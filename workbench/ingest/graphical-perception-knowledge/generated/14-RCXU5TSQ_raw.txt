@@ -29,7 +29,7 @@ sources:
     note: "Primary study (n=66 after exclusions) comparing line charts and colorfield charts for an aggregate judgment task. Found colorfields led to significantly higher accuracy."
     role: primary
   - type: research
-    ref: Cleveland & McGill, 1984
+    ref: "Cleveland & McGill, 1984"
     url: https://doi.org/10.2307/2288400
     note: "Foundational work establishing the general superiority of position over color for quantitative tasks. This guideline represents a task-specific exception to that general principle."
     role: related

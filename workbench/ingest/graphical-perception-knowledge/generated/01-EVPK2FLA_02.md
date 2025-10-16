@@ -19,7 +19,7 @@ evidence:
 sources:
   - type: research
     ref: Waldner et al., 2020
-    doi: 10.1109/TVCG.2019.2934784
+    url: https://doi.org/10.1109/TVCG.2019.2934784
     note: "Primary experiment refuting the central hypothesis that a clock metaphor aids interpretation. The 12-hour radial chart (12r) had the highest error rates and lowest subjective rating (2.95/5). User feedback highlighted confusion: 'I found it very hard to read initially... This is very confusing.'"
     role: primary
 

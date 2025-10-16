@@ -30,7 +30,7 @@ sources:
     note: "Primary study showing that channel rankings change with task and number of marks, challenging the universality of prior rankings."
     role: primary
   - type: research
-    ref: Cleveland & McGill, 1984
+    ref: "Cleveland & McGill, 1984"
     url: https://doi.org/10.2307/2288400
     note: "The foundational work establishing the classic perceptual ranking that this guideline suggests re-evaluating."
     role: related

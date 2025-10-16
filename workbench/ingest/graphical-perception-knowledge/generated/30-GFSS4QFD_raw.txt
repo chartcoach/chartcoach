@@ -207,7 +207,7 @@ evidence:
 
 sources:
   - type: research
-    ref: Cleveland & McGill, 1984
+    ref: "Cleveland & McGill, 1984"
     url: https://doi.org/10.2307/2288400
     note: "The foundational experimental work (n=55) that established the perceptual ranking of visual encodings, showing position on a common scale is superior to length, angle, and area for comparison tasks (p < 0.001)."
     role: primary

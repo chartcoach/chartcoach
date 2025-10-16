@@ -22,7 +22,7 @@ sources:
     url: https://doi.org/10.1109/TVCG.2018.2864511
     note: "This study, cited as [78] in the review paper, empirically tested five chart types across ten tasks. Bar charts were found to be a top performer for a majority of tasks, including cluster, filter, sort, and aggregation."
   - type: research
-    ref: Cleveland & McGill, 1984
+    ref: "Cleveland & McGill, 1984"
     url: https://doi.org/10.2307/2288400
     note: "The foundational work showing that judging position and length on a common scale (the core task in a bar chart) is highly accurate."
 

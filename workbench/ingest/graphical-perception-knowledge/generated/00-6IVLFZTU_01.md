@@ -23,7 +23,7 @@ evidence:
   summary: "Experiments by Cleveland & McGill (1984) and replicated by Heer & Bostock (2010) show that people judge length and position (bar charts) with significantly higher accuracy than angle (pie charts) for comparison tasks. Zeng & Battle's (2023) review confirms this is a foundational and widely accepted finding in graphical perception."
 sources:
   - type: research
-    ref: Cleveland & McGill, 1984
+    ref: "Cleveland & McGill, 1984"
     url: https://doi.org/10.2307/2288400
     note: "The original study demonstrated that comparisons based on position along a common scale (as in bar charts) are perceptually superior to those based on angle (as in pie charts)."
     role: primary
@@ -32,7 +32,7 @@ sources:
     url: https://doi.org/10.1145/1753326.1753357
     note: "A large-scale replication confirmed that bar charts lead to lower error rates than pie charts for comparison tasks."
     role: supporting
-  - typearctype: research
+  - type: research
     ref: Skau & Kosara, 2016
     url: https://doi.org/10.1109/TVCG.2016.2598532
     note: "Investigated the perceptual cues in pie charts, finding that people may use a combination of angle, area, and arc length, but that position-based charts remain superior for comparison."

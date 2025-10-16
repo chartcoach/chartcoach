@@ -20,7 +20,7 @@ sources:
     ref: Zeng & Battle, 2023
     note: "This review paper synthesizes foundational research, stating 'In general, position encodings (PX, PY) are the top choices for representing all data types (quantitative, nominal, ordinal)' (p. 8)."
   - type: research
-    ref: Cleveland & McGill, 1984
+    ref: "Cleveland & McGill, 1984"
     url: https://doi.org/10.2307/2288400
     note: "Original foundational research establishing the hierarchy of perceptual accuracy for visual encodings, with position on a common scale ranked highest."
   - type: research

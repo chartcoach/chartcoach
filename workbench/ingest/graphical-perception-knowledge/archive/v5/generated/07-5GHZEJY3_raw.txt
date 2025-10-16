@@ -59,7 +59,7 @@ sources:
     note: "This recent survey confirms the continued relevance and application of Mackinlay's rankings, noting position (PX, PY) is the most studied and effective channel."
     role: supporting
   - type: research
-    ref: Cleveland & McGill, 1984
+    ref: "Cleveland & McGill, 1984"
     url: https://doi.org/10.2307/2288400
     note: "The original experimental work that identified and ranked the perceptual accuracy of different visual encodings for quantitative data."
     role: related

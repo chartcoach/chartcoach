@@ -25,7 +25,7 @@ sources:
     url: https://doi.org/10.1145/22949.22950
     note: "Established the theoretical framework for ranking visual encodings by effectiveness, extending earlier empirical work into a generative system."
   - type: research
-    ref: Cleveland & McGill, 1984
+    ref: "Cleveland & McGill, 1984"
     url: https://doi.org/10.2307/2288400
     note: "Provided the original empirical evidence for ranking perceptual tasks for quantitative data, which forms the basis of this guideline."
 

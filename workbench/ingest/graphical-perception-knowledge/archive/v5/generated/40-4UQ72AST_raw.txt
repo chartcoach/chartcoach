@@ -174,7 +174,7 @@ sources:
     note: "The study's hypothesis (H2) that treemaps would yield significantly less accurate performance was not supported. Treemaps performed surprisingly well for RANK and COMP tasks."
     role: primary
   - type: research
-    ref: Cleveland & McGill, 1984
+    ref: "Cleveland & McGill, 1984"
     url: https://doi.org/10.2307/2288400
     note: "Foundational work establishing that length/position is perceptually more accurate than area, which is why the treemap result is surprising."
     role: related
@@ -254,7 +254,7 @@ sources:
     note: "Found scrolled barcharts (SB) were highly accurate for COMP and RANK tasks but were the slowest chart type for all tasks."
     role: primary
   - type: research
-    ref: Cleveland & McGill, 1984
+    ref: "Cleveland & McGill, 1984"
     url: https://doi.org/10.2307/2288400
     note: "Provides the foundational principle that position along a common scale (as in a bar chart) is the most accurate encoding for quantitative comparison."
     role: supporting

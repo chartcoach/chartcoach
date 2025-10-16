@@ -1,0 +1,1079 @@
+```md
+---
+id: use-table-for-lookup
+title: "Use a table when the primary task is looking up specific values"
+tags:
+  - impact:cognitive
+  - impact:performance
+  - chart:table
+  - task:lookup
+  - audience:general
+evidence:
+  strength: medium
+  summary: "Widely accepted practitioner principle that tables excel over charts for tasks requiring the retrieval of specific, precise data points. This allows users to find information relevant to them (e.g., their city, their age group) efficiently."
+sources:
+  - type: practitioner
+    ref: "Datawrapper: What to consider when creating tables"
+    url: https://www.datawrapper.de/blog/guide-what-to-consider-when-creating-tables
+    note: "States that readers can find data that applies to them 'often faster in a table than in a text or a chart'."
+    role: primary
+  - type: practitioner
+    ref: "Cole Nussbaumer Knaflic: Visual Battle: Table vs Graph"
+    note: "Discusses how the intended use of the data (lookup vs. pattern detection) should guide the choice between a table and a graph."
+    role: supporting
+---
+
+## Guidance
+
+When the main goal is to allow readers to find specific information or individual values, use a table rather than a chart.
+
+## Why
+
+Tables structure data in a way that facilitates direct lookup. Unlike charts, which are optimized for showing patterns and relationships, tables present data in a simple row-and-column format that makes it easy to scan for and retrieve precise values, such as the data for a specific city, company, or date.
+
+### Core Principle
+
+Design for the primary task. If the task is lookup, the design should optimize for finding specific items quickly and accurately.
+
+## When it applies
+
+- When your audience needs to find data points that apply specifically to them (e.g., their location, age group, industry).
+- When the data is structured text (names, teams, states) rather than purely quantitative.
+- When providing a reference or a directory-like resource.
+- When the audience needs to know the exact value of a piece of data.
+
+## Exceptions
+
+- If the table becomes excessively long and the lookup task can be better served by an interactive tool (like a search bar that returns a single result), a full table might not be necessary.
+- If identifying an overall pattern is more important than finding a single value, a chart is more appropriate.
+
+## Trade-offs
+
+- Tables are poor at revealing overall trends, patterns, outliers, or the "shape" of the data. By choosing a table, you prioritize precision and lookup over high-level visual discovery.
+
+## Signs of Trouble
+
+- **Constant Questions:** Readers are asking for specific numbers that are not easily read from your chart.
+- **"Where am I?":** Users have difficulty finding the data point relevant to their own context in a visualization.
+- **Text Clutter:** You have a long paragraph of text that is just listing structured data that would be easier to read in a table format.
+
+## How to Improve
+
+- **Quick Fix:** If you have a chart, add a small summary table with key values or provide a link to the full dataset in a table format.
+- **Comprehensive Approach:** If the primary task is lookup, replace the chart entirely with a well-formatted table. Ensure columns are clearly labeled and consider adding search or sort functionality to aid lookup.
+
+```
+
+<split/>
+
+```md
+---
+id: use-chart-for-patterns
+title: "Use a chart to reveal patterns, trends, or outliers"
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:*
+  - task:trend
+  - task:compare
+  - task:distribution
+  - task:correlation
+evidence:
+  strength: high
+  summary: "Foundational principle of data visualization. Charts leverage pre-attentive attributes to make patterns, trends, and outliers immediately visible, a task for which tables are poorly suited as they require sequential reading and mental calculation."
+sources:
+  - type: practitioner
+    ref: "Datawrapper: What to consider when creating tables"
+    url: https://www.datawrapper.de/blog/guide-what-to-consider-when-creating-tables
+    note: "Charts, however, show an overall picture. It’s hard to not notice outliers, the biggest value or the smallest value."
+    role: primary
+  - type: research
+    ref: "Cleveland & McGill, 1984"
+    url: https://doi.orgorg/10.2307/2288400
+    note: "Establishes the perceptual hierarchy of visual encodings, explaining *why* charts are effective for comparison and pattern detection."
+    role: supporting
+---
+
+## Guidance
+
+When the goal is to show the relationship between values, communicate a pattern, or highlight the overall shape of the data, use a chart instead of a table.
+
+## Why
+
+Charts translate numbers into visual objects (lines, bars, points), which allows the human visual system to rapidly perceive patterns, trends, and outliers. A table requires a user to read numbers sequentially and mentally compare them, making it very difficult to see a high-level story.
+
+### Core Principle
+
+Make the most important comparisons and patterns the easiest to see. Charts do this by encoding data visually, which our brains process more efficiently than text.
+
+## When it applies
+
+- When you want to show a trend over time.
+- When you want to compare the magnitude of different categories.
+- When you want to highlight the biggest or smallest value, or outliers.
+- When you want to communicate a key message or story from the data at a glance.
+
+## Exceptions
+
+- If the "pattern" is trivial or the data consists of only two or three numbers, a simple sentence might be more effective than a chart.
+- If precise values are more important than the pattern, a table might be a better choice (or a chart with a supplementary table).
+
+## Trade-offs
+
+- Charts sacrifice numerical precision for perceptual clarity. It is difficult to read exact values from most charts.
+
+## Signs of Trouble
+
+- **"So What?":** Viewers look at your table and cannot discern any clear takeaway or story.
+- **Hidden Insights:** You find yourself manually pointing out the highest value, the lowest value, or an interesting trend within a large table.
+
+## How to Improve
+
+- **Quick Fix:** Add in-cell visualizations to your table, like bar charts or sparklines, to introduce a visual layer.
+- **Comprehensive Approach:** Convert the table into an appropriate chart type. Use a line chart for trends, a bar chart for comparisons, or a scatter plot for correlations to make the underlying pattern immediately visible.
+
+```
+
+<split/>
+
+```md
+---
+id: use-table-for-precision
+title: "Use a table when precise numbers are critical for decision-making"
+tags:
+  - impact:logos
+  - impact:ethos
+  - chart:table
+  - task:lookup
+  - task:compare
+  - data:quantitative
+evidence:
+  strength: medium
+  summary: "Practitioner consensus emphasizes that when audiences need to act on specific data, tables provide the necessary numerical precision that charts inherently lack, supporting informed decision-making."
+sources:
+  - type: practitioner
+    ref: "Datawrapper: What to consider when creating tables"
+    url: https://www.datawrapper.de/blog/guide-what-to-consider-when-creating-tables
+    note: "A table then becomes a decision tool – to find the best interest rate, the best price, the best job, the best business strategy. Precise numbers matter for such decisions."
+    role: primary
+  - type: practitioner
+    ref: "Stephen Few: Show Me the Numbers"
+    note: "Argues that tables are superior when precise values are required, as graphs can only show approximate values."
+    role: supporting
+---
+
+## Guidance
+
+When your audience needs precise numbers to make specific decisions, provide the data in a table.
+
+## Why
+
+Charts are excellent for showing relative magnitudes and patterns but poor for communicating precise values. When a user needs to act on the data—such as comparing interest rates, prices, or technical specifications—the exact numbers are critical. A table presents these precise figures clearly, functioning as a tool for decision-making.
+
+## When it applies
+
+- When the data will be used to make financial, business, or personal choices.
+- When users need to compare values with high precision.
+- When the numbers themselves are the key information, rather than the relationship between them.
+- When providing reference data that may be copied or used in calculations.
+
+## Exceptions
+
+- If the decision can be made based on relative comparisons alone (e.g., "which is biggest?"), a chart might still be effective.
+- For very large datasets, a table may become overwhelming. In this case, an interactive chart that reveals precise values on hover or click may be a better compromise.
+
+## Trade-offs
+
+- Focusing on precision in a table means sacrificing the at-a-glance pattern recognition that charts provide. The user must work harder to synthesize trends.
+
+## Signs of Trouble
+
+- **Follow-up Questions:** After seeing your chart, your audience asks, "But what's the exact number for X?"
+- **Inaccurate Readings:** Users are making decisions based on your chart but are misjudging the values because they can only estimate from the visual.
+
+## How to Improve
+
+- **Quick Fix:** Add data labels to your chart to show the precise numbers.
+- **Moderate Approach:** Supplement your chart with a summary table showing the most important precise values.
+- **Comprehensive Approach:** If precision is the top priority, use a table as the primary method of display. You can still use in-table visuals like bar charts to add a comparative layer without sacrificing the numbers.
+
+```
+
+<split/>
+
+```md
+---
+id: use-table-for-conventional-data
+title: "Use a table for data types conventionally read as numbers"
+tags:
+  - impact:cognitive
+  - chart:table
+  - audience:general
+evidence:
+  strength: low
+  summary: "This practitioner advice suggests that for certain data types like age, audiences have strong, pre-existing mental models associated with the numbers themselves. Visualizing them can interfere with this direct understanding rather than aiding it."
+sources:
+  - type: practitioner
+    ref: "Datawrapper: What to consider when creating tables"
+    url: https://www.datawrapper.de/blog/guide-what-to-consider-when-creating-tables
+    note: "It’s strange to see age visualized, for example. Most of us wouldn’t think 'oh, that’s three times as old' when they learn that one person is 6 and the other is 18 years old. We have different (and rather strong) associations with these ages."
+    role: primary
+---
+
+## Guidance
+
+For data types that people are accustomed to interpreting as raw numbers (like age or standard drink sizes), present them in a table rather than visualizing them.
+
+## Why
+
+Some numerical data comes with strong, built-in mental models and associations. For example, we understand the social and developmental meaning of ages like 6, 18, and 65 in ways that a bar chart cannot convey. Visualizing these numbers as simple magnitudes (e.g., a bar for 18 being three times taller than a bar for 6) can strip them of their conventional meaning and feel awkward or unhelpful.
+
+## When it applies
+
+- When dealing with data like age, where the number itself has a rich, culturally-understood meaning.
+- For standardized measurements that are commonly understood as numbers, such as clothing sizes or drink volumes (0.25L, 0.5L).
+- When the audience's internal understanding of the number is more nuanced than a simple quantitative comparison.
+
+## Exceptions
+
+- If you are comparing statistical distributions of these values (e.g., the age distribution of a population), a chart like a histogram is perfectly appropriate. The guideline applies to showing individual instances of the data.
+
+## Trade-offs
+
+- You lose the ability to make quick visual comparisons of magnitude, but you gain by aligning with the audience's existing mental framework, which reduces cognitive load.
+
+## Signs of Trouble
+
+- **Awkward Visuals:** A chart of ages or other conventional numbers looks strange or uninformative.
+- **"Just tell me the number":** The audience finds the visualization to be a roundabout way of communicating a simple, familiar number.
+
+## How to Improve
+
+- **Action:** In your table, simply display the numbers in a column. For example, instead of creating a bar chart to show the ages of team members, list their ages in a "Age" column.
+
+```
+
+<split/>
+
+```md
+---
+id: use-table-for-bidirectional-comparison
+title: "Use a table to enable bidirectional comparisons"
+tags:
+  - impact:cognitive
+  - chart:table
+  - task:compare
+evidence:
+  strength: low
+  summary: "Practitioner advice highlights that tables uniquely allow for comparison in two directions (across rows and down columns), whereas most charts force the designer to prioritize one comparison axis over the other."
+sources:
+  - type: practitioner
+    ref: "Datawrapper: What to consider when creating tables"
+    url: https://www.datawrapper.de/blog/guide-what-to-consider-when-creating-tables
+    note: "In most chart types, we need to decide in which direction readers should be able to compare... In a table, you offer both."
+    role: primary
+---
+
+## Guidance
+
+Use a table when you want to allow readers to compare values both across rows (e.g., different metrics for the same item) and down columns (e.g., the same metric for different items).
+
+## Why
+
+Most chart types are optimized for a single direction of comparison. For example, a grouped bar chart makes it easy to compare categories within a group, but harder to compare the same category across different groups. A table's grid structure naturally supports both horizontal and vertical comparisons, offering more flexibility to the reader.
+
+## When it applies
+
+- When you have a matrix of data where both the rows and columns represent distinct, comparable categories.
+- When you cannot easily decide which comparison direction is more important for your audience.
+- When you want to provide a flexible data exploration tool for the reader.
+
+## Exceptions
+
+- If there is one primary comparison that is far more important than any other, a chart designed specifically for that comparison will be more effective.
+
+## Trade-offs
+
+- **Increased Cognitive Load:** While offering flexibility, tables force the reader to do the comparative work (mental math, scanning back and forth) themselves.
+- **Missed Insights:** Important trends, outliers, or patterns that would be immediately obvious in a chart are likely to be missed in a table.
+
+## Signs of Trouble
+
+- **Chart indecision:** You are struggling to decide whether to group your bar chart by region or by year, because both comparisons seem equally important.
+- **Complex needs:** Your audience wants to compare both a company's performance against its competitors this year, and that same company's performance against its own results from last year.
+
+## How to Improve
+
+- **Action:** Structure your data in a simple table with clear row and column headers. This empowers the reader to make their own comparisons as they see fit. For added clarity, consider using a heatmap within the table to guide the eye to high and low values.
+
+```
+
+<split/>
+
+```md
+---
+id: use-table-for-ranks
+title: "Use a table to display ranks"
+tags:
+  - impact:cognitive
+  - impact:logos
+  - chart:table
+  - task:rank
+  - data:ordinal
+evidence:
+  strength: medium
+  summary: "Displaying ranks as magnitudes (e.g., bar charts) can mislead viewers into making quantitative judgments about ordinal data. Practitioners recommend using tables to present ranks clearly as a sorted list, which aligns with their sequential nature."
+sources:
+  - type: practitioner
+    ref: "Datawrapper: What to consider when creating tables"
+    url: https://www.datawrapper.de/blog/guide-what-to-consider-when-creating-tables
+    note: "Ranks are special numbers: 1 doesn’t mean half as good as 2, but 'somehow better'. Visualizing ranks might support that false reading. Every time you want to show ranks, tables will likely be the top choice."
+    role: primary
+---
+
+## Guidance
+
+When displaying ranks or other strictly ordinal data, use a sorted table rather than a chart that encodes rank as a magnitude (e.g., bar length).
+
+## Why
+
+Rank data is ordinal, not quantitative. The difference between rank 1 and 2 is not necessarily the same as the difference between rank 10 and 11. Using a bar chart to visualize ranks can be misleading because it encourages viewers to interpret the bar lengths quantitatively (e.g., "Rank 1 is twice as good as Rank 2," which is false). A table simply presents the order, which is the true nature of the data.
+
+## When it applies
+
+- When your primary data consists of ranks (1st, 2nd, 3rd...).
+- When you want to show a sorted list of items.
+- When the underlying quantitative values that determined the rank are not available or not important to show.
+
+## Exceptions
+
+- If you want to show the rank *and* the underlying quantitative value, a bar chart sorted by value (which implicitly shows the rank by order) is an excellent choice. This guideline applies when the rank itself is the data being displayed.
+
+## Trade-offs
+
+- You lose the immediate visual impact of a chart, but you gain logical integrity and avoid misleading your audience.
+
+## Signs of Trouble
+
+- **Misleading Bars:** You have a bar chart where the y-axis is "Rank" and the bars represent Rank 1, Rank 2, etc. This incorrectly represents ordinal data as quantitative.
+- **Confused Audience:** Viewers are trying to interpret the *size* of the difference between ranks based on your visualization.
+
+## How to Improve
+
+- **Quick Fix:** If you have a bar chart of ranks, change the title and labels to make it clear that the bars simply represent rank order and their length is not a meaningful quantity.
+- **Comprehensive Approach:** Replace the chart with a table. Create a column for the rank (e.g., "#") and a column for the item being ranked. Sort the table by the rank column. This is the clearest and most honest way to present rank data.
+
+```
+
+<split/>
+
+```md
+---
+id: simplify-table-columns
+title: "Improve table readability by reducing the number and width of columns"
+tags:
+  - impact:cognitive
+  - impact:aesthetic
+  - chart:table
+  - medium:screen
+  - medium:print
+  - access:cognitive-load-risk
+evidence:
+  strength: medium
+  summary: "Practitioner consensus holds that fewer, narrower columns improve readability and reduce cognitive load, especially on mobile devices. This aligns with fundamental design principles of simplicity and maximizing the data-ink ratio."
+sources:
+  - type: practitioner
+    ref: "Datawrapper: What to consider when creating tables"
+    url: https://www.datawrapper.de/blog/guide-what-to-consider-when-creating-tables
+    note: "The fewer columns your table has, the more readable it becomes (especially on mobile phones). Ask yourself: What’s the essential information?"
+    role: primary
+  - type: practitioner
+    ref: "Stephen Few: Show Me the Numbers"
+    note: "Advocates for maximizing the data-ink ratio, which includes removing non-essential information and clutter to improve clarity."
+    role: supporting
+---
+
+## Guidance
+
+Keep tables focused by including only essential columns. For the columns that remain, make them as narrow as possible without sacrificing clarity.
+
+## Why
+
+Wide tables with many columns are difficult to read and process. They increase cognitive load as the reader's eye has to travel further, increasing the risk of errors. On smaller screens, wide tables force horizontal scrolling, which is a poor user experience that can cause readers to miss data entirely.
+
+### Core Principle
+
+Reduce the cognitive work required to decode your visualization; every unnecessary piece of information is a potential distraction.
+
+## When it applies
+
+- When designing any table, but especially for display on mobile devices.
+- When a table feels cluttered or overwhelming.
+- When a table requires horizontal scrolling to view all data.
+
+## Exceptions
+
+- In expert-facing exploratory tools, showing a large number of columns might be desirable to allow for in-depth analysis. In such cases, good filtering and column visibility controls are crucial.
+
+## Trade-offs
+
+- Removing columns means sacrificing some information. You must make a judgment call on what is truly essential for your audience and their task.
+
+## Signs of Trouble
+
+- **Horizontal Scrollbar:** Your table is wider than the screen or page width.
+- **Reader Fatigue:** It feels like a chore to find information in the table.
+- **Redundant Information:** The same word or unit appears in every cell of a column.
+- **Number Clutter:** Numbers are shown with excessive, unnecessary precision (e.g., `1,300,000.00` when `1.3m` would suffice).
+
+## How to Improve
+
+- **Quick Fix: Abbreviate and Round.**
+    - Use standard abbreviations (e.g., 'Q1' for 'Quarter 1').
+    - Round numbers to fewer decimal places or use compact formats (e.g., `1.3M` instead of `1,300,000`).
+    - Use icons instead of text where universally understood (e.g., a country flag).
+- **Moderate Redesign: Consolidate Headers.** Move repeating words or units from the cells into the column header. For example, change a column of `$10, $20, $30` to have a header "Price ($)" and cells `10, 20, 30`.
+- **Comprehensive Approach: Re-evaluate and Remove.** Critically assess each column. Ask "What decision does this column help the reader make?" If there's no clear answer, consider hiding it by default or removing it entirely. For responsive designs, configure less important columns to be hidden on mobile screens.
+
+```
+
+<split/>
+
+```md
+---
+id: prefer-vertical-tables
+title: "Structure tables to be taller (more rows) rather than wider (more columns)"
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:table
+  - task:lookup
+  - task:compare
+evidence:
+  strength: low
+  summary: "Practitioner advice suggests that vertical scanning is perceptually and cognitively easier for humans than horizontal scanning, especially for sorted lists. Transposing a wide table into a tall one can therefore improve readability."
+sources:
+  - type: practitioner
+    ref: "Datawrapper: What to consider when creating tables"
+    url: https://www.datawrapper.de/blog/guide-what-to-consider-when-creating-tables
+    note: "Humans find it easier skimming through the information that’s vertically aligned, not horizontally; especially if the data is sorted (think of dictionaries)."
+    role: primary
+---
+
+## Guidance
+
+Whenever possible, structure your data so that your table has more rows and fewer columns (a "tall" or "long" format).
+
+## Why
+
+Humans find it easier and faster to scan information vertically than horizontally. We are trained to do this by reading lists, dictionaries, and contacts on our phones. A tall, narrow table is easier to skim, especially if sorted, and avoids the usability problems of horizontal scrolling on screens.
+
+## When it applies
+
+- When you have a "wide" dataset (e.g., one row per country, with columns for 2010, 2011, 2012, etc.).
+- When designing for screen display, particularly on mobile devices where horizontal space is limited.
+- When one of the main tasks is to scan for items in a sorted list.
+
+## Exceptions
+
+- When the number of items (which would become rows) is very small, and the number of attributes (which would become columns) is very large, a wide format might be unavoidable.
+- If bidirectional comparison is a key task, a wide format may be necessary.
+
+## Trade-offs
+
+- Transposing data can sometimes feel less intuitive for certain datasets, depending on what the user considers the primary entity.
+- It can lead to repetition in some columns (e.g., the entity name being repeated for each year), but this is generally a worthwhile trade-off for improved scannability.
+
+## Signs of Trouble
+
+- **Horizontal Scrolling:** Your table is too wide for the screen.
+- **Difficult Comparisons:** It's hard to compare the same metric across many items because you have to scan horizontally across a large distance.
+
+## How to Improve
+
+- **Action: Transpose Your Data.** Restructure your table. For example, instead of a table with columns `Country | 2021 | 2022 | 2023`, transpose it to have columns `Country | Year | Value`. This creates a taller, narrower table that is easier to sort, filter, and read.
+
+```
+
+<split/>
+
+```md
+---
+id: use-zebra-striping-for-wide-tables
+title: "Use zebra striping for wide tables to improve row tracking"
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:table
+  - data:cardinality.high
+  - access:cognitive-load-risk
+evidence:
+  strength: medium
+  summary: "Zebra striping is a common design pattern recommended by practitioners to reduce row-tracking errors in wide tables. By providing a subtle visual guide, it helps users connect data points across the same row, lowering cognitive load."
+sources:
+  - type: practitioner
+    ref: "Datawrapper: What to consider when creating tables"
+    url: https://www.datawrapper.de/blog/guide-what-to-consider-when-creating-tables
+    note: "If you can’t avoid many columns, stripe every second row with a light grey... This will reduce the risk of readers accidentally jumping between rows."
+    role: primary
+  - type: practitioner
+    ref: "Taras Bakusevych: Data Tables Design"
+    note: "Also recommends zebra striping as a way to improve readability and differentiate rows."
+    role: supporting
+---
+
+## Guidance
+
+For tables with many columns, apply a subtle background color to every other row (known as "zebra striping" or "row banding").
+
+## Why
+
+In a wide table, it's easy for the eye to slip and jump to an adjacent row when scanning from a label on the left to a value on the far right. Zebra striping provides a persistent visual guide for each row, making it easier for the reader to stay on track and correctly associate data across the entire row.
+
+## When it applies
+
+- When a table has many columns, forcing the reader's eye to travel a long horizontal distance.
+- When a table is dense with information.
+- When you cannot reduce the number of columns.
+
+## Exceptions
+
+- **Narrow Tables:** Zebra striping is often unnecessary and can add distracting visual clutter to tables with only a few (2-3) columns, where the risk of row-jumping is low.
+- **High-Contrast Rows:** If rows are already separated by strong grid lines or ample white space, striping may be redundant.
+
+## Trade-offs
+
+- Adds "non-data ink" to the table, which can be seen as visual noise if not implemented subtly. The effect must be gentle enough to guide without distracting.
+
+## Signs of Trouble
+
+- **Scanning Errors:** You or your users find yourselves accidentally reading data from the wrong row when looking at columns far from the row labels.
+- **Eye Strain:** It feels mentally taxing to scan across a wide, dense table.
+
+## How to Improve
+
+- **Action:** Apply a very light grey background color (e.g., `#F5F5F5`) to every even-numbered or odd-numbered row in your table. The contrast between the striped and non-striped rows should be minimal—just enough to be perceivable.
+
+```
+
+<split/>
+
+```md
+---
+id: adjust-table-row-height
+title: "Adjust table row height based on the number of rows"
+tags:
+  - impact:aesthetic
+  - impact:cognitive
+  - chart:table
+  - data:cardinality.low
+  - data:cardinality.high
+evidence:
+  strength: low
+  summary: "This is a nuanced design heuristic from practitioner guides. A spacious layout for short tables improves aesthetics and legibility, while a compact layout for long tables optimizes for scannability and information density."
+sources:
+  - type: practitioner
+    ref: "Datawrapper: What to consider when creating tables"
+    url: https://www.datawrapper.de/blog/guide-what-to-consider-when-creating-tables
+    note: "If you show only a few rows, a wide layout is more pleasant to the eye. If your table has a lot of rows, consider a compact layout."
+    role: primary
+---
+
+## Guidance
+
+Use a more spacious, taller row height for tables with few rows, and a more compact, shorter row height for tables with many rows.
+
+## Why
+
+The optimal row height depends on the table's length.
+- **Short Tables:** A generous row height creates a clean, uncluttered, and aesthetically pleasing look. It makes each row easy to read.
+- **Long Tables:** A compact row height increases information density, allowing more rows to fit on the screen at once. This makes it easier for users to scan and compare values across multiple rows without excessive scrolling.
+
+## When it applies
+
+- When designing a table, consider the expected number of rows.
+- For short tables (e.g., < 10 rows), use a spacious layout.
+- For long tables (e.g., > 20 rows), use a compact layout.
+
+## Exceptions
+
+- If the rows must contain taller content, such as multi-line text or images, a compact layout will not be possible regardless of the number of rows.
+- Accessibility guidelines for touch targets might require a minimum row height, especially for interactive tables.
+
+## Trade-offs
+
+- A compact layout can feel cramped if not designed carefully, potentially reducing the legibility of individual rows.
+- A spacious layout on a long table wastes screen real estate and forces excessive scrolling.
+
+## Signs of Trouble
+
+- **Endless Scrolling:** A long table with very tall rows requires a frustrating amount of scrolling to see all the data.
+- **Wasted Space:** A short table with very compact rows looks cramped and lost in a sea of white space.
+- **Comparison Difficulty:** In a long, spacious table, it's hard to compare row 5 with row 15 because they are too far apart on the screen.
+
+## How to Improve
+
+- **Action:** In your CSS or table styling tool, define different style classes for compact and spacious tables.
+    - For `table.compact`, use smaller padding within cells (e.g., `padding: 4px 8px;`).
+    - For `table.spacious`, use larger padding (e.g., `padding: 12px 8px;`).
+- Apply the appropriate class based on the data you are presenting.
+
+```
+
+<split/>
+
+```md
+---
+id: paginate-long-tables
+title: "Paginate long tables to avoid obscuring content below"
+tags:
+  - impact:cognitive
+  - chart:table
+  - medium:screen
+  - medium:interactive
+  - data:cardinality.high
+evidence:
+  strength: low
+  summary: "This is a practical usability heuristic for web design. Very long tables can create a 'false bottom,' leading users to believe there is no more content on the page. Pagination breaks the table into manageable chunks and signals that more content exists."
+sources:
+  - type: practitioner
+    ref: "Datawrapper: What to consider when creating tables"
+    url: https://www.datawrapper.de/blog/guide-what-to-consider-when-creating-tables
+    note: "A good rule of thumb is that the table should be shorter than a desktop screen if you don’t want readers to miss the fact that your article continues below it. Turn on the pagination feature..."
+    role: primary
+---
+
+## Guidance
+
+For very long tables on a web page or article, enable pagination to break the table into shorter, screen-sized chunks.
+
+## Why
+
+A table that is taller than the user's screen can create a "false bottom." Users may see the end of their screen filled with table rows and assume they have reached the end of the article, causing them to miss any content that appears below the table. Pagination prevents this by keeping the table to a manageable height and clearly indicating that more data is available on other "pages."
+
+## When it applies
+
+- When a table is very long (e.g., taller than a typical desktop screen height, roughly 50+ rows).
+- When there is important content (text, other charts) that appears after the table in a linear document like a blog post or report.
+
+## Exceptions
+
+- If the primary task requires users to sort the entire dataset or use Ctrl+F to find content, pagination can be a hindrance. An alternative is to contain the table within a vertically scrollable `div` with a fixed height, though this can also have usability drawbacks.
+- For print, pagination is handled by the page breaks of the document itself.
+
+## Trade-offs
+
+- Pagination hides most of the data by default, requiring clicks to access.
+- It makes it impossible to see all the data at once or to sort the entire dataset globally.
+
+## Signs of Trouble
+
+- **"I didn't see that":** Users are consistently missing the content that comes after your long table.
+- **The Endless Scroll:** A table seems to go on forever, dominating the entire article and breaking the reading flow.
+
+## How to Improve
+
+- **Action:** In your table creation tool or code, enable the pagination feature. Set the number of rows per page to a reasonable number (e.g., 10, 20, or 25) that will likely keep the table's total height within a single screen view.
+
+```
+
+<split/>
+
+```md
+---
+id: use-color-strategically-in-tables
+title: "Use color sparingly and strategically in tables to highlight and guide"
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:table
+  - visual:color
+  - access:color-vision-risk
+  - access:cognitive-load-risk
+evidence:
+  strength: medium
+  summary: "Practitioner guides consistently advise using color as a strategic tool for emphasis, not decoration. The article provides specific, actionable heuristics on adjusting color intensity based on the size of the colored area to maintain readability and avoid visual overload."
+sources:
+  - type: practitioner
+    ref: "Datawrapper: What to consider when creating tables"
+    url: https://www.datawrapper.de/blog/guide-what-to-consider-when-creating-tables
+    note: "Use colors to lead the reader’s eye... The less space colors fill in, the brighter & more different they should be... when coloring whole cells, rows or columns, choose pastel background colors."
+    role: primary
+examples:
+  - type: good
+    description: "This table uses a subtle grey background for the header and party-affiliated pastel colors to categorize candidates, guiding the eye without overwhelming it."
+    caption: "FiveThirtyEight Endorsement Tracker"
+---
+
+## Guidance
+
+Use color in tables to serve a specific purpose, such as highlighting key information, showing categories, or guiding the eye. Adjust the color's intensity based on the area it fills.
+
+## Why
+
+Color is a powerful pre-attentive attribute that instantly draws the eye. When used without purpose, it creates distracting visual noise. When used strategically, it can significantly improve a table's readability by making important information stand out or by helping users navigate different data categories. The perceived intensity of a color changes with its size, requiring different approaches for text versus backgrounds.
+
+### Core Principle
+
+Every use of color should have a job. Use bright colors for small areas (like text) and muted, pastel colors for large areas (like cell backgrounds) to ensure emphasis without compromising legibility.
+
+## When it applies
+
+- When you want to draw attention to a specific row, column, or cell.
+- When you want to group rows or columns into categories (e.g., by political party, region).
+- When you want to highlight the highest or lowest values in a column.
+
+## Exceptions
+
+- In a purely exploratory, expert-facing table, extensive color-coding might be used for complex status indicators, but this is a specialized use case. For general audiences, less is more.
+
+## Trade-offs
+
+- Overusing color can make a table look chaotic and diminish the impact of any single highlight.
+- Poor color choices can create accessibility issues for users with color vision deficiencies or low vision.
+
+## Signs of Trouble
+
+- **The Rainbow Effect:** The table uses many different bright colors, and it's not clear what they signify. It looks like a bag of Skittles.
+- **Vibrating Colors:** A bright, saturated background color makes the black text on top appear to vibrate and is difficult to read.
+- **Invisible Highlights:** A colored piece of text is too dark or has too little contrast with the background to be readable.
+
+## How to Improve
+
+- **Quick Fix: Highlight with Purpose.** Pick one or two key data points you want the reader to see and use a single, simple highlight color (e.g., a yellow background) for those cells only.
+- **Moderate Approach: Categorize with Color.** If you have categorical data (e.g., political parties), assign a distinct, accessible color to each category. Use this color consistently, for instance, as a colored dot next to the category name or as a subtle background.
+- **Comprehensive Approach: Modulate Color by Area.**
+    - **For backgrounds (cells, rows):** Use light, unsaturated pastel colors. These provide a tint without overwhelming the text.
+    - **For text:** Use brighter, more saturated colors. Since text characters are small, they need a stronger color to be noticeable. Always ensure the colored text has at least a 4.5:1 contrast ratio against its background to be accessible.
+
+```
+
+<split/>
+
+```md
+---
+id: add-search-and-sort-to-tables
+title: "Make tables searchable and sortable for personalized data exploration"
+tags:
+  - impact:performance
+  - impact:cognitive
+  - chart:table
+  - medium:interactive
+  - task:lookup
+  - task:rank
+  - audience:general
+evidence:
+  strength: medium
+  summary: "For tables containing data points relevant to individual users (e.g., their city or company), practitioner guides recommend adding interactive features like search and sort. This transforms the table from a static display into a personalized tool, dramatically improving usability."
+sources:
+  - type: practitioner
+    ref: "Datawrapper: What to consider when creating tables"
+    url: https://www.datawrapper.de/blog/guide-what-to-consider-when-creating-tables
+    note: "If your table contains information which is more relevant to some readers... consider making your table searchable & sortable... Make it as easy as possible for them."
+    role: primary
+  - type: practitioner
+    ref: "Andrew Coyle: Design better data tables"
+    note: "Provides an animated collection of interactive table patterns, including filtering and sorting, as key methods for improving user experience."
+    role: supporting
+---
+
+## Guidance
+
+If a table contains data that individual readers will want to find themselves in (e.g., by location, name, or company), add interactive search and sorting capabilities.
+
+## Why
+
+When readers see a table that includes their hometown, their industry, or another personal identifier, their first impulse is to find their own data. Manually scanning a large table is slow and inefficient. A search field allows them to find their data instantly. Column sorting empowers them to re-rank the data based on the metric they care about most, turning a static table into a personalized analysis tool.
+
+## When it applies
+
+- For any interactive table (i.e., on a website or app).
+- When the table contains many rows (e.g., >20).
+- When the rows represent entities that users might have a personal connection to, such as locations, companies, products, or names.
+
+## Exceptions
+
+- For very small, simple tables, these features are overkill.
+- In a static medium like print or a PDF, this is not possible.
+- If a specific sort order is essential to the story being told, allowing custom sorting could undermine the narrative. You might choose to disable sorting in this case.
+
+## Trade-offs
+
+- Implementing these features requires more technical effort than a static table.
+- A search bar and sort icons add some visual complexity to the table header.
+
+## Signs of Trouble
+
+- **Ctrl+F Dependency:** Users' primary method of interacting with your table is to use the browser's "Find" function.
+- **"How do I rank?":** Users ask how they can see which item is best/worst according to a specific column that isn't the default sort order.
+- **Information Overload:** A user is presented with a 500-row table and has no easy way to find the single row they care about.
+
+## How to Improve
+
+- **Quick Fix: Add Sorting.** The easiest interactive feature to add is often column sorting. Add clickable arrows to your column headers to allow users to sort the table's contents.
+- **Comprehensive Approach: Add Search and Sort.** Implement both features. Place a clear search bar above the table and add sort indicators to all relevant column headers. This provides a powerful and intuitive experience for data exploration.
+
+```
+
+<split/>
+
+```md
+---
+id: sort-table-by-importance
+title: "Sort tables by a meaningful metric, not just alphabetically"
+tags:
+  - impact:cognitive
+  - impact:pathos
+  - chart:table
+  - task:rank
+  - task:compare
+evidence:
+  strength: medium
+  summary: "Practitioner consensus strongly advises against defaulting to alphabetical sort, as it often hides the most important information. Sorting by a key metric brings the most significant data to the forefront, immediately providing insight and context."
+sources:
+  - type: practitioner
+    ref: "Datawrapper: What to consider when creating tables"
+    url: https://www.datawrapper.de/blog/guide-what-to-consider-when-creating-tables
+    note: "It’s tempting to just sort the first column alphabetically. But often, that approach won’t bring the most interesting data to the top. In which row does the most important value hide? Consider showing this one first."
+    role: primary
+---
+
+## Guidance
+
+Set the default sort order of your table based on the most important or interesting column, rather than simply sorting the first column alphabetically.
+
+## Why
+
+The first few rows of a table receive the most attention. An alphabetical sort is arbitrary and rarely surfaces the most meaningful data. Sorting by a key quantitative metric (e.g., highest population, biggest change, top sales) immediately answers important questions for the reader ("Who is number one? What's the biggest value?") and surfaces the main story without requiring any interaction.
+
+### Core Principle
+
+Don't make the user do work you can do for them. By pre-sorting the data thoughtfully, you deliver insight on first glance.
+
+## When it applies
+
+- When creating any table with more than a few rows.
+- Especially important for long tables where most data is hidden by scrolling or pagination. The top-sorted items are the only ones guaranteed to be seen.
+
+## Exceptions
+
+- If the table is a dictionary or reference where alphabetical lookup is the primary and expected function, then alphabetical sort is the correct choice.
+- If there is no single "most important" metric, you might allow the user to choose the sort order, but you still must pick a sensible default.
+
+## Trade-offs
+
+- Choosing a default sort order imposes a specific narrative on the data. This is usually a good thing, but it de-emphasizes other potential stories. This trade-off is mitigated by offering interactive column sorting.
+
+## Signs of Trouble
+
+- **The "A"s Have It:** Your table's top rows are filled with entries for Afghanistan, Albania, and Algeria, while the most impactful data for China or the United States is buried hundreds of rows down.
+- **The Buried Lede:** The most interesting finding or most extreme value in your dataset is not visible without scrolling or re-sorting the table.
+
+## How to Improve
+
+- **Action: Re-sort the Table.** Identify the column that best tells the story or contains the most significant values. Sort the entire table by that column in descending (or ascending) order. You can even sort by a column that you choose not to display (an "invisible column"), such as sorting cities by population without showing the population number itself.
+
+```
+
+<split/>
+
+```md
+---
+id: embed-bar-charts-in-tables
+title: "Embed bar charts within table columns to visualize magnitude"
+tags:
+  - impact:perceptual
+  - chart:table
+  - chart:bar
+  - task:compare
+  - task:rank
+  - data:quantitative
+evidence:
+  strength: medium
+  summary: "Embedding bar charts into tables is a powerful practitioner technique that combines the precision of numbers with the at-a-glance comparability of charts. This hybrid approach allows for both quick visual ranking and detailed value lookup."
+sources:
+  - type: practitioner
+    ref: "Datawrapper: What to consider when creating tables"
+    url: https://www.datawrapper.de/blog/guide-what-to-consider-when-creating-tables
+    note: "Often, we can combine the best of both worlds – the readability & sortability of tables, and the quick overview of our data that charts offer."
+    role: primary
+  - type: practitioner
+    ref: "Stephen Few: Show Me the Numbers"
+    note: "Discusses and provides examples of embedding graphs within tables to enrich the data display."
+    role: supporting
+---
+
+## Guidance
+
+In tables, consider replacing or supplementing a column of numbers with in-cell bar charts to provide a quick visual guide to their magnitude.
+
+## Why
+
+A column of numbers requires readers to scan and mentally compare each value to understand their relative size. By representing those numbers as bars, you make comparison instantaneous. The eye can quickly see the largest, smallest, and intermediate values, allowing for rapid ranking and pattern detection while still keeping the data within the organized structure of a table.
+
+## When it applies
+
+- When you have a quantitative column that is particularly important for comparison.
+- In tables where you want to provide a quick visual overview in addition to precise numbers.
+- When you want to make it easy for readers to rank the rows by a specific metric.
+
+## Exceptions
+
+- If horizontal space is extremely limited, as bar charts inherently make a column wider than numbers alone. The article suggests applying this to only the most important columns.
+
+## Trade-offs
+
+- **Increased Width:** An in-cell bar chart requires more horizontal space than a simple number column.
+- **Potential Clutter:** If overused on many columns, it can make the table look busy. It's most effective when used selectively on one or two key columns.
+
+## Signs of Trouble
+
+- **"Number Numbness":** Readers' eyes glaze over when looking at a large column of multi-digit numbers, making it hard to spot the largest or smallest values.
+- **Slow Comparison:** It takes a noticeable amount of time for a user to determine the relative ranking of rows based on a specific column.
+
+## How to Improve
+
+- **Quick Fix: Add a Bar Chart Column.** Create a new column next to your key number column and insert a simple bar chart that visually represents the number. The bar should be scaled so the largest value in the column is at or near 100% width.
+- **Comprehensive Approach: Integrate Bars and Numbers.** Combine the bar and number in a single column. The bar can serve as a background for the number, which can be aligned left or right depending on what provides the best readability. This is a very space-efficient and effective design.
+
+```
+
+<split/>
+
+```md
+---
+id: use-heatmaps-in-tables
+title: "Use heatmaps in tables for a space-efficient overview of data"
+tags:
+  - impact:perceptual
+  - chart:table
+  - chart:heatmap
+  - visual:color
+  - task:compare
+  - task:distribution
+  - access:color-vision-risk
+evidence:
+  strength: medium
+  summary: "Heatmaps within tables are a widely-used practitioner technique for visualizing the distribution of values across a grid. The article gives key heuristics for applying color scales correctly: use a single scale for comparable columns and distinct scales for different metrics."
+sources:
+  - type: practitioner
+    ref: "Datawrapper: What to consider when creating tables"
+    url: https://www.datawrapper.de/blog/guide-what-to-consider-when-creating-tables
+    note: "A space-efficient way to visualize your data are heatmaps... If you have more than one column with the same measurement, applying one color gradient to all columns is most intuitive."
+    role: primary
+examples:
+  - type: good
+    description: "This table uses two distinct heatmaps (one purple, one teal) to show two different metrics: poll approval and disapproval. This clear separation prevents readers from comparing unrelated values."
+    caption: "FiveThirtyEight Trump Approval Tracker"
+---
+
+## Guidance
+
+Use cell background color (a heatmap) to visualize the magnitude of numbers in a table, providing a space-efficient way to see patterns. Apply color scales consistently and logically.
+
+## Why
+
+A heatmap allows you to add a visual layer to a table without taking up extra space. By mapping value to color intensity, you make it easy to spot high and low values, clusters, and patterns across multiple rows and columns at a glance. Correctly applying color scales is crucial for this to work.
+
+### Core Principle
+
+Visual encodings must be consistent to allow for valid comparisons. The same color should mean the same thing within a comparable set of data.
+
+## When it applies
+
+- When you have one or more columns of comparable numeric data.
+- When you want to show patterns and distributions across the table grid.
+- When horizontal space is too limited for bar charts.
+
+## Exceptions
+
+- When precise value comparisons are more important than a general overview, as judging exact values from color is difficult.
+- For users with color vision deficiency, the effectiveness of a heatmap is highly dependent on the choice of color palette.
+
+## Trade-offs
+
+- Color is less precise than position (i.e., bar length) for making quantitative comparisons.
+- A poorly chosen color gradient can obscure patterns or make text unreadable.
+
+## Signs of Trouble
+
+- **Inconsistent Colors:** The same value (e.g., "50") is colored dark green in one column and light green in another, because each column is on a different scale. This is highly misleading.
+- **Apples-to-Oranges:** Two different metrics (e.g., Temperature and Rainfall) are shown using the same blue color gradient, falsely inviting comparison between them.
+- **Unreadable Text:** The background color is too dark, making the text on top of it difficult or impossible to read.
+
+## How to Improve
+
+- **Quick Fix: Single-Column Heatmap.** Apply a simple, single-color sequential gradient (e.g., light grey to dark grey) to your most important numeric column.
+- **Comprehensive Approach: Apply Scales Logically.**
+    - **For Comparable Columns:** If you have multiple columns showing the same metric (e.g., sales for 2021, 2022, 2023), apply a **single color gradient** that is scaled across all values in all those columns. This ensures that a given color represents the same value in any of the comparable columns.
+    - **For Different Metrics:** If you have heatmaps for different, non-comparable metrics in the same table (e.g., Approval % and Disapproval %), use **two clearly distinct color palettes** (e.g., a blue scale for one, an orange scale for the other). This prevents readers from incorrectly comparing the two different metrics.
+
+```
+
+<split/>
+
+```md
+---
+id: use-sparklines-for-time-series-in-tables
+title: "Use sparklines to show trends over time within a table"
+tags:
+  - impact:perceptual
+  - chart:table
+  - chart:line
+  - data:temporal
+  - task:trend
+  - task:direction
+evidence:
+  strength: medium
+  summary: "Introduced by Edward Tufte, sparklines are a widely adopted practitioner technique for embedding 'word-sized graphics' into text or tables. They provide rich context on trends without taking up significant space, but practitioners caution that their default scaling can be misleading for magnitude comparisons."
+sources:
+  - type: practitioner
+    ref: "Datawrapper: What to consider when creating tables"
+    url: https://www.datawrapper.de/blog/guide-what-to-consider-when-creating-tables
+    note: "Instead of showing just two years, you can show how something developed in-between with mini line charts called 'sparklines'... keep in mind that they only show a general trend but are not comparable with each other."
+    role: primary
+  - type: practitioner
+    ref: "Edward Tufte: Beautiful Evidence"
+    note: "The book that formally introduced and defined sparklines as 'data-intense, design-simple, word-sized graphics'."
+    role: supporting
+---
+
+## Guidance
+
+To show a temporal trend for each row in a table, embed a miniature line chart (a sparkline) instead of just showing start and end points.
+
+## Why
+
+A sparkline provides a compact, high-resolution view of a trend over time. It reveals volatility, seasonality, or other patterns that are completely invisible when only showing a start and end value or a simple percentage change. It enriches the table by combining the precision of numbers with the visual shape of a trend.
+
+### Core Principle
+
+Maximize data density by integrating small, effective graphics directly with the corresponding data.
+
+## When it applies
+
+- When your table has rows representing entities (e.g., companies, countries, products).
+- When you have time-series data for each of those entities.
+- When you want to show the 'journey' of a value, not just its destination.
+
+## Exceptions
+
+- If the trend is a simple, monotonic increase or decrease for all rows, a sparkline might be overkill; a simple change percentage might suffice.
+- If direct comparison of magnitude between rows is the primary goal, sparklines with independent axes are the wrong choice.
+
+## Trade-offs
+
+- **Incomparable Magnitudes:** By default, most sparkline tools scale each chart's Y-axis to its own local min/max. This maximizes the visibility of the *shape* of the trend for each row, but it means you **cannot** visually compare the absolute values or magnitude of change between different rows' sparklines.
+
+## Signs of Trouble
+
+- **Lost Context:** A table shows values for "2010" and "2024" but gives no clue about what happened in between. Was it a steady rise, a dip and recovery, or a volatile path?
+- **Misleading Comparison:** A user incorrectly assumes that two sparklines of the same height represent the same magnitude of change, when their Y-axes are actually scaled differently.
+
+## How to Improve
+
+- **Quick Fix: Add a Sparkline Column.** Add a new column to your table and insert a sparkline chart for each row, showing the trend of the key metric. Explicitly state in a note that the charts show the trend's shape but are not comparable in magnitude.
+- **Moderate Approach: Add Context.** Enhance the sparkline by adding a subtle dot for the start and end points, or by highlighting the minimum and maximum values to add more information.
+- **Comprehensive Approach: Use a Scaled Alternative.** If comparability of magnitude between rows is crucial, a standard sparkline is the wrong choice. Instead, switch to a visualization that uses a shared scale, such as a proper small-multiples line chart or a slope chart. If your tool allows, set a unified Y-axis for all sparklines, but be aware this may flatten and obscure the trends in some rows.
+
+```

@@ -32,7 +32,7 @@ sources:
     note: "Primary controlled experiment (n=92) directly comparing linear and radial layouts for daily time-series data. Found linear charts were faster for all low-level tasks (p<0.001, η²p=0.126 to 0.259) and received significantly higher subjective ratings (p<0.001, η²p=0.488)."
     role: primary
   - type: research
-    ref: Cleveland & McGill, 1984
+    ref: "Cleveland & McGill, 1984"
     url: https://doi.org/10.2307/2288400
     note: "Foundational work showing that position judgments (used in bar charts) are more perceptually accurate than angle or area judgments (used in rose/pie charts)."
     role: supporting

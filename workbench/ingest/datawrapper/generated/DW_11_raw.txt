@@ -1,0 +1,633 @@
+```md
+---
+id: start-with-prebuilt-palettes
+title: "Start with professionally designed color palettes"
+
+tags:
+  - impact:aesthetic
+  - impact:perceptual
+  - impact:accessibility
+  - impact:ethos
+  - impact:performance
+  - chart:*
+  - task:*
+  - data:categorical
+  - data:quantitative
+  - visual:color
+  - audience:*
+  - medium:*
+  - access:color-vision-risk
+
+evidence:
+  strength: medium
+  summary: "This is a widely accepted best practice in the data visualization community, promoted by experts and incorporated into leading tools to ensure a baseline of quality, accessibility, and perceptual effectiveness, saving practitioners significant time and effort."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: How to find & create good color palettes"
+    url: https://www.datawrapper.de/blog/create-good-color-palettes
+    note: "The article recommends using default colors in your tool or palettes created by others for data visualization as a primary strategy."
+    role: primary
+
+tools:
+  - type: implement
+    name: ColorBrewer
+    url: https://colorbrewer2.org/
+    description: "A foundational tool for selecting sequential, diverging, and qualitative color schemes for maps and charts, with accessibility checks."
+  - type: implement
+    name: Datawrapper's Color Palettes
+    url: https://blog.datawrapper.de/19-new-color-palettes-for-your-charts-maps/
+    description: "A collection of pre-built, tested color palettes available within the Datawrapper tool."
+
+examples:
+  - type: good
+    description: "ColorBrewer provides palettes like 'Set1' for categorical data, which are designed to be distinct and are widely used in academic and journalistic visualizations."
+  - type: bad
+    description: "A chart using Microsoft Office's default 'rainbow' palette from the early 2000s, which uses overly saturated, non-perceptually distinct colors that are difficult for colorblind users to distinguish."
+---
+
+## Guidance
+
+Instead of creating palettes from scratch, leverage existing high-quality palettes designed specifically for data visualization. This includes the default palettes in reputable tools (like Datawrapper, Tableau) or curated collections from established sources like ColorBrewer.
+
+## Why
+
+Creating a good color palette from scratch is difficult. It requires balancing aesthetic appeal, perceptual distinguishability, and accessibility for color-vision deficiencies. Professionals have already invested significant time to create palettes that are tested and proven to work well for data visualization tasks, saving you time and preventing common mistakes like poor contrast or unintentional emphasis.
+
+### Core Principle
+
+Leverage expert work to ensure a baseline of quality and effectiveness. Building on established solutions is more efficient and reliable than reinventing the wheel, especially in a domain as complex as color theory.
+
+## When it applies
+
+- When you need a color palette for any chart and do not have a specific, complex branding requirement.
+- It is an especially useful strategy for beginners or anyone on a tight deadline.
+
+## Exceptions
+
+- When you must adhere to strict branding guidelines that dictate specific colors not found in pre-built palettes.
+- When creating a highly unique or artistic visualization that requires a bespoke aesthetic not met by standard options.
+
+## Trade-offs
+
+- Your visualization might look similar to others that use the same popular palettes.
+- You have less creative control compared to building a palette from scratch.
+
+## Signs of Trouble
+
+- **Muddy Colors:** Your chosen colors look dull or blend together, especially when used in small areas like lines or dots.
+- **Vibrating Edges:** Certain color pairs create a distracting shimmering effect at their borders.
+- **Accessibility Failure:** A colorblindness simulator shows that key categories become indistinguishable.
+- **Aesthetic Dissonance:** The colors clash with each other or don't create a cohesive, pleasing look.
+
+## How to Improve
+
+- **Quick approach:** Replace your custom palette with the default palette from your visualization tool. It's almost always a safer choice.
+- **Moderate approach:** Browse a curated collection like ColorBrewer. Select a palette that fits your data's structure (categorical, sequential, or diverging) and the number of categories you have.
+- **Comprehensive approach:** For your organization, systematically evaluate, select, and adopt a set of pre-built, brand-aligned palettes. Document them in a style guide to ensure consistency and quality across all future visualizations.
+
+```
+
+<split/>
+
+```md
+---
+id: sample-colors-from-inspiration
+title: "Extract color palettes from existing visualizations, art, and photographs"
+
+tags:
+  - impact:aesthetic
+  - impact:pathos
+  - chart:*
+  - task:*
+  - data:*
+  - visual:color
+  - audience:*
+  - medium:*
+
+evidence:
+  strength: low
+  summary: "This is a common practitioner technique for creative brainstorming. While effective for generating unique aesthetics, it is not based on formal research and requires careful validation to ensure the resulting palettes are perceptually effective and accessible."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: How to find & create good color palettes"
+    url: https://www.datawrapper.de/blog/create-good-color-palettes
+    note: "The article suggests picking colors from other data visualizations, art, and magazines as a method for finding palettes."
+    role: primary
+
+tools:
+  - type: implement
+    name: Adobe Color
+    url: https://color.adobe.com/create/image
+    description: "Allows you to upload an image and automatically extracts a color theme."
+  - type: implement
+    name: Image Color Picker
+    url: https://image-color.com/
+    description: "A simple web-based tool to upload an image and pick colors from it."
+
+examples:
+  - type: good
+    description: "A chart about ocean temperatures uses a palette sampled from a photograph of a sunset over the water, creating a thematic and evocative design. The designer then adjusted the colors to ensure they were distinguishable."
+  - type: bad
+    description: "A bar chart uses colors sampled directly from a low-contrast, pastel painting. The resulting bars are nearly indistinguishable from one another, making comparisons impossible."
+---
+
+## Guidance
+
+When seeking a unique aesthetic, use a color picker tool to extract palettes from sources you find visually appealing. This could be another data visualization, a piece of art, a photograph, or a magazine cover.
+
+## Why
+
+This method provides a shortcut to a harmonious and often unique color scheme. It leverages the color expertise of designers, artists, and photographers. However, it is crucial to remember that this is only a starting point; these colors must be tested and often adapted for a data visualization context.
+
+### Core Principle
+
+Inspiration is a valid starting point for design, but it must be followed by rigorous validation to ensure fitness for purpose.
+
+## When it applies
+
+- When you want a more custom or evocative palette than standard options provide.
+- When you are trying to match the mood or theme of your data (e.g., using earthy tones for an environmental chart).
+- When you're in an exploratory phase and looking for creative ideas.
+
+## Exceptions
+
+- Do not use this method if you need a palette that is guaranteed to be perceptually uniform for scientific or analytical purposes. In those cases, use palettes generated with perceptually uniform color spaces.
+- If the source image has poor contrast or uses colors that are not distinct, it's a poor candidate for this method.
+
+## Trade-offs
+
+- Colors that look great in a photograph or painting may not work well for discrete categories in a chart. You will likely need to adjust the brightness and saturation of the sampled colors to ensure they are distinguishable and accessible.
+- This method prioritizes aesthetics, which may come at the cost of perceptual clarity if not carefully managed in a follow-up step.
+
+## Signs of Trouble
+
+- **Context Mismatch:** Colors taken from a dark, moody painting look out of place or unreadable on a chart with a bright white background.
+- **Lost Distinctions:** The sampled colors are too similar in lightness, making them hard to tell apart in a bar chart or on a map.
+- **Legend Deception:** The colors look great as large swatches in the color picker tool but become indistinguishable when used as small points or thin lines in your chart.
+
+## How to Improve
+
+- **Quick approach:** Use an online tool (like Adobe Color's "Extract Theme") to automatically generate a palette from an image.
+- **Moderate approach:** After extracting colors, paste their hex codes into a palette validation tool (like Viz Palette). Check for colorblind safety and perceptual distance issues, and manually adjust individual colors to improve their performance.
+- **Comprehensive approach:** Use the sampled palette as a starting point. Convert the colors to a perceptually uniform color space (like LCH or Oklab). Adjust the Lightness and Chroma values to create a set of colors that are both harmonious and clearly distinguishable for your specific chart type and purpose.
+
+```
+
+<split/>
+
+```md
+---
+id: use-dataviz-palette-generators
+title: "Use specialized tools to generate data visualization color palettes"
+
+tags:
+  - impact:perceptual
+  - impact:accessibility
+  - impact:aesthetic
+  - impact:cognitive
+  - chart:*
+  - task:*
+  - data:categorical
+  - data:quantitative
+  - visual:color
+  - audience:*
+  - medium:*
+  - access:color-vision-risk
+
+evidence:
+  strength: medium
+  summary: "The development of these tools is based on decades of research into color perception and perceptually uniform color spaces (like CIELAB). Their use is a strong practitioner consensus for creating effective and accessible palettes."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: How to find & create good color palettes"
+    url: https://www.datawrapper.de/blog/create-good-color-palettes
+    note: "The article explicitly recommends using tools that generate color palettes for data visualization and mentions palette generators based on the color wheel that also check brightness."
+    role: primary
+  - type: research
+    ref: "Evaluation of Color Palettes for Bivariate Choropleth Maps"
+    url: https://www.tandfonline.com/doi/abs/10.1179/000870403235002169
+    note: "Highlights the importance of systematic color design, which modern tools help facilitate."
+    role: related
+
+tools:
+  - type: implement
+    name: Datawrapper Color Palette Tool
+    url: https://app.datawrapper.de/color-palette
+    description: "A tool to generate and check palettes, as featured in the source article."
+  - type: implement
+    name: Colorgorical
+    url: http://vrl.cs.brown.edu/color
+    description: "Generates categorical palettes with user-specified perceptual constraints."
+  - type: implement
+    name: Huetone
+    url: https://huetone.ardov.me/
+    description: "A tool for creating accessible color palettes with real-time contrast checks and simulations."
+  - type: validate
+    name: Viz Palette
+    url: https://projects.susielu.com/viz-palette
+    description: "A tool mentioned in the article for testing palettes for colorblind safety and seeing them in context."
+
+---
+
+## Guidance
+
+Utilize tools specifically designed to generate color palettes for data visualization. These tools often use perceptually uniform color spaces and incorporate accessibility checks, ensuring the generated palettes are both effective and inclusive.
+
+## Why
+
+General-purpose color palette generators (often based on an RGB or HSL color wheel) don't account for how the human eye perceives color differences. Data-viz specific tools are built on models like LCH or Oklab, which align with human perception. They help create palettes where colors are equally distinguishable, gradients are smooth, and accessibility is considered from the start.
+
+### Core Principle
+
+Design tools should match the task. For data visualization, use tools that prioritize perceptual uniformity and accessibility over simple geometric relationships in a non-perceptual color space.
+
+## When it applies
+
+- Whenever you need to create a new, custom color palette for a chart.
+- Especially critical when designing for categorical data with more than a few categories.
+- When creating sequential or diverging palettes where a smooth, even gradient is important.
+
+## Exceptions
+
+- If you have a very simple palette (e.g., one or two colors) or are strictly bound by pre-existing brand colors, these tools might be more complex than needed, though they can still be useful for validation.
+
+## Trade-offs
+
+- Learning to use these tools and understanding the underlying concepts (like LCH color space) can have a learning curve.
+- Palettes optimized for perceptual distance might sometimes feel less "pretty" or "intuitive" than those picked by hand, as they prioritize function over purely conventional aesthetics.
+
+## Signs of Trouble
+
+You've used a generic color wheel tool and the resulting palette has issues:
+- **Uneven Salience:** A bright yellow category "pops" and draws undue attention, while a dark blue one recedes, creating an unintentional visual hierarchy.
+- **Similar Neighbors:** Two adjacent colors on the HSL color wheel (e.g., a blue and a purple) look almost identical when applied to small marks in the chart.
+- **Bumpy Gradients:** Your color ramp has "flat spots" where the color barely changes and "hot spots" where it changes abruptly.
+
+## How to Improve
+
+- **Quick approach:** Instead of a generic generator, use a simple data-viz focused one like ColorBrewer to pick a pre-made, validated palette.
+- **Moderate approach:** Use a tool like Viz Palette or Datawrapper's palette tool to build a palette. Use its built-in colorblindness simulators and perceptual distance analysis to guide your choices.
+- **Comprehensive approach:** Use an advanced tool like Colorgorical or Huetone to generate a palette by specifying your exact needs (number of colors, perceptual constraints, etc.). Manually fine-tune the output in a perceptually uniform color space (LCH/Oklab).
+
+```
+
+<split/>
+
+```md
+---
+id: unify-categorical-color-brightness
+title: "Equalize the perceptual brightness of categorical colors"
+
+tags:
+  - impact:perceptual
+  - impact:aesthetic
+  - impact:cognitive
+  - chart:*
+  - task:compare
+  - task:lookup
+  - data:categorical
+  - visual:color
+  - audience:*
+  - medium:*
+
+evidence:
+  strength: medium
+  summary: "This is a key principle of advanced color design for data visualization, advocated by experts like Lisa Charlotte Muth (author of the source article) and implemented in sophisticated palette generation tools. It stems from the perceptual principle that luminance has a powerful, pre-attentive effect on visual salience."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: How to find & create good color palettes"
+    url: https://www.datawrapper.de/blog/create-good-color-palettes
+    note: "The article advises to 'Check the brightnesses of your colors' and to 'Unify your colors by blending them'."
+    role: primary
+  - type: practitioner
+    ref: "Designing with science: the 'uncanny valley' of color"
+    url: https://stripe.com/blog/designing-with-science
+    note: "A case study from Stripe on using perceptually uniform color spaces to create palettes with consistent luminance."
+    role: supporting
+
+tools:
+  - type: validate
+    name: Viz Palette
+    url: https://projects.susielu.com/viz-palette
+    description: "Shows the lightness values of colors in a palette and warns about colors that are too similar."
+  - type: implement
+    name: LCH Colour Picker
+    url: https://lch-picker.netlify.app/
+    description: "A color picker that works in the LCH color space, making it easy to fix Lightness (L) while changing Hue (H)."
+
+---
+
+## Guidance
+
+For categorical palettes where all categories are of equal importance, ensure all colors have a similar perceived brightness (luminance). This prevents some categories from unintentionally standing out more than others, ensuring a fair visual comparison.
+
+## Why
+
+The human eye is highly sensitive to differences in brightness. If one color in your palette is much brighter or darker than the others (e.g., bright yellow vs. dark blue), it will "pop" and draw the viewer's attention. This implies an importance that doesn't exist in the data, creating a misleading visual hierarchy. Equalizing brightness creates a more balanced, professional aesthetic where all categories receive equal visual weight.
+
+### Core Principle
+
+Visual salience should encode meaning in the data, not be an artifact of arbitrary color choices.
+
+## When it applies
+
+- When using multiple colors to distinguish between discrete categories of equal importance (e.g., in a multi-line chart, a grouped bar chart, or a scatter plot with different colored points).
+
+## Exceptions
+
+- This does not apply to sequential or diverging palettes, where changes in brightness are *intentionally* used to encode quantitative value.
+- Do not apply this when you intentionally want to highlight a specific category. In that case, making one color brighter or more saturated is a valid technique.
+
+## Trade-offs
+
+- A palette with perfectly uniform brightness can sometimes feel a bit muted or less vibrant than one with varied brightness.
+- It can be more difficult to find a large number of distinct hues that all work well at the same brightness level and maintain high contrast with the background.
+
+## Signs of Trouble
+
+- **The "Yellow" Problem:** A bright, pure yellow category is far more eye-catching than a dark blue or maroon one in the same chart.
+- **Accidental Emphasis:** Your eye is immediately drawn to one specific color, even though that category isn't the focus of the story.
+- **Grayscale Test Failure:** When you convert your chart to grayscale, some categories become nearly indistinguishable while others remain distinct, revealing their luminance differences.
+
+## How to Improve
+
+- **Quick approach:** Manually adjust the most obviously problematic color. For example, replace a bright, pure yellow (`#FFFF00`) with a darker, more muted gold or ochre.
+- **Moderate approach:** Use a color tool that displays the lightness/luminance value (e.g., in HSL, LCH, or Oklab). Adjust each color in your palette to have a similar lightness value (e.g., aim for all colors to have a Lightness value between 60 and 70 on a scale of 100).
+- **Comprehensive approach:** Build your palette from the ground up in a perceptually uniform color space like LCH or Oklab. Fix the Lightness (L) and Chroma (C) values to a desired level, and then pick your colors by choosing evenly spaced Hue (H) angles. This mathematically ensures all colors have the same brightness and saturation.
+
+```
+
+<split/>
+
+```md
+---
+id: use-lch-oklab-for-palettes
+title: "Create color palettes using a perceptually uniform color space"
+
+tags:
+  - impact:perceptual
+  - impact:accessibility
+  - impact:aesthetic
+  - impact:ethos
+  - chart:*
+  - task:*
+  - data:categorical
+  - data:quantitative
+  - visual:color
+  - audience:*
+  - medium:*
+  - access:color-vision-risk
+
+evidence:
+  strength: high
+  summary: "The use of perceptually uniform color spaces (like CIE L*a*b*, from which LCH is derived) is based on decades of color science research aiming to create models that match human perception. Their application to data visualization is a well-established best practice for creating accurate and effective color ramps and palettes."
+
+sources:
+  - type: standard
+    ref: "CIE L*a*b* color space"
+    url: https://en.wikipedia.org/wiki/CIELAB_color_space
+    note: "The foundational color science standard from which LCH is derived, established in 1976 to create a perceptually uniform space."
+    role: primary
+  - type: practitioner
+    ref: "Datawrapper Blog: How to find & create good color palettes"
+    url: https://www.datawrapper.de/blog/create-good-color-palettes
+    note: "The article advocates for using LCH, specifically recommending picking colors from a gradient in 'LCH or OKLCH color space' and defining lightness and saturation first."
+    role: supporting
+  - type: practitioner
+    ref: "A new way to create palettes: LCH color"
+    url: https://www.vis4.net/blog/2011/12/a-new-way-to-create-palettes-lch-color/
+    note: "An early but influential practitioner article explaining the benefits of LCH for data visualization palettes."
+    role: related
+
+tools:
+  - type: implement
+    name: Oklch Color Picker & Converter
+    url: https://oklch.com/
+    description: "An interactive tool for creating and converting colors using the modern Oklch color space."
+  - type: learn
+    name: "OKLCH in CSS: why we moved from RGB and HSL"
+    url: https://evilmartians.com/chronicles/oklch-in-css-why-we-moved-from-rgb-and-hsl
+    description: "A detailed blog post explaining the perceptual problems with HSL and the benefits of Oklch."
+
+---
+
+## Guidance
+
+When creating or modifying color palettes, work in a perceptually uniform color space (such as LCH, Oklab, or Lab) instead of device-dependent spaces like RGB or HSL.
+
+## Why
+
+Color spaces like RGB and HSL do not align with human perception. A 10-degree change in HSL's "hue" can result in a massive perceptual change in one area (e.g., greens) and a tiny, unnoticeable change in another (e.g., yellows). Perceptually uniform spaces are designed so that a given numerical change in color values corresponds to a consistent perceptual change for the human eye. This makes it much easier to create palettes where colors are evenly spaced and gradients are smooth.
+
+### Core Principle
+
+The tools we use to manipulate color should model how we actually see color. Using perceptually uniform spaces ensures that mathematical relationships between colors translate to meaningful perceptual relationships.
+
+## When it applies
+
+- Any time you are designing a color palette from scratch or making significant modifications to an existing one.
+- It is especially powerful for creating sequential palettes with smooth, even gradients.
+- It is the most reliable method for creating categorical palettes with perceptually equidistant colors.
+
+## Exceptions
+
+- For very quick, simple tasks or when you're forced to use legacy tools that don't support modern color spaces, you may have to rely on RGB/HSL and extensive manual tweaking and validation.
+
+## Trade-offs
+
+- Working in LCH/Oklab requires using modern tools that support it and learning a new way of thinking about color (Lightness, Chroma, Hue instead of Red, Green, Blue). The concepts can be less intuitive at first.
+
+## Signs of Trouble
+
+- **Bumpy Gradients:** Your sequential color ramp has "flat spots" where the color barely changes and "hot spots" where it changes abruptly. This is common in HSL-based gradients that pass through pure yellow or cyan.
+- **Uneven Steps:** In your categorical palette, the visual "jump" between red and orange feels much smaller than the jump between blue and purple, despite being "evenly spaced" on an HSL wheel.
+- **The "Gray Dead Zone":** When creating a diverging palette in RGB, the midpoint is a muddy, unattractive gray.
+
+## How to Improve
+
+- **Quick approach:** Use a web-based LCH color picker to translate your existing palette into LCH values. Observe the differences in Lightness (L) and Chroma (C) to understand why it might feel perceptually uneven.
+- **Moderate approach:** Use a palette generation tool that operates in LCH or Oklab. A common technique for categorical palettes is to fix the Lightness and Chroma values, then pick colors by choosing evenly spaced Hue angles (e.g., 0°, 60°, 120°).
+- **Comprehensive approach:** Integrate LCH/Oklab color definitions directly into your design system or programming environment (e.g., using CSS `oklch()` functions). Build all new palettes by systematically defining L, C, and H values to achieve the desired perceptual properties.
+
+```
+
+<split/>
+
+```md
+---
+id: validate-palette-with-simulators
+title: "Validate color palettes using accessibility and context simulators"
+
+tags:
+  - impact:accessibility
+  - impact:perceptual
+  - impact:inclusion
+  - impact:ethos
+  - chart:*
+  - task:*
+  - data:*
+  - visual:color
+  - audience:*
+  - medium:*
+  - access:color-vision-risk
+
+evidence:
+  strength: high
+  summary: "This practice is a direct application of universal design principles and is a core requirement for digital accessibility (e.g., WCAG). The need is supported by robust data on the prevalence of color vision deficiency (approx. 8% of men) and the perceptual science of how colors appear in different contexts."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: How to find & create good color palettes"
+    url: https://www.datawrapper.de/blog/create-good-color-palettes
+    note: "The article explicitly advises to 'Check your colors with a tool' and shows examples using 'Color Buddy' and 'VIZ PALETTE' to simulate colorblindness and see palettes in context."
+    role: primary
+  - type: standard
+    ref: "WCAG 2.1"
+    url: https://www.w3.org/TR/WCAG21/
+    note: "While not specifically about palettes, Success Criterion 1.4.1 (Use of Color) states that color should not be used as the only visual means of conveying information, which is the problem these simulators help identify."
+    role: related
+
+tools:
+  - type: validate
+    name: Viz Palette
+    url: https://projects.susielu.com/viz-palette
+    description: "Mentioned in the article, this tool helps you see your palette on different chart types and simulates for various color vision deficiencies."
+  - type: validate
+    name: Coblis — Color Blindness Simulator
+    url: https://www.color-blindness.com/coblis-color-blindness-simulator/
+    description: "A simple tool to upload an image of your chart and see how it appears to users with different types of CVD."
+  - type: validate
+    name: Color Buddy
+    url: https://colorbuddy.app/
+    description: "Another tool mentioned in the article that helps check color combinations."
+
+---
+
+## Guidance
+
+Before finalizing a color palette, test it using tools that simulate for color vision deficiencies (e.g., deuteranopia, protanopia) and show how the colors will appear in the actual context of your chart (e.g., as thin lines, small dots).
+
+## Why
+
+Colors that look distinct to you may be indistinguishable to the significant portion of the population with some form of color vision deficiency (CVD). Furthermore, colors can look very different when used as large swatches in a palette tool versus as small marks in a final visualization (the "small area" problem). Simulation tools help you catch these critical issues before publishing.
+
+### Core Principle
+
+Design for all users, not just for your own perception. What you see is not what everyone gets. Empathy and validation are required for inclusive design.
+
+## When it applies
+
+- **Always.** This should be a standard final check for any visualization that uses color to encode distinct categories or values.
+
+## Exceptions
+
+- **None.** Even if you believe your audience has no one with CVD, it is a fundamental best practice. Designing for colorblindness often results in more robust, perceptually distinct palettes that benefit *all* viewers by improving clarity.
+
+## Trade-offs
+
+- This adds an extra step to the design process.
+- It can sometimes force you to choose a "less beautiful" but more functional color to ensure the palette is robust and accessible for everyone.
+
+## Signs of Trouble
+
+- You haven't checked your palette for accessibility at all.
+- A colleague or user says they "can't tell the blue and purple apart."
+- In a line chart, two lines cross and become visually ambiguous.
+- Your palette relies heavily on a red/green distinction, which is the most common form of CVD.
+
+## How to Improve
+
+- **Quick approach:** Take a screenshot of your chart and upload it to a web-based colorblindness simulator like Coblis. Check if any important information is lost in the different simulations.
+- **Moderate approach:** Use a dedicated data visualization palette tool like Viz Palette. Paste your hex codes to see CVD simulations, checks for similar color pairs, and previews of how the colors look in different chart types (bars, lines, areas).
+- **Comprehensive approach:** Integrate automated accessibility checks into your design and development workflow. Use browser developer tools or design software plugins (e.g., Stark for Figma) that provide real-time color blindness simulation and contrast checking as you work.
+
+```
+
+<split/>
+
+```md
+---
+id: use-llm-for-palette-ideas
+title: "Use Large Language Models for initial color palette brainstorming"
+
+tags:
+  - impact:aesthetic
+  - impact:pathos
+  - impact:performance
+  - chart:*
+  - task:*
+  - data:*
+  - visual:color
+  - audience:*
+  - medium:*
+
+evidence:
+  strength: low
+  summary: "This is a very recent, emerging practice based on the new capabilities of LLMs. While mentioned by practitioners, there is no formal evidence of its effectiveness, and it comes with strong caveats that the output requires rigorous validation."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: How to find & create good color palettes"
+    url: https://www.datawrapper.de/blog/create-good-color-palettes
+    note: "The article includes a section 'Ask an LLM (like ChatGPT or Claude)' with an example prompt, positioning it as a valid method for generating color ideas."
+    role: primary
+
+tools:
+  - type: implement
+    name: ChatGPT
+    url: https://chat.openai.com/
+    description: "An LLM that can generate lists of hex codes based on thematic prompts."
+  - type: implement
+    name: Claude
+    url: https://claude.ai/
+    description: "An alternative LLM that can also be prompted for color palette ideas."
+  - type: validate
+    name: Viz Palette
+    url: https://projects.susielu.com/viz-palette
+    description: "An essential follow-up tool to test and validate any palette generated by an LLM."
+
+---
+
+## Guidance
+
+Use a Large Language Model (like ChatGPT or Claude) to generate color palette ideas by describing the theme, mood, or context of your visualization. Treat the hex codes generated by the LLM as a raw starting point for a more rigorous design and validation process.
+
+## Why
+
+LLMs can be a quick and creative brainstorming partner, translating abstract concepts (e.g., "a trustworthy palette for a financial report," "a warm, autumnal palette") into concrete hex codes. This can help overcome creative blocks and provide novel combinations you might not have considered.
+
+### Core Principle
+
+Leverage generative AI as a creative assistant, not a final authority. Its output is inspiration, not a finished, validated product.
+
+## When it applies
+
+- At the very beginning of the color selection process, when you're looking for inspiration and ideas.
+- When you are stuck or want to explore unconventional thematic palettes.
+
+## Exceptions
+
+- **Do not** use an LLM's output directly in a final visualization without extensive validation. LLMs have no inherent, reliable understanding of color perception, perceptual uniformity, or accessibility.
+
+## Trade-offs
+
+- This method is very fast for idea generation but creates an output that absolutely requires further validation and refinement.
+- Relying on it too heavily can lead to functionally poor palettes that look good as text but fail in practice. The generated palettes often lack perceptual balance.
+
+## Signs of Trouble
+
+- **Naive Output:** The LLM gives you a list of generic color names ("blue, green, red...") without specific hex codes, or provides hex codes that are overly simple (e.g., `#FF0000`, `#00FF00`).
+- **Immediate Failure:** You use the generated palette directly and it immediately fails colorblindness checks or contains colors with wildly different brightness levels.
+- **Vague Prompts, Vague Results:** You give a prompt like "give me colors" and get a generic, uninspired rainbow palette.
+
+## How to Improve
+
+- **Quick approach:** Prompt the LLM with a specific theme and ask for a list of hex codes. For example: "Give me five hex codes for a color palette with a 'serene forest' theme."
+- **Moderate approach:** Take the list of hex codes from the LLM and immediately plug them into a validation tool like Viz Palette. Use the tool's feedback to manually adjust, reorder, or replace colors to fix accessibility and perceptual issues.
+- **Comprehensive approach:** Use the LLM for thematic keywords only. If it suggests a palette for "sea glass," use "sea glass color palette" as a search term to find human-curated, pre-validated palettes. Or, use the theme to guide your own palette creation process in a perceptually uniform color space.
+
+```

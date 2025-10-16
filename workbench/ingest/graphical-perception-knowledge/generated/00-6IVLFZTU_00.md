@@ -22,7 +22,7 @@ evidence:
   summary: "Foundational research by Cleveland & McGill (1984) established a perceptual hierarchy of visual encodings, ranking position along a common scale as the most accurate for quantitative judgments. This has been replicated in numerous studies, including large-scale crowdsourced experiments by Heer & Bostock (2010), consistently showing position is significantly more accurate than angle, area, or color saturation for comparison tasks (p<0.001)."
 sources:
   - type: research
-    ref: Cleveland & McGill, 1984
+    ref: "Cleveland & McGill, 1984"
     url: https://doi.org/10.2307/2288400
     note: "The foundational experiment (n=55) that established the perceptual ranking of visual encodings, showing position on a common scale is most accurate for quantitative comparisons."
     role: primary

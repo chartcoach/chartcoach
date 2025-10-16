@@ -23,7 +23,7 @@ evidence:
   summary: "Foundational research by Cleveland & McGill (1984) established a perceptual hierarchy of visual encodings, ranking position along a common scale as the most accurate for quantitative judgments. This has been replicated in numerous studies, including large-scale crowdsourced experiments by Heer & Bostock (2010), consistently showing position is significantly more accurate than angle, area, or color saturation for comparison tasks (p<0.001)."
 sources:
   - type: research
-    ref: Cleveland & McGill, 1984
+    ref: "Cleveland & McGill, 1984"
     url: https://doi.org/10.2307/2288400
     note: "The foundational experiment (n=55) that established the perceptual ranking of visual encodings, showing position on a common scale is most accurate for quantitative comparisons."
     role: primary
@@ -99,7 +99,7 @@ evidence:
   summary: "Experiments by Cleveland & McGill (1984) and replicated by Heer & Bostock (2010) show that people judge length and position (bar charts) with significantly higher accuracy than angle (pie charts) for comparison tasks. Zeng & Battle's (2023) review confirms this is a foundational and widely accepted finding in graphical perception."
 sources:
   - type: research
-    ref: Cleveland & McGill, 1984
+    ref: "Cleveland & McGill, 1984"
     url: https://doi.org/10.2307/2288400
     note: "The original study demonstrated that comparisons based on position along a common scale (as in bar charts) are perceptually superior to those based on angle (as in pie charts)."
     role: primary

@@ -1,0 +1,359 @@
+```md
+---
+id: use-declarative-title
+title: "Use a descriptive title that states the main message or question"
+tags:
+  - impact:cognitive
+  - impact:logos
+  - chart:*
+  - task:*
+  - data:*
+  - audience:general
+  - medium:*
+  - access:cognitive-load-risk
+evidence:
+  strength: low
+  summary: "Widely accepted best practice in data journalism and communication to frame the audience's interpretation and improve comprehension speed. The article shows this by reframing a generic title into a direct question."
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: Fix my chart - Compact tables"
+    url: https://blog.datawrapper.de/fix-my-chart-compact-tables/
+    note: "Advises changing a generic title 'EURO 2024 host cities and their games' to a direct question 'Which city hosted the most EURO 2024 games?' to make the goal clear and say it 'loud and clear'."
+    role: primary
+tools:
+  - type: learn
+    name: "Chart titles are your secret weapon"
+    url: https://www.datawrapper.de/academy/chart-titles-are-your-secret-weapon
+    description: "A Datawrapper Academy article on writing effective titles, subtitles, and descriptions."
+examples:
+  - type: good
+    description: "A direct question 'Which city hosted the most EURO 2024 games?' immediately tells the reader what the table is about and what to look for."
+  - type: bad
+    description: "The generic title 'EURO 2024 host cities and their games' only describes the data's topic, forcing the reader to figure out the chart's purpose on their own."
+---
+
+## Guidance
+
+Write a title for your visualization that summarizes the key finding or poses the central question the data answers.
+
+## Why
+
+A title is the first thing a reader sees. A generic, descriptive title (e.g., "Sales by Quarter") forces the reader to interpret the chart from scratch. A declarative title (e.g., "Sales Grew 15% in Q4") or a guiding question ("Which Quarter Had the Highest Sales?") provides immediate context, directs attention, and makes your point clear and memorable. It sets the expectation and primes the reader for the insight you want to convey.
+
+## When it applies
+
+- Almost always. This applies to any chart, map, or table intended to communicate a specific insight to an audience.
+
+## Exceptions
+
+- In purely exploratory data analysis for a technical audience, a descriptive title might be sufficient.
+- In a dashboard with many small charts, a single overarching title might be used instead of titling every individual element.
+
+## Trade-offs
+
+- A strong, declarative title can influence the reader's interpretation. If the data is ambiguous or supports multiple valid conclusions, a more neutral question-based title or a descriptive one might be more ethical.
+
+## Signs of Trouble
+
+- **"What am I looking at?"**: The reader has to study the axes, legend, and data to figure out the chart's purpose.
+- **Label-like Title**: The title just restates the axis labels (e.g., "Revenue vs. Time").
+- **Missed Takeaway**: The reader looks at the chart and misses the main point you were trying to make.
+
+## How to Improve
+
+- **Quick Fix: Ask a Question.** Change your title from a description of the data (e.g., "Population of US Cities") to the question the chart answers (e.g., "Which US Cities Grew the Fastest?").
+
+- **Moderate Approach: State the Finding.** Formulate a full sentence that states the main finding of the chart (e.g., "Austin and Phoenix saw the largest population growth from 2010-2020.") and use this as the title.
+
+- **Comprehensive Approach: Use a Title and Subtitle.** Pair a declarative title with a descriptive subtitle. The title grabs attention with the main insight, while the subtitle provides context about the data shown (e.g., Title: "US population growth is concentrated in the Sun Belt", Subtitle: "Percent change in population for the 50 largest US cities, 2010-2020").
+
+```
+
+<split/>
+
+```md
+---
+id: add-summary-column-in-table
+title: "In tables, add a summary column to explicitly state the main takeaway"
+tags:
+  - impact:cognitive
+  - impact:perceptual
+  - chart:table
+  - task:summary-mean
+  - task:rank
+  - task:compare
+  - data:quantitative
+  - audience:*
+  - medium:*
+  - access:cognitive-load-risk
+evidence:
+  strength: low
+  summary: "Practitioner best practice for reducing cognitive load. Making key information explicit is a core tenet of effective information design. The article recommends this to avoid making the reader perform calculations."
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: Fix my chart - Compact tables"
+    url: https://blog.datawrapper.de/fix-my-chart-compact-tables/
+    note: "Recommends adding a 'Total Games' column, stating 'Don't think of it as repeating the information... but as explaining why it's even there.' This avoids forcing the reader to sum up games from other columns."
+    role: primary
+examples:
+  - type: good
+    description: "The revised table includes a prominent column showing the total games per city ('6 games', '5 games'), making the primary ranking immediately clear."
+  - type: bad
+    description: "The original table lacks a total column, forcing readers to count the number of events/dates in each row to determine which city hosted the most games."
+---
+
+## Guidance
+
+If the main point of your table relies on a calculated value (like a total or an average), add a new column that explicitly shows this value.
+
+## Why
+
+Don't make your audience do math. While the raw data might contain all the necessary components, forcing readers to perform calculations in their heads increases cognitive load and the risk of error. By pre-calculating and displaying the most important summary figure, you make the key insight immediately accessible and support the primary task, which is often comparison or ranking.
+
+### Core Principle
+
+Make the most important information the easiest to see. Every mental calculation you force on a reader is a potential point of confusion or abandonment.
+
+## When it applies
+
+- When a table is intended to show a summary statistic (total, average, change, etc.) that must be derived from other columns in the table.
+- When the primary goal is to rank or compare items based on a total value.
+
+## Exceptions
+
+- If the table is purely for lookup of raw, disaggregated data and no single summary metric is central to the message.
+- In some analytical contexts, a summary row at the bottom of the table might be more appropriate than a summary column.
+
+## Trade-offs
+
+- Adding a summary column takes up horizontal space, which might be a concern for very wide tables or mobile views.
+
+## Signs of Trouble
+
+- **"Hold on, let me count..."**: You find yourself (or your readers) adding up numbers across rows or columns to understand the main point.
+- **Hidden Insight**: The most important comparison is between totals that aren't actually visible in the table.
+- **Reader Calculation**: Every reader has to perform the same mental or manual calculation to get the key takeaway.
+
+## How to Improve
+
+- **Quick Fix: Add the Column.** In your spreadsheet or data source, create a new column and use a formula (e.g., `SUM()`) to calculate the summary value for each row. Add this new column to your table.
+
+- **Comprehensive Approach: Emphasize and Sort.** Make the new summary column visually prominent. Place it near the beginning of the table (e.g., right after the category labels), use a heavier font weight, and use it as the primary sort key for the table. This elevates it from just another piece of data to the central focus of the table.
+
+```
+
+<split/>
+
+```md
+---
+id: sort-table-by-metric
+title: "Sort tables by a primary metric to facilitate ranking"
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:table
+  - task:rank
+  - task:compare
+  - task:lookup
+  - data:quantitative
+  - data:categorical
+  - audience:*
+  - medium:*
+  - access:cognitive-load-risk
+evidence:
+  strength: low
+  summary: "Practitioner consensus supported by perceptual principles of ordered information processing. Sorting minimizes scanning and cognitive load for comparison tasks. The source article's final design sorts the table by the newly created 'total games' column."
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: Fix my chart - Compact tables"
+    url: https://blog.datawrapper.de/fix-my-chart-compact-tables/
+    note: "The 'fixed' chart implicitly follows this rule by sorting the table by the total number of games each city hosts, directly answering the question in the title."
+    role: primary
+examples:
+  - type: good
+    description: "The final table in the post is sorted in descending order by the 'games' column, making it easy to see the ranking from Berlin (6 games) down to Leipzig (4 games)."
+  - type: bad
+    description: "The initial table appears to be sorted alphabetically by city. This requires the user to manually scan and compare values to find which city hosts the most games."
+---
+
+## Guidance
+
+Sort table rows based on the value in a primary quantitative column, rather than using an arbitrary order like alphabetical.
+
+## Why
+
+Sorting transforms a table from a simple lookup tool into an analytical one. By ordering rows according to a key metric (e.g., from highest to lowest value), you make ranking and comparison tasks effortless for the reader. This pre-processing of information significantly reduces cognitive load, as the most important patterns become immediately obvious without requiring the reader to manually scan and compare each row.
+
+### Core Principle
+
+Organize information to support the primary task. If the task is to rank, then the visual structure should perform the ranking for the user.
+
+## When it applies
+
+- When a table contains a key quantitative column that you want readers to compare or rank.
+- This is especially important when the table's primary purpose is to show "which is most/least" or "how do these items stack up?".
+
+## Exceptions
+
+- When there is a more meaningful intrinsic order for the rows, such as chronological order for temporal data.
+- When the primary task is pure lookup and an alphabetical or categorical order is more expected and useful (like a phone book or index).
+
+## Trade-offs
+
+- Sorting by one column may obscure patterns related to other columns. For example, sorting by a quantitative value might hide any geographical or categorical clustering that an alphabetical or regional sort would reveal.
+
+## Signs of Trouble
+
+- **Reader Scavenger Hunt**: Viewers have to scan the entire table to find the highest or lowest value.
+- **Unanswered Question**: The table's title asks a question about ranking (e.g., "Who sold the most?"), but the data is not ordered to answer it.
+- **Alphabetical Default**: The table is sorted alphabetically by category name, even though the quantitative values are more important for the story.
+
+## How to Improve
+
+- **Quick Fix: Apply Sorting.** In your table creation tool, find the column you want to sort by and set its sorting order to "descending" or "ascending," depending on your story.
+
+- **Comprehensive Approach: Explain the Order.** First, ensure you have a summary column with the key metric (e.g., "Total Games"). Then, make this column the primary sort key for the table. Explicitly state in the title or introduction what the sorting order reveals (e.g., "Cities ranked by number of games hosted").
+
+```
+
+<split/>
+
+```md
+---
+id: use-row-stripes-for-readability
+title: "Use row stripes (zebra striping) to improve readability in tables"
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:table
+  - task:lookup
+  - data:*
+  - audience:*
+  - medium:screen
+  - medium:print
+  - access:cognitive-load-risk
+evidence:
+  strength: medium
+  summary: "A long-standing UI design heuristic for tables. Usability studies show it can reduce reading errors and improve lookup speed, especially in wide or dense tables. The source article explicitly recommends this to guide the reader's eye."
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: Fix my chart - Compact tables"
+    url: https://blog.datawrapper.de/fix-my-chart-compact-tables/
+    note: "The author explicitly recommends this technique: '...let's use background stripes to help the reader follow rows instead.' The final design implements this."
+    role: primary
+examples:
+  - type: good
+    description: "The final, improved table uses alternating light gray backgrounds for each row, making it easy to trace from a city name on the left to its corresponding data on the right."
+  - type: bad
+    description: "The initial table has a plain white background, which can make it difficult for the eye to stay on the correct row when scanning across its many columns."
+---
+
+## Guidance
+
+Apply a subtle, alternating background color to the rows of a table to make them easier to follow horizontally.
+
+## Why
+
+When scanning across a table, especially a wide one, it is easy for a reader's eye to slip to an adjacent row, leading to misinterpretation. Zebra striping provides a visual guide, anchoring the data in a row and making it easier and faster to associate values on the far right with their corresponding labels on the far left. This reduces cognitive strain and improves lookup accuracy.
+
+## When it applies
+
+- For most tables, but it is especially helpful for tables that are wide (have many columns) or dense (have many rows).
+
+## Exceptions
+
+- For very short tables (e.g., 2-3 rows), it is unnecessary.
+- If you are already using background color to encode data within cells (like in a heatmap table), adding row stripes can create visual noise and confusion.
+
+## Trade-offs
+
+- If the stripe color is too dark or saturated, it can be distracting and reduce text contrast, harming readability. The effect must be subtle.
+
+## Signs of Trouble
+
+- **Row-Skipping Errors**: You or your readers find yourselves accidentally reading data from the wrong row.
+- **Finger-Pointing**: You have to use your finger or a mouse cursor to trace a line across the table to stay on the correct row.
+- **Dense and Wide**: The table has more than 5 columns and/or more than 10 rows, with no visual guides for the rows.
+
+## How to Improve
+
+- **Quick Fix: Enable Zebra Striping.** In your table styling options, enable "zebra striping" or "alternating row colors." Choose a very light, low-saturation color (like a light gray) for the stripes to ensure high text contrast and subtlety.
+
+- **Moderate Approach: Use Horizontal Rules.** Instead of colored stripes, consider using subtle horizontal gridlines (rules) between rows. This can achieve a similar guiding effect with a cleaner, more minimal look. Ensure the lines are thin and light gray, not black.
+
+```
+
+<split/>
+
+```md
+---
+id: use-icons-for-small-quantities
+title: "Use icons to represent small, discrete quantities in tables"
+tags:
+  - impact:aesthetic
+  - impact:perceptual
+  - impact:cognitive
+  - chart:table
+  - chart:pictogram
+  - task:lookup
+  - task:compare
+  - data:quantitative
+  - visual:shape
+  - audience:general
+  - medium:*
+evidence:
+  strength: low
+  summary: "A modern application of pictogram principles (Isotype) promoted by practitioners for enhancing engagement and scannability. The source article suggests it as a way to 'have some fun'."
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: Fix my chart - Compact tables"
+    url: https://blog.datawrapper.de/fix-my-chart-compact-tables/
+    note: "Suggests replacing the number of group stage games with repeated soccer ball icons to add visual interest. 'With the total games clearly listed, you can afford to have some fun here!'"
+    role: primary
+examples:
+  - type: good
+    description: "The revised table uses three or four ⚽ icons to show the number of group stage games, making the column more visually engaging and scannable than plain numbers."
+  - type: bad
+    description: "The original table uses plain numerals ('3', '4') in the 'Group stage' column, which is functional but less visually appealing."
+---
+
+## Guidance
+
+For columns with small, whole numbers, consider replacing the numerals with a corresponding number of repeated icons.
+
+## Why
+
+Using icons as counters (a form of pictogram) can make a data table more engaging and visually appealing than a grid of plain numbers. For small quantities (typically under 10), the icons can be quickly subitized (perceived without counting), making comparison easy. This technique breaks the monotony of text and adds a thematic visual element that can enhance the story.
+
+## When it applies
+
+- In tables or infographics where you want to display small, discrete counts (e.g., number of events, items, or ratings on a 5-star scale).
+- It is most effective when visual appeal is a priority and the icon is thematically related to the data.
+
+## Exceptions
+
+- Do not use this for large numbers, as it becomes impossible to count the icons and defeats the purpose (e.g., showing 157 with 157 icons is bad design).
+- It is inappropriate for continuous data or when high numerical precision is critical and numerals are clearer.
+- Avoid if a suitable, simple, and universally understood icon is not available.
+
+## Trade-offs
+
+- Icons can be distracting if overused or if the design is too complex.
+- They may take up more horizontal space than numerals.
+- Poorly chosen icons can be ambiguous or culturally inappropriate.
+
+## Signs of Trouble
+
+- **Wall of Numbers**: Your table feels dense, boring, and uninviting.
+- **Small, Important Counts**: The table contains columns with small integers (e.g., 1-5) that are key to the story but don't stand out visually.
+- **Low Engagement**: Readers' eyes glaze over the table because it lacks visual hooks to draw them in.
+
+## How to Improve
+
+- **Quick Fix: Use Emojis or Icons.** In a tool that supports it (like Datawrapper), replace the numbers in a column with an appropriate emoji or SVG icon, repeated for each unit.
+
+- **Moderate Approach: Choose a Simple Icon.** Select or design a simple, clean icon that is thematically relevant to the data and easily recognizable at a small size.
+
+- **Comprehensive Approach: Use an Isotype Scale.** For slightly larger numbers, consider using an icon to represent a larger unit (e.g., one icon = 10 units), but be sure to include a clear key explaining the scale. This is the classic Isotype approach pioneered by Otto Neurath.
+
+```

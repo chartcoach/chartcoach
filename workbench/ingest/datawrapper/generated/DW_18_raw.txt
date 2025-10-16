@@ -1,0 +1,335 @@
+```md
+---
+id: use-small-multiples-for-sequential-storytelling
+title: "Arrange small multiples in a linear sequence to tell a story"
+
+tags:
+  - impact:cognitive
+  - impact:pathos
+  - impact:logos
+  - chart:small-multiples
+  - chart:line
+  - task:trend
+  - task:correlation
+  - data:temporal
+  - data:quantitative
+  - medium:static
+  - medium:screen
+  - medium:print
+  - audience:general
+  - access:cognitive-load-risk
+
+evidence:
+  strength: low
+  summary: "Practitioner advice from Datawrapper's 'Fix my chart' series demonstrating how to improve narrative impact by creating a deliberate reading path, reducing cognitive load and building a step-by-step argument."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: Fix my chart >> Sequential storytelling"
+    url: https://blog.datawrapper.de/fix-my-chart-sequential-storytelling/
+    note: "The article argues for arranging small multiple panels in a single row 'like the panels of a comic strip' to transform a static comparison into a sequential narrative."
+    role: primary
+
+tools:
+  - type: implement
+    name: Datawrapper
+    url: https://www.datawrapper.de
+    description: "The tool used in the source article to create both the 'before' (grid) and 'after' (linear sequence) charts."
+
+examples:
+  - type: bad
+    description: "A 2x2 grid of four line charts shows four related demographic trends. The grid layout requires the viewer to decide the reading order and work to connect the trends, obscuring the narrative."
+  - type: good
+    description: "The same four charts are arranged in a single horizontal row. This creates a clear left-to-right reading path that builds a story: falling fertility is offset by improved health outcomes, resulting in population growth."
+---
+
+## Guidance
+
+When presenting multiple related charts (small multiples), arrange them in a single row or column. This creates a clear reading path, guiding the viewer through a narrative step-by-step, like panels in a comic strip.
+
+## Why
+
+A linear layout establishes a deliberate sequence, which helps in building a story that reveals cause-and-effect relationships or connections between different facets of the data. This transforms a static comparison into a more engaging narrative and reduces the cognitive load of having to connect disparate charts on your own.
+
+### Core Principle
+
+Guide the viewer's attention to construct a narrative, rather than requiring them to synthesize all information at once.
+
+## When it applies
+
+- When you have several related charts showing different components of a larger phenomenon, and you want to explain the connection between them. This is especially effective for interconnected time-series trends.
+- When telling a story with a clear beginning, middle, and end (e.g., cause 1 → cause 2 → effect).
+
+## Exceptions
+
+- A grid layout (e.g., 2x2) can be more effective if the goal is direct comparison across two different categorical variables (e.g., comparing four regions across two years) and a linear narrative is not the primary goal. Grids are also more space-efficient.
+
+## Trade-offs
+
+- A linear layout typically uses more horizontal or vertical space than a compact grid layout.
+- It imposes a single, author-driven narrative, which may be less suitable for purely exploratory visualizations where the goal is for the user to freely discover their own insights.
+
+## Signs of Trouble
+
+- **Scattered Story:** The viewer has to jump around a grid of charts to piece together the story you're trying to tell.
+- **Missed Connections:** Viewers see individual trends but fail to grasp how they relate to one another.
+- **"So What?" Reaction:** The visualization presents data without a clear point or takeaway, leaving the audience wondering about its significance.
+
+## How to Improve
+
+- **Quick Fix: Add Numbering.** If you must keep a grid layout for space reasons, add numbers (1, 2, 3, 4) to the corners of each panel to suggest a reading order.
+- **Moderate approach: Linearize the Layout.** Re-arrange your small multiples from a grid into a single row or column. Order them logically to build your narrative (e.g., factor 1 → factor 2 → outcome).
+- **Comprehensive approach: Integrate a Narrative Flow.** Combine the linear layout with a summary title and annotations that explicitly connect one panel to the next, creating a cohesive visual essay.
+
+<split/>
+
+```md
+---
+id: use-color-to-clarify-narrative-roles
+title: "Assign colors based on a variable's role in the narrative"
+
+tags:
+  - impact:cognitive
+  - impact:perceptual
+  - impact:pathos
+  - chart:small-multiples
+  - chart:line
+  - chart:bar
+  - chart:waterfall
+  - task:correlation
+  - task:trend
+  - task:composition
+  - task:direction
+  - data:quantitative
+  - data:categorical
+  - visual:color
+  - audience:general
+  - access:color-vision-risk
+
+evidence:
+  strength: low
+  summary: "Practitioner advice from a Datawrapper blog post demonstrating that assigning color based on narrative function—such as 'increases population' vs. 'decreases population'—makes the story more intuitive."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: Fix my chart >> Sequential storytelling"
+    url: https://blog.datawrapper.de/fix-my-chart-sequential-storytelling/
+    note: "The article recommends using color to clarify the role of each variable. In the example, orange is used for a trend that reduces population potential (lower fertility), while green is used for trends that increase it (lower infant mortality, higher life expectancy)."
+    role: primary
+
+tools:
+  - type: validate
+    name: Viz Palette
+    url: https://projects.susielu.com/viz-palette
+    description: "Check how your chosen narrative colors will appear to people with different types of color vision deficiency."
+
+examples:
+  - type: bad
+    description: "Multiple trends are shown with distinct but arbitrary colors (e.g., blue, red, purple, orange). The colors differentiate the lines but do not help the viewer understand their relationship or function within the story."
+  - type: good
+    description: "In a story about population change, the trend for 'fertility rate' (which slows growth) is colored orange, while trends for 'life expectancy' and 'infant mortality' (which boost growth) are colored green. The color immediately communicates the function of each trend."
+---
+
+## Guidance
+
+In a multi-part or multi-variable visualization, use color to encode the function or contribution of each element within the story. For example, use one color for factors that increase a value and another for factors that decrease it.
+
+## Why
+
+This adds a semantic layer to your color palette, moving beyond simple differentiation. It allows viewers to instantly recognize the relationship between different variables (e.g., competing forces), making the underlying story more intuitive and easier to grasp.
+
+### Core Principle
+
+Color should support the story. Use it to encode meaning, not just to decorate or distinguish.
+
+## When it applies
+
+- When visualizing multiple variables that have opposing or complementary effects on a final outcome.
+- Useful for stories about financial performance (revenue vs. costs), demographic change (births vs. deaths), or environmental impact (emissions vs. mitigation).
+
+## Exceptions
+
+- When colors are already bound to a specific, widely-understood convention (e.g., political party colors in a given country) or strict brand guidelines that you cannot override.
+- When variables do not have a clear positive or negative function in the narrative.
+
+## Trade-offs
+
+- This approach requires a clear, simple narrative with well-defined roles (e.g., "increase" vs. "decrease"). It may not work for more complex situations with ambiguous relationships.
+- You are limited by the number of distinct functional roles you can represent clearly with color.
+
+## Signs of Trouble
+
+- **Rainbow of Confusion:** Multiple variables are shown with distinct but semantically meaningless colors that don't help explain their relationship.
+- **Decoding Effort:** The viewer has to constantly refer to the legend and think hard to understand if a trend is "good" or "bad" in the context of the story.
+- **Contradictory Colors:** Using colors with strong existing connotations (like red for "stop/danger" or green for "go/good") in a way that contradicts their narrative role.
+
+## How to Improve
+
+- **Quick Fix: Use a Diverging Palette.** If you have positive and negative contributors, use a standard diverging palette (e.g., blue-white-red) centered on a neutral point to separate the two groups.
+- **Moderate approach: Group by Function.** Identify the narrative role of each variable (e.g., 'contributes to growth', 'reduces growth', 'outcome'). Assign a single, meaningful color to each functional group.
+- **Comprehensive approach: Explain the Color Logic.** In addition to assigning functional colors, add a small legend or annotation that explicitly states what the colors mean (e.g., "Green = increases population"). Ensure the chosen colors are accessible for colorblind users.
+
+<split/>
+
+```md
+---
+id: add-narrative-annotations-to-connect-charts
+title: "Use a narrative title and annotations to explain the story"
+
+tags:
+  - impact:cognitive
+  - impact:pathos
+  - impact:logos
+  - impact:ethos
+  - chart:*
+  - task:trend
+  - task:correlation
+  - task:compare
+  - data:*
+  - audience:general
+  - medium:static
+  - medium:screen
+  - medium:print
+  - access:cognitive-load-risk
+
+evidence:
+  strength: low
+  summary: "Practitioner advice from Datawrapper's blog showing that explicit text—a narrative title, subtitle, and annotations—is essential for transforming a chart from a puzzle into a clear explanation."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: Fix my chart >> Sequential storytelling"
+    url: https://blog.datawrapper.de/fix-my-chart-sequential-storytelling/
+    note: "The article's final proposed chart includes a headline-style title, a summary subtitle, and specific annotations on each panel to explicitly state the story's key takeaways."
+    role: primary
+
+tools:
+  - type: learn
+    name: "Datawrapper Academy: How to add text to your charts"
+    url: https://academy.datawrapper.de/article/332-how-to-add-text-to-your-charts
+    description: "A tutorial on the mechanics and best practices of adding titles, descriptions, and annotations in Datawrapper."
+
+examples:
+  - type: bad
+    description: "A chart with a purely descriptive title like 'Four key indicators between 1950 and 2024'. It states what the data is, but not what it means, forcing the reader to interpret it themselves."
+  - type: good
+    description: "The same chart has an assertive title 'Demographic changes have transformed India in just 75 years' and a summary subtitle 'Despite falling fertility rates, progress in life expectancy and infant mortality led to a large net population growth...'. This tells the story upfront."
+---
+
+## Guidance
+
+Don't assume your chart speaks for itself. Add a descriptive title that states the main message, a subtitle that summarizes the narrative, and direct annotations to highlight key points and explain connections.
+
+## Why
+
+Annotations make your intended message explicit, reducing ambiguity and the cognitive effort required from the viewer. They transform the chart from a passive puzzle into an active explanation, ensuring the key insights are not missed.
+
+### Core Principle
+
+A visualization is an argument. Use text to state your thesis and guide the reader through your evidence.
+
+## When it applies
+
+- In any explanatory visualization where you want to communicate a specific finding, story, or insight.
+- It is especially critical in multi-part charts where the relationship between the parts must be explicitly explained.
+
+## Exceptions
+
+- In purely exploratory visualizations or dashboards where the goal is to let the user discover their own insights without being led.
+- When space is extremely limited and chart titles must be purely descriptive (e.g., "Sales YTD").
+
+## Trade-offs
+
+- Adding text takes up space and can potentially clutter the visualization if not done carefully and with a clear visual hierarchy.
+- It requires the author to have a strong, clear point of view to articulate, which may not always be desired.
+
+## Signs of Trouble
+
+- **Vague Titles:** The chart title is purely descriptive ("Population and Life Expectancy, 1950-2024") instead of assertive ("Population Soared Despite Falling Fertility...").
+- **"Figure 1" Syndrome:** The chart is presented without context, requiring the reader to hunt through surrounding paragraphs to understand its purpose.
+- **Viewer Questions:** People looking at the chart ask "So what does this mean?" or "Why are you showing me this?"
+
+## How to Improve
+
+- **Quick Fix: Write a Better Title.** Change the title from what the chart *is* to what the chart *shows*. E.g., change "Four Key Indicators" to "How India's Population Quadrupled in 75 Years".
+- **Moderate approach: Add a Summary Subtitle.** Below the main title, add a subtitle that summarizes the core narrative in one sentence. This provides an immediate, high-level takeaway.
+- **Comprehensive approach: Weave a Full Narrative.** Craft a headline-style title, a summary subtitle, and contextual annotations on each part of the visualization that work together to tell a complete, self-contained story.
+
+<split/>
+
+```md
+---
+id: annotate-magnitude-of-change
+title: "Use annotations to emphasize the magnitude of change"
+
+tags:
+  - impact:pathos
+  - impact:cognitive
+  - impact:logos
+  - chart:line
+  - chart:bar
+  - chart:slope
+  - task:trend
+  - task:compare
+  - task:direction
+  - data:temporal
+  - data:quantitative
+  - audience:general
+
+evidence:
+  strength: low
+  summary: "Practitioner advice from Datawrapper's blog shows that annotating the magnitude of change (e.g., '7x likelier to survive') creates more emotional impact ('bonkersness vibes') and makes the key insight more memorable."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: Fix my chart >> Sequential storytelling"
+    url: https://blog.datawrapper.de/fix-my-chart-sequential-storytelling/
+    note: "The original problem was a chart that didn't feel 'bonkers' enough. The solution involves adding annotations like '7x likelier to survive past infancy' and 'can expect to live 35 years longer' to make the scale of the change explicit and impactful."
+    role: primary
+
+examples:
+  - type: bad
+    description: "A line chart shows a trend going from 100 to 400. The viewer can see it goes up, but has to mentally calculate that this represents a quadrupling."
+  - type: good
+    description: "The same line chart has an annotation near the end of the line that reads 'A 4x increase' or a more narrative '...quadrupled in just 75 years.' This highlights the key takeaway and makes the scale of the change immediately obvious."
+---
+
+## Guidance
+
+Instead of just letting the viewer interpret a line's slope, add annotations that explicitly state the scale and significance of the change. Use clear, impactful language (e.g., "doubled," "fell by half," "7x more likely") to quantify the difference between key points.
+
+## Why
+
+Trend lines can be visually deceptive depending on the aspect ratio and axis scales. A direct annotation removes ambiguity and delivers the key takeaway with greater impact. Stating that a population "quadrupled" is more powerful and memorable—it has more "bonkersness vibes"—than just showing a line going up.
+
+### Core Principle
+
+Make the most important conclusion as easy as possible to grasp. If the magnitude of change is the story, state it directly on the chart.
+
+## When it applies
+
+- When the primary message of a chart is the scale or magnitude of a change over time or the difference between two important values.
+- When you want to add emotional impact or emphasize the significance of a finding.
+
+## Exceptions
+
+- When the exact magnitude is less important than the overall pattern, volatility, or shape of the trend.
+- In highly dense charts with many lines, where annotations for each one would cause too much clutter. In this case, a summary table or text might be better.
+
+## Trade-offs
+
+- Annotations can add visual clutter if overused.
+- They focus attention on specific points (e.g., start and end), potentially drawing attention away from the journey or variability in between.
+
+## Signs of Trouble
+
+- **Understated Impact:** A dramatic, real-world change (e.g., a 400% increase) looks like a gentle, unimpressive slope on the chart.
+- **Reader Math:** Viewers have to hover over points or trace gridlines to figure out the start and end values and then calculate the difference themselves.
+- **Lack of "Wow":** The chart presents impressive numbers, but fails to elicit a surprised or emotional response from the audience because the scale of the change isn't apparent.
+
+## How to Improve
+
+- **Quick Fix: Label Start and End Points.** Add data labels with the exact values to the first and last points of a time series. This is better than nothing, as it provides the raw numbers for calculation.
+- **Moderate approach: Annotate the Calculated Change.** Add a single annotation that does the math for the viewer. E.g., "+300%" or "An increase of 1.0B people". Place it near the trend line for context.
+- **Comprehensive approach: Use a Narrative Annotation.** Craft a short sentence that frames the magnitude in a more relatable way, as shown in the article's example. Instead of just "+35 years," write "...and can expect to live 35 years longer." This integrates the number into a more human-centered story.
+```

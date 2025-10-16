@@ -19,7 +19,7 @@ tags:
 
 sources:
   - type: research
-    ref: Cleveland & McGill, 1984
+    ref: "Cleveland & McGill, 1984"
     note: "This foundational paper established the perceptual ranking of visual channels, demonstrating that position on a common scale is the most accurately perceived."
   - type: research
     ref: Mackinlay, 1986

@@ -1,0 +1,617 @@
+```md
+---
+id: use-relative-data-in-choropleths
+title: "Use relative data, not absolute numbers, in choropleth maps"
+
+tags:
+  - impact:logos
+  - impact:ethical
+  - impact:perceptual
+  - chart:map.choropleth
+  - task:compare
+  - data:quantitative
+  - data:spatial
+  - visual:color
+  - audience:general
+
+evidence:
+  strength: medium
+  summary: "This is a foundational principle of thematic cartography. Mapping absolute counts without normalization is widely considered misleading because larger regions naturally have larger counts, confounding the variable of interest with geographic area or population. This can create a map that simply shows where people live, rather than the intended pattern."
+
+sources:
+  - type: practitioner
+    ref: Datawrapper Blog - What to consider when creating choropleth maps
+    url: https://blog.datawrapper.de/choropleth-maps/
+    note: "The article states, 'Choropleth maps work best for relative data. It would not be useful to map the absolute number of unemployed people... If you want to map absolute data, consider a symbol map instead.'"
+    role: primary
+  - type: research
+    ref: Monmonier, 1996, How to Lie with Maps
+    note: "Classic text in cartography that details how choices in data representation, such as using raw counts instead of rates, can fundamentally mislead the reader."
+    role: supporting
+
+tools:
+  - type: implement
+    name: Datawrapper
+    url: https://www.datawrapper.de
+    description: "A data visualization tool that enables the creation of choropleth maps and other charts, encouraging the use of relative data."
+  - type: learn
+    name: "Datawrapper Academy: How to create a choropleth map"
+    url: https://academy.datawrapper.de/article/120-how-to-create-a-choropleth-map
+    description: "Tutorial for creating choropleth maps, which implicitly uses and encourages normalized data."
+
+examples:
+  - type: bad
+    description: "The left map shows the absolute number of unemployed people. It misleadingly highlights populous counties, making it look like a population map."
+    url: https://blog.datawrapper.de/wp-content/uploads/2017/02/absolut-vs-relativ-1-1024x264.png
+  - type: good
+    description: "The right map shows the unemployment rate (a relative value). This provides a more honest and comparable view of unemployment across counties, revealing regional patterns independent of population size."
+    url: https://blog.datawrapper.de/wp-content/uploads/2017/02/absolut-vs-relativ-1-1024x264.png
+---
+
+## Guidance
+
+When creating a choropleth map, encode geographic regions with color based on a relative value (like a rate, percentage, or density) rather than an absolute count.
+
+## Why
+
+Absolute numbers in choropleth maps are almost always misleading. Larger geographic areas or areas with larger populations will naturally have higher absolute counts, regardless of the underlying phenomenon. This visually biases the map, making large, populous regions appear more significant. Using relative data (e.g., unemployment *rate* instead of *number* of unemployed people) normalizes for population or area, revealing the true geographic patterns and allowing for fair comparisons between regions.
+
+### Core Principle
+
+Visual prominence should reflect data prominence, not artifacts of geography or population distribution. Normalizing data ensures that the story the map tells is about the variable of interest, not simply "where most people live."
+
+## When it applies
+
+-   You are mapping quantitative data across geographic regions of varying size or population (e.g., states, counties, countries).
+-   Your goal is to compare regions to each other on a fair basis.
+-   The variable you are mapping is correlated with population (e.g., votes, cases of a disease, number of businesses).
+
+## Exceptions
+
+-   If all geographic regions have roughly the same population or area, using absolute numbers may be acceptable, though this is rare.
+-   If the goal is explicitly to show the raw magnitude concentrated in a specific area (and you acknowledge the bias), it might be used. However, a symbol map is usually a better choice for this task.
+
+## Trade-offs
+
+-   **Pro (using relative data):** Creates a more accurate, ethical, and insightful map that allows for meaningful comparisons.
+-   **Con (using relative data):** Requires an extra data processing step to calculate the rate or density. It also loses the sense of the absolute magnitude of the phenomenon.
+
+## Signs of Trouble
+
+-   **The "Population Map" Problem:** Your choropleth map of "Number of X" looks almost identical to a population density map of the same area. Large urban areas are dark, and rural areas are light, regardless of the rate.
+-   **Misleading Narrative:** The map suggests a "problem" is concentrated in cities, when in fact the *rate* might be higher in rural areas.
+
+## How to Improve
+
+-   **Quick Fix: Normalize the Data.** Divide your absolute number by a relevant denominator to create a relative value.
+    -   `Number of unemployed people` → `Number of unemployed / Total labor force` = **Unemployment Rate**
+    -   `Number of votes for a party` → `Number of votes / Total votes` = **Vote Share (%)**
+    -   `Total population` → `Total population / Area` = **Population Density**
+-   **Moderate Redesign: Switch Chart Type.** If you must show absolute numbers, switch from a choropleth map to a symbol map (also called a proportional symbol or bubble map). This places a scaled circle over each region, avoiding the issue of larger areas being colored more intensely.
+
+<split/>
+
+```md
+---
+id: use-choropleth-for-regional-patterns
+title: "Use choropleth maps to show clear regional patterns"
+
+tags:
+  - impact:logos
+  - impact:cognitive
+  - chart:map.choropleth
+  - task:trend
+  - task:distribution
+  - data:spatial
+  - audience:general
+
+evidence:
+  strength: low
+  summary: "This is a common practitioner best practice. The primary strength of a choropleth map is its ability to leverage human pattern-recognition for spatial data. If no discernible pattern exists, the map offers little insight beyond a colorful geographic reference, and other chart types are more effective for comparing values."
+
+sources:
+  - type: practitioner
+    ref: Datawrapper Blog - What to consider when creating choropleth maps
+    url: https://blog.datawrapper.de/choropleth-maps/
+    note: "The article leads with this point: 'Choropleth maps are great to show clear regional pattern in the data... If your data doesn't show a clear regional pattem, consider another chart type for your data.'"
+    role: primary
+  - type: practitioner
+    ref: Matthew Ericson - When Maps Shouldn't Be Maps
+    note: "This related article, cited in the source, explains that if there's no geographic story, a map is not the right tool and a bar chart is often better for comparison."
+    role: related
+
+tools:
+  - type: implement
+    name: Datawrapper
+    url: https://www.datawrapper.de
+    description: "A tool that facilitates the creation of choropleth maps to explore potential regional patterns."
+
+examples:
+  - type: good
+    description: "A map showing unemployment rates in neighboring counties, revealing a cluster of high unemployment in a specific part of the country. This is a strong use case for a choropleth."
+  - type: bad
+    description: "A map where high and low values are scattered randomly like salt and pepper. This lacks a clear regional story and makes it difficult to gain any insight. A bar chart would be better for comparing county values."
+---
+
+## Guidance
+
+Use a choropleth map when your geographic data exhibits clear regional patterns, such as clusters, gradients, or sharp contrasts between areas (e.g., urban vs. rural). If no spatial pattern exists, use a different chart type.
+
+## Why
+
+The main strength of a choropleth map is its ability to reveal the "where" of a story. It helps viewers quickly spot geographic trends that would be invisible in a table or a simple bar chart. If the values are randomly distributed across the map, there is no geographic story to tell, and the map format adds cognitive load without providing spatial insight.
+
+## When it applies
+
+-   You have data for defined geographic regions (countries, states, counties).
+-   You suspect or want to investigate if there is a geographic component to your data's distribution.
+-   Your analysis reveals clusters of high or low values, or a clear pattern like a north-south divide.
+
+## Exceptions
+
+-   **Reader Engagement:** Even without strong regional patterns, a map of a local area can be highly engaging for readers because they enjoy finding their own location ("the 'I am here' effect"). If your audience lives in the area being mapped, a choropleth can be justified for this reason alone.
+-   **Reference Tool:** A map can serve as a simple geographic lookup tool, even without patterns, especially in an interactive format where users can explore data for their specific area.
+
+## Trade-offs
+
+-   **Pro (using map):** Excellent for showing spatial distributions and engaging readers with familiar geography.
+-   **Con (using map without patterns):** Can be an inefficient and potentially confusing way to present data. It makes precise comparisons between regions difficult, a task for which a bar chart is far superior.
+
+## Signs of Trouble
+
+-   **"Salt and Pepper" Effect:** The map shows no clear clusters. High and low values are interspersed randomly, making it look like a noisy, chaotic image.
+-   **The Main Takeaway Isn't Geographic:** If the key insight from your data is "Region X has the highest value," and there's no broader spatial story, a sorted bar chart will communicate that point more effectively.
+
+## How to Improve
+
+-   **Quick Fix: Test for Patterns.** Before committing to a map, quickly scan your data. Is there a geographic logic to where the high and low values are? If not, proceed with caution.
+-   **Moderate Redesign: Switch to a Bar Chart.** If the main task is to compare or rank regions, a simple sorted bar chart is almost always better. It allows for easy and accurate comparison of values.
+-   **Comprehensive Approach: Pair a Map with a Bar Chart.** Use a map to provide the geographic overview and engage the reader, but pair it with a bar chart or table that allows for easy ranking and comparison of the individual regions.
+
+<split/>
+
+```md
+---
+id: use-diverging-color-for-extremes
+title: "Use a diverging color scheme to emphasize extremes and a meaningful midpoint"
+
+tags:
+  - impact:perceptual
+  - impact:logos
+  - impact:cognitive
+  - chart:*
+  - chart:map.choropleth
+  - visual:color
+  - task:direction
+  - task:compare
+  - data:quantitative
+  - access:color-vision-risk
+
+evidence:
+  strength: medium
+  summary: "The use of diverging palettes for data with a meaningful midpoint is a well-established cartographic and visualization principle, promoted by resources like ColorBrewer. It perceptually separates data into three classes (below, near, and above the midpoint), which aligns with the data's structure and the analytical task."
+
+sources:
+  - type: practitioner
+    ref: Datawrapper Blog - What to consider when creating choropleth maps
+    url: https://blog.datawrapper.de/choropleth-maps/
+    note: "The article advises, 'Consider a diverging scheme if you want to drive the attention to both extremes of the scale, e.g. to show the difference in votes between two competing parties.'"
+    role: primary
+  - type: practitioner
+    ref: ColorBrewer
+    url: https://colorbrewer2.org
+    note: "An authoritative tool for selecting map color schemes that codifies the concepts of sequential, diverging, and qualitative palettes, providing research-backed examples."
+    role: supporting
+
+tools:
+  - type: validate
+    name: ColorBrewer
+    url: https://colorbrewer2.org
+    description: "Helps you select and test effective diverging color schemes that are colorblind-safe and print-friendly."
+  - type: implement
+    name: Datawrapper
+    url: https://www.datawrapper.de
+    description: "Offers built-in, well-designed diverging color palettes for its mapping tools."
+
+examples:
+  - type: good
+    description: "A map of election results showing the margin of victory. One color represents a Democratic lead, the other a Republican lead, and a neutral light color represents a tie or very close race. This immediately shows which areas lean which way and by how much."
+    url: https://blog.datawrapper.de/wp-content/uploads/2017/02/farbschema-1024x264.png
+  - type: bad
+    description: "Using a single-hue sequential palette (e.g., light blue to dark blue) to show election margins. This would misleadingly frame one party's victory as 'more' and the other as 'less' on a single scale, obscuring the oppositional nature of the data."
+---
+
+## Guidance
+
+Use a diverging color scheme for quantitative data that has a meaningful midpoint. The scheme should use two distinct hues that diverge from a light, neutral central color.
+
+## Why
+
+A diverging color scheme is designed to draw attention to both ends of the data range—the low and high extremes—equally. The neutral midpoint signifies a break or a zero point in the data. This visual structure naturally maps to data like profit/loss, positive/negative change, or a split between two opposing groups (e.g., political parties), making the visualization intuitive to read.
+
+### Core Principle
+
+The visual structure of the encoding should match the conceptual structure of the data. Diverging data has two directions from a central point, and a diverging color scheme mirrors this structure.
+
+## When it applies
+
+-   Your data has a critical, meaningful midpoint, such as zero (e.g., population growth/decline, temperature change).
+-   You are visualizing a balance or margin between two opposing groups (e.g., vote share difference between two parties).
+-   You want to show values that are above or below a significant threshold, like an average or a baseline.
+
+## Exceptions
+
+-   If your data ranges from low to high and does not have a meaningful midpoint (e.g., unemployment rate from 0% to 100%), a sequential color scheme is more appropriate. Using a diverging scheme in this case would create a confusing and arbitrary visual break.
+
+## Trade-offs
+
+-   **Pro:** Clearly and intuitively communicates deviation from a central value in two directions.
+-   **Con:** Can be less effective at showing fine-grained differences among values on the same side of the midpoint compared to a sequential scheme that uses its entire range for one direction.
+
+## Signs of Trouble
+
+-   **Arbitrary Midpoint:** You're using a diverging palette for data like total population or life expectancy, forcing a visual break where no conceptual break exists.
+-   **Unbalanced Lightness:** The two hues used in the scheme have different lightness profiles, causing one side of the data to visually dominate the other.
+-   **Vibrant Center:** The color at the midpoint is bright and saturated instead of light and neutral, drawing attention to the least interesting part of the data.
+
+## How to Improve
+
+-   **Quick Fix: Center on the Midpoint.** Ensure your data is centered on the meaningful value (e.g., 0 for change, 50% for a two-party vote share).
+-   **Moderate Redesign: Choose a Proper Palette.** Select a palette with two distinct hues (e.g., blue and red, or purple and green) that meet at a light, neutral color (like light gray, white, or pale yellow). The colors at the extremes should be the darkest and most saturated. Use a tool like ColorBrewer to find a balanced, colorblind-safe palette.
+-   **Comprehensive Approach: Clarify in Text.** In your title, description, and legend, explicitly state what the midpoint and the two extremes represent to ensure correct interpretation. The legend should clearly label the center value (e.g., "0").
+
+<split/>
+
+```md
+---
+id: ensure-lightness-variation-in-colors
+title: "Ensure sufficient lightness variation in sequential and diverging color schemes"
+
+tags:
+  - impact:perceptual
+  - impact:accessibility
+  - chart:*
+  - visual:color
+  - data:quantitative
+  - data:ordinal
+  - access:color-vision-risk
+
+evidence:
+  strength: high
+  summary: "The principle that lightness (or luminance) is the most effective component of color for encoding ordered data is foundational in data visualization and cartography. It ensures that charts are perceptually ordered and accessible to people with color vision deficiencies, as well as robust to grayscale printing. This is a core recommendation in major style guides and accessibility standards."
+
+sources:
+  - type: practitioner
+    ref: Datawrapper Blog - What to consider when creating choropleth maps
+    url: https://blog.datawrapper.de/choropleth-maps/
+    note: "The article states: 'Make sure there is a lightness difference in your sequential/diverging color schemes. A gradient from a light color to a dark color enables your readers to quickly spot the regions with low and high values.'"
+    role: primary
+  - type: standard
+    ref: WCAG 2.1 Success Criterion 1.4.1 (Use of Color)
+    url: https://www.w3.org/TR/WCAG21/#use-of-color
+    note: "Requires that color is not used as the sole means of conveying information, indicating that another channel (like lightness) must also be present."
+    role: supporting
+  - type: research
+    ref: Ware, 2019, Information Visualization: Perception for Design
+    note: "Explains in detail the perceptual reasons why luminance-varying palettes are effective for encoding ordered data and more robust to color vision deficits."
+    role: supporting
+
+tools:
+  - type: validate
+    name: Viz Palette
+    url: https://projects.susielu.com/viz-palette
+    description: "Allows you to preview your color palette under various color vision deficiency simulations and see its lightness ramp."
+  - type: validate
+    name: ColorBrewer
+    url: https://colorbrewer2.org/
+    description: "All sequential and diverging palettes generated by this tool are designed with monotonic lightness gradients."
+
+examples:
+  - type: good
+    description: "The right map uses a sequential scheme that goes from a very light green to a dark blue. The change in lightness is clear and makes it easy to see which areas have higher values, even if you can't see the colors."
+    url: https://blog.datawrapper.de/wp-content/uploads/2017/02/lightness-1-1024x264.png
+  - type: bad
+    description: "The left map uses colors (blue and green) that have similar lightness levels. It's difficult to tell which color represents a higher value without constantly checking the legend, and the pattern is unclear."
+    url: https://blog.datawrapper.de/wp-content/uploads/2017/02/lightness-1-1024x264.png
+---
+
+## Guidance
+
+For sequential or diverging color schemes, ensure the colors follow a clear, monotonic progression in lightness, from light to dark (sequential) or from dark-to-light-to-dark (diverging).
+
+## Why
+
+The human visual system is far more sensitive to changes in lightness than to changes in hue. A consistent lightness ramp provides a natural sense of order, allowing viewers to instantly and intuitively perceive which areas have higher or lower values. This makes the chart easier to read, and critically, ensures it remains interpretable when printed in grayscale or viewed by people with color vision deficiencies.
+
+### Core Principle
+
+Encode ordered data with an ordered visual channel. Lightness is a strongly ordered perceptual channel, while hue is not.
+
+## When it applies
+
+-   You are using a sequential color scheme to represent data from low to high.
+-   You are using a diverging color scheme to represent data moving away from a central point.
+-   You want your visualization to be accessible to the widest possible audience, including those with color vision deficiencies.
+-   Your visualization may be printed in black and white.
+
+## Exceptions
+
+-   **Qualitative Data:** This guideline does not apply to qualitative (categorical) color schemes, where the goal is to distinguish between categories, not to show order. For qualitative palettes, you should aim for distinct hues while keeping lightness relatively consistent.
+
+## Trade-offs
+
+-   **Aesthetics vs. Clarity:** Sometimes, a palette with a perfect lightness ramp may be perceived as less aesthetically pleasing than one with more varied hues. However, prioritizing perceptual clarity and accessibility is almost always the correct trade-off.
+
+## Signs of Trouble
+
+-   **The Grayscale Test:** If you convert your visualization to grayscale, the different colors become indistinguishable shades of gray, and the data pattern is lost.
+-   **Rainbow Palettes:** You are using a "rainbow" color scheme (red, orange, yellow, green, blue...). These palettes have non-monotonic lightness ramps (yellow is lighter than green and red), which creates confusing visual artifacts and is not perceptually ordered.
+-   **Perceptual Ambiguity:** It's not immediately obvious which of two colors represents a higher value without consulting the legend.
+
+## How to Improve
+
+-   **Quick Fix: Use a Proven Tool.** Use a tool like [ColorBrewer](https://colorbrewer2.org/) or the built-in palettes in a reputable visualization software like Datawrapper. These tools provide pre-vetted palettes that have correct lightness gradients.
+-   **Moderate Redesign: Check Your Palette.** Use a validation tool like [Viz Palette](https://projects.susielu.com/viz-palette) to paste in your colors. It will show you the lightness ramp and simulate how it appears to users with different forms of colorblindness.
+-   **Comprehensive Approach: Adopt a Color System.** For diverging palettes, ensure the central color is the lightest and most neutral, with saturation and darkness increasing towards both extremes. For sequential palettes, start with a light, low-saturation color and end with a dark, high-saturation color of the same or a similar hue.
+
+<split/>
+
+```md
+---
+id: prefer-continuous-color-scales
+title: "Prefer continuous color scales over discrete steps for nuanced data"
+
+tags:
+  - impact:logos
+  - impact:perceptual
+  - chart:map.choropleth
+  - chart:heatmap
+  - visual:color
+  - data:quantitative
+  - task:compare
+
+evidence:
+  strength: medium
+  summary: "This is a well-argued practitioner recommendation based on perceptual principles. Binning data (discrete steps) can create artificial visual boundaries and hide meaningful variation within bins. A continuous scale provides a more truthful representation of the underlying data distribution, although it may make it harder to classify values into specific groups."
+
+sources:
+  - type: practitioner
+    ref: Datawrapper Blog - What to consider when creating choropleth maps
+    url: https://blog.datawrapper.de/choropleth-maps/
+    note: "The article argues for continuous scales: 'discrete steps sacrifice nuance for that quick readability. A continuous color scale lets readers compare neighboring regions, even if they would fall in the same color shade on a map with discrete steps.'"
+    role: primary
+  - type: practitioner
+    ref: Gregor Aisch - Take Care of your Choropleth Maps
+    note: "This article, written by a Datawrapper team member and cited in the source, makes a strong case against discrete steps, arguing they introduce bias and hide detail."
+    role: supporting
+
+tools:
+  - type: implement
+    name: Datawrapper
+    url: https://www.datawrapper.de
+    description: "The tool defaults to and encourages the use of continuous color scales for choropleth maps, paired with tooltips for detail."
+
+examples:
+  - type: bad
+    description: "A map using 5 discrete color 'steps' or 'bins'. Two neighboring counties with values of 24% and 25% might be shaded with dramatically different colors if 25% is the cutoff for a new bin. Meanwhile, counties with values of 25% and 34% are colored identically."
+    url: https://blog.datawrapper.de/wp-content/uploads/2017/02/continuous-1024x264.png
+  - type: good
+    description: "A map using a continuous color gradient. The counties with values 24% and 25% are shown with very similar colors, reflecting their similar values. The difference between 25% and 34% is also accurately represented by a noticeable change in color shade."
+    url: https://blog.datawrapper.de/wp-content/uploads/2017/02/continuous-1024x264.png
+---
+
+## Guidance
+
+When mapping continuous quantitative data, prefer using a continuous color scale (a smooth gradient) instead of discrete color steps (binning).
+
+## Why
+
+Discretizing data into a few color-coded bins is a form of data reduction that can be misleading. It creates artificial "cliffs" where none exist in the data (e.g., a tiny data difference across a bin boundary results in a large color difference) and hides meaningful variation within a single bin (e.g., large data differences are assigned the exact same color). A continuous color scale provides a more faithful and nuanced representation of the underlying data, allowing for more accurate comparisons between regions.
+
+### Core Principle
+
+Minimize data transformation that can obscure or distort the underlying patterns. Represent continuous data with a continuous visual variable.
+
+## When it applies
+
+-   You are visualizing a continuous quantitative variable (e.g., unemployment rate, temperature, income).
+-   The precise variation in the data is important to the story.
+-   The goal is to see subtle patterns and allow for comparison between any two regions, especially adjacent ones.
+
+## Exceptions
+
+-   **Classification is the Goal:** If the explicit purpose is to classify regions into predefined categories (e.g., "low," "medium," "high" based on external standards), then discrete steps are appropriate because the classification itself is the story.
+-   **Simplicity for Audience:** For some audiences or contexts, a small number of discrete steps might be cognitively easier to process than a continuous gradient, as it gives them fewer distinct colors to interpret.
+
+## Trade-offs
+
+-   **Continuous Scale:**
+    -   **Pro:** More truthful to the data; reveals more nuance; better for comparing adjacent regions.
+    -   **Con:** Harder to read a region's specific value without a tooltip; can feel more complex.
+-   **Discrete Steps:**
+    -   **Pro:** Easy to classify a region into a category; simple to read the legend.
+    -   **Con:** Can be misleading; hides detail; choice of bin boundaries is arbitrary and can dramatically change the map's story.
+
+## Signs of Trouble
+
+-   **Arbitrary Bins:** Your color bins are based on how the software automatically split the data (e.g., quantiles, equal intervals) rather than on meaningful thresholds in the data itself.
+-   **Visual Cliffs:** You see sharp color boundaries on the map that don't correspond to significant, real-world differences.
+-   **Lost Detail:** You know there is important variation in a certain range, but all the regions in that range are colored with the same solid block of color.
+
+## How to Improve
+
+-   **Quick Fix: Use a Continuous Gradient.** In your mapping software, select the option for a continuous or gradient scale instead of "steps" or "classes."
+-   **Comprehensive Approach: Pair Continuous Scale with Tooltips.** Use a smooth, continuous color gradient to show the overall pattern. Then, add interactive tooltips that appear on hover to provide the exact data value for any specific region. This gives you the best of both worlds: high-level pattern recognition and on-demand detail.
+
+<split/>
+
+```md
+---
+id: use-cartogram-for-population-focus
+title: "Use a cartogram when the number of people affected is more important than geographic area"
+
+tags:
+  - impact:ethical
+  - impact:logos
+  - chart:map.choropleth
+  - chart:map.cartogram
+  - data:spatial
+  - task:compare
+  - task:distribution
+
+evidence:
+  strength: medium
+  summary: "Cartograms are a well-known technique in thematic cartography for addressing the perceptual bias in choropleth maps where large, sparsely populated areas are overrepresented. While effective, their tendency to distort familiar shapes is a significant trade-off, making this a practitioner's judgment call based on the story and audience."
+
+sources:
+  - type: practitioner
+    ref: Datawrapper Blog - What to consider when creating choropleth maps
+    url: https://blog.datawrapper.de/choropleth-maps/
+    note: "The article suggests, 'Consider cartograms if it's important how many people are affected... In countries with a very different population density, cartograms can offer a more honest view of the data.'"
+    role: primary
+  - type: practitioner
+    ref: The Guardian - EU referendum: full results and analysis
+    url: https://www.theguardian.com/politics/ng-interactive/2016/jun/23/eu-referendum-live-results-and-analysis
+    note: "Cited in the source blog post as a good example of using a cartogram to show how population centers (like London) were a major factor in the results."
+    role: related
+
+tools:
+  - type: implement
+    name: Datawrapper
+    url: https://www.datawrapper.de
+    description: "Offers options to create area cartograms (and hex maps, another variant) to mitigate geographic distortion."
+
+examples:
+  - type: bad
+    description: "A standard US election map showing a 'sea of red' because many large, rural counties voted Republican, visually dwarfing the small, dense, Democratic-voting urban areas."
+    url: https://blog.datawrapper.de/wp-content/uploads/2017/02/cartogram-1024x264.png
+  - type: good
+    description: "A population cartogram of the same US election results. States and counties are resized by population. This shrinks the rural areas and enlarges the urban ones, providing a more accurate visual representation of how many *voters* chose each party."
+    url: https://blog.datawrapper.de/wp-content/uploads/2017/02/cartogram-1024x264.png
+---
+
+## Guidance
+
+If the story you are telling is more about people than about land, consider using a population cartogram, which resizes geographic regions according to their population.
+
+## Why
+
+Standard choropleth maps give visual prominence to geographic size. This can be profoundly misleading for human-centric data (like election results or health outcomes) because vast, sparsely populated areas can dominate the map and obscure the importance of small, dense population centers. A population cartogram corrects this by scaling each region's area to be proportional to its population, ensuring that the visual weight of a region matches its human weight.
+
+### Core Principle
+
+The visual weight of a mark should be proportional to its value or importance in the story. In human-centric data, that importance is often population, not land area.
+
+## When it applies
+
+-   You are mapping data where the number of people is the key denominator (e.g., election results, public opinion, disease outbreaks).
+-   The map has regions with extreme variations in population density (e.g., a map of the USA including both Wyoming and New York City).
+-   A standard choropleth map would give a misleading impression due to the "large empty areas" problem.
+
+## Exceptions
+
+-   **Unfamiliar Geography:** If your audience is not intimately familiar with the geography being mapped, the distortions of a cartogram can make it impossible for them to recognize regions and orient themselves.
+-   **Land-centric Data:** If your data is genuinely about the land itself (e.g., land use, crop yields per acre, mineral deposits), then a standard choropleth map is more appropriate.
+
+## Trade-offs
+
+-   **Honesty vs. Recognizability:**
+    -   **Pro:** Cartograms provide a more honest and less biased view of human-centric data.
+    -   **Con:** They distort familiar shapes, making it harder for viewers to identify specific regions and understand the geography.
+
+## Signs of Trouble
+
+-   **The "Sea of Red/Blue" Effect:** In a US election map, the visualization is dominated by the color of vast, rural areas, even if they contain far fewer voters than the small, dense urban areas.
+-   **The Wyoming Problem:** A geographically large but sparsely populated region (like Wyoming or Montana) has as much visual impact as a geographically small but densely populated one (like New Jersey or Rhode Island), distorting the human scale of the story.
+
+## How to Improve
+
+-   **Moderate Redesign: Create a Cartogram.** Use a tool that can generate a population-based area cartogram. This directly addresses the distortion problem.
+-   **Comprehensive Approach: Provide Both Views.** Offer the user both a standard geographic map and a population cartogram. You can do this by placing them side-by-side or allowing the user to toggle between the two views. This gives the user geographic context *and* the more "honest" population-based view.
+-   **Alternative: Use a Hex or Tile Grid Map.** A tile grid map represents each region (e.g., a state) as an equally sized shape (like a hexagon or square), arranged to approximate the actual geography. This removes the land-area bias entirely while being less distorting than a true cartogram.
+
+<split/>
+
+```md
+---
+id: use-interactive-tooltips-for-detail
+title: "Use interactive tooltips to provide exact values and additional context"
+
+tags:
+  - impact:cognitive
+  - impact:perceptual
+  - chart:map.choropleth
+  - chart:*
+  - medium:interactive
+  - task:lookup
+  - audience:general
+
+evidence:
+  strength: medium
+  summary: "This is a standard best practice in interactive data visualization. It aligns with Shneiderman's 'Visual Information-Seeking Mantra' (Overview first, zoom and filter, then details-on-demand). Tooltips are the primary mechanism for providing 'details-on-demand' without cluttering the overview."
+
+sources:
+  - type: practitioner
+    ref: Datawrapper Blog - What to consider when creating choropleth maps
+    url: https://blog.datawrapper.de/choropleth-maps/
+    note: "The article highlights the benefit: 'Tooltips are a great option to communicate the underlying value of each region... Tooltips also help to communicate extra information about regions and remind readers of the name of the area they're seeing.'"
+    role: primary
+  - type: research
+    ref: Shneiderman, 1996, The Eyes Have It
+    url: https://doi.org/10.1109/VISUAL.1996.568144
+    note: "This foundational paper outlines the 'Overview, Zoom, Details-on-Demand' mantra, for which tooltips are a canonical implementation of the 'details-on-demand' step."
+    role: supporting
+
+tools:
+  - type: implement
+    name: Datawrapper
+    url: https://www.datawrapper.de
+    description: "Tooltips are a core, easily configurable feature of Datawrapper's interactive maps."
+
+examples:
+  - type: good
+    description: "An interactive choropleth map of Europe. When a user hovers over Germany, a tooltip appears showing 'Germany: Population Growth 0.5%' along with other key statistics. This provides rich detail without cluttering the map."
+    url: https://blog.datawrapper.de/wp-content/uploads/2017/02/tooltip-1.gif
+---
+
+## Guidance
+
+In an interactive map, use tooltips that appear on hover or click to provide precise data values and other relevant contextual information for each region.
+
+## Why
+
+Choropleth maps are excellent for showing broad patterns but poor at communicating precise numerical values. A tooltip acts as a "details-on-demand" feature, solving this problem without cluttering the main visual. It allows an engaged user to look up exact numbers, see the name of the region they are hovering over, and access additional context that wouldn't fit in a static label.
+
+### Core Principle
+
+Follow the Visual Information-Seeking Mantra: "Overview first, zoom and filter, then details-on-demand." Tooltips are the quintessential "details-on-demand" tool.
+
+## When it applies
+
+-   You are creating an interactive map for the web or a screen-based medium.
+-   You need to communicate both the overall pattern and the exact underlying values.
+-   Your regions may be unfamiliar to your audience, so providing the region's name on hover is helpful.
+-   You are using a continuous color scale, which makes it impossible to infer exact values from color alone.
+
+## Exceptions
+
+-   **Static Media:** This guidance is not applicable for static formats like print or a saved image (PNG/JPG), where interactivity is impossible. In those cases, you may need to add direct labels to a few key regions.
+-   **Motor Control Issues:** Relying solely on hover can be problematic for users on touch devices or those with motor control impairments. Ensure that information is also accessible via clicking/tapping the region.
+
+## Trade-offs
+
+-   **Information Accessibility:**
+    -   **Pro:** Provides a clean, uncluttered overview while making deep detail available to those who seek it.
+    -   **Con:** Hides precise information from a first glance; users must interact to discover it.
+
+## Signs of Trouble
+
+-   **No Path to Precision:** Your interactive map shows colors, but there is no way for a user to find out the exact value a color represents.
+-   **"What am I looking at?":** A user hovers over a county or small country and has no idea what it is called.
+-   **Overloaded Tooltips:** Your tooltips are crammed with so much text and so many numbers that they become mini-spreadsheets, overwhelming the user.
+
+## How to Improve
+
+-   **Quick Fix: Enable Basic Tooltips.** At a minimum, configure your tooltips to show the region's name and its primary data value (e.g., "California: 12.5%").
+-   **Moderate Redesign: Customize Tooltip Content.** Edit the tooltip to present the information clearly. Use bolding to highlight the most important number, add units (like `%` or `$`), and include a secondary piece of context if helpful.
+-   **Comprehensive Approach: Thoughtful Information Hierarchy.** Design your tooltips to be a mini-dashboard for that region. Start with the most important information, but consider adding a comparison (e.g., "vs. national average") or a related data point that enriches the story for that specific region. Keep it brief and scannable.

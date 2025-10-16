@@ -1,0 +1,650 @@
+```md
+---
+id: favor-blue-for-colorblind-safety
+title: "Favor blue for key categorical distinctions"
+tags:
+  - impact:perceptual
+  - impact:accessibility
+  - impact:inclusion
+  - chart:*
+  - task:compare
+  - task:lookup
+  - data:categorical
+  - visual:color
+  - audience:*
+  - medium:*
+  - access:color-vision-risk
+
+evidence:
+  strength: medium
+  summary: "Based on practitioner experience and the physiology of color vision, blue is the hue least affected by the most common forms of red-green colorblindness (deuteranopia and protanopia), making it a reliable choice."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper: What to consider when visualizing data for colorblind readers"
+    url: https://blog.datawrapper.de/colorblindness-part2/
+    note: "The article states, 'the color that looks the most the same for people with normal vision and readers with red-/green-blindness... is blue. “Blue is the safest hue.”'"
+    role: primary
+
+tools:
+  - type: validate
+    name: Viz Palette
+    url: https://projects.susielu.com/viz-palette
+    description: "Tool to test color palettes and simulate how they appear to users with different types of color vision deficiency."
+
+examples:
+  - type: bad
+    description: "A chart that relies on a green vs. red or green vs. blue distinction of the same lightness will be difficult for colorblind readers to interpret, as these hues can appear similar."
+  - type: good
+    description: "A chart that uses blue as a primary color for a key category. This ensures that this category's color is perceived consistently by most viewers."
+---
+
+## Guidance
+
+When selecting a palette, use blue as a foundational color for key categories, as it is the most reliably perceived hue across different forms of color vision deficiency.
+
+## Why
+
+Blue is the color that is perceived most consistently by people with normal vision and those with the most common forms of red-green colorblindness (protanopia and deuteranopia). Unlike red and green, which fall on a confusion line for these viewers, blue remains distinctly blue, making it a "safe" and predictable choice.
+
+### Core Principle
+
+Choose colors that are robust to perceptual shifts across different types of vision.
+
+## When it applies
+
+-   When choosing a single highlight color for a visualization.
+-   When designing a categorical palette from scratch.
+-   When you need to ensure at least one color in your chart is perceived as intended by the widest possible audience.
+
+## Exceptions
+
+-   When blue has a strong, conflicting semantic meaning in the context of your data (e.g., representing "cold" in a chart where that's not the intended message).
+-   When designing for audiences with tritanopia (blue-yellow colorblindness), though this is much rarer. In this case, blue can be confused with teal, but it's still often a better choice than red/green combinations.
+
+## Trade-offs
+
+-   Over-reliance on blue can make palettes feel monotonous or generic, especially as the "blue and orange" combination has become a common default for accessibility.
+
+## Signs of Trouble
+
+-   **Hue Confusion:** Your chart's primary distinction relies on a green versus red comparison.
+-   **Simulator Failure:** When viewed in a red-green colorblindness simulator, two key colors in your chart become nearly indistinguishable.
+
+## How to Improve
+
+-   **Quick approach:** If you have a problematic color pair (like red/green), swap the green for a distinct blue.
+-   **Moderate approach:** Re-anchor your color palette around blue. If you need multiple colors, start with blue and choose other colors that have high contrast with it for all viewers (like a vibrant orange).
+-   **Comprehensive approach:** Adopt a pre-vetted, colorblind-safe palette that uses blue as a primary color.
+
+<split/>
+
+```md
+---
+id: combine-blue-and-orange
+title: "Combine blue with orange or red for a robust colorblind-safe pair"
+tags:
+  - impact:perceptual
+  - impact:accessibility
+  - impact:inclusion
+  - chart:*
+  - task:compare
+  - data:categorical
+  - data:cardinality.low
+  - visual:color
+  - audience:*
+  - medium:*
+  - access:color-vision-risk
+
+evidence:
+  strength: medium
+  summary: "This complementary color pair is widely recommended by practitioners because it remains distinguishable across protanopia, deuteranopia, and tritanopia, even though the perceived hues shift for each group."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper: What to consider when visualizing data for colorblind readers"
+    url: https://blog.datawrapper.de/colorblindness-part2/
+    note: "The article recommends this combination, explaining that even though the perceived hues change for colorblind readers (e.g., red-blind readers see it as blue and olive), the colors remain distinct from each other."
+    role: primary
+
+tools:
+  - type: implement
+    name: Datawrapper
+    url: https://www.datawrapper.de
+    description: "The charting tool automatically warns users if their selected colors are not distinguishable for colorblind readers."
+  - type: validate
+    name: Viz Palette
+    url: https://projects.susielu.com/viz-palette
+    description: "Allows you to build and test color palettes, including seeing simulations for different types of color vision deficiency."
+
+examples:
+  - type: bad
+    description: "A chart using colors near each other on the color wheel, like blue and purple of similar lightness. A red-green blind software developer is quoted saying this will 'completely torpedo my ability to understand your chart.'"
+  - type: good
+    description: "A chart that uses a blue and orange color combination. Red-blind readers will perceive it as blue and olive, green-blind as blue and orange, and blue-blind as teal and pink, all of which remain distinguishable pairs."
+---
+
+## Guidance
+
+For a simple and highly effective two-color palette, combine blue with a complementary orange or red.
+
+## Why
+
+The combination of blue and orange/red leverages colors that fall on different confusion lines for all major types of colorblindness. While red-green blind individuals perceive the orange/red as a shade of olive or brown, it remains clearly distinct from blue. Similarly, blue-blind individuals see the pair as teal and pink, which are also distinct. This makes the pair a robust choice for binary or diverging data.
+
+### Core Principle
+
+Choose colors that are far apart in the color space for all types of color vision deficiencies.
+
+## When it applies
+
+-   When you need a two-color categorical palette.
+-   When creating a diverging color scheme to show deviation from a central point.
+-   When highlighting a specific category against a baseline.
+
+## Exceptions
+
+-   When brand guidelines strictly prohibit these colors. In this case, you must find another pair that has high contrast in both hue and lightness.
+-   When the colors have a strong semantic meaning that conflicts with your data (e.g., using orange to represent something negative when it is culturally associated with warmth or safety).
+
+## Trade-offs
+
+-   This specific combination has become so common as a colorblind-safe default that it can sometimes feel unoriginal.
+-   Poorly chosen shades (e.g., a very light orange and a very light blue) might lack sufficient contrast, so lightness must also be considered.
+
+## Signs of Trouble
+
+-   **Problematic Pairs:** Your chart relies on red vs. green, or blue vs. purple of similar lightness.
+-   **Simulator Failure:** When checking your two-color palette in a colorblindness simulator, the colors merge into a similar shade.
+
+## How to Improve
+
+-   **Quick approach:** If you are using a problematic red-green palette, swap the green for a distinct blue.
+-   **Moderate approach:** Replace your existing two-color palette with a well-tested blue and orange combination, ensuring the two colors also differ in lightness.
+-   **Comprehensive approach:** Build a complete color system for your organization based on colorblind-safe principles, with the blue/orange combination as a core option for categorical data.
+
+<split/>
+
+```md
+---
+id: vary-lightness-not-just-hue
+title: "Ensure colors have distinct lightness values"
+tags:
+  - impact:perceptual
+  - impact:accessibility
+  - impact:inclusion
+  - impact:aesthetic
+  - chart:*
+  - task:compare
+  - data:categorical
+  - visual:color
+  - audience:*
+  - medium:print
+  - medium:screen
+  - access:color-vision-risk
+
+evidence:
+  strength: high
+  summary: "Known as the 'Get it right in black & white' principle, ensuring lightness variation makes designs robust not only for colorblind users but also for monochrome printing and varying light conditions. The human visual system is highly sensitive to luminance (lightness) differences."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper: What to consider when visualizing data for colorblind readers"
+    url: https://blog.datawrapper.de/colorblindness-part2/
+    note: "The article advises, 'You can use any colors you like as long as they vary by lightness,' and references the common wisdom, 'Get it right in black & white.'"
+    role: primary
+
+tools:
+  - type: validate
+    name: Colorblindness simulators (e.g., Color Oracle, Coblis)
+    url: https://colororacle.org/
+    description: "These tools often show a grayscale version, which makes it easy to check if your colors have sufficient lightness contrast."
+  - type: validate
+    name: APCA Contrast Calculator
+    url: https://www.myndex.com/APCA/
+    description: "A modern contrast checking tool that is more perceptually uniform than older methods, useful for checking lightness differences between colors."
+
+examples:
+  - type: bad
+    description: "Using a vibrant red and a vibrant green of similar lightness. For a colorblind reader, these might appear as a darker and lighter shade of olive/orange, but if their lightness is too similar, they will be hard to distinguish."
+  - type: good
+    description: "A dark red and a light green. Even though a colorblind reader won't see 'red' and 'green,' they will clearly see a dark color and a light color, making the elements distinguishable."
+---
+
+## Guidance
+
+Design your color palette so that colors differ significantly in lightness (brightness), not just in hue. A reliable test is to see if your visualization remains readable when converted to grayscale.
+
+## Why
+
+People with color vision deficiency, and indeed all people, are very good at perceiving differences in lightness. Even if two colors have hues that are confusing (like red and green), a difference in lightness will keep them distinguishable. This "get it right in black and white" principle also makes your charts robust for monochrome printing and readable in poor lighting conditions.
+
+### Core Principle
+
+Redundantly encode information in both color (hue) and lightness (luminance). The visual system is more sensitive to luminance contrast than to chrominance (hue) contrast.
+
+## When it applies
+
+-   Whenever you use multiple colors to distinguish categories in a chart.
+-   When designing a palette that must work for both screen and print.
+-   When using adjacent colors that could be confusing, such as red and green.
+
+## Exceptions
+
+-   In sequential color schemes, where a gradient of lightness is already the primary visual variable used to encode quantitative data. Here, the goal is smooth transition, not sharp distinction.
+
+## Trade-offs
+
+-   Finding a set of colors that are both aesthetically pleasing and have strong, distinct lightness values can be challenging. For example, it's hard to find a "light red" that still reads as red and contrasts well with a "dark blue".
+
+## Signs of Trouble
+
+-   **The Squint Test:** If you squint at your chart, do different colored categories blur into a single, muddy patch?
+-   **The Grayscale Test:** When you print the chart in black and white or use a grayscale filter, do two or more categories become nearly identical shades of gray?
+-   **Subtle Neighbors:** The palette includes colors like a medium-lightness green and a medium-lightness orange, which can easily be confused.
+
+## How to Improve
+
+-   **Quick approach:** Take one of the conflicting colors and use your software's color picker to make it significantly lighter or darker, then check again in grayscale.
+-   **Moderate approach:** Manually adjust each color in your palette to ensure a clear "staircase" of lightness values. You can check the lightness value (e.g., the 'L' in HSL) for each color.
+-   **Comprehensive approach:** Build your color palette from the ground up using a perceptually uniform color space (like L*C*h) to have precise control over lightness, chroma, and hue. Select colors with deliberately different lightness values.
+
+<split/>
+
+```md
+---
+id: use-fewer-colors
+title: "Limit the number of distinct colors in a chart"
+tags:
+  - impact:cognitive
+  - impact:perceptual
+  - impact:accessibility
+  - chart:*
+  - task:compare
+  - task:lookup
+  - data:categorical
+  - data:cardinality.high
+  - visual:color
+  - audience:*
+  - access:color-vision-risk
+  - access:cognitive-load-risk
+
+evidence:
+  strength: medium
+  summary: "Practitioner consensus suggests that using more than 3-4 colors increases cognitive load and the likelihood of perceptual confusion. The article cites a colorblind data analyst who 'tunes out' when more colors are used without other visual indicators."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper: What to consider when visualizing data for colorblind readers"
+    url: https://blog.datawrapper.de/colorblindness-part2/
+    note: "The article advises that the more colors you use, the harder they are to tell apart, and quotes a green-blind data analyst: 'If I see lots of colors being used in a chart (say, more than 3 or 4) I tend to tune out...'"
+    role: primary
+
+examples:
+  - type: bad
+    description: "A pie chart or stacked bar chart with ten different colored slices, requiring the user to constantly refer to a crowded legend."
+  - type: good
+    description: "A chart that highlights one or two important categories in a distinct color (or colors) and groups all other categories into a single, neutral gray 'Other' category. This focuses attention and reduces the number of colors needed."
+---
+
+## Guidance
+
+Restrict the number of distinct colors used to encode categories, ideally to four or fewer. If you have more categories, find ways to group them or use a different chart type.
+
+## Why
+
+The more colors you introduce, the harder it becomes to find a set where every color is easily distinguishable from all others, especially for colorblind viewers. Limiting colors also reduces the cognitive load for all readers, as they don't have to memorize as many color-to-category associations or constantly scan back and forth to a legend.
+
+### Core Principle
+
+Simplify the visual task to reduce cognitive load. Every color added is another piece of information to be processed and remembered.
+
+## When it applies
+
+-   When visualizing categorical data with many levels (e.g., more than 5-7 categories).
+-   When a chart appears cluttered or its legend is long and difficult to parse.
+
+## Exceptions
+
+-   When visualizing a large, fixed set of categories is the explicit goal and alternatives are not feasible (e.g., a map showing results for all 27 EU member states). Even in these cases, other techniques like interactivity should be used to aid interpretation.
+
+## Trade-offs
+
+-   To reduce colors, you may need to group smaller categories into an "Other" bucket, which involves a loss of detail.
+-   Switching to a chart type that handles more categories better (like a bar chart or small multiples) might take up more space.
+
+## Signs of Trouble
+
+-   **Legend Overload:** The color legend for your chart has more than five items and looks like a list.
+-   **Rainbow Effect:** The chart uses a multitude of colors that look like a rainbow, making it hard to focus and distinguish individual categories.
+-   **Subtle Shades:** The palette relies on multiple similar shades (e.g., teal, light blue, dark blue) to represent different categories.
+
+## How to Improve
+
+-   **Quick approach:** Group smaller or less important categories into a single "Other" category and color it with a neutral gray.
+-   **Moderate approach:** Instead of coloring every category, highlight only the one or two most important categories with a distinct color and set all others to gray. This focuses the reader's attention on the main story.
+-   **Comprehensive approach:** Reconsider your chart choice. Instead of a single, multi-colored chart (like a pie or stacked bar), use a chart type that handles many categories more gracefully, such as a simple bar chart with labels, a table, or small multiples.
+
+<split/>
+
+```md
+---
+id: simulate-colorblind-vision
+title: "Test visualizations with a colorblindness simulator"
+tags:
+  - impact:accessibility
+  - impact:perceptual
+  - impact:ethos
+  - chart:*
+  - visual:color
+  - audience:*
+  - medium:screen
+  - access:color-vision-risk
+
+evidence:
+  strength: high
+  summary: "Using simulators is a standard, widely-recommended practice for accessibility testing. The article lists multiple available tools, and such tools are integrated into professional software like Datawrapper and browser developer tools, indicating broad consensus on their utility."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper: What to consider when visualizing data for colorblind readers"
+    url: https://blog.datawrapper.de/colorblindness-part2/
+    note: "The article provides a list of recommended tools and methods for simulation, including websites, desktop apps, and browser extensions/features, positioning it as a key step in the design process."
+    role: primary
+
+tools:
+  - type: validate
+    name: Coblis — Color Blindness Simulator
+    url: https://www.color-blindness.com/coblis-color-blindness-simulator/
+    description: "A website where you can upload an image/screenshot to check how it looks with different types of color vision deficiency."
+  - type: validate
+    name: Color Oracle
+    url: https://colororacle.org/
+    description: "A free desktop app for Mac, Windows, and Linux that shows your whole screen as if viewed by a colorblind person."
+  - type: validate
+    name: Chrome DevTools (Emulate vision deficiencies)
+    url: https://developer.chrome.com/docs/devtools/accessibility/emulate-vision-deficiencies/
+    description: "A feature built into the Chrome browser to simulate different types of color vision deficiency in real-time on any webpage."
+  - type: validate
+    name: Firefox Accessibility Inspector
+    url: https://firefox-source-docs.mozilla.org/devtools-user/accessibility_inspector/
+    description: "A built-in Firefox tool that includes a dropdown to simulate deuteranopia, protanopia, and other vision deficiencies."
+
+---
+
+## Guidance
+
+Before publishing, test your visualizations using a colorblindness simulator to identify colors that are difficult for people with color vision deficiencies to distinguish.
+
+## Why
+
+Simulators provide a quick and easy way to get an approximation of how your visualization will appear to someone with protanopia, deuteranopia, or tritanopia. This allows you to spot and fix issues where important distinctions are lost before your audience sees the chart, improving the accessibility and professionalism of your work.
+
+## When it applies
+
+-   Any time you use color to encode distinct categories or values in a visualization.
+-   As a standard quality check before publishing any chart or map.
+
+## Exceptions
+
+-   Simulators are not a perfect representation of human vision and should not be the *only* method of testing. The article cautions, "They can give you an impression, but that’s it. Everyone is different." Real user feedback is always superior. However, in the absence of user testing, simulators are an essential tool.
+
+## Trade-offs
+
+-   Relying solely on simulators can give a false sense of security. It's a necessary step, but not a sufficient one for guaranteeing perfect accessibility.
+-   It adds an extra step to the design workflow, but the time investment is minimal compared to the benefit of creating a more inclusive visualization.
+
+## Signs of Trouble
+
+-   **Designing Blind:** You or your team regularly publish visualizations without ever checking them for colorblind accessibility.
+-   **Identical Shades:** In a simulation for deuteranopia or protanopia, two different colors in your chart (e.g., a green and an orange) become the exact same shade of brownish-yellow.
+-   **Lost Information:** A key insight in your chart disappears when viewed through a simulator.
+
+## How to Improve
+
+-   **Quick approach:** Take a screenshot of your final chart and upload it to a web-based simulator like Coblis.
+-   **Moderate approach:** Install a browser extension or desktop app like Color Oracle. This allows you to check your work in real-time as you are designing, which is more efficient than taking screenshots.
+-   **Comprehensive approach:** Integrate automated color accessibility checks into your design system and development workflow. Use tools like Datawrapper that provide built-in warnings, or configure linters in your code to flag problematic color combinations.
+
+<split/>
+
+```md
+---
+id: use-redundant-encoding
+title: "Reinforce color with a second visual variable"
+tags:
+  - impact:perceptual
+  - impact:accessibility
+  - impact:inclusion
+  - chart:scatter
+  - chart:line
+  - chart:map
+  - chart:table
+  - task:compare
+  - task:lookup
+  - data:categorical
+  - visual:color
+  - visual:shape
+  - visual:texture
+  - audience:*
+  - access:color-vision-risk
+
+evidence:
+  strength: high
+  summary: "Using a redundant visual variable (shape, pattern, position) to supplement color is a foundational principle of universal design and robust data visualization. The article quotes a developer who calls it 'the only bulletproof solution'."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper: What to consider when visualizing data for colorblind readers"
+    url: https://blog.datawrapper.de/colorblindness-part2/
+    note: "The article states, 'don’t rely on the colors alone to communicate your data. Consider using symbols in tables, shapes in scatterplots, patterns in maps, and dotted lines in line charts.' This is presented as a 'bulletproof solution.'"
+    role: primary
+
+examples:
+  - type: bad
+    description: "A choropleth map showing two adjacent countries with red and green fills. For a red-green colorblind reader, the border between them may disappear."
+  - type: good
+    description: "The same map, but with a diagonal line pattern added to the green country. Now, even if the colors look the same, the pattern makes the two countries clearly distinct."
+  - type: bad
+    description: "A line chart with two overlapping lines distinguished only by a gold and a bitcoin-orange color, which are hard to tell apart."
+  - type: good
+    description: "The same line chart, but one of the lines is changed to be dotted. This makes the lines distinguishable even where the colors are ambiguous."
+---
+
+## Guidance
+
+Do not rely on color alone to convey information. Use a second, redundant visual variable—such as shape, pattern, line style, or symbols—to reinforce the distinction between categories.
+
+## Why
+
+If a viewer cannot distinguish between the colors you've chosen, a second visual cue ensures they can still interpret the data correctly. This makes your visualization robust not only for colorblind users, but also for situations like black-and-white printing or low-contrast screens. It provides two independent channels for the brain to decode the information.
+
+### Core Principle
+
+Encode important information redundantly. Never rely on a single visual channel (especially color) for critical distinctions.
+
+## When it applies
+
+-   In any chart where different categories are represented by color.
+-   **Scatterplots:** Use different shapes (circle, square, triangle) for different categories.
+-   **Line charts:** Use different line styles (solid, dashed, dotted) or widths.
+-   **Area charts/Maps:** Use different patterns or textures (hatching, stippling).
+-   **Tables:** Use symbols or icons (✔️, ▲) in addition to background color.
+
+## Exceptions
+
+-   In charts with a very large number of categories, it can become impractical to find enough distinct shapes or patterns, leading to clutter. In such cases, interactive filtering or small multiples may be better solutions.
+
+## Trade-offs
+
+-   Adding shapes or patterns can increase visual clutter if not done carefully. The article cautions against a "confetti" look in scatterplots and recommends limiting shapes to three or four.
+-   Patterns can sometimes create distracting moiré effects or alter the perceived lightness of the color they fill.
+
+## Signs of Trouble
+
+-   **Color-Only:** The only difference between two important data series is their color.
+-   **Print Fail:** When you print the chart in black and white, it becomes unreadable.
+-   **Ambiguous Overlap:** In a line chart, two similarly-colored lines cross, and it's impossible to tell which is which on the other side.
+
+## How to Improve
+
+-   **Quick approach:** In a line chart, change one of the lines from solid to dashed. In a table, add an icon next to the text.
+-   **Moderate approach:** In a scatterplot with 3 categories, assign circle, triangle, and square shapes in addition to color. In a map, add a simple diagonal line pattern to one of two adjacent, similar-colored regions.
+-   **Comprehensive approach:** Systematically review all chart types your organization produces and establish a standard of using redundant encoding for all categorical data.
+
+<split/>
+
+```md
+---
+id: label-data-directly
+title: "Label data series directly instead of using a color legend"
+tags:
+  - impact:cognitive
+  - impact:perceptual
+  - impact:accessibility
+  - chart:line
+  - chart:pie
+  - chart:area
+  - task:lookup
+  - task:compare
+  - data:categorical
+  - visual:position
+  - audience:*
+  - access:color-vision-risk
+  - access:cognitive-load-risk
+
+evidence:
+  strength: high
+  summary: "Practitioner consensus strongly favors direct labeling for reducing cognitive load. By placing labels next to the data, it eliminates the need for viewers to mentally map colors from a legend to the chart—a process that is slow, error-prone, and a major barrier for colorblind users."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper: What to consider when visualizing data for colorblind readers"
+    url: https://blog.datawrapper.de/colorblindness-part2/
+    note: "The article identifies color keys as 'a problem to decipher for colorblind people' and advises to 'get rid of them altogether.' It concludes that direct labeling 'saves every one of your readers lots of time. Win-win!'"
+    role: primary
+
+examples:
+  - type: bad
+    description: "A line chart with five different colored lines and a separate legend at the bottom. The user must constantly look back and forth to identify the lines."
+  - type: good
+    description: "The same line chart, but with the legend removed and each line labeled directly with its name at the end of the line. The association is instant and unambiguous."
+---
+
+## Guidance
+
+Whenever possible, place labels directly on or next to the data they describe (e.g., on lines, bars, or pie slices) and remove the separate color legend.
+
+## Why
+
+A separate color legend forces the reader to perform a mentally taxing lookup task: find the category in the legend, remember its color, then scan the chart to find that color. This process is slow, inefficient, and a significant barrier for colorblind users who may struggle to match the colors. Direct labels eliminate this work entirely, making the chart faster and easier to understand for everyone.
+
+### Core Principle
+
+Reduce cognitive load by co-locating labels and the data they describe. Don't make your reader work to connect the dots.
+
+## When it applies
+
+-   In most charts with a manageable number of categorical series, particularly line charts, area charts, pie charts, and simple bar charts.
+-   When you want to make a chart as easy to read as possible at a glance.
+
+## Exceptions
+
+-   In highly dense charts where there is no clear space for labels without them overlapping (e.g., a scatterplot with thousands of points from multiple categories). In these cases, interactive tooltips are a better solution.
+-   On complex maps, where direct labeling can quickly lead to clutter and illegibility.
+
+## Trade-offs
+
+-   Placing labels effectively can be challenging. It may require manual adjustment or sophisticated labeling algorithms to prevent labels from overlapping with each other or with important data points.
+-   Direct labels can sometimes make a chart feel more cluttered than a clean chart area with a separate legend, though the usability gain usually outweighs this.
+
+## Signs of Trouble
+
+-   **The Back-and-Forth:** You or other viewers have to repeatedly look between the chart and the legend to understand what's being shown.
+-   **Legend Ambiguity:** The legend contains two colors that are very similar, making the matching task difficult or impossible for some users.
+-   **Orphaned Data:** The chart contains a legend, but it's positioned so far from the data that the connection is weak.
+
+## How to Improve
+
+-   **Quick approach:** In a line chart, add text labels at the end of each line. In a pie chart, add labels next to or inside each slice.
+-   **Moderate approach:** Carefully design your chart layout to create space for direct labels. You may need to adjust the axis range or the chart's aspect ratio.
+-   **Comprehensive approach:** Use a tool (like Datawrapper) that has built-in, sophisticated algorithms for automated direct labeling, and make it your default method for annotating categorical charts.
+
+<split/>
+
+```md
+---
+id: use-interactive-highlights
+title: "Use interactive highlights to disambiguate colored elements"
+tags:
+  - impact:cognitive
+  - impact:perceptual
+  - impact:accessibility
+  - chart:*
+  - task:lookup
+  - task:compare
+  - data:categorical
+  - visual:color
+  - medium:interactive
+  - access:color-vision-risk
+  - access:cognitive-load-risk
+
+evidence:
+  strength: medium
+  summary: "Interaction is a powerful and common technique for disambiguation in digital media. The article describes how hover effects (tooltips, highlighting, fading) can serve as an 'escape hatch' for users who cannot distinguish colors, allowing them to isolate and identify specific series."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper: What to consider when visualizing data for colorblind readers"
+    url: https://blog.datawrapper.de/colorblindness-part2/
+    note: "The article explains that for a red-blind person, two colors may appear identical, but 'once they interact with the chart and hover over a donut slice, they can still understand which one shows which data.' It lists several helpful hover effects."
+    role: primary
+
+examples:
+  - type: good
+    description: "A line chart where hovering over one line causes all other lines to fade into the background. This isolates the selected line, making it easy to trace its path without distraction."
+  - type: good
+    description: "A choropleth map where hovering over a region displays a tooltip with the region's name and its data value. This removes any ambiguity that might arise from the color encoding."
+  - type: good
+    description: "A chart with a legend where hovering over a legend item highlights the corresponding elements in the chart, directly linking the label to the data."
+---
+
+## Guidance
+
+For interactive charts, implement hover or click effects that highlight associated elements, providing an unambiguous way for users to identify data series.
+
+## Why
+
+Interaction provides an "escape hatch" for users who struggle to distinguish elements by color alone. By hovering or clicking, a user can isolate a single series, causing it to be highlighted while others fade, or revealing a detailed tooltip. This action temporarily removes the ambiguity caused by similar colors, allowing any user to confidently identify and trace a specific data series.
+
+### Core Principle
+
+Leverage interaction to provide on-demand detail and clarification, helping users resolve ambiguity at their own pace.
+
+## When it applies
+
+-   For any visualization published on the web or in a digital application that uses color to encode categories.
+-   Especially useful in charts with many overlapping or closely packed elements, like multi-series line charts or scatterplots.
+
+## Exceptions
+
+-   This guideline does not apply to static visualizations intended for print or formats like PDF and PNG. For static charts, redundant encoding (patterns, shapes) is necessary.
+-   The interaction must be accessible via keyboard as well as mouse to support users with motor disabilities.
+
+## Trade-offs
+
+-   Requires additional development time and effort to implement compared to a static chart.
+-   Poorly designed hover effects can be distracting or obscure underlying data.
+
+## Signs of Trouble
+
+-   **Static Interaction:** An online chart looks and behaves like a static image, with no response to user input like hovering or clicking.
+-   **Unhelpful Hover:** Hovering over a chart element does nothing, or only provides a cryptic tooltip (e.g., "series-3: 47.5").
+-   **Unlinked Legend:** In an interactive chart with a legend, hovering over the legend items does not affect the main chart area.
+
+## How to Improve
+
+-   **Quick approach:** Implement tooltips that appear on hover, clearly stating the category name and data value for the hovered element.
+-   **Moderate approach:** Create a highlight effect where hovering over a data series (or its legend item) makes it more prominent (e.g., thicker line, brighter color, dark stroke) while other series fade into the background.
+-   **Comprehensive approach:** Design a fully linked interactive experience. Hovering a legend item highlights the series in the chart. Hovering a point on the chart highlights the point, its series, and its legend item simultaneously. Ensure all interactions are also accessible via keyboard navigation (e.g., tabbing through elements).
+```

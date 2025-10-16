@@ -26,7 +26,7 @@ sources:
     note: "Experiment 2 estimated the 'Unalignment Effect' to be 1.16 [0.80, 1.61] percentage points of error, confirming that unaligned bar comparisons (length judgments) are much harder than aligned ones (position judgments), and that this error is worsened by distractor elements."
     role: primary
   - type: research
-    ref: Cleveland & McGill, 1984
+    ref: "Cleveland & McGill, 1984"
     url: https://doi.org/10.2307/2288400
     note: "The foundational paper that proposed the hierarchy of perceptual tasks, ranking position judgment along a common scale as more accurate than length judgment."
     role: supporting

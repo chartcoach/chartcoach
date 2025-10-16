@@ -1,0 +1,397 @@
+```md
+---
+id: add-padding-for-breathing-room
+title: "Add padding around visualizations for visual breathing room"
+
+tags:
+  - impact:aesthetic
+  - impact:cognitive
+  - impact:perceptual
+  - chart:*
+  - task:*
+  - data:*
+  - audience:*
+  - medium:screen
+  - medium:print
+  - access:cognitive-load-risk
+
+evidence:
+  strength: low
+  summary: "Based on established graphic design principles of using 'white space' or 'negative space' to improve layout, readability, and reduce cognitive load. This is a widely accepted practitioner heuristic."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: Fix my chart >> Map annotations"
+    url: https://www.datawrapper.de/blog/fix-my-chart-map-annotations
+    note: "The author's first step in fixing the cluttered map is to 'give this whole map more space to breathe by adding 5% padding around its borders.'"
+    role: primary
+
+tools:
+  - type: learn
+    name: "The Power of Whitespace"
+    url: https://www.interaction-design.org/literature/article/the-power-of-whitespace
+    description: An article explaining the role and types of white space in user interface and graphic design.
+
+examples:
+  - type: bad
+    description: "In the original map, the data points and annotations extend to the very edge of the frame, making the composition feel cramped and busy."
+    url: https://www.datawrapper.de/_/chart/Q5A5X/visualize.png
+  - type: good
+    description: "The revised map includes a consistent margin around the entire visualization, which provides visual relief and makes the content easier to process."
+    url: https://www.datawrapper.de/_/chart/pQ8eT/visualize.png
+---
+
+## Guidance
+
+Add empty space (padding or margin) around the border of your chart or map.
+
+## Why
+
+Padding provides "breathing room," preventing visual elements from feeling cramped or colliding with the edges of their container. This use of negative space reduces cognitive load and improves the overall aesthetic balance, making the visualization easier to process and appear more professional.
+
+### Core Principle
+Effective use of negative space guides the user's focus and improves comprehension by separating elements and creating a clear layout.
+
+## When it applies
+
+- This is a nearly universal principle for any visualization, especially those that feel dense or cluttered. It is particularly important for complex charts like maps with many data points and annotations.
+
+## Exceptions
+
+- In highly constrained layouts, like small mobile screens or packed dashboards where space is at an absolute premium, padding might be minimized. However, some separation is almost always better than none.
+
+## Trade-offs
+
+- Adding padding consumes screen or page real estate, which might slightly reduce the size of the visualization itself. However, the gain in clarity and perceived quality usually outweighs the minor loss in size.
+
+## Signs of Trouble
+
+- **Edge Collision:** Data points, labels, or other chart elements touch or are uncomfortably close to the edge of the chart's frame or the page.
+- **Cramped Feeling:** The overall impression is one of density and clutter, with no clear place for the eye to rest.
+
+## How to Improve
+
+- **Quick Fix:** In your visualization tool, find the "Padding" or "Margin" settings for the chart area and add a small value (e.g., 10-20 pixels or 5% of the total width/height).
+
+- **Comprehensive Approach:** Systematically review your layout templates to ensure consistent use of white space, not just around the chart but also between the title, subtitle, chart body, and source notes, to create a clear visual hierarchy.
+
+```
+
+<split/>
+
+```md
+---
+id: remove-non-essential-labels
+title: "Remove non-essential labels to reduce clutter"
+
+tags:
+  - impact:cognitive
+  - impact:perceptual
+  - impact:aesthetic
+  - chart:map
+  - chart:scatter
+  - task:*
+  - data:spatial
+  - access:cognitive-load-risk
+  - audience:general
+  - medium:static
+  - medium:interactive
+
+evidence:
+  strength: medium
+  summary: "Based on the principle of maximizing the data-ink ratio (Tufte, 1983) and reducing cognitive load. Removing extraneous information helps users focus on the primary message. Recommended by practitioners for decluttering complex visuals."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: Fix my chart >> Map annotations"
+    url: https://www.datawrapper.de/blog/fix-my-chart-map-annotations
+    note: "The author advises: 'get rid of the city labels. Extra text steals attention from your annotations, which already mention enough states and regions to help the reader get oriented.'"
+    role: primary
+  - type: practitioner
+    ref: "Tufte, E. (1983). The Visual Display of Quantitative Information"
+    note: "Introduced the concept of the 'data-ink ratio,' advocating for removing non-data ink to improve clarity and focus."
+    role: supporting
+
+examples:
+  - type: bad
+    description: "The original map includes city labels (e.g., 'Detroit', 'Anchorage') that are not central to the story. They add visual noise and compete for attention with the more important annotations."
+    url: https://www.datawrapper.de/_/chart/Q5A5X/visualize.png
+  - type: good
+    description: "The revised map removes the background city labels. This declutters the view and allows the data patterns and the story told by the annotations to become the primary focus."
+    url: https://www.datawrapper.de/_/chart/pQ8eT/visualize.png
+---
+
+## Guidance
+
+Critically evaluate every label and piece of text on your visualization. If a label is not essential for orientation or for understanding the main message, remove it.
+
+## Why
+
+Every element on a chart competes for the viewer's limited attention. Extraneous labels, like background city names on a map where annotations already provide regional context, add to the cognitive load and can distract from the main story the data is telling. Decluttering focuses the viewer's attention on what's most important.
+
+### Core Principle
+Minimize non-data ink to maximize the clarity of the data. Every element should serve a purpose; if it doesn't, it detracts.
+
+## When it applies
+
+- This is especially crucial for dense or complex visualizations, such as maps with many data points, busy scatter plots, or any chart that includes an additional layer of information like annotations.
+
+## Exceptions
+
+- If precise location or context is critical for understanding individual data points, and that context is *not* provided elsewhere, labels may be necessary. For example, on a map for logistical planning, city labels would be essential. For interactive charts, secondary information can be moved into tooltips.
+
+## Trade-offs
+
+- Removing labels may reduce the amount of contextual information available at a glance. You might sacrifice some specificity for overall clarity and narrative focus.
+
+## Signs of Trouble
+
+- **Text Overload:** The chart appears more like a page of text than a graphic, with labels fighting each other for space.
+- **Attention Competition:** Your eyes are drawn to background labels (like city names) before you notice the primary data or annotations.
+- **Redundancy:** The information in a label is already present in another element, like an annotation, the title, or a subtitle.
+
+## How to Improve
+
+- **Quick Fix:** Identify and delete the most obvious non-essential labels. In the source example, city labels were removed because regional annotations already provided sufficient geographic context.
+
+- **Moderate Approach:** Review all labels (axis labels, data point labels, etc.) and ask for each one: "Does the reader absolutely need this to understand the chart's main point?" Remove any that fail this test.
+
+- **Comprehensive Approach:** Redesign the visualization with a clear information hierarchy. Decide what the single most important message is, and ensure every element on the page either directly communicates that message or provides essential, non-redundant context for it.
+
+```
+
+<split/>
+
+```md
+---
+id: use-area-highlights-for-regional-annotations
+title: "Use area highlights for regional annotations on maps, not pointers"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - impact:logos
+  - chart:map
+  - chart:map.glyphs
+  - chart:scatter
+  - task:summary-mean
+  - task:distribution
+  - data:spatial
+  - audience:*
+  - medium:*
+
+evidence:
+  strength: low
+  summary: "Practitioner advice based on the principle of visual correspondence. The form of the annotation's connector should match the scope of its content (a region vs. a point), a core concept in creating logical visual grammar."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: Fix my chart >> Map annotations"
+    url: https://www.datawrapper.de/blog/fix-my-chart-map-annotations
+    note: "The author recommends: 'Since you're describing regional patterns rather than labeling specific data points, let's use circles instead of arrows to connect annotations with the map.'"
+    role: primary
+
+examples:
+  - type: bad
+    description: "The 'before' map uses arrows for annotations that describe regional trends (e.g., 'States in the central U.S...'). This incorrectly implies the comment refers to the single point the arrow touches."
+    url: https://www.datawrapper.de/_/chart/Q5A5X/visualize.png
+  - type: good
+    description: "The 'after' map uses large, semi-transparent circles to highlight the entire region being discussed. This accurately matches the scope of the visual element to the scope of the text."
+    url: https://www.datawrapper.de/_/chart/pQ8eT/visualize.png
+---
+
+## Guidance
+
+When an annotation describes a pattern across a geographical area or a cluster of data points, use a shape (like a circle or freeform area) to highlight that region instead of an arrow or leader line pointing to a single spot.
+
+## Why
+
+An arrow or pointer implies specificity, directing the eye to a single data point. This creates a logical mismatch if the annotation's text is about a general trend across a whole region. Using an area highlight visually aligns the annotation's scope with its content, preventing misinterpretation and more accurately guiding the reader's attention.
+
+### Core Principle
+The visual grammar of a chart should be logical and consistent. A pointer indicates "this specific thing," while an area indicates "this general region."
+
+## When it applies
+
+- When annotating maps or scatter plots to point out patterns affecting a group of points (e.g., "High concentration of plants in California," "Low correlation in this quadrant").
+
+## Exceptions
+
+- When your annotation refers to a specific, single data point of interest (e.g., "The largest power plant in the country"), an arrow or leader line is the correct choice.
+
+## Trade-offs
+
+- Drawing area highlights can sometimes obscure underlying data points more than a simple line. This can be mitigated by using semi-transparent fills for the highlight shapes.
+- Creating custom highlight shapes may require more effort or more advanced software than simple lines and arrows.
+
+## Signs of Trouble
+
+- **Pointer Ambiguity:** An arrow points into a dense cluster of dots, leaving the reader to guess which dot—or if all of them—are the subject of the annotation.
+- **Scope Mismatch:** The annotation text talks about a broad region (e.g., "the South"), but the arrow points to a single city or state within it.
+
+## How to Improve
+
+- **Quick Fix:** In your design tool, draw a semi-transparent circle or rectangle over the region of interest and connect your annotation text to that shape.
+
+- **Moderate Approach:** Replace all pointer-based regional annotations with area highlights. Ensure the highlight shapes are large enough to clearly encompass the relevant data but not so large that they obscure other parts of the chart.
+
+- **Comprehensive Approach:** Develop a consistent system for annotations: use pointers for specific points and area highlights for regional patterns. Document this as a style guide rule for future charts.
+
+```
+
+<split/>
+
+```md
+---
+id: use-data-colors-for-annotations
+title: "Use data colors for annotations to visually integrate them with the data"
+
+tags:
+  - impact:perceptual
+  - impact:aesthetic
+  - impact:cognitive
+  - chart:*
+  - task:lookup
+  - task:summary-mean
+  - data:categorical
+  - visual:color
+  - audience:general
+  - medium:*
+
+evidence:
+  strength: low
+  summary: "Practitioner advice focused on creating a cohesive visual system and guiding attention. Coloring annotations to match the data they describe reduces the cognitive steps needed to connect text to subject and subordinates the annotation to the data itself."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: Fix my chart >> Map annotations"
+    url: https://www.datawrapper.de/blog/fix-my-chart-map-annotations
+    note: "The author explains that 'reusing your data colors for the annotations helps them sit back onto the map instead of jumping off it in an attention-grabbing way... it's better to let the text blend in with the data rather than demanding to be read right away.'"
+    role: primary
+
+examples:
+  - type: bad
+    description: "The original map uses black for all annotation text. This makes them visually separate from the colored data points (blue and red) and creates a high-contrast layer that competes with the data for attention."
+    url: https://www.datawrapper.de/_/chart/Q5A5X/visualize.png
+  - type: good
+    description: "The revised map colors the annotation text to match the data it describes (e.g., text about 'wind plants' is blue, matching the wind plant dots). This creates a harmonious and less demanding visual experience."
+    url: https://www.datawrapper.de/_/chart/pQ8eT/visualize.png
+---
+
+## Guidance
+
+When an annotation refers to a specific data category that is represented by a color, style the annotation text (or its connector/highlight) with that same color.
+
+## Why
+
+Using a default, high-contrast color like black for all annotations can make them the most visually salient element on the chart, overshadowing the data. Coloring the annotation to match the data it describes achieves two things: 1) it creates an immediate visual link, reducing the cognitive effort needed to connect the text to the subject, and 2) it helps the annotation "sit back" visually, creating a softer hierarchy where the data remains primary and the annotations serve as a supporting, exploratory layer.
+
+## When it applies
+
+- Whenever you are annotating a chart that uses color to distinguish between two or more categories, and the annotations refer to those specific categories.
+
+## Exceptions
+
+- If your data colors have poor contrast against the chart's background color, using them for text may violate accessibility standards for readability (e.g., WCAG 4.5:1 contrast ratio). In this case, use a darker shade of the data color, use black text with a colored underline, or place the colored text within a neutral-colored highlight box.
+
+## Trade-offs
+
+- This approach might slightly reduce the pure legibility of the annotation text compared to pure black, especially if the data colors are light. You must ensure the chosen color still meets accessibility contrast requirements against the background.
+
+## Signs of Trouble
+
+- **Visual Disconnect:** The annotations feel like a separate, pasted-on layer rather than an integrated part of the visualization.
+- **Attention Hijacking:** Your eye is immediately drawn to the high-contrast annotation text, and you read it before you even look at the data patterns.
+- **Decoding Effort:** The reader has to consciously think, "Okay, this black-text annotation must be about the blue dots," instead of it being an automatic visual connection.
+
+## How to Improve
+
+- **Quick Fix:** Use an eyedropper tool to pick the color from a data series and apply it to the corresponding annotation text. Use an online contrast checker to ensure it's readable.
+
+- **Moderate Approach:** Systematically review all annotations. For each one that discusses a colored data category, apply that color to the text. If contrast is poor, use a darker shade of the same hue.
+
+- **Comprehensive Approach:** Create a style system where annotations can inherit colors from the data series they reference. For annotations that refer to multiple categories, consider using a neutral color like dark gray, or styling only specific keywords within the annotation with their respective colors (e.g., "...**solar plants** produce less than **wind farms**...").
+
+```
+
+<split/>
+
+```md
+---
+id: write-narrative-titles
+title: "Write narrative titles that state the main insight"
+
+tags:
+  - impact:cognitive
+  - impact:pathos
+  - impact:logos
+  - chart:*
+  - task:*
+  - data:*
+  - audience:general
+  - medium:*
+
+evidence:
+  strength: medium
+  summary: "A widely-accepted best practice in data journalism and explanatory data visualization. It frames the chart for the reader, reduces cognitive load, and ensures the intended message is communicated clearly. Advocated by numerous practitioner style guides and books."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: Fix my chart >> Map annotations"
+    url: https://www.datawrapper.de/blog/fix-my-chart-map-annotations
+    note: "The 'after' chart's title is changed from the descriptive 'Solar And Wind Power Plants In The U.S.' to the narrative 'In the U.S., renewable power is a regional industry,' which summarizes the key finding."
+    role: primary
+  - type: practitioner
+    ref: "Cole Nussbaumer Knaflic, Storytelling with Data"
+    url: https://www.storytellingwithdata.com/books
+    note: "A core principle of the book is to use an 'active title' that states the main takeaway, and to relegate descriptive information to a subtitle."
+    role: supporting
+
+examples:
+  - type: bad
+    description: "'Solar And Wind Power Plants In The U.S.' This title is descriptive but passive; it only tells the reader what data is being shown, forcing them to do the work of interpretation."
+    url: https://www.datawrapper.de/_/chart/Q5A5X/visualize.png
+  - type: good
+    description: "'In the U.S., renewable power is a regional industry.' This title is narrative and active; it tells the reader the main conclusion they should draw from the visualization, framing their understanding."
+    url: https://www.datawrapper.de/_/chart/pQ8eT/visualize.png
+---
+
+## Guidance
+
+Instead of a neutral, descriptive title (e.g., "Company Revenue, 2020-2024"), write a full-sentence title that summarizes the key message or takeaway of the chart (e.g., "Company revenue has doubled since 2022").
+
+## Why
+
+A descriptive title forces the reader to analyze the chart and figure out the main point for themselves. A narrative title does that work for them, framing the information and ensuring they immediately grasp the intended message. This respects the reader's time, reduces the chance of misinterpretation, and makes the visualization far more impactful.
+
+### Core Principle
+A visualization intended to explain something should have a clear point. State that point upfront to guide the audience's interpretation.
+
+## When it applies
+
+- This is most effective for explanatory visualizations intended to communicate a specific finding to a general audience, as in journalism, reports, and presentations.
+
+## Exceptions
+
+- For exploratory visualizations in an analytical setting (like a BI dashboard for an expert user), a neutral, descriptive title is often more appropriate, as the user is meant to find their own insights.
+- In a series of charts within a long-form article where the overall narrative is carried by the main text, simple descriptive titles may be sufficient to avoid repetition.
+
+## Trade-offs
+
+- A narrative title asserts a specific interpretation, which may discourage the reader from exploring the data for other possible stories. It is a more opinionated and directive approach than a neutral title.
+
+## Signs of Trouble
+
+- **The "So What?" Test:** A reader looks at your chart and its title and has to ask "So what?" or "What am I supposed to see here?"
+- **Variable List Title:** The title is just a list of the variables being plotted (e.g., "GDP per Capita vs. Life Expectancy").
+- **Buried Lede:** The most interesting finding is hidden in the chart, and the reader has to work hard to find it without any guidance from the title.
+
+## How to Improve
+
+- **Quick Fix:** Look at your finished chart and ask yourself, "What is the single most important thing I want someone to know from this?" Write down the answer as a complete sentence and make that your title. Move the old, descriptive title to the subtitle if needed.
+
+- **Moderate Approach:** Draft several potential narrative titles. Show them to a colleague with the chart and ask which one best captures the main point and is easiest to understand.
+
+- **Comprehensive Approach:** Adopt a "takeaway first" workflow. Before finalizing a chart's design, write the narrative title and subtitle. Then, design the chart to best support and illustrate that specific message, using visual hierarchy, color, and annotations to highlight the relevant evidence.
+
+```

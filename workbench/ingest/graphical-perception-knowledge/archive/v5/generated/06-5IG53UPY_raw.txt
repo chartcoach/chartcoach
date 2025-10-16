@@ -32,7 +32,7 @@ sources:
     note: "Synthesizes literature confirming bar charts outperform pie charts in comparison tasks (p.10). The paper reviews studies by Cleveland & McGill [17], Heer & Bostock [34], and others."
     role: primary
   - type: research
-    ref: Cleveland & McGill, 1984
+    ref: "Cleveland & McGill, 1984"
     url: https://doi.org/10.1080/01000378408908844
     note: "Foundational study establishing the perceptual hierarchy where position/length is superior to angle for quantitative judgments."
     role: supporting

@@ -1,0 +1,309 @@
+```md
+---
+id: use-classed-scale-for-discrete-data
+title: "Use a classed (stepped) color scale for discrete or ordinal data"
+tags:
+  - impact:logos
+  - impact:ethical
+  - chart:map.choropleth
+  - chart:heatmap
+  - data:ordinal
+  - data:categorical
+  - visual:color
+evidence:
+  strength: high
+  summary: "This is a foundational principle of visual encoding, widely accepted in cartography and data visualization practice. It ensures the visual representation (continuous vs. discrete) matches the underlying structure of the data."
+sources:
+  - type: practitioner
+    ref: 'Lisa Charlotte Muth, "When to use classed and when to use unclassed color scales", Datawrapper Blog'
+    url: https://blog.datawrapper.de/classed-vs-unclassed-color-scales/
+    note: "The article states this as a primary rule: 'If your data isn’t continuous, don’t use a continuous color scale.' This applies to ordinal data like Likert scales or ranks."
+    role: primary
+---
+
+## Guidance
+
+Use a classed (stepped or binned) color scale when your data is inherently discrete, such as ordinal or categorical data.
+
+## Why
+
+An unclassed (continuous) color gradient visually implies that intermediate values exist between the steps. For ordinal data like Likert scales ("strongly disagree", "disagree", "neutral", "agree", "strongly agree") or clothing sizes ("XS", "S", "M", "L", "XL"), there are no in-between values. Using a continuous scale misrepresents the fundamental structure of the data, suggesting a level of precision and continuity that does not exist.
+
+### Core Principle
+
+Visual encodings should match the structure of the data. Discrete data requires a discrete visual encoding.
+
+## When it applies
+
+- When visualizing ordinal data where categories have a clear order but are not continuous (e.g., survey responses, ranks).
+- When data has already been grouped into distinct, non-continuous bins.
+
+## Exceptions
+
+None known. Violating this guideline constitutes a misrepresentation of the data's nature.
+
+## Signs of Trouble
+
+- **False Gradients:** A color gradient is used to represent distinct ranks like "Gold," "Silver," and "Bronze," implying there's a "Gold-ish Silver" value in between.
+- **Ordinal Confusion:** A continuous legend is shown for data like clothing sizes, making it unclear what color corresponds to "Medium."
+
+## How to Improve
+
+- **Switch to Steps:** Change the color scale from a continuous gradient to a stepped or "quantized" scale. Assign one distinct color to each category or rank.
+- **Use a Categorical Palette:** If the data is categorical without an inherent order, use a qualitative (categorical) color palette instead of a sequential or diverging one.
+
+```
+
+<split/>
+
+```md
+---
+id: use-classed-scale-for-statistical-brackets
+title: "Use a classed color scale to emphasize specific statistical brackets"
+tags:
+  - impact:logos
+  - impact:cognitive
+  - chart:map.choropleth
+  - chart:heatmap
+  - task:compare
+  - task:lookup
+  - data:quantitative
+  - visual:color
+evidence:
+  strength: medium
+  summary: "Practitioner consensus supported by cartographic research suggests that classification simplifies a map's message, making it a more efficient tool for communicating specific, predefined statistical objectives."
+sources:
+  - type: practitioner
+    ref: 'Lisa Charlotte Muth, "When to use classed and when to use unclassed color scales", Datawrapper Blog'
+    url: https://blog.datawrapper.de/classed-vs-unclassed-color-scales/
+    note: "Highlights that classed maps are ideal when the objective is to show if data falls into a predefined class, such as 'areas with cancer mortality rates more than two standard deviations above the mean'."
+    role: primary
+  - type: research
+    ref: "Mak & Coulson, 1991"
+    note: "Cited in the source article, this research points out that as soon as a map has a statistical objective (like showing areas above a mean), classification is the appropriate method because the classification system defines the message."
+    role: supporting
+examples:
+  - type: good
+    description: "A map of US counties uses a simple two-color classed scale to show which counties have an unemployment rate above the national average (red) versus below (blue). This makes the core message immediately clear."
+    url: https://i.imgur.com/eBw27L4.png
+---
+
+## Guidance
+
+When your primary goal is to show which data points fall into predefined statistical groups, use a classed (stepped) color scale.
+
+## Why
+
+Classifying data simplifies the visual message by grouping a wide range of values into a few categories. This makes it a "simpler, more efficient communication device" for highlighting specific, narrow objectives. Instead of asking the viewer to interpret a complex gradient, you direct their attention to answering a specific question, such as "Is this region above or below the average?" or "Which areas fall into the highest-risk category?". The focus shifts from exploring the overall pattern to confirming class membership.
+
+## When it applies
+
+- When the main communication goal is to compare data to a specific threshold (e.g., a national average, a target value, zero).
+- When you want to show data grouped by standard deviations, quintiles, or other statistical buckets.
+- When you need to create a simple visual story that is easy to grasp quickly.
+
+## Exceptions
+
+- When the goal is to show a nuanced, overall pattern rather than focusing on specific thresholds.
+- When the classification boundaries are arbitrary and risk creating a misleading pattern (a problem known as the Modifiable Areal Unit Problem, or MAUP).
+
+## Signs of Trouble
+
+- **Lost Story:** The visualization shows a full, continuous gradient, but the accompanying text only talks about the difference between "high" and "low" values, forcing the user to mentally create the classes.
+- **Complex Comparison:** You are trying to explain if counties are above or below average, but the unclassed map shows dozens of shades of color, making the simple comparison difficult.
+
+## How to Improve
+
+- **Define Classes by Your Message:** Instead of using default classification (like quantiles or equal interval), create custom class breaks that align with your message (e.g., one class break at the average, or breaks at meaningful thresholds like 5%, 10%, 15%).
+- **Reduce the Number of Classes:** For a very clear point, use as few classes as possible. A diverging scale with two or three classes on either side of a critical midpoint can be very effective.
+
+```
+
+<split/>
+
+```md
+---
+id: use-unclassed-scale-for-nuanced-patterns
+title: "Use an unclassed color scale to show nuanced patterns and distributions"
+tags:
+  - impact:logos
+  - impact:ethos
+  - chart:map.choropleth
+  - chart:heatmap
+  - task:distribution
+  - task:compare
+  - task:correlation
+  - data:quantitative
+  - visual:color
+evidence:
+  strength: medium
+  summary: "Cartographic principles hold that unclassed maps are a more exact, truthful representation of the data, as they avoid imposing artificial boundaries. This preserves data complexity and allows for more detailed, reader-driven exploration."
+sources:
+  - type: practitioner
+    ref: 'Lisa Charlotte Muth, "When to use classed and when to use unclassed color scales", Datawrapper Blog'
+    url: https://blog.datawrapper.de/classed-vs-unclassed-color-scales/
+    note: "Argues that unclassed scales give a more 'truthful, nuanced view' and allow readers to see outliers, the nature of transitions (smooth vs. abrupt), and make subtle local comparisons."
+    role: primary
+  - type: research
+    ref: "Judith A. Tyner, Principles of Map Design"
+    note: "Cited in the source article, stating 'The unclassed choropleth is the most exact representation of the data model possible'."
+    role: supporting
+examples:
+  - type: good
+    description: "An unclassed map of US unemployment rates reveals subtle differences between neighboring counties, which are lost in the classed versions. For example, it shows that counties in South Dakota bordering other states have different rates than their neighbors across the border."
+    url: https://i.imgur.com/83pM2o5.png
+---
+
+## Guidance
+
+To provide a more detailed, truthful, and less interpreted view of the data, use an unclassed (continuous) color scale.
+
+## Why
+
+Unclassed scales represent data with higher fidelity, as they don't group values into artificial bins. This approach reveals subtle variations, outliers, and the nature of transitions between areas (e.g., whether a change is smooth or abrupt). It is the "most exact representation of the data model possible," empowering readers to do their own exploration and answer more nuanced questions, such as "How does my specific region compare to its immediate neighbors?" rather than just "Which broad category is my region in?".
+
+## When it applies
+
+- When the goal is to show the overall pattern or distribution of the data in its full complexity.
+- When you want to enable reader-driven exploration and discovery of local patterns or outliers.
+- When you want to present the data with maximum transparency and minimum designer interpretation.
+- When creating interactive maps where users can hover to get exact values via tooltips, mitigating the difficulty of reading values from a gradient.
+
+## Exceptions
+
+- When the primary goal is to communicate a simple, specific message based on statistical thresholds (e.g., above/below average).
+- In static formats (like print) where accurate value look-up is critical and tooltips are not available.
+
+## Trade-offs
+
+- It can be perceptually more difficult for a viewer to look up a precise value or range by matching a color to a continuous legend.
+- The map may appear more complex, potentially increasing cognitive load for viewers looking for a simple takeaway.
+
+## Signs of Trouble
+
+- **Banding Artifacts:** A classed map shows harsh, blocky transitions between regions that are actually very similar in value, creating a misleading visual boundary.
+- **Hidden Outliers:** An important outlier is visually indistinguishable from other high values because they have all been grouped into the same top-level class (e.g., "50%+").
+
+## How to Improve
+
+- **Switch to a Continuous Scale:** Change the map's color scale from "stepped" to "continuous" in your visualization tool.
+- **Choose a Good Interpolation:** Ensure the color gradient transitions smoothly and perceptually. A linear interpolation in a perceptually uniform color space (like L*a*b*) is often a good choice.
+
+```
+
+<split/>
+
+```md
+---
+id: use-classed-scale-for-static-lookup
+title: "Use a classed scale with few classes for value lookup in static visualizations"
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:map.choropleth
+  - chart:heatmap
+  - task:lookup
+  - medium:static
+  - medium:print
+  - data:quantitative
+  - visual:color
+evidence:
+  strength: medium
+  summary: "A 1991 study found that classed maps have a 'distinct and statistical significant advantage' over unclassed maps for value-estimation tasks, as it is perceptually easier to match a color to a discrete legend swatch than to estimate its position on a continuous gradient."
+sources:
+  - type: research
+    ref: "Mak & Coulson, 1991"
+    url: https://www.tandfonline.com/doi/abs/10.1559/152304091783886817
+    note: "Cited in the source article, this study (Map-User Response to Computer-Generated Choropleth Maps) concluded that classed maps are superior for value-estimation tasks (p120)."
+    role: primary
+  - type: practitioner
+    ref: 'Lisa Charlotte Muth, "When to use classed and when to use unclassed color scales", Datawrapper Blog'
+    url: https://blog.datawrapper.de/classed-vs-unclassed-color-scales/
+    note: "Recommends classed maps for static formats (print, PDF) where tooltips are unavailable, as they allow readers to read value ranges more reliably, even if the ranges are broader."
+    role: supporting
+---
+
+## Guidance
+
+For static visualizations (e.g., in print or PDFs) where viewers need to look up approximate values, use a classed color scale with a limited number of classes.
+
+## Why
+
+It is perceptually easier for the human eye to match a solid block of color to an identical block in a legend than it is to accurately estimate a color's relative position along a continuous gradient. Research has shown that this leads to a significant advantage for classed maps in "value-estimation tasks." While an unclassed map might offer more nuance, a classed map offers more certainty in reading a value's range. This is especially critical in static media where interactive tooltips cannot provide an escape hatch for precise value lookup.
+
+## When it applies
+
+- When creating maps or heatmaps for static formats like print reports, posters, or PDFs.
+- When a key task for the viewer is to determine the approximate value or category for a specific region.
+- When the audience may struggle with interpreting continuous gradients.
+
+## Exceptions
+
+- In interactive visualizations where users can hover over regions to get precise values from tooltips. In this case, an unclassed scale can be used to show nuance, with the tooltip providing the precision.
+- When the number of classes becomes too large (e.g., >7-9), the benefit is lost as it becomes difficult to distinguish between the many similar color steps.
+
+## Trade-offs
+
+- This approach sacrifices data nuance and detail for improved readability of value ranges. Small but potentially meaningful differences between regions may be obscured if they fall within the same class.
+
+## Signs of Trouble
+
+- **Guesswork on a Poster:** A printed poster contains a map with a continuous color gradient, forcing viewers to make wild guesses about what the colors mean.
+- **Too Many Steps:** A classed map has 15 classes, and the colors in the legend are so similar that they are impossible to tell apart.
+
+## How to Improve
+
+- **Reduce Classes:** If using a classed map, limit the number of steps to a manageable number (typically 3 to 7) that are visually distinct.
+- **Use Clear Class Breaks:** Choose intuitive and meaningful class breaks (e.g., round numbers, statistical cutoffs) and label them clearly in the legend.
+
+```
+
+<split/>
+
+```md
+---
+id: start-with-unclassed-view
+title: "Start choropleth map design by exploring an unclassed view of your data"
+tags:
+  - impact:logos
+  - impact:ethical
+  - chart:map.choropleth
+  - chart:heatmap
+  - data:quantitative
+  - data:distribution
+  - visual:color
+evidence:
+  strength: low
+  summary: "This is a recommended best practice from expert practitioners to ensure that design decisions, such as data classification, are made with full awareness of the underlying data distribution, preventing unintentional misrepresentation."
+sources:
+  - type: practitioner
+    ref: 'Lisa Charlotte Muth, "When to use classed and when to use unclassed color scales", Datawrapper Blog'
+    url: https://blog.datawrapper.de/classed-vs-unclassed-color-scales/
+    note: "The article concludes with this advice: 'No matter if you decide for a classed map at the end, you should start your process by looking at an unclassed map.' Datawrapper's tool defaults to this for this reason."
+    role: primary
+---
+
+## Guidance
+
+Before finalizing a choropleth map or heatmap, always start your design and exploration process by visualizing the data with an unclassed (continuous) color scale.
+
+## Why
+
+An unclassed map acts as a diagnostic tool, revealing the true, underlying distribution of your data without any simplification. It shows you where the clusters, gaps, and outliers are. By examining this raw view first, you can make a conscious and informed decision about whether classification is necessary and, if so, where to place the class breaks to best preserve or highlight important features. This workflow prevents you from accidentally obscuring key insights by relying on arbitrary or default classification schemes that may not be appropriate for your specific dataset.
+
+### Core Principle
+
+Understand your data's distribution before you simplify it.
+
+## When it applies
+
+- When beginning the design process for any visualization that encodes a continuous quantitative value with color, such as a choropleth map or a heatmap.
+- When you are unsure what classification method (e.g., quantiles, equal interval, natural breaks) is most appropriate for your data.
+
+## How to Improve
+
+- **Default to Continuous:** In your visualization tool, set the color scale to "continuous" as your first step.
+- **Analyze the Distribution:** Look at the unclassed map alongside a histogram of the data. Identify if the data is skewed, if there are natural clusters, or if there are significant outliers.
+- **Make an Informed Choice:** Based on this analysis, decide if a classed map is needed to tell your story. If so, use your understanding of the distribution to choose a classification method (or set custom breaks) that is purposeful and defensible. If not, stick with the nuanced unclassed view.
+
+```

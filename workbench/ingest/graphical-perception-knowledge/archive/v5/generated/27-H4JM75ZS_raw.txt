@@ -24,7 +24,7 @@ evidence:
   summary: "Foundational studies in 1984, replicated multiple times through 2019, show that viewers judge quantitative values more accurately using position along a common scale (bar charts) than by estimating angles or areas (pie charts), especially for comparison and ranking tasks."
 sources:
   - type: research
-    ref: Cleveland & McGill, 1984
+    ref: "Cleveland & McGill, 1984"
     note: "Foundational study establishing the perceptual hierarchy where position/length is superior to angle for quantitative judgments. Cited as [17] in Zeng & Battle (2023)."
     role: primary
   - type: research

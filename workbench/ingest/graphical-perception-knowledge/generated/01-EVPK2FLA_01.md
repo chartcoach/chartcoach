@@ -22,7 +22,7 @@ evidence:
 sources:
   - type: research
     ref: Waldner et al., 2020
-    doi: 10.1109/TVCG.2019.2934784
+    url: https://doi.org/10.1109/TVCG.2019.2934784
     note: "Primary experiment showing a significant main effect for cardinality on time to locate the maximum (F(1,79)=5.721, p=0.019, η²p=0.068). Qualitative error analysis showed users of 12-hour charts mistakenly selected a local maximum from the wrong sub-chart."
     role: primary
 

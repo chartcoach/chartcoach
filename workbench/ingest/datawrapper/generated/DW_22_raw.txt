@@ -1,0 +1,410 @@
+```md
+---
+id: prefer-sans-serif-for-labels
+title: "Prefer sans-serif fonts for data visualization labels and annotations"
+tags:
+  - impact:perceptual
+  - impact:accessibility
+  - impact:aesthetic
+  - impact:ethos
+  - chart:*
+  - task:*
+  - data:*
+  - audience:*
+  - medium:screen
+  - medium:print
+
+evidence:
+  strength: medium
+  summary: "This is a widely-held convention in modern data visualization and user interface design. While direct empirical evidence is mixed and context-dependent, sans-serifs are generally considered more legible at small sizes on digital screens due to their simpler letterforms."
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: Which fonts to use for your charts and tables"
+    url: https://blog.datawrapper.de/fonts-for-data-visualization/
+    note: "The article recommends sans-serif typefaces like Arial, Helvetica, Verdana, or a custom one as the default choice for charts, highlighting their clarity."
+    role: primary
+  - type: practitioner
+    ref: "Google Fonts Knowledge"
+    note: "General typographic guidance often suggests sans-serifs for UI and body text on screens for their clean rendering, while serifs are often reserved for headlines or long-form print text."
+    role: supporting
+tools:
+  - type: learn
+    name: "Google Fonts"
+    url: https://fonts.google.com/
+    description: "A library of free, high-quality fonts. You can filter by 'sans-serif' to explore options for your visualizations."
+
+examples:
+  - type: good
+    description: "A bar chart where axis labels, annotations, and numeric values use a clean, legible sans-serif font. The text is clear even at small sizes."
+  - type: bad
+    description: "A chart where a complex serif font (like Times New Roman) is used for small axis labels. The serifs can blur together on screen, reducing legibility."
+---
+
+## Guidance
+
+For most elements in a data visualization—including titles, descriptions, axis labels, annotations, and data labels—prefer a clean, legible sans-serif typeface.
+
+## Why
+
+Sans-serif fonts generally have simpler, cleaner letterforms that render more clearly at small sizes, especially on digital screens. Their lack of decorative strokes (serifs) prevents visual clutter and improves scannability, which is crucial when viewers are trying to quickly understand data.
+
+### Core Principle
+
+Optimize for legibility first. The primary goal of text in a data visualization is to be read quickly and accurately. Font choice should serve clarity, not decoration.
+
+## When it applies
+
+-   When creating charts and tables for digital display (websites, dashboards, presentations).
+-   For any text that is relatively small, such as axis labels, tick marks, or annotations.
+-   When aiming for a modern, clean, and neutral aesthetic.
+
+## Exceptions
+
+-   **For specific emphasis or branding:** A serif font can be used strategically for a main title to create contrast and establish a more traditional or authoritative tone (e.g., for a report in a newspaper style). However, the body of the chart should still use a sans-serif for legibility.
+-   **Print-first documents:** In high-resolution print, serif fonts can be very legible for longer blocks of text (like in a detailed report accompanying a chart), but sans-serifs still often work better for the chart elements themselves.
+
+## Trade-offs
+
+-   **Aesthetics and Tone:** Exclusively using sans-serifs might not fit a brand identity that relies on more traditional, classic, or decorative typography. Using a serif font for a title can add character, which is lost if only sans-serifs are used.
+
+## Signs of Trouble
+
+-   **Blurry or Jagged Text:** Small labels on your chart look fuzzy or hard to read, especially on lower-resolution screens.
+-   **Cluttered Appearance:** The chart feels busy or difficult to scan, and you can't immediately pinpoint why. The serifs on small text might be contributing to this visual noise.
+-   **Inconsistent Tone:** The font feels overly formal, old-fashioned, or decorative in a way that clashes with the data-driven nature of the chart.
+
+## How to Improve
+
+-   **Quick Fix:** Change the font for all chart elements (axes, labels, annotations) to a standard, widely available sans-serif like Arial, Helvetica, or Verdana.
+-   **Moderate Approach:** Select a high-quality sans-serif font family (e.g., Lato, Open Sans, Inter) that offers multiple weights (light, regular, bold). Use the regular weight for most text and bold for the title or key highlights.
+-   **Comprehensive Approach:** Develop a clear typographic system for your visualizations. Define that sans-serifs are used for all data-related text, and if desired, select a complementary serif font to be used *only* for main titles to create a consistent and intentional hierarchy.
+
+<split/>
+
+```md
+---
+id: use-tabular-figures
+title: "Use tabular figures to align numbers in charts and tables"
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - impact:ethos
+  - impact:aesthetic
+  - chart:table
+  - chart:bar
+  - chart:line
+  - task:compare
+  - task:lookup
+  - data:quantitative
+  - medium:*
+  - audience:*
+evidence:
+  strength: high
+  summary: "A foundational typography principle for presenting numerical data. Using tabular (monospaced) figures leverages the perceptual principle of alignment, making columns of numbers significantly easier to scan and compare accurately. This reduces cognitive load and prevents misinterpretation."
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: Which fonts to use for your charts and tables"
+    url: https://blog.datawrapper.de/fonts-for-data-visualization/
+    note: "The article provides a clear visual example contrasting 'default figures' (proportional) with 'tabular, lining figures,' showing how the latter correctly aligns columns of numbers."
+    role: primary
+  - type: practitioner
+    ref: "Butterick's Practical Typography"
+    url: https://practicaltypography.com/proportional-vs-tabular-figures.html
+    note: "Explains that tabular figures are a 'must' for columns of numbers, as proportional figures create a 'drunken, disorderly column'."
+    role: supporting
+tools:
+  - type: implement
+    name: "CSS font-feature-settings"
+    url: https://developer.mozilla.org/en-US/docs/Web/CSS/font-feature-settings
+    description: "The CSS property to enable OpenType features. Use `font-feature-settings: 'tnum';` to enable tabular figures."
+  - type: learn
+    name: "Font Feature Tester"
+    url: https://clagnut.com/sandbox/css3/
+    description: "A tool to test and see the effect of different OpenType features, like tabular figures ('tnum'), on your chosen font."
+examples:
+  - type: bad
+    description: "A table where numbers in a column use proportional figures. The decimal points do not align vertically, and digits with different widths (like '1' and '8') cause the numbers to look ragged and misaligned, making comparison difficult."
+  - type: good
+    description: "A table where numbers use tabular figures. All digits have the same width, causing the numbers and decimal points to align perfectly in a column. This allows for easy and accurate scanning and comparison of values."
+---
+
+## Guidance
+
+When displaying numbers in columns—such as in a table, on a chart's axis, or as data labels—always use tabular figures.
+
+## Why
+
+Tabular figures (also called monospaced numerals) ensure that every digit (0-9) occupies the same horizontal width. This vertically aligns numbers in a column, making it easy for the eye to scan up and down to compare magnitudes. The alternative, proportional figures, have variable widths (e.g., '1' is narrower than '8'), which causes columns of numbers to look ragged and misaligned, hindering quick and accurate comparison.
+
+### Core Principle
+
+Make valid comparisons easy. Alignment is a powerful perceptual cue, and by aligning numbers vertically, you reduce the cognitive effort required to compare them.
+
+## When it applies
+
+-   In any data table.
+-   For labels on a quantitative axis (typically the y-axis).
+-   For data labels placed directly on or next to chart elements (e.g., values at the end of bars).
+-   Any time numbers are listed vertically and intended to be compared.
+
+## Exceptions
+
+-   **Numbers in running text:** For numbers appearing within a sentence or paragraph (e.g., "Sales increased by 1,200 units in 2023."), proportional figures are often preferred as they fit more naturally and harmoniously with the surrounding text. Tabular figures can create awkward spacing in this context.
+
+## Trade-offs
+
+-   **Aesthetics in prose:** Using a font that only has tabular figures can make numbers look slightly odd when embedded in paragraphs, as they might not space as nicely as proportional figures. This is a minor trade-off, and most modern fonts designed for data or UI offer both styles.
+
+## Signs of Trouble
+
+-   **The "Wobbly Column":** When you look at a column of numbers, the decimal points don't line up, and the digits seem to jitter left and right.
+-   **Slow Comparison:** It takes you a moment longer than it should to determine which of two numbers in a table is larger.
+-   **Unprofessional Look:** The table or chart labels look slightly messy and disorderly, even if you can't pinpoint why.
+
+## How to Improve
+
+-   **Quick Fix:** Check if your font has a tabular option. Many system fonts do. If not, switch to a data-friendly font that does, such as Lato, Inter, Fira Sans, or PT Sans.
+-   **Moderate Approach (Web):** If you are working on the web, activate the OpenType feature for tabular figures using CSS. Apply the rule `font-feature-settings: 'tnum' on;` to the elements containing your numerical data.
+-   **Comprehensive Approach (Design Systems):** In your design system or style guide, explicitly define that all components used for displaying columnar data (tables, charts) must use fonts with tabular figures enabled by default. Document this as a core principle for data presentation.
+
+<split/>
+
+```md
+---
+id: avoid-all-caps-for-labels
+title: "Avoid using all-caps for long labels, titles, or annotations"
+tags:
+  - impact:perceptual
+  - impact:accessibility
+  - impact:aesthetic
+  - access:cognitive-load-risk
+  - chart:*
+  - audience:*
+  - medium:*
+evidence:
+  strength: high
+  summary: "A well-established principle in typography and readability research. Text set in all-caps is read more slowly than sentence or title case because it eliminates the unique word shapes created by ascenders and descenders, forcing readers to process words letter-by-letter. This increases cognitive load."
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: Which fonts to use for your charts and tables"
+    url: https://blog.datawrapper.de/fonts-for-data-visualization/
+    note: "The article shows a progression of examples from all-caps ('REVENUE INCREASED') to title case ('Revenue Increased') to sentence case ('Revenue increased'), implicitly favoring the more readable sentence case."
+    role: primary
+  - type: research
+    ref: "Miles Tinker, Legibility of Print, 1963"
+    note: "Classic research on typography showing that reading all-capital print significantly slows reading speed compared to lowercase text."
+    role: supporting
+  - type: standard
+    ref: "U.S. Web Design System (USWDS)"
+    url: https://designsystem.digital.gov/documentation/content-style-guide/capitalization/
+    note: "Recommends using sentence case for nearly all content, including headings and labels, to improve scannability and accessibility, and explicitly advises against using all caps."
+    role: related
+examples:
+  - type: bad
+    description: "A chart title written in all capital letters, such as 'REVENUE INCREASES OVER THE LAST FIVE YEARS'. It appears aggressive and is harder to read quickly."
+  - type: good
+    description: "The same chart title written in sentence case: 'Revenue increased over the last five years'. The mix of upper and lower case letters creates a more recognizable and legible word shape."
+---
+
+## Guidance
+
+Use sentence case ("The quick brown fox") or title case ("The Quick Brown Fox") for titles, labels, and annotations. Avoid using all-caps ("THE QUICK BROWN FOX") for anything other than very short abbreviations.
+
+## Why
+
+Text set in all capital letters is significantly harder and slower to read. We recognize words not just by their individual letters, but by their overall shape, which is defined by the pattern of ascenders (like in 'h', 'd') and descenders (like in 'p', 'g'). All-caps text forms a uniform rectangular block, eliminating these distinctive shapes and forcing the reader to process words letter by letter. It can also be perceived as "shouting" and visually aggressive.
+
+### Core Principle
+
+Respect the reader's cognitive resources. Choose formatting that makes text as easy as possible to scan and comprehend, reducing unnecessary mental effort.
+
+## When it applies
+
+-   Chart titles and subtitles.
+-   Axis labels and legend text.
+-   Long annotations or descriptions.
+-   Any text that is more than one or two words long.
+
+## Exceptions
+
+-   **Acronyms and Initialisms:** It is standard to use all-caps for acronyms like "USA," "GDP," or "NASA."
+-   **Very Short Labels:** For extremely short, one-word labels in a UI context (e.g., a "BACK" button), all-caps can be acceptable if used consistently and sparingly, often with increased letter-spacing for better legibility. However, sentence case is still a safer choice.
+
+## Trade-offs
+
+-   **Stylistic Impact:** All-caps can be used deliberately to create a strong, impactful, or stylized graphic effect. However, this aesthetic choice comes at the direct cost of readability and should be avoided in purely informational contexts.
+
+## Signs of Trouble
+
+-   **Reader Fatigue:** You feel a sense of strain or effort when reading the text on the chart.
+-   **"Shouting" Chart:** The visualization feels aggressive or loud, and the titles overpower the data.
+-   **Slow Comprehension:** It takes longer than expected to understand what the chart title or labels are saying.
+
+## How to Improve
+
+-   **Quick Fix:** Re-type your titles and labels using sentence case. This is the simplest and most effective solution. For chart titles, you can also use title case, but sentence case is often preferred for its more modern and less formal feel.
+-   **Moderate Approach:** Review all text elements in your visualization. Convert all-caps text to sentence case. If you need to create emphasis, use a heavier font weight (e.g., bold) instead of all-caps.
+-   **Comprehensive Approach:** Establish a clear capitalization rule in your style guide. Mandate sentence case for all headings, labels, and annotations in data visualizations. This ensures consistency and prioritizes readability across all your published work.
+
+<split/>
+
+```md
+---
+id: use-font-weights-sparingly
+title: "Use bold and italic styles sparingly for emphasis"
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - impact:aesthetic
+  - chart:*
+  - task:compare
+  - task:lookup
+  - audience:*
+  - medium:*
+evidence:
+  strength: medium
+  summary: "A core principle of effective typography and information hierarchy. When everything is emphasized, nothing is emphasized. Overusing bold or italics creates visual noise, makes text harder to read, and negates the purpose of highlighting. This is a well-established practitioner consensus."
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: Which fonts to use for your charts and tables"
+    url: https://blog.datawrapper.de/fonts-for-data-visualization/
+    note: "The article shows examples where bold is used for the title ('Revenue increases') and italics are used for a small parenthetical ('case test sparingly'), demonstrating a hierarchical and restrained use of different styles."
+    role: primary
+  - type: practitioner
+    ref: "Material Design - Typography"
+    url: https://material.io/design/typography/the-type-system.html
+    note: "Advocates for a clear type scale using a limited set of styles (e.g., different sizes and weights) to create hierarchy, implying that indiscriminate use of styles is counterproductive."
+    role: supporting
+examples:
+  - type: bad
+    description: "A chart where the title, axis labels, and all data labels are bold. The lack of contrast makes it impossible to tell what is most important, and the overall effect is heavy and cluttered."
+  - type: good
+    description: "A line chart where the title is bold, the axis labels are in a regular weight, and an annotation pointing to a key peak is in italics. Each style has a distinct purpose, guiding the reader's attention effectively."
+---
+
+## Guidance
+
+Use font styles like **bold** and *italics* intentionally and sparingly to create hierarchy and draw attention to key information. Avoid applying them to large blocks of text or to elements that do not need special emphasis.
+
+## Why
+
+Emphasis only works through contrast. If too many elements are bold or italic, these styles lose their ability to highlight what's most important. Overuse creates visual noise, reduces overall legibility, and fails to guide the reader's eye. A restrained, purposeful application of styles creates a clear information hierarchy, making your chart easier and faster to interpret.
+
+### Core Principle
+
+When everything is emphasized, nothing is. Effective visual hierarchy depends on selective, meaningful contrast.
+
+## When it applies
+
+-   You need to distinguish a title from body text or labels.
+-   You want to highlight a specific data point, category, or finding in an annotation.
+-   You are establishing a typographic system for your charts (e.g., title is bold, source is italic).
+
+## Exceptions
+
+-   **Branding Requirements:** Some brand guidelines may require extensive use of a specific weight (e.g., a bold, display-style font for all headings). While not ideal for information hierarchy, this may be a necessary constraint.
+-   **Accessibility for Low Vision:** In some cases, a bold font may be used more broadly to increase legibility for users with vision impairments, though increasing font size is often a better primary solution.
+
+## Trade-offs
+
+-   **Subtlety vs. Impact:** A very restrained use of bold and italics might be perceived as too subtle. However, this is generally preferable to the clutter and confusion caused by overuse.
+
+## Signs of Trouble
+
+-   **Visual Chaos:** The chart looks busy and your eye doesn't know where to focus first. Multiple elements are competing for attention.
+-   **The "All-Bold" Chart:** The title, axis labels, and data labels are all bold, making the entire visualization feel heavy and overwhelming.
+-   **Lost Emphasis:** You've made a key word bold to highlight it, but it doesn't stand out because other nearby text is also bold.
+
+## How to Improve
+
+-   **Quick Fix:** Reset most of your text to a regular font weight. Then, make only the main title bold. This is the most common and effective way to establish a primary level of hierarchy.
+-   **Moderate Approach:** Define a simple role for each style. For example:
+    -   **Bold:** Main title only.
+    -   *Italics:* Source information and specific callouts in annotations.
+    -   Regular: All other text (subtitles, axis labels, data labels).
+-   **Comprehensive Approach:** Create a formal typographic scale for your data visualizations. Define the specific font size, weight, and style for each distinct element (Title, Subtitle, Axis Label, Annotation, Source, etc.). This ensures consistency and a clear, intentional hierarchy in all your charts.
+
+<split/>
+
+```md
+---
+id: verify-font-character-set
+title: "Verify that your chosen font includes all required characters and symbols"
+tags:
+  - impact:logos
+  - impact:ethos
+  - impact:aesthetic
+  - impact:accessibility
+  - chart:*
+  - data:*
+  - medium:*
+  - audience:*
+evidence:
+  strength: high
+  summary: "This is a practical necessity for accurate and professional data representation. A missing character (glyph) is rendered as a placeholder 'tofu' (□) or falls back to a different font, which breaks the visual design and can corrupt the information, severely damaging credibility."
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: Which fonts to use for your charts and tables"
+    url: https://blog.datawrapper.de/fonts-for-data-visualization/
+    note: "The article includes a specific section 'Check if the font includes the symbols you need,' with visual examples of a font that has the required symbols (x$€£,¹%©®) and one that doesn't, showing the practical importance of this check."
+    role: primary
+  - type: practitioner
+    ref: "Google, Noto Fonts Project"
+    url: https://fonts.google.com/noto
+    note: "The entire Noto ('No Tofu') font project was initiated by Google to solve this exact problem by creating a font family that covers all Unicode standards, highlighting the universal importance of complete character sets."
+    role: supporting
+tools:
+  - type: validate
+    name: "Wakamai Fondue"
+    url: https://wakamaifondue.com/
+    description: "Drop a font file into this tool to see its full character set, supported languages, and OpenType features."
+  - type: implement
+    name: "Noto Sans"
+    url: https://fonts.google.com/noto/specimen/Noto+Sans
+    description: "A high-quality, open-source font family designed to support all languages and symbols, making it a safe choice for international data."
+examples:
+  - type: bad
+    description: "A chart showing financial data where the Euro symbol (€) is missing from the font. It appears as a square box (□) or in a different, clashing font, looking unprofessional and potentially confusing the reader."
+  - type: good
+    description: "The same chart, but created with a font that has full currency symbol support. The Euro symbol (€) renders correctly and consistently with the rest of the text."
+---
+
+## Guidance
+
+Before finalizing a font for your data visualization, confirm that it supports all the special characters, symbols, and languages your data requires.
+
+## Why
+
+If your data includes characters that your chosen font doesn't have a glyph for (e.g., currency symbols like €, accented characters like 'é', or mathematical symbols like 'µ'), the browser or software will render a placeholder character—often a box known as "tofu" (□)—or fall back to a different font. This creates an unprofessional, broken appearance, can make your data unreadable, and undermines the credibility of your visualization.
+
+### Core Principle
+
+Ensure data integrity and visual consistency. The visual representation of your data should be complete and free of rendering errors.
+
+## When it applies
+
+-   Always, but especially when:
+-   Your data involves multiple languages or non-English characters (e.g., German, Vietnamese, Cyrillic).
+-   You are displaying financial data with different currency symbols (£, ¥, €, $).
+-   You are using scientific or mathematical notations (µ, ±, °, ¹).
+-   You need to include symbols like copyright (©), registered trademark (®), or arrows (→).
+
+## Exceptions
+
+-   There are no exceptions. If a character is in your data, the font must support it. The only alternative is to remove or replace the character in the data itself, which is often not an option.
+
+## Trade-offs
+
+-   **Font Choice vs. Character Support:** You may have to abandon a stylistically preferred font in favor of a less exciting but more comprehensive one. A "boring" font that renders correctly is always better than a "beautiful" font that fails.
+
+## Signs of Trouble
+
+-   **"Tofu" Squares:** You see square boxes (□), question marks (?), or other replacement characters in your chart where symbols or special letters should be.
+-   **Font Goulash:** One symbol or character suddenly appears in a different font style (e.g., a serifed Euro symbol in a line of sans-serif text). This is a sign of font fallback.
+-   **Missing Accents:** Words appear without their proper diacritics (e.g., "resume" instead of "résumé").
+
+## How to Improve
+
+-   **Quick Fix:** If you see a missing character, immediately switch to a comprehensive, widely-used font like Arial, Helvetica, or Noto Sans, which have excellent character support.
+-   **Moderate Approach:** Before starting a project, list all potential special characters your data might contain. Use a font testing tool to check if your desired font supports them all. Paste a string of all required characters (e.g., "€£¥$ áéíóúüñ ±°¹²³") into a font previewer.
+-   **Comprehensive Approach:** For projects involving diverse international data, make a highly comprehensive font family like Noto Sans or Inter the default in your design system. Document the importance of character set verification as a required step in the data visualization production checklist.

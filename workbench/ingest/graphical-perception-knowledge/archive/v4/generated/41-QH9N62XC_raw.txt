@@ -19,7 +19,7 @@ sources:
     url: https://doi.org/10.1145/3544548.3581349
     note: "Synthesized finding in Section 5.1.2: 'In general, position encodings (PX, PY) are the top choices for representing all data types (quantitative, nominal, ordinal).'"
   - type: research
-    ref: Cleveland & McGill, 1984
+    ref: "Cleveland & McGill, 1984"
     url: https://doi.org/10.1080/01621459.1984.10478080
   - type: research
     ref: Mackinlay, 1986

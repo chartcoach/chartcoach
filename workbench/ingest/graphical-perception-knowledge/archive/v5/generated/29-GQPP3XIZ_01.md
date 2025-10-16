@@ -26,7 +26,7 @@ sources:
     note: "Confirmed that position and length encodings are superior to slope for relational tasks, with search rates for slope being significantly slower."
     role: primary
   - type: research
-    ref: Cleveland & McGill, 1984
+    ref: "Cleveland & McGill, 1984"
     url: https://doi.org/10.1080/01621459.1984.10478084
     note: "Foundational study establishing the perceptual ranking of visual channels, placing position and length above angle/slope for quantitative judgments."
     role: supporting

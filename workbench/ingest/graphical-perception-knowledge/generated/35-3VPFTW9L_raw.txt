@@ -24,7 +24,7 @@ evidence:
 
 sources:
   - type: research
-    ref: Cleveland & McGill, 1984
+    ref: "Cleveland & McGill, 1984"
     url: https://doi.org/10.1080/01091938.1984.10488667
     note: "Foundational study establishing the perceptual ranking of visual encodings, showing position on a common scale is most accurate for quantitative tasks. Cited as [17] in Zeng & Battle (2023)."
     role: primary

@@ -234,7 +234,7 @@ evidence:
   summary: "Foundational research by Cleveland & McGill (1984), replicated by Heer & Bostock (2010) and summarized in Zeng & Battle (2023), established a perceptual hierarchy where humans judge position along a common scale (bar charts) more accurately and efficiently than angle or area (pie charts)."
 sources:
   - type: research
-    ref: Cleveland & McGill, 1984
+    ref: "Cleveland & McGill, 1984"
     url: https://doi.org/10.1080/01973533.1984.10648834
     note: "Original study establishing the perceptual hierarchy of visual encodings, finding position > length > angle."
     role: primary

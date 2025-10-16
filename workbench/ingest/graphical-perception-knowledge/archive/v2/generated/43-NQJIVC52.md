@@ -75,7 +75,7 @@ examples:
 
     Examples:
       - type: research
-        ref: Cleveland & McGill, 1984
+        ref: "Cleveland & McGill, 1984"
         url: https://doi.org/10.2307/2288400
       - type: standard
         ref: WCAG 2.1 Success Criterion 1.4.3

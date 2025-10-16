@@ -1,0 +1,509 @@
+```md
+---
+id: prefer-bars-over-pies-for-comparison
+title: "Use Bar or Column Charts Over Pie Charts for Precise Comparisons"
+tags:
+  - impact:perceptual
+  - impact:logos
+  - impact:cognitive
+  - chart:bar
+  - chart:column
+  - chart:pie
+  - chart:donut
+  - task:compare
+  - task:rank
+  - task:composition
+  - data:quantitative
+  - data:categorical
+  - visual:position
+  - visual:length
+  - visual:angle
+  - visual:area
+  - audience:general
+  - medium:*
+  - access:cognitive-load-risk
+evidence:
+  strength: high
+  summary: "Practitioner consensus and foundational research (e.g., Cleveland & McGill, 1984) consistently show that humans compare lengths along a common baseline (bar charts) more accurately and quickly than they compare angles or areas (pie charts). A small difference (e.g., 3%) can be invisible in a pie chart but obvious in a bar chart."
+sources:
+  - type: practitioner
+    ref: "Datawrapper: A friendly guide to choosing a chart type"
+    url: https://www.datawrapper.de/blog/chart-types-guide
+    note: "Points out that 'circle sections aren't exactly easy to compare' and that for small differences, 'a bar chart...can be easy to spot...but practically invisible in a pie or donut.'"
+    role: primary
+  - type: research
+    ref: "Cleveland & McGill, 1984"
+    url: https://doi.org/10.2307/2288400
+    note: "Foundational study establishing a hierarchy of perceptual tasks, which ranked judgments of position along a common scale as significantly more accurate than judgments of angle or area."
+    role: supporting
+tools:
+  - type: implement
+    name: Datawrapper
+    url: https://www.datawrapper.de
+    description: "A tool for creating charts, maps, and tables, including bar charts and pie charts, with a focus on best practices."
+  - type: learn
+    name: "Fix my chart » Turning donuts into bars"
+    url: https://www.datawrapper.de/blog/fix-my-chart-donuts-into-bars/
+    description: "A practical walkthrough from the same source showing how and why to convert a donut chart into a bar chart for better clarity."
+examples:
+  - type: bad
+    description: "A pie or donut chart with several slices of similar size, making it difficult to rank them or accurately judge the difference between them without labels."
+  - type: good
+    description: "A horizontal bar chart, sorted by value, clearly showing the same proportions. The relative sizes of each category are immediately and accurately apparent."
+---
+
+## Guidance
+
+When viewers need to accurately compare the sizes of different parts of a whole, use a bar or column chart instead of a pie or donut chart.
+
+## Why
+
+Humans are not good at accurately judging and comparing angles or areas, which are the primary visual encodings in pie and donut charts. We are much more accurate and faster at comparing lengths that share a common baseline, which is how bar and column charts work. This makes comparisons of categories, especially those with small differences, much more reliable in a bar chart.
+
+### Core Principle
+
+Humans judge quantities more accurately by comparing positions along a common scale than by comparing angles, areas, or colors. A chart's encoding should align with human perceptual strengths for the primary task.
+
+## When it applies
+
+- When showing part-to-whole relationships (composition) where the main task is to **compare the parts to each other**, not just see them as a fraction of the total.
+- When the differences between the shares are subtle and precision is important (e.g., election results, market share).
+- When you have more than 3-4 categories.
+
+## Exceptions
+
+- When you only want to give a general sense of the part-to-whole relationship, and precise comparisons are not important. For example, showing a single data point like "75% of users completed the task".
+- When you have only two or three categories with very different values, a pie chart can effectively communicate the "part-of-a-whole" concept.
+
+## Trade-offs
+
+- **Bar/Column Chart:** Maximizes comparative accuracy but can be less effective at communicating the "part-of-a-whole" concept unless converted to a stacked bar chart showing 100%.
+- **Pie/Donut Chart:** Strong visual cue for part-to-whole relationships but sacrifices perceptual accuracy for comparing the parts.
+
+## Signs of Trouble
+
+- **The "Invisible Difference" Test:** Can you confidently tell which slice is bigger between two similarly-sized segments without reading the labels? If not, the chart is failing.
+- **Label Dependency:** The chart is unreadable without data labels on every single slice. The visualization itself isn't doing the work.
+- **Slice Overload:** The pie chart has five or more slices, creating a cluttered and confusing visual that is difficult to interpret.
+
+## How to Improve
+
+- **Quick Fix: Add Direct Labels.** If you must keep the pie chart, add direct percentage and category labels to each slice. This provides an escape hatch for the viewer, allowing them to read the numbers directly instead of trying to interpret the angles.
+- **Moderate Redesign: Sort the Slices.** If using a pie chart, order the slices from largest to smallest, starting at the 12 o'clock position. This provides some structure, but doesn't solve the core perceptual issue.
+- **Comprehensive Redesign: Switch to a Bar Chart.** Convert the data into a horizontal bar chart. Sort the bars from largest to smallest to provide a clear ranking. This uses the much more accurate visual channel of length on a common baseline, making all comparisons easy and intuitive.
+
+<split/>
+
+```md
+---
+id: use-small-multiples-for-complex-lines
+title: "Use Small Multiples to Clarify Overlapping Line Charts"
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:line
+  - chart:small-multiples
+  - task:compare
+  - task:trend
+  - data:temporal
+  - data:categorical
+  - data:cardinality.high
+  - audience:*
+  - medium:*
+  - access:cognitive-load-risk
+evidence:
+  strength: medium
+  summary: "A widely accepted design pattern, often called 'small multiples' and popularized by Edward Tufte, that reduces cognitive load by giving each data series its own space. This avoids the perceptual confusion of a 'spaghetti chart' and makes individual trends easier to follow."
+sources:
+  - type: practitioner
+    ref: "Datawrapper: A friendly guide to choosing a chart type"
+    url: https://www.datawrapper.de/blog/chart-types-guide
+    note: "Recommends a 'multiple lines' chart when you have lots of categories that 'overlap like crazy and turn into a spaghetti monster!' by giving each line its own panel."
+    role: primary
+  - type: practitioner
+    ref: "Tufte, E. R. (2001). The Visual Display of Quantitative Information."
+    note: "Tufte extensively discusses and advocates for small multiples as a powerful technique for 'showing comparisons, enhancing the density of information.' He describes them as 'illustrations of repetition, multiplication writ small.'"
+    role: supporting
+tools:
+  - type: implement
+    name: Datawrapper
+    url: https://www.datawrapper.de
+    description: "The chart editor allows for the creation of 'multiple lines' charts, which is their implementation of small multiples for line charts."
+examples:
+  - type: bad
+    description: "A single line chart with 10 different colored lines crisscrossing each other, making it nearly impossible to trace any single category's trend or compare it to another. This is often called a 'spaghetti chart'."
+  - type: good
+    description: "A grid of 10 small line charts, each showing the trend for a single category. All charts share the same x- and y-axis scales, allowing for easy comparison of trends and magnitudes across the grid."
+---
+
+## Guidance
+
+When a line chart with multiple series becomes a tangled "spaghetti monster," separate each series into its own small chart (a "small multiple"), arranged in a grid.
+
+## Why
+
+Overlapping lines in a single chart are perceptually and cognitively difficult to untangle. Viewers struggle to follow a single trend from start to finish and cannot easily compare one line to another. By giving each data series its own dedicated chart within a common grid, you eliminate the clutter. This allows viewers to clearly see the pattern of each individual category while still being able to compare trends, shapes, and general magnitudes across the grid.
+
+### Core Principle
+
+Reduce cognitive load by separating complex information into smaller, digestible chunks that can be compared against each other. Make the most important comparisons the easiest to see.
+
+## When it applies
+
+- When visualizing time-series data for more than 4-5 categories in a single chart.
+- When the lines in a chart heavily overlap, making them difficult to distinguish.
+- When the primary task is to understand the shape of the trend for each category, and to compare these shapes.
+
+## Exceptions
+
+- If the primary goal is to show the specific points where lines **cross or intersect** (e.g., when one candidate's poll numbers overtake another's), a single chart might be better, though it would likely require highlighting and annotation to be effective.
+- If you have very limited space and cannot accommodate a grid of charts.
+
+## Trade-offs
+
+- **Space:** Small multiples require significantly more screen or page real estate than a single chart.
+- **Direct Comparison:** Comparing the exact value of two different categories at a single point in time can be slightly harder, as the data points are in different panels. However, the comparison of overall trends is far easier.
+
+## Signs of Trouble
+
+- **The "Spaghetti" Test:** Does the chart look like a plate of spaghetti? If you can't easily follow one line from beginning to end with your eyes, it's a spaghetti chart.
+- **Legend Look-up:** Viewers have to repeatedly look back and forth between a large legend and the tangled lines to figure out which line is which.
+- **Color Overload:** You've run out of distinct colors to assign to each line, and some are starting to look very similar.
+
+## How to Improve
+
+- **Quick Fix: Highlight Key Series.** If you can't use small multiples, de-emphasize most of the lines by making them thin and gray. Then, use a strong, saturated color to highlight the one or two most important lines that are core to your message.
+- **Moderate Approach: Use a Slope Chart.** If you only care about the start and end points, convert the messy line chart into a much cleaner slope chart. This works if the journey between the points is not important.
+- **Comprehensive Redesign: Create Small Multiples.** Re-structure the visualization into a grid of smaller charts. Ensure each small chart uses the identical y-axis and x-axis scale so that they are comparable. Title each small chart with its category name, eliminating the need for a color legend.
+
+<split/>
+
+```md
+---
+id: prefer-bar-charts-for-mobile
+title: "Prefer Bar Charts Over Column Charts for Responsive and Mobile-First Design"
+tags:
+  - impact:perceptual
+  - impact:accessibility
+  - impact:aesthetic
+  - chart:bar
+  - chart:column
+  - task:compare
+  - task:rank
+  - data:categorical
+  - data:cardinality.high
+  - audience:*
+  - medium:screen
+  - medium:interactive
+  - access:cognitive-load-risk
+evidence:
+  strength: medium
+  summary: "A widely accepted practitioner heuristic for responsive web design. Vertical scrolling on mobile devices is a more natural and scalable interaction than horizontal scrolling or shrinking content. Horizontal bar charts preserve the full readability of category labels on narrow screens, which is a critical usability factor."
+sources:
+  - type: practitioner
+    ref: "Datawrapper: A friendly guide to choosing a chart type"
+    url: https://www.datawrapper.de/blog/chart-types-guide
+    note: "Advises that 'a bar chart is often a safer pick for small screens than a column chart, since it grows vertically rather than horizontally,' preventing label overlap and awkward rotation on squished smartphone screens."
+    role: primary
+tools:
+  - type: implement
+    name: Datawrapper
+    url: https://www.datawrapper.de
+    description: "Datawrapper charts are responsive by default, and this principle is a key part of their guidance for creating mobile-friendly visualizations."
+examples:
+  - type: bad
+    description: "A column chart on a smartphone screen where the 12 month names on the x-axis are either unreadably small, rotated 90 degrees, or truncated to 'J, F, M...'. The columns themselves are extremely thin."
+  - type: good
+    description: "A bar chart on a smartphone screen showing the same 12 months. The month names are fully legible and horizontal, placed to the left of each bar. The user can easily scroll down to see all 12 bars."
+---
+
+## Guidance
+
+When designing charts that must work well on small screens, favor horizontal bar charts over vertical column charts, especially for categories with long labels or high cardinality.
+
+## Why
+
+On a narrow screen (like a smartphone), a column chart's width is severely constrained. This forces category labels on the horizontal axis to be truncated, rotated, or overlap, rendering them unreadable. A horizontal bar chart elegantly solves this problem. It uses vertical space—which is abundant on mobile through scrolling—to list categories, allowing their labels to remain horizontal and fully legible.
+
+### Core Principle
+
+Design for the constraints of the medium. On mobile screens, vertical space is cheap (scrollable), while horizontal space is expensive.
+
+## When it applies
+
+- When creating visualizations for websites, dashboards, or any medium that will be viewed on a variety of screen sizes, especially mobile phones.
+- When you have many categories to display.
+- When your category labels are long or multi-word.
+
+## Exceptions
+
+- If the horizontal axis represents a continuous value like **time** (e.g., years, months), a column chart is the stronger convention and may be preferable, even with the labeling challenges.
+- If you have very few bars (e.g., 2-4) with very short, simple labels.
+
+## Trade-offs
+
+- **Bar Chart:** Excellent label readability on all screen sizes, but may require vertical scrolling on mobile.
+- **Column Chart:** More conventional for time-series data, but can become unreadable on narrow screens if not handled carefully.
+
+## Signs of Trouble
+
+- **Rotated Labels:** On a mobile view, the labels on your column chart's x-axis are turned sideways or at a 45-degree angle, forcing the user to tilt their head.
+- **Truncated Labels:** Category names are cut off with an ellipsis (e.g., "United Kingd...").
+- **"Pencil" Bars:** The columns are so squished horizontally that they look like thin pencil lines.
+
+## How to Improve
+
+- **Quick Fix: Abbreviate or Rotate Labels.** For a column chart, you can try to abbreviate labels or rotate them 45 degrees. This is a compromise and is often still difficult to read.
+- **Moderate Approach: Reduce Categories.** If possible, simplify the chart by grouping categories or showing only the "Top 5" and an "Other" category to reduce the number of columns.
+- **Comprehensive Redesign: Switch to a Bar Chart.** The most robust solution is to change the chart type from a column chart to a bar chart. This immediately resolves the label readability issue on any screen size by providing ample horizontal space for text next to each bar.
+
+<split/>
+
+```md
+---
+id: progressively-disclose-complexity
+title: "Introduce Complexity Progressively to Guide Your Audience"
+tags:
+  - impact:cognitive
+  - impact:pathos
+  - impact:logos
+  - chart:*
+  - task:*
+  - data:*
+  - audience:general
+  - audience:low-literacy
+  - medium:static
+  - medium:interactive
+  - medium:print
+  - access:cognitive-load-risk
+evidence:
+  strength: medium
+  summary: "This is a core pedagogical and narrative technique known as 'scaffolding' or 'progressive disclosure,' applied to data visualization. It reduces cognitive load by sequencing information from simple to complex, ensuring a core message is understood by all before offering deeper, more nuanced insights for interested readers."
+sources:
+  - type: practitioner
+    ref: "Datawrapper: A friendly guide to choosing a chart type"
+    url: https://www.datawrapper.de/blog/chart-types-guide
+    note: "Advises starting with simple visualizations and then increasing complexity. Provides a concrete example: 1) A simple line chart showing a clear trend, 2) an arrow plot showing country-level breakdowns, and 3) a complex scatter plot showing the correlation that explains the trend."
+    role: primary
+  - type: practitioner
+    ref: "Duarte, N. (2010). Resonate: Present Visual Stories that Transform Audiences."
+    note: "This principle aligns with storytelling structures that establish a simple baseline reality before introducing the complexity of a problem or solution, creating a narrative arc."
+    role: related
+examples:
+  - type: bad
+    description: "An article about climate change that immediately opens with a complex, multi-variable scatter plot showing the relationship between historical emissions, GDP, and emission reduction rates for 50 countries. Many readers are overwhelmed and stop reading."
+  - type: good
+    description: "The same article starts with a simple line chart titled 'Europe emits less CO₂ than 30 years ago.' The next chart is a bar chart ranking which countries reduced the most. The final, optional chart is the complex scatter plot for readers who want to understand the underlying correlations. The main message is clear to everyone."
+---
+
+## Guidance
+
+When presenting a complex analysis, start with a simple, clear chart that communicates the main message, then gradually introduce more complex charts that add nuance and detail.
+
+## Why
+
+Immediately presenting a complex, multi-variable chart to a general audience can be overwhelming, causing them to disengage before they understand the main point. By starting with a simple, high-level insight, you ensure everyone grasps the key takeaway. Subsequent, more complex charts can then build upon this foundation, creating a learning path for readers who want to dig deeper, rather than a cognitive barrier that shuts them out.
+
+### Core Principle
+
+Scaffold learning and reduce cognitive load by building from a simple, understandable foundation towards more complex and nuanced information.
+
+## When it applies
+
+- When your analysis involves multiple variables, steps, or layers of detail.
+- When communicating to a non-expert or general audience.
+- In data stories, articles, presentations, or reports where you are guiding a reader through a narrative.
+
+## Exceptions
+
+- When presenting to an expert audience that is already familiar with the data and the complex chart types you are using. In this case, you may be able to start directly with the more comprehensive view.
+- In an exploratory tool or dashboard designed for expert analysis, where the user is expected to be able to handle complexity.
+
+## Trade-offs
+
+- This approach requires more space (multiple charts instead of one) or more steps in a presentation to tell the full story.
+- It takes more authoring effort to deconstruct the analysis into a clear, narrative sequence.
+
+## Signs of Trouble
+
+- **"This is confusing":** Feedback from your audience indicates that they find your chart "too busy," "overwhelming," or "hard to read."
+- **The Long Explanation:** You find yourself spending the first five minutes of a presentation just explaining how to read your chart, before you can even talk about what the data shows.
+- **The Main Point is Missed:** Viewers get so caught up in trying to decode the visualization that they fail to grasp the most important message.
+
+## How to Improve
+
+- **Quick Fix: Use Heavy Annotation.** If you must use a single complex chart, use titles, subtitles, color, and explicit annotations to guide the viewer's eye and spell out the main insight in plain language. Circle the important parts.
+- **Moderate Approach: Build the Chart in Stages.** If in a presentation or an animated format, don't show the final complex chart all at once. Build it up piece by piece, explaining each new element as you add it to the view.
+- **Comprehensive Redesign: Structure as a Narrative Sequence.**
+  1.  **Identify the single most important message.**
+  2.  Create a very simple chart (e.g., a single line chart, a simple bar chart) that communicates only that one message. This is your "Level 1" insight.
+  3.  Then, create a second, slightly more detailed chart that answers a natural follow-up question (e.g., a stacked bar chart to show the composition of the total). This is "Level 2".
+  4.  Continue this process, ending with your most complex chart for the most engaged readers.
+
+<split/>
+
+```md
+---
+id: use-slope-chart-for-before-after
+title: "Use a Slope Chart for Clear Before-and-After Storytelling"
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - impact:pathos
+  - chart:slope
+  - chart:line
+  - task:compare
+  - task:rank
+  - task:direction
+  - task:trend
+  - data:temporal
+  - data:quantitative
+  - data:categorical
+  - data:cardinality.low
+  - audience:general
+  - medium:*
+evidence:
+  strength: low
+  summary: "A practitioner-developed chart type, popularized by Edward Tufte, that excels at showing change between two points in time. Its effectiveness is based on the design principle of maximizing the data-to-ink ratio, focusing attention by removing non-essential information."
+sources:
+  - type: practitioner
+    ref: "Datawrapper: A friendly guide to choosing a chart type"
+    url: https://www.datawrapper.de/blog/chart-types-guide
+    note: "Describes a slope chart as 'a line chart where everything between the first and last date has been erased' and notes it's a good choice 'if the ups and downs of how a line evolved are just not that interesting.'"
+    role: primary
+  - type: practitioner
+    ref: "Tufte, E. R. (2001). The Visual Display of Quantitative Information."
+    note: "Tufte champions the slope chart (though not always by that name) as an example of a high data-ink design that clearly shows change."
+    role: supporting
+tools:
+  - type: implement
+    name: Datawrapper
+    url: https://www.datawrapper.de
+    description: "The platform offers a dedicated slope chart type, making it easy to implement this guideline."
+examples:
+  - type: bad
+    description: "A line chart showing change in life expectancy from 1990 to 2020 for 10 countries. The lines are messy and the main point—the overall increase for each country—is obscured by minor fluctuations."
+  - type: good
+    description: "A slope chart showing the same data. It has two axes, 1990 and 2020, with lines connecting each country's value. It's immediately clear which countries improved the most (steepest upward slope) and how their ranks changed."
+---
+
+## Guidance
+
+When your story is about the change in values between two specific points in time (e.g., a "before" and "after"), use a slope chart to show the data clearly and dramatically.
+
+## Why
+
+A slope chart strips away all the intermediate data points of a line chart, forcing the viewer's attention exclusively on the start point, the end point, and the relationship between them. The slope of the line becomes a powerful visual metaphor for the rate and direction of change. This creates a very clean, uncluttered, and compelling story about change across multiple categories.
+
+### Core Principle
+
+Maximize the data-to-ink ratio. By removing irrelevant intermediate data, you focus the viewer's attention on the most important aspect of the data: the change itself.
+
+## When it applies
+
+- Your narrative is focused on a "before and after" comparison or the net change between two time periods.
+- The journey or volatility between the two points in time is not relevant or is considered noise.
+- You want to compare the change and ranking shifts across multiple categories simultaneously.
+
+## Exceptions
+
+- If the volatility, peaks, or troughs between the start and end points are a crucial part of the story (e.g., showing stock market volatility), a full line chart is necessary.
+- If you are showing change over many points in time, not just two.
+
+## Trade-offs
+
+- **Loss of Detail:** You sacrifice all information about what happened between the two points in time. A massive spike and crash in the middle would be completely invisible.
+- **Limited Time Points:** The chart type is fundamentally limited to comparing only two points in time.
+
+## Signs of Trouble
+
+- **Noisy Line Chart:** Your line chart has a clear start and end point, but the lines in between are noisy and distract from the main message about the overall change.
+- **Verbal Crutch:** You find yourself verbally telling your audience to "just look at the first and last values" and "ignore the stuff in the middle."
+- **Cluttered Endpoints:** In a standard line chart with many categories, the endpoints are all clustered together and hard to read or connect to their labels.
+
+## How to Improve
+
+- **Start with a Line Chart:** Begin with your time-series data in a standard line chart.
+- **Isolate Two Points:** Keep only the data for the first and last time periods you care about.
+- **Convert to Slope Chart:**
+  1.  Draw straight lines connecting the start value and end value for each category.
+  2.  Place the category labels directly next to the lines (usually at the start or end) to avoid a separate legend.
+  3.  Ensure the two time periods are clearly labeled as the x-axis.
+
+<split/>
+
+```md
+---
+id: balance-novelty-and-clarity
+title: "Balance Novelty and Clarity by Favoring Familiar Chart Types"
+tags:
+  - impact:cognitive
+  - impact:perceptual
+  - impact:pathos
+  - impact:ethos
+  - chart:*
+  - task:*
+  - audience:general
+  - audience:low-literacy
+  - medium:*
+  - access:cognitive-load-risk
+evidence:
+  strength: medium
+  summary: "A core principle of user-centered design and communication, widely accepted by practitioners. Familiar charts (bars, lines) reduce cognitive load because the audience already possesses the literacy to read them. Novel chart types, while potentially engaging, impose a 'learning curve' that can slow down or prevent comprehension."
+sources:
+  - type: practitioner
+    ref: "Datawrapper: A friendly guide to choosing a chart type"
+    url: https://www.datawrapper.de/blog/chart-types-guide
+    note: "Highlights the trade-off, stating that basic charts 'make comparing data really easy' and 'readers are already used to them,' whereas fancy types 'require a bit of a learning curve.' It advises knowing them but using them judiciously."
+    role: primary
+  - type: practitioner
+    ref: "Few, S. (2012). Show Me the Numbers: Designing Tables and Graphs to Enlighten."
+    note: "Few consistently advocates for clarity and effectiveness over decoration and novelty, emphasizing the use of simple, perceptually-grounded chart types like bar and line charts."
+    role: related
+examples:
+  - type: bad
+    description: "Using a visually complex stream graph to show precise changes in a company's revenue streams over time. While eye-catching, it makes it difficult for a stakeholder to read the actual values or compare the performance of two streams."
+  - type: good
+    description: "Using a standard stacked area chart or a set of line charts for the same revenue data. While potentially less 'exciting,' it allows for clear, accurate reading and comparison, which is the primary task."
+---
+
+## Guidance
+
+Prioritize clarity and ease of interpretation over visual novelty. Use basic, familiar chart types (e.g., bar, line, column) as your default, and deploy more "exciting" or unusual chart types (e.g., stream graph, Marimekko chart) only when they are the uniquely best fit for your data and goals.
+
+## Why
+
+The primary goal of a chart is to communicate data effectively. Familiar chart types have a low cognitive barrier to entry; your audience can immediately focus on understanding the **data's message** instead of first having to learn **how to read the chart**. Novel or "fancy" charts can be engaging, but they require the viewer to learn a new visual grammar on the spot. This extra cognitive load can distract from the message, or worse, lead to misinterpretation.
+
+### Core Principle
+
+Communication efficiency trumps visual novelty. Minimize the cognitive work required to decode your visualization.
+
+## When it applies
+
+- When communicating to a general or non-expert audience.
+- When the clarity and accuracy of the message are the top priorities.
+- In business or analytical contexts where efficient decision-making is key.
+
+## Exceptions
+
+- When a novel chart type (e.g., a Sankey diagram) is uniquely suited to show a specific structure in the data (e.g., flow) that would be difficult to show otherwise.
+- When the primary goal is to grab attention and create an aesthetic experience, and precise data reading is a secondary goal.
+- When presenting to an expert audience that is known to be familiar with advanced chart types.
+
+## Trade-offs
+
+- **Sticking to basic charts:** Maximizes clarity and speed of interpretation but might be perceived as less "creative" or "boring."
+- **Using a novel chart:** Might increase initial engagement and memorability but risks confusing the audience, slowing comprehension, and obscuring the data's message.
+
+## Signs of Trouble
+
+- **"Looks Cool":** Your primary reason for choosing a chart type is that it "looks cool" or "is different."
+- **The Chart "Tutorial":** You have to spend a significant amount of time explaining to your audience how the chart works before you can discuss its insights.
+- **The Blank Stare:** You present the chart and your audience looks confused rather than enlightened.
+
+## How to Improve
+
+- **Quick Fix: Add More Explanation.** If you must use a novel chart, add a clear title, subtitle, and annotations that explicitly state the main insight and briefly explain how to read the chart. Don't make the reader guess.
+- **Moderate Approach: Pair It with a Simple Chart.** Show the simple, "boring" chart first to establish the key message. Then, introduce the more "exciting" chart as an alternative view that adds a different dimension.
+- **Comprehensive Redesign: Re-evaluate Your Goal.** Ask yourself: "What is the single most important message, and what is the absolute clearest, simplest way to show it?" Start with a bar or line chart. Only move to a more complex type if you can clearly articulate why it's a fundamentally better choice for showing the specific pattern in your data.

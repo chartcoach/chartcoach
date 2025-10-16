@@ -29,7 +29,7 @@ sources:
     note: "This review paper collates and summarizes Mackinlay's rankings, confirming their foundational role. (See Table 3)"
     role: supporting
   - type: research
-    ref: Cleveland & McGill, 1984
+    ref: "Cleveland & McGill, 1984"
     note: "The foundational empirical study that Mackinlay's quantitative ranking is based on, providing experimental evidence for the superiority of position and length over angle and area."
     role: related
 

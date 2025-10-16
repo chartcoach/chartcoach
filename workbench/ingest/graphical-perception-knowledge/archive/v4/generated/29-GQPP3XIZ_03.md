@@ -20,7 +20,7 @@ sources:
     url: https://doi.org/10.1109/TVCG.2019.2934801
     note: "Found that position (dot plots) and length (bar charts) led to faster and more accurate comparisons than slope encodings, for both individual and delta charts."
   - type: research
-    ref: Cleveland & McGill, 1984
+    ref: "Cleveland & McGill, 1984"
     url: https://doi.org/10.2307/2288400
     note: "Established the foundational ranking of perceptual tasks, placing position along a common scale and length as more accurate than angle/slope for quantitative judgments."
 examples:

@@ -32,7 +32,7 @@ sources:
     note: "Synthesizes findings from five papers [17, 34, 50, 76, 99] comparing bar and pie charts, confirming that bar charts generally perform better in accuracy, efficiency, and user preference for most analytical tasks (p. 10)."
     role: primary
   - type: research
-    ref: Cleveland & McGill, 1984
+    ref: "Cleveland & McGill, 1984"
     note: "Original foundational experiment showing position-length judgments are perceptually more accurate than angle judgments for comparison tasks."
     role: supporting
   - type: research
@@ -137,7 +137,7 @@ sources:
     note: "Established the foundational psychophysical principle (Stevens' Power Law) that the perceived magnitude of a stimulus is a power function of its actual magnitude."
     role: supporting
   - type: research
-    ref: Cleveland & McGill, 1984
+    ref: "Cleveland & McGill, 1984"
     note: "In their foundational study on graphical perception, ranked area as a less accurate visual channel than length or position for quantitative judgments."
     role: related
 

@@ -1,0 +1,92 @@
+```md
+---
+id: low-contrast
+title: "Ensure sufficient contrast for text and graphical elements"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - impact:accessibility
+  - impact:inclusion
+  - chart:*
+  - task:*
+  - data:*
+  - visual:color
+  - audience:*
+  - medium:*
+  - access:color-vision-risk
+  - access:cognitive-load-risk
+
+evidence:
+  strength: high
+  summary: "Low contrast is the most commonly identified accessibility failure in data visualizations (Elavsky et al., 2022). WCAG 2.1 Success Criteria 1.4.3 (Contrast Minimum) and 1.4.11 (Non-text Contrast) mandate specific contrast ratios, based on extensive research into readability for people with low vision and other cognitive impairments."
+
+sources:
+  - type: standard
+    ref: WCAG 2.1 Understanding Non-Text Contrast
+    url: https://www.w3.org/WAI/WCAG21/Understanding/non-text-contrast.html
+    note: "Requires graphical objects and user-interface components to have a contrast ratio of at least 3:1 against adjacent colors."
+    role: primary
+  - type: research
+    ref: Elavsky et al., 2022
+    url: https://onlinelibrary.wiley.com/doi/10.1111/cgf.14522
+    note: "Collated checklists for accessibility-related guidelines, identifying low contrast as the most common failure (88% of audits conducted)."
+    role: primary
+
+tools:
+  - type: validate
+    name: WebAIM Contrast Checker
+    url: https://webaim.org/resources/contrastchecker/
+    description: Lets designers enter foreground and background colors to calculate contrast ratios, reporting whether the combination meets WCAG AA or AAA criteria.
+
+examples:
+  - type: good
+    description: This interactive notebook demonstrates how to achieve high contrast in data visualisations. It explains that regular text should have a contrast ratio of at least 4.5:1 and non‑text elements (like chart geometries) need a 3:1 contrast. Examples show how to measure contrast using colour pickers and dropper tools to ensure charts are accessible for viewers with low vision.
+    url: https://observablehq.com/@frankelavsky/high-contrast-for-data-visualization-with-examples
+---
+
+## Guidance
+
+Ensure geometries and large text have a contrast ratio greater than 3:1 against their background. Regular text must have a contrast ratio greater than 4.5:1 against its background.
+
+## Why
+
+Low contrast is a pervasive and fundamental accessibility failure that directly impacts the readability and discernibility of content for users with low vision, color vision deficiencies, and certain cognitive disabilities. Ensuring adequate contrast significantly reduces eye strain and cognitive load, making the visualization understandable for a much broader audience.
+
+### Core Principle
+
+Content must be perceivable to all users. Sufficient contrast is fundamental to visual perception and legibility, enabling users to clearly differentiate between foreground and background elements that convey meaningful information.
+
+## When it applies
+
+- When any text (headings, labels, annotations, captions, legends) is present in a visualization.
+- When any graphical elements (bars, lines, points, areas, icons) convey meaningful information through their visual properties.
+- When designing for diverse audiences, especially those with low vision or when visualizations might be viewed in suboptimal conditions (e.g., bright glare, small screens).
+- To all interactive elements (buttons, links, selectable features) and their focus/hover states.
+
+## Exceptions
+
+- **Purely decorative elements:** Elements that are purely decorative and convey no information (e.g., a background pattern that doesn't interfere with content) may not require strict contrast ratios.
+- **Logotypes:** Brand logos or essential parts of logotypes are exempt from contrast requirements.
+- **Incidental elements:** Components of complex real-world images (e.g., a person in a photograph) where specific contrast is not the primary purpose.
+
+## Trade-offs
+
+- **Aesthetic color choices:** Strict adherence to contrast ratios may limit design flexibility and aesthetic color choices, especially for subtle or highly saturated palettes.
+- **Design complexity:** Requires careful color selection and thorough testing during the design and development process, potentially adding an extra layer of complexity.
+
+## Signs of Trouble
+
+- **The Squint Test:** If you squint at the visualization, do any text or graphical elements become indistinguishable from their background or blend with adjacent elements?
+- **Contrast Checker Failures:** A contrast checker tool (e.g., WebAIM Contrast Checker) reports a contrast ratio below 4.5:1 for regular text (or 3:1 for large text/graphical objects).
+- **Subtle Branding:** Using corporate or brand colors without prior accessibility checks often leads to insufficient contrast, especially for light text on light backgrounds or dark on dark.
+- **User Feedback:** Viewers explicitly report difficulty reading text, distinguishing chart elements, or experiencing eye strain.
+
+## How to Improve
+
+- **Quick approach:** Use a contrast checker tool (e.g., WebAIM Contrast Checker) to identify all failing color combinations. Adjust foreground or background colors with the smallest possible change to meet the minimum required ratios (4.5:1 for regular text, 3:1 for large text and graphical objects).
+- **Moderate approach:** Adopt a pre-tested, accessible color palette that has been designed with sufficient contrast in mind. When using brand colors, work with designers to find accessible equivalents or complementary colors that meet contrast standards. Consider using darker text on lighter backgrounds for maximum readability.
+- **Comprehensive approach:** Integrate automated contrast checks into your design and development workflows. Design your visualization system to allow user-selectable high-contrast modes or themes, providing flexible options for users to customize their viewing experience. For graphical elements, consider redundant encodings like patterns, textures, or varying line styles in addition to color, especially for categories.
+
+---
+```

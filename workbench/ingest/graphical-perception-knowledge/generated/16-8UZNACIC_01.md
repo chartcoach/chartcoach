@@ -23,7 +23,7 @@ evidence:
 
 sources:
   - type: research
-    ref: Cleveland & McGill, 1984
+    ref: "Cleveland & McGill, 1984"
     url: https://doi.org/10.1080/01621459.1984.10478080
     note: "Foundational study establishing the perceptual ranking of elementary graphical tasks. Showed position along a common scale is the most accurate encoding for quantitative comparison."
     role: primary

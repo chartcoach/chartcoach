@@ -1,13 +1,8 @@
 # /// script
 # requires-python = ">=3.13"
 # dependencies = [
-#     "duckdb==1.4.1",
 #     "google-genai==1.44.0",
-#     "numpy==2.3.3",
-#     "polars==1.34.0",
-#     "pyarrow==21.0.0",
 #     "pyzotero==1.6.17",
-#     "tqdm==4.67.1",
 # ]
 # ///
 
@@ -204,7 +199,9 @@ def _(
 
 @app.cell(hide_code=True)
 def _(METHOD_PAPER_PATH, types):
-    method_paper = types.Part.from_bytes(data=METHOD_PAPER_PATH.read_bytes(), mime_type="application/pdf")
+    method_paper = types.Part.from_bytes(
+        data=METHOD_PAPER_PATH.read_bytes(), mime_type="application/pdf"
+    )
     return (method_paper,)
 
 
@@ -336,8 +333,6 @@ def _():
 def _():
     import marimo as mo
     from pyzotero import zotero
-    import polars as pl
-    import duckdb
     import json
     return json, mo, zotero
 

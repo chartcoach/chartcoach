@@ -27,17 +27,17 @@ evidence:
 sources:
   - type: research
     ref: Waldner et al., 2020
-    doi: 10.1109/TVCG.2019.2934784
+    url: https://doi.org/10.1109/TVCG.2019.2934784
     note: "Primary controlled experiment (n=92) directly comparing linear and radial layouts for daily time-series data. Found linear charts were faster for all low-level tasks (p<0.001, η²p=0.126 to 0.259) and received significantly higher subjective ratings (p<0.001, η²p=0.488)."
     role: primary
   - type: research
-    ref: Cleveland & McGill, 1984
+    ref: "Cleveland & McGill, 1984"
     url: https://doi.org/10.2307/2288400
     note: "Foundational work showing that position judgments (used in bar charts) are more perceptually accurate than angle or area judgments (used in rose/pie charts)."
     role: supporting
   - type: research
     ref: Goldberg & Helfman, 2011
-    doi: 10.1057/ivs.2011.8
+    url: https://doi.org/10.1057/ivs.2011.8
     note: "Eye-tracking study showing value lookups are more efficient on linear graphs than radial graphs."
     role: supporting
 

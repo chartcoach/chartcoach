@@ -16,6 +16,7 @@ tags:
   - impact:performance
 
   # Chart types (use hierarchy with dots for specificity)
+  # Use chart:* if applies to ALL chart types, otherwise list specific ones
   - chart:bar
   - chart:line
   - chart:scatter
@@ -55,11 +56,13 @@ tags:
   - visual:texture
 
   # Audience characteristics
+  # Use audience:* if applies to ALL audiences, otherwise list specific ones
   - audience:general
   - audience:expert
   - audience:low-literacy
 
   # Medium/format
+  # Use medium:* if applies to ALL formats, otherwise list specific ones
   - medium:static
   - medium:interactive
   - medium:animation
@@ -78,7 +81,7 @@ evidence:
 
 sources:
   - type: research
-    ref: Cleveland & McGill, 1984
+    ref: "Cleveland & McGill, 1984"
     url: https://doi.org/10.2307/2288400
     note: "Foundational study (n=55) establishing perceptual ranking with significant accuracy differences (p<0.001)"
     role: primary # Options: primary | supporting | related
@@ -144,6 +147,35 @@ examples:
         FORMAT: {family}:{value}.{subvalue}
         Example: chart:map.choropleth, data:periodicity.24h, task:summary-mean
 
+        UNIVERSAL SELECTOR (*):
+        When a guideline applies to ALL values within a tag family, use the star selector instead
+        of listing every individual value. This keeps tags concise and signals broad applicability.
+
+        Rules for star selector usage:
+        - Use {family}:* to indicate "applies to all {family} values"
+        - If {family}:* is present, DO NOT include any other {family}:{value} tags
+        - Star selector indicates the guideline is universally applicable within that family
+
+        Examples:
+          - chart:* means applies to all chart types (bar, line, pie, map, etc.)
+          - audience:* means applies to all audiences (general, expert, low-literacy, etc.)
+          - medium:* means applies to all formats (static, interactive, print, screen, etc.)
+
+        When to use star selector:
+        - The guideline truly applies to every chart type → chart:*
+        - The guideline is relevant regardless of audience → audience:*
+        - The guideline works for all data types → data:*
+        - The guideline applies to every medium/format → medium:*
+
+        Invalid combinations (DON'T do this):
+          - chart:*, chart:bar ❌ (redundant - star already includes bar)
+          - audience:*, audience:general ❌ (conflicting - pick one)
+
+        Valid combinations (DO this):
+          - chart:*, task:compare ✅ (different families can mix)
+          - chart:bar, chart:line ✅ (specific values when not universal)
+          - chart:* ✅ (star alone when truly universal)
+
         EXTENSIBILITY:
         This tag system is FLEXIBLE and EXTENSIBLE. The families listed below are common patterns,
         but you can create new families, values, and subvalues as needed for your specific domain.
@@ -162,6 +194,14 @@ examples:
         - Consider the user's perspective: Tag based on what they see/feel, not just technical details
         - Include edge cases: If it applies to uncommon scenarios, tag those too
         - Mix concrete and abstract: chart:pie (concrete) + task:compare (abstract) = better matching
+        - Use star selector judiciously: Only use {family}:* when truly universal within that family
+
+        Star selector examples:
+        - "Always provide alt text" → chart:*, medium:*, audience:* (truly universal)
+        - "Avoid rainbow color schemes" → chart:*, visual:color (applies to all charts using color)
+        - "Sort bars by value" → chart:bar, task:compare (NOT chart:* - specific to bar charts)
+        - "Use consistent color schemes" → chart:*, medium:*, data:categorical (universal for categorical data)
+        - "Ensure 4.5:1 contrast ratio" → chart:*, audience:*, access:color-vision-risk (universal accessibility)
 
         ROUTING LOGIC:
         - Tags enable hierarchical matching: chart:map matches chart:map.choropleth
@@ -183,6 +223,7 @@ examples:
           - impact:ethical          → Truthfulness, avoiding deception, transparency, fairness
           - impact:aesthetic        → Visual appeal, style, design quality, brand consistency
           - impact:performance      → Rendering speed, file size, scalability, technical efficiency
+        Note: impact:* is rarely appropriate (most guidelines don't affect ALL impact dimensions)
 
         CHART TYPES (prefix: chart:)
         Use hierarchy to route from general to specific:
@@ -192,6 +233,7 @@ examples:
           - chart:map.small-multiples → specific to small-multiple map arrangements
           - chart:map.glyphs → specific to maps with overlaid symbols/glyphs
         Example: A guideline tagged chart:map applies to ALL map types; chart:map.choropleth applies only to choropleths.
+        Use chart:* when the guideline applies universally (e.g., "Always provide descriptive titles")
 
         TASKS (prefix: task:)
         What the viewer is trying to accomplish:
@@ -204,6 +246,7 @@ examples:
           - task:distribution  → Understanding spread and frequency
           - task:composition   → Seeing part-to-whole relationships
           - task:summary-mean, task:summary-median → Specific summary statistics
+        Use task:* for truly task-agnostic guidelines (rare - most guidelines are task-specific)
 
         DATA CHARACTERISTICS (prefix: data:)
         Properties of the underlying data:
@@ -214,16 +257,19 @@ examples:
           - data:periodicity.24h, data:periodicity.yearly → Repeating patterns
           - data:cardinality.high → Many unique values (>20)
           - data:cardinality.low  → Few unique values (<10)
+        Use data:* when the guideline applies regardless of data type (e.g., "Always cite data sources")
 
         VISUAL CHANNELS (prefix: visual:)
         The visual encoding being used or discussed:
           - visual:color, visual:position, visual:size, visual:shape, visual:texture, visual:angle
+        Use visual:* when the guideline applies to all visual channels (uncommon)
 
         AUDIENCE (prefix: audience:)
         Who will be viewing/using the visualization:
           - audience:general      → General public, no domain expertise assumed
           - audience:expert       → Domain experts who understand technical details
           - audience:low-literacy → Users with limited reading/technical skills
+        Use audience:* when the guideline benefits all audiences equally (common for accessibility)
 
         MEDIUM/FORMAT (prefix: medium:)
         How the visualization will be presented:
@@ -232,6 +278,7 @@ examples:
           - medium:animation    → Animated/transitioning
           - medium:print        → Will be printed on paper
           - medium:screen       → Will be viewed on screen
+        Use medium:* when the guideline applies universally across formats
 
         ACCESSIBILITY RISKS (prefix: access:)
         Specific accessibility concerns this guideline addresses:
@@ -239,14 +286,21 @@ examples:
           - access:screenreader-risk     → Screen reader compatibility
           - access:motor-control-risk    → Fine motor control challenges
           - access:cognitive-load-risk   → High cognitive demand or complexity
+        Use access:* rarely (most guidelines address specific accessibility concerns)
 
         HOW AN AI AGENT USES THESE TAGS:
         1. User describes their chart: "I have a choropleth map showing election results by county"
         2. Agent extracts context tags: chart:map.choropleth, data:spatial, data:categorical
-        3. Agent queries guidelines matching these tags (hierarchically: chart:map OR chart:map.choropleth)
+        3. Agent queries guidelines matching these tags (hierarchically: chart:map OR chart:map.choropleth OR chart:*)
         4. Agent ranks results by relevance (more tag matches = higher priority)
         5. Agent presents most relevant guidelines first
         6. Agent explains why each guideline was recommended (based on matching tags)
+
+        Star selector matching behavior:
+        - chart:* matches ANY chart type the user mentions
+        - audience:* matches requests regardless of target audience
+        - User says "bar chart" → matches guidelines tagged chart:bar, chart:*, or chart:bar.*
+        - User says "any chart" → prioritizes guidelines tagged chart:* (universal applicability)
 
         HOW A HUMAN AUTHOR OPTIMIZES TAGS FOR DISCOVERABILITY:
 
@@ -357,7 +411,7 @@ examples:
 
     Examples:
       - type: research
-        ref: Cleveland & McGill, 1984
+        ref: "Cleveland & McGill, 1984"
         url: https://doi.org/10.2307/2288400
         note: "Foundational study (n=55) establishing perceptual ranking with significant accuracy differences (p<0.001)"
         role: primary

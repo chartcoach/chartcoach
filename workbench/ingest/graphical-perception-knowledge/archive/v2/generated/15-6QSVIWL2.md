@@ -28,7 +28,7 @@ sources:
     url: https://doi.org/10.1145/1753326.1753357
     note: "This paper replicated and confirmed the classic perceptual hierarchy for quantitative data using crowdsourced experiments. It found that position on a common scale is judged most accurately, followed by length, then angle, and finally area."
   - type: research
-    ref: Cleveland & McGill, 1984
+    ref: "Cleveland & McGill, 1984"
     url: https://doi.org/10.1080/01621459.1984.10478080
     note: "The original seminal research establishing the hierarchy of graphical perception tasks."
 

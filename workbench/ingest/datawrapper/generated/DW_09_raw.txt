@@ -1,0 +1,551 @@
+```md
+---
+id: avoid-stereotypical-colors-for-race
+title: "Avoid using stereotypical colors to represent racial or ethnic groups"
+
+tags:
+  - impact:inclusion
+  - impact:ethical
+  - impact:ethos
+  - impact:pathos
+  - visual:color
+  - data:categorical
+  - chart:*
+  - audience:general
+  - medium:*
+
+evidence:
+  strength: medium
+  summary: "Practitioner consensus strongly advises against using colors historically tied to racist classification systems, as this perpetuates harmful stereotypes and disrespects the represented communities. This is a foundational principle of inclusive design."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: What to consider when choosing colors for race, ethnicity, and world regions"
+    url: https://blog.datawrapper.de/colors-for-race-ethnicity-world-regions/
+    note: "Article explicitly warns against using black for Black people, white for white people, yellow for Asian people, etc., citing their roots in outdated, stereotypical 'racial' science."
+    role: primary
+
+examples:
+  - type: bad
+    description: "An early 20th-century German map titled 'Völkergruppen der Erde' (People Groups of the Earth) uses stereotypical colors: yellow for 'Mongolian' (Asian), black for 'Negroid' (African), and white for 'Europid' (European), reinforcing racist classifications."
+    url: https://blog.datawrapper.de/wp-content/uploads/2021/06/völkergruppen-1024x733.png
+  - type: good
+    description: "A chart showing racial group data uses a non-stereotypical palette of purple, orange, green, and pink, assigning colors arbitrarily to avoid harmful associations."
+
+---
+
+## Guidance
+
+Do not use colors that are stereotypically associated with racial or ethnic groups. This includes avoiding black for Black people, white for white people, yellow for Asian people, and red for Indigenous peoples.
+
+## Why
+
+These color associations are rooted in outdated and often racist historical classification systems. Using them, even unintentionally, can perpetuate harmful stereotypes, reduce complex identities to a single physical trait, and make readers feel disrespected or misrepresented. The goal is to represent people respectfully, not to reinforce historical biases.
+
+### Core Principle
+
+Visual choices should actively work to dismantle stereotypes, not reinforce them. Representing human groups requires a higher degree of care to ensure the visualization is inclusive and respectful.
+
+## When it applies
+
+- When creating any visualization that categorizes data by race or ethnicity, including bar charts, line charts, pie charts, and maps.
+
+## Exceptions
+
+None. While there might be rare, complex narrative reasons to subvert this, the risk of causing harm far outweighs potential benefits. It is safer and more respectful to always avoid this practice.
+
+## Signs of Trouble
+
+- **Direct Mapping:** Your color legend shows a direct and obvious link between a color and a racial stereotype (e.g., a yellow swatch for "Asian").
+- **Historical Echoes:** The color choices resemble those found in colonial-era or pseudoscientific "race maps."
+
+## How to Improve
+
+- **Comprehensive approach:** Select a categorical color palette where the colors are abstract and have no connection to physical appearance or historical stereotypes. Use tools like `Viz Palette` or `ColorBrewer` to find a balanced, non-referential set of colors. Assign these colors arbitrarily to the groups in your data.
+
+```
+
+<split/>
+
+```md
+---
+id: use-color-white-cautiously-for-white-category
+title: "Avoid using the color white to represent the 'White' racial category"
+
+tags:
+  - impact:inclusion
+  - impact:ethical
+  - impact:cognitive
+  - visual:color
+  - data:categorical
+  - chart:*
+  - audience:general
+
+evidence:
+  strength: low
+  summary: "Practitioner advice suggests that using white to color the 'White' category can make it seem like a neutral default or background, visually diminishing other groups. This is a subtle but important consideration in inclusive design."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: What to consider when choosing colors for race, ethnicity, and world regions"
+    url: https://blog.datawrapper.de/colors-for-race-ethnicity-world-regions/
+    note: "The article argues that using white for the 'White' category should be an exception, as it risks making the group seem like an unimportant backdrop. It suggests giving it a warm, light color instead to maintain visual presence."
+    role: primary
+
+examples:
+  - type: bad
+    description: "A bar chart colors the 'White' category with the color white, causing it to blend into the background and making the other, colored bars seem like deviations from a neutral norm."
+  - type: good
+    description: "A chart about M.L.S. fanbases uses a light orange for the 'White' category, giving it a visual presence equal to the other categories colored in shades of blue and purple."
+    url: https://blog.datawrapper.de/wp-content/uploads/2021/06/morning-consult-1-1024x512.png
+
+---
+
+## Guidance
+
+Avoid using the color white or a very light gray to represent the "White" category in a visualization. Assign it a distinct color with a visual weight comparable to other categories.
+
+## Why
+
+Using white can make this group appear as a neutral default or a background, rather than one group among many. This visually diminishes the presence and importance of other racial groups, unintentionally centering the "White" category as the norm against which others are measured.
+
+### Core Principle
+
+All categories representing groups of people should be given equal visual importance to ensure they are perceived as equally valid subjects of the data story.
+
+## When it applies
+
+- When visualizing data broken down by race, and one of the categories is "White."
+
+## Exceptions
+
+- The Datawrapper article notes a rare, high-risk exception: if the narrative focus is explicitly on how other groups' data compares to or is "catching up" with the white population, using white as a baseline *might* be defensible. However, this is a very advanced and risky choice that should be made with extreme care and clear justification.
+
+## Signs of Trouble
+
+- **The Invisible Bar:** The bar, line, or area for the "White" category is colored white and seems to disappear into the chart's background.
+- **Default vs. Deviation:** The visualization creates an impression of colored "other" groups being compared against a neutral, un-colored "default" group.
+
+## How to Improve
+
+- **Quick Fix:** Change the color from pure white to a light but distinct hue (e.g., a light orange, light blue, or off-white with a colored tint).
+- **Comprehensive approach:** Choose a balanced, categorical palette where every color has a similar level of saturation and brightness. Assign one of these colors to the "White" category, ensuring it stands on equal footing with all others.
+
+```
+
+<split/>
+
+```md
+---
+id: avoid-skin-tone-colors-for-race
+title: "Avoid using browns, olives, or other skin-tone-like colors for racial and ethnic categories"
+
+tags:
+  - impact:inclusion
+  - impact:ethical
+  - impact:pathos
+  - visual:color
+  - data:categorical
+  - chart:*
+  - audience:general
+
+evidence:
+  strength: low
+  summary: "Practitioner advice suggests avoiding colors that resemble skin tones to represent any racial group, as this can be seen as reductive and dehumanizing, boiling complex identity down to a literal skin color."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: What to consider when choosing colors for race, ethnicity, and world regions"
+    url: https://blog.datawrapper.de/colors-for-race-ethnicity-world-regions/
+    note: "The article states: 'Consider avoiding brown and olive — people of any race might be unhappy seeing themselves in these colors.' The reasoning is that these colors are too reminiscent of literal skin tones."
+    role: primary
+
+examples:
+  - type: bad
+    description: "A chart uses a palette of beige, tan, brown, and olive green to represent different racial groups, literally coloring people by approximations of skin tone."
+  - type: good
+    description: "A chart uses an abstract palette of purple, teal, and orange. These colors have no association with skin tones and represent the categories as distinct, abstract groups."
+
+---
+
+## Guidance
+
+Refrain from using a palette of browns, olives, beiges, or other colors that resemble human skin tones when representing any racial or ethnic group.
+
+## Why
+
+Using colors that are literal or figurative representations of skin tone is reductive and can be dehumanizing. It boils complex, multifaceted identities down to a single physical attribute, which can make people feel uncomfortable and misrepresented, regardless of their own race.
+
+### Core Principle
+
+Represent people as people, not as their physical characteristics. Visualizations should respect the complexity of human identity.
+
+## When it applies
+
+- When choosing colors for charts that categorize people by race, ethnicity, or any other demographic characteristic.
+
+## Exceptions
+
+- An explicit artistic or narrative project about skin color itself (like Angelica Dass's "Humanae" project, which photographs people against a Pantone color matched to their skin) is a clear exception, as the color is the subject, not just a label. For general data visualization, there are no common exceptions.
+
+## Signs of Trouble
+
+- **Flesh-Tone Palette:** The color palette for your racial or ethnic groups consists of shades of brown, tan, beige, or pink that evoke skin.
+- **Audience Discomfort:** Viewers express that the colors make them feel "weird" or "uncomfortable."
+
+## How to Improve
+
+- **Comprehensive approach:** Completely replace the skin-tone palette with an abstract categorical color palette. Choose hues like blues, purples, greens, and oranges that have no common association with skin color. Ensure the chosen colors are distinct and accessible.
+
+```
+
+<split/>
+
+```md
+---
+id: give-other-multiracial-equal-visual-weight
+title: "Avoid using gray or muted colors that diminish 'Other' or 'Multiracial' categories"
+
+tags:
+  - impact:inclusion
+  - impact:ethical
+  - visual:color
+  - data:categorical
+  - chart:*
+  - audience:general
+
+evidence:
+  strength: medium
+  summary: "Practitioner consensus from multiple sources on inclusive design warns against using gray for 'Other' or 'Multiracial' categories. This practice visually signals that these groups are less important, violating the principle of representing all people with equal respect."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: What to consider when choosing colors for race, ethnicity, and world regions"
+    url: https://blog.datawrapper.de/colors-for-race-ethnicity-world-regions/
+    note: "The article explicitly advises against using gray for 'Other' or 'Multiracial' categories, stating it is 'inappropriate' because 'You’re visualizing people, not footnotes'."
+    role: primary
+  - type: practitioner
+    ref: "Alice Feng, 'A Do No Harm Guide for Visualizing Race & Ethnicity'"
+    note: "Cited in the Datawrapper article, this guide promotes asking 'If I were one of the data points in this visualization, would I feel offended?' Using gray for a group of people often fails this test."
+    role: supporting
+
+examples:
+  - type: bad
+    description: "A chart shows five racial categories. Four are shown in vibrant colors, while the 'Multiracial' category is colored gray, making it look like an unimportant afterthought."
+  - type: good
+    description: "In a chart from the Urban Institute, the 'Two or more races' category is given a distinct, vibrant purple, granting it the same visual status as the other categories represented in blue, green, and orange."
+    url: https://blog.datawrapper.de/wp-content/uploads/2021/06/urban-institute-multiracial-1024x729.png
+
+---
+
+## Guidance
+
+When visualizing categories like "Other," "Multiracial," or "Two or more races," assign them a distinct color with the same visual prominence (saturation and brightness) as all other categories. Do not default to using gray.
+
+## Why
+
+Using gray or a faded color visually communicates that this group is less important, an afterthought, or "othered" from the "main" groups. All categories representing people deserve equal respect and visual weight in the design. Graying out a category treats people like footnotes rather than as subjects of the data.
+
+### Core Principle
+
+Design choices should ensure all human subjects in the data are represented with equal dignity and importance.
+
+## When it applies
+
+- Any chart with a categorical breakdown that includes an "Other," "Mixed-Race," "Two or more races," or similar catch-all category.
+
+## Exceptions
+
+- Gray can be used to de-emphasize data if that is an explicit and ethical analytical goal. For example, highlighting one specific group in color while showing all *other* groups collectively in gray as a background comparison. This is a deliberate choice about focus, not a default choice for a specific category label.
+
+## Signs of Trouble
+
+- **The Gray Bar:** In a legend or chart, the "Other" or "Multiracial" category is the only one colored gray.
+- **Hierarchy of Color:** The color scheme creates a clear visual hierarchy where some groups are vibrant and others are muted, and the muted group is "Other."
+
+## How to Improve
+
+- **Quick Fix:** Replace the gray with a distinct color from your existing palette. If you need another color, choose one that is visually equidistant from the others.
+- **Comprehensive approach:** When planning your palette, treat the "Other/Multiracial" category as a first-class citizen. Create a palette with N colors for your N categories, and ensure all have similar visual weight using a tool like `Viz Palette`.
+
+```
+
+<split/>
+
+```md
+---
+id: avoid-blue-for-europe-white-people
+title: "Avoid assigning the color blue to represent Europe or white populations"
+
+tags:
+  - impact:inclusion
+  - impact:ethical
+  - impact:pathos
+  - visual:color
+  - data:categorical
+  - data:spatial
+  - chart:*
+  - audience:general
+
+evidence:
+  strength: low
+  summary: "Based on color psychology, practitioner advice suggests that assigning blue—a color with strong positive connotations of trust and authority in many cultures—to dominant groups like 'White' people or Europe can unintentionally reinforce stereotypes of superiority."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: What to consider when choosing colors for race, ethnicity, and world regions"
+    url: https://blog.datawrapper.de/colors-for-race-ethnicity-world-regions/
+    note: "The article argues that since blue is often associated with positive traits like professionalism and royalty, using it for Europe or white people 'can reinforce the idea of their superiority.' It suggests assigning blue to a less-dominant group instead."
+    role: primary
+
+examples:
+  - type: bad
+    description: "A world map visualization colors Europe in a deep, authoritative blue, while other continents are colored in less prominent or neutral colors like yellow or green, creating an unintended visual hierarchy."
+  - type: good
+    description: "A chart from the JPMorgan Chase Institute on consumer spending shows 'Black' and 'Hispanic' categories with prominent blue lines, while 'White' and 'Asian' categories use other colors. This subverts the default and gives visual prominence to historically marginalized groups."
+    url: https://blog.datawrapper.de/wp-content/uploads/2021/06/jpmorgan-chase-1024x729.png
+
+---
+
+## Guidance
+
+In visualizations comparing racial groups or world regions, avoid the default choice of using the color blue exclusively for "White" people or for "Europe."
+
+## Why
+
+In many Western and global business contexts, the color blue carries strong positive associations: trust, authority, professionalism, stability, and even royalty. When this culturally loaded color is assigned to a historically dominant group, it can unintentionally reinforce stereotypes of superiority and centrism. Being conscious of this association allows for more equitable color choices.
+
+## When it applies
+
+- When choosing categorical colors for data on race, ethnicity, or world regions, especially for a general or international audience.
+
+## Exceptions
+
+- If blue is a non-negotiable brand color that must be used.
+- If the visualization uses multiple different shades of blue to represent many different categories, which dilutes the special status of any single blue.
+
+## Signs of Trouble
+
+- **The Default Blue:** In a multi-group chart, the "White" or "European" category is colored with a standard, corporate-style blue while other groups are not.
+- **Unintended Endorsement:** The visualization appears to subtly favor or grant authority to one group over others through a culturally powerful color choice.
+
+## How to Improve
+
+- **Quick Fix:** Shift the blue towards a different hue like turquoise or purple to lessen the "authoritative blue" association.
+- **Moderate approach:** Intentionally assign the color blue to a non-dominant or historically marginalized racial or regional category in your visualization.
+- **Comprehensive approach:** Opt for a balanced color palette that avoids using a single, primary blue altogether, instead relying on other hues like green, purple, orange, and magenta to create distinctions.
+
+```
+
+<split/>
+
+```md
+---
+id: use-desaturated-colors-for-neutrality
+title: "Use less saturated colors for racial categories to avoid strong emotional associations"
+
+tags:
+  - impact:pathos
+  - impact:inclusion
+  - impact:ethical
+  - impact:aesthetic
+  - visual:color
+  - data:categorical
+  - chart:*
+  - audience:general
+
+evidence:
+  strength: low
+  summary: "Practitioner advice rooted in color psychology suggests that highly saturated colors carry strong, often unintended, emotional meanings (e.g., red=danger). Using muted colors for sensitive data like race helps neutralize these associations."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: What to consider when choosing colors for race, ethnicity, and world regions"
+    url: https://blog.datawrapper.de/colors-for-race-ethnicity-world-regions/
+    note: "The article explains that saturated 'crayon colors have strong associations' (red=danger, green=positive). It recommends toning them down to avoid associating these adjectives with racial categories."
+    role: primary
+
+examples:
+  - type: bad
+    description: "A chart uses bright, 'crayon' red for one ethnic group and bright green for another, unintentionally associating them with 'danger' and 'goodness' respectively."
+  - type: good
+    description: "A chart showing college education levels by race uses a palette of muted, less saturated colors (pale pink, light blue, soft orange). These colors are distinct but emotionally neutral."
+    url: https://blog.datawrapper.de/wp-content/uploads/2021/06/census-education-desaturated-1024x729.png
+
+---
+
+## Guidance
+
+Prefer less saturated (i.e., more muted or pastel) colors over highly saturated (i.e., bright, primary "crayon") colors when creating categories for race and ethnicity.
+
+## Why
+
+Highly saturated colors carry strong and often subconscious emotional connotations. For example, a vibrant red can signal danger, warning, or importance, while a bright green can signal "good" or "go." Applying these emotionally loaded colors to groups of people is inappropriate and risks injecting unintended, biased meaning into the chart. Desaturated colors are more visually neutral and carry less emotional baggage.
+
+## When it applies
+
+- When choosing a color palette for visualizing sensitive demographic data, particularly race and ethnicity.
+
+## Trade-offs
+
+- **Accessibility vs. Neutrality:** Less saturated colors can be harder for all people to distinguish and may fail to provide sufficient contrast for visually impaired users or those with color vision deficiencies. This trade-off must be actively managed.
+
+## Signs of Trouble
+
+- **Crayon Box Palette:** The chart uses a palette of bright, primary colors that feel more appropriate for a children's drawing than for sensitive data.
+- **Unintended Alarms:** A specific group is colored with a jarringly bright red or other color with a strong cultural meaning, drawing undue attention or implying a judgment.
+
+## How to Improve
+
+- **Quick Fix:** Take your existing palette and reduce the saturation of each color. In most color pickers, this means moving the selector away from the vibrant edge and closer to the gray center.
+- **Comprehensive approach:** Design or choose a palette specifically composed of muted, desaturated colors. Crucially, pair this with a strategy to mitigate the accessibility trade-off, such as adding high-contrast outlines to chart elements, using direct labels, or applying patterns.
+
+```
+
+<split/>
+
+```md
+---
+id: ensure-muted-palettes-are-accessible
+title: "Ensure muted color palettes for sensitive data remain accessible"
+
+tags:
+  - impact:accessibility
+  - impact:inclusion
+  - visual:color
+  - access:color-vision-risk
+  - chart:*
+  - audience:*
+
+evidence:
+  strength: high
+  summary: "While muted palettes can be good for neutrality (practitioner advice), they pose a risk to accessibility. Established WCAG principles require sufficient contrast and perceptibility, which can be achieved through careful color selection or by adding redundant visual cues like outlines or labels."
+
+sources:
+  - type: standard
+    ref: "WCAG 2.1 Success Criterion 1.4.1 & 1.4.11"
+    url: https://www.w3.org/TR/WCAG21/
+    note: "Requires that color is not used as the sole means of conveying information (1.4.1) and that graphical elements have a contrast ratio of at least 3:1 against adjacent colors (1.4.11)."
+    role: primary
+  - type: practitioner
+    ref: "Datawrapper Blog: What to consider when choosing colors for race, ethnicity, and world regions"
+    url: https://blog.datawrapper.de/colors-for-race-ethnicity-world-regions/
+    note: "Acknowledges that less saturated colors are harder to distinguish and can fail contrast tests, and suggests using saturated outlines as a solution."
+    role: supporting
+
+tools:
+  - type: validate
+    name: Viz Palette
+    url: https://projects.susielu.com/viz-palette
+    description: "A tool to test color palettes for colorblind safety and perceptual distinctness."
+  - type: validate
+    name: Adobe Color Contrast Analyzer
+    url: https://color.adobe.com/create/color-contrast-analyzer
+    description: "Checks if color combinations meet WCAG contrast requirements."
+
+examples:
+  - type: bad
+    description: "A line chart uses several similar-looking pastel colors. Two lines (e.g., a light blue and a light green) are indistinguishable for users with deuteranopia and difficult to tell apart for all users."
+  - type: good
+    description: "A chart uses a muted color palette but adds a darker, saturated outline to each bar. This ensures the shape of each bar is clearly visible, even if the fill colors are hard to distinguish."
+    url: https://blog.datawrapper.de/wp-content/uploads/2021/06/census-education-desaturated-outline-1024x729.png
+
+---
+
+## Guidance
+
+If using a less saturated or pastel palette, you must verify that the colors are still distinguishable and meet accessibility contrast standards. If they are not, add redundant visual cues to ensure clarity for all users.
+
+## Why
+
+The benefit of using muted colors for emotional neutrality is completely negated if some users cannot perceive the differences between them. An inaccessible chart fails at its primary goal of clear communication. Ensuring distinguishability respects all users, including those with color vision deficiencies (CVD) and low vision.
+
+## When it applies
+
+- Always, but it is especially critical when you have intentionally chosen a desaturated, pastel, or low-contrast color palette.
+
+## Signs of Trouble
+
+- **The Squint Test:** If you squint at your chart, different colored categories blur into a single mass.
+- **Colorblind Simulation Failure:** Using a CVD simulator reveals that two or more colors become identical.
+- **Subtle Neighbors:** The palette includes colors that are very close in hue and brightness (e.g., a light green and a light cyan).
+
+## How to Improve
+
+- **Quick Fix: Add Direct Labels.** Place labels directly on or next to chart elements (bars, lines, slices). This makes color a secondary, rather than primary, channel for identification.
+- **Moderate approach: Add High-Contrast Outlines.** Add a darker, saturated, or high-contrast stroke around your desaturated fills. This clearly defines the boundaries of each element even if the fill colors are not easily distinguished.
+- **Comprehensive approach: Use Redundant Encoding.** In addition to accessible colors, use another visual channel to differentiate categories. For a line chart, use different stroke styles (solid, dashed, dotted). For a scatter plot, use different shapes (circles, squares, triangles). This provides multiple ways for users to decode the information.
+
+```
+
+<split/>
+
+```md
+---
+id: shuffle-color-assignments-for-race
+title: "Shuffle color assignments for racial and ethnic groups across different projects"
+
+tags:
+  - impact:inclusion
+  - impact:ethical
+  - impact:cognitive
+  - visual:color
+  - data:categorical
+  - chart:*
+  - audience:general
+
+evidence:
+  strength: low
+  summary: "Practitioner advice suggests that repeatedly using the same color for the same racial group can create a new, unintentional stereotype. Shuffling colors between projects is a strategy to prevent this and encourage mindful choices each time."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: What to consider when choosing colors for race, ethnicity, and world regions"
+    url: https://blog.datawrapper.de/colors-for-race-ethnicity-world-regions/
+    note: "The article advises against permanent color assignments for racial categories to prevent creating new, strong associations. 'Instead, be flexible... if you find yourself picking the same color for a specific racial group in every new project, consider a different set.'"
+    role: primary
+
+examples:
+  - type: bad
+    description: "A news organization's style guide dictates that in all charts, the 'Hispanic' category must be orange and the 'Asian' category must be green. This creates a rigid, potentially stereotypical association over time."
+  - type: good
+    description: "A researcher publishes a paper on income by race, using purple for one group. In their next paper a year later on a different topic, they use a different palette where the same group is now represented by green, consciously breaking the previous association."
+
+---
+
+## Guidance
+
+Avoid creating a fixed, reusable color key for racial or ethnic categories that you apply across all your visualizations. Intentionally vary the colors assigned to these groups in different, unrelated projects or publications.
+
+## Why
+
+Consistently using the same color for the same group (e.g., always showing the Hispanic population in pink) can inadvertently create a new, sticky association in your audience's mind. Over time, this can become a de facto standard that carries its own unintended meaning. Shuffling colors forces a deliberate, thoughtful choice each time and prevents the calcification of new color-based stereotypes. It is a check against unconscious bias.
+
+### Core Principle
+
+Avoid creating new visual stereotypes while trying to dismantle old ones. Each visualization is a new context requiring fresh, mindful design choices.
+
+## When it applies
+
+- This is most relevant for organizations (like newsrooms, research institutes) and individuals who frequently publish visualizations on racial and ethnic data.
+
+## Exceptions
+
+- **Within a single context:** You *must* be consistent within a single article, report, dashboard, or presentation. The shuffling should only occur *between* distinct and unrelated projects.
+
+## Trade-offs
+
+- **Cognitive Effort:** It requires more conscious effort for each new project, rather than automatically applying a template.
+- **Brand Inconsistency:** It prevents establishing a consistent, brand-level color system for these specific demographic categories, but this is precisely the point—to prioritize ethical representation over rigid branding.
+
+## Signs of Trouble
+
+- **Fixed Style Guide:** Your organization's style guide has a rule like: "Always use purple for Group A, green for Group B, and orange for Group C."
+- **Autopilot Coloring:** You find yourself reflexively choosing the same color for the same group in every new chart you make without thinking about it.
+
+## How to Improve
+
+- **Moderate approach:** After completing a project, make a note of the color assignments. When starting the next project, consciously choose a different palette or re-assign the colors from your preferred palette to different groups.
+- **Comprehensive approach:** Before starting a new visualization, ask yourself why you are about to pick a certain color for a certain group. If the answer is "because I used it last time," stop and deliberately make a different choice. Use this as a moment to check for any unconscious bias in your color selection process.
+
+```

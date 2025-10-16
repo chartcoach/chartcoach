@@ -29,7 +29,7 @@ sources:
     note: "Demonstrates that colorfields (summary task) and line charts (detail task) have different strengths."
     role: primary
   - type: research
-    ref: Cleveland & McGill, 1984
+    ref: "Cleveland & McGill, 1984"
     url: https://doi.org/10.2307/2288400
     note: "Foundational work establishing that position (used in line charts) is a highly accurate encoding for quantitative judgments, supporting its use for detail-oriented tasks."
     role: related

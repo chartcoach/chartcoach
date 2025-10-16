@@ -26,7 +26,7 @@ sources:
     ref: Huff, 1993. How to Lie with Statistics.
     note: "Classic text popularizing the deceptive potential of truncated axes in 'Gee-Whiz Graphs'."
   - type: research
-    ref: Cleveland & McGill, 1984
+    ref: "Cleveland & McGill, 1984"
     url: https://doi.org/10.2307/2288400
     note: "Foundational work on graphical perception, establishing the importance of position and length for accurate comparisons."
 

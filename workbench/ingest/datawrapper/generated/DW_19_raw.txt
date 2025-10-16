@@ -1,0 +1,313 @@
+```md
+---
+id: use-narrative-title
+title: "Use a narrative title to state the main takeaway"
+
+tags:
+  - impact:cognitive
+  - impact:pathos
+  - impact:logos
+  - chart:*
+  - task:*
+  - audience:general
+  - medium:screen
+  - medium:print
+  - medium:static
+
+evidence:
+  strength: medium
+  summary: "A widely accepted best practice in data journalism and communication (e.g., Datawrapper, Financial Times, Axios) to improve comprehension speed and ensure the chart's primary message is understood by the audience."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: Fix my chart >> Simple data"
+    url: https://www.datawrapper.de/blog/fix-my-chart-simple-data
+    note: "The article transforms a neutral title ('Berlin's Bike Theft Statistics') into a narrative one ('Berlin's unsolved bike thefts') to better communicate the key finding."
+    role: primary
+
+examples:
+  - type: bad
+    description: "A neutral, descriptive title like 'Berlin's Bike Theft Statistics' forces the reader to analyze the chart to find the main point."
+  - type: good
+    description: "A narrative title like 'Berlin's unsolved bike thefts' immediately communicates the chart's main story, framing the data for the reader and improving comprehension."
+---
+
+## Guidance
+
+Make your chart title an active, declarative sentence that summarizes the key insight or story your data reveals.
+
+## Why
+
+A neutral title like "Bike Theft Statistics" requires the reader to interpret the data to find the story. A narrative title like "Berlin's unsolved bike thefts" delivers the main conclusion immediately. This reduces cognitive load and focuses the reader's attention on the most important finding, making the chart more effective as a communication tool.
+
+## When it applies
+
+-   When presenting a chart to a general audience.
+-   When the primary goal is to communicate a specific finding quickly and clearly.
+-   In storytelling contexts like articles, reports, and presentations.
+
+## Exceptions
+
+-   For exploratory data analysis or in scientific/technical reports where the audience is expected to draw their own conclusions, a neutral, descriptive title (e.g., "Reported vs. Solved Bike Thefts, 2004-2022") may be more appropriate to maintain objectivity.
+
+## How to Improve
+
+-   **Identify the 'so what?':** Look at your chart and ask yourself, "What is the single most important message here?"
+-   **Write a sentence:** Turn that message into a concise, declarative sentence.
+-   **Place it as the title:** Use this sentence as the main title of your chart. Use a more descriptive, neutral label as a subtitle if needed.
+
+```
+
+<split/>
+
+```md
+---
+id: demote-secondary-information
+title: "Place secondary, contextual information in subtitles or footnotes"
+
+tags:
+  - impact:cognitive
+  - impact:logos
+  - impact:aesthetic
+  - chart:*
+  - task:*
+  - audience:*
+  - medium:*
+
+evidence:
+  strength: low
+  summary: "A common typographic and information design principle for creating visual hierarchy, widely adopted in practitioner style guides to improve clarity and focus."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: Fix my chart >> Simple data"
+    url: https://www.datawrapper.de/blog/fix-my-chart-simple-data
+    note: "The post demonstrates moving a supplementary fact ('In 2022, 80% of the suspects had previously been reported') from a prominent on-chart annotation to the subtitle to reduce clutter."
+    role: primary
+
+examples:
+  - type: bad
+    description: "Placing a secondary, though interesting, fact as a prominent annotation on the chart clutters the visualization and distracts from the primary message about the low solve rate."
+  - type: good
+    description: "The secondary fact is moved to the subtitle. This keeps the information available for context but subordinates it to the main title and visual, creating a clear hierarchy."
+---
+
+## Guidance
+
+Identify the single most important message for the chart itself. Relocate supplementary facts, methodological notes, or related but non-essential data points to less prominent locations like a subtitle or a footnote.
+
+## Why
+
+This creates a clear information hierarchy, guiding the reader's attention to the primary message first. It prevents the main visualization from becoming cluttered with details that, while interesting, are not central to the main point. This reduces cognitive load and helps the reader process the most important information more efficiently.
+
+### Core Principle
+
+Guide the reader's attention by establishing a clear visual hierarchy. The most important information should be the most visually prominent.
+
+## When it applies
+
+-   When you have multiple related pieces of information but want to emphasize one primary insight in the chart.
+-   When adding context that is helpful but not essential for understanding the main visual pattern.
+
+## How to Improve
+
+-   **Quick Fix:** Move less critical annotations or callouts into a subtitle directly below the main title.
+-   **Moderate Approach:** Consolidate multiple secondary points into a single, concise subtitle.
+-   **Comprehensive Approach:** Review all text on the chart. Keep only the title and direct labels. Move all other context, definitions, and secondary findings to subtitles and footnotes below the chart.
+
+```
+
+<split/>
+
+```md
+---
+id: use-direct-labels
+title: "Label data series directly instead of using a separate legend"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - access:cognitive-load-risk
+  - chart:line
+  - chart:area
+  - chart:pie
+  - chart:bar.stacked
+  - task:compare
+  - task:lookup
+  - visual:color
+
+evidence:
+  strength: medium
+  summary: "This practice reduces the 'split-attention effect,' a cognitive load principle where separating related information increases mental effort. Integrating labels directly with data is a widely-accepted heuristic that improves processing speed and accuracy."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: Fix my chart >> Simple data"
+    url: https://www.datawrapper.de/blog/fix-my-chart-simple-data
+    note: "The article's revision replaces a legend with text annotations placed directly on the two areas of the chart, explaining what 'solved' and 'unsolved' cases represent."
+    role: primary
+
+examples:
+  - type: bad
+    description: "A chart that relies on a separate color legend requires the viewer to constantly shift their gaze between the chart and the legend to decode the data."
+  - type: good
+    description: "The revised chart uses text annotations ('Only 4-5% are ever solved') pointing directly to the relevant area, eliminating the need for a legend and making the chart faster to read."
+---
+
+## Guidance
+
+Whenever possible, place labels that identify data series directly on or next to the chart elements they describe (e.g., at the end of a line, inside a bar or area), rather than using a separate color legend.
+
+## Why
+
+A separate legend forces the viewer to look back and forth between the data and the key, increasing cognitive load and the time it takes to understand the chart. Direct labels place the meaning right next to the data, making the connection instant and effortless. This minimizes the mental work required to decode the visualization.
+
+## When it applies
+
+-   When you have a small number of distinct series (usually fewer than 5) that can be labeled without creating excessive clutter.
+-   In static charts where interactivity (like hover tooltips) is not available.
+
+## Exceptions
+
+-   With a very large number of series, a cluttered mess of direct labels may be worse than a legend.
+-   In interactive charts where series can be toggled on and off, a legend can double as a user interface control.
+-   When lines are densely packed or cross frequently, direct labels can become ambiguous or overlap.
+
+## How to Improve
+
+-   **Lines and Areas:** Place labels at the end of lines or directly within large, clear areas. Match the text color to the line/area color if contrast allows, or use black/white text with a subtle background glow for readability.
+-   **Pies and Donuts:** Label slices directly, either inside the slice or with a leader line pointing to it.
+-   **Stacked Bars:** If space permits, label segments directly inside the bar. If not, consider a different chart type like a grouped bar chart.
+
+```
+
+<split/>
+
+```md
+---
+id: remove-mute-gridlines
+title: "Remove or mute gridlines unless precise value lookups are essential"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - impact:aesthetic
+  - chart:bar
+  - chart:line
+  - chart:area
+  - chart:scatter
+  - task:trend
+  - task:compare
+  - task:distribution
+  - visual:position
+
+evidence:
+  strength: medium
+  summary: "Based on Edward Tufte's principle of maximizing the data-ink ratio. Removing non-data ink like heavy gridlines reduces visual noise, a widely accepted best practice in information visualization design to improve focus on data patterns."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: Fix my chart >> Simple data"
+    url: https://www.datawrapper.de/blog/fix-my-chart-simple-data
+    note: "The 'before' chart has visible gridlines, while the 'after' chart removes them entirely, resulting in a cleaner visual field where the data stands out more."
+    role: primary
+  - type: practitioner
+    ref: "Tufte, 2001, The Visual Display of Quantitative Information"
+    note: "Introduced the concept of the 'data-ink ratio,' arguing that good graphics should maximize the ink devoted to data and erase non-data ink, including excessive gridlines."
+    role: related
+
+examples:
+  - type: bad
+    description: "The original chart contains several horizontal gridlines that add visual noise without significantly aiding in the interpretation of the overall trend."
+  - type: good
+    description: "The revised chart removes all gridlines. This makes the shape of the data area the most prominent visual feature, focusing the viewer's attention on the trend over time."
+---
+
+## Guidance
+
+Remove gridlines completely, or mute them to a very light, non-obtrusive color (e.g., light gray). Only retain them when the primary goal of the chart is to enable users to look up precise numerical values.
+
+## Why
+
+Gridlines add visual clutter ("chart junk") that can compete with the data itself. For many common tasks, such as identifying trends, seeing patterns, or comparing general magnitudes, they are unnecessary. By removing or muting them, you increase the "data-ink ratio," which helps the actual data patterns stand out more clearly and creates a cleaner, more professional aesthetic.
+
+## When it applies
+
+-   When the chart's main purpose is to show trends, patterns, or general comparisons.
+-   In most charts intended for presentation or publication in articles.
+
+## Exceptions
+
+-   When the primary task is to look up and compare specific, precise values (e.g., "What was the exact value in 2018?").
+-   In dashboards or technical charts where users need to perform precise readings. Even then, they should be muted and not heavy black lines.
+
+## How to Improve
+
+-   **Quick Fix:** Change the color of your gridlines from black to a light gray.
+-   **Moderate Approach:** Remove all minor gridlines and keep only the major ones that correspond to the axis ticks.
+-   **Comprehensive Approach:** Remove all gridlines. If specific values are important, add them as direct labels to key data points instead.
+
+```
+
+<split/>
+
+```md
+---
+id: use-contextual-annotations-for-summaries
+title: "Replace generic summary lines with specific, contextual annotations"
+
+tags:
+  - impact:cognitive
+  - impact:logos
+  - impact:pathos
+  - chart:line
+  - chart:area
+  - chart:bar
+  - task:summary-mean
+  - task:trend
+
+evidence:
+  strength: low
+  summary: "A storytelling technique in data visualization that translates abstract statistics into concrete, understandable statements. This practitioner-led approach enhances narrative impact and is championed by data journalism outlets."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: Fix my chart >> Simple data"
+    url: https://www.datawrapper.de/blog/fix-my-chart-simple-data
+    note: "The article removes a generic '10-year average' line and replaces it with a specific text annotation: 'Over 29,000 cases of bike theft are recorded in the average year'."
+    role: primary
+
+examples:
+  - type: bad
+    description: "The original chart includes a dashed line labeled '10-year average'. This is abstract and requires the user to estimate its value and meaning."
+  - type: good
+    description: "The revised chart removes the line and adds a text annotation explaining the average in concrete, understandable terms, connecting the statistic directly to the chart's story."
+---
+
+## Guidance
+
+Instead of showing a simple reference line for a statistical summary (like an average), use a text annotation to state the insight in a full, contextual sentence.
+
+## Why
+
+A simple line representing an average is an abstract statistical concept. It shows a position but doesn't explain its significance. By replacing it with a text annotation that explains the statistic in concrete terms (e.g., "Over 29,000 cases of bike theft are recorded in the average year"), you translate the data from an abstract concept into a meaningful and memorable insight for the reader. This adds narrative power and clarity.
+
+## When it applies
+
+-   When showing summary statistics like means, medians, or targets.
+-   When the goal is to tell a story with the data, not just present raw statistics.
+-   When the exact value of the summary is more important than its position relative to every single data point.
+
+## Exceptions
+
+-   In statistical process control charts or other technical diagrams where reference lines have a standardized, well-understood meaning for an expert audience.
+-   When you need to show how multiple data points fall above or below the summary line.
+
+## How to Improve
+
+-   **Remove the summary line:** Delete the reference line from your chart.
+-   **Calculate the value:** Determine the value of the statistic (e.g., the 10-year average).
+-   **Write an insight:** Craft a sentence that explains what this value means in the context of your data.
+-   **Annotate the chart:** Add the sentence as a text annotation, pointing to the general area on the chart where the average falls.
+
+```

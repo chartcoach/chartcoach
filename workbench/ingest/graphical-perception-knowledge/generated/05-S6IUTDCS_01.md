@@ -2,7 +2,7 @@
 id: use-faceted-charts-for-accuracy-not-speed
 title: "Use faceted charts for accuracy, but be wary of increased completion time"
 
-tags S
+tags:
   - impact:perceptual
   - impact:cognitive
   - impact:performance

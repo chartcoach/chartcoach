@@ -21,7 +21,7 @@ tags:
 
 sources:
   - type: research
-    ref: Cleveland & McGill, 1984
+    ref: "Cleveland & McGill, 1984"
     url: https://doi.org/10.1080/01621459.1984.10478080
     note: "The foundational experimental paper establishing the perceptual hierarchy of visual encodings, showing position is judged more accurately than length and angle."
   - type: research

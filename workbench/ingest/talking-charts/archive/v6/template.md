@@ -78,7 +78,7 @@ evidence:
 
 sources:
   - type: research
-    ref: Cleveland & McGill, 1984
+    ref: "Cleveland & McGill, 1984"
     url: https://doi.org/10.2307/2288400
     note: "Foundational study (n=55) establishing perceptual ranking with significant accuracy differences (p<0.001)"
     role: primary # Options: primary | supporting | related
@@ -357,7 +357,7 @@ examples:
 
     Examples:
       - type: research
-        ref: Cleveland & McGill, 1984
+        ref: "Cleveland & McGill, 1984"
         url: https://doi.org/10.2307/2288400
         note: "Foundational study (n=55) establishing perceptual ranking with significant accuracy differences (p<0.001)"
         role: primary

@@ -22,7 +22,7 @@ tags:
   - medium:interactive
 sources:
   - type: research
-    ref: Cleveland & McGill, 1984
+    ref: "Cleveland & McGill, 1984"
     note: "Referenced as [17] in Zeng & Battle. Established the foundational ranking of perceptual tasks, showing position on a common scale is most accurate."
   - type: research
     ref: Heer & Bostock, 2010

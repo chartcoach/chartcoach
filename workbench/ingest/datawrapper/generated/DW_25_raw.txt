@@ -1,0 +1,316 @@
+```md
+---
+id: use-linear-interpolation-for-even-distributions
+title: "Use Linear Interpolation for Evenly Distributed Data"
+
+tags:
+  - impact:perceptual
+  - impact:logos
+  - impact:ethical
+  - chart:map.choropleth
+  - chart:heatmap
+  - task:distribution
+  - task:lookup
+  - task:compare
+  - data:quantitative
+  - data:spatial
+  - visual:color
+  - audience:general
+  - medium:*
+  - access:cognitive-load-risk
+
+evidence:
+  strength: medium
+  summary: "Recommended by visualization practitioners like Datawrapper for creating an intuitive mapping where color change is directly proportional to value change. This is most effective and honest for evenly distributed data, as it accurately represents the full range and highlights outliers."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: How to choose an interpolation for your color scale"
+    url: https://blog.datawrapper.de/interpolation-for-color-scales-and-maps/
+    note: "The article explains that linear interpolation is best for 'fairly even distributions' or to 'call attention to outliers' because it maps values to colors proportionally."
+    role: primary
+
+examples:
+  - type: good
+    description: "A choropleth map of a dataset with a uniform distribution using a linear scale. Each color step in the legend represents an equal range of values (e.g., 10-20, 20-30), and the map shows a variety of colors."
+  - type: bad
+    description: "A choropleth map of income (a highly skewed dataset) using a linear scale. Most of the map is a single light color, with only a few small, wealthy areas appearing dark, obscuring all variation among the majority."
+---
+
+## Guidance
+
+For quantitative data that is fairly evenly distributed, use a linear color scale interpolation. This applies to both stepped (classed) and continuous (unclassed) scales.
+
+## Why
+
+Linear interpolation creates a direct, proportional relationship between a value and its assigned color. Each step in value corresponds to an equal step in color. This is the most intuitive and transparent way to represent the data's full range, and it accurately highlights the magnitude of outliers.
+
+### Core Principle
+
+Visual encoding should be directly proportional to the data values unless there is a specific reason to distort the scale.
+
+## When it applies
+
+- When visualizing quantitative data (e.g., on a choropleth map or heatmap) where the values are spread out relatively evenly across the range.
+- When there are no significant skews or extreme outliers that would dominate the dataset.
+- When your primary goal is to show the absolute magnitude of values, including outliers, in a transparent way.
+
+## Exceptions
+
+Do not use linear interpolation for heavily skewed data. Outliers will consume most of the color range, "washing out" the variation in the denser parts of the distribution and making most data points appear in the same low-intensity color.
+
+## Trade-offs
+
+While honest to the full data range, linear interpolation can be less effective at showing subtle differences within dense clusters of data compared to methods like quantiles or natural breaks, which are designed to reveal such patterns.
+
+## Signs of Trouble
+
+- **The Washed-Out Map:** Most of your map or heatmap is one uniform, light color, with only a few tiny areas in dark colors. This indicates a skewed distribution where the linear scale is failing to show detail.
+- **Empty Legend Bins:** In a stepped legend, some color steps correspond to very few or no data points, while one step contains almost all of them.
+
+## How to Improve
+
+- **Quick Fix:** If your data is only slightly skewed, you can try using a diverging scale centered on the median instead of a sequential one to better balance the color distribution.
+- **Moderate Approach:** Switch to a different interpolation method. A quantile scale will ensure each color is used for an equal number of data points, revealing variation in the dense areas.
+- **Comprehensive Approach:** First, visualize your data's distribution with a histogram. If it is highly skewed, choose an interpolation method designed for that distribution, such as quantile or logarithmic scaling, to reveal more detail where most of the data lies.
+
+```
+
+<split/>
+
+```md
+---
+id: use-quantile-interpolation-for-skewed-data
+title: "Use Quantile Interpolation for Data with Outliers or Skew"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:map.choropleth
+  - chart:heatmap
+  - task:distribution
+  - task:rank
+  - data:quantitative
+  - data:spatial
+  - visual:color
+  - audience:general
+  - medium:*
+  - access:cognitive-load-risk
+
+evidence:
+  strength: medium
+  summary: "Recommended by visualization practitioners like Datawrapper for skewed distributions. Quantile binning ensures that each color in the scale represents an equal number of data points, revealing variation that would otherwise be obscured by a linear scale dominated by outliers."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: How to choose an interpolation for your color scale"
+    url: https://blog.datawrapper.de/interpolation-for-color-scales-and-maps/
+    note: "The article recommends Quantile (equal count) interpolation specifically 'For distributions with extreme outliers' because it 'distribute[s] the colors evenly' among the data points (e.g., counties)."
+    role: primary
+
+examples:
+  - type: good
+    description: "A map of US county population density (a highly skewed dataset) using a quantile scale. The map shows rich color variation across the entire country, allowing comparison between rural, suburban, and urban areas."
+  - type: bad
+    description: "Using a quantile scale on perfectly uniform data. This would create misleading breaks where none exist, implying differences in rank that are not meaningful."
+---
+
+## Guidance
+
+For quantitative data that is skewed or has extreme outliers, use a quantile-based interpolation for your color scale. For stepped scales, this is known as "Quantile" or "Equal Count"; for continuous scales, it involves setting the midpoint to the "Median".
+
+## Why
+
+Quantile interpolation assigns data points to color bins such that each bin contains the same number of data points (e.g., each of 5 colors gets 20% of the counties). This prevents outliers from consuming the entire color spectrum and instead "stretches" the color range over the densest parts of the distribution. This reveals more granular differences and allows for better rank-comparison where most of the data lies.
+
+### Core Principle
+
+The visual weight of a color in the chart should reflect its frequency in the dataset, not just its absolute value.
+
+## When it applies
+
+- When visualizing skewed datasets on choropleth maps or heatmaps, such as those involving population density, income, or other socio-economic indicators.
+- When your goal is to show variation and relative ranking across all data points, rather than focusing on the absolute magnitude of a few outliers.
+
+## Exceptions
+
+- If the absolute value of outliers is the most important part of the story, a linear scale might be more appropriate to emphasize their extreme magnitude.
+- Quantile scales can be misleading as they create large visual gaps between values that are numerically close but happen to fall on either side of a quantile boundary. The legend must be read carefully.
+
+## Trade-offs
+
+A quantile scale intentionally distorts the relationship between value and color. A small change in value might cross a color boundary, while a much larger change in value within a bin will show no color change at all. The legend becomes crucial, as the numeric ranges for each color step will be uneven and must be clearly displayed.
+
+## Signs of Trouble
+
+- **Misleading Legend:** The numeric ranges in your legend are highly irregular (e.g., 0-2.1, 2.1-3.5, 3.5-15.8). This can confuse viewers if not explained.
+- **Lost Magnitude:** An extreme outlier is colored the same as a value far smaller than it, obscuring its true scale. For example, New York City might be in the same dark blue bin as a much smaller city.
+
+## How to Improve
+
+- **Quick Fix:** Ensure your legend clearly displays the uneven numeric ranges for each color bin. Add a caption explaining that each color represents an equal number of regions (e.g., "Each color contains 20% of counties").
+- **Moderate Approach:** Combine the quantile approach with manual adjustments. Start with the calculated quantile breaks, then round them to "nicer" or more meaningful numbers to improve the legend's readability.
+- **Comprehensive Approach:** Supplement the map with another chart type. A bar chart of the top/bottom N values can restore the sense of true magnitude that the quantile map obscures. Alternatively, a logarithmic scale may be a more mathematically consistent way to handle the skew.
+
+```
+
+<split/>
+
+```md
+---
+id: use-natural-breaks-for-data-clustering
+title: "Use Natural Breaks (Jenks) to Classify Data into Natural Clusters"
+
+tags:
+  - impact:perceptual
+  - impact:logos
+  - chart:map.choropleth
+  - chart:heatmap
+  - task:distribution
+  - data:quantitative
+  - data:spatial
+  - visual:color
+  - audience:general
+  - medium:*
+  - access:cognitive-load-risk
+
+evidence:
+  strength: medium
+  summary: "The Jenks Natural Breaks algorithm is a data classification method that seeks to minimize variance within each class and maximize variance between classes. It is recommended by practitioners like Datawrapper for creating an optimized, data-driven grouping when the data has distinct clusters."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: How to choose an interpolation for your color scale"
+    url: https://blog.datawrapper.de/interpolation-for-color-scales-and-maps/
+    note: "The article recommends Natural Breaks (Jenks) 'To take distribution into account' as a method that finds natural clusters in the data."
+    role: primary
+  - type: research
+    ref: "Jenks, 1967, The Data Model Concept in Statistical Mapping"
+    note: "The foundational paper describing the algorithm for optimal data classification by minimizing intra-class variance."
+    role: related
+
+examples:
+  - type: good
+    description: "A map of per-capita GDP where natural breaks correctly group countries into 'developing', 'emerging', and 'developed' clusters that exist in the data, creating a more intuitive and insightful visualization."
+  - type: bad
+    description: "Using natural breaks to compare two different maps (e.g., 2010 vs 2020). Because the breaks are calculated independently for each dataset, the same color will represent a different range of values on each map, making direct comparison impossible."
+---
+
+## Guidance
+
+When your data appears to have distinct groupings, use the Natural Breaks (Jenks) classification method to define the steps in your color scale.
+
+## Why
+
+The Natural Breaks algorithm is a statistical method that identifies the best way to slice up data by finding natural gaps between clusters of values. It creates classes where the values inside each class are very similar to each other, and the differences between classes are large. This produces a map that is both statistically optimized and often visually intuitive, as it groups like with like.
+
+### Core Principle
+
+Data classification should reflect the inherent structure of the data itself, grouping similar items and separating dissimilar ones.
+
+## When it applies
+
+- When you want to create a choropleth map or heatmap that groups similar areas together in an objective, data-driven way.
+- When you are exploring a dataset and want to see if there are meaningful clusters within it. It's a strong general-purpose choice when you are unsure about the data's distribution.
+
+## Exceptions
+
+- When comparing multiple maps (e.g., across time or regions), do not use Natural Breaks on each map individually. The break points will be different for each dataset, making the colors non-comparable. In this case, use a single, fixed classification scheme for all maps.
+
+## Trade-offs
+
+The resulting class limits can be irregular and non-intuitive (e.g., 3.72, 5.91, 8.44), making the legend harder to read than one with rounded numbers. The calculation is also entirely data-dependent, making it difficult to explain the rationale behind the breaks beyond "the algorithm chose them."
+
+## Signs of Trouble
+
+- **Unreadable Legend:** The break points in the legend have many decimal places or seem arbitrary, making them hard for a user to remember or interpret.
+- **Non-Comparable Maps:** You have multiple maps that you want viewers to compare, but since each uses its own unique Natural Breaks, the same color means different things on each map, invalidating any comparison.
+
+## How to Improve
+
+- **Quick Fix:** After calculating the Jenks breaks, manually round them to the nearest simple number (e.g., round 8.44 to 8.5). This slightly compromises statistical optimality for a significant gain in readability.
+- **Moderate Approach:** If comparability across small multiples is needed, calculate the Natural Breaks on the *entire combined dataset*, and then apply those same fixed breaks to all your individual maps.
+- **Comprehensive Approach:** If the breaks seem arbitrary even after calculation, it may be that your data doesn't have strong natural clusters. In that case, another method like quantiles (for ranking) or linear (for showing magnitude) might be more appropriate and easier to explain.
+
+```
+
+<split/>
+
+```md
+---
+id: use-custom-color-scale-breaks
+title: "Use Custom Color Scale Breaks for Readability and Emphasis"
+
+tags:
+  - impact:logos
+  - impact:pathos
+  - impact:ethos
+  - impact:cognitive
+  - chart:map.choropleth
+  - chart:heatmap
+  - task:lookup
+  - task:compare
+  - data:quantitative
+  - data:spatial
+  - visual:color
+  - audience:*
+  - medium:*
+  - impact:ethical
+
+evidence:
+  strength: low
+  summary: "A common practitioner technique, as promoted by tools like Datawrapper, for manually setting color class breaks to align with meaningful thresholds (e.g., policy targets, averages). This improves interpretability and narrative focus but lacks a formal evidence base."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: How to choose an interpolation for your color scale"
+    url: https://blog.datawrapper.de/interpolation-for-color-scales-and-maps/
+    note: "The article recommends custom interpolation 'For flexibility and to make steps easier to read', highlighting its use for creating more understandable legends."
+    role: primary
+
+examples:
+  - type: good
+    description: "A map of unemployment rates where a color break is explicitly set at the national average, and another at a key policy threshold, immediately showing which regions are above or below these important benchmarks."
+  - type: bad
+    description: "A map of election results where custom breaks are strategically chosen just above and below 50% to exaggerate a party's lead, making narrow wins look like landslides. This is a form of chart manipulation."
+---
+
+## Guidance
+
+Manually set custom break points for your color scale to align with meaningful, easy-to-understand, or narratively important values.
+
+## Why
+
+While data-driven methods like quantiles or Natural Breaks are objective, they often result in awkward numbers in the legend (e.g., 17.38%). Custom breaks allow you to choose "nice" round numbers (e.g., 5%, 10%, 15%) or values that have real-world significance (e.g., the average value, a policy target, or zero for a diverging scale). This makes the chart easier for the audience to read and connects the visualization directly to the story you are telling.
+
+### Core Principle
+
+A visualization should be optimized for human interpretation, which often means prioritizing clear, memorable thresholds over pure statistical representation.
+
+## When it applies
+
+- When you want to make your legend easy to read (e.g., using 10, 20, 30 instead of 11.2, 23.1, 34.9).
+- When you need to highlight specific thresholds, such as values above or below an average, a target, or a previous result.
+- When creating multiple maps that must be comparable, requiring a consistent, shared classification scheme across all of them.
+
+## Exceptions
+
+Arbitrarily choosing custom breaks without justification can be a form of manipulation, intentionally hiding or exaggerating features in the data. Your choices must be deliberate, justifiable, and transparent to maintain ethical integrity.
+
+## Trade-offs
+
+Custom breaks are subjective and sacrifice the statistical objectivity of methods like Jenks or quantiles. Poorly chosen breaks can misrepresent the underlying distribution and may be perceived as biased if not properly justified.
+
+## Signs of Trouble
+
+- **Gerrymandered Bins:** The custom breaks appear strategically chosen to push certain regions into specific bins to support a biased narrative.
+- **Empty Bins:** Your chosen breaks result in some color steps having no data points, which suggests the breaks don't fit the data well and are wasting parts of your color scale.
+- **Lost Nuance:** The custom breaks are too broad, lumping together areas with meaningfully different values into the same color and hiding important variation.
+
+## How to Improve
+
+- **Quick Fix:** Always explain *why* you chose your custom breaks in a caption or annotation (e.g., "Colors change at the national average of 5.2%"). Transparency builds trust.
+- **Moderate Approach:** Use a data-driven method like quantiles or Natural Breaks as a starting point, then round or adjust those breaks to more readable or meaningful numbers. This combines statistical rigor with improved readability.
+- **Comprehensive Approach:** If you're highlighting a single, specific threshold, consider a simpler two-color (binary) or diverging color scheme. For example, use one color for values below the average and another for values above the average. This focuses audience attention directly on the most important comparison.
+
+```

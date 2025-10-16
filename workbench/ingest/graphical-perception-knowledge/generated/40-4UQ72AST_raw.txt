@@ -94,7 +94,7 @@ sources:
     note: "Synthesizes five papers comparing bar and pie charts, concluding bar charts outperform for 'sort' tasks (Section 5.2.3, Table 9)."
     role: primary
   - type: research
-    ref: Cleveland & McGill, 1984
+    ref: "Cleveland & McGill, 1984"
     url: https://doi.org/10.1080/01621459.1984.10478280
     note: "Foundational experiment showing position/length judgments are perceptually superior to angle/area judgments."
     role: supporting
@@ -250,7 +250,7 @@ sources:
     note: "Formalized the ranking of perceptual tasks, establishing expressiveness and effectiveness criteria for visual encodings."
     role: supporting
   - type: research
-    ref: Cleveland & McGill, 1984
+    ref: "Cleveland & McGill, 1984"
     url: https://doi.org/10.1080/01621459.1984.10478280
     note: "Provided the foundational experimental data for the perceptual ranking of visual channels."
     role: supporting

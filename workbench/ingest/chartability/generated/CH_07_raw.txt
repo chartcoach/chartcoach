@@ -1,0 +1,85 @@
+```md
+---
+id: ensure-sufficient-contrast
+title: "Ensure sufficient contrast for text and graphic elements"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - impact:accessibility
+  - chart:*
+  - task:*
+  - data:*
+  - visual:color
+  - audience:*
+  - medium:*
+  - access:color-vision-risk
+  - access:cognitive-load-risk
+
+evidence:
+  strength: high
+  summary: "WCAG 2.1 standards (Success Criterion 1.4.3 & 1.4.11) mandate minimum contrast ratios (4.5:1 for regular text, 3:1 for large text and graphic components) to ensure readability for users, particularly those with low vision. Audits consistently show low contrast as a frequent accessibility failure (Elavsky et al., 2022 notes 88% failure rate)."
+
+sources:
+  - type: standard
+    ref: WCAG 2.1 Understanding Non-Text Contrast
+    url: https://www.w3.org/WAI/WCAG21/Understanding/non-text-contrast.html
+    note: "Requires user-interface components and graphical objects to have a contrast ratio of at least 3:1 against adjacent colors. Regular text requires 4.5:1."
+    role: primary
+  - type: research
+    ref: Elavsky et al., 2022
+    url: https://onlinelibrary.wiley.com/doi/10.1111/cgf.14522
+    note: "This paper highlights low contrast as the most common accessibility failure (88% of audits) and synthesizes guidelines from various sources."
+    role: primary
+
+tools:
+  - type: validate
+    name: WebAIM Contrast Checker
+    url: https://webaim.org/resources/contrastchecker/
+    description: "Lets designers enter foreground and background colors to calculate contrast ratios and check against WCAG AA/AAA criteria."
+
+examples:
+  - type: good
+    description: "An interactive notebook demonstrating how to achieve high contrast in data visualizations, explaining contrast ratios and showing measurement techniques for text and chart geometries."
+    url: https://observablehq.com/@frankelavsky/high-contrast-for-data-visualization-with-examples
+---
+
+## Guidance
+
+Geometries and large text must have >3:1 contrast against background. Regular text must have >4.5:1 contrast against background.
+
+## Why
+
+Sufficient contrast ensures that text and visual elements are perceivable and readable for all users, including those with low vision, color vision deficiencies, or in challenging viewing conditions. Low contrast increases cognitive load and can render essential information invisible, making a visualization inaccessible. This is a fundamental principle of perceivability.
+
+### Core Principle
+
+Ensure perceivable information for all users by providing adequate visual differentiation between foreground and background elements.
+
+## When it applies
+
+-   When any text (titles, labels, annotations) is used in a visualization.
+-   When any graphic elements (bars, lines, points, backgrounds, interactive states) communicate information.
+-   In all static and interactive visualizations across all media.
+
+## Exceptions
+
+None known. While future standards (WCAG 3.0) may refine contrast models, the fundamental need for sufficient contrast remains absolute for accessibility.
+
+## Trade-offs
+
+Achieving high contrast can sometimes constrain aesthetic color choices or require careful selection of palettes. However, accessibility should take precedence over purely aesthetic preferences for essential information.
+
+## Signs of Trouble
+
+-   **The Squint Test:** If you squint at your chart, can you still clearly distinguish text and graphic elements from their backgrounds?
+-   **Faded Appearance:** Text or shapes appear dull, washed out, or blend into the background, especially against complex backgrounds.
+-   **Difficulty Reading:** Users report difficulty reading labels, titles, or differentiating chart components.
+-   **Automated Audit Failures:** Contrast checker tools report violations of WCAG 2.1 AA contrast requirements for text or non-text content.
+
+## How to Improve
+
+-   **Quick approach:** Use a contrast checker tool (e.g., WebAIM Contrast Checker) to test foreground and background color pairs. Adjust one or both colors to meet the minimum 4.5:1 ratio for regular text and 3:1 for large text/geometries.
+-   **Moderate approach:** Prioritize luminance contrast over hue or saturation when selecting color palettes. Ensure a wide range of lightness values, especially for text and critical graphic elements against their backgrounds. Test colors against WCAG standards as an integral part of the design process.
+-   **Comprehensive approach:** Integrate contrast testing into your design system and development pipeline. Provide users with options to switch to high-contrast themes or allow their operating system's high-contrast settings to be respected. For interactive elements, ensure state changes (e.g., hover, focus) also maintain sufficient contrast against their previous state and background.
+```

@@ -1,0 +1,94 @@
+```md
+---
+id: low-contrast
+title: "Ensure sufficient contrast for text and graphical elements"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - impact:accessibility
+  - impact:inclusion
+  - impact:logos
+  - impact:pathos
+  - impact:ethos
+  - impact:ethical
+  - chart:*
+  - task:*
+  - data:*
+  - visual:color
+  - audience:*
+  - audience:low-literacy
+  - medium:*
+  - access:color-vision-risk
+  - access:cognitive-load-risk
+
+evidence:
+  strength: high
+  summary: "WCAG 2.1 requires text to have a 4.5:1 contrast ratio and non-text elements (like chart geometries) to have 3:1. This is critical for readability by users with low vision and cognitive disabilities. Authors of Chartability found low contrast to be the most common failure, occurring in 88% of their audits."
+
+sources:
+  - type: research
+    ref: Elavsky et al., 2022
+    url: https://onlinelibrary.wiley.com/doi/10.1111/cgf.14522
+    note: "Paper collating accessibility checklists, finding low contrast to be the most common failure (88% of audits)."
+    role: primary
+  - type: standard
+    ref: WCAG 2.1 Understanding Non-Text Contrast
+    url: https://www.w3.org/WAI/WCAG21/Understanding/non-text-contrast.html
+    note: "Requires user-interface components and graphical objects (such as icons, form controls and charts) to have a contrast ratio of at least 3:1 against adjacent colours. Also, regular text requires 4.5:1 contrast."
+    role: primary
+
+tools:
+  - type: validate
+    name: WebAIM Contrast Checker
+    url: https://webaim.org/resources/contrastchecker/
+    description: "The WebAIM Contrast Checker lets designers enter foreground and background colours to calculate contrast ratios. It reports the ratio and shows whether the combination meets WCAG AA or AAA criteria, helping people adjust colours so that text and UI elements have sufficient contrast."
+
+examples:
+  - type: good
+    description: "This interactive notebook demonstrates how to achieve high contrast in data visualisations. It explains that regular text should have a contrast ratio of at least 4.5:1 and non‑text elements (like chart geometries) need a 3:1 contrast. Examples show how to measure contrast using colour pickers and dropper tools to ensure charts are accessible for viewers with low vision."
+    url: https://observablehq.com/@frankelavsky/high-contrast-for-data-visualization-with-examples
+---
+
+## Guidance
+
+Ensure chart geometries and large text have a contrast ratio of at least 3:1 against their background, and regular text has a ratio of at least 4.5:1.
+
+## Why
+
+Low contrast makes text and graphical elements difficult or impossible to read and distinguish for users with low vision, color vision deficiencies, or cognitive impairments. Adhering to contrast standards significantly improves readability and accessibility for a wide range of users. It is also one of the most common accessibility failures, occurring in 88% of audits performed by the Chartability authors.
+
+### Core Principle
+
+All information and user interface components must be presentable to users in ways they can perceive.
+
+## When it applies
+
+-   Whenever text (labels, titles, annotations) or graphical elements (bars, lines, points, backgrounds) are used in a visualization.
+-   When content must be readable or distinguishable by users with low vision or certain cognitive disabilities.
+
+## Exceptions
+
+-   **Incidental elements:** Decorative elements that convey no information, inactive user interface components, or elements that are part of a logo or brand name are exempt from contrast requirements.
+-   **Meaning conveyed by other means:** If the change in state for an interactive element is communicated through other redundant indicators (e.g., a change in stroke thickness of at least 2px, a dash pattern, or a marker), then contrast color difference for that state change might not be strictly required.
+
+## Trade-offs
+
+-   Achieving high contrast might constrain aesthetic choices or force deviations from brand-specific color palettes.
+-   It can be challenging to maintain sufficient contrast across a complex chart with many data points or layers without making the chart feel overly busy.
+-   Current WCAG 2.x contrast models have known limitations, and while WCAG 3.0 aims to improve this, it is not yet standard.
+
+## Signs of Trouble
+
+-   **The Squint Test:** If you squint at the visualization, do text or chart elements blend into the background or into each other?
+-   **Automated Checker Warnings:** A contrast checking tool (like WebAIM Contrast Checker) reports failures for text or graphical objects when testing their foreground and background colors.
+-   **Readability Complaints:** Users report difficulty reading text or distinguishing chart elements, especially on different screens, in varied lighting conditions, or with vision impairments.
+
+## How to Improve
+
+-   **Quick approach:** Use a contrast checker (e.g., WebAIM Contrast Checker) to identify failing color pairs. Adjust the lightness or darkness difference between foreground text/elements and their background until the required 4.5:1 (for regular text) or 3:1 (for large text and graphical objects) ratio is met.
+
+-   **Moderate approach:** Systematically select color palettes that are designed for high contrast and accessibility from the outset. Prioritize distinct luminance values over mere hue differences for critical elements to ensure visual separation regardless of color perception.
+
+-   **Comprehensive approach:** Integrate accessibility directly into your design system and development workflow to ensure contrast is a foundational consideration. This may involve providing users with options to switch to a high-contrast theme or dynamically adjust contrast settings, respecting user preferences from operating systems or browser extensions.
+```

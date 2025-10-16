@@ -1,0 +1,891 @@
+```md
+---
+id: use-distinct-categorical-colors
+title: "Use perceptually distinct colors for categorical data"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - impact:accessibility
+  - chart:*
+  - task:compare
+  - task:lookup
+  - data:categorical
+  - visual:color
+  - audience:*
+  - access:cognitive-load-risk
+
+evidence:
+  strength: high
+  summary: "This is a foundational principle of visual encoding, widely supported by practitioner consensus and perceptual science. The goal is to maximize the visual distance between colors to make them unambiguously discriminable, reducing cognitive load and errors in chart reading."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: A friendly guide to colors in data visualisation"
+    url: https://blog.datawrapper.de/colorguide/
+    note: "The guide recommends picking colors that are 'far apart' and provides visual examples of good color pairs (e.g., #60a862 and #726dd9) versus bad pairs that are too similar."
+    role: primary
+  - type: research
+    ref: "Healey & Enns, 2012. Attention and Visual Memory in Visualization and Computer Graphics"
+    url: https://doi.org/10.1109/TVCG.2011.127
+    note: "Synthesizes research on pre-attentive processing, showing that color is a primary feature for rapidly distinguishing objects, but only when the colors are sufficiently different."
+    role: supporting
+
+tools:
+  - type: implement
+    name: ColorBrewer
+    url: https://colorbrewer2.org/
+    description: Provides a set of well-tested, perceptually distinct categorical color schemes.
+  - type: implement
+    name: IWantHue
+    url: https://medialab.github.io/iwanthue/
+    description: Generates custom palettes of optimally distinct colors for a given number of categories.
+  - type: learn
+    name: Color pairs by distance
+    url: https://blog.datawrapper.de/colorguide/#color-distance
+    description: An interactive tool in the source article that shows the perceptual distance between two colors.
+
+examples:
+  - type: good
+    description: "A palette where each color (e.g., a blue, an orange, a green) is clearly different from every other color, even when viewed as small points or thin lines."
+  - type: bad
+    description: "A palette that uses multiple shades of the same hue (e.g., light blue, medium blue, dark blue) to represent different categories. These are difficult to tell apart, especially for non-adjacent items."
+---
+
+## Guidance
+
+Use colors that are easy to tell apart for different categories in your chart. The more visually distinct the colors are, the easier and faster your audience can decode the information.
+
+## Why
+
+The primary purpose of using color for categorical data is to enable viewers to quickly and accurately distinguish between different groups. If colors are too similar (e.g., a light green and a teal), viewers have to exert more mental effort to match the data marks to the legend. This increases cognitive load, slows down interpretation, and can lead to errors.
+
+### Core Principle
+
+Make the most important comparisons the easiest to see. For categorical data, distinguishing between categories is the primary comparison, so the colors used should make this task as effortless as possible.
+
+## When it applies
+
+- Any time you are using color to represent different, non-ordered categories (e.g., countries, products, survey responses).
+- This applies to virtually all chart types that use color for categories, including bar charts, line charts, pie charts, and scatter plots.
+
+## Exceptions
+
+- When using different shades of a single hue to represent categories that have a meaningful relationship, such as different sub-groups of a larger whole. However, this often moves into the territory of sequential color use and should be done with caution.
+- If the colors are tied to specific, unchangeable brand identities that happen to be similar. In this case, consider adding other visual cues like direct labels, icons, or different shapes to aid distinction.
+
+## Trade-offs
+
+- **Aesthetics vs. Clarity:** Sometimes the most perceptually distinct colors can create a palette that feels jarring or aesthetically unpleasing. You may need to balance perfect discriminability with a color scheme that is harmonious and fits the overall tone.
+- **Number of Colors:** It becomes exponentially harder to find distinct colors as you increase the number of categories.
+
+## Signs of Trouble
+
+- **The Squint Test:** If you squint your eyes while looking at the chart, do different categories blend together into a single mass?
+- **Subtle Neighbors:** Does your legend contain two colors that are very similar in hue or brightness (e.g., a bright yellow and a light green)?
+- **Constant Back-and-Forth:** Do you find yourself repeatedly glancing between the chart and the legend to be sure which color corresponds to which category?
+
+## How to Improve
+
+- **Quick Fix: Increase Saturation/Brightness Differences.** If two colors are of a similar hue (e.g., two blues), make one much darker and the other much lighter. The difference in luminance is a powerful cue for distinction.
+- **Moderate Approach: Use a Pre-built, Tested Palette.** Instead of picking colors by hand, use a tool like ColorBrewer or a built-in "colorblind-safe" palette from your charting software. These have been designed to maximize perceptual distance.
+- **Comprehensive Approach: Build a Palette Based on Perceptual Models.** Use a tool like IWantHue or Viz Palette that operates in a perceptually uniform color space (like L*C*h). This allows you to generate a set of colors that are mathematically equidistant from each other in terms of how humans perceive them, while also checking for color vision deficiency issues.
+
+```
+
+<split/>
+
+```md
+---
+id: limit-categorical-colors
+title: "Limit categorical palettes to 5-7 colors"
+
+tags:
+  - impact:cognitive
+  - impact:perceptual
+  - chart:*
+  - task:compare
+  - task:lookup
+  - data:categorical
+  - data:cardinality.high
+  - visual:color
+  - audience:*
+  - access:cognitive-load-risk
+
+evidence:
+  strength: high
+  summary: "Based on principles of cognitive psychology regarding the limits of working memory (Miller's Law, 'The Magical Number Seven, Plus or Minus Two'). Exceeding this limit forces users to constantly re-scan the legend, significantly increasing cognitive load. This is a widely-held best practice in data visualization."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: A friendly guide to colors in data visualisation"
+    url: https://blog.datawrapper.de/colorguide/
+    note: "The article advises to 'Use a limited number of colors' and shows a 'Don't' example of a pie chart with 12 colors, which is labeled as confusing and hard to read."
+    role: primary
+  - type: research
+    ref: "Miller, G. A., 1956. The magical number seven, plus or minus two"
+    url: http://www.psych.utoronto.ca/users/peterson/psy430s2001/Miller%20GA%201956%20Magical%20Number%207.pdf
+    note: "Foundational paper in cognitive psychology suggesting that the channel capacity for short-term memory is limited to about 7 distinct items."
+    role: supporting
+
+tools:
+  - type: learn
+    name: "Datawrapper: Why you shouldn't use more than 6 colors"
+    url: https://blog.datawrapper.de/many-colors-in-a-chart/
+    description: "A more detailed article explaining the cognitive reasons for limiting colors and providing alternative strategies."
+
+examples:
+  - type: bad
+    description: "A pie chart or line chart with 10-12 different colored categories. Viewers cannot remember which color is which and must constantly reference the legend."
+  - type: good
+    description: "A bar chart with over 10 categories where only the top 5 are individually colored and the rest are grouped into a single gray 'Other' category. This focuses attention and respects cognitive limits."
+---
+
+## Guidance
+
+When using color to distinguish between categories, limit your palette to a maximum of 5-7 distinct colors.
+
+## Why
+
+Human working memory is limited. Most people can only track about 5-7 different visual items at a time. When a chart presents more colors than this, the viewer cannot hold the mapping between colors and categories in their head. They are forced into a tedious and inefficient process of looking at a data point, finding its color in the legend, reading the category name, and then repeating this for every single comparison. This dramatically increases cognitive load and makes the chart frustrating to use.
+
+### Core Principle
+
+Reduce the cognitive work required to decode your visualization. Design for the limits of human attention and memory to make your chart feel effortless to understand.
+
+## When it applies
+
+- Whenever you are using a color legend to map colors to categorical data.
+- Particularly critical for chart types where data marks are small or separated, like line charts and scatter plots, as the legend is the only way to decode them.
+- When you have data with high cardinality (many unique categories).
+
+## Exceptions
+
+- When colors are not meant to be individually identified but to give an overall impression of diversity or complexity (though this is a rare and advanced use case).
+- When the chart is interactive and the user can hover over elements to see their category, which offloads the memory burden to the interface. However, the static view of the chart should still be as clear as possible.
+- For maps where adjacent regions must have different colors (the four-color theorem). Even here, recycling a small set of colors is the standard approach.
+
+## Trade-offs
+
+- **Detail vs. Clarity:** Limiting colors may require you to group smaller categories into an "Other" bucket. This sacrifices detail about those individual categories in favor of making the overall chart much clearer and more focused on the main players.
+
+## Signs of Trouble
+
+- **Rainbow Overload:** The chart uses a large number of colors that start to resemble a rainbow.
+- **Legend Dominance:** The legend takes up a significant portion of the chart's total area and contains a long list of items.
+- **Mental Gymnastics:** You feel like you're playing a memory game, constantly trying to remember if "light purple" was "Category X" or "Category Y".
+
+## How to Improve
+
+- **Quick Fix: Group Minor Categories.** Identify the top 3-5 most important categories. Assign distinct colors to them and group all remaining categories into a single, neutral gray "Other" category.
+- **Moderate Approach: Highlight, Don't Distinguish.** Instead of giving every category a unique color, make most of them a neutral gray and use one or two bright colors to highlight the specific categories that are central to your story.
+- **Comprehensive Redesign: Change the Chart Type.** If distinguishing between all 10+ categories is essential, a color legend is the wrong approach. Switch to a chart type that allows for direct labeling, such as a bar chart or a dot plot. This eliminates the need for a legend entirely, as each category is clearly labeled along its axis.
+
+```
+
+<split/>
+
+```md
+---
+id: use-conventional-colors
+title: "Use conventional colors for concepts with strong associations"
+
+tags:
+  - impact:cognitive
+  - impact:inclusion
+  - impact:ethos
+  - chart:*
+  - task:lookup
+  - data:categorical
+  - visual:color
+  - audience:general
+
+evidence:
+  strength: medium
+  summary: "This is a widely-accepted practitioner heuristic based on communication theory and cognitive schemas. Using established color conventions leverages the audience's existing knowledge, reducing cognitive load and increasing interpretation speed. Violating them can cause significant confusion."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: A friendly guide to colors in data visualisation"
+    url: https://blog.datawrapper.de/colorguide/
+    note: "The article advises to 'Consider conventions' and provides examples such as using red for Republicans and blue for Democrats in the US, and using national flag colors for countries (e.g., red/white/blue for Croatia)."
+    role: primary
+
+examples:
+  - type: good
+    description: "In a chart about US politics, the Republican party is colored red and the Democratic party is colored blue, matching the convention used by all major news outlets."
+  - type: good
+    description: "A chart about environmental topics uses shades of green and blue, tapping into the common association of these colors with nature."
+  - type: bad
+    description: "A chart showing survey results for 'Yes'/'No' answers colors 'Yes' in red and 'No' in green. This conflicts with the widespread 'red = stop/bad', 'green = go/good' convention, causing confusion."
+---
+
+## Guidance
+
+When visualizing concepts that have strong, pre-existing color associations (like political parties, brands, or abstract concepts like "good" vs. "bad"), use the conventional colors.
+
+## Why
+
+Your audience does not come to your chart as a blank slate. They bring a lifetime of cultural and learned associations with them. Leveraging these conventions acts as a cognitive shortcut, making your chart instantly more intuitive. For example, in the US, coloring Democrats blue and Republicans red is an immediate, universally understood code. Using these colors means your audience can understand the chart without even looking at the legend. Conversely, violating a strong convention (e.g., coloring Democrats red) creates cognitive dissonance, forcing the viewer to unlearn their expectation and actively work to decode your chart, which can lead to misinterpretation or distrust.
+
+### Core Principle
+
+Don't make your audience think more than they have to. Meet them where they are by using the visual language they already understand.
+
+## When it applies
+
+- Visualizing political data (e.g., election maps, polling results).
+- Charting data related to specific brands (e.g., comparing market share of Coca-Cola, Pepsi, and Sprite).
+- Representing concepts with strong symbolic color meanings (e.g., green for positive/growth, red for negative/loss; gold/silver/bronze for 1st/2nd/3rd place).
+- Visualizing data for countries or teams with well-known flag or jersey colors.
+
+## Exceptions
+
+- When the conventional colors have poor perceptual properties (e.g., they are not colorblind-safe or have poor contrast). In this case, your primary responsibility is to make the chart readable, but you should acknowledge that you are deviating from the norm.
+- When you are intentionally subverting the convention to make a specific rhetorical point. This is an advanced technique and should be used with extreme care, as it can easily backfire.
+- When visualizing for an international audience where conventions may differ or not exist. For example, the red/blue political convention is specific to the US; in other countries, party colors are different (e.g., red for Labour in the UK, orange for the NDP in Canada).
+
+## Trade-offs
+
+- **Brand Guidelines vs. Convention:** A company's brand palette may conflict with a common convention. For example, if your brand color is red and you are charting financial growth, using red for positive numbers would be confusing. In these cases, the semantic convention should usually take precedence over brand consistency within the chart itself.
+
+## Signs of Trouble
+
+- **Cognitive Dissonance:** A viewer says, "Wait, I thought [X] was supposed to be the blue one?"
+- **Slower Interpretation:** Viewers pause for a long time before they can answer a simple question about the chart, as they have to consciously override their initial assumption.
+- **Accusations of Bias:** If you swap political colors, viewers may assume you are being intentionally misleading or are ignorant of the topic.
+
+## How to Improve
+
+- **Quick Fix: Research First.** Before choosing colors, do a quick search for "[Category] color convention" (e.g., "US political party colors"). Follow the established standard.
+- **Moderate Approach: Adapt Conventions for Accessibility.** If a conventional color is not accessible (e.g., a yellow with poor contrast), find the closest accessible alternative. For example, use a darker, more accessible gold instead of a light yellow.
+- **Comprehensive Approach: Add Redundant Cues.** If you must deviate from a convention, or if no convention exists, don't rely on color alone. Add direct labels, icons, or other markers so that the chart is understandable even if the color mapping isn't intuitive.
+
+```
+
+<split/>
+
+```md
+---
+id: use-thematic-colors
+title: "Choose colors that are thematically appropriate for your topic"
+
+tags:
+  - impact:pathos
+  - impact:aesthetic
+  - impact:ethos
+  - chart:*
+  - data:*
+  - visual:color
+  - audience:*
+
+evidence:
+  strength: low
+  summary: "This is a qualitative design heuristic focused on aesthetics and narrative resonance, rather than a rule based on quantitative perceptual research. Practitioner guides and expert designers advocate for this to create more cohesive and emotionally engaging visualizations."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: A friendly guide to colors in data visualisation"
+    url: https://blog.datawrapper.de/colorguide/
+    note: "The article advises to 'Use a color that fits your topic', showing an example of using green colors for a chart about nature and warm, sepia-toned colors for a chart about the colors of old book covers."
+    role: primary
+
+examples:
+  - type: good
+    description: "A chart about ocean temperatures uses a palette of blues."
+  - type: good
+    description: "A visualization about wine production uses shades of red, white, and rosé."
+  - type: bad
+    description: "A chart showing the decline in rainforest area is colored in bright, cheerful pinks and yellows, creating a tonal mismatch with the serious subject matter."
+---
+
+## Guidance
+
+Whenever possible, choose a color palette that has a thematic or semantic connection to the subject of your visualization.
+
+## Why
+
+Colors are not just abstract codes; they carry powerful emotional and cultural associations. Aligning your color choice with your topic creates a more cohesive, memorable, and persuasive visualization. A chart about deforestation that uses greens and browns feels more grounded and intuitive than one that uses purples and oranges. This thematic resonance can make your chart feel more professional and authoritative (ethos) and can subtly reinforce the chart's message (pathos), all while making it more aesthetically pleasing.
+
+### Core Principle
+
+Good design reinforces content. The visual elements of your chart, including color, should support and enhance the data's story, not feel arbitrary or disconnected.
+
+## When it applies
+
+- This is a general stylistic consideration that can be applied to almost any chart.
+- It is particularly effective in journalistic or narrative visualizations where engaging the audience on an emotional level is important.
+- When creating charts for a specific theme or report (e.g., an annual environmental report).
+
+## Exceptions
+
+- **When it conflicts with clarity.** Perceptual clarity always comes first. If the "thematic" colors are too similar to each other or are not colorblind-safe, you must prioritize a more discriminable palette. A readable chart with "boring" colors is always better than a beautiful but unreadable one.
+- **When it conflicts with strong conventions.** For example, when charting US political data, you must use the conventional red/blue, even if your personal aesthetic prefers a different palette.
+- **When no obvious theme exists.** For abstract financial or scientific data, a clean, neutral, and highly functional palette is often a better choice than forcing a thematic connection that isn't there.
+
+## Trade-offs
+
+- **Originality vs. Obviousness:** Leaning too heavily on thematic clichés (e.g., always using blue for water) can sometimes feel unoriginal. The goal is to be evocative, not stereotypical.
+- **Finding good palettes:** It can be time-consuming to find a palette that is both thematically appropriate and perceptually effective (i.e., distinct, ordered, and accessible).
+
+## Signs of Trouble
+
+- **Tonal Dissonance:** The mood of the color palette feels at odds with the topic (e.g., a serious topic with playful colors).
+- **Arbitrary Feel:** The colors seem randomly chosen and have no connection to the subject matter, making the chart feel generic.
+- **Viewer Confusion:** A viewer asks, "Why did you choose these colors?" and there is no good answer related to the data's story.
+
+## How to Improve
+
+- **Quick Fix: Brainstorm & Sample.** Brainstorm words associated with your topic. Search for images related to those words (e.g., search for "autumn" for a chart about seasonal data) and use a color picker tool to sample colors from those images to build a palette.
+- **Moderate Approach: Copy from the Masters.** Look at high-quality data visualizations on a similar topic from sources like The New York Times, The Pudding, or National Geographic. Analyze their color choices and adapt them for your own use. The Datawrapper article specifically suggests copying from others like The Economist or FiveThirtyEight.
+- **Comprehensive Approach: Use Themed Palette Tools.** Use tools that can generate palettes from images or keywords. Tools like Adobe Color allow you to upload a photo and extract a color theme, which can be a great way to build a professional-looking, thematic palette.
+
+```
+
+<split/>
+
+```md
+---
+id: use-color-for-highlighting
+title: "Use a single, saturated color to highlight key data against a muted background"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:*
+  - task:compare
+  - task:lookup
+  - data:*
+  - visual:color
+  - audience:*
+
+evidence:
+  strength: high
+  summary: "This technique leverages pre-attentive processing, where certain visual properties like intense color 'pop out' and are processed almost instantly. By muting non-essential context, it dramatically reduces cognitive load and directs viewer attention, a principle widely used in data journalism and dashboard design."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: A friendly guide to colors in data visualisation"
+    url: https://blog.datawrapper.de/colorguide/
+    note: "Under the section 'Color to highlight elements', the guide shows a clear example of a multi-line chart where one line is a vibrant red and all other 'context' lines are a muted gray, making the highlighted line pop out."
+    role: primary
+  - type: research
+    ref: "Itti & Koch, 2001. Computational Modelling of Visual Attention"
+    url: https://doi.org/10.1038/s41583-020-00385-9
+    note: "This research field explains the neural basis for visual salience, where features that differ from their surroundings (like a single colored item in a sea of gray items) automatically capture attention."
+    role: supporting
+
+tools:
+  - type: learn
+    name: "Storytelling with Data: The power of gray"
+    url: https://www.storytellingwithdata.com/blog/2011/07/the-power-of-gray
+    description: "A classic blog post explaining the strategic use of gray to de-emphasize context and make highlights more effective."
+
+examples:
+  - type: good
+    description: "In a line chart showing the stock prices of 10 different companies, 9 lines are gray, and the one line for 'Your Company' is bright blue. This immediately focuses the viewer on the most relevant data."
+  - type: bad
+    description: "A bar chart where every bar is a different, bright color, even though the story is only about the tallest bar. The competing colors create visual noise and obscure the main point."
+---
+
+## Guidance
+
+To draw attention to the most important part of your data, use a single, strong, saturated color for that element and display all other contextual data in a muted, neutral color like gray.
+
+## Why
+
+Not all data points are equally important. Often, a chart's purpose is to tell a specific story or highlight a key insight. Using a full, multi-color palette gives equal visual weight to every data point, forcing the viewer to figure out what's important. By strategically using color for your main point and gray for everything else, you are doing that work for them. This use of a "spot color" leverages pre-attentive processing; the unique color "pops out" and directs the eye exactly where you want it to go, making your message land in seconds.
+
+### Core Principle
+
+Guide your audience's attention. Use visual hierarchy to signal what is most important, and de-emphasize what is merely context.
+
+## When it applies
+
+- When your chart is intended to communicate a specific story or finding (e.g., "Our sales have doubled," "This country is an outlier").
+- In any chart with many data series (lines, bars, dots) where you want to focus on just one or two.
+- In dashboards, to draw attention to a key metric or an alert.
+
+## Exceptions
+
+- **Exploratory analysis:** When the goal is to explore the data without a preconceived story and allow the user to find their own insights, giving every category a distinct color may be more appropriate.
+- **When all categories are equally important:** If you are presenting a simple comparison of a few categories (e.g., sales for 3 main competitors) and there is no single "hero," then giving each its own color from a balanced palette is the right choice.
+
+## Trade-offs
+
+- **Loss of detail in context:** The de-emphasized gray elements become harder to distinguish from each other. This is a deliberate choice: you are trading the ability to easily compare the contextual elements for the ability to instantly see the main point.
+
+## Signs of Trouble
+
+- **A Sea of Color:** Your chart uses many bright colors, and your eye doesn't know where to look first. The main insight is lost in the noise.
+- **The "So what?" question:** A viewer looks at your colorful chart and asks, "Okay, but what am I supposed to be looking at?"
+- **Weak Highlight:** You've tried to highlight something, but the highlight color is not distinct enough from the other colors in the palette to truly stand out.
+
+## How to Improve
+
+- **Quick Fix: "Gray out" the competition.** Take your existing chart. Keep the color for the one or two categories you want to talk about, and change every other category's color to a light or medium gray.
+- **Moderate Approach: Add an interactive highlight.** If it's important for users to be able to inspect all categories, start with one highlighted by default but allow the user to click or hover on other categories in the legend to highlight them in turn.
+- **Comprehensive Approach: Re-structure with small multiples.** If you need to tell a story about several different categories, it's often better to give each one its own small chart (a "small multiple") where it is highlighted, rather than trying to cram all the highlights into a single, confusing chart.
+
+```
+
+<split/>
+
+```md
+---
+id: use-sequential-gradients-for-ordered-data
+title: "Use sequential color gradients for ordered, continuous data"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:map.choropleth
+  - chart:heatmap
+  - task:compare
+  - task:rank
+  - data:quantitative
+  - data:ordinal
+  - visual:color
+
+evidence:
+  strength: high
+  summary: "This is a foundational principle of cartography and data visualization, most famously systemized by Cynthia Brewer. Research shows that the human visual system naturally interprets a progression from light to dark as a progression from low to high value, making this encoding intuitive and effective for ranking and comparison tasks."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: A friendly guide to colors in data visualisation"
+    url: https://blog.datawrapper.de/colorguide/
+    note: "The article identifies 'sequential' as a primary data type for color gradients and shows examples of appropriate single-hue and multi-hue sequential schemes that progress from a light color to a dark color."
+    role: primary
+  - type: research
+    ref: "Brewer, C. A., 1994. Color Use Guidelines for Mapping and Visualization"
+    url: https://www.tandfonline.com/doi/abs/10.1559/152304094782549852
+    note: "A foundational paper that systemized the classification of data (sequential, diverging, qualitative) and prescribed appropriate color scheme designs for each, forming the basis for tools like ColorBrewer."
+    role: primary
+
+tools:
+  - type: implement
+    name: ColorBrewer
+    url: https://colorbrewer2.org/
+    description: "The definitive tool for selecting pre-made, perceptually-sound sequential, diverging, and qualitative color schemes."
+  - type: implement
+    name: Datawrapper's Color Palette Tool
+    url: https://app.datawrapper.de/create/palette
+    description: "Allows you to create and test custom color gradients, including sequential schemes."
+
+examples:
+  - type: good
+    description: "A choropleth map of US states showing population density, where states with low density are light blue and states with high density are dark blue. The progression in lightness clearly matches the progression in value."
+  - type: bad
+    description: "A heatmap using a random assortment of categorical colors (blue, green, red, orange) to represent temperature. There is no intuitive order, making it impossible to see patterns of high and low values."
+---
+
+## Guidance
+
+When encoding ordered data (from low to high), use a sequential color gradient that progresses uniformly from a light, desaturated color to a dark, saturated color.
+
+## Why
+
+Our brains are naturally wired to associate darkness/intensity with magnitude. We intuitively understand that a darker color means "more" and a lighter color means "less." A sequential color gradient leverages this innate understanding. By mapping your data's minimum value to a light color and its maximum value to a dark color of the same or similar hue, you create a chart that is instantly readable. Viewers can effortlessly see patterns, identify high and low areas, and make rough comparisons without conscious effort.
+
+### Core Principle
+
+Visual encodings should match the structure of the data. Ordered data demands an ordered visual encoding, and a light-to-dark color progression is a powerful ordered encoding.
+
+## When it applies
+
+- For any data that has a clear order and ranges from a low value to a high value, such as income, temperature, percentages, or years.
+- This is the standard for choropleth maps and heatmaps.
+- It can also be used to color bars, lines, or points in other charts, although position and size are typically more effective encodings for those chart types.
+
+## Exceptions
+
+- When your data has a meaningful midpoint (e.g., zero). In that case, a diverging gradient is more appropriate.
+- For a dark background, the sequence should be inverted: from a dark, desaturated color to a bright, saturated color. The principle remains the same: the progression should be in luminance/brightness.
+
+## Trade-offs
+
+- **Just-noticeable-differences:** It can be difficult for the human eye to precisely map a specific shade back to an exact value. A legend with clear steps is crucial. Gradients are excellent for showing overall patterns but less precise for looking up specific values than, for example, a bar chart.
+
+## Signs of Trouble
+
+- **No Clear Order:** The colors in your gradient do not have a clear progression from light to dark. A medium value might be darker than a high value.
+- **Rainbows:** You are using a rainbow gradient (red-orange-yellow-green-blue), which is perceptually non-uniform and misleading.
+- **Categorical Confusion:** You are using a set of distinct categorical colors (like a qualitative ColorBrewer palette) to encode continuous, ordered data.
+
+## How to Improve
+
+- **Quick Fix: Use a Single Hue.** The simplest and safest sequential scheme is to use a single hue and vary the lightness. For example, light blue to dark blue. Most charting tools have this as a default option.
+- **Moderate Approach: Use a Tested Multi-Hue Palette.** Use a tool like ColorBrewer to select a pre-built sequential palette. Multi-hue palettes (e.g., from light yellow to dark green) can be more aesthetically pleasing and offer slightly better discrimination, but they must be carefully designed to ensure lightness still increases monotonically.
+- **Comprehensive Approach: Create a Perceptually Uniform Gradient.** Use advanced color tools (like D3's d3-scale-chromatic or tools based on CIELAB/L*C*h color spaces) to create a custom gradient that ensures the steps in perceived color change are uniform across the entire range. This provides the most accurate visual representation of your data.
+
+```
+
+<split/>
+
+```md
+---
+id: use-diverging-gradients-for-midpoint-data
+title: "Use diverging color gradients for data with a meaningful midpoint"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:map.choropleth
+  - chart:heatmap
+  - task:compare
+  - task:direction
+  - data:quantitative
+  - visual:color
+
+evidence:
+  strength: high
+  summary: "Like sequential schemes, this is a core principle from cartography (Brewer, 1994) for encoding a specific data structure. Diverging palettes are uniquely effective at showing deviation from a central value. They use two distinct hues to pre-attentively separate data into two classes (positive/negative, above/below average), with saturation/lightness encoding magnitude within each class."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: A friendly guide to colors in data visualisation"
+    url: https://blog.datawrapper.de/colorguide/
+    note: "The guide identifies 'diverging' as a primary data type for color gradients and shows examples of appropriate schemes that use a neutral center and two different hues moving to dark, saturated extremes."
+    role: primary
+  - type: research
+    ref: "Brewer, C. A., 1994. Color Use Guidelines for Mapping and Visualization"
+    url: https://www.tandfonline.com/doi/abs/10.1559/152304094782549852
+    note: "Systematically defines diverging data and prescribes the two-hue, neutral-midpoint color scheme as the appropriate visual encoding to match this data structure."
+    role: primary
+
+tools:
+  - type: implement
+    name: ColorBrewer
+    url: https://colorbrewer2.org/
+    description: "The definitive tool for selecting pre-made, perceptually-sound diverging color schemes, such as the classic 'Red-Blue' or 'Brown-Green' palettes."
+  - type: implement
+    name: Datawrapper's Color Palette Tool
+    url: https://app.datawrapper.de/create/palette
+    description: "Allows you to create and test custom color gradients, including diverging schemes with a defined center point."
+
+examples:
+  - type: good
+    description: "A map showing election results, where counties with a Republican majority are shades of red, counties with a Democratic majority are shades of blue, and counties with a ~50/50 split are light gray/white. The saturation of the color indicates the margin of victory."
+  - type: bad
+    description: "A chart showing temperature change relative to a 30-year average uses a single sequential gradient from blue (coldest) to red (warmest). It's impossible to see where the zero-change line is, which is the most important reference point."
+---
+
+## Guidance
+
+When your data has a meaningful central value (like zero, an average, or a baseline), use a diverging color gradient. This scheme should have a neutral, light color at the midpoint and two different hues that become darker and more saturated as they move towards the extremes.
+
+## Why
+
+Diverging data tells two stories at once: which direction the data deviates from the center, and by how much. A diverging palette is perfectly structured to tell both. The two different hues (e.g., blue and red) create a clear categorical separation between values above and below the midpoint. The sequential progression from light (near the center) to dark (at the extremes) on each side encodes the magnitude of the deviation. This design allows a viewer to instantly see the overall pattern: which areas are positive/negative, which are neutral, and which have the most extreme values in either direction.
+
+### Core Principle
+
+Visual encodings should match the structure of the data. Diverging data has a structure of two opposing sequences meeting at a common, neutral origin, and a diverging color palette visually mirrors this structure.
+
+## When it applies
+
+- Data that can be positive or negative, like profit/loss, temperature change, or job growth/decline.
+- Data that is compared to an average or baseline, like "population growth above/below the national average."
+- Polling or survey data on a Likert scale (e.g., Strongly Disagree to Strongly Agree) where you want to emphasize the split from the neutral center.
+- Most commonly used in choropleth maps and heatmaps.
+
+## Exceptions
+
+- If the midpoint of your data range is not conceptually meaningful. For example, if your data ranges from -10 to +90, the midpoint is +40, but this value probably has no special meaning. In this case, treating the data as a simple sequential range from -10 to +90 might be better, unless zero is the critical threshold you want to show.
+- If only one side of the divergence is important. If you only care about values *above* the average, you could use a sequential scheme that starts at the average.
+
+## Trade-offs
+
+- **Color Association:** The choice of the two hues can carry meaning. The classic blue-red diverging scheme is often associated with cold-hot or liberal-conservative, which may or may not fit your topic. You must choose hues that are not just distinct, but also thematically appropriate.
+
+## Signs of Trouble
+
+- **Midpoint Obscured:** You are using a sequential gradient to show diverging data. The crucial center point is hidden somewhere in the middle of the gradient, impossible to spot.
+- **Asymmetrical Palette:** Your diverging palette is not balanced. The neutral color is not at the conceptual midpoint of your data, or one hue is visually much heavier than the other, creating a biased visual.
+- **Rainbow in the Middle:** You're using a rainbow scheme. This is even worse for diverging data than for sequential, as it places a perceptually arbitrary color (like green or yellow) at the most important part of the scale—the center.
+
+## How to Improve
+
+- **Quick Fix: Use a Classic Diverging Palette.** Select a pre-built, tested diverging scheme like Red-Yellow-Blue or Brown-Teal from a tool like ColorBrewer. Ensure your charting software's settings map the data's conceptual midpoint to the palette's neutral center color.
+- **Moderate Approach: Choose Thematically Appropriate Hues.** Instead of a generic palette, choose two hues that relate to your topic, but ensure they have similar perceptual weight and meet at a light, neutral color. For example, for an environmental topic, you might use a brown-to-green palette to show degradation vs. growth.
+- **Comprehensive Approach: Center the Data, Not the Palette.** The most common mistake is failing to set the midpoint correctly. Ensure that the neutral color of your palette is mathematically centered on the meaningful midpoint of your data (e.g., zero). If your data ranges from -20 to +100, the palette must still be centered on 0, not the data's midpoint of +40, for the visualization to be honest.
+
+```
+
+<split/>
+
+```md
+---
+id: avoid-rainbow-color-schemes
+title: "Avoid rainbow color schemes for ordered data"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - impact:accessibility
+  - impact:ethical
+  - chart:map.choropleth
+  - chart:heatmap
+  - task:rank
+  - task:compare
+  - data:quantitative
+  - data:ordinal
+  - visual:color
+  - access:color-vision-risk
+
+evidence:
+  strength: high
+  summary: "There is overwhelming consensus in the visualization research community that rainbow palettes are harmful for data representation. Their hues are not perceptually ordered, and the non-uniform changes in lightness create false boundaries and obscure real patterns. They are also notoriously inaccessible to users with color vision deficiencies."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: A friendly guide to colors in data visualisation"
+    url: https://blog.datawrapper.de/colorguide/
+    note: "The article explicitly warns against this, showing a choropleth map with a rainbow gradient labeled with a large red 'X' and the text 'Don't use a rainbow gradient'. This represents strong practitioner consensus."
+    role: primary
+  - type: research
+    ref: "Borland & Taylor, 2007. Rainbow Color Map (Still) Considered Harmful"
+    url: https://doi.org/10.1109/TVCG.2007.1051
+    note: "A seminal paper that details the perceptual and cognitive problems with rainbow color maps, showing how they can obscure data and introduce artifacts that mislead scientists."
+    role: primary
+  - type: standard
+    ref: "WCAG 2.1"
+    url: https://www.w3.org/TR/WCAG21/
+    note: "While not banning rainbows explicitly, the requirement for information to not rely solely on color (1.4.1) and for sufficient contrast (1.4.3, 1.4.11) makes most rainbow palettes non-compliant as they are inaccessible to colorblind users and have low-contrast segments (like yellow)."
+    role: supporting
+
+tools:
+  - type: implement
+    name: "Viridis/Matplotlib Palettes"
+    url: https://matplotlib.org/stable/tutorials/colors/colormaps.html
+    description: "A set of perceptually uniform, colorblind-safe colormaps (Viridis, Plasma, Inferno, Magma) designed as superior alternatives to the rainbow 'jet' colormap."
+
+examples:
+  - type: bad
+    description: "A weather map showing temperature using a red-orange-yellow-green-blue-purple gradient. It's impossible to tell if the jump from yellow to green is a bigger or smaller change than the jump from blue to purple. It also creates false 'stripes' on the map."
+  - type: good
+    description: "The same weather map using a perceptually uniform sequential gradient (like 'Viridis' or a simple light-blue-to-dark-blue). The temperature progression is now intuitive and patterns are easy to see accurately."
+---
+
+## Guidance
+
+Never use a rainbow (or "jet") color scheme to represent continuous, ordered data. Instead, use a sequential or diverging gradient that is perceptually uniform.
+
+## Why
+
+Rainbow color schemes are one of the most common and most harmful mistakes in data visualization. They fail on three critical levels:
+1.  **Perceptual Disorder:** The hues of the rainbow (Red, Orange, Yellow, Green, Blue...) have no natural perceptual order. People don't intuitively rank green as being "more" or "less" than orange. This forces viewers to constantly refer to the legend to decode the values.
+2.  **Non-Uniformity:** The perceived change between colors is not uniform. The abrupt shifts between some hues (like yellow and green) create false boundaries where none exist in the data, while slow transitions in other areas (within the greens) can hide significant changes. This leads to misinterpretation of the data's structure.
+3.  **Inaccessibility:** Rainbow schemes are completely unreadable to people with common forms of color vision deficiency. They also have areas of low luminance (like the bright yellow in the middle) that have poor contrast against a white background.
+
+### Core Principle
+
+The visual distance between two points in a visualization should be proportional to the difference in their data values. Rainbow palettes violate this principle, creating a distorted and untruthful representation of the data.
+
+## When it applies
+
+- This is a universal rule for any chart encoding ordered quantitative data with color.
+- It is especially critical in scientific visualization, heatmaps, and choropleth maps where color is the primary encoding for value.
+
+## Exceptions
+
+There are no widely accepted exceptions for using a full rainbow palette to encode scalar data. Some specific, limited-spectrum palettes can work if they are designed to be perceptually uniform, but the default ROYGBIV rainbow is never a good choice.
+
+## Trade-offs
+
+- **Familiarity:** Some scientific fields have historically used rainbow colormaps, so switching to a better palette might meet with resistance from an audience accustomed to the old, flawed standard. The benefit in accuracy and accessibility far outweighs this temporary discomfort.
+
+## Signs of Trouble
+
+- **ROYGBIV:** Your chart's legend shows the colors of the rainbow.
+- **False Contours:** You see sharp lines and "bands" appearing on your heatmap or map that don't correspond to any specific data threshold.
+- **Yellow-Out:** There is a bright yellow area in your chart that is hard to look at and has poor contrast with the background and labels.
+
+## How to Improve
+
+- **Quick Fix: Switch to a Single-Hue Sequential Scheme.** This is the easiest and safest alternative. Change your color mapping to a gradient that goes from light blue to dark blue, for example. The improvement in interpretability will be immediate.
+- **Moderate Approach: Use a Perceptually Uniform Palette.** Replace the rainbow ("jet") palette with a modern, perceptually uniform alternative like Viridis, Plasma, or Cividis. These are specifically designed to be ordered, uniform, and colorblind-safe. Most modern analysis software (like Matplotlib, R) now offers these as defaults or easy options.
+- **Comprehensive Approach: Re-evaluate the Encoding.** Ask if color is the right encoding at all. For many tasks, a bar chart or dot plot that uses position and length is far more accurate than any color gradient. If you must use color, ensure you choose the right type (sequential or diverging) for your data and use a tool like ColorBrewer to select a well-vetted, accessible palette.
+
+```
+
+<split/>
+
+```md
+---
+id: test-for-color-vision-deficiency
+title: "Test color palettes for color vision deficiencies"
+
+tags:
+  - impact:accessibility
+  - impact:inclusion
+  - impact:ethical
+  - chart:*
+  - data:*
+  - visual:color
+  - audience:*
+  - access:color-vision-risk
+
+evidence:
+  strength: high
+  summary: "This is a core requirement for accessible design, supported by WCAG guidelines. Approximately 1 in 12 men and 1 in 200 women have some form of color vision deficiency (CVD). Failing to test for this means knowingly creating a visualization that is unreadable for a significant portion of the potential audience."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: A friendly guide to colors in data visualisation"
+    url: https://blog.datawrapper.de/colorguide/
+    note: "The article has a section 'Make sure your colors work' which points to a tool called 'VIZ PALETTE' specifically for checking colors for accessibility, demonstrating this is a key step in the practitioner workflow."
+    role: primary
+  - type: standard
+    ref: "WCAG 2.1 Success Criterion 1.4.1 Use of Color"
+    url: https://www.w3.org/TR/WCAG21/#use-of-color
+    note: "Requires that color is not used as the only visual means of conveying information, indicating an action, prompting a response, or distinguishing a visual element. Testing for CVD is a direct way to verify if you are violating this."
+    role: primary
+
+tools:
+  - type: validate
+    name: Viz Palette
+    url: https://projects.susielu.com/viz-palette
+    description: "A tool specifically for data visualization palettes. It lets you paste in your colors and see how they appear to people with different types of color blindness, and how they look in different chart types."
+  - type: validate
+    name: Coblis — Color Blindness Simulator
+    url: https://www.color-blindness.com/coblis-color-blindness-simulator/
+    description: "Upload an image of your chart to see how it looks under various color vision deficiencies."
+  - type: implement
+    name: ColorBrewer
+    url: https://colorbrewer2.org/
+    description: "Includes a specific checkbox to only show palettes that are 'colorblind safe', allowing you to choose an accessible palette from the start."
+
+examples:
+  - type: bad
+    description: "A chart using a red and a green of similar brightness to distinguish between two important categories. For a user with deuteranopia (red-green color blindness), these two colors will appear as nearly identical shades of brownish-yellow."
+  - type: good
+    description: "A chart using a blue and an orange to distinguish between two categories. This pair is generally safe for all common forms of color blindness, as it relies on the blue-yellow axis of vision which is typically preserved."
+---
+
+## Guidance
+
+Always check your chosen color palette using a color blindness simulator to ensure it is readable by people with common forms of color vision deficiency (CVD).
+
+## Why
+
+You cannot assume your audience sees color the same way you do. The most common form of CVD, red-green color blindness, affects up to 8% of the male population. For these individuals, certain color pairs—most notably red/green but also others like blue/purple or green/brown—can become indistinguishable. If your chart relies on these color pairs to convey information, that information is completely lost to a large segment of your audience. Testing your palettes is not an optional extra; it is a fundamental step to ensure your work is inclusive, accessible, and effective for everyone.
+
+### Core Principle
+
+Design for everyone. An effective visualization must be readable by the widest possible audience, and that includes people with disabilities like color vision deficiency.
+
+## When it applies
+
+- This rule applies to **every single visualization** you create that uses color to convey information.
+- It is especially critical for categorical palettes with multiple colors and for diverging palettes that use red and green.
+
+## Exceptions
+
+- There are no exceptions. Even if you believe your audience does not include people with CVD, your work can be shared and seen by others. Designing accessibly is a universal best practice.
+
+## Trade-offs
+
+- **Aesthetic Constraints:** Prioritizing colorblind-safe palettes can sometimes limit your aesthetic choices. Some color combinations might be less trendy or visually punchy than inaccessible alternatives. This is a minor cost for the major benefit of making your work accessible to all.
+
+## Signs of Trouble
+
+- **Red vs. Green:** Your palette's primary comparison is between red and green elements.
+- **Hue-based Distinctions:** Your palette relies solely on differences in hue (like a red, a green, a brown) without also varying brightness or saturation. A color blindness simulation will often cause these to collapse into a single muddy color.
+- **"I can't tell the difference":** A user tells you they can't distinguish between two colors in your chart. Take this feedback seriously—they may have CVD.
+
+## How to Improve
+
+- **Quick Fix: Run a Simulation.** Take a screenshot of your finished chart and upload it to an online simulator like Coblis. Check the deuteranopia and protanopia views. If any key colors become indistinguishable, you need to change them.
+- **Moderate Approach: Choose Better Pairs.** When picking colors, avoid problematic pairs. Instead of red/green, use blue/orange. Instead of blue/purple, use blue/yellow. Varying both hue and brightness/saturation is key. For example, a light blue and a dark orange is a very robust pair.
+- **Comprehensive Approach: Start with Accessible Palettes.** Don't pick colors and then test; pick colors that are already tested. Use tools like ColorBrewer or the Datawrapper palette creator and enable the "colorblind safe" filter from the beginning. This ensures your foundation is accessible, and you can build your design on top of that with confidence. Also, consider adding redundant cues (symbols, patterns, labels) so color is not the *only* way to get the information.
+
+```
+
+<split/>
+
+```md
+---
+id: ensure-background-contrast
+title: "Ensure colors have sufficient contrast on both light and dark backgrounds"
+
+tags:
+  - impact:perceptual
+  - impact:accessibility
+  - chart:*
+  - visual:color
+  - medium:screen
+  - medium:print
+  - medium:static
+  - medium:interactive
+
+evidence:
+  strength: medium
+  summary: "This is a practical design principle for creating robust, reusable visualizations. While not as rigorously studied as CVD, practitioner guides emphasize this for ensuring charts don't 'break' when moved between different contexts (e.g., a report with a white background vs. a presentation with a black background)."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: A friendly guide to colors in data visualisation"
+    url: https://blog.datawrapper.de/colorguide/
+    note: "The article includes a section 'Use colors that work on a bright & a dark background', with a clear visual showing a set of colors tested against both white and black backgrounds. Colors that are too dark fail on the dark background, and colors that are too light fail on the light one."
+    role: primary
+  - type: standard
+    ref: "WCAG 2.1 Success Criterion 1.4.11 Non-text Contrast"
+    url: https://www.w3.org/TR/WCAG21/#non-text-contrast
+    note: "Requires a contrast ratio of at least 3:1 for graphical objects. This applies to the chart elements against their background, so testing on different backgrounds is a way to ensure this requirement is met in various contexts."
+    role: supporting
+
+tools:
+  - type: validate
+    name: "Adobe Color: Contrast Checker"
+    url: https://color.adobe.com/create/color-contrast-analyzer
+    description: "Allows you to check the contrast ratio between foreground and background colors to see if they meet WCAG standards."
+
+examples:
+  - type: bad
+    description: "A chart uses a dark navy blue. It looks great on a white website, but when pasted into a PowerPoint presentation with a black background, the navy blue bar becomes nearly invisible."
+  - type: bad
+    description: "A chart uses a pastel yellow. It is difficult to see on a white background and completely disappears on a light gray background."
+  - type: good
+    description: "A palette of mid-tone, saturated colors (like a classic royal blue, an orange, a magenta) that have sufficient contrast to be clearly visible on both a pure white and a pure black background."
+---
+
+## Guidance
+
+When selecting a color palette, test it against both a light (white/light gray) and a dark (black/dark gray) background to ensure all colors remain visible and distinct.
+
+## Why
+
+You rarely have full control over where your visualization will end up. A chart you design on a white background for a report might be screenshotted and pasted into a dark-themed presentation, embedded in a website with a dark mode, or printed. Colors with medium lightness are particularly vulnerable: dark navy can disappear on a black background, and light yellow can disappear on a white one. By choosing colors that are robust enough to work in both environments, you create a more versatile and durable visualization that won't fail unexpectedly when its context changes.
+
+### Core Principle
+
+Design for resilience. Anticipate that your work will be used in contexts you didn't plan for and make design choices that ensure it remains effective.
+
+## When it applies
+
+- This is a good general practice for any chart, but it's especially important for visualizations intended for wide distribution or reuse (e.g., in a style guide, a component library, or a public-facing report).
+- Crucial for charts that will be used in presentations, which often have varied and unpredictable background colors.
+
+## Exceptions
+
+- If you are 100% certain that your visualization will only ever be displayed in a single, controlled context (e.g., a specific print publication with a fixed background color), then you only need to optimize for that one background. This is rare in digital environments.
+
+## Trade-offs
+
+- **Palette Constraints:** This rule disqualifies very light pastel colors and very dark, muted colors, which might limit some aesthetic options. You are trading a wider range of possible lightness values for greater robustness.
+
+## Signs of Trouble
+
+- **Disappearing Colors:** When you toggle your OS or an application to dark mode, some of the elements in your chart become invisible or very hard to see.
+- **Low-Contrast Pastels:** Your palette includes very light colors (like pastel yellow or baby blue) that are barely visible against a white background.
+- **Muted Darks:** Your palette includes very dark colors (like navy, maroon, or forest green) that blend in with a black background.
+
+## How to Improve
+
+- **Quick Fix: Add a Background/Border.** If you can't change the colors, ensure the chart is always exported with a solid white background (or a white border). This "insulates" it from whatever background it's placed on, but it can look clunky.
+- **Moderate Approach: Adjust Lightness.** For each color in your palette, check its contrast against both black and white. Avoid colors that are too close to either extreme. A good rule of thumb is to pick colors from the middle 50% of the lightness range—not too light, and not too dark.
+- **Comprehensive Approach: Design a Dual-Theme Palette.** For maximum flexibility, design two explicit versions of your palette: one for light themes and one for dark themes. This is common practice in UI design systems and can be applied to data visualization, ensuring optimal readability in both contexts.
+
+```

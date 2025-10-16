@@ -28,7 +28,7 @@ sources:
     note: "Experiments 1 & 2 (n=26 total) showed that slope encodings led to significantly slower search rates and lower accuracy (p<0.001) than position or length encodings for relational tasks."
     role: primary
   - type: research
-    ref: Cleveland & McGill, 1984
+    ref: "Cleveland & McGill, 1984"
     url: https://doi.org/10.2307/2288400
     note: "Foundational work establishing the perceptual hierarchy where position and length are judged more accurately than angle/slope."
     role: supporting

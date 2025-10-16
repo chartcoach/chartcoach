@@ -23,7 +23,7 @@ evidence:
 
 sources:
   - type: research
-    ref: Cleveland & McGill, 1984
+    ref: "Cleveland & McGill, 1984"
     url: https://doi.org/10.2307/2288400
     note: "Foundational experiment (n=51) demonstrating that judgments of position along a common scale are significantly more accurate than judgments of length, angle, or area."
     role: primary

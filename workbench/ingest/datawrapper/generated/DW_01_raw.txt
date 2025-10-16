@@ -1,0 +1,538 @@
+```md
+---
+id: use-area-charts-for-temporal-data
+title: "Use area charts for trends over time, not categorical comparisons"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - impact:logos
+  - chart:area
+  - chart:bar
+  - chart:column
+  - task:trend
+  - task:compare
+  - data:temporal
+  - data:categorical
+
+evidence:
+  strength: medium
+  summary: "Practitioner consensus holds that area charts imply a continuous connection over time, making them unsuitable for categorical comparisons. Bar or column charts, which use discrete visual elements, are the standard and more appropriate choice for comparing distinct categories."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: What to consider when creating area charts"
+    url: https://www.datawrapper.de/blog/area-charts
+    note: "The article's first point states: 'Use area charts only if you want to show how values develop over time. If you want to show how values differ in different categories, consider a (stacked) bar, column chart, or split bars instead.'"
+    role: primary
+
+examples:
+  - type: bad
+    description: "An area chart is used to compare values for discrete categories like 'A', 'B', 'C', and 'D'. The connecting line incorrectly implies a relationship or progression between these separate groups."
+  - type: good
+    description: "A bar or column chart is used to compare the same discrete categories. Each category is represented by a distinct bar, allowing for clear comparison without suggesting a false continuity."
+---
+
+## Guidance
+
+Reserve area charts for visualizing how values develop over a continuous period, such as time. For comparing values across discrete, non-temporal categories, use a bar or column chart.
+
+## Why
+
+Area charts connect data points, creating a visual flow that implies continuity and progression. This metaphor is appropriate for time-series data but is misleading when applied to distinct categories like countries, products, or departments. Bar charts are designed specifically to facilitate comparisons between discrete items.
+
+### Core Principle
+
+The visual grammar of a chart should match the structure of the data. Use visual elements that suggest continuity (like lines and areas) for continuous data, and use elements that suggest discrete items (like bars) for categorical data.
+
+## When it applies
+
+-   You are choosing a chart type to compare quantities across different categories.
+-   Your independent variable is categorical (e.g., products, regions, poll responses) and not temporal.
+
+## Exceptions
+
+-   If your categories have a natural, inherent order (ordinal data) and you want to show a cumulative build-up across them, a stepped area chart could be considered, but a stacked bar chart is often still clearer.
+
+## Signs of Trouble
+
+-   **Categorical X-Axis:** The labels on your area chart's x-axis are names (e.g., "North America," "Europe," "Asia") instead of dates or times.
+-   **Awkward Connections:** The line connecting your data points feels meaningless. For example, what does the slope of the line between "Apples" and "Oranges" represent?
+
+## How to Improve
+
+-   **Quick Fix:** Change the chart type from an area chart to a column or bar chart. Most charting software allows this with a single click. This immediately corrects the misleading visual metaphor.
+-   **Comprehensive Approach:** Re-evaluate the primary goal. If it's to compare categories, a bar chart is best. If there's a hidden time element, restructure the data to create a proper time-series visualization.
+
+<split/>
+
+```md
+---
+id: prefer-line-charts-when-total-is-not-key
+title: "Prefer line charts over stacked area charts when the total is not meaningful"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:area
+  - chart:area.stacked
+  - chart:line
+  - task:trend
+  - task:compare
+  - data:temporal
+  - access:cognitive-load-risk
+
+evidence:
+  strength: medium
+  summary: "Practitioner best practice suggests that since stacked area charts visually emphasize the cumulative total, they should be reserved for part-to-whole analysis. Line charts are less complex and more effective for comparing the trends of individual, non-additive series."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: What to consider when creating area charts"
+    url: https://www.datawrapper.de/blog/area-charts
+    note: "The article advises: 'If the total (the height of all your stacked areas) is not important, consider a line chart instead. Many readers will have an easier time understanding a line chart than an area chart.'"
+    role: primary
+  - type: practitioner
+    ref: "Myles Harrison: Stacked Area Graphs Are Not Your Friend"
+    note: "This related article, referenced by the primary source, argues that line charts are a better alternative to area charts for trend comparison due to perceptual issues with stacked forms."
+    role: supporting
+
+examples:
+  - type: bad
+    description: "A stacked area chart is used to show the prices of three different stocks over time. The total height of the areas represents the sum of the stock prices, which is a meaningless metric, and it makes comparing the top two stocks difficult."
+  - type: good
+    description: "A line chart shows the same three stock prices. Each stock has its own line, originating from the same baseline, making their individual performance trends easy to track and compare."
+---
+
+## Guidance
+
+If your primary goal is to compare the trends of individual series over time and their cumulative total is not meaningful, use a line chart instead of a stacked area chart.
+
+## Why
+
+Stacked area charts are designed to show how a total is composed of different parts and how that composition changes over time. The "stacking" visually sums the component values, which draws the reader's attention to the total. This adds unnecessary cognitive load if the total is irrelevant to your message. A line chart focuses purely on the trend of each individual series, making it a cleaner and more direct way to show and compare trends.
+
+## When it applies
+
+-   You are visualizing multiple time-series data sets together.
+-   The values of the different series are independent and should not be added together (e.g., stock prices, temperatures in different cities, unemployment rates for different countries).
+-   Your primary task for the reader is to compare the trajectory of one series to another.
+
+## Exceptions
+
+-   If the values represent parts of a whole (e.g., population share by continent, market share by company) and both the individual shares and the total are important, a stacked area chart is appropriate.
+-   If the series add up to 100%, a 100% stacked area chart is a very effective choice.
+
+## Signs of Trouble
+
+-   **Meaningless Total:** The total height of all your stacked areas represents a number that has no real-world meaning (e.g., "total temperature," "total price").
+-   **Comparison is the Goal:** Your chart's title or key message is about comparing series (e.g., "X overtakes Y"), but you are using a stacked format that obscures this comparison.
+
+## How to Improve
+
+-   **Quick Fix:** In your charting tool, switch the chart type from "Stacked Area" to "Line." All the series will now share a common baseline, making them instantly comparable.
+-   **Moderate Approach:** After converting to a line chart, review your color choices and line weights to ensure each series is distinct and the most important ones stand out.
+
+<split/>
+
+```md
+---
+id: use-line-charts-for-subtle-differences
+title: "Use a line chart to show subtle differences between values"
+
+tags:
+  - impact:perceptual
+  - chart:area
+  - chart:line
+  - task:trend
+  - task:compare
+  - task:direction
+  - data:temporal
+  - data:quantitative
+
+evidence:
+  strength: high
+  summary: "Area charts must start their y-axis at zero to accurately represent volume. This can compress the visual space and obscure small but significant variations. Line charts do not have this constraint, allowing the y-axis range to be 'zoomed in' to amplify these differences, a practice supported by perceptual principles of maximizing data resolution."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: What to consider when creating area charts"
+    url: https://www.datawrapper.de/blog/area-charts
+    note: "The article notes that for small differences, a line chart is better because 'the y-axis of a line chart doesn't need to start at zero. This means that your y-axis can be stretched to show the tiny differences.'"
+    role: primary
+
+examples:
+  - type: bad
+    description: "An area chart shows a value fluctuating between 95 and 98 over time. Because the y-axis starts at 0, the top of the area looks almost like a flat line, hiding the variation."
+  - type: good
+    description: "A line chart shows the same data, but with the y-axis ranging from 94 to 99. The fluctuations are now clearly visible and their pattern is easy to discern."
+---
+
+## Guidance
+
+When visualizing time-series data where the variations between values are small relative to their total magnitude, choose a line chart over an area chart.
+
+## Why
+
+Area charts represent quantity through shaded area, which means they must have a y-axis that starts at zero to avoid misrepresentation. This requirement can severely compress the visual representation of your data, making small but important fluctuations nearly invisible. Line charts, which encode values purely by position, are not bound by the zero-baseline rule for trend analysis. This allows you to adjust the y-axis to "zoom in" on the relevant data range, magnifying subtle variations and making them easy to perceive.
+
+## When it applies
+
+-   You are visualizing a time series where all values are far from zero (e.g., a human body temperature chart).
+-   The absolute magnitude is less important than the change, volatility, or pattern of change over time.
+-   Your data range is small compared to its distance from zero (e.g., values range from 1,050 to 1,060).
+
+## Exceptions
+
+-   If the absolute magnitude and its relation to zero is the key message (e.g., "profits remained high"), an area chart (or a line chart that starts at zero) might be acceptable. However, you risk the audience missing the smaller trends.
+
+## Trade-offs
+
+-   By using a line chart with a non-zero baseline, you gain clarity on variation but sacrifice the at-a-glance perception of absolute magnitude. This can be misleading if not done carefully. Always clearly label your axes to make the range apparent.
+
+## Signs of Trouble
+
+-   **Flat-Liner:** Your area chart looks almost flat, even though you know there are important fluctuations in the data.
+-   **High Baseline:** All the action in your area chart is happening in a narrow band at the very top of the chart.
+
+## How to Improve
+
+-   **Quick Fix:** Change the chart type to a line chart.
+-   **Moderate Approach:** After changing to a line chart, adjust the minimum and maximum of your y-axis to tightly frame the data's range. For example, if your data ranges from 850 to 875, set your axis to run from 840 to 880 instead of 0 to 900.
+
+<split/>
+
+```md
+---
+id: use-stacked-columns-for-few-time-points
+title: "Use a stacked column chart for part-to-whole trends with few time points"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:area
+  - chart:area.stacked
+  - chart:column.stacked
+  - task:composition
+  - task:trend
+  - data:temporal
+  - data:cardinality.low
+
+evidence:
+  strength: medium
+  summary: "Practitioner consensus indicates that with few discrete time points (e.g., under 10), stacked column charts allow for easier value comparison and better labeling. The discrete nature of columns is a better fit for sparse data than the continuous form of an area chart."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: What to consider when creating area charts"
+    url: https://www.datawrapper.de/blog/area-charts
+    note: "The blog recommends: 'If you have less than ten or so dates, consider a stacked column chart instead. Labelling will be improved and readers have an easier time reading the values...'"
+    role: primary
+  - type: practitioner
+    ref: "Dr. Drang: I hate stacked area charts"
+    note: "This related article, referenced by the primary source, explains how readers can misinterpret area charts and how stacked column charts can be a better alternative, particularly for discrete comparisons."
+    role: supporting
+
+examples:
+  - type: bad
+    description: "A stacked area chart shows part-to-whole data for only four years. The result is a jagged, angular shape that is awkward to read and label."
+  - type: good
+    description: "A stacked column chart displays the same data. Each year is represented by a cleanly divided column, making it easy to see the composition for each year and to apply labels to each segment."
+---
+
+## Guidance
+
+If you are showing how the composition of a total changes over a small number of discrete time points (e.g., fewer than ten), use a stacked column chart instead of a stacked area chart.
+
+## Why
+
+Stacked columns create distinct, stable blocks for each time point, which are easier for the eye to process and compare than the angular points of an area chart with sparse data. This format also provides more defined spaces for placing data labels, improving readability. An area chart's continuous nature is best suited for showing trends over many data points; with few points, it can look awkward and imply a misleadingly simplistic trend between points.
+
+## When it applies
+
+-   You are visualizing part-to-whole data over time.
+-   You have a small number of dates or time periods (e.g., quarterly data for two years, or annual data for five years).
+-   The exact values of the segments at each time point are important.
+
+## Exceptions
+
+-   If the intervals between your time points are not uniform (e.g., data for 1950, 2017, 2030, 2100), an area chart is a better choice. Its continuous x-axis can accurately represent the varying durations between points, whereas a column chart would treat them as equidistant.
+
+## Signs of Trouble
+
+-   **Few Peaks:** Your area chart consists of only a few data points, resulting in a low-resolution, "connect-the-dots" appearance.
+-   **Labeling Nightmare:** It's difficult to find a clean, unambiguous place to put labels for the different areas at each data point.
+
+## How to Improve
+
+-   **Quick Fix:** Change the chart type from "Stacked Area" to "Stacked Column." This immediately reframes the data into discrete, more readable units.
+-   **Moderate Approach:** After switching to a stacked column chart, ensure the gaps between columns are appropriately sized (usually smaller than the column width) to reinforce the connection over time. Add direct labels to the most important segments.
+
+<split/>
+
+```md
+---
+id: use-line-chart-to-show-crossovers
+title: "Use a line chart to emphasize when one category overtakes another"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:area
+  - chart:area.stacked
+  - chart:line
+  - task:compare
+  - task:rank
+  - task:trend
+  - data:temporal
+  - access:cognitive-load-risk
+
+evidence:
+  strength: high
+  summary: "In a stacked area chart, only the bottom series has a stable baseline. Comparing other series, which are plotted on fluctuating baselines, is a perceptually difficult and inaccurate task. Line charts provide all series with a common, stable baseline (the y=0 axis), making rank-order changes and crossovers easy and accurate to spot, a principle rooted in Cleveland & McGill's foundational work."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: What to consider when creating area charts"
+    url: https://www.datawrapper.de/blog/area-charts
+    note: "The article advises: 'If you want to show that one share overtook another one, consider a line chart instead.' It explains that this makes the comparison clearer and allows you to show only the relevant series."
+    role: primary
+  - type: research
+    ref: "Cleveland & McGill, 1984"
+    url: https://doi.org/10.2307/2288400
+    note: "Foundational study establishing that judgments on a common scale (as in a line chart) are far more accurate than length or angle judgments, which are analogous to judging the thickness of non-baselined layers in a stacked area chart."
+    role: related
+
+examples:
+  - type: bad
+    description: "A stacked area chart shows the population share of different age groups. The insight is that the '>60' group surpasses the '<30' group in 2015. However, because neither of these groups is at the bottom, their trends are distorted and the crossover point is difficult to pinpoint accurately."
+  - type: good
+    description: "A line chart plots only the '>60' and '<30' population shares. Both lines share the same y-axis, making their trends easy to follow and the exact point where they cross is immediately obvious."
+---
+
+## Guidance
+
+When the key insight is to compare the trends of different series—especially to show a "crossover" where one overtakes another in rank—use a line chart instead of a stacked area chart.
+
+## Why
+
+In a stacked area chart, every series except the one at the very bottom is plotted on a fluctuating baseline created by the series below it. This distorts the perceived shape of its trend, making it extremely difficult to judge its true trajectory or compare it accurately to other non-baselined series. A line chart, by contrast, places all series on the same common y-axis, enabling direct, accurate comparisons and making intersections (crossovers) unambiguous.
+
+### Core Principle
+
+Humans make the most accurate visual comparisons when objects are positioned along a common scale. Line charts excel at this, while stacked area charts (for all but the bottom series) inherently prevent it.
+
+## When it applies
+
+-   Your primary message involves comparing two or more individual series within a whole.
+-   A key event in your data is a change in the rank ordering of the series (e.g., "Product B sales surpass Product A").
+-   You want to draw attention to the relationship between specific series, not all of them.
+
+## Trade-offs
+
+-   Switching to a line chart de-emphasizes the part-to-whole relationship. The viewer will no longer see how the series sum to a total. If showing the total is also critical, consider showing both charts or using annotations.
+
+## Signs of Trouble
+
+-   **Wobbly Trends:** A series in the middle of your stack appears to go down, but its actual value may have been increasing (just slower than the series below it grew).
+-   **Hidden Crossover:** You have to verbally explain that one series overtook another because it's not visually obvious from the chart.
+-   **Narrative Focus on a Slice:** Your story is about the blue slice and the green slice, but they are separated by a red slice in the middle of the stack.
+
+## How to Improve
+
+-   **Quick Fix:** Change the chart type to a line chart.
+-   **Moderate Approach:** After changing to a line chart, remove any series that are not part of the core comparison to reduce clutter. Use color and line thickness to highlight the key series you want the audience to compare.
+-   **Comprehensive Approach:** Create a line chart focused on the crossover story. Then, if the part-to-whole context is still important, consider adding a simple secondary chart (like a pie chart or stacked bar for a single point in time) to establish the composition.
+
+<split/>
+
+```md
+---
+id: baseline-most-important-area-series
+title: "Place the most important or stable series at the bottom of a stacked area chart"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:area
+  - chart:area.stacked
+  - task:compare
+  - task:composition
+  - task:trend
+  - visual:position
+
+evidence:
+  strength: high
+  summary: "Based on foundational research by Cleveland & McGill, perceptual judgments made against a common, straight baseline are significantly more accurate than judgments of length or area on a shifting baseline. Placing the key series at the bottom of a stacked area chart leverages this principle by giving it a stable baseline."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: What to consider when creating area charts"
+    url: https://www.datawrapper.de/blog/area-charts
+    note: "The post advises: 'Bring the most important value to the bottom of the chart... Your readers can compare values easier with each other if they have the same baseline.'"
+    role: primary
+  - type: research
+    ref: "Cleveland & McGill, 1984"
+    url: https://doi.org/10.2307/2288400
+    note: "This foundational study established the hierarchy of perceptual tasks, with 'position along a common scale' being the most accurate. The bottom series of an area chart benefits from this."
+    role: related
+
+examples:
+  - type: bad
+    description: "In a chart showing market share, the company you are focusing on is in the middle of the stack. Its trend is distorted by the categories below it, making its performance difficult to assess accurately."
+  - type: good
+    description: "The same chart is reordered to place the focus company at the bottom. Its area now rests on the x-axis, and its true trend over time is immediately and accurately visible."
+---
+
+## Guidance
+
+When creating a stacked area chart, strategically order the layers so the most important category for your message, or the least volatile category, is at the bottom.
+
+## Why
+
+Humans can only accurately judge and compare values that share a common, straight baseline. In a stacked area chart, only the bottom-most series benefits from the stable, flat baseline of the x-axis. All other series are plotted on top of the fluctuating series below them, distorting their shape and making their true values and trends difficult to read. Placing your key series at the bottom makes its trend perceptually accurate and easy to follow.
+
+### Core Principle
+
+Make the most important comparison the easiest one to make. By giving the most important series a stable baseline, you are optimizing the chart for its primary purpose.
+
+## When it applies
+
+-   You are creating a stacked area chart.
+-   There is one particular series whose trend is more important than the others.
+-   Alternatively, if no series is more important, placing the largest or most stable (least volatile) series at the bottom can create a smoother baseline for the other series, slightly improving overall readability.
+
+## Signs of Trouble
+
+-   **Distorted Story:** The series you care most about is in the middle of the stack, and its visual shape doesn't match the story you're trying to tell from the data.
+-   **Baseline Instability:** The bottom layer of your chart is a very small, volatile series, creating a "noisy" foundation for all the other categories.
+
+## How to Improve
+
+-   **Quick Fix:** In your charting tool, reorder the data series so that the most important one is listed first (as this usually places it at the bottom).
+-   **Moderate Approach:** After reordering, use color to further emphasize the key series at the bottom. Make it a strong, saturated color while using more muted or analogous colors for the other series above it.
+
+<split/>
+
+```md
+---
+id: direct-label-area-charts
+title: "Directly label series on an area chart instead of using a legend"
+
+tags:
+  - impact:cognitive
+  - impact:perceptual
+  - chart:area
+  - chart:area.stacked
+  - task:lookup
+  - access:cognitive-load-risk
+
+evidence:
+  strength: medium
+  summary: "Practitioner experience and cognitive science principles on the split-attention effect show that direct labeling reduces the cognitive load of switching attention between a chart and a separate legend. This makes charts faster and easier to comprehend."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: What to consider when creating area charts"
+    url: https://www.datawrapper.de/blog/area-charts
+    note: "The article suggests: 'Consider turning off automatic labelling and place the labels yourself. Your readers will be able to read the chart faster thanks to that.'"
+    role: primary
+
+examples:
+  - type: bad
+    description: "An area chart has a legend with colored squares and category names at the side or bottom. The reader must constantly look back and forth between the legend and the colored areas to understand what each represents."
+  - type: good
+    description: "The same area chart has text labels placed directly on top of or next to the areas they describe. The reader can identify each series instantly without moving their eyes away from the data."
+---
+
+## Guidance
+
+Whenever possible, place labels directly onto their corresponding areas in an area chart, rather than relying on a separate color legend.
+
+## Why
+
+Requiring a viewer to look back and forth between a legend and the chart itself increases cognitive load. This phenomenon, known as the split-attention effect, forces the brain to work harder to match the key to the data, slowing down comprehension and increasing the chance of error. Placing labels directly on or next to the data they describe eliminates this extra mental step, allowing for faster and more accurate interpretation.
+
+## When it applies
+
+-   You are creating an area chart (or line chart, pie chart, etc.) with multiple series.
+-   There is enough space within or near the areas to place readable text labels.
+
+## Exceptions
+
+-   In highly dense or volatile charts, there may not be enough clear space for direct labels.
+-   In interactive charts, a legend can be used as a filtering or highlighting mechanism, which provides a functional benefit that may outweigh the split-attention cost. A common solution is to highlight the corresponding area on hover.
+
+## Signs of Trouble
+
+-   **Ping-Pong Eyes:** You find yourself (or watch others) repeatedly glancing between the chart's colored areas and a legend to understand what's what.
+-   **Ambiguous Colors:** Two colors in your legend are similar enough that it's hard to distinguish them in the chart itself.
+
+## How to Improve
+
+-   **Quick Fix:** Turn off the default legend and manually add text labels in your charting software. Place them in a clear, spacious part of each area, usually towards the right side of the chart where the trend concludes.
+-   **Moderate Approach:** Style the direct labels to match the color of their respective areas. This creates an even stronger visual link. Ensure there is sufficient contrast between the text color and the area's background color for readability.
+-   **Comprehensive Approach (for interactive charts):** Implement interactive labels that appear on hover, or use the legend to trigger highlighting, which connects the legend item to the data without requiring manual matching.
+
+<split/>
+
+```md
+---
+id: group-small-series-in-area-charts
+title: "Group small, insignificant series into an 'Other' category"
+
+tags:
+  - impact:cognitive
+  - impact:aesthetic
+  - impact:perceptual
+  - chart:area
+  - chart:area.stacked
+  - data:cardinality.high
+  - access:cognitive-load-risk
+
+evidence:
+  strength: medium
+  summary: "This is a common data reduction technique recommended by practitioners to simplify complex charts. It aligns with the principle of maximizing the data-ink ratio by removing non-critical visual detail (many thin, unlabelable slivers) to improve clarity and focus."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: What to consider when creating area charts"
+    url: https://www.datawrapper.de/blog/area-charts
+    note: "The blog recommends: 'Consider grouping many tiny values together to one bigger value (e.g. 'others') to clean up the overall look of the chart. You will need fewer labels, which will help your readers to navigate themselves faster on the chart.'"
+    role: primary
+
+examples:
+  - type: bad
+    description: "A stacked area chart shows market share for 15 companies. The top of the chart is a chaotic jumble of 10 very thin, multi-colored slivers that are impossible to label or distinguish."
+  - type: good
+    description: "The same chart now shows the top 5 companies as distinct areas, while the remaining 10 have been consolidated into a single, clean area at the top labeled 'Other companies'. The chart is now far easier to read."
+---
+
+## Guidance
+
+In a stacked area chart with many categories, combine the smallest and least important series into a single group, typically labeled "Other."
+
+## Why
+
+An excess of categories in a stacked area chart leads to visual clutter. The smallest series often appear as thin, unreadable "slivers" that are difficult to distinguish, color-code, and label. While technically accurate, this level of detail overwhelms the viewer and obscures the main trends. Grouping these minor series simplifies the chart visually, reduces the number of colors and labels needed, and allows the reader to focus their attention on the most significant categories.
+
+## When it applies
+
+-   You have a stacked area chart (or stacked bar, or pie chart) with high cardinality (many categories).
+-   A number of your categories contribute very little to the total (e.g., each is less than 1-2% of the total).
+-   The individual trends of these small categories are not the main point of the story.
+
+## Trade-offs
+
+-   You lose the ability to see the individual trends of the series that have been grouped into "Other." If the behavior of a specific small series is important, it should be kept separate.
+
+## Signs of Trouble
+
+-   **Rainbow Slivers:** The top of your chart is a thin, messy band of many different colors.
+-   **Unlabelable Layers:** It is physically impossible to place a readable label on several of the areas.
+-   **Cognitive Overload:** The chart looks intimidatingly complex at first glance due to the sheer number of series.
+
+## How to Improve
+
+-   **Data Preparation:** Before creating the chart, identify the categories that consistently fall below a certain threshold (e.g., 2% of the total). Create a new category called "Other" and sum their values into it.
+-   **Visual Styling:** After grouping, place the "Other" category at the top of the stack. Assign it a neutral color, like grey, to signal that it's a miscellaneous collection and to keep the visual focus on the more important, individually colored categories below.

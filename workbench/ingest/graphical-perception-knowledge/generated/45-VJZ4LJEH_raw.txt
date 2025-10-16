@@ -260,7 +260,7 @@ evidence:
 
 sources:
   - type: research
-    ref: Cleveland & McGill, 1984
+    ref: "Cleveland & McGill, 1984"
     url: https://doi.org/10.2307/2288400
     note: "Foundational study (n=55) that experimentally established a hierarchy of perceptual tasks, with position on a common scale being most accurate for quantitative comparisons (p<0.001)."
     role: primary
