@@ -1,0 +1,288 @@
+```md
+---
+id: group-similar-marks
+title: "Group similar marks to speed up visual search"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:scatter
+  - chart:heatmap
+  - chart:all
+  - task:lookup
+  - task:find-anomalies
+  - data:categorical
+  - data:cardinality.high
+  - visual:color
+  - visual:position
+  - medium:screen
+  - medium:static
+  - access:cognitive-load-risk
+
+sources:
+  - type: research
+    ref: Gramazio, Schloss, & Laidlaw, 2014
+    url: https://doi.org/10.1109/TVCG.2014.2346983
+    note: "Experiments 1 and 2 found that spatially grouping marks by color made visual search significantly faster and less affected by the number of marks, compared to random layouts."
+
+examples:
+  - type: bad
+    description: "In a scatterplot with randomly distributed colors, finding a specific target (e.g., a single purple square) requires a slow, serial search through all points. The marks look like 'confetti'."
+  - type: good
+    description: "In a scatterplot where colors are spatially clustered, the target 'pops out' from its local group, allowing for rapid, preattentive identification. The human visual system can process each color group as a single object."
+---
+
+## Guidance
+
+When the spatial position of marks is not itself encoding a primary variable (e.g., in categorical heatmaps or when reordering is acceptable), group marks with similar properties (like color) together.
+
+## Why
+
+Spatially grouping similar items allows the human visual system to perceive them as a single textured object or "chunk." This enables preattentive processing, where a target with a unique feature (the "pop-out" effect) can be identified almost instantly, regardless of the number of other items. In contrast, a random layout forces a slow, cognitively demanding serial search where each item is inspected one by one.
+
+## When it applies
+
+- **Primary Task is Search:** This is most critical when the user's main goal is to find or locate specific, known targets within a visualization.
+- **High Data Density:** The benefits of grouping become exponentially larger as the number of data points (set size) increases. For a small number of points, the difference is negligible; for hundreds or thousands, it's dramatic.
+- **Order is Flexible:** Applies to visualizations where the ordering of marks can be changed without losing meaning, such as treemaps, categorical heatmaps (mutation matrices), or bar charts sorted by value.
+
+## Exceptions
+
+- **Position Encodes Meaning:** Do not reorder marks if their position is determined by quantitative data, as in a standard scatterplot where X and Y axes represent continuous variables. In these cases, the spatial structure is the primary insight and should not be altered for grouping.
+- **Task is Global Pattern Recognition:** If the goal is to see the overall distribution or correlation, enforcing an artificial grouping might create misleading patterns or obscure the natural structure of the data.
+
+## Trade-offs
+
+- **Ordering by a single property:** Grouping marks by one categorical variable (e.g., color representing region) may prevent you from ordering them by another important variable (e.g., value). You sacrifice one organizational principle for another.
+- **Illusory Patterns:** Artificial grouping could inadvertently create visual clusters that imply a relationship between items that doesn't exist in the data.
+
+## Signs of Trouble
+
+- **The "Confetti" Test:** The visualization looks like a random spray of colored dots with no discernible structure, making it hard to focus.
+- **Long Search Times:** It takes users a noticeably long time to find a specific item they are looking for. They may scan back and forth across the entire chart.
+- **High Cognitive Load:** Viewers report that the chart is "busy," "cluttered," or "hard to read." They have to actively hunt for information rather than seeing it emerge.
+
+## How to Improve
+
+- **Quick Fix: Highlighting.** If you cannot reorder the data, use an interactive feature like a legend filter or search box to highlight all marks belonging to a specific category. This creates a temporary "group" for the user to focus on.
+
+- **Moderate Redesign: Sort by Group.** In charts like bar charts or lists, apply a secondary sort by the categorical variable (e.g., sort first by value, then by region). This will bring similar items closer together.
+
+- **Comprehensive Redesign: Use Small Multiples or Faceting.** Instead of plotting all categories on one chart, break the visualization into a grid of smaller charts (facets), one for each category. This creates the strongest possible grouping and allows for easy comparison across groups.
+
+```
+<split/>
+```md
+---
+id: use-sufficient-mark-size
+title: "Use sufficiently large marks for target identification tasks"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:scatter
+  - chart:heatmap
+  - chart:line
+  - task:lookup
+  - task:find-anomalies
+  - visual:size
+  - medium:screen
+  - access:cognitive-load-risk
+
+sources:
+  - type: research
+    ref: Gramazio, Schloss, & Laidlaw, 2014
+    url: https://doi.org/10.1109/TVCG.2014.2346983
+    note: "Experiments found that search performance was slowest for the smallest mark sizes (less than ~0.5° visual angle) and improved until plateauing at larger sizes. This holds true for both grid and scatterplot layouts."
+
+examples:
+  - type: bad
+    description: A scatterplot with thousands of tiny, single-pixel dots. It is extremely difficult to locate a specific dot, and its color may be hard to discern.
+  - type: good
+    description: A scatterplot where marks are large enough to be clearly visible and their shape and color are unambiguous, making it easy to find a specific target.
+---
+
+## Guidance
+
+For tasks that require finding a specific target, ensure visual marks are large enough to be easily and quickly perceived. Avoid using very small marks (e.g., those subtending less than 0.5° of visual angle).
+
+## Why
+
+The human visual system requires a minimum size to accurately and quickly perceive an object's features, such as its color and shape. Very small marks are difficult to differentiate from their neighbors and require more cognitive effort to process, which significantly slows down visual search tasks. Performance improves as mark size increases, up to a point where further size increases offer no additional benefit and may even be detrimental.
+
+## When it applies
+
+- **Task is Target Identification:** This is crucial when the viewer needs to locate a specific data point, such as finding a particular outlier in a scatterplot or a specific mutation in a genomic heatmap.
+- **High-Density Plots:** In charts with many marks, small marks are especially problematic as they can easily get lost in the clutter.
+- **Color or Shape Encoding:** When color or shape is a key encoding channel, marks must be large enough for the color/shape to be unambiguously perceived. Research by Stone (2012) shows perceived color can change with size.
+
+## Exceptions
+
+- **Task is Global Pattern Recognition:** If the primary goal is to see the overall shape of the data, trends, or density patterns (e.g., in a density plot or a scatterplot showing overall correlation), using smaller, semi-transparent marks can be more effective. Larger marks can obscure these global patterns through overplotting. The Gramazio paper's case study confirmed this: researchers preferred smaller marks for seeing global trends.
+- **Extremely Large Datasets:** For datasets with millions of points, using larger marks may be impossible due to overplotting. In such cases, aggregation or sampling techniques are often a better solution than simply plotting all points.
+
+## Trade-offs
+
+- **Data Density vs. Legibility:** Using larger marks makes individual points more legible but reduces the number of points you can display without significant overlap (overplotting). You trade the ability to see every point for the ability to clearly see individual points.
+- **Global vs. Local Views:** Larger marks prioritize local detail (finding one point) at the expense of the global view (seeing the overall trend). Smaller marks do the opposite.
+
+## Signs of Trouble
+
+- **Slow Search:** Users take a long time to find a specific point, even when they know what they are looking for.
+- **Misidentification:** Users misinterpret the color or shape of small marks.
+- **"It all blends together":** Users complain that the visualization is a "smudge" or that they can't distinguish individual points.
+- **Overplotting:** Larger marks create a solid mass of color where the density and distribution of points are completely obscured.
+
+## How to Improve
+
+- **Quick Fix: Increase Mark Size.** Simply increase the size (e.g., pixel radius) of the marks. Test a few sizes to find the point where they are clearly legible but overplotting is still manageable.
+
+- **Moderate Approach: Use Outlines.** Add a contrasting outline (e.g., a white or black stroke) around marks. This can improve their individual legibility even at slightly smaller sizes by separating them from the background and each other.
+
+- **Comprehensive Approach: Dynamic Sizing or Aggregation.** For interactive visualizations, link mark size to the zoom level. At a zoomed-out level, use smaller marks, transparency, or data aggregation (e.g., hexbinning) to show global patterns. As the user zooms in, increase the mark size to reveal local detail. This resolves the trade-off between global and local views.
+
+```
+<split/>
+```md
+---
+id: reduce-marks-if-ungrouped
+title: "Reduce mark quantity if data cannot be spatially grouped"
+
+tags:
+  - impact:perceptual
+  - impact:performance
+  - chart:scatter
+  - chart:all
+  - task:lookup
+  - task:find-anomalies
+  - data:cardinality.high
+  - visual:position
+  - medium:screen
+  - access:cognitive-load-risk
+
+sources:
+  - type: research
+    ref: Gramazio, Schloss, & Laidlaw, 2014
+    url: https://doi.org/10.1109/TVCG.2014.2346983
+    note: "Experiments showed that for random (ungrouped) layouts, search time increased linearly with the number of marks. For grouped layouts, the number of marks had little to no effect on search time."
+
+examples:
+  - type: bad
+    description: A scatterplot showing 5,000 individual, randomly-colored data points. Finding a specific point requires scanning through all 5,000, which is extremely slow and inefficient.
+  - type: good
+    description: Instead of plotting all 5,000 points, the data is summarized. The chart shows the top 100 most significant points and a note explains that 4,900 other points are not shown. This allows the user to quickly find key items.
+---
+
+## Guidance
+
+If marks in a visualization cannot be spatially grouped by a distinguishing feature (like color), consider reducing the number of marks shown to improve visual search performance. The time it takes to find a target in an ungrouped layout is directly proportional to the total number of marks.
+
+## Why
+
+When marks are not grouped, the visual system has no preattentive cues to guide it. It must resort to a serial search, inspecting each item one by one until the target is found. This is a slow, linear process; doubling the number of items roughly doubles the search time. In contrast, when marks are grouped, the system can quickly dismiss entire groups, making the search much more efficient. If grouping is not an option, the only way to shorten a serial search is to reduce the number of items to search through.
+
+## When it applies
+
+- **Ungrouped Layouts:** This is critical for visualizations with a random or meaningful-but-ungrouped spatial layout, such as standard scatterplots where position is determined by data, or "confetti"-style categorical plots.
+- **Search or Lookup Tasks:** The guideline is most relevant when the primary task is to find a known item or identify specific anomalies.
+- **High Cardinality / High Density:** The problem is most acute in visualizations with hundreds or thousands of data points.
+
+## Exceptions
+
+- **Showing Every Point is Essential:** In some contexts (e.g., fraud detection, data validation), it may be critical to see every single data point to ensure nothing is missed. In these cases, performance may be a secondary concern to completeness.
+- **Global Trend Analysis:** If the task is to understand the overall distribution, density, or shape of the data, then showing all points (often with transparency or as smaller marks) is necessary. Summarization would remove the very information the user needs.
+
+## Trade-offs
+
+- **Completeness vs. Performance:** Reducing the number of marks improves search speed but means you are not showing the complete dataset. This could cause users to miss important context or outliers that were filtered out.
+- **Information Loss:** Summarization and aggregation are inherently lossy. The designer must make an informed decision about *what* to filter out, which may introduce bias.
+
+## Signs of Trouble
+
+- **Linear Slowdown:** As you add more data, the visualization becomes proportionally slower to use for finding things.
+- **"Needle in a Haystack":** Users describe the task of finding a point as looking for a "needle in a haystack."
+- **Overplotting:** The marks are so dense that they form an illegible mass, making a point-by-point search impossible anyway.
+- **User Abandonment:** Users give up on finding a specific item because it takes too long.
+
+## How to Improve
+
+- **Quick Fix: Highlighting and Filtering.** Provide interactive controls that allow users to filter the data dynamically. This empowers the user to reduce the number of marks on-demand based on their current query, without the designer having to make a fixed choice.
+
+- **Moderate Redesign: Data Summarization.** Instead of plotting all data, apply a rule to show only the most important points (e.g., top 100 by value, most recent items, or statistical outliers). Always include a clear note explaining that the data is summarized (e.g., "Showing 100 of 5,000 total items").
+
+- **Comprehensive Redesign: Aggregation.** Change the visualization type to one that uses aggregation. For example, convert a dense scatterplot into a 2D histogram or a hexbin map. This groups points into bins, and color can then be used to show the density within each bin. This maintains the sense of distribution while dramatically reducing the number of rendered objects.
+
+```
+<split/>
+```md
+---
+id: choose-mark-size-by-task
+title: "Choose mark size based on the primary analysis task"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:scatter
+  - chart:heatmap
+  - task:lookup
+  - task:trend
+  - task:distribution
+  - visual:size
+  - medium:screen
+  - audience:expert
+
+sources:
+  - type: research
+    ref: Gramazio, Schloss, & Laidlaw, 2014
+    url: https://doi.org/10.1109/TVCG.2014.2346983
+    note: "A case study with genomics researchers (Section 5) revealed an association between mark size and task type: larger marks were preferred for finding a single target, while smaller marks were preferred for discerning global patterns."
+
+examples:
+  - type: bad
+    description: A single visualization with medium-sized marks is provided to an analyst who needs to both find specific outliers and assess the overall data distribution. The mark size is a poor compromise, being too small for easy lookup and too large to prevent overplotting that obscures the global trend.
+  - type: good
+    description: An interactive visualization tool offers a "view mode" toggle. One mode, "Find Outliers," uses large, opaque marks. The other mode, "See Trends," uses small, semi-transparent marks. This allows the user to optimize the view for their current task.
+---
+
+## Guidance
+
+Select the size of visual marks based on the user's primary task. Use larger marks for local tasks like finding a specific target, and smaller marks for global tasks like identifying trends or overall patterns.
+
+## Why
+
+The optimal mark size is a trade-off between local detail and a global overview.
+- **Larger marks** are easier to see, select, and distinguish individually, which facilitates *local* tasks like looking up a specific point.
+- **Smaller marks** reduce overplotting and clutter, allowing the eye to integrate information across a wide area to perceive *global* patterns, such as the shape of a distribution, the density of clusters, or the direction of a trend.
+A single, fixed size is often a poor compromise for both tasks.
+
+## When it applies
+
+- **Multi-purpose Visualizations:** This is especially relevant for expert tools and analytical dashboards where users perform a variety of tasks on the same visualization.
+- **Dense Data:** The conflict between local and global views is most pronounced in visualizations with high data density, where larger marks would lead to significant overplotting.
+- **Expert Audiences:** Expert users (like the genomics researchers in the source paper's case study) are often aware of their shifting analytical needs and can leverage task-specific views effectively.
+
+## Exceptions
+
+- **Single-Purpose Displays:** If a visualization is designed for one specific task (e.g., a chart in a news article that only exists to highlight one specific outlier), then only one mark size is needed.
+- **Sparse Data:** When there are very few data points, you can often use marks that are large enough for easy lookup without causing any overplotting, making the trade-off irrelevant.
+
+## Trade-offs
+
+- **Prioritizing One Task Over Another:** Choosing a fixed mark size inherently optimizes for one type of task at the expense of the other.
+- **Increased Complexity:** Providing multiple views or interactive controls for mark size adds complexity to the user interface.
+
+## Signs of Trouble
+
+- **Task Switching Complaints:** Users report that the chart is "great for seeing the big picture, but I can't find anything specific," or conversely, "I can see the individual points, but I have no idea what the overall trend is."
+- **Inefficient Workflows:** Users are observed manually filtering data or zooming excessively to try and switch between global and local views, indicating the static view is insufficient.
+- **User Frustration:** The visualization feels like it's fighting the user's analytical goal.
+
+## How to Improve
+
+- **Quick Fix: Create Two Static Versions.** If the medium is static (e.g., a report), create two versions of the chart: one with large marks, captioned "Highlighting Key Outliers," and another with small, transparent marks, captioned "Overall Data Distribution."
+
+- **Moderate Redesign: Add a View Toggle.** In an interactive tool, add a simple control (e.g., a dropdown or button set) that allows the user to switch between a "Global" view (small marks) and a "Local" view (large marks).
+
+- **Comprehensive Redesign: Zoom-Dependent Mark Sizing.** Implement a semantic zoom feature. When the user is zoomed out, display the data with small marks, transparency, or as an aggregated heatmap to show global patterns. As the user zooms in on a region of interest, automatically increase the mark size (or de-aggregate the data) to reveal individual data points and their local details. This fluidly adapts the view to the user's context without requiring explicit mode switches.
+
+```

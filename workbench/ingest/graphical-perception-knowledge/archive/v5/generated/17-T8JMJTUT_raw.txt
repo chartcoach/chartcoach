@@ -1,0 +1,394 @@
+```md
+---
+id: prefer-contiguous-non-contiguous-cartograms-for-location
+title: "Prefer contiguous or non-contiguous cartograms for location tasks"
+tags:
+  - impact:perceptual
+  - impact:performance
+  - chart:map
+  - chart:map.cartogram
+  - chart:map.cartogram.contiguous
+  - chart:map.cartogram.non-contiguous
+  - chart:map.cartogram.rectangular
+  - chart:map.cartogram.dorling
+  - task:lookup
+  - data:spatial
+  - data:quantitative
+  - visual:position
+  - visual:area
+  - audience:general
+  - medium:static
+  - access:cognitive-load-risk
+evidence:
+  strength: medium
+  summary: "A 2018 study with 33 participants found that contiguous and non-contiguous cartograms led to significantly faster and more accurate performance on location tasks compared to rectangular and Dorling cartograms."
+sources:
+  - type: research
+    ref: "Nusrat, Alam, and Kobourov, 2018"
+    url: "https://doi.org/10.1109/TVCG.2016.2642109"
+    note: "Compared four cartogram types on a 'locate' task. Found contiguous and non-contiguous types had significantly lower error rates and completion times than rectangular cartograms."
+    role: primary
+---
+## Guidance
+
+For tasks that require users to find or identify specific geographic regions on a cartogram (a "locate" task), prefer contiguous or non-contiguous cartogram types over rectangular or Dorling cartograms.
+
+## Why
+
+Contiguous and non-contiguous cartograms do a better job of preserving the relative positions of regions from the original map. This makes it easier for viewers to mentally map a known location to its new position on the distorted cartogram. The source study found statistically significant differences in both completion time and error rates for this task, with rectangular cartograms performing the worst.
+
+### Core Principle
+
+Minimize the cognitive distance between a user's mental model of a map and the visualized representation. Preserving relative locations, even if distorted, aids in this mapping.
+
+## When it applies
+
+-   When the primary goal for the user is to look up a specific region (e.g., "Find Texas on this population cartogram").
+-   When working with a general audience that may rely on relative geography for orientation.
+
+## Exceptions
+
+-   If preserving exact adjacency (topology) in a schematic way is the absolute highest priority, a rectangular cartogram might be considered. However, be aware this comes at a significant performance cost for location tasks.
+
+## Trade-offs
+
+-   **Contiguous cartograms** achieve this by distorting the original shapes of regions.
+-   **Non-contiguous cartograms** sacrifice all adjacency information, which can make the map feel fragmented and prevent users from understanding neighborhood relationships.
+
+## Signs of Trouble
+
+-   **Slow Lookup:** Users take a long time to find a specific region you ask them to locate.
+-   **Frequent Misidentification:** Users frequently misidentify regions on the cartogram.
+-   **Wrong Tool for the Job:** You are using a rectangular or Dorling cartogram, and the primary task for the user is looking up specific regions.
+
+## How to Improve
+
+-   **Quick Fix: Add Labels and a Reference.** Add clear labels to all regions, especially if you must use a poorly-suited cartogram type. Providing a small, undistorted reference map alongside the cartogram also helps, as was done in the study.
+-   **Moderate Redesign:** If using a rectangular cartogram, switch to a Dorling cartogram. Performance is still poor for location tasks but was found to be slightly better than rectangular.
+-   **Comprehensive Redesign:** Re-render the cartogram using a contiguous (e.g., diffusion-based) or non-contiguous algorithm. This directly addresses the perceptual issue by better preserving relative positions.
+
+```
+
+<split/>
+
+```md
+---
+id: use-noncontiguous-cartograms-for-shape-recognition
+title: "Use non-contiguous cartograms to preserve shape recognition"
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:map
+  - chart:map.cartogram
+  - chart:map.cartogram.non-contiguous
+  - chart:map.cartogram.contiguous
+  - task:lookup
+  - data:spatial
+  - data:quantitative
+  - visual:shape
+  - visual:area
+  - audience:general
+  - medium:static
+evidence:
+  strength: medium
+  summary: "In a 2018 experiment, non-contiguous cartograms, which perfectly preserve region shape, resulted in a four-fold reduction in error rates for shape recognition tasks compared to contiguous cartograms."
+sources:
+  - type: research
+    ref: "Nusrat, Alam, and Kobourov, 2018"
+    url: "https://doi.org/10.1109/TVCG.2016.2642109"
+    note: "In a 'recognize' task, the error rate for non-contiguous cartograms was ~5%, while for contiguous cartograms it was ~20%, a statistically significant difference."
+    role: primary
+---
+## Guidance
+
+When it is critical for users to be able to recognize geographic regions by their original shape, use a non-contiguous cartogram.
+
+## Why
+
+Non-contiguous cartograms are constructed by scaling each region independently while keeping its original shape perfectly intact. In contrast, contiguous cartograms must distort shapes to maintain adjacency. The source study found a large and statistically significant difference in error rates (nearly a factor of four) for a shape recognition task, strongly favoring non-contiguous cartograms.
+
+## When it applies
+
+-   When the user's task is to identify a region based on its shape (e.g., "Which of these shapes is Colorado?").
+-   When regions are not labeled and recognition relies on shape.
+-   Note: Dorling and rectangular cartograms are unsuitable for this task by design, as they replace original shapes with circles and rectangles.
+
+## Exceptions
+
+-   If maintaining adjacency (topology) is more important than shape recognition, a contiguous cartogram would be a better choice.
+
+## Trade-offs
+
+-   The primary trade-off of using non-contiguous cartograms is the complete loss of adjacency information. The cartogram can look fragmented and makes it difficult to understand neighborhood relationships.
+
+## Signs of Trouble
+
+-   **Shape Blindness:** Users are unable to identify well-known geographic regions by their shape in your cartogram.
+-   **Shape Distortion:** You are using a contiguous cartogram and expecting users to recognize shapes that have been significantly distorted by the algorithm.
+
+## How to Improve
+
+-   **Quick Fix:** If using a contiguous cartogram, add clear labels to compensate for the distorted shapes.
+-   **Comprehensive Redesign:** If the task is primarily recognition, switch from a contiguous cartogram to a non-contiguous one. This is the most effective way to ensure shapes are recognizable.
+
+```
+
+<split/>
+
+```md
+---
+id: use-topology-preserving-cartograms-for-adjacency
+title: "Use contiguous or rectangular cartograms to show geographic adjacencies"
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:map
+  - chart:map.cartogram
+  - chart:map.cartogram.contiguous
+  - chart:map.cartogram.rectangular
+  - task:spatial-relationships
+  - data:spatial
+  - data:quantitative
+  - visual:position
+  - audience:general
+  - medium:static
+evidence:
+  strength: medium
+  summary: "A 2018 study found that topology-preserving cartograms (contiguous and rectangular) led to significantly lower error rates (11% and 5%) on adjacency-finding tasks compared to non-preserving types like Dorling (24%) and non-contiguous (48%)."
+sources:
+  - type: research
+    ref: "Nusrat, Alam, and Kobourov, 2018"
+    url: "https://doi.org/10.1109/TVCG.2016.2642109"
+    note: "For a 'find adjacency' task, a statistically significant difference in error rates was found, favoring cartogram types that preserve neighborhood connections."
+    role: primary
+---
+## Guidance
+
+When the user's task is to identify which geographic regions are neighbors, use a cartogram type that preserves topology, such as a contiguous or rectangular cartogram.
+
+## Why
+
+By definition, contiguous and topology-preserving rectangular cartograms ensure that regions that are adjacent in reality remain adjacent in the visualization. Non-contiguous and Dorling cartograms break these connections, making it perceptually difficult to determine neighbors. The study confirmed this, showing that even with a reference map, users made far more errors trying to identify neighbors on Dorling and non-contiguous cartograms.
+
+### Core Principle
+
+The visual structure of a chart should match the structure of the data relationships being communicated. If adjacency is a key relationship, it must be visually encoded.
+
+## When it applies
+
+-   When the user needs to answer questions about neighborhood relationships, such as "Which states border Nevada?".
+-   When analyzing the spatial context of a region is important.
+
+## Exceptions
+
+-   None known. If the task is to find adjacencies, a topology-preserving cartogram is required. Other types are unsuitable for this specific task.
+
+## Trade-offs
+
+-   **Contiguous cartograms** must distort region shapes to maintain topology.
+-   **Rectangular cartograms** heavily distort shape and relative position to create a schematic, grid-like layout. They also perform poorly on other tasks like comparison and summarization.
+
+## Signs of Trouble
+
+-   **Lost Neighbors:** Your visualization uses a Dorling (circles) or non-contiguous cartogram, and you expect users to understand which regions are neighbors.
+-   **Topological Confusion:** Users are confused about the spatial relationships between regions in your cartogram.
+
+## How to Improve
+
+-   **Quick Fix: Add Interaction.** If you must use a Dorling or non-contiguous cartogram, add interaction (e.g., highlighting all neighbors on hover) to explicitly communicate the lost adjacency information.
+-   **Comprehensive Redesign: Switch Chart Type.** If the primary task is to understand topology, switch to a contiguous or rectangular cartogram. Choose the contiguous type if preserving some sense of shape and location is important. Choose the rectangular type only if a highly schematic, abstract layout is the main goal.
+
+```
+
+<split/>
+
+```md
+---
+id: prefer-contiguous-cartograms-for-area-comparison
+title: "Prefer contiguous cartograms for comparing or ranking region values"
+tags:
+  - impact:perceptual
+  - impact:performance
+  - chart:map
+  - chart:map.cartogram
+  - chart:map.cartogram.contiguous
+  - task:compare
+  - task:rank
+  - data:spatial
+  - data:quantitative
+  - visual:area
+  - visual:shape
+  - audience:general
+  - medium:static
+evidence:
+  strength: medium
+  summary: "In a 2018 study, contiguous cartograms consistently resulted in the lowest error rates for tasks requiring users to compare the size of regions or find the region with the top value ('compare' and 'find top-k' tasks)."
+sources:
+  - type: research
+    ref: "Nusrat, Alam, and Kobourov, 2018"
+    url: "https://doi.org/10.1109/TVCG.2016.2642109"
+    note: "For three tasks related to value comparison ('compare', 'find top-k', 'detect change'), contiguous cartograms had the lowest error rates, with the difference being statistically significant compared to rectangular cartograms."
+    role: primary
+---
+## Guidance
+
+For tasks that require users to compare the statistical values of regions or rank them, prefer using contiguous cartograms.
+
+## Why
+
+While human perception of area is known to be less accurate than length, this study found that within cartograms, the irregular, familiar shapes of contiguous cartograms may provide better perceptual cues for size judgment than simple circles (Dorling) or rectangles with potentially misleading aspect ratios. Across three different tasks testing value comparison, contiguous cartograms consistently yielded the lowest error rates.
+
+## When it applies
+
+-   When the user's primary goal is to judge relative magnitudes, such as "Which state is bigger, Texas or California?" or "Find the state with the second-highest population."
+
+## Exceptions
+
+-   The study noted that for simple comparisons where the area ratio was large, Dorling cartograms also performed well, suggesting they are a viable alternative for non-complex comparisons.
+-   If perfect statistical accuracy is required, Dorling or non-contiguous cartograms are better, as they can be scaled with zero cartographic error, whereas contiguous algorithms introduce some error.
+
+## Trade-offs
+
+-   Contiguous cartograms distort the original shapes of regions, which can make them harder to recognize without labels.
+-   The algorithms for creating contiguous cartograms introduce some statistical inaccuracy (cartographic error), meaning the visualized area may not perfectly match the data value.
+
+## Signs of Trouble
+
+-   **Comparison Errors:** Users struggle to determine which of two regions is larger on your cartogram.
+-   **Rectangular Confusion:** You are using a rectangular cartogram for comparison tasks, a type which showed significantly higher error rates in the study.
+
+## How to Improve
+
+-   **Quick Fix: Add Data Labels.** Add tooltips or direct labels that show the exact data value. This provides an escape hatch, allowing users to compare numbers directly instead of relying solely on area perception.
+-   **Moderate Redesign:** If using a rectangular cartogram, switch to a Dorling cartogram, which performed better for comparison tasks.
+-   **Comprehensive Redesign:** Switch to a contiguous cartogram to minimize user error for comparison and ranking tasks, as it was the best-performing type in the study.
+
+```
+
+<split/>
+
+```md
+---
+id: avoid-rectangular-cartograms-for-summarizing-patterns
+title: "Avoid rectangular cartograms for summarizing spatial patterns"
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:map
+  - chart:map.cartogram
+  - chart:map.cartogram.rectangular
+  - task:distribution
+  - task:summary-mean
+  - data:spatial
+  - data:quantitative
+  - visual:area
+  - visual:position
+  - audience:general
+  - medium:static
+evidence:
+  strength: medium
+  summary: "A 2018 study on cartogram effectiveness found that rectangular cartograms had the highest error rate for 'summarize' tasks, a result that was statistically significant compared to non-contiguous and Dorling cartograms."
+sources:
+  - type: research
+    ref: "Nusrat, Alam, and Kobourov, 2018"
+    url: "https://doi.org/10.1109/TVCG.2016.2642109"
+    note: "For the 'summarize' task, the error rate for rectangular cartograms was the highest, and significantly higher than for Dorling and non-contiguous types."
+    role: primary
+---
+## Guidance
+
+When the primary goal is for users to see the "big picture" and identify broad trends or patterns in the data, avoid using rectangular cartograms.
+
+## Why
+
+Rectangular cartograms severely distort both shape and relative geographic location, replacing them with a rigid, schematic grid. This abstraction can obscure the larger spatial patterns that are often the main takeaway of a thematic map. The study found that for `summarize` tasks (e.g., "Which part of the country contributes more to GDP?"), rectangular cartograms had the highest error rate. Dorling, non-contiguous, and contiguous cartograms, which all better preserve some aspect of the original geography (location or shape), performed significantly better.
+
+## When it applies
+
+-   When presenting a cartogram to show high-level trends, distributions, or patterns, such as an east/west divide, a coastal concentration, or a rural/urban split.
+-   When the audience is a general one, not experts trained to read highly abstract schematics.
+
+## Exceptions
+
+-   If maintaining strict topology in a clean, grid-like schematic is the most critical requirement, and the audience is expert users familiar with this representation, a rectangular cartogram might be used.
+
+## Trade-offs
+
+-   Avoiding rectangular cartograms means you sacrifice their primary benefit: a clean, schematic layout that perfectly preserves adjacency without the visual complexity of distorted shapes.
+
+## Signs of Trouble
+
+-   **Pattern Obscurity:** Users are unable to describe the overall trend or pattern in your cartogram.
+-   **Viewer Confusion:** Feedback indicates the visualization is confusing, abstract, or hard to connect back to the underlying geography.
+-   **Wrong Tool for Summary:** You are using a rectangular cartogram to show a high-level summary to a general audience.
+
+## How to Improve
+
+-   **Moderate Redesign: Switch to a Dorling Cartogram.** Dorling cartograms performed well for summary tasks. The simple, uniform circles make it easy to spot clusters of large or small values, revealing patterns without the complexity of distorted shapes.
+-   **Comprehensive Redesign: Switch to a Contiguous Cartogram.** Contiguous cartograms also performed well. By preserving a stronger sense of the underlying geography and topology, they help users interpret spatial patterns in a more familiar context.
+
+```
+
+<split/>
+
+```md
+---
+id: favor-dorling-contiguous-cartograms-for-engagement
+title: "Favor Dorling or contiguous cartograms for user engagement and preference"
+tags:
+  - impact:pathos
+  - impact:aesthetic
+  - impact:ethos
+  - chart:map
+  - chart:map.cartogram
+  - chart:map.cartogram.contiguous
+  - chart:map.cartogram.dorling
+  - data:spatial
+  - audience:general
+  - medium:static
+evidence:
+  strength: medium
+  summary: "In a 2018 study, participants subjectively rated Dorling (circles) and contiguous cartograms significantly higher than non-contiguous and rectangular types. They were described as more 'entertaining,' 'elegant,' 'innovative,' and 'easy to understand'."
+sourcesS:
+  - type: research
+    ref: "Nusrat, Alam, and Kobourov, 2018"
+    url: "https://doi.org/10.1109/TVCG.2016.2642109"
+    note: "An attitude study and final preference-based choice showed a strong subjective preference for Dorling and contiguous cartograms over rectangular and non-contiguous types."
+    role: primary
+---
+## Guidance
+
+To increase user engagement and appeal, prefer Dorling or contiguous cartograms, as they are generally better liked by viewers.
+
+## Why
+
+Beyond pure task performance, user experience and reception are critical for effective communication. The source study included a subjective attitude survey which found a clear preference for Dorling and contiguous cartograms. Participants rated them higher on scales of helpfulness, organization, elegance, and clarity. When asked to choose a cartogram type to continue working with, a vast majority selected Dorling or contiguous, indicating a strong preference developed through use.
+
+### Core Principle
+
+A visualization that is perceived as engaging, elegant, and usable is more likely to be explored and trusted by the audience.
+
+## When it applies
+
+-   When audience reception, aesthetic appeal, and engagement are important goals, for instance in journalism, public-facing dashboards, and presentations.
+-   When choosing between two cartogram types that have similar analytical performance for your specific task.
+
+## Exceptions
+
+-   If the primary task demands the unique strengths of a non-contiguous cartogram (perfect shape preservation) or a rectangular cartogram (strict schematic topology), then analytical performance should take priority over subjective preference.
+
+## Trade-offs
+
+-   Prioritizing user preference may mean sacrificing performance on certain tasks. Dorling cartograms, while well-liked, perform poorly on location and adjacency tasks. Contiguous cartograms, also well-liked, distort shapes.
+
+## Signs of Trouble
+
+-   **Negative Feedback:** Users describe your rectangular or non-contiguous cartogram as "confusing," "boring," "ugly," or "difficult to use."
+-   **Low Engagement:** You observe that users do not spend much time with the visualization or do not explore it.
+
+## How to Improve
+
+-   **Consider a Switch:** If your primary task is comparison or summarization, consider switching from a rectangular or non-contiguous cartogram to a Dorling or contiguous one to improve user reception.
+-   **Mitigate Weaknesses:** If you choose a subjectively preferred type like a Dorling cartogram, be sure to mitigate its known analytical weaknesses. For example, add labels or interaction to help with location and adjacency tasks, balancing its aesthetic appeal with improved usability.
+
+```

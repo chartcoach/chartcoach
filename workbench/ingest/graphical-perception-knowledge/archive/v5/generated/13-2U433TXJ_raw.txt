@@ -1,0 +1,290 @@
+```md
+---
+id: prefer-bars-over-pies-for-comparisons
+title: "Prefer Bar Charts Over Pie Charts for Quantitative Comparisons"
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:bar
+  - chart:pie
+  - task:compare
+  - task:rank
+  - data:quantitative
+  - data:categorical
+  - visual:position
+  - visual:length
+  - visual:angle
+  - visual:area
+  - audience:general
+  - medium:static
+  - medium:interactive
+evidence:
+  strength: high
+  summary: "Foundational research from 1984, replicated in multiple crowdsourced and lab experiments, consistently shows that humans compare lengths along a common baseline (bar charts) more accurately and efficiently than they compare angles or areas (pie charts)."
+sources:
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://doi.org/3544548.3581349
+    note: "Review paper synthesizing findings from 59 perception studies. Confirms the superiority of bar charts over pie charts for comparison tasks, citing foundational and replication studies."
+    role: primary
+  - type: research
+    ref: Cleveland & McGill, 1984
+    note: "Foundational study establishing the perceptual hierarchy where position-length judgments outperform angle judgments."
+    role: supporting
+  - type: research
+    ref: Heer & Bostock, 2010
+    note: "Crowdsourced replication study that confirmed Cleveland & McGill's original findings, showing bar charts lead to more accurate comparisons than pie charts."
+    role: supporting
+  - type: research
+    ref: Skau & Kosara, 2016
+    note: "Investigated how pie and donut charts are perceived, finding that people likely use a combination of arc length and area, not central angle, but performance is still inferior to bar charts for comparison."
+    role: related
+---
+
+## Guidance
+
+Use bar charts, which encode quantitative values by position and length along a common scale, for tasks that require comparing or ranking values. Avoid using pie charts, which encode values using angles and areas.
+
+## Why
+
+Humans are significantly more accurate and faster at judging differences in length along a common baseline than they are at judging differences in angles or areas. This fundamental principle of graphical perception means that bar charts lead to fewer errors and less ambiguity when comparing values.
+
+### Core Principle
+
+Humans judge quantities more accurately by comparing positions along a common scale than by comparing angles, areas, or colors. Visual encodings should be chosen based on their ranking in this perceptual hierarchy to maximize accuracy for the given analytical task.
+
+## When it applies
+
+- When the primary task is to compare or rank the magnitude of different categories.
+- When you need to show precise differences between values.
+- When you have more than 2-3 categories to compare.
+
+## Exceptions
+
+- When showing a part-to-whole relationship for a very small number of categories (e.g., 2 or 3 slices) and precise comparison is **not** the primary goal, a pie chart can be acceptable. Its primary function in this case is to communicate a simple composition, like "Category A is about half of the total."
+- When the data adds up to a meaningful total (100% or a whole number) and you want to emphasize the part-to-whole relationship.
+
+## Trade-offs
+
+- **Clarity vs. Familiarity:** While bar charts are perceptually superior, some audiences may have a strong (though often misguided) expectation for pie charts when seeing part-to-whole data.
+- **Space:** A bar chart typically requires more rectangular screen space than a compact, circular pie chart.
+
+## Signs of Trouble
+
+- **Similar Slices:** The chart has multiple slices that are close in value (e.g., 22%, 24%, 25%), making them nearly impossible to rank visually.
+- **The "Over 5 Slices" Rule:** If your pie chart has more than 5-7 slices, it almost certainly becomes an unreadable "color wheel" where comparisons are meaningless.
+- **3D or Exploded Pies:** The use of 3D perspective or "exploding" slices distorts the angles and areas, further degrading perceptual accuracy.
+- **Frequent Legend Lookups:** Viewers have to constantly look back and forth between the chart and the legend to understand which slice represents which category and what its value is.
+
+## How to Improve
+
+- **Quick Fix: Add Direct Labels.** If you must use a pie chart, add direct labels with the category name and exact value (e.g., "Category A: 42%") to each slice. This provides an escape hatch, allowing users to read the values instead of relying on flawed angle/area perception.
+- **Moderate Redesign: Switch to a Bar Chart.** The most effective improvement is to convert the pie chart into a bar chart. This immediately leverages a more accurate visual encoding (length on a common scale).
+- **Comprehensive Redesign: Sort the Bar Chart.** After converting to a bar chart, sort the bars in ascending or descending order. This further reduces cognitive load by making the ranking of categories immediately obvious without requiring multiple comparisons.
+
+<split/>
+
+```md
+---
+id: align-timeseries-vis-with-similarity-invariance
+title: "Align Time-Series Visualization with Desired Similarity Invariance"
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:line
+  - chart:line.horizon
+  - chart:heatmap
+  - task:compare
+  - task:cluster
+  - data:temporal
+  - audience:expert
+  - medium:interactive
+evidence:
+  strength: medium
+  summary: "A 2019 lab experiment demonstrated that the choice of visualization (line chart, horizon graph, or colorfield) significantly changes what temporal patterns viewers perceive as similar, affecting alignment with algorithmic measures that have different invariances (e.g., to temporal warping or amplitude scaling)."
+sources:
+  - type: research
+    ref: Gogolou et al., 2019
+    url: https://doi.org/10.1109/TVCG.2018.2865077
+    note: "Primary study showing that the notion of time-series similarity is not visualization-independent. Found horizon graphs align with temporal warping invariance, while line charts and colorfields align better with amplitude/offset invariance."
+    role: primary
+---
+
+## Guidance
+
+When visualizing time-series data for similarity comparison tasks, choose a visualization technique whose perceptual properties match the desired analytical "invariance." For example, if local shifts in time should be ignored, use a visualization that de-emphasizes precise temporal alignment.
+
+## Why
+
+Different visualizations cause people to perceive similarity differently. The visual encoding can either highlight or mask specific types of data deformations, such as temporal shifts (warping), amplitude scaling, or vertical offsets. Aligning the visualization with the analytical goal (e.g., the invariance of a chosen similarity algorithm like DTW or z-normalized Euclidean distance) ensures that what viewers see as "similar" matches what the algorithm calculates as "similar," reducing confusion and improving trust in the results.
+
+### Core Principle
+
+The notion of similarity is not an absolute; it is dependent on the visualization used to display the data. An effective visualization for similarity search is one that makes the desired invariances easy to perceive and the undesired variations salient.
+
+## When it applies
+
+- When using automated or semi-automated tools to find similar patterns in time-series data (e.g., in EEG analysis, financial data, or sensor logs).
+- When asking users to visually validate or rank the results of a similarity search algorithm.
+- When designing interactive systems for querying time-series data by example.
+
+## Exceptions
+
+- For elementary tasks like looking up a single value at a specific point in time, this principle is less critical, as the goal is not pattern comparison.
+
+## Trade-offs
+
+- **Performance vs. Perceptual Alignment:** The visualization that best matches the desired invariance may not be the fastest or easiest to read. For example, horizon graphs align well with temporal warping but can have a higher cognitive load and lead to slower task times than line charts.
+- **Specificity vs. Generality:** A visualization chosen for a specific invariance (e.g., horizon graph for temporal warping) may perform poorly for other invariances (e.g., amplitude scaling).
+
+## Signs of Trouble
+
+- **Algorithm-Human Mismatch:** Users consistently disagree with the rankings provided by a similarity search algorithm, indicating a mismatch between what they perceive as similar and what the algorithm is designed to find.
+- **Feature Fixation:** Users are getting hung up on features that should be ignored for the task at hand (e.g., complaining that two otherwise identical patterns are "different" because one is slightly shifted in time).
+- **Low Inter-Rater Agreement:** When multiple users are asked to judge similarity, their answers are inconsistent, suggesting the visualization is ambiguous or does not guide them to a common interpretation of similarity.
+
+## How to Improve
+
+- **For Temporal Warping Invariance (e.g., using DTW):** If patterns should be considered similar even if they are slightly stretched, compressed, or shifted in time, **use a horizon graph.** Its dual encoding helps users see high-level patterns while being less sensitive to precise x-axis alignment.
+- **For Amplitude/Offset Invariance (e.g., using z-normalization):** If patterns should be considered similar regardless of their height or vertical position, **use a line chart or colorfield.** Avoid horizon graphs, as their rigid color bands make them highly sensitive to vertical changes.
+- **For Precise Matching (e.g., using Euclidean Distance):** If patterns must match point-by-point in both time and value, **a standard line chart** is often most effective, as it accurately represents both dimensions without the abstractions of other techniques.
+
+<split/>
+
+```md
+---
+id: avoid-horizon-graphs-for-amplitude-invariant-similarity
+title: "Avoid Horizon Graphs for Amplitude-Invariant Time-Series Similarity Tasks"
+tags:
+  - impact:perceptual
+  - chart:line.horizon
+  - task:compare
+  - task:cluster
+  - data:temporal
+  - visual:color
+  - visual:position
+  - audience:expert
+evidence:
+  strength: medium
+  summary: "A 2019 lab experiment found that horizon graphs are highly sensitive to changes in amplitude and vertical offset. Viewers perceived patterns as different if they crossed color band boundaries, even with minor value changes, making the visualization poorly suited for tasks where such differences should be ignored (e.g., with z-normalization)."
+sources:
+  - type: research
+    ref: Gogolou et al., 2019
+    url: https://doi.org/10.1109/TVCG.2018.2865077
+    note: "Primary study that experimentally demonstrated the perceptual sensitivity of horizon graphs to y-axis transformations due to their banded color encoding. Participants strongly favored non-z-normalized results when using this chart type."
+    role: primary
+---
+
+## Guidance
+
+Do not use horizon graphs for similarity comparison tasks where patterns should be considered similar regardless of their amplitude (height) or vertical offset (y-position).
+
+## Why
+
+Horizon graphs use discrete colored bands to represent ranges of values. A small, continuous change in a signal's amplitude or offset can cause it to cross a band boundary, resulting in an abrupt, dramatic change of color. Viewers perceive this large color change as a significant difference, making the visualization highly sensitive to a signal's vertical position and scale. This conflicts directly with the goal of amplitude/offset invariance.
+
+### Core Principle
+
+A visual encoding should not create large, abrupt perceptual changes in response to small, continuous changes in the underlying data, especially when those data changes are meant to be analytically ignored.
+
+## When it applies
+
+- When the analytical goal is to find patterns with similar shapes, regardless of their absolute values or vertical position.
+- When working with similarity measures that are invariant to amplitude and offset, such as those that use z-normalization.
+
+## Exceptions
+
+- This guidance should be ignored when amplitude and vertical offset **are** meaningful and critical features for determining similarity. In that case, the sensitivity of horizon graphs becomes a desirable feature, not a bug.
+
+## Trade-offs
+
+- **Amplitude Sensitivity vs. Temporal Insensitivity:** While horizon graphs are poor for amplitude-invariant tasks, they are perceptually more robust to temporal warping (shifts in time) than line charts or colorfields. You must choose which invariance is more important for your task.
+
+## Signs of Trouble
+
+- **The Banding Cliff:** Two patterns with nearly identical shapes and values are perceived as completely different because one lies just above a band threshold (e.g., blue) and the other lies just below it (e.g., red).
+- **Flatline Exaggeration:** Signals with low amplitude (close to the baseline) are shown in different colors, exaggerating their differences, while high-amplitude signals might all fall into the same dark band, obscuring their differences.
+- **Algorithm Mismatch:** When using a z-normalized similarity algorithm, users consistently reject the top results because the visualization makes them look different in amplitude.
+
+## How to Improve
+
+- **Switch to a Line Chart or Colorfield:** If amplitude and offset invariance is the primary goal, switch to a standard line chart or a colorfield (heatmap). These visualizations are perceptually more robust to these transformations, as they rely on relative shape and continuous color gradients, respectively, rather than discrete color bands.
+- **Re-evaluate the Analytical Goal:** If a horizon graph is required for other reasons (e.g., space constraints), consider whether the analytical goal should be changed to one where amplitude and offset are indeed meaningful.
+
+<split/>
+
+```md
+---
+id: be-aware-of-bar-chart-aspect-ratio-bias
+title: "Be Aware of Aspect Ratio Bias in Bar Charts"
+tags:
+  - impact:perceptual
+  - impact:ethical
+  - chart:bar
+  - task:summary-mean
+  - task:compare
+  - data:quantitative
+  - visual:length
+  - visual:shape
+  - audience:general
+evidence:
+  strength: medium
+  summary: "Recent experiments (2016-2020) have revealed a systematic bias in bar chart perception related to the aspect ratio of the bars. Tall, thin bars tend to be underestimated, while short, wide bars are overestimated. Square-like bars show the least bias."
+sources:
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://doi.org/3544548.3581349
+    note: "Review paper summarizing conflicting and evolving findings on bar chart bias, highlighting the recent discovery of aspect ratio effects by Ceja et al. (2020)."
+    role: primary
+  - type: research
+    ref: Ceja et al., 2020
+    note: "Primary experimental work identifying that the aspect ratio of bars is a key factor in systematic perception bias. Found tall bars are underestimated, wide bars are overestimated, and square bars are unbiased."
+    role: supporting
+  - type: research
+    ref: Godau et al., 2016
+    note: "Earlier study that found a consistent underestimation in bar charts, but did not isolate aspect ratio as the cause."
+    role: related
+  - type: research
+    ref: Xiong et al., 2020
+    note: "Study that found overestimation in bars, contradicting Godau et al. but helping motivate the investigation into aspect ratio as a resolving factor."
+    role: related
+---
+
+## Guidance
+
+Recognize that the aspect ratio (width-to-height ratio) of bars in a bar chart can introduce systematic perceptual bias. Tall, thin bars can make viewers underestimate values, while short, wide bars can make them overestimate values.
+
+## Why
+
+The perception of length, the primary visual cue in a bar chart, is not perfectly objective and can be influenced by other visual features like width. This "aspect ratio bias" means that simply changing the dimensions of a chart without changing the data can alter a viewer's interpretation of the values, potentially leading to inaccurate conclusions. Square-like bars appear to be the most perceptually neutral.
+
+## When it applies
+
+- When designing any bar chart, especially for mobile or responsive contexts where aspect ratios can change dramatically.
+- When precise judgment of value is important.
+- When comparing values across different charts that may have different aspect ratios.
+
+## Exceptions
+
+- When the bar chart is only used to show a general trend or relative ranking, and precise value estimation is not the primary goal, this subtle bias may be less critical.
+- If all bars in the chart have a similar, non-extreme aspect ratio, the relative bias between them will be minimal.
+
+## Trade-offs
+
+- **Ideal Ratio vs. Space Constraints:** Aiming for a "square-like" aspect ratio to minimize bias may not be feasible given screen real estate or the range of data values, which can force bars to become very tall or very short.
+- **Aesthetics vs. Accuracy:** The most aesthetically pleasing bar width might not be the most perceptually accurate one.
+
+## Signs of Trouble
+
+- **Responsive Design Distortion:** A bar chart that looks correct on a desktop display becomes a set of "pancakes" (short, wide bars) or "skyscrapers" (tall, thin bars) on a mobile device, potentially changing the viewer's interpretation.
+- **Inconsistent Judgments:** If you present the same data using two charts with different bar aspect ratios, and viewers draw different conclusions about the values.
+- **Extreme Proportions:** The bars on your chart are either extremely wide and short or extremely tall and narrow.
+
+## How to Improve
+
+- **Aim for Neutral Ratios:** Where possible, design bar charts so that the bars have a moderate, somewhat "square-like" aspect ratio. Avoid extremely thin or extremely wide bars.
+- **Use Direct Labels:** If you must use extreme aspect ratios, mitigate the risk of bias by adding direct data labels to the bars. This provides a numerical "escape hatch" so viewers are not solely reliant on their potentially biased perception of length.
+- **Test in Responsive Contexts:** When creating responsive visualizations, explicitly check how the bar chart renders at different screen widths. Ensure the aspect ratios do not become so extreme that they might introduce significant bias.
+- **Maintain Consistency:** When presenting multiple bar charts that are meant to be compared, strive to use a consistent aspect ratio across all of them.
+
+```

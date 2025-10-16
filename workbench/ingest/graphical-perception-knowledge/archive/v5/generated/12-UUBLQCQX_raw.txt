@@ -1,0 +1,238 @@
+```md
+---
+id: balance-color-discriminability-preference
+title: "Balance color discriminability with aesthetic preference for categorical palettes"
+tags:
+  - impact:perceptual
+  - impact:aesthetic
+  - impact:cognitive
+  - visual:color
+  - data:categorical
+  - task:compare
+  - audience:general
+
+evidence:
+  strength: medium
+  summary: "Gramazio et al. (2016) experimentally demonstrated a core trade-off where palettes optimized for discriminability (ease of telling colors apart) were often rated as less aesthetically pleasing, and vice versa. Their Colorgorical tool is explicitly designed to help users navigate this balance."
+sources:
+  - type: research
+    ref: Gramazio et al., 2016
+    url: https://doi.org/10.1109/TVCG.2016.2598918
+    note: "Primary study establishing the inverse relationship between preference and discriminability (perceptual/name distance) and creating a tool to manage it."
+    role: primary
+  - type: research
+    ref: Schloss & Palmer, 2011
+    url: https://doi.org/10.3758/s13414-010-0087-y
+    note: "Establishes that preference is related to hue similarity, which is often at odds with discriminability."
+    role: supporting
+tools:
+  - type: implement
+    name: Colorgorical
+    url: http://vrl.cs.brown.edu/color
+    description: Generates categorical palettes by allowing users to explicitly weigh discriminability and preference factors.
+  - type: implement
+    name: ColorBrewer
+    url: https://colorbrewer2.org/
+    description: Provides distinct pre-made palettes. Qualitative palettes prioritize discriminability, while sequential/diverging palettes can be more harmonious.
+
+examples:
+  - type: good
+    description: A palette for an analytical dashboard might prioritize discriminability, using highly distinct colors to ensure clarity, even if they aren't the most 'beautiful' combination.
+  - type: bad
+    description: Using a highly harmonious, analogous palette (e.g., several similar shades of blue and green) for a 10-category line chart, making it nearly impossible for viewers to distinguish the lines.
+---
+## Guidance
+
+When choosing a color palette for categorical data, explicitly consider the trade-off between how easy the colors are to tell apart (discriminability) and how visually pleasing they are (aesthetic preference).
+
+## Why
+
+These two goals are often in conflict. Highly discriminable palettes, which use very different colors, can be less aesthetically pleasing. Conversely, harmonious palettes, which use similar colors, are often harder to distinguish. The optimal choice depends on the purpose of your visualization.
+
+### Core Principle
+
+A color palette's effectiveness is a balance between perceptual clarity and aesthetic appeal. Optimizing for one often comes at the cost of the other.
+
+## When it applies
+
+- When using color to distinguish between categories in any chart type (e.g., bar charts, line charts, scatter plots).
+- When deciding between a pre-made palette and generating a custom one.
+- When the visualization has a dual purpose of both analysis and presentation.
+
+## Exceptions
+
+- For purely functional, analytical tools used by experts, discriminability should almost always take priority over aesthetics.
+- For purely artistic or decorative data art, aesthetic preference may be the primary or only consideration.
+
+## Trade-offs
+
+- **Prioritizing discriminability** may result in a palette that feels less cohesive, jarring, or fails to meet brand guidelines.
+- **Prioritizing aesthetics** can make the chart harder to read accurately, increase cognitive load, and exclude users with color vision deficiencies.
+
+## Signs of Trouble
+
+- **The Squint Test:** If you squint at the chart, do different categories blur into one another? This signals low discriminability.
+- **Audience Feedback:** Do viewers comment that the colors are "ugly" or "clash"? This signals low aesthetic preference.
+- **Legend Deception:** The colors look distinct in the large swatches of the legend but are hard to tell apart as small points or thin lines in the chart itself.
+
+## How to Improve
+
+- **Quick approach:** For analytical charts, choose a pre-made "Qualitative" palette from a tool like ColorBrewer, which is designed for high discriminability. For presentation-focused charts, a palette with more similar hues might be acceptable.
+- **Moderate approach:** Start with an aesthetically pleasing palette, and then use a tool like Viz Palette to check it for color-vision-deficiency issues. Manually adjust the lightness or saturation of any conflicting colors to increase their discriminability.
+- **Comprehensive approach:** Use a tool like Colorgorical to generate a custom palette. Start with the weights for discriminability and preference balanced, then adjust them based on your primary goal (analysis vs. presentation) to find a suitable middle ground.
+```
+
+<split/>
+
+```md
+---
+id: limit-categorical-colors
+title: "Use fewer than 8 categorical colors for better discrimination"
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - access:cognitive-load-risk
+  - visual:color
+  - data:categorical
+  - data:cardinality.high
+
+evidence:
+  strength: high
+  summary: "Gramazio et al. (2016) found that as palette size increased from 3 to 8 colors, user error rates in discrimination tasks rose significantly. This confirms a well-established principle in visualization that human capacity for distinguishing and remembering categorical colors is limited, typically to about 4-5 items."
+sources:
+  - type: research
+    ref: Gramazio et al., 2016
+    url: https://doi.org/10.1109/TVCG.2016.2598918
+    note: "Experiment 1 showed that participant accuracy decreased and discard rates (due to high errors) increased as palette size grew from 3 to 5 to 8 colors."
+    role: primary
+  - type: research
+    ref: Haroz & Whitney, 2012
+    url: https://doi.org/10.1109/TVCG.2012.182
+    note: "Found that viewers can track about 3-4 colored items at a time, demonstrating the low capacity of attention for colored objects."
+    role: supporting
+
+examples:
+  - type: good
+    description: A line chart showing trends for 4-5 key competitors, each with a distinct color.
+  - type: bad
+    description: A stacked bar chart or a map with 15 different categories, each assigned a unique color, forcing the user to constantly refer to the legend and still struggle to differentiate them.
+---
+## Guidance
+
+Limit the number of distinct colors used to represent categories in a single view. Aim for 8 or fewer, and ideally 5 or fewer.
+
+## Why
+
+Humans have a limited capacity to reliably and quickly distinguish between many different colors. As you add more colors to a palette, the perceptual difference between them necessarily decreases, making them harder to tell apart. This leads to higher error rates, slower interpretation, and increased cognitive load for the viewer.
+
+### Core Principle
+
+Respect the limitations of human working memory and visual perception. An effective visualization does not overload the viewer's capacity to process information.
+
+## When it applies
+
+- When assigning colors to represent distinct, non-ordered categories (nominal data).
+- When creating legends for charts like line charts, scatter plots, or multi-category bar charts.
+- Any time the viewer must associate a color with a specific meaning.
+
+## Exceptions
+
+- In some visualization types like treemaps, color can be used to reinforce a grouping structure even with many items, as long as position and size are the primary encodings.
+- If colors are not meant to be individually identified but are used to show a general pattern or texture, more colors may be acceptable.
+
+## Trade-offs
+
+- Limiting categories may require you to group some data into a less-specific "Other" category, which means a loss of detail.
+- Choosing an alternative chart type (like small multiples) may take up more space.
+
+## Signs of Trouble
+
+- **The Rainbow Effect:** Your chart uses so many colors it looks like a bag of candy, with no clear visual hierarchy.
+- **Constant Legend Look-ups:** You or your viewers have to repeatedly look back and forth between the legend and the chart to understand what's being shown.
+- **Ambiguous Neighbors:** The palette contains very similar colors (e.g., teal and light green, or pink and light purple) that are hard to tell apart, especially as small marks.
+
+## How to Improve
+
+- **Quick approach:** If you have more than 8 categories, group the smallest or least important ones into a single "Other" category and color it with a neutral gray.
+- **Moderate approach:** Highlight the 1-3 most important categories with distinct, saturated colors and de-emphasize all other categories by coloring them with shades of a single, muted hue (e.g., different shades of gray or blue).
+- **Comprehensive approach:** Redesign the visualization to not rely on color for identification. Switch to a chart type that uses position, such as a bar chart, a dot plot, or a series of small multiples. This allows you to label categories directly.
+```
+
+<split/>
+
+```md
+---
+id: vary-lightness-in-palettes
+title: "Vary lightness in categorical palettes to improve both preference and discriminability"
+tags:
+  - impact:perceptual
+  - impact:aesthetic
+  - impact:accessibility
+  - access:color-vision-risk
+  - visual:color
+  - data:categorical
+
+evidence:
+  strength: medium
+  summary: "The Pair Preference model in Gramazio et al. (2016) identifies lightness contrast as a key driver of aesthetic preference. Lightness variation also inherently increases perceptual distance, aiding discriminability. This is a 'win-win' technique that improves both clarity and visual appeal, and is crucial for accessibility."
+sources:
+  - type: research
+    ref: Gramazio et al., 2016
+    url: https://doi.org/10.1109/TVCG.2016.2598918
+    note: "Identifies lightness contrast (ΔL) as a positive term in the Pair Preference regression model, indicating it contributes to higher preference ratings."
+    role: primary
+  - type: practitioner
+    ref: "Designing for colorblindness by We Are Colorblind"
+    url: https://wearecolorblind.com/articles/designing-for-colorblindness-part-1-of-3/
+    note: "Emphasizes that relying on hue alone is problematic and that good contrast in lightness and saturation is key for accessibility."
+    role: related
+tools:
+  - type: validate
+    name: Viz Palette
+    url: https://projects.susielu.com/viz-palette
+    description: Provides tools to check a palette's lightness steps and simulate its appearance for users with color vision deficiencies.
+  - type: validate
+    name: "Leonardo"
+    url: https://leonardocolor.io/
+    description: Generates color palettes based on a target contrast ratio, ensuring good lightness variation.
+
+examples:
+  - type: good
+    description: A palette like ColorBrewer's 'Dark2' which includes colors with noticeably different lightness values (e.g., a light green, a medium orange, and a dark purple).
+  - type: bad
+    description: A palette where all colors are pastel or all are dark, with very similar lightness levels. The colors might look distinct in hue but become hard to tell apart when viewed in grayscale or by someone with color vision deficiency.
+---
+## Guidance
+
+When creating a categorical color palette, ensure the colors have a noticeable variation in lightness (some light, some medium, some dark).
+
+## Why
+
+Varying lightness is a powerful, 'win-win' technique. It makes colors easier to tell apart, which improves discriminability. At the same time, the Pair Preference model shows that lightness contrast contributes to more aesthetically pleasing color combinations. Crucially, palettes with good lightness variation are more robust for viewers with color vision deficiencies, who may not be able to distinguish hues but can still perceive differences in lightness.
+
+## When it applies
+
+- Always, when creating a categorical color palette.
+- Especially important when accessibility for color-vision-deficient users is a priority.
+- When you want to ensure your visualization is still readable when printed in grayscale.
+
+## Exceptions
+
+- None known. Varying lightness is a broadly beneficial practice for categorical palettes.
+
+## Trade-offs
+
+- There are no significant perceptual or aesthetic trade-offs. The main challenge is the effort required to create or select a palette with good lightness variation, but the benefits are substantial.
+
+## Signs of Trouble
+
+- **The Muddy Middle:** All colors in the palette have a similar mid-range lightness, making them appear to blend together.
+- **Grayscale Test Fail:** When you convert the visualization to grayscale (or use a colorblindness simulator), you can no longer distinguish the categories.
+- **Low Contrast Pairs:** The palette contains pairs of colors that are different in hue but very similar in lightness (e.g., a medium red and a medium green).
+
+## How to Improve
+
+- **Quick approach:** Use the "grayscale" filter on your computer or in design software to check your current chart. If categories become indistinguishable, your palette lacks lightness variation.
+- **Moderate approach:** Take your existing palette and use a color picker with HSL/HSB (Hue, Saturation, Lightness/Brightness) sliders. Manually adjust the 'L' or 'B' value for each color to create more separation. Aim for clear steps in lightness across the palette.
+- **Comprehensive approach:** Use a tool like Leonardo or Viz Palette that is explicitly designed to create and validate palettes with good lightness (and contrast) variation. Generate a new palette that is demonstrably accessible and perceptually distinct.
+```

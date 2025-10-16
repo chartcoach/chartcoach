@@ -1,0 +1,186 @@
+```md
+---
+id: avoid-area-charts-for-trend-estimation
+title: "Avoid area charts for estimating trends accurately"
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:area
+  - chart:line
+  - chart:scatter
+  - task:trend
+  - task:correlation
+  - data:quantitative
+  - data:temporal
+  - visual:area
+  - visual:position
+  - audience:general
+  - medium:static
+  - access:cognitive-load-risk
+sources:
+  - type: research
+    ref: Correll & Heer, 2017
+    url: https://doi.org/10.1145/3025453.3025922
+    note: "Found that area charts introduce a systematic under-estimation of trend intercepts (a 'within-the-area' bias), leading to less accurate trend estimation compared to scatter plots or line charts."
+---
+## Guidance
+
+Avoid using area charts when the primary goal is for viewers to estimate or judge trends in the data. Line charts and scatter plots lead to more accurate perceptual estimates of trends.
+
+## Why
+
+Area charts create a "within-the-area" perceptual bias. Viewers tend to systematically underestimate the trend's intercept because they perceive points within the filled area as more likely or representative. This leads to less accurate trend estimations compared to visually symmetric charts like line graphs or scatter plots, where there is no filled region to create such a bias.
+
+## When it applies
+
+- When visualizing bivariate data, especially time-series, where understanding the trend is a key objective.
+- When the viewer's task is to judge the slope, intercept, or overall trajectory of the data by eye.
+- When the accuracy of trend perception is more important than showing a part-to-whole relationship or total volume.
+
+## Exceptions
+
+- When the main goal is to show the cumulative total or volume over time, and trend estimation is a secondary, less critical task. For example, in a stacked area chart showing the composition of a total over time.
+- When using a streamgraph (a type of area chart) to show changes in distribution over time, though be aware that estimating the trend of any single category remains challenging.
+
+## Trade-offs
+
+- **Clarity vs. Volume:** Area charts effectively convey volume and a sense of cumulative quantity. Switching to a line chart improves trend estimation accuracy but loses this explicit visual representation of volume. The line chart focuses purely on the trend of the data points.
+
+## Signs of Trouble
+
+- **Underestimation Bias:** Users consistently interpret the trend as being lower or having a lower intercept than it actually does. For example, they might estimate a starting value of 80 when it is actually 100.
+- **Misjudged Intercept:** When asked to estimate the starting point or general level of a trend in an area chart, viewers' estimates are systematically low.
+- **Focus on Volume, not Trend:** User discussions about an area chart center exclusively on the total volume, while missing or misinterpreting the underlying rate of change.
+
+## How to Improve
+
+- **Quick Fix: Add a Trend Line.** Overlay an explicit, statistically calculated trend line onto the area chart. This provides a clear visual guide, helping to counteract the chart's inherent perceptual bias, but does not fully eliminate it.
+
+- **Moderate Redesign: Switch to a Line Chart.** Change the chart type from an area chart to a line chart. This is a simple change in most visualization tools and is highly effective at removing the "within-the-area" bias, leading to more accurate trend perception.
+
+- **Comprehensive Redesign: Use a Scatter Plot.** If the data is not a strictly continuous series, or if you want to avoid the implication of connection between points, use a scatter plot. This removes the bias and provides a neutral representation of the data points, allowing for unbiased trend estimation.
+```
+<split/>
+```md
+---
+id: visualize-outlier-sensitive-trends
+title: "Explicitly visualize trend lines when outliers are significant"
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - impact:ethical
+  - impact:logos
+  - chart:scatter
+  - chart:line
+  - task:trend
+  - task:correlation
+  - data:quantitative
+  - data:outliers
+  - audience:general
+  - audience:expert
+  - medium:static
+sources:
+  - type: research
+    ref: Correll & Heer, 2017
+    url: https://doi.org/10.1145/3025453.3025922
+    note: "Found that viewers performing 'regression by eye' naturally down-weight or ignore outliers. Their visual estimates are closer to a robust fit (that excludes outliers) than a standard OLS fit (that includes them)."
+---
+## Guidance
+
+When visualizing data with outliers that are analytically significant (i.e., they should be included in a trend model), you must explicitly plot the trend line. Do not rely on the viewer to perform "regression by eye."
+
+## Why
+
+Viewers naturally discount or ignore outliers when visually estimating trends. Their mental model of the trend will be robust to outliers, resembling a regression where outliers are removed (a "robust fit"). If those outliers are analytically important and should influence the trend (as in a standard Ordinary Least Squares regression), this creates a misunderstanding between the viewer's perception and the intended statistical model.
+
+## When it applies
+
+- When visualizing data that contains extreme values or outliers.
+- When the analytical goal requires a model (like OLS regression) that is sensitive to these outliers.
+- When it is critical that the audience understands the influence of extreme data points on the overall trend (e.g., how one large sale affects the average).
+
+## Exceptions
+
+- If the analytical goal is to perform a robust analysis and intentionally down-weight outliers. In this case, the audience's natural tendency aligns with the goal, though showing a calculated robust trend line would still be clearer.
+- During early-stage exploratory analysis where the user's task is to identify and decide whether certain points should be treated as outliers.
+
+## Trade-offs
+
+- **Clutter vs. Precision:** Adding an explicit trend line adds visual complexity.
+- **Flexibility vs. Specificity:** Relying on "regression by eye" allows for flexible interpretation, while plotting a specific trend line (e.g., OLS) imposes a single statistical model on the viewer, which may not always be desirable.
+
+## Signs of Trouble
+
+- **Divergent Conclusions:** A viewer looking at a scatter plot with outliers reaches a different conclusion about the trend than what a statistical OLS model indicates.
+- **Ignoring Extremes:** Viewers describe the trend based only on the dense cluster of points, dismissing outliers as "errors" or "flukes" when they are in fact significant data points.
+- **"Robust by Default" Perception:** The audience is unaware of how much a few extreme points are pulling the "true" average trend up or down.
+
+## How to Improve
+
+- **Quick Fix: Highlight the Outliers.** Use a different color, size, or shape to draw attention to the outlier points. This signals their potential importance, though it doesn't guarantee viewers will correctly incorporate them into their mental trend line.
+
+- **Moderate Redesign: Add the OLS Trend Line.** Overlay a standard regression line (e.g., Ordinary Least Squares) that is calculated including the outliers. This makes the influence of the outliers on the overall trend explicit and clear.
+
+- **Comprehensive Redesign: Show Both Models.** For more expert audiences, visualize both the robust trend line (ignoring outliers) and the OLS trend line (including outliers). Label them clearly (e.g., "Trend without extreme values" vs. "Overall trend including all data"). This powerfully communicates the precise impact of the outliers on the model.
+```
+<split/>
+```md
+---
+id: trust-viewers-to-estimate-nonlinear-trends
+title: "Trust viewers to visually estimate simple non-linear trends"
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:scatter
+  - chart:line
+  - task:trend
+  - task:correlation
+  - data:quantitative
+  - data:non-linear
+  - audience:general
+  - medium:interactive
+  - medium:static
+sources:
+  - type: research
+    ref: Correll & Heer, 2017
+    url: https://doi.org/10.1145/3025453.3025922
+    note: "Found no significant difference in accuracy when viewers estimated linear, quadratic, or trigonometric trends, suggesting 'regression by eye' is also effective for simple non-linear relationships."
+---
+## Guidance
+
+For simple, clear non-linear patterns (like a basic curve or cyclical wave), you can often trust viewers to accurately perceive the general shape and direction of the trend without explicitly plotting a regression model.
+
+## Why
+
+Research shows that people are capable of performing "regression by eye" on simple non-linear data, not just straight lines. For basic curves, their estimation accuracy is comparable to their accuracy with linear trends. This means you do not always need to add a complex formula or trend line, which can clutter the chart, if the pattern is visually apparent.
+
+## When it applies
+
+- When visualizing data with a clear, simple non-linear relationship (e.g., a simple parabolic curve, a seasonal sine wave).
+- During exploratory data analysis where the primary goal for the viewer is to identify the basic shape of the relationship.
+- When you want to minimize visual clutter by not adding an explicit trend line.
+
+## Exceptions
+
+- For complex or noisy non-linear relationships where the underlying pattern is not visually obvious.
+- When the specific parameters of the non-linear model (e.g., the exact coefficient of a polynomial regression) are important for the audience to know.
+- When comparing the fit of multiple different non-linear models to the data.
+
+## Trade-offs
+
+- **Clutter vs. Precision:** Omitting the trend line keeps the visualization clean but relies on the viewer's perceptual system, which may introduce small inaccuracies. Adding the trend line provides precision and specifies a model but adds visual elements to the chart.
+
+## Signs of Trouble
+
+- **Model Misidentification:** Viewers misinterpret the shape of the trend, for instance by trying to fit a straight line to clearly curved data.
+- **Inconsistent Interpretations:** Different viewers describe the non-linear trend in wildly different ways, indicating the pattern is not clear enough to be interpreted consistently without guidance.
+- **High Noise:** If the data is very noisy, the underlying non-linear pattern may be obscured, making visual estimation unreliable.
+
+## How to Improve
+
+- **Quick Fix: Use Annotations.** Add a simple text annotation like "Note the curving pattern" or "Data shows a cyclical trend" to guide the viewer's attention without adding a full trend line.
+
+- **Moderate Redesign: Add a Smoothed Trend Line.** Use a non-parametric smoother (like LOESS) to add a flexible trend line. This captures the general shape of the data without committing to a specific mathematical model, balancing guidance and flexibility.
+
+- **Comprehensive Redesign: Add a Parametric Trend Line.** If a specific model is appropriate (e.g., a quadratic fit), plot that trend line. For expert audiences, consider including the model's equation or R² value to provide maximum clarity and precision.
+```

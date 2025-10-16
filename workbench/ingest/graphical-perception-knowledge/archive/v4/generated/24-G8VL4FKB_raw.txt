@@ -1,0 +1,287 @@
+```md
+---
+id: use-position-over-angle
+title: "Use position, not angle, to compare quantitative values"
+tags:
+  - impact:perceptual
+  - impact:logos
+  - impact:cognitive
+  - chart:pie
+  - chart:donut
+  - chart:bar
+  - chart:dot
+  - task:compare
+  - task:rank
+  - task:composition
+  - data:quantitative
+  - data:categorical
+  - visual:position
+  - visual:angle
+  - visual:area
+  - audience:general
+  - medium:static
+  - medium:interactive
+  - access:cognitive-load-risk
+sources:
+  - type: research
+    ref: Cleveland & McGill, 1984
+    url: https://doi.org/10.1080/01621459.1984.10478080
+    note: "Experiments showed position judgments were nearly twice as accurate as angle judgments (Figure 16). The paper concludes that pie charts should not be used for comparisons."
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://arxiv.org/abs/2109.01271v3
+    note: "Synthesizes multiple studies confirming this finding, recommending bar charts over pie charts for sort/comparison tasks (Table 9, Bar Charts vs. Pie Charts section)."
+tools:
+  - type: learn
+    name: "From Pie Charts to Bar Charts"
+    url: https://www.data-to-viz.com/caveat/pie.html
+    description: Explains the perceptual issues with pie charts and provides alternatives.
+examples:
+  - type: bad
+    description: "In this pie chart from the Cleveland & McGill paper (Figure 22), it is very difficult to accurately rank the five categories (A-E) by size. The differences between B, C, and D are particularly hard to judge."
+  - type: good
+    description: "The same data presented as a dot plot (Figure 23) makes the ranking trivial. The values are encoded by position along a common horizontal scale, which is the most accurate elementary perceptual task. The order A < B < C < D < E is immediately obvious."
+---
+## Guidance
+
+Use visual encodings based on position along a common scale (like bar charts or dot plots) instead of angle or area (like pie charts or donut charts) for tasks that require comparing or ranking proportions.
+
+## Why
+
+Human perception is significantly more accurate at judging position along a common scale than judging angles. Seminal experiments by Cleveland & McGill (1984) found that estimation errors were almost twice as large for angle judgments (in pie charts) compared to position judgments (in bar charts). This perceptual inaccuracy makes it difficult for viewers to spot small but important differences or to correctly rank values, undermining the primary purpose of the chart.
+
+## When it applies
+
+- When the primary goal is for the user to **compare**, **rank**, or **look up** the values of different parts of a whole.
+- When you have more than two or three categories to compare.
+- When the differences between category values are not extremely large (e.g., not 75% vs 25%).
+
+## Exceptions
+
+- When showing a single, simple part-to-whole relationship with only two or three very distinct values (e.g., 75% vs. 25%). In this limited case, the goal is to give a rough "sense" of the composition, not enable precise comparison.
+- When a client or publication has a strong stylistic requirement for a pie chart and the data can be directly labeled, mitigating the perceptual issues.
+
+## Trade-offs
+
+- **Space:** Bar charts often require more vertical or horizontal space than a single pie chart.
+- **Familiarity:** Some audiences may have a strong (though often misguided) preference for the familiarity of pie charts. Switching to a bar chart may require a brief justification or adjustment period for the audience.
+- **Part-of-Whole:** A bar chart does not as immediately convey that the categories are parts of a single whole, whereas a pie chart's core metaphor is the complete circle.
+
+## Signs of Trouble
+
+- **The Squint Test:** If you squint at the chart, is it hard to tell which slice is larger without reading the labels?
+- **Similar Values:** The chart contains two or more slices that are very close in value (e.g., 22% and 24%), and their relative size is not immediately obvious.
+- **Slice Overload:** The chart has more than 4-5 slices, turning it into a "rainbow wheel" where comparisons are nearly impossible.
+- **Forced Ranking Failure:** You or your viewers struggle to quickly and confidently rank the slices from largest to smallest.
+
+## How to Improve
+
+- **Quick Fix: Add Direct Labels.** If you must keep the pie chart, add direct percentage and/or value labels to each slice. This provides a text-based "escape hatch," allowing users to read the values directly instead of relying on flawed angle judgments.
+
+- **Moderate Redesign: Convert to a Bar or Dot Chart.** Re-encode the data using position. A bar chart is the most common and effective alternative. This immediately makes comparisons more accurate and intuitive.
+
+- **Comprehensive Redesign: Sort and Annotate the Bar Chart.** After converting to a bar chart, sort the bars in a meaningful order (e.g., descending or ascending value). This makes ranking effortless and reveals the distribution of values. You can add an annotation to highlight the key insight or comparison the chart is meant to show.
+<split/>
+```md
+---
+id: prefer-common-baseline-for-comparisons
+title: "Use a common baseline to compare values across categories"
+tags:
+  - impact:perceptual
+  - impact:logos
+  - chart:bar.stacked
+  - chart:area.stacked
+  - chart:bar.grouped
+  - task:compare
+  - task:rank
+  - data:quantitative
+  - data:categorical
+  - visual:position
+  - visual:length
+  - audience:general
+sources:
+  - type: research
+    ref: Cleveland & McGill, 1984
+    url: https://doi.org/10.1080/01621459.1984.10478080
+    note: "Experiment 1 compared 'position' (Types 1-3) vs. 'length' (Types 4-5) judgments. Length judgments, which correspond to segments in a stacked bar, were 40-250% less accurate than position judgments on a common baseline. The paper recommends grouped charts over divided/stacked charts."
+examples:
+  - type: bad
+    description: "In this divided bar chart from Cleveland & McGill (Figure 24), comparing the sizes of the inner segments (e.g., segment '3' vs segment '4' within category A) is a difficult length judgment because they do not share a common baseline."
+  - type: good
+    description: "The same data is shown as a grouped dot chart (Figure 25), which is perceptually similar to a grouped bar chart. Every single component is placed on a common vertical baseline, making all comparisons accurate position judgments. The relative sizes are now clear."
+---
+## Guidance
+
+Avoid stacked bar charts and stacked area charts when the primary task is to compare the size of individual components across different groups. Instead, use a chart type that places all components on a common baseline, such as a grouped bar chart, a dot plot, or small multiples.
+
+## Why
+
+According to Cleveland & McGill's hierarchy of perceptual tasks, judging position along a common scale is far more accurate than judging length without one. In a stacked bar chart, only the bottom-most series rests on the common baseline (y=0). All other segments float on top of the ones below them, requiring viewers to perform difficult and error-prone length judgments to compare their sizes across bars. This leads to inaccurate interpretations and can obscure important trends in the inner components.
+
+## When it applies
+
+- When a key user task is to compare the values of a *specific* component across multiple groups (e.g., "Did revenue from 'Product A' grow more than from 'Product B' between 2022 and 2023?").
+- When you need to accurately rank the size of components within different groups.
+- When visualizing trends of individual components over time in a stacked area chart. The fluctuating baseline makes it nearly impossible to judge the true trend of the upper layers.
+
+## Exceptions
+
+- When the primary task is to compare the **total** value of the stacks and see the approximate part-to-whole composition *within* each stack.
+- If there are only two components in each stack. In this case, the top component's value can be inferred by its distance from the top of the bar, which is a slightly easier (though still not ideal) task.
+
+## Trade-offs
+
+- **Space:** Grouped bar charts and small multiples require more horizontal or total space than a stacked bar chart.
+- **Total Comparison:** Grouped charts make it harder to see and compare the total sum of the components in each group, a task at which stacked bar charts excel.
+- **Cognitive Load:** For categories with many components, a grouped bar chart can become visually cluttered.
+
+## Signs of Trouble
+
+- **Floating Segments:** You find it difficult to tell if a middle or top segment in one bar is larger than the corresponding segment in another bar.
+- **Part-to-Part Questions:** Viewers are asking questions about the relative size or trend of inner components (e.g., "Is the blue part getting bigger or smaller?"), not about the totals.
+- **Hidden Trends:** The trend of an individual component is obscured because the baseline below it is fluctuating, masking its true change over time.
+
+## How to Improve
+
+- **Quick Fix: Reorder the Stacks.** If you must use a stacked chart, place the component that is most important for comparison at the bottom, so it rests on the common baseline.
+
+- **Moderate Redesign: Switch to a Grouped Bar Chart.** Convert the stacked bar chart to a grouped bar chart. This gives every single bar a common baseline, making all part-to-part comparisons accurate and easy. This directly addresses the perceptual problem.
+
+- **Comprehensive Redesign: Use Small Multiples.** Create a separate, small chart (e.g., a simple bar or line chart) for each component. This approach is especially effective for time-series data, as it gives each component its own clear chart to reveal its individual trend, free from any distortion from other series.
+<split/>
+```md
+---
+id: prioritize-perceptual-hierarchy
+title: "Encode quantitative data using higher-ranked perceptual tasks"
+tags:
+  - impact:perceptual
+  - impact:logos
+  - chart:bar
+  - chart:scatter
+  - chart:bubble
+  - chart:pie
+  - chart:map.choropleth
+  - task:compare
+  - task:rank
+  - task:lookup
+  - data:quantitative
+  - visual:position
+  - visual:length
+  - visual:angle
+  - visual:area
+  - visual:volume
+  - visual:color
+  - audience:general
+sources:
+  - type: research
+    ref: Cleveland & McGill, 1984
+    url: https://doi.org/10.1080/01621459.1984.10478080
+    note: "This paper introduces the theory of a perceptual hierarchy, ranking elementary tasks by accuracy. The proposed ordering is: 1. Position (common scale), 2. Position (non-aligned), 3. Length/Direction/Angle, 4. Area, 5. Volume, 6. Shading/Color Saturation."
+---
+## Guidance
+
+When choosing how to visually encode quantitative data, prioritize encodings that rely on higher-ranked perceptual tasks. The general hierarchy, from most to least accurate, is:
+1.  **Position** along a common scale (e.g., bar charts, dot plots)
+2.  **Length** (e.g., unaligned bars)
+3.  **Angle** or **Direction** (e.g., pie charts, slopes)
+4.  **Area** (e.g., bubble charts, treemaps)
+5.  **Volume** (e.g., 3D bar charts)
+6.  **Shading** or **Color Saturation** (e.g., heatmaps, choropleth maps)
+
+## Why
+
+Graphical perception is the cognitive process of decoding information from a chart. Research by Cleveland & McGill (1984) demonstrated that the choice of visual encoding directly impacts the speed and accuracy of this process. Using a higher-ranked encoding (e.g., position) results in more accurate judgments and better pattern detection than a lower-ranked one (e.g., area). Selecting an encoding from higher up the hierarchy maximizes a viewer's ability to see patterns and understand the data correctly.
+
+## When it applies
+
+- This is a fundamental principle that applies during the initial design phase of any visualization that represents quantitative data.
+- It is especially critical when accuracy and the ability to make fine-grained comparisons are important for the audience.
+- When evaluating an existing chart to see if its encoding is optimal for its purpose.
+
+## Exceptions
+
+- **Information Density:** Sometimes a lower-ranked encoding is chosen to increase information density. For example, a choropleth map (shading) shows a geographic pattern that would be lost if the data were presented in a simple bar chart (position).
+- **Aesthetics & Engagement:** Lower-ranked encodings like area (in a bubble chart) can sometimes be more visually engaging or stylistically appropriate, even if they are less precise. This is a deliberate trade-off.
+- **Multiple Variables:** When encoding multiple variables, you must necessarily use a combination of visual channels, some of which will be lower on the hierarchy (e.g., a scatterplot using position for two variables and bubble size/area for a third).
+
+## Trade-offs
+
+- **Accuracy vs. Density:** Higher-ranked encodings like position often require more space (e.g., a bar chart vs. a single colored cell in a heatmap). There can be a trade-off between perceptual accuracy and information density.
+- **Accuracy vs. "Big Picture":** While a bar chart is more accurate for value comparison, a treemap (area) or choropleth map (shading) may be better for quickly showing the overall structure or a spatial pattern, even if individual comparisons are imprecise.
+
+## Signs of Trouble
+
+- **"Is this bubble bigger?"** Viewers struggle to determine the relative size of areas (bubble charts), volumes (3D charts), or the intensity of shades (heatmaps).
+- **Subtle Differences Lost:** The visualization fails to reveal a known, important but subtle difference between data points because the encoding is not precise enough to make it visible.
+- **Mandatory Tooltips:** Viewers must hover over every single mark to understand its value. While tooltips are a useful feature for details-on-demand, relying on them for basic comparisons indicates the primary visual encoding has failed.
+
+## How to Improve
+
+- **Identify the Current Encoding:** First, determine what perceptual task your chart requires for its primary comparison (e.g., bubble chart = area, pie chart = angle, heatmap = color saturation).
+
+- **Move Up the Hierarchy:** Consider if you can redesign the chart to use a higher-ranked task. This often involves switching chart types:
+    - If using **Angle** (pie chart), switch to **Position** (bar chart).
+    - If using **Area** (bubble chart), consider switching to **Position** (dot plot or bar chart).
+    - If using **Color Saturation** (choropleth map), consider if a bar chart for each region (a form of position encoding) would better serve the task of comparison, even if it loses some geographic context.
+<split/>
+```md
+---
+id: plot-differences-directly
+title: "Plot differences directly instead of showing them as gaps between lines"
+tags:
+  - impact:perceptual
+  - impact:logos
+  - chart:line
+  - task:compare
+  - task:trend
+  - data:temporal
+  - data:quantitative
+  - visual:length
+  - visual:position
+  - audience:general
+sources:
+  - type: research
+    ref: Cleveland & McGill, 1984
+    url: https://doi.org/10.1080/01621459.1984.10478080
+    note: "Section 5.2 and Figures 26-28 demonstrate that judging the difference between two curves is highly inaccurate. The paper states 'it is almost impossible to get even a rough idea of the behavior of the differences.' It recommends plotting the differences directly."
+examples:
+  - type: bad
+    description: "In the original Playfair chart of imports and exports (Figure 6), the trade balance is encoded as the gap between the two lines. It is very difficult to perceive the sharp rise and fall of the balance around 1760 because it requires a difficult length judgment."
+  - type: good
+    description: "Figure 28 shows the same trade balance data, but plotted directly as a single line against a zero baseline. The task is now a simple position judgment. The dramatic peak around 1760 is now immediately and unambiguously clear."
+---
+## Guidance
+
+When the primary task is to analyze the difference or balance between two series (e.g., imports vs. exports), do not rely on viewers judging the gap between two lines. Instead, explicitly calculate the difference and plot it directly in its own chart.
+
+## Why
+
+Judging the fluctuating vertical distance between two lines is an extremely difficult and error-prone perceptual task. The human visual system tends to judge the *minimum* distance between the lines, not the vertical distance, leading to gross misinterpretations of the magnitude and trend of the difference. As demonstrated by Cleveland & McGill (1984), this can obscure even very dramatic patterns. Plotting the difference directly converts the task to a much more accurate position judgment against a stable zero-baseline.
+
+## When it applies
+
+- When visualizing two time-series where the relationship or difference *between* the lines is more important than their individual absolute values.
+- Classic examples include import/export charts (showing trade balance), birth/death rates (showing population growth), or revenue/costs (showing profit).
+- Any dual-axis chart where the intent is to compare the two series.
+
+## Exceptions
+
+- If the absolute values of both series are just as important as the difference, it can be effective to show both the original chart (with the two lines) and the separate difference chart together. This provides both context and a clear view of the relationship.
+
+## Trade-offs
+
+- **Loss of Context:** A separate difference chart removes the context of the original series' magnitudes. A profit of $100k might be huge for a small company (with revenue of $200k) but tiny for a large one (with revenue of $2B).
+- **Space:** Creating a separate difference chart requires more vertical screen or page space.
+
+## Signs of Trouble
+
+- **Wandering Gaps:** The space between the two lines appears to narrow or widen, but it's hard to tell by how much, when, or where.
+- **Peak Obscurity:** A significant peak or trough in the *difference* is barely noticeable in the original chart because it's just a subtle change in the gap.
+- **Crossover Confusion:** Viewers have trouble identifying the exact point where one line overtakes the other (where the difference would cross zero).
+
+## How to Improve
+
+- **Quick Fix: Add Shading.** Add a shaded region in the area between the two lines. While this still relies on a poor perceptual task (area/length judgment), it makes the quantity being judged more salient and can help highlight where the gap is largest.
+
+- **Comprehensive Redesign: Create a Difference Chart.** Create a second chart, typically positioned directly below the original. In this new chart, plot the result of `Series A - Series B` against a horizontal zero-line. This directly and accurately visualizes the trend and magnitude of the difference, converting the difficult length task into a simple, accurate position task.
+```

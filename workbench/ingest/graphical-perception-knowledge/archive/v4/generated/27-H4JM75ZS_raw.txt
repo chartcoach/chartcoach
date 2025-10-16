@@ -1,0 +1,203 @@
+```md
+---
+id: align-visual-similarity-with-data-similarity
+title: "Align Visual Similarity with Data Similarity"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - task:cluster
+  - task:correlation
+  - data:categorical
+  - visual:color
+  - visual:shape
+  - chart:scatter
+  - chart:network
+  - audience:general
+  - medium:static
+
+sources:
+  - type: research
+    ref: Demiralp et al., 2014
+    url: https://doi.org/10.1109/TVCG.2014.2346978
+    note: "Introduces 'visual embedding' to map data distances to perceptual distances using kernels. Figure 17 demonstrates this by assigning colors and shapes to character clusters in Les Misérables based on their co-occurrence."
+
+tools:
+  - type: learn
+    name: Perceptual Kernels Repository
+    url: https://github.com/uwdata/perceptual-kernels
+    description: "The original code and data from the research, which can be used to perform visual embedding."
+---
+
+## Guidance
+
+When encoding categorical data, such as clusters or groups, assign perceptually similar visual properties (colors, shapes) to data groups that are similar or closely related. This technique is known as visual embedding.
+
+## Why
+
+This practice makes the underlying structure of the data visually apparent. By mapping data-space distances to perceptual-space distances, viewers can intuitively grasp relationships, similarities, and differences between data groups without conscious effort. For example, if two clusters in a network graph are closely related, they should be assigned colors or shapes that people perceive as being very similar.
+
+## When it applies
+
+- When visualizing clustered data, such as in network diagrams, scatter plots, or any chart where you are encoding group membership.
+- When the relationships or similarities *between* categories are as important as the categories themselves.
+- When you want to guide the viewer's attention to the high-level structure of the data.
+
+## Exceptions
+
+- If all categories are intended to be perceived as equally distinct and unrelated, a maximally separated palette (where all items are far from each other) is more appropriate.
+- When a pre-existing, meaningful color or shape association exists (e.g., brand colors, established conventions), that may take precedence over algorithmic assignment.
+
+## Trade-offs
+
+- **Flexibility vs. Consistency:** Requires custom assignment of visual properties for each dataset, which may conflict with the goal of using a consistent palette across multiple charts.
+- **Complexity:** Implementing visual embedding requires a computational process (e.g., simulated annealing) to find the optimal assignment, which is more complex than simply using a default palette.
+
+## Signs of Trouble
+
+- **Structural Mis-Match:** Two data clusters that are known to be very similar are assigned highly distinct colors (e.g., red and green) or shapes (e.g., a circle and a star).
+- **Perceptual Chaos:** The visual properties assigned to nodes in a network or points in a scatterplot appear random and do not provide any clues about the underlying data groupings.
+- **High Cognitive Load:** Viewers have to constantly consult a legend and perform mental calculations to understand the relationships between categories, as the visual encoding provides no intuitive hints.
+
+## How to Improve
+
+- **Quick approach: Manual Grouping.** If you have a small number of clusters with a clear similarity structure (e.g., a hierarchy), manually assign colors or shapes. For example, assign shades of blue to one parent group and shades of orange to another. This is a low-fidelity version of visual embedding.
+
+- **Moderate approach: Use a Pre-Computed Mapping.** For common tasks, you might find existing tools or libraries that can map data structures to perceptually-informed palettes. This avoids having to implement the optimization yourself.
+
+- **Comprehensive approach: Implement Visual Embedding.** Use a computational method to find the optimal assignment. This involves:
+    1.  Defining a distance metric for your data (e.g., inter-cluster connections in a graph).
+    2.  Choosing a perceptual kernel (a matrix of perceptual distances) for your chosen visual variable (e.g., color or shape).
+    3.  Running an optimization algorithm to find the assignment of data points to palette items that minimizes the difference between data distances and perceptual distances.
+
+```
+<split/>
+```md
+---
+id: optimize-categorical-palettes-for-discriminability
+title: "Optimize Categorical Palettes for Maximum Discriminability"
+
+tags:
+  - impact:perceptual
+  - task:compare
+  - task:lookup
+  - task:cluster
+  - data:categorical
+  - data:cardinality.high
+  - visual:color
+  - visual:shape
+  - visual:size
+
+sources:
+  - type: research
+    ref: Demiralp et al., 2014
+    url: https://doi.org/10.1109/TVCG.2014.2346978
+    note: "Section 7.1 and Figure 16 demonstrate re-ordering shape, color, and size palettes to maximize perceptual distance between sequential items. This ensures that the most distinct visual elements are used first."
+
+tools:
+  - type: learn
+    name: Perceptual Kernels Repository
+    url: https://github.com/uwdata/perceptual-kernels
+    description: "The original code and data from the research, which can be used to re-order palettes based on perceptual distance."
+---
+
+## Guidance
+
+Re-order categorical palettes (for color, shape, etc.) to maximize the perceptual distance between items. The ordering should start with the two most dissimilar items, then iteratively add the item that is most perceptually distant from the already-selected set.
+
+## Why
+
+Default palettes are often ordered arbitrarily (e.g., alphabetically for shapes) or based on simple perceptual dimensions (e.g., by hue for colors). This can result in perceptually similar items being used for adjacent categories, making them difficult to distinguish. A perceptually optimized order ensures that as you add more categories to a chart, you are always using the most distinct and discriminable visual encodings available.
+
+## When it applies
+
+- When assigning visual properties to nominal (unordered) categories.
+- When you need to ensure that viewers can clearly and quickly distinguish between different categories in a chart, especially with a high number of categories.
+- Applicable to any categorical encoding channel, including color hue, shape, and even size (when used categorically).
+
+## Exceptions
+
+- When a pre-existing order is meaningful (e.g., a specific sequence for brand colors, or a logical progression of shapes).
+- For ordinal or quantitative data, where the palette order must reflect the data order (e.g., a sequential color scheme).
+
+## Trade-offs
+
+- A perceptually re-ordered palette may appear less "tidy" or organized than one sorted by hue or shape type, potentially trading aesthetic simplicity for perceptual performance.
+- The optimal ordering is dependent on the specific perceptual model (kernel) used.
+
+## Signs of Trouble
+
+- **The Squint Test:** When you squint at the chart, do two or more different categories blend together into what looks like a single group?
+- **Subtle Neighbors:** The palette contains two very similar items used for different categories (e.g., a light green and a pale teal, or a circle and a slightly rounded square).
+- **Frequent Legend Lookups:** Viewers have to repeatedly look back and forth between the chart and the legend because the visual markers in the chart are not easily distinguishable.
+- **High Error Rate:** When asked to identify points belonging to a specific category, users make frequent mistakes.
+
+## How to Improve
+
+- **Quick approach: Manual Re-ordering.** Look at your chosen palette. Identify pairs of colors or shapes that are too similar and manually swap one of them with a more distinct option from later in the palette. Try to alternate between visually different families (e.g., a warm color then a cool color; a rounded shape then an angular shape).
+
+- **Moderate approach: Use a Perceptually-Informed Palette Generator.** Use tools like Colorgorical or iWantHue that are designed to generate maximally distinct color palettes. These tools often have options to optimize for perceptual distance and color vision deficiency.
+
+- **Comprehensive approach: Use a Perceptual Kernel.** For the highest fidelity, use a pre-computed perceptual kernel (distance matrix) for your chosen visual variable. Implement an ordering algorithm (as described in the paper: start with the most distant pair, then greedily add the next most distant item) to generate a new, optimized palette order.
+
+```
+<split/>
+```md
+---
+id: use-triplet-matching-for-perceptual-models
+title: "Use Triplet Matching to Reliably Measure Perceptual Similarity"
+
+tags:
+  - impact:perceptual
+  - impact:logos
+  - context:research
+  - context:system-design
+  - visual:color
+  - visual:shape
+  - visual:size
+
+sources:
+  - type: research
+    ref: Demiralp et al., 2014
+    url: https://doi.org/10.1109/TVCG.2014.2346978
+    note: "Section 6.4 argues that triplet matching with a reference ('Is A more similar to B or to C?') is the preferred judgment task. It exhibited the lowest variance, highest robustness, and best predictive accuracy for creating perceptual kernels compared to Likert scales and spatial arrangement."
+---
+
+## Guidance
+
+When building perceptual models to power visualization recommendation systems or automated design tools, use triplet matching comparison tasks to gather similarity judgments from users. Avoid methods like 2D spatial arrangement.
+
+## Why
+
+The way human similarity judgments are collected fundamentally affects the quality and reliability of the resulting perceptual model. The research found that triplet matching tasks (e.g., "Is this shape more similar to shape A or shape B?") produce the most robust, lowest-variance, and accurate perceptual models. In contrast, seemingly intuitive methods like having users drag and drop items on a 2D canvas ("spatial arrangement") are fast but produce noisy, unreliable data that fails to capture the true dimensionality of perceptual spaces like color.
+
+## When it applies
+
+- This is a methodological guideline for researchers and developers who are building visualization recommendation systems, automated palette generators, or any tool that relies on a quantitative model of human graphical perception.
+- When you need to create a "perceptual kernel" or distance matrix for a set of visual variables (e.g., a new shape or icon set).
+
+## Exceptions
+
+- If speed and cost are the absolute highest priorities and low-fidelity results are acceptable, faster methods like pairwise Likert ratings might be a reasonable compromise. The paper notes they fare well and are much faster to collect than exhaustive triplets.
+- Spatial arrangement might be acceptable only if the perceptual space is known to be 2D and high precision is not required.
+
+## Trade-offs
+
+- **Cost and Time:** Triplet matching requires significantly more judgments to build a model compared to pairwise ratings or spatial arrangement, making it more expensive and time-consuming to execute.
+- **Robustness and Accuracy:** The higher upfront cost of triplet matching is traded for a much more reliable and accurate perceptual model that will lead to better downstream design recommendations.
+
+## Signs of Trouble
+
+- **Inconsistent Models:** A perceptual model built from user judgments shows high variance between subjects, indicating the collection method was not reliable.
+- **Poor Predictive Power:** A model of univariate encodings (e.g., separate models for shape and color) fails to accurately predict how bivariate encodings (shape + color) are perceived. The study found triplet matching models were best at this.
+- **Dimensionality Mismatch:** A model built using a 2D spatial arrangement task produces strange results for color, because color perception is inherently three-dimensional (hue, saturation, lightness).
+
+## How to Improve
+
+- **Quick approach: Use Pre-existing Robust Models.** Instead of building your own model, use palettes and perceptual kernels from research that were generated using robust methods like triplet matching. The paper's authors open-sourced their kernels for this purpose.
+
+- **Moderate approach: Use Pairwise Likert Ratings.** If triplet matching is too costly, use pairwise Likert scale ratings (e.g., "Rate the similarity of A and B on a scale of 1-9"). This method performed reasonably well in the study and is much faster to collect.
+
+- **Comprehensive approach: Implement Triplet Matching.** Design a crowdsourced or lab study that presents users with triplets of visual stimuli and asks them to choose which of two items is more similar to a third reference item. Use the resulting judgments to build a high-fidelity perceptual kernel.
+
+```

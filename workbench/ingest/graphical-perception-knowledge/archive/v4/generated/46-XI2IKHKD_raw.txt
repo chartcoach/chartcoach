@@ -1,0 +1,476 @@
+```md
+---
+id: use-bar-charts-for-cluster-identification
+title: "Use bar charts for identifying clusters"
+
+tags:
+  - impact:perceptual
+  - impact:performance
+  - chart:bar
+  - task:cluster
+  - data:categorical
+  - data:quantitative
+  - audience:general
+  - medium:static
+
+sources:
+  - type: research
+    ref: Saket et al., 2019
+    url: https://doi.org/10.1109/TVCG.2018.2829750
+    note: "Experiment found bar charts had high accuracy and speed, and were significantly more preferred by users than pie charts for finding clusters (Guideline G1)."
+
+examples:
+  - type: good
+    description: A bar chart is used to show the number of movies per genre. It is easy to see the distinct groups (clusters) of genres.
+  - type: bad
+    description: A line chart is used to show the same data. It is difficult to count the number of distinct groups because the connecting lines create a false sense of continuity.
+---
+
+## Guidance
+
+When users need to identify the number of groups or clusters in categorical data, use a bar chart.
+
+## Why
+
+Bar charts encode values using length from a common baseline, which is a highly effective visual channel for human perception. This makes it easy to group items of similar size. An empirical study found that for cluster identification tasks, bar charts offer an excellent combination of high accuracy, high speed, and strong user preference compared to other basic chart types like line charts, scatterplots, or even pie charts.
+
+## When it applies
+
+- The task is to count the number of distinct groups or clusters within a set of categorical data (e.g., "How many different genres are shown in this chart?").
+- The dataset has one categorical and one quantitative attribute.
+- The number of categories is relatively low (the study used datasets with 5-34 data points, which mapped to fewer categories).
+
+## Exceptions
+
+- **When part-to-whole is critical:** If the primary goal is to see the clusters as a proportion of a total, a pie chart is also a fast and accurate option, though it is generally less preferred by users and performs poorly on other tasks.
+- **For multivariate data:** If clustering involves more than two variables, a bar chart is insufficient. A chart type like a parallel coordinates plot or a more advanced clustering visualization would be necessary.
+
+## Trade-offs
+
+- **Space:** Bar charts can take up more space than a pie chart, especially with long category labels.
+- **Part-to-whole relationship:** While you can see the relative sizes of clusters in a bar chart, the relationship to the total sum is less immediately apparent than in a pie chart.
+
+## Signs of Trouble
+
+- **User confusion:** Users are taking a long time or making frequent errors when asked to count the number of categories in a visualization.
+- **Incorrect chart type:** A line chart is being used for purely categorical data, implying a trend or connection between discrete categories that doesn't exist.
+- **Over-plotting:** A scatterplot with overlapping points makes it hard to distinguish or count the underlying groups.
+
+## How to Improve
+
+- **Quick approach:** If using another chart type, ensure the categories are clearly distinct. For a scatterplot, use different colors or shapes for each category. For a pie chart, ensure slices are clearly labeled.
+- **Comprehensive approach:** Switch to a bar chart. Sort the bars by value (ascending or descending) to make it even easier to see the groups and their relative sizes. This addresses the task directly by using the most effective visualization type found in the research.
+
+```
+<split/>
+```md
+---
+id: use-line-charts-for-correlation
+title: "Use line charts to identify correlations"
+
+tags:
+  - impact:perceptual
+  - impact:performance
+  - chart:line
+  - task:correlation
+  - data:quantitative
+  - data:ordinal
+  - audience:general
+  - medium:static
+
+sources:
+  - type: research
+    ref: Saket et al., 2019
+    url: https://doi.org/10.1109/TVCG.2018.2829750
+    note: "The study found line charts and scatterplots were fastest and most accurate for correlation tasks, but user preference was significantly higher for line charts (Guideline G2)."
+
+examples:
+  - type: good
+    description: A line chart shows the relationship between movie budget and profit over time. The upward or downward trend of the line makes the correlation clear.
+  - type: bad
+    description: A pie chart attempts to show the same relationship. It is impossible to determine the correlation from the angles of the slices.
+---
+
+## Guidance
+
+For tasks that require users to determine if a correlation exists between two variables (especially when one is ordered, like time), use a line chart.
+
+## Why
+
+Line charts connect data points, creating a single, continuous object. The human visual system is excellent at perceiving the overall slope and direction of this line, which directly maps to the concept of a positive or negative correlation (a trend). An empirical study demonstrated that for correlation tasks, line charts are not only fast and accurate but also significantly more preferred by users than other effective charts like scatterplots.
+
+## When it applies
+
+- The primary task is to assess the relationship between two variables: "Is there a correlation between X and Y?".
+- At least one of the variables has a natural order (e.g., time, age groups, rating levels).
+
+## Exceptions
+
+- **When data is not ordered:** If neither variable has a natural order, a scatterplot is the more appropriate and conventional choice for showing correlation. Using a line chart would imply a false sequence.
+- **To see distribution and outliers:** A scatterplot is superior at revealing the underlying distribution, density, and specific outliers in the data, which a line chart can obscure. If these aspects are more important than the overall trend, prefer a scatterplot.
+
+## Trade-offs
+
+- **Obscures individual points:** A line chart emphasizes the overall trend at the expense of individual data points. If outliers or the precise location of each point are important, a scatterplot is better.
+- **Implies continuity:** The connecting line can suggest that data exists between the measured points, which may not be true.
+
+## Signs of Trouble
+
+- **Low accuracy:** Users incorrectly identify the presence, absence, or direction of a correlation.
+- **Slow performance:** Users take a long time to answer questions about the relationship between two variables.
+- **Wrong tool for the job:** A table, pie chart, or bar chart is being used, requiring users to perform slow, cognitively demanding mental calculations to infer a correlation.
+
+## How to Improve
+
+- **Quick approach:** If stuck with a scatterplot, add a trend line (line of best fit) to make the correlation more explicit.
+- **Comprehensive approach:** If the data has an ordered attribute, switch to a line chart to leverage its perceptual advantages for trend and correlation identification. This aligns with both user performance and preference.
+
+```
+<split/>
+```md
+---
+id: avoid-tables-pie-charts-for-correlation
+title: "Avoid using tables or pie charts for correlation tasks"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - impact:performance
+  - chart:table
+  - chart:pie
+  - task:correlation
+  - data:quantitative
+  - audience:general
+  - medium:static
+  - access:cognitive-load-risk
+
+sources:
+  - type: research
+    ref: Saket et al., 2019
+    url: https://doi.org/10.1109/TVCG.2018.2829750
+    note: "Experiments showed that tables and pie charts were 'significantly less accurate, slower, and less preferred by users' for correlation tasks (Guideline G5)."
+
+examples:
+  - type: bad
+    description: A table lists movie budgets and ratings. To find a correlation, a user must mentally scan and compare many pairs of numbers, which is slow and error-prone.
+  - type: bad
+    description: A pie chart shows budget per rating. It is perceptually impossible to judge the correlation between the two variables from the angles or areas of the slices.
+---
+
+## Guidance
+
+Do not use tables or pie charts when the user's primary goal is to identify a correlation between two variables.
+
+## Why
+
+Correlation is a judgment of a relationship across many data points. Tables and pie charts are not visually structured for this task.
+- **Tables** require users to read individual numbers and perform a series of slow, cognitively demanding mental comparisons to form a judgment about the overall trend. This is highly inefficient and error-prone.
+- **Pie charts** encode data using angles and area, visual channels that are very poor for judging relationships between variables. It is perceptually impossible to see a trend across slices.
+
+Empirical research confirms that both chart types lead to significantly lower accuracy, slower performance, and strong user disapproval for correlation tasks.
+
+## When it applies
+
+- The main task is to determine if a relationship exists between two variables (e.g., "Do sales increase with ad spend?").
+- The data involves at least two quantitative or ordinal variables.
+
+## Exceptions
+
+- **When used for annotation:** A table might be presented *alongside* a scatterplot to provide exact values for lookup, but it should not be the primary tool for judging the correlation itself.
+
+## Trade-offs
+
+- There are no benefits to using tables or pie charts for correlation that would outweigh their severe perceptual and cognitive drawbacks. Following this guideline does not involve meaningful trade-offs; it is a fundamental best practice.
+
+## Signs of Trouble
+
+- **The "Mental Scan":** You observe users scanning back and forth between rows and columns in a table, trying to piece together a trend in their head.
+- **Guesswork:** Users looking at a pie chart express confusion or simply guess when asked about a correlation.
+- **Poor performance:** Task completion times for correlation questions are very high, and error rates are significant.
+- **User frustration:** Users complain that the task is difficult or impossible with the provided visualization.
+
+## How to Improve
+
+- **Comprehensive approach:** Replace the table or pie chart with a visualization designed for correlation.
+  - **For ordered data (like time series):** Use a **line chart**.
+  - **For non-ordered quantitative data:** Use a **scatterplot**.
+
+  Both of these chart types visually encode the data in a way that makes patterns of correlation perceptually obvious, dramatically improving accuracy, speed, and user satisfaction.
+
+```
+<split/>
+```md
+---
+id: avoid-line-charts-for-precise-lookup
+title: "Avoid line charts when users need to look up precise values"
+
+tags:
+  - impact:perceptual
+  - impact:performance
+  - chart:line
+  - task:lookup
+  - data:quantitative
+  - audience:general
+  - medium:static
+
+sources:
+  - type: research
+    ref: Saket et al., 2019
+    url: https://doi.org/10.1109/TVCG.2018.2829750
+    note: "The study found that line charts had the lowest aggregate accuracy and speed, attributing the low performance on tasks like 'Retrieve Value' to the difficulty of precisely identifying values between axis ticks (Guideline G4)."
+
+examples:
+  - type: bad
+    description: A line chart shows monthly sales. A user is asked for sales in March, but the data point for March falls between the $100K and $200K gridlines, forcing them to estimate.
+  - type: good
+    description: A bar chart shows the same monthly sales. The top of each bar aligns with a value on the axis, making it much easier to read the precise value for March.
+---
+
+## Guidance
+
+Avoid using a standard line chart if the primary task for the user is to look up the precise value of a specific data point.
+
+## Why
+
+Line charts are optimized for showing trends and overall shape. Their data points often fall between the gridlines or ticks on an axis. This forces the user to perform a difficult perceptual estimation to determine the point's exact value, leading to low accuracy and slow performance. Research has shown that line charts perform poorly for value retrieval tasks compared to tables or bar charts, which are designed for this purpose.
+
+## When it applies
+
+- The user's main goal is to answer questions like, "What was the exact value for Category X?".
+- High precision is required.
+- The visualization is static and does not have interactive tooltips.
+
+## Exceptions
+
+- **When interactivity is available:** If the user can hover over a data point to see its exact value in a tooltip, the limitation of the static chart is mitigated.
+- **When trend is primary:** If the primary goal is to show a trend and value lookup is a secondary, less critical task, a line chart may still be the best choice overall.
+- **When direct labels are used:** If each data point on the line is explicitly labeled with its value, the need for estimation is removed.
+
+## Trade-offs
+
+- **Clutter:** Adding direct labels to a line chart to improve lookup can create significant visual clutter, especially if the line is noisy or has many data points.
+- **Losing the trend:** Switching to a bar chart or table makes precise lookup easier but can make the overall trend or pattern harder to see at a glance compared to a line chart.
+
+## Signs of Trouble
+
+- **Estimation, not reading:** Users are tilting their heads and using their fingers to trace from a point on the line over to the axis.
+- **Low confidence:** Users give answers with qualifiers like "It's about..." or "It looks like...".
+- **High error rate:** User answers for specific values are consistently inaccurate.
+
+## How to Improve
+
+- **Quick Fix: Add direct labels.** If you must use a line chart, add text labels with the exact value to each data point (or at least the most important ones).
+- **Moderate Approach: Add interactivity.** If the medium allows, implement tooltips that appear on hover, displaying the precise value of the data point.
+- **Comprehensive Redesign: Switch chart types.** For tasks prioritizing precise value lookup, replace the line chart with a more suitable visualization:
+    - **Use a bar chart:** Encodes values by length against a common baseline, making lookup accurate and fast.
+    - **Use a table:** Provides the highest possible precision for value lookup, though it is slower to read and poor for seeing trends.
+
+```
+<split/>
+```md
+---
+id: prioritize-position-encoding
+title: "Prioritize position encodings over other visual channels"
+
+tags:
+  - impact:perceptual
+  - impact:performance
+  - visual:position
+  - visual:length
+  - visual:angle
+  - visual:area
+  - visual:color
+  - data:quantitative
+  - data:ordinal
+  - data:categorical
+  - audience:general
+
+sources:
+  - type: research
+    ref: Zeng & Battle, 2023
+    note: "This review paper synthesizes foundational research, stating 'In general, position encodings (PX, PY) are the top choices for representing all data types (quantitative, nominal, ordinal)' (p. 8)."
+  - type: research
+    ref: Cleveland & McGill, 1984
+    url: https://doi.org/10.2307/2288400
+    note: "Original foundational research establishing the hierarchy of perceptual accuracy for visual encodings, with position on a common scale ranked highest."
+  - type: research
+    ref: Mackinlay, 1986
+    url: https://doi.org/10.1145/22949.22950
+    note: "Extended Cleveland & McGill's work, formalizing the expressiveness and effectiveness principles for automated visualization design."
+
+---
+
+## Guidance
+
+When designing a visualization, use position along a common scale (as in bar charts and scatter plots) as the primary visual variable to encode your most important data.
+
+## Why
+
+Human visual perception is most accurate, efficient, and consistent at decoding information encoded by position. We can judge differences in position and length far more accurately than we can judge differences in angle, area, or color saturation. This hierarchy of perceptual tasks, established by foundational research, is a cornerstone of effective visualization design. Using a less effective encoding (like area in a bubble chart) for your primary data will lead to less accurate interpretation by your audience.
+
+## When it applies
+
+- You are encoding quantitative data for comparison (e.g., sales figures, measurements).
+- You need to show the rank or order of categorical data.
+- You are plotting data on a 2D plane (e.g., any chart with an X and Y axis).
+
+## Exceptions
+
+- **When position is already used:** In some charts, like maps (geographical position) or treemaps (hierarchical position), the `position` channel is already taken. In these cases, other channels like `color` or `size` must be used to encode quantitative values.
+- **For aesthetic or conceptual reasons:** A designer might intentionally choose a less perceptually accurate encoding (like area) to create a certain aesthetic or to better match a metaphor (e.g., using circles to represent 'bubbles'). This is a deliberate trade-off of accuracy for other communicative goals.
+
+## Trade-offs
+
+- **Space:** Charts that rely on position, like bar charts, can take up more space than more compact forms like treemaps or packed bubble charts.
+- **Familiarity:** In some contexts, audiences may be more familiar with a less effective chart type (like a pie chart) than a more effective one (like a bar chart), creating a potential learning curve.
+
+## Signs of Trouble
+
+- **Inaccurate comparisons:** Users have difficulty accurately judging which value is larger when comparing angles in a pie chart or areas in a bubble chart.
+- **Misleading charts:** The most important data in your visualization is encoded with a secondary channel like color hue or shape, while position is used for less important data.
+- **The "Which is bigger?" problem:** It is difficult to answer "How much bigger is A than B?" with any precision.
+
+## How to Improve
+
+- **Quick approach:** If using a chart with a less effective primary encoding (e.g., bubble chart), add direct text labels with the exact values. This provides a "perceptual escape hatch" by allowing users to read the numbers directly.
+- **Comprehensive approach:** Re-design the visualization to use a more effective encoding for the most important data.
+  - Instead of a **pie chart** (angle), use a **bar chart** (length/position).
+  - Instead of a **bubble chart** (area), use a **bar chart** or **dot plot** (position).
+  - Instead of encoding a quantitative value with only **color**, use **position** on an axis.
+
+```
+<split/>
+```md
+---
+id: use-saturation-over-hue-for-ordered-data
+title: "Use color saturation or lightness, not hue, for ordered data"
+
+tags:
+  - impact:perceptual
+  - impact:accessibility
+  - visual:color
+  - data:quantitative
+  - data:ordinal
+  - access:color-vision-risk
+
+sources:
+  - type: research
+    ref: Zeng & Battle, 2023
+    note: "Review concludes that for ordinal data, Color Saturation (CS) is recommended while Color Hue (CH) is not, based on expressiveness principles from Mackinlay [61] and empirical work [29] (p. 8)."
+  - type: research
+    ref: Mackinlay, 1986
+    url: https://doi.org/10.1145/22949.22950
+    note: "Formalized the principle that color hue is not perceptually ordered, while saturation and value are, making them suitable for encoding ordinal or quantitative data."
+  - type: practitioner
+    ref: ColorBrewer
+    url: https://colorbrewer2.org/
+    note: Provides vetted sequential and diverging color schemes that vary in lightness/saturation for ordered data.
+
+examples:
+  - type: good
+    description: A map uses a sequential color scheme from light blue to dark blue to show population density. The perceptual progression from light to dark naturally maps to the data progression from low to high.
+  - type: bad
+    description: A map uses a rainbow color scheme (blue, green, yellow, red) to show population density. It is not intuitive whether green is 'more' or 'less' than yellow, making the map difficult to interpret and perceptually unordered.
+---
+
+## Guidance
+
+When encoding ordered data (quantitative or ordinal) with color, use a sequential palette that varies in saturation and/or lightness (e.g., from light blue to dark blue). Avoid using a qualitative palette that varies primarily in hue (e.g., blue, green, red, yellow).
+
+## Why
+
+Humans do not perceive color hue as having a natural order. There is no intuitive sense that "green" is greater than "blue." In contrast, changes in lightness and saturation are intrinsically perceived as ordered; we naturally see a progression from light to dark. Using a hue-based (rainbow) palette for ordered data creates a perceptual mismatch that forces the viewer to constantly refer to the legend, increasing cognitive load and the risk of misinterpretation. Sequential palettes align with our natural perception, making them intuitive to read.
+
+## When it applies
+
+- You are using color to represent quantitative data (e.g., temperature, sales, population).
+- You are using color to represent ordinal data (e.g., rankings like "low," "medium," "high," or survey responses from "strongly disagree" to "strongly agree").
+- This applies to any chart type that uses color to encode value, such as choropleth maps, heatmaps, or colored scatterplots.
+
+## Exceptions
+
+- **For categorical data:** If the data has no inherent order (e.g., company names, types of fruit), a qualitative palette that uses different hues is the correct choice to maximize discriminability between categories.
+- **For diverging data:** If the data has a meaningful midpoint (like zero), a diverging palette (e.g., blue-white-red) that uses two different hues diverging from a light central color is appropriate. This is still a form of ordered palette.
+
+## Trade-offs
+
+- **Aesthetics:** Rainbow palettes are often perceived as vibrant and visually engaging, which is why they are frequently (mis)used. A single-hue sequential palette may appear more muted, which can be a trade-off between aesthetic appeal and perceptual accuracy.
+
+## Signs of Trouble
+
+- **The Rainbow Problem:** A rainbow (or spectral) color scheme is used to encode sequential or diverging data.
+- **Constant Legend-Checking:** You observe viewers repeatedly looking back and forth between the chart and the legend to understand what the colors mean.
+- **Order Confusion:** It's not immediately obvious which colors represent higher or lower values. Questions like "Wait, is yellow more or less than green?" are a red flag.
+- **False Boundaries:** Abrupt hue changes in a rainbow palette can create the illusion of sharp boundaries in the data where none exist.
+
+## How to Improve
+
+- **Quick approach:** Use a grayscale palette. This is a simple sequential palette that varies only in lightness and is guaranteed to be perceptually ordered and colorblind-safe.
+- **Moderate approach:** Choose a pre-vetted sequential color palette from a tool like [ColorBrewer](https://colorbrewer2.org/) or [Viz Palette](https://projects.susielu.com/viz-palette). These are designed by experts to be perceptually uniform and accessible.
+- **Comprehensive approach:** Design a custom sequential palette using a perceptually uniform color space like HCL or L*C*h. This gives you full control over hue, chroma, and luminance to create a branded, effective, and accessible palette that progresses smoothly from light to dark.
+
+```
+<split/>
+```md
+---
+id: beware-aspect-ratio-bias-in-bar-charts
+title: "Be aware of aspect ratio bias in bar charts"
+
+tags:
+  - impact:perceptual
+  - impact:ethical
+  - chart:bar
+  - task:compare
+  - task:lookup
+  - data:quantitative
+
+sources:
+  - type: research
+    ref: Zeng & Battle, 2023
+    note: "Synthesizes research on systematic bias in bar charts, highlighting that 'the systematic bias in bars is related to the aspect ratio of bars' (p. 10)."
+  - type: research
+    ref: Ceja et al., 2020
+    note: "Cited as [15] in Zeng & Battle. This experiment found that 'wide bars are overestimated, and tall bars are underestimated,' while square bars showed no systematic bias."
+  - type: research
+    ref: Godau et al., 2016
+    note: "Cited as [27] in Zeng & Battle. Found systematic underestimation in bar charts."
+  - type: research
+    ref: Xiong et al., 2020
+    note: "Cited as [110] in Zeng & Battle. Found overestimation in bar charts, a contradiction that was later clarified by the work on aspect ratio."
+
+---
+
+## Guidance
+
+Recognize that the aspect ratio of bars in a bar chart can systematically bias the viewer's perception of their value. Specifically, tall and thin bars tend to be underestimated, while short and wide bars tend to be overestimated.
+
+## Why
+
+This is a perceptual bias where the shape of the bar interferes with the judgment of its primary encoding: length. While bar charts are generally highly effective, this subtle bias can lead to inaccurate interpretation, especially when making fine-grained comparisons or judgments of average value. Research has shown that bars with a "square" aspect ratio (where height is closer to width) exhibit the least bias. Being aware of this phenomenon is the first step toward mitigating its potentially deceptive effects.
+
+## When it applies
+
+- When designing any bar chart.
+- When high-precision comparison of bar lengths is critical.
+- When evaluating the potential for misinterpretation in a dashboard or report.
+
+## Exceptions
+
+- **When labels are present:** If every bar is directly labeled with its value, the perceptual bias is less of a concern because viewers can rely on reading the numbers instead of judging the lengths.
+- **When relative rank is all that matters:** If the only goal is to see which bar is tallest (ranking), and the precise magnitude of the differences is unimportant, the bias is less critical.
+
+## Trade-offs
+
+- **Space constraints:** It may not always be practical to adjust bar widths to achieve a square-like aspect ratio. For example, a chart with many bars will necessitate thin bars, introducing the underestimation bias.
+- **Aesthetic norms:** Very wide bars might look unconventional and could be perceived as stylistically awkward, even if they are perceptually more neutral.
+
+## Signs of Trouble
+
+- **Extreme aspect ratios:** Your bar chart consists of very tall, "spiky" bars or very short, "stubby" bars.
+- **Unexplained misinterpretations:** Users seem to consistently misjudge the relative differences between bars in a way that can't be explained by the data alone.
+
+## How to Improve
+
+- **Quick Fix: Add direct labels.** The simplest way to counteract the perceptual bias is to add data labels to the bars. This gives viewers a direct way to read the value, bypassing the biased length judgment.
+- **Moderate Approach: Adjust bar width.** Where possible, adjust the width of your bars to be closer to their average height, moving them toward a "squarish" profile. This can be done by changing the `band` or `padding` settings in most charting libraries.
+- **Comprehensive Approach: Test and validate.** If precision is paramount, consider running a small user test to see if the aspect ratio in your design is causing misinterpretation. Alternatively, consider if another chart type, like a dot plot, might be less susceptible to this specific bias for your use case (as it encodes value with position only, not a filled area).

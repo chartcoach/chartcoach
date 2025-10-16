@@ -1,0 +1,234 @@
+```md
+---
+id: use-donuts-like-pies
+title: "Consider donut charts an effective alternative to pie charts"
+
+tags:
+  - impact:perceptual
+  - impact:aesthetic
+  - chart:pie
+  - chart:donut
+  - task:composition
+  - task:lookup
+  - data:quantitative
+
+sources:
+  - type: research
+    ref: Skau & Kosara, 2016
+    url: https://doi.org/10.1111/cgf.12888
+    note: "Two studies found that donut charts are as accurate as traditional pie charts for part-to-whole estimations. The removal of the central angle did not hinder perceptual accuracy."
+
+examples:
+  - type: good
+    description: A donut chart is used to show composition. The central space is effectively used to display the total value, a design advantage over a pie chart, without sacrificing perceptual accuracy.
+---
+
+## Guidance
+
+Donut charts are a viable and effective alternative to traditional pie charts for showing part-to-whole relationships.
+
+## Why
+
+Empirical studies show that removing the center of a pie chart to create a donut chart does not decrease viewers' accuracy in estimating proportions. The central angle is the least critical visual cue for this task, and its absence is adequately compensated for by the remaining area and arc length cues.
+
+## When it applies
+
+- When choosing between a pie chart and a donut chart to represent the composition of a whole (e.g., market share, budget allocation).
+- When you want to use the central space of a circular chart for a title, a key performance indicator (KPI), or an icon.
+
+## Exceptions
+
+- If the donut becomes extremely thin (e.g., inner radius is more than 80% of the outer radius), accuracy may slightly decrease. In such cases, the area cue becomes less salient, and the chart relies almost entirely on arc length.
+- If the specific goal is to have users judge angles, though this is a rare and generally ineffective visualization task.
+
+## Trade-offs
+
+- **Gained:** A donut chart provides a blank central space that can be used for labels, totals, or icons, which is a significant design advantage over a pie chart.
+- **Sacrificed:** The explicit central angle cue is removed. However, research shows this is a minimal loss as it's the least important perceptual cue for this chart type.
+
+## Signs of Trouble
+
+- **Unnecessary Hesitation:** A team avoids using donut charts due to an unsubstantiated belief that they are less accurate than pie charts.
+- **Wasted Space:** A pie chart is used where the central area could have been productively used for a key takeaway or total value.
+
+## How to Improve
+
+- **Quick approach:** If you have a pie chart, feel confident converting it to a donut chart with a moderate hole size (e.g., 20-60% inner radius). This gains valuable space for labeling or a summary figure without losing perceptual accuracy.
+
+- **Comprehensive approach:** When designing a dashboard or report, treat donut charts and pie charts as functionally equivalent for part-to-whole tasks. Choose between them based on your overall design goals. If you need a prominent spot for a total value or summary, a donut chart is the superior choice.
+
+```
+<split/>
+```md
+---
+id: pie-cues-area-arc-over-angle
+title: "Recognize area and arc length are the dominant cues in pie and donut charts, not angle"
+
+tags:
+  - impact:perceptual
+  - chart:pie
+  - chart:donut
+  - task:composition
+  - visual:angle
+  - visual:size
+  - visual:length
+
+sources:
+  - type: research
+    ref: Skau & Kosara, 2016
+    url: https://doi.org/10.1111/cgf.12888
+    note: "Study 1 isolated the three visual cues (angle, area, arc length). Charts showing only angle were perceived with the highest error, while area and arc length were more accurate and comparable to a standard pie chart."
+
+---
+
+## Guidance
+
+When designing or evaluating pie and donut charts, understand that viewers primarily rely on the segment's **area** and **arc length** to judge proportions, not the central angle.
+
+## Why
+
+Experiments that isolated the three visual cues found that charts showing *only* angle were the least accurately perceived. While all three cues are present and contribute in a standard chart, the central angle is the weakest perceptual signal. This explains why removing the center to create a donut chart has a negligible effect on accuracy.
+
+## When it applies
+
+- When evaluating novel or "artistic" variations of pie or donut charts seen in infographics.
+- When explaining the perceptual principles behind why certain pie chart variations are or are not effective.
+- This principle underpins other guidelines, such as why varying segment radii is a bad practice.
+
+## Exceptions
+
+- No exceptions are known. This is a fundamental finding about the perceptual mechanism of these charts. Even if a user believes they are using angle, their judgments are more strongly correlated with area and arc length.
+
+## Trade-offs
+
+- This understanding may conflict with traditional textbook explanations of pie charts, which often focus exclusively on the concept of angles summing to 360 degrees. It requires shifting focus from the geometric construction to the perceptual reality.
+
+## Signs of Trouble
+
+- **Distorted Cues:** A chart design that prioritizes preserving the angle cue while distorting the more important area or arc length cues (e.g., using wedge-shaped icons of different base widths).
+- **Misguided Justification:** Defending an ineffective chart variation by claiming "it still shows the right angles."
+
+## How to Improve
+
+- **Quick approach:** When critiquing a pie chart variation, check if the relative areas and arc lengths of the segments correctly represent the data proportions. If they are distorted, the chart is likely misleading, regardless of what the angles show.
+
+- **Comprehensive approach:** When creating an infographic or custom visualization based on a circular layout, ensure that the design choices do not compromise the integrity of the area and arc length encodings. If a stylistic choice (like using a non-circular shape) breaks these cues, switch to a more robust chart type like a bar chart.
+
+```
+<split/>
+```md
+---
+id: avoid-varying-pie-radii
+title: "Maintain a constant radius for all segments in a pie or donut chart"
+
+tags:
+  - impact:perceptual
+  - impact:ethical
+  - chart:pie
+  - chart:donut
+  - task:composition
+  - task:compare
+
+sources:
+  - type: research
+    ref: Skau & Kosara, 2016
+    url: https://doi.org/10.1111/cgf.12888
+    note: "The paper's recommendations state that since arc length and area are important, changing the radius interferes with people's ability to read the chart and should be avoided. This is a direct application of their findings."
+
+examples:
+  - type: bad
+    description: This "spiky" pie chart, sometimes seen in infographics, varies the radius of each segment. This makes the blue segment appear much larger than the green segment, even if their underlying values are similar, because it has both a larger area and arc length.
+---
+
+## Guidance
+
+Do not vary the radius of individual segments within a single pie or donut chart. All segments should extend from a common center to a common outer boundary.
+
+## Why
+
+Varying the radius of a segment simultaneously distorts its **area** and **arc length**, which are the two primary visual cues viewers use to judge value and make comparisons. A segment with a larger radius will be perceptually overestimated and appear more important than it is. This practice is inherently misleading and undermines the chart's integrity.
+
+## When it applies
+
+- When designing pie or donut charts, especially for infographics or presentations where there might be a temptation to use this stylistic effect for emphasis.
+
+## Exceptions
+
+- There are no exceptions where this practice is perceptually sound for representing part-to-whole data. If the goal is purely artistic and not data representation, this rule may not apply, but the result should not be presented as a data chart.
+
+## Trade-offs
+
+- You sacrifice a "dynamic" or "spiky" stylistic effect in favor of data accuracy and ethical representation. This is a trade-off that should always be made.
+
+## Signs of Trouble
+
+- **Spiky Segments:** A pie or donut chart where one or more slices extend further from the center than others.
+- **Distorted Proportions:** When looking at the chart, it feels difficult to judge the relative size of the segments, and the emphasized (longer) segments seem to dominate the visual.
+
+## How to Improve
+
+- **Quick Fix:** If you need to emphasize one slice, use a more saturated or contrasting color for that slice. Alternatively, slightly "exploding" the slice (pulling it out from the center while maintaining its shape) is a less distorting way to draw attention, but should still be used with caution.
+
+- **Comprehensive Redesign:** If emphasizing a specific value is the primary goal, a pie or donut chart is often not the best choice. Switch to a **bar chart**, where you can easily use color, an outline, or an annotation to highlight a specific bar without distorting the data representation for all other values.
+
+```
+<split/>
+```md
+---
+id: avoid-nested-donuts
+title: "Avoid using nested donut charts for comparison"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:donut
+  - chart:pie
+  - task:compare
+  - task:composition
+  - access:cognitive-load-risk
+
+sources:
+  - type: research
+    ref: Skau & Kosara, 2016
+    url: https://doi.org/10.1111/cgf.12888
+    note: "The paper's recommendations state that 'Nested donuts... are problematic' because comparing circles of different radii and areas is difficult, a direct implication of their findings that area and arc length are key cues."
+
+examples:
+  - type: bad
+    description: A nested donut chart (or radial bar chart) makes it very difficult to compare the composition of the inner ring to the outer ring. It is hard to tell if the light blue segment is a larger percentage in the inner or outer ring.
+---
+
+## Guidance
+
+Do not nest multiple donut charts concentrically to compare the composition of different groups or to show changes over time.
+
+## Why
+
+Nesting donut charts forces viewers to compare segments that have different radii and are not aligned to a common baseline. This makes it perceptually difficult and error-prone to compare the arc lengths and areas, which are the primary cues for reading these charts. The cognitive load required to make these comparisons is high, and the accuracy is low.
+
+## When it applies
+
+- When you need to compare the composition of multiple groups (e.g., survey results for different demographics).
+- When you want to show how a part-to-whole relationship changes over multiple time periods.
+
+## Exceptions
+
+- There are no known exceptions where this chart form is effective for comparing compositions. While visually compact, it is perceptually flawed.
+
+## Trade-offs
+
+- **Gained:** By avoiding nested donuts, you gain clarity and accuracy in your comparisons.
+- **Sacrificed:** You lose a visually compact, circular layout. The alternatives, like small multiples or bar charts, typically require more screen or page space.
+
+## Signs of Trouble
+
+- **Bullseye Chart:** The visualization looks like a target or a bullseye, with multiple concentric rings each broken into colored segments.
+- **Comparison Difficulty:** Viewers struggle to answer questions like "Did Category A's share increase or decrease between the inner and outer ring?"
+
+## How to Improve
+
+- **Moderate Redesign: Use Small Multiples.** Instead of nesting the donut or pie charts, place them side-by-side. This layout is called small multiples. It allows for easier comparison of the overall patterns in each chart, although direct comparison of individual slices between charts is still challenging.
+
+- **Comprehensive Redesign: Use a Stacked Bar Chart.** The most effective alternative is a **100% stacked bar chart**. This chart type aligns all groups along a common baseline, making it much easier to compare the proportional contributions of each category across the groups. For showing change over time, a **stacked area chart** can also be an effective choice.
+
+```

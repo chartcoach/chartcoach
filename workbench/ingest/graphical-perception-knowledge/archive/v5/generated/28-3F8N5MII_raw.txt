@@ -1,0 +1,382 @@
+```md
+---
+id: map-larger-quantities-to-darker-colors
+title: "Map larger quantities to darker colors in colormaps"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - impact:performance
+  - chart:map.choropleth
+  - chart:heatmap
+  - task:compare
+  - task:rank
+  - task:lookup
+  - data:quantitative
+  - data:ordinal
+  - visual:color
+  - audience:general
+  - medium:static
+  - medium:screen
+  - access:cognitive-load-risk
+
+evidence:
+  strength: high
+  summary: "People have a 'dark-is-more' perceptual bias, making them faster and more accurate when interpreting colormaps where darker colors represent larger quantities. This is a long-standing finding reinforced by modern studies measuring response times."
+
+sources:
+  - type: research
+    ref: Schloss et al., 2019
+    url: https://doi.org/10.1109/TVCG.2018.2865147
+    note: "Empirically confirmed a 'dark-is-more' bias by showing faster response times for 'dark-more' encodings, especially when colormaps did not appear to vary in opacity."
+    role: primary
+  - type: research
+    ref: Cuff, 1973
+    url: https://doi.org/10.1179/caj.1973.10.1.17
+    note: "Early empirical work in cartography that first reported a 'dark-is-more' bias."
+    role: supporting
+  - type: research
+    ref: McGranaghan, 1989
+    url: https://doi.org/10.1559/152304089783813958
+    note: "Found the 'dark-is-more' bias persisted even on dark backgrounds, though it was reduced."
+    role: supporting
+
+tools:
+  - type: implement
+    name: ColorBrewer
+    url: https://colorbrewer2.org/
+    description: "Provides pre-built sequential color scales that correctly graduate from light to dark."
+  - type: learn
+    name: Datawrapper - What to consider when choosing colors
+    url: https://www.datawrapper.de/academy/en/article/what-to-consider-when-choosing-colors-for-data-visualization/
+    description: "A practical guide on selecting colors for data visualization, including sequential palettes."
+
+examples:
+  - type: good
+    description: "This heatmap uses a single-hue sequential palette where darker shades of blue correctly represent higher values (more animal sightings), aligning with the 'dark-is-more' bias."
+  - type: bad
+    description: "A heatmap where lighter colors represent higher values. This forces the viewer to overcome their 'dark-is-more' intuition, increasing cognitive load and slowing down interpretation."
+---
+
+## Guidance
+
+For colormaps representing ordered data (such as low to high values), encode larger quantities with darker colors.
+
+## Why
+
+This aligns with a fundamental perceptual bias known as "dark-is-more." Viewers intuitively associate darker colors with more "substance" or greater magnitude. Following this convention reduces the cognitive load required to interpret the chart, leading to faster and more accurate understanding.
+
+### Core Principle
+
+Make the most important information the easiest to see. By aligning the visual encoding with a viewer's pre-existing perceptual biases, you reduce the mental effort needed to decode the visualization.
+
+## When it applies
+
+- When creating colormaps for quantitative or ordinal data.
+- This is especially critical for heatmaps, choropleth maps, and scientific visualizations where color is the primary channel for representing magnitude.
+- The principle is strongest when the colormap is presented on a light or white background.
+
+## Exceptions
+
+- When a strong, universally understood semantic association conflicts with this rule (e.g., using white/yellow for "sunshine" or "light"). Even in these cases, be aware that the "dark-is-more" bias may still compete with the semantic meaning.
+- On dark backgrounds, an "opaque-is-more" or "light-is-more" bias can sometimes compete with or even override the "dark-is-more" bias, especially if the colormap appears to vary in opacity.
+
+## Trade-offs
+
+- May conflict with branding guidelines that use light colors for primary emphasis.
+- If not designed carefully, a dark-is-more scheme on a dark background can lead to low-contrast areas that are difficult to read.
+
+## Signs of Trouble
+
+- **Legend Overload:** Viewers have to repeatedly check the legend to understand what the colors mean.
+- **"Backwards" Feeling:** The visualization feels unintuitive or "backwards" to viewers, even if they can't articulate why.
+- **Interpretation Errors:** Viewers misinterpret the data, assuming light-colored regions represent high values.
+
+## How to Improve
+
+- **Quick Fix: Reverse the Scale.** Most visualization tools have an option to reverse a color scale. If your current map uses a light-is-more scheme, simply reverse it so the darker end of the palette maps to the higher end of your data range.
+- **Moderate Approach: Use a Sequential Palette.** Switch from a multi-hue or rainbow palette to a pre-defined sequential palette (e.g., from ColorBrewer). These are specifically designed to vary from light to dark, making the "dark-is-more" relationship clear.
+- **Comprehensive Approach: Design for Robustness.** If the visualization will be used on both light and dark backgrounds, choose a colormap that does not appear to vary in opacity and use a "dark-is-more" encoding. This ensures the primary perceptual bias is consistent across different contexts.
+
+<split/>
+
+```md
+---
+id: use-opacity-invariant-colormaps-for-robustness
+title: "Ensure colormaps are robust by avoiding apparent opacity variations"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - impact:performance
+  - chart:map.choropleth
+  - chart:heatmap
+  - task:compare
+  - task:rank
+  - data:quantitative
+  - visual:color
+  - audience:general
+  - medium:static
+  - medium:screen
+  - access:cognitive-load-risk
+
+evidence:
+  strength: medium
+  summary: "A 2019 study showed that colormaps appearing to vary in opacity create an 'opaque-is-more' bias. This bias conflicts with the 'dark-is-more' bias on dark backgrounds, slowing interpretation. Colormaps that don't vary in opacity are more robust across different backgrounds."
+
+sources:
+  - type: research
+    ref: Schloss et al., 2019
+    url: https://doi.org/10.1109/TVCG.2018.2865147
+    note: "Introduced and tested the 'opaque-is-more' bias, demonstrating its interaction with the 'dark-is-more' bias. Found that colormaps with a low 'Opacity Variation Index' (i.e., not appearing to vary in opacity) were more consistently interpreted across light and dark backgrounds."
+    role: primary
+  - type: research
+    ref: Roth et al., 2010
+    url: https://doi.org/10.1179/000870410X12658023489377
+    note: "Proposed 'value-by-alpha' maps, which intentionally create apparent opacity. The Schloss et al. study provides the perceptual rationale explaining when these are effective (on light backgrounds) and when they are problematic (on dark backgrounds)."
+    role: related
+
+tools:
+  - type: implement
+    name: MATLAB Hot colormap
+    description: "An example of a colormap that curves substantially through color space and is less likely to appear to vary in opacity on a white or black background."
+  - type: learn
+    name: "Schloss et al., 2019, Figure 5"
+    url: https://doi.org/10.1109/TVCG.2018.2865147
+    description: "The paper's Figure 5 visualizes the 'Opacity Variation Index' and shows how different colormaps (Autumn, Hot, Blue, Gray) deviate from a linear interpolation to the background, which is the cause of apparent opacity."
+
+examples:
+  - type: good
+    description: "A heatmap using a colormap like MATLAB's 'Hot' or 'Autumn'. These colormaps curve through color space, making them less likely to be perceived as a simple interpolation to a white or black background. This makes their interpretation more stable across different background colors."
+  - type: bad
+    description: "A grayscale colormap used on a dark blue background. The colormap will be perceived as an interpolation from white to black, unrelated to the blue, and won't appear to vary in opacity. However, a colormap created by interpolating from a saturated blue to white would appear to vary in opacity against a blue background, creating conflicting perceptual cues."
+---
+
+## Guidance
+
+If a colormap must be displayed on different background colors (e.g., in a presentation with both light and dark slide themes), use a colormap that does not appear to vary in opacity.
+
+## Why
+
+Colormaps that appear to vary in opacity (typically those created by interpolating a single color to the background color) create a powerful "opaque-is-more" perceptual bias. On a light background, this reinforces the default "dark-is-more" bias, aiding comprehension. However, on a dark background, the two biases conflict: the darker color signifies "more," but the lighter, more opaque color *also* signifies "more." This conflict slows down interpretation and can lead to errors. Using a colormap that is not perceived as varying in opacity makes the "dark-is-more" principle dominant and reliable on any background.
+
+### Core Principle
+
+Design for perceptual consistency. A visualization's interpretation should not change dramatically when its context, such as the background color, is altered.
+
+## When it applies
+
+- When creating a visualization that will be used in multiple contexts, such as a report that will be printed (white background) and a presentation that will be projected (potentially dark background).
+- When creating style guides or templates for visualizations that need to be robust.
+
+## Exceptions
+
+- If you can guarantee the visualization will *only* ever be viewed on a light background. In this specific case, you can leverage both the "dark-is-more" and "opaque-is-more" biases by using a colormap that appears to vary in opacity (e.g., a sequential single-hue palette) to create a maximally intuitive chart.
+
+## Trade-offs
+
+- Choosing a colormap that is robust across backgrounds may mean sacrificing the "extra" perceptual boost that comes from aligning the "dark-is-more" and "opaque-is-more" biases on a light background. The visualization may be slightly less intuitive in the light-background-only case, but it will be far more consistent overall.
+
+## Signs of Trouble
+
+- **Context Collapse:** A chart that was clear on your white-background report becomes confusing when you paste it into a dark-background presentation slide.
+- **Conflicting Cues on Dark Mode:** On a dark background, viewers are unsure whether the lightest, most-contrasting color or the darkest color represents the highest value.
+- **Opacity Illusion:** The colormap looks like a translucent layer placed over the background, where some colors look "see-through." This is a strong indicator that the "opaque-is-more" bias is in effect.
+
+## How to Improve
+
+- **Quick Fix: Check on Both Backgrounds.** Before finalizing your visualization, test it by placing it on both a pure white and a pure black background. If the interpretation feels different or ambiguous on one, your colormap is not robust.
+- **Moderate Approach: Choose a Curving Colormap.** Select a colormap that curves significantly through color space, such as a multi-hue sequential map (e.g., MATLAB's 'Hot' or 'Viridis'). Because these palettes don't follow a straight line to white or black, they are less likely to be perceived as a simple opacity scale against either background.
+- **Comprehensive Approach: Quantify Opacity Variation.** As demonstrated in Schloss et al. (2019), you can measure how much a colormap deviates from a linear interpolation between its most contrasting color and the background color. Colormaps with high deviation (a high "Opacity Variation Index") are less likely to appear to vary in opacity and are therefore more robust.
+
+<split/>
+
+```md
+---
+id: prefer-position-over-color-for-quantitative-data
+title: "Prefer position over color for encoding quantitative data"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - impact:performance
+  - chart:bar
+  - chart:line
+  - chart:scatter
+  - chart:map.choropleth
+  - task:compare
+  - task:rank
+  - task:lookup
+  - data:quantitative
+  - visual:position
+  - visual:color
+  - audience:general
+
+evidence:
+  strength: high
+  summary: "Foundational research in graphical perception, replicated over decades, consistently shows that humans judge quantities more accurately from position along a common scale than from color saturation or hue. This forms a core principle of effective visualization design."
+
+sources:
+  - type: research
+    ref: Cleveland & McGill, 1984
+    url: https://doi.org/10.2307/2288400
+    note: "The foundational study that experimentally established a perceptual ranking of visual channels, placing position at the top for quantitative tasks."
+    role: primary
+  - type: research
+    ref: Mackinlay, 1986
+    url: https://doi.org/10.1145/22949.22950
+    note: "Formalized and extended the Cleveland & McGill rankings into an automated system (APT), solidifying the principle's importance in visualization theory."
+    role: supporting
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://doi.org/10.1145/3544548.3581349
+    note: "This review paper summarizes and collates this long-standing knowledge, showing its continued relevance and application in modern visualization recommendation systems (see Table 3)."
+    role: related
+
+tools:
+  - type: learn
+    name: The Semiology of Graphics
+    ref: Jacques Bertin, 1967
+    description: "The original theoretical work that proposed a hierarchy of 'retinal variables', laying the groundwork for later empirical studies."
+
+examples:
+  - type: good
+    description: "A bar chart comparing the population of several cities. The length of each bar (position along a common y-axis) allows for precise comparison."
+  - type: bad
+    description: "A choropleth map where each US state is colored by its population. It's difficult to tell if California's color represents a value that is 1.5x or 2x larger than Texas's color. A bar chart would make this comparison trivial."
+---
+
+## Guidance
+
+To represent quantitative data for comparison or ranking tasks, encode the values using position along a common scale. Use color as a secondary, redundant encoding or for categorical data.
+
+## Why
+
+Human perception is far more accurate at judging differences in position and length than it is at judging differences in color saturation or hue. When values are encoded as bar lengths, point positions on an axis, or line heights, viewers can make quick and precise comparisons. When the same values are encoded only with color, these comparisons become slow, inaccurate estimations.
+
+### Core Principle
+
+Match the visual encoding channel to its perceptual effectiveness for the task. For quantitative comparisons, position is the most effective channel.
+
+## When it applies
+
+- When the primary goal is for the viewer to accurately compare, rank, or look up quantitative values.
+- This applies to a wide range of charts, including bar charts, line charts, and scatter plots, which are all based on the position channel.
+
+## Exceptions
+
+- **Showing Geographic Patterns:** In a choropleth map, color is the only feasible channel to fill geographic regions. The primary goal is to show spatial patterns, not enable precise value comparisons. The trade-off is sacrificing comparison accuracy for spatial context.
+- **Limited Space/Overview:** In a heatmap, color is used to provide a dense overview of a large matrix of values where using position (e.g., a grid of bar charts) would be impractical.
+- **Highlighting:** Color can be very effective for drawing attention to specific categories or values (e.g., coloring one bar red to highlight it) even if position is encoding the primary value.
+
+## Trade-offs
+
+- Using position often requires more space than using color. A single choropleth map can represent data for 50 states, while a bar chart of the same data would require significantly more screen real estate.
+- An over-reliance on position-based charts can lead to a lack of visual variety.
+
+## Signs of Trouble
+
+- **"Is this darker blue twice as much as the lighter blue?":** Viewers are unable to accurately judge the magnitude of difference between colored regions.
+- **Dense, colorful maps without clear patterns:** A choropleth map is used, but the task is to rank the top 5 regions by value—a task for which the color encoding is ill-suited.
+- **A bar chart where every bar is a different color:** This is a sign of redundant encoding. If the colors don't represent a meaningful category, they are just chartjunk that can increase cognitive load.
+
+## How to Improve
+
+- **Quick Fix: Add Labels.** If you must use a color-encoded chart like a choropleth map for comparisons, add direct data labels to the most important regions. This provides a "perceptual escape hatch" by allowing users to read the values directly.
+- **Moderate Approach: Provide a Position-based Alternative.** Accompany a choropleth map with a bar chart that ranks the same data. This gives the user both the spatial context (from the map) and the ability to make precise comparisons (from the bar chart).
+- **Comprehensive Approach: Switch the Chart Type.** If the primary task is comparison, not spatial analysis, change the chart type. Instead of a choropleth map of state-by-state sales, use a bar chart. This directly encodes the quantitative data using the most effective visual channel for the task.
+
+<split/>
+
+```md
+---
+id: use-scatterplots-for-correlation
+title: "Use scatterplots to show correlation between two quantitative variables"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:scatter
+  - task:correlation
+  - data:quantitative
+  - visual:position
+  - audience:general
+  - medium:static
+  - medium:screen
+
+evidence:
+  strength: high
+  summary: "Empirical studies consistently show that scatterplots are one of the most effective visualizations for judging the strength and direction of correlation. The overall shape and density of the point cloud provide a strong perceptual cue for the underlying relationship."
+
+sources:
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://doi.org/10.1145/3544548.3581349
+    note: "This review synthesizes findings and lists scatterplots as a top choice for the 'Correlate' task, citing multiple empirical studies (e.g., [53], [20], [78]). See Table 9."
+    role: primary
+  - type: research
+    ref: Harrison et al., 2014
+    url: https://doi.org/10.1109/TVCG.2014.2346979
+    note: "A study that ranked nine different visualization types for correlation perception and found scatterplots to be the most effective."
+    role: supporting
+  - type: research
+    ref: Kay & Heer, 2015
+    url: https://doi.org/10.1109/TVCG.2015.2467671
+    note: "A re-analysis of the Harrison et al. data that further refined the model for correlation perception in scatterplots, confirming their effectiveness."
+    role: supporting
+
+tools:
+  - type: learn
+    name: "Datawrapper: What is a scatter plot?"
+    url: https://www.datawrapper.de/academy/en/article/what-is-a-scatter-plot/
+    description: "An introduction to scatterplots and their primary use case for showing relationships between variables."
+
+examples:
+  - type: good
+    description: "A chart plotting 'ice cream sales' vs. 'temperature'. The clear upward trend of the points from bottom-left to top-right immediately communicates a positive correlation."
+  - type: bad
+    description: "Two separate line charts, one for 'ice cream sales' over time and one for 'temperature' over time. While a viewer might be able to mentally infer a correlation, it requires significant cognitive effort and is not as direct or clear as a scatterplot."
+---
+
+## Guidance
+
+To help viewers identify and assess the correlation between two quantitative variables, use a scatterplot.
+
+## Why
+
+Scatterplots map two quantitative variables to the x and y axes, allowing the relationship between them to emerge as a visual pattern. The shape, density, and direction of the cloud of points provide powerful, direct perceptual cues about the strength and nature (positive, negative, or non-existent) of the correlation. Other chart types, like line charts or bar charts, require viewers to perform mental calculations to infer the same relationship, increasing cognitive load and the risk of error.
+
+### Core Principle
+
+Choose the visualization that makes the primary task the most direct perceptual judgment. For correlation, this means letting the relationship manifest as a single, holistic visual pattern.
+
+## When it applies
+
+- The primary goal is to show the relationship or correlation between two continuous variables.
+- You want to identify outliers that do not fit the general pattern of the relationship.
+- You are performing exploratory data analysis to look for potential relationships in the data.
+
+## Exceptions
+
+- **Time-Series Data:** If one of the variables is time and the primary goal is to show the trend of each variable over that time, two side-by-side line charts might be more effective. A scatterplot would obscure the temporal sequence.
+- **Categorical Data:** A scatterplot requires two quantitative variables. If one variable is categorical, a box plot or violin plot is more appropriate for showing the distribution of the quantitative variable across the categories.
+- **Overplotting:** If you have a very large number of data points, a standard scatterplot can become a dense, unreadable blob. In this case, use techniques like transparency, smaller points, or a 2D density plot (heatmap) to reveal the underlying structure.
+
+## Trade-offs
+
+- A scatterplot is an abstract representation that may be less familiar to some audiences than bar or line charts.
+- It can be difficult to look up the exact value of a single point, especially in a dense plot (though tooltips can mitigate this in interactive versions).
+
+## Signs of Trouble
+
+- **Zig-Zag Lines:** A line chart is used to connect points in a scatterplot where the x-axis is not time. This creates meaningless connections and obscures the correlation.
+- **"Mental Gymnastics":** You present two bar charts and ask the audience to "notice how the pattern is similar," forcing them to compare the shapes of the two charts in their head.
+- **Dual-Axis Disaster:** A dual-axis line chart is used to imply a correlation, but the scaling of the two axes is arbitrary and can create a misleading impression of a strong or weak relationship.
+
+## How to Improve
+
+- **Quick Fix: Connect the Dots.** If you are already looking at two variables, simply plot them against each other on X and Y axes to create a scatterplot. Add a trend line to make the correlation more explicit.
+- **Moderate Approach: From Separate to Single.** If you have two separate charts (e.g., line charts over time for two variables), create an additional scatterplot of the two variables against each other. This allows you to show both the individual trends and their direct relationship.
+- **Comprehensive Approach: Use a Scatterplot Matrix (SPLOM).** If you are exploring relationships among multiple (3+) variables, use a scatterplot matrix. This grid of scatterplots shows the relationship between every pair of variables in your dataset, providing a powerful tool for exploratory analysis.
+
+```

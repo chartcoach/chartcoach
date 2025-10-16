@@ -1,0 +1,330 @@
+```md
+---
+id: avoid-full-spectrum-hue-for-order
+title: "Avoid full-spectrum hue progressions for ordered data"
+
+tags:
+  - impact:perceptual
+  - impact:ethical
+  - impact:accessibility
+  - visual:color
+  - data:quantitative
+  - data:ordinal
+  - task:rank
+  - task:trend
+  - task:direction
+  - access:color-vision-risk
+  - audience:general
+  - audience:expert
+  - medium:static
+  - medium:interactive
+
+sources:
+  - type: research
+    ref: "Bujack et al., 2018"
+    url: https://doi.org/10.1109/SciVis.2018.8823772
+    note: "Theorem 4 proves that a full hue map does not satisfy global intrinsic order because it is periodic, meaning viewers cannot reliably determine direction or rank."
+  - type: research
+    ref: "Borland & Taylor, 2007"
+    url: https://doi.org/10.1109/MCG.2007.323435
+    note: "Classic paper summarizing the perceptual problems with rainbow colormaps, such as non-uniformity and lack of perceptual ordering."
+
+tools:
+  - type: implement
+    name: ColorBrewer 2.0
+    url: https://colorbrewer2.org/
+    description: Provides a set of vetted sequential and diverging color schemes that are perceptually sound.
+  - type: validate
+    name: Viz Palette
+    url: https://projects.susielu.com/viz-palette
+    description: Tool for creating and testing color palettes for perceptual uniformity and color vision deficiency simulation.
+  - type: learn
+    name: "Cividis: A new perceptually uniform colormap"
+    url: https://www.youtube.com/watch?v=xAoljeRJ3lU
+    description: A video explaining the design and benefits of perceptually uniform colormaps.
+
+examples:
+  - type: bad
+    description: "A classic rainbow colormap used to show elevation on a map. Because red appears at both ends of the visible light spectrum, it's ambiguous whether red is high or low without a legend. Furthermore, the transitions between hues (e.g., yellow to green) create false boundaries that may not exist in the data."
+  - type: good
+    description: "A choropleth map showing unemployment rates by county using a single-hue sequential scheme (e.g., light blue to dark blue). The intuitive progression from light to dark clearly and unambiguously communicates lower to higher rates."
+---
+
+## Guidance
+
+Avoid using colormaps that cycle through the full spectrum of hues (like a classic rainbow) to represent ordered (quantitative or ordinal) data. Instead, use a sequential or diverging colormap.
+
+## Why
+
+A full hue cycle is periodic, meaning the colors at the beginning and end of the scale can be perceptually similar (e.g., red and violet in a rainbow). This breaks the perceptual order, making it impossible for a viewer to intuitively know if a value is high or low, or which of two colors represents a larger value, without constantly referencing a legend. These colormaps also introduce false boundaries and are not friendly to viewers with color vision deficiencies.
+
+## When it applies
+
+- When visualizing quantitative or ordinal data where the order of values is meaningful.
+- For tasks that rely on perceiving order, such as identifying trends, ranking values, or understanding a continuous progression.
+- When creating heatmaps, choropleth maps, or any surface plot representing a continuous variable.
+
+## Exceptions
+
+- **Cyclical Data:** For data that is inherently cyclical (e.g., direction/wind angle from 0-360 degrees, time of day), a cyclical colormap where the start and end colors are the same can be appropriate.
+- **Categorical Data:** When data is purely categorical with no inherent order, a qualitative (multi-hue) palette can be used to maximize distinguishability, though care must still be taken with the number of categories.
+
+## Trade-offs
+
+- **Fewer Distinct Steps:** Sequential palettes may feel like they have fewer distinct "steps" than a rainbow palette, which can seem less discriminating for very high-resolution data. However, this is a worthwhile trade-off for ensuring the accurate perception of order.
+
+## Signs of Trouble
+
+- **Rainbow Palette:** The chart uses a colormap with more than two or three unrelated hues in sequence (e.g., red, yellow, green, blue, purple).
+- **Order Ambiguity:** It's unclear if blue represents a "higher" or "lower" value than green without constantly checking the legend.
+- **Cyclical Confusion:** The colors at the low and high ends of the data range are perceptually similar (e.g., a rainbow map where both ends are reddish).
+- **False Contours:** The visualization shows apparent stripes or boundaries that are artifacts of the colormap, not features of the data.
+
+## How to Improve
+
+- **Quick Fix: Switch to Grayscale.** The simplest and safest sequential colormap is grayscale (black to white). It is universally understood and free of hue-related ambiguity.
+
+- **Moderate Redesign: Use a Single-Hue Sequential Palette.** Replace the rainbow colormap with a sequential colormap that varies in lightness and/or saturation within a single hue (e.g., light blue to dark blue). Tools like ColorBrewer provide vetted options.
+
+- **Comprehensive Redesign: Use a Perceptually Uniform Colormap.** Adopt a perceptually uniform colormap like Viridis, Plasma, Inferno, Cividis, or a ColorBrewer multi-hue sequential palette. These are specifically designed so that a change in the data value corresponds to a proportional perceptual change, ensuring accurate and accessible interpretation.
+
+```
+<split/>
+```md
+---
+id: monotonicity-is-not-sufficient-for-order
+title: "Do not assume a colormap is ordered just because one of its channels is monotonic"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - visual:color
+  - data:quantitative
+  - data:ordinal
+  - task:rank
+  - task:trend
+  - audience:expert
+  - medium:static
+  - medium:interactive
+
+sources:
+  - type: research
+    ref: "Bujack et al., 2018"
+    url: https://doi.org/10.1109/SciVis.2018.8823772
+    note: "Theorem 6 demonstrates via counter-example that monotonicity in a single attribute (hue, saturation, or luminance) is not sufficient to guarantee intrinsic perceptual order. The interaction between channels matters."
+
+tools:
+  - type: validate
+    name: Colormeasures
+    url: http://www.colormeasures.org
+    description: A tool developed by the paper's authors to analyze and visualize the perceptual properties of colormaps.
+  - type: validate
+    name: Vischeck
+    url: https://www.vischeck.com/
+    description: A tool for simulating color vision deficiencies, which can reveal problems in colormaps that rely on hue differences.
+
+examples:
+  - type: bad
+    description: "A colormap that is monotonic in luminance (continuously gets brighter) but also changes hue from red to yellow and back to red. The non-monotonic change in hue creates a 'flat spot' or perceived reversal in the middle, even though luminance is always increasing. This violates perceptual order."
+    url: https://raw.githubusercontent.com/vis-guides/guidelines/main/src/images/bujack-2018-fig1-center.png
+  - type: good
+    description: "The 'Viridis' colormap, which is monotonic in lightness but also carefully controls its hue and saturation progression to ensure that the perceived change is consistent across the entire range. The result is perceptually uniform."
+---
+
+## Guidance
+
+Do not assume a colormap is perceptually ordered simply because it is monotonic in one channel (e.g., strictly increasing in lightness, saturation, or hue). Perceptual order depends on the combined effect of all color channels.
+
+## Why
+
+The human visual system perceives color as a combination of hue, saturation, and lightness. A colormap can be monotonic in one of these attributes (e.g., always getting brighter) while simultaneously changing another attribute non-monotonically (e.g., hue shifts from red to yellow and back to red). This interaction can create perceptual "flat spots," bands, or even reversals, where the perceived order does not match the data order.
+
+## When it applies
+
+- When designing or selecting custom colormaps for ordered data.
+- When evaluating a colormap that claims to be "ordered" based on a single attribute.
+- In any situation requiring accurate interpretation of continuous data, such as scientific visualization, heatmaps, and surface plots.
+
+## Exceptions
+
+- **Grayscale:** A pure grayscale colormap only varies in luminance. Since other channels are constant (zero saturation), its monotonicity in luminance is sufficient to guarantee perceptual order.
+- **Single-Hue Saturation Scale:** A colormap that varies only in saturation (from gray to a single, full-saturated hue) at a constant lightness is also perceptually ordered.
+
+## Trade-offs
+
+- **Simplicity vs. Robustness:** Creating a simple monotonic ramp in one channel is easy but perceptually fragile. Designing a truly perceptually uniform colormap requires more complex tools and knowledge but results in a much more robust and reliable visualization.
+
+## Signs of Trouble
+
+- **False Contours:** The visualization shows apparent boundaries, stripes, or edges that do not exist in the data. This is a classic sign of non-uniformity in the colormap.
+- **The "Band" Test:** When looking at a smooth gradient, does the colormap appear to have distinct bands of color (e.g., a "yellow band" in the middle of a green-to-blue ramp)? This indicates a non-linear perceptual shift.
+- **The Flat Spot:** A section of the colormap where different data values are mapped to colors that are nearly indistinguishable, causing a loss of detail.
+- **The "Squint Test":** If you squint your eyes, does the colormap gradient become splotchy or uneven? A good sequential map should look like a smooth, monotonic gray gradient when you squint.
+
+## How to Improve
+
+- **Quick Fix: Use a Vetted Palette.** The easiest and most reliable solution is to discard the custom colormap and choose a pre-built, perceptually uniform palette from a trusted source like ColorBrewer 2.0 or the standard palettes in libraries like Matplotlib (Viridis, Cividis) or D3.js (d3-scale-chromatic).
+
+- **Moderate Approach: Analyze the Colormap.** Use a tool like Viz Palette or Colormeasures to plot the colormap's path through a perceptual color space (like CIELAB). Look at the plots for lightness (L*), chroma (C*), and hue (h). A good sequential colormap will have a mostly monotonic lightness profile and smooth changes in other channels.
+
+- **Comprehensive Approach: Design in a Perceptual Color Space.** When creating a custom colormap, work in a perceptual color space like CIELAB, CIELUV, or HCL. Instead of defining colors in RGB, define a path through the perceptual space that has the desired properties (e.g., monotonic lightness, controlled hue shift), and then convert the resulting colors back to RGB for display.
+
+```
+<split/>
+```md
+---
+id: use-partial-hue-for-order
+title: "Use partial hue progressions to improve discriminability in sequential colormaps"
+
+tags:
+  - impact:perceptual
+  - visual:color
+  - data:quantitative
+  - data:ordinal
+  - task:rank
+  - task:trend
+  - medium:static
+  - medium:interactive
+
+sources:
+  - type: research
+    ref: "Bujack et al., 2018"
+    url: https://doi.org/10.1109/SciVis.2018.8823772
+    note: "Theorem 5 proves that in a Euclidean color space, a hue map satisfies global intrinsic order if it does not span more than half the circle of hues. This provides the theoretical basis for using partial hue progressions in sequential and diverging palettes."
+
+tools:
+  - type: implement
+    name: "d3-scale-chromatic"
+    url: https://github.com/d3/d3-scale-chromatic
+    description: "A D3.js module that provides a variety of perceptually-backed color schemes, including multi-hue sequential palettes like Viridis and Turbo."
+  - type: learn
+    name: "How to Choose Colors for Your Data Visualizations"
+    url: https://www.data-to-viz.com/caveat/color.html
+    description: "A guide that explains the different types of color palettes, including multi-hue sequential palettes, and when to use them."
+
+examples:
+  - type: good
+    description: "The 'Viridis' colormap. It progresses from blue to green to yellow. This is a partial hue progression combined with a strong monotonic increase in lightness, creating a highly discriminable and perceptually ordered scale."
+  - type: bad
+    description: "A colormap that attempts to show order by progressing from yellow to purple to green. This path jumps across the color wheel, creating a non-monotonic hue progression that is not perceptually ordered."
+---
+
+## Guidance
+
+To increase the number of discernible steps in a sequential colormap, use a palette that combines a monotonic change in lightness with a smooth, partial progression in hue.
+
+## Why
+
+While a full hue cycle is not ordered, a segment of the hue circle (spanning less than 180 degrees) is perceptually ordered. Incorporating a limited, monotonic hue shift (e.g., from blue to green to yellow) into a sequential colormap increases the total perceptual distance between colors. This makes it easier for viewers to distinguish between nearby values compared to a colormap that only varies in lightness.
+
+## When it applies
+
+- When visualizing continuous data with high resolution, where you need to see subtle variations.
+- When a single-hue sequential palette does not provide enough visual distinction across the range.
+- For creating effective sequential and diverging colormaps.
+
+## Exceptions
+
+- **Grayscale is sufficient:** If the data has low resolution or if simplicity is the highest priority, a simple grayscale or single-hue palette may be perfectly adequate and less distracting.
+- **Brand constraints:** If you are constrained to a specific brand palette that does not include a multi-hue progression, this may not be an option.
+
+## Trade-offs
+
+- **Increased Complexity:** A multi-hue sequential palette is more complex than a single-hue one and, if poorly designed, can introduce artifacts. It's crucial to use well-vetted palettes.
+- **Potential Distraction:** The change in hue can be more visually stimulating than a simple lightness ramp, which might be distracting in some contexts.
+
+## Signs of Trouble
+
+- **Low Discriminability:** In a single-hue or grayscale map, large ranges of data are mapped to colors that are visually indistinguishable.
+- **Hue Jumping:** The colormap's hue progression is not smooth or monotonic. For example, it goes from blue to red to green, jumping across the color wheel instead of moving smoothly along it.
+- **Full Rainbow:** The hue progression spans the entire color wheel, violating the "partial progression" rule and destroying the perceptual order.
+
+## How to Improve
+
+- **Quick Fix: Choose a Vetted Multi-Hue Palette.** Switch from a single-hue palette (e.g., "Blues" from ColorBrewer) to a multi-hue sequential palette (e.g., "YlGnBu" from ColorBrewer or "Viridis" from Matplotlib/D3). These are designed to have the desired properties.
+
+- **Moderate Approach: Design a Diverging Palette.** For data with a critical midpoint (like zero), use a diverging palette. These are effectively two different partial hue progressions moving away from a neutral, light color in the center (e.g., blue-to-gray-to-red).
+
+- **Comprehensive Approach: Create a Custom HCL-Based Palette.** Use a tool or library that supports the HCL (Hue-Chroma-Luminance) color space. Design a colormap by defining a start and end point and creating a linear interpolation between them in HCL space. This allows you to create a smooth, partial hue progression while ensuring lightness remains monotonic.
+
+```
+<split/>
+```md
+---
+id: luminance-and-saturation-are-ordered
+title: "Use luminance or saturation ramps for ordered data"
+
+tags:
+  - impact:perceptual
+  - visual:color
+  - data:quantitative
+  - data:ordinal
+  - task:rank
+  - task:trend
+  - audience:general
+  - access:color-vision-risk
+
+sources:
+  - type: research
+    ref: "Bujack et al., 2018"
+    url: https://doi.org/10.1109/SciVis.2018.8823772
+    note: "Theorem 3 states that in a path metric space, shortest paths (like a pure luminance ramp or saturation ramp) are intrinsically ordered. This provides a strong theoretical foundation for using grayscale and single-hue saturation scales."
+  - type: research
+    ref: "Ware, 2012"
+    url: https://www.elsevier.com/books/information-visualization/ware/978-0-12-381464-7
+    note: "Ware emphasizes that a monotonic change in luminance is important for seeing the overall form of data (a qualitative task)."
+
+tools:
+  - type: implement
+    name: ColorBrewer 2.0
+    url: https://colorbrewer2.org/
+    description: "Provides pre-vetted single-hue sequential palettes that primarily rely on luminance and saturation ramps."
+  - type: learn
+    name: "A Guide to Datawrapper's Sequential Palettes"
+    url: https://blog.datawrapper.de/colorguide-sequential-palettes/
+    description: "Explains the logic and use of sequential palettes, many of which are based on luminance/saturation ramps."
+
+examples:
+  - type: good
+    description: "A grayscale heatmap showing website clicks. The progression from light gray (few clicks) to black (many clicks) provides an intuitive, unambiguous, and perceptually ordered representation of the data."
+  - type: good
+    description: "A choropleth map using a single-hue saturation ramp, from gray to a deep blue, to show vaccination rates. The increasing 'amount of color' is easily interpreted as an increasing rate."
+---
+
+## Guidance
+
+For representing ordered data, use colormaps that follow a simple luminance ramp (grayscale) or a saturation ramp (from a neutral gray to a saturated hue). These are fundamentally and intuitively perceived as ordered.
+
+## Why
+
+The human visual system naturally and pre-attentively processes variations in lightness and saturation as indicators of magnitude. "More light" (or "more dark") and "more color" are intuitively mapped to "more value." These simple ramps are mathematically "shortest paths" in perceptual color space, which gives them a strong, intrinsic order that is robust and easy to interpret.
+
+## When it applies
+
+- When clarity and unambiguous order are the top priorities for a visualization.
+- When visualizing quantitative or ordinal data for a general audience.
+- As a safe, default choice for any sequential data.
+- When creating accessible visualizations, as luminance is the primary channel perceived by all viewers, including those with color vision deficiencies.
+
+## Exceptions
+
+- **Low Discriminability:** A pure luminance or saturation ramp may not provide enough visually distinct steps to reveal very subtle variations in high-resolution data. In these cases, a multi-hue sequential palette might be better.
+- **Aesthetic Goals:** A simple grayscale or single-hue palette may be perceived as less aesthetically engaging than a more colorful alternative. This may be a valid reason to choose another option if the primary goal is engagement rather than precise analysis.
+
+## Trade-offs
+
+- **Discriminability vs. Order:** These simple ramps provide the clearest sense of order but may offer fewer just-noticeable-differences than a multi-hue sequential palette. You trade some discriminability for maximum clarity of order.
+
+## Signs of Trouble
+
+- **Complex Palette for Simple Data:** You are using a complex rainbow or multi-hue palette to show a simple ordered sequence, introducing unnecessary ambiguity.
+- **Accessibility Failures:** A colorblindness simulator reveals that your chosen multi-hue palette loses its apparent order for viewers with deuteranopia or protanopia.
+- **Viewer Confusion:** Viewers are unsure about the order of values and must constantly refer to the legend.
+
+## How to Improve
+
+- **Quick Fix: Switch to Grayscale.** The simplest way to ensure perceptual order is to use a grayscale colormap. This removes all hue-related ambiguity and is universally accessible.
+
+- **Moderate Approach: Use a Single-Hue Sequential Palette.** Choose a palette from a tool like ColorBrewer that uses a single hue (e.g., "Reds", "Blues", "Greens"). These palettes primarily work by varying lightness and saturation, providing a clear order with an added layer of hue information.
+
+- **Comprehensive Approach: Combine with a Partial Hue Shift.** If more discriminability is needed, use a perceptually uniform multi-hue sequential palette (like Viridis or YlGnBu). These palettes are built upon a strong, monotonic luminance ramp but add a controlled, partial hue shift to increase the number of distinct steps while preserving the fundamental order.

@@ -1,0 +1,205 @@
+```md
+---
+id: challenge-universal-visual-channel-rankings
+title: "Challenge the universal ranking of visual channels"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - impact:ethical
+  - chart:bar
+  - chart:line
+  - chart:scatter
+  - chart:pie
+  - task:compare
+  - task:lookup
+  - task:rank
+  - data:quantitative
+  - visual:position
+  - visual:length
+  - visual:area
+  - visual:angle
+  - visual:color
+  - medium:screen
+  - access:cognitive-load-risk
+
+sources:
+  - type: research
+    ref: McColeman et al., 2022
+    url: https://doi.org/10.1109/TVCG.2021.3114684
+    note: "Demonstrates that classic visual channel rankings (e.g., from Cleveland & McGill) do not hold for memory-based reproduction tasks and vary significantly with the number of marks and specific data values."
+  - type: research
+    ref: Cleveland & McGill, 1984
+    url: https://doi.org/10.1080/01036564.1984.10555259
+    note: "The foundational work establishing a ranking of visual channels based on two-value ratio-judgment tasks, which this guideline suggests using with caution."
+
+---
+
+## Guidance
+
+Do not assume a single, universal ranking of visual channels (e.g., position is always better than length, which is always better than angle) is applicable to all visualization tasks. The effectiveness of a visual channel is highly dependent on the user's task, the number of data points, and the specific values being shown.
+
+## Why
+
+Classic rankings of visual channels were derived from simple tasks, like judging the ratio between two marks. Research shows these rankings do not hold for more complex, memory-intensive tasks, such as recalling and reproducing a series of values. For these tasks, other factors like the number of items to remember (cognitive load) and their distribution have a much larger impact on performance than the choice of visual channel. For example, `angle` can be less biased than `position (line)` in a memory task, reversing the traditional ranking.
+
+## When it applies
+
+- When the user's task involves more than just a simple, immediate comparison of two values.
+- When the task requires memory, such as comparing a chart to one seen previously or recalling values after looking away.
+- When displaying more than 2-4 data points, as the influence of working memory limitations becomes dominant.
+- When deciding between chart types and optimizing for a specific perceptual metric (e.g., minimizing bias vs. maximizing precision).
+
+## Exceptions
+
+- For simple, immediate perceptual tasks, such as judging which of two adjacent bars in a bar chart is taller, the classic rankings (position > length) are generally reliable and serve as a strong starting point.
+- When a specific organizational or branding style guide mandates a certain chart type, though the perceptual limitations should still be acknowledged.
+
+## Trade-offs
+
+- **Clarity vs. Simplicity:** Relying on a simple universal ranking is easy but can lead to suboptimal or misleading charts. Considering the specific context requires more effort but results in more effective visualizations.
+- **Optimizing for Bias vs. Precision:** The "best" channel may differ depending on what you optimize for. For example, bubble charts (`area`) can be surprisingly precise (consistent responses) but also highly biased (consistently wrong). Bar charts (`position`) may be less biased but also less precise under certain conditions.
+
+## Signs of Trouble
+
+- **Dogmatic Design:** A design process that defaults to a specific chart type (e.g., "always use a bar chart because position is best") without considering the task or data complexity.
+- **Mismatched Performance:** Users can easily perform simple judgments (e.g., "which is biggest?") but struggle to recall values, summarize distributions, or compare multiple points from memory.
+- **Surprising Errors:** Observing that users make systematic errors on a chart type that is theoretically "good" (e.g., consistently underestimating values in a line chart).
+
+## How to Improve
+
+- **Quick Approach: Acknowledge the Task.** Before choosing a chart, clearly define the primary question you want the user to answer. If it involves memory or comparing more than two values, be skeptical of simple ranking heuristics.
+
+- **Moderate Approach: Choose Based on Error Tolerance.** Decide if your application is more sensitive to bias (systematic error, e.g., always underestimating) or imprecision (random error). The research shows that `angle` and `length` can be less biased, while `area` can be more precise. Choose the channel that aligns with your tolerance for different error types.
+
+- **Comprehensive Approach: Prototype and Test.** For critical applications, create versions of the visualization using different visual channels and test them with representative users on the specific task they need to perform. This is the most reliable way to determine the optimal encoding for your unique context.
+```
+<split/>
+```md
+---
+id: limit-marks-for-memory-tasks
+title: "Limit the number of discrete marks for tasks requiring memory"
+
+tags:
+  - impact:cognitive
+  - impact:perceptual
+  - task:lookup
+  - task:compare
+  - data:quantitative
+  - data:cardinality.high
+  - access:cognitive-load-risk
+  - chart:bar
+  - chart:line
+  - chart:scatter
+
+sources:
+  - type: research
+    ref: McColeman et al., 2022
+    url: https://doi.org/10.1109/TVCG.2021.3114684
+    note: "Found that the number of data points ('marks') had an order of magnitude more influence on performance (error, bias, precision) than the choice of visual channel, due to visual working memory limits."
+
+---
+
+## Guidance
+
+Recognize that the number of data points shown in a chart has a more significant impact on a user's ability to recall information than the choice of visual channel (e.g., position, length, area). Performance degrades sharply when a chart contains more than 4-8 distinct values.
+
+## Why
+
+Human visual working memory is severely limited, typically to around 3-4 items. When a user looks at a chart and then looks away (or even moves their eyes to a different part of the chart), they can only hold a few specific values in memory. As the number of marks increases, errors, biases, and imprecision in recall all increase dramatically, regardless of how well the data is encoded. For example, every visual channel tested was less effective for 8 marks than for 4 marks.
+
+## When it applies
+
+- When users need to remember specific values from a chart to perform a comparison or make a decision.
+- When designing dashboards or reports where users will glance at a chart and are expected to extract and retain information.
+- For any task that is not an immediate, direct comparison within a single fixation, such as comparing trends or distributions across multiple charts.
+
+## Exceptions
+
+- When the primary task is to get a "gist" or see the overall shape of the distribution, rather than recalling individual values.
+- In highly interactive systems where users can hover to see exact values, offloading the memory requirement to the tool. However, this doesn't help with comparisons that require remembering a value from one part of the chart while looking at another.
+- For statistical charts like histograms or box plots, which are designed to summarize large numbers of marks.
+
+## Trade-offs
+
+- **Detail vs. Clarity:** Showing all data points provides complete detail but can overwhelm cognitive capacity, making the chart unusable for memory-based tasks. Summarizing or filtering data improves clarity at the cost of granular detail.
+- **Granularity vs. Scalability:** Charts with few marks are easy to read but don't scale to large datasets. Techniques to handle more marks (like aggregation) are necessary but change the nature of the task from individual lookup to summary analysis.
+
+## Signs of Trouble
+
+- **Information Overload:** The chart appears cluttered and dense, making it difficult to isolate or focus on any single data point.
+- **The "Glaze Over" Effect:** Users look at the chart but are unable to answer specific questions about the data without re-examining it multiple times.
+- **Inability to Compare:** Users struggle to compare values that are not physically adjacent, as they cannot hold one value in memory while looking at the other.
+- **Reliance on Legend:** Users constantly have to look back and forth between the chart and a legend or table to make sense of the data.
+
+## How to Improve
+
+- **Quick Fix: Filter or Reduce.** The most direct solution is to reduce the number of marks. Show only the most important data points (e.g., top 5, outliers, start/end points) and aggregate the rest.
+
+- **Moderate Redesign: Use Small Multiples.** Instead of putting all marks on one chart, break the data into smaller, related charts (small multiples). Each chart will have fewer marks, making it easier to process within working memory limits. This facilitates comparison across categories.
+
+- **Comprehensive Redesign: Aggregate and Summarize.** If individual values are not critical, switch to a chart type that summarizes the distribution. For example, instead of a strip plot with 50 points, use a box plot, histogram, or density plot to show the summary statistics (mean, median, spread), which are easier to perceive and remember.
+```
+<split/>
+```md
+---
+id: avoid-line-charts-for-absolute-value-recall
+title: "Avoid line charts when users must recall absolute point values"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:line
+  - task:lookup
+  - task:compare
+  - data:quantitative
+  - data:temporal
+  - visual:position
+
+sources:
+  - type: research
+    ref: McColeman et al., 2022
+    url: https://doi.org/10.1109/TVCG.2021.3114684
+    note: "In a memory-based reproduction task, position-on-a-line performed worst across all metrics (bias, precision, and error), especially compared to position-on-a-bar, suggesting people encode trend/shape over absolute values."
+
+---
+
+## Guidance
+
+Be cautious using line charts for tasks that require users to accurately remember and recall the absolute values of individual data points. In memory-based tasks, bar charts or dot plots are significantly more effective for this purpose.
+
+## Why
+
+While both line charts and bar charts use the visual channel of position, they are perceived differently. A line chart connects points, encouraging the perception of a continuous shape, trend, or slopes between points. In memory-based tasks, users tend to encode this overall shape rather than the absolute vertical position of each individual point. This leads to high error and systematic bias (e.g., underestimation) when they try to reproduce the absolute values. In contrast, discrete marks like bars or dots encourage perception of individual magnitudes.
+
+## When it applies
+
+- The primary task for the user is to look at the chart, remember the value of one or more specific data points, and then use that information for comparison or decision-making.
+- When accuracy of absolute magnitudes is more important than the perception of overall trend or rate of change.
+- When designing static charts or dashboards where users cannot hover to see exact values.
+
+## Exceptions
+
+- When the primary task is to communicate the overall trend, shape, or pattern of change over a continuous variable (like time). Line charts are exceptionally effective for this.
+- In highly interactive charts where tooltips provide precise values on demand, thus offloading the memory requirement.
+- When comparing the slopes or rates of change between multiple series, for which line charts are ideal.
+
+## Trade-offs
+
+- **Trend vs. Magnitude:** Line charts excel at showing trends but are poor for recalling discrete magnitudes. Bar charts excel at discrete magnitudes but can be less effective for showing the continuous shape of a trend. The choice depends on which aspect of the data is more important to communicate.
+- **Connectedness vs. Discreteness:** The connecting line in a line chart implies a relationship between adjacent points, which is useful for continuous data but misleading for discrete categories.
+
+## Signs of Trouble
+
+- **"Shape" Recall, "Value" Error:** Users can accurately describe the overall pattern ("it went up, then down sharply") but are highly inaccurate when asked to estimate the value at the peak or trough.
+- **Systematic Underestimation:** Users consistently recall the values of points on a line chart as being lower than they actually were.
+- **Comparison Failures:** Users struggle to accurately compare the value of a point at the beginning of a line chart with a point at the end, because they are primarily encoding the local slopes, not the absolute positions.
+
+## How to Improve
+
+- **Quick Fix: Add Point Markers.** Add visible dots or markers to each data point on the line chart. This helps to visually emphasize the individual points and slightly improves the perception of their discrete values.
+
+- **Moderate Redesign: Switch to a Dot Plot or Bar Chart.** If recalling absolute values is the primary goal, the most effective change is to switch the chart type. Use a bar chart (for categorical data) or a dot plot (for either categorical or continuous data) to encode values using position on a common baseline without a connecting line.
+
+- **Comprehensive Approach: Provide Both Views.** If both trend and absolute magnitude are important, consider providing both a line chart and a bar chart. This can be done via small multiples or an interactive control that allows the user to toggle between the two views, letting them use the best chart for their specific task at any given moment.
+```

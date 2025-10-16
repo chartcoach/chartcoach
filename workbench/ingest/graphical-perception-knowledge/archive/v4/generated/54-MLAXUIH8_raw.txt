@@ -1,0 +1,159 @@
+```md
+---
+id: start-axis-at-zero-for-magnitude
+title: "Start quantitative axes at zero for bar and line charts to avoid exaggerating change"
+tags:
+  - impact:perceptual
+  - impact:ethical
+  - impact:logos
+  - chart:bar
+  - chart:line
+  - task:compare
+  - task:trend
+  - data:quantitative
+  - medium:static
+  - medium:screen
+sources:
+  - type: research
+    ref: "Correll et al., 2020"
+    url: "https://doi.org/10.1145/3313831.3376222"
+    note: "Experiments 1, 2, and 3 consistently showed that y-axis truncation significantly increased the perceived severity of effect sizes in both bar and line charts."
+examples:
+  - type: bad
+    url: https://i.imgur.com/n1f1WJ7.png
+    caption: Truncated Y-Axis
+    description: "This infamous Fox News chart truncates the y-axis to make a 4.6% increase in the tax rate look like a 6-fold increase. The non-zero baseline dramatically exaggerates the difference."
+  - type: good
+    url: https://i.imgur.com/8YlE145.png
+    caption: Zero-based Y-Axis
+    description: "The same data with a y-axis that starts at zero. The change is now correctly represented as a small increase, accurately reflecting the data's magnitude."
+---
+## Guidance
+For bar charts and line charts where the primary goal is to communicate the magnitude of values or the size of a change, the quantitative axis (usually the y-axis) must start at zero.
+
+## Why
+Starting the axis at a non-zero value truncates the bars or lines, which perceptually exaggerates the differences between data points. This leads viewers to believe that changes or differences are more significant than they actually are. Research shows this is a powerful perceptual bias that occurs in both bar and line charts and is not simply a matter of misreading labels.
+
+## When it applies
+- When creating a bar or line chart to show and compare absolute magnitudes.
+- When the audience may not be an expert in the data and could be misled by the magnified visual effect.
+- When encoding values using length or height as the primary visual channel.
+
+## Exceptions
+- When showing small but critical fluctuations that would be invisible on a zero-based scale (e.g., stock price changes, body temperature). In these cases, the truncation should be explicit and the context must justify the focus on small changes.
+- For chart types where the goal is to show deviation from a meaningful non-zero baseline, such as index charts (showing percent change from a start date) or statistical process control charts (showing deviation from a mean).
+- When the data has no meaningful zero point (e.g., temperature in Celsius or Fahrenheit).
+
+## Trade-offs
+- **Clarity vs. Detail:** Starting the axis at zero provides an honest representation of magnitude but can sometimes make small, important variations in the data difficult to see. Truncating the axis highlights these variations but at the cost of distorting their overall significance.
+
+## Signs of Trouble
+- **Dramatic Slopes for Small Changes:** A line chart shows a very steep incline or decline, but the axis labels reveal the total change is only a few percentage points.
+- **Disproportionate Bars:** In a bar chart, one bar appears twice as tall as another, but its data value is not twice as large.
+- **Non-Zero Baseline:** The y-axis of a bar chart showing raw totals or amounts begins at any value other than 0.
+
+## How to Improve
+- **Quick Fix: Reset the Axis.** The most direct fix is to change the axis minimum to 0.
+
+- **Moderate Approach: Add Context.** If a truncated axis is necessary to show detail, add explicit annotations to provide numerical context that can temper the misleading visual. For example, add a clear title ("A Small but Critical 1.5% Drop in Q3 Engagement") or label the percentage change directly on the chart.
+
+- **Comprehensive Approach: Change the Chart.** If the goal is to highlight a small change, consider creating a chart that visualizes the *change itself*. A separate bar chart showing the *delta* (the difference between values) can be properly zero-based and honestly represent the magnitude of the change.
+```
+<split/>
+```md
+---
+id: broken-axis-indicators-are-ineffective
+title: "Do not rely on broken-axis indicators to fix the perceptual bias of a truncated axis"
+tags:
+  - impact:perceptual
+  - impact:ethical
+  - chart:bar
+  - task:compare
+  - task:trend
+  - data:quantitative
+sources:
+  - type: research
+    ref: "Correll et al., 2020"
+    url: "https://doi.org/10.1145/3313831.3376222"
+    note: "Experiment 2 found no significant difference in perceived severity between standard truncated bar charts and those with broken-axis or gradient-fill indicators, showing these cues do not correct the perceptual bias."
+examples:
+  - type: bad
+    caption: A bar chart with a broken-axis glyph.
+    description: "This chart uses a truncated y-axis but adds a 'break' symbol to indicate the non-zero baseline. While this signals transparency, it does not prevent the viewer from perceptually exaggerating the differences between the bars."
+---
+## Guidance
+Avoid using a truncated axis and then attempting to "fix" it with a visual indicator like a broken-axis symbol (`~` or `//`) or a gradient fill. These visual elements do not correct the perceptual exaggeration of change.
+
+## Why
+Visual indicators signal that a truncation has occurred, but they do not de-bias the viewer. People still perceive the exaggerated effect size caused by the non-zero baseline, even when the truncation is explicitly marked. The brain processes the magnified visual difference in bar heights or line slopes regardless of the warning symbol on the axis.
+
+## When it applies
+- When designing a bar chart or line chart with a non-zero baseline.
+- When you are tempted to truncate an axis to show detail but feel you should add an indicator to be "honest."
+
+## Exceptions
+While these indicators don't fix the perceptual bias, they can serve as a signal of **transparency**, showing the designer is intentionally truncating the axis and not trying to hide it. This is a matter of authorial ethos, but it's critical to understand that the misleading perceptual effect remains.
+
+## Trade-offs
+- Using an indicator adds visual complexity without solving the core perceptual problem. It creates a false sense of "honesty" while allowing the perceptual distortion to persist.
+
+## Signs of Trouble
+- **The "It's Okay, I Labeled It" Fallacy:** You've truncated an axis but believe it's acceptable simply because you added a "break" symbol.
+- **Justified Deception:** A chart uses a dramatic truncated scale but includes a tiny, hard-to-see axis break as a fig leaf for the exaggeration.
+
+## How to Improve
+- **Quick Fix: Remove the Indicator and Fix the Axis.** The best course of action is to remove the ineffective indicator and set the axis to start at zero.
+
+- **Comprehensive Approach: Reframe the Data.** Instead of indicating a break on a truncated chart, choose a chart type or framing that doesn't require one. To show small changes, create a separate chart of the *change itself* (a delta chart) which can be properly zero-based, or switch to a dot plot where position is not dependent on a zero-baseline.
+```
+<split/>
+```md
+---
+id: select-axis-range-as-rhetorical-choice
+title: "Intentionally select the y-axis range to frame the data's importance"
+tags:
+  - impact:ethical
+  - impact:pathos
+  - impact:logos
+  - chart:bar
+  - chart:line
+  - chart:scatter
+  - task:trend
+  - task:compare
+  - audience:general
+sources:
+  - type: research
+    ref: "Correll et al., 2020"
+    url: "https://doi.org/10.1145/3313831.3376222"
+    note: "The authors conclude by rejecting a simple 'honest' vs. 'dishonest' dichotomy, arguing designers have a responsibility to consider and control the perceived effect size by selecting the axis range."
+---
+## Guidance
+Recognize that choosing the y-axis range is a powerful rhetorical act, not a neutral technical setting. You are deciding how significant the data's variations should appear. There is no universally "honest" scale; the choice depends on the story you are telling and the real-world meaning of the data.
+
+## Why
+The perceived effect size is directly controlled by the y-axis range. A wide range (e.g., starting at zero) minimizes the perceived visual effect, while a narrow, truncated range amplifies it. Instead of searching for a single "correct" scale, designers must consciously weigh this trade-off and take responsibility for the resulting perception their chart creates.
+
+## When it applies
+- Always, when designing a chart with a quantitative axis (e.g., bar, line, area, scatter plot).
+- When deciding whether to start an axis at zero or to truncate it to show more detail.
+
+## Exceptions
+None. This is a fundamental principle about the designer's mindset and responsibility, which always applies.
+
+## Trade-offs
+- **Detail vs. Context:** Highlighting small fluctuations (with a truncated axis) sacrifices the "big picture" context of the overall magnitude. Showing the big picture (with a zero-based axis) can obscure small but meaningful details.
+- **Rhetorical Goal vs. "Neutrality":** A zero-baseline is often seen as more neutral, but it is also a rhetorical choice that downplays variation. Choosing to amplify variation is also a valid rhetorical choice, provided it is done intentionally and ethically.
+
+## Signs of Trouble
+- **Default Settings:** Accepting the default axis range from your software without considering its rhetorical impact.
+- **Seeking a Single Rule:** Looking for a simple, universal rule (e.g., "always start at zero" or "always show the data range") without considering the specific data story.
+- **Unintended Exaggeration:** A chart makes a minor business fluctuation look like a catastrophic event, causing undue alarm.
+- **Unintended Minimization:** A chart makes a critical public health trend look flat and insignificant, causing undue complacency.
+
+## How to Improve
+- **Minimal: Self-Critique.** Before publishing, ask yourself: "Does the visual prominence of the change in this chart match its real-world importance?" Adjust the axis range to better align the visual with the contextual meaning.
+
+- **Moderate: Add Framing Text.** Write a descriptive title, subtitle, or annotation that frames the data for the reader. For example, a chart with a dramatic truncated axis could have a title like "A Small but Steady Increase: Quarterly Profits Rise 0.5%." This provides verbal context to temper the visual.
+
+- **Comprehensive: Test with Users.** Show your chart to a few colleagues or target users. Ask them "What is the main takeaway from this chart?" or "How significant does this change seem to you?" If their perception doesn't match the intended message, adjust the axis range or chart design.
+```

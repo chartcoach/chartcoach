@@ -1,0 +1,367 @@
+```md
+---
+id: avoid-bar-charts-for-mean-aggregation
+title: "Use point charts instead of bar charts for judging average values"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - impact:ethical
+  - chart:bar
+  - chart:scatter
+  - task:summary-mean
+  - task:aggregate
+  - data:quantitative
+  - audience:general
+  - medium:static
+  - medium:screen
+
+evidence:
+  strength: medium
+  summary: "Godau et al. (2016) found in a series of experiments that viewers systematically underestimate the average of values presented in a bar chart, a bias not present in point charts."
+
+sources:
+  - type: research
+    ref: Godau, Vogelgesang, & Gaschler, 2016
+    url: https://doi.org/10.1016/j.chb.2016.01.036
+    note: "Primary experimental evidence demonstrating systematic underestimation of the mean in bar charts compared to point charts."
+    role: primary
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://arxiv.org/abs/2109.01271v3
+    note: "Review paper that discusses systematic bias in bar charts (Table 8) and synthesizes findings from papers like Godau et al."
+    role: supporting
+
+examples:
+  - type: bad
+    description: "A bar chart used to show the distribution of values, from which a viewer might try to infer the average. The filled area of the bars encourages a biased, lower perception of the mean."
+  - type: good
+    description: "A dot plot (or a 1D scatterplot) showing the same data. By using points instead of bars, the visualization avoids the perceptual bias and allows for a more accurate estimation of the average."
+---
+
+## Guidance
+
+To help viewers accurately judge the average (mean) of a set of values, use a point chart (dot plot) or scatterplot rather than a bar chart.
+
+## Why
+
+Viewers systematically underestimate the average value of a set of bars. This perceptual bias is robust and occurs because people's attention is drawn to the center of mass of the bars, not their top edges which actually encode the values. This leads to a perceived average that is consistently lower than the true average. Point-based charts do not suffer from this bias.
+
+### Core Principle
+
+Make the most important visual judgments easy and accurate. If the task is to judge an average, the chart type should not introduce a systematic perceptual error into that judgment.
+
+## When it applies
+
+- When the primary task for the viewer is to estimate, judge, or compare the overall average of a group of values.
+- When presenting distributions of quantitative data where the central tendency is a key takeaway.
+
+## Exceptions
+
+- If the primary task is to look up individual values or compare specific pairs of values (not the overall average), a bar chart is often effective. The underestimation bias is specific to the aggregation task of judging the mean.
+- When bar charts are a strong convention for a specific audience, and the cost of violating that convention is high. In this case, mitigate the issue by adding an explicit reference line for the average.
+
+## Trade-offs
+
+- **Familiarity:** Bar charts are extremely common and familiar to a general audience. A dot plot may be slightly less familiar, potentially requiring a brief moment of orientation for some viewers.
+- **Visual Weight:** Bars have a greater visual weight than points, which can sometimes be used to emphasize magnitude. This is lost when switching to a dot plot.
+
+## Signs of Trouble
+
+- **Exclusive use of bar charts:** The visualization relies solely on bar charts for showing distributions where the mean is a key feature.
+- **Misleading comparisons:** A design decision (e.g., choosing a bar chart over a dot plot) leads to inaccurate conclusions about the data's central tendency, even if the data is plotted correctly.
+
+## How to Improve
+
+- **Quick Fix: Add a Reference Line.** If you must use a bar chart, add a clearly labeled horizontal line that explicitly marks the average value. This gives viewers a direct and unbiased visual anchor, overriding their biased perceptual judgment.
+
+- **Comprehensive Redesign: Switch to a Point-Based Chart.** Replace the bar chart with a dot plot or a 1D scatterplot. This directly addresses the root cause of the bias by removing the filled areas of the bars. This is the most effective way to ensure viewers can accurately perceive the average.
+
+```
+
+<split/>
+
+```md
+---
+id: prefer-position-for-quantitative-data
+title: "Encode quantitative data with position, not length, angle, or area"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:bar
+  - chart:scatter
+  - chart:dot-plot
+  - chart:pie
+  - chart:bubble
+  - task:compare
+  - task:rank
+  - task:lookup
+  - data:quantitative
+  - visual:position
+  - visual:length
+  - visual:angle
+  - visual:area
+  - audience:general
+
+evidence:
+  strength: high
+  summary: "Cleveland & McGill's foundational 1984 study, replicated many times through 2023, established a clear perceptual hierarchy where position along a common scale is the most accurate visual channel for quantitative comparisons."
+
+sources:
+  - type: research
+    ref: Cleveland & McGill, 1984
+    url: https://doi.org/10.2307/2288400
+    note: "Foundational study establishing the perceptual ranking of elementary graphical tasks."
+    role: primary
+  - type: research
+    ref: Heer & Bostock, 2010
+    url: https://doi.org/10.1145/1753326.1753357
+    note: "Crowdsourced replication study that confirmed the original findings of Cleveland & McGill."
+    role: supporting
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://arxiv.org/abs/2109.01271v3
+    note: "Synthesizes the literature, confirming this principle remains a cornerstone of visualization design (Table 3)."
+    role: related
+
+examples:
+  - type: bad
+    description: "A pie chart comparing market share. Viewers must compare angles, which is a perceptually inaccurate task, especially for small differences."
+  - type: good
+    description: "A bar chart showing the same market share data. Viewers can easily and accurately compare the bar endpoints, which are aligned to a common baseline (the x-axis)."
+---
+
+## Guidance
+
+For tasks requiring accurate comparison or judgment of quantitative values, encode the data using position along a common scale (e.g., bar charts, dot plots, scatterplots). Avoid encoding quantitative data with length, angle (e.g., pie charts), or area (e.g., bubble charts), as these are perceived less accurately.
+
+## Why
+
+Humans are significantly more accurate at judging differences in position along a common axis than they are at judging differences in length, angle, or area. This principle, known as perceptual ranking, is a foundational finding in visualization research. Using a more accurate channel like position reduces the risk of misinterpretation and allows viewers to make more precise judgments about the data.
+
+### Core Principle
+
+Humans judge quantities more accurately by comparing positions along a common scale than by comparing angles, areas, or colors.
+
+## When it applies
+
+- When the primary goal is to enable viewers to accurately compare, rank, or look up quantitative values.
+- When designing charts like bar charts, line charts, scatterplots, pie charts, or bubble charts.
+
+## Exceptions
+
+- **Showing Part-to-Whole:** When the *only* goal is to show a part-to-whole relationship and the number of slices is very small (2-3), a pie chart can be acceptable, as it strongly affords the "parts-of-a-whole" interpretation. However, a stacked bar chart often works as well or better.
+- **Geographic Data:** When using area to encode a value on a map (e.g., a cartogram), the area is tied to a recognizable shape, which can be acceptable if the primary goal is to show a general geographic pattern rather than precise comparisons.
+
+## Trade-offs
+
+- **Space:** Charts that use position effectively (like bar charts) can sometimes take up more space than area-based charts (like treemaps or packed bubble charts).
+- **Familiarity/Engagement:** In some non-analytical contexts, charts like pie charts or bubble charts might be perceived as more engaging or familiar, even if they are less perceptually accurate.
+
+## Signs of Trouble
+
+- **Pie or Donut Chart:** A pie or donut chart is used to compare values, especially with more than 3-4 slices.
+- **Bubble Chart:** A bubble chart is used for anything other than showing a general impression of magnitude distribution.
+- **"Which is bigger?":** Viewers struggle to determine which slice or bubble is larger, especially when the differences are small.
+- **Inaccurate Takeaways:** Viewers draw incorrect conclusions about the relative magnitude of different categories.
+
+## How to Improve
+
+- **Quick Fix: Add Direct Labels.** If you must use a pie or bubble chart, add direct data labels (e.g., "42%") to each element. This provides an "escape hatch" for viewers, allowing them to read the exact values instead of relying on their inaccurate perceptual judgment of angle or area.
+
+- **Comprehensive Redesign: Switch to a Position-Based Chart.** The most effective fix is to change the chart type.
+  - If you have a **pie chart**, convert it to a **bar chart**.
+  - If you have a **bubble chart**, consider a **bar chart** or a **dot plot**.
+  This ensures the quantitative values are encoded using the most perceptually accurate channel.
+
+```
+
+<split/>
+
+```md
+---
+id: use-saturation-for-ordinal-data
+title: "Use color saturation or brightness for ordinal data, not hue"
+
+tags:
+  - impact:perceptual
+  - impact:accessibility
+  - visual:color
+  - data:ordinal
+  - data:quantitative
+  - chart:heatmap
+  - chart:map.choropleth
+  - task:rank
+  - task:direction
+  - access:color-vision-risk
+
+evidence:
+  strength: high
+  summary: "Foundational theoretical models of expressiveness (Mackinlay, 1986) and extensive empirical research show that saturation and brightness are perceived as ordered, while hue is not. Using sequential color schemes improves task performance for ordered data."
+
+sources:
+  - type: research
+    ref: Mackinlay, 1986
+    url: https://doi.org/10.1145/22949.22950
+    note: "Defines the expressiveness principle, stating that visual encodings should match the perceptual character of the data. Recommends against using hue for ordered data."
+    role: primary
+  - type: research
+    ref: Bujack et al., 2018
+    url: https://doi.org/10.1109/TVCG.2018.2816551
+    note: "Provides a theoretical framework for assessing colormaps, confirming that hue is not inherently ordered."
+    role: supporting
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://arxiv.org/abs/2109.01271v3
+    note: "Review paper that summarizes the consensus: 'CH [Color Hue] is not expressive for representing ordinal data, and CS [Color Saturation] performs better than CH'."
+    role: related
+
+tools:
+  - type: implement
+    name: ColorBrewer
+    url: https://colorbrewer2.org/
+    description: "A widely used tool for selecting perceptually-sound sequential, diverging, and qualitative color palettes."
+  - type: validate
+    name: Viz Palette
+    url: https://projects.susielu.com/viz-palette
+    description: "Allows you to create and test color palettes, including simulating for color vision deficiencies."
+
+examples:
+  - type: bad
+    description: "A map showing unemployment rate by county using a rainbow color scheme. It's impossible to tell if red is higher or lower than green without constantly checking the legend."
+  - type: good
+    description: "The same map using a single-hue sequential scheme, from light blue (low unemployment) to dark blue (high unemployment). The order is immediately intuitive."
+---
+
+## Guidance
+
+When encoding ordered data (e.g., low, medium, high; 0-100), use a sequential color scheme that primarily varies in saturation or brightness (e.g., light blue to dark blue). Avoid using a palette that varies in hue (e.g., a rainbow scheme), as hue does not have a natural perceptual order.
+
+## Why
+
+Changes in saturation and brightness are naturally perceived by the human visual system as an ordered progression ("less" to "more"), which correctly matches the structure of ordinal or quantitative data. In contrast, changes in hue (e.g., from red to green to blue) are perceived as categorical differences. Using a rainbow palette forces the viewer to memorize an arbitrary order from the legend, increasing cognitive load and the risk of error.
+
+### Core Principle
+
+Visual encodings should match the structure of the data. Ordered data deserves an ordered visual encoding.
+
+## When it applies
+
+- When representing any ordered data, including ordinal categories (e.g., "Bad", "Good", "Excellent") or continuous quantitative values (e.g., temperature, population density).
+- When designing heatmaps, choropleth maps, or any other chart that uses a color gradient to represent value.
+
+## Exceptions
+
+- **Diverging Data:** If your data has a meaningful midpoint (like zero) and diverges in two directions (e.g., profit and loss), a diverging palette (which uses two different hues that meet at a neutral color) is appropriate. This is a deliberate exception that still follows the core principle, as it uses two sequential schemes joined together.
+- **Cyclical Data:** For cyclical data (like phase or wind direction), a cyclical color scheme that varies in hue and returns to its starting point can be effective.
+
+## Trade-offs
+
+- **Aesthetics:** Rainbow palettes can appear vibrant and are sometimes used to attract attention. A well-designed sequential palette is often more subtle, which might be perceived as less "colorful," but it is far more effective and honest to the data.
+
+## Signs of Trouble
+
+- **The Rainbow Palette:** A rainbow (or spectral) color scheme is used to represent sequential or diverging data.
+- **Legend-Reliant:** Viewers cannot tell which of two colors represents a higher value without looking at the legend.
+- **False Boundaries:** The abrupt hue changes in a rainbow palette create false visual boundaries in the data where none exist, while masking variations within a single hue band.
+- **Accessibility Issues:** Rainbow palettes are notoriously bad for people with color vision deficiencies, as common color pairs (like red/green) can become indistinguishable.
+
+## How to Improve
+
+- **Quick Fix: Grayscale It.** A simple test is to view your visualization in grayscale. If the ordering of values is lost, your color scheme is ineffective. A quick fix can be to use a grayscale palette.
+
+- **Comprehensive Redesign: Use a Perceptually-Based Sequential Palette.** The best solution is to replace the hue-based palette with a proper sequential one.
+  - For a single series, use a **single-hue sequential** palette (e.g., light blue to dark blue).
+  - For more dynamic range, use a **multi-hue sequential** palette that still has a clear progression in brightness/saturation (e.g., yellow to green to blue).
+  - Use tools like **ColorBrewer** to select a pre-vetted, perceptually uniform, and colorblind-safe palette.
+
+```
+
+<split/>
+
+```md
+---
+id: use-scatterplot-for-correlation
+title: "Use scatterplots to show correlation between two quantitative variables"
+
+tags:
+  - impact:perceptual
+  - chart:scatter
+  - chart:parallel-coordinates
+  - chart:line
+  - task:correlation
+  - data:quantitative
+  - audience:general
+  - medium:static
+
+evidence:
+  strength: high
+  summary: "Multiple empirical studies (e.g., Harrison et al. 2014, Li et al. 2010) consistently find that scatterplots are significantly more effective for judging correlation than other visualizations like parallel coordinates, which can lead to underestimation of correlation strength."
+
+sources:
+  - type: research
+    ref: Harrison et al., 2014
+    url: https://doi.org/10.1109/TVCG.2014.2346979
+    note: "Crowdsourced experiment showing significant differences in correlation perception across nine common chart types, with scatterplots performing very well."
+    role: primary
+  - type: research
+    ref: Li, Martens, & van Wijk, 2010
+    url: https://doi.org/10.1057/ivs.2008.13
+    note: "Found that the degree of correlation is underestimated in parallel coordinate plots, suggesting scatterplots are better for this specific task."
+    role: primary
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://arxiv.org/abs/2109.01271v3
+    note: "Synthesizes the literature and recommends scatterplots as a top choice for the 'correlate' task based on empirical evidence (Table 9)."
+    role: supporting
+
+examples:
+  - type: bad
+    description: "A parallel coordinates plot used to show the relationship between GDP and life expectancy. The crossed lines make it difficult to judge the strength of the correlation."
+  - type: good
+    description: "A scatterplot showing GDP (x-axis) vs. life expectancy (y-axis). The upward-sloping pattern of the points clearly and intuitively communicates the positive correlation."
+---
+
+## Guidance
+
+When the primary task is to help a viewer assess the relationship (correlation) between two quantitative variables, a scatterplot is the most effective chart type.
+
+## Why
+
+Scatterplots map the two variables directly to Cartesian x and y positions. The human visual system is excellent at detecting patterns in 2D point clouds. The strength, direction, and shape of the correlation become visually salient through the overall pattern of the points (e.g., a tight cluster sloping upwards indicates a strong positive correlation). Other chart types, like parallel coordinates, encode the data differently and have been shown to lead to systematic underestimation of correlation strength.
+
+### Core Principle
+
+Choose the chart type that makes the primary analytical task the easiest and most accurate perceptual task.
+
+## When it applies
+
+- The main goal is to see if two quantitative variables are related, and if so, how (e.g., positive, negative, strong, weak, linear, non-linear).
+- You are performing exploratory data analysis to find relationships in the data.
+
+## Exceptions
+
+- **Many Variables:** If you need to show the relationships between *many* variables at once (>3-4), a scatterplot matrix (a grid of many small scatterplots) or a parallel coordinates plot may be more space-efficient. However, be aware that judging correlation in a parallel coordinates plot is less accurate. It is better for identifying clusters and outliers across many dimensions.
+- **Time-Series Data:** If one of the variables is time, a line chart is the standard convention and is highly effective at showing trends over time. If you are correlating two different time series, you can use a dual-axis line chart (with caution) or a scatterplot where each point represents a single point in time.
+
+## Trade-offs
+
+- **Overplotting:** With very large datasets, a standard scatterplot can suffer from overplotting, where many points are plotted on top of each other, obscuring the true density.
+- **Number of Variables:** A single scatterplot can only show the relationship between two variables (or three, by encoding a third with color or size).
+
+## Signs of Trouble
+
+- **Wrong Tool for the Job:** Using a line chart for two non-temporal variables, or using a bar chart where each bar represents a data point from a two-variable set.
+- **Ambiguous Patterns:** The visualization used makes it difficult to describe the relationship. Viewers can't tell if there is a positive or negative correlation, or if it is strong or weak.
+- **Underestimated Correlation:** Using parallel coordinates for correlation tasks, which has been shown to cause viewers to underestimate the strength of the relationship.
+
+## How to Improve
+
+- **Quick Fix: Switch to a Scatterplot.** If you are using another chart type (like a line chart for non-temporal data, or parallel coordinates) to show a two-variable relationship, the simplest and most effective fix is to switch to a scatterplot.
+
+- **Moderate Approach: Address Overplotting.** If your scatterplot is too dense due to overplotting, adjust the opacity of the points (make them semi-transparent) or reduce the point size. This helps reveal the density and structure of the underlying data.
+
+- **Comprehensive Approach: Use Binned or Density Plots.** For very large datasets, move beyond a simple scatterplot. Use a 2D histogram (which bins points into a grid and colors the grid cells by density) or a 2D kernel density estimate (KDE) plot. These techniques explicitly visualize the density of the data, completely solving the overplotting problem and clearly showing the shape of the correlation.
+
+```

@@ -1,0 +1,450 @@
+```md
+---
+id: position-over-other-channels-for-quantitative
+title: "Use position on a common scale to encode quantitative data"
+
+tags:
+  - impact:perceptual
+  - impact:logos
+  - chart:bar
+  - chart:scatter
+  - chart:dot-plot
+  - task:compare
+  - task:rank
+  - task:lookup
+  - data:quantitative
+  - visual:position
+  - visual:length
+  - visual:angle
+  - visual:area
+
+sources:
+  - type: research
+    ref: Cleveland & McGill, 1984
+    url: https://www.jstor.org/stable/2288400
+    note: "Established the foundational ranking of perceptual tasks, showing position on a common scale is most accurate."
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://arxiv.org/abs/2109.01271v3
+    note: "Synthesizes this finding as a core principle for visualization recommendation systems (see Table 3)."
+
+examples:
+  - type: good
+    description: "A bar chart aligns all values to a common baseline (the x-axis), allowing for highly accurate comparisons of length/position. This makes it easy to see that category B is about twice as large as category D."
+  - type: bad
+    description: "A pie chart uses angle and area to encode values. It is very difficult to accurately compare the sizes of slices, especially those that are not adjacent. Is the 'Engineering' slice larger than the 'Sales' slice? It's hard to tell for sure without labels."
+---
+
+## Guidance
+
+When encoding quantitative data for comparison or ranking, prioritize using position along a common, aligned scale over other visual channels like length, angle, or area.
+
+## Why
+
+The human visual system is most accurate at judging differences in position along a common scale. This leads to faster, more precise, and less biased interpretation of quantitative data compared to judging unaligned lengths, angles (like in a pie chart), or areas. This principle is one of the most robust findings in graphical perception research.
+
+## When it applies
+
+- When the primary task for the user is to compare, rank, or look up quantitative values.
+- When creating foundational chart types like bar charts, dot plots, or scatter plots.
+- When data accuracy and preventing misinterpretation are critical.
+
+## Exceptions
+
+- **When showing part-to-whole relationships is the primary goal:** While a bar chart is still often better, a pie chart with very few slices (2-3) might be considered acceptable if the goal is to emphasize the composition, not precise comparison.
+- **When showing summary statistics:** For tasks like judging the average or variance of a large set of points, other channels like color can sometimes be more effective than position (see `color-for-summary-judgments` guideline).
+- **When mapping geographic data:** Position is already used to place data on the map, so another channel (like color or size) must be used for the quantitative value.
+
+## Trade-offs
+
+- **Space:** Using position as the primary encoding (e.g., in a bar chart) can take up more screen or page space than more compact representations like a treemap (which uses area).
+- **Familiarity:** While perceptually superior, a dot plot may be less familiar to a general audience than a pie chart, potentially requiring a brief moment of cognitive adjustment.
+
+## Signs of Trouble
+
+- **Impossible Comparisons:** Viewers are unable to confidently say which of two non-adjacent values is larger.
+- **Reliance on Labels:** The chart is unreadable without direct data labels on every element; the visual encoding itself fails to communicate the values.
+- **Distorted Perception:** Small differences in value appear exaggerated, or large differences appear minimized, due to the encoding (e.g., comparing areas of complex shapes).
+- **Inconsistent Judgments:** Different people arrive at different conclusions about the relative size of components in your chart.
+
+## How to Improve
+
+- **Quick Fix: Add Direct Labels.** If you must use a less effective encoding like area or angle, add direct numerical labels to each element. This provides an escape hatch, allowing users to read the exact values instead of relying on flawed perceptual judgments.
+
+- **Moderate Redesign: Switch to a Better Chart Type.** If you are using a pie chart, convert it to a bar chart. If you are using a treemap for comparison, consider a bar chart instead. This directly applies the principle of using position/length on a common scale.
+
+- **Comprehensive Approach: Re-evaluate Encodings.** Review all data-to-visual-channel mappings in your chart. Ensure that your most important quantitative variable, especially if it's used for comparison, is mapped to the most effective channel: position on a common scale (x or y axis).
+<split/>
+```md
+---
+id: bar-over-pie-for-comparison
+title: "Prefer bar charts over pie charts for value comparisons"
+
+tags:
+  - impact:perceptual
+  - impact:logos
+  - chart:bar
+  - chart:pie
+  - task:compare
+  - task:rank
+  - task:composition
+  - data:quantitative
+  - data:categorical
+  - visual:position
+  - visual:length
+  - visual:angle
+  - visual:area
+
+sources:
+  - type: research
+    ref: Cleveland & McGill, 1984
+    url: https://www.jstor.org/stable/2288400
+    note: "Demonstrated experimentally that judgments of position along a common scale (bar charts) are more accurate than judgments of angle (pie charts)."
+  - type: research
+    ref: Saket et al., 2019
+    url: https://doi.org/10.1109/TVCG.2018.2864510
+    note: "Empirical study confirming bar charts are superior for most analytical tasks, but noting pie charts can be acceptable for simple value retrieval."
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://arxiv.org/abs/2109.01271v3
+    note: "Synthesizes findings from multiple papers (e.g., [17, 34, 50, 76, 99]) confirming the general superiority of bar charts."
+
+examples:
+  - type: good
+    description: "A bar chart makes it easy to compare the values of different categories because all bars share a common baseline, allowing for accurate length/position comparison."
+  - type: bad
+    description: "This pie chart has several slices of similar size. It's nearly impossible to reliably rank them or determine how much larger one is than another without reading the labels. This forces cognitive load on the user."
+---
+
+## Guidance
+
+For tasks that require comparing the magnitude of different categories, use a bar chart instead of a pie chart.
+
+## Why
+
+Bar charts encode quantitative values using length and position along a common axis, which humans perceive with high accuracy. Pie charts encode values using angle and area, which are much harder to judge precisely. This perceptual difference means that viewers can make faster and more accurate comparisons with a bar chart.
+
+## When it applies
+
+- The primary goal is to compare values between different categories.
+- You need to show the ranking of categories.
+- You have more than 2-3 categories.
+- The values of the categories are relatively close to each other.
+
+## Exceptions
+
+- **Simple Part-to-Whole:** If you have only two or three categories and the primary goal is to show a simple part-to-whole relationship (e.g., "Category A makes up about a quarter of the total"), a pie chart can be acceptable. However, a stacked bar chart often serves this purpose just as well or better.
+- **Binary Choice:** For showing a single percentage of a binary choice (e.g., 75% Yes vs. 25% No), a single-slice pie chart (or "pac-man" chart) can be visually effective.
+
+## Trade-offs
+
+- **Showing the "Whole":** A bar chart doesn't inherently visualize the total sum of the parts as obviously as a pie chart does (which always sums to 100%). To compensate, you can add a "total" annotation or use a 100% stacked bar chart if the part-to-whole relationship is critical.
+- **Audience Expectation:** In some business or non-technical contexts, audiences may have a strong expectation for pie charts. Choosing a bar chart might require a slight cultural shift, but it is a shift toward greater clarity and accuracy.
+
+## Signs of Trouble
+
+- **The "Which is bigger?" question:** Viewers are struggling to determine which of two slices is larger, especially if they are not adjacent.
+- **Many Slices:** The pie chart has more than 5 slices, creating a cluttered and unreadable "rainbow wheel."
+- **3D or Exploded Slices:** The use of 3D perspective or exploded slices distorts the angles and areas, making accurate perception impossible and misleading the viewer.
+- **Label-Only Reading:** The chart is only useful because of its data labels; the visualization itself adds no value and may even detract from understanding.
+
+## How to Improve
+
+- **Quick Fix: Add Direct Percentage Labels.** If you cannot change the chart type, add clear, legible percentage labels directly onto or next to each pie slice. This gives users an escape hatch to read the numbers directly.
+
+- **Moderate Redesign: Convert to a Bar Chart.** Re-create the visualization as a bar chart. This is the most direct and effective improvement. Ensure the y-axis starts at zero.
+
+- **Comprehensive Approach: Convert to a Sorted Bar Chart.** Re-create the visualization as a bar chart and sort the bars in ascending or descending order (unless there is a natural order to the categories). Sorting reduces the cognitive effort required to find the largest/smallest values and understand the ranking.
+<split/>
+```md
+---
+id: saturation-over-hue-for-ordinal
+title: "Use color saturation over color hue for ordinal data"
+
+tags:
+  - impact:perceptual
+  - impact:accessibility
+  - data:ordinal
+  - visual:color
+  - access:color-vision-risk
+
+sources:
+  - type: research
+    ref: Mackinlay, 1986
+    url: https://doi.org/10.1145/22949.22950
+    note: "Proposed in his foundational work that saturation is effective for ordinal data while hue is not."
+  - type: research
+    ref: Golebiowska & Coltekin, 2022
+    url: https://doi.org/10.1109/TVCG.2020.3035823
+    note: "Empirical work confirming that single-hue (sequential) scales perform better for ordinal tasks."
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://arxiv.org/abs/2109.01271v3
+    note: "Synthesizes the theoretical rule and empirical findings (Table 3 and Section 5.1)."
+
+examples:
+  - type: good
+    description: "A sequential color scheme uses a single hue (e.g., blue) and varies the saturation/lightness from light to dark. This creates a clear, intuitive visual order that maps directly to the order in the data (e.g., 'Low', 'Medium', 'High')."
+  - type: bad
+    description: "A qualitative color scheme uses distinct hues (e.g., red, green, blue) for ordinal data like 'Low', 'Medium', 'High'. This is confusing because there is no natural perceptual order to the colors. Is red more or less than green?"
+---
+
+## Guidance
+
+To represent ordered or sequential data (e.g., 'Low', 'Medium', 'High'; '1-10', '11-20', '21-30'), use a sequential color scheme that varies in saturation or lightness, not one that varies in hue.
+
+## Why
+
+The human brain naturally perceives a sequence in lightness or saturation (from light to dark), making it intuitive for representing ordered data. In contrast, different hues (like red, green, blue) do not have an inherent perceptual order. Using a qualitative (multi-hue) palette for ordinal data forces the viewer to memorize the mapping and can lead to misinterpretation, as the visual representation doesn't match the underlying data structure.
+
+## When it applies
+
+- The data has a natural, logical order (i.e., it is ordinal or binned quantitative data).
+- You are using color to fill areas in a choropleth map, heatmap, or stacked bar chart.
+- You are coloring marks like dots in a scatterplot or lines in a line chart based on an ordered attribute.
+
+## Exceptions
+
+- **Categorical Data:** If your data has no inherent order (e.g., 'USA', 'Canada', 'Mexico'), a qualitative palette with distinct hues is the correct choice.
+- **Diverging Data:** If your data has a meaningful midpoint (like zero) and diverges in two directions (e.g., 'Negative', 'Neutral', 'Positive'), a diverging color scheme (which uses two different hues that meet at a neutral color) is appropriate.
+
+## Trade-offs
+
+- **Fewer Distinguishable Steps:** A single-hue sequential scheme can make it harder to distinguish between many fine-grained steps compared to a multi-hue scheme. However, this is often a worthwhile trade-off for ensuring the perceptual order is correct. If you need many steps, consider a multi-hue sequential palette (like Viridis), which is carefully designed to be perceptually uniform.
+
+## Signs of Trouble
+
+- **The "What order is this?" Problem:** Viewers cannot tell the order of the categories without constantly referring to the legend.
+- **Rainbow Legend:** The legend for your ordered data looks like a rainbow, using distinct colors like red, orange, yellow, green, blue.
+- **Accidental Grouping:** Viewers perceive groups of similar colors (e.g., blue and purple) as being related, even if they are far apart in the data's actual order.
+- **Lost in Translation:** The perceived order of colors does not match the actual order of the data.
+
+## How to Improve
+
+- **Quick Fix: Switch to Grayscale.** A simple grayscale ramp (from white to black) is a perfectly effective sequential scheme and a safe default.
+
+- **Moderate Redesign: Use a Single-Hue Sequential Palette.** Choose a single color (like blue) and create a palette that ranges from a very light version of that color to a very dark version. Most visualization tools have built-in palettes for this (e.g., "Blues", "Greens").
+
+- **Comprehensive Approach: Use a Perceptually-Uniform Sequential Palette.** For the highest accuracy, use a color palette that is mathematically designed to be perceptually uniform, like Viridis, Plasma, or Cividis. This ensures that a step in the data corresponds to an equally perceived step in color, and it is also more robust for viewers with color vision deficiency. Tools like D3.js, Matplotlib, and ColorBrewer provide these palettes.
+<split/>
+```md
+---
+id: match-chart-to-task
+title: "Select chart types based on the user's primary task"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - impact:logos
+  - chart:bar
+  - chart:line
+  - chart:scatter
+  - chart:parallel-coordinates
+  - chart:pie
+  - chart:table
+  - task:compare
+  - task:correlation
+  - task:cluster
+  - task:find-anomalies
+  - task:distribution
+  - audience:general
+  - audience:expert
+  - medium:static
+  - medium:interactive
+
+sources:
+  - type: research
+    ref: Saket et al., 2019
+    url: https://doi.org/10.1109/TVCG.2018.2864510
+    note: "Conducted a large-scale empirical study comparing 5 common chart types across 10 analytical tasks."
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://arxiv.org/abs/2109.01271v3
+    note: "Synthesizes the findings from Saket et al. and others into a set of task-based recommendations (Table 9)."
+
+---
+
+## Guidance
+
+There is no single "best" chart. The effectiveness of a visualization is highly dependent on the user's task. Select a chart type that is empirically proven to be effective for the specific task your audience needs to perform.
+
+## Why
+
+Different chart types leverage different visual encodings (e.g., position, length, angle, color), and human perception is not equally good at all of them. A chart that is excellent for one task (e.g., a scatterplot for finding correlation) can be poor for another (e.g., looking up precise values). Aligning the chart type with the task reduces cognitive load, increases accuracy, and makes insight discovery more efficient.
+
+## When it applies
+
+Always. This is a foundational principle of visualization design. Before choosing a chart, first ask: "What is the main question this chart should help the user answer?"
+
+### Task-Based Recommendations:
+
+- **Correlation:** To see the relationship between two quantitative variables, use a **scatterplot** or a **line chart**.
+- **Clustering & Finding Anomalies:** To find groups of similar items or outliers, **bar charts**, **scatterplots**, and **parallel coordinates** are effective. Parallel coordinates can be particularly powerful for multidimensional data.
+- **Comparison & Ranking:** To compare values across categories, use a **bar chart**.
+- **Distribution:** To understand the distribution of values, use a **bar chart** (for a histogram) or a dedicated histogram/density plot.
+- **Part-to-Whole (Composition):** To see how a part relates to the whole, a **bar chart** is generally effective. A **pie chart** may be used for very few categories if precision is not the goal.
+- **Lookup/Retrieve Value:** When precision is key, a **table** is often best. For visual retrieval, **pie charts** and **parallel coordinates** have shown to be effective in some contexts.
+
+## Exceptions
+
+- **Composite Tasks:** Users may need to perform multiple tasks with a single chart. In such cases, you must prioritize the most critical task or choose a chart that is "good enough" for several tasks, even if it isn't the best at any single one. A simple bar chart or scatterplot is often a robust multi-task choice.
+- **Audience Conventions:** In some domains, there are strong conventions for using specific chart types (e.g., candlestick charts in finance). Deviating from these conventions may confuse an expert audience, even if another chart type is perceptually superior.
+
+## Trade-offs
+
+- **Specificity vs. Generality:** Optimizing for a single task might make the chart less effective for other, secondary tasks. A scatterplot is great for correlation but requires more effort for value lookups than a table.
+- **Simplicity vs. Power:** More complex chart types like parallel coordinates can be very powerful for expert tasks (like anomaly detection) but may have a steeper learning curve for a general audience.
+
+## Signs of Trouble
+
+- **Task Mismatch:** The chart's title or surrounding text asks a question that the chart is poorly suited to answer (e.g., asking about correlation with a pie chart).
+- **User Confusion:** Viewers are unsure how to read the chart or what conclusion to draw from it.
+- **Inefficiency:** It takes a long time or a lot of effort for a user to answer a simple question using the chart.
+- **Wrong Tool for the Job:** Using a complex or novel chart type when a simple bar or line chart would have answered the question more effectively.
+
+## How to Improve
+
+- **Quick Fix: Add Annotations or a Better Title.** If you can't change the chart, improve the title and add annotations to explicitly point out the key insight the chart is meant to convey. This guides the user's attention and helps them perform the intended task.
+
+- **Moderate Redesign: Switch to a Recommended Chart Type.** Based on the primary task, switch to a more appropriate chart from the list above. For example, if the goal is to show correlation, change your set of bar charts into a single scatterplot.
+
+- **Comprehensive Approach: Provide Multiple, Linked Views.** Create a dashboard with multiple charts, each optimized for a different task. For example, provide a scatterplot for correlation insights and a linked table for precise value lookups. Clicking a point in the scatterplot could highlight the corresponding row in the table.
+<split/>
+```md
+---
+id: make-outliers-globally-unique
+title: "Make outliers globally unique to ensure they pop out"
+
+tags:
+  - impact:perceptual
+  - task:find-anomalies
+  - visual:color
+  - visual:shape
+  - visual:size
+  - chart:scatter
+  - chart:map.glyphs
+
+sources:
+  - type: research
+    ref: Haroz & Whitney, 2012
+    url: https://doi.org/10.1109/TVCG.2012.211
+    note: "Found that outlier detection depends on an item's global uniqueness across the entire display, not just local contrast, implying the use of scene-wide ensemble statistics."
+  - type: research
+    ref: Szafir et al., 2016
+    url: https://doi.org/10.1167/16.5.11
+    note: "Highlights this finding as a key principle for outlier identification tasks in visualizations."
+
+examples:
+  - type: good
+    description: "In a scatterplot where all points are blue circles, a single red square will pop out instantly as an outlier, regardless of where it is on the screen, because it is globally unique in both color and shape."
+  - type: bad
+    description: "In a scatterplot with a mix of blue squares and blue circles, a single red square is placed next to a blue square. While it has high local contrast with its immediate neighbors (who are mostly circles), its 'squareness' is not unique in the display, reducing its pop-out effect compared to a globally unique item."
+---
+
+## Guidance
+
+To make an outlier or an important data point visually salient (i.e., "pop out"), ensure its visual features (e.g., color, shape, size) are unique across the entire display, not just different from its immediate neighbors.
+
+## Why
+
+The human visual system automatically computes summary statistics (or "ensembles") of features across a whole scene. An item is perceived as an outlier when it deviates significantly from these global, scene-wide statistics. An object that is only locally different but globally common will not create a strong pop-out effect. Therefore, global uniqueness is a more powerful driver of pre-attentive outlier detection than local contrast.
+
+## When it applies
+
+- You want to draw the user's attention to a specific data point or a small group of anomalous points.
+- The task is anomaly detection, highlighting, or finding specific items in a dense visualization.
+- Designing scatterplots, symbol maps, or any chart with a large number of discrete marks.
+
+## Exceptions
+
+- **When all items are unique:** If every item in a visualization is already unique (e.g., a photograph), this principle doesn't apply in the same way. Salience is then driven by other factors like semantic meaning or low-level image features.
+- **When local comparison is the task:** If the task is explicitly to compare an item to its immediate neighbors (e.g., "Is this house bigger than the ones next to it?"), local contrast is what matters most.
+
+## Trade-offs
+
+- **Visual Dominance:** Making an item globally unique gives it strong visual weight, which can be distracting if it is not the primary point of interest. This technique should be used sparingly and only for genuinely important data.
+- **Aesthetic Disruption:** A single, starkly different element can sometimes disrupt the aesthetic harmony of a visualization. This is often a necessary price for drawing attention effectively.
+
+## Signs of Trouble
+
+- **The "Where's Waldo?" Effect:** The supposedly important outlier is lost in the crowd, and users have to actively search for it.
+- **Local Camouflage:** The outlier is visually distinct from its immediate neighbors, but it blends in with other items elsewhere in the display.
+- **False Alarms:** Items that are not actually outliers are popping out more than the true outliers because they happen to have higher local contrast.
+
+## How to Improve
+
+- **Quick Fix: Use a Unique Color.** Change the color of the outlier to a hue that is not used anywhere else in the visualization. Make it bright and saturated to maximize its salience.
+
+- **Moderate Redesign: Use Redundant, Unique Encodings.** Make the outlier unique across multiple visual channels simultaneously. For example, if the other points are small blue circles, make the outlier a large red star. This combination of unique color, size, and shape makes it maximally salient.
+
+- **Comprehensive Approach: Design a "Quiet" Background.** To make outliers stand out, make the non-outlier items as homogeneous as possible. Use a muted, single color for all background points and uniform size/shape. This lowers the global variance of the "distractors," making any deviation from that norm (the outlier) much more conspicuous.
+<split/>
+```md
+---
+id: color-for-summaries-position-for-details
+title: "Use color for summary judgments and position for finding details"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:heatmap
+  - chart:line
+  - chart:colorfield-plot
+  - task:summary-mean
+  - task:distribution
+  - task:find-extremum
+  - task:determine-range
+  - data:temporal
+  - data:quantitative
+  - visual:color
+  - visual:position
+
+sources:
+  - type: research
+    ref: Albers, Correll, & Gleicher, 2014
+    url: https://doi.org/10.1145/2556288.2557200
+    note: "Original study showing this trade-off in time-series visualizations. Color-based charts (colorfields) were better for aggregation tasks, while position-based charts (line graphs) were better for finding extrema."
+  - type: research
+    ref: Szafir et al., 2016
+    url: https://doi.org/10.1167/16.5.11
+    note: "Generalizes this finding as a key trade-off between color and position, suggesting different processing abilities for the two channels."
+
+---
+
+## Guidance
+
+There is a fundamental trade-off between using color and position. Use color-based encodings (like heatmaps) when the user's task is to judge summary statistics like the average or variance. Use position-based encodings (like line charts) when the task is to identify specific details like the minimum or maximum value.
+
+## Why
+
+This reflects a difference in how the visual system processes these two channels. Color appears to facilitate a global, summative perception, allowing the brain to quickly "average" the color across a region to get the gist (e.g., "this area is mostly dark blue"). Position, on the other hand, better represents distinct shapes and boundaries, making it easier to pinpoint specific peaks and valleys in the data.
+
+## When it applies
+
+- You are designing a visualization for time-series or other continuous data.
+- You have to choose between representing a key variable with color (e.g., in a heatmap) or position (e.g., on the y-axis of a line chart).
+- You need to decide which of two competing chart types is better for your audience's primary goal.
+
+## Exceptions
+
+- **Low-Resolution Color:** If the color scale has very few, distinct steps, it may be less effective for summary judgments as it no longer represents a continuous field.
+- **Categorical Data:** This principle applies to quantitative or ordinal data represented on a continuous scale. For purely categorical data, color is primarily for identification, not summary statistics.
+
+## Trade-offs
+
+- **This is a direct trade-off:** A chart optimized for summary judgments (e.g., a heatmap) will be less effective for identifying extrema, and vice-versa. You cannot have the best of both worlds in a single chart.
+
+## Signs of Trouble
+
+- **Hunting for Peaks in a Heatmap:** Users are struggling to find the exact highest or lowest value in a heatmap, scanning back and forth across the color legend.
+- **"What's the average?" in a Line Chart:** Users find it difficult to estimate the average value of a very volatile, jagged line chart. The many peaks and valleys make it hard to judge the central tendency.
+- **Task Mismatch:** You are using a line chart and the primary question is about the overall "mood" or average level, or you are using a heatmap and the primary question is "When did we hit the absolute maximum?".
+
+## How to Improve
+
+- **Quick Fix: Add Annotations.** On a line chart, you could add a shaded confidence interval or an explicit trend line to help with summary judgments. On a heatmap, you could add marker icons or outlines around the cells with the min/max values to help with identification.
+
+- **Moderate Redesign: Choose the Chart that Matches the Primary Task.** If the most important task is judging the average, switch from a line chart to a heatmap (colorfield plot). If the most important task is finding the peak value, switch from a heatmap to a line chart.
+
+- **Comprehensive Approach: Provide Coordinated Multiple Views.** Display both a line chart and a heatmap of the same data side-by-side. Link them with interactions like brushing and linking. This allows the user to get the "best of both worlds" by using the right chart for the right task. For example, they can get the "gist" from the heatmap and then brush a region to see the precise details in the line chart.
+```

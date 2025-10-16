@@ -1,0 +1,446 @@
+```md
+---
+id: prioritize-position-for-quantitative-data
+title: "Prioritize position for encoding quantitative data"
+
+tags:
+  # Impact dimensions (select all that apply)
+  - impact:perceptual
+  - impact:logos
+  - impact:ethical
+
+  # Chart types (use hierarchy with dots for specificity)
+  - chart:bar
+  - chart:line
+  - chart:scatter
+  - chart:dot-plot
+  - chart:pie
+  - chart:bubble
+
+  # Tasks (what the user is trying to accomplish)
+  - task:compare
+  - task:rank
+  - task:lookup
+  - task:trend
+
+  # Data characteristics
+  - data:quantitative
+
+  # Visual channels
+  - visual:position
+  - visual:length
+  - visual:angle
+  - visual:area
+  - visual:color
+
+  # Audience characteristics
+  - audience:general
+  - audience:expert
+
+  # Medium/format
+  - medium:static
+  - medium:interactive
+  - medium:print
+  - medium:screen
+
+evidence:
+  strength: high # Options: high | medium | low
+  summary: "This is a foundational principle of graphical perception, established by Cleveland & McGill in 1984 and integrated into seminal visualization theory by Mackinlay in 1986. It's one of the most replicated and widely accepted findings in the field."
+
+sources:
+  - type: research
+    ref: Mackinlay, 1986
+    url: https://dl.acm.org/doi/10.1145/22949.22950
+    note: "Established a theoretical framework for automated visualization design based on this perceptual ranking (see Figures 14 and 15)."
+    role: primary # Options: primary | supporting | related
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://dl.acm.org/doi/10.1145/3544548.3581349
+    note: "This recent survey confirms the continued relevance and application of Mackinlay's rankings, noting position (PX, PY) is the most studied and effective channel."
+    role: supporting
+  - type: research
+    ref: Cleveland & McGill, 1984
+    url: https://doi.org/10.2307/2288400
+    note: "The original experimental work that identified and ranked the perceptual accuracy of different visual encodings for quantitative data."
+    role: related
+
+examples:
+  - type: good
+    description: A bar chart uses position along a common scale (the x-axis) and length to encode quantitative values, allowing for accurate comparisons.
+  - type: bad
+    description: A pie chart uses angle and area to encode values. It is much harder for humans to accurately compare the sizes of two non-adjacent slices, leading to perceptual errors.
+  - type: bad
+    description: A bubble chart uses area to encode values, which is one of the least accurate channels for making precise quantitative comparisons.
+---
+
+## Guidance
+
+For tasks requiring accurate judgment of quantitative values, encode data using position on a common scale (e.g., bar charts, scatter plots) or length. These are perceptually more accurate than angle (pie charts), area (bubble charts), or color.
+
+## Why
+
+Viewers are significantly more accurate and faster at judging differences in position along an aligned scale than they are at judging differences in length, angle, or area. Using a less accurate channel increases the risk of misinterpretation and reduces the precision with which viewers can read the data.
+
+### Core Principle
+
+Humans judge quantities more accurately by comparing positions along a common scale than by comparing other visual attributes like angle, areas, or colors.
+
+## When it applies
+
+-   When the primary task is to compare, rank, or look up precise quantitative values.
+-   When creating standard charts like bar charts, line charts, or scatter plots.
+-   When data integrity and accurate interpretation are more important than compact-ness or novel aesthetics.
+
+## Exceptions
+
+-   When the goal is to show a part-to-whole relationship and the number of slices is very small (2-3), a pie chart can be acceptable, though a bar chart is still often clearer.
+-   When showing hierarchical data or packing many values into a small space, area-based charts like treemaps can be effective for showing general magnitude, even if they sacrifice precision.
+-   When visualizing geographic data, where position is already used to encode location, other channels like color or size must be used.
+
+## Trade-offs
+
+-   **Space:** Bar charts and dot plots (which use position) can take up more screen or page space than more compact representations like pie charts or treemaps (which use angle or area).
+-   **Part-to-whole:** While a stacked bar chart can show part-to-whole relationships, it is often harder to compare the individual components that are not on the baseline. A pie chart makes the part-to-whole relationship more explicit, at the cost of comparison accuracy.
+
+## Signs of Trouble
+
+-   **Difficult Comparisons:** Viewers find it hard to confidently say which of two non-adjacent pie slices or bubbles is larger.
+-   **Inaccurate Takeaways:** When asked to estimate the ratio between two values (e.g., "how many times bigger is A than B?"), users' answers are consistently wrong.
+-   **Reliance on Labels:** The chart is unreadable without direct data labels on every element. The visual encoding itself is failing.
+
+## How to Improve
+
+-   **Quick Fix: Add Direct Labels.** If you must use a pie or bubble chart, add direct data labels (e.g., "42%") to each element. This provides an "escape hatch" for the user to read exact values instead of relying on flawed perceptual judgments.
+-   **Moderate Redesign: Switch to a Better Chart.** Convert a pie chart or bubble chart into a bar chart or a dot plot. This directly replaces the less accurate encoding (angle/area) with a more accurate one (position/length).
+-   **Comprehensive Approach: Align the Scales.** If comparing multiple series with grouped bar charts, ensure all bars share a common, aligned baseline (the y-axis at zero) to maximize the effectiveness of position and length judgments.
+
+<split/>
+
+```md
+---
+id: avoid-unintended-order-for-nominal-data
+title: "Encode nominal data with channels that don't imply order"
+
+tags:
+  # Impact dimensions (select all that apply)
+  - impact:perceptual
+  - impact:logos
+  - impact:ethical
+  - impact:cognitive
+
+  # Chart types (use hierarchy with dots for specificity)
+  - chart:bar
+  - chart:pie
+  - chart:scatter
+  - chart:map
+
+  # Tasks (what the user is trying to accomplish)
+  - task:compare
+  - task:lookup
+  - task:distribution
+
+  # Data characteristics
+  - data:categorical
+
+  # Visual channels
+  - visual:length
+  - visual:area
+  - visual:size
+  - visual:color
+  - visual:shape
+
+  # Audience characteristics
+  - audience:general
+
+  # Medium/format
+  - medium:static
+  - medium:screen
+
+evidence:
+  strength: high # Options: high | medium | low
+  summary: "This guideline is a direct application of Mackinlay's 'Expressiveness Principle' (1986), a foundational concept in automated visualization and information design. The principle states that a visualization should only encode the information present in the data, without adding extraneous, potentially misleading information."
+
+sources:
+  - type: research
+    ref: Mackinlay, 1986
+    url: https://dl.acm.org/doi/10.1145/22949.22950
+    note: "Defined the expressiveness criterion and provided the example of incorrectly using a bar chart for nominal data (Figure 11), as the bar lengths add a false ordering."
+    role: primary # Options: primary | supporting | related
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://dl.acm.org/doi/10.1145/3544548.3581349
+    note: "Reaffirms the importance of Mackinlay's expressiveness and effectiveness principles in modern visualization recommendation systems and summarizes the recommended channels for nominal data (Table 3)."
+    role: supporting
+
+examples:
+  - type: bad
+    description: "A bar chart showing the number of employees by department (e.g., Sales, Marketing, Engineering). While it correctly shows the quantities, sorting the departments alphabetically results in arbitrary bar lengths, implying a meaningless order."
+    url: 
+  - type: good
+    description: "The same data, but the departments are represented by different colored dots in a scatter plot or different colors in a legend. This correctly distinguishes the categories without implying a false order. Alternatively, a bar chart where the bars are sorted by value is also good, as the order is now meaningful."
+    url: 
+  - type: good
+    description: "Mackinlay's Figure 12 shows the correct use of a plot chart (using position on a nominal axis) to encode car nationalities, avoiding the false ordering implied by the bar chart in his Figure 11."
+    url: 
+---
+
+## Guidance
+
+When visualizing nominal (categorical) data with no inherent order, use visual channels that do not create a perceptual ranking. Effective choices include **color hue**, **shape**, or **texture**. Avoid using channels like **length**, **area**, or **color saturation**, as viewers will incorrectly perceive an order or magnitude that does not exist in the data.
+
+## Why
+
+This follows the **Expressiveness Principle**: a visualization should represent *all* the facts in the data and *only* the facts in the data. Using a visual channel like bar length to encode unordered categories (e.g., countries, types of fruit) adds false information by implying that one category is "more" or "less" than another, leading to misinterpretation.
+
+### Core Principle
+
+The visual structure of a graphic should match the logical structure of the data. Do not use ordered visual encodings for unordered data.
+
+## When it applies
+
+-   When your data contains an unordered categorical attribute (e.g., department names, geographic regions, product types).
+-   When choosing how to distinguish different series in a chart (e.g., different lines in a line chart, different point types in a scatter plot).
+-   When designing a legend for categorical data.
+
+## Exceptions
+
+-   When the categories have a meaningful order for the specific analysis, even if not inherent to the data itself. For example, it is common and effective to sort the bars of a bar chart representing nominal categories in ascending or descending order to facilitate ranking, which is a valid task. In this case, the order is no longer arbitrary.
+
+## Trade-offs
+
+-   **Distinctiveness vs. Channels:** While color hue is effective, the number of easily distinguishable hues is limited (typically 5-8). For categories with higher cardinality, you may need to combine channels (e.g., color and shape) or switch to a different chart type that uses position (like a dot plot).
+-   **Familiarity:** A bar chart is a very common chart type. Replacing it with a less common form like a dot plot might require a small amount of extra cognitive effort from the viewer, though it is more theoretically correct.
+
+## Signs of Trouble
+
+-   **False Rankings:** Viewers draw conclusions about the order of categories when no such order exists (e.g., "The USA is 'higher' than Germany" from an alphabetically sorted bar chart of nominal data).
+-   **Arbitrary Patterns:** The shape of the chart (the pattern of bar lengths) changes dramatically just by re-sorting the categories alphabetically vs. by some other arbitrary criterion.
+-   **Confusion:** The visualization seems to imply a quantitative relationship where none exists. For example, using circles of different sizes (area) to represent different political parties.
+
+## How to Improve
+
+-   **Quick Fix: Re-sort Meaningfully.** If using a bar chart for nominal data, sort the bars by their value (descending or ascending). This makes the ordering intentional and supports the task of ranking, removing the arbitrary ordering.
+-   **Moderate Redesign: Switch Encoding Channel.** Instead of using length, use color hue or shape to distinguish the categories. For example, in a scatter plot, use different colored points for each category instead of different sized points.
+-   **Comprehensive Approach: Switch Chart Type.** Change the chart to one that is explicitly designed for nominal comparisons. For example, replace a bar chart of nominal categories with a dot plot (as shown in Mackinlay's Figure 12), which uses position on a nominal axis without the strong quantitative signal of bar length.
+
+<split/>
+
+```md
+---
+id: use-ordered-channels-for-ordinal-data
+title: "Use perceptually ordered channels for ordinal data"
+
+tags:
+  # Impact dimensions (select all that apply)
+  - impact:perceptual
+  - impact:logos
+  - impact:cognitive
+
+  # Chart types (use hierarchy with dots for specificity)
+  - chart:heatmap
+  - chart:map.choropleth
+  - chart:bar.stacked
+  - chart:table
+
+  # Tasks (what the user is trying to accomplish)
+  - task:compare
+  - task:rank
+  - task:lookup
+
+  # Data characteristics
+  - data:ordinal
+
+  # Visual channels
+  - visual:position
+  - visual:color
+  - visual:density
+  - visual:texture
+
+  # Audience characteristics
+  - audience:general
+
+  # Medium/format
+  - medium:static
+  - medium:screen
+
+evidence:
+  strength: high # Options: high | medium | low
+  summary: "This guideline follows from Mackinlay's (1986) effectiveness rankings, which synthesized psychophysical research to match data types to appropriate visual encodings. The ranking for ordinal data prioritizes channels that have a clear, intuitive perceptual order."
+
+sources:
+  - type: research
+    ref: Mackinlay, 1986
+    url: https://dl.acm.org/doi/10.1145/22949.22950
+    note: "Figure 15 provides a perceptual ranking of visual channels for ordinal data, prioritizing Position, then Density, Color Saturation, and Color Hue."
+    role: primary # Options: primary | supporting | related
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://dl.acm.org/doi/10.1145/3544548.3581349
+    note: "Confirms the theoretical recommendation of using color saturation (CS) over color hue (CH) for ordinal data and cites empirical work supporting this."
+    role: supporting
+
+examples:
+  - type: good
+    description: "A survey result chart (e.g., 'Strongly Disagree' to 'Strongly Agree') uses a diverging color palette where the saturation increases from a neutral center to dark colors at the extremes. This intuitively maps to the strength of agreement."
+    url: 
+  - type: bad
+    description: "The same survey data is visualized using a rainbow colormap (red, yellow, green, blue, purple). Viewers cannot intuitively order these colors, making it difficult to interpret the results."
+    url: 
+---
+
+## Guidance
+
+When visualizing ordinal data (categories with a meaningful order, like "Small, Medium, Large" or "Bad, Neutral, Good"), use visual channels that have a natural perceptual order.
+
+-   **Most effective:** Position (e.g., placement along an axis).
+-   **Also effective:** Color saturation (from light to dark), color value/lightness, or density.
+-   **Avoid:** Unordered channels like color hue (e.g., a rainbow palette) or shape.
+
+## Why
+
+The goal is to match the logical structure of the data (ordered) with the perceptual structure of the visualization (ordered). Channels like color saturation are intuitively perceived as moving from "less" to "more," which aligns perfectly with ordinal data. Unordered channels like a rainbow of hues force the viewer to memorize the order, increasing cognitive load and the chance of error.
+
+### Core Principle
+
+Visual encodings should match the structure of the data. Ordered data deserves ordered encodings.
+
+## When it applies
+
+-   Visualizing Likert scale data (e.g., "Strongly Disagree" to "Strongly Agree").
+-   Representing ranked categories (e.g., credit ratings "AAA, AA, A, B").
+-   Data that has been binned into ordered groups (e.g., "Low, Medium, High" income).
+-   Creating choropleth maps or heatmaps with ordinal categories.
+
+## Exceptions
+
+-   None known. Using an unordered channel for ordered data is nearly always a poor choice as it violates the expressiveness principle. However, the *choice* of ordered channel may depend on other factors (e.g., using position in a bar chart vs. color saturation in a map).
+
+## Trade-offs
+
+-   **Number of steps:** While color saturation is effective, the number of just-noticeable differences is limited. For ordinal scales with many steps (>7-9), it can become difficult to distinguish adjacent colors. Position does not have this limitation.
+-   **Redundancy:** In some cases, using a redundant encoding (e.g., position in a sorted bar chart *and* an ordered color scale on the bars) can reinforce the pattern, but it can also create visual clutter.
+
+## Signs of Trouble
+
+-   **Memorization Required:** Viewers have to constantly refer to the legend to understand the order of the categories (e.g., "Wait, is green better or worse than blue?").
+-   **Unintuitive Order:** The visual ordering feels arbitrary or random. A rainbow colormap for ordinal data is a classic example of this problem.
+-   **Ambiguity:** It's unclear if there's an order to the categories at all. For example, using circle, square, and triangle shapes to represent low, medium, and high risk.
+
+## How to Improve
+
+-   **Quick Fix: Switch to an Ordered Palette.** If using color, change from a qualitative (rainbow) palette to a sequential (e.g., light blue to dark blue) or diverging (e.g., dark red to white to dark blue) palette. Most visualization tools have these built-in.
+-   **Moderate Redesign: Use Position.** If possible, restructure the chart to use position to represent the ordinal scale. For example, instead of coloring points on a map by an ordinal risk level, create a separate bar chart or dot plot that ranks the locations by risk level.
+-   **Comprehensive Approach: Simplify and Clarify.** Ensure the chosen ordered channel is clear and unambiguous. For a sequential color scale, use a single hue and vary the saturation/lightness. For a diverging scale, use two distinct hues that diverge from a neutral midpoint. Test the palette with colorblindness simulators.
+
+<split/>
+
+```md
+---
+id: prioritize-color-hue-for-nominal-data
+title: "Use color hue or shape to distinguish nominal categories"
+
+tags:
+  # Impact dimensions (select all that apply)
+  - impact:perceptual
+  - impact:cognitive
+
+  # Chart types (use hierarchy with dots for specificity)
+  - chart:scatter
+  - chart:line
+  - chart:map
+  - chart:bar.grouped
+
+  # Tasks (what the user is trying to accomplish)
+  - task:compare
+  - task:lookup
+  - task:distribution
+  - task:cluster
+
+  # Data characteristics
+  - data:categorical
+  - data:cardinality.low
+
+  # Visual channels
+  - visual:color
+  - visual:shape
+  - visual:texture
+  - visual:position
+
+  # Audience characteristics
+  - audience:general
+
+  # Medium/format
+  - medium:static
+  - medium:interactive
+  - medium:screen
+
+evidence:
+  strength: high # Options: high | medium | low
+  summary: "Mackinlay's 1986 effectiveness ranking for nominal data places position first, followed by color hue, texture, and shape. This indicates that after using position (e.g., for axes), color hue is the next most effective channel for distinguishing unordered categories."
+
+sources:
+  - type: research
+    ref: Mackinlay, 1986
+    url: https://dl.acm.org/doi/10.1145/22949.22950
+    note: "Figure 15 presents the full perceptual ranking for nominal data, showing Position > Color Hue > Texture > Connection > Containment > ... > Shape. This established the theoretical basis for these recommendations."
+    role: primary # Options: primary | supporting | related
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://dl.acm.org/doi/10.1145/3544548.3581349
+    note: "This survey of 59 papers confirms that color hue (CH) is a highly effective and commonly studied encoding for nominal data, and discusses empirical work on creating discriminable palettes."
+    role: supporting
+
+examples:
+  - type: good
+    description: "A scatter plot where points are colored by category (e.g., red for 'Fruit', blue for 'Vegetable'). The different hues make it easy to distinguish the groups."
+    url: 
+  - type: good
+    description: "A line chart with multiple time series, where each line is a different color to represent a different company."
+    url: 
+  - type: bad
+    description: "A scatter plot that uses different shades of the same color (e.g., light blue, medium blue, dark blue) to represent different, unordered categories like 'Car', 'Truck', and 'Bus'. This falsely implies an order."
+    url: 
+---
+
+## Guidance
+
+To distinguish between nominal (unordered) categories, the most effective visual channels to use (after position has been used for the main axes) are **color hue**, **texture**, and **shape**. These allow for quick and accurate identification of different groups without implying a false order.
+
+## Why
+
+According to established perceptual rankings, viewers can quickly and accurately differentiate a limited number of distinct hues or shapes. These channels are ideal for nominal data because they are not intuitively perceived as ordered, which aligns with the unordered nature of the data. Using an ordered channel like color saturation or size would violate the expressiveness principle by implying a ranking that doesn't exist.
+
+### Core Principle
+
+Use visual channels that are perceptually distinct but unordered to encode data that is categorically different but unordered.
+
+## When it applies
+
+-   When assigning colors to different categories in a legend.
+-   When choosing how to represent different groups of points in a scatter plot.
+-   When styling different lines in a multi-series line chart.
+-   When representing categorical data on a map with glyphs or symbols.
+
+## Exceptions
+
+-   **High Cardinality:** The number of easily distinguishable hues is small (around 5-8). For nominal data with many categories, relying on color hue alone can lead to confusion as colors become too similar. In such cases, direct labels, interactivity (hovering), or breaking the chart into small multiples may be necessary.
+-   **Brand Constraints:** If you are required to use a limited brand color palette, you may not have enough distinct hues available. You might need to supplement with other channels like shape or rely on interactivity.
+
+## Trade-offs
+
+-   **Accessibility:** Relying solely on color hue can make a chart unreadable for viewers with color vision deficiency. It is a best practice to use a redundant encoding (e.g., color *and* shape, or color *and* different dash styles for lines) to improve accessibility.
+-   **Clutter vs. Clarity:** Using many different shapes or complex textures can add visual clutter to a chart, even if they are technically distinct. Color hue is often less cluttering than shape or texture.
+
+## Signs of Trouble
+
+-   **Similar Colors:** Your color palette includes two or more colors that are difficult to tell apart (e.g., a light green and a light teal).
+-   **Back-and-Forth:** Viewers have to repeatedly look back and forth between the chart and the legend to identify which category is which.
+-   **Accessibility Failure:** When viewed with a colorblindness simulator, two or more categories become indistinguishable.
+-   **False Ordering:** Using different saturations of one color (light blue, dark blue) for nominal data, making viewers think there's an order.
+
+## How to Improve
+
+-   **Quick Fix: Use a Color Palette Tool.** Use a tool designed for generating qualitative (categorical) color palettes, such as ColorBrewer or Viz Palette. These tools are built to maximize perceptual distance between colors and often include colorblind-safe options.
+-   **Moderate Redesign: Add Redundant Encoding.** Don't rely on color alone. Pair color with shape for scatter plots (e.g., red circles, blue squares) or with dash styles for line charts (e.g., solid red line, dashed blue line). This makes the chart more robust and accessible.
+-   **Comprehensive Approach: Rethink the Chart Type.** If you have too many categories to distinguish effectively with color or shape, consider a different approach. A bar or dot plot can use position to separate the categories, with direct labels for each one. Alternatively, small multiples can be used to give each category its own small chart, eliminating the need for a complex legend.
+```

@@ -1,0 +1,267 @@
+```md
+---
+id: use-size-for-extremum-accuracy
+title: "Use size to accurately find minimum and maximum values; use grayscale value for speed"
+
+tags:
+  - impact:perceptual
+  - impact:performance
+  - chart:glyphs
+  - chart:scatter
+  - task:find-extremum
+  - task:lookup
+  - task:rank
+  - data:quantitative
+  - data:ordinal
+  - visual:size
+  - visual:color
+  - audience:general
+  - medium:static
+  - medium:interactive
+
+evidence:
+  strength: medium
+  summary: "A 2016 crowdsourced study with 87 participants found that encoding data with 'size' led to the highest accuracy for identifying minimum and maximum values in a sequence. Using 'value' (grayscale) resulted in the fastest task completion times."
+
+sources:
+  - type: research
+    ref: "Chung et al., 2016"
+    url: "https://doi.org/10.1111/cgf.12889"
+    note: "Experiment 2 tested which visual channel was most effective for min/max value judgments. Size was most accurate (lowest error rate), and value (grayscale) was fastest (lowest response time). Hue and orientation were least accurate."
+    role: primary
+
+---
+## Guidance
+To help users identify minimum or maximum values in a sequence (e.g., finding the biggest/smallest data point), encode the quantitative value using **size** for the best accuracy, or **value** (grayscale intensity) for the fastest performance.
+
+## Why
+Humans are highly effective at comparing the sizes of objects to determine extremes, leading to fewer errors. At the same time, judging differences in grayscale value is a very fast pre-attentive task, reducing the time needed to find the target. This guideline optimizes for either accuracy or speed depending on the primary goal of the task.
+
+### Core Principle
+The choice of visual channel directly impacts the speed and accuracy of a perceptual task. Channels that are perceptually ordered and quantitative, like size and value, are better suited for tasks involving magnitude judgments than non-ordered channels like hue.
+
+## When it applies
+- When designing a series of glyphs or symbols where a quantitative attribute needs to be clearly distinguished.
+- When the primary user task is to find the minimum, maximum, or outliers in a set of data points.
+- In scatterplots where a third variable is encoded by a visual channel like the size or color of the points.
+
+## Exceptions
+- If the dynamic range of the data is very large, using `size` can be problematic: very small items may become invisible, while very large items may occlude others.
+- When using `value` (grayscale), the number of distinguishable steps is limited (typically 5-7), so it may not be suitable for data with high cardinality or when subtle differences are important.
+
+## Trade-offs
+- Using `size` is highly accurate but can be slower to process than `value`, as it may require more conscious comparison.
+- Using `value` (grayscale) is very fast but can be slightly less accurate than `size`.
+- Using `shape` (with a countable feature) is surprisingly accurate but is significantly slower than other channels, increasing cognitive load.
+
+## Signs of Trouble
+- **High Error Rate:** Users frequently misidentify the minimum or maximum value. This is a common symptom when using channels like color `hue` or `orientation` for this task.
+- **Slow Performance:** Users take a long time to complete the task. This often occurs when using cognitively demanding channels like `shape` or when users have to read raw numeric text.
+- **User Complaints:** Users express difficulty in telling which item is the largest or smallest.
+
+## How to Improve
+- **Quick Fix:** If you are using a poor channel like color `hue`, switch to a sequential color ramp (e.g., from light gray to dark gray, or light blue to dark blue). This changes the encoding from the ineffective `hue` to the more effective `value` (or `saturation`).
+- **Moderate Redesign (Prioritizing Accuracy):** Change the primary encoding for the quantitative data to `size`. Ensure the size range is sufficient to make the smallest and largest values clearly distinguishable.
+- **Moderate Redesign (Prioritizing Speed):** Change the primary encoding to `value` (grayscale intensity). This is often the fastest way for users to spot the darkest or lightest element in a sequence.
+
+```
+<split/>
+```md
+---
+id: avoid-hue-for-ordered-data
+title: "Avoid using color hue or orientation to encode ordered quantitative data"
+
+tags:
+  - impact:perceptual
+  - impact:ethical
+  - task:rank
+  - task:find-extremum
+  - task:correlation
+  - data:quantitative
+  - data:ordinal
+  - visual:color
+  - visual:orientation
+  - audience:general
+
+evidence:
+  strength: medium
+  summary: "A 2016 study found that color hue and orientation were the least accurate visual channels for finding min/max values. Hue was also perceived as less ordered than the underlying data, making it poor for judging data trends or correlation."
+
+sources:
+  - type: research
+    ref: "Chung et al., 2016"
+    url: "https://doi.org/10.1111/cgf.12889"
+    note: "Across two experiments, color hue and orientation consistently ranked at or near the bottom for both accuracy in finding extrema (Experiment 2) and for creating a perception of order (Experiment 1)."
+    role: primary
+  - type: research
+    ref: "Cleveland & McGill, 1984"
+    url: "https://doi.org/10.2307/2288400"
+    note: "Foundational work that established perceptual hierarchies, placing channels like position and length far above color and angle (related to orientation) for quantitative tasks."
+    role: supporting
+
+---
+## Guidance
+Do not use color `hue` (e.g., red, green, blue) or `orientation` (the angle of a line or shape) to represent ordered quantitative or ordinal data. These channels are not perceptually ordered and lead to high error rates.
+
+## Why
+The human visual system does not naturally perceive an intrinsic order in color hues (e.g., is green "more" or "less" than blue?) or in the rotation of an object. When a viewer sees a sequence of different hues, their brain treats them as distinct categories, not as a progression along a scale. This makes it very difficult and error-prone to judge rank, order, or identify extreme values.
+
+### Core Principle
+Visual encodings should match the structure of the data. Ordered data requires a perceptually ordered visual channel (like position, length, size, or saturation). Using a categorical channel (like hue or shape) for ordered data creates a perceptual mismatch.
+
+## When it applies
+- When encoding any quantitative or ordinal data (e.g., temperature, revenue, survey ratings).
+- When the user needs to perform tasks like ranking, comparing magnitudes, judging trends, or finding the smallest/largest values.
+- This applies to glyphs, points in a scatterplot, lines, bars, and any other visual mark.
+
+## Exceptions
+- `Hue` is an excellent channel for **categorical** (nominal) data, where the goal is to distinguish between separate, unordered groups.
+- A very limited, culturally conventional set of hues might imply order (e.g., a traffic light red-yellow-green for "bad-neutral-good"), but this is not generalizable and is highly context-dependent.
+- `Orientation` or `angle` can be effective in specific chart types where it is mapped to a common scale, such as in a pie chart (though angle is still less accurate than position). The guideline applies to its use as an encoding for individual glyphs in a sequence.
+
+## Trade-offs
+There are few trade-offs to following this rule for ordered data. Sticking to perceptually ordered channels like position, size, or color value/saturation will almost always improve clarity and reduce errors. The main "cost" is giving up the use of multiple colors, but the gain in interpretability is worth it.
+
+## Signs of Trouble
+- **Rainbow Legend:** The chart's legend shows a sequence of distinct hues (red, orange, yellow, green, blue...) for a continuous or ordered variable.
+- **Inability to Rank:** When looking at two marks, a viewer cannot immediately say which one represents a larger value without consulting the legend.
+- **Slow, Error-Prone Interpretation:** Viewers have to constantly refer back to the legend to decode the values, and they frequently make mistakes when judging order or magnitude.
+- **"What does this color mean?"** If this question is frequently asked, it's a sign the color encoding is not intuitive.
+
+## How to Improve
+- **Quick Fix: Switch to a Sequential Palette.** If you are using a rainbow `hue` scale, replace it with a sequential color scale. This can be a single hue that varies in lightness/saturation (e.g., light blue to dark blue) or a grayscale ramp. This changes the encoding from `hue` to `value` and/or `saturation`, which are perceptually ordered.
+- **Moderate Redesign: Switch the Visual Channel.** Instead of color, encode the ordered data using a more effective channel like `size` (for glyphs) or `position` (by switching to a bar or dot plot). Reserve color `hue` for an important categorical variable if one exists.
+- **Comprehensive Approach: Re-evaluate Encodings Holistically.** Review all data attributes and user tasks. Assign the most effective visual channels (like position, length, size) to the most important quantitative comparisons. Use less effective channels like `hue` for secondary or categorical information.
+
+```
+<split/>
+```md
+---
+id: use-countable-features-for-ordered-shapes
+title: "Encode ordered data with shapes by varying a countable feature"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:glyphs
+  - chart:scatter
+  - task:rank
+  - task:find-extremum
+  - data:quantitative
+  - data:ordinal
+  - visual:shape
+  - access:cognitive-load-risk
+
+evidence:
+  strength: low
+  summary: "A 2016 study found that, contrary to some theories, shape can encode ordered data if the shape variation is based on a countable feature (e.g., number of spikes on a star). This encoding was surprisingly accurate for finding extrema, but also the slowest to process."
+
+sources:
+  - type: research
+    ref: "Chung et al., 2016"
+    url: "https://doi.org/10.1111/cgf.12889"
+    note: "The study tested a star-shaped glyph where the number of spikes represented an ordered value. In Experiment 1, it was perceived as more ordered than hue or orientation. In Experiment 2, it was the second-most accurate channel for finding extrema (after size), but also had the second-longest response time."
+    role: primary
+  - type: research
+    ref: "Bertin, 1983. Semiology of Graphics."
+    note: "Classic theory that categorizes 'shape' as a categorical (associative) visual variable, not an ordered one. This study provides a nuance to that rule."
+    role: related
+
+---
+## Guidance
+If you must use `shape` to encode ordered data, vary the shape along a single, easily countable dimension, such as the number of sides of a polygon or points on a star. Be aware that this increases cognitive load and interpretation time.
+
+## Why
+While shape is generally considered a categorical (unordered) visual variable, the human brain can perceive order if the variation is systematic and quantifiable. By changing the number of points on a star (e.g., 3, 4, 5, 6 points), you are implicitly encoding the data with a "count" channel, which is ordered. This allows for surprisingly accurate judgments but requires more conscious effort (counting) than pre-attentive channels like size or color value.
+
+### Core Principle
+A visual channel can be "forced" to be ordered if its variation is mapped to an ordered and countable geometric property. This combines a categorical channel (`shape`) with a quantitative one (`count`).
+
+## When it applies
+- When designing custom glyphs to represent multivariate data.
+- In situations where more effective channels like position, size, and color are already used to encode other variables.
+- When accuracy is more important than speed, and the number of distinct steps is relatively small.
+
+## Exceptions
+- Do not use a set of arbitrary, unrelated shapes (e.g., a circle, a square, a triangle, a cross) to represent ordered data. This provides no perceptual ordering. The shapes themselves must vary systematically.
+- This method is not suitable for tasks requiring rapid interpretation, as the cognitive load of counting or differentiating complex shapes is high.
+
+## Trade-offs
+- **Accuracy for Speed:** Using countable shapes can be relatively accurate for magnitude comparison tasks, but it is one of the slowest methods, significantly increasing the time and mental effort required from the viewer.
+- **Limited Steps:** The number of easily distinguishable shapes is low. It's hard to quickly tell the difference between a 10-sided and an 11-sided polygon, limiting the practical cardinality of the data.
+- **Cognitive Load:** This method is cognitively demanding. Other channels like size or value are processed much more automatically.
+
+## Signs of Trouble
+- **Arbitrary Shapes:** The legend shows a collection of unrelated shapes (e.g., circle, star, square) mapped to a quantitative scale.
+- **Slow Reading Time:** Users take a very long time to interpret the chart because they have to stop and carefully inspect or count features on each shape.
+- **High Cognitive Load:** Viewers report that the chart is "tiring" or "hard to read."
+- **Indistinguishable Shapes:** The shape variations are too subtle to be easily distinguished (e.g., comparing a 9-pointed star to a 10-pointed star).
+
+## How to Improve
+- **Quick Fix:** If using arbitrary shapes, switch to a more effective channel like `size` or `color value`.
+- **Moderate Redesign:** If you must use shape, ensure the variation is simple and clear. For example, use regular polygons with a small number of sides (e.g., triangle, square, pentagon, hexagon). Add labels if necessary to aid interpretation.
+- **Comprehensive Approach:** Re-evaluate if `shape` is the right channel for this data attribute. Typically, ordered data should be mapped to a more perceptually efficient channel (position, length, size, saturation). Reserve `shape` for purely categorical data where it excels.
+
+```
+<split/>
+```md
+---
+id: distinguish-perceived-order-from-actual-order
+title: "Recognize that some visual channels can exaggerate or understate the perception of order"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - impact:ethical
+  - task:correlation
+  - task:trend
+  - task:rank
+  - visual:size
+  - visual:color
+  - visual:texture
+  - data:quantitative
+  - data:ordinal
+
+evidence:
+  strength: medium
+  summary: "A 2016 study found a significant divergence between the actual, measured order in a data sequence and the 'perceived orderedness' reported by viewers. Grayscale value and texture made sequences seem more ordered than they were, while size was a more faithful representation."
+
+sources:
+  - type: research
+    ref: "Chung et al., 2016"
+    url: "https://doi.org/10.1111/cgf.12889"
+    note: "Experiment 1 asked 110 participants to rate the 'orderedness' of sequences. Results in Figure 5 show that for the same level of statistical disorder, sequences encoded with 'value' (grayscale) and 'texture' were consistently rated as more ordered, while 'hue' and 'orientation' were rated as less ordered. 'Size' tracked the actual disorder most closely."
+    role: primary
+
+---
+## Guidance
+Be aware that your choice of visual channel can influence how ordered or chaotic a dataset appears to the viewer. To give a more faithful impression of the data's underlying order, use **size**. To create a stronger perception of order and trends, use **value** (grayscale intensity) or **texture**.
+
+## Why
+Some visual channels are more "sensitive" to disorder than others. Channels like grayscale `value` and `texture` are so strongly perceived as ordered that viewers may see a pattern or trend even when significant disorder is present. Conversely, channels like `hue` are so perceptually chaotic that they can mask an underlying pattern. `Size` provides a more neutral, accurate visual representation of the statistical level of order or correlation in the data.
+
+### Core Principle
+The perceived properties of a visualization do not always map 1:1 to the statistical properties of the data. An effective and ethical designer must understand which visual channels might exaggerate or mask patterns and choose the channel that best aligns with the intended task and message.
+
+## When it applies
+- When visualizing data to assess its correlation, trend, or level of order.
+- When choosing an encoding for a scatterplot or glyph map where you want to show the relationship between variables.
+- When you are deciding whether to emphasize a trend (use `value`) or provide a more neutral view (use `size`).
+
+## Exceptions
+- If the primary goal is not to judge order but simply to look up individual values, this effect is less critical.
+- When using `value` or `texture`, if the data is truly highly ordered, then the channel choice simply reinforces the existing pattern, which is not misleading. The risk comes from making noisy data look clean.
+
+## Trade-offs
+- **Emphasizing vs. Representing:** Using `value` or `texture` can make a weak trend more salient and easier to spot, but at the risk of misleading the viewer about the strength of the pattern.
+- **Faithfulness vs. Salience:** Using `size` provides a more honest depiction of the data's messiness, but a subtle trend might be harder for a viewer to detect compared to when it's encoded with `value`.
+
+## Signs of Trouble
+- **False Confidence:** A chart using grayscale `value` shows what appears to be a very strong, clean trend, but the underlying data has a low correlation coefficient or high variance. The channel may be creating an illusion of order.
+- **Missed Patterns:** A chart using color `hue` or `orientation` to encode a quantitative variable looks like a random mess, causing a viewer to conclude there is no pattern, even if a moderate trend exists in the data.
+- **Inaccurate Takeaways:** Viewers consistently overestimate the strength of a correlation when it is encoded with `value` or `texture`.
+
+## How to Improve
+- **For Neutral Assessment:** If the goal is to let the viewer make an unbiased assessment of the data's order or correlation, encode the variable using `size`. This channel was found to most closely match the statistical reality.
+- **To Emphasize a Trend:** If you have identified a meaningful trend and want to make it as clear as possible for the viewer, encoding it with `value` (grayscale) or `texture` can help make the pattern more perceptually salient. Be prepared to justify this choice and supplement with statistical information (e.g., an R² value).
+- **Provide Both:** In an interactive context, you could allow the user to switch the encoding between `size` and `value` to get both a "faithful" and a "salient" view of the data, helping them understand the pattern from multiple perspectives.

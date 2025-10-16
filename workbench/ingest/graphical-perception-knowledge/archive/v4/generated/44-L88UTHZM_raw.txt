@@ -1,0 +1,360 @@
+```md
+---
+id: prefer-position-for-quantitative
+title: "Use position on a common scale to encode quantitative data"
+tags:
+  - impact:perceptual
+  - chart:bar
+  - chart:line
+  - chart:scatter
+  - chart:pie
+  - chart:donut
+  - task:compare
+  - task:rank
+  - task:lookup
+  - data:quantitative
+  - visual:position
+  - visual:length
+  - visual:angle
+  - visual:area
+  - visual:color
+  - audience:general
+  - medium:static
+sources:
+  - type: research
+    ref: Cleveland & McGill, 1984
+    url: https://doi.org/10.1145/22949.22950
+    note: "Established the foundational ranking of perceptual tasks, showing position on a common scale is most accurate."
+  - type: research
+    ref: Mackinlay, 1986
+    url: https://doi.org/10.1145/22949.22950
+    note: "Extended the ranking to create an automated system based on principles of expressiveness and effectiveness."
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://doi.org/3544548.3581349
+    note: "Synthesized findings from 59 papers, confirming the primacy of position encodings (see Table 3)."
+---
+
+## Guidance
+
+For comparing or ranking quantitative values, encode data using position along a common, aligned scale (like in a bar chart or dot plot). This is more perceptually accurate than using length, angle, area, or color saturation.
+
+## Why
+
+The human visual system is most accurate at judging differences in position along a common scale. Other visual channels, such as angle (in pie charts), area (in bubble charts), or color saturation (in heatmaps), lead to larger estimation errors and less accurate comparisons. This principle, established by Cleveland and McGill, is a cornerstone of effective visualization design.
+
+## When it applies
+
+- When the primary task is to enable users to accurately compare, rank, or look up quantitative values.
+- When it is important for viewers to notice subtle but meaningful differences between data points.
+- This guidance applies to most common chart types intended for quantitative comparison.
+
+## Exceptions
+
+- When the goal is to show a general trend or part-to-whole relationship where exact comparisons are less important, other encodings might be acceptable (e.g., area in treemaps for hierarchical composition).
+- When showing correlation in a scatterplot, two position channels are used to reveal a pattern, not just for simple comparison along one axis.
+- When visualizing data on a map, position is already used to encode geography, so another channel (like color or size) must be used for the quantitative value.
+
+## Trade-offs
+
+- Charts that rely heavily on position (like bar charts or dot plots) can sometimes take up more space than area-based charts (like treemaps).
+- Some audiences may find a pie chart more intuitively familiar for a simple part-to-whole comparison, even if it is less perceptually accurate.
+
+## Signs of Trouble
+
+- **Inaccurate Judgments:** Viewers consistently misjudge the relative size of values (e.g., a value that is 2x another does not look twice as large).
+- **Invisible Differences:** Small but important differences between values are not visible or are hard to discern.
+- **Label Dependency:** The chart is unreadable and comparisons are impossible without adding direct data labels to every mark.
+
+## How to Improve
+
+- **Quick Fix: Add Data Labels.** If you must use a less accurate encoding like angle or area, add direct data labels (e.g., "42%") to each mark. This provides an escape hatch, allowing users to read the exact values instead of relying on flawed perceptual estimation.
+
+- **Moderate Redesign: Switch to Aligned Length.** If using unaligned lengths or angles (like in a pie chart), switch to a chart that uses length from a common baseline, such as a stacked bar chart. While not as accurate as a standard bar chart for all comparisons, it's an improvement over angle.
+
+- **Comprehensive Redesign: Use Position on a Common Scale.** Redesign the chart to use the most accurate encoding. Replace a pie chart, donut chart, or bubble chart with a standard bar chart or a dot plot. This directly leverages the most effective visual channel for quantitative comparison.
+
+```
+<split/>
+```md
+---
+id: use-bars-instead-of-pies
+title: "Use bar charts over pie charts for comparisons"
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:bar
+  - chart:pie
+  - chart:donut
+  - task:compare
+  - task:rank
+  - task:composition
+  - data:quantitative
+  - data:categorical
+  - visual:length
+  - visual:angle
+  - visual:area
+sources:
+  - type: research
+    ref: Cleveland & McGill, 1984
+    url: https://doi.org/10.1145/22949.22950
+    note: "Original experiments demonstrated that judging position/length against a common scale is more accurate than judging angle."
+  - type: research
+    ref: Heer & Bostock, 2010
+    url: https://doi.org/10.1145/1753326.1753357
+    note: "Replicated and extended Cleveland & McGill's findings via crowdsourcing, confirming the superiority of bar charts over pie charts for comparison."
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://doi.org/3544548.3581349
+    note: "Synthesis of multiple studies (p.10) confirms bar charts outperform pie charts for 'sort' tasks."
+---
+
+## Guidance
+
+When comparing the magnitude of different categories, especially for ranking or assessing differences, use a bar chart instead of a pie chart.
+
+## Why
+
+People are much better at accurately judging and comparing lengths from a common baseline (in a bar chart) than they are at judging angles or areas (in a pie chart). This makes comparisons in bar charts faster, more accurate, and less prone to error. Pie charts often lead to perceptual distortion, especially when slices are of similar size or not aligned to a vertical or horizontal axis.
+
+## When it applies
+
+- When a user needs to compare the values of different parts of a whole.
+- When the task is to rank categories by value.
+- This is especially critical when there are more than 2-3 categories or when the differences between categories are subtle.
+
+## Exceptions
+
+- A pie chart may be acceptable for showing a simple part-to-whole relationship with only **two or three** distinct, very different slices (e.g., 75% vs 25%). In these limited cases, the "part of a whole" metaphor can be intuitive and the perceptual error is minimal.
+- When the goal is simply to communicate that one part is a majority of the whole, without needing precise comparisons.
+
+## Trade-offs
+
+- A bar chart may take up more screen real estate, especially if category labels are long (though a horizontal bar chart mitigates this).
+- Some audiences may have a strong (though misguided) expectation for pie charts to be used for any data that represents percentages or composition.
+
+## Signs of Trouble
+
+- **Similar Slices:** The chart contains multiple slices of similar size, making it impossible to tell which is larger without reading labels.
+- **The 5-Slice Rule:** The pie chart has more than 5 slices, creating significant visual clutter and cognitive overload.
+- **Non-Aligned Comparison:** It's difficult to compare two slices that are not adjacent to each other (e.g., comparing a slice at 2 o'clock with one at 7 o'clock).
+- **Label Dependency:** The chart is completely unreadable without direct data labels on every single slice.
+
+## How to Improve
+
+- **Quick Fix: Simplify and Label.** If you absolutely must use a pie chart, ensure it has 3 or fewer slices, add direct percentage labels, and sort the slices from largest to smallest starting at the 12 o'clock position to provide a consistent baseline.
+
+- **Moderate Redesign: Switch to a Donut Chart.** Convert the pie chart to a donut chart. While still based on angle/arc length, the empty center can reduce the tendency to misinterpret area and encourages focus on the arc length, which is marginally better for comparison.
+
+- **Comprehensive Redesign: Use a Bar Chart.** Replace the pie chart with a bar chart, with categories on the y-axis and values on the x-axis. Sort the bars from largest to smallest (unless there is a natural order to the categories) to make ranking effortless.
+
+```
+<split/>
+```md
+---
+id: handle-scatterplot-overplotting
+title: "Use aggregation or sampling to mitigate overplotting in scatterplots"
+tags:
+  - impact:perceptual
+  - impact:performance
+  - chart:scatter
+  - task:distribution
+  - task:correlation
+  - task:find-anomalies
+  - data:cardinality.high
+  - visual:position
+  - visual:color
+  - medium:static
+  - medium:interactive
+sources:
+  - type: research
+    ref: Sarikaya & Gleicher, 2018
+    url: https://doi.org/10.1109/TVCG.2017.2744184
+    note: "This survey paper provides a framework for scatterplot design, highlighting overplotting as a key challenge and categorizing solutions like binning, density estimation, and sampling (see Sections 5 & 7)."
+  - type: research
+    ref: Carr et al., 1987
+    note: "Pioneered scatterplot matrix and hexagonal binning techniques to handle larger datasets."
+  - type: research
+    ref: Mayorga & Gleicher, 2013
+    url: https://doi.org/10.1109/TVCG.2013.65
+    note: "Introduced Splatterplots, a density-based representation that handles overdraw while preserving outlier visibility."
+---
+
+## Guidance
+
+In scatterplots with a high number of data points (e.g., thousands or more), avoid plotting every point as an individual, opaque mark. Instead, use aggregation techniques (like binning or density estimation) or representative sampling to reveal the underlying data distribution and density.
+
+## Why
+
+When too many points are plotted in a small area, they overlap, a problem called "overplotting" or "overdraw." This obscures the true density of the data, hides clusters and patterns, and can make a dense region look the same as a sparse one. Individual points lose their identity, and the visualization becomes a misleading "ink blob."
+
+## When it applies
+
+- When creating a scatterplot where the number of data points is large relative to the available screen space, leading to significant point overlap.
+- When the primary task is to understand the distribution, density, or clustering of the data, rather than inspecting every single point.
+
+## Exceptions
+
+- If the primary task is to identify and interact with every single data point, and you have powerful interactive tools like zooming and panning, plotting all points might be necessary. However, an aggregated overview should still be provided as the initial, default view.
+- For datasets with low point density where overplotting is not an issue.
+
+## Trade-offs
+
+- Aggregation techniques sacrifice the ability to see and interact with individual data points in favor of showing the overall distribution. You lose granular detail to gain a clearer high-level summary.
+- Sampling shows individual points but only a subset of them, which risks misrepresenting the full dataset if not done carefully.
+
+## Signs of Trouble
+
+- **"Ink Blobs":** Large areas of the chart are solid blocks of color where individual points are indistinguishable.
+- **Hidden Density:** A region with 10,000 points looks identical to a region with only 1,000 points, masking the true density.
+- **Lost Outliers:** Outliers located near dense regions are completely covered by other points and become invisible.
+- **Performance Lag:** The visualization is slow and unresponsive because it is trying to render too many individual marks.
+
+## How to Improve
+
+- **Quick Fix: Reduce Opacity.** Reduce the opacity (alpha) of the points. This allows overlapping points to create darker areas, giving a rough, qualitative sense of density. This is a simple first step but becomes less effective with extreme overdraw.
+
+- **Moderate Approach: Use 2D Binning.** Group the data into a grid of rectangular or hexagonal bins. Use a color scale to encode the number of points in each bin, effectively creating a heatmap-like overview of the scatterplot space.
+
+- **Comprehensive Approach: Use Density Estimation.** Use a continuous kernel density estimation (KDE) to create a contour plot or a density-based representation like a Splatterplot. This provides a smoother, often more accurate view of the data distribution and can be combined with techniques to show outliers that fall outside the dense regions.
+
+```
+<split/>
+```md
+---
+id: task-driven-chart-selection
+title: "Select chart types based on the user's analytical task"
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:bar
+  - chart:line
+  - chart:scatter
+  - chart:parallel-coordinates
+  - task:correlation
+  - task:find-anomalies
+  - task:cluster
+  - task:filter
+  - task:sort
+sources:
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://doi.org/3544548.3581349
+    note: "Table 9 summarizes empirical findings recommending specific visualization types for ten different analytical tasks. This guideline atomizes those recommendations."
+  - type: research
+    ref: Amar, Eagan, & Stasko, 2005
+    url: https://doi.org/10.1109/INFVIS.2005.1532136
+    note: "Provided the low-level task taxonomy that forms the basis of the task categories used in Zeng & Battle's review."
+  - type: research
+    ref: Saket et al., 2019
+    note: "One of the key empirical papers synthesized in Table 9, directly evaluating the effectiveness of different chart types for different tasks."
+---
+
+## Guidance
+
+Choose the visualization type that is empirically best suited for the user's primary analytical task. Different chart types have different strengths, and aligning the chart to the task improves user performance, accuracy, and speed.
+
+## Why
+
+No single chart type is optimal for all tasks. For example, a chart that is excellent for showing correlation (like a scatterplot) may be poor for retrieving a specific value. Using a chart that is not well-suited for the task at hand can lead to slower performance, increased errors, and user frustration. Empirical studies provide evidence for which charts work best for specific low-level tasks.
+
+## When it applies
+
+- When designing a visualization or dashboard.
+- When building a visualization recommendation system.
+- When the user's goal can be mapped to a specific analytical task (e.g., "find the relationship between X and Y" maps to `task:correlation`).
+
+## Exceptions
+
+- Audience familiarity and conventions can sometimes override the empirically "best" choice. If an audience is highly familiar with a less optimal chart type, introducing a new one may require additional training.
+- When multiple tasks need to be supported simultaneously, a compromise chart type may be necessary, or multiple linked views should be provided.
+
+## Trade-offs
+
+- Choosing the most effective chart for a specific task might mean using a less common or less aesthetically familiar chart type.
+- Optimizing for one task may make the visualization less effective for other, secondary tasks.
+
+## Signs of Trouble
+
+- **Slow Performance:** Users take a long time to answer simple questions using the visualization.
+- **High Error Rates:** Users frequently make incorrect interpretations or draw false conclusions from the chart.
+- **User Frustration:** Users express difficulty in finding the information they need or complain that the chart is "confusing."
+- **Task-Chart Mismatch:** The chart's design does not align with its intended use (e.g., using a line chart to show categorical comparisons).
+
+## How to Improve
+
+- **Quick Fix: Add Annotations or Redundant Encoding.** If you can't change the chart type, add annotations (like trend lines on a scatterplot for a correlation task) or other visual cues to better support the primary task.
+
+- **Moderate Approach: Provide an Alternative View.** If the current chart must be kept, provide a toggle or a linked view that shows the same data in a more appropriate chart type for a specific task.
+
+- **Comprehensive Redesign: Implement Task-Driven Recommendations.** Based on empirical evidence (e.g., Zeng & Battle, Table 9), select the most effective chart for the primary task:
+  - For **Correlation** tasks: Use a **scatterplot**.
+  - For **Find Anomalies** tasks: Use a **scatterplot** or **parallel coordinates plot**.
+  - For **Clustering** tasks: Use a **bar chart** or **parallel coordinates plot**.
+  - For **Sorting** or **Filtering** tasks: Use a **bar chart**.
+  - For **Retrieve Value** tasks: Use a **pie chart** (for part-to-whole) or a **parallel coordinates plot**.
+
+```
+<split/>
+```md
+---
+id: bar-chart-aspect-ratio-bias
+title: "Be aware of aspect ratio bias in bar charts"
+tags:
+  - impact:perceptual
+  - impact:ethical
+  - chart:bar
+  - task:summary-mean
+  - task:compare
+  - data:quantitative
+  - visual:length
+sources:
+  - type: research
+    ref: Ceja et al., 2021
+    url: https://doi.org/10.1109/TVCG.2020.3031580
+    note: "Found that the systematic bias in bar charts is related to their aspect ratio: wide bars are overestimated, tall bars are underestimated, and square bars show no bias."
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://doi.org/3544548.3581349
+    note: "Summarizes the conflicting literature on bar chart bias and highlights the Ceja et al. finding as a recent explanation (see Table 8)."
+---
+
+## Guidance
+
+Recognize that the aspect ratio of bars in a bar chart can systematically bias a viewer's perception of their value. Tall, skinny bars tend to be underestimated, while short, wide bars tend to be overestimated.
+
+## Why
+
+Recent research has shown that the shape of a bar influences how its magnitude is perceived. Unlike the common belief that bar charts are always accurately perceived, their aspect ratio introduces a systematic perceptual bias. This can lead viewers to misjudge the data, with tall bars appearing smaller than they are and wide bars appearing larger.
+
+## When it applies
+
+- When designing any bar chart where the bars are not perfect squares.
+- When accurate judgment of bar length is critical.
+- When comparing values across different bar charts that may have different aspect ratios.
+
+## Exceptions
+
+- When the exact magnitude is not as important as the relative ranking of the bars.
+- When direct data labels are present on all bars, providing a way for users to override their perceptual judgment by reading the exact values.
+
+## Trade-offs
+
+- Forcing bars to be square to eliminate bias may lead to layouts that are impractical, space-inefficient, or aesthetically awkward.
+- Using a standard, non-square aspect ratio is common practice, but carries this risk of perceptual bias.
+
+## Signs of Trouble
+
+- **Extreme Aspect Ratios:** The bar chart consists of very tall, skinny bars or very short, wide bars.
+- **Inconsistent Ratios:** A dashboard or report uses multiple bar charts with different aspect ratios, introducing variable biases and making comparisons between charts unreliable.
+- **High-Stakes Decisions:** The bar chart is being used to inform important decisions where small misperceptions of value could have significant consequences.
+
+## How to Improve
+
+- **Quick Fix: Add Data Labels.** The most immediate mitigation is to add direct data labels to the bars. This allows viewers to read the true value, though it does not fix the underlying perceptual bias.
+
+- **Moderate Approach: Aim for Square-ish Ratios.** When designing the chart, try to make the aspect ratio of the bars as close to square as is practical. This may involve adjusting the chart's overall width, height, and the spacing between bars.
+
+- **Comprehensive Redesign: Switch to a Dot Plot.** To eliminate aspect ratio bias entirely, consider replacing the bar chart with a dot plot. A dot plot encodes value using only the position of a dot, which is not subject to the same shape-based perceptual biases as the length and area of a bar.
+
+```

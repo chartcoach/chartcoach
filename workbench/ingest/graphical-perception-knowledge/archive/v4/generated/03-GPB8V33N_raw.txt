@@ -1,0 +1,351 @@
+```md
+---
+id: prefer-scatter-plots-for-correlation
+title: "Prefer scatter plots for assessing correlation"
+
+tags:
+  - impact:perceptual
+  - chart:scatter
+  - chart:parallel-coordinates
+  - chart:line
+  - task:correlation
+  - data:quantitative
+  - medium:static
+
+sources:
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://doi.org/10.1145/3544548.3581349
+    note: "Synthesizes empirical work (Table 9) from Li et al. (2010) and Correll & Heer (2017) showing scatter plots are a top choice for correlation tasks."
+  - type: research
+    ref: Kanjanabose et al., 2015
+    url: https://doi.org/10.1111/cgf.12638
+    note: "The authors excluded correlation tasks from their study because prior work by Li et al. (2010) already established scatter plots as more effective than parallel coordinate plots for this purpose."
+
+tools:
+  - type: learn
+    name: The Visual Display of Quantitative Information
+    url: https://www.edwardtufte.com/tufte/books_vdqi
+    description: "Edward Tufte's foundational book on data graphics, which extensively covers the principles behind effective scatter plots."
+
+examples:
+  - type: good
+    description: "Anscombe's quartet demonstrates how scatter plots can reveal very different correlations (or lack thereof) in datasets with identical summary statistics."
+    url: https://en.wikipedia.org/wiki/Anscombe%27s_quartet
+  - type: bad
+    description: "Attempting to judge correlation from a parallel coordinate plot. While possible for experts with simple patterns, it is far less intuitive and more error-prone than a scatter plot, as the correlation is encoded in the pattern of line crossings rather than a single visual gestalt."
+---
+
+## Guidance
+
+For assessing the correlation between two quantitative variables, use a scatter plot over other chart types like parallel coordinate plots or line charts.
+
+## Why
+
+The human visual system is adept at perceiving the overall shape, direction, and tightness of a cloud of points. A scatter plot directly maps two variables to a 2D plane, allowing viewers to intuitively judge the strength and nature of a relationship from the resulting pattern. Research confirms that scatter plots lead to more accurate correlation estimates than parallel coordinate plots, where correlation is represented by less-perceptible line-crossing patterns.
+
+## When it applies
+
+- When the primary goal is to determine if a relationship exists between two continuous variables.
+- When you need to communicate the strength (e.g., strong, weak, none) and direction (positive or negative) of that relationship.
+
+## Exceptions
+
+- **Time-series data:** If the two variables have a shared, ordered dimension (usually time), a dual-axis line chart might be considered, but a scatter plot is still often clearer for seeing the pure correlation, stripped of the time dimension.
+- **Multivariate analysis:** When exploring correlations among many variables simultaneously, a scatter plot matrix (SPLOM) or a correlation matrix heatmap may be more efficient than creating individual scatter plots. Parallel coordinate plots can also be used to spot multivariate patterns, though they are less effective for assessing specific pairwise correlations.
+
+## Trade-offs
+
+- A scatter plot is limited to visualizing two (or with encoding, three to four) variables at once. For high-dimensional data, you sacrifice a holistic view for a clear pairwise view.
+- Overplotting can become an issue with large datasets, obscuring the true density and correlation. This requires mitigation techniques like transparency, sampling, or density plots.
+
+## Signs of Trouble
+
+- **Zig-zag decoding:** Viewers are trying to assess correlation in a parallel coordinate plot by mentally tracing the angles and crossings of many lines, a high-cognitive-load activity.
+- **Misleading trends:** In a line chart, viewers may confuse a trend over time with the correlation between the two variables.
+- **Identical summaries, different stories:** You rely solely on a correlation coefficient (e.g., Pearson's r) without visualizing the data, potentially missing non-linear relationships, outliers, or distinct subgroups (as demonstrated by Anscombe's quartet).
+
+## How to Improve
+
+- **Quick approach: Switch to a scatter plot.** If you are using another chart type to show correlation, the most direct improvement is to create a simple scatter plot with the two variables on the x and y axes.
+- **Moderate approach: Enhance the scatter plot.** Add a regression line (line of best fit) to make the overall trend more explicit. Be cautious to ensure the relationship is actually linear.
+- **Comprehensive approach: Address overplotting.** For large datasets, use techniques to mitigate overplotting. You can adjust point opacity (alpha), reduce point size, sample the data, or switch to a 2D density plot or heatmap to more accurately represent the data's distribution.
+```
+<split/>
+```md
+---
+id: use-bar-charts-for-comparison
+title: "Use bar charts for accurate comparisons and ranking"
+
+tags:
+  - impact:perceptual
+  - chart:bar
+  - chart:pie
+  - chart:donut
+  - task:compare
+  - task:rank
+  - task:sort
+  - task:extremum
+  - data:quantitative
+  - data:categorical
+
+sources:
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://doi.org/10.1145/3544548.3581349
+    note: "Table 9 summarizes multiple studies (Cleveland & McGill, 1984; Heer & Bostock, 2010; Saket et al., 2019) showing bar charts are a top recommendation for tasks like sorting, filtering, clustering, and finding extrema."
+
+tools:
+  - type: learn
+    name: "What to consider when creating bar charts"
+    url: https://www.datawrapper.de/academy/bar-charts
+    description: "A practical guide from Datawrapper on best practices for designing bar charts."
+
+examples:
+  - type: good
+    description: "A simple bar chart clearly shows the relative populations of different countries. It's easy to see which is largest, which is smallest, and to accurately judge the difference between any two bars."
+  - type: bad
+    description: "The same data presented in a pie chart makes it difficult to accurately compare the sizes of slices that are not adjacent or are similarly sized. Ranking them requires more cognitive effort and is more error-prone."
+---
+
+## Guidance
+
+When the primary task is to compare quantitative values across discrete categories or to rank those categories, use a bar chart.
+
+## Why
+
+Bar charts encode data using a powerful visual channel: position along a common scale. The ends of the bars are all aligned on a shared baseline (usually zero), making it exceptionally easy for the human eye to accurately compare their lengths and judge differences. This perceptual advantage makes bar charts a superior choice over charts that use angle (pie charts), area (bubble charts), or color intensity for comparison tasks, as confirmed by decades of graphical perception research.
+
+## When it applies
+
+- When you need to show a quantitative value for a set of distinct categories (e.g., sales per region, population by country).
+- When the key user task is to see which category has the highest or lowest value (`task:extremum`), to sort the categories by value (`task:sort`, `task:rank`), or to compare the difference between two or more categories (`task:compare`).
+
+## Exceptions
+
+- **Part-to-whole relationships:** If the primary goal is to show how categories contribute to a total, a stacked bar chart might be appropriate. However, note that only the bottom-most segment and the total length are easy to compare. For comparing other segments, a simple bar chart is still better.
+- **Very large number of categories:** If you have hundreds of categories, a bar chart can become unwieldy. In such cases, a table or an alternative visualization like a treemap might be necessary, though this sacrifices some of the bar chart's comparative precision.
+
+## Trade-offs
+
+- Bar charts can take up more space than more compact forms like treemaps, especially if category labels are long.
+- They are less effective at showing part-to-whole relationships compared to a (well-designed) stacked bar chart or treemap, as the total is not explicitly visualized.
+
+## Signs of Trouble
+
+- **The "Pie Chart Problem":** You are using a pie, donut, or bubble chart, and users are struggling to tell which segment/circle is bigger or by how much.
+- **Cognitive Strain:** Viewers have to read data labels or consult a legend to rank the values because the visual representation isn't clear enough on its own.
+- **Inaccurate Comparisons:** In a stacked bar chart, viewers are trying to compare the sizes of segments that do not share a common baseline, leading to errors.
+
+## How to Improve
+
+- **Quick approach: Sort the bars.** If your bar chart categories are not in a meaningful order, sort them by value (ascending or descending). This dramatically reduces the cognitive load required to find the highest/lowest values and understand the ranking.
+- **Moderate approach: Switch from a pie/donut chart.** If you are using a pie or donut chart for comparison, convert it to a bar chart. This immediately improves the perceptual accuracy of the comparisons.
+- **Comprehensive approach: Use a common baseline.** If you are using a chart type where values are not aligned to a common baseline (like a stacked bar chart for comparing inner segments, or a radar chart), consider switching to a grouped bar chart or small multiple bar charts to enable more accurate comparisons.
+```
+<split/>
+```md
+---
+id: avoid-extreme-bar-aspect-ratios
+title: "Avoid extreme aspect ratios in bar charts"
+
+tags:
+  - impact:perceptual
+  - impact:ethical
+  - chart:bar
+  - task:compare
+  - task:lookup
+  - data:quantitative
+
+sources:
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://doi.org/10.1145/3544548.3581349
+    note: "Table 8 summarizes research from Ceja et al. (2020) which found that the aspect ratio of bars introduces systematic bias: tall bars are underestimated, wide bars are overestimated, and square-like bars show no bias."
+
+examples:
+  - type: bad
+    description: "A bar chart with very tall, thin bars. Viewers will likely underestimate the true values represented by the bars, especially the longest ones."
+  - type: bad
+    description: "A bar chart with very short, wide bars. Viewers will likely overestimate the values, potentially perceiving differences as larger than they are."
+  - type: good
+    description: "A bar chart where the bars have a 'squarish' or balanced aspect ratio. This presentation minimizes the risk of perceptual bias in judging the bars' lengths."
+---
+
+## Guidance
+
+Design bar charts so that the bars have a balanced, "square-like" aspect ratio. Avoid making them either extremely tall and thin or extremely short and wide.
+
+## Why
+
+Recent graphical perception studies have revealed a systematic bias related to the aspect ratio of bars. The human brain does not judge length in isolation; it is influenced by width.
+-   **Tall, thin bars** are perceptually underestimated.
+-   **Short, wide bars** are perceptually overestimated.
+
+This bias means that viewers may systematically misinterpret the data you are presenting, which can be misleading. A balanced aspect ratio (close to 1:1) has been shown to minimize this perceptual error.
+
+## When it applies
+
+- When creating any bar chart (vertical or horizontal) where accurate judgment of magnitude is important.
+- This is especially critical in analytical or scientific contexts where precision matters, but it is a good general practice for all data communication to ensure fairness and accuracy.
+
+## Exceptions
+
+- **Sparklines:** In very small, word-sized charts (sparklines), the primary goal is to show shape and trend at a glance, not precise magnitude. In this context, the aspect ratio is dictated by the surrounding text, and the bias is less of a concern.
+- **Aesthetic choice:** In some artistic or infographic contexts, extreme aspect ratios may be used for stylistic effect. Be aware that this is an aesthetic choice that comes at the cost of perceptual accuracy.
+
+## Trade-offs
+
+- **Space constraints:** Adhering to this guideline may require more chart space than you have available, forcing a compromise between perceptual accuracy and layout constraints.
+- **Labeling:** Very wide bars can sometimes create awkward layouts for category labels.
+
+## Signs of Trouble
+
+- **"Skyscraper" bars:** Your chart has bars that are very tall and skinny, resembling skyscrapers.
+- **"Pancake" bars:** Your chart has bars that are very wide and short, like a stack of pancakes.
+- **Inconsistent bar widths:** The width of the bars changes within the same chart, which can further confuse perception.
+
+## How to Improve
+
+- **Quick approach: Adjust chart dimensions.** Manually resize the height and width of your chart container. Widen a chart with "skyscraper" bars or heighten a chart with "pancake" bars until the bars look more balanced.
+- **Moderate approach: Reduce the number of bars.** If you have too many categories, the bars may become too thin when squeezed into a small space. Consider grouping less important categories into an "Other" category or splitting the chart into multiple smaller charts (small multiples).
+- **Comprehensive approach: Implement a dynamic aspect ratio calculation.** In a programmatic charting environment, you can calculate the bar width based on the number of bars and the available chart height to target a specific aspect ratio, ensuring the bars remain well-proportioned even as the data or chart size changes.
+```
+<split/>
+```md
+---
+id: use-pcp-for-multivariate-outliers
+title: "Use parallel coordinate plots to identify outliers in multivariate data"
+
+tags:
+  - impact:perceptual
+  - chart:parallel-coordinates
+  - chart:scatter
+  - chart:table
+  - task:anomaly
+  - data:quantitative
+  - medium:static
+
+sources:
+  - type: research
+    ref: Kanjanabose et al., 2015
+    url: https://doi.org/10.1111/cgf.12638
+    note: "Found that parallel coordinate plots (PCPs) outperformed scatter plots and data tables in accuracy for outlier detection tasks. At harder difficulty levels, PCPs were also faster than scatter plots."
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://doi.org/10.1145/3544548.3581349
+    note: "Table 9 confirms PCPs are a recommended visualization type for finding anomalies, citing the Kanjanabose et al. (2015) study."
+
+tools:
+  - type: learn
+    name: "Parallel Coordinates"
+    url: https://www.data-to-viz.com/graph/parallel.html
+    description: "An explanation of how to build and interpret parallel coordinate plots, with reproducible code examples."
+
+examples:
+  - type: good
+    description: "A parallel coordinate plot of car data. A single car with extremely low mileage but very high horsepower would create a line with a unique, jagged pattern that stands out from the main bundle of lines, making it easy to spot as an outlier."
+  - type: bad
+    description: "A scatter plot matrix (SPLOM) of the same car data. The outlier might only be visible in one or two of the many small plots, making it easy to miss unless the viewer scrutinizes every single plot in the matrix."
+---
+
+## Guidance
+
+To find outliers in a dataset with multiple quantitative variables, a parallel coordinate plot (PCP) is often more effective than a data table or a series of scatter plots.
+
+## Why
+
+A parallel coordinate plot represents each data item as a polyline that connects its values across a series of parallel vertical axes. An outlier, being different from other data points across one or more variables, will often create a polyline with a path that deviates significantly from the main "bundle" of lines. This distinct visual signature makes outliers perceptually "pop out." Empirical studies have shown this method leads to higher accuracy in identifying outliers compared to scanning a table or looking for outlier points in a matrix of scatter plots.
+
+## When it applies
+
+- When you are exploring a multivariate dataset (with 3 or more quantitative variables).
+- When your goal is to find data points that are abnormal or different from the rest of the group. This could be for data cleaning, fraud detection, or identifying unique cases.
+
+## Exceptions
+
+- **Two variables:** For only two variables, a simple scatter plot is generally more straightforward and just as effective for spotting outliers.
+- **Categorical data:** PCPs are primarily designed for quantitative or ordinal data. They are less effective for purely categorical data.
+- **Very high dimensionality:** With a very large number of axes (e.g., >20), a PCP can become cluttered, and the outlier's signal might be lost in the noise. In such cases, dimensionality reduction techniques might be needed first.
+
+## Trade-offs
+
+- **Learning curve:** PCPs can be less intuitive for audiences unfamiliar with them compared to more common charts like scatter plots.
+- **Axis order:** The visibility of certain patterns, including outliers, can be highly dependent on the order of the axes. Interactive re-ordering of axes is often necessary for effective exploration.
+
+## Signs of Trouble
+
+- **"Needle in a haystack":** You are visually scanning a large data table row by row, trying to spot a row with unusual numbers. This is a slow and error-prone process.
+- **Matrix blindness:** You are looking at a scatter plot matrix and have to carefully examine every small plot to see if a point is an outlier in any dimension, which is cognitively demanding and easy to miss.
+- **Clutter:** Your PCP is a solid block of color, making it impossible to trace individual lines or spot deviating patterns.
+
+## How to Improve
+
+- **Quick approach: Highlight outliers.** If you can programmatically identify outliers (e.g., using statistical methods), you can then highlight the corresponding lines in the PCP with a bright, distinct color to make them stand out.
+- **Moderate approach: Use transparency and color.** Apply alpha transparency to the lines. The main patterns and clusters will appear as dense, opaque bundles, while outlier lines will be faint and distinct.
+- **Comprehensive approach: Enable interactive exploration.** Implement interactive features for your PCP. Allow users to re-order the axes to explore different dimensional adjacencies. Provide "brushing" functionality, where users can select a subset of lines on one axis to see where they go on other axes, which is a powerful way to isolate and examine potential outliers.
+```
+<split/>
+```md
+---
+id: use-tables-for-value-lookup
+title: "Use data tables for fast and precise value lookups"
+
+tags:
+  - impact:performance
+  - impact:perceptual
+  - chart:table
+  - chart:scatter
+  - chart:parallel-coordinates
+  - task:lookup
+  - data:quantitative
+
+sources:
+  - type: research
+    ref: Kanjanabose et al., 2015
+    url: https://doi.org/10.1111/cgf.12638
+    note: "This empirical study found that for value retrieval tasks, data tables resulted in the fastest response times, significantly outperforming both scatter plots and parallel coordinate plots."
+
+examples:
+  - type: good
+    description: "A financial report showing exact sales figures for different products in a table. A user can quickly find the exact sales number for 'Product X' by scanning the corresponding row and column."
+  - type: bad
+    description: "A scatter plot where a user needs to find the exact sales figure for 'Product X'. They must first find the point, then trace it to the y-axis and estimate its value, a slower and less precise process than reading a table."
+---
+
+## Guidance
+
+When the primary user task is to look up specific, precise numerical values, a data table is often more efficient than a visualization.
+
+## Why
+
+Visualizations excel at revealing patterns, trends, and relationships in data. However, this often comes at the cost of precision. To find a specific value in a chart, a user must locate a data point and then map it back to an axis, which involves estimation. A data table, by contrast, presents the exact values directly as text. For the singular task of value retrieval, reading a number is faster and more accurate than decoding it from a graphical element.
+
+## When it applies
+
+- The main goal is to find exact numbers (e.g., "What were the sales for Q3?").
+- The user needs high precision that would be lost in a graphical representation.
+- The dataset is relatively small, and scanning it is not prohibitive.
+
+## Exceptions
+
+- **Hybrid approach:** The best solution is often a hybrid one. A visualization can be used to show patterns, and a data table can be provided alongside it to allow for precise lookups. Many interactive dashboards allow users to see the underlying data table for a chart.
+- **Pattern discovery:** If the lookup task is part of a broader pattern-finding activity (e.g., "Find the value of the highest point"), a chart is superior because it makes finding that point of interest (the extremum) much easier in the first place.
+
+## Trade-offs
+
+- **Pattern blindness:** A table-only view completely obscures visual patterns, trends, correlations, and outliers that would be immediately apparent in a chart. You sacrifice insight for precision.
+- **Scalability:** Visually scanning a very large table to find a value can become slower than interacting with a chart (e.g., hovering over a point to see its value in a tooltip).
+
+## Signs of Trouble
+
+- **"Axis-tracing":** Users are spending a lot of time carefully tracing points from a chart back to the axes to estimate their values.
+- **Tooltip hunting:** In an interactive chart, users are hovering over many different points, one by one, just to read the exact numbers.
+- **Requests for raw data:** Your audience consistently asks for the raw data file or a table after seeing your visualization because they can't get the precision they need.
+
+## How to Improve
+
+- **Quick approach: Add data labels.** If you must use a visualization, add direct text labels to the data points. This provides the precision of a table within the context of the chart.
+- **Moderate approach: Provide a companion table.** Display a data table directly below or next to your visualization. This gives users the best of both worlds: the chart for patterns and the table for precision.
+- **Comprehensive approach: Create an interactive link.** In a digital medium, link the visualization and the table. When a user hovers over or clicks a data point in the chart, the corresponding row in the table is highlighted, and vice-versa. This creates a seamless experience for both pattern discovery and precise lookup.
+```

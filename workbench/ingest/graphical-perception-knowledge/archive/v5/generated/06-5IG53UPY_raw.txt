@@ -1,0 +1,395 @@
+```md
+---
+id: prefer-bars-over-pies-for-comparison
+title: "Use bar charts over pie charts for accurate part-to-whole comparisons"
+
+tags:
+  - impact:perceptual
+  - impact:logos
+  - chart:bar
+  - chart:pie
+  - chart:donut
+  - task:compare
+  - task:rank
+  - task:composition
+  - data:quantitative
+  - data:categorical
+  - visual:position
+  - visual:length
+  - visual:angle
+  - visual:area
+  - audience:general
+  - medium:static
+  - medium:screen
+
+evidence:
+  strength: high
+  summary: "Decades of research, starting with Cleveland & McGill (1984) and replicated since, consistently show that people judge length along a common scale (bar charts) more accurately than angles or areas (pie charts), leading to fewer errors in comparison tasks."
+
+sources:
+  - type: research
+    ref: Zeng & Battle, 2023
+    note: "Synthesizes literature confirming bar charts outperform pie charts in comparison tasks (p.10). The paper reviews studies by Cleveland & McGill [17], Heer & Bostock [34], and others."
+    role: primary
+  - type: research
+    ref: Cleveland & McGill, 1984
+    url: https://doi.org/10.1080/01000378408908844
+    note: "Foundational study establishing the perceptual hierarchy where position/length is superior to angle for quantitative judgments."
+    role: supporting
+  - type: research
+    ref: Heer & Bostock, 2010
+    url: https://doi.org/10.1145/1753326.1753357
+    note: "Crowdsourced replication confirming the original findings of Cleveland & McGill, showing bar charts lead to more accurate comparisons than pie charts."
+    role: supporting
+
+examples:
+  - type: bad
+    description: "This pie chart makes it difficult to compare the market share of the smaller competitors. It's nearly impossible to tell if 'Company C' is larger than 'Company D' without reading the labels."
+  - type: good
+    description: "By converting the pie chart to a bar chart and sorting the values, it becomes effortless to compare and rank all competitors. The superiority of 'Company B' and the close race between 'C' and 'D' are immediately obvious."
+---
+
+## Guidance
+
+When visualizing part-to-whole data and the main goal is for viewers to compare the sizes of the parts, use a bar chart instead of a pie chart.
+
+## Why
+
+Bar charts encode quantitative values using length along a common, straight baseline. Pie charts encode values using angle and area. Humans are significantly more accurate at judging and comparing lengths on a common scale than they are at judging angles or areas, which reduces misinterpretation.
+
+### Core Principle
+
+Humans judge quantities more accurately by comparing positions along a common scale than by comparing angles, areas, or colors.
+
+## When it applies
+
+- When showing part-to-whole relationships.
+- When the viewer needs to compare or rank the component parts.
+- When you have more than two or three categories.
+
+## Exceptions
+
+- If the goal is to show a single part-to-whole relationship for only two values (e.g., '60% Yes, 40% No').
+- If the parts sum to a meaningful, well-known total (like 100%) and precise comparison is not the primary goal.
+
+## Signs of Trouble
+
+- **Similar Slices:** A pie chart has multiple slices of similar size, making it hard to tell which is larger without reading labels.
+- **Legend Lookup:** Viewers must constantly look back and forth between the chart and a legend to understand it.
+- **Ranking Difficulty:** It's not immediately obvious how to rank the categories from largest to smallest.
+
+## How to Improve
+
+- **Quick Fix: Add Direct Labels.** If you must use a pie chart, add direct percentage labels to each slice to provide an 'escape hatch' for accurate reading.
+- **Comprehensive Redesign: Switch to a Bar Chart.** Convert the pie chart to a bar chart. For maximum clarity, sort the bars by value to make comparison and ranking trivial.
+
+```
+
+<split/>
+
+```md
+---
+id: use-segment-length-for-trajectory-time
+title: "Encode time on 2D trajectories using segment length"
+
+tags:
+  - impact:perceptual
+  - chart:line
+  - chart:map
+  - chart:map.glyphs
+  - data:spatiotemporal
+  - task:lookup
+  - task:aggregate
+  - visual:length
+  - medium:static
+
+evidence:
+  strength: medium
+  summary: "An empirical study found that encoding time via segment length (tick marks) resulted in significantly lower error rates for time-lookup tasks on 2D trajectories compared to encoding time with color or size."
+
+sources:
+  - type: research
+    ref: Perin et al., 2018
+    url: https://doi.org/10.1109/TVCG.2017.2743918
+    note: "Primary experimental study. Found that the 'TLENGTH' encoding had the lowest error for the TIME task (Figure 10) and was recommended for conveying time (RT1)."
+    role: primary
+
+tools:
+  - type: learn
+    name: "Paper: Assessing the Graphical Perception of Time and Speed on 2D+Time Trajectories"
+    url: https://doi.org/10.1109/TVCG.2017.2743918
+    description: "The research paper this guideline is based on, with full experimental details."
+
+examples:
+  - type: bad
+    description: "A line showing a storm's path uses a light-to-dark gradient to represent time. It is very difficult to identify where the storm was at the 50% time mark."
+  - type: good
+    description: "The same storm path is shown with tick marks added at equal time intervals (e.g., every hour). It is now much easier to count the ticks to find the 50% time mark."
+---
+
+## Guidance
+
+To represent the passage of time along a 2D trajectory (like a route on a map), use discrete, equally-timed tick marks. The resulting segment length between ticks will implicitly and effectively encode both time and speed.
+
+## Why
+
+Humans can accurately perceive and count discrete marks (ticks) to judge elapsed time. This method (`TLENGTH`) was found to be the most accurate for time-perception tasks in experiments, significantly outperforming encodings that use a continuous color gradient (`TVALUE`) or varying stroke-width (`TSIZE`).
+
+### Core Principle
+
+Discrete, countable marks are more effective for representing linear progression (like time) than continuous visual variables like color or size, which are harder to estimate precisely.
+
+## When it applies
+
+- When visualizing spatio-temporal data as a 2D path (e.g., a trip, animal migration, storm track).
+- When you need to convey how much time has elapsed at any point along the path.
+- When the task is to find a specific point in time (e.g., "Where was the vehicle at the 2-hour mark?").
+
+## Exceptions
+
+- If the path is extremely cluttered or crosses over itself many times, tick marks may become visually confusing.
+- If the background contains strong linear patterns (like a grid or contour lines), ticks may be difficult to distinguish. In such cases, another channel like size (`TSIZE`) may be a less accurate but more legible alternative.
+
+## Signs of Trouble
+
+- **Color Guessing:** A trajectory uses a color gradient for time, and viewers are unable to confidently locate a specific time point (e.g., "the 50% mark").
+- **Imprecise Width:** A trajectory uses varying line width for time, and it's hard to distinguish small changes in thickness.
+
+## How to Improve
+
+- **Comprehensive Redesign: Use Tick Marks.** Instead of using a continuous color gradient or varying stroke width to show time, divide the trajectory into segments of equal time duration using orthogonal tick marks.
+
+```
+
+<split/>
+
+```md
+---
+id: avoid-color-for-trajectory-time
+title: "Avoid encoding time on 2D trajectories with a continuous color scale"
+
+tags:
+  - impact:perceptual
+  - impact:accessibility
+  - chart:line
+  - chart:map
+  - data:spatiotemporal
+  - task:lookup
+  - visual:color
+  - access:color-vision-risk
+  - medium:static
+
+evidence:
+  strength: medium
+  summary: "An empirical study on trajectory visualization found that using a continuous color scale (e.g., light-to-dark) to represent time resulted in the highest error rates and slow performance for time-estimation tasks."
+
+sources:
+  - type: research
+    ref: Perin et al., 2018
+    url: https://doi.org/10.1109/TVCG.2017.2743918
+    note: "Experimental study showing the 'TVALUE' encoding produced the largest errors for the TIME task (Figure 10) and was explicitly discouraged (RT2)."
+    role: primary
+
+examples:
+  - type: bad
+    description: "A line showing a flight path uses a light-to-dark blue gradient to show elapsed time. It is very difficult to accurately locate the halfway point of the flight's duration."
+  - type: good
+    description: "The flight path is instead encoded with tick marks at 30-minute intervals. Finding the halfway point is now a much easier task of counting segments."
+---
+
+## Guidance
+
+Do not use a continuous color scale (e.g., a color value/brightness gradient) to represent the passage of time on a 2D path.
+
+## Why
+
+It is difficult for humans to accurately map a specific color shade back to a precise quantitative value, especially for non-extremum values. Experiments show this encoding (`TVALUE`) leads to the largest errors for time-lookup tasks, even though it is common in the literature. Viewers tend to give up and guess.
+
+### Core Principle
+
+Continuous color scales are poorly suited for precise value lookup tasks. They are better for showing overall trends or identifying extreme values.
+
+## When it applies
+
+- When visualizing a 2D trajectory where viewers need to look up or estimate the elapsed time at a specific point.
+- When accuracy in time perception is more important than aesthetics.
+
+## Exceptions
+
+- If the only task is to get a general sense of direction (e.g., "the path generally goes from light to dark") and no precise time lookups are needed. However, other encodings are still superior.
+
+## Signs of Trouble
+
+- **Value Guessing:** Viewers are unable to confidently locate a specific time point (e.g., "the 50% mark") and must guess.
+- **Slow Performance:** It takes viewers a long time to make a decision, and they may give up and click randomly.
+- **Indistinguishable Shades:** The color gradient is so smooth that large portions of the trajectory appear to be the same color.
+
+## How to Improve
+
+- **Moderate Redesign: Switch to Size.** If tick marks are not feasible, use varying line width (`TSIZE`) to encode time. This performs better than color, though it is still not ideal.
+- **Comprehensive Redesign: Use Segment Length.** The most effective method is to replace the color encoding with tick marks representing equal time intervals.
+
+```
+
+<split/>
+
+```md
+---
+id: use-color-for-trajectory-speed
+title: "Encode speed on 2D trajectories using a color value scale"
+
+tags:
+  - impact:perceptual
+  - chart:line
+  - chart:map
+  - data:spatiotemporal
+  - task:find-extremum
+  - task:lookup
+  - visual:color
+  - medium:static
+
+evidence
+  strength: medium
+  summary: "An empirical study found that using a color value (brightness) scale to encode speed on 2D paths resulted in lower error rates for speed-estimation tasks compared to using size (stroke width), especially for curved paths."
+
+sources:
+  - type: research
+    ref: Perin et al., 2018
+    url: https://doi.org/10.1109/TVCG.2017.2743918
+    note: "Experimental study found that the 'SVALUE' encoding performed well for the SPEED task, better than 'SSIZE', and was recommended (Rs1)."
+    role: primary
+
+examples:
+  - type: bad
+    description: "A curved line representing a car's path on a racetrack uses line width to show speed. The width is distorted by the curvature, making it hard to see where the car was fastest."
+  - type: good
+    description: "The same racetrack path uses a light-to-dark color gradient to show speed. The darkest point (fastest speed) is immediately obvious, even on the tightest curves."
+---
+
+## Guidance
+
+To represent varying speed along a 2D trajectory, use a sequential color value (brightness) scale. For example, a paler color for slow speeds and a darker color for fast speeds.
+
+## Why
+
+Color value (`SVALUE`) is effective for `find extremum` tasks, as the lightest or darkest points on the path are easily identifiable. Experiments show this encoding leads to lower error and is perceptually more effective than encoding speed with size (stroke width), which can be visually distorted on curved paths.
+
+### Core Principle
+
+Changes in color value (brightness) are robust to changes in shape or orientation, making it a reliable channel for encoding data on complex, curving paths.
+
+## When it applies
+
+- When visualizing a 2D trajectory and the primary task is to identify where speed is highest or lowest.
+- When visualizing trajectories that are curved, as color is not distorted by the path's geometry.
+
+## Exceptions
+
+- If color is already used for another variable (e.g., to distinguish between multiple trajectories).
+- If the audience has color vision deficiencies, a monochrome brightness scale is still effective, but care must be taken with contrast.
+- If precise speed *values* must be read, no single encoding is ideal, and tooltips or annotations may be necessary.
+
+## Signs of Trouble
+
+- **Distorted Width:** You are using line width to show speed on a curved path, and it is hard to judge the true speed because the thickness appears to change with a tight corner.
+
+## How to Improve
+
+- **Quick Fix: Switch to Color.** Change the encoding for speed from line width to a sequential color ramp (e.g., `white` to `darkgreen`).
+- **Moderate Redesign: Use a Diverging Palette for Speed Changes.** If the focus is on speeding up vs. slowing down relative to an average, use a diverging color palette (e.g., blue for slow, white for average, red for fast).
+
+```
+
+<split/>
+
+```md
+---
+id: optimize-categorical-colors-scatterplots
+title: "Optimize categorical colors and shapes in scatterplots for discriminability"
+
+tags:
+  - impact:perceptual
+  - impact:accessibility
+  - chart:scatter
+  - task:cluster
+  - task:lookup
+  - data:categorical
+  - visual:color
+  - visual:shape
+  - access:color-vision-risk
+
+evidence:
+  strength: medium
+  summary: "Studies on multiclass scatterplots show that using perceptually optimized color palettes and filled shapes significantly improves the ability to distinguish between categories, as cited in a 2023 literature review."
+
+sources:
+  - type: research
+    ref: Zeng & Battle, 2023
+    note: "Provides a case study of improving a Voyager scatterplot (Figure 5, p.12) using guidelines from Demiralp et al. [23] and Smart & Szafir [92] on color palettes and filled shapes."
+    role: primary
+  - type: research
+    ref: Demiralp et al., 2014
+    url: https://doi.org/10.1109/TVCG.2014.2346978
+    note: "Introduced a method for learning perceptual kernels to create discriminable color palettes."
+    role: supporting
+  - type: research
+    ref: Smart & Szafir (cited in Zeng & Battle, 2023)
+    note: "A study cited on p.8 of the review paper, which found that filled shapes improve color discrimination in scatterplots."
+    role: supporting
+
+tools:
+  - type: implement
+    name: Colorgorical
+    url: http://vrl.cs.brown.edu/color
+    description: "Generates categorical color palettes optimized for perceptual distance."
+  - type: validate
+    name: Viz Palette
+    url: https://projects.susielu.com/viz-palette
+    description: "Tool to create and test color palettes for data visualization, including colorblindness simulation."
+
+examples:
+  - type: bad
+    description: "A scatterplot uses a default color palette and open-circle marks to show three species. The 'Chinstrap' orange and 'Adelie' red are hard to distinguish, and the thin outlines reduce color salience."
+    url: https://i.imgur.com/gO0P0fC.png
+  - type: good
+    description: "The same scatterplot is improved by using a perceptually-distant color palette and filled-circle marks. All three species are now clearly distinguishable, even in dense areas."
+    url: https://i.imgur.com/k9vLw6d.png
+---
+
+## Guidance
+
+When using color to distinguish categories in a scatterplot, use a palette optimized for perceptual distance and prefer filled shapes over unfilled outlines.
+
+## Why
+
+Default software color palettes are often not designed for maximum perceptual separation, leading to categories that are hard to tell apart. Research shows that:
+1.  Palettes can be algorithmically re-ordered to maximize the visual difference between colors, making categories easier to distinguish.
+2.  Filled shapes provide a larger surface area for color, making them more discriminable and their color easier to perceive than thin outlines.
+
+### Core Principle
+
+Maximize the perceptual distance between visual marks to make them easier to distinguish.
+
+## When it applies
+
+- When creating scatterplots with multiple (3+) categorical groups distinguished by color.
+- When the task involves identifying clusters or distinguishing points from different groups.
+- When accessibility for users with color vision deficiencies is a concern.
+
+## Exceptions
+
+- If point density is extremely high, smaller, unfilled, or semi-transparent marks may be necessary to mitigate overplotting, even at the cost of some color discriminability.
+
+## Signs of Trouble
+
+- **Blending Categories:** Two or more colored groups of points are difficult to tell apart, especially where they overlap.
+- **The Squint Test:** If you squint your eyes, do different categories merge into one visual group?
+- **Unfilled Shapes:** The chart uses hollow shapes (e.g., `○`, `□`) where the color is only on a thin outline, reducing its visibility.
+- **Colorblind Confusion:** When viewed through a colorblindness simulator, two or more categories become identical.
+
+## How to Improve
+
+- **Quick Fix: Use Filled Shapes.** Change the mark property from an outline to a filled shape (e.g., a filled circle `●` instead of an open one `○`). This is a simple change that immediately improves color salience.
+- **Comprehensive Redesign: Adopt a Perceptually-Tuned Palette.** Use a tool like Colorgorical or Viz Palette to generate a new color scheme specifically designed for discriminability. These tools create palettes where colors are as far apart from each other as possible in perceptual color space.
+
+```

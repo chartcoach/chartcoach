@@ -1,0 +1,215 @@
+```md
+---
+id: group-similar-marks-for-search
+title: "Group similar marks to speed up visual search"
+tags:
+  - impact:perceptual
+  - impact:performance
+  - impact:cognitive
+  - chart:scatter
+  - chart:heatmap
+  - chart:treemap
+  - task:lookup
+  - task:find-anomalies
+  - data:categorical
+  - visual:color
+  - visual:position
+  - audience:general
+  - medium:static
+  - medium:interactive
+  - access:cognitive-load-risk
+evidence:
+  strength: medium
+  summary: "Gramazio et al. (2014, n=15 & n=15) found in two experiments (grids and scatterplots) that spatially grouping marks by color significantly sped up visual search times compared to randomly arranged marks (p < .001). The benefit of grouping increased with the number of marks."
+sources:
+  - type: research
+    ref: Gramazio et al., 2014
+    url: https://doi.org/10.1109/TVCG.2014.2346983
+    note: "Primary study demonstrating that grouping by color reduces search time for finding a target."
+    role: primary
+---
+
+## Guidance
+
+Group marks that share a categorical attribute (e.g., color) together spatially to accelerate visual search tasks.
+
+## Why
+
+Spatial grouping leverages the visual system's preattentive processing capabilities. When similar items are clustered, they form a single perceptual "object" or texture region. This allows viewers to search across a few large groups instead of many individual items, drastically reducing cognitive load and search time. The study found this "pop-out" effect makes search performance largely independent of the number of marks.
+
+### Core Principle
+
+Reduce the number of distinct items a viewer must scan by creating larger, perceptually grouped units.
+
+## When it applies
+
+- When a key task is to find a specific item or a small group of items (a visual search or lookup task).
+- In visualizations where the spatial arrangement of marks is flexible, such as heatmaps, treemaps, or categorical bar charts that can be sorted by category.
+- When using color to encode categories, and you want to make it easier for users to find all items of a particular color.
+
+## Exceptions
+
+- When the spatial position of marks is determined by other data variables and cannot be altered (e.g., standard scatterplots where X and Y position are fixed, or geographic maps).
+- When the primary goal of the visualization is to show the distribution or randomness of categories.
+
+## Trade-offs
+
+- Grouping may create an unintended sense of order or a continuous gradient if not done carefully, which could be misleading for purely categorical data.
+- Forcing a grouped layout might conflict with other organizational principles (e.g., alphabetic or numeric sorting).
+
+## Signs of Trouble
+
+- **"Where's Waldo?" effect:** Users have to hunt laboriously through a sea of differently colored marks to find a target.
+- **Slow performance:** Tasks involving finding a single item take a long time, and the time increases significantly as more data is added.
+- **High perceived effort:** Users report that the visualization feels "cluttered" or "messy" and is difficult to search through.
+
+## How to Improve
+
+- **Quick Fix: Re-sort the data.** In charts like bar charts or tables, sort the data by the categorical color variable to bring similar items together.
+- **Moderate Redesign: Use Small Multiples.** If direct grouping isn't possible (like in a scatterplot), consider breaking the visualization into small multiples, one for each category. This creates strong spatial grouping.
+- **Comprehensive Approach: Choose a chart type that supports grouping.** If the data allows, switch from a scatterplot to a heatmap or a sorted bar chart where spatial proximity can be controlled to reflect categorical similarity.
+
+```
+
+<split/>
+
+```md
+---
+id: minimize-marks-in-ungrouped-displays
+title: "For ungrouped visualizations, minimize the number of marks to speed up visual search"
+tags:
+  - impact:perceptual
+  - impact:performance
+  - impact:cognitive
+  - chart:scatter
+  - data:cardinality.high
+  - task:lookup
+  - task:find-anomalies
+  - visual:color
+  - visual:position
+  - audience:general
+  - medium:static
+  - medium:interactive
+  - access:cognitive-load-risk
+evidence:
+  strength: medium
+  summary: "Gramazio et al. (2014, n=15 & n=15) found that for randomly arranged (ungrouped) marks, visual search time increased linearly with the number of marks (p < .001). In contrast, for spatially grouped marks, search time was largely unaffected by the number of marks."
+sources:
+  - type: research
+    ref: Gramazio et al., 2014
+    url: https://doi.org/10.1109/TVCG.2014.2346983
+    note: "Demonstrated that search time increases with set size for random layouts but not for grouped layouts."
+    role: primary
+---
+
+## Guidance
+
+In visualizations where marks cannot be spatially grouped by category (like a standard scatterplot), be aware that every additional mark increases the time and effort required for visual search tasks. If search is a primary goal, consider reducing the number of marks shown.
+
+## Why
+
+Without spatial grouping, the visual system defaults to a serial search, examining items one by one or in small chunks until the target is found. This process is slow and scales poorly. The study demonstrated that for randomly arranged marks, search time robustly increased with the number of "distractor" items.
+
+### Core Principle
+
+The performance of serial visual search degrades linearly with the number of items. If you cannot enable preattentive "pop-out" through grouping, performance will suffer as data density increases.
+
+## When it applies
+
+- When displaying data in a scatterplot or another chart type where mark positions are fixed by data values and categories appear randomly distributed.
+- When the number of data points (cardinality) is high.
+- When a primary user task is to locate specific items based on their category (e.g., finding a purple dot in a sea of other colored dots).
+
+## Exceptions
+
+- When the primary goal is to show the overall distribution, density, or shape of the entire dataset, for which all points are necessary.
+- In interactive systems where users can filter or query to reduce the number of visible marks dynamically.
+
+## Trade-offs
+
+- Reducing the number of marks (e.g., by sampling or aggregation) improves search performance but sacrifices data completeness and may hide important outliers or patterns in the overall distribution.
+
+## Signs of Trouble
+
+- **Scalability issues:** A visualization that is easy to search with 100 points becomes nearly unusable with 1,000 points.
+- **User frustration:** Users complain that it "takes forever" to find what they are looking for.
+- **Overplotting:** Marks are so numerous and dense that they obscure each other, making individual identification impossible.
+
+## How to Improve
+
+- **Quick Fix: Use Highlighting.** In an interactive context, provide a legend or control that allows users to highlight all marks of a single category, making them "pop out" from the others.
+- **Moderate Approach: Implement Filtering.** Provide interactive filters so users can reduce the number of visible marks to only those relevant to their current task.
+- **Comprehensive Approach: Use Data Aggregation.** If showing every single point isn't critical, consider aggregating the data. This could mean using larger binned marks (like a 2D histogram) or summarizing dense regions, which reduces the number of distinct items a user needs to scan.
+
+```
+
+<split/>
+
+```md
+---
+id: use-sufficiently-large-marks-for-search
+title: "Use sufficiently large marks for visual search tasks"
+tags:
+  - impact:perceptual
+  - impact:performance
+  - chart:scatter
+  - chart:heatmap
+  - chart:line
+  - task:lookup
+  - task:find-anomalies
+  - visual:size
+  - audience:general
+  - medium:static
+  - medium:interactive
+evidence:
+  strength: medium
+  summary: "In two experiments, Gramazio et al. (2014) found that visual search was slowest for the smallest marks. Performance improved as mark size increased up to a point (around 0.76° visual angle), after which the benefits plateaued. The study recommends avoiding marks smaller than ~0.5° visual angle."
+sources:
+  - type: research
+    ref: Gramazio et al., 2014
+    url: https://doi.org/10.1109/TVCG.2014.2346983
+    note: "Found that response times were greatest for the smallest marks and plateaued as mark size increased."
+    role: primary
+---
+
+## Guidance
+
+For tasks that require finding a specific target, ensure that visual marks are large enough to be easily and quickly identified. Avoid using very small marks (e.g., smaller than ~0.5° of visual angle).
+
+## Why
+
+Very small marks are difficult for the visual system to process, requiring more effort to differentiate and parse. This slows down performance regardless of whether the marks are grouped or not. As mark size increases, they become more legible, and performance improves. However, this benefit has diminishing returns; beyond a certain point (the study found a plateau around 0.76° to 1.27° of visual angle), making marks even larger does not further speed up search time and may begin to cause overplotting.
+
+### Core Principle
+
+Legibility precedes all other perceptual tasks. If a mark cannot be easily seen, it cannot be effectively interpreted.
+
+## When it applies
+
+- In any visualization where users need to identify individual marks, especially in dense displays like scatterplots, line charts with points, or heatmaps.
+- When designing for a variety of screen sizes and resolutions, where the physical size of marks may change.
+- When target detection speed is a critical performance metric.
+
+## Exceptions
+
+- When the primary goal is to show overall density or large-scale patterns, and individual mark identity is unimportant. In these cases, very small (even sub-pixel) marks can be effective for revealing density structures.
+- In cases of extreme overplotting, using smaller, semi-transparent marks may be preferable to large, opaque marks that would occlude each other completely.
+
+## Trade-offs
+
+- Larger marks consume more screen space, which can lead to more overplotting and limit the total amount of data that can be displayed without occlusion.
+- The optimal mark size depends on display density; what is appropriately large in a sparse plot may be too large in a dense one.
+
+## Signs of Trouble
+
+- **Squinting required:** Users have to lean in or squint to distinguish individual marks.
+- **Slow performance on sparse charts:** Even with few data points, users take a long time to find targets.
+- **"Pixel-hunting":** Marks are so small that they are difficult to see or to click on in an interactive visualization.
+
+## How to Improve
+
+- **Quick Fix: Increase Mark Size.** Simply increase the size (radius, area) of all marks until they are clearly legible. Based on the study, aim for a size between 0.5° and 1.0° of visual angle.
+- **Moderate Approach: Add Outlines.** Add a contrasting outline (stroke) to marks. This can improve their discriminability from the background and each other without significantly increasing their footprint.
+- **Comprehensive Approach: Make Mark Size Dynamic.** In an interactive system, allow mark size to be adjusted by the user or dynamically linked to the zoom level, ensuring marks remain legible as the user navigates through the data.
+
+```

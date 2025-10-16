@@ -1,0 +1,336 @@
+```md
+---
+id: use-scatterplot-for-correlation
+title: "Use scatterplots to show the relationship between two quantitative variables"
+tags:
+  - impact:perceptual
+  - chart:scatter
+  - task:correlation
+  - data:quantitative
+sources:
+  - type: research
+    ref: Kay & Heer, 2016
+    url: https://doi.org/10.1109/TVCG.2015.2467671
+    note: "Primary source providing strong evidence. Found scatterplots offer high precision and low individual variance for both positive and negative correlations."
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://arxiv.org/abs/2109.01271v3
+    note: "Meta-analysis (Table 9) confirms scatterplots are a top choice for correlation tasks based on a review of the literature."
+  - type: research
+    ref: Harrison et al., 2014
+    url: https://doi.org/10.1109/TVCG.2014.2346979
+    note: "Original study whose data was re-analyzed by Kay & Heer (2016)."
+---
+
+## Guidance
+
+For visualizing and assessing the correlation between two continuous variables, a scatterplot is the most effective and reliable choice.
+
+## Why
+
+Scatterplots offer the highest perceptual precision for estimating correlation compared to other common chart types. Research shows they perform robustly for both positive and negative correlations and exhibit low variance in performance among different viewers, making them a consistently understandable choice.
+
+## When it applies
+
+- When the primary task is to assess the strength and direction of the relationship between two quantitative variables.
+
+## Exceptions
+
+- If one of the variables is time, a line chart might be more conventional, although a scatterplot can still be effective for showing correlation against time.
+- For very large datasets, overplotting can obscure the distribution. In these cases, use techniques like transparency (alpha), sampling, or binning (e.g., a 2D histogram or heatmap).
+
+## Trade-offs
+
+- For a high number of variables, a scatterplot matrix (SPLOM) can become large and difficult to navigate. In these cases, a parallel coordinates plot might be better for exploratory analysis, but not for judging specific correlations.
+
+## Signs of Trouble
+
+- **Wrong Tool for the Job:** Another chart type (like a parallel coordinates plot, stacked area chart, or radar chart) is being used to make a claim about correlation.
+- **Inconsistent Judgements:** Viewers draw different conclusions about the strength or direction of the trend shown in the chart.
+
+## How to Improve
+
+- **Comprehensive Redesign: Switch to a Scatterplot.** If another chart type is being used to show correlation, replace it with a scatterplot to improve perceptual accuracy and consistency. For multiple variables, use a scatterplot matrix.
+```
+<split/>
+```md
+---
+id: prefer-position-for-quantitative
+title: "Use position on a common scale over other visual channels for quantitative data"
+tags:
+  - impact:perceptual
+  - task:compare
+  - task:rank
+  - data:quantitative
+  - visual:position
+  - visual:length
+  - visual:angle
+  - visual:area
+  - chart:bar
+  - chart:dot-plot
+  - chart:pie
+  - chart:bubble
+sources:
+  - type: research
+    ref: Cleveland & McGill, 1984
+    url: https://doi.org/10.2307/2288400
+    note: "Foundational research that established the perceptual ranking of visual encodings."
+  - type: research
+    ref: Mackinlay, 1986
+    url: https://doi.org/10.1145/22949.22950
+    note: "Formalized the effectiveness ranking of visual encodings in the APT framework."
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://arxiv.org/abs/2109.01271v3
+    note: "Meta-analysis (Table 3) synthesizes this principle from the literature, ranking position as most effective."
+---
+
+## Guidance
+
+When encoding quantitative data for comparison or ranking, prioritize using position along a common, aligned scale (as in bar charts or dot plots). This is perceptually more accurate than using length, angle, or area.
+
+## Why
+
+Humans are most accurate at judging differences in position along a common scale. Performance decreases significantly when judging unaligned lengths, and further still when judging angles (as in pie charts) or areas (as in bubble charts). This hierarchy of perceptual accuracy means that charts using position lead to faster and more accurate insights.
+
+## When it applies
+
+- The primary task is to accurately compare or rank quantitative values.
+- When choosing the fundamental encoding for a chart designed to show magnitude.
+
+## Exceptions
+
+- **Part-to-whole:** When showing part-to-whole relationships is the primary goal, angle (pie chart) or length (stacked bar) are often used, though they are less accurate for comparing the individual parts to each other.
+- **Space Constraints:** When space is highly constrained and you need to encode a third quantitative variable, area (e.g., bubble size) may be a necessary compromise.
+- **Geographic Data:** On maps, area (of geographic regions) is an inherent property, and color is typically used to encode a quantitative value.
+
+## Trade-offs
+
+- Using position (e.g., a bar chart) often requires more space than using area (e.g., a treemap) to display the same data.
+
+## Signs of Trouble
+
+- **Impossible Comparisons:** Viewers are asked to compare the sizes of non-adjacent slices in a pie chart or bubbles in a bubble chart.
+- **Misinterpreted Ratios:** Viewers misjudge the ratio between two values because they are encoded with area or angle. For example, they may fail to perceive that one pie slice is twice as large as another.
+
+## How to Improve
+
+- **Quick Fix: Add Data Labels.** If you must keep a chart that uses a less accurate encoding (like a pie or bubble chart), add direct data labels (e.g., "42%") to each mark. This provides an escape hatch for reading exact values, bypassing the perceptual difficulty.
+- **Moderate Redesign: Align the Scales.** If using multiple bar charts, ensure they share the same axis and baseline to facilitate comparison. Convert a pie chart to a sorted bar chart to make comparisons easier.
+- **Comprehensive Redesign: Switch to Position.** Convert charts based on angle or area (pie charts, bubble charts, treemaps for comparison) into a bar chart or dot plot to leverage the superior accuracy of position on a common scale.
+```
+<split/>
+```md
+---
+id: use-bar-chart-for-common-tasks
+title: "Use bar charts for sorting, filtering, and understanding distributions"
+tags:
+  - impact:perceptual
+  - chart:bar
+  - task:sort
+  - task:filter
+  - task:distribution
+  - task:cluster
+  - task:aggregate
+  - task:find-extremum
+  - data:quantitative
+  - data:categorical
+sources:
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://arxiv.org/abs/2109.01271v3
+    note: "Meta-analysis (Table 9) shows bar charts are recommended for 6 out of 10 common analytical tasks based on a review of empirical studies [17, 34, 78]."
+---
+
+## Guidance
+
+Bar charts are a highly effective and versatile choice for a majority of common analytical tasks, including sorting values, filtering data, characterizing distributions, clustering, and aggregation.
+
+## Why
+
+Bar charts encode quantitative values using the position of the bar's end along a common scale. This visual encoding is the most accurate for human perception of magnitude, making bar charts a robust and reliable default for many analytical goals. Their simplicity reduces cognitive load and allows for quick, accurate comparisons.
+
+## When it applies
+
+- The user needs to compare the magnitude of values across different categories.
+- The task involves finding the largest or smallest value (`Find Extremum`), ordering categories by value (`Sort`), or seeing the shape of the data (`Characterize Distribution`).
+
+## Exceptions
+
+- **Correlation:** For visualizing the correlation between two quantitative variables, a scatterplot is superior.
+- **Trends over Time:** For visualizing trends over a continuous variable like time, a line chart is generally preferred.
+- **Part-to-Whole:** To emphasize a part-to-whole relationship, a pie chart or stacked bar chart may be used, but with a loss of accuracy for comparing the parts to each other.
+
+## Trade-offs
+
+- While effective, bar charts can become cluttered if there are too many categories. In such cases, it may be better to highlight the top N categories and group the rest into an "Other" category.
+- Some research notes that the aspect ratio of bars can introduce systematic bias in perception, though this effect is often smaller than the inaccuracies of other chart types.
+
+## Signs of Trouble
+
+- A less effective chart type, like a pie chart or a word cloud, is being used for ranking or comparing magnitudes.
+- Viewers have difficulty accurately determining the order or relative size of categories.
+
+## How to Improve
+
+- **Moderate Redesign: Switch to a Bar Chart.** If a pie chart, donut chart, or a series of numbers in a table is being used to show magnitudes for comparison, replace it with a bar chart.
+- **Quick Fix: Sort the Bars.** For improved readability, sort the bars in ascending or descending order unless there is a natural, meaningful order to the categories (e.g., age groups, time periods).
+```
+<split/>
+```md
+---
+id: avoid-shape-texture-for-quantitative
+title: "Avoid encoding quantitative data with shape or texture"
+tags:
+  - impact:perceptual
+  - impact:ethical
+  - visual:shape
+  - visual:texture
+  - data:quantitative
+  - data:ordinal
+sources:
+  - type: research
+    ref: Mackinlay, 1986
+    url: https://doi.org/10.1145/22949.22950
+    note: "Defined the principle of expressiveness, stating that visual encodings should express all and only the attributes of the data."
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://arxiv.org/abs/2109.01271v3
+    note: "Meta-analysis (Table 3) confirms this theoretical principle, marking shape (S) and texture (T) as not recommended for quantitative data (Q)."
+---
+
+## Guidance
+
+Do not use visual channels like shape (e.g., circle vs. square) or texture (e.g., cross-hatching vs. dots) to represent ordered (ordinal) or quantitative data. Reserve these channels for purely nominal (categorical) data.
+
+## Why
+
+Shape and texture are not perceptually ordered. A viewer cannot reliably determine if a square is "greater than" or "less than" a circle. Using them to encode magnitude violates the principle of "expressiveness," as it creates a chart that falsely implies an order that cannot be perceived, leading to misinterpretation.
+
+## When it applies
+
+- When choosing visual encodings for any chart that involves quantitative or ordinal data. This is a foundational rule of visualization design.
+
+## Exceptions
+
+- While standard shapes are unordered, some research has explored shapes with *countable* differences (e.g., a 1-spike star vs. a 5-spike star) which can be perceived as ordered. However, this is an advanced and uncommon technique that should be used with extreme caution. For all standard chart marks, the rule holds.
+- Use shape and texture to distinguish between different categories of data that have no inherent order.
+
+## Signs of Trouble
+
+- **Unordered Legend:** A chart legend shows a quantitative or ordinal scale (e.g., "1-10," "11-20" or "Low," "Medium," "High") mapped to different shapes (e.g., circle, square, triangle).
+- **Ambiguous Encoding:** A chart uses different patterns or shapes, and viewers are unsure how to interpret their relative value.
+
+## How to Improve
+
+- **Comprehensive Redesign: Re-encode the Data.** Replace the shape or texture encoding with a visual channel that is perceptually ordered.
+  - **Good choices for quantitative/ordinal data:** Position, length, size (area), color saturation/luminance.
+  - **Example:** In a scatterplot, instead of using different shapes for a quantitative value, use the size of the points or a sequential color palette.
+```
+<split/>
+```md
+---
+id: use-color-hue-for-nominal
+title: "Use distinct color hues for categorical data, not for ordered data"
+tags:
+  - impact:perceptual
+  - impact:ethical
+  - visual:color
+  - data:categorical
+  - data:quantitative
+  - data:ordinal
+  - access:color-vision-risk
+sources:
+  - type: research
+    ref: Mackinlay, 1986
+    url: https://doi.org/10.1145/22949.22950
+    note: "Established that color hue is effective for nominal data but not for ordered data."
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://arxiv.org/abs/2109.01271v3
+    note: "Meta-analysis (Table 3) reinforces that hue (CH) is for nominal data (N) and not fully recommended for ordinal (O) or quantitative (Q) data."
+---
+
+## Guidance
+
+Use different color hues (e.g., red, blue, green) to distinguish between nominal categories that have no inherent order. Avoid using a multi-hue sequence (like a rainbow) to represent ordered data (ordinal or quantitative).
+
+## Why
+
+Hues are excellent for showing "what" or "which" (category), but not "how much" (magnitude). A standard rainbow colormap is not perceptually uniform or ordered; viewers cannot reliably map the sequence of colors to a sequence of values. This leads to misinterpretation of the data, with some ranges appearing more important and others being obscured. For ordered data, a sequential palette (based on saturation or luminance) is required.
+
+## When it applies
+
+- When choosing a color scheme for any visualization.
+
+## Exceptions
+
+- **Diverging Palettes:** For bipolar data that pivots around a meaningful central value (like zero), a diverging palette that uses two different hues (e.g., blue to white to red) is an effective technique.
+- **Cyclical Data:** For cyclical data (e.g., seasons of the year, compass direction), a cyclical color palette can be appropriate, but should be chosen carefully.
+
+## Signs of Trouble
+
+- **Rainbow Scale:** A continuous quantitative variable (e.g., temperature, elevation) is encoded with a rainbow color scheme.
+- **Unordered Hues for Order:** An ordinal scale (e.g., "Bad," "Neutral," "Good") is encoded with unrelated hues (e.g., "blue," "green," "red") instead of a sequential or diverging palette.
+
+## How to Improve
+
+- **Moderate Redesign: Switch the Palette Type.**
+  - For **quantitative data**, replace the multi-hue rainbow palette with a **sequential palette** (e.g., light blue to dark blue).
+  - For **diverging data**, use a **diverging palette** (e.g., purple to gray to green).
+  - For **categorical data**, ensure the chosen hues are maximally discriminable and accessible. Use a tool like Viz Palette or ColorBrewer to select a colorblind-safe palette.
+```
+<split/>
+```md
+---
+id: use-parallel-coordinates-for-multivariate-exploration
+title: "Use parallel coordinates for multivariate cluster and anomaly detection"
+tags:
+  - impact:perceptual
+  - chart:parallel-coordinates
+  - task:cluster
+  - task:find-anomalies
+  - task:retrieve-value
+  - data:quantitative
+sources:
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://arxiv.org/abs/2109.01271v3
+    note: "Meta-analysis (Table 9) identifies parallel coordinates as an effective choice for cluster, find anomalies, and retrieve value tasks, citing Kanjanabose et al. 2015 [42]."
+---
+
+## Guidance
+
+Consider using a parallel coordinates plot for the exploratory analysis of multivariate data, especially for tasks that involve identifying clusters of similar items, finding outliers (anomalies), and retrieving the values of a specific item across multiple dimensions.
+
+## Why
+
+In a parallel coordinates plot, each data item is represented as a line connected across multiple parallel axes. This structure allows for unique patterns to emerge: clusters of similar items form visible "bundles" of lines with similar paths, while anomalies often appear as lines that follow a path dramatically different from the main bundles. This makes it a powerful tool for discovering structure in high-dimensional datasets.
+
+## When it applies
+
+- When analyzing datasets with multiple quantitative variables (typically 4 or more).
+- When the goal is exploratory: to understand relationships between many variables, find natural groupings of data points, or spot unusual data points.
+
+## Exceptions
+
+- **Do not use for correlation.** Parallel coordinates are notoriously poor for accurately judging the correlation between any two variables. For that task, use a scatterplot or scatterplot matrix.
+- The order of the axes dramatically impacts which patterns are visible. Therefore, parallel coordinates are most effective in an interactive environment where the user can reorder axes.
+
+## Trade-offs
+
+- The chart can become cluttered and unreadable with a very large number of data points (lines), a problem known as overplotting.
+- Interpretation is highly dependent on the order of the axes. A meaningful pattern between two variables might be completely invisible if their axes are not adjacent.
+
+## Signs of Trouble
+
+- **Correlation Claims:** A parallel coordinates plot is being presented as the primary evidence for a strong or weak correlation between two variables.
+- **Static and Arbitrary:** The visualization is static, and the axes are in an arbitrary order, likely hiding more patterns than it reveals.
+- **Overplotting:** The plot is a solid mass of color, making it impossible to discern individual lines or bundles.
+
+## How to Improve
+
+- **Quick Fix: Add Interactivity.** If possible, allow users to reorder axes and brush/highlight lines. Brushing enables a user to select a subset of lines and see their path across all axes, which is crucial for exploration.
+- **Moderate approach: Reduce Overplotting.** Use transparency (alpha blending) to reveal the density of lines and make bundles more apparent. For very large datasets, consider sampling the data or using binned parallel coordinates.
+- **Comprehensive approach: Supplement with Other Views.** Combine a parallel coordinates plot with other views, such as a scatterplot matrix (SPLOM). Use the parallel coordinates for an overview and identifying clusters, then use the SPLOM to accurately investigate the specific correlations between pairs of variables.
+```

@@ -1,0 +1,332 @@
+```md
+---
+id: use-color-for-summary-position-for-identification
+title: Use Color for Summary Tasks and Position for Identification Tasks
+
+tags:
+  - impact:perceptual
+  - impact:performance
+  - chart:heatmap
+  - chart:line
+  - chart:bar
+  - task:summary-mean
+  - task:summary-variance
+  - task:find-extremum
+  - task:range
+  - data:quantitative
+  - visual:color
+  - visual:position
+  - medium:static
+  - medium:screen
+
+evidence:
+  strength: medium
+  summary: "Studies comparing color-based visualizations (like heatmaps) and position-based ones (like line charts) find a task-dependent trade-off: color is more accurate for estimating mean and variance, while position is more accurate for identifying minimum/maximum values."
+
+sources:
+  - type: research
+    ref: Albers, Correll, & Gleicher, 2014
+    url: https://doi.org/10.1145/2556288.2557200
+    note: "Primary study demonstrating the trade-off between color for summary and position for identification tasks in time series."
+    role: primary
+  - type: research
+    ref: Szafir, Haroz, Gleicher, & Franconeri, 2016
+    url: https://doi.org/10.1167/16.5.11
+    note: "Synthesizes the Albers et al. finding as a key example of task-dependent perceptual trade-offs."
+    role: supporting
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://arxiv.org/abs/2109.01271v3
+    note: "Review paper that also discusses the task-driven findings of Albers et al. in the context of visualization recommendation."
+    role: related
+
+---
+
+## Guidance
+
+When visualizing a dataset, preferentially use color (e.g., in a heatmap) for tasks requiring users to estimate summary statistics like mean or variance. Preferentially use position (e.g., in a line or bar chart) for tasks requiring users to identify specific values like the minimum, maximum, or range.
+
+## Why
+
+There is a trade-off in perceptual accuracy between visual channels for different analytical tasks. The human visual system is better at averaging or summing up values encoded with color over an area, which facilitates summary judgments. In contrast, it is more precise at locating specific high or low points when they are encoded by position along a common scale. Choosing the channel that matches the user's primary task leads to faster and more accurate interpretation.
+
+### Core Principle
+
+Match the visual encoding channel to the perceptual demands of the analytical task. Not all channels are equally effective for all tasks.
+
+## When it applies
+
+- When visualizing time-series or other continuous data and choosing between chart types.
+- When the user's goal is either to get a "gist" of the data (summary) or find specific points of interest (identification).
+- When deciding between a chart type like a heatmap (color-based) and a line chart (position-based) for the same data.
+
+## Exceptions
+
+- If the primary task is to compare the magnitude of individual data points, position is almost always superior, even if a secondary task is summarization.
+- For categorical data, where position might be arbitrary and color is used for identity, not for encoding a quantitative value.
+
+## Trade-offs
+
+- A chart optimized for summary tasks (e.g., a heatmap) will be less effective for identification tasks; finding the exact maximum value is difficult.
+- A chart optimized for identification (e.g., a line chart) may make it harder to judge the average value over a range compared to a color-based chart. You must prioritize the user's most critical task.
+
+## Signs of Trouble
+
+- **Summary Struggle:** Users have difficulty estimating the average value or overall trend in a line or bar chart.
+- **Identification Failure:** Users cannot easily or accurately point out the highest or lowest value in a heatmap.
+- **Task Mismatch:** You are using a line chart, but the primary question is "What was the average value in June?" or using a heatmap and asking "What was the single peak value?".
+
+## How to Improve
+
+- **Quick Fix: Add Annotations.** On a line chart, use a shaded reference range or an explicit label to state the average for a period. On a heatmap, add a marker or annotation for the maximum and minimum values.
+- **Moderate Approach: Provide Both Views.** If both summary and identification are critical, provide users with two views of the same data: a line chart *and* a heatmap, allowing them to switch between them or see them side-by-side.
+- **Comprehensive Approach: Align Chart to Primary Task.** If the most important task is estimating the average sales per month, use a color-based encoding like a calendar heatmap. If the most important task is identifying the peak sales day, use a position-based encoding like a bar or line chart.
+
+```
+
+<split/>
+
+```md
+---
+id: avoid-luminance-bias-for-numerosity
+title: Avoid Using Luminance to Encode Categories for Quantity Comparison
+
+tags:
+  - impact:perceptual
+  - impact:ethical
+  - task:compare
+  - task:composition
+  - chart:scatter
+  - chart:map.glyphs
+  - data:categorical
+  - data:cardinality.low
+  - visual:color
+  - access:cognitive-load-risk
+
+evidence:
+  strength: medium
+  summary: "Research on numerosity perception shows that darker collections of items can appear more numerous than lighter ones, even when the item count is identical. This can bias visual comparisons of quantity."
+
+sources:
+  - type: research
+    ref: Ross & Burr, 2010
+    url: https://jov.arvojournals.org/article.aspx?articleid=2121303
+    note: "Primary study demonstrating that darker stimuli can appear more numerous."
+    role: primary
+  - type: research
+    ref: Szafir, Haroz, Gleicher, & Franconeri, 2016
+    url: https://doi.org/10.1167/16.5.11
+    note: "Synthesizes this finding to warn visualization designers about luminance biasing numerosity estimates."
+    role: supporting
+
+tools:
+  - type: validate
+    name: Viz Palette
+    url: https://projects.susielu.com/viz-palette
+    description: A tool to create and test color palettes, which can be used to check for luminance differences.
+  - type: learn
+    name: HCL Color Picker
+    url: http://tristen.ca/hcl-picker/
+    description: Helps create color palettes with controlled chroma, hue, and luminance.
+
+---
+
+## Guidance
+
+When categories are being compared by the number of items they contain (numerosity), avoid encoding the categories with colors that have significantly different luminance (perceptual lightness/darkness).
+
+## Why
+
+The human visual system is biased to perceive darker collections as more numerous. Using a light color (e.g., yellow) for one category and a dark color (e.g., navy blue) for another can cause viewers to misjudge which category has more items, creating an inaccurate impression of the data.
+
+### Core Principle
+
+Ancillary visual properties of a mark should not interfere with the primary data comparison. Here, luminance interferes with the perception of count.
+
+## When it applies
+
+- In scatterplots, dot plots, or strip plots where you are comparing the number of points in different colored groups.
+- In maps with symbols or any visualization where the number of marks (e.g., dots, icons) represents a quantity, and marks are colored by category.
+
+## Exceptions
+
+- When luminance is intentionally used to encode a second, ordered variable (e.g., darker points are more recent). However, you must be aware of the potential for misinterpretation of quantity and consider adding explicit labels or annotations.
+
+## Trade-offs
+
+- Restricting palettes to only equiluminant colors can reduce the available color choices, which may impact aesthetic appeal or clash with brand guidelines.
+- Finding colors that are both equiluminant and highly discriminable for color-vision deficient users can be challenging.
+
+## Signs of Trouble
+
+- **Luminance Disparity:** The palette contains colors with large differences in lightness, such as a bright yellow and a dark purple used to encode categories of equal importance.
+- **Potential for Misjudgment:** A quick glance at the chart suggests the darker group is larger, but a manual count or data labels prove otherwise.
+- **The Squint Test:** Squinting at the visualization makes one category's marks disappear while another's remain prominent.
+
+## How to Improve
+
+- **Quick Fix: Add Count Labels.** If you must use a biased palette, mitigate the risk by explicitly labeling the counts for each category (e.g., "Category A (n=25)", "Category B (n=24)").
+- **Moderate Approach: Use an Equiluminant Palette.** Choose or create a color palette where all categorical colors have roughly the same perceptual lightness. Use tools like HCL color space pickers to control for luminance.
+- **Comprehensive Approach: Use a Different Visual Variable.** Instead of using color to separate categories in one plot, use faceting (small multiples) to create a separate plot for each category. This allows for comparison of density and spread without the confounding effect of color luminance.
+
+```
+
+<split/>
+
+```md
+---
+id: recognize-proximity-dominates-grouping
+title: Recognize That Spatial Proximity Is a Stronger Grouping Cue Than Color or Shape
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - task:cluster
+  - chart:scatter
+  - chart:map.glyphs
+  - visual:position
+  - visual:color
+  - visual:shape
+
+evidence:
+  strength: high
+  summary: "Based on foundational Gestalt psychology principles, spatial proximity is a mandatory and dominant perceptual grouping cue. Viewers will automatically group items that are spatially close, often overriding other visual groupings like similarity of color or shape."
+
+sources:
+  - type: research
+    ref: Rock & Palmer, 1990
+    note: "Classic paper on the principles of perceptual grouping, including the dominance of proximity."
+    role: primary
+  - type: research
+    ref: Oyama, 1961
+    note: "Early research showing proximity tends to dominate over color in perceptual grouping."
+    role: primary
+  - type: research
+    ref: Szafir, Haroz, Gleicher, & Franconeri, 2016
+    url: https://doi.org/10.1167/16.5.11
+    note: "Applies this core psychological principle to data visualization, explaining how it affects cluster perception in charts like scatterplots."
+    role: supporting
+
+---
+
+## Guidance
+
+When designing visualizations that require viewers to segment data into groups, be aware that viewers will perceive items that are close together as a group, regardless of whether they have different colors, shapes, or other features.
+
+## Why
+
+The human visual system automatically and powerfully groups elements based on spatial proximity (a core Gestalt principle). This process is pre-attentive and can dominate other grouping cues like similarity of color or shape. A tight cluster of multi-colored dots will first be perceived as "one cluster" before it is seen as "a mix of red and blue dots." If your analytical goal depends on grouping by a feature like color, spatial proximity can work against you.
+
+### Core Principle
+
+The laws of perceptual grouping dictate how we see structure. Proximity is among the most powerful of these laws.
+
+## When it applies
+
+- In scatterplots, maps with glyphs, or any visualization where marks are distributed in 2D space.
+- When you intend for the viewer to find clusters based on a feature (e.g., "find the group of red dots") but those dots are intermingled with other colors in a tight spatial cluster.
+
+## Exceptions
+
+- When spatial position itself is the primary data encoding and the goal is to show a *lack* of correlation between position and a feature (e.g., proving that red and blue dots are evenly mixed throughout the space).
+
+## Trade-offs
+
+- You cannot easily "turn off" grouping by proximity. This means if you want feature-based grouping (e.g., by color) to be primary, you may need to use other techniques like faceting (small multiples) to physically separate the groups, which requires more screen space.
+
+## Signs of Trouble
+
+- **Accidental Clusters:** The visualization has distinct spatial clumps of points that are visually salient but not meaningful in the data.
+- **Feature Grouping Fails:** You intend for viewers to see "the red group" and "the blue group," but they instead describe the chart by its spatial clusters (e.g., "the top-left group" and "the bottom-right group").
+- **Audience Confusion:** Viewers incorrectly associate all points in a dense region as belonging to the same category.
+
+## How to Improve
+
+- **Quick Fix: Add Annotations.** If featural groups are intermingled, draw explicit boundaries (e.g., enclosing circles or "lassos") around the intended groups to help the viewer's visual system segment them correctly.
+- **Moderate Approach: Use Faceting (Small Multiples).** To make feature-based groups the primary visual structure, physically separate them into different charts. For example, show one scatterplot containing only red dots and another next to it containing only blue dots.
+- **Comprehensive Approach: Use a Different Chart Type.** If grouping by a categorical variable is the primary goal, a scatterplot may be the wrong choice. Consider a chart type that explicitly separates categories on an axis, such as a grouped bar chart, box plots per category, or a beeswarm plot.
+
+```
+
+<split/>
+
+```md
+---
+id: visualize-data-to-see-structure
+title: Visualize Data to Verify Assumptions and Reveal Underlying Structure
+
+tags:
+  - impact:logos
+  - impact:ethical
+  - task:distribution
+  - task:correlation
+  - task:find-anomalies
+  - chart:scatter
+  - chart:line
+  - audience:general
+  - audience:expert
+
+evidence:
+  strength: high
+  summary: "Anscombe's Quartet (1973) is a famous statistical demonstration showing that datasets with nearly identical summary statistics (e.g., mean, variance, correlation) can have vastly different visual structures. This highlights the necessity of visualization for sound data analysis and to avoid erroneous conclusions."
+
+sources:
+  - type: research
+    ref: Anscombe, F. J. (1973). "Graphs in Statistical Analysis"
+    note: "The foundational paper presenting Anscombe's Quartet and arguing for the importance of graphing data."
+    role: primary
+  - type: research
+    ref: Szafir, Haroz, Gleicher, & Franconeri, 2016
+    url: https://doi.org/10.1167/16.5.11
+    note: "Uses Anscombe's Quartet as a prime example of 'structure estimation' tasks where visualization is critical because statistics alone are insufficient."
+    role: supporting
+
+examples:
+  - type: good
+    description: "The four plots of Anscombe's Quartet. All have the same summary statistics but are clearly different, showing the power of visualization."
+  - type: bad
+    description: "A report that only presents a high correlation coefficient (e.g., r=0.82) without showing the underlying scatterplot. The data could be linear, curved, or contain a severe outlier, but the number alone hides this reality."
+
+---
+
+## Guidance
+
+Always visualize your data as a primary step in analysis. Do not rely solely on summary statistics to understand the relationships and distributions within a dataset.
+
+## Why
+
+Summary statistics like mean, standard deviation, and correlation coefficients can be dangerously misleading. They can be identical for datasets that are qualitatively very different, masking important features like non-linear relationships, outliers, or distinct subgroups. Visual inspection is often the only way to discover these critical patterns, validate the appropriateness of a statistical model, and avoid making false assumptions.
+
+### Core Principle
+
+Summary statistics abstract data; visualization reveals it. Trusting abstraction without revelation risks serious misinterpretation.
+
+## When it applies
+
+- During any form of exploratory data analysis.
+- Before committing to a statistical model (e.g., before running a linear regression).
+- When communicating findings to an audience, to ensure they understand the underlying data shape, not just a single summary number.
+
+## Exceptions
+
+- In highly automated, large-scale systems where individual visual inspection of every datapoint is impossible. Even in these cases, however, visualization of data samples and model diagnostic plots is crucial for quality assurance.
+
+## Trade-offs
+
+- Visualization takes more time and effort than simply computing summary statistics.
+- The interpretation of visualizations can be subjective, whereas statistics are objective (though, as noted, potentially misleading without visual context).
+
+## Signs of Trouble
+
+- **Blind Analysis:** Conclusions are drawn or models are built based purely on statistical outputs (e.g., R-squared values, p-values) without ever plotting the data.
+- **Hidden Patterns:** A summary statistic (like the mean) is heavily skewed by one or two outliers that are not seen or acknowledged.
+- **Model Mismatch:** A linear model is applied to a clearly non-linear relationship because the correlation coefficient alone seemed "high enough".
+- **Over-reliance on Tables:** Reports or dashboards consist entirely of tables of numbers, with no graphical representations.
+
+## How to Improve
+
+- **Quick Fix: Generate a Scatterplot or Histogram.** For any two variables you are correlating, create a simple scatterplot. For any single variable, create a histogram or density plot. This is the fastest way to spot non-linearities, outliers, or multi-modal distributions.
+- **Moderate Approach: Create a Scatterplot Matrix (SPLOM) or Pairs Plot.** For multivariate datasets, use a scatterplot matrix to quickly visualize the pairwise relationships and distributions between all variables in one grid.
+- **Comprehensive Approach: Integrate Visualization into Your Default Workflow.** Adopt an exploratory data analysis (EDA) mindset where visualization is the first step, not an afterthought. Use tools that automatically suggest relevant visualizations to lower the barrier to routine visual inspection.
+
+```

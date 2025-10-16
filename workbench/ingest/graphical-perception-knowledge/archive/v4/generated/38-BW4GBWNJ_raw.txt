@@ -1,0 +1,71 @@
+```md
+---
+id: bar-charts-underestimate-mean
+title: "Avoid bar charts when viewers must accurately judge the average value"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - impact:ethical
+  - chart:bar
+  - chart:scatter
+  - task:summary-mean
+  - data:quantitative
+  - visual:length
+  - visual:position
+  - audience:general
+  - medium:static
+  - medium:screen
+  - medium:print
+  - access:cognitive-load-risk
+
+sources:
+  - type: research
+    ref: Godau, Vogelgesang, & Gaschler, 2016
+    url: https://doi.org/10.1016/j.chb.2016.01.036
+    note: "Found that viewers systematically underestimate the mean value in bar graphs, but not in point graphs (dot plots). The bias persisted across different bar heights, with numerical scales, and even with the presence of outliers."
+
+examples:
+  - type: bad
+    description: In this bar chart, viewers are likely to perceive the average value of the bars to be lower than it actually is. This can lead to a biased interpretation of the overall performance or level.
+  - type: good
+    description: This dot plot (or strip plot) presents the same data without the perceptual bias. Viewers can more accurately judge the central tendency of the values because they are not influenced by the filled area of the bars.
+
+---
+## Guidance
+
+Avoid using bar charts when the primary task is to estimate the average (mean) value across all bars. Viewers systematically underestimate the mean in bar charts, which can lead to a biased impression of the data.
+
+## Why
+
+Human perception is biased when judging the average height of multiple bars. Research suggests this occurs because our attention is drawn toward the middle of the bars' filled areas, rather than their tops where the value is actually encoded. This results in a consistent underestimation of the true mean (Godau et al., 2016). In contrast, dot plots, which encode values as points, do not exhibit this bias.
+
+## When it applies
+
+- When a key takeaway for the audience is understanding the central tendency or average of a set of values.
+- In dashboards or reports where a grand average or an overall level (e.g., average sales across regions) is a primary metric.
+- When comparing the perceived average of one group of bars to another.
+
+## Exceptions
+
+- If the primary task is simply to compare individual bars to each other or to look up specific values, and judging the overall average is not important, a bar chart may still be appropriate.
+- When the exact mean is explicitly labeled on the chart, the perceptual bias is less of a concern for final interpretation, although the initial visual impression may still be biased.
+
+## Trade-offs
+
+- **Clarity vs. Familiarity:** Switching to a dot plot (strip plot) avoids the perceptual bias but may be less familiar to some audiences than a standard bar chart.
+- **Visual Weight vs. Accuracy:** Bar charts fill more area and can have more visual weight, which might be desirable aesthetically. However, this comes at the cost of perceptual accuracy for the specific task of judging the mean.
+
+## Signs of Trouble
+
+- **Biased Impression:** A bar chart is used to show a set of values (e.g., performance across several categories) with the implicit goal of conveying the overall performance level.
+- **Misleading Summary:** The visual center of the bars appears lower than the actual mathematical mean, potentially leading viewers to conclude that values are lower or a situation is less severe than it truly is.
+
+## How to Improve
+
+- **Quick approach:** Add an explicit reference line indicating the true average value. This provides a cognitive "escape hatch" that allows viewers to override their biased initial perception.
+
+- **Moderate approach:** Switch from a bar chart to a dot plot (or strip plot). Represent the same data using points instead of bars. This is a direct fix for the perceptual bias and allows for more accurate judgment of the mean.
+
+- **Comprehensive approach:** If judging the average is the most critical task, consider if a different visualization is more direct. For example, a single prominent number (a "KPI" display) showing just the average might be more effective if the individual values are secondary.
+```

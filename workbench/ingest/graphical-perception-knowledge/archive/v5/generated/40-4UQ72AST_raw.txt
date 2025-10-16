@@ -1,0 +1,379 @@
+```md
+---
+id: use-wrapped-bars-for-ranking-accuracy
+title: "Use wrapped bar charts for accurate ranking in lists"
+
+tags:
+  - impact:perceptual
+  - impact:performance
+  - chart:bar
+  - chart:bar.wrapped
+  - task:rank
+  - data:quantitative
+  - data:cardinality.medium
+  - visual:length
+  - visual:position
+  - medium:static
+  - medium:screen
+
+evidence:
+  strength: medium
+  summary: "A 2019 crowdsourced study found wrapped bar charts had the highest accuracy for ranking tasks on lists of 75-300 items, outperforming scrolled bar charts, treemaps, and Zvinca plots."
+
+sources:
+  - type: research
+    ref: Mylavarapu et al., 2019
+    url: https://doi.org/10.1145/3290605.3300422
+    note: "Compared six ranked-list visualizations and found wrapped bars were most accurate for the RANK task (determining an item's position in the list)."
+    role: primary
+
+---
+
+## Guidance
+
+For tasks that require viewers to accurately determine the rank or position of an item within a sorted list, prefer using a wrapped bar chart over other layouts like standard scrolled bar charts or treemaps.
+
+## Why
+
+Wrapped bar charts encode values using bar length, a highly effective visual channel for quantitative comparison. Unlike standard (scrolled) bar charts, they fit the entire dataset onto a single screen by wrapping the bars into multiple columns. This eliminates the need for scrolling, which can introduce interaction costs and errors, while maintaining high perceptual accuracy for ranking.
+
+### Core Principle
+
+Make the most important comparisons the easiest to see. By placing all data on one screen, wrapped bars facilitate global ranking without the cognitive load of scrolling and remembering off-screen items.
+
+## When it applies
+
+- When visualizing a sorted list of quantitative data (e.g., top 100 products by sales).
+- When the primary task for the user is to determine the rank of one or more items (e.g., "Where does this product rank?").
+- When the list is too long to fit on a single screen using a standard bar chart (typically >30-50 items).
+
+## Exceptions
+
+- If task completion speed is more critical than maximum accuracy, other layouts like Zvinca plots or treemaps may be faster, though less accurate.
+- If the task is to estimate the overall average of the list, Zvinca plots have been shown to be more effective.
+
+## Trade-offs
+
+- **Slower than other compact layouts:** While more accurate, wrapped bar charts can be slower for ranking tasks compared to treemaps or Zvinca plots. You trade speed for accuracy.
+- **Comparison across columns is harder:** Comparing the magnitude of two bars in different columns is more difficult than in a single-column bar chart, as they don't share an identical baseline or scale. However, for the specific task of ranking, this appears to be a worthwhile trade-off.
+
+## Signs of Trouble
+
+- **Users misjudge ranks:** In user testing or feedback, viewers frequently misidentify the rank of items, especially in a long scrolled list.
+- **Slow performance on ranking tasks:** Users take a long time to find an item's rank, often scrolling back and forth repeatedly.
+- **Over-reliance on labels:** Users ignore the visual representation and rely solely on reading numerical rank labels, defeating the purpose of the visualization.
+
+## How to Improve
+
+- **Quick Fix: Add Rank Labels.** If you must use a less effective chart type like a treemap, add explicit rank numbers (e.g., "#1", "#2") directly to the marks. This provides a textual escape hatch but undermines the visual encoding.
+- **Moderate Redesign: Switch to Wrapped Bars.** Convert a scrolled bar chart or treemap into a wrapped bar chart. This retains the effective length encoding of a bar chart while eliminating the need for scrolling.
+- **Comprehensive Approach: Test Task-Specific Layouts.** If different tasks (ranking, comparison, averaging) are all important, consider providing multiple views or choosing a balanced layout. The study suggests wrapped bars are a good "all-around" choice, but if averaging is key, a Zvinca plot might be a better primary view.
+```
+
+<split/>
+
+```md
+---
+id: use-zvinca-plots-for-fast-averaging
+title: "Use Zvinca plots for fast and accurate average estimation"
+
+tags:
+  - impact:perceptual
+  - impact:performance
+  - chart:custom.zvinca-plot
+  - task:summary-mean
+  - data:quantitative
+  - data:cardinality.medium
+  - visual:position
+  - medium:static
+  - medium:screen
+
+evidence:
+  strength: medium
+  summary: "A 2019 study found that for estimating the average value of a ranked list, Zvinca plots were both the fastest and among the most accurate of six chart types tested, including bar charts and treemaps."
+
+sources:
+  - type: research
+    ref: Mylavarapu et al., 2019
+    url: https://doi.org/10.1145/3290605.3300422
+    note: "Found Zvinca plots had the lowest error rate and fastest completion time for the MEAN task (estimating the average of all items)."
+    role: primary
+
+---
+
+## Guidance
+
+When the primary task is for a viewer to estimate the average (mean) value of a ranked list of items, use a Zvinca plot.
+
+## Why
+
+A Zvinca plot represents each value as a dot along a common scale, arranged into columns to fit on a single screen. For the task of estimating an average, this representation was found to be both faster and more accurate than bar-based or area-based alternatives. The authors speculate this is because the minimal ink of dots (compared to bars) makes it easier to perceive the "center of mass" or geometric center of the point cloud, leading to a better average estimate.
+
+### Core Principle
+
+The visual encoding should match the task. For global summary tasks like averaging, a representation that facilitates gestalt perception of the whole distribution (like a dot cloud) can be more effective than one that emphasizes individual values (like a bar chart).
+
+## When it applies
+
+- When visualizing a ranked list where a key user goal is to understand the central tendency or "typical" value.
+- When asking questions like "What is the average performance?" or "What is the approximate mean value of this list?".
+- When the list is too long to easily scan in a standard bar chart.
+
+## Exceptions
+
+- **When comparing individual values:** Zvinca plots performed poorly for comparing two specific items. For that task, a bar chart is a better choice.
+- **When ranking is the primary task:** Wrapped bar charts were more accurate for determining the rank of a specific item.
+
+## Trade-offs
+
+- **Poor for comparison tasks:** You gain speed and accuracy for estimating the average at the cost of accuracy for comparing specific values. The dot representation makes precise length/magnitude comparisons difficult.
+- **Unfamiliarity:** Zvinca plots are not a common chart type, which may require a brief learning curve for a general audience.
+
+## Signs of Trouble
+
+- **Inaccurate average estimates:** When using other chart types like treemaps or packed bars, users consistently provide poor estimates of the average value.
+- **Slow performance on summary tasks:** Users take a long time to answer questions about the overall distribution or average.
+- **Users resort to "mental math":** Viewers try to read individual values and calculate an average manually, rather than using the visualization to form a perceptual judgment.
+
+## How to Improve
+
+- **Quick Fix: Highlight the Mean.** On an existing chart (like a bar chart), add a reference line indicating the calculated mean value. This provides the answer directly but doesn't improve the user's ability to perceive it from the data.
+- **Moderate Redesign: Switch to a Zvinca Plot.** If the primary task is estimating the average, convert the existing visualization (e.g., a treemap or packed bar chart) to a Zvinca plot. This directly applies the finding for improved perceptual performance on this specific task.
+- **Comprehensive Approach: Provide Multiple Views.** If both summary and comparison tasks are important, provide an interface where the user can switch between a Zvinca plot (for summary) and a wrapped bar chart (for comparison/ranking), labeling each view by its intended purpose.
+```
+
+<split/>
+
+```md
+---
+id: consider-treemaps-for-ranked-lists
+title: "Do not dismiss treemaps for visualizing flat ranked lists"
+
+tags:
+  - impact:perceptual
+  - impact:performance
+  - chart:treemap
+  - task:rank
+  - task:compare
+  - data:quantitative
+  - data:cardinality.medium
+  - data:cardinality.high
+  - visual:area
+  - visual:position
+  - medium:static
+  - medium:screen
+
+evidence:
+  strength: low
+  summary: "Contrary to common wisdom, a 2019 study found treemaps were never the least accurate chart type for ranking or comparison tasks on flat lists. They outperformed several novel layouts, suggesting area may be 'good enough' for some non-hierarchical tasks."
+
+sources:
+  - type: research
+    ref: Mylavarapu et al., 2019
+    url: https://doi.org/10.1145/3290605.3300422
+    note: "The study's hypothesis (H2) that treemaps would yield significantly less accurate performance was not supported. Treemaps performed surprisingly well for RANK and COMP tasks."
+    role: primary
+  - type: research
+    ref: Cleveland & McGill, 1984
+    url: https://doi.org/10.2307/2288400
+    note: "Foundational work establishing that length/position is perceptually more accurate than area, which is why the treemap result is surprising."
+    role: related
+
+---
+
+## Guidance
+
+Consider treemaps as a viable option for visualizing flat (non-hierarchical) ranked lists, especially when space is limited and high-precision comparison is not the absolute priority.
+
+## Why
+
+While perceptual science shows that judging area is less accurate than judging length, this study found that treemaps performed surprisingly well for ranking and comparison tasks. They were never the worst-performing chart type and were more accurate than several other layouts. The authors speculate that the deterministic nature of modern squarified treemap layouts, which places items in a predictable pattern based on rank, provides a strong positional cue that helps viewers compensate for the difficulty of judging area alone.
+
+### Core Principle
+
+A visualization's effectiveness is a product of all its visual cues, not just the primary encoding. A weaker primary channel (area) can be supported by a stronger secondary channel (position) to create a "good enough" result.
+
+## When it applies
+
+- When visualizing a flat, ranked list (e.g., population by country, where there is no hierarchy).
+- When the number of items is large and screen space is at a premium, as treemaps are very space-efficient.
+- When the task is general ranking or approximate comparison, rather than precise magnitude judgments.
+
+## Exceptions
+
+- **When high accuracy is critical:** For tasks requiring precise comparisons, bar charts (scrolled or wrapped) remain superior as they use the more accurate length encoding.
+- **When estimating the average:** Treemaps performed poorly for the task of estimating the average value of the list.
+
+## Trade-offs
+
+- **Accuracy for Space-Efficiency:** You trade the higher perceptual accuracy of length-based charts (like bar charts) for the superior space-efficiency of a treemap.
+- **Clarity for Density:** A treemap can display hundreds of items in a small space, but discerning small differences between items is much harder than with a bar chart.
+
+## Signs of Trouble
+
+- **Inability to compare similar items:** Users cannot tell which of two similarly-sized rectangles is larger.
+- **Poor average estimates:** Users consistently give bad estimates of the average value when viewing the treemap.
+- **Confusion about layout:** Users don't understand that the layout has a ranked order (e.g., from top-left to bottom-right) and perceive it as a random jumble of rectangles.
+
+## How to Improve
+
+- **Quick Fix: Add Value Labels.** Augment the treemap by adding direct value labels inside each rectangle. This allows users to read exact values when the area comparison is too difficult.
+- **Moderate Redesign: Use a Bar Chart.** If accuracy is a concern and the list is not excessively long, switch to a wrapped or scrolled bar chart. This uses a more perceptually accurate encoding (length).
+- **Comprehensive Approach: Choose Based on Priority.** If the main goal is a compact overview of a large list, a treemap is a reasonable choice. If the main goal is accurate comparison and ranking, a wrapped bar chart is better. Choose the chart that best fits the primary task.
+```
+
+<split/>
+
+```md
+---
+id: use-scrolled-barcharts-for-accuracy-not-speed
+title: "Use scrolled bar charts for high-accuracy comparison, but expect slower performance"
+
+tags:
+  - impact:perceptual
+  - impact:performance
+  - chart:bar
+  - task:compare
+  - task:rank
+  - data:quantitative
+  - data:cardinality.high
+  - visual:length
+  - visual:position
+  - medium:interactive
+  - medium:screen
+  - access:motor-control-risk
+
+evidence:
+  strength: medium
+  summary: "A 2019 study confirmed that scrolled bar charts provide high accuracy for ranking and comparison tasks, but at the cost of significantly longer completion times due to the need for interaction (scrolling)."
+
+sources:
+  - type: research
+    ref: Mylavarapu et al., 2019
+    url: https://doi.org/10.1145/3290605.3300422
+    note: "Found scrolled barcharts (SB) were highly accurate for COMP and RANK tasks but were the slowest chart type for all tasks."
+    role: primary
+  - type: research
+    ref: Cleveland & McGill, 1984
+    url: https://doi.org/10.2307/2288400
+    note: "Provides the foundational principle that position along a common scale (as in a bar chart) is the most accurate encoding for quantitative comparison."
+    role: supporting
+
+---
+
+## Guidance
+
+For long, ranked lists where the highest possible accuracy for comparing values is the primary goal, a standard scrolled bar chart is a strong choice. Be aware that this accuracy comes at the cost of slower task performance.
+
+## Why
+
+Standard bar charts encode quantitative values using length along a single, common baseline. This is the most perceptually accurate method for comparing magnitudes. For lists that are too long to fit on a screen, scrolling is required. While the interaction of scrolling slows the user down, it preserves the single baseline and wide display area for bars, maximizing the accuracy of any comparison made with on-screen items.
+
+### Core Principle
+
+There is often a direct trade-off between perceptual accuracy and interaction cost. Maximizing the former may increase the latter.
+
+## When it applies
+
+- When visualizing a long, ranked list of quantitative data.
+- When the absolute highest priority is the accuracy of comparing two values or determining an item's precise rank.
+- When task completion time is not a major constraint.
+
+## Exceptions
+
+- **When speed is critical:** If users need to perform tasks quickly, the interaction cost of scrolling makes this a poor choice. A wrapped bar chart or other static layout would be better.
+- **When a global overview is needed:** Scrolling makes it impossible to see the entire list at once, hindering tasks that require a holistic view of the distribution.
+
+## Trade-offs
+
+- **Accuracy vs. Speed:** This is the fundamental trade-off. You get best-in-class accuracy for visible items but pay a significant time penalty for any task requiring scrolling.
+- **Local vs. Global View:** A scrolled bar chart provides an excellent, high-resolution view of the local, on-screen data but a poor (or non-existent) view of the global data distribution.
+
+## Signs of Trouble
+
+- **Slow task times:** Users take a very long time to answer questions, especially those that involve comparing items far apart in the list.
+- **"Scroll fatigue":** Users complain about the amount of scrolling required or abandon tasks that require extensive scrolling.
+- **Losing context:** Users scroll to find one item, then have to scroll back to find the other item they were comparing it to, losing context in the process.
+
+## How to Improve
+
+- **Quick Fix: Implement "Jump to" Functionality.** If you must use a scrolled list, add a search or "jump to" feature that allows users to quickly navigate to items of interest without manual scrolling.
+- **Moderate Redesign: Switch to Wrapped Bars.** Convert the scrolled bar chart to a wrapped bar chart. This places all items on a single screen, eliminating scrolling. This maintains high accuracy while dramatically improving speed.
+- **Comprehensive Approach: Use a Linked Overview+Detail.** Combine a small, complete overview of the entire list (e.g., a "thumbnail" Zvinca plot or sparkline) with a scrolled, detailed bar chart view. The overview provides global context and can be used to navigate the detail view.
+```
+
+<split/>
+
+```md
+---
+id: prefer-wrapped-barcharts-for-balanced-performance
+title: "Prefer wrapped bar charts for a balanced visualization of ranked lists"
+
+tags:
+  - impact:perceptual
+  - impact:performance
+  - chart:bar
+  - chart:bar.wrapped
+  - task:compare
+  - task:rank
+  - data:quantitative
+  - data:cardinality.medium
+  - data:cardinality.high
+  - visual:length
+  - visual:position
+  - medium:static
+  - medium:screen
+
+evidence:
+  strength: medium
+  summary: "A 2019 study concluded that wrapped bar charts offer the 'most balanced performance' for visualizing ranked lists, providing accuracy comparable to standard bar charts but without the significant time penalty caused by scrolling."
+
+sources:
+  - type: research
+    ref: Mylavarapu et al., 2019
+    url: https://doi.org/10.1145/3290605.3300422
+    note: "The paper's discussion section concludes: 'wrapped bars may be the overall most balanced choice' because they are both highly accurate and relatively fast."
+    role: primary
+
+---
+
+## Guidance
+
+As a default choice for visualizing a medium-to-long ranked list of quantitative values, prefer a wrapped bar chart. It offers a strong balance between perceptual accuracy and task completion speed.
+
+## Why
+
+Wrapped bar charts solve the primary problem of standard bar charts for long lists: the need to scroll. By wrapping the bars into multiple columns, they fit the entire list onto one screen. This dramatically reduces interaction time. At the same time, they retain the use of length as the primary visual encoding, which provides high perceptual accuracy for ranking and comparison tasks. They effectively combine the perceptual strength of a bar chart with the space-efficiency of a treemap.
+
+### Core Principle
+
+Optimize for the most common tasks while mitigating the biggest performance bottlenecks. Wrapped bars optimize for ranking and comparison (common tasks) while mitigating the scrolling bottleneck of standard bar charts.
+
+## When it applies
+
+- As a general-purpose, default visualization for a ranked list of 50-300+ items.
+- When both accuracy and reasonable task speed are important.
+- When you need to provide a complete, non-interactive overview of a ranked list.
+
+## Exceptions
+
+- **For estimating averages:** Zvinca plots were shown to be faster and more accurate for estimating the mean of the list.
+- **For very large datasets:** For lists with thousands of items, even a wrapped bar chart may become too cluttered. A treemap or other more compact representation might be necessary for a scalable overview, despite lower precision.
+- **When comparison across the full range is critical:** The use of multiple columns means bars are not all on a single, shared scale, making it harder to compare an item in the first column to an item in the last. A scrolled bar chart is better for this specific need.
+
+## Trade-offs
+
+- **Global Comparison Difficulty:** While far better than a scrolled chart for a global view, comparing the first bar to the last bar is still harder in a wrapped layout than in a small, single-column bar chart because they are in different columns with different scales.
+- **Not the absolute best at any single task:** While a good all-rounder, it may be outperformed by specialized charts for specific tasks (e.g., Zvinca plots for averaging).
+
+## Signs of Trouble
+
+- **Difficulty comparing across columns:** Users struggle to compare a bar at the top-left with a bar at the bottom-right.
+- **Clutter with high item count:** As the number of columns increases to fit more items, the individual bars become too narrow to be clearly interpreted.
+
+## How to Improve
+
+- **Quick Fix: Add Reference Lines.** To aid comparison across columns, consider adding subtle reference lines for key values (e.g., quartiles) across the entire chart.
+- **Moderate Redesign: Allow Interactive Highlighting.** When a user hovers over a bar, highlight other bars of similar value across all columns. This helps overcome the difficulty of cross-column comparison.
+- **Comprehensive Approach: Choose a Task-Specific Chart.** If you find users are primarily performing a single task where wrapped bars underperform (e.g., estimating the average), switch to the chart type optimized for that task (e.g., a Zvinca plot).
+```

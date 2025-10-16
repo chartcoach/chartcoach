@@ -1,0 +1,96 @@
+```md
+---
+id: consider-wrapped-bar-chart
+title: "Consider a wrapped bar chart to improve perception of disproportionately small values"
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:bar
+  - task:compare
+  - task:lookup
+  - task:rank
+  - data:categorical
+  - data:quantitative
+  - data:disproportionate-values
+  - visual:length
+  - visual:position
+  - audience:general
+  - medium:static
+  - medium:interactive
+  - access:cognitive-load-risk
+evidence:
+  strength: medium
+  summary: "A 2020 study with 190 participants found wrapped bar charts improve accuracy for identifying small values by up to 35 percentage points in datasets with low entropy (<0.75) and high H-spread (>4.5), but can increase task time and cognitive load for tasks involving the largest values."
+sources:
+  - type: research
+    ref: Karduni et al., 2020
+    url: https://doi.org/10.1145/3313831.3376365
+    note: "Introduced and evaluated the Du Bois wrapped bar chart, finding it improves accuracy for small values in disproportionate datasets at the cost of increased cognitive load for large values."
+    role: primary
+tools:
+  - type: implement
+    name: Wrapped Bar Chart Prototype
+    url: https://wrapped-barchart.herokuapp.com/
+    description: An interactive D3.js implementation of the wrapped bar chart discussed in the research paper.
+  - type: learn
+    name: Wrapped Bar Data Simulator
+    url: https://ryanwesslen.shinyapps.io/wrapped_bar_sim/
+    description: An R Shiny app to simulate datasets with varying entropy and H-spread to understand when wrapped bar charts are most applicable.
+examples:
+  - type: good
+    description: "W.E.B. Du Bois' original 1900 data portrait of occupations for Georgia's Black population. He wrapped the extremely large 'Laborers' and 'Farmers' categories to make the much smaller professional occupation categories visible and comparable."
+  - type: bad
+    description: "A standard bar chart showing ad spending by political candidates, where one candidate's spending is so high that all other candidates' bars are barely visible, making comparisons between them impossible."
+---
+
+## Guidance
+
+Use a wrapped bar chart when visualizing categorical data where a few values are so large they make smaller values difficult to read or compare.
+
+## Why
+
+Standard bar charts can render small-valued bars nearly invisible when a few disproportionately large bars dominate the scale. This wastes screen space and makes it impossible to perform visual comparisons on the smaller values. Wrapping the large bars preserves the linear scale while dedicating more pixel real estate to the smaller values, making them easier to identify and compare.
+
+### Core Principle
+
+Ensure all data points in a visualization are perceptible and comparable. By reallocating space from disproportionately large marks, you can improve the resolution and clarity for the rest of the data.
+
+## When it applies
+
+-   When a dataset has disproportionately large values that are orders of magnitude greater than others. The research identifies this with an "H-spread" greater than 4.5.
+-   When the overall data distribution is concentrated in a few categories, identified by a low normalized entropy (less than 0.75).
+-   When the primary analytical task is to identify, compare, or estimate ratios involving the *smallest* values in the dataset.
+
+## Exceptions
+
+-   When the primary task is the rapid identification or comparison of the *largest* values. Wrapping adds cognitive steps (counting the wraps) that can slow down this specific task and may even decrease accuracy.
+-   When data values are relatively evenly distributed (high entropy) and there are no significant outliers. The wrapping mechanism provides no benefit and adds unnecessary visual complexity.
+-   When preattentive processing and at-a-glance magnitude comparison of all bars is the top priority. Wrapping breaks the immediate visual perception of length for the largest bars.
+
+## Trade-offs
+
+-   **Increased Accuracy for Small Values vs. Increased Cognitive Load:** Viewers can more accurately perceive small values, but they must perform mental calculations (e.g., "this bar is wrapped 3 times, so 3 × 1000 + 500") for large values, increasing cognitive effort and task time.
+-   **Clarity of Small Bars vs. Obscurity of Large Bar Rank:** While small bars become clear, the visual dominance and easy rankability of the largest bars are lost. It becomes a multi-step process to determine the value of the largest bars.
+
+## Signs of Trouble
+
+-   **"Ants on a Line":** In a standard bar chart, many bars are so short they are barely visible or indistinguishable from each other and the axis.
+-   **Vast White Space:** A large portion of the chart area is empty because one or two bars set an extreme scale, squashing all other marks.
+-   **User Confusion with Wrapped Charts:** Users are unsure how to read the wrapped bars or complain about having to "do math" to figure out the value of the longest bars.
+-   **Slow Performance on Largest Values:** Users take significantly longer to identify the largest bar in a wrapped chart compared to a standard one.
+
+## How to Improve
+
+### If your standard bar chart has disproportionate values:
+
+-   **Quick approach: Add data labels.** Directly label the small, hard-to-read bars. This provides a lookup mechanism but doesn't fix the underlying perceptual problem of visual comparison.
+-   **Moderate approach: Use a log scale.** A logarithmic scale can make all values visible, but it distorts the linear relationships between them and can be difficult for general audiences to interpret correctly.
+-   **Comprehensive approach: Switch to a wrapped bar chart.** This redesign directly addresses the perceptual problem by dedicating more space to small values while maintaining an easy-to-understand linear scale.
+
+### If your wrapped bar chart is causing confusion:
+
+-   **Quick approach: Add wrap counts.** Add a text label next to each wrapped portion of a bar indicating the number of wraps (e.g., a "x3" label). This reduces the cognitive load of counting.
+-   **Moderate approach: Add an inverse axis.** As suggested in the research, add a secondary axis on the right side of the chart that counts down from the wrap threshold. This makes it easier to read the value of the final, unwrapped "tail" portion.
+-   **Comprehensive approach: Use interaction.** Allow users to toggle between a standard and wrapped view. This gives them control over the trade-off, enabling them to see the big picture (standard view) and the details (wrapped view) on demand.
+
+```

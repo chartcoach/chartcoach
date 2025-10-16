@@ -1,0 +1,278 @@
+```md
+---
+id: position-for-quantitative
+title: "Use position on a common scale to encode quantitative values"
+
+tags:
+  - impact:perceptual
+  - impact:logos
+  - task:compare
+  - task:rank
+  - task:lookup
+  - data:quantitative
+  - visual:position
+  - visual:length
+  - visual:angle
+  - visual:area
+  - audience:general
+  - medium:static
+
+sources:
+  - type: research
+    ref: Cleveland & McGill, 1984
+    note: "This foundational paper established the perceptual ranking of visual channels, demonstrating that position on a common scale is the most accurately perceived."
+  - type: research
+    ref: Mackinlay, 1986
+    note: "Extended the perceptual rankings into an automated system (APT), formalizing the principle for visualization recommendation."
+---
+
+## Guidance
+
+When encoding quantitative data for comparison or ranking, use position along a common, aligned scale as the primary visual channel. Bar charts, dot plots, and scatter plots all leverage this principle.
+
+## Why
+
+Humans are most accurate at judging and comparing quantitative differences when they are represented by position along a common baseline. Our perceptual system is less accurate at decoding quantitative values from other visual channels like length (for unaligned bars), angle (as in pie charts), area, or color saturation. Using position leads to faster, more accurate, and less biased interpretations of the data.
+
+## When it applies
+
+- When the primary goal is for the user to accurately compare, rank, or look up quantitative values.
+- When creating fundamental chart types like bar charts, line charts, and scatterplots.
+- For almost any dataset involving quantitative variables.
+
+## Exceptions
+
+- When the primary goal is not precise comparison but rather seeing part-to-whole relationships, an area-based chart like a treemap or pie chart might be considered, though a bar chart is often still superior.
+- For geospatial data, position is already used to encode location (latitude/longitude), so other channels like color (for choropleths) or size (for proportional symbols) must be used to encode quantitative values.
+
+## Trade-offs
+
+- **Aesthetics vs. Clarity:** Sometimes, less perceptually effective charts (like multi-colored bubble charts) are chosen for their visual appeal. Prioritizing position might lead to more "standard" but less visually novel charts.
+- **Information Density:** Encoding values using only position can sometimes require more space than encoding them with other channels like color on a heatmap.
+
+## Signs of Trouble
+
+- **Angle Estimation:** Viewers are being asked to compare the angles of pie chart slices.
+- **Area Judgements:** Viewers need to compare the relative sizes of circles or other irregular shapes (e.g., in a bubble chart or treemap) to understand magnitude.
+- **Color Decoding:** Viewers must rely on a color gradient legend to decode specific quantitative values, especially for comparison tasks.
+- **Unaligned Lengths:** Viewers are asked to compare the lengths of bars that do not share a common baseline (e.g., in a stacked bar chart).
+
+## How to Improve
+
+- **Quick Fix: Add Direct Labels.** If you must use a less effective chart (like a pie chart), add direct numerical labels to each segment. This provides an "escape hatch" for users, allowing them to read the exact values instead of relying on flawed perceptual judgments of angle or area.
+
+- **Moderate Redesign: Switch to a Better Chart Type.**
+  - Instead of a pie chart, use a bar chart to show part-to-whole comparisons. All bars share a common baseline (0), making their lengths (positions) easily and accurately comparable.
+  - Instead of a bubble chart for comparison, consider a dot plot or a bar chart.
+
+- **Comprehensive Approach: Re-evaluate Encodings from First Principles.** Review all quantitative data in your visualization. Ensure the most important comparisons are encoded using position on a common scale. Use secondary channels like color or size for less critical or categorical information.
+```
+<split/>
+```md
+---
+id: saturation-over-hue-for-ordinal
+title: "Use color saturation for ordinal data instead of a rainbow hue scale"
+
+tags:
+  - impact:perceptual
+  - impact:accessibility
+  - access:color-vision-risk
+  - task:rank
+  - task:compare
+  - data:ordinal
+  - data:quantitative
+  - visual:color
+  - audience:general
+
+sources:
+  - type: research
+    ref: Mackinlay, 1986
+    note: "Theorized that color hue is not perceptually ordered, while saturation is, making it unsuitable for ordinal or quantitative data."
+  - type: research
+    ref: Liu & Heer, 2018
+    note: "Empirically confirmed that rainbow colormaps perform poorly for ordering tasks and are not intuitive."
+---
+
+## Guidance
+
+For ordinal data (e.g., "low," "medium," "high") or binned quantitative data, use a sequential color scale that varies primarily in saturation or lightness. Avoid using a multi-hue "rainbow" scale.
+
+## Why
+
+The human brain does not perceive the colors of the rainbow (red, orange, yellow, green, blue, indigo, violet) as having a natural, intuitive order. This makes it difficult for viewers to rank values or judge the magnitude of differences. In contrast, a single-hue scale that varies from light to dark (e.g., light blue to dark blue) has a clear perceptual order that is easy to interpret. This makes comparisons and ranking tasks faster and more accurate. Furthermore, rainbow scales can introduce accessibility issues for colorblind users and create misleading visual artifacts where none exist in the data.
+
+## When it applies
+
+- When encoding any data that has a natural order, including:
+  - Ordinal categories (e.g., "small", "medium", "large"; "agree", "neutral", "disagree").
+  - Binned quantitative data (e.g., 0-10, 11-20, 21-30).
+- When using choropleth maps, heatmaps, or any chart where color represents ordered magnitude.
+
+## Exceptions
+
+- For **nominal** (unordered) categorical data, using distinct hues (e.g., blue, orange, green) is appropriate because there is no inherent order to convey.
+- Some specialized multi-hue sequential scales (like Viridis or Magma) are carefully designed to be perceptually uniform and perform well, but these are exceptions to the general rule against arbitrary rainbow scales.
+
+## Trade-offs
+
+- **Visual Appeal:** Rainbow palettes are often perceived as vibrant and engaging, while a single-hue palette might seem more muted. This is a trade-off between aesthetic appeal and perceptual accuracy.
+- **Discriminability:** While a single-hue scale is better for ordering, a multi-hue scale might make it easier to distinguish between many different levels, though this comes at the cost of interpretability.
+
+## Signs of Trouble
+
+- **Rainbow Legend:** The color legend shows a spectrum of colors like red, yellow, green, and blue to represent a continuous or ordered variable.
+- **No Natural Order:** It's impossible to tell if "green" is greater or less than "yellow" without constantly referring back to the legend.
+- **False Boundaries:** Sharp transitions between colors (e.g., from yellow to green) can create the illusion of significant shifts in the data where none exist.
+- **Colorblind Inaccessibility:** Using a colorblindness simulator reveals that different colors in the scale become indistinguishable (e.g., red and green appear as the same shade).
+
+## How to Improve
+
+- **Quick Fix: Switch to Grayscale.** As a quick test or solution, convert your rainbow scale to a simple grayscale. This immediately enforces a perceptual order from light to dark and reveals if the rainbow was masking or creating patterns.
+
+- **Moderate Redesign: Use a Single-Hue Sequential Scale.** Choose a single color (e.g., blue) and create a palette that varies from a very light shade of that color to a very dark one. Most visualization tools have built-in options for this (e.g., "Blues," "Greens").
+
+- **Comprehensive Approach: Adopt a Perceptually Uniform Colormap.** Use a professionally designed multi-hue sequential colormap like Viridis, Plasma, or Cividis. These palettes are engineered to be:
+  1.  **Perceptually Ordered:** They increase in lightness, so the order is clear.
+  2.  **Perceptually Uniform:** A change in the data corresponds to an equivalent perceptual change in color.
+  3.  **Colorblind-Safe:** They are readable by people with common forms of color vision deficiency.
+```
+<split/>
+```md
+---
+id: grouped-bar-difference-overlay
+title: "Add difference overlays to grouped bar charts to facilitate comparisons"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:bar
+  - chart:bar.grouped
+  - task:compare
+  - task:direction
+  - task:find-extremum
+  - data:quantitative
+  - data:categorical
+  - visual:length
+  - visual:position
+  - audience:general
+  - medium:static
+
+sources:
+  - type: research
+    ref: Srinivasan et al., 2018
+    url: https://doi.org/10.1145/3173574.3173878
+    note: "The study found that a grouped bar chart with a difference overlay (GB+D) was the most preferred design and performed well across a wide range of comparison tasks."
+---
+
+## Guidance
+
+When comparing values between two series in a grouped bar chart, superimpose an explicit visual mark (e.g., a line or dot) that encodes the difference between the two bars in each group.
+
+## Why
+
+A standard grouped bar chart requires viewers to mentally estimate the height of two bars and then calculate the difference. This is cognitively demanding, slow, and error-prone, especially for identifying the *largest* or *smallest* change across many categories. By adding a "difference overlay," the task of judging the difference is transformed from a mental calculation into a direct perceptual task of comparing the position or length of the overlay marks. This leads to faster, more accurate comparisons and is highly preferred by users because it provides both the original values (the bars) and the change (the overlay) in a single view.
+
+## When it applies
+
+- When using a grouped bar chart to compare values between two series (e.g., this year vs. last year).
+- When the key tasks include identifying the category with the maximum change, measuring the difference for a specific category, or getting a quick sense of the magnitude of changes.
+
+## Exceptions
+
+- When comparing more than two series, as multiple difference overlays can become visually cluttered and confusing.
+- If the sole task is to show the difference and the original values are unimportant, a dedicated "difference chart" (showing only the differences) might be simpler. However, users often lose valuable context with this approach.
+
+## Trade-offs
+
+- **Visual Clutter:** Adding overlays introduces more ink to the chart, which can slightly increase visual complexity. However, for two series, this trade-off is generally worthwhile for the large gain in performance and clarity.
+- **Design Familiarity:** This pattern is less common than a standard grouped bar chart, so it may require a brief moment of orientation for a first-time viewer.
+
+## Signs of Trouble
+
+- **Mental Math:** Viewers are scanning back and forth between two bars in a group, trying to subtract one from the other.
+- **Slow Comparisons:** It takes a long time for a viewer to answer "Which category had the biggest increase?"
+- **Inaccurate Judgments:** Viewers incorrectly identify the category with the largest or smallest difference.
+- **Loss of Context:** A chart shows only the differences (e.g., a difference chart) but viewers keep asking "What were the original sales numbers?"
+
+## How to Improve
+
+- **Quick Fix: Annotate Key Differences.** If you cannot alter the chart type, manually add annotations (e.g., a text box with "+\$5K") to the one or two most important categories to highlight their change.
+
+- **Moderate Redesign: Implement a Difference Overlay.** Modify your grouped bar chart to add the overlay. For each category, draw a line or symbol that visually represents the difference. The position of the overlay should clearly indicate the direction of the change (e.g., an overlay above a bar for an increase, below for a decrease).
+
+- **Comprehensive Approach: Provide Interactive Overlays.** In an interactive dashboard, allow users to toggle the difference overlays on and off. This keeps the default view simple while providing the powerful comparison tool on demand. Brushing over an overlay could reveal a tooltip with the exact difference and original values.
+
+examples:
+  - type: good
+    description: "A grouped bar chart showing sales for two years. A small horizontal line is superimposed over each group of bars, indicating the exact difference in sales between the two years. This makes it easy to see both the absolute sales figures and the year-over-year change."
+  - type: bad
+    description: "A standard grouped bar chart with two series. To find the biggest change, a user must visually compare the heights of the blue and orange bars for every single category, a slow and error-prone process."
+```
+<split/>
+```md
+---
+id: show-both-series-with-difference-overlay
+title: "Show original values for both series when using difference overlays"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - access:cognitive-load-risk
+  - chart:bar
+  - chart:bar.grouped
+  - task:compare
+  - task:find-extremum
+  - task:lookup
+  - data:quantitative
+  - data:categorical
+  - audience:general
+
+sources:
+  - type: research
+    ref: Srinivasan et al., 2018
+    url: https://doi.org/10.1145/3173574.3173878
+    note: "The study showed that a single bar chart with a difference overlay (SB+D) led to significantly more errors when users had to identify extremes in the non-explicitly encoded series. The grouped bar chart with an overlay (GB+D) was more accurate and preferred."
+---
+
+## Guidance
+
+When using a difference overlay to compare two series, explicitly encode the original values for *both* series (e.g., with a grouped bar chart) rather than showing only one series and forcing viewers to mentally calculate the other.
+
+## Why
+
+Showing only one series' value as a bar and asking viewers to mentally add or subtract the difference overlay to find the second series' value is highly confusing and error-prone. This design imposes a significant cognitive load, especially for tasks like finding the minimum or maximum value of the non-explicitly shown series. People are much more accurate and confident when both original values are directly represented (e.g., as two bars side-by-side), with the difference overlay serving as a helpful supplement rather than a necessary component for calculation.
+
+## When it applies
+
+- Any time a difference overlay is used to compare two series.
+- When it is important for the user to be able to accurately perceive or look up values from *both* of the original series, not just one of them.
+
+## Exceptions
+
+- If the value of the second series is truly unimportant and never needs to be read or compared, showing only one bar with an overlay might save space. However, this is a risky assumption, as users often need more context than designers anticipate.
+
+## Trade-offs
+
+- **Space:** A grouped bar chart showing both series takes up more horizontal space than a single bar chart.
+- **Simplicity:** A single bar chart might appear simpler at first glance, but this simplicity is deceptive and comes at the cost of high cognitive load and potential for error.
+
+## Signs of Trouble
+
+- **Calculation Errors:** Viewers are making mistakes when asked about the values of the series that isn't directly shown as a bar. For example, they report the difference value instead of the calculated series value.
+- **User Confusion:** Viewers express confusion, saying things like "It's hard to imagine the previous year's value" or "I have to stop and do math to figure it out."
+- **Task Avoidance:** When given a chart with only one bar and an overlay, users struggle or give up on tasks related to the second (unseen) series.
+
+## How to Improve
+
+- **Quick Fix: Add Redundant Labels.** On a chart with a single bar and an overlay, add text labels for the values of *both* series. This reduces the need for mental math, though it doesn't fix the underlying flawed visual representation.
+
+- **Moderate Redesign: Switch to a Grouped Bar Chart with Overlay.** Change the chart type from a single bar chart with an overlay to a grouped bar chart with an overlay. This directly represents both original values, making all comparison tasks easier and more accurate.
+
+- **Comprehensive Approach: Re-evaluate the Core Task.** If space is the primary constraint preventing the use of a grouped bar chart, reconsider if another chart type is more appropriate. For example, if comparing many categories is the goal, a dot plot with lines connecting the two series' values for each category could be a space-efficient and clear alternative.
+
+examples:
+  - type: good
+    description: "A grouped bar chart shows blue bars for 2023 sales and orange bars for 2022 sales. A small line overlay shows the difference. Users can easily see the absolute sales for both years and the change."
+  - type: bad
+    description: "A bar chart shows only blue bars for 2023 sales, with a line overlay indicating the change from 2022. To find the highest sale in 2022, a user must mentally subtract the overlay value from the bar height for every single category, a difficult and error-prone task."
+```

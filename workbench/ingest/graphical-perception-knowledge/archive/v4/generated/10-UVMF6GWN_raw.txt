@@ -1,0 +1,179 @@
+```md
+---
+id: anticipate-underestimation-of-line-chart-averages
+title: "Anticipate that viewers will underestimate the average value of a line chart"
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - impact:ethical
+  - chart:line
+  - task:summary-mean
+  - data:quantitative
+  - visual:position
+  - access:cognitive-load-risk
+  - audience:general
+  - medium:static
+  - medium:screen
+sources:
+  - type: research
+    ref: Xiong et al., 2020
+    url: https://doi.org/10.1109/TVCG.2019.2934400
+    note: "Experiments 1, 2, and 3 consistently showed that the average position of a single line in a line chart is systematically underestimated by viewers."
+---
+## Guidance
+
+Be aware that viewers tend to systematically perceive the average value of a line in a line chart as lower than it actually is.
+
+## Why
+
+Research shows a consistent perceptual bias where the estimated average position of a line is underestimated. This occurs even for simple, single-series line charts and can lead to inaccurate takeaways about the data's central tendency. This bias appears to be a low-level perceptual phenomenon, not a result of a conscious strategy.
+
+## When it applies
+
+- When a key goal is for the user to accurately estimate the average value or overall level of a data series represented by a line chart.
+- This applies to both noisy (variable) and uniform (straight) lines.
+
+## Exceptions
+
+- If the primary task is not to estimate the average (e.g., identifying peaks/troughs, comparing specific points, or judging the overall trend direction or volatility), this bias may be less critical.
+
+## Trade-offs
+
+- While line charts are excellent for showing trends over time, this inherent bias can compromise the accuracy of average value perception. Acknowledging this means you might need to add other visual cues to compensate, which could add clutter.
+
+## Signs of Trouble
+
+- **User Misinterpretation:** Users verbally describe or make decisions based on a lower-than-actual average value for the series.
+- **Comparative Errors:** When comparing the average of the line chart to a specific benchmark or another chart, users consistently judge the line chart's average as being lower than it is.
+
+## How to Improve
+
+- **Quick approach:** Explicitly state the average value in an annotation, title, or caption. This provides a cognitive correction, even if the perceptual bias remains.
+
+- **Moderate approach:** Add a visual reference line to the chart that marks the true average value. This gives viewers a direct, unbiased anchor for comparison, helping to override the perceptual illusion.
+
+- **Comprehensive approach:** If accurate average perception is the most critical task, consider if another chart type might be less prone to this specific bias. However, be aware that other chart types have their own biases (e.g., bar charts are often overestimated). The best choice depends on which type of error is more acceptable for your use case.
+
+```
+<split/>
+```md
+---
+id: anticipate-overestimation-of-bar-chart-averages
+title: "Anticipate that viewers will overestimate the average value of a bar chart"
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - impact:ethical
+  - chart:bar
+  - task:summary-mean
+  - data:quantitative
+  - visual:position
+  - visual:size
+  - access:cognitive-load-risk
+  - audience:general
+  - medium:static
+  - medium:screen
+sources:
+  - type: research
+    ref: Xiong et al., 2020
+    url: https://doi.org/10.1109/TVCG.2019.2934400
+    note: "Experiments 1, 2, and 3 consistently showed that the average position of a set of bars is systematically overestimated by viewers."
+---
+## Guidance
+
+Be aware that viewers tend to systematically perceive the average value (height) of a set of bars in a bar chart as higher than it actually is.
+
+## Why
+
+Research demonstrates a consistent perceptual bias where the estimated average position of bars is overestimated. This happens even for single-series bar charts and can lead to an inflated mental model of the data's central tendency. The paper speculates this may be related to how bars are encoded (using length/area in addition to position) or their aspect ratio.
+
+## When it applies
+
+- When a key goal is for the user to accurately estimate the average value of a series represented by a bar chart.
+- This applies whether the bars are of uniform height or are noisy (variable).
+
+## Exceptions
+
+- If the primary task is not to estimate the average (e.g., comparing individual bars, looking up specific values), this bias is less concerning.
+- The same research notes that position judgments for bars were more *precise* (less variable) than for lines, despite the bias. Therefore, this overestimation might be an acceptable trade-off for higher precision in judgment.
+
+## Trade-offs
+
+- While bar charts are standard for comparing magnitudes, this overestimation bias can affect the perception of the group's average. Mitigating it with annotations can add visual clutter.
+
+## Signs of Trouble
+
+- **Inflated Estimates:** Users make decisions or draw conclusions based on an average value that is higher than the true mean of the data.
+- **Benchmark Errors:** When comparing the average of the bars to a reference line or value, users may incorrectly judge the bars' average as exceeding the benchmark when it does not.
+
+## How to Improve
+
+- **Quick approach:** Explicitly state the average value of the series in an annotation, title, or caption. This provides a direct cognitive correction.
+
+- **Moderate approach:** Add a visual reference line to the chart that marks the true average value. This provides an unbiased anchor that helps viewers correct their biased perception.
+
+- **Comprehensive approach:** The paper suggests the bias might be related to the aspect ratio of the bars. While more research is needed, you could experiment with different bar widths to see if it mitigates the effect. For now, adding a clear reference line is the most reliable strategy.
+
+```
+<split/>
+```md
+---
+id: separate-series-to-avoid-perceptual-pull
+title: "Separate data series into different charts to avoid perceptual pull"
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:line
+  - chart:bar
+  - chart:small-multiples
+  - task:summary-mean
+  - task:compare
+  - data:quantitative
+  - visual:position
+  - access:cognitive-load-risk
+  - audience:general
+  - medium:static
+  - medium:screen
+sources:
+  - type: research
+    ref: Xiong et al., 2020
+    url: https://doi.org/10.1109/TVCG.2019.2934400
+    note: "Experiments 2 and 3 demonstrate a 'perceptual pull' effect, where the perceived average of one data series is biased toward the position of another series on the same chart."
+---
+## Guidance
+
+When displaying multiple data series on the same plot, be aware that their perceived averages will be "pulled" toward each other. To ensure accurate perception of each series' average, separate them into small multiples.
+
+## Why
+
+Similar to a cognitive anchoring effect, the presence of an irrelevant data series on the same axes perceptually biases the estimated average of a target series. This "perceptual pull" can either exaggerate or diminish other inherent biases (like the underestimation of lines or overestimation of bars), leading to significant misinterpretation. The effect occurs regardless of whether the series are of the same type (e.g., two lines) or different types (e.g., a line and a bar chart).
+
+## When it applies
+
+- When showing two or more data series (e.g., multiple lines, multiple groups of bars, or a line and bars) on the same chart with a shared Y-axis.
+- When the accurate estimation of the average value for *each individual series* is an important task for the viewer.
+
+## Exceptions
+
+- If the primary task is to compare the series *to each other* at specific points (e.g., "which line is higher in May?") or to judge the overall distance between them, plotting them on the same axes is necessary. In this case, the perceptual pull on their averages may be a secondary, acceptable concern.
+
+## Trade-offs
+
+- **Plotting Together:** Facilitates direct, point-by-point comparison between series but introduces perceptual pull, which compromises the accurate perception of individual averages.
+- **Separating (Small Multiples):** Ensures more accurate perception of individual series averages but makes direct, point-by-point comparison across series more difficult, as it requires scanning between plots.
+
+## Signs of Trouble
+
+- **Convergence Error:** Viewers' estimates for the averages of two different series are closer together than they should be. For example, they might underestimate the average of a high-value series and overestimate the average of a low-value series shown on the same plot.
+- **Exaggerated Bias:** The underestimation of a line chart's average is even worse when a second, lower-value data series is also present on the chart.
+- **Distorted Comparison:** The perceived difference in averages between two series is smaller than the actual difference.
+
+## How to Improve
+
+- **Quick approach:** Add clear, distinct annotations with the true average value for each series. This provides a cognitive correction, though it does not fix the underlying perceptual bias.
+
+- **Moderate approach:** Add distinct reference lines showing the average for each series (e.g., a dashed line for series A's average, a dotted line for series B's average). This can help anchor perception to the correct values but may clutter the chart.
+
+- **Comprehensive approach:** Redesign the chart to use small multiples. Place each data series on its own chart, but keep the Y-axis scale consistent across all charts. This eliminates the perceptual pull by physically separating the series, allowing for more accurate judgment of each one's average.
+
+```

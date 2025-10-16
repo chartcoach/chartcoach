@@ -1,0 +1,326 @@
+```md
+---
+id: use-small-multiples-for-spatiotemporal-peaks
+title: "Use small-multiple maps to find peaks in spatiotemporal data"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - impact:performance
+  - chart:map
+  - chart:map.small-multiples
+  - task:find-extremum
+  - task:compare
+  - task:rank
+  - data:spatiotemporal
+  - medium:interactive
+  - medium:screen
+
+sources:
+  - type: research
+    ref: Peña-Araya, Bezerianos, & Pietriga, 2020
+    url: https://doi.org/10.1145/3313831.3376350
+    note: "Experiment found small-multiple maps were fastest and most accurate for finding the peak value in a spatiotemporal dataset, outperforming animated maps and maps with glyphs."
+
+examples:
+  - type: good
+    description: "Small multiples provide a complete overview, allowing a global search across all time-steps at a glance, followed by a local comparison of candidate peaks without relying on memory."
+  - type: bad
+    description: "An animated map forces the user to remember the location and intensity of previous peaks to make a comparison, increasing cognitive load and leading to slower, less accurate performance."
+  - type: bad
+    description: "A map with glyphs has very small time-cells, making it difficult to accurately compare subtle color differences to identify the true peak."
+---
+
+## Guidance
+
+To help users find the maximum value (peak) of a phenomenon across both space and time, represent the data using small-multiple maps.
+
+## Why
+
+Small-multiple maps are faster and more accurate for this task because they provide a complete, static overview of the entire dataset. This allows users to perform a global visual search to identify potential peaks and then make direct, local comparisons between them without having to rely on working memory (as in an animation) or decipher low-resolution glyphs.
+
+## When it applies
+
+- When the user's task is to identify the location and time of the maximum intensity of a phenomenon, such as the peak of a disease outbreak or the highest level of social media activity.
+- When the analysis requires both a broad overview of the entire time-series and detailed comparison between specific points in time and space.
+
+## Exceptions
+
+- If there are too many time-steps to display on the available screen space, the individual maps in a small-multiples layout may become too small to be legible. In such cases, aggregation or an alternative interactive approach may be needed.
+
+## Trade-offs
+
+- **Screen Space:** Small multiples consume significantly more screen real estate than a single animated map or a map with glyphs.
+- **Data Density:** Performance may degrade if the number of time-steps is so large that individual maps become unreadably small.
+
+## Signs of Trouble
+
+- **Endless Scrubbing:** With an animated map, users repeatedly play, pause, and scrub the timeline back and forth, trying to remember where and when they saw the "darkest" region.
+- **Squinting at Glyphs:** With a glyph map, users struggle to compare colors in the tiny, low-resolution cells, unable to confidently determine which is the true maximum.
+
+## How to Improve
+
+- **Comprehensive Redesign: Switch to Small Multiples.** If you are currently using an animated map or a map with glyphs for peak-finding tasks, switch to a small-multiples layout. Arrange a grid of static maps, one for each time-step, to provide a complete overview and facilitate direct comparison. This is the most effective approach according to the research.
+
+<split/>
+```md
+---
+id: use-map-glyphs-for-spatiotemporal-lookup
+title: "Use maps with glyphs for fast arrival time lookups"
+
+tags:
+  - impact:performance
+  - impact:perceptual
+  - chart:map
+  - chart:map.glyphs
+  - task:lookup
+  - data:spatiotemporal
+  - medium:interactive
+  - medium:screen
+
+sources:
+  - type: research
+    ref: Peña-Araya, Bezerianos, & Pietriga, 2020
+    url: https://doi.org/10.1145/3313831.3376350
+    note: "The study found that a map with glyphs was the fastest technique for the 'Arrival' task, which involved finding the time a phenomenon reached a specific, known location."
+
+examples:
+  - type: good
+    description: "On a map with glyphs, finding the arrival time for a specific region requires only a quick scan within a single, localized glyph, making it very efficient."
+  - type: bad
+    description: "Using small multiples for this task forces the user to scan across many different maps to find the one where the target region first appears, which is slower."
+  - type: bad
+    description: "Using an animation for this task is the slowest method, as the user must wait for the animation to play until the target region appears."
+---
+
+## Guidance
+
+When the primary task is to find out *when* a phenomenon first appeared at a *specific* geographical location, use a map with glyphs where each glyph visualizes the time series for its location.
+
+## Why
+
+This technique is fastest because it co-locates all temporal data for a single spatial region. The task is transformed from a search across many maps (small multiples) or a waiting game (animation) into a simple, highly efficient visual lookup within a single, designated glyph on the map.
+
+## When it applies
+
+- The task is a targeted lookup: "When did X happen at location Y?"
+- The user knows the specific location they are interested in.
+- Speed of lookup for this specific task is the highest priority.
+
+## Exceptions
+
+- This technique is not suitable for most other spatiotemporal analysis tasks, such as determining propagation direction, identifying spatial jumps, or finding overall peaks. Its optimization for lookup comes at a high cost to other analytical capabilities.
+
+## Trade-offs
+
+- **Task Specificity:** This method is highly optimized for single-location temporal lookup but performs poorly for tasks requiring comparisons across different regions or across consecutive time steps.
+- **Cognitive Load for Other Tasks:** Using this visualization for tasks other than lookup can be cognitively demanding because the temporal information is spatially fragmented across the glyphs.
+
+## Signs of Trouble
+
+- **Poor Global Understanding:** Users can easily find the arrival time at one location but cannot describe the overall pattern, direction, or speed of the propagation across the entire map.
+- **Difficulty with Comparisons:** Users struggle to answer questions like "Did the phenomenon spread from east to west?" or "Did it jump over any regions?"
+
+## How to Improve
+
+- **Quick Fix: Add Highlighting.** If using a glyph map, ensure robust interactivity that allows a user to hover over a time-cell in one glyph and see the corresponding time-cell highlighted in all other glyphs to aid comparison.
+- **Moderate Redesign: Use a More General-Purpose View.** If analysis involves more than just arrival-time lookup, switch to a small-multiples layout. It offers a better balance for a wider range of spatiotemporal tasks.
+
+<split/>
+```md
+---
+id: choose-spatiotemporal-viz-for-direction-task
+title: "Choose animated maps for speed or static maps for accuracy when tracking propagation direction"
+
+tags:
+  - impact:perceptual
+  - impact:performance
+  - impact:cognitive
+  - chart:map
+  - chart:map.animated
+  - chart:map.small-multiples
+  - task:direction
+  - task:trend
+  - data:spatiotemporal
+  - medium:animation
+  - medium:interactive
+
+sources:
+  - type: research
+    ref: Peña-Araya, Bezerianos, & Pietriga, 2020
+    url: https://doi.org/10.1145/3313831.3376350
+    note: "The paper identified a speed-accuracy trade-off for the 'Direction' task. Animation was fastest but more error-prone, while static views (small multiples, glyphs) were slower but more accurate."
+
+examples:
+  - type: good
+    description: "An animated map allows for rapid perception of movement, making it the fastest way to get a general sense of propagation direction."
+  - type: bad
+    description: "Relying solely on the speed of an animated map can lead to mistakes; the study found it to be the most error-prone method for determining direction."
+  - type: good
+    description: "A small-multiples view, while slower to process, allows for careful, deliberate comparison of consecutive frames, leading to higher accuracy in direction-finding."
+---
+
+## Guidance
+
+When analyzing the direction of spatiotemporal propagation, choose your visualization based on the trade-off between speed and accuracy:
+- For the **fastest** assessment, use an **animated map**.
+- For the most **accurate** assessment, use a **static map** (like small multiples).
+
+## Why
+
+There is a speed-accuracy trade-off for this task. The human visual system is highly attuned to motion, which allows animated maps to provide a very fast, intuitive sense of direction. However, this speed can come at the cost of precision, leading to more errors. Static representations like small multiples force a more deliberate, side-by-side comparison, which is slower but less prone to error.
+
+## When it applies
+
+- When the task is to determine if a phenomenon is spreading in a consistent direction (e.g., north-to-south, outward from a central point).
+- When deciding whether to prioritize quick insights or analytical rigor.
+
+## Exceptions
+
+- If the propagation is very slow or subtle, the motion cue in an animation may be too weak to be effective, diminishing its speed advantage.
+- If the primary user is giving a presentation, the narrative quality and high user confidence associated with animation may outweigh the risk of minor inaccuracies.
+
+## Trade-offs
+
+- **Speed vs. Accuracy:** This is the central trade-off. Animated maps prioritize speed; static maps (small multiples) prioritize accuracy.
+- **User Confidence:** Users report higher confidence with animation, even when they are less accurate. This can be a risk if a feeling of confidence is mistaken for correctness.
+
+## Signs of Trouble
+
+- **Frequent Errors with Animation:** When using an animated map, post-hoc analysis reveals that users frequently misidentify the primary direction of spread or miss secondary propagation fronts.
+- **Slow Analysis with Static Maps:** When using small multiples, users complain that determining the overall direction takes too long or feels tedious.
+
+## How to Improve
+
+- **Prioritizing Speed:** If your current static map feels too slow for direction-finding, switch to an animated map but advise users to double-check their initial assessment.
+- **Prioritizing Accuracy:** If your animated map is leading to errors, switch to a small-multiples layout. This will slow down the analysis but increase the reliability of the results.
+- **Balanced Approach:** Use an animated map for an initial, quick assessment, and then switch to or supplement with a small-multiples view for confirmation and more detailed analysis.
+
+<split/>
+```md
+---
+id: avoid-map-glyphs-for-spatial-jumps
+title: "Avoid using maps with glyphs to detect spatial jumps in propagation"
+
+tags:
+  - impact:cognitive
+  - impact:perceptual
+  - impact:performance
+  - chart:map
+  - chart:map.glyphs
+  - task:find-anomalies
+  - data:spatiotemporal
+  - medium:interactive
+  - access:cognitive-load-risk
+
+sources:
+  - type: research
+    ref: Peña-Araya, Bezerianos, & Pietriga, 2020
+    url: https://doi.org/10.1145/3313831.3376350
+    note: "The study found that maps with glyphs were significantly slower and less preferred for detecting 'Hops' (spatial jumps), as they impose a high cognitive load for this task."
+
+examples:
+  - type: bad
+    description: "In a map with glyphs, to see if a jump occurred from time T to T+1, a user must find the cell for T in one glyph and the cell for T+1 in another, distant glyph, and compare their context. This is cognitively very difficult."
+  - type: good
+    description: "In an animated or small-multiples map, the entire map for time T is replaced by the map for T+1. A new, non-adjacent colored region 'pops' into view, making the spatial jump immediately obvious."
+---
+
+## Guidance
+
+Do not use a map with glyphs when the task is to detect non-contiguous propagation (i.e., "spatial jumps"). Use an animated map or a small-multiples layout instead.
+
+## Why
+
+Detecting a spatial jump requires comparing the state of the entire map between two consecutive time-steps. A map with glyphs fundamentally breaks this comparison apart; the information for time `T` and time `T+1` is fragmented across dozens of separate, tiny glyphs. Re-assembling this information mentally is cognitively demanding and highly inefficient. In contrast, both animation and small multiples preserve the spatial integrity of the map for each time-step, making a sudden appearance in a non-adjacent region a salient "pop-out" visual event.
+
+## When it applies
+
+- The analytical task is to identify anomalies in propagation, specifically when a phenomenon spreads to a non-adjacent geographical region between time-steps.
+- Examples include a disease outbreak jumping a country due to air travel or a viral meme appearing in a disconnected social group.
+
+## Exceptions
+
+- There are no known exceptions where a map with glyphs would be effective for this task. The cognitive mismatch between the visualization's structure and the task's requirements is a fundamental limitation.
+
+## Trade-offs
+
+- The main trade-off is choosing between animation and small multiples, both of which are effective for this task. Maps with glyphs are simply the wrong tool for the job and should be avoided.
+
+## Signs of Trouble
+
+- **Missed Jumps:** Users completely fail to notice when the phenomenon jumps to a distant, non-adjacent location.
+- **Extreme Slowness:** Users take an exceptionally long time to answer questions about spatial jumps, often having to manually check many glyphs.
+- **Low Confidence:** Users report very low confidence in their answers about whether or not jumps occurred.
+
+## How to Improve
+
+- **Comprehensive Redesign: Replace the Glyph Map.** The most effective fix is to replace the map with glyphs entirely.
+    - **Use an animated map** to show the temporal progression. Spatial jumps will appear as sudden onsets in new locations.
+    - **Use a small-multiples layout** to present all time-steps statically. Jumps will be visible by scanning from one map to the next in the sequence.
+
+<split/>
+```md
+---
+id: prefer-small-multiples-for-spatiotemporal-analysis
+title: "Prefer small-multiple maps for general-purpose spatiotemporal analysis"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - impact:performance
+  - chart:map
+  - chart:map.small-multiples
+  - task:compare
+  - task:trend
+  - task:find-extremum
+  - data:spatiotemporal
+  - medium:screen
+  - medium:interactive
+
+sources:
+  - type: research
+    ref: Peña-Araya, Bezerianos, & Pietriga, 2020
+    url: https://doi.org/10.1145/3313831.3376350
+    note: "The paper's overall conclusion was that 'small-multiple maps perform best overall,' demonstrating a good balance of speed and accuracy across a range of five different spatiotemporal tasks."
+
+examples:
+  - type: good
+    description: "A dashboard showing the spread of a flu variant using a grid of small maps, one for each week. This allows analysts to spot peaks, assess direction, and see overall scope in a single, static view."
+---
+
+## Guidance
+
+For general-purpose analysis of spatiotemporal data, where users may perform a variety of tasks, prefer a small-multiples layout of maps.
+
+## Why
+
+Small-multiple maps performed the best overall in a comparative study, offering a robust balance of speed and accuracy across diverse tasks like finding peaks, determining direction, and assessing scope. They provide a complete static overview, which avoids the memory burden of animation, while maintaining better resolution and avoiding the cognitive fragmentation of glyph-based maps. This makes them a strong default choice.
+
+## When it applies
+
+- When a single visualization must support multiple analytical tasks (e.g., finding peaks, trends, and anomalies).
+- When you are designing a general-purpose exploratory tool and are unsure of the user's specific primary task.
+- When analytical rigor and the ability to make direct, static comparisons are more important than the narrative flow of an animation.
+
+## Exceptions
+
+- **Targeted Lookup:** If the *only* task is to find the arrival time at a specific location, a map with glyphs is faster.
+- **Presentation:** If the primary goal is to present a narrative to a general audience, an animated map may be more engaging and have higher perceived user confidence, even if it's less analytically powerful.
+- **Extreme Data Density:** If the number of time-steps is very large (e.g., 100+), the individual maps in a small-multiples view may become too small to be legible on a standard screen, requiring an alternative design.
+
+## Trade-offs
+
+- **Screen Real Estate:** Small multiples are space-intensive. A large number of time-steps can make individual maps very small.
+- **Engagement:** For non-expert audiences, a grid of static maps may feel less engaging or more intimidating than a fluid animation.
+
+## Signs of Trouble
+
+- **Illegible Maps:** The individual maps in the grid are so small that geographical details and color variations are impossible to discern.
+- **User Disengagement:** A general audience finds the visualization static and overwhelming, failing to grasp the overall story.
+
+## How to Improve
+
+- **Moderate Approach: Add Interactivity.** Enhance a small-multiples view with brushing and linking. Hovering over a region in one map should highlight the same region in all other maps. This helps users track specific locations over time.
+- **Comprehensive Approach: Create a Hybrid View.** Combine the strengths of different views. For example, provide a small-multiples layout as the main analytical view, but also offer an animated version on-demand for getting a quick overview of the dynamics.
+```

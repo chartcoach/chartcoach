@@ -1,0 +1,310 @@
+```md
+---
+id: prefer-color-over-shape-for-scatter-categories
+title: "Use color over shape to distinguish categories in scatterplots"
+
+tags:
+  - impact:perceptual
+  - impact:performance
+  - chart:scatter
+  - task:compare
+  - task:summary-mean
+  - task:cluster
+  - data:categorical
+  - visual:color
+  - visual:shape
+  - audience:general
+  - medium:static
+  - medium:interactive
+  - access:cognitive-load-risk
+
+sources:
+  - type: research
+    ref: Gleicher et al., 2013
+    url: https://doi.org/10.1109/TVCG.2013.183
+    note: "Experiments showed that when comparing the average value of groups in a multiclass scatterplot, user performance (accuracy) was significantly higher when categories were encoded by color (hue) compared to being encoded by shape."
+
+examples:
+  - type: good
+    description: In this chart, the three species are encoded by color. This allows for quick and accurate grouping, making it easy to see that the Gentoo penguins (green) have a higher average body mass.
+    url: https://i.imgur.com/uR1jWqT.png
+  - type: bad
+    description: Here, the categories are encoded only by shape. It is much more difficult and slower to mentally group the circles, triangles, and pluses to compare their average positions.
+    url: https://i.imgur.com/K07oVb2.png
+---
+
+## Guidance
+
+Prefer using color (a highly salient visual channel) over shape to differentiate categories in a multi-class scatterplot, especially when the task involves comparing the aggregate properties of the groups.
+
+## Why
+
+The human visual system can select and group items by color more efficiently and accurately than by shape. This pre-attentive processing allows for faster and more reliable aggregate judgments, like comparing the mean position of two clouds of points. Using a less salient channel like shape requires more cognitive effort and results in slower, less accurate performance for these tasks.
+
+## When it applies
+
+- When creating multi-class scatterplots where a primary task is for viewers to compare summary statistics (like the mean or center) of different categories.
+- When you want to enable viewers to quickly and easily distinguish and group different categories of points.
+
+## Exceptions
+
+- When color is already used to encode another variable (e.g., a quantitative value).
+- When designing for accessibility, using shape *in addition* to color is a best practice to support users with color vision deficiency. In this case, color should not be the *only* means of conveying the information.
+- When the number of categories is very low (2-3) and the shapes are highly distinct (e.g., circles vs. crosses).
+
+## Trade-offs
+
+- Relying solely on color can exclude the 5-8% of the male population with color vision deficiencies if the palette isn't carefully chosen to be colorblind-safe.
+- Shape can be a useful redundant or secondary encoding for accessibility, even if it doesn't boost performance for users without visual impairments in this specific task.
+
+## Signs of Trouble
+
+- **The Squint Test:** If you squint at the chart, is it difficult to distinguish the different groups of points?
+- **Slow Grouping:** Do viewers find it slow or mentally taxing to identify all the points belonging to a single category?
+- **Inaccurate Comparisons:** Are viewers making errors when asked which group has a higher or lower average value on an axis?
+
+## How to Improve
+
+- **Quick Fix: Switch to Color.** If you are currently using shape to encode categories, switch to using a perceptually distinct color palette. This is the most effective way to improve performance for aggregate comparison tasks.
+
+- **Moderate Approach: Use Highly Distinct Shapes.** If color is unavailable, use highly distinct and simple shapes (e.g., circles, crosses, open triangles, solid squares). Avoid complex or similar shapes. Ensure the marks are large enough for the shapes to be easily identifiable.
+
+- **Comprehensive Approach: Prioritize Channels.** Use color as the primary encoding for the most important categorical variable. If other variables must be encoded, relegate them to less salient channels like shape. For maximum accessibility, use both color and shape redundantly, but recognize this is for inclusion, not for a performance boost.
+<split/>
+```md
+---
+id: avoid-redundant-encodings-for-scatter-categories
+title: "Avoid using redundant visual channels for categorical identification"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - impact:aesthetic
+  - chart:scatter
+  - task:compare
+  - task:summary-mean
+  - data:categorical
+  - visual:color
+  - visual:shape
+
+sources:
+  - type: research
+    ref: Gleicher et al., 2013
+    url: https://doi.org/10.1109/TVCG.2013.183
+    note: "The study found that using a second visual channel (e.g., shape) to redundantly encode a category already defined by a primary channel (e.g., color) did not improve user performance in a mean-comparison task. For example, making all red dots also circles and all blue dots also triangles did not help."
+
+---
+
+## Guidance
+
+For aggregate comparison tasks in scatterplots, do not use a second visual channel (e.g., shape) to redundantly encode the same category that is already clearly encoded by a primary channel (e.g., color).
+
+## Why
+
+The human visual system typically selects objects based on a single, salient feature at a time. When viewers compare the average value of two groups, they select the groups based on one channel (e.g., color). Adding a second, redundant cue (like shape) doesn't make this selection process faster or more accurate. It adds unnecessary visual complexity without providing a perceptual benefit for this type of task.
+
+## When it applies
+
+- When the primary goal is to optimize a scatterplot for efficient aggregate comparison (e.g., "which group has the higher average?").
+- When the primary encoding channel (e.g., a distinct color palette) is already sufficient for distinguishing the categories for your target audience.
+
+## Exceptions
+
+- **Accessibility is paramount.** The most important exception is designing for accessibility. Redundant encoding (e.g., using both a colorblind-safe palette and distinct shapes) is a critical best practice to ensure that users with color vision deficiency can distinguish categories. In this case, the goal is inclusion, not performance optimization.
+- **The primary channel is weak.** If the primary encoding channel is not very salient (e.g., subtle variations in luminance or very similar shapes), adding a redundant cue might help.
+
+## Trade-offs
+
+- **Clarity vs. Accessibility:** Forgoing redundancy can create a visually cleaner, simpler chart. However, it can render the chart unusable for people who cannot perceive the primary encoding channel (e.g., colorblind users). The benefit of accessibility almost always outweighs the minor gain in visual simplicity.
+
+## Signs of Trouble
+
+- **Unnecessary Clutter:** The chart feels visually busy because multiple visual properties (color, shape, etc.) are all encoding the same single variable.
+- **Design Over-engineering:** Time and effort are spent designing a complex, redundant encoding scheme that yields no performance benefit for the intended task.
+
+## How to Improve
+
+- **Quick Fix: Simplify.** If your audience does not have visual impairments and your primary encoding is strong, simplify the design by removing the redundant channel. For example, use only color to encode the category and make all points the same shape (e.g., circles).
+
+- **Moderate Approach: Use a Secondary Channel for a Different Variable.** Instead of using shape redundantly, use it to encode a *different* categorical variable. This makes the chart more information-dense.
+
+- **Comprehensive Approach (Recommended): Design for Accessibility First.** Use redundant encoding as a default practice for accessibility.
+  1.  Start with a strong primary channel (e.g., color). Choose a colorblind-safe palette.
+  2.  Add a redundant secondary channel (e.g., shape). Choose simple, highly distinguishable shapes.
+  3.  Acknowledge that this approach prioritizes inclusion over visual minimalism.
+<split/>
+```md
+---
+id: layer-secondary-information-in-scatterplots
+title: "Layer secondary information using other visual channels"
+
+tags:
+  - impact:perceptual
+  - impact:performance
+  - chart:scatter
+  - task:compare
+  - task:summary-mean
+  - data:categorical
+  - visual:color
+  - visual:shape
+
+sources:
+  - type: research
+    ref: Gleicher et al., 2013
+    url: https://doi.org/10.1109/TVCG.2013.183
+    note: "The study found that adding a 'conflicting' or non-informative secondary cue did not hurt performance. When comparing the average value of red vs. blue points, performance was the same whether the points were all circles or a mix of circles and triangles (where shape encoded a different, irrelevant variable)."
+
+---
+
+## Guidance
+
+When creating a multi-class scatterplot, you can use a secondary visual channel (like shape) to encode a different variable without fearing it will interfere with a primary aggregate task based on another channel (like color).
+
+## Why
+
+The human visual system is adept at selective attention. When performing an aggregate task based on a primary channel (e.g., comparing the average position of "red" vs. "blue" points), viewers can effectively "tune out" or ignore variations in a secondary channel (e.g., whether the points are circles or squares). This allows for the creation of more information-dense displays without significantly impairing performance on a specific comparison sub-task.
+
+## When it applies
+
+- When you need to encode more than one categorical or ordinal variable on the points in a scatterplot (e.g., color for 'region' and shape for 'product type').
+- When the primary task involves an aggregate judgment on one of those variables.
+
+## Exceptions
+
+- **Salience Mismatch:** Performance can be affected if the secondary (irrelevant) channel is overwhelmingly more salient than the primary channel you want the viewer to focus on.
+- **Extreme Complexity:** While one additional layer of information doesn't hurt, performance can start to degrade if the chart becomes extremely complex (e.g., many different categories, multiple layered encodings, and high density).
+
+## Trade-offs
+
+- **Information Density vs. Cognitive Load:** Layering information increases the visual complexity of the chart. While it may not interfere with a specific perceptual task, it can increase the overall cognitive load for viewers trying to understand all the variables at once.
+
+## Signs of Trouble
+
+- **Visual Overwhelm:** The chart is a "Skittles" or "fruit salad" plot, visually overwhelming with too many combinations of colors, shapes, and sizes, making it difficult for viewers to know where to focus.
+- **Task Confusion:** Viewers are unsure which visual channel corresponds to which variable or which comparison they are supposed to make.
+
+## How to Improve
+
+- **Quick Fix: Establish a Visual Hierarchy.** Ensure the visual channel for the primary comparison task (e.g., color) is more salient than the channels used for secondary information. Use stronger colors for the primary task and subtler variations in shape or size for the secondary task.
+
+- **Moderate Approach: Use Interactive Highlighting.** Provide an interactive legend that allows users to highlight data by the primary or secondary variable. This helps them isolate the information they need and reduces cognitive load.
+
+- **Comprehensive Redesign: Consider Small Multiples.** If you need to encode several variables, layering them all in one chart may not be the best approach. Consider using small multiples, where each chart shows a different subset of the data, to reduce complexity while still allowing for comparison.
+<split/>
+```md
+---
+id: do-not-limit-data-points-in-scatterplots
+title: "Do not arbitrarily limit data points for aggregate tasks in scatterplots"
+
+tags:
+  - impact:perceptual
+  - impact:performance
+  - chart:scatter
+  - task:summary-mean
+  - task:cluster
+  - data:quantitative
+  - data:cardinality.high
+
+sources:
+  - type: research
+    ref: Gleicher et al., 2013
+    url: https://doi.org/10.1109/TVCG.2013.183
+    note: "The study tested scatterplots with 50 points per class versus 75 points per class. It found that performance in a mean-comparison task was not harmed by the larger number of points; in fact, accuracy was marginally higher."
+
+---
+
+## Guidance
+
+When the task is to judge and compare the average value of groups in a scatterplot, do not assume that showing more data points will hurt performance. Within reasonable bounds, viewers can effectively process larger numbers of points for this task.
+
+## Why
+
+The visual system's ability to perform aggregate judgments, such as finding the "center of gravity" of a cloud of points, is highly efficient and largely independent of the number of items in the set. Performance does not degrade with more points because the brain is not serially counting or averaging each point; it is performing a parallel, holistic assessment of the group's properties. More points can even provide a more stable and reliable visual estimate of the group's center.
+
+## When it applies
+
+- In scatterplots where users are expected to visually judge and compare summary statistics (like the mean or distribution) of different groups.
+- When deciding whether to show a full dataset or a sample. This guideline suggests that showing the full dataset is perceptually feasible.
+
+## Exceptions
+
+- **Severe Overplotting:** If the data points become so dense that they overlap and form an indistinguishable mass, it becomes impossible to perceive the underlying distribution or density. The guideline applies when points are generally distinct.
+- **Technical Performance:** Extremely large datasets (millions of points) can cause slow rendering or make interaction sluggish. In these cases, limiting points through aggregation or sampling is a technical necessity.
+
+## Trade-offs
+
+- **Completeness vs. Clarity:** Showing all data provides a complete and honest picture of the distribution but can lead to overplotting.
+- **Detail vs. Performance:** Rendering every single point in a massive dataset may be perceptually fine but technically impractical.
+
+## Signs of Trouble
+
+- **Overplotting:** Points are so dense they obscure each other, forming solid blobs. It's impossible to discern the shape of the distribution or areas of high density.
+- **Performance Lag:** The chart is slow to render, pan, or zoom, leading to a frustrating user experience.
+- **Arbitrary Sampling:** A small, arbitrary sample of the data is shown, which may not be representative of the full dataset, potentially misleading the viewer.
+
+## How to Improve
+
+- **Quick Fix: Adjust Opacity.** If you have moderate overplotting, reduce the opacity of the points (e.g., set alpha to 0.2). This allows areas of high density to appear darker, creating a makeshift heatmap effect that reveals the underlying distribution.
+
+- **Moderate Approach: Change Mark Type.** If overplotting is severe, switch from solid filled circles to smaller points or open outlines. This allows more points to be visible in dense areas.
+
+- **Comprehensive Redesign: Use Density Visualizations.** For very large datasets where overplotting is unavoidable, switch from plotting individual points to visualizing density. Use a 2D histogram (heatmap), a contour plot, or bin the data (hexbinning) to show the number of points in each region of the chart.
+<split/>
+```md
+---
+id: additional-classes-dont-harm-binary-comparison
+title: "Include additional categories in a scatterplot without harming two-way comparisons"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:scatter
+  - task:compare
+  - task:summary-mean
+  - data:categorical
+  - data:cardinality.high
+
+sources:
+  - type: research
+    ref: Gleicher et al., 2013
+    url: https://doi.org/10.1109/TVCG.2013.183
+    note: "The study found that when viewers were asked to compare two specific classes (e.g., 'orange' vs. 'purple'), their performance was not significantly affected by the presence of an additional 'distractor' class (e.g., 'green')."
+
+---
+
+## Guidance
+
+When designing a multi-class scatterplot, do not be afraid to include additional "distractor" categories, even if a primary task is for the user to compare two specific categories.
+
+## Why
+
+The human visual system's capacity for selective attention allows viewers to focus on specific categories (e.g., "blue" and "orange") and effectively ignore others (e.g., "green"), as long as the categories are perceptually distinct. The presence of additional, irrelevant data does not "distract" or interfere with the ability to perform an aggregate comparison on a target subset. This enables the display of richer contextual information without harming specific sub-tasks.
+
+## When it applies
+
+- When creating a scatterplot with three or more categories, where users might be interested in comparing any given pair of them.
+- When deciding whether to filter a dataset down to just two categories or show the broader context of all categories.
+
+## Exceptions
+
+- **Poor Category Distinction:** The guideline assumes the categories are easily distinguishable. If a poor color palette with similar hues is used, viewers will struggle to isolate the groups of interest, and performance will degrade.
+- **Extreme Visual Complexity:** Performance can suffer if the chart becomes excessively complex due to a combination of many distractor categories *and* other conflicting visual cues (e.g., varied shapes and sizes).
+- **The "Where's Waldo" Problem:** If there are very many categories (e.g., >10-12), it may become cognitively difficult for a user to even find the two categories they wish to compare.
+
+## Trade-offs
+
+- **Context vs. Simplicity:** Showing more categories provides richer context but also increases the total number of objects and colors on the screen, which can make the chart feel more cluttered or intimidating to some viewers.
+
+## Signs of Trouble
+
+- **Indistinguishable Categories:** The colors (or shapes) used for different categories are too similar, making it difficult for viewers to mentally isolate the groups they want to compare.
+- **Cognitive Overload:** There are so many categories that the viewer feels overwhelmed and isn't sure where to begin their analysis.
+- **Unhelpful Context:** The additional categories shown provide no useful context and only serve to clutter the view.
+
+## How to Improve
+
+- **Quick Fix: Ensure a Distinct Palette.** Use a color palette where every color is perceptually distinct from every other color. Tools like `Colorgorical` or `Viz Palette` can help generate or test these.
+
+- **Moderate Approach: Add Interactive Filtering/Highlighting.** Provide an interactive legend that allows users to click on categories to highlight them or fade out all others. This empowers users to reduce clutter themselves and focus on the comparisons they care about.
+
+- **Comprehensive Redesign: Re-evaluate the Chart Choice.** If you have many categories (e.g., more than 7-8), a single scatterplot may not be the best choice. Consider alternatives that handle high cardinality better, such as a dot plot faceted by category, a beeswarm plot, or small multiples.

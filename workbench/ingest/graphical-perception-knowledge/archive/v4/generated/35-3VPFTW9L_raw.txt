@@ -1,0 +1,197 @@
+```md
+---
+id: optimize-categorical-color-assignment
+title: "Optimize categorical color assignment to maximize class separability"
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:scatter
+  - task:cluster
+  - task:compare
+  - data:categorical
+  - data:quantitative
+  - visual:color
+  - audience:general
+  - medium:static
+  - medium:interactive
+  - access:cognitive-load-risk
+  - access:color-vision-risk
+sources:
+  - type: research
+    ref: Wang et al., 2019
+    url: https://doi.org/10.1109/TVCG.2018.2864912
+    note: "The paper introduces an automated method for optimizing color assignment in multiclass scatterplots to improve perceptual separability of classes."
+tools:
+  - type: implement
+    name: Color Assignment Tool (Research Prototype)
+    url: http://www.color-assignment.net/
+    description: The web-based tool from the research paper to apply their optimization algorithm.
+  - type: validate
+    name: Viz Palette
+    url: https://projects.susielu.com/viz-palette
+    description: Helps test how colors in a palette appear on different chart types and simulates color vision deficiency.
+examples:
+  - type: bad
+    description: "In a scatterplot with default color assignment, spatially adjacent classes are given similar colors (e.g., light green and dark green), making them difficult to distinguish."
+    url: https://i.imgur.com/uQvA175.png
+  - type: good
+    description: "The same scatterplot with an optimized color assignment. Spatially adjacent classes are now given highly distinct colors (e.g., orange and blue), making class structures clearly visible."
+    url: https://i.imgur.com/w9Z3x1b.png
+---
+## Guidance
+
+When using color to distinguish between categories in a multiclass scatterplot, don't just assign colors from a palette in their default order. Systematically match colors to classes to maximize the perceptual separability between spatially adjacent or overlapping groups.
+
+## Why
+
+Default color assignment is arbitrary and often results in visually similar colors being assigned to neighboring point clusters. This makes it difficult for viewers to distinguish between classes, slowing down analysis and increasing the risk of misinterpretation. An optimized assignment improves the speed and accuracy of identifying and separating class structures.
+
+## When it applies
+
+- When visualizing labeled data with multiple categories (classes) on a scatterplot.
+- When class clusters overlap or are in close spatial proximity.
+- When the primary task is to identify, count, or compare the distribution of different classes.
+
+## Exceptions
+
+- If class labels have strong, universally understood semantic color associations (e.g., political parties, specific brands), these semantic mappings may take precedence over a purely perceptual optimization. In this case, you can pre-assign those fixed colors and optimize the remaining assignments.
+
+## Trade-offs
+
+- A purely perceptual optimization may conflict with aesthetic preferences or brand guidelines. The assignment that is most "separable" might not be the most visually harmonious.
+- Manual optimization is a tedious trial-and-error process. Automated optimization requires specific tooling.
+
+## Signs of Trouble
+
+- **The Squint Test:** If you squint at the chart, do different point clusters blur together into a single, indistinguishable color blob?
+- **Neighboring Ambiguity:** Are two clusters that are close to each other assigned similar colors (e.g., a light blue and a medium blue), making their boundary unclear?
+- **User Confusion:** Do viewers struggle to count the number of distinct classes or frequently misidentify points in overlapping regions?
+
+## How to Improve
+
+- **Quick Fix: Manual Swap.** Identify the two most confusing, adjacent classes in the scatterplot. Find their colors in the legend and swap one of their colors with a color from a distant, non-confusing class. Repeat for the next most confusing pair.
+- **Moderate Approach: Evaluate with Simulators.** After assigning colors, use a color vision deficiency simulator (like the one in Viz Palette) to check if adjacent classes remain distinct for all users. Manually adjust any color pairs that become indistinguishable.
+- **Comprehensive Approach: Use an Optimization Algorithm.** Employ a computational method (like the genetic algorithm described in the source paper) that analyzes both the spatial distribution of points and the perceptual differences in the color palette to find an optimal assignment automatically.
+
+```
+<split/>
+```md
+---
+id: assign-distinct-colors-to-adjacent-classes
+title: "Assign perceptually distant colors to spatially adjacent classes"
+tags:
+  - impact:perceptual
+  - chart:scatter
+  - chart:map.glyphs
+  - task:cluster
+  - task:compare
+  - data:categorical
+  - data:spatial
+  - visual:color
+  - access:color-vision-risk
+sources:
+  - type: research
+    ref: Wang et al., 2019
+    url: https://doi.org/10.1109/TVCG.2018.2864912
+    note: "The paper's optimization model includes a 'point distinctness' factor, which aims to maximize the color difference between neighboring points of different classes."
+tools:
+  - type: learn
+    name: CIELAB Color Space
+    url: https://en.wikipedia.org/wiki/CIELAB_color_space
+    description: "Learn about perceptually uniform color spaces, where geometric distance corresponds to perceived color difference."
+---
+## Guidance
+
+When assigning categorical colors in a scatterplot, identify pairs of classes whose points are spatially close or overlapping. Assign these class pairs colors that are perceptually far apart (e.g., a blue and an orange, not a light green and a teal).
+
+## Why
+
+The human visual system struggles to segment objects that are both spatially close and chromatically similar. By maximizing the perceptual color difference for neighboring clusters, you reduce the cognitive load required to distinguish between them, making class boundaries clearer and reducing interpretation errors.
+
+## When it applies
+
+- In multiclass scatterplots or other point-based charts (e.g., maps with category glyphs) where different categories of marks overlap or are in close proximity.
+- When the task requires viewers to accurately identify the class of points, especially in dense or overlapping regions.
+
+## Exceptions
+
+- If classes that are spatially close are also semantically related (e.g., sub-species of a species), using similar colors (e.g., shades of blue) might be a deliberate choice to encode this relationship. This intentionally sacrifices some class separability to communicate hierarchy.
+
+## Trade-offs
+
+- You must "spend" your most distinct color pairs on the most critical adjacencies. This may leave less distinct color pairs (e.g., two shades of green) for other classes, but this is acceptable if those classes are spatially well-separated from each other.
+
+## Signs of Trouble
+
+- **Color Bleeding:** The boundary between two adjacent clusters appears fuzzy because their assigned colors are too similar.
+- **Mistaken Identity:** You find yourself frequently misreading the class of a point that lies near the border of two clusters.
+- **Legend Check:** You have to constantly look back and forth between the plot and the legend to tell two neighboring classes apart.
+
+## How to Improve
+
+- **Quick Fix: Identify and Swap.** Find the most spatially-confused pair of classes. In the legend, swap one of their colors with a color from another class that is far away from both.
+- **Moderate Approach: Use a Perceptual Palette.** Start with a color palette designed to be perceptually uniform and maximally distant (e.g., from ColorBrewer or tools like Colorgorical). While this doesn't guarantee optimal *assignment*, it increases the chance that adjacent colors will be distinct.
+- **Comprehensive Approach: Model and Optimize.** Use a color difference metric like CIEDE2000 to calculate the perceptual distance between all pairs of colors in your palette. Then, use an algorithm to assign the color pairs with the largest distance to the class pairs with the smallest average spatial distance between their points.
+
+```
+<split/>
+```md
+---
+id: use-high-contrast-for-indistinct-classes
+title: "Assign high-contrast colors to sparse or overlapping classes"
+tags:
+  - impact:perceptual
+  - impact:accessibility
+  - chart:scatter
+  - task:cluster
+  - task:lookup
+  - data:categorical
+  - data:quantitative
+  - visual:color
+  - access:color-vision-risk
+sources:
+  - type: research
+    ref: Wang et al., 2019
+    url: https://doi.org/10.1109/TVCG.2018.2864912
+    note: "The paper's method includes a 'contrast with background' factor, weighted by how non-separable a class is. It prioritizes high-contrast colors for classes that are harder to see."
+tools:
+  - type: validate
+    name: Adobe Color Contrast Analyzer
+    url: https://color.adobe.com/create/color-contrast-analyzer
+    description: A tool to check the contrast ratio between a color and its background.
+---
+## Guidance
+
+In a multiclass scatterplot, identify classes that are visually "weak"—meaning they are sparse, have low point density, or are heavily intermingled with other classes. Assign these hard-to-see classes colors that have a high luminance contrast against the chart's background.
+
+## Why
+
+Classes that lack spatial coherence are already perceptually difficult to discern as a group. Assigning them a low-contrast color (like light yellow or pale gray on a white background) can render them effectively invisible, leading viewers to overlook them entirely. A high-contrast color makes these weak classes salient, ensuring they are not missed during analysis.
+
+## When it applies
+
+- For multiclass scatterplots on a uniform background (e.g., white, black, or gray).
+- When the dataset contains classes of vastly different sizes, densities, or degrees of overlap.
+- When it is important that no class, no matter how small or scattered, is overlooked.
+
+## Exceptions
+
+- If the explicit goal is to de-emphasize outliers or minor, unimportant classes, using a lower-contrast color for them (e.g., gray) can be an intentional and effective design choice to direct attention elsewhere.
+
+## Trade-offs
+
+- This approach may require assigning your most salient, high-contrast colors to the "messiest" or smallest data classes. This might conflict with a desire to assign those same salient colors to the most "important" classes for storytelling purposes.
+
+## Signs of Trouble
+
+- **The Vanishing Class:** A category listed in the legend seems to be completely missing from the plot, only to be found upon close inspection as a few faint, low-contrast points.
+- **Background Camouflage:** Points of a certain color are difficult to spot because they blend in with the chart's background.
+- **Uneven Salience:** The largest, densest clusters are assigned the brightest colors, while small, sparse clusters are given faint colors, making the small clusters even harder to notice.
+
+## How to Improve
+
+- **Quick Fix: The Yellow Swap.** If you have a class that is hard to see on a white background, check if it's assigned a color like yellow, light green, or pale cyan. Swap this color with a dark, high-contrast color like a deep blue, purple, or dark red from another, more prominent class.
+- **Moderate Approach: Check All Ratios.** Use a contrast checker tool to measure the WCAG contrast ratio of every color in your palette against the background. Reserve the colors with the highest ratios (e.g., > 3:1) for the classes you identify as the sparsest or most heavily overlapped.
+- **Comprehensive Approach: Weight Contrast by Separability.** Implement a system that first calculates a "non-separability score" for each class (based on density and overlap). Then, when assigning colors, weight the selection process so that classes with higher non-separability scores are preferentially assigned colors with higher background contrast.
+
+```

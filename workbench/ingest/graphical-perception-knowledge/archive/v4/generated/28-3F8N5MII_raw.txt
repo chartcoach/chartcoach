@@ -1,0 +1,239 @@
+```md
+---
+id: prefer-darker-colors-for-larger-quantities
+title: "Prefer Darker Colors for Larger Quantities in Colormaps"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:heatmap
+  - chart:map.choropleth
+  - task:aggregate
+  - task:compare
+  - task:lookup
+  - data:quantitative
+  - visual:color
+  - audience:general
+  - medium:static
+  - medium:screen
+
+sources:
+  - type: research
+    ref: Schloss et al., 2019
+    url: https://doi.org/10.1109/TVCG.2018.2865147
+    note: "Demonstrates a dominant 'dark-is-more' bias, where participants respond faster and more accurately when darker colors map to larger quantities, especially on light backgrounds."
+  - type: research
+    ref: Cuff, 1973
+    note: "Early empirical work in cartography reporting a 'dark-is-more' bias in choropleth maps."
+
+tools:
+  - type: implement
+    name: ColorBrewer
+    url: https://colorbrewer2.org/
+    description: Provides a set of well-designed sequential colormaps that typically progress from light to dark.
+  - type: validate
+    name: Viz Palette
+    url: https://projects.susielu.com/viz-palette
+    description: Allows you to check how your colormap is perceived and whether the lightness steps are monotonic.
+
+examples:
+  - type: good
+    description: A heatmap on a white background where the highest values are represented by the darkest shade of blue. This aligns with the 'dark-is-more' intuition, making it quick to interpret.
+  - type: bad
+    description: A choropleth map where larger quantities (e.g., higher population density) are shown in lighter colors, and smaller quantities in darker colors. This forces the viewer to fight their intuition, increasing cognitive load and interpretation time.
+---
+
+## Guidance
+
+For sequential data represented by a colormap (like in a heatmap or choropleth map), map larger quantities to darker colors and smaller quantities to lighter colors.
+
+## Why
+
+People have a strong, pre-existing cognitive bias to associate darker colors with more "stuff" or larger quantities (a "dark-is-more" bias). Aligning your visual encoding with this intuition reduces cognitive load and allows viewers to interpret the visualization faster and more accurately. Violating this expectation forces users to constantly consult the legend and can lead to misinterpretation.
+
+## When it applies
+
+- When using a sequential colormap to represent quantitative data that progresses from low to high.
+- This rule is especially strong and reliable when your visualization has a **light or white background**.
+- Applies to chart types like heatmaps, choropleth maps, and other surfaces filled with color to represent magnitude.
+
+## Exceptions
+
+- **On dark backgrounds:** The "dark-is-more" bias can weaken or even reverse if the colormap appears to vary in opacity. On a dark background, lighter colors have higher contrast and can seem more "opaque" or prominent. In these cases, a "light-is-more" encoding might be more effective.
+- **Diverging data:** This guideline does not apply to diverging data, which has a meaningful midpoint (like zero). Diverging data should use a diverging colormap with two distinct hues that meet at a neutral, light color.
+
+## Trade-offs
+
+- Following this guideline may conflict with some brand color palettes that use light colors as the primary "accent" color.
+- It prioritizes perceptual speed and intuitiveness over other aesthetic or brand considerations.
+
+## Signs of Trouble
+
+- **Delayed Interpretation:** Viewers pause for a long time or have to carefully study the legend to understand what the colors mean.
+- **Reversed Readings:** Users mistakenly interpret high-value areas as low-value, or vice-versa.
+- **User Feedback:** Viewers comment that the chart feels "backwards" or "counter-intuitive."
+- **Inconsistent Performance:** When testing, users are significantly slower or make more errors with a "light-is-more" encoding compared to a "dark-is-more" one on a light background.
+
+## How to Improve
+
+- **Quick Fix: Invert the Colormap.** If your current map uses a "light-is-more" scheme, simply reverse the color scale so that darker colors correspond to higher values. Most visualization tools have a "reverse" or "invert" option for the color scale.
+
+- **Moderate Approach: Choose a Standard Sequential Palette.** Switch to a well-tested, perceptually uniform sequential colormap (like Viridis, Plasma, or the single-hue schemes from ColorBrewer). These are explicitly designed to vary from light to dark to encode quantity.
+
+- **Comprehensive Approach: Test Your Encodings.** If you are creating a visualization for a broad or critical application, run a simple user test. Present two versions of the chart (one "dark-is-more," one "light-is-more") and measure which one people can interpret more quickly and accurately for a simple aggregation task (e.g., "Which region has more?").
+<split/>
+```md
+---
+id: use-high-contrast-colors-for-high-values-on-dark-backgrounds
+title: "On Dark Backgrounds, Use Lighter, Higher-Contrast Colors for High Values"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:heatmap
+  - chart:map.choropleth
+  - task:aggregate
+  - task:compare
+  - data:quantitative
+  - visual:color
+  - medium:screen
+  - context:dark-mode
+
+sources:
+  - type: research
+    ref: Schloss et al., 2019
+    url: https://doi.org/10.1109/TVCG.2018.2865147
+    note: "Identifies an 'opaque-is-more' bias that conflicts with the 'dark-is-more' bias on dark backgrounds. When a colormap appears to vary in opacity (e.g., a gradient to black), lighter, more 'opaque' colors are more intuitively mapped to larger quantities."
+
+tools:
+  - type: implement
+    name: Chroma.js Color Scale Helper
+    url: https://gka.github.io/palettes/
+    description: Tool for creating color scales, which can be used to generate gradients from a saturated color to black, simulating opacity.
+  - type: validate
+    name: APCA Contrast Calculator
+    url: https://www.myndex.com/APCA/
+    description: A modern contrast-checking tool that can help you find the color with the highest perceptual contrast against your dark background.
+
+examples:
+  - type: good
+    description: A heatmap on a black background uses a colormap from black to bright yellow. The largest quantities are mapped to yellow, which has the highest contrast and appears most 'opaque', making it pop.
+  - type: bad
+    description: A heatmap on a black background uses a colormap from a medium-dark blue to black. The highest values are mapped to the medium-dark blue, which has low contrast and is hard to distinguish from the black background, making the most important data points disappear.
+---
+
+## Guidance
+
+When designing a colormap for a dark background that appears to fade into the background (simulating opacity), map the largest quantities to the lightest, highest-contrast color, not the darkest one.
+
+## Why
+
+On dark backgrounds, two perceptual biases conflict: the general "dark-is-more" bias and a more powerful "opaque-is-more" bias. Lighter colors have higher contrast against a dark background, making them appear more "opaque" or solid. Viewers will intuitively map these high-contrast colors to larger quantities. Encoding "more" as a dark color that blends in with the background is perceptually confusing and requires more effort to interpret.
+
+## When it applies
+
+- You are designing a visualization (e.g., heatmap) that will be displayed on a **dark or black background**.
+- The colormap is a gradient that interpolates between a saturated color and the dark background color (e.g., a gradient from bright blue to black on a black background), which creates the illusion of varying opacity.
+
+## Exceptions
+
+- This guidance is less relevant if the colormap does not appear to vary in opacity. For example, if you use a multi-hue colormap (like 'Hot' or 'Viridis') that is designed to be robust against background changes, the standard "dark-is-more" rule may still be effective, as the "opaque-is-more" bias is not triggered.
+- If you are required by a strict style guide to use a "dark-is-more" encoding regardless of background. Be aware that this will likely decrease usability on dark themes.
+
+## Trade-offs
+
+- This "light-is-more" approach on dark backgrounds directly contradicts the "dark-is-more" rule that works best on light backgrounds. This means a single colormap may not be intuitively understood if it's used across both light and dark themes without modification.
+
+## Signs of Trouble
+
+- **Disappearing Data:** The areas with the highest values on your chart seem to fade away or are hard to see against the dark background.
+- **Perceptual Inversion:** The chart "feels" backwards, as if the low values are being highlighted and the high values are being de-emphasized.
+- **Low-Contrast Hotspots:** The most "important" part of the heatmap (the highest value) has very low visual salience.
+- **The Squint Test:** When you squint at the chart, the brightest spots (which should represent "more") actually correspond to low or mid-range values.
+
+## How to Improve
+
+- **Quick Fix: Reverse the Scale for Dark Mode.** If you have a theme-switcher, programmatically reverse your colormap when the user selects the dark theme. This ensures "more" is always mapped to the highest-contrast color for the current background.
+
+- **Moderate Approach: Use a "Value-by-Alpha" Inspired Scale.** Re-design your colormap for dark backgrounds to be a linear interpolation from the background color (e.g., black) to a single, bright, saturated color (e.g., yellow). This intentionally leverages the "opaque-is-more" bias.
+
+- **Comprehensive Approach: Choose a Robust, Theme-Agnostic Colormap.** Instead of a simple gradient that fades to the background, use a perceptually-uniform, multi-hue colormap (like Viridis, Plasma, or Magma) that is designed to have monotonic lightness and work on both light and dark backgrounds. With these, you can often consistently use the "dark-is-more" rule, as they don't strongly trigger the "opaque-is-more" bias.
+<split/>
+```md
+---
+id: use-robust-colormaps-for-variable-backgrounds
+title: "Design Colormaps to be Robust to Background Color Changes"
+
+tags:
+  - impact:perceptual
+  - impact:aesthetic
+  - chart:heatmap
+  - chart:map.choropleth
+  - data:quantitative
+  - visual:color
+  - medium:screen
+  - medium:interactive
+  - context:dark-mode
+  - context:theming
+
+sources:
+  - type: research
+    ref: Schloss et al., 2019
+    url: https://doi.org/10.1109/TVCG.2018.2865147
+    note: "Suggests that to create colormaps robust to background changes, it is beneficial to use colormaps that do not appear to vary in opacity and to consistently encode larger quantities in darker colors."
+
+tools:
+  - type: implement
+    name: "d3-scale-chromatic"
+    url: https://github.com/d3/d3-scale-chromatic
+    description: Provides perceptually-uniform colormaps like Viridis, Magma, and Inferno, which are generally robust to background changes.
+  - type: learn
+    name: "A guide to choosing colors for data visualization"
+    url: https://lisacharlotterost.github.io/2016/04/22/Colors-for-DataVis/
+    description: Explains the properties of different colormap types, including those that are more robust.
+
+examples:
+  - type: good
+    description: A dashboard component uses the Viridis colormap. When the user switches from light mode to dark mode, the heatmap remains easily interpretable because the colormap does not rely on transparency and has a clear lightness progression.
+  - type: bad
+    description: A heatmap uses a gradient from white to blue. On a white background, it works well. But when placed on a dark background, the white end of the gradient creates distracting high-contrast areas for low values, and the blue end blends in, making it confusing.
+---
+
+## Guidance
+
+If a visualization needs to work on both light and dark backgrounds, use a colormap that does not appear to vary in opacity (i.e., does not look like a simple fade to the background color). For these robust colormaps, consistently use a "dark-is-more" encoding.
+
+## Why
+
+Simple gradient colormaps that fade to a color (e.g., a gradient from white to blue) can create perceptual confusion when the background changes. On a white background, they trigger a "dark-is-more" intuition. On a dark background, they can trigger a conflicting "opaque-is-more" intuition. By choosing a colormap that doesn't trigger the "opaque-is-more" bias (one that curves through color space, like the 'Hot' or 'Viridis' palettes), you can rely on the more stable "dark-is-more" bias to provide a consistent, predictable experience for the user, regardless of their theme.
+
+## When it applies
+
+- You are designing a chart or component for a design system, template, or application that supports both **light and dark themes**.
+- The final background color of the visualization is unknown or may be configured by the end-user.
+- You want to ensure a single, consistent interpretation of your colormap across different viewing contexts.
+
+## Exceptions
+
+- If your visualization will only *ever* be shown on a single, known background color (e.g., a chart in a printed report with a white background), you do not need to worry about background robustness. You can optimize the colormap specifically for that one background.
+- For purely aesthetic goals where perceptual accuracy and speed are not the top priority.
+
+## Trade-offs
+
+- Robust multi-hue colormaps (like Viridis) can be more visually complex than a simple, single-hue gradient.
+- This approach prioritizes consistency and perceptual robustness over creating the highest-possible-contrast visualization for one specific background. A purpose-built "light-is-more" scale on a dark background might have higher salience, but it won't be robust.
+
+## Signs of Trouble
+
+- **Theme Incompatibility:** Your charts look great in light mode but become confusing, unreadable, or "inverted" in dark mode.
+- **High Design Overhead:** Your team has to create and maintain two separate versions of every colormap (one for light, one for dark) to keep them legible.
+- **Inconsistent Legends:** A colormap legend that reads "dark is more" feels correct on a light background but feels wrong on a dark background.
+
+## How to Improve
+
+- **Quick Fix: Swap the Colormap.** Replace your simple single-hue gradient (e.g., `white` -> `blue`) with a perceptually-uniform, multi-hue sequential colormap like Viridis, Inferno, or Magma. These are designed to have a clear lightness progression that is less dependent on the background.
+
+- **Moderate Approach: Test Your Palette on Both Backgrounds.** Before finalizing a colormap, place it on both a white and a black background. Does it still clearly communicate low-to-high? Do the most important values still stand out? Does it ever look like it's "fading away"? If it fails on one background, choose a different map.
+
+- **Comprehensive Approach: Standardize on Robust Colormaps in Your Design System.** Formally adopt a set of theme-agnostic colormaps as part of your official style guide. This ensures that any designer or developer building charts will start with a palette that is guaranteed to work across different themes, reducing one-off design decisions and improving consistency.
+```

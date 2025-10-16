@@ -1,0 +1,337 @@
+```md
+---
+id: group-bars-for-comparison
+title: "Place bars that need comparison close to each other"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:bar
+  - task:compare
+  - task:sort
+  - task:rank
+  - data:quantitative
+  - visual:position
+  - visual:length
+  - medium:static
+  - medium:interactive
+
+sources:
+  - type: research
+    ref: Lu et al., 2022
+    url: https://doi.org/10.1109/TVCG.2021.3114874
+    note: "Found that the Just Noticeable Difference (JND) for bar charts is primarily affected by the distance between bars, not their height. Greater distance makes comparison less accurate."
+
+---
+
+## Guidance
+
+To make it easier for viewers to accurately compare the values of two or more bars, place them as close together as possible. Avoid making viewers compare bars on opposite ends of the chart.
+
+## Why
+
+The minimum perceptible difference between two bars, known as the Just Noticeable Difference (JND), increases significantly as the distance between the bars grows. Viewers judge bar heights by comparing the positions of their endpoints. This task is perceptually easy when the bars are adjacent but becomes difficult and error-prone when they are separated by other bars or empty space.
+
+## When it applies
+
+- When a primary goal of a bar chart is to have viewers compare or rank the magnitudes of specific categories.
+- When designing layouts for small multiples of bar charts where comparisons across charts are intended.
+
+## Exceptions
+
+- If the categorical order of the bars is fixed and meaningful (e.g., alphabetical, chronological, or geographical) and this order is more important than facilitating direct comparisons. In this case, reordering the bars to aid comparison would disrupt the primary structure of the data.
+
+## Trade-offs
+
+- Reordering bars to facilitate a specific comparison might make other comparisons harder or break a conventional sort order (like alphabetical) that the audience expects.
+- Grouping bars might require more thoughtful design to avoid creating misleading clusters.
+
+## Signs of Trouble
+
+- **The Far-Apart Comparison:** The chart's narrative or annotations ask the viewer to compare two bars that are on opposite ends of the chart.
+- **User Uncertainty:** Viewers express uncertainty or make errors when asked which of two distant, similarly-sized bars is taller.
+- **"Looks the Same":** Two bars with slightly different values are perceived as identical because the distance between them is too large for the small difference to be noticeable.
+
+## How to Improve
+
+- **Quick Fix: Add Gridlines or Annotations.** If you cannot reorder the bars, add subtle gridlines that span the plot area. This helps the eye track positions across the chart. Alternatively, add direct data labels to the specific bars you want to compare.
+
+- **Moderate Approach: Reorder the Bars.** If the bar order is not fixed, sort the chart to bring the bars of interest next to each other. For example, sorting the chart by value places all bars of similar height close together.
+
+- **Comprehensive Approach: Use a Dot Plot or Slope Chart.** If multiple, non-adjacent comparisons are critical, a dot plot may be a better choice as it de-emphasizes the bar "body" and focuses on the position of the point. To explicitly show the difference between two specific items, a slope chart can be highly effective.
+
+```
+<split/>
+```md
+---
+id: enhance-indistinguishable-elements
+title: "Enhance chart elements that have very similar values"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - impact:ethical
+  - access:cognitive-load-risk
+  - task:compare
+  - task:rank
+  - task:sort
+  - chart:bar
+  - chart:pie
+  - chart:scatter
+  - visual:length
+  - visual:angle
+  - visual:size
+
+sources:
+  - type: research
+    ref: Lu et al., 2022
+    url: https://doi.org/10.1109/TVCG.2021.3114874
+    note: "Introduced a model for Just Noticeable Difference (JND) and proposed enhancing elements whose visual difference falls below the JND threshold to prevent misinterpretation."
+
+---
+
+## Guidance
+
+When a chart contains two or more elements whose encoded values are too similar to be told apart visually (e.g., two bars of nearly identical height), add secondary cues like labels or symbols to make their difference or rank explicit.
+
+## Why
+
+The difference in visual properties (like bar height, slice angle, or circle area) may fall below the Just Noticeable Difference (JND)—the minimum threshold for a person to perceive a difference. This causes viewers to incorrectly assume the values are identical, leading to interpretation errors and an inaccurate understanding of the data. Explicitly enhancing these elements prevents such ambiguity.
+
+## When it applies
+
+- In any chart where precise comparison or ranking is important and some data values are very close to each other.
+- This is especially critical in charts with lower perceptual accuracy, such as pie charts (angle/area) and bubble charts (area), where small differences are already difficult to judge.
+
+## Exceptions
+
+- If the primary goal is to communicate that several values are "about the same" and their exact difference or rank is irrelevant to the message. In this case, enhancing them might introduce unnecessary clutter and distract from the main point.
+
+## Trade-offs
+
+- Adding enhancements like data labels or icons increases visual clutter. If overused, it can make a chart look busy and overwhelming, increasing cognitive load.
+- The choice of enhancement (e.g., text vs. symbol) can influence how the information is processed. Text encourages reading, while symbols support faster visual processing.
+
+## Signs of Trouble
+
+- **Identical Twins:** A chart contains two or more elements (bars, slices, bubbles) that appear identical or almost identical, even though their underlying data values are different.
+- **Failed Ranking:** When asked to rank elements by size, viewers are unable to correctly order a group of visually similar items.
+- **Data-Ink Deception:** The visual difference between two elements is imperceptible, creating a discrepancy between the data and what is shown.
+
+## How to Improve
+
+- **Quick Fix: Add Direct Data Labels.** The most straightforward solution is to add text labels with the exact values to the ambiguous elements. This provides a numerical "escape hatch" for viewers to get the precise information.
+
+- **Moderate Approach: Use Ordinal Glyphs.** For a group of similar items, add a secondary, non-numerical visual cue to indicate their rank. For example, you could add small, ordered icons (e.g., one star, two stars, three stars) to the top three items in a tight race. This clarifies the order without the clutter of full data labels.
+
+- **Comprehensive Approach: Switch to a More Perceptually Accurate Chart.** If precise comparisons are critical and the data contains many similar values, the chart type itself may be the problem. Switch from a chart with low perceptual accuracy (like a pie or bubble chart) to one with high accuracy (like a bar chart or dot plot).
+
+```
+<split/>
+```md
+---
+id: prefer-position-for-quantitative
+title: "Prefer position on a common scale for encoding quantitative data"
+
+tags:
+  - impact:perceptual
+  - impact:logos
+  - data:quantitative
+  - task:compare
+  - task:rank
+  - task:lookup
+  - visual:position
+  - visual:length
+  - visual:angle
+  - visual:area
+  - visual:color
+  - chart:bar
+  - chart:line
+  - chart:scatter
+  - chart:pie
+
+sources:
+  - type: research
+    ref: Cleveland & McGill, 1984
+    url: https://doi.org/10.2307/2288400
+    note: "Established the foundational ranking of perceptual tasks, showing position on a common scale is most accurate."
+  - type: research
+    ref: Mackinlay, 1986
+    url: https://doi.org/10.1145/22949.22950
+    note: "Formalized and extended the perceptual rankings into a rule-based system for automated visualization design."
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://doi.org/3544548.3581349
+    note: "Synthesizes these and other findings, confirming the durability of this principle (Table 3)."
+
+---
+
+## Guidance
+
+When creating charts for comparing or ranking quantitative values, encode the data using position along a common, aligned scale. Bar charts, dot plots, and line charts do this well. Avoid using less accurate channels like angle (pie charts) or area (bubble charts, treemaps) for this task.
+
+## Why
+
+Decades of graphical perception research have established a clear hierarchy of how accurately humans perceive different visual encodings. We are most accurate when judging position along a common scale. Other channels are progressively less accurate in roughly the following order: position (unaligned scales), length, angle, area, and finally color saturation/hue. Using a more accurate channel leads to fewer interpretation errors, higher precision, and faster understanding.
+
+## When it applies
+
+- When the primary task for the viewer is to accurately compare, rank, or look up quantitative values.
+- When small but meaningful differences in the data need to be clearly visible.
+
+## Exceptions
+
+- **Showing Composition:** When the primary task is to show a part-to-whole relationship, area-based charts like pie charts or treemaps can be acceptable, though they remain poor for comparing the parts to each other.
+- **Showing High-Level Patterns:** When the goal is to see a broad overview or pattern rather than precise values, such as identifying hotspots in a heatmap (using color) or understanding hierarchical structure in a treemap (using area).
+
+## Trade-offs
+
+- **Space:** Charts that rely on position (like bar charts) can take up more linear space than area-proportional charts (like treemaps) that can be packed more densely.
+- **Engagement:** For some general audiences, area-based charts like pie charts may feel more familiar or aesthetically engaging, even if they are perceptually less effective. Choosing a bar chart over a pie chart may be a trade-off between perceptual accuracy and audience familiarity.
+
+## Signs of Trouble
+
+- **Pie Chart for Comparison:** A pie chart, donut chart, or bubble chart is used when the main goal is to compare categories to each other.
+- **Ranking Errors:** Viewers struggle to accurately rank the slices of a pie chart or the bubbles in a bubble chart, especially when values are close.
+- **Hidden Differences:** Small but important differences between data values are not visible in the chart because the chosen visual channel (e.g., area) is not precise enough to represent them.
+
+## How to Improve
+
+- **Quick Fix: Add Direct Data Labels.** If you must use a less accurate chart (like a pie chart), add direct data labels to each element. This provides a numerical "escape hatch," allowing users to read the precise values instead of relying on flawed visual estimation.
+
+- **Moderate Approach: Switch to a Better Encoding.** Convert the chart to use a more effective visual channel. For example:
+  - Replace a pie chart (angle/area) with a bar chart (length/position).
+  - Replace a bubble chart (area) with a dot plot (position).
+
+- **Comprehensive Approach: Re-evaluate the Core Task.** Step back and clarify the primary question the visualization is meant to answer. Choose a chart type that is fundamentally aligned with that task and uses the most effective visual channel according to the perceptual hierarchy. For example, if the task is "ranking," a sorted bar chart is almost always a better choice than a pie chart.
+
+```
+<split/>
+```md
+---
+id: use-scatterplots-for-correlation
+title: "Use scatterplots to show correlation between two quantitative variables"
+
+tags:
+  - impact:perceptual
+  - impact:logos
+  - chart:scatter
+  - task:correlation
+  - data:quantitative
+  - visual:position
+
+sources:
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://doi.org/3544548.3581349
+    note: "Synthesizes empirical work recommending scatterplots as the top choice for correlation tasks (Table 9)."
+  - type: research
+    ref: Harrison et al., 2014
+    url: https://doi.org/10.1109/TVCG.2014.2346979
+    note: "A primary study evaluating nine visualization types and finding scatterplots are highly effective for judging correlation."
+
+---
+
+## Guidance
+
+When the main goal is to show the relationship or correlation between two quantitative variables, a scatterplot is the most effective and conventional choice.
+
+## Why
+
+Scatterplots are perceptually effective for this task because they directly map the two variables to the most accurate visual channels: horizontal and vertical position. The resulting cloud of points allows the human visual system to easily and intuitively detect patterns, such as linear or curvilinear trends, clusters, and the strength of a correlation. Studies comparing multiple chart types confirm that scatterplots are superior to other visualizations for judging correlation.
+
+## When it applies
+
+- You have two columns of continuous or discrete quantitative data.
+- You want to see if the variables are related, and if so, what the nature of that relationship is (e.g., positive, negative, linear, non-linear).
+
+## Exceptions
+
+- **Very Large Datasets:** With hundreds of thousands or millions of data points, a standard scatterplot can suffer from severe overplotting, where points are drawn on top of each other, obscuring the underlying density.
+- **Categorical vs. Quantitative:** If one variable is categorical, a scatterplot is not appropriate. A box plot or violin plot would be a better choice.
+
+## Trade-offs
+
+- Scatterplots can be difficult to read if the axes are not scaled properly or if there are extreme outliers that compress the majority of the data into a small area.
+- They primarily show correlation, not causation. Viewers may incorrectly infer a causal link without additional context.
+
+## Signs of Trouble
+
+- **Dual-Axis Deception:** Trying to show correlation by plotting two line charts on a dual-axis chart. This is notoriously misleading, as the perceived correlation can be manufactured by manipulating the axis scales.
+- **Separate Charts:** Presenting two separate bar or line charts and asking the audience to infer a correlation between them, which is a difficult and error-prone cognitive task.
+- **No Visual Pattern:** A table of numbers is used to imply a correlation, but the viewer is never shown the underlying visual pattern, which might reveal it to be weak, non-linear, or driven by outliers.
+
+## How to Improve
+
+- **Quick Fix: Switch to a Scatterplot.** If you have two columns of quantitative data, plot them on the x and y axes of a scatterplot. This is the most direct and effective solution.
+
+- **Moderate Approach (for Overplotting): Use Transparency or Binning.** If the scatterplot is too dense due to overplotting, either make the points semi-transparent (so dense areas appear darker) or switch to a 2D histogram (heatmap), which bins the points and uses color to show the number of points in each bin.
+
+- **Comprehensive Approach: Add a Trend Line and Confidence Interval.** To make the correlation more explicit and provide statistical context, add a regression line (e.g., a line of best fit) to the scatterplot. Showing a confidence interval band around the line also helps communicate the uncertainty of the model fit.
+
+```
+<split/>
+```md
+---
+id: bar-chart-aspect-ratio-bias
+title: "Beware that a bar's aspect ratio can create perceptual bias"
+
+tags:
+  - impact:perceptual
+  - impact:ethical
+  - chart:bar
+  - task:compare
+  - task:lookup
+  - visual:length
+  - data:quantitative
+
+sources:
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://doi.org/3544548.3581349
+    note: "Summarizes multiple studies on systematic bias in bar charts, linking it to aspect ratio (Table 8)."
+  - type: research
+    ref: Ceja et al., 2020
+    url: https://doi.org/10.1109/TVCG.2020.3032822
+    note: "Found that wide bars are overestimated, tall bars are underestimated, and square-like bars show no systematic bias."
+
+---
+
+## Guidance
+
+Be aware that the aspect ratio of bars in a bar chart can systematically bias a viewer's perception of their value. Tall, thin bars tend to be underestimated, while short, wide bars tend to be overestimated.
+
+## Why
+
+Experiments on graphical perception have revealed a systematic bias related to the shape of bars. This is a subtle perceptual phenomenon where the geometry of the mark itself influences our judgment of its encoded value (length). Bars with a "squarish" aspect ratio (where height is closer to width) are judged most accurately, while extreme aspect ratios lead to predictable errors in estimation.
+
+## When it applies
+
+- When designing any bar chart where accurate judgment of magnitude is important.
+- When creating responsive visualizations where bar widths might change dramatically at different screen sizes.
+
+## Exceptions
+
+- When bars are so wide that they are perceived more as filled areas than as objects with a specific height (e.g., a divided bar chart showing 100%).
+- If direct data labels are present on all bars, the perceptual bias is less of a concern as viewers can rely on the text instead of judging the length.
+
+## Trade-offs
+
+- Adjusting bar width to achieve a less biased aspect ratio can affect the overall dimensions and data density of the chart. For a fixed chart width, wider bars mean fewer bars can be displayed.
+- Aesthetic considerations or brand guidelines might dictate a specific bar width that is not perceptually ideal.
+
+## Signs of Trouble
+
+- **"Skyscraper" Bars:** The chart contains extremely tall and thin bars, which are likely to be perceptually underestimated by viewers.
+- **"Pancake" Bars:** The chart contains very short and wide bars, which are likely to be perceptually overestimated by viewers.
+- **Inconsistent Judgments:** In user testing, viewers consistently overestimate or underestimate values in a predictable way depending on the shape of the bars.
+
+## How to Improve
+
+- **Quick Fix: Add Direct Data Labels.** As a simple and effective mitigation, add data labels to the bars. This gives viewers a direct way to read the value, bypassing the need for perceptual estimation.
+
+- **Moderate Approach: Adjust Aspect Ratio.** If you have control over the chart's design, adjust the bar widths to make them more "squarish" and less extreme. Avoid using very skinny or very fat bars, especially if precise visual comparison is a key goal.
+
+- **Comprehensive Approach: Switch to a Dot Plot.** If this bias is a significant concern, consider using a dot plot instead of a bar chart. A dot plot encodes value using only the position of a point, which is not subject to the same aspect ratio bias. This cleanly separates the data encoding (position) from the mark (the dot).
+
+```

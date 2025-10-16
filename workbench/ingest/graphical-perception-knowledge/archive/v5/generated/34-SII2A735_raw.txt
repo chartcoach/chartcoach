@@ -1,0 +1,197 @@
+```md
+---
+id: prefer-closed-shapes
+title: "Prefer closed shapes over open shapes for scatterplot symbols"
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:scatter
+  - visual:shape
+  - task:lookup
+  - task:trend
+  - task:distribution
+  - audience:general
+  - medium:static
+  - medium:interactive
+  - access:cognitive-load-risk
+evidence:
+  strength: medium
+  summary: "Three experiments in a 2018 study found that closed shapes (circles, squares) are processed significantly faster and more accurately than open shapes (plus signs, asterisks) in both basic perception and higher-level visualization tasks."
+sources:
+  - type: research
+    ref: Burlinson, Subramanian, & Goolkasian, 2018
+    url: https://doi.org/10.1109/TVCG.2017.2745086
+    note: "Primary study identifying open vs. closed shapes as distinct perceptual categories. Found closed shapes were processed faster and more accurately in flanker and same/different tasks (Experiments 1 & 2)."
+    role: primary
+tools: []
+examples: []
+---
+## Guidance
+
+When using a single symbol type in a visualization like a scatterplot, prefer using a simple, closed shape (e.g., a circle `●` or square `■`) over an open shape (e.g., a plus sign `+`, asterisk `*`, or 'x').
+
+## Why
+
+The human visual system processes closed shapes more quickly and with fewer errors than open shapes. This reduces cognitive load and improves the speed and accuracy of interpreting the chart.
+
+### Core Principle
+
+The brain appears to have distinct, pre-attentive categories for "open" and "closed" shapes, with a processing advantage for closed forms.
+
+## When it applies
+
+- When selecting a single shape for encoding data points in a scatterplot.
+- In cluttered displays where quick identification of symbols is important.
+
+## Exceptions
+
+- When an open shape has a specific semantic meaning that is crucial to the chart's message (e.g., using a `+` to represent a hospital).
+- When needing to overlay multiple points at the exact same location, where open shapes might obscure each other less than filled, closed shapes.
+
+## Trade-offs
+
+- **Aesthetics vs. Performance:** Open shapes can sometimes appear lighter or less visually dominant, which may be a desired aesthetic choice, but this comes at the cost of perceptual performance.
+
+## Signs of Trouble
+
+- **Slow Reading:** Viewers take a noticeably long time to identify or count points on the chart.
+- **High Error Rates:** When asked to perform simple tasks like counting points in a region, users make frequent mistakes.
+
+## How to Improve
+
+- **Quick approach:** If using open shapes, switch them to their closed counterparts (e.g., change `+` to `■` or `x` to `◆`).
+- **Comprehensive approach:** In your design system or style guide, establish a default preference for using solid circles or squares as the primary symbol for scatterplots and other point-based charts.
+
+```
+
+<split/>
+
+```md
+---
+id: mix-open-closed-shapes
+title: "Distinguish categories by mixing open and closed shapes in scatterplots"
+tags:
+  - impact:perceptual
+  - chart:scatter
+  - visual:shape
+  - data:categorical
+  - data:cardinality.low
+  - task:compare
+  - task:distribution
+  - task:correlation
+  - access:cognitive-load-risk
+evidence:
+  strength: medium
+  summary: "A 2018 study on shape perception found that discriminating between symbols is significantly faster and more accurate when one shape is 'open' (e.g., a plus sign) and the other is 'closed' (e.g., a circle), compared to using two shapes from the same category (e.g., a circle and a square)."
+sources:
+  - type: research
+    ref: Burlinson, Subramanian, & Goolkasian, 2018
+    url: https://doi.org/10.1109/TVCG.2017.2745086
+    note: "Experiment 2 (Same/Different Task) and Experiment 3 (High-Level Tasks) showed that perceptual interference is higher when discriminating between two shapes from the same category (e.g., two closed shapes)."
+    role: primary
+tools: []
+examples: []
+---
+## Guidance
+
+When using shape to encode different categories in a single scatterplot, maximize their distinguishability by pairing an open shape (like a plus sign `+` or an asterisk `*`) with a closed shape (like a circle `●` or a square `■`).
+
+## Why
+
+Humans find it much easier to tell apart shapes from different perceptual categories (open vs. closed) than two different shapes from the same category. This reduces the cognitive effort required to differentiate and group the data, leading to faster and more accurate interpretation, especially in cluttered charts.
+
+### Core Principle
+
+Leveraging pre-attentive categorical boundaries (like open vs. closed) makes visual discrimination easier than relying on within-category feature differences (like the number of sides on two closed shapes).
+
+## When it applies
+
+- When encoding 2-4 different categories in a single scatterplot using shape.
+- In multi-class scatterplots that are dense or cluttered.
+- When the task requires viewers to quickly distinguish, compare, or count points from different categories.
+
+## Exceptions
+
+- If you are using another, more powerful visual channel like color to distinguish categories, the choice of shape becomes less critical. However, this guideline still serves as a good secondary encoding for accessibility.
+- If shapes have a pre-defined, semantic meaning that forces the use of two closed or two open shapes (e.g., using a square and a circle to represent houses and pools).
+
+## Trade-offs
+
+- You are limited in the number of easily distinguishable shapes you can use. This technique is most effective for a small number of categories.
+- May conflict with aesthetic choices if a designer prefers a set of all-closed or all-open shapes for stylistic reasons.
+
+## Signs of Trouble
+
+- **Category Confusion:** Viewers struggle to differentiate between the categories represented by different shapes (e.g., "Are those circles or squares? They look the same at a glance.").
+- **Legend Look-up:** Viewers have to repeatedly look at the legend to confirm which shape corresponds to which category.
+- **Slow Task Performance:** Tasks like "Which category has more points in this quadrant?" take a long time and result in errors.
+
+## How to Improve
+
+- **Quick approach:** If you are using two closed shapes (e.g., circles and squares), change one of them to an open shape (e.g., circles and plus signs).
+- **Moderate approach:** Review your shape palette. For a 3-category plot, consider using one closed shape, one open shape, and a third visually distinct shape that is also from one of the two categories (e.g., circle, plus sign, triangle).
+- **Comprehensive approach:** Create a default shape palette in your design system that alternates between open and closed shapes for categorical levels. For example: Level 1 = Circle (closed), Level 2 = Plus sign (open), Level 3 = Triangle (closed), Level 4 = Asterisk (open).
+
+```
+
+<split/>
+
+```md
+---
+id: avoid-same-category-shapes-for-numerosity-trend
+title: "For numerosity or trend tasks, avoid using shapes from the same perceptual category"
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:scatter
+  - visual:shape
+  - task:trend
+  - task:summary-mean
+  - data:categorical
+  - access:cognitive-load-risk
+evidence:
+  strength: medium
+  summary: "A 2018 study found that when viewers judge numerosity (counting) or trends in multi-class scatterplots, using two shapes from the same category (e.g., two closed shapes like a circle and a square) causes significant perceptual interference, leading to slower performance and more errors."
+sources:
+  - type: research
+    ref: Burlinson, Subramanian, & Goolkasian, 2018
+    url: https://doi.org/10.1109/TVCG.2017.2745086
+    note: "Experiment 3 specifically tested high-level visual analytic tasks and found a significant interaction where same-category distractors lengthened reaction times for numerosity and linear relationship (trend) tasks."
+    role: primary
+tools: []
+examples: []
+---
+## Guidance
+
+When creating a multi-class scatterplot where the primary user tasks are to judge numerosity (e.g., "Which category has more points?") or identify trends (e.g., "What is the relationship for the blue category?"), do not use multiple shapes that are all "closed" (like circles, squares, triangles) or all "open" (like pluses, asterisks, crosses).
+
+## Why
+
+These specific tasks rely heavily on the brain's ability to rapidly and accurately segregate the different classes of points. Using shapes from the same perceptual category (e.g., circles and squares to distinguish two groups) creates visual interference that directly impedes this process. This makes the task slower, more error-prone, and more cognitively demanding.
+
+## When it applies
+
+- Specifically when designing a scatterplot for tasks of counting, comparing quantities of points, or assessing the trend of a specific category within a mix.
+- In dense or complex scatterplots with overlapping points.
+
+## Exceptions
+
+- The study found the effect was not significant for `average value` judgment tasks. If that is the *only* task, the shape choice is less critical.
+- When another powerful encoding like color is the primary differentiator and shapes are only a redundant encoding. In this case, the interference from shape is likely to be minimal.
+
+## Trade-offs
+
+- This guideline constrains your choice of shapes, which may conflict with branding or aesthetic goals that favor a uniform shape style.
+
+## Signs of Trouble
+
+- **Counting Errors:** Users consistently miscount or misjudge the relative number of points in each category.
+- **Trend Misinterpretation:** Users have difficulty mentally isolating a single category to assess its trend, or the trend of one category appears to be visually influenced by the other.
+- **"Wall of Marks":** The different categories seem to blur into a single texture, making it hard to see the structure of each group individually.
+
+## How to Improve
+
+- **Quick approach:** Identify the most important category for the trend/numerosity task and ensure its shape is from a different perceptual class than the others (e.g., one closed shape for the target category, and one or more open shapes for the distractor categories).
+- **Comprehensive approach:** For any multi-class scatterplot intended for trend or numerosity analysis, adopt a strategy of alternating between open and closed shapes for your categorical shape palette (e.g., Category 1: Circle, Category 2: Plus, Category 3: Square, Category 4: X).
+
+```

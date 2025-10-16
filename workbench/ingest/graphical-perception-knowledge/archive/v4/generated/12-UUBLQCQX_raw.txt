@@ -1,0 +1,224 @@
+```md
+---
+id: balance-color-discriminability-preference
+title: "Balance color discriminability and aesthetic preference for categorical palettes"
+
+tags:
+  - impact:perceptual
+  - impact:aesthetic
+  - impact:cognitive
+  - visual:color
+  - data:categorical
+  - chart:bar
+  - chart:scatter
+  - chart:line
+  - chart:map
+  - task:compare
+  - task:lookup
+  - access:cognitive-load-risk
+
+sources:
+  - type: research
+    ref: Gramazio, Laidlaw, & Schloss, 2017
+    url: https://doi.org/10.1109/TVCG.2016.2598918
+    note: "The paper's central thesis is a model for balancing these two competing goals. Experiments 1 and 2 demonstrate this trade-off in practice."
+
+tools:
+  - type: implement
+    name: Colorgorical
+    url: http://vrl.cs.brown.edu/color
+    description: Generates categorical color palettes with sliders to balance discriminability and preference.
+  - type: validate
+    name: Viz Palette
+    url: https://projects.susielu.com/viz-palette
+    description: Lets you see how a color palette looks on different chart types and check for colorblind safety.
+
+examples:
+  - type: good
+    description: A palette using analogous hues (e.g., blues and greens) but with significant differences in lightness and saturation. This maintains some harmony while ensuring categories are distinguishable.
+  - type: bad
+    description: A palette with highly saturated, disparate hues (like a default "rainbow" scheme). While highly discriminable, it's aesthetically jarring and lacks harmony.
+  - type: bad
+    description: A palette with very similar hues (e.g., multiple shades of pastel blue and green). This may feel harmonious but makes categories very difficult to tell apart, especially for small marks.
+---
+
+## Guidance
+
+When creating categorical color palettes, intentionally balance the need for colors to be easily distinguishable (discriminability) with the need for them to be visually pleasing (aesthetic preference). Do not optimize for one at the total expense of the other.
+
+## Why
+
+These two goals are often in conflict. Aesthetic preference tends to increase with hue similarity (e.g., analogous colors), while discriminability decreases. Research shows that relying solely on maximizing discriminability can lead to jarring, unappealing palettes. Conversely, relying only on aesthetics can lead to palettes that are confusing and increase interpretation errors. The Colorgorical paper demonstrates a model for successfully navigating this trade-off.
+
+## When it applies
+
+- When using color to encode distinct categories in a visualization (e.g., different groups in a bar chart, different series in a line chart).
+- When both data clarity and visual appeal are important for audience engagement and trust.
+
+## Exceptions
+
+- **Purely analytical tasks:** If the primary goal is rapid, accurate analysis by experts, prioritize discriminability above all else. Aesthetic appeal is secondary.
+- **Primarily artistic or branding:** If the visualization is more of an art piece or a brand statement and data accuracy is less critical, aesthetic preference may take priority. However, ensure the chart does not become misleading.
+
+## Trade-offs
+
+- **Clarity vs. Appeal:** Optimizing for discriminability (e.g., using colors from opposite ends of the color wheel) may result in a less harmonious or "pretty" palette. Optimizing for aesthetics (e.g., using similar hues) may make it harder for viewers to tell categories apart, increasing cognitive load and error rates.
+
+## Signs of Trouble
+
+- **The "Circus" Palette:** The colors feel jarring, overly saturated, and disconnected, resembling a default rainbow scheme. This prioritizes discriminability over preference and can be visually overwhelming.
+- **The "Muddy" Palette:** Colors are too similar in hue and lightness, making them hard to tell apart, especially for small marks like dots in a scatterplot or thin lines. This prioritizes preference over discriminability.
+- **User Feedback:** Viewers complain that the chart is "ugly" or "hard to look at," or they express confusion about "which category is which."
+
+## How to Improve
+
+- **Quick Fix: Adjust Lightness/Saturation.** If your hues are too similar, try making some significantly lighter or darker to increase contrast. If your hues are too disparate (a rainbow), try desaturating some of the colors to reduce the jarring effect.
+
+- **Moderate Approach: Use a Perceptually-Aware Tool.** Use a tool like Colorgorical to generate a palette. Start with its "preferable" settings and then manually tweak individual colors that are too similar, or start with "low error" settings and adjust for aesthetics.
+
+- **Comprehensive Approach: Define Your Priority & Generate.** Use a tool with explicit controls for discriminability and preference (like Colorgorical's sliders). If clarity is key, weigh discriminability metrics higher. If appeal is key, weigh preference higher. Generate multiple options and test them using colorblindness simulators and by looking at them on actual chart examples.
+```
+<split/>
+```md
+---
+id: limit-categorical-colors
+title: "Limit the number of colors in a categorical palette"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - visual:color
+  - data:categorical
+  - data:cardinality.high
+  - access:cognitive-load-risk
+
+sources:
+  - type: research
+    ref: Gramazio, Laidlaw, & Schloss, 2017
+    url: https://doi.org/10.1109/TVCG.2016.2598918
+    note: "Experiment 1 found that participant error rates in a discrimination task increased significantly as palette size grew from 3 to 5 to 8 colors (P1 in the paper)."
+
+tools:
+  - type: implement
+    name: Colorgorical
+    url: http://vrl.cs.brown.edu/color
+    description: A tool whose performance degrades as the number of requested colors increases, illustrating the difficulty of the problem.
+
+examples:
+  - type: good
+    description: A bar chart with 4-5 distinct categories, each with a clearly different color. Viewers can easily match the bars to the legend.
+  - type: bad
+    description: A line chart with 10 different colored lines. The legend becomes a "wall of colors" that is cognitively overwhelming to match to the tangled lines in the chart.
+---
+
+## Guidance
+
+Use as few colors as possible when encoding categorical data, ideally no more than 5-7. As the number of colors in a palette increases, a viewer's ability to quickly and accurately distinguish between them decreases.
+
+## Why
+
+Research demonstrates a direct link between the number of colors and task performance. The study behind Colorgorical found that participants' error rates increased significantly as palette size grew from 3 to 8 colors. It becomes perceptually and cognitively more difficult to distinguish between and remember a larger set of colors, no matter how well-chosen the palette is. Each additional color makes the task of finding a sufficiently distinct new color harder, leading to "muddy" palettes with ambiguous colors.
+
+## When it applies
+
+- Any time you are using color to distinguish between discrete categories.
+- This is especially critical for charts with many small marks (e.g., scatterplots) or overlapping elements (e.g., line charts), where colors can be even harder to tell apart.
+
+## Exceptions
+
+- There are no known exceptions where using many (10+) colors for categorical data is effective. If you have many categories, color is the wrong visual encoding to distinguish them all. The solution is to change the data grouping or the chart type, not to find a "better" 12-color palette.
+
+## Trade-offs
+
+- To adhere to this guideline, you may need to group or filter your data, for example by combining less important categories into an "Other" group. This means losing some granularity in the visualization in service of clarity.
+
+## Signs of Trouble
+
+- **Color Overload:** The chart legend has more than 7-8 distinct colors.
+- **Lookalike Colors:** The palette is forced to include colors that are very similar to each other (e.g., teal and light green) because the perceptually "easy" colors are already used up.
+- **The "Back-and-Forth" Dance:** You observe viewers repeatedly looking between the legend and the chart because they cannot hold all the color-category mappings in their working memory.
+- **The Squint Test:** If you squint at the chart, multiple categories blur into the same color.
+
+## How to Improve
+
+- **Quick Fix: Group Categories.** Combine the least important or smallest categories into a single "Other" group. Use a neutral color, like gray, for this group to make it recede visually.
+
+- **Moderate Redesign: Highlight Key Categories.** If your narrative focuses on only a few of the many categories, assign distinct colors to those key categories and color all other categories gray. This creates a clear visual hierarchy.
+
+- **Comprehensive Redesign: Change the Chart Type.** If all categories are equally important, color is not the right tool for the job. Switch to a chart that uses position, which is more effective for distinguishing many categories. Good alternatives include a bar chart, a dot plot, or faceting (small multiples), where each category gets its own small chart.
+```
+<split/>
+```md
+---
+id: use-perceptual-models-for-color-palettes
+title: "Use perceptual models to generate custom categorical color palettes"
+
+tags:
+  - impact:perceptual
+  - impact:aesthetic
+  - impact:performance
+  - visual:color
+  - data:categorical
+
+sources:
+  - type: research
+    ref: Gramazio, Laidlaw, & Schloss, 2017
+    url: https://doi.org/10.1109/TVCG.2016.2598918
+    note: "The paper introduces and validates Colorgorical, a tool based on perceptual models. Experiment 2 shows that its generated palettes are as discriminable and often more preferable than industry-standard, expert-made palettes."
+
+tools:
+  - type: implement
+    name: Colorgorical
+    url: http://vrl.cs.brown.edu/color
+    description: The tool from the paper, which uses iterative sampling based on perceptual scores to generate custom palettes.
+  - type: validate
+    name: Viz Palette
+    url: https://projects.susielu.com/viz-palette
+    description: Test how a color palette looks on different chart types and check for colorblind safety.
+
+examples:
+  - type: good
+    description: "Using Colorgorical to generate a 5-color palette for a dashboard, specifying a blue hue range to align with branding, while ensuring the tool generates four other colors that are still discriminable."
+  - type: bad
+    description: Manually picking five colors from a standard RGB color picker without considering their perceptual distance in a perceptually uniform color space like CIELAB.
+  - type: bad
+    description: "Forcing the use of a pre-made 5-color palette (e.g., from ColorBrewer) that clashes with brand guidelines or is not well-suited for the specific data being presented."
+---
+
+## Guidance
+
+Instead of relying solely on pre-made palettes or manual color picking, use tools that leverage perceptual models to generate custom palettes. These tools can balance discriminability, aesthetic preference, and user-defined constraints like specific hue ranges.
+
+## Why
+
+Manually picking colors is difficult and often leads to ineffective results. Pre-made palettes (like ColorBrewer) are reliable but inflexible. The Colorgorical paper introduced and validated a model that operationalizes effective palette design by scoring colors based on Perceptual Distance (CIEDE2000), Name Difference, and Pair Preference. This allows for flexible, custom palettes that are grounded in perceptual principles. The study showed that palettes generated this way are as effective, and often more aesthetically preferable, than standard expert-designed palettes.
+
+## When it applies
+
+- When you need a categorical color palette that is both perceptually effective and tailored to specific needs.
+- When you need to align with brand colors but also ensure data clarity.
+- When you need a specific number of colors not offered by standard pre-made palettes.
+- When you want to build upon an existing set of colors with new, compatible ones.
+
+## Exceptions
+
+- For quick, standard visualizations where an expert-designed palette like those from ColorBrewer or Viridis is sufficient and there are no branding or other constraints, using a pre-made palette is often faster and more straightforward.
+
+## Trade-offs
+
+- Generating a custom palette requires more initial effort and decision-making than simply picking a pre-made one. The user must actively decide on the relative importance of discriminability versus aesthetic preference for their specific project.
+
+## Signs of Trouble
+
+- **Palette Rigidity:** Your design system or team feels locked into using a few pre-made palettes, even when they don't fit the data or brand identity.
+- **Manual Guesswork:** Designers spend significant time manually picking and tweaking colors, often with inconsistent or perceptually poor results.
+- **Brand vs. Clarity Conflict:** A custom brand palette is applied directly to a chart, but it makes categories impossible to distinguish, forcing a choice between brand consistency and data clarity.
+
+## How to Improve
+
+- **Quick Fix: Test Your Existing Palette.** Before replacing it, run your current brand or custom palette through a colorblindness simulator and a tool like Viz Palette to identify specific pairs of colors that are too similar or problematic.
+
+- **Moderate Approach: Augment an Existing Palette.** Use a tool like Colorgorical to "build on" your existing palette. Provide your core brand colors as a starting point and ask the tool to generate additional, discriminable colors that work well with them.
+
+- **Comprehensive Approach: Integrate a Generative Tool into Your Workflow.** Adopt a tool like Colorgorical for creating all new categorical palettes. Set your desired constraints (e.g., hue filters for brand colors) and generate options based on your project's goals, explicitly balancing clarity and aesthetics.
+```

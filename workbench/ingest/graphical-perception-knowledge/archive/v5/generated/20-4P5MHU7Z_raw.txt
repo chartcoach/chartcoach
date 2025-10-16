@@ -1,0 +1,173 @@
+```md
+---
+id: avoid-stacked-bar-segment-comparison
+title: "Avoid Comparing Adjacent Segments Within a Stacked Bar"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:bar
+  - chart:bar.stacked
+  - task:compare
+  - task:rank
+  - data:quantitative
+  - visual:length
+  - medium:static
+  - medium:interactive
+  - access:cognitive-load-risk
+
+evidence:
+  strength: medium
+  summary: "Talbot et al. (2014) identified a strong 'part-to-whole' comparison bias that causes significant underestimation when comparing adjacent segments in a stacked bar. Adding a gap between segments was shown to mitigate this bias."
+
+sources:
+  - type: research
+    ref: "Talbot, Setlur, & Anand, 2014"
+    url: "https://doi.org/10.1109/TVCG.2014.2346320"
+    note: "Primary study identifying and explaining the part-to-whole bias in 'Divided Bar' (Type 5) comparisons."
+    role: primary
+  - type: research
+    ref: "Cleveland & McGill, 1984"
+    url: "https://doi.org/10.2307/2288400"
+    note: "Foundational paper that first identified the high error rate of 'Divided Bar' comparisons but did not explain the cause."
+    role: supporting
+  - type: research
+    ref: "Heer & Bostock, 2010"
+    url: "https://doi.org/10.1145/1753326.1753357"
+    note: "Crowdsourced replication that confirmed the high error rate of 'Divided Bar' comparisons."
+    role: supporting
+
+examples:
+  - type: bad
+    description: "A stacked bar chart showing revenue by product line, with a caption asking the reader to compare the revenue of 'Product A' and 'Product B' which are stacked on top of each other. Viewers will systematically underestimate the ratio."
+  - type: good
+    description: "A grouped bar chart showing the same product revenue data. Each product has its own bar starting from a common baseline, making the comparison accurate and easy."
+  - type: good
+    description: "A stacked bar chart where a small gap has been intentionally added between 'Product A' and 'Product B' to break the part-to-whole illusion and facilitate a more accurate comparison."
+---
+
+## Guidance
+
+Do not ask viewers to compare the sizes of two segments that are stacked directly on top of each other. Such comparisons are highly inaccurate and prone to systematic underestimation.
+
+## Why
+
+When two bar segments are adjacent in a stack, viewers exhibit a strong perceptual bias to perform a "part-to-whole" comparison. Instead of comparing the size of one segment to the other, they subconsciously compare one segment to the combined total of both. For example, when comparing a segment of size 30 to an adjacent segment of size 60, viewers tend to perceive the ratio closer to 33% (30 / 90) rather than the correct 50% (30 / 60).
+
+### Core Principle
+
+Visual context can trigger unintended perceptual strategies. Forcing a length comparison in a context that strongly implies composition (stacking) leads to predictable errors.
+
+## When it applies
+
+- When creating stacked bar charts where a primary analysis task is to compare the magnitude of adjacent segments within the same bar.
+- This applies to both 100% stacked bar charts and standard stacked bar charts.
+
+## Exceptions
+
+- If the primary goal of the chart is to show the total value of the stack and the general composition of that total, a stacked bar is appropriate. This guidance is specifically for the task of *comparing adjacent segments*. If that comparison is secondary, the bias may be an acceptable trade-off.
+
+## Trade-offs
+
+- Following this guidance may require changing the chart type, which could use more screen space (e.g., a grouped bar chart) or make it harder to see the total of the stack.
+- Adding gaps to mitigate the bias can slightly distort the visual perception of the total length of the bar.
+
+## Signs of Trouble
+
+- **Task Mismatch:** The chart is a stacked bar, but the key insight or caption requires comparing two adjacent segments.
+- **The 33-vs-50 Test:** When presented with two adjacent segments with a 1:2 ratio, do viewers estimate the ratio closer to 33% than 50%? This indicates the part-to-whole bias is active.
+- **Misleading Annotations:** The visualization uses callouts or arrows to prompt a comparison between two adjacent stacked segments.
+
+## How to Improve
+
+- **Quick approach: Add a Gap.** Introduce a small, visible gap between the segments you want to compare. This visually breaks the "part-to-whole" gestalt and encourages a more direct and accurate length-to-length comparison.
+
+- **Moderate approach: Use a Grouped Bar Chart.** Switch the chart type to a grouped bar chart. This places all bars on a common baseline, which is the most perceptually accurate way to facilitate comparisons of magnitude.
+
+- **Comprehensive approach: Use Dot Plots or Dumbbell Plots.** For pure comparison tasks, consider a dot plot. If the main goal is to show the difference between two values in a pair, a dumbbell plot is even better, as it is explicitly designed to highlight the gap between two points.
+
+<split/>
+
+```md
+---
+id: group-bars-for-comparison
+title: "Place Bars That Need Comparison Next to Each Other"
+
+tags:
+  - impact:perceptual
+  - chart:bar
+  - task:compare
+  - task:rank
+  - data:quantitative
+  - visual:position
+  - medium:static
+  - medium:interactive
+
+evidence:
+  strength: high
+  summary: "Multiple studies since 1984 have confirmed that comparing adjacent bars is more accurate than comparing separated bars. Talbot et al. (2014) showed this 'Separation Effect' is primarily due to visual distance, not just intervening distractors, and is most pronounced for shorter bars."
+
+sources:
+  - type: research
+    ref: "Cleveland & McGill, 1984"
+    url: "https://doi.org/10.2307/2288400"
+    note: "Foundational study that established that adjacent comparisons (Type 1) are more accurate than separated ones (Type 3)."
+    role: primary
+  - type: research
+    ref: "Talbot, Setlur, & Anand, 2014"
+    url: "https://doi.org/10.1109/TVCG.2014.2346320"
+    note: "Explored the 'Separation Effect', finding that visual distance is the primary cause of error and that the effect is magnified for shorter bars."
+    role: supporting
+  - type: research
+    ref: "Heer & Bostock, 2010"
+    url: "https://doi.org/10.1145/1753326.1753357"
+    note: "Crowdsourced replication that confirmed the original ranking from Cleveland & McGill."
+    role: supporting
+
+examples:
+  - type: bad
+    description: "A bar chart of country populations sorted alphabetically. Comparing the populations of 'Canada' and 'Mexico' is difficult because many other bars are in between them."
+  - type: good
+    description: "The same population data, but sorted by population size. This brings bars of similar size closer together, making many comparisons easier. Or, a chart that explicitly groups 'Canada' and 'Mexico' side-by-side to facilitate that specific comparison."
+
+---
+
+## Guidance
+
+To help your audience make accurate comparisons between bars, place the bars they need to compare directly next to each other.
+
+## Why
+
+The visual distance between bars directly impacts comparison accuracy. The further apart two bars are, the more difficult and error-prone the comparison becomes. This is because the human visual system struggles to project the height of one bar across a wide gap to compare it with another. This "Separation Effect" is particularly strong when comparing shorter bars.
+
+### Core Principle
+
+Make the most important comparisons the easiest to perform visually. Minimize the perceptual work required by reducing distance and removing obstacles.
+
+## When it applies
+
+- When designing a bar chart where a primary goal is for the audience to compare the magnitudes of specific categories.
+- This is especially critical when the values being compared are small relative to the axis scale, as the comparison error increases more dramatically with distance for shorter bars.
+
+## Exceptions
+
+- If the bars have a natural and meaningful order (e.g., a time series, or alphabetical for easy lookup) that takes precedence over a specific comparison task, keeping that order may be more important. In this case, consider adding interactive features or annotations to aid comparison.
+
+## Trade-offs
+
+- Re-sorting the chart to group bars for comparison might break a different, meaningful order (like alphabetical or geographical). You trade easy lookup or conventional ordering for easy comparison.
+
+## Signs of Trouble
+
+- **The Eye-Dart:** Viewers must rapidly move their eyes back and forth between two distant bars to judge which is taller.
+- **The Finger-Ruler:** Viewers feel the need to use their finger or a physical object to bridge the gap between two bars to compare their heights.
+- **Arbitrary Sort Order:** The bars are sorted alphabetically or by some other arbitrary dimension, forcing important comparison pairs to be far apart.
+
+## How to Improve
+
+- **Quick approach: Add Reference Lines.** Interactively or statically, add a subtle reference line from the top of one bar that extends across the chart. This provides a visual guide to aid the comparison.
+
+- **Moderate approach: Re-sort or Group the Bars.** Re-sort the chart to bring the key comparison bars closer together. For example, sort by value. If a few specific comparisons are key, create a "grouped bar chart" where those categories are clustered together.
+
+- **Comprehensive approach: Use a Dumbbell Plot.** If the primary task is to show the difference or gap between pairs of values (e.g., '2023 vs 2024' for multiple categories), switch to a dumbbell plot. This chart type is explicitly designed to show the relationship between two points, making the comparison the central visual element.
+```
