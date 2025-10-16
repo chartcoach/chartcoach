@@ -1,0 +1,585 @@
+```md
+---
+id: use-small-multiples-to-untangle-lines
+title: "Use small multiples to untangle overlapping line charts"
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:line
+  - chart:line.small-multiples
+  - task:trend
+  - task:compare
+  - data:temporal
+  - data:cardinality.high
+  - access:cognitive-load-risk
+evidence:
+  strength: medium
+  summary: "Practitioner consensus, popularized by Edward Tufte, holds that separating overlapping lines into individual panels (small multiples) significantly reduces cognitive load and improves the viewer's ability to perceive individual trends."
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: What to consider when creating small multiple line charts"
+    url: https://www.datawrapper.de/blog/what-to-consider-when-creating-small-multiple-line-charts
+    note: "Primary source for this guideline. Argues that giving each line its own panel makes it easier for readers to parse each line."
+    role: primary
+  - type: practitioner
+    ref: "Tufte, E. (1990). Envisioning Information."
+    note: "Tufte popularized the term 'small multiples' and championed them as a solution for presenting rich, multivariate data without confusion."
+    role: supporting
+tools:
+  - type: implement
+    name: Datawrapper
+    url: https://www.datawrapper.de
+    description: "Visualization tool that offers a 'Multiple Lines' chart type specifically for creating small multiples."
+examples:
+  - type: bad
+    description: "A line chart with several overlapping and crossing lines. It's difficult to follow any single line from start to finish or to discern its shape."
+  - type: good
+    description: "The same data presented as a grid of small line charts. Each line has its own panel, making its individual trend clear and easy to follow."
+---
+
+## Guidance
+
+When a standard line chart has multiple lines that overlap and cross frequently, separate each line into its own small chart, arranged in a grid. This technique is known as small multiples, faceting, or trellising.
+
+## Why
+
+Overlapping lines create visual clutter, which increases the cognitive load on the viewer. It becomes difficult to follow a single category's trajectory or to distinguish one line from another, a problem often called a "spaghetti chart." Small multiples give each line "space to breathe," allowing the viewer to clearly see the shape and trend of each category without distraction.
+
+### Core Principle
+
+Reduce the cognitive work required to decode your visualization. By separating complex information into smaller, digestible chunks, you make it easier for viewers to perceive individual patterns accurately.
+
+## When it applies
+
+- **You have multiple time series to display.** Even a handful of lines (e.g., 4-5) can benefit from this approach if they cross each other often.
+- **The primary task is to understand the trend of *each* category.** Small multiples excel at showing the individual shape (volatility, growth rate, seasonality) of each line.
+- **You have a high number of categories.** Small multiples are a scalable solution for showing more categories than would be legible on a single line chart.
+
+## Exceptions
+
+- **The primary task is to compare the values of different lines at specific points in time.** A standard line chart with a shared y-axis is superior for this task, as it relies on the highly accurate perceptual task of comparing positions along a common scale.
+- **You have only two or three lines that don't overlap significantly.** In this case, a standard line chart is often simpler and more direct.
+
+## Trade-offs
+
+- **Gains:** Drastically improved clarity for individual trends and reduced cognitive load.
+- **Sacrifices:** Direct comparison of absolute values between categories at a specific point in time becomes much harder, as the viewer must visually carry a value from one panel to another. The overall chart takes up more screen or page space.
+
+## Signs of Trouble
+
+- **The "Spaghetti" Test:** Your chart looks like a tangled mess of lines, making it nearly impossible to trace one from beginning to end.
+- **Back-and-Forth:** Viewers have to repeatedly look back and forth between the legend and the chart to figure out which line is which.
+- **Hidden Trends:** The story of an individual category is lost in the noise of all the other lines.
+
+## How to Improve
+
+- **Quick Fix: Highlight Key Lines.** In the original spaghetti chart, make most lines a faint gray and give one or two key lines a saturated color. This is a partial solution that focuses attention but doesn't solve the core clutter problem for the other lines.
+- **Comprehensive Redesign: Switch to Small Multiples.** Re-create the visualization using a tool that supports faceting or small multiples. Place each time series in its own panel with a clear title, and arrange the panels in a logical grid.
+
+<split/>
+
+```md
+---
+id: use-standard-line-chart-for-point-in-time-comparison
+title: "Use a standard line chart for comparing values at specific points in time"
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:line
+  - chart:line.small-multiples
+  - task:compare
+  - task:rank
+  - task:lookup
+  - data:temporal
+  - data:quantitative
+  - visual:position
+evidence:
+  strength: high
+  summary: "Comparing positions on a common, aligned scale is the most accurate elementary perceptual task for quantitative comparison (Cleveland & McGill, 1984). A standard line chart facilitates this task directly, while small multiples do not."
+sources:
+  - type: research
+    ref: "Cleveland & McGill, 1984"
+    url: https://doi.org/10.2307/2288400
+    note: "Foundational research establishing a hierarchy of perceptual tasks, ranking 'position on a common scale' as the most accurate for quantitative judgments."
+    role: primary
+  - type: practitioner
+    ref: "Datawrapper Blog: What to consider when creating small multiple line charts"
+    url: https://www.datawrapper.de/blog/what-to-consider-when-creating-small-multiple-line-charts
+    note: "Explicitly contrasts small multiples with standard line charts for this task, stating it's 'impossible' to answer 'Which was higher in 2022?' in their small multiple example but 'easy' in the standard line chart."
+    role: supporting
+examples:
+  - type: bad
+    description: "A small multiple chart is shown, and the user is asked 'Which was higher in 2022, the orange line or the red?'. It's impossible to tell because the lines are in different panels."
+  - type: good
+    description: "A standard line chart with the same data is shown. A vertical line at 2022 makes it immediately obvious which line is higher, as they can be directly compared on the shared y-axis."
+---
+
+## Guidance
+
+If the primary goal for your audience is to compare the absolute values of different categories at specific moments in time (e.g., "Which country had a higher GDP in 2020?"), use a standard line chart where all lines share a common y-axis.
+
+## Why
+
+A standard line chart aligns all data points at a given time along a single vertical axis. This allows for direct comparison of position along a common scale, which is the most accurate way humans judge quantitative differences. In contrast, small multiples place these data points in separate panels, forcing the viewer into the much less accurate task of comparing positions across unaligned scales, which is often impossible without reading the axis labels.
+
+### Core Principle
+
+Make the most important comparisons the easiest to see. The visual encoding should directly support the primary analytical task. For point-in-time comparisons, this means aligning the data on a common scale.
+
+## When it applies
+
+- **The key question is "Which is more/less?" at a specific time.** For example, comparing sales figures for different products at the end of the quarter.
+- **Ranking categories at various points in time is important.** A standard line chart makes it easy to see how ranks change as lines cross each other.
+- **The number of lines is small enough (typically under 5-6) to remain legible.**
+
+## Exceptions
+
+- **Lines are so cluttered that they form an illegible "spaghetti chart."** In this case, the benefit of untangling the lines with small multiples may outweigh the loss of direct comparability.
+- **A secondary comparison method is added to small multiples.** For instance, if you add background lines to each panel (see `repeat-background-lines-in-small-multiples`), you can partially restore the ability to compare.
+
+## Trade-offs
+
+- **Gains:** Enables fast and accurate comparison of values between categories at any point in time.
+- **Sacrifices:** Can become cluttered and unreadable if too many lines are included. Trends of low-value categories can be flattened and obscured if another category has a much larger magnitude.
+
+## Signs of Trouble
+
+- **Impossible Questions:** A viewer looks at your small multiple chart and asks, "OK, but which one was the highest in June?" and there is no easy way to answer.
+- **Mental Gymnastics:** To make a comparison, a user has to find a point in one panel, estimate its value on the y-axis, hold that number in their head, find the point in another panel, estimate its value, and then mentally subtract them.
+
+## How to Improve
+
+- **Switch Chart Type:** If you are using small multiples but the primary task is comparison, switch to a standard line chart.
+- **Combine Approaches:** If you need to show both individual trends and allow for some comparison, consider using small multiples but repeating all lines faintly in the background of each panel. This provides a common reference, albeit a less precise one than a dedicated line chart.
+
+<split/>
+
+```md
+---
+id: use-independent-y-axes-to-compare-trends
+title: "Use independent y-axes in small multiples to compare trends of different magnitudes"
+tags:
+  - impact:perceptual
+  - impact:logos
+  - impact:ethical
+  - chart:line.small-multiples
+  - task:trend
+  - task:direction
+  - task:compare
+  - data:temporal
+  - data:quantitative
+evidence:
+  strength: medium
+  summary: "Practitioner consensus, supported by visualization experts like Claus O. Wilke, recommends using independent y-axes (or 'free scales') to reveal the shape of trends in series with vastly different magnitudes. This technique makes relative changes visible that would otherwise be flattened on a shared scale, but carries a high risk of misinterpretation if not clearly signaled."
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: What to consider when creating small multiple line charts"
+    url: https://www.datawrapper.de/blog/what-to-consider-when-creating-small-multiple-line-charts
+    note: "Demonstrates how a strong downward trend, invisible on a shared-axis chart, becomes apparent when using independent y-axes in small multiples."
+    role: primary
+  - type: practitioner
+    ref: "Wilke, C. O. (2019). Fundamentals of Data Visualization."
+    note: "Includes a chapter on faceted plots that discusses the use of independent axes, highlighting their power for showing patterns in different ranges but also warning about the potential for misinterpretation."
+    role: supporting
+examples:
+  - type: bad
+    description: "A standard line chart shows multiple lines. One line with very large values dominates the chart, while other lines with smaller absolute values appear as nearly flat lines near the zero axis, obscuring their own significant trends."
+  - type: good
+    description: "The same data is shown in a small multiple chart with independent y-axes. Each panel's y-axis is scaled to the range of its own data. Now, the significant percentage-wise trends of the lower-value lines are clearly visible."
+---
+
+## Guidance
+
+To compare the *shape* of trends among categories with vastly different absolute values, use small multiples with independent y-axes for each panel. This scales each line to the full height of its panel, revealing its relative change over time.
+
+## Why
+
+When plotted on a shared y-axis, a line with a very large magnitude (e.g., sales for a flagship product) can visually suppress lines with smaller magnitudes (e.g., sales for a new product). The smaller lines appear flat and uneventful, even if they are experiencing dramatic percentage growth or decline. By giving each line its own y-axis scaled to its own data range, you normalize their visual height, making the *shape* of their respective trends comparable.
+
+### Core Principle
+
+Match the visual scale to the analytical task. When comparing relative change or trend shape, a normalized scale is more effective than an absolute one.
+
+## When it applies
+
+- **You have data series with vastly different orders of magnitude.** For example, comparing the stock price of a $1,000 stock and a $10 stock.
+- **The analytical goal is to compare the *pattern* of change**, not the absolute amounts. You want to answer questions like "Did these categories experience a similar dip in Q2?" or "Which category had the most volatile trend?"
+- **The audience is interested in relative growth, percentage change, or volatility.**
+
+## Exceptions
+
+- **The audience needs to compare absolute values.** Using independent axes makes this comparison impossible and is highly misleading. If absolute comparison is the goal, a shared axis is mandatory.
+- **The audience is likely to misinterpret the chart.** If you cannot be certain that viewers will notice and understand the independent scales, the risk of misinterpretation may be too high. For a general, non-expert audience, it's a dangerous technique.
+
+## Trade-offs
+
+- **Gains:** Reveals important trends in lower-magnitude series that would otherwise be invisible.
+- **Sacrifices:** Completely removes the ability to compare absolute values across panels. Introduces a significant risk of viewer misinterpretation if not handled carefully.
+
+## Signs of Trouble
+
+- **Flat Lines:** In a standard line chart, you have one or more lines that look almost completely flat, hovering near the bottom of the chart, because another line's values are so much larger.
+- **False Conclusions:** A viewer looks at two panels with independent axes and concludes the two categories have similar values because their lines reach the same height in their respective panels.
+
+## How to Improve
+
+- **Implement Independent Scales:** In your charting tool, select the option for "free" or "independent" axes for your small multiples.
+- **Crucially, Signal the Change:** You **must** make it obvious to the reader that the scales are different. Use explicit text annotations like "Note: Y-axis scales differ between panels to show individual trends." This is an ethical obligation to prevent misinterpretation. (See guideline: `signal-independent-y-axes`)
+
+<split/>
+
+```md
+---
+id: signal-independent-y-axes
+title: "Clearly signal when using independent y-axes in small multiples"
+tags:
+  - impact:ethical
+  - impact:cognitive
+  - impact:logos
+  - chart:line.small-multiples
+  - task:trend
+  - access:cognitive-load-risk
+evidence:
+  strength: high
+  summary: "Visualization experts and practitioners universally agree that when using independent scales in small multiples, it is ethically imperative to make this fact obvious to the reader. Readers default to assuming scales are shared, so failing to signal the difference can lead to serious misinterpretation. Claus O. Wilke recommends explicit textual warnings."
+sources:
+  - type: practitioner
+    ref: "Wilke, C. O. (2019). Fundamentals of Data Visualization."
+    url: https://clauswilke.com/dataviz/figure-titles-captions.html
+    note: "Strongly recommends adding a sentence like 'Notice that the y-axis scalings differ among the different panels of this figure.' to alert the reader and prevent misinterpretation."
+    role: primary
+  - type: practitioner
+    ref: "Datawrapper Blog: What to consider when creating small multiple line charts"
+    url: https://www.datawrapper.de/blog/what-to-consider-when-creating-small-multiple-line-charts
+    note: "Calls the use of independent scales 'dangerous' because 'readers might not check the y-axes'. Recommends making the difference obvious through chart descriptions and visual cues like unusual gridlines."
+    role: supporting
+examples:
+  - type: bad
+    description: "A small multiple chart uses independent y-axes, but provides no visual or textual cue to indicate this. A reader would likely assume the scales are the same, leading to incorrect conclusions about the relative magnitudes of the data series."
+  - type: good
+    description: "A small multiple chart with independent y-axes includes a clear note in the description, such as: 'Pay special attention to the y-axes, which have different scales.' The gridlines might also be styled in a way that draws attention to the different axis labels."
+---
+
+## Guidance
+
+If you use independent y-axes in a small multiple chart, you must explicitly and obviously inform the reader. Do not assume they will notice on their own.
+
+## Why
+
+Readers have a strong default assumption that all charts in a single figure share the same scales. This is a cognitive shortcut that is usually efficient. When you violate this convention by using independent scales, you are setting a trap for the unwary reader. Failing to warn them is a form of deception, even if unintentional, as it can lead them to draw false conclusions about the data (e.g., that two lines of the same height represent the same value).
+
+### Core Principle
+
+Designer, do no harm. Your primary ethical responsibility is to present data truthfully and minimize the potential for misinterpretation. When using a potentially confusing technique, you must provide clear "warning labels."
+
+## When it applies
+
+- **Any time you use small multiples where the y-axis (or x-axis) is not shared across all panels.** This is most common for showing trends in data of different magnitudes.
+
+## Exceptions
+
+- **There are no exceptions.** If the scales are different, you must signal it. The only alternative is to not use different scales.
+
+## Trade-offs
+
+- **Gains:** Prevents misinterpretation and ensures the chart is read honestly. Builds trust with your audience by being transparent.
+- **Sacrifices:** Adds extra text to the chart, which can feel like clutter. It requires you to admit that your chart contains a potentially confusing element.
+
+## Signs of Trouble
+
+- **No Warning:** The chart uses independent scales, but there is no text in the title, subtitle, or notes to alert the reader.
+- **Hidden Labels:** The axis labels are present but are too small, have low contrast, or are otherwise difficult to read, making it unlikely a viewer will notice the differences.
+
+## How to Improve
+
+- **Quick Fix: Add a Text Warning.** Add a clear sentence to your chart's subtitle or description. The blog post cites Claus O. Wilke's recommendation: *"Notice that the y-axis scalings differ among the different panels of this figure."*
+- **Moderate Improvement: Add Visual Cues.** In addition to the text warning, use visual design to hint that something is different. The article suggests using gridlines that "don't look normal" to subtly prompt the reader to inspect the axes more closely. For example, ensuring that the top gridline in each panel has a different, clearly labeled value.
+- **Comprehensive Approach: Combine Text and Visual Cues.** The safest method is to use both a clear textual warning and thoughtful visual design that draws attention to the axis labels, ensuring readers can't miss the fact that the scales are independent.
+
+<split/>
+
+```md
+---
+id: curate-small-multiple-panels
+title: "Curate the number of panels in small multiples to focus the narrative"
+tags:
+  - impact:cognitive
+  - impact:pathos
+  - impact:logos
+  - chart:line.small-multiples
+  - task:summary-mean
+  - audience:general
+  - medium:screen
+  - medium:static
+  - access:cognitive-load-risk
+evidence:
+  strength: medium
+  summary: "Practitioner advice emphasizes that the role of a data visualizer is not just to show data, but to guide the audience to insight. Showing too many small multiples overwhelms the viewer and abdicates the responsibility of analysis. Curation focuses attention and strengthens the chart's message."
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: What to consider when creating small multiple line charts"
+    url: https://www.datawrapper.de/blog/what-to-consider-when-creating-small-multiple-line-charts
+    note: "Advises against giving readers 'dozens of panels to let them figure out the interesting bits themselves'. Instead, creators should select panels that support a specific point while giving a truthful picture. Also highlights the issue of excessive scrolling on mobile."
+    role: primary
+examples:
+  - type: bad
+    description: "A grid of dozens of small multiple line charts is shown. It's overwhelming, and the viewer has no idea where to start or what is important."
+  - type: good
+    description: "A smaller, curated set of 6-9 panels is shown. This selection highlights the most interesting or relevant categories (e.g., the highest, the lowest, the most volatile) and is easier to digest."
+---
+
+## Guidance
+
+When creating small multiples, consciously select the number of panels to show. Instead of including every possible category, curate a selection that supports your main message and avoids overwhelming the reader.
+
+## Why
+
+While small multiples make it *possible* to show many categories, it is not always *advisable*. Presenting dozens of panels forces the audience to do the analytical work of finding what's interesting, which can lead to information overload and disengagement. As the creator, your role is to guide the viewer. By carefully selecting which panels to show, you focus their attention, tell a clearer story, and make your point more effectively.
+
+### Core Principle
+
+Clarity over comprehensiveness. A data visualization is an act of communication, not a data dump. Guide your audience to an insight rather than leaving them to find it in a sea of information.
+
+## When it applies
+
+- **You have a large number of categories (e.g., > 15-20).**
+- **You are creating a static or narrative visualization for a general audience.**
+- **You have a clear story or point you want to make.**
+- **You are designing for mobile screens**, where excessive scrolling can be frustrating.
+
+## Exceptions
+
+- **The tool is for expert analysis or exploration.** In a dashboard for an expert user, providing a searchable, filterable view of all categories might be desirable (the article suggests a searchable table with sparklines as a good alternative for this use case).
+- **The goal is to show the sheer scale or diversity of the dataset.** Sometimes, showing a massive grid of charts can itself be the message (e.g., "look at all 50 states' trend lines").
+
+## Trade-offs
+
+- **Gains:** A more focused, less overwhelming, and more persuasive chart. A better user experience, especially on mobile.
+- **Sacrifices:** You are withholding data from the viewer. This requires you to make sound editorial judgments to ensure you are still presenting a truthful and representative picture of the situation.
+
+## Signs of Trouble
+
+- **The Endless Scroll:** On a mobile device, a user has to scroll for a long time to see all the panels.
+- **"Where do I look?":** A viewer looks at the chart and is visibly confused about where to start or what matters.
+- **No Clear Takeaway:** After viewing the chart, the audience can't summarize the main point.
+
+## How to Improve
+
+- **Define Your Message:** Before you start, ask yourself: "What is the single most important thing I want my audience to learn from this chart?"
+- **Select and Group:** Choose the panels that best support that message. This might include the highest and lowest values, the most dramatic movers, or interesting outliers. Remove the rest.
+- **Consider Alternatives for 'All Data':** If you feel compelled to show all data, consider a more appropriate format. The article suggests using sparklines (miniature line charts) inside a searchable, sortable table. This allows users to explore the full dataset without being initially overwhelmed.
+
+<split/>
+
+```md
+---
+id: use-color-to-categorize-in-small-multiples
+title: "Use color to categorize or highlight in small multiples, not just to identify"
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - impact:logos
+  - chart:line.small-multiples
+  - visual:color
+  - task:compare
+  - task:rank
+evidence:
+  strength: medium
+  summary: "Practitioner best practice advises leveraging the fact that small multiples use position and labels for identification, which frees up the color channel for a more analytical purpose. Instead of using a redundant color legend, color can be used to group, categorize, or highlight data, adding another layer of information to the chart."
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: What to consider when creating small multiple line charts"
+    url: https://www.datawrapper.de/blog/what-to-consider-when-creating-small-multiple-line-charts
+    note: "States that since panel titles identify each line, 'your lines don't need different colors'. This frees up color to do another job, like categorizing lines into groups (e.g., 'downwards trending') or highlighting specific panels of interest."
+    role: primary
+examples:
+  - type: bad
+    description: "A small multiple chart where each panel's line has a different, arbitrary color (red, blue, green, orange, etc.), requiring a color key even though each panel is already labeled. The color adds no new information."
+  - type: good
+    description: "A small multiple chart where color is used to make a point. For example, all lines showing an upward trend are colored blue, and all lines with a downward trend are colored red. Or, most lines are gray, with one or two key panels highlighted in a bright color."
+---
+
+## Guidance
+
+In a small multiple line chart, use color to add an additional layer of meaning, such as categorizing groups or highlighting key panels. Avoid using a unique color for every line simply for identification, as the panel title already serves that purpose.
+
+## Why
+
+In a standard line chart, a color legend is necessary to distinguish between the different lines. However, in a small multiple chart, each line is clearly identified by the title of its panel. Using a different color for each line is therefore redundant. This redundancy "frees up" the powerful visual channel of color to do more analytical work. You can use it to encode a second dimension of the data (e.g., grouping by region) or to direct the viewer's attention (e.g., highlighting an outlier).
+
+### Core Principle
+
+Every visual element should serve a purpose. If a visual channel like color is not needed for its primary job (identification), deploy it for a more sophisticated secondary job (categorization, highlighting).
+
+## When it applies
+
+- **You are creating a small multiple line chart.**
+- **You have an additional categorical variable by which you can group your data** (e.g., region, industry, trend direction).
+- **You want to tell a story that involves highlighting specific categories** or comparing one group to another.
+
+## Exceptions
+
+- **You intend to layer the small multiples back into a single summary chart.** If the final step is to show all lines on one chart, maintaining consistent, unique colors throughout can be helpful.
+- **Brand guidelines strictly dictate the color of each category.** Even in this case, consider if a grayscale-plus-highlight approach could work.
+
+## Trade-offs
+
+- **Gains:** Adds a layer of analytical depth to the chart. More efficiently uses visual encoding channels. Can make a story or argument more apparent.
+- **Sacrifices:** Requires more thought to devise a meaningful color scheme. May break conventions if users expect a unique color for each item.
+
+## Signs of Trouble
+
+- **The Rainbow Effect:** Your small multiples use a wide variety of colors (one for each panel) for no apparent reason.
+- **Redundant Legend:** You have a color legend next to your small multiple chart, even though each panel is already labeled with the category name.
+- **Missed Opportunity:** All lines are the same color, but there's a clear opportunity to group them into meaningful categories (e.g., continents, parties, outcomes).
+
+## How to Improve
+
+- **For Highlighting:** Make all the lines a neutral gray. Then, pick one or a few panels that are central to your story and give them a saturated, attention-grabbing color.
+- **For Categorizing:** Define logical groups within your data. Assign a distinct color to each group. For example, in a chart of countries, you could color all North American countries blue, European countries red, and Asian countries green. Or, as in the article's example, color all lines with a positive overall trend blue and all with a negative trend orange.
+- **Remove the Legend:** Once color is used for highlighting or categorizing, your old color legend is no longer needed. Remove it to reduce clutter.
+
+<split/>
+
+```md
+---
+id: sort-small-multiple-panels-meaningfully
+title: "Sort small multiple panels in a meaningful order"
+tags:
+  - impact:cognitive
+  - impact:logos
+  - impact:pathos
+  - chart:line.small-multiples
+  - task:rank
+  - task:compare
+  - visual:position
+evidence:
+  strength: medium
+  summary: "Practitioner best practice holds that the spatial arrangement of small multiples should be deliberate, not accidental. Sorting panels by a key data attribute (e.g., end value, rate of change) guides the reader's attention, facilitates comparison, and helps reveal larger patterns that would be missed with arbitrary or alphabetical sorting."
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: What to consider when creating small multiple line charts"
+    url: https://www.datawrapper.de/blog/what-to-consider-when-creating-small-multiple-line-charts
+    note: "Recommends sorting panels to decide what readers see first and to help them navigate the data. Suggests sorting by start value, end value, range, or % change to help answer specific questions. States alphabetical order is a last resort, better only than no order at all."
+    role: primary
+examples:
+  - type: bad
+    description: "A small multiple chart where panels are sorted alphabetically. The highest and lowest values are scattered randomly throughout the grid, making it hard to find them or to see any overall pattern."
+  - type: good
+    description: "The same chart, but with panels sorted by their final value, from highest to lowest. The overall trend of decline or growth across all categories becomes much clearer, and the top and bottom performers are immediately identifiable."
+---
+
+## Guidance
+
+Arrange the panels of your small multiple chart in a deliberate, data-driven order. Avoid default sorting (like alphabetical) unless it is genuinely meaningful for your data.
+
+## Why
+
+The order in which information is presented influences perception and interpretation. By sorting small multiple panels according to a relevant data feature, you guide the reader's eye and help them answer implicit questions. Sorting by end value immediately shows the final ranking. Sorting by growth rate highlights the fastest-changing categories. A meaningful sort order adds another layer of organization to the visualization, turning a simple collection of charts into a more powerful analytical tool. Alphabetical sorting, by contrast, is usually arbitrary from a data perspective and can hide important patterns.
+
+### Core Principle
+
+Impose meaningful order on your data. The arrangement of visual elements should reflect a logical structure, not an arbitrary one.
+
+## When it applies
+
+- **You are creating any small multiple chart (lines, bars, maps, etc.).**
+- **The default order of your categories is not intrinsically meaningful** (e.g., product names, countries, companies).
+
+## Exceptions
+
+- **The categories have a conventional, well-known order.** For example, sorting age groups chronologically, or time periods sequentially.
+- **The categories have a geographic arrangement.** It might be better to arrange the panels to mimic a map.
+- **You have a very large number of panels and no obvious sorting logic.** In this last-resort scenario, the article concedes that "an alphabetical order is better than none at all" because it at least makes specific panels findable.
+
+## Trade-offs
+
+- **Gains:** Makes high-level patterns and rankings immediately visible. Guides the viewer's attention to what's most important. Answers key questions (e.g., "who finished on top?") without the user having to hunt for the answer.
+- **Sacrifices:** A specific category may be harder to find if the user is looking for it alphabetically. (This can be mitigated by clear labels).
+
+## Signs of Trouble
+
+- **Random-Looking Layout:** The panels with the highest and lowest values appear to be in random positions in the grid.
+- **The Alphabetical Default:** The panels are sorted A-Z (e.g., Argentina, Brazil, Canada...) which has no relationship to the data being shown.
+- **Missed Story:** There is a clear ranking pattern (e.g., a steady decline in values as you read through the panels), but it's not obvious because the order is jumbled.
+
+## How to Improve
+
+- **Identify Key Questions:** What question do you want to help the reader answer? "Who is biggest/smallest?", "Who grew the most?", "Who is most volatile?".
+- **Choose Your Sort Variable:** Based on the question, sort the panels by a corresponding data feature:
+  - **End value:** To see the final ranking.
+  - **Start value:** To see the initial ranking.
+  - **Change or slope:** To see the fastest-growing or declining categories.
+  - **Average value:** To see the typical ranking.
+  - **Volatility (e.g., standard deviation):** To see the most/least stable categories.
+- **State the Order:** Consider adding a note in the chart's description to inform the reader of the sort order (e.g., "Regions are sorted by their 2022 house prices, from highest to lowest.").
+
+<split/>
+
+```md
+---
+id: repeat-background-lines-in-small-multiples
+title: "Repeat all lines in the background of each panel for comparison context"
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:line.small-multiples
+  - task:compare
+  - task:rank
+  - visual:position
+evidence:
+  strength: medium
+  summary: "This practitioner technique mitigates a primary weakness of small multiples (difficulty of direct comparison) by reintroducing a shared visual context. By rendering all other series as faint background lines, each panel allows the viewer to judge the highlighted series' rank and position relative to the full distribution at any point in time."
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: What to consider when creating small multiple line charts"
+    url: https://www.datawrapper.de/blog/what-to-consider-when-creating-small-multiple-line-charts
+    note: "Proposes this method as a way to 'enable at least a bit of comparison' in small multiples. Notes that it allows readers to see which categories ranked higher or lower on the same date and can also make the sorting order more obvious."
+    role: primary
+examples:
+  - type: bad
+    description: "A standard small multiple chart. In each panel, only the line for that category is visible. It is impossible to know how that line's value compares to any other category's value at a specific point in time."
+  - type: good
+    description: "A small multiple chart where each panel highlights one line in a strong color, but also shows all other lines from the dataset in a faint, non-distracting gray in the background. This allows the viewer to see the highlighted line in the context of the overall distribution."
+---
+
+## Guidance
+
+To improve comparability in a small multiple line chart, repeat all of the data series as faint background lines in every panel, while highlighting the specific line for that panel in a stronger color.
+
+## Why
+
+A key drawback of small multiples is that they make it difficult to compare absolute values across panels at a specific point in time. By tracing all the lines in a muted gray color in the background of each panel, you provide a consistent frame of reference. This allows the viewer to see where the highlighted line falls within the overall distribution—is it at the top, in the middle, or at the bottom? This technique restores some of the comparative power of a standard line chart without reintroducing the clutter.
+
+### Core Principle
+
+Provide context. A single data point or series is more meaningful when viewed in relation to the whole.
+
+## When it applies
+
+- **You are using small multiples but still want to afford some level of comparison and ranking between categories.**
+- **You want to make your sorting order more visually apparent.** For example, if you sort by end value, repeating the background lines will create a clear visual cascade across the panels.
+- **You are using a shared y-axis across all panels.** This technique is less effective and potentially misleading with independent y-axes.
+
+## Exceptions
+
+- **You have a very large number of lines.** Plotting dozens or hundreds of background lines can create a dense, messy "hairball" that obscures the highlighted line.
+- **Your primary goal is solely to show the unique shape of each individual trend, and any comparison is a distraction.**
+
+## Trade-offs
+
+- **Gains:** Restores the ability to judge rank and approximate value comparisons at any point in time. Provides valuable context about the overall distribution.
+- **Sacrifices:** Adds more ink to the chart, which can increase visual complexity if not done with care (the background lines must be very faint).
+
+## Signs of Trouble
+
+- **Lost in Space:** A viewer sees a line in one panel but has no idea if its value is high or low compared to the other categories.
+- **Invisible Sorting:** You've sorted your panels by end value, but this is not visually obvious to the reader.
+
+## How to Improve
+
+- **Find the Setting:** In your charting tool, look for an option to "repeat background lines," "show all series as context," or a similar feature within the small multiples settings.
+- **Style for Emphasis:** Configure the chart to have two styles:
+    1.  **Highlighted Line:** A saturated, prominent color and a slightly thicker stroke weight.
+    2.  **Background Lines:** A very light gray or other neutral color with a thin stroke weight.
+- **Ensure Contrast:** The highlighted line must be clearly distinguishable from the background lines. The background lines should provide context without creating clutter or distraction.

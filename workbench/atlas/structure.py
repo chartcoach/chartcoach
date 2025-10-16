@@ -1,9 +1,11 @@
 # /// script
-# requires-python = ">=3.13"
+# requires-python = ">=3.12"
 # dependencies = [
+#     "anywidget==0.9.18",
 #     "duckdb==1.4.1",
 #     "embedding-atlas==0.11.0",
 #     "numpy==2.3.4",
+#     "pandas==2.3.3",
 #     "polars==1.34.0",
 #     "pyarrow==21.0.0",
 #     "pyyaml==6.0.3",
@@ -16,19 +18,183 @@ __generated_with = "0.17.0"
 app = marimo.App(width="columns")
 
 
-@app.cell(column=0)
-def _(guidelines):
-    len(guidelines)
+@app.cell(column=0, hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+    # Guideline Author Intent Space
+
+    Guideline items close to each other are highly similar in terms of what they cover and aim to address.
+
+    Allows discovering items with “similar guidance” deduplicate near‑identical rules, grouping by conceptual intent.
+    """
+    )
     return
 
 
 @app.cell
+def _(author_intent_df, make_atlas_widget):
+    author_intent_widget = make_atlas_widget(author_intent_df)
+    author_intent_widget
+    return
+
+
+@app.cell
+def _(build_author_intent_space, guidelines, make_df):
+    author_intent_df = make_df(
+        guidelines,
+        build_author_intent_space,
+    )
+    author_intent_df
+    return (author_intent_df,)
+
+
+@app.cell(column=1, hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+    # Guideline Scenario Space
+
+    Guideline items close together in this space are marked to have similar or identical applicability / trigger conditions.
+
+    Shows how items are distributed based on their contextual similarity. Large, dense clusters mean that it will be difficult for us to identify the most relevant guidelines given contextual cues such as tags, "when it applies" section, etc.
+    """
+    )
+    return
+
+
+@app.cell
+def _(make_atlas_widget, scenario_df):
+    scenario_widget = make_atlas_widget(scenario_df)
+    scenario_widget
+    return
+
+
+@app.cell
+def _(build_scenario_space, guidelines, make_df):
+    scenario_df = make_df(
+        guidelines,
+        build_scenario_space,
+    )
+    scenario_df
+    return (scenario_df,)
+
+
+@app.cell(column=2, hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+    # Trouble Space
+
+    Guideline items close together in this space are violated by similar or the same mistakes in visualization design.
+    """
+    )
+    return
+
+
+@app.cell
+def _(make_atlas_widget, trouble_df):
+    trouble_widget = make_atlas_widget(trouble_df)
+    trouble_widget
+    return
+
+
+@app.cell
+def _(build_trouble_space, guidelines, make_df):
+    trouble_df = make_df(
+        guidelines,
+        build_trouble_space,
+    )
+    trouble_df
+    return (trouble_df,)
+
+
+@app.cell(column=3, hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+    # Improvement Space
+
+    Guideline items close together in this space can be fixed by similar or the same design improvements.
+    """
+    )
+    return
+
+
+@app.cell
+def _(improvement_df, make_atlas_widget):
+    improvement_widget = make_atlas_widget(improvement_df)
+    improvement_widget
+    return
+
+
+@app.cell
+def _(build_improvement_space, guidelines, make_df):
+    improvement_df = make_df(
+        guidelines,
+        build_improvement_space,
+    )
+    improvement_df
+    return (improvement_df,)
+
+
+@app.cell(column=4)
+def _(
+    EmbeddingAtlasWidget,
+    Guideline,
+    compute_text_projection,
+    derive_guideline_categories,
+    pl,
+):
+    def make_atlas_widget(df: pl.DataFrame) -> EmbeddingAtlasWidget:
+        pdf = df.to_pandas()
+        compute_text_projection(
+            pdf,
+            text="content",
+            x="projection_x",
+            y="projection_y",
+            neighbors="neighbors",
+        )
+        return EmbeddingAtlasWidget(
+            pdf,
+            text="content",
+            x="projection_x",
+            y="projection_y",
+            neighbors="neighbors",
+            labels="auto",
+        )
+
+
+    def make_df(
+        guidelines: list[Guideline],
+        space_fn: callable,
+    ) -> pl.DataFrame:
+        categories_col = [derive_guideline_categories(g) for g in guidelines]
+        new_col = [space_fn(g) for g in guidelines]
+
+        return pl.from_dict(
+            {
+                "content": new_col,
+                "categories": categories_col,
+            }
+        ).unnest("categories")
+    return make_atlas_widget, make_df
+
+
+@app.cell
+def _():
+    from embedding_atlas.widget import EmbeddingAtlasWidget
+    from embedding_atlas.projection import compute_text_projection
+    import polars as pl
+    return EmbeddingAtlasWidget, compute_text_projection, pl
+
+
+@app.cell(column=5)
 def _(GUIDELINE_PATHS, parse_guideline):
     guidelines = []
     for path in GUIDELINE_PATHS:
         try:
-            content = path.read_text(encoding="utf-8")
-            guideline = parse_guideline(content)
+            guideline = parse_guideline(path)
             guidelines.append(guideline)
         except Exception as e:
             print(f"Error parsing {path}: {e}")
@@ -36,7 +202,124 @@ def _(GUIDELINE_PATHS, parse_guideline):
 
 
 @app.cell
-def _(List, Literal, Optional, dataclass, field, re, yaml):
+def _(Guideline, re):
+    def derive_guideline_categories(guideline: Guideline) -> dict:
+        stem = guideline.file.split("/")[-1].split(".")[0]
+        source_abbreviation = (
+            "PK"
+            if "-" in stem
+            else stem.split("_")[0]
+        )
+        source_map = {
+            'PK': 'Perception Knowledge Papers',
+            'CH': 'Chartability',
+            'DW': 'Datawrapper',
+            'TC': 'Talking Charts',
+        }
+        is_universal = any(":*" in tag for tag in guideline.tags)
+        impacts_perceptual = any(
+            tag == "impact:perceptual" for tag in guideline.tags
+        )
+        impacts_rhetorical = any(
+            tag in ["impact:ethos", "impact:logos", "impact:pathos"]
+            for tag in guideline.tags
+        )
+        impacts_accessibility = any(
+            tag == "impact:accessibility" for tag in guideline.tags
+        )
+        evidence_strength = guideline.evidence.strength
+
+        return {
+            "source": source_map[source_abbreviation],
+            "is_universal": is_universal,
+            "impacts_perceptual": impacts_perceptual,
+            "impacts_accessibility": impacts_accessibility,
+            "impacts_rhetorical": impacts_rhetorical,
+            "evidence_strength": evidence_strength,
+        }
+
+
+    def build_author_intent_space(guideline: Guideline) -> str:
+        title = guideline.title
+        guidance = guideline.guidance
+        why = guideline.why
+        core_principle = guideline.core_principle
+
+        return "\n".join(
+            filter(
+                bool,
+                [
+                    f"# {title}",
+                    guidance,
+                    why,
+                    core_principle,
+                ],
+            )
+        )
+
+
+    def stringify_tag(tag: str) -> str:
+        """{family}:{value}.{specific-value} --> {family} is {specific-value} {value}"""
+        family, value, specific_value = re.match(
+            r"^([^:]+):([^\.]+)\.?(.*)$",
+            tag,
+        ).groups()
+
+        if value == "*":
+            return f"applies to all {family}"
+
+        specific_value = specific_value or ""
+        return f"{family} is {specific_value} {value}".strip().replace("  ", " ")
+
+
+    def build_scenario_space(guideline: Guideline) -> str:
+        title = guideline.title
+        when_it_applies = "\n".join(guideline.when_it_applies)
+        tags = ", ".join([stringify_tag(tag) for tag in sorted(guideline.tags)])
+
+        return "\n".join(
+            filter(
+                bool,
+                [
+                    f"# {title}",
+                    when_it_applies,
+                    tags,
+                ],
+            )
+        )
+
+
+    def build_trouble_space(guideline: Guideline) -> str:
+        title = guideline.title
+        trouble = "\n".join(sorted(guideline.signs_of_trouble))
+        return "\n".join(
+            [
+                f"Signs of '{title}' being violated:",
+                trouble,
+            ]
+        )
+
+
+    def build_improvement_space(guideline: Guideline) -> str:
+        title = guideline.title
+        how_to_improve = "\n".join(sorted(guideline.how_to_improve))
+        return "\n".join(
+            [
+                f"Ways to improve adherence to '{title}':",
+                how_to_improve,
+            ]
+        )
+    return (
+        build_author_intent_space,
+        build_improvement_space,
+        build_scenario_space,
+        build_trouble_space,
+        derive_guideline_categories,
+    )
+
+
+@app.cell(hide_code=True)
+def _(List, Literal, Optional, dataclass, field, pathlib, re, yaml):
     @dataclass
     class Evidence:
         strength: Literal["high", "medium", "low"]
@@ -70,6 +353,7 @@ def _(List, Literal, Optional, dataclass, field, re, yaml):
 
     @dataclass
     class Guideline:
+        file: str
         id: str
         title: str
         tags: List[str]
@@ -88,7 +372,10 @@ def _(List, Literal, Optional, dataclass, field, re, yaml):
         how_to_improve: List[str] = field(default_factory=list)
 
 
-    def parse_guideline(content: str) -> Guideline:
+    def parse_guideline(path: pathlib.Path) -> Guideline:
+        file = str(path)
+        content = path.read_text()
+
         # Split frontmatter and body
         parts = re.split(r"^---\s*$", content, maxsplit=2, flags=re.MULTILINE)
         frontmatter = yaml.safe_load(parts[1])
@@ -132,6 +419,7 @@ def _(List, Literal, Optional, dataclass, field, re, yaml):
             ]
 
         return Guideline(
+            file=file,
             id=frontmatter["id"],
             title=frontmatter["title"],
             tags=frontmatter["tags"],
@@ -148,19 +436,19 @@ def _(List, Literal, Optional, dataclass, field, re, yaml):
             signs_of_trouble=extract_list(section_map.get("Signs of Trouble", "")),
             how_to_improve=extract_list(section_map.get("How to Improve", "")),
         )
-    return (parse_guideline,)
+    return Guideline, parse_guideline
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _():
     import yaml
     import re
     from typing import List, Dict, Optional, Literal
-    from dataclasses import dataclass, field
+    from dataclasses import dataclass, field, asdict
     return List, Literal, Optional, dataclass, field, re, yaml
 
 
-@app.cell(column=1)
+@app.cell(column=6)
 def _(
     GUIDELINES_CH_ROOT,
     GUIDELINES_DW_ROOT,
@@ -175,7 +463,6 @@ def _(
             *GUIDELINES_TC_ROOT.glob("*.md"),
         ]
     )
-    GUIDELINE_PATHS
     return (GUIDELINE_PATHS,)
 
 
@@ -199,7 +486,7 @@ def _():
     import marimo as mo
     import pathlib
     from typing import TypedDict
-    return (pathlib,)
+    return mo, pathlib
 
 
 if __name__ == "__main__":

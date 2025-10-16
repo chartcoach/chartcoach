@@ -1,0 +1,396 @@
+```md
+---
+id: keep-color-key-visible
+title: "Ensure the color key is always visible or frequently repeated"
+tags:
+  - impact:cognitive
+  - impact:perceptual
+  - chart:*
+  - task:lookup
+  - task:compare
+  - data:categorical
+  - visual:color
+  - audience:*
+  - medium:screen
+  - medium:print
+  - access:cognitive-load-risk
+
+evidence:
+  strength: medium
+  summary: "Practitioner consensus from sources like Datawrapper suggests that keeping the legend accessible reduces cognitive load and user frustration, improving chart readability, especially for long-scrolling or complex visualizations."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: Remind readers of the colors in your data visualization"
+    url: https://blog.datawrapper.de/remind-readers-of-colors-in-data-vis/
+    note: "Advocates for using sticky or repeated legends in long digital formats and repeated keys in print to avoid forcing readers to scroll or search."
+    role: primary
+
+examples:
+  - type: good
+    description: "An example from FiveThirtyEight shows a long chart where the color key is repeated multiple times as the user scrolls, ensuring it's always nearby the part of the chart being viewed."
+---
+
+## Guidance
+
+In long-scrolling or complex visualizations, keep the color key visible at all times, either by making it "sticky" or by repeating it at regular intervals.
+
+## Why
+
+Viewers often need to reference the color key multiple times to understand a chart. Forcing them to scroll or search for a distant key increases cognitive load, interrupts their analysis, and can cause them to abandon the visualization altogether. A constantly accessible key reduces this friction.
+
+### Core Principle
+
+Minimize the cognitive work required to decode a visualization. The distance between the data and its explanation should be as short as possible.
+
+## When it applies
+
+- For any chart using a categorical color legend that is taller or wider than a single screen view.
+- When a chart has many categories, increasing the likelihood that viewers will need to re-check the key.
+- In print layouts where a chart spans a large area or multiple pages.
+
+## Exceptions
+
+For very simple charts with only two or three memorable categories that are directly labeled, a persistent key may be redundant.
+
+## Trade-offs
+
+A sticky legend consumes screen real estate, which can be a problem on smaller screens. Repeating a legend adds some visual clutter, but this is usually a worthwhile trade-off for the reduction in cognitive load.
+
+## Signs of Trouble
+
+- **The Scroll-and-Scan:** You find yourself scrolling up and down repeatedly between a section of the chart and the legend at the top.
+- **Giving Up:** A viewer expresses frustration that they "can't remember what the colors mean" and stops trying to interpret the chart.
+- **Legend Obscurity:** The legend is only visible at the very beginning of a long visual story.
+
+## How to Improve
+
+- **Quick Fix: Repeat the Legend.** Copy and paste the color key at logical breaks in your long visualization. The source article notes readers won't be annoyed by this repetition but will be annoyed if they can't find the key.
+
+- **Moderate Approach: Use a Sticky Legend.** For web-based visualizations, use CSS (`position: sticky;` or `position: fixed;`) to fix the legend's position in the viewport so it remains visible as the user scrolls.
+
+- **Comprehensive Approach: Integrate the Key.** In addition to a sticky or repeated key, use other techniques like direct labeling or coloring annotations to reduce reliance on the key in the first place.
+
+```
+
+<split/>
+
+```md
+---
+id: color-text-in-annotations
+title: "Reinforce color associations by coloring relevant words in annotations"
+tags:
+  - impact:cognitive
+  - impact:perceptual
+  - chart:*
+  - task:lookup
+  - task:compare
+  - task:trend
+  - data:categorical
+  - visual:color
+  - audience:*
+  - medium:*
+  - access:cognitive-load-risk
+  - access:color-vision-risk
+
+evidence:
+  strength: medium
+  summary: "Practitioner best practice from sources like Datawrapper and The Economist shows that coloring text in annotations creates a direct, low-effort link between the explanation and the data, reinforcing category meaning at the point of interest."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: Remind readers of the colors in your data visualization"
+    url: https://blog.datawrapper.de/remind-readers-of-colors-in-data-vis/
+    note: "Recommends coloring only the specific categorical noun (e.g., 'Nuclear') in an annotation, and provides solutions for low-contrast colors."
+    role: primary
+
+examples:
+  - type: good
+    description: "In the annotation 'Nuclear energy decreased its share...', only the word 'Nuclear' is colored orange, matching the 'Nuclear energy' category in the chart. This precisely links the text to the data."
+  - type: bad
+    description: "Coloring the entire sentence 'Nuclear energy decreased its share...' in orange would be incorrect, as the color orange represents the category 'Nuclear energy', not the concept of 'decreasing'."
+  - type: good
+    description: "An example from The Economist shows a line chart where the label for 'Hispanic' is a darker shade of the corresponding line's color to ensure text legibility."
+---
+
+## Guidance
+
+In annotations referring to a specific data category, apply that category's color to the relevant words in the text. Be precise: color only the words that name the category.
+
+## Why
+
+This technique brings the legend directly to the data, creating an immediate visual connection between the textual insight and the graphical mark. It reduces cognitive load by eliminating the need for the viewer to scan back and forth between the annotation, the legend, and the data.
+
+### Core Principle
+
+Place explanatory information as close as possible to the data it describes.
+
+## When it applies
+
+- When writing callouts or annotations that highlight or explain a specific data point, line, or area.
+- In any chart type (bar, line, scatter, etc.) where you are drawing attention to a particular category.
+
+## Exceptions
+
+When all category colors are too light or have poor contrast against the background, making them unsuitable for text. In this case, alternative methods should be used.
+
+## Trade-offs
+
+- **Legibility vs. Consistency:** The exact category color may not be legible as text. You may need to sacrifice exact color matching for readability by using a darker shade.
+- **Precision:** Only the words that directly name the category should be colored. Coloring additional words can create ambiguity about what the color represents.
+
+## Signs of Trouble
+
+- **Illegible Text:** The colored text is hard to read because of low contrast with the background (WCAG AA requires a 4.5:1 ratio for normal text).
+- **Ambiguous Coloring:** The entire annotation is colored, making it unclear if the color represents the category, a trend (e.g., "decrease"), or something else.
+
+## How to Improve
+
+- **Quick Fix: Darken the Text Color.** If a category color is too light (e.g., light yellow), use a darker shade of that same hue for the text to meet accessibility contrast ratios.
+
+- **Moderate Approach: Use a Background Highlight.** Instead of coloring the text itself, use the category color as a background color for the relevant words. Use black or white text on top to ensure high contrast and readability.
+
+- **Comprehensive Approach: Re-evaluate the Palette.** If many of your category colors are not suitable for text, your palette may not be versatile enough. Consider choosing a palette where each color has a corresponding, accessible darker shade for text use.
+
+```
+
+<split/>
+
+```md
+---
+id: make-color-key-interactive
+title: "Enable highlighting or filtering by interacting with the color key"
+tags:
+  - impact:cognitive
+  - impact:perceptual
+  - chart:bar.stacked
+  - chart:pie
+  - chart:map
+  - chart:line
+  - data:categorical
+  - data:cardinality.high
+  - task:compare
+  - task:distribution
+  - task:trend
+  - visual:color
+  - audience:*
+  - medium:interactive
+  - access:cognitive-load-risk
+  - access:motor-control-risk
+
+evidence:
+  strength: medium
+  summary: "Interactive features common in tools like Datawrapper demonstrate that allowing users to highlight a series via the legend helps manage complexity and focus attention, especially in charts with high category counts or overlapping marks."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: Remind readers of the colors in your data visualization"
+    url: https://blog.datawrapper.de/remind-readers-of-colors-in-data-vis/
+    note: "Highlights this as a default feature in many Datawrapper charts (maps, pie, bar) and describes its utility for navigating complex visualizations."
+    role: primary
+
+examples:
+  - type: good
+    description: "An animated GIF in the source article shows a user hovering over items in a stacked bar chart's legend ('GAS', 'OIL', 'WIND'). As they hover each item, all other categories in the chart fade out, making the selected category's trend easy to follow."
+---
+
+## Guidance
+
+In interactive visualizations, allow users to hover over or click a category in the legend to isolate or highlight the corresponding data series in the chart.
+
+## Why
+
+When a chart contains many overlapping categories (a "spaghetti chart"), it can be difficult for a viewer to trace a single series. Interactive highlighting declutters the view on demand, reducing cognitive load and allowing the user to focus on the pattern of one category at a time.
+
+### Core Principle
+
+Empower users to control the complexity of the information being presented.
+
+## When it applies
+
+- In interactive charts with more than 3-4 categories.
+- Especially useful for line charts with overlapping lines, stacked area/bar charts, and dense scatter plots.
+- When you want to encourage exploration and detailed comparison of individual categories.
+
+## Exceptions
+
+- In static visualizations (print, PDF, images) where interactivity is not possible.
+- In very simple charts where highlighting would not add significant clarity.
+
+## Trade-offs
+
+- **Discoverability:** Users may not know the feature exists unless it is implicitly expected or explicitly communicated.
+- **Motor Control:** Hover-only interactions can be difficult for users with motor control challenges or on touch devices. A click/tap interaction should also be provided.
+
+## Signs of Trouble
+
+- **"Spaghetti" Chart:** A line chart with so many overlapping lines that it's impossible to follow any single one.
+- **User Questions:** Viewers ask "Where is the line for [Category X]?" because they can't find it in the visual clutter.
+- **Overlooked Patterns:** Important trends within a single category are missed because they are obscured by others.
+
+## How to Improve
+
+- **Quick Fix: Implement Highlighting.** On legend item hover/click, reduce the opacity of all other series to ~20% and keep the selected series at 100%. This is a common and effective pattern.
+
+- **Moderate Approach: Two-Way Binding.** Implement highlighting in both directions: hovering a legend item highlights the data, and hovering a data series highlights the corresponding legend item. This creates a more cohesive and intuitive experience.
+
+- **Comprehensive Approach: Add Filtering Controls.** In addition to highlighting, provide explicit controls (like checkboxes) that allow users to permanently turn series on and off, giving them full control over the chart's contents.
+
+```
+
+<split/>
+
+```md
+---
+id: use-category-colors-in-tooltips
+title: "Reinforce category identity by incorporating color into tooltips"
+tags:
+  - impact:cognitive
+  - impact:perceptual
+  - chart:*
+  - task:lookup
+  - data:categorical
+  - visual:color
+  - audience:*
+  - medium:interactive
+  - access:cognitive-load-risk
+
+evidence:
+  strength: medium
+  summary: "Practitioner consensus holds that including category colors in tooltips reinforces the color-category association at the point of interaction, reducing cognitive load by eliminating the need to consult a separate legend."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: Remind readers of the colors in your data visualization"
+    url: https://blog.datawrapper.de/remind-readers-of-colors-in-data-vis/
+    note: "Argues that tooltips with color help teach and remind users of color meanings, especially since tooltips are close to the data and may obscure the main legend."
+    role: primary
+
+examples:
+  - type: good
+    description: "A tooltip for a map shows a colored square next to the category name ('Likely Biden' with a blue square), immediately connecting the data point to its category."
+  - type: good
+    description: "A tooltip from ProPublica uses the category color as a background for a portion of the tooltip content, visually grouping the information for that category."
+---
+
+## Guidance
+
+When displaying a tooltip for a data point, visually incorporate that point's category color within the tooltip itself.
+
+## Why
+
+Tooltips provide information at the user's precise point of interest. By including the category color, you reinforce its meaning at the exact moment the user is focused on that data point. This is more efficient than forcing their eyes to travel to a potentially distant or obscured legend. It also serves as a "just-in-time" learning opportunity for users who skipped the legend.
+
+### Core Principle
+
+Provide context where it's needed, when it's needed.
+
+## When it applies
+
+- In any interactive visualization that uses tooltips to display information about categorized data.
+- Particularly useful when the main color legend might be scrolled out of view or covered by the tooltip itself.
+
+## Exceptions
+
+In tooltips for data that is not categorically colored (e.g., a single-series line chart), this guideline is not applicable.
+
+## Trade-offs
+
+Adds a small amount of complexity to tooltip design and implementation. If using color as a background, it requires careful checking of text contrast for all possible category colors.
+
+## Signs of Trouble
+
+- **Tooltip Ambiguity:** A user hovers over a point, reads the tooltip, but still has to move their cursor away and find the legend to understand which category the point belongs to.
+- **Legend Obscured:** The tooltip appears and covers the chart's legend, making it impossible to see both at once.
+
+## How to Improve
+
+- **Quick Fix: Add a Color Swatch.** The simplest method is to add a small colored square or circle (a "swatch") next to the category name inside the tooltip. This is easy to implement with HTML/CSS.
+
+- **Moderate Approach: Color the Text.** Color the category name text itself using the category's color. This requires ensuring the color has sufficient contrast against the tooltip background.
+
+- **Comprehensive Approach: Use a Colored Background.** Use the category color as a background for the tooltip's header or a relevant section. This creates a strong visual grouping but requires a robust color palette where all colors work as backgrounds for either black or white text.
+
+```
+
+<split/>
+
+```md
+---
+id: integrate-color-key-into-narrative
+title: "Integrate the color key directly into the chart's title or description"
+tags:
+  - impact:cognitive
+  - impact:aesthetic
+  - impact:logos
+  - chart:*
+  - task:*
+  - data:categorical
+  - data:cardinality.low
+  - visual:color
+  - audience:general
+  - medium:*
+  - access:color-vision-risk
+  - access:screenreader-risk
+
+evidence:
+  strength: medium
+  summary: "Practitioner examples from newsrooms like The Economist demonstrate that weaving color legends into narrative text can create a more elegant, integrated visualization by reducing clutter and teaching color associations contextually."
+
+sources:
+  - type: practitioner
+    ref: "Datawrapper Blog: Remind readers of the colors in your data visualization"
+    url: https://blog.datawrapper.de/remind-readers-of-colors-in-data-vis/
+    note: "Presents this as a way to make a visualization feel simpler and save space, while also cautioning about potential link confusion with blue text and the value of keeping a traditional key as a fallback."
+    role: primary
+
+examples:
+  - type: good
+    description: "A chart title reads 'Europe and Asia lose population share, Africa gains,' where the words 'Europe' (dark red), 'Asia' (red), and 'Africa' (dark blue) are colored to match their corresponding series in the chart, effectively turning the title into a legend."
+  - type: good
+    description: "A chart about moon crashes has a subtitle that explains which countries are represented by which colors on the map, creating an integrated key."
+---
+
+## Guidance
+
+For charts with a few distinct categories, embed the color legend directly into the title, subtitle, or descriptive text by coloring the words that name the categories.
+
+## Why
+
+This technique seamlessly integrates the legend into the chart's narrative, reducing visual clutter by eliminating a separate legend element. It teaches the viewer the color meanings as they are reading the chart's primary message, making the decoding process feel more natural and less like a separate step.
+
+### Core Principle
+
+Combine text and graphics to create a single, cohesive explanatory unit.
+
+## When it applies
+
+- Best suited for charts with a low number of categories (typically 2 to 4) that can be naturally woven into a sentence.
+- Highly effective in journalistic or narrative visualizations where the title and description play a key role in framing the data.
+
+## Exceptions
+
+- When there are too many categories to list gracefully in a sentence.
+- When the category names are long or complex, making the title unwieldy.
+- If your brand or style guide forbids using blue for non-hyperlink text, avoid this technique for blue categories, as users may perceive it as a link.
+
+## Trade-offs
+
+- **Potential for Redundancy:** The source article suggests it can still be a good idea to keep a traditional legend as well, to serve as a reminder for viewers who start reading in the middle of the chart.
+- **Accessibility:** Text color must have sufficient contrast. Additionally, screen readers will not announce the color, so the text must make sense on its own without the color information.
+
+## Signs of Trouble
+
+- **Confused Clicks:** Users try to click on blue-colored text in the title, assuming it's a hyperlink.
+- **Unreadable Title:** The category colors are too light, making the title difficult to read.
+- **Clunky Phrasing:** The title or description reads awkwardly because it has been forced to include all the category names.
+
+## How to Improve
+
+- **Quick Fix: Color Key Nouns.** In your title or subtitle, identify the nouns for your main categories and apply the corresponding color to just those words.
+
+- **Moderate Approach: Add a Fallback Legend.** Use the integrated title-legend, but also include a small, traditional color key elsewhere as a secondary reference point. This provides reinforcement and a clear lookup target.
+
+- **Comprehensive Approach: Test for Ambiguity.** Before publishing, ask a colleague to review the chart. Do they understand the colored text is a legend? Do they find any of the colors confusing (e.g., blue for links)? Adjust based on feedback.
+
+```

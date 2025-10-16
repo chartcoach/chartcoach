@@ -29,7 +29,7 @@ sources:
   - type: practitioner
     ref: "A new colormap for Matplotlib"
     url: https://www.youtube.com/watch?v=xAoljeRJ3lU
-    description: "Talk by the creators of the viridis colormap explaining the importance of perceptual uniformity and the process of designing such a map."
+    note: "Talk by the creators of the viridis colormap explaining the importance of perceptual uniformity and the process of designing such a map."
     role: learn
 
 tools:

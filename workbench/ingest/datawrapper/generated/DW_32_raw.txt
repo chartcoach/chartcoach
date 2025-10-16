@@ -1,0 +1,794 @@
+```md
+---
+id: label-data-directly
+title: "Label data series directly instead of using a separate legend"
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:line
+  - chart:pie
+  - chart:donut
+  - chart:bar.stacked
+  - task:lookup
+  - task:compare
+  - data:categorical
+  - visual:color
+  - audience:*
+  - medium:*
+  - access:cognitive-load-risk
+evidence:
+  strength: high
+  summary: "This practice applies the Gestalt principle of proximity, which is foundational in perceptual psychology. By placing labels close to the data, cognitive load for mapping is reduced, a principle supported by extensive HCI and design literature. Practitioner style guides (e.g., AP, Economist, Datawrapper) universally recommend this."
+sources:
+  - type: practitioner
+    ref: "Datawrapper: What to consider when using text in data visualizations"
+    url: https://www.datawrapper.de/blog/text-in-data-visualizations
+    note: "The source article advocates for direct labeling to reduce eye-travel and make visualizations more convenient for readers, noting it's the default for several chart types in their tool."
+    role: primary
+  - type: practitioner
+    ref: "Wei, E. (2020). Remove the legend to become one."
+    note: "A popular essay arguing that direct labeling is a superior method for clarity and reducing the cognitive burden on the reader."
+    role: supporting
+  - type: research
+    ref: "Kosslyn, S. M. (2006). Graph Design for the Eye and Mind."
+    note: "Kosslyn's principle of 'Legibility' emphasizes that text should be easy to read and that related information should be grouped, which supports direct labeling over distant legends."
+    role: related
+tools:
+  - type: implement
+    name: Datawrapper
+    url: https://www.datawrapper.de
+    description: "Automatically applies direct labels to line, pie, and donut charts on desktop views."
+  - type: learn
+    name: "PolicyViz: Three Ways to Annotate Your Graphs"
+    url: https://policyviz.com/2017/08/10/three-ways-to-annotate-your-graphs/
+    description: "Jon Schwabish demonstrates practical ways to use annotations, including direct labeling, to improve chart clarity."
+---
+
+## Guidance
+
+Place labels directly on or next to the chart elements they describe, such as lines, bars, or pie slices, instead of relying on a separate color key or legend.
+
+## Why
+
+This reduces cognitive load by eliminating the need for viewers to constantly shift their eyes back and forth between the data and the legend. Direct labeling makes the connection between a label and its data point immediate and effortless, which speeds up comprehension.
+
+### Core Principle
+
+Reduce the cognitive work required to decode your visualization. By placing explanatory text exactly where it's needed, you remove an unnecessary step of mapping a legend to the data.
+
+## When it applies
+
+- When a chart uses color to distinguish between multiple categories or series, such as a multi-line chart, a stacked bar chart, or a pie/donut chart.
+- In explanatory charts where rapid, clear communication is the primary goal.
+
+## Exceptions
+
+- **Small Screens:** On very small screens (e.g., mobile devices) where space is extremely limited, a legend at the top might be a necessary compromise to avoid labels overlapping and becoming unreadable.
+- **Dense Plots:** In highly dense charts, like a scatter plot with many overlapping categories or a line chart with dozens of tangled series, a legend may be less cluttered than attempting to label every element directly. In this case, interactive highlighting is a better solution.
+
+## Trade-offs
+
+- Direct labels can sometimes clutter the chart, especially with many series or in dense data regions.
+- They may require manual placement and adjustment to avoid overlapping with data marks or other labels, which can take more time than an automatic legend.
+
+## Signs of Trouble
+
+- **Back-and-Forth:** Viewers have to repeatedly look between the legend and the chart to decode which line is which.
+- **Label Hunting:** It is difficult to match a color in a dense chart to its corresponding entry in a long legend.
+- **The Squint Test:** Squinting at the chart makes it impossible to connect the colored marks to their meaning without consulting the legend.
+
+## How to Improve
+
+- **Quick Fix: Reorder the Legend.** If you must use a legend, order the items in it to match the order of the data. For example, in a line chart, list the series in the same top-to-bottom order as the lines appear at the end of the chart.
+- **Moderate Redesign: Use Direct Labels.** Use your tool's features to add labels directly. For line charts, place labels at the end of the lines. For pie charts, place labels inside or next to their slices.
+- **Comprehensive Approach: Redesign to Avoid a Legend.** Use "small multiples" to give each category its own chart with a clear title, eliminating the need for colored series. Alternatively, for a narrative chart, highlight and directly label only the most important series and de-emphasize the rest in gray.
+
+```
+
+<split/>
+
+```md
+---
+id: repeat-data-units-in-context
+title: "Repeat data units where the data is shown"
+tags:
+  - impact:cognitive
+  - impact:logos
+  - chart:*
+  - task:lookup
+  - task:compare
+  - data:quantitative
+  - audience:*
+  - medium:*
+  - access:cognitive-load-risk
+evidence:
+  strength: medium
+  summary: "This is a widely accepted practitioner heuristic for reducing cognitive load, based on the principle of keeping context close to the data. While not the subject of specific empirical studies, it's a standard feature in high-quality data visualization tools and style guides to prevent ambiguity."
+sources:
+  - type: practitioner
+    ref: "Datawrapper: What to consider when using text in data visualizations"
+    url: https://www.datawrapper.de/blog/text-in-data-visualizations
+    note: "The source article recommends including units in axis labels, tooltips, and annotations to make it obvious what the data uses."
+    role: primary
+---
+
+## Guidance
+
+Include the unit of measurement (e.g., `_`%`_`, `_`$`_`, `_`kg`_`, `_`m`_`) directly within axis labels, tooltips, and annotations, not just in a single title or description.
+
+## Why
+
+Repeating the unit keeps the context directly with the data, preventing misinterpretation and reducing the viewer's memory load. It ensures that even when focusing on a specific part of the chart—like a tooltip or a single axis—the meaning of the numbers remains clear and unambiguous.
+
+### Core Principle
+
+Don't make your audience remember context. Present information as a complete, self-contained package wherever it appears.
+
+## When it applies
+
+- Any visualization displaying quantitative data with a specific unit of measurement.
+- Interactive charts with tooltips.
+
+## Exceptions
+
+- In an extremely simple chart where the unit is universally understood and stated clearly in the title (e.g., "Unemployment Rate (%)"), it might be omitted from axis labels to reduce minor clutter, but it should still always appear in tooltips.
+
+## Trade-offs
+
+- This may add very slight visual clutter, but the benefit of clarity far outweighs this minimal cost.
+
+## Signs of Trouble
+
+- **Naked Numbers:** Tooltips or labels show just a number (e.g., "15.3") without the unit, leaving the interpretation to the viewer.
+- **Unit Hunting:** Viewers have to scan the title or description to remember if the axis shows millions, thousands, or percentages.
+
+## How to Improve
+
+- **Quick Fix: Edit Formats.** In your charting tool, edit the number formatting for axes and tooltips. Append the unit symbol or prefix (e.g., `%`, `_`$`_`, `_`k`_`, `_`m`_`) to the number format string.
+- **Moderate Approach: Rephrase Annotations.** When writing annotations, phrase the text to naturally include the unit. For example, write "peaked at $45M in sales" instead of "peaked here at 45."
+- **Comprehensive Approach: Systematize It.** Create a style guide or template for your charts that specifies the inclusion of units in all relevant text elements as a default rule.
+
+```
+
+<split/>
+
+```md
+---
+id: write-informative-tooltips
+title: "Write informative tooltips that restate context, not just the value"
+tags:
+  - impact:cognitive
+  - impact:logos
+  - chart:*
+  - task:lookup
+  - data:quantitative
+  - data:categorical
+  - audience:*
+  - medium:interactive
+  - access:cognitive-load-risk
+evidence:
+  strength: medium
+  summary: "This is a best practice in user interface and interaction design for data visualization. While direct empirical research is sparse, practitioner consensus is strong, as it directly supports usability by reducing memory load and providing immediate context at the point of interest."
+sources:
+  - type: practitioner
+    ref: "Datawrapper: What to consider when using text in data visualizations"
+    url: https://www.datawrapper.de/blog/text-in-data-visualizations
+    note: "The article advises customizing tooltips to 'teach and remind people of what your chart or map actually shows,' recommending formats like '3.4% unemployed' instead of just '3.4%'."
+    role: primary
+---
+
+## Guidance
+
+Design tooltips to show not just the numerical value, but also the category and unit it represents. Phrase them as a complete piece of information.
+
+## Why
+
+Informative tooltips serve as a "just-in-time" reminder of what the data point represents, reinforcing the chart's message and reducing cognitive load. Instead of just showing a number, a well-designed tooltip answers the question, "What am I looking at?" directly at the point of interaction.
+
+## When it applies
+
+- In any interactive visualization that uses tooltips to reveal data on hover or click.
+
+## Exceptions
+
+- None known. Providing more context in a tooltip is nearly always better, as long as it is concise.
+
+## Trade-offs
+
+- Requires a small amount of extra effort to configure the tooltip format, but has no significant downsides.
+
+## Signs of Trouble
+
+- **Orphaned Value:** A tooltip shows only a number, like `3.4`, without any descriptive text.
+- **Ambiguous Data:** On a multi-series chart, it is unclear from the tooltip which series the hovered value belongs to without relying on color matching.
+
+## How to Improve
+
+- **Quick Fix: Customize the Tooltip Format.** Go into your chart editor's tooltip settings. Instead of the default format (e.g., `{{ value }}`), customize it to include the category name and the unit (e.g., `{{ series_name }}: {{ value }}% unemployed`).
+- **Moderate Approach: Use Custom HTML.** For complex charts, use custom HTML in tooltips to provide a small summary table or multiple data points related to the hovered element. This can provide rich, structured information on demand.
+- **Comprehensive Approach: Tell a Mini-Story.** Craft tooltip content to be a readable sentence, such as: "In **{{ year }}**, the unemployment rate for **{{ series_name }}** was **{{ value }}%**."
+
+```
+
+<split/>
+
+```md
+---
+id: explain-and-emphasize-with-annotations
+title: "Use annotations to explain context and emphasize key insights"
+tags:
+  - impact:cognitive
+  - impact:logos
+  - impact:pathos
+  - chart:*
+  - audience:general
+  - medium:static
+  - medium:interactive
+evidence:
+  strength: high
+  summary: "Annotations are a cornerstone of effective explanatory data visualization, advocated by virtually all leading practitioners (Tufte, Few, Schwabish, Wong). They bridge the gap between data display and data storytelling, guiding attention and providing narrative, which is proven to increase engagement and comprehension."
+sources:
+  - type: practitioner
+    ref: "Datawrapper: What to consider when using text in data visualizations"
+    url: https://www.datawrapper.de/blog/text-in-data-visualizations
+    note: "The article calls annotations an 'extremely powerful tool,' recommending their use to explain design elements, emphasize outliers, and provide context to make charts more insightful and visually appealing."
+    role: primary
+  - type: practitioner
+    ref: "Schwabish, J. (2014). An Economist’s Guide to Visualizing Data."
+    url: https://pubs.aeaweb.org/doi/pdfplus/10.1257/jep.28.1.209
+    note: "Argues for an 'assertion-evidence' model where annotations and assertive titles guide the reader to the chart's main takeaway."
+    role: supporting
+  - type: practitioner
+    ref: "Tufte, E. R. (2001). The Visual Display of Quantitative Information."
+    note: "Tufte's work emphasizes maximizing the 'data-ink ratio' but also integrating words, numbers, and drawings, which is the essence of annotation."
+    role: related
+---
+
+## Guidance
+
+Add textual annotations directly onto the chart to point out outliers, explain trends, define key thresholds, or provide crucial context for specific data points.
+
+## Why
+
+Annotations transform a chart from a passive display of data into an active piece of communication. They guide the reader's attention to what's important, answer potential questions before they are asked, and provide narrative context that the raw data alone cannot. This makes the chart more insightful, engaging, and memorable.
+
+### Core Principle
+
+Don't just show data; tell a story. Guide your reader to the insights you want them to see.
+
+## When it applies
+
+- In any explanatory visualization where you want to tell a story or guide the reader to a specific conclusion.
+- Especially useful for highlighting outliers, trend changes, or the impact of external events (e.g., "Recession began").
+
+## Exceptions
+
+- **Exploratory Tools:** In purely exploratory visualizations or dashboards where the goal is for the user to discover their own insights, excessive annotations can be leading and counterproductive.
+- **Sparklines:** In dashboards with very small charts (sparklines), there is typically not enough space for annotations.
+
+## Trade-offs
+
+- Adding thoughtful annotations takes more time and critical thinking than just producing a default chart.
+- Poorly placed or wordy annotations can create clutter and obscure the data they are meant to explain.
+
+## Signs of Trouble
+
+- **The Silent Chart:** The chart presents data without any interpretation, leaving the viewer to wonder "So what?"
+- **The Mysterious Spike:** There is a dramatic peak or dip in the data with no explanation offered.
+- **Post-Chart Paragraph:** You find yourself writing a long paragraph of text below the chart to explain what it shows; this text should be on the chart as annotations.
+
+## How to Improve
+
+- **Quick Fix: Label the 'What'.** Add a single annotation to label the most important data point (e.g., "2022 Peak: $3.4M") or to explain an external event ("New policy introduced").
+- **Moderate Approach: Explain the 'Why'.** Add 2-3 annotations to build a small narrative. Explain a key trend, highlight a significant comparison, and define a technical element like a threshold line. Use arrows or connector lines to clearly link text to data.
+- **Comprehensive Approach: Guide the Reader.** Structure the entire chart around a narrative told through a series of annotations that guide the reader from one insight to the next, as seen in high-quality data journalism from outlets like The New York Times or The Pudding.
+
+```
+
+<split/>
+
+```md
+---
+id: create-visual-hierarchy-with-typography
+title: "Create a clear visual hierarchy using font size, weight, and color"
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - impact:aesthetic
+  - chart:*
+  - audience:*
+  - medium:*
+evidence:
+  strength: high
+  summary: "This is a foundational principle of graphic design and typography, supported by decades of practice and research in visual perception. A clear hierarchy directs attention and reduces cognitive load by signaling the relative importance of information, making complex layouts scannable."
+sources:
+  - type: practitioner
+    ref: "Datawrapper: What to consider when using text in data visualizations"
+    url: https://www.datawrapper.de/blog/text-in-data-visualizations
+    note: "The source article recommends making all text small and gray, then intentionally emphasizing the most important information with bigger sizes, bolder weights, and higher-contrast colors."
+    role: primary
+  - type: practitioner
+    ref: "Lupton, E. (2010). Thinking with Type."
+    note: "A standard text on typography that details how to use scale, weight, and other variables to create clear and effective information hierarchies."
+    role: supporting
+---
+
+## Guidance
+
+Use deliberate variations in font size, weight (boldness), and color contrast to guide the reader's eye. Make the most important text (like the title or a key finding) the most prominent, and less important text (like the source line or footnotes) the least prominent.
+
+## Why
+
+A clear visual hierarchy tells the reader what to look at first, second, and third. It structures the information, reduces cognitive load, and makes the visualization scannable and easier to navigate. Without it, all text competes for attention, creating a flat, confusing layout.
+
+### Core Principle
+
+Design is about making choices. Decide what's most important and use visual contrast to signal that importance to your audience.
+
+## When it applies
+
+- In any visualization that contains more than one type of text element (e.g., title, description, labels, source). This applies to virtually all charts.
+
+## Exceptions
+
+- None. A clear hierarchy is always beneficial for communication.
+
+## Trade-offs
+
+- This is a fundamental design practice with no significant trade-offs. The only "cost" is the time it takes to be intentional about typographic choices.
+
+## Signs of Trouble
+
+- **The Wall of Same:** All the text on the chart has the same size, weight, and color, giving no clue as to what's most important or where to start reading.
+- **Competing Elements:** A faint, gray source line is given the same visual weight as the main title, or an annotation is more visually demanding than the title.
+
+## How to Improve
+
+- **Quick Fix: Emphasize the Title, De-emphasize the Source.** Make your chart title bold. Make the source line and any footnotes smaller and gray. This immediately creates two levels of hierarchy.
+- **Moderate Approach: Establish Three Levels.** Define a simple, clear hierarchy and apply it consistently. For example:
+    1.  **Title:** Large, bold, black.
+    2.  **Labels & Annotations:** Medium size, regular weight, dark gray.
+    3.  **Description & Source:** Small size, regular weight, light gray.
+- **Comprehensive Approach: Design from the Bottom Up.** As suggested in the article, set all text to be small, light, and gray. Then, go back and intentionally add emphasis one level at a time, asking yourself: "What is the single most important piece of text? What's next?" This forces you to make conscious, motivated decisions about the hierarchy.
+
+```
+
+<split/>
+
+```md
+---
+id: limit-number-of-font-sizes
+title: "Limit the number of distinct font sizes in a single visualization"
+tags:
+  - impact:aesthetic
+  - impact:cognitive
+  - chart:*
+  - audience:*
+  - medium:*
+evidence:
+  strength: high
+  summary: "This is a core tenet of professional typography and information design. Using a limited, systematic set of type sizes (a 'type scale') creates harmony and clarity. Too many sizes create visual noise and weaken the informational hierarchy, a principle universally taught in design education."
+sources:
+  - type: practitioner
+    ref: "Datawrapper: What to consider when using text in data visualizations"
+    url: https://www.datawrapper.de/blog/text-in-data-visualizations
+    note: "The article warns that 'lots of different font sizes in particular can quickly look messy' and recommends using only two clear levels of hierarchy for annotations and labels, using boldness for emphasis instead of more sizes."
+    role: primary
+---
+
+## Guidance
+
+Use a limited and clearly distinct set of font sizes to create a clean and organized typographic hierarchy. For most charts, two to four distinct sizes are sufficient for all text elements.
+
+## Why
+
+Using too many different font sizes creates a cluttered, chaotic appearance that undermines the visual hierarchy and looks unprofessional. A restrained, consistent typographic scale makes the design feel more intentional and organized, which in turn makes the hierarchy clearer and easier for the reader to process.
+
+### Core Principle
+
+Create clarity and harmony through constraint. Use fewer elements to make the remaining ones more powerful.
+
+## When it applies
+
+- When designing any visualization with multiple text elements like a title, subtitle, axis labels, annotations, and a source line.
+
+## Exceptions
+
+- None known. Simplicity and consistency in typography are universally beneficial.
+
+## Trade-offs
+
+- None. This is a best practice that improves both aesthetics and clarity without sacrificing information.
+
+## Signs of Trouble
+
+- **Typographic Ransom Note:** Your chart uses 5, 6, or more different font sizes, making it look chaotic and unplanned.
+- **Indistinguishable Sizes:** You are using very similar font sizes (e.g., 11px and 12px) that don't create a clear, perceptible step in the visual hierarchy.
+- **Relying on Size Alone:** You are using a new font size for every new level of emphasis, instead of using other variables like weight (bold) or color.
+
+## How to Improve
+
+- **Quick Fix: Consolidate.** Audit all text in your chart. Consolidate all body/label/annotation text to a single size (e.g., 12px) and all titles/headings to another, larger size (e.g., 18px). Use weight (bold) or color for emphasis instead of introducing more sizes.
+- **Moderate Approach: Establish a Type Scale.** Define a simple typographic scale with 3-4 distinct steps and stick to it. For example: Title (24px), Subtitle/Key Annotations (16px), Body/Labels (12px), and Source/Footnotes (10px).
+- **Comprehensive Approach: Integrate with a Design System.** Formalize your type scale within a larger design system or style guide. This ensures that all visualizations produced by your team are consistent, professional, and easy to read.
+
+```
+
+<split/>
+
+```md
+---
+id: avoid-center-aligned-text
+title: "Left-align multi-line text for better readability and structure"
+tags:
+  - impact:perceptual
+  - impact:aesthetic
+  - impact:cognitive
+  - chart:*
+  - audience:*
+  - medium:*
+evidence:
+  strength: high
+  summary: "This is a standard, undisputed principle of typography for Western languages. The consistent starting position of each line in left-aligned text (a 'hard left edge') reduces the cognitive effort required for the eye to find the beginning of the next line, improving reading speed and comprehension."
+sources:
+  - type: practitioner
+    ref: "Datawrapper: What to consider when using text in data visualizations"
+    url: https://www.datawrapper.de/blog/text-in-data-visualizations
+    note: "The article states that left- or right-aligned text 'looks tidier' and that center-aligned text is 'harder to read' for anything more than a few words, as the reader needs longer to find the beginning of the next line."
+    role: primary
+---
+
+## Guidance
+
+For multi-line blocks of text such as titles, descriptions, and annotations, use left-alignment. Avoid center-alignment for anything more than a single, short line of text.
+
+## Why
+
+Left-aligned text provides a consistent vertical starting point for each line, allowing the reader's eye to easily find the beginning of the next line. In contrast, centered text has a ragged left edge, forcing the reader to work harder on every line break. Furthermore, a strong vertical edge created by left-aligned text creates a cleaner, more organized layout that can align neatly with other chart elements.
+
+## When it applies
+
+- For any text block with more than one line.
+- For single-line titles or labels where alignment with other chart elements creates a more structured layout.
+
+## Exceptions
+
+- A short, single-line title can be centered over a chart without harming readability, though left-alignment often looks more modern and structured.
+- For very formal, symmetrical presentations like an invitation or a title page, centering is a common convention.
+
+## Trade-offs
+
+- The only trade-off is giving up a symmetrical, formal aesthetic, which is often less important than readability and layout structure in a data visualization.
+
+## Signs of Trouble
+
+- **Ragged Edges:** Your multi-line title or annotation has uneven, "ragged" edges on both the left and right, making it look messy and unprofessional.
+- **Slower Scan:** You find your eyes have to work slightly harder to track from the end of one line to the beginning of the next in a block of text.
+- **Awkward Gaps:** Centered text creates awkward empty spaces that disrupt the clean lines of the chart grid.
+
+## How to Improve
+
+- **Quick Fix: Switch to Left-Align.** In your chart editor, find the text alignment setting for your title, description, and annotations, and change it from "center" to "left."
+- **Moderate Approach: Align with the Chart.** Position your left-aligned title block so its left edge aligns with the left edge of the chart's plot area or y-axis. This creates a strong, clean vertical line in the overall composition and reinforces the structure of the visualization.
+
+```
+
+<split/>
+
+```md
+---
+id: avoid-rotated-text-labels
+title: "Avoid rotating text to ensure readability"
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - impact:accessibility
+  - chart:bar
+  - chart:column
+  - audience:*
+  - medium:*
+  - access:cognitive-load-risk
+evidence:
+  strength: high
+  summary: "Reading rotated text is demonstrably slower and more error-prone than reading horizontal text. This is a universally-accepted principle in HCI, typography, and data visualization best practices. The need for rotated text is considered a design failure, indicating a poor choice of chart type."
+sources:
+  - type: practitioner
+    ref: "Datawrapper: What to consider when using text in data visualizations"
+    url: https://www.datawrapper.de/blog/text-in-data-visualizations
+    note: "The article states bluntly 'Don't make your readers turn their heads.' It recommends rephrasing labels or, if they are still too long, switching from a column chart to a bar chart."
+    role: primary
+  - type: practitioner
+    ref: "Few, S. (2012). Show Me the Numbers."
+    note: "Few consistently argues against rotated text, stating it fails basic principles of clear communication and recommends horizontal bar charts as the standard solution for long category labels."
+    role: supporting
+---
+
+## Guidance
+
+Keep all text horizontal for maximum readability. If your category labels are too long to fit horizontally on an axis, choose a different chart type or shorten the labels.
+
+## Why
+
+Rotated text is difficult and uncomfortable to read. It forces the viewer to either physically tilt their head or mentally rotate the words, both of which significantly slow down reading speed and increase cognitive load. Horizontal text is the standard we read every day, and deviating from it introduces an unnecessary barrier to comprehension.
+
+## When it applies
+
+- This is most often a problem with long category labels on the x-axis of a vertical column chart.
+
+## Exceptions
+
+- There are no good exceptions for rotating text to be read. It is a signal that a different design choice is needed.
+
+## Trade-offs
+
+- Avoiding rotated text might require changing your chart type from a column chart to a bar chart, which could alter the layout of your page. However, the gain in readability is almost always worth this trade-off.
+
+## Signs of Trouble
+
+- **The Head Tilt:** You or your viewers have to physically tilt your head to read the labels on your chart.
+- **Cluttered Axis:** Angled labels are crashing into each other on a column chart's x-axis.
+- **The "Solution" is the Problem:** You have chosen to rotate labels because they don't fit. This itself is the sign of trouble.
+
+## How to Improve
+
+- **Quick Fix: Shorten the Labels.** Rephrase labels to be more concise. For example, change "United States of America" to "U.S." or "Average Annual Income" to "Avg. Income." Check if acronyms are appropriate for your audience.
+- **Moderate Redesign: Switch to a Bar Chart.** If labels are still too long for a column chart, immediately switch to a bar chart. This provides ample horizontal space for long category labels to be read naturally and is the standard, correct solution to this problem.
+- **Comprehensive Approach: Re-evaluate the Data.** If you have too many categories for even a bar chart to look clean, reconsider your data presentation. Can you group smaller categories into an "Other" bucket? Can you show only the "Top 10" and provide the rest in a table? Or is an interactive, searchable chart a better format?
+
+```
+
+<split/>
+
+```md
+---
+id: use-text-outlines-over-gridlines
+title: "Use a text outline or halo when placing labels over chart elements"
+tags:
+  - impact:perceptual
+  - impact:aesthetic
+  - chart:*
+  - audience:*
+  - medium:*
+evidence:
+  strength: medium
+  summary: "This is a standard cartographic and graphic design technique known as creating a 'halo' or 'mask.' It reliably improves text legibility against complex or variable backgrounds by ensuring local contrast. While not the subject of formal academic studies, its effectiveness is self-evident and it is a feature in professional design and mapping software."
+sources:
+  - type: practitioner
+    ref: "Datawrapper: What to consider when using text in data visualizations"
+    url: https://www.datawrapper.de/blog/text-in-data-visualizations
+    note: "The article recommends using a text outline (a stroke in the background color) to make text 'easier to read and nicer to look at' when it sits on other elements like gridlines."
+    role: primary
+---
+
+## Guidance
+
+When text is placed over other visual elements like gridlines, data lines, or colored map areas, add a subtle outline (or "halo") to the text that matches the chart's background color.
+
+## Why
+
+The outline creates a small, clean buffer around the letters, effectively "carving out" space and preventing background elements from visually interfering with the letterforms. This simple technique dramatically improves legibility and creates a cleaner, more polished and professional look without adding visual clutter.
+
+## When it applies
+
+- Whenever text (e.g., annotations, map labels, direct data labels) sits on top of any non-background element, especially thin lines like gridlines.
+
+## Exceptions
+
+- If text is placed entirely in empty white space with no elements passing through or behind it, an outline is unnecessary.
+
+## Trade-offs
+
+- A very thick or high-contrast outline can be distracting in its own right and create a "sticker" effect. The effect should be subtle—just enough to separate the text from what's behind it.
+
+## Signs of Trouble
+
+- **Vibrating Text:** Gridlines running through your labels make them hard to read and appear to "vibrate" against the text.
+- **Lost Letters:** Parts of letters become illegible or get lost against a similarly-colored background element or a busy texture.
+- **Messy Intersections:** The point where a data line or gridline crosses through a text label looks messy and unintentional.
+
+## How to Improve
+
+- **Quick Fix: Enable the Outline.** In your charting tool, find the settings for text annotations or labels and look for an "outline," "stroke," or "halo" option. Enable it and set its color to your chart's background color (e.g., white) and its thickness to 1-2 pixels.
+- **Alternative: Manual Placement.** If your tool doesn't support halos, carefully place your labels so they fall in empty spaces between gridlines or other elements. This is more time-consuming and less flexible.
+
+```
+
+<split/>
+
+```md
+---
+id: use-straightforward-phrasing
+title: "Use simple, direct language in titles, descriptions, and annotations"
+tags:
+  - impact:cognitive
+  - impact:logos
+  - impact:inclusion
+  - chart:*
+  - audience:general
+  - audience:low-literacy
+  - medium:*
+evidence:
+  strength: high
+  summary: "This is a core principle of effective communication, supported by the Plain Language movement and extensive research in readability and cognitive science. Simple, direct language is processed faster, understood more accurately, and is more accessible to a broader audience, including non-native speakers and those with cognitive disabilities."
+sources:
+  - type: practitioner
+    ref: "Datawrapper: What to consider when using text in data visualizations"
+    url: https://www.datawrapper.de/blog/text-in-data-visualizations
+    note: "The article advises asking 'What’s the easiest way to say this?' and suggests imagining you are describing the visualization to a friend to arrive at more natural and understandable language."
+    role: primary
+  - type: standard
+    ref: "Plain Language Action and Information Network (PLAIN)"
+    url: https://www.plainlanguage.gov/
+    note: "Federal guidelines and resources based on decades of evidence that plain language improves comprehension and trust."
+    role: supporting
+---
+
+## Guidance
+
+Write titles, descriptions, and annotations in simple, clear language. Avoid jargon, acronyms, and overly formal or academic phrasing. Actively rephrase official dataset descriptions to be more direct and understandable.
+
+## Why
+
+Clear communication is the primary goal of most visualizations. Complex, jargon-filled language creates a cognitive barrier, making your audience work harder or simply give up. Simple phrasing ensures your message is accessible to the widest possible audience, including non-experts, non-native speakers, and readers with different literacy levels.
+
+### Core Principle
+
+To write clearly, imagine you are explaining the chart to an intelligent friend who is not an expert in the subject. Use the words you would use in that casual, direct conversation.
+
+## When it applies
+
+- Always, but it is especially critical when visualizing for a general or non-expert audience.
+
+## Exceptions
+
+- When creating a chart for a highly specialized, expert audience (e.g., in a scientific paper or a technical brief), using precise, shared jargon can be more efficient and appropriate. Even then, unnecessary complexity should be avoided.
+
+## Trade-offs
+
+- Simplifying language can sometimes feel like "dumbing down" the data, but it is actually a mark of respect for the reader's time and attention. The trade-off is between sounding "academic" or "official" and being genuinely understood.
+
+## Signs of Trouble
+
+- **Academic Tone:** Your title sounds like it was copied from a research paper abstract (e.g., "A visualization denoting the central estimate of the average extent to which citizens support...").
+- **Jargon Alert:** You are using insider acronyms or technical terms that a general reader would not know without a glossary.
+- **Copypasta:** You have copied and pasted the description directly from a metadata file or an API response.
+
+## How to Improve
+
+- **Quick Fix: The 'Friend Test'.** Read your title and description out loud. Does it sound like something a human would actually say to another human? If not, rephrase it until it does.
+- **Moderate Approach: From 'What it is' to 'What it shows'.** Instead of a descriptive title that states what the chart *is* (e.g., "A Chart of Sales Over Time"), write an assertive title that states what the chart *shows* (e.g., "Sales Have More Than Doubled Since 2020").
+- **Comprehensive Approach: Edit for Plain Language.** Review all text on your chart and actively replace complex words with simpler ones (e.g., use "use" instead of "utilize"), eliminate prepositional phrases, and break long sentences into shorter ones.
+
+```
+
+<split/>
+
+```md
+---
+id: prioritize-conversational-message
+title: "State the main message first, place precise details later"
+tags:
+  - impact:cognitive
+  - impact:logos
+  - impact:pathos
+  - chart:*
+  - audience:general
+  - medium:*
+evidence:
+  strength: high
+  summary: "This practice, known as the 'inverted pyramid' in journalism and 'progressive disclosure' in user interface design, is highly effective for communication. It leverages the primacy effect, where users best remember the first item they see. It respects the reader's limited attention by delivering the key takeaway immediately."
+sources:
+  - type: practitioner
+    ref: "Datawrapper: What to consider when using text in data visualizations"
+    url: https://www.datawrapper.de/blog/text-in-data-visualizations
+    note: "The article advises using colloquial wording in the title (the first thing people read) and moving precise details to less prominent elements like the description or notes, citing the Washington Post as a prime example."
+    role: primary
+  - type: practitioner
+    ref: "Wong, D. (2010). The Wall Street Journal Guide to Information Graphics."
+    note: "This guide from a major newsroom emphasizes crafting a clear headline that summarizes the chart's main point, with details following in supplementary text."
+    role: supporting
+---
+
+## Guidance
+
+Use a clear, conversational, and impactful statement for the main title that summarizes the chart's key finding. Relegate the precise, technical details about the data (e.g., specific date ranges, population definitions, methodology caveats) to the description or notes, which should be styled to be less prominent.
+
+## Why
+
+This strategy hooks the reader with a clear, memorable takeaway first. The necessary but complex details are still available for those who need them, but they don't obscure the primary message. People remember simple statements and stories, not methodological footnotes. By delivering the main point upfront, you respect the reader's time and increase the chance your message will stick.
+
+## When it applies
+
+- When presenting data to a general audience, especially in a storytelling context like a news article, report, or presentation.
+
+## Exceptions
+
+- In formal scientific or academic contexts, precision and methodology may need to be stated upfront, as the validity of the finding is paramount for an expert audience.
+- In legal or regulatory documents where the precise definition is the most important piece of information.
+
+## Trade-offs
+
+- There is a fine line between simplifying for clarity and oversimplifying to the point of being misleading. The main message in the title must still be a truthful and defensible representation of the data. The details in the notes are essential for maintaining intellectual honesty and credibility.
+
+## Signs of Trouble
+
+- **Footnote in the Title:** Your title is cluttered with parenthetical clarifications, date ranges, and asterisks (e.g., "Change in Rent (Q1 2020-Q1 2022)*").
+- **Buried Lede:** The most interesting finding is hidden in a small annotation or the surrounding article text, while the chart's title is a dry, descriptive label like "Rent Prices by County."
+- **Reader Fatigue:** The title is so long and dense that readers might skip it entirely.
+
+## How to Improve
+
+- **Quick Fix: Swap Title and Subtitle.** Find the most interesting conclusion in your chart (it might already be in your subtitle or an annotation) and make it the main title. Move the old, descriptive title to the subtitle/description field.
+- **Moderate Approach: Structure a Text Hierarchy.** Intentionally design your chart's text into three layers of information, styled according to the visual hierarchy:
+    1.  **Title:** The main, conversational takeaway.
+    2.  **Subtitle/Description:** A sentence providing the "what, where, when."
+    3.  **Notes/Source:** The fine print: methodology, specific definitions, and data source.
+- **Comprehensive Approach: Write the Headline First.** Before you even finalize the chart design, decide on the single most important message you want to convey. Write that message as a short, clear headline. Then, build the chart and all its supporting text elements to prove and explain that one headline.
+
+```
+
+<split/>
+
+```md
+---
+id: use-human-readable-number-formats
+title: "Use human-readable number formats and avoid unnecessary precision"
+tags:
+  - impact:cognitive
+  - impact:perceptual
+  - impact:aesthetic
+  - chart:*
+  - task:lookup
+  - task:compare
+  - data:quantitative
+  - audience:*
+evidence:
+  strength: high
+  summary: "This is a widespread best practice in data visualization, information design, and technical writing. Cognitive psychology suggests that working memory is limited, and processing long strings of numbers (e.g., 12,831,283 vs 12.8m) imposes a higher cognitive load for no communicative benefit in most contexts."
+sources:
+  - type: practitioner
+    ref: "Datawrapper: What to consider when using text in data visualizations"
+    url: https://www.datawrapper.de/blog/text-in-data-visualizations
+    note: "The article argues that excessive decimal or thousands places make visualizations 'overly complicated' and 'unattractive,' recommending abbreviations (12.8k, 12.8m) and smart formatting to remove trailing zeroes."
+    role: primary
+  - type: practitioner
+    ref: "Few, S. (2012). Show Me the Numbers."
+    note: "Few argues for reducing 'non-data ink,' which includes spurious precision. He recommends rounding to the level of precision needed for the reader's task, which is rarely more than one or two significant digits."
+    role: supporting
+---
+
+## Guidance
+
+Format numbers to be as simple as is appropriate for the context. Avoid showing excessive decimal places and use standard suffixes to abbreviate large numbers (e.g., "12.8k" for 12,831, "12.8m" for 12,831,283).
+
+## Why
+
+Unnecessary precision adds visual clutter and cognitive load without improving understanding. Readers rarely need, or remember, numbers with many decimal places or a long string of digits. Simplified, rounded numbers are easier to scan, compare, and recall, making your visualization more effective and approachable.
+
+## When it applies
+
+- In any text element that displays numbers: axis labels, data point labels, annotations, and tooltips.
+
+## Exceptions
+
+- **High-Stakes Precision:** When high precision is scientifically, financially, or engineeringly critical and the audience expects it (e.g., pharmaceutical dosages, financial statements to the cent).
+- **Small Ranges:** When the key differences in your data only appear after the decimal point, more precision is required to show the variation.
+- Even in these cases, consider if the full precision is needed everywhere, or if it can be reserved for tooltips while the main labels are simplified.
+
+## Trade-offs
+
+- Rounding and abbreviation inherently remove some information. You must ensure that the rounding does not distort the data's message, create false equivalences, or violate the expectations of an expert audience.
+
+## Signs of Trouble
+
+- **Decimal Overload:** Your labels show numbers like `22.428%` or `12,831,783.92`.
+- **Spurious Precision:** The data displays a level of precision that is not meaningful or real in the underlying measurements (e.g., survey results reported to three decimal places).
+- **Jagged Alignment:** In a table or a list of labels, numbers with varying numbers of decimal places do not align correctly on the decimal point, looking messy.
+
+## How to Improve
+
+- **Quick Fix: Change the Number Format.** In your charting tool's settings, change the default number format to show zero or one decimal place. Enable a format that abbreviates large numbers (e.g., using `k` for thousands, `m` for millions).
+- **Moderate Approach: Use Smart Formatting and Tooltips.** Use a "smart" number format that removes unnecessary trailing zeroes (e.g., `27.0%` becomes `27%` while `22.4%` stays as is). Move the full, precise numbers into interactive tooltips, so they are available on demand without cluttering the main view.
+- **Comprehensive Approach: Define Precision by Context.** Establish rules for number formatting based on the data type and magnitude. For example: percentages get one decimal place, dollar amounts over $1M are abbreviated to one decimal place (e.g., $3.4m), and population counts are rounded to the nearest thousand.
+
+```

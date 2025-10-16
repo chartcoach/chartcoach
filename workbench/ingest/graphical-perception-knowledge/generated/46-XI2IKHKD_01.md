@@ -20,8 +20,7 @@ evidence:
 sources:
   - type: research
     ref: Saket et al., 2019
-    url: https://doi
-.org/10.1109/TVCG.2018.2829750
+    url: https://doi.org/10.1109/TVCG.2018.2829750
     note: "Found line charts and scatterplots significantly more accurate for correlation tasks (p<0.05, η²=0.41). Line charts, scatterplots, and bar charts were also significantly faster than pie charts and tables (p<0.05, η²=0.70)."
     role: primary
   - type: research
