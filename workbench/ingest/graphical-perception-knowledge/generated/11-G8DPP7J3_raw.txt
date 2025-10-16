@@ -1,0 +1,334 @@
+```md
+---
+id: prioritize-position-for-quantitative-comparison
+title: "Use position on a common scale for quantitative comparisons"
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - impact:ethical
+  - task:compare
+  - task:rank
+  - task:lookup
+  - data:quantitative
+  - visual:position
+  - visual:length
+  - visual:angle
+  - visual:area
+  - chart:bar
+  - chart:dot-plot
+  - chart:line
+  - chart:pie
+  - chart:donut
+  - audience:general
+  - medium:static
+  - medium:interactive
+evidence:
+  strength: high
+  summary: "Cleveland & McGill's foundational 1984 experiment (n=55) established a ranking of visual encodings by perceptual accuracy, finding position on a common scale significantly more accurate for comparison tasks than length, angle, or area. These findings have been replicated and confirmed in numerous studies over 40+ years, including large-scale crowdsourced experiments (Heer & Bostock, 2010, n>1,900), forming a cornerstone of visualization best practices."
+sources:
+  - type: research
+    ref: Cleveland & McGill, 1984
+    note: "The foundational experiment that proposed and tested a hierarchy of perceptual tasks, finding position on a common, non-aligned scale was significantly more accurate (lower error) than length, angle, and area for comparison tasks."
+    role: primary
+  - type: research
+    ref: Heer & Bostock, 2010
+    note: "A large-scale crowdsourced replication that validated Cleveland & McGill's original findings, confirming that position is more accurate than angle and area for proportional judgments."
+    role: supporting
+  - type: research
+    ref: Zeng & Battle, 2023
+    note: "This literature review (Table 3) summarizes the theoretical effectiveness ranking as 'PX=PY > L=An=O > Ar > CS', reaffirming the primacy of position."
+    role: related
+examples:
+  - type: bad
+    caption: Pie Chart for Market Share
+    description: "A pie chart uses angle and area to represent market share. It's difficult to accurately compare the sizes of slices, especially those that are similar in size or not adjacent."
+  - type: good
+    caption: Bar Chart for Market Share
+    description: "A bar chart represents the same market share data. Because all bars start from a common baseline (y=0), their lengths can be compared easily and accurately using position, making it clear which company has a larger share and by how much."
+---
+## Guidance
+
+To enable accurate comparisons and ranking of quantitative data, encode values using position along a common, aligned scale. For example, use a bar chart or a dot plot instead of a pie chart or differently-sized shapes (bubbles).
+
+## Why
+
+Humans are significantly more accurate at perceiving and comparing differences in position along a common axis than they are at judging differences in length, angle, area, or color saturation. Using position minimizes perceptual error and allows viewers to make more precise judgments about the data.
+
+### Core Principle
+
+Make the most important comparisons the easiest and most accurate to perform. The choice of visual encoding directly impacts the perceptual accuracy of the viewer's task.
+
+## When it applies
+
+- When the primary task for the viewer is to compare, rank, or look up specific quantitative values.
+- When presenting discrete values across different categories (e.g., sales by region, population by country).
+- When data precision is important and you want to minimize the risk of misinterpretation.
+
+## Exceptions
+
+- **Part-to-whole estimation without comparison:** If the only goal is to show a rough sense of a part's contribution to a total (e.g., "about a quarter"), and comparing between parts is not critical, a pie chart might be acceptable due to convention. However, a bar chart is still more accurate for comparison.
+- **Geographic data:** When showing data on a map, position is already used to encode location. Other channels like color (for choropleths) or area (for bubble maps) must be used, even though they are less precise for magnitude comparisons.
+
+## Trade-offs
+
+- **Space:** Bar and dot plots can take up more screen or page space (especially vertically) than more compact forms like treemaps or pie charts.
+- **Familiarity:** In some business contexts, audiences may be accustomed to pie charts for showing composition. Switching to a bar chart, while more accurate, may require a brief adjustment period for the audience.
+
+## Signs of Trouble
+
+- **Difficult Comparisons:** Viewers struggle to determine which slice of a pie chart is larger, or by how much.
+- **"Just-Read-the-Label" Syndrome:** Viewers ignore the visual encoding (e.g., the slices) and rely solely on the data labels to understand the values. This indicates the visualization itself has failed.
+- **Inconsistent Baselines:** In stacked bar charts, only the bottom-most series can be accurately compared, as all other segments do not share a common baseline.
+
+## How to Improve
+
+- **Quick Fix: Add Direct Labels.** If you must use a pie or donut chart, add direct data labels (values or percentages) to each segment. This provides an "escape hatch" for the user to get accurate numbers, though it doesn't fix the underlying perceptual flaw.
+
+- **Moderate Redesign: Switch to a Bar Chart or Dot Plot.** The most effective fix is to change the chart type. Convert the pie chart into a simple bar chart. This places all values on a common baseline, making comparisons effortless and accurate.
+
+- **Comprehensive Approach: Sort and Annotate.** After switching to a bar chart, sort the bars in ascending or descending order (unless there is a natural ordering to the categories). This further reduces cognitive load by making ranking and finding extrema (min/max) trivial. Add annotations to highlight key insights.
+```
+
+<split/>
+
+```md
+---
+id: maximize-minimum-perceptual-distance
+title: "Optimize categorical color palettes by maximizing the minimum perceptual distance"
+tags:
+  - impact:perceptual
+  - impact:accessibility
+  - visual:color
+  - data:categorical
+  - data:cardinality.high
+  - access:color-vision-risk
+  - task:compare
+  - task:lookup
+tools:
+  - type: implement
+    name: Colourmap Hospital
+    url: http://bit.ly/cmhosp
+    description: "The web tool from the source paper for optimizing color palettes by maximizing minimum perceptual distance (using the Nelder-Mead algorithm)."
+  - type: validate
+    name: Viz Palette
+    url: https://projects.susielu.com/viz-palette
+    description: "Lets you create color palettes and check them for perceptual distance, nameability, and color vision deficiency simulation."
+  - type: implement
+    name: Colorgorical
+    url: http://vrl.cs.brown.edu/color
+    description: "A tool that generates categorical color palettes with specified perceptual constraints, including name difference and pair-wise separation."
+evidence:
+  strength: medium
+  summary: "Fang et al. (2017) propose an algorithmic approach to improve categorical colormaps by focusing on the worst-case scenario: the pair of colors with the smallest perceptual distance. By maximizing this minimum distance (Dmin) using the CIEDE2000 color difference formula, the method ensures a baseline level of discriminability across the entire palette."
+sources:
+  - type: research
+    ref: Fang et al., 2017
+    url: https://doi.org/10.1109/TVCG.2016.2599214
+    note: "Primary paper proposing the optimization strategy of maximizing the minimal perceptual distance (Dmin) to improve the worst-performing color pairs in a palette. Demonstrates the method with case studies and a web tool."
+    role: primary
+---
+## Guidance
+
+When creating or refining a categorical color palette, don't just pick colors that look different on average. Instead, computationally optimize the palette to maximize the perceptual distance between the *most similar* pair of colors.
+
+## Why
+
+The overall distinguishability of a color palette is limited by its weakest link—the two colors that are easiest to confuse. By focusing on and increasing the distance of this "worst pair," you guarantee a higher minimum level of discriminability for all colors in the set, reducing the chance of misinterpretation, especially for small marks or for users with color vision deficiencies.
+
+### Core Principle
+
+A color palette is only as discriminable as its most similar pair of colors. Improving the worst-case scenario provides a more robust and accessible result than improving the average.
+
+## When it applies
+
+- When creating a categorical color palette with more than 3-4 colors.
+- When refining an existing palette (e.g., from a brand guide or a default software palette).
+- When it's critical that all categories are clearly distinguishable from one another (e.g., different lines on a line chart, categories in a scatter plot).
+- When designing for accessibility, as maximizing perceptual distance can help mitigate issues for users with color vision deficiencies.
+
+## Exceptions
+
+- **Strong Semantic Constraints:** If you are strictly required to use a predefined set of colors (e.g., brand colors, flag colors) and are not allowed to alter them at all, this optimization cannot be applied. (See related guideline "Balance color optimization with semantic meaning" for a middle-ground approach).
+- **Small Palettes:** For palettes with only 2-3 colors, manual selection of highly distinct colors (e.g., blue, orange, gray) is often sufficient and may not require computational optimization.
+
+## Trade-offs
+
+- **Aesthetics:** A purely mathematically optimized palette may not be as aesthetically pleasing or harmonious as a hand-picked one. The colors might feel more random or jarring.
+- **Semantic Loss:** Without constraints, optimization can "drift" colors away from their intended meaning (e.g., a "blue" might become purplish). This requires careful balancing with constraints.
+
+## Signs of Trouble
+
+- **The Squint Test:** If you squint your eyes while looking at the visualization, do two or more distinct colors merge into one?
+- **Subtle Neighbors:** The palette contains two colors that are very close in hue and lightness, such as a medium blue and a slightly darker cyan, or a lime green and a yellow.
+- **Legend Deception:** Colors that look distinct as large swatches in a legend become indistinguishable when used as small points or thin lines in the actual chart.
+- **"Is this green or blue?":** Viewers express confusion or have to double-check the legend to differentiate between two similar colors.
+
+## How to Improve
+
+- **Quick Fix: Manual Adjustment.** Identify the two most similar colors in your palette and manually adjust one of them to be more distinct. For example, make one significantly lighter or darker, or shift its hue by a noticeable amount (e.g., change a teal to a pure blue).
+
+- **Moderate Approach: Use a Palette Generation Tool.** Use a tool like Colorgorical or Viz Palette to generate a new palette from scratch. These tools are designed to create palettes with good perceptual separation.
+
+- **Comprehensive Approach: Constrained Optimization.** Start with your desired (or existing) palette. Use a tool like **Colourmap Hospital** to computationally optimize it. The tool will identify the pair with the smallest CIEDE200 distance and adjust the colors to increase that minimum distance, giving you a refined, more discriminable palette. If semantics are important, apply constraints to limit how much colors can change (e.g., by locking hue).
+```
+
+<split/>
+
+```md
+---
+id: balance-color-optimization-with-semantics
+title: "Balance perceptual color optimization with semantic meaning using constraints"
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - impact:logos
+  - impact:aesthetic
+  - visual:color
+  - data:categorical
+tools:
+  - type: implement
+    name: Colourmap Hospital
+    url: http://bit.ly/cmhosp
+    description: "Allows users to fix certain colors or apply constraints (e.g., on hue) while optimizing the rest of the palette, preserving semantic associations."
+evidence:
+  strength: medium
+  summary: "Case studies in Fang et al. (2017) demonstrate a constrained optimization workflow. For a London Tube Map visualization, they preserved historical line colors by fixing them while optimizing newly added colors. For a seismology map, they preserved color metaphors by applying a tight (±5%) hue constraint, which improved perceptual distance while retaining the intended red-for-shallow, blue-for-deep color symbolism."
+sources:
+  - type: research
+    ref: Fang et al., 2017
+    url: https://doi.org/10.1109/TVCG2016.2599214
+    note: "The paper's case studies (Sections 7.1 and 7.2) are the primary evidence, showing how fixing colors or applying range constraints on hue/saturation/lightness allows for perceptual optimization without losing critical semantic information like historical or metaphoric color associations."
+    role: primary
+examples:
+  - type: good
+    caption: Seismology Map with Constrained Optimization
+    description: "In the paper's seismology case study, the authors start with a metaphoric color scheme (e.g., red for shallow, damaging earthquakes). To improve it, they don't re-optimize from scratch. Instead, they apply a ±5% hue constraint, which preserves the 'red-ness' of the shallow category while allowing the algorithm to adjust saturation and lightness for better overall separation from other colors. This retains the metaphor while improving perceptual performance."
+  - type: bad
+    caption: Brand Palette Optimization without Constraints
+    description: "A company wants to make its 8-color brand palette more accessible. They run it through an optimizer without constraints. The resulting palette is highly discriminable, but the 'brand blue' has become purple and the 'brand green' is now teal, breaking brand consistency and confusing users familiar with the original color meanings."
+---
+## Guidance
+
+When optimizing a categorical color palette that has existing meaning (e.g., brand colors, conventions, metaphors), use constraints to preserve that meaning. Fix essential colors in place or apply tight ranges to hue, saturation, or lightness to guide the optimization process.
+
+## Why
+
+Colors in visualizations often carry semantic meaning that aids cognition and recall. A purely mathematical optimization can destroy these valuable associations (e.g., turning a "danger" red into a magenta), increasing cognitive load and potentially breaking consistency with user expectations or brand identity. Constrained optimization provides a middle path, improving perceptual discriminability while respecting semantic intent.
+
+### Core Principle
+
+Effective visualization design balances perceptual goals (e.g., discriminability) with cognitive goals (e.g., meaning and memorability). Don't let the pursuit of one completely undermine the other.
+
+## When it applies
+
+- When you need to use a specific set of colors that have poor perceptual separation (e.g., a brand palette with several similar blues).
+- When colors are tied to established conventions (e.g., red for Republicans/stop, blue for Democrats/go).
+- When colors are used metaphorically (e.g., shades of red/orange for "hot", shades of blue for "cold").
+- When extending a historical color scheme, like adding a new line to the London Tube Map, and you need to maintain consistency with the existing colors.
+
+## Exceptions
+
+- **No Pre-existing Meaning:** If you are creating a colormap from scratch for purely categorical data with no inherent meaning (e.g., arbitrary product IDs), you do not need to apply semantic constraints and can optimize for maximum perceptual distance freely.
+
+## Trade-offs
+
+- **Sub-optimal Perception:** The final, constrained palette will likely have a smaller minimum perceptual distance than a fully unconstrained, optimized palette. You are trading some amount of "perfect" discriminability for "good enough" discriminability plus semantic consistency.
+- **Increased Complexity:** Setting up constrained optimization requires more thought and effort than simply clicking "optimize". You must decide which colors to fix and what range of variation is acceptable for others.
+
+## Signs of Trouble
+
+- **Lost Identity:** An optimized palette no longer reflects the brand or conventional colors it was derived from. A "Coke Red" has become pink.
+- **Broken Metaphors:** The optimized colors no longer match their intended metaphor. The color for "hot" temperatures is now a cool purple.
+- **User Confusion:** Viewers familiar with a previous version of the color scheme are confused by the changes, as the colors no longer map to the categories they remember.
+
+## How to Improve
+
+- **Quick Fix: Identify and Fix Key Colors.** Before optimizing, identify the 1-3 most important colors that must not change (e.g., the primary brand color, the color for "background"). Lock these colors and only allow the optimizer to change the less critical colors.
+
+- **Moderate Approach: Constrain by Hue.** To preserve the general character of each color, apply a tight hue constraint (e.g., ±5% or ±10°) to each color before optimizing. This allows the algorithm to adjust saturation and lightness to improve separation while ensuring that blues stay blue and greens stay green. This is often the most effective and practical approach.
+
+- **Comprehensive Approach: Layered Constraints.** For complex palettes, use a mix of techniques.
+  1.  **Fix** unchangeable colors (background, main brand color).
+  2.  Apply **tight hue constraints** to colors with strong semantic meaning.
+  3.  Apply **looser constraints** (or none at all) to secondary colors with weaker semantic ties, giving the algorithm more freedom to find an optimal solution in the remaining color space.
+```
+
+<split/>
+
+```md
+---
+id: adapt-scatterplot-encoding-to-task
+title: "In scatterplots, encode a third variable with color for aggregation and with size for summary tasks"
+tags:
+  - impact:perceptual
+  - task:summary-mean
+  - task:cluster
+  - chart:scatter
+  - data:quantitative
+  - visual:color
+  - visual:size
+evidence:
+  strength: medium
+  summary: "In an experiment comparing visual encodings for 3-variable scatterplots, Kim & Heer (2018) found that task performance varied by encoding channel. For 'aggregate' tasks (e.g., estimating the average value of a group of points), using color saturation was more accurate than using area. Conversely, for 'summary' tasks (e.g., judging the overall distribution or trend), using area (bubble size) was more accurate than using color."
+sources:
+  - type: research
+    ref: Kim & Heer, 2018
+    url: https://doi.org/10.1111/cgf.13409
+    note: "Primary experimental paper (Table 7) finding that for 3-encoding visualizations (scatterplots with a third variable), color saturation performed best for 'aggregate' tasks, while area performed best for 'summary' tasks."
+    role: primary
+  - type: research
+    ref: Zeng & Battle, 2023
+    note: "This review paper summarizes the findings from Kim & Heer in Table 7, highlighting the task-dependency of visual encoding effectiveness in scatterplots."
+    role: supporting
+examples:
+  - type: good
+    caption: Scatterplot for Aggregation Task
+    description: "A scatterplot shows products by price (x-axis) and rating (y-axis). A third variable, profit margin, is encoded using color saturation (from light gray to dark blue). The task is to compare the average profit margin of products under $50 vs. over $50. Using color allows viewers to mentally average the 'blueness' of each cluster, which is a perceptually effective strategy for this task."
+  - type: bad
+    caption: Scatterplot for Aggregation Task using Size
+    description: "The same product scatterplot, but this time profit margin is encoded using bubble size (area). When asked to compare the average profit margin of the two price groups, viewers struggle to mentally average the disparate bubble sizes, leading to less accurate estimates."
+---
+## Guidance
+
+When adding a third quantitative variable to a scatterplot, match the visual encoding to the primary analytical task:
+- For **aggregation tasks** (e.g., comparing the average value of different groups), encode the variable using **color saturation** or **luminance**.
+- For **summary tasks** (e.g., assessing the overall trend or distribution of the variable), encode the variable using **area** (i.e., a bubble chart).
+
+## Why
+
+The human visual system is better at performing different types of "at-a-glance" estimations with different visual channels. We are relatively good at visually averaging color across a region of points (an ensemble coding process well-suited for aggregation). However, we are less effective at averaging a collection of differently-sized areas. Conversely, varying sizes can give a better gestalt sense of the overall distribution. Aligning the encoding channel with the task leverages the strengths of our perceptual system.
+
+### Core Principle
+
+No single visual encoding is optimal for all tasks. The effectiveness of a visualization depends on a match between the encoding, the data, and the task at hand.
+
+## When it applies
+
+- When creating a scatterplot that encodes three quantitative variables (X position, Y position, and a third channel).
+- When you can identify a primary task for the viewer—either comparing the average of point-clusters or assessing the overall pattern of the third variable.
+
+## Exceptions
+
+- **Nominal Data:** If the third variable is categorical, not quantitative, this guideline does not apply. Color hue is the appropriate encoding for categorical data in a scatterplot.
+- **Overplotting:** In extremely dense scatterplots, large bubbles (area) can cause significant overplotting, obscuring the underlying data. In such cases, using color might be a necessary compromise, even if the primary task is summary. Transparency (alpha) can also be used to mitigate this.
+
+## Trade-offs
+
+- **Flexibility:** A chart optimized for one task (e.g., aggregation via color) will be sub-optimal for another (e.g., summary). If viewers need to perform both tasks, there is no single best option, and you may need to provide two different charts or an interactive control to switch encodings.
+
+## Signs of Trouble
+
+- **Inaccurate Group Averages:** When asking viewers to compare the average value of two groups in a bubble chart, their estimates are inconsistent or highly variable.
+- **"Just-Read-the-Tooltips" for Averages:** In a bubble chart, viewers give up on visually estimating the average and instead rely on hovering over every point and mentally calculating the average, defeating the purpose of the visualization.
+- **Lost Detail in Summary:** When using color saturation for a summary task, viewers find it hard to get a sense of the distribution of the third variable, as all points are the same size.
+
+## How to Improve
+
+- **Identify the Primary Task.** First, clarify the main question the chart should answer. Is it "Which group has the higher average?" (aggregate) or "What is the overall distribution of this variable?" (summary).
+
+- **Quick Fix: Switch the Encoding.** Based on the primary task, change the encoding for the third variable.
+  - If the task is aggregation, change the encoding from `size` to `color`.
+  - If the task is summary, change the encoding from `color` to `size`.
+
+- **Comprehensive Approach: Provide Interaction.** If users need to perform both tasks, provide an interactive control (e.g., a toggle button or dropdown) that allows them to switch the encoding of the third variable between `color` and `size`. This empowers the user to configure the chart for their specific question of the moment.
+```

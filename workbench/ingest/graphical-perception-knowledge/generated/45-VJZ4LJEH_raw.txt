@@ -1,0 +1,610 @@
+```md
+---
+id: avoid-rainbow-colormaps
+title: "Avoid rainbow colormaps for quantitative data"
+
+tags:
+  - impact:perceptual
+  - impact:accessibility
+  - chart:map
+  - chart:heatmap
+  - data:quantitative
+  - visual:color
+  - access:color-vision-risk
+
+evidence:
+  strength: high
+  summary: "Liu & Heer (2018) found the 'jet' rainbow colormap performed worst among 9 tested schemes for both speed and accuracy in a relative distance judgment task. This confirms longstanding critiques that it lacks perceptual ordering, creates false boundaries, and is not friendly to common forms of color vision deficiency."
+
+sources:
+  - type: research
+    ref: Liu & Heer, 2018
+    url: https://doi.org/10.1145/3173574.3174172
+    note: "Empirical study (n=56 per group) showed the 'jet' rainbow colormap was the slowest and most error-prone for quantitative comparison tasks, concluding it 'should be jettisoned'."
+    role: primary
+  - type: research
+    ref: Borland & Taylor, 2007
+    url: https://doi.org/10.1109/MCG.2007.323435
+    note: "A widely cited paper arguing that rainbow colormaps are 'considered harmful' because they lack perceptual ordering and can obscure or create misleading data features."
+    role: supporting
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://doi.org/10.1145/3544548.3581349
+    note: "Review paper that notes the ineffectiveness of rainbow colormaps, citing Liu & Heer [58] who found it 'performs the worst for ordering colors and should be jettisoned'."
+    role: related
+
+tools:
+  - type: implement
+    name: viridis
+    url: https://bids.github.io/colormap/
+    description: "A family of perceptually uniform colormaps designed to be readable by people with common forms of color blindness, now the default in many scientific tools."
+  - type: validate
+    name: Viz Palette
+    url: https://projects.susielu.com/viz-palette
+    description: "Tool to test color palettes for colorblind safety and perceptual distance."
+  - type: learn
+    name: "A Better Default Colormap for Matplotlib"
+    url: https://www.youtube.com/watch?v=xAoljeRJ3lU
+    description: "A talk by the creators of viridis explaining the problems with rainbow colormaps and the design of perceptually uniform alternatives."
+---
+
+## Guidance
+
+For encoding continuous quantitative data, avoid using the "rainbow" (or "jet") colormap that cycles through all hues of the spectrum (blue-cyan-green-yellow-red).
+
+## Why
+
+The rainbow colormap is not perceptually ordered. The order of hues in the spectrum does not correspond to a naturally perceived order of magnitude, leading to inaccurate interpretations of data. It can create misleading visual artifacts, such as sharp boundaries where none exist in the data, and it can mask subtle variations. Furthermore, it is not accessible to users with common forms of color vision deficiency.
+
+### Core Principle
+
+Visual encodings should match the structure of the data and the task. Ordered data, like quantitative values, requires a visual encoding that is clearly perceived as ordered.
+
+## When it applies
+
+- When visualizing continuous quantitative data, such as in heatmaps, choropleth maps, or scientific visualizations (e.g., temperature, pressure, elevation).
+- When the goal is for viewers to accurately judge the magnitude of values or compare differences between regions.
+
+## Exceptions
+
+None known. While the rainbow colormap is still prevalent in some scientific domains due to historical convention, its perceptual flaws make it a poor choice for effective and accurate data communication. One study (Liu & Heer, 2018) found a single edge case where color name boundaries in a rainbow map aided a specific judgment, but this was an anomaly and does not outweigh the significant overall drawbacks.
+
+## Trade-offs
+
+- **Familiarity vs. Clarity:** In some expert communities, the rainbow colormap is conventional. Switching to a better alternative may require a brief adjustment period for the audience but will ultimately lead to more accurate interpretation.
+- **Aesthetics vs. Accuracy:** Some may find the vibrant colors of a rainbow map more visually engaging, but this comes at the high cost of perceptual accuracy and accessibility.
+
+## Signs of Trouble
+
+- **False Boundaries:** The chart appears to have sharp bands of color (e.g., a distinct yellow band between green and red) that don't correspond to a sudden change in the underlying data.
+- **Colorblind Invisibility:** When viewed with a color vision deficiency simulator (e.g., deuteranopia), large portions of the color scale become indistinguishable, appearing as a uniform block of brownish-yellow.
+- **Ambiguous Order:** It's unclear whether yellow represents a higher or lower value than green without constantly referencing the legend.
+- **Hidden Features:** Subtle but important variations in the data are not visible because they fall within a single broad color band (like the wide green area in a typical rainbow map).
+
+## How to Improve
+
+- **Quick Fix: Switch to Grayscale.** A simple grayscale (black-to-white) ramp is perceptually ordered and accessible. This is a safe and immediate improvement.
+
+- **Moderate Approach: Use a Single-Hue Sequential Colormap.** Use a palette that progresses from a light shade of one color to a dark shade of the same color (e.g., light blue to dark blue). This provides a clear, intuitive sense of order.
+
+- **Comprehensive Approach: Use a Perceptually Uniform Multi-Hue Colormap.** Use a modern palette like Viridis, Plasma, Magma, or Cividis. These are specifically designed to have a linear relationship between data value and perceived brightness, are accessible to colorblind viewers, and provide good resolution across the entire data range.
+
+<split/>
+
+```md
+---
+id: use-multi-hue-for-continuous
+title: "Consider perceptually uniform multi-hue colormaps for high-resolution continuous data"
+
+tags:
+  - impact:perceptual
+  - chart:heatmap
+  - chart:map.choropleth
+  - data:quantitative
+  - task:compare
+  - task:lookup
+  - visual:color
+
+evidence:
+  strength: medium
+  summary: "Liu & Heer (2018) found that while single-hue colormaps are effective, they suffer from poor resolution for making fine-grained comparisons (low 'span'). Perceptually uniform multi-hue colormaps (e.g., viridis) provided better discrimination for these small value differences without sacrificing overall performance."
+
+sources:
+  - type: research
+    ref: Liu & Heer, 2018
+    url: https://doi.org/10.1145/3173574.3174172
+    note: "Showed single-hue schemes had higher error rates for small data spans (e.g., span=15 on a 100-point scale), while multi-hue schemes like 'viridis' maintained low error across all spans. This suggests 'multi-hue colormaps can provide improved resolution'."
+    role: primary
+
+tools:
+  - type: implement
+    name: viridis
+    url: https://bids.github.io/colormap/
+    description: "A family of perceptually uniform colormaps that ramp in both hue and luminance, providing good resolution while being colorblind-safe."
+  - type: implement
+    name: ColorBrewer
+    url: https://colorbrewer2.org/#type=sequential&scheme=BuPu&n=3
+    description: "Provides pre-made single-hue and multi-hue sequential palettes, though not all are fully perceptually uniform."
+---
+
+## Guidance
+
+For visualizing continuous quantitative data where fine-grained discrimination is important, consider using a perceptually uniform multi-hue colormap (e.g., Viridis, Plasma) over a single-hue sequential colormap.
+
+## Why
+
+Single-hue colormaps (e.g., light blue to dark blue) are perceptually ordered but can have insufficient resolution for discerning small differences in data values. This is because all the variation is packed into the luminance channel. By carefully designing a colormap that ramps in both luminance and hue, it's possible to create more perceptual "steps" across the range, making it easier for viewers to distinguish between similar but not identical values.
+
+## When it applies
+
+- When visualizing continuous scalar fields (e.g., heatmaps, geographic maps) where small local variations are meaningful.
+- When the data range is large, and you need to ensure discriminability across the entire scale.
+- When the number of discrete steps in a binned colormap is high (e.g., > 9 bins), making the differences between adjacent colors small.
+
+## Exceptions
+
+- When the number of distinct values or bins is small (e.g., 3-5), a single-hue colormap is often sufficient and may be more aesthetically subtle.
+- When the primary task is to judge overall magnitude and not to resolve fine details. A simple single-hue ramp can be very intuitive for this purpose.
+
+## Trade-offs
+
+- **Simplicity vs. Resolution:** A single-hue colormap is arguably simpler and more immediately intuitive ("darker means more"). A multi-hue colormap offers higher perceptual resolution at the cost of this simplicity.
+- **Design Effort:** Creating a *bad* multi-hue colormap is easy (see: rainbow colormaps). Using a *good* one requires relying on pre-vetted, perceptually uniform palettes like Viridis or Cividis.
+
+## Signs of Trouble
+
+- **Banding/Contouring:** A visualization using a single-hue scheme appears to have large patches of uniform color, even though the underlying data contains subtle gradients.
+- **Indistinguishable Neighbors:** In a binned single-hue colormap, it's difficult to tell the difference between adjacent color steps, especially if there are many of them.
+- **User Feedback:** Viewers report difficulty seeing the difference between two values that are numerically distinct.
+
+## How to Improve
+
+- **Quick Fix: Reduce Bins.** If using a binned single-hue scale, try reducing the number of bins (e.g., from 9 to 5). This will increase the perceptual distance between adjacent colors.
+- **Moderate Approach: Switch to a Pre-vetted Multi-Hue Palette.** Replace the single-hue colormap with a perceptually uniform multi-hue sequential palette from a library like Viridis or ColorBrewer (e.g., 'YlGnBu').
+- **Comprehensive Approach: Test and Choose.** If possible, test both a single-hue and a multi-hue palette with your specific data and a sample of your audience to see which one better supports the required interpretation tasks. For some data, the improved resolution of a multi-hue map will be critical; for others, the simplicity of a single-hue map will suffice.
+
+<split/>
+
+```md
+---
+id: avoid-dark-colors-on-light-backgrounds
+title: "Avoid fine-grained comparisons in dark, low-luminance colors on a light background"
+
+tags:
+  - impact:perceptual
+  - visual:color
+  - medium:screen
+  - medium:print
+  - data:quantitative
+
+evidence:
+  strength: medium
+  summary: "Liu & Heer (2018) observed a dramatic increase in error rates for comparison tasks involving colors in low-luminance regions (e.g., near-black shades) when presented on a white background. This occurred even when perceptual models predicted the colors should be distinguishable."
+
+sources:
+  - type: research
+    ref: Liu & Heer, 2018
+    url: https://doi.org/10.1145/3173574.3174172
+    note: "Found high error rates for dark color triplets in 'greys', 'magma', and 'plasma' colormaps on a white background, hypothesizing that high contrast with the background impedes the discrimination of similar dark shades."
+    role: primary
+
+tools:
+  - type: validate
+    name: Contrast Checker
+    url: https://webaim.org/resources/contrastchecker/
+    description: "While designed for text, this tool can be used to check the contrast ratio between adjacent dark colors and a light background, though it doesn't directly measure perceptual discriminability."
+---
+
+## Guidance
+
+When creating a visualization on a light or white background, be cautious about relying on viewers to distinguish between very dark, low-luminance colors for fine-grained comparisons.
+
+## Why
+
+The high contrast between a bright background and dark color marks can make it perceptually difficult to discriminate between two similar dark shades. The human visual system seems to struggle with resolving subtle differences in the "dark end" of the spectrum under these high-contrast conditions. This can lead to surprisingly high error rates, even when the colors are technically different enough according to standard color models.
+
+## When it applies
+
+- When using a sequential colormap that ends in very dark or near-black colors (e.g., `magma`, `inferno`, or a dark grayscale ramp).
+- When the visualization is presented on a white or very light background.
+- When it is important for the audience to make precise comparisons between values in the low end of the data range.
+
+## Exceptions
+
+- When the comparisons required are coarse-grained, and distinguishing between, for example, 95% black and 100% black is not critical to the chart's message.
+- If the visualization is presented on a dark background. In this case, the opposite problem may occur: difficulty distinguishing between very light, high-luminance colors.
+
+## Trade-offs
+
+- **Data Range vs. Discriminability:** Using the full range from light to black maximizes the dynamic range of the colormap but sacrifices discriminability at the dark end. Truncating the dark end improves local discrimination but slightly reduces the overall range.
+- **Aesthetic vs. Perceptual:** Very dark colors can create a strong visual impact, but this may come at the cost of perceptual accuracy for comparisons within that dark range.
+
+## Signs of Trouble
+
+- **The "Black Hole" Effect:** The darkest parts of your visualization appear as a single, undifferentiated mass of black or near-black, even though the underlying data has some variation.
+- **Legend Check:** The darkest two or three swatches in your color legend look almost identical when viewed on the chart itself.
+- **Inaccurate Low-End Judgments:** When asked, viewers cannot reliably tell the difference between data points represented by the darkest colors on the scale.
+
+## How to Improve
+
+- **Quick Fix: Lighten the Dark End.** Modify your colormap so that it ends at a dark gray (e.g., 85-90% black) instead of pure black. This reduces the extreme contrast and gives the visual system more "room" to perceive differences.
+- **Moderate Approach: Choose a Different Palette.** Select a sequential colormap that does not extend into extremely low-luminance values. Some palettes are intentionally designed to avoid the extremes of pure white and pure black.
+- **Comprehensive Approach: Invert the Scheme.** If the context allows, consider using a dark background for the visualization and a colormap that ramps from a dark color to a light one. This avoids the specific issue of dark-on-light, but be aware that it may introduce the opposite problem with light colors.
+
+<split/>
+
+```md
+---
+id: prioritize-position-for-quantity
+title: "Use position along a common scale to represent quantitative data"
+
+tags:
+  - impact:perceptual
+  - impact:logos
+  - data:quantitative
+  - task:compare
+  - task:rank
+  - task:lookup
+  - visual:position
+  - visual:length
+  - visual:angle
+  - visual:area
+  - visual:color
+  - chart:bar
+  - chart:scatter
+  - chart:pie
+
+evidence:
+  strength: high
+  summary: "A foundational principle established by Cleveland & McGill (1984) and extended by Mackinlay (1986). Numerous replications confirm that humans judge quantities more accurately and efficiently by comparing position along a common scale than by comparing length, angle, area, or color."
+
+sources:
+  - type: research
+    ref: Cleveland & McGill, 1984
+    url: https://doi.org/10.2307/2288400
+    note: "Foundational study (n=55) that experimentally established a hierarchy of perceptual tasks, with position on a common scale being most accurate for quantitative comparisons (p<0.001)."
+    role: primary
+  - type: research
+    ref: Heer & Bostock, 2010
+    url: https://doi.org/10.1145/1753326.1753357
+    note: "Large-scale crowdsourced replication (n≈2000) that confirmed the original Cleveland & McGill rankings, demonstrating the robustness of the principle."
+    role: supporting
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://doi.org/10.1145/3544548.3581349
+    note: "Review paper synthesizing the literature, reaffirming the hierarchy 'PX=PY > L=An=O > Ar > CS > CH' for quantitative data, where PX/PY is position."
+    role: related
+---
+
+## Guidance
+
+When designing a visualization for comparing quantitative values, prioritize using position along a common, aligned scale as the primary visual encoding.
+
+## Why
+
+The human visual system is exceptionally good at accurately judging distances and comparing positions when the objects are aligned to a common baseline (like in a bar chart). This perceptual task is faster, more accurate, and less prone to bias than judging other visual channels like length (for unaligned bars), angle (in a pie chart), area (in a treemap), or color saturation.
+
+### Core Principle
+
+Make the most important comparisons the easiest and most accurate to perform. For quantitative comparisons, this means leveraging the most effective perceptual channel: position on a common scale.
+
+## When it applies
+
+- The primary task for the viewer is to compare magnitudes, rank values, or look up specific quantities.
+- Accuracy is a key requirement for the visualization.
+- You need to choose between different chart types for representing quantitative data (e.g., bar chart vs. pie chart vs. treemap).
+
+## Exceptions
+
+- **Showing part-to-whole relationships:** While less accurate for comparison, a pie chart or treemap can be more effective at emphasizing that values are components of a whole. However, even here, a stacked bar chart often performs better.
+- **Showing correlation:** A scatterplot, which uses position on two *unaligned* scales, is the standard for showing the relationship between two variables.
+- **Severe space constraints:** An area-based chart like a treemap can display hierarchical data in a more compact space than a bar chart, at the cost of comparison accuracy.
+
+## Trade-offs
+
+- **Space Efficiency:** Bar charts and dot plots can take up more space (especially vertical space for many categories) than more compact, area-based representations.
+- **Familiarity/Aesthetics:** In some contexts, audiences may expect or prefer a pie chart, even though a bar chart would be more perceptually effective.
+
+## Signs of Trouble
+
+- **The "Pie Chart Problem":** Viewers cannot reliably tell which slice of a pie chart is larger when the values are close.
+- **Area Ambiguity:** In a bubble chart or treemap, it's difficult to judge if one shape is 1.5x or 2x the area of another.
+- **Constant Legend-Checking:** Viewers have to repeatedly look at a color legend to decode quantitative values, because the color channel is not precise enough for direct comparison.
+
+## How to Improve
+
+- **Quick Fix: Add Direct Labels.** If you must use a less accurate chart type (like a pie chart), add direct data labels (e.g., "42%"). This provides a textual "escape hatch" for viewers, allowing them to compare numbers directly instead of relying on flawed perceptual judgments of angle or area.
+
+- **Moderate Redesign: Switch to a Bar or Dot Plot.** When the goal is comparison, convert the visualization to a bar chart or dot plot. This aligns all values to a common baseline (the x-axis), allowing for highly accurate comparisons using position.
+
+- **Comprehensive Approach: Educate Your Audience.** If you are replacing a familiar but ineffective chart type (like a pie chart), briefly explain the rationale. A small note like "Bar charts are used to make comparisons easier" can help manage audience expectations and highlight the benefit of the more effective design.
+
+<split/>
+
+```md
+---
+id: use-hue-shape-for-nominal
+title: "Use color hue, shape, or texture for nominal (categorical) data"
+
+tags:
+  - impact:perceptual
+  - impact:logos
+  - data:categorical
+  - visual:color
+  - visual:shape
+  - visual:texture
+  - visual:size
+
+evidence:
+  strength: high
+  summary: "Mackinlay's (1986) expressiveness principles state that visual channels for nominal data should not imply a perceptual order. Color hue, shape, and texture are effective because they are perceived as distinct categories. Using ordered channels like size, length, or color saturation can mislead viewers by implying a false ranking or magnitude."
+
+sources:
+  - type: research
+    ref: Mackinlay, 1986
+    url: https://doi.org/10.1145/22949.22950
+    note: "Foundational paper on automating visualization design that defines expressiveness criteria. It ranks position, color hue, texture, and shape as highly effective for nominal data."
+    role: primary
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://doi.org/10.1145/3544548.3581349
+    note: "Review summarizing Mackinlay's theoretical rules in Table 3, recommending Color Hue (CH), Texture (T), Orientation (O), and Shape (S) for nominal data, while marking Area (Ar) and Color Saturation (CS) as unsuitable (inexpressive)."
+    role: supporting
+
+tools:
+  - type: implement
+    name: Colorgorical
+    url: http://vrl.cs.brown.edu/color
+    description: "Generates categorical color palettes optimized for perceptual difference and nameability."
+---
+
+## Guidance
+
+When representing nominal (categorical) data, use visual channels that are perceived as distinct but unordered, such as color hue, shape, or texture. Avoid using channels that imply magnitude, such as size, length, or color saturation.
+
+## Why
+
+Nominal data consists of distinct categories with no intrinsic order (e.g., 'Apple', 'Orange', 'Banana'). The visual encoding used to represent this data should match this characteristic. Color hues (red, blue, green), shapes (circle, square, triangle), and textures are perceived as different without one being inherently "more" or "less" than another. In contrast, channels like size or color saturation have a strong perceptual ordering, which can cause viewers to incorrectly infer a quantitative relationship or ranking that doesn't exist in the data.
+
+### Core Principle
+
+A visualization is expressive when it encodes all the facts in the data and only the facts in the data. Using an ordered visual variable for unordered data violates this principle.
+
+## When it applies
+
+- When assigning visual properties to categories in any chart type (e.g., colors of bars, shapes of points in a scatterplot).
+- When choosing how to differentiate series in a line chart or groups in a bar chart.
+
+## Exceptions
+
+- When categories have a conventional or metaphorical association with an ordered channel. For example, using a small, medium, and large 'T-shirt' icon to represent 'Small', 'Medium', and 'Large' sizes is appropriate because the encoding matches the data's inherent (ordinal) structure.
+- When a nominal category has a strong, universally understood color association (e.g., red for 'stop' or 'negative', green for 'go' or 'positive').
+
+## Trade-offs
+
+- **Scalability:** The number of easily distinguishable hues, shapes, or textures is limited. It becomes very difficult to distinguish more than 7-10 distinct categories using color or shape alone. Position (e.g., in a bar chart) scales to many more categories.
+- **Interpretive Load:** Shapes or textures can sometimes carry more semantic meaning than color, but they can also add visual clutter and may be harder to decode than simple color patches.
+
+## Signs of Trouble
+
+- **False Ordering:** A chart uses different sizes of bubbles to represent different countries, leading viewers to think that bigger bubbles mean "more" of something, when the size is arbitrary.
+- **Saturation Confusion:** A chart uses light blue, medium blue, and dark blue to represent 'Product A', 'Product B', and 'Product C', suggesting that C is somehow more important or has a higher value than A.
+- **Categorical Chaos:** Using a single, continuous color gradient (e.g., a blue-to-red gradient) to encode purely categorical data, making it impossible to distinguish individual categories.
+
+## How to Improve
+
+- **Quick Fix: Switch to a Qualitative Palette.** If using a sequential or diverging color palette for nominal data, switch to a qualitative (categorical) palette where each color is a distinct hue, with similar saturation and lightness. Tools like ColorBrewer have pre-built qualitative palettes.
+
+- **Moderate Approach: Use a Redundant Encoding.** Combine two unordered channels to improve discriminability, especially for colorblind users. For example, use both a distinct color hue AND a distinct shape for each category in a scatterplot.
+
+- **Comprehensive Approach: Re-evaluate the Encoding.** If you have many categories (>10), encoding them with color or shape alone will fail. Re-design the chart to use position as the primary way to distinguish categories. For example, instead of a single scatterplot with 20 different colors, use a bar chart with 20 bars, where each category gets its own unique position along the axis.
+
+<split/>
+
+```md
+---
+id: use-scatterplot-for-correlation
+title: "Use scatterplots to show correlation between two variables"
+
+tags:
+  - impact:perceptual
+  - task:correlation
+  - data:quantitative
+  - chart:scatter
+  - chart:parallel-coordinates
+
+evidence:
+  strength: medium
+  summary: "Empirical studies consistently show that scatterplots are a top-performing visualization for identifying correlation. Zeng & Battle's (2023) review notes that scatterplots are recommended for correlation tasks based on work by Harrison et al. (2014) and Saket et al. (2019), and are superior to parallel coordinates for this specific task according to Li et al. (2010)."
+
+sources:
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://doi.org/10.1145/3544548.3581349
+    note: "Synthesizes empirical results in Table 9, showing scatterplots as a recommended design for 'Correlate' tasks, citing sources [53, 20, 78]. Also notes Li et al. [53] found scatterplots better than parallel coordinates for this task."
+    role: primary
+  - type: research
+    ref: Harrison et al., 2014
+    url: https://doi.org/10.1109/TVCG.2014.2346979
+    note: "A crowdsourced experiment (n=1,755) that evaluated human perception of correlation across nine visualization types, finding scatterplots to be highly effective."
+    role: supporting
+  - type: research
+    ref: Kay & Heer, 2015
+    url: https://doi.org/10.1109/TVCG.2015.2467671
+    note: "A re-analysis and extension of Harrison et al.'s work, providing a more nuanced model for correlation perception in scatterplots."
+    role: related
+---
+
+## Guidance
+
+When the primary goal is to show the relationship or correlation between two quantitative variables, use a scatterplot.
+
+## Why
+
+Scatterplots directly map two quantitative variables to the two positional axes (X and Y). This direct mapping allows the human visual system to effectively perceive the overall shape, direction, and strength of the relationship as a visual pattern. Empirical studies have confirmed that viewers are better at estimating correlation from scatterplots than from many other visualization types, including parallel coordinate plots.
+
+## When it applies
+
+- When you have two paired quantitative variables (e.g., 'Height' and 'Weight', 'Temperature' and 'Ice Cream Sales').
+- When the main question is "Is there a relationship between variable A and variable B?".
+- For identifying patterns like linear trends, non-linear trends, and clusters.
+
+## Exceptions
+
+- **Many variables:** A standard scatterplot only shows two variables. For exploring correlations across many variables, a scatterplot matrix (SPLOM) or other multivariate visualization techniques might be necessary.
+- **Overplotting:** If you have a very large number of data points, a standard scatterplot can become a dense, unreadable blob. In this case, techniques like transparency, binning (creating a 2D histogram or hexbin plot), or sampling are needed to reveal the underlying density and patterns.
+
+## Trade-offs
+
+- **Clutter:** With a large dataset, a simple scatterplot can become cluttered and unreadable (overplotting).
+- **Limited Variables:** A single scatterplot is limited to showing the relationship between two (or maybe 3-4, with color and size) variables at a time.
+
+## Signs of Trouble
+
+- **Correlation Obscured:** You are trying to describe a correlation using a chart type not suited for it, such as a dual-axis line chart or a grouped bar chart, making the relationship difficult or impossible to see.
+- **"Hairball" Plot:** In a parallel coordinates plot with many data points, the lines are so dense that it's impossible to discern the pattern of correlation between any two axes.
+- **Overplotted Mess:** The scatterplot is just a solid block of color, obscuring the density and distribution of points within it.
+
+## How to Improve
+
+- **Quick Fix: Adjust Transparency.** If a scatterplot is overplotted, make the points semi-transparent. This allows dense regions to appear darker, revealing the underlying data distribution.
+- **Moderate Approach: Switch to a Scatterplot.** If you are using another chart type to show correlation, switch to a scatterplot. This is almost always the most direct and effective method.
+- **Comprehensive Approach: Use Binning for Large Datasets.** For very large datasets, replace the scatterplot of individual points with a 2D histogram or a hexbin plot. These charts divide the canvas into a grid and use color intensity to show the number of data points that fall into each bin, effectively solving the overplotting problem while still showing the correlation pattern.
+
+<split/>
+
+```md
+---
+id: mind-bar-chart-aspect-ratio-bias
+title: "Be mindful of aspect ratio bias when designing bar charts"
+
+tags:
+  - impact:perceptual
+  - chart:bar
+  - data:quantitative
+  - visual:length
+
+evidence:
+  strength: medium
+  summary: "Recent experiments have found a systematic bias in the perception of bar length related to its aspect ratio. Ceja et al. (2020) found that viewers tend to overestimate the value of short, wide bars and underestimate the value of tall, narrow bars. Square-like bars showed no systematic bias, resolving earlier contradictory findings in the literature."
+
+sources:
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://doi.org/10.1145/3544548.3581349
+    note: "Summarizes conflicting findings on bar chart bias and highlights Ceja et al. [15] as a recent experiment resolving the conflict by linking bias to aspect ratio (Table 8)."
+    role: primary
+  - type: research
+    ref: Ceja et al., 2020
+    url: https://doi.org/10.1109/TVCG.2020.3030386
+    note: "The primary study (n=3 experiments) that identified the aspect ratio effect: wide bars were overestimated, tall bars were underestimated."
+    role: supporting
+---
+
+## Guidance
+
+When designing bar charts, be aware that the aspect ratio of the bars (the ratio of width to height) can introduce a systematic perceptual bias.
+
+## Why
+
+Viewers do not perceive the length of a bar in isolation; its width influences their judgment. Research has shown that, on average:
+- **Tall, narrow bars** are perceived as shorter than they actually are (underestimation).
+- **Short, wide bars** are perceived as longer than they actually are (overestimation).
+- **Bars with a square-like aspect ratio** tend to be perceived most accurately, with no systematic bias.
+
+This means that simply changing the width of your bars (or the size of your chart) can alter how viewers interpret the data, even if the data itself remains unchanged.
+
+## When it applies
+
+- In any bar chart (vertical or horizontal).
+- Particularly relevant in responsive visualization design, where chart dimensions and bar widths might change dynamically.
+- When high-precision judgments are required from the chart.
+
+## Exceptions
+
+- When the bar chart is primarily used for coarse-grained comparisons (e.g., "which is biggest?") and small biases in perceived magnitude are not critical.
+- When direct data labels are applied to all bars, providing a textual way to get the exact value that can override the perceptual bias.
+
+## Trade-offs
+
+- **Aesthetics vs. Accuracy:** You may prefer the look of very thin or very thick bars, but this can come at the cost of perceptual accuracy.
+- **Information Density:** Using wider bars may reduce the number of categories you can fit into a given space.
+
+## Signs of Trouble
+
+- **Extreme Ratios:** The bars in your chart are either extremely tall and skinny or very short and wide.
+- **Inconsistent Widths:** Bars within the same chart have different widths, making comparisons invalid.
+- **Responsive Reflow Issues:** As the screen size changes, bars become progressively wider or thinner, which could be subtly shifting the audience's perception of the data.
+
+## How to Improve
+
+- **Quick Fix: Add Direct Data Labels.** This is the easiest way to mitigate the bias. By providing the exact number on or near the bar, you give viewers a way to get the precise value, reducing their reliance on potentially biased length perception.
+- **Moderate Approach: Aim for "Reasonable" Aspect Ratios.** While you don't need to make every bar a perfect square, avoid extreme aspect ratios. Strive for a "classic" bar chart look where the bar widths are substantial but not overwhelming, and gaps are present between bars.
+- **Comprehensive Approach: Consider a Dot Plot.** If extremely high-precision graphical perception is the top priority, consider switching to a dot plot. A dot plot encodes value using only the position of the dot, not the length of a bar, which may be less susceptible to this specific aspect ratio bias.
+
+<split/>
+
+```md
+---
+id: use-filled-shapes-for-color-marks
+title: "Use filled shapes for better color discrimination in point-based charts"
+
+tags:
+  - impact:perceptual
+  - chart:scatter
+  - visual:color
+  - visual:shape
+
+evidence:
+  strength: medium
+  summary: "In studies of multi-class scatterplots, filled shapes (e.g., ●) have been shown to make color differences more discriminable than unfilled shapes (e.g., ○) or line-based marks (e.g., +). This increases the viewer's ability to distinguish between categories."
+
+sources:
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://doi.org/10.1145/3544548.3581349
+    note: "Cites Smart & Szafir [92] finding that 'CH [Color Hue] are generally more discriminable with filled shapes than with unfilled ones' (p. 8) and uses this insight to propose an improvement to a Voyager recommendation (p. 12, Figure 5)."
+    role: primary
+  - type: research
+    ref: Smart & Szafir, 2019
+    url: https://doi.org/10.1109/TVCG.2019.2934294
+    note: "Primary study on multiclass scatterplots that found filled shapes offer better color discriminability than unfilled shapes."
+    role: supporting
+---
+
+## Guidance
+
+When using color to distinguish between categories in a point-based visualization like a scatterplot, use filled shapes (e.g., solid circles) rather than unfilled outlines or other non-filled marks (e.g., crosses, pluses).
+
+## Why
+
+A larger, solid area of color provides a stronger and clearer signal to the human visual system than a thin outline or a small line-based mark. This makes it easier for viewers to perceive the color and, consequently, to more quickly and accurately distinguish between different colored categories. Using unfilled shapes effectively reduces the amount of colored area for each mark, diminishing the strength of the color encoding.
+
+## When it applies
+
+- In scatterplots with multiple categorical groups distinguished by color.
+- In any chart using a legend where colored point markers represent different categories.
+- When accessibility is a concern, as a stronger color signal can also aid viewers with some forms of color vision deficiency.
+
+## Exceptions
+
+- **Overplotting:** In a scatterplot with a very high density of points, using semi-transparent, unfilled circles can sometimes help reveal underlying density and structure that would be obscured by solid, opaque marks. However, even here, using semi-transparent *filled* circles is often a better solution.
+- **Redundant Encoding:** If you are also using shape to encode a different variable (e.g., circles for 'Group A', squares for 'Group B'), you must use a mix of shapes. Even in this case, using filled versions of all shapes is preferable to unfilled ones.
+
+## Trade-offs
+
+- **Occlusion:** Filled shapes are more likely to occlude (cover up) other marks behind them compared to unfilled shapes, especially in dense plots. This trade-off can be managed with transparency.
+
+## Signs of Trouble
+
+- **"Find the Category" Game:** It's difficult to distinguish the colors of different categories in the plot because the marks are too small or thin (e.g., using a '.' or '+' marker).
+- **Muted Colors:** The colors in the plot appear washed out or less vibrant than in the legend because they are only being used for thin outlines.
+- **Legend-Chart Mismatch:** The large, solid color swatches in the legend look very different from the small, thin marks in the chart, making the mapping between them more difficult.
+
+## How to Improve
+
+- **Quick Fix: Change Mark Type.** In your plotting software, change the marker type from an open shape (like `'o'` with no fill in some libraries) or a line-based shape (like `'+'` or `'x'`) to a filled shape (like a solid circle). This is usually a one-line code or one-click setting change.
+- **Moderate Approach: Increase Mark Size.** In addition to using filled shapes, slightly increasing the size of the marks can further enhance color discriminability. Be careful not to make them so large that they cause excessive overplotting.
+- **Comprehensive Approach: Manage Overplotting with Transparency.** If using filled shapes leads to overplotting in dense areas, apply a level of transparency (alpha) to the marks. This preserves the benefit of the filled shape while allowing viewers to see the density of points where they overlap.
+
+```

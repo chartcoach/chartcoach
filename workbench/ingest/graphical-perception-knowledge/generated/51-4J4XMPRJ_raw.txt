@@ -1,0 +1,243 @@
+```md
+---
+id: avoid-size-encoding-in-scatter-mean-task
+title: "Avoid encoding a third variable with size in scatterplots when users need to judge the average position"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - impact:ethical
+  - chart:scatter
+  - task:summary-mean
+  - data:quantitative
+  - visual:size
+  - visual:position
+  - audience:general
+  - medium:static
+  - medium:screen
+  - access:cognitive-load-risk
+
+evidence:
+  strength: medium
+  summary: "A crowdsourced study (Hong et al. 2022, n=130) found that the perceived mean of a scatterplot is systematically biased toward the location of larger points due to a 'weighted average illusion.' The bias was significant and increased with the correlation between size and position, causing misjudgments of up to 7% of the chart's width."
+
+sources:
+  - type: research
+    ref: Hong, Witt, & Szafir, 2022
+    url: https://doi.org/10.1109/TVCG.2021.3114783
+    note: "Primary study (n=130) that quantified the 'weighted average illusion' for size in scatterplots, showing a significant bias toward larger points, especially when size and position are correlated."
+    role: primary
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://doi.org/10.1145/3544548.3581349
+    note: "Methodology paper for collating graphical perception knowledge, which this guideline is based upon. The JSON for the Hong et al. paper was extracted using this methodology."
+    role: related
+
+examples:
+  - type: bad
+    description: "A bubble chart shows life expectancy vs. GDP, with population encoded as bubble size. When asked to estimate the average life expectancy, viewers' judgment is pulled toward the values of high-population (large bubble) countries, leading to a biased estimate."
+  - type: good
+    description: "Instead of a single bubble chart, the data is faceted into small multiples (e.g., scatterplots for 'low population', 'medium population', and 'high population' countries). This removes the size variable from any single chart, eliminating the bias when judging the mean within each."
+
+---
+
+## Guidance
+
+When viewers need to estimate the average position of data points in a scatterplot (e.g., a bubble chart), do not use size to encode a third quantitative variable.
+
+## Why
+
+Humans have a strong, subconscious perceptual bias where larger points are given more "weight" when mentally calculating an average. This "weighted average illusion" systematically pulls the perceived mean away from the true, unweighted mean and towards the locations of the larger points. This can lead to significant misinterpretations of the data's central tendency, especially when judging if a data point is above or below average.
+
+### Core Principle
+
+Irrelevant or secondary visual features can unintentionally interfere with the primary task of judging position, leading to biased summary statistics. The visual salience of a mark (how much it stands out) is not separated from its positional value during ensemble processing tasks like averaging.
+
+## When it applies
+
+- When using a scatterplot or bubble chart.
+- When a primary task for the viewer is to assess the mean (average) of the data points, or to judge whether individual points are above or below the overall average.
+- When encoding a third quantitative variable using the `size` or `area` of the marks.
+
+## Exceptions
+
+- When the primary task is looking up individual values, and judging the overall mean is not important or relevant. In this case, size can be an effective channel for conveying the third variable.
+- If the goal is to *intentionally* create a weighted average visualization. However, this intent must be made explicit to the viewer with clear titles and annotations (e.g., "Population-Weighted Average") to avoid deception.
+
+## Trade-offs
+
+- You lose the ability to encode a third variable using the `size` channel within a single chart. This may require using more screen space (for small multiples) or a less effective channel (like color lightness) which has its own, albeit weaker, biasing effects.
+
+## Signs of Trouble
+
+- **Data Gravity:** When looking at the chart, does your eye get pulled toward a cluster of large bubbles? Is it difficult to mentally "ignore" the size of the points when trying to guess the average x or y value?
+- **Correlation Amplification:** The bias is strongest when the largest bubbles are clustered in one corner of the chart (e.g., a positive correlation where points in the top-right are also the largest).
+- **Misleading Comparisons:** Viewers incorrectly judge points as "above average" because the perceived average has been pulled down by a cluster of small points elsewhere, or vice versa.
+
+## How to Improve
+
+- **Quick Fix: Add a Reference Line.** Explicitly draw lines on the chart for the true (unweighted) x- and y-means. This gives viewers a concrete, unbiased reference point to use for judgment instead of relying on their biased perception.
+
+- **Moderate Redesign: Switch the Encoding Channel.** Use a different visual channel for the third variable, such as color lightness. The biasing effect still exists for color (darker points are weighted more), but research shows it is weaker than the effect of size.
+
+- **Comprehensive Redesign: Use Small Multiples.** Facet the data by the third variable. For example, create a series of smaller, uniformly-sized scatterplots for "low," "medium," and "high" values of the third variable. This completely separates the variables and eliminates the source of the perceptual interference.
+
+<split/>
+```md
+---
+id: use-lightness-cautiously-in-scatter-mean-task
+title: "Use color lightness cautiously for third variables in scatterplots when judging the mean"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:scatter
+  - task:summary-mean
+  - data:quantitative
+  - visual:color
+  - visual:position
+  - audience:general
+  - medium:static
+  - medium:screen
+  - access:cognitive-load-risk
+
+evidence:
+  strength: medium
+  summary: "A crowdsourced study (Hong et al. 2022, n=130) found that the perceived mean of a scatterplot is systematically biased toward the location of darker points. While the effect was weaker than the bias caused by point size, it still led to misjudgments, especially when the lightness of points was correlated with their position."
+
+sources:
+  - type: research
+    ref: Hong, Witt, & Szafir, 2022
+    url: https://doi.org/10.1109/TVCG.2021.3114783
+    note: "Primary study (n=130) that quantified the 'weighted average illusion' for color lightness in scatterplots, showing a bias toward darker points."
+    role: primary
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://doi.org/10.1145/3544548.3581349
+    note: "Methodology paper for collating graphical perception knowledge, which this guideline is based upon. The JSON for the Hong et al. paper was extracted using this methodology."
+    role: related
+
+examples:
+  - type: bad
+    description: "A scatterplot shows product satisfaction vs. price, with sales volume encoded by color lightness (high sales = dark points). Viewers estimating the average satisfaction level are biased by the dark points representing high-volume products, potentially misjudging the overall average."
+  - type: good
+    description: "The same scatterplot of satisfaction vs. price explicitly includes horizontal and vertical lines showing the true mean for each axis. An annotation explains, 'Solid lines indicate the average satisfaction and price across all products.'"
+
+---
+
+## Guidance
+
+When using color lightness (e.g., a sequential color scale) to encode a third variable in a scatterplot, be aware that darker points can bias the viewer's perception of the average position.
+
+## Why
+
+Similar to the bias from size, humans tend to give more perceptual "weight" to darker, more salient points when mentally averaging a group. This pulls the perceived mean towards the darker points. The effect is less pronounced than it is for size, but it can still lead to inaccurate estimations of a distribution's central tendency.
+
+### Core Principle
+
+The visual salience of a mark (how much it stands out) is not separated from its positional value during ensemble processing tasks like averaging. Darker marks are more salient and are therefore over-weighted in mental calculations.
+
+## When it applies
+
+- When using a scatterplot where point color lightness or saturation encodes a third quantitative variable.
+- When viewers need to estimate the mean (average) of the distribution, or judge whether points fall above or below that average.
+
+## Exceptions
+
+- If the primary task is pattern detection or clustering, and a precise, unbiased mean is not critical.
+- When using a diverging color scheme where the most salient colors are at both extremes of the scale, which may create a more complex (or balancing) set of biases.
+
+## Trade-offs
+
+- Using color lightness is a common and intuitive way to encode a third quantitative variable. Mitigating the bias may require adding chart elements (reference lines) that increase clutter or using a less common design (small multiples).
+- While color lightness creates less bias than size for this task, size can be a more precise and discriminable channel for individual lookup tasks. The choice involves a trade-off between task support.
+
+## Signs of Trouble
+
+- **Dark Spot Focus:** Are the darkest points in your chart clustered in one area? Does this cluster seem more prominent or "heavy" than lighter-colored areas?
+- **Subtle but Systematic Error:** If you ask users to click on the average position, do their clicks consistently fall closer to the cluster of dark points than the true mean?
+
+## How to Improve
+
+- **Quick Fix: Add Mean Reference Lines.** The most direct way to mitigate the bias is to explicitly draw horizontal and vertical lines indicating the true x- and y-means. This provides an unbiased anchor for judgment.
+
+- **Moderate Redesign: Reduce the Lightness Range.** Use a narrower range of color lightness (e.g., reduce the contrast between the lightest and darkest points). The research found that the bias was amplified by wider ranges, so limiting this range can reduce the effect.
+
+- **Comprehensive Redesign: Use an Alternative Encoding or Layout.** If an unbiased mean is critical, switch to an encoding that does not exhibit this bias (though options are limited) or use small multiples to facet the data by the third variable, which removes the source of the bias from any single chart.
+
+<split/>
+```md
+---
+id: avoid-correlation-between-position-and-salience
+title: "Anticipate strong bias when a point's size or lightness is highly correlated with its position"
+
+tags:
+  - impact:perceptual
+  - impact:ethical
+  - chart:scatter
+  - chart:bubble-chart
+  - task:summary-mean
+  - task:correlation
+  - data:quantitative
+  - data:correlation.high
+  - visual:size
+  - visual:color
+  - visual:position
+  - audience:general
+
+evidence:
+  strength: medium
+  summary: "Hong et al. (2022, n=130) demonstrated that the perceptual bias in judging a scatterplot's mean is significantly amplified when a point's size or lightness is correlated with its x/y position. For size, the bias in high-correlation conditions was up to 78% stronger than in low-correlation conditions."
+
+sources:
+  - type: research
+    ref: Hong, Witt, & Szafir, 2022
+    url: https://doi.org/10.1109/TVCG.2021.3114783
+    note: "Primary study (n=130) that shows the 'weighted average illusion' is dramatically amplified when the salience-encoding channel (size/lightness) is correlated with the position-encoding channels."
+    role: primary
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://doi.org/10.1145/3544548.3581349
+    note: "Methodology paper for collating graphical perception knowledge, which this guideline is based upon. The JSON for the Hong et al. paper was extracted using this methodology."
+    role: related
+
+examples:
+  - type: bad
+    description: "A bubble chart shows years of education vs. income, with a third variable like 'wealth' encoded by size. Because education, income, and wealth are all positively correlated, the largest bubbles cluster in the top-right corner. This creates a powerful perceptual pull that makes viewers overestimate the average income and education level."
+  - type: good
+    description: "To show the same correlated data, the designer uses small multiples. The data is binned into three groups by wealth ('low', 'medium', 'high'), and a separate scatterplot is shown for each. This allows for unbiased assessment of the mean within each group and clear comparison between groups."
+
+---
+
+## Guidance
+
+When encoding a third variable with size or color lightness in a scatterplot, recognize that the perceptual bias in judging the mean will be strongest when the third variable is highly correlated with the x and y variables.
+
+## Why
+
+When size or lightness is correlated with position, the most salient (largest or darkest) points naturally cluster together in one region of the chart. This grouping creates a strong, singular "center of gravity" that powerfully pulls the viewer's perceived average towards that cluster. This maximizes the "weighted average illusion," leading to the largest and most misleading errors in judgment.
+
+## When it applies
+
+- This is a condition of the data itself, not just a design choice. This guidance applies whenever you visualize trivariate data where the variable encoded by size or lightness is highly correlated (positively or negatively) with the variables encoded by position.
+- This is especially critical in exploratory analysis, where the user may not be aware of the underlying correlations and is most vulnerable to being misled.
+
+## Exceptions
+
+- There are no exceptions where the bias disappears under these conditions. The only reason to ignore this guidance is if judging the unweighted mean is completely irrelevant to the chart's purpose and there is no risk of viewers attempting to do so.
+
+## Trade-offs
+
+- Showing highly correlated trivariate data in a single scatterplot is inherently risky. The primary alternative, using small multiples, requires more screen space and makes it harder for a viewer to perceive the overall three-way relationship at a glance. You trade single-chart simplicity for multi-chart perceptual accuracy.
+
+## Signs of Trouble
+
+- **The "Up-and-to-the-Right" Problem:** Do the marks in your chart get progressively larger or darker as you move from the bottom-left to the top-right? This is a classic sign of high positive correlation across all three variables and a major red flag for this bias.
+- **One-Sided Salience:** Is one corner or side of the chart dominated by large or dark marks, while the opposite side contains all the small or light marks? This visual imbalance is a direct indicator of the data condition that causes the strongest bias.
+
+## How to Improve
+
+- **Acknowledge and Annotate (Mitigation).** If you must use a single chart, the most responsible action is to add explicit reference lines for the true unweighted mean and add an annotation that warns the viewer about the potential for bias. For example: "Note: The true average is shown by the solid lines; the visual average may appear higher due to the concentration of large circles in the top right."
+
+- **Use Small Multiples (Elimination).** This is the most effective solution. Facet the data by quantiles of the third variable (e.g., binning into "small," "medium," and "large" sizes) and create separate plots for each group. This breaks the perceptual link between size/lightness and position, removing the source of the bias and allowing for accurate judgment of the mean within each subgroup.
+```

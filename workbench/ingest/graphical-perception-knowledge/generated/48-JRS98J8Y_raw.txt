@@ -1,0 +1,317 @@
+```md
+---
+id: use-perceptually-uniform-colormaps
+title: "Use perceptually uniform colormaps for quantitative data"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - impact:ethical
+  - chart:heatmap
+  - chart:map.choropleth
+  - chart:scatter
+  - task:compare
+  - task:lookup
+  - task:distribution
+  - data:quantitative
+  - data:ordinal
+  - visual:color
+  - visual:color.colormap
+  - medium:screen
+  - medium:print
+  - access:cognitive-load-risk
+
+evidence:
+  strength: high
+  summary: "Synthesizes decades of research (Pizer, 1981; Levkowitz & Herman, 1992; Moreland, 2009) into a formal framework. Non-uniform colormaps (like rainbow) are shown to create false gradients and obscure features, while uniform colormaps (like Viridis) faithfully represent data structure. This is a foundational principle of visualization."
+
+sources:
+  - type: research
+    ref: Bujack et al., 2018
+    url: https://doi.org/10.1109/TVCG.2017.2743978
+    note: "Primary source. Proposes a mathematical framework defining perceptual uniformity as constant 'speed' through a perceptual color space (Section 4.2). Demonstrates how non-uniform colormaps like Rainbow have high variance in perceptual speed (Fig. 7c), distorting data."
+    role: primary
+  - type: research
+    ref: Levkowitz & Herman, 1992
+    url: https://doi.org/10.1109/38.125043
+    note: "Defines uniformity as equally spaced data values being represented by colors that are perceived as equally different. This is a foundational concept synthesized by Bujack et al."
+    role: supporting
+  - type: research
+    ref: Borland & Taylor, 2007
+    url: https://doi.org/10.1109/MCG.2007.323435
+    note: "Classic paper arguing the Rainbow colormap is 'considered harmful' precisely because of its lack of perceptual uniformity, which creates artificial boundaries in the data."
+    role: supporting
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://doi.org/10.1145/3544548.3581349
+    note: "This paper provides the methodology for collating and structuring graphical perception knowledge (like the principles from Bujack et al.) into a machine-readable format for visualization recommendation systems."
+    role: related
+
+tools:
+  - type: validate
+    name: ColorMeasures.org
+    url: http://colormeasures.org
+    description: "The online tool created by Bujack et al. to assess colormaps based on the perceptual rules in their paper, including uniformity (local and global speed)."
+  - type: implement
+    name: ColorBrewer
+    url: https://colorbrewer2.org
+    description: Provides pre-built, perceptually-sound sequential and diverging color schemes.
+  - type: validate
+    name: Viz Palette
+    url: https://projects.susielu.com/viz-palette
+    description: Allows you to see the 'steps' in your color palette, making it easy to spot non-uniformities.
+
+examples:
+  - type: good
+    caption: The Viridis colormap (Bujack et al., 2018, Fig 1f)
+    description: "The Viridis colormap was specifically designed for perceptual uniformity. It has low variations in perceptual 'speed,' meaning equal changes in the data correspond to equal perceptual changes in color. This ensures the data's structure is accurately represented."
+  - type: bad
+    caption: The Rainbow colormap (Bujack et al., 2018, Fig 1e)
+    description: "The rainbow colormap is highly non-uniform. It has a high perceptual speed around blue and low speed around green. This exaggerates changes in some parts of the data range and hides them in others, creating misleading visual artifacts."
+---
+
+## Guidance
+
+Use perceptually uniform colormaps to represent continuous quantitative or ordinal data. In a uniform colormap, equal steps in the data value correspond to equal perceptual steps in color.
+
+## Why
+
+The human visual system does not perceive differences in hue, saturation, and lightness equally. Non-uniform colormaps, like the common rainbow scale, can make small data changes look enormous while making large changes nearly invisible. This misrepresents the data, creating misleading visual artifacts like false boundaries and obscuring important features.
+
+### Core Principle
+
+Visual encodings should be faithful to the data's structure. The perceived magnitude of change in the visualization should directly correspond to the magnitude of change in the data.
+
+## When it applies
+
+- When using a continuous color scale to represent ordered data (quantitative or ordinal).
+- In chart types like heatmaps, choropleth maps, or any visualization where color represents a continuous value.
+- When the goal is to accurately represent the structure, gradients, and relative magnitudes within the data.
+
+## Exceptions
+
+- **Categorical Data:** Uniformity is not a relevant concept for encoding distinct, unordered categories.
+- **Highlighting:** If the specific goal is to draw attention to a particular value range (e.g., a critical threshold), a non-uniform, diverging, or accent color scheme might be intentionally used. This, however, changes the task from exploration to highlighting.
+
+## Trade-offs
+
+- **Aesthetic vibrancy:** Strictly uniform colormaps might appear less vibrant or saturated than non-uniform ones like the rainbow. The most uniform colormap is greyscale, which lacks the appeal of color for many applications.
+- **Discriminative Power:** There can be a trade-off between perfect uniformity and discriminative power (the total number of discernible color steps). Some colormaps may sacrifice a little uniformity to achieve a wider perceptual range.
+
+## Signs of Trouble
+
+- **False Bands:** The colormap appears to have distinct stripes or bands of color, even though the underlying data is continuous. This is a classic sign of non-uniformity (e.g., the sharp transition from yellow to green in a rainbow).
+- **Hidden Features:** When switching to a uniform colormap (like greyscale or Viridis), new patterns or gradients suddenly appear that were invisible before.
+- **Exaggerated Features:** The colormap shows dramatic "cliffs" or "peaks" that are not present in the underlying data. This often happens in the high-frequency color regions of a rainbow map (like cyan and yellow).
+- **Uneven Gradients:** The gradient looks like it speeds up and slows down. For example, it seems to change very slowly in one area (e.g., shades of green) and very quickly in another (e.g., blue to cyan).
+
+## How to Improve
+
+- **Quick Fix: Switch to Greyscale.** A simple black-to-white luminance ramp is perceptually uniform. While it lacks color, it's a safe and immediate way to remove the distortions of a poor colormap.
+
+- **Moderate Approach: Use a Pre-built Uniform Colormap.** Replace the problematic colormap with a scientifically-designed one. Most modern visualization libraries have these built-in.
+  - **Sequential Data:** Use colormaps like `Viridis`, `Plasma`, `Inferno`, or `Magma`.
+  - **Diverging Data:** Use colormaps like `Cool-Warm` (from Moreland) or `Blue-Red`. Tools like ColorBrewer provide excellent options.
+
+- **Comprehensive Approach: Assess and Design.** Use a tool like [ColorMeasures.org](http://colormeasures.org) to analyze your colormap's perceptual speed and uniformity. If creating a custom colormap, ensure it forms a straight line in a perceptually uniform color space (like CIELAB or CIECAM02-UCS) to achieve uniformity.
+
+<split/>
+```md
+---
+id: ensure-colormap-perceptual-order
+title: "Ensure continuous colormaps have an intuitive perceptual order"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:heatmap
+  - chart:map.choropleth
+  - task:rank
+  - task:compare
+  - task:direction
+  - data:quantitative
+  - data:ordinal
+  - visual:color
+  - visual:color.colormap
+  - access:cognitive-load-risk
+
+evidence:
+  strength: high
+  summary: "A foundational principle in visualization, synthesized by Bujack et al. (2018) from decades of research (Ware, 1988; Moreland, 2009). Colormaps without a clear perceptual order (like rainbow) prevent users from judging relative value, forcing high cognitive load to constantly reference a legend. This is demonstrated by the failure of rainbow colormaps in simple three-color sorting tasks."
+
+sources:
+  - type: research
+    ref: Bujack et al., 2018
+    url: https://doi.org/10.1109/TVCG.2017.2743978
+    note: "Primary source. Defines and provides mathematical measures for different types of order, including local vs. global and legend-based vs. intuitive (Section 4.3). Shows how the rainbow colormap fails global intuitive order checks (Fig. 11e)."
+    role: primary
+  - type: research
+    ref: Ware, 1988
+    url: https://doi.org/10.1109/38.7744
+    note: "Foundational work explaining that for a colormap to be intuitively ordered, it should have a monotonic relationship with luminance. The rainbow map violates this, as yellow is more luminous than colors on either side of it."
+    role: supporting
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://doi.org/10.1145/3544548.3581349
+    note: "This paper provides the methodology for collating and structuring graphical perception knowledge (like the principles from Bujack et al.) into a machine-readable format for visualization recommendation systems."
+    role: related
+
+tools:
+  - type: validate
+    name: ColorMeasures.org
+    url: http://colormeasures.org
+    description: "The online tool from Bujack et al. which can assess a colormap's intuitive order by calculating the 'triangle side difference' (local and global)."
+  - type: implement
+    name: ColorBrewer
+    url: https://colorbrewer2.org
+    description: "Provides sequential colormaps (e.g., 'YlGnBu') that are designed to have a clear perceptual order based on luminance and hue progression."
+
+examples:
+  - type: good
+    caption: A greyscale colormap (Bujack et al., 2018, Fig 11a)
+    description: "A simple black-to-white luminance ramp has a perfect, intuitive perceptual order. Any three colors chosen from the ramp can be correctly sorted by any viewer without a legend."
+  - type: bad
+    caption: The rainbow colormap (Bujack et al., 2018, Fig 11e)
+    description: "The rainbow colormap lacks a global intuitive order. For example, if you pick red, green, and blue, which value is in the middle? There is no clear perceptual progression, making it impossible to sort values without memorizing the legend (red-orange-yellow-green-blue...)."
+---
+
+## Guidance
+
+When representing ordered data (quantitative or ordinal), use a colormap that has a clear and intuitive perceptual order. A viewer should be able to correctly determine if one color represents a higher or lower value than another without relying on the legend.
+
+## Why
+
+If a colormap lacks a clear perceptual order, viewers cannot perform basic comparison tasks. They cannot judge the relative magnitude of values, identify trends, or determine direction (is it increasing or decreasing?). This forces them into a slow, error-prone cycle of looking at a color in the chart, finding it in the legend, reading the value, and repeating for every comparison. This dramatically increases cognitive load and undermines the purpose of the visualization.
+
+### Core Principle
+
+Visual encodings should match the structure of the data. Ordered data requires an ordered visual representation. The human visual system primarily uses luminance to infer order and shape.
+
+## When it applies
+
+- When using a continuous color scale to represent ordered data (quantitative or ordinal).
+- For tasks that involve ranking, comparing, or identifying the direction of data.
+- For any chart where color represents a continuous value, such as a heatmap or a choropleth map.
+
+## Exceptions
+
+- **Categorical Data:** Order is not a meaningful concept for unordered categories. Here, the goal is discriminability, not order.
+- **Diverging Data:** A diverging colormap has two opposite orders moving away from a central, neutral color. It is effectively two ordered colormaps joined together. It has order, but it is not a single monotonic progression.
+
+## Trade-offs
+
+- **Constrained Color Choice:** Requiring a strict perceptual order, especially one based on monotonically increasing luminance, limits the available palette. You cannot, for example, have a colormap that goes from dark blue to bright yellow and back to dark red, as this would violate the principle of order.
+
+## Signs of Trouble
+
+- **The Three-Color Test:** Pick three colors from different parts of the colormap. Can you (or a colleague) confidently place them in order from low to high? If not, the colormap lacks intuitive order.
+- **The Squint Test:** Squint at the visualization. Does the form dissolve into a series of disconnected color patches instead of a coherent shape? This often indicates a lack of luminance order. The rainbow colormap fails this test, as the bright yellow band in the middle breaks the form.
+- **Legend Dependence:** You find yourself constantly moving your eyes back and forth between the chart and the legend to understand basic relationships.
+
+## How to Improve
+
+- **Quick Fix: Add Contours or Labels.** If you must use a poorly-ordered colormap, overlaying explicit contour lines or data labels can provide the ordering information that the colormap fails to convey. This is a crutch, not a fix.
+
+- **Moderate Approach: Use a Single-Hue or Two-Hue Progression.** A simple way to ensure order is to use a sequential colormap that varies primarily in lightness and saturation within a single hue (e.g., light blue to dark blue) or between two adjacent hues (e.g., yellow to green). ColorBrewer is an excellent source for these.
+
+- **Comprehensive Approach: Use a Monotonic Luminance Ramp.** The most robust way to create perceptual order is to ensure the colormap's luminance is monotonically increasing (or decreasing). Colormaps like `Viridis` or a simple greyscale ramp are designed this way. This directly leverages the visual system's ability to perceive shape from shading.
+
+<split/>
+```md
+---
+id: ensure-colormap-discriminative-power
+title: "Ensure colormaps have sufficient discriminative power for the task"
+
+tags:
+  - impact:perceptual
+  - chart:heatmap
+  - chart:map.choropleth
+  - task:lookup
+  - task:compare
+  - data:quantitative
+  - data:cardinality.high
+  - visual:color
+  - visual:color.colormap
+
+evidence:
+  strength: high
+  summary: "Bujack et al. (2018) formalize the concept of 'discriminative power' as the perceptual path length of a colormap. A colormap with low discriminative power (e.g., a short grayscale ramp) cannot distinguish between many different values, causing data to be clumped together. Colormaps with longer perceptual paths (like Viridis or Rainbow) allow for finer distinctions, though they may introduce other trade-offs like non-uniformity."
+
+sources:
+  - type: research
+    ref: Bujack et al., 2018
+    url: https://doi.org/10.1109/TVCG.2017.2743978
+    note: "Primary source. Defines discriminative power and distinguishes between local (neighboring colors) and global (any two colors) versions (Section 4.1). Measured as the average perceptual speed, it shows Rainbow has high discriminative power but poor uniformity, while Greyscale is uniform but has lower power (Fig. 4)."
+    role: primary
+  - type: research
+    ref: Pizer et al., 1982
+    url: https://spie.org/Publications/Proceedings/Paper/10.1117/12.933458
+    note: "Describes colormap 'sensitivity' in terms of the number of Just Noticeable Differences (JNDs), a direct precursor to the concept of discriminative power or perceptual path length, which Bujack et al. build upon."
+    role: supporting
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://doi.org/10.1145/3544548.3581349
+    note: "This paper provides the methodology for collating and structuring graphical perception knowledge (like the principles from Bujack et al.) into a machine-readable format for visualization recommendation systems."
+    role: related
+
+tools:
+  - type: validate
+    name: ColorMeasures.org
+    url: http://colormeasures.org
+    description: "The online tool from Bujack et al. that directly calculates the local and global discriminative power (as 'average speed') for any given colormap."
+  - type: implement
+    name: Chroma.js
+    url: https://gka.github.io/chroma.js/
+    description: A JavaScript library for color conversions and scale generation that can help in creating colormaps with a desired number of perceptual steps.
+
+examples:
+  - type: good
+    caption: The Rainbow colormap (for discriminative power ONLY)
+    description: "As shown by Bujack et al. (Fig. 4), the rainbow colormap has the highest average 'speed' or discriminative power. Its long path through color space allows it to represent many distinct steps. However, this comes at the severe cost of poor uniformity and order."
+  - type: bad
+    caption: A short or 'flat' greyscale colormap (Bujack et al., 2018, Fig 1c)
+    description: "A colormap that only uses a small range of colors (e.g., mid-grays) has very low discriminative power. It is impossible to distinguish between different data values because they are all mapped to nearly the same color. This effectively erases detail from the data."
+---
+
+## Guidance
+
+Select a colormap with sufficient discriminative power, meaning it travels a long enough path through perceptual color space to make data variations visible. The goal is to ensure that different data values are mapped to perceptibly different colors.
+
+## Why
+
+If a colormap has low discriminative power (a "short" perceptual path), a wide range of data values will be mapped to colors that are indistinguishable from one another. This effectively reduces the resolution of the data, hiding details, obscuring gradients, and making it impossible to perform accurate lookups or comparisons. The visualization will appear washed out or "muddy," with large areas of seemingly constant color.
+
+### Core Principle
+
+The visualization should have enough perceptual resolution to represent the significant variations present in the data.
+
+## When it applies
+
+- When visualizing data with a wide range of values or high cardinality.
+- When the task requires identifying subtle variations or looking up values with some precision.
+- For any chart using a continuous colormap, but especially those where small variations are meaningful (e.g., medical imaging, scientific simulation).
+
+## Exceptions
+
+- **Low-Resolution Data:** If the source data itself has very few distinct levels, a colormap with high discriminative power is unnecessary and could even be misleading by suggesting more precision than exists.
+- **Highlighting:** When the goal is to group data into a few broad classes (e.g., "low," "medium," "high"), a simple, "short" colormap with just a few distinct steps may be more effective than a fully continuous one. This is closer to a binning task.
+
+## Trade-offs
+
+- **Uniformity and Order:** Maximizing discriminative power can often come at the expense of perceptual uniformity and order. The rainbow colormap is a classic example: it has very high discriminative power because it traverses a long, winding path through color space, but this path is not uniform and lacks a clear perceptual order.
+- **Aesthetics:** Colormaps with very high discriminative power can sometimes appear garish or overly saturated. Well-designed colormaps like Viridis strike a balance between good discriminative power and other desirable properties.
+
+## Signs of Trouble
+
+- **Muddy Patches:** Large areas of the visualization appear to be a single, uniform color, even though you know the underlying data contains variation.
+- **Lost Detail:** When you probe the data, you find significant numerical differences between points that look exactly the same color in the visualization.
+- **Short Legend:** The color legend shows a very short gradient that changes only slightly from one end to the other.
+
+## How to Improve
+
+- **Quick Fix: Increase Color Range.** If using a simple single-hue ramp (e.g., light blue to dark blue), ensure it spans a wide range of lightness. A ramp from 10% to 90% lightness will have much more discriminative power than one from 40% to 60%.
+
+- **Moderate Approach: Switch to a Multi-Hue Colormap.** A perceptually-ordered, multi-hue colormap (like `Viridis` or `YlGnBu` from ColorBrewer) naturally travels a longer path through color space than a single-hue one, providing greater discriminative power while maintaining good perceptual properties.
+
+- **Comprehensive Approach: Analyze Perceptual Path Length.** Use a tool like [ColorMeasures.org](http://colormeasures.org) to calculate the "average speed" (discriminative power) of your colormap. Compare it to established benchmarks. For example, Bujack et al. show that Viridis and the Cool/Warm divergent map have significantly more discriminative power than a standard greyscale map, while avoiding the pitfalls of the rainbow map. Choose a map that balances a high average speed with low standard deviation (uniformity).
+```

@@ -1,0 +1,162 @@
+```md
+---
+id: use-colorfield-for-average-summary
+title: "Use a colorfield chart to judge average values across time-series regions"
+
+tags:
+  - impact:perceptual
+  - impact:performance
+  - chart:line
+  - chart:heatmap
+  - task:summary-mean
+  - task:compare
+  - data:temporal
+  - data:quantitative
+  - visual:color
+  - visual:position
+  - audience:general
+  - medium:screen
+  - access:color-vision-risk
+
+evidence:
+  strength: medium
+  summary: "Correll et al. (2012, n=66) found in a crowd-sourced experiment that for judging the average value of regions in time-series data, a colorfield chart (color encoding) was significantly more accurate than a standard line chart (position encoding) (F(1,1921)=143.75, p < 0.0001)."
+
+sources:
+  - type: research
+    ref: Correll et al., 2012
+    url: https://doi.org/10.1145/2207676.2208556
+    note: "Primary study (n=66 after exclusions) comparing line charts and colorfield charts for an aggregate judgment task. Found colorfields led to significantly higher accuracy."
+    role: primary
+  - type: research
+    ref: Cleveland & McGill, 1984
+    url: https://doi.org/10.2307/2288400
+    note: "Foundational work establishing the general superiority of position over color for quantitative tasks. This guideline represents a task-specific exception to that general principle."
+    role: related
+
+examples:
+  - type: good
+    description: "A colorfield chart (similar to a 1D heatmap) is used to encode time-series values. This leverages perceptual averaging, making it easier to judge the average value of each monthly segment."
+    url: https://i.imgur.com/K3Z4a2a.png # Screenshot of Figure 3(c) from the paper
+  - type: bad
+    description: "A standard line chart is used for the same task. While good for seeing trends and peaks, it requires more cognitive effort to estimate the average value of each monthly segment, leading to lower accuracy on this specific task."
+    url: https://i.imgur.com/K5bM23F.png # Screenshot of Figure 3(a) from the paper
+---
+
+## Guidance
+
+For tasks requiring users to judge the average value of regions within a dense time-series, prefer encoding the values with color (e.g., a colorfield or 1D heatmap) over position (e.g., a line chart).
+
+## Why
+
+The human visual system can efficiently perform "perceptual averaging" on features like color across a spatial region. In contrast, mentally calculating the average height of a complex line shape is a more cognitively demanding task. Using color outsources this averaging work to the pre-attentive visual system, leading to higher accuracy for this specific summary task.
+
+### Core Principle
+
+Match the visual encoding to the perceptual task. While position is superior for looking up individual values, color can be superior for judging spatial aggregates.
+
+## When it applies
+
+- When the primary task is to compare the *average* value of different segments in a dense time-series (e.g., "Which month had the highest average sales?").
+- When an overview or summary judgment is more important than reading precise individual data points.
+
+## Exceptions
+
+- If the primary task is to identify precise values, find peaks/troughs, or judge the exact slope or rate of change. A line chart (position) is superior for these detail-oriented tasks.
+- When designing for audiences with color vision deficiencies, as reliance on color introduces accessibility barriers. Additional encodings or affordances would be needed.
+
+## Trade-offs
+
+- **Reduced Precision:** You sacrifice the ability for users to look up precise individual values, which a line chart's y-axis provides.
+- **Accessibility:** Relying on color makes the chart inaccessible to users with certain types of color vision deficiency unless a carefully designed, perceptually uniform, and tested palette is used.
+- **Familiarity:** Line charts are a much more conventional and familiar representation for time-series data. A colorfield may require more initial explanation for a general audience.
+
+## Signs of Trouble
+
+- **User Error:** Users consistently misjudge which region has the highest or lowest average when using a line chart for a dense dataset.
+- **"Peak" Confusion:** Users mistakenly identify the region with the highest single point (the peak) as the one with the highest average.
+- **Slow Performance:** Users take a long time to answer questions about regional averages, suggesting they are performing slow, serial mental calculations rather than getting a quick visual impression.
+
+## How to Improve
+
+- **Quick Fix: Annotate the Line Chart.** On an existing line chart, add visual annotations that highlight the average for each region, such as a faint horizontal line. This adds a direct encoding of the summary statistic without changing the chart type.
+
+- **Moderate Redesign: Switch to a Colorfield.** Change the chart type from a line chart to a colorfield (or 1D heatmap). Map the data values to a perceptually uniform color scale (e.g., from ColorBrewer). This directly enables perceptual averaging.
+
+- **Comprehensive Approach: Provide Linked Views.** Offer both a colorfield chart for high-level summary judgments and a traditional line chart for detailed exploration. Selecting a region in the colorfield could highlight or filter the corresponding section in the line chart, giving users the benefits of both encodings.
+```
+
+<split/>
+
+```md
+---
+id: shuffle-pixels-for-average-judgment
+title: "Randomly permute data points within a region to improve perceptual averaging"
+
+tags:
+  - impact:perceptual
+  - impact:performance
+  - chart:heatmap
+  - task:summary-mean
+  - data:temporal
+  - data:quantitative
+  - visual:color
+  - access:cognitive-load-risk
+
+evidence:
+  strength: medium
+  summary: "Correll et al. (2012, n=66) found that permuting (shuffling) the data points within each monthly region of a colorfield chart led to significantly higher accuracy for average-judgment tasks compared to an ordered colorfield (mean accuracy 91.4% vs 81.5%). The interaction between display type and permutation was significant (p < 0.0001)."
+
+sources:
+  - type: research
+    ref: Correll et al., 2012
+    url: https://doi.org/10.1145/2207676.2208556
+    note: "Study found that a 2D permutation of data points in the colorfield condition significantly improved performance, supporting a perceptual averaging theory. This effect was not present for line charts."
+    role: primary
+
+examples:
+  - type: good
+    description: "The data points within each month are randomly permuted (shuffled). This mixes the colors, making the local average more representative of the global average for the region and making the perceptual averaging task easier and more accurate."
+    url: https://i.imgur.com/kP4U1vX.png # Screenshot of Figure 3(d) from the paper
+  - type: bad
+    description: "The data points are ordered by time. Strong trends or patterns within a month can create large patches of uniform color, potentially biasing the user's perception of the average."
+    url: https://i.imgur.com/K3Z4a2a.png # Screenshot of Figure 3(c) from the paper
+---
+
+## Guidance
+
+When using a colorfield (1D heatmap) for judging average values of discrete regions, randomly permuting the data points within each region can improve user accuracy.
+
+## Why
+
+Perceptual averaging is most effective when the colors to be averaged are spatially close. In an ordered time-series colorfield, trends can create large, uniform color patches, forcing the visual system to average over a wider, more challenging area. Permuting the data points (shuffling the pixels) breaks up these patterns, mixing the colors within each region. This makes the local average more representative of the region's global average, making the perceptual task easier and more accurate.
+
+### Core Principle
+
+Facilitate pre-attentive processing by optimizing the spatial layout of visual information for the specific perceptual mechanism being leveraged.
+
+## When it applies
+
+- When using a colorfield or heatmap to help users judge the average value of discrete, bounded regions.
+- When the underlying data within regions may have strong trends or patterns that could bias the perception of the overall average color.
+
+## Exceptions
+
+- If preserving the internal pattern or trend within each region is also important to the user's task. Permutation intentionally destroys this information.
+- If the regions are very small (containing only a few data points), the effect of permutation will be negligible.
+
+## Trade-offs
+
+- **Loss of Detail:** This technique intentionally destroys the low-level temporal pattern (the "shape" of the data) within each region to improve perception of the summary statistic (the average). It is only suitable when the summary is the primary goal.
+- **Unfamiliarity:** A permuted or "noisy" looking chart is highly unconventional and may be perceived as an error or a "broken" visualization if not explained.
+
+## Signs of Trouble
+
+- **"Trend" Bias:** When using an ordered colorfield, users' judgments of the average seem to be biased by strong trends within a region (e.g., they might overestimate the average of a region that ends on a high note, even if the overall average is lower).
+
+## How to Improve
+
+- **Quick Approach: Add an Average Indicator.** If you cannot permute the data, add a separate, explicit visual indicator of the average for each region, such as a colored border or an overlaid glyph whose color represents the average.
+
+- **Comprehensive Approach: Implement Permutation.** For each defined region (e.g., a month), take all the data points belonging to it and randomly reorder them before rendering them as colored blocks. This directly optimizes the chart for perceptual averaging, but be sure to include a note for users explaining that the noisy appearance is intentional for improved summary perception.
+```

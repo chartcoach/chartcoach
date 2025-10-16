@@ -1,0 +1,228 @@
+```md
+---
+id: encode-deltas-for-comparison
+title: "Directly encode differences (deltas) for comparison tasks"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - impact:performance
+  - chart:bar
+  - chart:dot-plot
+  - chart:line
+  - task:compare
+  - task:rank
+  - task:filter
+  - task:aggregate
+  - task:direction
+  - data:quantitative
+  - visual:position
+  - visual:length
+  - medium:static
+  - medium:screen
+  - access:cognitive-load-risk
+
+evidence:
+  strength: medium
+  summary: "Nothelfer & Franconeri (2020, n=39) found in three experiments that directly encoding the difference (delta) between two data points significantly improved performance over showing individual values. Benefits ranged from a 25% reduction in error to a 95% improvement in task speed, depending on the task."
+
+sources:
+  - type: research
+    ref: Nothelfer & Franconeri, 2020
+    url: https://doi.org/10.1109/TVCG.2019.2934801
+    note: "Across three experiments (n=39), directly encoding deltas was significantly better than showing individual values for visual search (49-95% faster, p<0.001), proportion judgment (30% more accurate, p<0.001), and averaging (25% less error, p<0.001)."
+    role: primary
+
+---
+## Guidance
+
+Directly encode the difference (delta) between pairs of data values instead of showing the two individual values, especially when the primary task is to understand the relationship between them.
+
+## Why
+
+The human visual system is inefficient at perceiving relations between separate objects. It requires a slow, serial process of identifying each object, computing the relation, and then moving to the next. Explicitly encoding the delta transforms this difficult relational task into a simple perceptual task of reading a single value (e.g., the length of one bar), which is much faster and more accurate.
+
+### Core Principle
+
+Make the most important comparisons the easiest to see. Convert a complex cognitive calculation into a simple perceptual judgment.
+
+## When it applies
+
+- When the user's primary goal is to compare pairs of values (e.g., before vs. after, target vs. actual).
+- When showing the magnitude or direction of change is more important than the absolute values.
+- In charts like bar charts, dot plots, or slope graphs where pairs of values are being compared.
+
+## Exceptions
+
+- When the absolute values are critical context and cannot be removed (e.g., needing to know if a score changed from 90 to 95 vs. 10 to 15). In these cases, a difference overlay may be a better compromise than a separate delta chart.
+- When the user needs to perform tasks on the individual values, not just the relationship between them.
+
+## Trade-offs
+
+- **Loss of Context:** Displaying only deltas removes the context of the original absolute values. You lose the baseline information.
+- **Increased Space:** A separate delta chart can take up more dashboard real estate.
+
+## Signs of Trouble
+
+- **Back-and-Forth:** Viewers have to repeatedly look back and forth between two bars or points to judge the difference.
+- **Mental Math:** Viewers are mentally subtracting values to understand the change.
+- **Slow Task Performance:** It takes a long time for users to find a specific change or summarize the overall trend.
+
+## How to Improve
+
+- **Quick Fix: Add a Delta Annotation.** If you must keep a chart of individual values, add explicit text labels showing the difference (e.g., "+5%" or "-$20"). This provides a cognitive shortcut even if the perceptual task is hard.
+
+- **Moderate Approach: Use a Difference Overlay.** On a grouped bar chart, overlay a mark (like a line or arrow) that explicitly shows the delta between the two bars. This preserves the absolute values while adding a direct encoding of the difference.
+
+- **Comprehensive Approach: Create a Dedicated Delta Chart.** Replace or supplement the chart of individual values with a chart that directly plots the differences. For example, use a bar chart showing the net change for each category, centered on a zero baseline.
+
+```
+
+<split/>
+
+```md
+---
+id: use-delta-charts-for-search
+title: "Use delta charts to quickly find specific relational patterns"
+
+tags:
+  - impact:perceptual
+  - impact:performance
+  - chart:bar
+  - chart:dot-plot
+  - task:filter
+  - task:lookup
+  - data:quantitative
+  - visual:position
+  - visual:length
+  - medium:static
+  - medium:screen
+
+evidence:
+  strength: medium
+  summary: "Nothelfer & Franconeri (2020, n=13) found that for visual search tasks, delta charts were staggeringly more efficient, accelerating search rates by 49-95% compared to charts showing individual values. This effectively transformed a slow serial search into a fast, near-parallel one."
+
+sources:
+  - type: research
+    ref: Nothelfer & Franconeri, 2020
+    url: https://doi.org/10.1109/TVCG.2019.2934801
+    note: "Experiment 1 (n=13) measured visual search efficiency for a target relationship. Directly encoding deltas reduced search times from 164-266 ms per additional item to just 8-135 ms per item, a 49-95% improvement (p<0.001)."
+    role: primary
+
+---
+## Guidance
+
+To help users quickly locate a specific instance of a relationship (e.g., "find the only department that had a decrease"), represent the data using a delta chart.
+
+## Why
+
+Searching for a relationship between two separate marks (e.g., a short bar next to a tall bar) is a slow, serial cognitive task that requires focused attention on each pair. Searching for a single mark with a unique visual property (e.g., a single red bar, or the only bar below the zero line) is a much faster, often pre-attentive perceptual task. A delta chart converts the slow, difficult task into the fast, easy one.
+
+### Core Principle
+
+Transform serial cognitive tasks into parallel perceptual tasks for massive efficiency gains.
+
+## When it applies
+
+- When the user needs to perform a "find the odd one out" or "pop-out" task based on a relationship (e.g., increase vs. decrease, positive vs. negative).
+- In dashboards or exploratory tools where a user is scanning a large amount of data for a specific pattern or anomaly.
+
+## Exceptions
+
+- When the absolute values of the items being searched are also important for identification. For example, if the task is "find the state with the biggest increase that started above $50M," a delta chart alone would be insufficient.
+
+## Trade-offs
+
+- Displaying only deltas removes the context of the original absolute values, which might be necessary for other tasks.
+
+## Signs of Trouble
+
+- **Slow Scanning:** Users have to slowly scan from pair to pair to find the one they are looking for, rather than the target "popping out."
+- **High Error Rate:** Users frequently miss the target or select the wrong one because the search process is too mentally taxing.
+- **User Complaints:** Users describe the task as "tedious" or "like finding a needle in a haystack."
+
+## How to Improve
+
+- **Comprehensive Approach: Use a Delta Chart.** Instead of a grouped bar chart showing 'before' and 'after' values, create a single bar chart showing the 'change'. The item to be found (e.g., the only decrease) will be visually distinct (e.g., the only bar pointing down or colored differently) and will pop out to the viewer.
+
+```
+
+<split/>
+
+```md
+---
+id: prefer-position-length-over-slope
+title: "Use position or length over slope for comparing relational data"
+
+tags:
+  - impact:perceptual
+  - impact:performance
+  - chart:bar
+  - chart:dot-plot
+  - chart:line
+  - task:compare
+  - task:filter
+  - task:aggregate
+  - data:quantitative
+  - visual:position
+  - visual:length
+  - visual:angle
+  - visual:shape
+
+evidence:
+  strength: high
+  summary: "Nothelfer & Franconeri (2020, n=26) found that encodings using position (dot plots) and length (bar charts) were significantly faster and more accurate than those using slope. This result strongly reinforces the foundational perceptual rankings established by Cleveland & McGill (1984) and replicated since."
+
+sources:
+  - type: research
+    ref: Nothelfer & Franconeri, 2020
+    url: https://doi.org/10.1109/TVCG.2019.2934801
+    note: "Experiments 1 & 2 (n=26 total) showed that slope encodings led to significantly slower search rates and lower accuracy (p<0.001) than position or length encodings for relational tasks."
+    role: primary
+  - type: research
+    ref: Cleveland & McGill, 1984
+    url: https://doi.org/10.2307/2288400
+    note: "Foundational work establishing the perceptual hierarchy where position and length are judged more accurately than angle/slope."
+    role: supporting
+
+---
+## Guidance
+
+When creating charts for comparing pairs of values, prefer to use position (as in a dot plot) or length (as in a bar chart) over slope or angle (as in a slope graph).
+
+## Why
+
+Humans are perceptually more accurate and efficient at judging differences in position along a common scale and differences in length than they are at judging differences in angle or orientation. Choosing an encoding that aligns with this perceptual hierarchy reduces cognitive load and leads to faster, more accurate interpretation.
+
+### Core Principle
+
+Align your choice of visual encoding with the known hierarchy of human perceptual accuracy.
+
+## When it applies
+
+- When choosing a chart type to show comparisons between pairs of quantitative values.
+- When the primary task is to judge the magnitude or direction of change.
+- This applies to both standard charts (e.g., grouped bar charts) and delta charts (e.g., bar chart of differences).
+
+## Exceptions
+
+- Slope graphs can be very effective for the specific task of showing **rank change** over two points in time. Their primary value in that context comes from showing the crossings and re-ordering of lines, a task for which bar charts or dot plots are less suited.
+
+## Trade-offs
+
+- Bar charts and dot plots may take up more horizontal space than a compact slope graph.
+- A slope graph can sometimes feel more connected and fluid for showing change between two states.
+
+## Signs of Trouble
+
+- **Inaccurate Judgments:** Users struggle to accurately perceive the size of the change in a slope graph, often misjudging which changes are larger or smaller.
+- **Slow Comparisons:** It takes users longer to compare changes when they are encoded as slopes versus when they are encoded as lengths on a common baseline.
+- **Inconsistent Interpretation:** Different users arrive at different conclusions about the relative size of changes.
+
+## How to Improve
+
+- **Comprehensive Approach: Change the Chart Type.** If you are using a slope graph primarily to show the magnitude of change, consider switching to a chart that uses a more accurate encoding:
+  - A **bar chart** plotting the deltas.
+  - A **dumbbell plot** (or connected dot plot), which uses position on a common scale.
+
+```

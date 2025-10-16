@@ -1,0 +1,179 @@
+```md
+---
+id: use-discontinuous-colormaps-for-gradients
+title: "Use Diverging or Spectral Colormaps to Emphasize Gradients in Scalar Fields"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:map
+  - chart:map.choropleth
+  - chart:heatmap
+  - task:summary
+  - task:compare
+  - data:quantitative
+  - data:spatial
+  - visual:color
+  - audience:general
+  - audience:expert
+  - medium:static
+  - medium:screen
+  - access:color-vision-risk
+
+evidence:
+  strength: medium
+  summary: "Reda & Papka (2019, n=105) found that for judging average gradients, diverging (cool-warm) and spectral (rainbow) colormaps yielded significantly higher viewer sensitivity (lower JNDs) than a smooth, monotonic colormap (viridis) (p < 0.001, d=0.26-0.38)."
+
+sources:
+  - type: research
+    ref: Reda & Papka, 2019
+    url: https://doi.org/10.1109/VISUAL.2019.8933760
+    note: "Crowdsourced experiment (n=105) showed that viewers were 21-26% more sensitive to gradient differences with 'cool-warm' and 'rainbow' colormaps compared to 'viridis' (p<0.001), suggesting that color discontinuities act as helpful perceptual cues for summary tasks."
+    role: primary
+  - type: research
+    ref: Borland & Taylor II, 2007
+    url: https://doi.org/10.1109/MCG.2007.323435
+    note: "Classic paper arguing that rainbow colormaps are 'harmful' because their non-uniform nature can introduce perceptual artifacts and obscure data. Reda & Papka's work provides a counter-example where these artifacts can be beneficial for a specific task."
+    role: related
+
+examples:
+  - type: good
+    description: The paper provides an example where `cool-warm` and `rainbow` colormaps are used. Their inherent discontinuities make it easier to compare the overall 'steepness' of the two synthetic terrain maps by allowing viewers to use the size and frequency of color patches as a heuristic.
+  - type: bad
+    description: The `viridis` colormap in the paper's example, while excellent for value lookup, makes it harder to judge the overall gradient. Its perceptual smoothness removes the discrete color bands that aid in this specific summary task, making the two maps appear more similar than they are.
+---
+
+## Guidance
+
+To help viewers compare the overall "steepness" or average gradient in scalar fields (like heatmaps or geographic maps), use colormaps with salient features, such as diverging or spectral (e.g., rainbow) schemes.
+
+## Why
+
+These colormaps create apparent "bands" or discontinuities. Viewers can use these bands as perceptual shortcuts, quickly judging the size and frequency of color patches to estimate the overall gradient. Smooth, monotonic colormaps lack these cues, making it harder for viewers to discern subtle structural differences in the data.
+
+### Core Principle
+
+Visual artifacts, like color banding, can sometimes serve as beneficial heuristics for specific summary tasks, even if they are discouraged for value lookup tasks. Optimizing an encoding for one task may make it less effective for another.
+
+## When it applies
+
+- When visualizing a continuous quantitative variable on a 2D surface (e.g., a heatmap, a choropleth map of elevation or temperature).
+- When the primary task is to compare the overall "activity," "variability," or average gradient between different regions or entire maps.
+- When you want to make subtle structural differences more apparent to the viewer.
+
+## Exceptions
+
+- **When the primary task is precise value lookup** at a specific point. For this, a perceptually uniform, monotonic colormap (`viridis`) is better, as discontinuities can distort perceived values.
+- **When communicating to audiences with color vision deficiencies.** The standard rainbow colormap is notoriously inaccessible and should be avoided or replaced with a colorblind-safe alternative.
+- **When there is no meaningful midpoint in the data.** Diverging scales are most effective when centered on a critical value like zero, an average, or a threshold.
+
+## Trade-offs
+
+- This approach prioritizes the perception of **structure and gradients** at the expense of **precise value lookup**.
+- The color bands that aid with gradient estimation can create artificial boundaries that distort the perception of individual data values.
+- The resulting visualization may appear less aesthetically "smooth" than one using a monotonic colormap.
+
+## Signs of Trouble
+
+- **"Invisible" Gradients:** Viewers report that two maps "look the same" when there are known, subtle differences in their underlying gradients.
+- **Qualitative Feedback:** Users describe the visualization as "flat" or "washed out" and struggle to identify areas of high or low activity.
+- **Low Sensitivity:** In a controlled test, users require very large differences in gradient magnitude to reliably tell two fields apart when using a smooth colormap.
+
+## How to Improve
+
+- **Quick Fix: Switch to a Diverging Scheme.** If your data has a meaningful midpoint, replace your monotonic colormap with a perceptually uniform diverging colormap like `cool-warm` or `blue-red`. This immediately introduces a strong central discontinuity that aids comparison.
+
+- **Moderate Approach: Use a Binned (Quantized) Scale.** If you must use a monotonic colormap, manually bin the data into 5-7 distinct steps. This artificially introduces boundaries that can help with gradient perception, acting as a compromise between a smooth and a heavily banded scheme.
+
+- **Comprehensive Approach: Provide User Choice.** Acknowledge that different tasks require different colormaps. Implement a control that allows users to toggle between a "gradient-optimized" (e.g., diverging) and a "value-optimized" (e.g., monotonic) color scheme. This empowers users to tailor the visualization to their specific analytical goal.
+
+```
+
+<split/>
+
+```md
+---
+id: avoid-smooth-colormaps-for-gradients
+title: "Avoid Smooth, Monotonic Colormaps When Highlighting Gradients"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:map
+  - chart:map.choropleth
+  - chart:heatmap
+  - task:summary
+  - task:compare
+  - data:quantitative
+  - data:spatial
+  - visual:color
+  - audience:general
+  - audience:expert
+  - medium:static
+  - medium:screen
+
+evidence:
+  strength: medium
+  summary: "Reda & Papka (2019, n=105) found that for judging average gradients, a smooth, monotonic colormap (viridis) performed significantly worse than diverging (cool-warm) and spectral (rainbow) colormaps, requiring larger differences to be noticeable (p < 0.001, d=0.26-0.38)."
+
+sources:
+  - type: research
+    ref: Reda & Papka, 2019
+    url: https://doi.org/10.1109/VISUAL.2019.8933760
+    note: "Crowdsourced experiment (n=105) showed that a smooth, monotonic colormap ('viridis') made viewers 21-26% less sensitive to gradient differences compared to 'cool-warm' and 'rainbow' schemes (p<0.001). This suggests its lack of discontinuities hinders performance on this summary task."
+    role: primary
+  - type: research
+    ref: Liu & Heer, 2018
+    url: https://doi.org/10.1145/3173574.3174172
+    note: "This paper demonstrates that `viridis` is highly effective for tasks like value estimation, highlighting the task-dependency of colormap choice. The advice to avoid it for gradients does not contradict its strength in other areas."
+    role: related
+
+examples:
+  - type: bad
+    description: Using a smooth, monotonic colormap like viridis to show terrain steepness makes it difficult for viewers to quickly compare which of two areas has a higher average gradient. The lack of visual landmarks (color bands) requires more effortful inspection.
+  - type: good
+    description: Replacing a smooth colormap with a diverging or binned one introduces visual boundaries. These boundaries allow viewers to use heuristics, like comparing the area or frequency of specific colors, to more easily judge the overall gradient.
+---
+
+## Guidance
+
+For tasks requiring the perception and comparison of average gradients in 2D scalar fields, avoid using perceptually uniform, monotonic colormaps like `viridis`.
+
+## Why
+
+Smooth, monotonic colormaps are designed to minimize visual artifacts and enable accurate value lookup. However, this very smoothness removes the salient visual cues (like color bands) that people use as heuristics to judge structural properties like average gradient. Without these cues, viewers are less sensitive to subtle differences in the data's "steepness" or "activity."
+
+### Core Principle
+
+Optimizing a visual encoding for one task (e.g., value lookup) can make it less effective for another task (e.g., summary or gradient perception). The "best" encoding is task-dependent.
+
+## When it applies
+
+- When the primary analytical goal is to compare the overall rate of change or "variability" across a surface (e.g., a heatmap or map).
+- When you need to draw attention to subtle structural differences between two or more scalar fields.
+
+## Exceptions
+
+- **This guidance does not apply when the primary task is to read specific data values**, estimate the magnitude of a single point, or compare the color distance between two points. In those cases, a smooth, perceptually uniform monotonic colormap is superior precisely because it lacks distorting artifacts.
+- If the aesthetic goal of a perfectly smooth image outweighs the need for high-performance gradient perception.
+
+## Trade-offs
+
+- By avoiding a smooth colormap, you are actively choosing to introduce visual artifacts (color bands) to aid with a summary task.
+- This will make the visualization less effective for precise value lookup and may appear less "smooth" or aesthetically pleasing to some viewers.
+
+## Signs of Trouble
+
+- **Inability to Differentiate:** When presented with two maps, one with a demonstrably higher average gradient, users cannot reliably tell which is which.
+- **"Washed Out" Appearance:** The visualization lacks perceptual contrast, and areas of high and low change are difficult to distinguish.
+- **User Complaints:** Viewers express difficulty in "seeing the pattern" or identifying the "most active" regions in the visualization.
+
+## How to Improve
+
+- **Quick Fix: Switch to a Diverging Colormap.** The fastest way to introduce a helpful discontinuity is to replace the monotonic scheme with a perceptually uniform diverging scheme (e.g., `cool-warm` or `PuOr`). This is especially effective if your data has a meaningful midpoint.
+
+- **Moderate Approach: Use a Binned (Quantized) Scheme.** Instead of a continuous smooth ramp, segment your colormap into 5-7 distinct color steps. This preserves the overall monotonic order but creates the boundaries needed for the gradient perception task.
+
+- **Comprehensive Approach: Visualize the Gradient Directly.** Instead of relying on the source data's colormap to imply the gradient, create a new visualization. Calculate the gradient field explicitly (e.g., using a Sobel filter) and display it on its own map. This directly shows the information of interest, though it requires more space and cognitive integration from the user.
+
+```

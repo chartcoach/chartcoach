@@ -1,0 +1,216 @@
+```md
+---
+id: scatterplot-vs-pc-for-correlation
+title: "Use scatterplots for positive correlation; consider parallel coordinates for negative correlation"
+tags:
+  - impact:perceptual
+  - chart:scatter
+  - chart:parallel-coordinates
+  - task:correlation
+  - data:quantitative
+  - visual:position
+  - visual:line
+  - medium:screen
+  - medium:static
+evidence:
+  strength: high
+  summary: "In a large crowdsourced study (n=1687), Harrison et al. (2014) found that scatterplots significantly outperformed parallel coordinates for judging positive correlation (p<0.001). However, for negative correlation, parallel coordinates performed just as well as scatterplots, with no significant difference in perceptual precision."
+sources:
+  - type: research
+    ref: Harrison et al., 2014
+    url: https://doi.org/10.1109/TVCG.2014.2346979
+    note: "Primary experiment (n=1687) comparing 9 visualization types for correlation tasks. Found a significant interaction between chart type and correlation direction (positive vs. negative) for parallel coordinates."
+    role: primary
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://arxiv.org/abs/2109.01271v3
+    note: "Meta-review that includes Harrison et al. (2014) as a key paper [33] and confirms that both scatterplots and parallel coordinates are common choices for correlation tasks, highlighting the need for nuanced guidance."
+    role: supporting
+---
+
+## Guidance
+
+When the primary task is to assess the strength of a correlation, use a scatterplot, especially for positive correlations. If you are visualizing negative correlations, parallel coordinates are an equally effective alternative.
+
+## Why
+
+The visual form of a scatterplot is symmetric for positive and negative correlations: a cloud of points tilting one way or the other. This consistency makes it a reliable default.
+
+In contrast, parallel coordinates are visually *asymmetric*. A perfect positive correlation (r=1) is a series of parallel vertical lines, while a perfect negative correlation (r=-1) is a series of lines crossing at a single point, forming a distinct 'X' shape. This 'X' shape is a highly salient visual feature, making it easy for the brain to detect and judge, which explains why parallel coordinates are so effective for negative correlations. The parallel lines of a positive correlation are less distinct and harder to judge precisely.
+
+## When it applies
+
+This guidance is most relevant when your primary goal is for users to accurately perceive the strength of a correlation between two quantitative variables.
+
+## Exceptions
+
+- **Multivariate Display:** If you need to display many variables at once (>5), a parallel coordinates plot is more space-efficient than a full scatterplot matrix. In this context, using parallel coordinates may be a reasonable trade-off, even if it sacrifices some perceptual precision for positive correlations.
+
+## Trade-offs
+
+- Choosing a scatterplot over parallel coordinates for a multivariate dataset requires using a **scatterplot matrix**, which can take up significant screen space and become cluttered.
+- Choosing parallel coordinates makes it easier to display many variables but may lead to users underestimating the strength of positive correlations.
+
+## Signs of Trouble
+
+- **Inconsistent Judgments:** Users misjudge the strength of a positive correlation in a parallel coordinates plot, or they find it difficult to compare the strength of a positive vs. a negative correlation in the same chart.
+- **Over-plotting:** In a parallel coordinates plot with many data points, the lines become a dense, illegible block, obscuring any pattern.
+
+## How to Improve
+
+- **Quick Fix: Reorder Axes.** If you must use parallel coordinates, try reordering the axes to maximize the number of adjacent, negatively correlated variable pairs. This leverages the perceptual strength of the 'X' pattern.
+
+- **Moderate Redesign: Add a Scatterplot.** Supplement your parallel coordinates plot with a linked scatterplot that allows users to select two variables for a more precise, focused comparison.
+
+- **Comprehensive Redesign: Use a Scatterplot Matrix.** If judging correlation is the most critical task for a multivariate dataset, switch to a scatterplot matrix (SPLOM). It is the most perceptually accurate representation for this task, though it requires more space.
+
+```
+
+<split/>
+
+```md
+---
+id: stacked-bar-for-correlation
+title: "Prefer stacked bar charts over stacked area or line charts for judging correlation"
+tags:
+  - impact:perceptual
+  - chart:bar.stacked
+  - chart:area.stacked
+  - chart:line.stacked
+  - task:correlation
+  - data:quantitative
+  - data:correlation.negative
+  - visual:length
+  - visual:area
+  - visual:color
+  - medium:screen
+  - medium:static
+evidence:
+  strength: high
+  summary: "For judging negative correlation, a large-scale experiment (Harrison et al., 2014, n=1687) found that stacked bar charts led to significantly more precise perceptual judgments than both stacked area charts and stacked line charts (p<0.001 for both comparisons)."
+sources:
+  - type: research
+    ref: Harrison et al., 2014
+    url: https://doi.org/10.1109/TVCG.2014.2346979
+    note: "Primary experiment (n=1687) testing 9 chart types. Found that for negative correlation, stacked bars were significantly better than other stacked variants. All stacked variants performed poorly for positive correlation."
+    role: primary
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://arxiv.org/abs/2109.01271v3
+    note: "This meta-review categorizes and collates findings from papers like Harrison et al. (2014), providing the framework for comparing chart types by task."
+    role: supporting
+---
+
+## Guidance
+
+When visualizing correlation in a part-to-whole context, use a stacked bar chart. It allows for more precise perceptual judgments than a stacked area or stacked line chart, particularly when showing negative correlations.
+
+## Why
+
+The visual strategies viewers use to judge correlation differ across these chart types. With stacked bars, viewers can rely on comparing the relative proportions of colored segments (e.g., *"how much orange is there compared to blue in each bar?"*). This part-to-whole judgment of length is a relatively stable and accurate task.
+
+In contrast, when viewing stacked area or line charts, viewers tend to focus on the "spikiness" or overall shape of the boundary lines. This is a less direct and noisier proxy for correlation, leading to less precise judgments.
+
+### Core Principle
+
+Make the most important comparisons the easiest to see. Stacked bars turn the abstract task of "judging correlation" into a more concrete perceptual task of "comparing segment lengths," which humans are better at.
+
+## When it applies
+
+- When you need to show the correlation between two quantitative variables that are components of a whole.
+- This guidance is particularly strong for visualizing **negative correlations**. The Harrison et al. (2014) study found that all three stacked chart types performed poorly for *positive* correlation, so this recommendation is specific to the negative case.
+
+## Exceptions
+
+- **Showing Continuous Trends:** If showing a continuous trend or "flow" over an ordered dimension (like time) is more important than precisely judging correlation, a stacked area chart might be preferred for its strong visual sense of continuity.
+
+## Trade-offs
+
+- A stacked bar chart breaks the visual continuity that a stacked area or line chart provides. It is better for discrete comparisons at each point on the x-axis but worse for communicating the overall shape of the trend.
+
+## Signs of Trouble
+
+- **Inconsistent Judgments:** Users are unable to reliably judge the strength or even the direction of the correlation from a stacked area or stacked line chart.
+- **Focus on the wrong thing:** Users comment on the shape of the top line of a stacked area chart, rather than the relationship between the components.
+
+## How to Improve
+
+- **Quick Fix: Add Annotations.** If you must use a stacked area chart, add annotations or callouts that explicitly state the nature of the correlation at key points.
+
+- **Moderate Redesign: Switch to Stacked Bars.** If judging the part-to-whole correlation is the primary goal, change the chart type from stacked area/line to stacked bar.
+
+- **Comprehensive Redesign: Unstack the Data.** If the part-to-whole relationship is secondary to the correlation, unstack the data. Use a scatterplot to show the correlation most directly, or use two separate line charts on a shared x-axis to allow for easier comparison of trends.
+
+```
+
+<split/>
+
+```md
+---
+id: sort-line-chart-for-correlation
+title: "Sort a line chart's x-axis to improve perception of correlation"
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:line
+  - task:correlation
+  - data:quantitative
+  - data:correlation.positive
+  - visual:position
+  - visual:line
+  - medium:screen
+  - medium:static
+evidence:
+  strength: high
+  summary: "In a large experiment (n=1687), Harrison et al. (2014) found that line charts with an x-axis sorted by value led to significantly more precise judgments of positive correlation compared to standard (unsorted) line charts (p<0.001)."
+sources:
+  - type: research
+    ref: Harrison et al., 2014
+    url: https://doi.org/10.1109/TVCG.2014.2346979
+    note: "Primary experiment (n=1687) that explicitly tested an 'ordered line' chart against a standard 'line' chart and found a large, significant performance improvement for correlation tasks."
+    role: primary
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://arxiv.org/abs/2109.01271v3
+    note: "This review paper provides the broader context, confirming that line charts are a common but often problematic choice for correlation, underscoring the value of specific improvements like sorting."
+    role: supporting
+---
+
+## Guidance
+
+If using a line chart to show correlation between two quantitative variables, and the x-axis has no intrinsic order (e.g., it represents unordered categories or individuals), sort the data by the x-axis variable. This simple change dramatically improves a viewer's ability to perceive the strength of the correlation.
+
+## Why
+
+Sorting the data transforms a visually noisy, "spiky" line chart into a much smoother shape that more clearly reveals the underlying trend. For a strong positive correlation, an unsorted line chart often appears as a tangled mess of lines, imposing a high cognitive load. A sorted line chart, by contrast, forms a clean, upward-trending curve that approaches the clarity of a scatterplot's trend line. This allows the visual system to easily judge the overall trend and the noise around it, which are the core components of perceiving correlation.
+
+### Core Principle
+
+Reduce cognitive load by simplifying the visual task. Sorting turns the complex task of mentally untangling a noisy line into the simple task of judging the general slope and tightness of a curve.
+
+## When it applies
+
+- When using a line chart to visualize the relationship between two quantitative variables.
+- When the horizontal axis represents a dimension that does **not** have a meaningful, pre-determined order that must be preserved (e.g., individual products, people, or unordered categories).
+
+## Exceptions
+
+- **Time-Series Data:** **Do not** apply this guideline if the horizontal axis represents time. Reordering a time axis would destroy the temporal meaning of the data and make it impossible to see trends, seasonality, or other time-based patterns.
+- **Geographic or Spatial Data:** Do not reorder an axis if it represents a meaningful spatial sequence (e.g., distance along a transect).
+
+## Trade-offs
+
+- Sorting by the x-axis variable means you lose the original ordering of the data points. This is only acceptable when that original order is arbitrary or not meaningful to the analysis.
+
+## Signs of Trouble
+
+- **"Spaghetti" Chart:** The line chart intended to show a correlation looks like a chaotic, jagged mess of crisscrossing lines.
+- **Inability to See Trend:** Viewers cannot tell if there is a relationship between the two variables because the extreme visual noise obscures the underlying pattern.
+
+## How to Improve
+
+- **Moderate Redesign: Sort the Data.** The most direct fix is to re-plot the data after sorting the underlying dataset by the variable mapped to the x-axis. This is a simple data transformation that dramatically improves the chart's effectiveness for this task.
+
+- **Comprehensive Redesign: Switch to a Scatterplot.** If the relationship between the two variables is the most important takeaway, and the connection between adjacent points is not critical, consider switching to a scatterplot. A scatterplot is the most direct and perceptually effective visualization for showing correlation between two quantitative variables, and it does not require sorting to be effective.
+
+```

@@ -1,0 +1,334 @@
+```md
+---
+id: use-position-for-extrema-tasks
+title: "Use position-based charts for finding maximum or minimum values"
+tags:
+  - impact:perceptual
+  - impact:performance
+  - chart:line
+  - chart:bar
+  - task:find-extremum
+  - task:rank
+  - data:temporal
+  - visual:position
+  - visual:color
+  - audience:general
+  - medium:screen
+  - access:cognitive-load-risk
+evidence:
+  strength: medium
+  summary: "Albers et al. (2014, n=64 per task) found that position-based charts like composite graphs (93% accuracy), modified stock charts (89%), and line graphs (88%) were significantly more accurate for finding maximum values in a time series than color-based charts like colorfields (59%) (p < .0001)."
+sources:
+  - type: research
+    ref: Albers, Correll, & Gleicher, 2014
+    url: https://doi.org/10.1145/2556288.2557200
+    note: "Experimentally compared 8 time-series visualizations across 6 aggregate tasks. Found position encodings consistently outperformed color for point comparison tasks like finding maxima/minima (p < .0001)."
+    role: primary
+---
+## Guidance
+
+For tasks requiring users to find the maximum or minimum value in a time series, prefer visualizations that encode data using position (e.g., line charts, composite bar-and-line charts) over those that use color (e.g., heatmaps, colorfields).
+
+## Why
+
+Position along a common scale is a more perceptually precise visual channel than color saturation or hue. Humans can more accurately judge and compare the specific values of points when they are encoded by their vertical or horizontal position, which is critical for reliably identifying the single highest or lowest value in a dataset.
+
+### Core Principle
+
+Match the visual channel to the task's required precision. High-precision tasks, like identifying a single extreme value, demand high-precision encodings like position.
+
+## When it applies
+
+- When a primary user task is to identify the highest or lowest data point in a series or within specific periods of a series.
+- When comparing the performance of different charts for quantitative comparison tasks.
+
+## Exceptions
+
+- If the goal is simply to get a rough "gist" of the data and precision is not important, a color-based chart might be sufficient, though it will be less accurate.
+
+## Trade-offs
+
+- Position-based charts like line graphs can become cluttered with multiple series, whereas color-based charts can sometimes scale to show more data, albeit with lower precision.
+- Simple line charts are less effective for summary tasks (like judging averages) compared to some color-based designs.
+
+## Signs of Trouble
+
+- **Inaccurate Readings:** Users consistently fail to identify the true maximum or minimum value when viewing a color-encoded chart like a heatmap.
+- **Confounding Brightness with Value:** Users mistake the most saturated or brightest color for the highest value, even if the legend indicates otherwise.
+- **Slow Performance:** Users take a long time to scan the entire chart, mentally converting colors back to values, to find the extremum.
+
+## How to Improve
+
+- **Quick Fix: Add Explicit Labels.** If you must use a color-based chart, add labels for the maximum and minimum values to provide a direct lookup. This is a workaround that doesn't fix the perceptual issue but mitigates the inaccuracy.
+- **Moderate Redesign: Switch to a Line Chart.** Replace the colorfield or heatmap with a standard line chart. This immediately leverages position for encoding, which is more accurate for this task.
+- **Comprehensive Approach: Use a Composite or Stock Chart.** Augment a line chart by overlaying bars for period averages (Composite Graph) or adding explicit marks for period-based extrema (Modified Stock Chart). This not only uses position but also adds visual cues that make finding extrema within specific periods even easier.
+
+```
+
+<split/>
+
+```md
+---
+id: use-explicit-encoding-for-outliers
+title: "Explicitly highlight outliers to improve their detection"
+tags:
+  - impact:perceptual
+  - impact:performance
+  - impact:cognitive
+  - task:find-anomalies
+  - chart:line
+  - chart:heatmap
+  - data:temporal
+  - visual:color
+  - visual:shape
+  - audience:general
+  - medium:screen
+  - access:cognitive-load-risk
+evidence:
+  strength: medium
+  summary: "Albers et al. (2014, n=48) found that an 'Event Striping' chart, which explicitly visualizes outliers as distinct stripes on a colorfield, achieved 67% accuracy for outlier detection. This was more than double the performance of standard line graphs (37%) or colorfields (31%) (p < .0001)."
+sources:
+  - type: research
+    ref: Albers, Correll, & Gleicher, 2014
+    url: https://doi.org/10.1145/2556288.2557200
+    note: "The study's 'Event Striping' design was created specifically for outlier detection and dramatically outperformed all other general-purpose chart types for that task, demonstrating the power of task-specific encoding (p < .0001)."
+    role: primary
+---
+## Guidance
+
+To help users find outliers in a time series, use a visualization that computationally identifies and explicitly highlights those unusual data points with salient visual marks.
+
+## Why
+
+Standard visualizations require users to perform two difficult mental steps: first, build a mental model of the data's overall distribution and typical values, and second, scan for points that deviate from that model. This is cognitively demanding and error-prone. A chart that pre-calculates and visually separates outliers offloads this work to the computer, making detection faster and more accurate.
+
+### Core Principle
+
+Make the most important information the easiest to see. If finding outliers is the primary task, the design should make them perceptually "pop."
+
+## When it applies
+
+- When the main goal for the user is to identify anomalous data points, "freak events," or values that don't fit the general pattern.
+- When designing specialized dashboards for monitoring or anomaly detection.
+
+## Exceptions
+
+- If the definition of an "outlier" is subjective and you want the user to define it themselves through exploration, showing raw data may be preferable.
+- If all data points are of equal importance and there is no specific anomaly-detection task.
+
+## Trade-offs
+
+- Designing for a specific task like outlier detection makes the chart less effective for other tasks. The "Event Striping" chart, while excellent for finding outliers, performed poorly for all other tested tasks (e.g., finding average, range, or spread).
+- The definition of an "outlier" must be determined beforehand (e.g., >2 standard deviations from the mean), which may not be appropriate for all datasets.
+
+## Signs of Trouble
+
+- **Missed Anomalies:** Users frequently overlook significant, unusual data spikes or troughs in a standard line chart or heatmap.
+- **Noise vs. Signal Confusion:** Users cannot distinguish between high-frequency noise and genuine, meaningful outliers.
+- **Slow Discovery:** It takes users a long time to manually scan the entire dataset to find just a few unusual points.
+
+## How to Improve
+
+- **Quick Fix: Add Reference Lines.** On a standard line chart, add lines for the mean and +/- 2 standard deviations. This gives users a visual guide to identify points that fall outside the typical range.
+- **Moderate Redesign: Use a Different Symbol.** On a scatter or line chart, use a different color or shape to mark points that are algorithmically identified as outliers.
+- **Comprehensive Approach: Design a Task-Specific Chart.** Implement a design like "Event Striping," where the background shows a smoothed representation of the data (e.g., a colorfield) and outliers are drawn on top as visually distinct, high-contrast marks.
+
+```
+
+<split/>
+
+```md
+---
+id: use-box-plots-for-spread-comparison
+title: "Use box plots to compare spread or variance across categories"
+tags:
+  - impact:perceptual
+  - impact:performance
+  - impact:cognitive
+  - task:distribution
+  - task:compare
+  - chart:box-plot
+  - chart:line
+  - data:temporal
+  - data:categorical
+  - audience:general
+  - medium:screen
+evidence:
+  strength: medium
+  summary: "In a study comparing time-series visualizations, Albers et al. (2014, n=56) found that box plots were the most effective design for comparing the spread of values within monthly periods, achieving 85% accuracy. This was significantly higher than the next-best design (woven colorfield, 71%) and far superior to standard line charts (49%) (p < .0001)."
+sources:
+  - type: research
+    ref: Albers, Correll, & Gleicher, 2014
+    url: https://doi.org/10.1145/2556288.2557200
+    note: "Demonstrated that explicitly encoding a statistic related to spread (like IQR in a box plot) is far more effective for judging spread than relying on perceptual estimation from raw data displays like line charts (p < .0001)."
+    role: primary
+---
+## Guidance
+
+When users need to compare the spread, variance, or consistency of data across different categories or time periods, use box plots.
+
+## Why
+
+Judging "spread" from raw data displays like line charts is a difficult perceptual task that humans are not good at. Box plots solve this by explicitly computing and encoding statistics related to distribution—specifically the interquartile range (IQR), which is a robust measure of spread. This offloads the complex mental calculation from the user to the chart, resulting in significantly higher accuracy.
+
+### Core Principle
+
+When a task requires judging a specific, computable statistic (like spread or variance), it is more effective to encode that statistic directly rather than asking the viewer to estimate it from raw data.
+
+## When it applies
+
+- The user's task is to determine which category is more "variable," "volatile," "consistent," or "spread out."
+- You need to show the distribution of values for multiple categories side-by-side.
+
+## Exceptions
+
+- If the audience is unfamiliar with box plots, they may require a brief explanation. However, their superior performance often justifies the small learning curve.
+- If showing every single data point is critical and the distribution is small, a dot plot or strip plot might be an alternative.
+
+## Trade-offs
+
+- Box plots summarize the data, so they hide the specific shape of the distribution (e.g., they can't distinguish a bimodal distribution from a unimodal one). Violin plots are an alternative that addresses this, but may be more complex.
+- Box plots are less effective for other tasks, such as finding specific maximum values, compared to a modified stock chart.
+
+## Signs of Trouble
+
+- **Confusing Range with Spread:** When viewing a line chart, users incorrectly assume the category with the highest maximum or widest range is also the one with the greatest spread.
+- **Inability to Compare:** Users report that they "can't tell" which of two line chart segments is more variable.
+- **Incorrect Judgements:** Formal testing reveals that user judgments about spread from raw data charts are no better than chance.
+
+## How to Improve
+
+- **Quick Fix: Add Reference Bands.** On a line chart, add shaded bands for the standard deviation or interquartile range around the mean. This provides a visual guide to the spread, though it can become cluttered.
+- **Comprehensive Redesign: Switch to Box Plots.** Replace the line chart or other raw data display with a series of box plots, with one box plot for each category or time period being compared. This is the most effective way to support this specific task.
+
+```
+
+<split/>
+
+```md
+---
+id: use-aggregated-views-for-average-comparison
+title: "Use aggregated views for comparing averages across time periods"
+tags:
+  - impact:perceptual
+  - impact:performance
+  - impact:cognitive
+  - task:summary-mean
+  - task:compare
+  - chart:line
+  - chart:bar
+  - chart:heatmap
+  - data:temporal
+  - audience:general
+  - medium:screen
+evidence:
+  strength: medium
+  summary: "Albers et al. (2014, n=64) found that for comparing monthly averages, designs that explicitly aggregated data by month were most effective. A composite graph (line+bar) achieved 86% accuracy and a woven colorfield achieved 78% accuracy, both significantly outperforming a standard line graph (48%) which showed continuous, un-aggregated data (p < .0001)."
+sources:
+  - type: research
+    ref: Albers, Correll, & Gleicher, 2014
+    url: https://doi.org/10.1145/2556288.2557200
+    note: "The study showed that both explicitly encoding the average (composite graph) and visually grouping data to encourage perceptual averaging (woven colorfield) were superior to showing raw, continuous data for average comparison tasks (p < .0001)."
+    role: primary
+---
+## Guidance
+
+When users need to compare the average value of a time series across discrete periods (e.g., month-to-month), use a visualization that either explicitly calculates and displays the average for each period or visually groups the data within those periods.
+
+## Why
+
+Mentally calculating the average of a fluctuating line over a specific range is a cognitively demanding and inaccurate task. Designs that offload this work by either pre-calculating the average (e.g., showing a bar for the monthly mean) or using visual techniques to facilitate perceptual averaging (e.g., grouping colors into a block) lead to much better user performance.
+
+### Core Principle
+
+Align the computational structure of the visualization with the structure of the user's task. If the task is to compare monthly aggregates, the visualization should be structured around monthly aggregates.
+
+## When it applies
+
+- The task is to compare summary statistics like the mean or average across different time periods (e.g., "Which month had the highest average sales?").
+- You are visualizing a continuous time series but the comparisons of interest happen at a coarser, discrete level of granularity (e.g., daily data, monthly comparisons).
+
+## Exceptions
+
+- When the task requires seeing fine-grained, continuous trends or specific point values, and not summary statistics. A standard line graph is better for seeing the exact shape of the data over time.
+
+## Trade-offs
+
+- Aggregating the data loses detail about the intra-period trends. A composite graph (showing both the raw line and the aggregate bars) mitigates this but at the cost of higher visual complexity.
+- A chart designed for monthly averages may be misleading if the user then tries to perform a weekly comparison.
+
+## Signs of Trouble
+
+- **Inaccurate Summaries:** When using a standard line chart, users are unable to correctly identify which month has the highest average value.
+- **Focus on Peaks:** Users mistake the month with the highest single peak for the month with the highest average.
+- **Cognitive Overload:** Users express frustration or report that comparing averages is "too hard" or requires too much mental effort.
+
+## How to Improve
+
+- **Quick Fix: Switch to a Bar Chart.** If only the average matters, discard the raw data and show a simple bar chart with one bar for each period's average. This is highly accurate for the specific task but loses all underlying detail.
+- **Moderate Redesign: Use a Woven Colorfield.** If using a heatmap-style colorfield, "weave" the pixels within each period (i.e., randomly permute them). This breaks up local trends and creates a more uniform block of color, which the visual system can average more effectively.
+- **Comprehensive Approach: Use a Composite Graph.** Overlay a bar chart of the periodic averages on top of the raw line chart. This provides the best of both worlds: the line shows the detailed trend, and the bars provide an accurate, explicit encoding for comparing averages.
+
+```
+
+<split/>
+
+```md
+---
+id: use-explicit-extrema-for-range-comparison
+title: "Explicitly mark extrema to help users compare ranges"
+tags:
+  - impact:perceptual
+  - impact:performance
+  - chart:box-plot
+  - chart:line
+  - task:determine-range
+  - task:compare
+  - data:temporal
+  - audience:general
+  - medium:screen
+evidence:
+  strength: medium
+  summary: "For the task of comparing the value range (max-min) within time periods, Albers et al. (2014, n=64) found that charts explicitly encoding extrema were most effective. Modified stock charts (92% accuracy) and box plots (89% accuracy) significantly outperformed standard line graphs (74%) where the extrema had to be found manually (p < .0001)."
+sources:
+  - type: research
+    ref: Albers, Correll, & Gleicher, 2014
+    url: https://doi.org/10.1145/2556288.2557200
+    note: "Found that making the minimum and maximum values for each period perceptually salient (via stock chart bars or box plot whiskers) dramatically improved accuracy on a range comparison task compared to a standard line graph (p < .0001)."
+    role: primary
+---
+## Guidance
+
+When users need to compare the range of values (the difference between the maximum and minimum) across different categories or time periods, use a chart that explicitly marks the extrema, such as a modified stock chart or a box plot.
+
+## Why
+
+In a standard line chart, comparing ranges requires a user to perform a multi-step mental process for each period: scan to find the peak, scan to find the trough, mentally subtract the two, hold the result in working memory, and then repeat for all other periods. This is slow and error-prone. Charts that explicitly mark the extrema make the key components of the range (the min and max values) perceptually salient, simplifying the task to comparing the distance between two visible marks.
+
+## When it applies
+
+- The user's task is to identify which category or time period has the largest or smallest difference between its highest and lowest value.
+- This is distinct from comparing spread/variance, which considers all points. Range is only concerned with the two extreme points.
+
+## Exceptions
+
+- If the data is very noisy, the range might be determined by outliers and not be a meaningful representation of the data's typical behavior. In this case, comparing spread using a box plot (which shows interquartile range) is more robust.
+
+## Trade-offs
+
+- Modified stock charts and box plots add visual clutter compared to a simple line chart.
+- These chart types are optimized for range/distribution tasks and may be less effective for judging the overall shape of the trend compared to a standard line chart.
+
+## Signs of Trouble
+
+- **Slow Task Completion:** Users take a very long time to answer questions about which period had the greatest range.
+- **Inaccurate Comparisons:** When viewing a line chart, users frequently choose the wrong period as having the largest range.
+- **Conflating Maximum with Range:** Users incorrectly assume the period with the highest peak value also has the largest range.
+
+## How to Improve
+
+- **Quick Fix: Highlight the Min/Max Points.** On a standard line chart, add distinct markers (e.g., dots) for the minimum and maximum point in each period. This helps guide the user's eye but still requires them to estimate the distance.
+- **Moderate Redesign: Use a Box Plot.** Replace the line chart with a series of box plots. The distance between the ends of the whiskers directly visualizes the range for each period, making comparison straightforward.
+- **Comprehensive Approach: Use a Modified Stock Chart.** Augment the line chart with explicit visual marks (e.g., horizontal bars) for the min and max of each period. This retains the continuous trend information from the line while adding highly effective support for the range comparison task.
+
+```

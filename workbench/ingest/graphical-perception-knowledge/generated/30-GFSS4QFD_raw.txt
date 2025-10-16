@@ -1,0 +1,373 @@
+```md
+---
+id: use-filled-marks-for-color
+title: "Use filled marks over unfilled marks to improve color distinction in scatterplots"
+
+tags:
+  - impact:perceptual
+  - impact:accessibility
+  - chart:scatter
+  - task:compare
+  - task:lookup
+  - task:cluster
+  - data:categorical
+  - visual:color
+  - visual:shape
+  - medium:screen
+  - access:color-vision-risk
+
+evidence:
+  strength: medium
+  summary: "Smart & Szafir (2019) conducted experiments with 606 participants, finding that colors were significantly more discriminable for filled shapes (e.g., ■) than their unfilled counterparts (e.g., □) across all three axes of the CIELAB color space (p < .001)."
+
+sources:
+  - type: research
+    ref: Smart & Szafir, 2019
+    url: https://doi.org/10.1145/3290605.3300899
+    note: "Experiment 1 (n=606) found filled shapes outperformed unfilled shapes for color discrimination tasks. For example, filled squares (■) led to significantly better color perception than unfilled squares (□) (p < .001)."
+    role: primary
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://doi.org/10.48550/arXiv.2109.01271
+    note: "Synthesizes this finding (Section 5.1.2), stating 'CH is generally more discriminable with filled shapes than with unfilled ones.'"
+    role: supporting
+
+tools:
+  - type: learn
+    name: "From Data to Viz: Scatterplot"
+    url: https://www.data-to-viz.com/graph/scatter.html
+    description: Provides a guide on scatterplot creation, with examples often using filled marks for clarity.
+
+examples:
+  - type: good
+    description: "This scatterplot uses filled circles. The distinct colors for each category are easy to perceive, even for small marks, facilitating quick identification and comparison."
+  - type: bad
+    description: "This scatterplot uses unfilled circles (outlines only). The colors are harder to distinguish, especially where marks are small or close together, because the colored area is minimal. This increases cognitive load and error rates."
+---
+
+## Guidance
+
+When using color to distinguish between categories in a scatterplot, use filled shapes (e.g., ●, ■) instead of unfilled, outlined shapes (e.g., ○, □).
+
+## Why
+
+Filled shapes present more colored pixels to the eye than outlined shapes of the same size. This larger area of color makes it perceptually easier for viewers to discriminate between different hues, even when the differences are subtle or the marks are small. Using filled shapes increases the accuracy and speed of identifying categories based on color.
+
+### Core Principle
+
+The perceptual salience of a color encoding is proportional to its area. Larger, denser color marks are easier to see and distinguish than smaller, sparser ones.
+
+## When it applies
+
+- In any scatterplot where color is used to encode categorical data (e.g., distinguishing different groups, series, or clusters).
+- When you have many categories and need to ensure colors in your palette are as distinct as possible.
+- When marks may be small, dense, or overlapping, as the added color area of filled marks helps them stand out.
+
+## Exceptions
+
+- If scatterplot marks are very large, the difference in color perception between filled and unfilled shapes may be negligible.
+- In cases of extreme overplotting, using semi-transparent unfilled shapes might be a deliberate choice to reveal density patterns, sacrificing individual mark clarity for an aggregate view. However, other techniques like density plots or changing mark size are often better for this.
+
+## Trade-offs
+
+- **Clarity vs. Overplotting:** Filled marks are clearer individually but can obscure each other more in dense plots (overplotting) compared to semi-transparent or outlined marks.
+- **Aesthetics:** Style guides may sometimes call for outlined or "ghost" marks for aesthetic reasons, but this comes at the cost of perceptual performance.
+
+## Signs of Trouble
+
+- **The Squint Test:** If you squint at the chart, do different color categories blur together into a single mass?
+- **Color Confusion:** Do viewers have trouble telling apart two similar colors in the plot (e.g., a light green and a light blue)?
+- **Legend-Chart Disconnect:** Do the colors look distinct in the large legend swatches but become indistinguishable as small marks in the plot?
+
+## How to Improve
+
+- **Quick Fix: Fill the Marks.** The most direct improvement is to change the rendering property of your marks from outlined to filled. Most plotting libraries have a simple setting for this (e.g., in D3.js, set the `fill` attribute instead of just the `stroke`).
+
+- **Moderate Approach: Increase Stroke Width.** If you must use unfilled marks for stylistic reasons, significantly increasing the stroke width can improve color perception by increasing the total colored area. However, this also makes the mark's inner area smaller and can create a "chunky" look.
+
+- **Comprehensive Approach: Re-evaluate Encodings.** If filling the marks is not enough, reconsider the entire encoding scheme. You may need to choose a more perceptually distant color palette, or reduce the number of categories to make them more distinct.
+
+```
+
+<split/>
+
+```md
+---
+id: account-for-shape-size-bias
+title: "Recognize that mark shape biases size perception in scatterplots"
+
+tags:
+  - impact:perceptual
+  - impact:ethical
+  - chart:scatter
+  - task:compare
+  - task:rank
+  - data:quantitative
+  - visual:size
+  - visual:shape
+  - medium:screen
+
+evidence:
+  strength: medium
+  summary: "In a study with 489 participants, Smart & Szafir (2019) found that mark shape significantly biases perceived size. Shapes with more visual mass at the top or bottom (e.g., 'T', '■') were consistently perceived as larger than centrally-weighted shapes (e.g., '+') of the same pixel dimensions (p < .001). The bias was substantial, with 'T' shapes perceived as larger than other shapes in 82% of trials."
+
+sources:
+  - type: research
+    ref: Smart & Szafir, 2019
+    url: https://doi.org/10.1145/3290605.3300899
+    note: "Experiment 3 (n=489) demonstrated a strong, asymmetric interference of shape on size perception. Filled shapes were also generally perceived as larger than unfilled counterparts. The effect was asymmetrical; size had a much smaller effect on shape perception."
+    role: primary
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://doi.org/10.48550/arXiv.2109.01271
+    note: "This meta-analysis highlights the work of Smart & Szafir as an example of interference effects between visual channels that challenge traditional assumptions of separability (Section 5.1.2)."
+    role: related
+
+tools:
+  - type: implement
+    name: "D3 Extension for Perceptual Correction"
+    url: https://bit.ly/2prjuRu
+    description: "The authors of the primary study implemented a D3.js extension to computationally model and correct for the perceptual biases between shape, size, and color. (Note: Link from original paper)."
+
+examples:
+  - type: bad
+    description: "This chart uses different shapes (e.g., circles for 'Group A', triangles for 'Group B') and also uses size to encode a quantitative variable (e.g., revenue). A triangle and a circle of the same pixel diameter will be perceived as different sizes, leading to inaccurate comparisons of revenue between the groups."
+  - type: good
+    description: "This chart encodes a quantitative variable with size, but uses the same shape (circles) for all data points. This ensures that any perceived difference in size is due to the data, not an artifact of shape bias."
+---
+
+## Guidance
+
+Avoid using both different shapes and size to encode distinct data variables in the same scatterplot. The choice of shape systematically alters the perceived size of a mark.
+
+## Why
+
+The human visual system does not judge the "size" of different geometric shapes uniformly. Shapes with more visual mass concentrated at their top or bottom edges (like triangles ▲ or capital 'T's) are consistently perceived as larger than shapes with mass at their center (like '+' or 'X's), even when they have the exact same bounding box height and width. This means viewers will make inaccurate comparisons of the size-encoded variable between different shape categories.
+
+### Core Principle
+
+Visual channels are not always separable. Shape and size are integral dimensions, meaning the perception of one is biased by the value of the other. The interference is also asymmetric: shape has a large effect on perceived size, while size has a very small effect on perceived shape.
+
+## When it applies
+
+- When creating a scatterplot that uses `size` to encode a continuous quantitative variable (e.g., market cap, population).
+- When also using `shape` to encode a categorical variable in the same plot (e.g., continent, industry type).
+
+## Exceptions
+
+- **When size is purely decorative or uniform.** If all marks are the same size, or if size is not encoding data, using different shapes for categories is perfectly fine.
+- **When only a single shape is used.** If all marks have the same shape, using size to encode data is effective because there is no shape-induced bias to account for.
+
+## Trade-offs
+
+- **Fewer Encoding Channels:** Adhering to this guideline means you cannot use both shape and size to encode data simultaneously, reducing the number of variables you can display in a single static plot. You may need to use faceting (small multiples) or a different chart type instead.
+
+## Signs of Trouble
+
+- **Mixed Encodings:** The chart legend shows that `size` represents one variable (e.g., "Revenue") and `shape` represents another (e.g., "Region").
+- **Apples-to-Oranges Comparison:** The chart invites the viewer to compare the size of a ▲ to the size of a ● to draw a conclusion about the data.
+- **Inconsistent Visual Weight:** Looking at two marks of supposedly the same "size" value, one appears noticeably larger or heavier than the other simply because it's a square and the other is a star.
+
+## How to Improve
+
+- **Quick Fix: Add Redundant Labels.** If you must keep the mixed encodings, add direct text labels for the size-encoded value to the marks. This provides a "cognitive escape hatch," allowing determined users to read the true values instead of relying on flawed perceptual judgments.
+
+- **Moderate Approach: Use a Single Shape.** The most effective solution is to choose one channel to prioritize. If comparing the size-encoded variable is important, use a single, consistent shape for all data points and use only color to distinguish categories.
+
+- **Comprehensive Approach: Facet the Chart.** Instead of encoding category by `shape` in one chart, create a series of small multiple scatterplots, one for each category. Within each plot, use a consistent shape and encode the quantitative value using `size`. This allows for accurate size comparisons within each category and high-level comparisons across charts, without perceptual interference.
+
+```
+
+<split/>
+
+```md
+---
+id: prioritize-position-for-quantity
+title: "Use position on a common scale to encode quantitative data"
+
+tags:
+  - impact:perceptual
+  - impact:logos
+  - task:compare
+  - task:rank
+  - data:quantitative
+  - visual:position
+  - visual:length
+  - visual:angle
+  - visual:area
+  - visual:color
+  - chart:bar
+  - chart:scatter
+  - chart:pie
+  - chart:donut
+
+evidence:
+  strength: high
+  summary: "A foundational principle of graphical perception, established by Cleveland & McGill (1984) and replicated in numerous studies, shows that humans judge quantitative data most accurately when it is encoded as position along a common, aligned scale. Subsequent encodings like length, angle, and area are progressively less accurate."
+
+sources:
+  - type: research
+    ref: Cleveland & McGill, 1984
+    url: https://doi.org/10.2307/2288400
+    note: "The foundational experimental work (n=55) that established the perceptual ranking of visual encodings, showing position on a common scale is superior to length, angle, and area for comparison tasks (p < 0.001)."
+    role: primary
+  - type: research
+    ref: Mackinlay, 1986
+    url: https://doi.org/10.1145/22949.22950
+    note: "Formalized the perceptual rankings into an automated system (APT), extending them to nominal and ordinal data and solidifying the principle in visualization system design."
+    role: primary
+  - type: research
+    ref: Heer & Bostock, 2010
+    url: https://doi.org/10.1145/1753326.1753357
+    note: "A large-scale crowdsourced replication (n=1,935) that confirmed the original Cleveland & McGill findings, demonstrating their robustness."
+    role: supporting
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://doi.org/10.48550/arXiv.2109.01271
+    note: "This meta-analysis synthesizes the extensive literature, confirming the primacy of position encodings as a core, widely supported principle (Table 3)."
+    role: supporting
+
+examples:
+  - type: good
+    description: "A simple bar chart encodes sales figures for different regions. Because all bars start from a common baseline (zero), their lengths correspond directly to their position, making it easy and accurate to compare the sales figures."
+  - type: bad
+    description: "A pie chart shows the same regional sales figures. It is difficult to accurately compare the slice for 'Region A' (e.g., 23%) to 'Region B' (e.g., 25%) because it requires comparing angles or areas, which humans do poorly. A bar chart would make this small difference immediately obvious."
+  - type: bad
+    description: "A bubble chart uses the area of circles to represent population size. Comparing the area of two different circles is notoriously inaccurate; viewers are likely to misjudge the relative population sizes."
+---
+
+## Guidance
+
+For tasks that require accurate comparison or ranking of quantitative values, encode the data using position along a common, aligned scale. Avoid using less accurate encodings like angle, area, or color saturation for this purpose.
+
+## Why
+
+The human visual system is better at judging some visual properties than others. Decades of research in graphical perception have established a clear hierarchy of effectiveness. We are most accurate when comparing positions along a shared scale (like in a bar chart). We are significantly less accurate when comparing lengths of unaligned objects, and even less accurate when comparing angles (like in a pie chart) or areas (like in a bubble chart). Choosing a more effective encoding reduces error and makes insights more obvious.
+
+### Core Principle
+
+The accuracy of human graphical perception varies by visual encoding channel. To enable precise comparisons, match the data and task to the most effective channel available. This is often summarized as the "Cleveland-McGill Scale."
+
+## When it applies
+
+- When the primary task for the viewer is to compare magnitudes (e.g., "Which category is largest?"), rank items, or judge differences between values.
+- When creating bar charts, dot plots, or scatterplots, which are all based on position.
+- When choosing between a bar chart and a pie chart for showing part-to-whole relationships where comparison of the parts is important.
+
+## Exceptions
+
+- **Showing Composition Only:** If the goal is purely to show a part-to-whole relationship and accurate comparison between parts is not important, a pie chart may be acceptable (e.g., showing a value like "75% complete"). However, a stacked bar chart often does this better.
+- **Geographic Data:** For maps, position is already used to encode location. Therefore, other channels like color (for choropleths) or area (for bubble maps) must be used to encode quantitative data, despite being less perceptually accurate. Be aware of the inherent inaccuracies in these chart types.
+- **When Other Tasks Dominate:** If the primary task is not comparison but something else, like identifying clusters or correlations, other chart types (like scatterplots) that also use position are still ideal.
+
+## Signs of Trouble
+
+- **Angle/Area Judgments:** The chart forces viewers to compare the angles of pie slices, the areas of circles, or the saturation of colors to understand quantitative differences.
+- **"Is This Bigger?":** Viewers express uncertainty when trying to determine which of two non-positional marks (e.g., two pie slices) represents a larger value.
+- **Inaccurate Takeaways:** Different people looking at the chart come to different conclusions about the relative size of the components.
+
+## How to Improve
+
+- **From Pie/Donut Chart → Bar Chart:** If you are using a pie or donut chart to compare categories, convert it to a bar chart. This changes the encoding from the less-accurate angle/area to the highly-accurate position/length, making comparisons trivial.
+
+- **From Bubble Chart → Bar or Dot Plot:** If you are using the area of circles to encode quantity, change to a bar chart or a dot plot. This maps the quantity to position along a common axis, dramatically improving comparison accuracy.
+
+- **From Stacked Bars (unaligned) → Grouped Bars (aligned):** When comparing segments within a stacked bar chart, only the bottom-most segment is on a common baseline. To facilitate comparison of all segments, switch to a grouped bar chart where every bar starts at zero.
+
+```
+
+<split/>
+
+```md
+---
+id: use-scatterplot-for-correlation
+title: "Use scatterplots to reveal correlation between two quantitative variables"
+
+tags:
+  - impact:perceptual
+  - impact:logos
+  - task:correlation
+  - task:cluster
+  - task:outlier-detection
+  - data:quantitative
+  - chart:scatter
+  - medium:screen
+  - medium:static
+
+evidence:
+  strength: high
+  summary: "Empirical studies consistently show that scatterplots are the most effective visualization for perceiving correlation between two quantitative variables. A meta-analysis by Zeng & Battle (2023) synthesizes findings from multiple papers (e.g., Saket et al. 2018, Harrison et al. 2014) that recommend scatterplots for correlation and anomaly detection tasks."
+
+sources:
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://doi.org/10.48550/arXiv.2109.01271
+    note: "This meta-analysis (Table 9) identifies scatterplots as the top recommended visualization type for the 'Correlate' task, based on a synthesis of empirical work from sources like [20, 53, 78]."
+    role: primary
+  - type: research
+    ref: Saket et al., 2019
+    url: https://doi.org/10.1109/TVCG.2018.2864525
+    note: "This study (referenced as [78] in Zeng & Battle) empirically tested ten visualization types across ten tasks and found scatterplots were highly effective for correlation and finding anomalies."
+    role: supporting
+  - type: research
+    ref: Harrison et al., 2014
+    url: https://doi.org/10.1109/TVCG.2014.2346979
+    note: "This study (referenced as [33] in Zeng & Battle) specifically evaluated the human perception of correlation in nine different visualization types and found scatterplots performed best, with perception following Weber's Law."
+    role: supporting
+
+tools:
+  - type: learn
+    name: "From Data to Viz: Correlation"
+    url: https://www.data-to-viz.com/story/TwoNum.html
+    description: "An educational resource that guides users to choose a scatterplot for visualizing the relationship between two continuous variables, explaining why and providing code examples."
+
+examples:
+  - type: good
+    description: "A classic scatterplot showing the relationship between height and weight. Each person is a dot. The upward-trending pattern of dots clearly and intuitively communicates the positive correlation between the two variables."
+  - type: bad
+    description: "Two separate bar charts, one for height and one for weight, sorted alphabetically. While each chart is valid on its own, placing them side-by-side makes it impossible to see the correlation between the variables at an individual level."
+---
+
+## Guidance
+
+When the primary goal is to understand the relationship (correlation) between two continuous, quantitative variables, use a scatterplot.
+
+## Why
+
+A scatterplot maps two quantitative variables to a 2D Cartesian plane, with one variable on the x-axis and the other on the y-axis. This design makes the relationship between the variables emerge as a direct visual pattern. The human visual system is adept at identifying patterns like lines, curves, and clusters from clouds of points. A positive correlation appears as an upward trend, a negative correlation as a downward trend, and no correlation as a random cloud, making scatterplots the most direct and intuitive tool for this specific task.
+
+### Core Principle
+
+Effective visualization directly maps the structure of the analytical task onto a visual representation that the brain can process efficiently. For correlation, the task is to see a bivariate relationship, and the scatterplot's 2D structure provides a direct visual analogue.
+
+## When it applies
+
+- When you have two continuous, quantitative variables (e.g., height vs. weight, temperature vs. ice cream sales, years of experience vs. salary).
+- When the main question is "How are these two variables related?" or "Is there a connection between X and Y?".
+- For related tasks like identifying clusters (groups of similar points) and finding outliers (points that deviate from the main pattern).
+
+## Exceptions
+
+- **Overplotting:** If you have a very large number of data points, a standard scatterplot can become a solid, unreadable blob. In this case, modifications are needed.
+- **Time Series Data:** While you can use a scatterplot to compare two time series, a line chart with two lines is often a more conventional and effective way to show trends over time.
+
+## Trade-offs
+
+- **Individual Value Lookup:** While possible, looking up the exact x and y values for a specific point in a dense scatterplot can be difficult without interactivity (e.g., tooltips). Bar charts or tables are better for precise value lookup.
+- **Limited Variables:** A basic scatterplot is limited to two primary quantitative variables. Additional variables can be encoded with color, size, or shape, but this can add complexity and perceptual biases.
+
+## Signs of Trouble
+
+- **"Correlation" from Separate Charts:** You are trying to infer a relationship by looking at two or more separate charts (e.g., two bar charts or two pie charts). This requires cognitive, not visual, integration and is highly ineffective.
+- **Using a Line Chart for Non-Temporal Data:** A line is drawn connecting points that do not have a sequential relationship (e.g., connecting points for different people sorted alphabetically). This implies a trend that doesn't exist.
+- **Massive Overplotting:** The plot is a solid block of color where individual points are indistinguishable, hiding the underlying structure of the data.
+
+## How to Improve
+
+- **Create a Scatterplot:** If you have two quantitative variables, the default choice for exploring their relationship should be a scatterplot.
+
+- **For Overplotting (Moderate):** If your scatterplot is too dense, use semi-transparent marks (alpha blending). This allows areas with more points to appear darker, revealing density patterns.
+
+- **For Overplotting (Comprehensive):** For very large datasets, move from a simple scatterplot to a 2D density plot, a contour plot, or a heatmap (also known as a 2D histogram). These techniques aggregate points into bins and use color to show the number of points in each area, solving the overplotting problem while still revealing the overall relationship.
+
+```

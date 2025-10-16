@@ -1,0 +1,228 @@
+```md
+---
+id: use-horizon-graphs-for-time-warping-invariance
+title: "Use horizon graphs for time series similarity tasks requiring time-warping invariance"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:time-series
+  - chart:horizon-graph
+  - chart:line
+  - chart:colorfield
+  - task:compare
+  - task:cluster
+  - data:temporal
+  - visual:color
+  - visual:shape
+  - audience:expert
+  - medium:screen
+  - access:cognitive-load-risk
+
+evidence:
+  strength: medium
+  summary: "A 2019 lab study (n=18) found that when judging similarity, users' choices aligned much more closely with time-warping algorithms (like DTW) when using horizon graphs compared to line charts or colorfields. Users were 2.6x more likely to choose DTW-similar results over Euclidean-similar ones."
+
+sources:
+  - type: research
+    ref: Gogolou et al., 2019
+    url: https://doi.org/10.1109/TVCG.2018.2865077
+    note: "Experiment 1 (n=18) showed that horizon graphs strongly favored similarity measures that allow for temporal warping (DTW). The mean ratio of Top-DTW to Top-ED answers was 2.64 for horizon graphs, versus 1.87 for line charts and 1.23 for colorfields."
+    role: primary
+
+---
+
+## Guidance
+
+When users need to find similarly shaped time series patterns that may be shifted or stretched in time, use a horizon graph. This is common in fields like neuroscience (EEG analysis) or finance where the exact timing of a pattern is less important than its overall shape.
+
+## Why
+
+Horizon graphs use a dual encoding of color for high-level patterns (like peaks and valleys) and shape/position for details. This encourages viewers to focus on the overall shape and structure, making them less sensitive to local misalignments or "warping" along the time axis. This perceptual tendency aligns well with similarity search algorithms like Dynamic Time Warping (DTW) that are designed to ignore such temporal variations.
+
+### Core Principle
+
+The choice of visualization can guide a user's perception of similarity to align with specific algorithmic definitions. A chart that emphasizes shape over exact temporal position will naturally guide users toward a time-warping-invariant notion of similarity.
+
+## When it applies
+
+- When the primary task is to identify or cluster time series based on shape similarity, and the underlying similarity metric is (or should be) invariant to local stretching, compressing, or shifting in time (e.g., Dynamic Time Warping).
+- When analyzing data where the timing of events can vary, such as EEG signals, stock market patterns, or sensor readings.
+
+## Exceptions
+
+- When the exact timing and alignment of data points are critical. In such cases, a standard line chart is more appropriate as it makes temporal deviations more salient.
+- When the audience is unfamiliar with horizon graphs, as they can have a higher cognitive load and learning curve. The study found they were consistently the slowest to interpret.
+
+## Trade-offs
+
+- **Slower Performance:** While perceptually aligned for this task, horizon graphs are more complex. The source study found they led to significantly longer task completion times compared to line charts and colorfields.
+- **Higher Cognitive Load:** The same study noted lower agreement among users and subjective feedback that horizon graphs were more difficult to use. You trade raw speed for better alignment with a specific type of similarity.
+
+## Signs of Trouble
+
+- **Fixation on Timing:** Users complain that two patterns "don't line up perfectly," even when their overall shapes are clearly similar. This suggests the current visualization (e.g., a line chart) is over-emphasizing temporal position.
+- **Inconsistent Results:** Users manually searching for similar patterns produce results that are very different from what a DTW-based algorithm finds.
+
+## How to Improve
+
+- **Quick approach: Educate the User.** If you must use a line chart, explicitly tell the user to "focus on the overall shape of the pattern, not its exact position in time." This provides a cognitive scaffold but doesn't change the perceptual bias of the chart.
+
+- **Moderate approach: Switch to a Horizon Graph.** Replace the existing line chart or colorfield with a horizon graph. This directly changes the visual encoding to better support the task, guiding the user's perception toward shape-based similarity.
+
+- **Comprehensive approach: Combine and Explain.** Use a horizon graph as the primary visualization and explicitly state the similarity criteria being used (e.g., "Showing patterns with the most similar shape, regardless of slight time shifts"). This combination of perceptual guidance (the chart) and cognitive framing (the explanation) provides the clearest direction.
+
+```
+
+<split/>
+
+```md
+---
+id: avoid-horizon-graphs-for-amplitude-invariance
+title: "Avoid horizon graphs for time series similarity tasks requiring amplitude or offset invariance"
+
+tags:
+  - impact:perceptual
+  - chart:time-series
+  - chart:horizon-graph
+  - chart:line
+  - chart:colorfield
+  - task:compare
+  - task:cluster
+  - data:temporal
+  - visual:color
+  - audience:expert
+  - medium:screen
+
+evidence:
+  strength: medium
+  summary: "A 2019 lab study (n=18) found that horizon graphs are perceptually sensitive to amplitude and vertical offset. When judging similarity, users' choices were strongly biased against results that were algorithmically similar but had different amplitudes (Z-normalized), choosing them only half as often as non-normalized results."
+
+sources:
+  - type: research
+    ref: Gogolou et al., 2019
+    url: https://doi.org/10.1109/TVCG.2018.2865077
+    note: "Experiment 2 (n=18) showed that with horizon graphs, users strongly disfavored Z-normalized results (invariant to amplitude/offset). The mean ratio of Top-NormED to Top-ED answers was 0.56, indicating a strong bias against amplitude invariance. In contrast, line charts (1.33) and colorfields (1.55) favored normalized results."
+    role: primary
+
+---
+
+## Guidance
+
+Do not use horizon graphs when the user needs to find time series patterns with similar shapes, regardless of their height (amplitude) or vertical position (offset). In these scenarios, use a line chart or colorfield instead.
+
+## Why
+
+Horizon graphs work by slicing the y-axis into discrete colored bands. A small change in a signal's amplitude or offset can push it across a band's boundary, causing a dramatic change in its color. This visual discontinuity makes two algorithmically similar shapes appear very different to the human eye. This perceptual effect runs directly counter to similarity measures that use Z-normalization to ignore amplitude and offset.
+
+### Core Principle
+
+A visualization's encoding should not create large visual discontinuities for small, conceptually unimportant changes in the data. The hard boundaries of horizon graph bands violate this principle when amplitude is meant to be ignored.
+
+## When it applies
+
+- When the user's task is to find patterns of a similar shape, even if one is "taller" or "shifted up" compared to another.
+- When the underlying similarity algorithm uses a form of normalization (like Z-normalization) to achieve amplitude and offset invariance. Using a horizon graph in this context will create a frustrating mismatch between what the user sees and what the algorithm returns.
+
+## Exceptions
+
+- If amplitude and offset are critically important features for the similarity comparison, then a horizon graph's sensitivity to them could be considered a feature, not a bug. However, a standard line chart on a fixed scale would likely communicate these differences more clearly.
+
+## Trade-offs
+
+- By avoiding horizon graphs, you may lose some of their space-efficiency. However, for this specific task, the gain in perceptual accuracy and alignment with the user's goal far outweighs the cost in screen real estate.
+
+## Signs of Trouble
+
+- **Color Dominates Shape:** A user dismisses a pattern as "completely different" because it's a different color (e.g., red vs. blue), even though its shape is identical to the query.
+- **Algorithm Mismatch:** A Z-normalized search algorithm returns a result that the user, looking at a horizon graph, finds nonsensical. For example, the algorithm ranks two patterns as highly similar, but the user sees one as a single blue peak and the other as a two-banded blue-and-red peak.
+- **Flat Signals Exaggerated:** Relatively flat, low-amplitude signals appear noisy or overly prominent because they hover near a band boundary, causing colors to flicker.
+
+## How to Improve
+
+- **Quick approach: Switch to a Line Chart.** The simplest and most effective fix is to replace the horizon graph with a standard line chart. This removes the discrete color bands that cause the perceptual distortion.
+
+- **Moderate approach: Use a Colorfield.** A colorfield (or heatmap) visualization can also support amplitude-invariant comparison. The study found it performed similarly to a line chart for this task. This may be a good option if you need to display many time series compactly.
+
+- **Comprehensive approach: Normalize Data Before Visualizing.** If you must show multiple series and their absolute values are not important, you can Z-normalize the data *before* plotting it with line charts in small multiples. This puts every series on the same scale (mean=0, std=1), making their shapes directly comparable and removing amplitude/offset as a visual variable.
+
+```
+
+<split/>
+
+```md
+---
+id: use-colorfields-for-faster-time-series-similarity-judgments
+title: "Consider colorfields for faster high-level time series similarity judgments"
+
+tags:
+  - impact:performance
+  - impact:cognitive
+  - chart:time-series
+  - chart:colorfield
+  - chart:horizon-graph
+  - chart:line
+  - task:compare
+  - task:cluster
+  - data:temporal
+  - visual:color
+  - audience:general
+  - medium:screen
+
+evidence:
+  strength: medium
+  summary: "A 2019 lab study (n=18 per experiment) found that for a time series similarity judgment task, colorfields were consistently among the fastest visualization types, while horizon graphs were consistently the slowest. In one experiment, colorfields were ~24% faster than line charts and ~34% faster than horizon graphs."
+
+sources:
+  - type: research
+    ref: Gogolou et al., 2019
+    url: https://doi.org/10.1109/TVCG.2018.2865077
+    note: "In Experiment 1 (n=18), mean completion time for a similarity task was 15.6s for colorfields, 20.5s for line charts, and 23.7s for horizon graphs. In Experiment 2 (n=18), colorfields (21.5s) were comparable to line charts (21.1s) and both were significantly faster than horizon graphs (28.8s)."
+    role: primary
+
+---
+
+## Guidance
+
+For tasks that require users to quickly make high-level similarity judgments between time series, consider using colorfields (also known as heatmaps or color strips) instead of more complex representations like horizon graphs.
+
+## Why
+
+Colorfields simplify the visual task by encoding values as color in a simple rectangular strip. This can reduce cognitive load, as the user can often perform a faster, more holistic comparison of color patterns rather than mentally tracing the complex, high-frequency paths of a line or horizon graph. This is especially true when the overall "texture" or "rhythm" of the time series is a key part of the similarity judgment.
+
+### Core Principle
+
+Reducing the visual complexity of a chart can speed up high-level perceptual tasks. By abstracting values into color, colorfields offload some of the cognitive work of detailed shape tracing.
+
+## When it applies
+
+- When speed of judgment is a key priority for the user.
+- When the task involves comparing many time series at once (as in small multiples), where the space-efficiency and scannability of colorfields are advantageous.
+- When the overall pattern and density are more important than precise value lookups or detailed shape analysis.
+
+## Exceptions
+
+- When precise value comparison or identification of specific features (e.g., the exact peak value) is required. Line charts are superior for such tasks.
+- When the similarity judgment is sensitive to temporal warping (stretching/shifting). The study found colorfields were the least effective visualization for time-warping-invariant tasks.
+
+## Trade-offs
+
+- **Loss of Precision:** Colorfields make it difficult to read precise values or perceive fine-grained shape details compared to line charts. You trade precision for speed and density.
+- **Perceptual Biases:** The choice of color map can introduce perceptual artifacts. A non-perceptually uniform color map can make equal data changes appear unequal.
+- **Less Effective for Some Similarity Types:** While fast, colorfields were shown to be less effective than horizon graphs for perceiving similarity that is invariant to time-warping.
+
+## Signs of Trouble
+
+- **Slow Decision Making:** Users spend a long time visually tracing and re-tracing line charts or horizon graphs to make a similarity decision.
+- **Visual Clutter:** A display with many line charts is visually overwhelming and difficult to scan for patterns.
+- **User Fatigue:** Users report feeling fatigued or overwhelmed after comparing many complex time series visualizations.
+
+## How to Improve
+
+- **Quick approach: Switch to a Colorfield.** Replace an existing line chart or horizon graph view with a colorfield representation using a simple, effective color scale (e.g., a sequential scale for positive-only data or a diverging scale for data with a meaningful zero point).
+
+- **Moderate approach: Offer a Toggle.** Provide users with a control to switch between a line chart view (for detail) and a colorfield view (for overview and speed). This allows them to use the best representation for different stages of their analysis.
+
+- **Comprehensive approach: Use Linked Views.** Display a compact colorfield overview of many time series. When the user hovers over or selects a colorfield, display a more detailed line chart of that series in a separate, linked panel. This provides the best of both worlds: a fast, scannable overview and on-demand detail.
+
+```

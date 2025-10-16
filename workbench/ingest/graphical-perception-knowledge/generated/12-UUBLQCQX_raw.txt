@@ -1,0 +1,480 @@
+```md
+---
+id: balance-color-discriminability-preference
+title: "Balance color discriminability with aesthetic preference"
+
+tags:
+  - impact:perceptual
+  - impact:aesthetic
+  - impact:pathos
+  - impact:ethos
+  - visual:color
+  - data:categorical
+  - task:compare
+  - task:lookup
+  - audience:general
+
+evidence:
+  strength: medium
+  summary: "Gramazio et al. (2017, n=137) found a direct trade-off: palettes optimized for perceptual distance (discriminability) were rated as less preferable, while palettes optimized for preference (based on hue similarity) had worse performance on discrimination tasks (e.g., error rates for 3-color palettes increased from 11% to 15% when switching from a 'Low-Error' to a 'Preferable' setting, p<0.005)."
+
+sources:
+  - type: research
+    ref: Gramazio, Laidlaw, & Schloss, 2017
+    url: https://doi.org/10.1109/TVCG.2016.2598918
+    note: "Exp 1 (n=137) demonstrated the inverse relationship between palettes optimized for discriminability (based on perceptual/name distance) and those optimized for aesthetic preference (based on hue similarity). Both RT/error rates and preference ratings were significantly affected by this trade-off (p<0.01)."
+    role: primary
+  - type: research
+    ref: Schloss & Palmer, 2011
+    url: https://doi.org/10.3758/s13414-010-0081-8
+    note: "Established the underlying model of aesthetic preference for color pairs, finding that people generally prefer pairs with similar hues and contrasting lightness."
+    role: supporting
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://arxiv.org/abs/2109.01271v3
+    note: "This survey paper's methodology involves collating such perception findings to inform visualization recommendation systems, highlighting the importance of balancing competing principles."
+    role: related
+
+tools:
+  - type: implement
+    name: Colorgorical
+    url: http://vrl.cs.brown.edu/color
+    description: "Generates categorical color palettes by allowing users to directly balance the weights of 'Pair Preference' (aesthetics) and 'Perceptual/Name Distance' (discriminability)."
+  - type: validate
+    name: Viz Palette
+    url: https://projects.susielu.com/viz-palette
+    description: "Allows you to see your chosen palette in various chart types and simulate how it appears to users with color vision deficiencies, helping you evaluate both aesthetic and discriminability trade-offs."
+
+examples:
+  - type: good
+    description: "A palette using distinct but harmonious colors, like a triad of a primary color and two analogous secondary colors (e.g., blue, with orange-yellow and orange-red). The hues are related but different enough to be distinguished."
+  - type: bad
+    description: "A rainbow palette. While it has high perceptual distance between distant colors (red vs. blue), the adjacent colors (yellow vs. green) are hard to distinguish and the overall effect is often considered aesthetically jarring and lacks a natural order."
+  - type: bad
+    description: "A monochrome palette with very subtle lightness steps. While aesthetically pleasing and harmonious, the low perceptual distance makes it very difficult for viewers to accurately distinguish between categories, especially in complex charts."
+---
+
+## Guidance
+
+When creating a categorical color palette, consciously balance the goal of discriminability (making colors easy to tell apart) with the goal of aesthetic preference (making the color combination visually pleasing). These two goals are often in conflict.
+
+## Why
+
+Colors that are perceptually far apart (e.g., red and green) are highly discriminable but can be aesthetically jarring and are often rated as less preferable. Conversely, colors that are harmoniously related (e.g., analogous or similar hues) are often rated as more aesthetically pleasing but can be difficult to distinguish from one another, leading to higher error rates and slower task performance. Finding a good balance is key to creating a chart that is both effective and engaging.
+
+### Core Principle
+
+Effective visualization design must satisfy both perceptual requirements (clarity, accuracy) and aesthetic/rhetorical goals (engagement, trust). A palette that fails at either can undermine the entire visualization.
+
+## When it applies
+
+- When choosing colors for categorical data, where each color represents a distinct group (e.g., different product lines, political parties, or survey respondents).
+- In any chart type that uses color to distinguish categories, such as bar charts, line charts, scatter plots, and choropleth maps.
+- When creating visualizations for a general audience, where aesthetic appeal can significantly impact engagement and trust in the data.
+
+## Exceptions
+
+- **Labeling is Primary:** If every colored element is directly labeled and color is used only for redundant grouping, high discriminability is less critical. You can prioritize aesthetics more heavily.
+- **Highlighting/Accent Colors:** When using a palette of neutral grays with one or two "accent" colors to draw attention, the primary goal is emphasis, not balanced comparison. The accent colors should be highly discriminable from the gray, but the grays themselves can be subtle.
+- **Branding Constraints:** If you are required to use a specific brand palette, you may have limited ability to optimize for both goals. In this case, the priority is to work within the given constraints, perhaps by selecting a subset of the brand colors that offer the best possible balance.
+
+## Trade-offs
+
+- **Prioritizing Discriminability:** You may sacrifice some aesthetic harmony. The resulting palette might feel less cohesive or visually "louder."
+- **Prioritizing Aesthetics:** You will likely reduce perceptual performance. Viewers may take longer and make more errors when trying to identify and compare categories, especially if colors are not adjacent.
+
+## Signs of Trouble
+
+- **The Squint Test:** If you squint your eyes and look at the chart, do different color categories blur together into a single visual mass? This indicates low discriminability.
+- **Back-and-Forth:** Do you find yourself (or your users) repeatedly glancing between the legend and the chart to tell which color is which? This suggests the colors are not distinct enough.
+- **Aesthetic Revulsion:** Does the chart feel visually chaotic, jarring, or "ugly"? This might indicate that colors with high perceptual distance were chosen without regard for aesthetic harmony.
+- **"Muddy" Palette:** Do the colors look desaturated and similar, making the chart feel washed out and hard to read? This suggests an over-correction towards harmony at the expense of discriminability.
+
+## How to Improve
+
+- **Quick Fix: Adjust Lightness/Saturation.** Take your preferred aesthetic palette and try increasing the lightness difference between similar hues. Or, take a highly discriminable palette and slightly desaturate the colors to reduce their intensity and make them more harmonious.
+
+- **Moderate Approach: Use a Smart Tool.** Use a tool like Colorgorical that explicitly models the trade-off. Start with a high weight on "Pair Preference" to get an aesthetic base, then gradually increase the weight on "Perceptual Distance" or "Name Difference" until you find a palette that is both acceptable to you and has no two colors that are too similar.
+
+- **Comprehensive Redesign: Adopt a Principled Color Strategy.** Instead of picking individual colors, choose a color scheme based on color theory, such as a "split-complementary" or "triadic" scheme. These models are designed to provide both contrast and harmony. Select a primary color, then use the model to find contrasting but related colors, and adjust their lightness and saturation for optimal balance.
+
+<split/>
+
+```md
+---
+id: limit-categorical-colors
+title: "Limit categorical palettes to 8 colors or fewer"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - access:cognitive-load-risk
+  - visual:color
+  - data:categorical
+  - data:cardinality.high
+  - chart:bar
+  - chart:line
+  - chart:scatter
+  - chart:pie
+
+evidence:
+  strength: high
+  summary: "Multiple studies confirm that discrimination accuracy decreases as the number of colors increases. Gramazio et al. (2017, n=77) found error rates in a visual discrimination task more than doubled from 3-color palettes (12% error) to 8-color palettes (29% error), F(2,57)=30.8, p<0.001. This aligns with foundational work on attentional capacity limits, which suggests humans can only track about 4-5 items at a time (Haroz & Whitney, 2012)."
+
+sources:
+  - type: research
+    ref: Gramazio, Laidlaw, & Schloss, 2017
+    url: https://doi.org/10.1109/TVCG.2016.2598918
+    note: "Experiment 1 (n=77) showed that as palette size increased from 3 to 5 to 8 colors, mean error rates rose from 79/660 to 119/660 to 190/660, a statistically significant increase (p < .001). The authors also noted that models of color perception became less predictable for 8-color palettes."
+    role: primary
+  - type: research
+    ref: Haroz & Whitney, 2012
+    url: https://doi.org/10.1109/TVCG.2012.180
+    note: "Found that attentional capacity limits make visualizations with more than 5 distinct colors harder to process, supporting the need to limit color cardinality."
+    role: supporting
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://arxiv.org/abs/2109.01271v3
+    note: "The survey notes that most graphical perception studies focus on a limited set of chart types and encodings, but the principle of limited cardinality is a consistent theme."
+    role: related
+
+tools:
+  - type: learn
+    name: "Datawrapper: Which color scale to use"
+    url: https://www.datawrapper.de/v/which-color-scale-to-use-for-my-data-vis/
+    description: "Provides practical advice on when to use categorical scales and why they should be limited in size."
+  - type: implement
+    name: Colorgorical
+    url: http://vrl.cs.brown.edu/color
+    description: "Can generate palettes up to 22 colors but the authors note 'it is inadvisable to use that many colors due to perceptual limitations'."
+
+examples:
+  - type: bad
+    description: "A pie chart or bar chart with 12 or more slices/bars, each with a unique color. It becomes a 'chartjunk' rainbow, and the viewer cannot reliably match the colors in the chart to the legend."
+  - type: good
+    description: "A chart with 10 categories where the top 5 are assigned distinct colors and the remaining 5 'long-tail' categories are grouped into a single 'Other' category, colored in a neutral gray."
+---
+
+## Guidance
+
+For categorical data, limit the number of distinct colors in a single view to a maximum of eight, and ideally aim for five or fewer.
+
+## Why
+
+The human brain has a limited capacity for processing and remembering distinct visual information. As you add more colors, it becomes exponentially harder for a viewer to quickly and accurately distinguish between them. This increases cognitive load, slows down interpretation, and leads to more errors. Forcing a user to constantly refer back to a legend to decode a dozen colors makes a chart ineffective.
+
+### Core Principle
+
+Respect the cognitive limits of your audience. The goal of visualization is to reduce cognitive load, not increase it. Overloading a chart with too many distinct colors defeats this purpose.
+
+## When it applies
+
+- When using color to represent distinct, non-ordered categories.
+- In any chart type where colors are mapped to a legend, including bar charts, line charts, scatter plots, and pie charts.
+- Particularly important when the viewer needs to make quick comparisons between categories.
+
+## Exceptions
+
+- **Direct Labeling:** If every colored item is directly labeled with its category name, the cognitive burden of remembering the color-legend mapping is removed. While still visually complex, using more than 8 colors can be acceptable in this case.
+- **Exploratory Analysis by Experts:** For an expert user performing interactive, exploratory data analysis, a larger color palette may be a necessary tool for discovery, as they can filter, zoom, and hover to disambiguate colors. This does not apply to static, explanatory visualizations for a general audience.
+- **Spatial Contiguity:** In maps or other visualizations where same-colored regions are spatially clustered (e.g., a choropleth map of US regions), the brain can group them more easily. However, the limit still largely applies.
+
+## Trade-offs
+
+- **Loss of Granularity:** By limiting colors, you may need to group some categories into an "Other" bucket. This means you sacrifice the ability to see detail in the less-prominent categories.
+- **Design Complexity:** It requires more thought to decide which categories to show and which to group, rather than simply assigning a color to every unique value in a data column.
+
+## Signs of Trouble
+
+- **The Rainbow Effect:** The chart uses a wide spectrum of colors that looks like a rainbow, making it visually noisy and hard to interpret.
+- **Legend-Gazing:** You observe users repeatedly moving their eyes (or mouse) back and forth between the chart and the legend.
+- **Subtle Neighbors:** The palette contains multiple colors that are very similar (e.g., three different shades of blue, or a teal next to a green). This is a common symptom when trying to create a 10+ color palette.
+- **"What color is this?"** Users ask questions not about the data, but about which category a particular color represents.
+
+## How to Improve
+
+- **Quick Fix: Grouping.** Identify the most important categories you want to highlight. Assign distinct, highly discriminable colors to them. Group the remaining "long-tail" categories into a single "Other" or "Miscellaneous" category and color it with a neutral gray.
+
+- **Moderate Redesign: Faceting (Small Multiples).** Instead of putting all categories in one large, color-coded chart, break it into a series of smaller, simpler charts (a "small multiple" or "facet" grid). Each small chart can show one or a few categories, drastically reducing the number of colors needed in any single view.
+
+- **Comprehensive Redesign: Re-evaluate the Goal.** If you feel you absolutely need to show 20 different categories, ask if a single chart is the right approach. Perhaps a searchable, sortable table is more appropriate. Or, maybe the core message of the visualization can be reframed to focus on a more limited, important subset of the data.
+
+<split/>
+
+```md
+---
+id: prioritize-name-difference
+title: "Use color name difference to improve palette discriminability"
+
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - visual:color
+  - data:categorical
+  - task:compare
+  - task:lookup
+  - audience:general
+
+evidence:
+  strength: medium
+  summary: "In a study of color palette effectiveness (Gramazio et al. 2017, n=77), palettes with higher 'Name Difference' scores showed significantly faster response times (r=-0.89, p<0.005 for 3-color palettes) and lower error rates (r=-0.87, p<0.001) in a discrimination task. The authors suggest it may be a better predictor of performance than standard perceptual distance models like CIEDE2000."
+
+sources:
+  - type: research
+    ref: Gramazio, Laidlaw, & Schloss, 2017
+    url: https://doi.org/10.1109/TVCG.2016.2598918
+    note: "Experiment 1 (n=77) found Name Difference to be the most predictive factor for response time and highly predictive of error rate, outperforming Perceptual Distance (CIEDE2000) in some conditions."
+    role: primary
+  - type: research
+    ref: Demiralp, Bernstein, & Heer, 2014
+    url: https://doi.org/10.1109/TVCG.2014.2346978
+    note: "Gramazio et al. note their finding supports this earlier work, which also suggested Name Difference is a better measure of color distance for visualization."
+    role: supporting
+  - type: research
+    ref: Heer & Stone, 2012
+    url: https://doi.org/10.1145/2207676.2208548
+    note: "This paper introduced the color naming model and the concept of 'Name Difference' based on crowdsourced data, providing the foundation for its use in palette generation."
+    role: related
+
+tools:
+  - type: implement
+    name: Colorgorical
+    url: http://vrl.cs.brown.edu/color
+    description: "Directly implements the 'Name Difference' metric as a core scoring function that users can optimize for when generating palettes."
+  - type: learn
+    name: "Heer & Stone: Color Naming Models"
+    url: https://vis.stanford.edu/color-names/
+    description: "An interactive visualization and explanation of the color naming data that powers the 'Name Difference' metric."
+
+examples:
+  - type: good
+    description: "A palette containing 'red', 'blue', and 'green'. These colors have very high name difference; few people would ever call the red 'blue'."
+  - type: bad
+    description: "A palette containing 'cyan', 'teal', and 'turquoise'. While perceptually distinct in CIELAB space, they share color names and are easily confused in a legend, leading to poor performance."
+---
+
+## Guidance
+
+When creating a categorical color palette, choose colors that are not just perceptually distant, but also have different names (a high "Name Difference").
+
+## Why
+
+Humans don't just perceive color; we categorize it with language. The ability to quickly and correctly distinguish colors in a chart is strongly tied to whether we would use different words to describe them. For example, it's much easier to differentiate "red" from "blue" than it is to differentiate "cyan" from "teal," even if the two pairs have a similar mathematical distance in a perceptual color space. Palettes optimized for name difference result in faster and more accurate chart reading.
+
+### Core Principle
+
+Visual encoding should align with cognitive categories. Because we think and communicate with words, aligning color choices with common language categories reduces the cognitive work required to decode a visualization.
+
+## When it applies
+
+- When creating any categorical color palette that will be decoded using a legend.
+- Especially important in complex visualizations with many data points, where rapid and accurate identification of categories is crucial.
+- For visualizations intended for a general audience that will rely on common color names.
+
+## Exceptions
+
+- **No Legend:** If all items are directly labeled, the need for linguistically distinct colors is reduced, as the viewer is not mapping color to a name via a legend.
+- **Expert Audience with Domain Conventions:** If an expert audience has a well-established (and learned) convention for subtle color differences (e.g., geologists interpreting a specific color scale), their domain-specific vocabulary may override general color names.
+
+## Trade-offs
+
+- **Aesthetic Constraints:** Strictly optimizing for name difference might lead to a palette of primary-like colors (e.g., red, green, blue, yellow) that may not fit the desired aesthetic tone of the visualization. You may need to balance it with aesthetic goals.
+- **Reduced Color Space:** It can be harder to find a large number of colors (e.g., 7-8) that all have high name difference from each other, potentially limiting your palette size more than a purely perceptual model would.
+
+## Signs of Trouble
+
+- **Verbal Ambiguity:** When describing the chart, people say things like "the light blueish-green one" instead of a simple color name.
+- **"Is this blue or green?":** Users express confusion about how to label a color, indicating low name difference between palette entries.
+- **High Error Rates:** In testing, you find that users frequently misidentify categories, even when the colors look obviously different to you on the legend. This is a classic sign that the perceptual distance is not translating to cognitive distinctiveness.
+
+## How to Improve
+
+- **Quick Fix: The "Say it Out Loud" Test.** Look at your palette and say the first name that comes to mind for each color. If you hesitate, or if you use the same name for two colors (e.g., "blue" for both navy and sky blue), you have a name difference problem. Replace one of the ambiguous colors.
+
+- **Moderate Approach: Use Basic Color Terms.** Build your palette around the 11 basic color terms identified in linguistic research (black, white, red, green, yellow, blue, brown, orange, pink, purple, and gray). This provides a strong foundation of high name difference. You can then create lighter/darker variants for aesthetic purposes, as long as each color still clearly maps to its base name.
+
+- **Comprehensive Approach: Use a Name-Aware Tool.** Use a tool like Colorgorical that has "Name Difference" built into its optimization algorithm. By giving high weight to this factor, you can algorithmically generate a palette that is optimized for linguistic distinctiveness based on large-scale experimental data.
+
+<split/>
+
+```md
+---
+id: avoid-dull-yellow-greens
+title: "Avoid dull yellow-green colors in general-purpose palettes"
+
+tags:
+  - impact:aesthetic
+  - impact:pathos
+  - impact:ethos
+  - visual:color
+  - data:categorical
+  - audience:general
+
+evidence:
+  strength: medium
+  summary: "Based on cross-cultural studies of color preference (e.g., Palmer & Schloss, 2010), the dark, dull yellow-green region (e.g., olive, khaki) is one of the most disliked on average. Gramazio et al. (2017) explicitly identified and excluded this region (CIELAB H in [85°, 114°], L* in [35, 75]) from their palette generation tool to improve the typical aesthetic appeal and user reception."
+
+sources:
+  - type: research
+    ref: Gramazio, Laidlaw, & Schloss, 2017
+    url: https://doi.org/10.1109/TVCG.2016.2598918
+    note: "The authors specifically filter this region to prevent their optimization algorithm from selecting these colors, noting 'the goal is to cater to the average observer' and improve 'typical aesthetic palette preference'."
+    role: primary
+  - type: research
+    ref: Palmer & Schloss, 2010
+    url: https://www.pnas.org/doi/10.1073/pnas.0906172107
+    note: "This foundational paper on the 'ecological valence theory' of color preference identifies a strong, cross-culturally consistent dislike for colors associated with negative concepts, such as decaying matter (e.g., brownish/yellowish greens)."
+    role: supporting
+  - type: research
+    ref: Taylor & Franklin, 2012
+    url: https://doi.org/10.3758/s13423-011-0205-z
+    note: "Further investigates the link between color-object associations and preference, reinforcing the findings of ecological valence theory."
+    role: supporting
+
+tools:
+  - type: implement
+    name: Colorgorical
+    url: http://vrl.cs.brown.edu/color
+    description: "This tool automatically filters out the 'dark yellowish-green region' by default to generate more aesthetically preferable palettes."
+
+examples:
+  - type: bad
+    description: "A bar chart where one of the main categories is represented by a muddy, olive-green color. This may cause a negative emotional reaction in some viewers and make the chart less appealing."
+  - type: good
+    description: "When a green hue is needed, the palette uses a more vibrant, saturated green or a lighter, minty green, avoiding the disliked dull yellow-green range."
+---
+
+## Guidance
+
+When designing color palettes for a general audience, avoid using colors from the dark, dull, yellow-green region (often described as "olive," "khaki," or "swampy" green).
+
+## Why
+
+Aesthetic appeal is not merely decorative; it influences viewer engagement, trust, and the overall emotional tone of a visualization. Research on color preference has shown that, on average and across cultures, people have a strong aversion to dull yellow-green colors. These colors are often associated with negative concepts like decay or sickness. Using them in your visualization can create an unintended negative impression and reduce the credibility and appeal of your work.
+
+### Core Principle
+
+The aesthetic and emotional impact of color choices can affect how an audience receives and trusts the information presented. Cater to the preferences of the average observer to maximize positive reception.
+
+## When it applies
+
+- When designing visualizations for a broad, general, or public audience.
+- When the goal is to create a positive, trustworthy, or aesthetically pleasing impression.
+- In any chart using categorical colors where you have the flexibility to choose your palette.
+
+## Exceptions
+
+- **Thematic Relevance:** If the data is specifically *about* something associated with this color (e.g., military uniforms, olives, swamp ecosystems), then using it is thematically appropriate and expected. The context removes the negative association.
+- **Branding:** If these colors are part of a required brand palette, you may be forced to use them.
+- **Expert Audience:** An expert audience may be less influenced by general aesthetic preferences and more focused on data, or they may have domain-specific conventions that use these colors.
+
+## Trade-offs
+
+- **Reduced Palette Options:** By excluding a region of the color space, you are slightly limiting the total number of available colors for your palette. However, this is rarely a practical issue given the vastness of the remaining color space.
+
+## Signs of Trouble
+
+- **"That's an ugly chart":** Viewers comment on the aesthetics of the chart in a negative way, often without being able to pinpoint why.
+- **Muddy or Murky Feel:** The visualization feels drab, sickly, or unappealing. The colors may be technically discriminable but are emotionally off-putting.
+- **User Feedback:** In testing, users describe a color as "weird," "gross," or "muddy."
+
+## How to Improve
+
+- **Quick Fix: Hue Shift.** If you have a color that falls into this range, keep its lightness and saturation the same but shift its hue. Move it towards a purer green (away from yellow) or a purer yellow/orange (away from green).
+
+- **Moderate Approach: Select a New Palette.** If your palette relies on this color, it's best to select a new one. Use a tool that generates aesthetically pleasing palettes or choose a pre-made palette from a reputable source (like ColorBrewer's qualitative schemes) that avoids these colors.
+
+- **Comprehensive Approach: Use a Preference-Aware Tool.** Use a tool like Colorgorical that is built on models of color preference. It automatically avoids these disliked regions, ensuring the palettes it generates are more likely to be well-received by an average viewer.
+
+<split/>
+
+```md
+---
+id: ensure-color-background-contrast
+title: "Constrain palette colors to a mid-range of lightness"
+
+tags:
+  - impact:perceptual
+  - impact:accessibility
+  - visual:color
+  - medium:screen
+  - medium:print
+  - data:categorical
+
+evidence:
+  strength: high
+  summary: "To ensure visibility on both light and dark backgrounds, colors must fall within a mid-range of lightness. Gramazio et al. (2017) enforce this by constraining generated colors to a CIELAB L* range of 25-85. This practical rule aligns with foundational accessibility principles (e.g., WCAG) that require sufficient contrast for readability on varied backgrounds."
+
+sources:
+  - type: research
+    ref: Gramazio, Laidlaw, & Schloss, 2017
+    url: https://doi.org/10.1109/TVCG.2016.2598918
+    note: "The Colorgorical model explicitly excludes colors lighter than L*=85 and darker than L*=25 'so that all colors are visible on black or white backgrounds'."
+    role: primary
+  - type: standard
+    ref: WCAG 2.1 Success Criterion 1.4.3
+    url: https://www.w3.org/TR/WCAG21/#contrast-minimum
+    note: "While not a direct mapping, the principle of ensuring sufficient contrast between foreground (color marks) and background is a core accessibility requirement. Clamping lightness is a practical heuristic to help meet this goal in varied contexts."
+    role: related
+
+tools:
+  - type: implement
+    name: Colorgorical
+    url: http://vrl.cs.brown.edu/color
+    description: "Automatically clamps the lightness of generated colors to an L* range of 25-85."
+  - type: validate
+    name: Color contrast checker
+    url: https://webaim.org/resources/contrastchecker/
+    description: "Allows you to manually check the contrast ratio of a foreground color against both a white (#FFFFFF) and black (#000000) background."
+
+examples:
+  - type: bad
+    description: "A palette that includes a very light yellow. On a standard white background, the yellow marks are nearly invisible."
+  - type: bad
+    description: "A palette that includes a very dark navy blue. When the chart is placed on a slide with a dark gray or black background, the navy blue marks disappear."
+  - type: good
+    description: "A palette where all colors are of medium lightness, like the 'Set2' or 'Pastel1' schemes from ColorBrewer. These palettes are robust and remain legible on both light and dark backgrounds."
+---
+
+## Guidance
+
+When creating a categorical color palette, constrain your color choices to a mid-range of lightness to ensure they are visible on both light and dark backgrounds. Avoid extremely light and extremely dark colors.
+
+## Why
+
+You cannot always control the context in which your visualization will be displayed. A chart designed on a white background might be pasted into a presentation with a dark theme, or vice versa. Colors that are too light (e.g., pale yellow) will be invisible on a white background. Colors that are too dark (e.g., navy blue) will disappear on a black background. By choosing colors in a medium lightness range (e.g., CIELAB L* between 25 and 85), you create a robust palette that remains legible in a wider variety of contexts.
+
+### Core Principle
+
+Design for resilience. Your visualizations should be robust enough to withstand common changes in their viewing environment without losing legibility.
+
+## When it applies
+
+- Always, when creating a general-purpose color palette.
+- Especially critical when you know your visualization will be used in multiple contexts (e.g., in a report, on a website, and in a slideshow).
+- When creating a style guide or design system for a team, to ensure all generated charts are robust.
+
+## Exceptions
+
+- **Fixed Background:** If you have absolute control over the background color and know it will never change (e.g., a chart on a printed poster with a specified background), you only need to ensure contrast against that one specific color. You could then use very light colors on a dark background, or vice versa.
+- **Highlighting:** When using color for highlighting, you might intentionally use a very light color (like yellow) as a background fill behind black text to draw attention. In this case, the color is the background, not the foreground mark.
+
+## Trade-offs
+
+- **Reduced Dynamic Range:** You are intentionally reducing the range of lightness available to you. This can make it slightly harder to create highly distinct colors, as lightness contrast is a powerful tool for discriminability. However, the gain in robustness usually outweighs this cost.
+
+## Signs of Trouble
+
+- **Disappearing Marks:** Some of your chart elements (bars, points, lines) are invisible or very difficult to see against the background.
+- **Context-Dependent Failure:** The chart looks fine on your screen, but when a colleague pastes it into their presentation, some of the data disappears.
+- **Low Contrast Warnings:** Accessibility-checking tools flag some of your colors for having insufficient contrast against a standard white or black background.
+
+## How to Improve
+
+- **Quick Fix: Manual Lightness Check.** For each color in your palette, check its contrast against both white (#FFFFFF) and black (#000000) using a contrast checking tool. If a color fails against either background (e.g., a ratio below 2:1 for graphical elements), adjust its lightness until it passes.
+
+- **Moderate Approach: Use a Robust Pre-made Palette.** Choose a pre-made qualitative palette that is known to be robust. For example, the `Set2` and `Pastel1` palettes from ColorBrewer are designed with medium lightness and work well on varied backgrounds.
+
+- **Comprehensive Approach: Build Lightness Clamping into Your Process.** When using a color picker, pay attention to the 'Lightness' or 'Brightness' value (e.g., the 'L' in HSL or the 'B' in HSB/HSV). Avoid values that are very high (e.g., >90%) or very low (e.g., <20%). If using a programmatic tool, use one like Colorgorical that automatically clamps the lightness range of its output.
+
+```

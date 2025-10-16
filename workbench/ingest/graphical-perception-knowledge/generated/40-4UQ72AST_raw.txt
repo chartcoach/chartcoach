@@ -1,0 +1,295 @@
+```md
+---
+id: use-wrapped-bars-for-ranked-lists
+title: "For long ranked lists, use wrapped bar charts for a balance of speed and accuracy"
+tags:
+  - impact:perceptual
+  - impact:performance
+  - chart:bar
+  - chart:bar.wrapped
+  - task:rank
+  - task:compare
+  - task:summary-mean
+  - data:quantitative
+  - data:cardinality.high
+  - visual:length
+  - visual:position
+  - medium:static
+  - medium:screen
+evidence:
+  strength: medium
+  summary: "In a crowdsourced study (n=222), wrapped bar charts were more accurate than treemaps, packed/piled bars, and Zvinca plots for ranking tasks. They were also significantly faster than scrolled bar charts for comparison and averaging tasks, making them a good 'balanced choice'."
+sources:
+  - type: research
+    ref: Mylavarapu et al., 2019
+    url: https://doi.org/10.1145/3290605.3300422
+    note: "Primary study comparing six ranked-list visualizations. Found wrapped bars to be the 'most balanced choice' for combining accuracy, speed, and familiarity for lists of up to 300 items."
+    role: primary
+---
+## Guidance
+
+When visualizing a long, sorted list of values (e.g., more than can fit on one screen), consider using a wrapped bar chart layout. This technique breaks the single list into multiple columns, allowing all items to be visible simultaneously without scrolling.
+
+## Why
+
+Wrapped bar charts maintain the use of length as the primary visual encoding, which is highly accurate. By eliminating the need for scrolling, they significantly reduce task completion time compared to a standard, long bar chart. This offers a practical compromise between the high accuracy of a scrolled bar chart and the speed of a non-interactive chart.
+
+### Core Principle
+
+Make the most important comparisons the easiest to see. By placing all data on one screen, wrapped bars facilitate at-a-glance distributional awareness, even if it makes fine-grained comparisons across columns slightly harder.
+
+## When it applies
+
+- When you need to display a ranked list that is too long to fit on a single screen.
+- When both reasonable accuracy and fast completion time are important.
+- When the primary task is to understand the overall distribution, find a specific item's rank, or make general comparisons.
+
+## Exceptions
+
+- If precise comparison between any two bars in the entire list is the absolute top priority, a single scrolled bar chart is superior. Despite being slower, it provides a single common baseline for all items, which yields the highest possible accuracy.
+- For extremely large datasets (thousands of items), other density-based visualizations may become more appropriate than any bar chart variant.
+
+## Trade-offs
+
+- **Accuracy vs. Speed:** You sacrifice a small amount of comparison accuracy (for items in different columns) for a large gain in speed and the ability to see the entire distribution at once.
+- **Space:** Comparison across columns is more difficult because the bars do not share a common baseline.
+
+## Signs of Trouble
+
+- **Endless Scrolling:** Users have to scroll extensively to find an item or compare items at opposite ends of a list.
+- **Lost Context:** Users cannot see the overall shape of the distribution because only a fraction of it is visible at any time.
+
+## How to Improve
+
+- **Moderate Redesign: Wrap the Bars.** Instead of a single long, scrolling list of bars, break the list into several columns that fit on one screen. Each column gets its own baseline. This is the core of the wrapped bar chart approach.
+
+```
+
+<split/>
+
+```md
+---
+id: prefer-bars-over-pies-for-comparison
+title: "For comparing quantities, prefer bar charts over pie charts"
+tags:
+  - impact:perceptual
+  - impact:ethical
+  - chart:bar
+  - chart:pie
+  - task:compare
+  - task:rank
+  - task:lookup
+  - data:quantitative
+  - data:categorical
+  - visual:length
+  - visual:angle
+  - visual:area
+evidence:
+  strength: high
+  summary: "Foundational research by Cleveland & McGill (1984), replicated multiple times through 2023, shows that judging length on a common baseline (bar charts) is significantly more accurate and faster than judging angle or area (pie charts). A 2023 review of 59 studies confirms this is the consensus for comparison tasks."
+sources:
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://dl.acm.org/doi/10.1145/3544548.3581349
+    note: "Synthesizes five papers comparing bar and pie charts, concluding bar charts outperform for 'sort' tasks (Section 5.2.3, Table 9)."
+    role: primary
+  - type: research
+    ref: Cleveland & McGill, 1984
+    url: https://doi.org/10.1080/01621459.1984.10478280
+    note: "Foundational experiment showing position/length judgments are perceptually superior to angle/area judgments."
+    role: supporting
+  - type: research
+    ref: Heer & Bostock, 2010
+    url: https://doi.org/10.1145/1753326.1753357
+    note: "Large-scale crowdsourced replication (n=1,935) confirming the original findings of Cleveland & McGill."
+    role: supporting
+---
+## Guidance
+
+When your audience needs to accurately compare or rank the values of different categories, use a bar chart instead of a pie chart.
+
+## Why
+
+Bar charts encode values using length along a common, straight baseline. The human visual system can compare these lengths very accurately and easily. Pie charts encode values using angles and areas, which are much harder for people to compare precisely, leading to more errors and slower interpretation.
+
+### Core Principle
+
+Humans judge quantities more accurately by comparing positions along a common scale than by comparing angles or areas. Match your visual encoding to the channel where human perception is strongest for the given task.
+
+## When it applies
+
+- When the user's task involves comparing one category to another (e.g., "Which region had the highest sales?").
+- When ranking categories from largest to smallest.
+- When looking up the approximate value of a specific category.
+
+## Exceptions
+
+- Pie charts can be acceptable for showing a part-to-whole relationship with very few (2-3) slices, especially when the goal is to communicate a simple, familiar proportion like "about half" or "a small fraction." In these limited cases, the familiarity of the "part-of-a-whole" metaphor might be useful.
+
+## Trade-offs
+
+- A bar chart typically requires more rectangular space than a pie chart. However, this is a worthwhile trade-off for the significant gains in clarity and perceptual accuracy.
+- Pie charts have a strong "part-to-whole" metaphor that bar charts lack, but this is often not worth the perceptual cost.
+
+## Signs of Trouble
+
+- **Multiple Slices:** The pie chart has more than 3-4 slices.
+- **Similar Slices:** Slices are close in size, making visual comparison nearly impossible without labels.
+- **"Exploded" Slices:** Slices are separated, which further distorts area perception.
+- **3D Effect:** A 3D pie chart is used, which introduces severe perspective distortion that makes accurate reading impossible.
+
+## How to Improve
+
+- **Quick Fix: Add Direct Labels.** If you must keep the pie chart, add direct labels with percentages or absolute values to each slice. This creates an escape hatch, allowing users to read the numbers instead of trying to decode the angles.
+- **Comprehensive Redesign: Switch to a Bar Chart.** Convert the pie chart into a bar chart, sorting the bars from largest to smallest (or another logical order). This makes comparisons trivial and accurate.
+
+```
+
+<split/>
+
+```md
+---
+id: use-scatterplots-for-correlation
+title: "To show the relationship between two quantitative variables, use a scatterplot"
+tags:
+  - impact:perceptual
+  - chart:scatter
+  - task:correlation
+  - data:quantitative
+  - visual:position
+  - medium:static
+  - medium:screen
+evidence:
+  strength: high
+  summary: "A 2023 review of 59 perception studies synthesized findings from multiple experiments (e.g., Harrison et al. 2014, Li et al. 2010), consistently showing that scatterplots are the most effective visualization for judging statistical correlation compared to other common chart types."
+sources:
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://dl.acm.org/doi/10.1145/3544548.3581349
+    note: "Synthesizes empirical work (Table 9) showing scatterplots as the top choice for the 'Correlate' task, referencing primary studies like Li et al. [53] and Harrison et al. [33]."
+    role: primary
+  - type: research
+    ref: Harrison et al., 2014
+    url: https://doi.org/10.1109/TVCG.2014.2346979
+    note: "Crowdsourced experiment that found scatterplots led to the most accurate perception of correlation among nine chart types."
+    role: supporting
+---
+## Guidance
+
+When the primary goal is for a user to assess the correlation (i.e., the strength and direction of a relationship) between two numerical variables, a scatterplot is the most effective choice.
+
+## Why
+
+Scatterplots map each variable to a positional axis (X and Y). The human visual system is adept at perceiving patterns in the resulting cloud of points, such as linearity, slope, and spread. These visual patterns directly correspond to the statistical properties of correlation, making the relationship easy to interpret. Other chart types, like parallel coordinates or tables, obscure this relationship.
+
+### Core Principle
+
+Match the visual structure to the analytical task. For assessing correlation, a chart that directly encodes the relationship between two variables via position is optimal.
+
+## When it applies
+
+- The primary task is to determine if and how two quantitative variables are related (e.g., positive, negative, strong, weak, linear, non-linear).
+- You are exploring relationships in a dataset, for example, between height and weight, or advertising spend and sales.
+
+## Exceptions
+
+- For a very large number of points (high-density data), overplotting can obscure the correlation by turning the chart into a solid blob. In this case, use modifications like transparent points, contour lines, or a 2D density plot (heatmap).
+- When one of the variables is time, a line chart is more conventional and often more effective for showing a trend, which is a specific type of correlation.
+
+## Trade-offs
+
+- Scatterplots are less effective for looking up the precise value of a single data point compared to a table, but they are vastly superior for revealing the overall relationship between variables.
+
+## Signs of Trouble
+
+- **Overplotting:** The data points are so dense they form a solid mass, hiding the true density and structure of the relationship.
+- **Wrong Chart Type:** A line chart is used to connect points for two non-time variables, creating spurious connections and suggesting a sequence that doesn't exist.
+- **Inappropriate Scales:** The axis ranges are set in a way that either exaggerates a weak correlation or flattens a strong one.
+
+## How to Improve
+
+- **Quick Fix: Adjust Point Styling.** If overplotting is an issue, make the points smaller and/or semi-transparent to reveal areas of higher density.
+- **Moderate Redesign: Bin the Data.** For very dense data, switch from plotting individual points to a 2D histogram (heatmap) or contour plot. This aggregates points into bins and uses color to show density, solving the overplotting problem.
+- **Comprehensive Redesign: Use the Right Chart.** If another chart type was used, switch to a scatterplot to make the correlation task perceptually tractable.
+
+```
+
+<split/>
+
+```md
+---
+id: use-position-length-for-quantitative
+title: "Encode quantitative data with position or length, not area or color"
+tags:
+  - impact:perceptual
+  - task:compare
+  - task:lookup
+  - task:rank
+  - data:quantitative
+  - visual:position
+  - visual:length
+  - visual:angle
+  - visual:area
+  - visual:color
+  - chart:bar
+  - chart:scatter
+  - chart:bubble-chart
+  - chart:treemap
+evidence:
+  strength: high
+  summary: "Mackinlay's 1986 theoretical framework, built on empirical work by Cleveland & McGill (1984), established a ranking of visual channels by effectiveness. For quantitative data, position and length are ranked highest, while area and color saturation are significantly less effective. A 2023 review confirms this remains a foundational principle."
+sources:
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://dl.acm.org/doi/10.1145/3544548.3581349
+    note: "Summarizes the established theoretical rankings from Mackinlay [61] and Cleveland & McGill [17] in Table 3, showing position (PX/PY) and length (L) are most effective for quantitative data (Q)."
+    role: primary
+  - type: research
+    ref: Mackinlay, 1986
+    url: https://doi.org/10.1145/22949.22950
+    note: "Formalized the ranking of perceptual tasks, establishing expressiveness and effectiveness criteria for visual encodings."
+    role: supporting
+  - type: research
+    ref: Cleveland & McGill, 1984
+    url: https://doi.org/10.1080/01621459.1984.10478280
+    note: "Provided the foundational experimental data for the perceptual ranking of visual channels."
+    role: supporting
+---
+## Guidance
+
+When representing quantitative (numerical) data for comparison, prioritize using visual channels like position on a common scale (as in a scatterplot or bar chart) or length (as in a bar chart). Use less effective channels like area (as in a bubble chart or treemap) or color saturation only when position and length are unavailable or unsuitable.
+
+## Why
+
+There is a well-established hierarchy of perceptual accuracy for visual encodings. Humans can judge and compare positions and lengths with high accuracy. Judgments of area, angle, and color value are significantly less precise, leading to higher error rates and slower interpretation when trying to extract magnitudes from a chart.
+
+### Core Principle
+
+Match the most important data and tasks to the most effective visual channels. For precise quantitative comparisons, this means prioritizing position and length.
+
+## When it applies
+
+- When designing any chart that encodes numerical values and requires accurate judgment of those values.
+- When deciding between a bar chart (length) and a bubble chart (area) to represent magnitude.
+- When deciding whether to use color or position to encode a primary variable.
+
+## Exceptions
+
+- **Geographic Data:** On a map, position is already used to encode location. Therefore, color (for a choropleth) or area (for a bubble map) become the best available channels to encode a quantitative value.
+- **Showing General Magnitude:** Area can be effective when the goal is to show general differences of several orders of magnitude (e.g., a country's GDP vs. a tiny island's GDP), where precision is not needed.
+
+## Trade-offs
+
+- **Data Density vs. Accuracy:** Using position and length (e.g., bar charts) can sometimes use more space than using area (e.g., treemaps, bubble charts). This represents a trade-off between the chart's data density and its perceptual accuracy.
+
+## Signs of Trouble
+
+- **Bubble Chart for Precision:** A bubble chart is used when users need to make precise comparisons between bubbles of similar size. It is nearly impossible to tell if a bubble is 5% or 10% larger than its neighbor.
+- **Color as Primary Variable:** A table uses a color scale on text or cells as the only way to compare numerical values, without any accompanying bars or positional encodings.
+
+## How to Improve
+
+- **Moderate Redesign: Switch Encodings.** If using a bubble chart for precise comparison, switch to a bar chart. This changes the encoding from the less effective channel of area to the more effective channel of length.
+- **Comprehensive Redesign: Plan with the Hierarchy.** When designing a visualization from scratch, map your most important quantitative variable to the Y-position (if possible), the next most important to the X-position, and so on down the perceptual ranking (Position > Length > Angle > Area > Color).
+
+```

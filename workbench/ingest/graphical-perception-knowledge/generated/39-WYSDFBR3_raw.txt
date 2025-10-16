@@ -1,0 +1,436 @@
+```md
+---
+id: avoid-rainbow-colormap-for-ordered-data
+title: "Avoid rainbow colormaps for encoding ordered quantitative data"
+
+tags:
+  # Impact dimensions (select all that apply)
+  - impact:perceptual
+  - impact:cognitive
+  - impact:accessibility
+  - impact:ethical
+  - impact:aesthetic
+
+  # Chart types (use hierarchy with dots for specificity)
+  - chart:map
+  - chart:map.choropleth
+  - chart:map.isarithmic
+  - chart:heatmap
+
+  # Tasks (what the user is trying to accomplish)
+  - task:rank
+  - task:compare
+  - task:trend
+  - task:distribution
+
+  # Data characteristics
+  - data:quantitative
+  - data:ordinal
+  - data:spatial
+
+  # Visual channels
+  - visual:color
+  - visual:color.hue
+
+  # Audience characteristics
+  - audience:general
+  - audience:expert
+
+  # Medium/format
+  - medium:static
+  - medium:interactive
+  - medium:screen
+  - medium:print
+
+  # Accessibility risks
+  - access:color-vision-risk
+  - access:cognitive-load-risk
+
+evidence:
+  strength: high # Options: high | medium | low
+  summary: "Gołębiowska & Çöltekin (2020, n=534) found that rainbow colormaps lack an intuitive perceptual order. When asked to order rainbow hues, participants produced 101 unique sequences with no consensus. In contrast, a sequential scheme yielded near-universal agreement (81.7% consistency), demonstrating a strong 'dark is more' bias. This confirms that spectral order does not map to perceptual magnitude."
+
+sources:
+  - type: research
+    ref: Gołębiowska & Çöltekin, 2020
+    url: https://doi.org/10.1109/TVCG.2020.3035823
+    note: "Primary study (n=534) demonstrating lack of intuitive order in rainbow colormaps. In an ordering task, accuracy with rainbow was 38% vs. 81.7% with sequential (p<0.001)."
+    role: primary # Options: primary | supporting | related
+  - type: research
+    ref: Borland & Taylor, 2007
+    url: https://doi.org/10.1109/MCG.2007.323435
+    note: "Seminal paper titled 'Rainbow Color Map (Still) Considered Harmful,' which synthesizes the perceptual problems of rainbow schemes."
+    role: supporting
+  - type: research
+    ref: Brewer, 1997
+    url: https://doi.org/10.1559/152304097782439312
+    note: "Classic cartographic paper critiquing the use of spectral schemes for representing magnitude."
+    role: supporting
+
+tools:
+  - type: implement
+    name: ColorBrewer
+    url: https://colorbrewer2.org/
+    description: "Provides pre-built, perceptually-tested sequential and diverging color schemes."
+  - type: validate
+    name: Viz Palette
+    url: https://projects.susielu.com/viz-palette
+    description: "Tool to test color palettes and simulate how they appear to users with color vision deficiencies."
+---
+
+## Guidance
+
+Avoid using rainbow (spectral) colormaps for encoding continuous or ordered data. Instead, use a sequential or diverging color scheme that has a clear, monotonic progression in lightness.
+
+## Why
+
+The order of hues in a rainbow (red, orange, yellow, green, blue) does not create a natural sense of "more" or "less" for the human visual system. This makes it difficult for viewers to accurately judge the magnitude of the data, compare values, or perceive overall patterns. Rainbow colormaps can create false boundaries where none exist in the data and hide details in areas with low perceptual contrast (e.g., the yellow-green region).
+
+### Core Principle
+
+Visual encodings should match the structure of the data. Ordered data requires a perceptually ordered visual encoding, which rainbow schemes fail to provide. A monotonic change in lightness (from light to dark, or dark to light) is a much stronger and more intuitive visual cue for magnitude than a change in hue.
+
+## When it applies
+
+- When visualizing continuous quantitative data, such as temperature, elevation, density, or any other scalar field.
+- When using chart types like heatmaps, choropleth maps, or isarithmic maps.
+- When the user's task involves comparing values, ranking regions, or understanding the overall distribution of the data.
+
+## Exceptions
+
+- **Categorical Data:** If the colors represent distinct, unordered categories (e.g., land use types like 'forest', 'water', 'urban'), a palette of distinct hues is appropriate. However, this is a categorical palette, not a rainbow colormap applied to ordered data.
+- **Specialized Conventions:** In some scientific fields, rainbow colormaps are a strong, albeit problematic, convention. Even in these cases, using them carries significant perceptual risks.
+- **Specific Value Lookup:** For the narrow task of looking up a specific value by matching a color to a legend, rainbow schemes can be faster, but this comes at the cost of inhibiting all other tasks.
+
+## Trade-offs
+
+- **Aesthetics vs. Clarity:** Some people find rainbow colormaps visually appealing or vibrant. Choosing a sequential scheme prioritizes perceptual accuracy and clarity over this subjective aesthetic preference.
+- **Familiarity vs. Effectiveness:** In fields where rainbow schemes are common, switching to a sequential palette may seem unfamiliar to an expert audience, but it will almost certainly improve their ability to interpret the data correctly.
+
+## Signs of Trouble
+
+- **The "Stripe" Effect:** The chart appears to have distinct bands of color, creating artificial boundaries that may not exist in the data.
+- **Inability to Rank:** It's difficult to tell at a glance whether green represents a higher or lower value than yellow.
+- **Muddled Center:** The central range of the colormap (often yellow/green) is difficult to distinguish, obscuring details in that range.
+- **Accessibility Fail:** A colorblindness simulator reveals that major portions of the color scale (e.g., red and green) become indistinguishable.
+
+## How to Improve
+
+- **Quick Fix: Switch to Grayscale.** A simple grayscale ramp (black to white) is a perceptually ordered sequential scheme and is almost always better than a rainbow colormap for showing magnitude.
+
+- **Moderate Approach: Use a Single-Hue Sequential Scheme.** Choose a single color and vary its lightness and saturation from light to dark (e.g., light blue to dark blue). Tools like ColorBrewer make this easy. This provides a strong perceptual ordering.
+
+- **Comprehensive Approach: Use a Perceptually Uniform Multi-Hue Sequential Scheme.** For a more visually rich palette, use a scheme like Viridis, Magma, or Plasma. These palettes are carefully designed to have a monotonic increase in lightness while also moving through different hues, but they avoid the perceptual problems of a full rainbow. They are both visually appealing and perceptually effective.
+
+```
+
+<split/>
+
+```md
+---
+id: prefer-sequential-colormap-for-patterns
+title: "Prefer sequential colormaps over rainbow schemes for identifying overall patterns"
+
+tags:
+  # Impact dimensions (select all that apply)
+  - impact:perceptual
+  - impact:cognitive
+
+  # Chart types (use hierarchy with dots for specificity)
+  - chart:map
+  - chart:map.choropleth
+  - chart:map.isarithmic
+  - chart:heatmap
+
+  # Tasks (what the user is trying to accomplish)
+  - task:trend
+  - task:distribution
+  - task:rank
+  - task:cluster
+
+  # Data characteristics
+  - data:quantitative
+  - data:spatial
+
+  # Visual channels
+  - visual:color
+  - visual:color.lightness
+
+  # Audience characteristics
+  - audience:general
+  - audience:expert
+
+  # Medium/format
+  - medium:static
+  - medium:screen
+
+evidence:
+  strength: medium # Options: high | medium | low
+  summary: "Gołębiowska & Çöltekin (2020, n=534) found sequential colormaps were superior to rainbow for pattern interpretation tasks. On a choropleth map, accuracy in a pattern association task was significantly higher with the sequential scheme. On a region ranking task, the rainbow scheme led to significantly slower performance."
+
+sources:
+  - type: research
+    ref: Gołębiowska & Çöltekin, 2020
+    url: https://doi.org/10.1109/TVCG.2020.3035823
+    note: "Study (n=534) comparing rainbow vs. sequential schemes on map tasks. For pattern association on choropleth maps (T7), sequential was more accurate (p=0.000). For ranking regions (T8), rainbow was slower on choropleth maps (p<0.001)."
+    role: primary # Options: primary | supporting | related
+
+tools:
+  - type: implement
+    name: ColorBrewer
+    url: https://colorbrewer2.org/
+    description: "Provides pre-built, perceptually-tested sequential color schemes ideal for pattern recognition."
+  - type: learn
+    name: "A Better Default Colormap for Matplotlib"
+    url: https://bids.github.io/colormap/
+    description: "An article explaining the design of perceptually uniform colormaps like Viridis, which are excellent for pattern recognition."
+---
+
+## Guidance
+
+When the primary goal is for a user to identify general patterns, trends, or the overall "shape" of the data, use a sequential colormap with a smooth, monotonic lightness gradient. Avoid using rainbow colormaps for this purpose.
+
+## Why
+
+The human visual system is excellent at perceiving structure and patterns from smooth gradients of lightness (shading). A sequential colormap leverages this by mapping data values to a perceptually continuous scale from light to dark. This allows viewers to effortlessly see clusters, gradients, and outliers. Rainbow colormaps disrupt this process by creating harsh, artificial boundaries and non-uniform perceptual steps, which can obscure the true underlying pattern of the data.
+
+### Core Principle
+
+Make the most important patterns the easiest to see. Smooth, monotonic lightness changes support the pre-attentive perception of form and structure, while unordered hue changes interfere with it.
+
+## When it applies
+
+- The user needs to understand the overall distribution of values across a map or heatmap.
+- The task is to identify clusters, hot spots, or areas of high/low concentration.
+- The user is trying to determine the direction of a trend or gradient in the data.
+- Tasks like "find the area with the highest concentration" or "describe the overall pattern."
+
+## Exceptions
+
+- If the primary task is to look up a specific value by matching a color to a legend, and pattern recognition is not important. In this limited case, the distinct hues of a rainbow map can be faster (though this is a significant trade-off).
+
+## Trade-offs
+
+- **Detail vs. Gestalt:** A sequential scheme excels at showing the overall pattern (gestalt), but its subtle variations may make it slightly slower to identify a specific value compared to a high-contrast rainbow scheme. However, this can be easily mitigated with interactive tooltips.
+
+## Signs of Trouble
+
+- **Can't See the Forest for the Trees:** Viewers can name the color of any given point but struggle to describe the overall trend or shape of the data.
+- **Artificial "Contour Lines":** The chart looks more like a contour map with sharp, colorful edges, even if the underlying data is smooth.
+- **Misinterpreted Gradients:** Viewers incorrectly describe the direction or steepness of a change in the data because of the non-uniform steps in the rainbow palette.
+
+## How to Improve
+
+- **Quick Fix: Switch to a Single-Hue Sequential Scheme.** In your visualization tool, change the colormap from "Rainbow" or "Jet" to a sequential one like "Blues," "Greens," or "Reds." This immediately provides a monotonic lightness ramp that will reveal patterns more clearly.
+
+- **Comprehensive Approach: Use a Perceptually Uniform Multi-Hue Scheme.** Adopt a colormap like Viridis, Plasma, or Cividis. These schemes are designed to be perceptually uniform, meaning a certain step in the data corresponds to a same-sized perceptual step in the color. They vary in lightness monotonically (making them great for patterns) but also shift in hue, making them more visually rich and robust for people with color vision deficiencies.
+
+```
+
+<split/>
+
+```md
+---
+id: use-rainbow-for-value-lookup-with-caution
+title: "Use high-contrast rainbow schemes for fast value lookup, but only with caution"
+
+tags:
+  # Impact dimensions (select all that apply)
+  - impact:perceptual
+  - impact:performance
+  - impact:accessibility
+
+  # Chart types (use hierarchy with dots for specificity)
+  - chart:map
+  - chart:map.choropleth
+  - chart:map.isarithmic
+
+  # Tasks (what the user is trying to accomplish)
+  - task:lookup
+  - task:filter
+
+  # Data characteristics
+  - data:quantitative
+  - data:spatial
+
+  # Visual channels
+  - visual:color
+  - visual:color.hue
+
+  # Audience characteristics
+  - audience:expert
+  - audience:general
+
+  # Medium/format
+  - medium:static
+  - medium:screen
+
+  # Accessibility risks
+  - access:color-vision-risk
+  - access:cognitive-load-risk
+
+evidence:
+  strength: medium # Options: high | medium | low
+  summary: "In a study of map-reading tasks (n=534), Gołębiowska & Çöltekin (2020) found that rainbow colormaps could outperform sequential schemes for specific value lookups. For a 'locate' task, the rainbow scheme led to significantly higher accuracy (p<0.001). For a 'retrieve value' task, it was significantly faster (p<0.05), though accuracy was similar. This benefit is limited to value lookups and comes at a high cost to other tasks."
+
+sources:
+  - type: research
+    ref: Gołębiowska & Çöltekin, 2020
+    url: https://doi.org/10.1109/TVCG.2020.3035823
+    note: "Study (n=534) found that for a 'locate' task (T6), rainbow was more accurate than sequential. For a 'retrieve value' task (T5), rainbow was faster than sequential. This suggests an advantage for tasks involving matching a specific color to a legend."
+    role: primary # Options: primary | supporting | related
+  - type: research
+    ref: Ware, 1988
+    url: https://doi.org/10.1109/2945.8950
+    note: "Early work suggesting that hue-varying schemes like rainbow work well for reading specific details from maps."
+    role: supporting
+
+tools:
+  - type: implement
+    name: "d3-scale-chromatic"
+    url: https://github.com/d3/d3-scale-chromatic
+    description: "Provides various D3 colormaps, including the problematic 'd3.interpolateRainbow'. Use with caution."
+---
+
+## Guidance
+
+For the specific and narrow task of looking up a value at a location by matching a color to a legend, a high-contrast rainbow colormap can enable faster or more accurate performance than a standard sequential scheme. However, this approach should be used with extreme caution as it severely impairs other critical tasks like pattern recognition and magnitude comparison.
+
+## Why
+
+The distinct and easily nameable hues in a rainbow colormap (e.g., "blue," "green," "red") can function as categorical labels. This transforms the lookup task into a faster visual search and matching process, where the user quickly finds the target color on the map and matches it to the legend. In contrast, finding a specific shade in a subtle, single-hue sequential gradient can be more difficult and time-consuming.
+
+### Core Principle
+
+Distinct, nameable colors facilitate faster visual search and matching tasks compared to subtle variations in a continuous gradient.
+
+## When it applies
+
+- The **single most important and frequent task** for the user is to determine the value at a specific point (e.g., "What is the temperature at this exact coordinate?").
+- The visualization is static and not interactive (e.g., in print).
+- Pattern recognition, trend analysis, and comparison of magnitudes between different regions are not important goals.
+
+## Exceptions
+
+- **Interactivity is available:** If users can hover or click to see a tooltip with the exact value, the benefit of the rainbow colormap for lookups becomes irrelevant. An interactive sequential map is superior.
+- **Accessibility is a concern:** Standard rainbow colormaps are not perceivable by many users with color vision deficiencies.
+- **Pattern detection is needed:** If users need to see trends, clusters, or the overall shape of the data, a rainbow map is a poor choice.
+
+## Trade-offs
+
+- **You sacrifice pattern perception for lookup speed.** This is a major trade-off. Using a rainbow map makes it very difficult to see overall trends, gradients, or the "shape" of the data.
+- **You sacrifice accessibility.** Standard rainbow maps are inaccessible to users with common forms of colorblindness (e.g., deuteranopia).
+- **You risk misinterpretation of magnitudes.** Users may incorrectly infer relationships between values based on the non-perceptual color ordering.
+
+## Signs of Trouble
+
+- **One-Trick Pony:** The chart is fast for finding a single value but fails when users are asked to describe the overall trend or compare two non-adjacent regions.
+- **User Complaints:** Users say, "I can't see the big picture" or "I don't know if red is higher or lower than green without looking at the legend every time."
+- **Accessibility Audit Fail:** Colorblindness simulators show that large parts of the map become an indistinguishable mush.
+
+## How to Improve
+
+- **Quick Fix: Enhance the Legend.** If you must use a rainbow colormap, ensure the legend is extremely clear, large, and always visible. Add explicit numerical labels to the color bands in the legend.
+
+- **Moderate Approach: Use a Quantized Sequential Scheme.** Instead of a continuous gradient, use a binned (quantized) sequential scheme with 5-7 distinct, easily distinguishable steps. This provides some of the "categorical" feel that aids lookup while still maintaining a clear perceptual order.
+
+- **Comprehensive Approach: Use a Sequential Scheme with Interactivity.** The best solution is to use a perceptually uniform sequential colormap (like Viridis) and add interactive tooltips. This provides the best of both worlds: the sequential scheme is excellent for pattern recognition, and the tooltips provide fast, precise value lookup on demand without compromising accessibility or perceptual integrity.
+
+```
+
+<split/>
+
+```md
+---
+id: distinguish-hue-recall-from-value-recall
+title: "Choose colormaps based on whether users need to recall the color itself or the value it represents"
+
+tags:
+  # Impact dimensions (select all that apply)
+  - impact:cognitive
+  - impact:perceptual
+
+  # Chart types (use hierarchy with dots for specificity)
+  - chart:map
+  - chart:map.choropleth
+  - chart:map.isarithmic
+
+  # Tasks (what the user is trying to accomplish)
+  - task:lookup
+  - task:compare
+
+  # Data characteristics
+  - data:quantitative
+  - data:spatial
+
+  # Visual channels
+  - visual:color
+
+  # Audience characteristics
+  - audience:general
+
+  # Medium/format
+  - medium:static
+
+evidence:
+  strength: medium # Options: high | medium | low
+  summary: "A study by Gołębiowska & Çöltekin (2020, n=534) found a clear dissociation in memory tasks. Rainbow colormaps were significantly better for recalling the specific hue of a region from memory (e.g., 68% vs 24% accuracy on one map type, p<0.001). Conversely, sequential colormaps were better for recalling the quantitative value that the hue represented (e.g., 60% vs 45% accuracy on another map type, p=0.036)."
+
+sources:
+  - type: research
+    ref: Gołębiowska & Çöltekin, 2020
+    url: https://doi.org/10.1109/TVCG.2020.3035823
+    note: "Study (n=534) directly tested hue recall (T9) and value recall (T10). Rainbow schemes led to far superior accuracy in hue recall, while sequential schemes were more accurate for value recall, demonstrating a cognitive trade-off."
+    role: primary # Options: primary | supporting | related
+  - type: research
+    ref: Lenneberg, 1961
+    url: https://doi.org/10.2466/pms.1961.12.3.375
+    note: "Classic work establishing that 'nameable' colors are easier to recognize and discriminate from memory."
+    role: related
+---
+
+## Guidance
+
+Distinguish between tasks that require recalling a *color's identity* versus recalling the *value it represents*. Use rainbow-like palettes with distinct, nameable hues for hue recall. Use sequential palettes with a clear lightness progression for value recall.
+
+## Why
+
+There is a cognitive dissociation between remembering a color's name and remembering its quantitative meaning.
+
+1.  **Hue Recall:** Rainbow colormaps contain distinct, nameable colors (e.g., "red," "green," "blue"). These categorical labels are easy to encode and retrieve from verbal working memory.
+2.  **Value Recall:** Sequential colormaps map data magnitude to a perceptual dimension (lightness). This creates a strong "darker means more" association, making it easier to remember and reconstruct the approximate value a color represented, even if you can't remember the exact shade.
+
+### Core Principle
+
+The 'nameability' of colors aids in recalling the color's identity (hue recall), while the perceptual ordering of colors aids in recalling the color's meaning (value recall).
+
+## When it applies
+
+- When designing static visualizations or animated sequences where a user sees information and must act on it from memory.
+- In dashboards where a user might glance at a map and then refer to it mentally while looking at another chart.
+- **For Hue Recall:** When the task is "Was Region A the red one?" or requires remembering which of several colored items was in a location.
+- **For Value Recall:** When the task is "What was the approximate population density in Region A?"
+
+## Exceptions
+
+- **Interactive Visualizations:** If the user can always refer back to the visualization and its legend, the need for recall is diminished, and other perceptual principles (like using sequential schemes for patterns) should take priority.
+- **Annotation is Possible:** If the user can directly label or annotate the chart, they can offload the memory task, making the colormap choice less critical for recall.
+
+## Trade-offs
+
+- **Optimizing for one type of recall hurts the other.** A colormap that is good for hue recall (rainbow) is poor for value recall and pattern recognition. A colormap good for value recall (sequential) is poor for hue recall. You must choose which memory task is more important for the user's goal.
+
+## Signs of Trouble
+
+- **Hue Recall Failure (with sequential):** A user says, "I know the value was high, but I can't remember if it was the dark blue or the even darker blue."
+- **Value Recall Failure (with rainbow):** A user says, "I remember that region was green, but I have no idea if that means the value was high, low, or in the middle."
+
+## How to Improve
+
+- **To support HUE RECALL:** If remembering the specific color identity is paramount, use a palette with a small number of distinct, nameable colors. A categorical palette is often better than a full rainbow. For example, use the primary colors from the `d3-scale-category10` palette.
+
+- **To support VALUE RECALL:** If remembering the approximate data value is most important, use a perceptually uniform sequential colormap like Viridis, Cividis, or a single-hue progression from ColorBrewer. The consistent "lightness = value" mapping provides a strong anchor for memory.
+
+- **Combined Approach:** Use a good sequential scheme for the visualization, but add clear, memorable annotations or glyphs for key regions of interest. This allows the overall pattern to be seen, while providing a distinct visual hook for remembering specific locations.
+
+```

@@ -1,0 +1,309 @@
+```md
+---
+id: use-segment-length-for-trajectories
+title: "Use segment length to encode time and speed on 2D trajectories"
+
+tags:
+  - impact:perceptual
+  - impact:performance
+  - chart:line
+  - chart:map
+  - task:find-extremum
+  - task:aggregate
+  - task:retrieve-value
+  - data:spatiotemporal
+  - visual:length
+  - visual:color
+  - audience:general
+  - medium:static
+  - medium:interactive
+
+evidence:
+  strength: medium
+  summary: "Perin et al. (2018, n=18) found that encoding time with segment length (time ticks) resulted in the lowest error rates for both perceiving speed (find extremum task) and time (retrieve value task) on 2D trajectories, outperforming both color and size encodings."
+
+sources:
+  - type: research
+    ref: Perin et al., 2018
+    url: https://doi.org/10.1109/TVCG.2017.2743918
+    note: "Primary experimental study (n=18) comparing nine visual encodings for time and speed on 2D trajectories. Found segment length (`TLENGTH`) had the lowest error for both time and speed tasks (Recommendations RT1, RTS1, RTS2)."
+    role: primary
+
+examples:
+  - type: good
+    description: "The authors' summary figure shows that encoding time with segment length, either alone or combined with a color encoding for speed, is the most highly recommended option for both straight and curved paths."
+  - type: good
+    description: "A classic 19th-century map by Charles Joseph Minard uses time ticks (segment length) along a path to show the speed of ships. The spacing between ticks clearly indicates where the journey was faster or slower. This is cited in the paper as a foundational example."
+
+---
+
+## Guidance
+
+When visualizing movement or change along a 2D path (a trajectory), encode time using segment length by placing tick marks at constant time intervals. Speed can then be effectively inferred from the spacing between the ticks.
+
+## Why
+
+This method provides a highly effective, perceptually efficient encoding for both time and speed simultaneously. The regular intervals of the ticks allow viewers to accurately perceive the passage of time, while the resulting length of the segments between ticks provides a strong, intuitive visual cue for speed (longer segment = faster speed). This dual-encoding property is very efficient.
+
+### Core Principle
+
+An effective visual encoding can represent multiple related data dimensions simultaneously without interference. Here, discretizing time with ticks naturally creates a continuous visual variable (length) for the derivative of time (speed).
+
+## When it applies
+
+- When visualizing spatiotemporal data on a 2D path, like a trip on a map or the evolution of two variables in a scatterplot over time.
+- When viewers need to perform tasks related to both time (e.g., "where was the object at the halfway point?") and speed (e.g., "where was the object moving fastest?").
+- When you have a limited number of visual variables available, as this single encoding conveys both time and speed.
+
+## Exceptions
+
+- If the background of the visualization already contains many linear marks (e.g., a dense grid, contour lines, or existing annotations), the added ticks might create visual clutter and be hard to distinguish.
+- For very short or highly convoluted paths with many sharp turns, there may not be enough space to draw discernible ticks and segments.
+
+## Trade-offs
+
+- Decoding speed from segment length is an inference task, not a direct lookup. This can be slightly slower than using a direct speed encoding like color. Perin et al. (2018) found that completion times for tasks using segment length were sometimes slightly higher than for other encodings, even though accuracy was best.
+- This encoding does not inherently show the direction of travel, which might need to be added with another visual cue like an arrowhead.
+
+## Signs of Trouble
+
+- **Cluttered Path:** The tick marks blend in with the background or other chart elements, making them hard to read.
+- **Illegible Segments:** On curved or dense parts of the trajectory, the segments are too small or overlap, making speed comparison impossible.
+- **Task Mismatch:** Viewers only need to know speed, and a direct color encoding would be faster for them to read, even if slightly less accurate.
+
+## How to Improve
+
+- **Quick Fix: Emphasize Ticks.** Ensure ticks have high contrast with the path and background. Make them slightly thicker or a different color if needed.
+- **Moderate Approach: Add Redundant Speed Encoding.** Add a color encoding for speed on top of the segment length encoding. This provides a direct lookup channel for speed. Perin et al. (2018) found this combination was also highly effective, though it may slightly interfere with speed perception on curved paths compared to segment length alone.
+- **Comprehensive Approach: Simplify the Context.** If the background is too busy, simplify it by muting grid lines, removing unnecessary labels, or using a simpler base map to allow the segment length encoding to stand out as the primary temporal indicator.
+
+<split/>
+```md
+---
+id: avoid-color-value-for-time-trajectories
+title: "Avoid using a continuous color gradient to encode elapsed time on trajectories"
+
+tags:
+  - impact:perceptual
+  - impact:accessibility
+  - chart:line
+  - chart:map
+  - task:retrieve-value
+  - task:aggregate
+  - task:lookup
+  - data:spatiotemporal
+  - data:quantitative
+  - visual:color
+  - access:color-vision-risk
+  - audience:general
+
+evidence:
+  strength: medium
+  summary: "Perin et al. (2018, n=18) found that encoding elapsed time with color value (`TVALUE`) resulted in significantly higher errors for time-retrieval tasks compared to encoding time with segment length or size. This confirmed their hypothesis that perceiving small color variations is difficult."
+
+sources:
+  - type: research
+    ref: Perin et al., 2018
+    url: https://doi.org/10.1109/TVCG.2017.2743918
+    note: "Experimental study (n=18) that explicitly tested and discouraged the use of color value for encoding time on trajectories, finding it led to large errors in a time-retrieval task (Recommendation RT2)."
+    role: primary
+
+examples:
+  - type: bad
+    description: "A trajectory line where time is encoded from light blue (start) to dark blue (end). It is very difficult for a viewer to accurately locate the point that represents 75% of the elapsed time just by looking at the shade of blue."
+  - type: good
+    description: "Instead of a color gradient for time, the trajectory uses ticks at 25%, 50%, and 75% of the elapsed time. These discrete marks allow for much more accurate lookup of time values."
+
+---
+
+## Guidance
+
+Avoid using a continuous color gradient (e.g., light blue to dark blue) to encode a quantitative, continuous variable like elapsed time when users need to perform precise lookups.
+
+## Why
+
+Humans are generally poor at accurately mapping a specific shade from a continuous color gradient back to a precise quantitative value. This "inverse lookup" is a perceptually difficult task. Viewers can get a qualitative sense of progression (e.g., "this is near the beginning"), but they cannot reliably identify a specific value (e.g., "this is the 68% mark"). This limitation leads to high error rates and low confidence.
+
+### Core Principle
+
+Visual channels have different perceptual properties. While color is good for drawing attention or showing categorical differences, position and length are far superior for making precise quantitative judgments.
+
+## When it applies
+
+- When visualizing a continuous quantitative variable like elapsed time on a 2D path.
+- When the user's task is to retrieve a specific value (e.g., "Find the point where 50% of the time has elapsed").
+- When accuracy in reading the time value is important.
+
+## Exceptions
+
+- When only a rough, qualitative sense of time progression is needed (e.g., showing a general flow from "beginning" to "middle" to "end") and no precise lookup is required.
+- When color is being used as a redundant channel to reinforce another, more effective primary encoding for time.
+
+## Trade-offs
+
+- Following this guideline means you cannot use the color channel for encoding time, freeing it up for another variable (like speed or a category).
+- Avoiding color for time may require using an encoding (like segment length) that can add visual complexity (tick marks).
+
+## Signs of Trouble
+
+- **The "Guessing Game":** Viewers are unable to confidently locate a specific time point and resort to guessing.
+- **Inaccurate Readings:** When tested, users' estimates of time values from the color gradient are consistently off by a large margin.
+- **Slow Performance:** It takes users a long time to attempt a lookup, often because they are scanning back and forth between the color legend and the path.
+- **Accessibility Failure:** Users with color vision deficiency find it even more difficult, or impossible, to perceive the gradient.
+
+## How to Improve
+
+- **Quick Fix: Add Annotations.** Keep the color gradient if it's required for other reasons, but add clear, explicit labels or tick marks for key time points (e.g., 25%, 50%, 75%). This provides a perceptual "escape hatch" for users who need accuracy.
+- **Moderate Approach: Switch to Size.** Encode time using stroke width (size). Perin et al. (2018) found this was more accurate than color for time-retrieval tasks. The path would get progressively thicker over time.
+- **Comprehensive Approach: Switch to Segment Length.** The most effective solution is to encode time using segment length (tick marks at constant time intervals). This was the most accurate encoding in the study and is the recommended best practice.
+
+<split/>
+```md
+---
+id: avoid-size-for-speed-on-curved-trajectories
+title: "Avoid using stroke width to encode speed on curved trajectories"
+
+tags:
+  - impact:perceptual
+  - chart:line
+  - chart:map
+  - task:find-extremum
+  - data:spatiotemporal
+  - visual:size
+  - audience:general
+
+evidence:
+  strength: medium
+  summary: "Perin et al. (2018, n=18) found that encoding speed with size (stroke width) was not robust to path curvature. While usable on straight paths, it performed significantly worse on curved paths, leading to larger errors in speed-estimation tasks compared to color-based encodings."
+
+sources:
+  - type: research
+    ref: Perin et al., 2018
+    url: https://doi.org/10.1109/TVCG.2017.2743918
+    note: "The study found that size (`SSIZE`) was greatly distorted on curved paths and discouraged its use for encoding speed in such cases (Recommendation RS2)."
+    role: primary
+
+examples:
+  - type: bad
+    description: "A map showing a winding road, where vehicle speed is encoded by the thickness of the line. On a sharp turn, a thick line (representing high speed) can become visually compressed and difficult to judge accurately, potentially being misinterpreted as slower speed."
+  - type: good
+    description: "On the same map with the winding road, speed is encoded using a color gradient (e.g., green for slow, yellow for fast). The color is perceived consistently regardless of the path's curvature, leading to more accurate interpretation."
+
+---
+
+## Guidance
+
+On trajectories with significant curves or turns, avoid using stroke width (size) as the primary visual channel for encoding speed.
+
+## Why
+
+The perception of line thickness is distorted by the geometry of a curved path. A thick line segment on a tight curve can appear visually "bunched up" or less prominent than the same thickness on a straight segment. This distortion interferes with the viewer's ability to accurately compare speeds along the trajectory, leading to misinterpretation and higher error rates, especially when trying to identify the fastest or slowest points.
+
+### Core Principle
+
+The effectiveness of a visual channel can be dependent on the context of other visual elements. A channel that works in a simple case (a straight line) may fail in a more complex one (a curved line) due to perceptual interference.
+
+## When it applies
+
+- When visualizing speed on a 2D path.
+- When the path is curved, winding, or has sharp angles.
+- When the user's task involves comparing speeds or finding the point of maximum/minimum speed.
+
+## Exceptions
+
+- This guideline is less critical for trajectories that are entirely or mostly straight. Perin et al. (2018) found that size was an adequate encoding for speed on straight paths.
+- If speed variations are very large and dramatic, size might still be effective as the differences in thickness could overcome the perceptual distortion.
+
+## Trade-offs
+
+- By not using size to encode speed, you free up that channel for another variable (such as time).
+- The alternative, using color, introduces its own constraints, such as the need to be mindful of color vision deficiencies and potential conflicts with background colors.
+
+## Signs of Trouble
+
+- **Curvature Bias:** Speed judgments are consistently inaccurate on the curved portions of the path.
+- **Inconsistent Perception:** The same speed value (represented by the same stroke width) appears different on a straight section versus a curved section.
+- **User Feedback:** Viewers report that it's "hard to tell how fast it's going around the corners."
+
+## How to Improve
+
+- **Quick Fix: Combine with a Better Encoding.** If you must use size, add a redundant, more robust encoding like color to represent speed. The color will help viewers overcome the perceptual bias introduced by the size on curves.
+- **Moderate Approach: Switch to Color.** Change the speed encoding from size to color value (e.g., a sequential color gradient). Perin et al. (2018) found that color was more robust to path curvature than size for speed-related tasks.
+- **Comprehensive Approach: Switch to Segment Length.** Re-encode the trajectory using time ticks (segment length) to represent time. Speed can then be accurately inferred from the distance between ticks, an encoding that is highly robust for both straight and curved paths.
+
+<split/>
+```md
+---
+id: use-color-for-speed-size-for-time-fallback
+title: "If segment length is unusable, use color for speed and size for time on trajectories"
+
+tags:
+  - impact:perceptual
+  - chart:line
+  - chart:map
+  - task:find-extremum
+  - task:aggregate
+  - task:retrieve-value
+  - data:spatiotemporal
+  - visual:color
+  - visual:size
+  - audience:general
+
+evidence:
+  strength: low
+  summary: "When the optimal encoding (segment length) is not an option, Perin et al. (2018, n=18) identify the combination of color for speed and size for time (`SVALUE TSIZE`) as the 'next best choice'. This is a fallback recommendation based on the relative strengths of the remaining channels for each task."
+
+sources:
+  - type: research
+    ref: Perin et al., 2018
+    url: https://doi.org/10.1109/TVCG.2017.2743918
+    note: "The study proposes this combination as a practical alternative when segment length is not desirable, though it is perceptually inferior to segment length (Recommendation RTS3)."
+    role: primary
+
+examples:
+  - type: good
+    description: "A flight path on a map with a dense grid background. Ticks would be cluttered, so instead, the plane's speed is shown with a color gradient and the elapsed time is shown by the increasing thickness of the path. This is a reasonable fallback."
+  - type: bad
+    description: "A trajectory on a simple, clean background uses color for speed and size for time. This is a missed opportunity, as the superior segment length encoding would have been possible and more effective."
+
+---
+
+## Guidance
+
+If using segment length (time ticks) is not practical for a 2D trajectory, use color value to encode speed and stroke width (size) to encode elapsed time.
+
+## Why
+
+This combination serves as a reasonable "next best" fallback by assigning the remaining visual channels to the tasks they perform best at. Research shows that:
+1.  **Color for Speed:** Color is effective for finding extrema (the "fastest" or "slowest" point), which is a common speed-related task.
+2.  **Size for Time:** Stroke width is more effective than color for retrieving specific time values, even though it's not as good as segment length.
+
+This pairing avoids the worst-case scenario of using color to encode time, which leads to very high error rates.
+
+## When it applies
+
+- As a fallback option when the primary recommendation—using segment length—is not feasible.
+- This situation might arise if the visualization's background is too cluttered (e.g., a dense map or grid) and would interfere with tick marks.
+- When you must encode both time and speed, and only the color and size channels are available.
+
+## Exceptions
+
+- This is itself a compromise. The primary recommendation is always to use segment length if possible, as it is perceptually superior for both tasks.
+- If the trajectory is highly curved, be aware that the size encoding for time may still be subject to some perceptual distortion, and the color encoding for speed would be the more robust of the two.
+
+## Trade-offs
+
+- **Reduced Accuracy:** This combination is less accurate for both time and speed tasks compared to using segment length. It is a compromise that prioritizes practicality over optimal perceptual performance.
+- **Introduced Biases:** It inherits the weaknesses of its constituent encodings. The size channel is not robust on curved paths, and the color channel presents accessibility challenges for users with color vision deficiency.
+
+## Signs of Trouble
+
+- **Primary Option Ignored:** You are using this combination on a simple, clean background where the superior segment length encoding would have worked perfectly well.
+- **High Error Rates:** Even with this "next best" combination, users are still struggling to make accurate judgments, suggesting the task demands a more perceptually effective encoding.
+
+## How to Improve
+
+- **Quick Fix: Check for Curvature Bias.** If your path is curved, be aware that the size (time) encoding may be distorted. You might add annotations at key time points to compensate.
+- **Moderate Approach: Re-evaluate Context.** Determine if the background context can be simplified. Muting a grid, using a less detailed map, or removing other chart junk might make it possible to use the superior segment length encoding.
+- **Comprehensive Approach: Implement Segment Length.** If accuracy is paramount, redesign the visualization to accommodate a segment length encoding for time. This is the most effective way to improve performance for both time and speed-related tasks.
+```

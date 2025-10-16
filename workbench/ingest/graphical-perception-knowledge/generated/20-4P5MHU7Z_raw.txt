@@ -1,0 +1,216 @@
+```md
+---
+id: align-bars-to-common-baseline
+title: "Align bars to a common baseline for accurate comparison"
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:bar
+  - chart:bar.stacked
+  - task:compare
+  - task:rank
+  - visual:position
+  - visual:length
+  - medium:static
+  - medium:interactive
+  - access:cognitive-load-risk
+
+evidence:
+  strength: high
+  summary: "Foundational perception research, confirmed by Talbot et al. (2014, n=50), shows that judging position along a common scale is significantly more accurate than judging unaligned lengths. Talbot et al. found comparison error increased by ~1.16 percentage points for unaligned bars in stacked contexts."
+
+sources:
+  - type: research
+    ref: Talbot et al., 2014
+    url: https://doi.org/10.1109/TVCG.2014.2346320
+    note: "Experiment 2 estimated the 'Unalignment Effect' to be 1.16 [0.80, 1.61] percentage points of error, confirming that unaligned bar comparisons (length judgments) are much harder than aligned ones (position judgments), and that this error is worsened by distractor elements."
+    role: primary
+  - type: research
+    ref: Cleveland & McGill, 1984
+    url: https://doi.org/10.2307/2288400
+    note: "The foundational paper that proposed the hierarchy of perceptual tasks, ranking position judgment along a common scale as more accurate than length judgment."
+    role: supporting
+---
+
+## Guidance
+
+To enable accurate comparisons between the sizes of different bars, ensure they all share a common, flat baseline (typically starting at zero). This applies to both simple and stacked bar charts.
+
+## Why
+
+Humans are far more accurate at judging and comparing positions along a common, aligned scale than they are at comparing two unaligned lengths. When bars are "floating" (such as the upper segments of a stacked bar chart), viewers must resort to less accurate length estimation. This task is not only harder but also more susceptible to interference from other visual elements (distractor bars).
+
+### Core Principle
+
+Humans judge quantities more accurately by comparing positions along a common scale than by comparing unaligned lengths.
+
+## When it applies
+
+- When the primary goal of a bar chart is for the audience to compare the magnitude of different categories.
+- When choosing between a stacked bar chart and a grouped bar chart for a comparison task.
+- This guidance is especially critical for stacked bar charts, where only the bottom-most segments share a common baseline.
+
+## Exceptions
+
+- When the primary goal is to show the composition of a total, a stacked bar chart may be appropriate. However, this comes with the explicit trade-off that comparisons between the unaligned, "floating" segments will be difficult and inaccurate.
+
+## Trade-offs
+
+- Stacked charts or other unaligned designs can save space compared to grouped bar charts or small multiples. However, this compactness is achieved by sacrificing the ability for viewers to make accurate comparisons between most of the components.
+
+## Signs of Trouble
+
+- **Floating Segments:** The chart requires viewers to compare the length of a bar segment in the middle or top of a stack to another segment.
+- **Difficult Judgments:** It feels difficult to definitively say which of two unaligned bars or segments is larger.
+- **Inconsistent Baselines:** The chart is a "floating" bar chart or range chart where the bars do not start from the same axis.
+
+## How to Improve
+
+- **Quick Fix: Limit Claims.** If you must use a stacked bar chart, only make or emphasize comparisons between the segments that sit on the common baseline. Avoid drawing conclusions about the relative size of the "floating" segments.
+
+- **Moderate Redesign: Use a Grouped Bar Chart.** Convert the stacked bar chart to a grouped bar chart. This gives every bar its own common baseline, enabling accurate position judgments for all categories.
+
+- **Comprehensive Redesign: Use Line Charts or Small Multiples.** If comparing trends over time, switch from a stacked area/bar chart to a line chart, which uses a common baseline for all values. For categorical comparisons, consider small multiples of simple bar charts, which provides a common baseline for all values at the cost of more screen space.
+
+```
+
+<split/>
+
+```md
+---
+id: avoid-comparing-adjacent-stacked-segments
+title: "Avoid direct comparison of adjacent segments in a stacked bar"
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:bar
+  - chart:bar.stacked
+  - task:compare
+  - task:rank
+  - visual:length
+  - medium:static
+  - medium:interactive
+  - access:cognitive-load-risk
+
+evidence:
+  strength: medium
+  summary: "Talbot et al. (2014, n=50) found that comparing adjacent segments in a stacked bar (a 'divided bar') leads to a large negative bias. Viewers tend to make an incorrect part-to-whole judgment instead of a part-to-part length comparison. This bias is significantly reduced by introducing a gap."
+
+sources:
+  - type: research
+    ref: Talbot et al., 2014
+    url: https://doi.org/10.1109/TVCG.2014.2346320
+    note: "Experiment 3 demonstrated that comparing adjacent 'divided bars' had the highest error of all tested configurations, with a large negative bias. This error was substantially reduced (by ~0.87 percentage points) when a single-bar gap was introduced between the segments, breaking the 'part-to-whole' illusion."
+    role: primary
+---
+
+## Guidance
+
+Do not design a stacked bar chart with the primary goal of having users compare the lengths of two segments that are stacked directly on top of each other. This specific configuration is highly prone to perceptual bias.
+
+## Why
+
+When two segments are adjacent in a stack, viewers are strongly biased to compare the smaller segment to the *total size of the combined segments* (a part-to-whole comparison), rather than comparing the two segments to each other. This leads to significant and systematic underestimation of the smaller segment's size relative to its neighbor.
+
+### Core Principle
+
+The visual context of an object biases its perceived properties. Adjacent elements encourage Gestalt grouping (in this case, as a single whole), which can interfere with the intended analytical task of comparing the parts.
+
+## When it applies
+
+- When using a stacked bar chart.
+- When a key analytical task requires viewers to accurately compare the sizes of two or more segments *within the same bar*.
+
+## Exceptions
+
+- This guidance does not apply when the goal *is* a part-to-whole comparison (i.e., comparing a segment to the total bar).
+- It also does not apply to comparing the same segment *across* different bars (e.g., comparing the blue segment in Bar A to the blue segment in Bar B), although that task is still difficult if the segments are not on the baseline.
+
+## Trade-offs
+
+- Stacked bars are effective for showing total compositions. Avoiding this specific comparison type might mean switching to a chart that is less effective at showing the overall total.
+
+## Signs of Trouble
+
+- **Misleading Comparisons:** The main point of the chart relies on a comparison between adjacent segments within a single bar.
+- **Systematic Bias:** Viewers consistently underestimate the relative size of segments. For example, if two segments are 60 and 30, viewers might perceive the ratio as 33% (30 / (60+30)) instead of the correct 50% (30 / 60).
+
+## How to Improve
+
+- **Quick Fix: Add a Gap.** Introduce a small gap between the segments within the stack. This visually breaks the part-to-whole Gestalt and significantly reduces the comparison bias, making the part-to-part judgment more accurate.
+
+- **Moderate Redesign: Use Direct Labels.** Add data labels with absolute values or calculated percentages to each segment. This provides an "escape hatch" for the viewer, allowing them to compare numbers directly instead of relying on flawed perceptual judgments.
+
+- **Comprehensive Redesign: Use a Different Chart Type.** If comparing the segments is critical, switch to a grouped bar chart or a dot plot. These charts place all values on a common baseline, which is the most accurate method for visual comparison.
+
+```
+
+<split/>
+
+```md
+---
+id: group-bars-for-comparison
+title: "Group bars closely together for accurate comparison"
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:bar
+  - task:compare
+  - task:rank
+  - visual:position
+  - medium:static
+  - medium:interactive
+  - access:cognitive-load-risk
+
+evidence:
+  strength: medium
+  summary: "Talbot et al. (2014, n=50) found that separating bars with empty space or distractor bars significantly increases comparison error. The 'Separation Effect' was estimated to add ~0.7 percentage points of error and was most pronounced when comparing shorter bars."
+
+sources:
+  - type: research
+    ref: Talbot et al., 2014
+    url: https://doi.org/10.1109/TVCG.2014.2346320
+    note: "Experiment 1 isolated the 'Separation Effect,' finding that separating bars increased comparison error by an estimated 0.70 [0.46, 0.99] percentage points. The effect was significantly larger when comparing short reference bars (125 pixels high)."
+    role: primary
+---
+
+## Guidance
+
+When viewers need to compare the values of different bars, place those bars as close to each other as possible, preferably adjacent. Avoid separating them with wide gaps or intervening distractor bars.
+
+## Why
+
+Humans find it more difficult and less accurate to compare the heights of bars that are separated by a large distance. The mental effort required to span the gap and hold one height in memory to compare with another introduces perceptual error. This effect is especially strong when the bars being compared are short, as the relative error becomes larger.
+
+### Core Principle
+
+Make the most important comparisons the easiest to see. Minimizing the visual distance between objects being compared reduces the cognitive and perceptual load, leading to faster and more accurate judgments.
+
+## When it applies
+
+- When the primary task for the viewer is to compare or rank the values represented by different bars.
+- When designing the layout and sorting order of a bar chart.
+
+## Exceptions
+
+- If the bars must be sorted by a different, meaningful order (e.g., alphabetically, geographically, or temporally) that is more important to the chart's purpose than the direct value comparison. Even in this case, consider ways to mitigate the separation effect.
+
+## Trade-offs
+
+- Strictly grouping bars for comparison may disrupt another meaningful order (e.g., alphabetical). You may sacrifice scannability on one dimension (like finding a specific category by name) to improve comparison accuracy on another (value).
+
+## Signs of Trouble
+
+- **Ruler Use:** Viewers have to use their finger, a cursor, or a physical ruler to track a bar's height across the chart to compare it with a distant bar.
+- **Hesitation:** Comparisons between distant, similarly-sized bars feel like rough estimations rather than confident judgments.
+- **Key Comparisons are Far Apart:** The most important comparisons your chart is meant to enable are between bars located on opposite ends of the chart.
+
+## How to Improve
+
+- **Quick Fix: Use Interactive Highlighting.** In an interactive chart, use hover or selection to highlight the specific bars being compared, and potentially draw a reference line between their tops. This helps the eye connect them.
+
+- **Moderate Redesign: Re-sort the Chart.** If the existing order is not critical, sort the bars by value. This naturally places bars of similar height next to each other, making fine distinctions easier.
+
+- **Comprehensive Redesign: Use Small Multiples or a Dot Plot.** If many non-adjacent comparisons are needed, consider a different chart. A dot plot can make it easier to scan for values. Small multiples can be used to group related categories, bringing them closer for comparison while maintaining a larger organizational structure.
+
+```

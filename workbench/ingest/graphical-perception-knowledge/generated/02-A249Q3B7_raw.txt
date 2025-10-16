@@ -1,0 +1,288 @@
+```md
+---
+id: use-small-multiples-for-spatial-snapshot
+title: "Use small multiples for comparing spatial patterns at a single point in time"
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:map
+  - chart:map.small-multiples
+  - task:correlation
+  - task:compare
+  - data:spatiotemporal
+  - data:spatial
+  - medium:static
+  - medium:screen
+  - access:cognitive-load-risk
+evidence:
+  strength: medium
+  summary: "A 2019 study (n=18) on spatiotemporal visualizations found that small-multiple maps were almost twice as fast (over 30 seconds faster) and significantly less error-prone than single maps with time-series glyphs when identifying correlations at a single point in time."
+sources:
+  - type: research
+    ref: Peña-Araya, Pietriga, & Bezerianos, 2019
+    url: https://doi.org/10.1109/TVCG.2019.2934807
+    note: "Compared small-multiple maps (proportional symbol and cartogram) to single maps with bar chart glyphs. For tasks at a single time point across all locations, small multiples were significantly faster (Barchart1M: ~51s, GlyphSM: ~16s) and less error-prone (Barchart1M: ~17% error, GlyphSM: ~4% error)."
+    role: primary
+tools: []
+examples:
+  - type: good
+    description: "To show the correlation between two variables across US states for a single year, a small-multiple layout (one map per variable, or one map per region) would be effective. Each map juxtaposes the spatial information for that single moment."
+  - type: bad
+    description: "Using a single US map where each state has a 10-year bar chart glyph would be ineffective for answering a question about a single year (e.g., 'What was the pattern in 2015?'). The user would have to mentally find and extract the '2015' bar from 50 different charts."
+---
+## Guidance
+
+To show how multiple variables correlate across a geographic area at a specific moment, arrange the data as small-multiple maps. This layout juxtaposes all spatial information for that single time slice.
+
+## Why
+
+Small multiples bring all relevant spatial information for a single moment into a compact, comparable view, reducing cognitive load. Viewers can focus on comparing locations within one view instead of mentally filtering and re-assembling data from multiple time-series glyphs scattered across a single map. This leads to faster and more accurate interpretation.
+
+### Core Principle
+
+Make the most important comparisons the easiest to see. When the task is spatial comparison, the visualization's structure should prioritize the juxtaposition of space.
+
+## When it applies
+
+- When the primary task is to understand the spatial pattern or correlation of variables at **one specific moment in time** (e.g., "How did sales and marketing spend correlate across all states in Q4?").
+- When comparing multiple variables across a geographic area for a single time slice.
+
+## Exceptions
+
+- If there is only one or a very small number of locations to compare, a single view might be sufficient, and the overhead of setting up small multiples may be unnecessary.
+
+## Trade-offs
+
+- **Screen Space:** Small multiples inherently use more screen space than a single map.
+- **Temporal Blindness:** This layout is less effective for showing temporal trends, as the viewer must scan across different, spatially separated maps to perceive change over time.
+
+## Signs of Trouble
+
+- **Slow Search:** Viewers take a long time to answer questions about a specific time point because they have to scan through many time-series glyphs (e.g., mini bar charts) on a single map.
+- **High Error Rate:** Viewers make frequent mistakes when asked to describe the spatial pattern at one moment, suggesting they are struggling to assemble a complete mental picture.
+- **User Frustration:** Users complain that it's "too hard" or "takes too long" to compare all the locations for a single year.
+
+## How to Improve
+
+- **Moderate Redesign: Switch to Small Multiples.** Re-structure the visualization from a single map with temporal glyphs to a series of small-multiple maps. Each small map can represent a time point, allowing easy spatial comparison within each.
+
+- **Quick Fix: Add Highlighting.** If you must use a single map with time-series glyphs, implement interactive highlighting. Allow the user to select a single time point (e.g., by hovering over a legend) which then emphasizes that point across all location glyphs, fading out the non-selected times.
+
+```
+
+<split/>
+
+```md
+---
+id: use-temporal-glyphs-for-trend-analysis
+title: "Use a single map with time-series glyphs for analyzing trends over time"
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:map
+  - chart:map.glyphs
+  - task:correlation
+  - task:trend
+  - data:spatiotemporal
+  - data:temporal
+  - medium:static
+  - medium:screen
+  - access:cognitive-load-risk
+evidence:
+  strength: medium
+  summary: "A 2019 study (n=18) on spatiotemporal visualizations found that a single map with bar chart glyphs was significantly faster (by ~5-12 seconds) and less error-prone for identifying correlation and evolution patterns across all time steps, compared to small-multiple map designs."
+sources:
+  - type: research
+    ref: Peña-Araya, Pietriga, & Bezerianos, 2019
+    url: https://doi.org/10.1109/TVCG.2019.2934807
+    note: "Compared a single map with bar chart glyphs to small-multiple maps. For tasks across all time steps, the single map was faster (Barchart1M: ~18-22s vs ~23-29s for small multiples) and had lower error rates, a finding that held true whether analyzing a single location, a region, or all locations."
+    role: primary
+tools: []
+examples:
+  - type: good
+    description: "To show the 10-year trend of two variables in all 50 US states, a single map with a 10-segment bar chart glyph on each state is effective. Viewers can easily see the trend within each state's glyph."
+  - type: bad
+    description: "Using a small-multiple layout with 10 separate US maps (one for each year) makes it difficult to track a single state's trend. The viewer's eye must jump between the same state on 10 different maps, increasing cognitive load."
+---
+## Guidance
+
+When the primary goal is to identify trends or correlations across the entire duration of a time series, use a single map and place a time-series glyph (like a miniature line or bar chart) at each location.
+
+## Why
+
+This design juxtaposes all temporal information for each location, making it easy to perceive trends and patterns within a single, self-contained glyph. It avoids the high cognitive load of scanning and mentally integrating information across multiple, spatially separated maps.
+
+### Core Principle
+
+Make the most important comparisons the easiest to see. When the task is temporal trend analysis, the visualization's structure should prioritize the juxtaposition of time.
+
+## When it applies
+
+- When the primary task is to understand the temporal evolution of variables at various locations (e.g., "What was the trend in the relationship between literacy and working hours for each state over the last decade?").
+- When analyzing data over many time steps.
+
+## Exceptions
+
+- If the time series is very short (e.g., two or three points), the advantage is diminished, and small multiples may be equally effective as the cognitive load of scanning is low.
+
+## Trade-offs
+
+- **Spatial Clutter:** This approach is less effective for understanding spatial patterns at a single moment in time, as that information is distributed across many different glyphs.
+- **Occlusion:** The glyphs themselves can create visual clutter and overlap, especially in dense geographic areas, potentially obscuring each other or the underlying map.
+
+## Signs of Trouble
+
+- **Cross-Map Scanning:** Viewers are seen scanning back and forth between multiple maps in a small-multiple layout to try and piece together a temporal trend for a single location.
+- **Inability to See Trends:** When asked about the overall trend, users of a small-multiple layout express difficulty, uncertainty, or give incorrect answers.
+- **User Feedback:** Users say "I can't follow the trend for Texas" when looking at a series of small maps.
+
+## How to Improve
+
+- **Moderate Redesign: Consolidate to a Single Map.** Re-design the visualization from small multiples to a single base map. At each location, place a glyph (e.g., a mini line chart, bar chart, or sparkline) that encodes the variable's values over the entire time period.
+
+- **Quick Fix: Animate the Small Multiples.** If you must use small multiples, provide an animation that cycles through the time steps. While animation has its own significant drawbacks for analysis, it can sometimes help in perceiving simple trends by presenting the temporal sequence in place.
+
+```
+
+<split/>
+
+```md
+---
+id: prefer-stable-base-map-in-small-multiples
+title: "For small-multiple maps, prefer symbols on a stable base map over cartograms"
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:map
+  - chart:map.small-multiples
+  - chart:map.cartogram
+  - chart:map.glyphs
+  - task:compare
+  - task:correlation
+  - data:spatiotemporal
+  - medium:static
+  - medium:screen
+  - access:cognitive-load-risk
+evidence:
+  strength: medium
+  summary: "A 2019 study (n=18) comparing small-multiple map types found that proportional symbol maps on a stable base were less error-prone than Dorling cartograms. The cartograms' shifting geographic layouts made it harder for users to match locations across different views, increasing cognitive load and errors."
+sources:
+  - type: research
+    ref: Peña-Araya, Pietriga, & Bezerianos, 2019
+    url: https://doi.org/10.1109/TVCG.2019.2934807
+    note: "In single-time tasks, Dorling cartograms had a higher error rate than proportional symbol maps (GlyphSM). The authors attribute this to the difficulty of re-identifying and matching locations whose positions shift between the multiples in the cartogram design."
+    role: primary
+tools: []
+examples:
+  - type: good
+    description: "A small-multiple view of US election results over several years where each map is a standard, stable geographic projection. The changing results are encoded with color, but the map shape and state positions are constant, making year-to-year comparison easy."
+  - type: bad
+    description: "A small-multiple view where each map is a population cartogram for a different year. Because states change shape and position in each map, it is very difficult to track a specific state like Rhode Island across the years to see how its values changed."
+---
+## Guidance
+
+When creating small-multiple maps to show changes over time or across variables, use a consistent, stable base map in each multiple. Encode thematic data using symbols (like proportional circles or color) overlaid on the map, rather than by distorting the map's geometry (as in a cartogram).
+
+## Why
+
+A stable base map provides a consistent spatial frame of reference. This makes it trivial for viewers to locate and track the same geographic feature across different multiples. Cartograms, which change the shape and position of features in each map, force the viewer to re-find the location of interest in every panel. This increases cognitive load and makes comparisons slower and more error-prone.
+
+### Core Principle
+
+Reduce the cognitive work required to decode a visualization. Every unnecessary matching or re-identification step is a chance for error and slows down comprehension.
+
+## When it applies
+
+- When creating any small-multiple visualization where the viewer needs to compare the same location(s) across different maps.
+- This is especially critical for tasks involving many small or irregularly shaped geographic units.
+
+## Exceptions
+
+- If the primary goal of each map is to emphasize the magnitude of the variable used for the cartogram's distortion, and comparison *across* multiples is a secondary task. For example, if you want to powerfully communicate population distribution in different decades, and seeing the trend is less important than feeling the distribution.
+
+## Trade-offs
+
+- **Occlusion:** Using symbols on a map can lead to occlusion, where symbols overlap and obscure each other, especially in dense areas (e.g., the Northeastern US). Cartograms can sometimes mitigate this by enlarging dense areas, but at the cost of geographic accuracy and comparability.
+- **Perceptual Bias:** Encoding a key variable with symbol area on a standard map can introduce its own perceptual biases, though it avoids the re-identification problem of cartograms.
+
+## Signs of Trouble
+
+- **"Where's Waldo?":** Viewers struggle to find the same state or region in different panels of a small-multiple cartogram layout.
+- **Mis-matching:** Viewers mistakenly compare two different locations because they have trouble tracking a single location across the shifting layouts.
+- **Slow Comparisons:** Tasks that require comparing one location across multiple panels are unexpectedly slow.
+
+## How to Improve
+
+- **Moderate Redesign: Switch to a Stable Base Map.** Instead of using a cartogram where geography distorts, use a standard geographic base map. Encode the variable that was used for the cartogram's distortion with a different visual channel, such as the size or color of a symbol placed on the map.
+
+- **Quick Fix: Add Persistent Labels.** If you must use a cartogram, ensure every geographic feature has a clear, persistent, and easily findable label (e.g., a state abbreviation) in every multiple. This adds clutter but provides a necessary crutch for re-identification.
+
+```
+
+<split/>
+
+```md
+---
+id: match-juxtaposition-to-task-complexity
+title: "For spatiotemporal data, juxtapose the dimension with higher complexity"
+tags:
+  - impact:perceptual
+  - impact:cognitive
+  - chart:map
+  - chart:map.small-multiples
+  - chart:map.glyphs
+  - task:correlation
+  - task:trend
+  - task:compare
+  - data:spatiotemporal
+  - medium:static
+  - medium:screen
+evidence:
+  strength: medium
+  summary: "A 2019 study (n=18) demonstrated a clear trade-off in spatiotemporal visualization: small multiples (juxtaposing space) were best for spatially complex tasks (many locations, few time points), while single maps with glyphs (juxtaposing time) were best for temporally complex tasks (many time points, few locations)."
+sources:
+  - type: research
+    ref: Peña-Araya, Pietriga, & Bezerianos, 2019
+    url: https://doi.org/10.1109/TVCG.2019.2934807
+    note: "The study showed a crossover effect. Small multiples were ~30s faster for single-time, all-location tasks. Single-map glyphs were ~7s faster for all-time, single-location tasks. Results were inconclusive for tasks with balanced complexity (e.g., regional subsets over time intervals), highlighting the trade-off."
+    role: primary
+tools: []
+examples: []
+---
+## Guidance
+
+When visualizing spatiotemporal data, choose a layout that groups the most complex dimension together. If the task involves many locations but few time points, use small multiples to juxtapose space. If the task involves many time points but few locations, use a single map with time-series glyphs to juxtapose time.
+
+## Why
+
+The goal is to minimize the amount of visual scanning and mental integration the viewer must perform. By juxtaposing (placing side-by-side) the data along the dimension that is most complex or varied, you make the most difficult comparisons easier. Forcing the user to collate scattered information increases cognitive load and slows down analysis.
+
+### Core Principle
+
+Structure the visualization to support the primary task's comparison needs. The information that needs to be compared most should be placed closest together.
+
+## When it applies
+
+- When designing a visualization for exploring correlations or trends in data that has both a spatial and temporal component.
+- When you must choose between a small-multiple layout (which juxtaposes space at different times) and a single-map-with-glyphs layout (which juxtaposes time at different spaces).
+
+## Exceptions
+
+- For tasks with balanced complexity (e.g., a moderate number of locations and a moderate number of time steps), the performance difference between the two approaches may be negligible. In this "messy middle," other factors like audience familiarity or aesthetic preference may guide the choice.
+
+## Trade-offs
+
+- Optimizing for one dimension (e.g., time) inherently makes comparisons along the other dimension (e.g., space) more difficult. There is no single layout that is optimal for all spatiotemporal tasks. A choice for one task is a trade-off against another.
+
+## Signs of Trouble
+
+- **Excessive Scanning:** You observe viewers repeatedly scanning back and forth across wide areas of the visualization to gather information for a single judgment (e.g., scanning across ten maps to see one state's trend, or across fifty bar charts to see one year's pattern).
+- **Mismatched Design:** The visualization layout is the inverse of the task. For example, using a small-multiple layout (juxtaposes space) when the user's primary questions are about temporal trends.
+
+## How to Improve
+
+- **Moderate Redesign: Flip the Juxtaposition.** If users struggle with temporal trends in your small-multiples layout, switch to a single map with temporal glyphs. Conversely, if they struggle with spatial comparisons in your single-map layout, switch to small multiples.
+
+- **Comprehensive Approach: Provide Both Views.** In an interactive setting, empower the user to toggle between a small-multiple view (to prioritize spatial comparison) and a single-map view (to prioritize temporal comparison). This allows them to choose the best layout for their specific task at any given moment.
+
+```

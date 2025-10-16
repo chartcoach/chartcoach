@@ -1,0 +1,186 @@
+```md
+---
+id: use-position-over-angle-area
+title: "Use position over angle or area for accurate quantitative comparisons"
+
+tags:
+  - impact:perceptual
+  - impact:ethical
+  - task:compare
+  - task:rank
+  - task:lookup
+  - data:quantitative
+  - visual:position
+  - visual:length
+  - visual:angle
+  - visual:area
+  - chart:bar
+  - chart:dot-plot
+  - chart:pie
+  - chart:bubble
+  - audience:general
+  - medium:static
+  - medium:interactive
+
+evidence:
+  strength: high
+  summary: "Cleveland & McGill (1984) established a perceptual hierarchy of visual encodings, finding position-based judgments (e.g., bar charts) are significantly more accurate than angle (pie charts) or area (bubble charts). This was replicated by Heer & Bostock (2010, N~1,800) in a large crowdsourced study, confirming the original ranking and its design implications."
+
+sources:
+  - type: research
+    ref: Cleveland & McGill, 1984
+    url: https://doi.org/10.1080/01621459.1984.10478080
+    note: "Foundational study establishing the perceptual hierarchy. Position on a common scale was found to be the most accurate encoding for quantitative comparison tasks."
+    role: primary
+  - type: research
+    ref: Heer & Bostock, 2010
+    url: https://doi.org/10.1145/1753326.1753357
+    note: "Crowdsourced replication study (N~1,800 across experiments) that validated Cleveland & McGill's findings. The ranking of judgment types by accuracy was consistent with the original study (see Figure 4), with position and length encodings significantly outperforming angle and area."
+    role: supporting
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://doi.org/10.1145/3544548.3581349
+    note: "Literature review synthesizing 59 graphical perception papers, confirming the hierarchy of PX=PY > L > An > Ar (Position > Length > Angle > Area) as a foundational principle (see Table 3)."
+    role: related
+
+tools:
+  - type: learn
+    name: "The Perceptual Proxies of Visual Comparison"
+    url: https://doi.org/10.1109/TVCG.2019.2934786
+    description: "A paper by Jardine et al. (2020) that further explores the cognitive mechanisms behind why this perceptual hierarchy exists."
+  - type: implement
+    name: "Datawrapper: Why not to use pie charts"
+    url: https://academy.datawrapper.de/article/125-why-not-to-use-pie-charts
+    description: "A practical guide on the limitations of pie charts and what to use instead."
+---
+
+## Guidance
+
+For comparing quantitative values, encode data using position along a common, aligned scale (e.g., bar charts, dot plots) instead of using angle (pie charts) or area (bubble charts, treemaps).
+
+## Why
+
+Humans are perceptually more accurate and faster at judging differences in position along a single axis than they are at judging differences in angles or areas. Using a less accurate encoding like angle or area increases the risk of misinterpretation, where viewers may fail to see important differences or may perceive differences that aren't significant.
+
+### Core Principle
+
+Make the most important comparisons the easiest and most accurate to perform. The visual encoding should match the limits of human perception for the given task.
+
+## When it applies
+
+-   When the primary goal is for the audience to accurately compare or rank quantities.
+-   When displaying values that are relatively close to each other, where small differences matter.
+-   When working with a general audience that may not be trained in reading complex charts.
+
+## Exceptions
+
+-   **Composition Task:** If the primary goal is to show a part-to-whole relationship and the number of slices is very small (2-3), a pie chart can be effective at conveying a simple proportion (e.g., "about a quarter"). However, a bar chart is still better for precise comparison.
+-   **Geographic Data:** For maps, area is inherently used to represent geographic regions (e.g., country size). Other channels like color (for choropleths) or the area of a separate symbol (proportional symbol map) must be used.
+-   **Limited Space:** A treemap (using area) can be a space-efficient way to show a large, hierarchical dataset, even if it makes precise comparisons difficult. The goal shifts from comparison to seeing the overall structure.
+
+## Trade-offs
+
+-   **Familiarity:** Pie charts are widely recognized, and switching to a bar chart might feel less familiar to some audiences, even if it's more effective.
+-   **Aesthetics:** Some designers may prefer the circular or organic look of pie charts or bubble charts for aesthetic reasons, potentially sacrificing perceptual accuracy.
+-   **Space:** Bar charts and dot plots typically require more linear space (especially with many categories) compared to a single pie chart.
+
+## Signs of Trouble
+
+-   **"Which slice is bigger?"** Viewers are unsure which of two similarly sized slices in a pie chart is larger.
+-   **3D or Exploded Slices:** The use of 3D perspective or exploding slices, which further distorts angles and areas, making comparison nearly impossible.
+-   **Many Slices:** A pie chart has more than 5-7 slices, creating a cluttered "color wheel" where comparison is futile.
+-   **Bubble Overlap:** In a bubble chart, bubbles overlap, obscuring their true size and making area judgments difficult.
+
+## How to Improve
+
+-   **Quick Fix: Add Direct Labels.** If you must use a pie or bubble chart, add direct data labels (e.g., "42%") to each element. This provides an "escape hatch" by allowing viewers to read the numbers directly instead of relying on their (inaccurate) perceptual judgment of angle or area.
+
+-   **Moderate Redesign: Switch to a Donut Chart.** If a part-to-whole circular form is desired, a donut chart can be slightly better than a pie chart. It de-emphasizes angle and encourages viewers to compare arc length, which is a marginally more accurate judgment (closer to length).
+
+-   **Comprehensive Redesign: Use a Bar Chart.** The most effective solution is to replace the pie or area-based chart with a bar chart. This encodes the quantitative values using length/position along a common baseline, which aligns with how our visual system most accurately perceives and compares magnitudes.
+
+```
+
+<split/>
+
+```md
+---
+id: avoid-square-shapes-in-treemaps
+title: "Avoid perfectly square shapes when comparing areas in treemaps"
+
+tags:
+  - impact:perceptual
+  - task:compare
+  - task:rank
+  - data:quantitative
+  - visual:area
+  - chart:treemap
+  - chart:cartogram
+  - audience:general
+  - medium:static
+
+evidence:
+  strength: medium
+  summary: "A crowdsourced study by Heer & Bostock (2010) found that when comparing rectangular areas, participants were surprisingly *least* accurate when the shapes were perfect squares (aspect ratio of 1:1). Performance improved when rectangles had a slight aspect ratio, suggesting that viewers use 1D length comparisons as a heuristic for 2D area."
+
+sources:
+  - type: research
+    ref: Heer & Bostock, 2010
+    url: https://doi.org/10.1145/1753326.1753357
+    note: "Experiment 1B tested rectangular area judgments. Results in Figure 5 show that comparisons of rectangles with an aspect ratio of 1:1 (squares) had the highest log absolute error. The paper concludes this 'suggests that the 'squarified' optimization objective of leading treemap algorithms may rest on tenuous perceptual footing'."
+    role: primary
+  - type: research
+    ref: Zeng & Battle, 2023
+    url: https://doi.org/10.1145/3544548.3581349
+    note: "This review paper collated the Heer & Bostock (2010) study, though it did not highlight this specific finding in its high-level summary tables."
+    role: related
+
+tools:
+  - type: implement
+    name: D3.js Treemap Layout
+    url: https://d3js.org/d3-hierarchy/treemap
+    description: "The default d3.treemap layout algorithm (d3.treemapSquarify) aims for square-like rectangles. This guideline suggests that aiming for perfection here may be suboptimal."
+---
+
+## Guidance
+
+When designing treemaps or other charts where viewers must compare rectangular areas, avoid algorithms that force all shapes to be perfectly square (i.e., have an aspect ratio of 1:1). A slight deviation from a perfect square can improve the accuracy of area comparisons.
+
+## Why
+
+Viewers often use a mental shortcut (heuristic) to judge 2D area: they compare 1D lengths of the sides. When comparing two perfect squares, this heuristic fails because all sides are equal, forcing a more difficult and less accurate pure area judgment. When rectangles have a slight aspect ratio, viewers can compare the different side lengths, which paradoxically helps them make a better overall judgment of the area difference. The common wisdom to make treemap rectangles "as square as possible" may be perceptually suboptimal.
+
+### Core Principle
+
+Design should account for the cognitive shortcuts and heuristics people use, even if those heuristics are not mathematically pure. Sometimes, a "less perfect" geometric form can lead to "more perfect" perception.
+
+## When it applies
+
+-   When using treemaps, squarified cartograms, or any other visualization that uses the area of rectangles to encode quantitative data.
+-   When the primary task is for viewers to compare the sizes of different rectangles.
+
+## Exceptions
+
+-   **Overall Structure is Key:** If the goal of the treemap is not precise comparison but to show the hierarchical structure and relative weight of components in a large dataset, the accuracy of individual comparisons is less critical.
+-   **Aesthetic or Space Constraints:** A squarified layout is very space-efficient and can be aesthetically pleasing. These goals might take priority over a small gain in perceptual accuracy, especially if direct value labels are also provided.
+
+## Trade-offs
+
+-   **Space Efficiency:** Allowing for non-square rectangles might lead to layouts with long, thin "slivers" that are hard to label and visually unappealing. Squarified algorithms were invented to prevent this.
+-   **Aesthetics:** A layout of perfect squares can look more orderly and clean than one with varied aspect ratios. Deviating from this may be seen as less polished.
+
+## Signs of Trouble
+
+-   **Perfectly Tiled Squares:** Your treemap consists of a grid of rectangles that are all nearly perfect squares.
+-   **User Inaccuracy:** In user testing, people struggle to accurately identify the larger of two similarly-sized rectangles in your treemap.
+-   **Over-reliance on Labels:** Viewers report that they cannot judge the sizes at all and rely exclusively on reading the text labels to make comparisons.
+
+## How to Improve
+
+-   **Quick Fix: Add Data Labels.** Always include direct value labels on treemap rectangles. This gives users a way to compare values precisely, bypassing the difficult perceptual task of area comparison.
+
+-   **Moderate Adjustment: Tweak Algorithm Parameters.** If using a layout algorithm like `d3.treemapSquarify`, be aware of its behavior. While it's difficult to force it to be *less* square, you can provide an alternative algorithm to the layout generator if you want to experiment with different aspect ratios.
+
+-   **Comprehensive Re-evaluation: Consider a Different Chart Type.** If precise comparison is the most critical task, a treemap may be the wrong choice. A bar chart (or a sorted series of bar charts for hierarchical data) will enable far more accurate comparisons by using position and length instead of area.
+
+```

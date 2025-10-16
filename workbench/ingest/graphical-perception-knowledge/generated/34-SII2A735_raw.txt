@@ -1,0 +1,212 @@
+```md
+---
+id: mix-open-closed-shapes
+title: "Combine open and closed shapes to distinguish categories in cluttered scatterplots"
+tags:
+  - impact:perceptual
+  - impact:performance
+  - chart:scatter
+  - task:compare
+  - task:correlation
+  - task:distribution
+  - data:categorical
+  - visual:shape
+  - access:cognitive-load-risk
+  - medium:screen
+  - medium:static
+evidence:
+  strength: medium
+  summary: "In a study with heterogeneous scatterplots (n=20), Burlinson et al. (2018) found that using a mix of open and closed shapes (e.g., a circle and a plus sign) led to significantly faster response times and fewer errors than using two shapes from the same category (e.g., a circle and a square) for numerosity and trend-judgement tasks. The interference from using same-category shapes was a large effect (η² = .717 for numerosity)."
+sources:
+  - type: research
+    ref: Burlinson, Subramanian, & Goolkasian, 2018
+    url: https://doi.org/10.1109/TVCG.2017.2745086
+    note: "Experiment 3 (n=20) showed that mixing open and closed shapes reduced perceptual interference in single-plot displays. For numerosity tasks, same-feature distractors lengthened RTs by ~400ms (p < .001, η²=.717) compared to different-feature distractors."
+    role: primary
+examples:
+  - type: good
+    description: "This chart uses a mix of open (cross) and closed (circle, square) shapes to represent different categories. This makes it easier for the viewer to distinguish between the 'cross' category and the other two categories."
+  - type: bad
+    description: "This chart uses three closed shapes (circle, square, triangle). This creates perceptual interference, making it harder for viewers to quickly differentiate between the categories than if a mix of open and closed shapes were used."
+---
+
+## Guidance
+
+When encoding multiple categories with shape in a single, potentially cluttered plot, use a combination of open shapes (e.g., +, ×, *) and closed shapes (e.g., ●, ■, ▲).
+
+## Why
+
+The visual system processes "openness" and "closedness" as distinct perceptual categories. Mixing them makes it easier for viewers to pre-attentively group and segment the different categories, reducing the cognitive effort needed to tell them apart, especially in dense plots.
+
+### Core Principle
+
+Make the most important comparisons the easiest to see. Using perceptually distinct categories for shape encoding is a powerful way to make groups pop out from one another.
+
+## When it applies
+
+- When using shape to encode two or more categorical variables in a single scatterplot or similar chart.
+- When the plot is dense or cluttered, making discrimination difficult.
+- For tasks requiring viewers to compare groups, count items (numerosity), or assess trends within categories.
+
+## Exceptions
+
+- In sparse plots where categories are well-separated, the benefit is minimal.
+- In separate-plot displays (small multiples) where each plot contains only one category, as discrimination is not needed within a single plot.
+- When brand guidelines or aesthetic constraints require using only one family of shapes (e.g., all geometric/closed).
+
+## Trade-offs
+
+- This may slightly limit aesthetic choices if a design system requires using only one type of shape (e.g., all geometric).
+
+## Signs of Trouble
+
+- **Category Confusion:** Viewers struggle to differentiate between categories marked with similar shapes (e.g., telling the circles from the squares).
+- **The Squint Test:** When you squint at the chart, the different categories of points blur together into a single, undifferentiated mass.
+- **Slow Interpretation:** It takes viewers a long time to answer questions about specific categories, like "Which group has more points?"
+
+## How to Improve
+
+- **Quick Fix: Swap a Shape.** If you are using two closed shapes (e.g., circle and square), replace one with an open shape (e.g., a plus sign). This simple change introduces the powerful open/closed perceptual cue and immediately improves discriminability.
+
+- **Moderate Redesign: Re-evaluate Your Shape Palette.** When selecting a palette of shapes, consciously choose a mix from the "open" family and the "closed" family to maximize their perceptual distance. Don't just rely on the defaults of your charting software.
+
+```
+
+<split/>
+
+```md
+---
+id: avoid-same-category-shapes
+title: "Avoid using multiple shapes from the same perceptual category (all open or all closed)"
+tags:
+  - impact:perceptual
+  - impact:performance
+  - chart:scatter
+  - task:compare
+  - task:correlation
+  - task:distribution
+  - data:categorical
+  - visual:shape
+  - access:cognitive-load-risk
+  - medium:screen
+  - medium:static
+evidence:
+  strength: medium
+  summary: "Burlinson et al. (2018, n=20) found that using shapes from the same perceptual category (e.g., two closed shapes like a circle and a square) caused significant perceptual interference in multi-class scatterplots. This increased response times by ~400ms (p < .001, η² = .717) and led to more errors in numerosity tasks compared to using a mix of open and closed shapes."
+sources:
+  - type: research
+    ref: Burlinson, Subramanian, & Goolkasian, 2018
+    url: https://doi.org/10.1109/TVCG.2017.2745086
+    note: "Experiment 3 (n=20) demonstrated a large interference effect for same-category distractors in single-plot displays. For numerosity tasks, for example, error rates were significantly higher when trying to distinguish two closed shapes than when distinguishing an open and a closed shape."
+    role: primary
+examples:
+  - type: bad
+    description: "Using circles and squares (both closed shapes) to encode two different categories makes it harder for viewers to tell them apart, increasing cognitive load and the chance of misinterpretation."
+  - type: good
+    description: "By using circles (closed) and crosses (open), the chart leverages the open vs. closed perceptual distinction, making the two categories easy to separate at a glance."
+---
+
+## Guidance
+
+In a single plot with multiple categories encoded by shape, avoid using shapes that are all from the "open" family (e.g., asterisk and plus) or all from the "closed" family (e.g., circle and square).
+
+## Why
+
+Shapes that share a strong perceptual characteristic like "closedness" or "openness" create more interference for the visual system. It's harder for a viewer to tell them apart at a glance, which increases cognitive load and leads to slower, more error-prone interpretation.
+
+### Core Principle
+
+Reduce the cognitive work required to decode your visualization. Forcing viewers to distinguish between two perceptually similar shapes is an unnecessary mental step that can be easily avoided.
+
+## When it applies
+
+- When selecting two or more shapes to represent different categories in a single, dense visualization like a scatterplot.
+- Especially for tasks like comparing counts (numerosity) or identifying trends within specific categories, where clear separation is vital.
+
+## Exceptions
+
+- If aesthetics or brand guidelines strictly require using a specific family of shapes (e.g., all geometric/closed). In this case, be aware of the performance cost and consider using another, stronger visual channel like color to reinforce the distinction.
+- For very sparse, clearly separated data where perceptual interference is not a significant risk.
+
+## Trade-offs
+
+- Following this rule means you cannot create a purely "geometric" (all closed) or "symbolic" (all open) aesthetic for your chart's shapes.
+
+## Signs of Trouble
+
+- **Viewer Complaints:** Users report that "the circles and squares look too much alike" or they have to "stare for a while" to tell the groups apart.
+- **High Error Rates:** When asked to compare the categories, users frequently make mistakes.
+- **Back-and-Forth:** Viewers have to repeatedly look between the legend and the chart to confirm which shape corresponds to which category, indicating the shapes are not easily distinguishable.
+
+## How to Improve
+
+- **Simple Substitution:** Replace one of the shapes with an equivalent from the opposite category. For example, if using a circle and a square (both closed), change the square to a cross (open). This immediately breaks the perceptual grouping and reduces interference.
+
+- **Add a Redundant Encoding:** If you must use same-category shapes, add a secondary visual cue like color to help distinguish them. For example, use blue circles and orange squares. Note that this does not eliminate the shape interference but can help mitigate it.
+
+```
+
+<split/>
+
+```md
+---
+id: prefer-closed-shapes-for-speed
+title: "Use closed shapes for faster and more accurate mark identification"
+tags:
+  - impact:perceptual
+  - impact:performance
+  - visual:shape
+  - task:lookup
+  - data:categorical
+  - medium:screen
+  - medium:static
+evidence:
+  strength: medium
+  summary: "In basic perceptual tasks (n=38), Burlinson et al. (2018) found that closed shapes (e.g., circle, square) were processed significantly faster and more accurately than open shapes (e.g., plus, asterisk). This effect was large and consistent, with closed shapes leading to fewer errors and faster reaction times (η² = 0.520)."
+sources:
+  - type: research
+    ref: Burlinson, Subramanian, & Goolkasian, 2018
+    url: https://doi.org/10.1109/TVCG.2017.2745086
+    note: "Experiment 2 (n=38) used a same-different task and found a significant main effect for shape category, with faster RTs for closed shapes than open shapes (M=668ms vs M=689ms, p < .001, η² = 0.520) and fewer errors (2.7% vs 3.4%, p = 0.002, η² = 0.228)."
+    role: primary
+examples:
+  - type: good
+    description: "Using solid circles as markers in a scatterplot allows for rapid identification of individual data points because closed shapes are processed more efficiently by the visual system."
+  - type: bad
+    description: "Using asterisks as markers can slightly slow down a viewer's ability to find and identify a specific point, as open shapes are processed less efficiently than closed shapes."
+---
+
+## Guidance
+
+When a primary task involves rapidly finding or identifying individual data points, prefer using closed shapes (e.g., circle, square, triangle) over open shapes (e.g., plus, asterisk, cross).
+
+## Why
+
+Research suggests that the human visual system processes closed shapes more efficiently than open shapes. This results in faster reaction times and higher accuracy when viewers are trying to identify a target mark, especially in basic perceptual tasks.
+
+## When it applies
+
+- In dashboards or monitoring systems where rapid target detection is crucial.
+- For `lookup` tasks where a user needs to find a specific data point.
+- When encoding a single categorical variable with shape, where the open/closed distinction is not needed for comparison with other categories.
+
+## Exceptions
+
+- When using a mix of open and closed shapes is necessary to distinguish multiple categories (see guideline `mix-open-closed-shapes`). The benefit of discriminability between categories often outweighs the small speed advantage of using only closed shapes.
+- When an open shape has a strong, conventional semantic meaning in the context (e.g., an 'X' to mark a location, a '+' to indicate an addition).
+
+## Trade-offs
+
+- Relying only on closed shapes prevents you from using the powerful open vs. closed distinction as a way to group and separate categories.
+
+## Signs of Trouble
+
+- **Slow Lookup:** Users take a noticeable amount of time to find data points marked with open shapes.
+- **Missed Targets:** In a cluttered display, users fail to spot marks encoded with open shapes like asterisks or plus signs.
+
+## How to Improve
+
+- **Quick Change:** If performance is slow for a chart using asterisks, switch to circles or squares and measure if task time improves.
+- **Considered Choice:** When designing a new visualization with a single shape type, default to a closed shape like a circle unless there is a specific reason to use an open one. This optimizes for faster perception from the start.
+
+```
