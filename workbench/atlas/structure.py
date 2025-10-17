@@ -15,15 +15,17 @@
 import marimo
 
 __generated_with = "0.17.0"
-app = marimo.App(width="columns")
+app = marimo.App(width="columns", layout_file="layouts/structure.grid.json")
 
 
 @app.cell(column=0, hide_code=True)
 def _(make_section, mo, section_selector, section_title_map):
-    mo.vstack([
-        section_selector,
-        make_section(section_title_map[section_selector.value]),
-    ])
+    mo.vstack(
+        [
+            section_selector,
+            make_section(section_title_map[section_selector.value]),
+        ]
+    )
     return
 
 
@@ -282,6 +284,7 @@ def _(Guideline, re):
         evidence_strength = guideline.evidence.strength
 
         return {
+            "url": f"https://github.com/peter-gy/chartcoach/tree/main/{guideline.file}",
             "source": source_map[source_abbreviation],
             "is_universal": is_universal,
             "impacts_perceptual": impacts_perceptual,
@@ -422,7 +425,7 @@ def _():
     return List, Literal, Optional, dataclass, field, re, yaml
 
 
-@app.cell(column=3)
+@app.cell(column=3, hide_code=True)
 def _(
     GUIDELINES_CH_ROOT,
     GUIDELINES_DW_ROOT,
@@ -440,12 +443,14 @@ def _(
     return (GUIDELINE_PATHS,)
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(pathlib):
     INGEST_ROOT_PATH = pathlib.Path("workbench/ingest")
     GUIDELINES_CH_ROOT = INGEST_ROOT_PATH / "chartability" / "generated"
     GUIDELINES_DW_ROOT = INGEST_ROOT_PATH / "datawrapper" / "generated"
-    GUIDELINES_PC_ROOT = INGEST_ROOT_PATH / "graphical-perception-knowledge" / "generated"
+    GUIDELINES_PC_ROOT = (
+        INGEST_ROOT_PATH / "graphical-perception-knowledge" / "generated"
+    )
     GUIDELINES_TC_ROOT = INGEST_ROOT_PATH / "talking-charts" / "generated"
     return (
         GUIDELINES_CH_ROOT,
@@ -455,7 +460,7 @@ def _(pathlib):
     )
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _():
     import marimo as mo
     import pathlib
