@@ -1,0 +1,15 @@
+[tool.uv.workspace]
+members = [
+    "packages/catalog/python",
+]
+
+# https://github.com/charliermarsh/ruff
+[tool.ruff]
+extend-include = ["*.ipynb"]
+
+[tool.ruff.lint]
+pydocstyle = { convention = "numpy" }
+ignore = []
+
+[tool.marimo.runtime]
+dotenv = [".env"]
