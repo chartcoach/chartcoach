@@ -1,7 +1,8 @@
 # Work in Progress
 
-Run Embedding Atlas of vis guidelines via:
+Run examples via:
 
 ```bash
-uvx --python 3.12  marimo edit  workbench/atlas/structure.py --no-token --port 3338 --headless --sandbox
+uv sync
+uv run marimo edit packages/catalog/python/examples --no-token --port 3335 --headless   
 ```
