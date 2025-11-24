@@ -7,11 +7,11 @@ app = marimo.App(width="columns")
 @app.cell(column=0, hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## Data Extraction
+    ## Pixel-to-Data Extraction
 
-    Having access to a rasterized image, we first convert it into a linearized representation using DePlot so that automated visualization feedback can consider the underlying data.
+    To critique a chart effectively, we must understand its underlying data distribution, not just its visual surface. We use **DePlot** to linearize the rasterized image into a tabular representation, enabling downstream tools to reason about the data directly.
 
-    > Liu, Fangyu, Julian Eisenschlos, Francesco Piccinno, et al. “DePlot: One-Shot Visual Language Reasoning by Plot-to-Table Translation.” In Findings of the Association for Computational Linguistics: ACL 2023, edited by Anna Rogers, Jordan Boyd-Graber, and Naoaki Okazaki. Association for Computational Linguistics, 2023. https://doi.org/10.18653/v1/2023.findings-acl.660.
+    > Liu, Fangyu, Julian Eisenschlos, Francesco Piccinno, et al. “DePlot: One-Shot Visual Language Reasoning by Plot-to-Table Translation.” In Findings of the Association for Computational Linguistics: ACL 2023. https://doi.org/10.18653/v1/2023.findings-acl.660.
     """)
     return
 
@@ -71,9 +71,9 @@ def _(Image, pl):
 @app.cell(column=1, hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## Column Renames
+    ## Semantic Enrichment
 
-    DePlot sometimes outputs generic column names like `col1`, `col2`. We use an LLM to generate more descriptive names based on sample values from each column.
+    DePlot often outputs generic headers (e.g., `col1`). To support semantic reasoning (e.g., knowing that a column represents "Food Impact" rather than just numbers), we use an LLM to infer descriptive `snake_case`schema names from sample values.
     """)
     return
 
@@ -140,11 +140,11 @@ def _(pl):
 @app.cell(column=2, hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## Draco Representation
+    ## Abstract Chart Representation
 
-    We use the renderer-agnostic chart specification format introduced by Draco 2 to represent the input chart and to allow downstream linting and rule-based analysis.
+    We lift the cleaned data and image into a **Draco specification**--a renderer-agnostic formalism. This creates a "digital twin" of the visualization, allowing us to apply logical constraints and measure perceptual costs mathematically.
 
-    > Yang, Junran, Péter Ferenc Gyarmati, Zehua Zeng, and Dominik Moritz. “Draco 2: An Extensible Platform to Model Visualization Design.” 2023 IEEE Visualization and Visual Analytics (VIS), October 2023, 166–70. https://doi.org/10.1109/VIS54172.2023.00042.
+    > Yang, Junran, Péter Ferenc Gyarmati, Zehua Zeng, and Dominik Moritz. “Draco 2: An Extensible Platform to Model Visualization Design.” 2023 IEEE Visualization and Visual Analytics (VIS). https://doi.org/10.1109/VIS54172.2023.00042.
     """)
     return
 
@@ -245,9 +245,9 @@ def _():
 @app.cell(column=3, hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## Chart Linting
+    ## Baseline: Symbolic Linting
 
-    Having access to an abstract representation of the visualization, we can apply codified visualization design best practices to perform automated chart critique.
+    **The Efficiency Trap:** Symbolic approaches like VizLinter and Draco excel at optimizing perceptual efficiency. However, they often conclude that a chart **cannot be improved** simply because it is perceptually "optimal" (has a low cost). This ignores the reality that **optimizing for perception is not the exclusive criterion** for design. A chart that is perfect for rapid data extraction might fail at persuasion or emotional resonance--nuances these rule-based systems struggle to reason about.
     """)
     return
 
@@ -257,7 +257,7 @@ def _(mo):
     mo.md(r"""
     ### Vega-Lite Linter (VizLinter)
 
-    Using linter from:
+    We employ **VizLinter** to detect fundamental design violations. By analyzing the Vega-Lite specification against a set of rules, it identifies structural errors and deviations from standard best practices.
 
     > Chen, Qing, Fuling Sun, Xinyue Xu, Zui Chen, Jiazhe Wang, and Nan Cao. “VizLinter: A Linter and Fixer Framework for Data Visualization.” IEEE Transactions on Visualization and Computer Graphics 28, no. 1 (2022): 206–16. https://doi.org/10.1109/TVCG.2021.3114804.
     """)
@@ -297,19 +297,15 @@ def _(alt):
 
 
 @app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ### Draco Chart Features
-
-    The input visualization activates the features below after checking against the visualization design best practices encoded in Draco.
-    """)
-    return
-
-
-@app.cell(hide_code=True)
 def _(draco_spec, mo):
     mo.md(rf"""
-    Based on Draco's judgement, the supplied chart has a **cost of ${draco_spec.cost}$**. See the breakdown of costs below:
+    ### Draco Chart Features
+
+    Draco decomposes the visualization into logical facts and evaluates them against a knowledge base of both **hard constraints** and **soft constraints**.
+
+    Unlike errors, these features represent design *trade-offs* (e.g., `encoding_field` counts). Draco aggregates these into a **Global Perceptual Cost**, quantifying the theoretical "cognitive effort" required to read the chart based on empirical weights.
+
+    Based on Draco's knowledge base, the supplied chart has a calculated **Perceptual Cost of ${draco_spec.cost}$**:
     """)
     return
 
@@ -323,11 +319,11 @@ def _(draco_spec):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ### Draco Chart Recommendations
+    ### Draco Recommendations
 
-    As the activated features above are triggered preferences and not fundamental violations, we can't use all of them for "linting". E.g. the `encoding_field` cost depends purely on the number of encoded fields. It is not a violation per se, it is just a factor that adds to the perceptual cost Draco optimizes against.
+    Since a high perceptual cost isn't strictly an "error", simple linting is often insufficient. To understand what "optimal" looks like from a purely theoretical perspective, we ask: ***"How would Draco design this chart from scratch?"***
 
-    We can leverage the codified visualization design guidelines encoded in Draco by checking what charts it would recommend from scratch, only providing it with the to-be-encoded data fields.
+    By generating the mathematically optimal visualization for this specific dataset, we establish a baseline for **maximum perceptual efficiency**--which we can then compare against the user's actual design to highlight missed opportunities (or intentional rhetorical choices).
     """)
     return
 
@@ -339,12 +335,10 @@ def _(altair_renderer, candidates, mo, renamed_df, snake_to_title):
             mo.vstack(
                 [
                     mo.md(f"**Candidate {i + 1} has a cost of ${spec.cost}$**"),
-                    mo.ui.altair_chart(
-                        spec.render(
-                            df=renamed_df,
-                            label_mapping=snake_to_title,
-                            renderer=altair_renderer,
-                        )
+                    spec.render(
+                        df=renamed_df,
+                        label_mapping=snake_to_title,
+                        renderer=altair_renderer,
                     ),
                 ]
             )
@@ -394,9 +388,9 @@ def _():
 @app.cell(column=4, hide_code=True)
 def _(feedback_model, mo):
     mo.md(rf"""
-    ## Visualization Design Feedback Generation by Off-the-shelf LLM
+    ## Baseline: Off-the-shelf LLM
 
-    We can use an off-the-shelf LLM such as `{feedback_model}` and provide it with the chart image, the visualized data schema, the chart creator's analytical goal and rhetorical goal and their target audience. We will want a series of improvement suggestions along with rationale of those suggestions.
+    **The Problem of Hallucination:** We can ask a standard model (`{feedback_model}`) to critique the chart based on the user's specific situation (e.g., "senior audience," "substitution behavior"). While fluent, these models often generate **generic design platitudes** or **hallucinate citations** to appear authoritative. They lack access to a verified body of visualization design knowledge that can be reliably observed and easily extended by users.
     """)
     return
 
@@ -525,9 +519,11 @@ def _(mo):
 @app.cell(column=5, hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## Visualization Design Feedback Generation by Off-the-shelf LLM with Lint Results
+    ## Baseline: Hybrid (LLM + Linting)
 
-    In addition to the basic details, we can also supply the LLM with results from VizLinter and Draco's observations.
+    We can attempt to ground the LLM by feeding it the **perceptual preference violations** detected by Draco and VizLinter.
+
+    While this provides valid technical critiques, it still fails to address **contextual nuance**. Linters can flag "inefficient" choices, but they cannot help the LLM understand *why* those choices might be necessary for a specific audience (e.g., seniors) or rhetorical goal. The resulting feedback remains a mix of technical pedantry and hard-to-verify, potentially hallucinated advice, unanchored to empirical research.
     """)
     return
 
@@ -583,11 +579,78 @@ def _(
 @app.cell(column=6, hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## Agentic Knowledge Retrieval-Augmented Visualization Design Feedback Generation
+    ## Agentic Exploration via Progressive Disclosure
 
-    As apparent from the off-the-shelf LLM feedback, source hallucinations and overly generic suggestions can limit the usefulness of the generated visualization design feedback. To mitigate this, we can augment the LLM with relevant knowledge retrieved from our programmatically accessible catalog of visualization design best practices.
+    Unlike symbolic linters (which ignore intent) or standard LLMs (which hallucinate sources), our approach uses **Agentic Progressive Disclosure** to generate feedback that is both situated and grounded.
 
-    In this example instead of embedding-based retrieval we are using a progressive disclosure-based approach in an agentic loop where the agent has access to tools to interact with the catalog, retrieve available labels, filter by labels, retrieve specific guidelines by ID, etc.
+    This capability is directly enabled by our granular **knowledge representation**, which structurally separates high-level metadata from dense empirical evidence. Instead of overwhelming the context window with irrelevant text, the agent traverses the catalog hierarchically:
+
+    1.  **Taxonomy Alignment (Labels):** The agent maps user intent (e.g., "brochure for seniors") to the catalog's vocabulary (e.g., `audience:elderly`) using lightweight labels.
+    2.  **Guideline Filtering (Abstracts):** It scans concise `title` and `description` fields to identify promising principles without consuming token-heavy details.
+    3.  **Evidence Verification (Body):** Only then does it retrieve the full `body` of specific guidelines to validate applicability and formulate grounded feedback.
+
+    By preventing **context pollution**, this method ensures the model remains focused on the user's unique situation while retaining access to deep empirical backing--delivering the "why" that linters miss and the "truth" that raw LLMs lack.
+
+    Note that this way **no design knowledge is hard-coded** into the system prompt. All insights are retrieved dynamically from the catalog--a centralized, flexible resource. This decoupling allows the underlying knowledge base to be **debated, forked, and remixed** by the community, ensuring the agent always draws from a living body of shared best practices rather than static, opaque rules.
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.mermaid("""
+    graph LR
+        %% Styles
+        classDef input fill:#eceff1,stroke:#455a64,stroke-width:2px,color:#000;
+        classDef agent fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#000;
+        classDef tool fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#000;
+        classDef store fill:#fff9c4,stroke:#fbc02d,stroke-width:2px,stroke-dasharray: 5 5,color:#000;
+
+        %% Inputs
+        subgraph Pipeline [Pipeline Inputs]
+            Img[Chart Image]:::input
+            Data[DePlot Data]:::input
+            Lints[Symbolic Lints<br/>Draco/VizLinter]:::input
+        end
+        Intent[User Intent]:::input
+
+        %% The Central Agent
+        Pipeline & Intent --> Agent[VisFeedback Agent]:::agent
+        Catalog[(Knowledge Catalog)]:::store
+
+        %% The Loop
+        subgraph Loop [Progressive Disclosure Loop]
+            direction TB
+        
+            %% Step 1: Discovery Tools
+            Agent --1. Map Context--> DiscoveryTools
+            subgraph DiscoveryTools [Step 1: Discovery]
+                direction LR
+                T1[Tool: Discover Topics]:::tool
+                T2[Tool: Check Authority]:::tool
+            end
+            DiscoveryTools -.->|Vocabulary & Source Types| Agent
+
+            %% Step 2: Search Tool
+            Agent --2. Filter Topics--> SearchTools
+            subgraph SearchTools [Step 2: Filtering]
+                T3[Tool: Scan Abstracts]:::tool
+            end
+            SearchTools -.->|Titles & Descriptions| Agent
+
+            %% Step 3: Verification Tool
+            Agent --3. Verify Applicability--> VerifyTools
+            subgraph VerifyTools [Step 3: Verification]
+                T4[Tool: Read Full Guidelines]:::tool
+            end
+            VerifyTools -.->|Full Rationale & Evidence| Agent
+        end
+
+        %% Knowledge Base Connections
+        T1 & T2 & T3 & T4 <--> Catalog
+    
+        %% Final Output
+        Agent --> Final[Situated & Grounded<br/>Feedback]:::agent
     """)
     return
 

@@ -7,9 +7,11 @@ app = marimo.App(width="columns")
 @app.cell(column=0, hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## Union
+    ## The Unified Design Catalog
 
-    The union of visualization design knowledge catalogs spanning different origins.
+    A holistic synthesis that bridges the gap between **academic theory** and **practitioner intuition**.
+
+    This union harmonizes distinct epistemologies--merging **100+ cognitive science papers**, quantitative **perception rankings**, rigorous **accessibility standards**, and battle-tested **editorial heuristics**--into a single, queryable schema for intelligent visualization recommendation.
     """)
     return
 
@@ -27,9 +29,11 @@ def _(NB_ROOT, ch_catalog, dw_catalog, misc_catalog, prc_catalog, tc_catalog):
 @app.cell(column=1, hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## Misc Papers
+    ## Cognitive Science & Perception
 
-    A variety of papers on perception and visualization design guidelines, referenced by
+    A corpus of **103 papers** cited in the foundational review *"The Science of Visual Data Communication"*.
+
+    This collection spans diverse research domains, ranging from **low-level mechanics** (saliency, ensemble coding, color perception) to **high-level cognitive factors** (bias, memory, narrative framing) and **applied contexts** (health risk communication, uncertainty visualization).
 
     > Franconeri, Steven L., Lace M. Padilla, Priti Shah, Jeffrey M. Zacks, and Jessica Hullman. “The Science of Visual Data Communication: What Works.” Psychological Science in the Public Interest 22, no. 3 (2021): 110–61. https://doi.org/10.1177/15291006211051956.
     """)
@@ -155,9 +159,9 @@ def _():
 @app.cell(column=2, hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## Datawrapper
+    ## Practitioner Wisdom (Datawrapper)
 
-    Design knowledge and preferences extracted from practitioner blog post's from datawrapper.de's visualization dos and don'ts series.
+    Pragmatic, editorial design heuristics extracted from Datawrapper's extensive ["Dos and Don'ts" library](https://www.datawrapper.de/blog/category/datavis-dos-and-donts) of $36$ posts. These guidelines represent the tacit knowledge of data journalism, focusing on clarity, aesthetics, and reader engagement.
     """)
     return
 
@@ -302,13 +306,13 @@ def _(NB_ROOT):
 @app.cell(column=3, hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## Chartability
+    ## Inclusive Design Standards (Chartability)
 
-    Chart accessibility guidelines extracted from
+    Structured accessibility heuristics that map visualization components to WCAG standards and inclusive design principles.
 
     > Elavsky, Frank, Cynthia Bennett, and Dominik Moritz. “How Accessible Is My Visualization? Evaluating Visualization Accessibility with Chartability.” Computer Graphics Forum 41, no. 3 (2022): 57–70. https://doi.org/10.1111/cgf.14522.
 
-    and the chartability workbook: https://chartability.github.io/POUR-CAF/
+    See the workbook: https://chartability.github.io/POUR-CAF/
     """)
     return
 
@@ -433,9 +437,9 @@ def _(
 @app.cell(column=4, hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## Collated Perception Knowledge
+    ## Collated Graphical Perception Knowledge
 
-    Preferences and knowledge about visualization perception extracted from the structured items collated by
+    A systematic collation of **graphical perception** findings—how humans visually process and decode information. This catalog aggregates performance metrics (accuracy, speed, bias) from 58 empirical studies to rank visual encodings and chart types, specifically designed to inform algorithmic recommendations.
 
     > Zeng, Zehua, and Leilani Battle. “A Review and Collation of Graphical Perception Knowledge for Visualization Recommendation.” Proceedings of the 2023 CHI Conference on Human Factors in Computing Systems, ACM, April 19, 2023, 1–16. https://doi.org/10.1145/3544548.3581349.
     """)
@@ -694,9 +698,19 @@ def _():
 @app.cell(column=5, hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## Talking Charts
+    ## Communicative Intent (Talking Charts)
 
-    Guidelines and heuristics extracted from the [Talking Charts](https://talking-charts.vda.univie.ac.at) project
+    Qualitative guidelines focusing on rhetoric, resonance, and audience connection. These checklists bridge the gap between technical correctness and the ability of a chart to "speak" to lay audiences. $32$ items extracted from the [Talking Charts](https://talking-charts.vda.univie.ac.at) project's findings drawn from a variety of publications:
+
+    > Gregory, Kathleen, Laura Koesten, Regina Schuster, Torsten Möller, and Sarah Davies. “Data Journeys in Popular Science: Producing Climate Change and COVID-19 Data Visualizations at Scientific American.” Harvard Data Science Review 6, no. 2 (2024). https://doi.org/10.1162/99608f92.141c99cf.
+
+    > Knoll, Christian, Torsten Möller, Kathleen Gregory, and Laura Koesten. “The Gulf of Interpretation: From Chart to Message and Back Again.” Proceedings of the 2025 CHI Conference on Human Factors in Computing Systems, ACM, April 26, 2025, 1–17. https://doi.org/10.1145/3706598.3713413.
+
+    > Koesten, Laura, Kathleen Gregory, Regina Schuster, Christian Knoll, Sarah Davies, and Torsten Möller. “What Is the Message? Perspectives on Visual Data Communication.” arXiv:2304.10544. Preprint, arXiv, April 12, 2023. https://doi.org/10.48550/arXiv.2304.10544.
+
+    > Koesten, Laura, Antonia Saske, Sandra Maria Starchenko, and Kathleen Gregory. “Encountering Friction, Understanding Crises: How Do Digital Natives Make Sense of Crisis Maps?” Proceedings of the 2025 CHI Conference on Human Factors in Computing Systems, ACM, April 26, 2025, 1–15. https://doi.org/10.1145/3706598.3713520.
+
+    > Schuster, Regina, Kathleen Gregory, Torsten Möller, and Laura Koesten. “‘Being Simple on Complex Issues’ – Accounts on Visual Data Communication About Climate Change.” IEEE Transactions on Visualization and Computer Graphics 30, no. 9 (2024): 6598–611. https://doi.org/10.1109/TVCG.2024.3352282.
     """)
     return
 
