@@ -3,7 +3,7 @@
 Run examples via:
 
 ```bash
-uv sync
+uv sync --all-groups --all-extras --all-packages
 uv run marimo edit packages/catalog/python/examples --no-token --port 3335 --headless
 ```
 
