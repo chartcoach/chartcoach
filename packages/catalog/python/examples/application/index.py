@@ -1,17 +1,17 @@
 import marimo
 
-__generated_with = "0.18.0"
+__generated_with = "0.18.1"
 app = marimo.App(width="columns")
 
 
 @app.cell(column=0, hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## Pixel-to-Data Extraction
+    ## Step 1: Extracting Data from the Chart Image
 
-    To critique a chart effectively, we must understand its underlying data distribution, not just its visual surface. We use **DePlot** to linearize the rasterized image into a tabular representation, enabling downstream tools to reason about the data directly.
+    Feedback requires access to the underlying data, not just the rendered pixels. We use DePlot to recover a tabular representation from the rasterized chart image.
 
-    > Liu, Fangyu, Julian Eisenschlos, Francesco Piccinno, et al. “DePlot: One-Shot Visual Language Reasoning by Plot-to-Table Translation.” In Findings of the Association for Computational Linguistics: ACL 2023. https://doi.org/10.18653/v1/2023.findings-acl.660.
+    > Liu et al., "DePlot: One-Shot Visual Language Reasoning by Plot-to-Table Translation," ACL 2023. https://doi.org/10.18653/v1/2023.findings-acl.660
     """)
     return
 
@@ -71,9 +71,9 @@ def _(Image, pl):
 @app.cell(column=1, hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## Semantic Enrichment
+    ## Step 2: Inferring Column Semantics
 
-    DePlot often outputs generic headers (e.g., `col1`). To support semantic reasoning (e.g., knowing that a column represents "Food Impact" rather than just numbers), we use an LLM to infer descriptive `snake_case`schema names from sample values.
+    DePlot produces generic column headers such as `col1`. We prompt a language model to infer descriptive names from sample values, enabling downstream reasoning about what each column represents.
     """)
     return
 
@@ -140,11 +140,11 @@ def _(pl):
 @app.cell(column=2, hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## Abstract Chart Representation
+    ## Step 3: Constructing a Draco Specification
 
-    We lift the cleaned data and image into a **Draco specification**--a renderer-agnostic formalism. This creates a "digital twin" of the visualization, allowing us to apply logical constraints and measure perceptual costs mathematically.
+    We map the recovered data and inferred schema to a Draco specification, a renderer-agnostic representation of the chart's visual encoding. This enables constraint-based validation and perceptual cost estimation.
 
-    > Yang, Junran, Péter Ferenc Gyarmati, Zehua Zeng, and Dominik Moritz. “Draco 2: An Extensible Platform to Model Visualization Design.” 2023 IEEE Visualization and Visual Analytics (VIS). https://doi.org/10.1109/VIS54172.2023.00042.
+    > Yang et al., "Draco 2: An Extensible Platform to Model Visualization Design", IEEE VIS 2023. https://doi.org/10.1109/VIS54172.2023.00042
     """)
     return
 
@@ -245,9 +245,9 @@ def _():
 @app.cell(column=3, hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## Baseline: Symbolic Linting
+    ## Baseline A: Symbolic Linting
 
-    **The Efficiency Trap:** Symbolic approaches like VizLinter and Draco excel at optimizing perceptual efficiency. However, they often conclude that a chart **cannot be improved** simply because it is perceptually "optimal" (has a low cost). This ignores the reality that **optimizing for perception is not the exclusive criterion** for design. A chart that is perfect for rapid data extraction might fail at persuasion or emotional resonance--nuances these rule-based systems struggle to reason about.
+    Symbolic tools such as VizLinter and Draco validate charts against structural rules and perceptual constraints. When a chart incurs low perceptual cost and triggers no violations, these tools report that no improvements are needed. This is correct within their scope, but perceptual efficiency is not the only criterion for design quality. A chart optimised for rapid data extraction may still fail to support a specific analytical task or suit a particular audience. Symbolic linters cannot assess such contextual factors.
     """)
     return
 
@@ -255,11 +255,11 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ### Vega-Lite Linter (VizLinter)
+    ### VizLinter
 
-    We employ **VizLinter** to detect fundamental design violations. By analyzing the Vega-Lite specification against a set of rules, it identifies structural errors and deviations from standard best practices.
+    VizLinter checks the Vega-Lite specification against structural rules, detecting encoding violations and deviations from common conventions.
 
-    > Chen, Qing, Fuling Sun, Xinyue Xu, Zui Chen, Jiazhe Wang, and Nan Cao. “VizLinter: A Linter and Fixer Framework for Data Visualization.” IEEE Transactions on Visualization and Computer Graphics 28, no. 1 (2022): 206–16. https://doi.org/10.1109/TVCG.2021.3114804.
+    > Chen et al., "VizLinter: A Linter and Fixer Framework for Data Visualization," TVCG 2022. https://doi.org/10.1109/TVCG.2021.3114804
     """)
     return
 
@@ -299,13 +299,11 @@ def _(alt):
 @app.cell(hide_code=True)
 def _(draco_spec, mo):
     mo.md(rf"""
-    ### Draco Chart Features
+    ### Draco Features and Perceptual Cost
 
-    Draco decomposes the visualization into logical facts and evaluates them against a knowledge base of both **hard constraints** and **soft constraints**.
+    Draco represents the chart as logical facts and evaluates them against hard constraints (violations) and soft constraints (trade-offs). Soft constraint activations are aggregated into a perceptual cost score, which estimates the cognitive effort required to read the chart based on empirically derived weights.
 
-    Unlike errors, these features represent design *trade-offs* (e.g., `encoding_field` counts). Draco aggregates these into a **Global Perceptual Cost**, quantifying the theoretical "cognitive effort" required to read the chart based on empirical weights.
-
-    Based on Draco's knowledge base, the supplied chart has a calculated **Perceptual Cost of ${draco_spec.cost}$**:
+    The chart in this scenario has a perceptual cost of **${draco_spec.cost}$**:
     """)
     return
 
@@ -321,9 +319,9 @@ def _(mo):
     mo.md(r"""
     ### Draco Recommendations
 
-    Since a high perceptual cost isn't strictly an "error", simple linting is often insufficient. To understand what "optimal" looks like from a purely theoretical perspective, we ask: ***"How would Draco design this chart from scratch?"***
+    To establish a baseline for perceptual efficiency, we ask Draco to generate chart specifications from scratch given the same data schema. The resulting candidates represent designs that minimise perceptual cost according to Draco's weighted constraints.
 
-    By generating the mathematically optimal visualization for this specific dataset, we establish a baseline for **maximum perceptual efficiency**--which we can then compare against the user's actual design to highlight missed opportunities (or intentional rhetorical choices).
+    Comparing these candidates to the user's chart can reveal missed optimisations, but deviations from the minimum-cost design may reflect intentional choices that Draco cannot evaluate.
     """)
     return
 
@@ -388,9 +386,9 @@ def _():
 @app.cell(column=4, hide_code=True)
 def _(feedback_model, mo):
     mo.md(rf"""
-    ## Baseline: Off-the-shelf LLM
+    ## Baseline B: Off-the-Shelf LLM
 
-    **The Problem of Hallucination:** We can ask a standard model (`{feedback_model}`) to critique the chart based on the user's specific situation (e.g., "senior audience," "substitution behavior"). While fluent, these models often generate **generic design platitudes** or **hallucinate citations** to appear authoritative. They lack access to a verified body of visualization design knowledge that can be reliably observed and easily extended by users.
+    We prompt a language model (`{feedback_model}`) with the chart image and the user's stated goals. The model produces fluent feedback, but it draws on knowledge embedded in its weights rather than verifiable sources. Without grounding, the output may include generic advice that does not address the specific situation or citations that cannot be traced to real publications.
     """)
     return
 
@@ -519,11 +517,9 @@ def _(mo):
 @app.cell(column=5, hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## Baseline: Hybrid (LLM + Linting)
+    ## Baseline C: LLM with Linting Context
 
-    We can attempt to ground the LLM by feeding it the **perceptual preference violations** detected by Draco and VizLinter.
-
-    While this provides valid technical critiques, it still fails to address **contextual nuance**. Linters can flag "inefficient" choices, but they cannot help the LLM understand *why* those choices might be necessary for a specific audience (e.g., seniors) or rhetorical goal. The resulting feedback remains a mix of technical pedantry and hard-to-verify, potentially hallucinated advice, unanchored to empirical research.
+    We provide the LLM with the violations and activated features from VizLinter and Draco. This adds technical context to the prompt. However, linting results describe structural properties of the chart; they do not explain when those properties are appropriate for a given audience or task. The model still lacks access to situated design knowledge, so its reasoning about contextual factors remains ungrounded.
     """)
     return
 
@@ -579,19 +575,17 @@ def _(
 @app.cell(column=6, hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## Agentic Exploration via Progressive Disclosure
+    ## Catalog-Grounded Feedback via Progressive Disclosure
 
-    Unlike symbolic linters (which ignore intent) or standard LLMs (which hallucinate sources), our approach uses **Agentic Progressive Disclosure** to generate feedback that is both situated and grounded.
+    We use the cataloging scheme described in the paper to ground the language model's reasoning. The agent queries the catalog through a hierarchical traversal that limits context consumption:
 
-    This capability is directly enabled by our granular **knowledge representation**, which structurally separates high-level metadata from dense empirical evidence. Instead of overwhelming the context window with irrelevant text, the agent traverses the catalog hierarchically:
+    1. **Discover vocabulary.** The agent retrieves available labels from the catalog's metadata to map the user's stated goals (e.g., "brochure for seniors") to the catalog's taxonomy (e.g., `audience:older-adults`).
+    2. **Filter by abstract.** The agent scans guideline titles and descriptions to identify entries relevant to the user's situation without loading full content.
+    3. **Retrieve full guidelines.** For promising candidates, the agent fetches the complete body text and references to verify applicability and formulate feedback.
 
-    1.  **Taxonomy Alignment (Labels):** The agent maps user intent (e.g., "brochure for seniors") to the catalog's vocabulary (e.g., `audience:elderly`) using lightweight labels.
-    2.  **Guideline Filtering (Abstracts):** It scans concise `title` and `description` fields to identify promising principles without consuming token-heavy details.
-    3.  **Evidence Verification (Body):** Only then does it retrieve the full `body` of specific guidelines to validate applicability and formulate grounded feedback.
+    This traversal prevents irrelevant guidelines from consuming the model's context window. Each recommendation cites specific guideline IDs, which users can inspect to verify rationale and trace claims to primary sources.
 
-    By preventing **context pollution**, this method ensures the model remains focused on the user's unique situation while retaining access to deep empirical backing--delivering the "why" that linters miss and the "truth" that raw LLMs lack.
-
-    Note that this way **no design knowledge is hard-coded** into the system prompt. All insights are retrieved dynamically from the catalog--a centralized, flexible resource. This decoupling allows the underlying knowledge base to be **debated, forked, and remixed** by the community, ensuring the agent always draws from a living body of shared best practices rather than static, opaque rules.
+    No design knowledge is embedded in the system prompt. All guidance comes from the catalog, which can be inspected, modified, and extended independently of the feedback system.
     """)
     return
 
@@ -621,7 +615,7 @@ def _(mo):
         %% The Loop
         subgraph Loop [Progressive Disclosure Loop]
             direction TB
-        
+
             %% Step 1: Discovery Tools
             Agent --1. Map Context--> DiscoveryTools
             subgraph DiscoveryTools [Step 1: Discovery]
@@ -648,7 +642,7 @@ def _(mo):
 
         %% Knowledge Base Connections
         T1 & T2 & T3 & T4 <--> Catalog
-    
+
         %% Final Output
         Agent --> Final[Situated & Grounded<br/>Feedback]:::agent
     """)
@@ -671,7 +665,7 @@ def _(
             mo.md(
                 "\n\n".join(
                     [
-                        f"### Feedback by Chart Coach powered by `{feedback_model}`",
+                        f"### Catalog-Grounded Feedback (`{feedback_model}`)",
                         grounded_vis_feedback.feedback,
                     ]
                 )
@@ -964,7 +958,7 @@ def _(catalog, pl):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Below the observable, programmatically accessible catalog of guidelines based on which vis feedback is provided.
+    The table below shows the catalog instance from which guidelines are retrieved. Each row corresponds to a guideline with its metadata, section content, and references.
     """)
     return
 
@@ -986,7 +980,9 @@ def _():
 @app.cell(column=7, hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## Utilities
+    ## Utility Functions
+
+    Helper functions for image loading, column name formatting, and configuration.
     """)
     return
 
@@ -1008,17 +1004,9 @@ def _(Image, httpx):
 @app.cell(hide_code=True)
 def _(mo, pathlib):
     NB_ROOT = pathlib.Path(__file__).parent
-    CATALOG_PARQUET_PATH = NB_ROOT.parent / "curation" / "catalog.parquet"
+    CATALOG_PARQUET_PATH = NB_ROOT.parent / "cataloging" / "catalog.parquet"
     catalog_parquet = mo.watch.file(CATALOG_PARQUET_PATH)
     return (catalog_parquet,)
-
-
-@app.cell(hide_code=True)
-def _():
-    import warnings
-
-    warnings.filterwarnings("ignore")
-    return
 
 
 @app.cell(hide_code=True)
@@ -1044,15 +1032,18 @@ def _(os):
 
 @app.cell(hide_code=True)
 def _():
+    import json
     import os
+    import pathlib
+    import warnings
+
     import draco
     import httpx
     import marimo as mo
     import polars as pl
     from PIL import Image
-    import pathlib
-    import json
 
+    warnings.filterwarnings("ignore")
     return Image, httpx, json, mo, os, pathlib, pl
 
 

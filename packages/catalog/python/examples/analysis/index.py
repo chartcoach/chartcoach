@@ -1,28 +1,50 @@
 import marimo
 
-__generated_with = "0.18.0"
+__generated_with = "0.18.1"
 app = marimo.App(width="columns")
 
 
 @app.cell(column=0, hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## Cross-Domain Isomorphisms (Analogical Transfer)
+    # Structural Analysis of the Knowledge Space
 
-    **Objective:**
-    To uncover "wormholes" in the design space—instances where the same design principle applies to two completely unrelated domains.
+    This notebook accompanies Section 5.3 of the paper. It demonstrates the four operators defined in Equations 4–7:
 
-    **The Logic:**
-    We search for guideline pairs that exhibit **Low Context Similarity** (different domains/tasks) but **High Advice Similarity** (conceptually similar solutions).
+    1. [Analogical Transfer](#sec:analogical-transfer) -- similar advice, different contexts
+    2. [Conflict Detection](#sec:conflict-detection) -- similar contexts, divergent advice
+    3. [Viewpoint Divergence](#sec:viewpoint-divergence) -- one source's advice matches another's mistake
+    4. [Boundary Detection](#sec:boundary-detection) -- context-exception alignment across guidelines
 
-    $$ S_{transfer} = \text{Sim}(\vec{v}_{advice}^A, \vec{v}_{advice}^B) - \text{Sim}(\vec{v}_{context}^A, \vec{v}_{context}^B) $$
+    Additional analyses include:
+    - [Solution Convergence](#sec:solution-convergence) -- distinct problems, convergent fixes
+    - [Remediation Distance](#sec:remediation-distance) -- proxy for implementation effort
+    - [Projection](#sec:projection) -- 2D visualization of the knowledge space
 
-    **Interpretation:**
-    A high score identifies "Structural Isomorphisms"—abstract problems that look different on the surface but share the same underlying mathematical or perceptual structure. This allows us to "transfer" a solution from a well-studied domain (like map design) to a less-studied one (like risk communication).
+    Each section includes a worked example with specific guideline pairs from the catalog.
 
-    **Output Metrics:**
-    *   `advice_similarity`: Indicates the solutions are effectively the same.
-    *   `context_similarity`: Indicates the domains are different.
+    **Reproducibility.** All queries execute over the embedded catalog described in Section 5.2. The embedding model is OpenAI `text-embedding-3-small` ($d = 1536$). Vector indexing uses HNSW via DuckDB.
+    """)
+    return
+
+
+@app.cell(column=1, hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ## Analogical Transfer
+    <a id="sec:analogical-transfer"></a>
+
+    This analysis surfaces guideline pairs that share similar advice despite addressing unrelated contexts—what Section 5.3 of the paper terms *analogical transfer*.
+
+    **Method.** We compute:
+
+    $$ S_{\text{transfer}} = \text{Sim}(\vec{v}_{\text{advice}}^A, \vec{v}_{\text{advice}}^B) - \text{Sim}(\vec{v}_{\text{context}}^A, \vec{v}_{\text{context}}^B) $$
+
+    A high score indicates guidelines whose solutions are semantically close but whose application domains differ. Such pairs may reflect shared underlying principles obscured when guidelines are organized by domain.
+
+    **Output columns:**
+    - `advice_similarity`: Cosine similarity between advice sections.
+    - `context_similarity`: Cosine similarity between context sections.
     """)
     return
 
@@ -61,18 +83,14 @@ def _(conn):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    **Case Study: The "Discretization" Isomorphism**
+    ### Example: Categorical Boundaries
 
-    In the results below, the system finds a structural link between:
+    The query returns a pair linking:
 
-    - **Domain A (Risk Comm):** `separate-severity-from-probability` (Context: High-stakes health decisions).
-    - **Domain B (Survey Vis):** `use-classed-scales-for-ordinal-data` (Context: Likert scales & rankings).
+    - **`separate-severity-from-probability`** (risk communication): advises against mixing severity scales with probability displays.
+    - **`use-classed-scales-for-ordinal-data`** (survey visualization): advises discrete color steps for ordinal data such as Likert scales.
 
-    **The Isomorphism:** Despite the contexts being unrelated, the system detects that both advise against mixing "Severity" or "Rank" with continuous visual scales.
-
-    **The Transfer:** The principle from `Domain B` ("Continuous gradients imply non-existent intermediate values") effectively explains *why* the bad practice in `Domain A` fails ("Severity gradients distract from discrete probability statistics").
-
-    This suggests a universal rule: *Categorical concepts must have categorical visual boundaries.*
+    Both guidelines warn against mapping categorical distinctions to continuous visual gradients. The underlying principle--*categorical concepts require categorical visual boundaries*--spans domains that otherwise share little vocabulary. This relationship is not apparent when guidelines are organized by chart type or application area; the operator surfaces it through embedding geometry.
     """)
     return
 
@@ -90,25 +108,23 @@ def _(catalog, pl):
     return
 
 
-@app.cell(column=1, hide_code=True)
+@app.cell(column=2, hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## Exploring Universal Solutions
+    ## Solution Convergence
+    <a id="sec:solution-convergence"></a>
 
-    **Objective:**
-    To explore distinct design problems that appear to share similar solutions.
+    This analysis identifies guideline pairs where distinct problems lead to similar solutions.
 
-    **The Logic:**
-    We search for pairs of guidelines where the **Mistakes** are semantically distinct (low similarity), but the **Fixes** are highly similar.
+    **Method.** We compute:
 
-    $$ S_{convergence} = \text{Sim}(\vec{v}_{fix}^A, \vec{v}_{fix}^B) - \text{Sim}(\vec{v}_{mistake}^A, \vec{v}_{mistake}^B) $$
+    $$ S_{\text{convergence}} = \text{Sim}(\vec{v}_{\text{fix}}^A, \vec{v}_{\text{fix}}^B) - \text{Sim}(\vec{v}_{\text{mistake}}^A, \vec{v}_{\text{mistake}}^B) $$
 
-    **Interpretation:**
-    High convergence scores may point to fundamental design heuristics—such as "Simplification" or "Direct Labeling"—that serve as common correctives for a variety of visual issues. Identifying these clusters could help prioritize which core design concepts are most broadly applicable.
+    High scores indicate guidelines whose remediation strategies converge despite addressing different anti-patterns. Such clusters may point to broadly applicable design heuristics.
 
-    **Output Metrics:**
-    *   `fix_similarity`: Cosine similarity (0-1) between the solutions. Higher values indicate the fixes are semantically close.
-    *   `mistake_similarity`: Cosine similarity (0-1) between the problems. Lower values indicate the problems are distinct.
+    **Output columns:**
+    - `fix_similarity`: Cosine similarity between fix sections.
+    - `mistake_similarity`: Cosine similarity between mistake sections.
     """)
     return
 
@@ -146,17 +162,14 @@ def _(conn):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    **Case Study: The "Faceting" Attractor**
+    ### Example: Spatial Separation
 
-    In the results above, the system identifies a solution convergence between:
+    The query returns a pair linking:
 
-    - **Problem A:** `avoid-redundant-retinal-encodings` (Issue: **Perceptual Interference** caused by mapping too many variables to shape/color).
+    - **`avoid-redundant-retinal-encodings`**: addresses perceptual interference from mapping too many variables to shape and color.
+    - **`szafir-2018-avoid-3d`**: addresses geometric distortion and occlusion from 3D projections.
 
-    - **Problem B:** `szafir-2018-avoid-3d` (Issue: **Geometric Distortion** and occlusion caused by 3D projections).
-
-    **The Convergence:** Despite the problems being distinct (2D Clutter vs. 3D Distortion), both guidelines prescribe **Small Multiples (Faceting)** as the optimal fix.
-
-    **The Insight:** This suggests that *Spatial Separation* (Faceting) acts as a universal strategy for managing high-dimensional data, consistently outperforming both "Over-encoding" and "3D Projection" strategies.
+    Despite different problem descriptions (2D clutter versus 3D distortion), both guidelines prescribe small multiples (faceting) as the fix. This convergence suggests that spatial separation functions as a common strategy for managing high-dimensional data across multiple problem types.
     """)
     return
 
@@ -174,24 +187,22 @@ def _(catalog, pl):
     return
 
 
-@app.cell(column=2, hide_code=True)
+@app.cell(column=3, hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## Linking Guidelines via Context and Exceptions
+    ## Boundary Detection
+    <a id="sec:boundary-detection"></a>
 
-    **Objective:**
-    To propose potential logical links between guidelines by analyzing where the scope of one guideline ends and another begins.
+    This analysis proposes handoff points where one guideline's scope ends and another's begins, corresponding to Equation 7 in Section 5.3 of the paper.
 
-    **The Logic:**
-    We measure the similarity between the **Context** of `Guideline A` (when it applies) and the **Exceptions** of `Guideline B` (when it should be ignored).
+    **Method.** We measure similarity between the context of one guideline and the exceptions of another:
 
-    $$ S_{link}(A, B) = \text{Sim}(\vec{v}_{context}^A, \vec{v}_{exception}^B) $$
+    $$ S_{\text{link}}(A, B) = \text{Sim}(\vec{v}_{\text{context}}^A, \vec{v}_{\text{exception}}^B) $$
 
-    **Interpretation:**
-    This operation attempts to approximate the implicit "decision logic" of the design space. If the conditions triggering `Guideline A` align with the exception cases of `Guideline B`, it suggests a potential hand-off point. This relationship could be useful for automated systems to dynamically adjust recommendations based on changing context.
+    A high score suggests that the conditions triggering Guideline A align with the exclusion criteria of Guideline B, indicating a potential decision boundary.
 
-    **Output Metrics:**
-    *   `match_score`: The cosine similarity between the context vector and the exception vector. A higher score suggests a stronger semantic link between the rule's trigger and the other rule's exclusion criteria.
+    **Output columns:**
+    - `match_score`: Cosine similarity between context and exception vectors.
     """)
     return
 
@@ -225,17 +236,14 @@ def _(conn):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(rf"""
-    **Case Study: The Density Threshold**
+    ### Example: Dot Plots and Bar Charts
 
-    In the results above, the system detects a link (Score: $0.744$) between:
+    The query returns a link (score: 0.744) between:
 
-    **The Trigger:** `group-bars-adjacently` (Context: Pairwise comparisons).
+    - **`group-bars-adjacently`** (context: pairwise comparisons requiring precise difference estimation).
+    - **`use-dot-plots-for-aggregation`** (exception: "the user needs to compare the exact difference between two specific items").
 
-    **The Handoff:** `use-dot-plots-for-aggregation` (Exception: "The user needs to compare the exact difference between two specific items").
-
-    **The Insight:** The system effectively "learns" that while Dot Plots are superior for high-volume aggregation, there is a specific boundary condition (pairwise precision) where control should be handed back to Bar Charts.
-
-    This creates a dynamic graph: *Start with Dot Plot $\to$ If User needs Precision $\to$ Switch to Grouped Bar.*
+    The dot plot guideline explicitly identifies pairwise precision as a boundary condition. The operator surfaces this relationship: dot plots suit distributional overview, but grouped bars should take precedence when exact pairwise comparison is required.
     """)
     return
 
@@ -253,26 +261,24 @@ def _(catalog, pl):
     return
 
 
-@app.cell(column=3, hide_code=True)
+@app.cell(column=4, hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## Screening for Conflicting Advice
+    ## Conflict Detection
+    <a id="sec:conflict-detection"></a>
 
-    **Objective:**
-    To highlight instances where guidelines appear to agree on the context but differ in their recommendations.
+    This analysis identifies guideline pairs that address similar contexts but prescribe different advice, corresponding to Equation 6 in Section 5.3 of the paper.
 
-    **The Logic:**
-    We look for pairs of guidelines that have very similar **Contexts** (high similarity) but divergent **Advice** (low similarity).
+    **Method.** We compute:
 
-    $$ S_{friction} = \text{Sim}(\vec{v}_{context}^A, \vec{v}_{context}^B) - \text{Sim}(\vec{v}_{advice}^A, \vec{v}_{advice}^B) $$
+    $$ S_{\text{friction}} = \text{Sim}(\vec{v}_{\text{context}}^A, \vec{v}_{\text{context}}^B) - \text{Sim}(\vec{v}_{\text{advice}}^A, \vec{v}_{\text{advice}}^B) $$
 
-    **Interpretation:**
-    This metric aims to surface potential trade-offs or debates within the catalog. If two sources address the same scenario but offer different instructions, it suggests a nuance that might require human judgment or further investigation, rather than automatic application.
+    High positive values indicate guidelines that describe overlapping problem spaces but offer divergent solutions. Such pairs may represent genuine design trade-offs rather than errors.
 
-    **Output Metrics:**
-    *   `situation_sim`: Measures overlap in the problem context.
-    *   `advice_sim`: Measures overlap in the recommended solution.
-    *   `friction_score`: The difference between context similarity and advice similarity. High positive values indicate guidelines that effectively describe the same problem but offer significantly different solutions.
+    **Output columns:**
+    - `situation_sim`: Cosine similarity between context sections.
+    - `advice_sim`: Cosine similarity between advice sections.
+    - `friction_score`: Difference between context and advice similarity.
     """)
     return
 
@@ -311,15 +317,14 @@ def _(conn):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    **Case Study: Precision vs. Aesthetics**
+    ### Example: Position Encoding and Donut Charts
 
-    In the results above, the system flags a friction between:
-    *   `prioritize-position-encodings` (Advice: Use Bar Charts for precision).
-    *   `avoid-extreme-donut-thinness` (Advice: Use Donut Charts, just make them thick).
+    The query flags a conflict between:
 
-    **The Context:** Both apply to "Quantitative data" where "Precise reading of values" is a goal.
+    - **`prioritize-position-encodings`**: recommends bar charts for precise value reading.
+    - **`avoid-extreme-donut-thinness`**: advises using donut charts with adequate ring thickness.
 
-    **The Insight:** The high friction score correctly identifies the tension between the *optimal* choice for precision (Bar) and the *acceptable* choice for aesthetics (Thick Donut). This tells a designer: "You can use a donut, but you are trading optimal precision for shape".
+    Both guidelines address quantitative data where accurate reading matters. The conflict score identifies a design tension: bar charts optimize precision, while well-proportioned donuts offer an acceptable alternative when other constraints (e.g., layout, aesthetics) favor circular forms. The score does not indicate an error; it surfaces a trade-off that designers must navigate.
     """)
     return
 
@@ -337,25 +342,24 @@ def _(catalog, pl):
     return
 
 
-@app.cell(column=4, hide_code=True)
+@app.cell(column=5, hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## Estimating Remediation Effort
+    ## Remediation Distance
+    <a id="sec:remediation-distance"></a>
 
-    **Objective:**
-    To define a proxy metric for the difficulty of applying a specific guideline.
+    This analysis defines a proxy for the scope of change a guideline requires.
 
-    **The Logic:**
-    We calculate the semantic distance (difference) between the description of the **Mistake** and the description of the **Fix** within a single guideline.
+    **Method.** We compute the cosine distance between a guideline's mistake description and its fix:
 
-    $$ \text{Effort} = 1 - \text{Sim}(\vec{v}_{fix}, \vec{v}_{mistake}) $$
+    $$ \text{Effort} = 1 - \text{Sim}(\vec{v}_{\text{fix}}, \vec{v}_{\text{mistake}}) $$
 
     **Interpretation:**
-    *   **Low Distance:** Suggests the mistake and fix are semantically adjacent (e.g., "Small Label" vs "Large Label"), which may correlate with a simple parameter adjustment.
-    *   **High Distance:** Suggests the solution uses a distinct vocabulary from the problem (e.g., "Distorted Pie Chart" vs "Bar Chart"). This semantic gap might indicate a need for more significant changes to the visualization structure.
+    - **Low distance**: The mistake and fix share vocabulary (e.g., "small label" vs. "large label"), suggesting a parameter adjustment.
+    - **High distance**: The fix uses distinct vocabulary from the mistake (e.g., "cluttered pie chart" vs. "grouped bar chart"), suggesting structural change.
 
-    **Output Metrics:**
-    *   `effort_score`: Represents the cosine distance (1 minus similarity). Higher values indicate a larger semantic gap between the problem state and the solution state, serving as a proxy for implementation difficulty.
+    **Output columns:**
+    - `effort_score`: Cosine distance (1 minus similarity). Higher values indicate larger semantic gaps between problem and solution states.
     """)
     return
 
@@ -384,17 +388,14 @@ def _(conn):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    **Case Study: Pie Chart Labeling**
+    ### Example: Data Aggregation
 
-    In the results above, `group-small-pie-slices` receives a high effort score ($0.647$):
+    The query assigns a high effort score (0.647) to **`group-small-pie-slices`**:
 
-    **The Mistake:** "Using a pointer line for every single tiny slice" (A layout/annotation attempt).
+    - **Mistake**: "Using a pointer line for every small slice" (annotation strategy).
+    - **Fix**: "Aggregate the smallest 3–4 values into one category" (data transformation).
 
-    **The Fix:** "Aggregate the smallest 3-4 values into one category" (A data aggregation).
-
-    **The Insight:** The system flags this as "High Effort" because the vocabulary shifts from *drawing lines* to *modifying data*.
-
-    This correctly identifies that the solution isn't just a better pointer line—it requires a fundamental change to the underlying data structure.
+    The vocabulary shifts from drawing annotations to modifying data structure. The high score correctly reflects that the fix is not a better pointer line but a change to the underlying data model.
     """)
     return
 
@@ -411,24 +412,22 @@ def _(catalog, pl):
     return
 
 
-@app.cell(column=5, hide_code=True)
+@app.cell(column=6, hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## Analyzing Divergent Viewpoints
+    ## Viewpoint Divergence
+    <a id="sec:viewpoint-divergence"></a>
 
-    **Objective:**
-    To explore how different guidelines might interpret similar design choices from opposing perspectives.
+    This analysis identifies cases where one source's advice matches another source's listed mistakes, corresponding to Equation 6 in Section 5.3 of the paper.
 
-    **The Logic:**
-    We cross-reference guidelines to find cases where the **Advice** of one guideline is semantically equivalent to the **Mistake** (anti-pattern) of another.
+    **Method.** We compute:
 
-    $$ S_{contrast}(A, B) = \text{Sim}(\vec{v}_{advice}^A, \vec{v}_{mistake}^B) $$
+    $$ S_{\text{contrast}}(A, B) = \text{Sim}(\vec{v}_{\text{advice}}^A, \vec{v}_{\text{mistake}}^B) $$
 
-    **Interpretation:**
-    A high similarity score here highlights areas of potential debate. By identifying instances where one recommendation aligns with another's anti-pattern, we can better understand the diverse schools of thought in the field. This view encourages users to consider context rather than treating guidelines as universal truths.
+    A high score indicates that what one guideline recommends, another explicitly discourages. Such pairs highlight contested territory in the field.
 
-    **Output Metrics:**
-    *   `collision_score`: The cosine similarity between the recommender's advice and the critic's mistake description. Higher values indicate a stronger semantic match, suggesting a direct contradiction between the two guidelines.
+    **Output columns:**
+    - `collision_score`: Cosine similarity between one guideline's advice and another's mistake description.
     """)
     return
 
@@ -462,15 +461,14 @@ def _(conn):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    **Case Study: The Rainbow Colormap Debate**
+    ### Example: Rainbow Colormaps
 
-    In the results above, the system detects a collision ($0.682$) between two guidelines regarding **Rainbow Colormaps**:
+    The query detects a collision (score: 0.682) between:
 
-    **The Recommender:** `consider-rainbow-for-lookup-tasks` advises using rainbow scales specifically for "rapid location" tasks (Advice).
+    - **`consider-rainbow-for-lookup-tasks`**: recommends rainbow scales for rapid categorical lookup, citing evidence that hue variation supports fast legend matching.
+    - **`replace-rainbow-with-uniform-multi-hue`**: lists rainbow colormaps as a common mistake due to perceptual banding artifacts.
 
-    **The Critic:** `replace-rainbow-with-uniform-multi-hue` explicitly lists "Using a rainbow scale" as a "Common Mistake" due to perceptual banding.
-
-    **The Insight:** The high score confirms that this is not a universal truth but a trade-off: the *Advice* of one (optimized for lookup speed) is the *Mistake* of the other (optimized for value estimation accuracy).
+    The collision confirms that rainbow colormaps occupy contested territory: appropriate for some tasks (categorical lookup), problematic for others (magnitude estimation). The scheme does not resolve this conflict; it surfaces it so that users can make informed decisions based on their specific requirements.
     """)
     return
 
@@ -488,58 +486,18 @@ def _(catalog, pl):
     return
 
 
-@app.cell(column=6, hide_code=True)
+@app.cell(column=7, hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## The Semantic Atlas of Design Knowledge
+    ## Projection of the Knowledge Space
+    <a id="sec:projection"></a>
 
-    **Objective:**
-    To visualize the global topology of the knowledge catalog. By projecting the high-dimensional vector space into two dimensions, we can inspect the structural relationships between different types of design knowledge.
+    This visualization projects the high-dimensional embedding space into two dimensions for inspection.
 
-    **The Method: Dimensionality Reduction (UMAP)**
-    To render the 1536-dimensional embeddings on a 2D screen, we employ **UMAP (Uniform Manifold Approximation and Projection)**. Unlike linear projections (like PCA), UMAP is a manifold learning technique designed to preserve the **local neighborhood structure** of the data.
+    **Method.** We use UMAP (Uniform Manifold Approximation and Projection), a manifold learning technique that preserves local neighborhood structure. Guidelines that are semantically close in the 1536-dimensional embedding space remain close in the 2D projection, revealing natural clusters.
 
-    This ensures that guidelines that are semantically close in the high-dimensional space remain close in the 2D visualization, identifying natural clusters of knowledge.
+    The interactive widget below displays all guideline sections. Points are colored by section role; hovering reveals guideline metadata.
     """)
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.mermaid(r"""
-    graph LR
-        subgraph "High-Dimensional Space"
-            V[Vector Embeddings]
-            N[Dimensions: 1536]
-        end
-
-        subgraph "Manifold Learning"
-            U[UMAP Algorithm]
-            T[Topology Preservation]
-        end
-
-        subgraph "Projected Space"
-            P[2D Coordinates]
-            C[Clusters]
-        end
-
-        V --> U
-        N -.-> V
-        U --> |Minimize Cross-Entropy| P
-        U -.-> T
-        T -.-> P
-        P --> |Visualized As| C
-
-        style V fill:#e1f5fe,stroke:#01579b
-        style P fill:#e8f5e9,stroke:#1b5e20
-        style U fill:#fff3e0,stroke:#e65100
-    """)
-    return
-
-
-@app.cell
-def _(projected_sections_df):
-    projected_sections_df.select("role").unique("role")
     return
 
 
@@ -567,12 +525,13 @@ def _(EmbeddingAtlasWidget, catalog, os, pl):
     return (projected_sections_df,)
 
 
-@app.cell(column=7, hide_code=True)
+@app.cell(column=8, hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## Formalization and Implementation
+    ## Implementation Details
+    <a id="sec:implementation"></a>
 
-    This section details the transformation pipeline that converts the human-readable Markdown catalog into the mathematical structure utilized in the analyses presented in this notebook.
+    This section documents the pipeline that transforms the Markdown catalog into the queryable vector structure used in the analyses above.
     """)
     return
 
@@ -622,23 +581,34 @@ def _(mo):
     1.  **Parsing:** The `Catalog` extracts semantic sections (`context`, `advice`, `mistake`, etc.) from the raw Markdown files.
     2.  **Embedding:** Each section is embedded independently via a Transformer model ($\Phi$). This ensures that the vector representation of an "Advice" section contains only the semantics of the solution, unpolluted by the context or rationale.
     3.  **Indexing:** The resulting vectors are stored in DuckDB and indexed using HNSW (Hierarchical Navigable Small World graphs) to enable real-time similarity operations.
+    """)
+    return
 
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
     ### Formal Notation
 
-    To ground the arithmetic operations used in this notebook, we define the following notation:
+    Let $\mathcal{C}$ denote the catalog, a finite set of guidelines $\{g_1, \ldots, g_N\}$. Each guideline $g_i$ comprises role-specific text sections:
 
-    Let $\mathcal{C}$ be the **Catalog**, a set of unique guidelines $\{ g_1, \dots, g_N \}$.
-    Each guideline $g_i$ is a tuple of role-specific text sections:
+    $$ g_i = \{(r, t_{i,r}) \mid r \in \mathcal{R}\} $$
 
-    $$ g_i = \{ (r, t_{i,r}) \mid r \in \{\text{context}, \text{advice}, \text{mistake}, \dots\} \} $$
+    where $\mathcal{R} = \{\texttt{context}, \texttt{advice}, \texttt{mistake}, \texttt{fix}, \texttt{exceptions}, \ldots\}$ is the set of section roles.
 
-    We define an embedding function $\Phi: \mathcal{T} \rightarrow \mathbb{R}^d$ that maps text to a high-dimensional vector space. The computable representation of a section is:
+    Let $\mathcal{T}$ denote the space of natural-language text strings. The embedding function $\Phi: \mathcal{T} \rightarrow \mathbb{R}^d$ maps text to a $d$-dimensional vector space. For a guideline $g_i$ with a section of role $r$, the vector representation is:
 
     $$ \vec{v}_{i,r} = \Phi(t_{i,r}) $$
 
-    All similarity metrics reported above are derived from the cosine similarity between these specific section vectors:
+    where $t_{i,r} \in \mathcal{T}$ is the text content of that section.
 
-    $$ \text{Sim}(\vec{v}_{A, r1}, \vec{v}_{B, r2}) = \frac{\vec{v}_{A, r1} \cdot \vec{v}_{B, r2}}{\|\vec{v}_{A, r1}\| \|\vec{v}_{B, r2}\|} $$
+    Similarity between sections is measured by cosine similarity:
+
+    $$ \text{Sim}(\vec{v}_{A,r_1}, \vec{v}_{B,r_2}) = \frac{\vec{v}_{A,r_1} \cdot \vec{v}_{B,r_2}}{\|\vec{v}_{A,r_1}\| \, \|\vec{v}_{B,r_2}\|} $$
+
+    The operators in this notebook combine similarity scores across different section roles to surface structural relationships. For example, analogical transfer (Equation 4 in the paper) computes:
+
+    $$ S_{\text{transfer}}(A, B) = \text{Sim}(\vec{v}_{A,\texttt{advice}}, \vec{v}_{B,\texttt{advice}}) - \text{Sim}(\vec{v}_{A,\texttt{context}}, \vec{v}_{B,\texttt{context}}) $$
     """)
     return
 
@@ -654,10 +624,17 @@ def _(index_sections, projected_sections_df):
     return (conn,)
 
 
-@app.cell(column=8, hide_code=True)
+@app.cell(column=9, hide_code=True)
 def _(mo):
     mo.md(r"""
     ## Setup
+    <a id="sec:setup"></a>
+
+    The cells below load the catalog and establish the database connection. Implementation uses:
+
+    - **Polars** for dataframe operations
+    - **DuckDB** for SQL queries over embedded vectors
+    - **OpenAI text-embedding-3-small** ($d = 1536$) for section embeddings
     """)
     return
 
@@ -672,7 +649,7 @@ def _(Catalog, catalog_parquet, pl):
 @app.cell(hide_code=True)
 def _(mo, pathlib):
     NB_ROOT = pathlib.Path(__file__).parent
-    CATALOG_PARQUET_PATH = NB_ROOT.parent / "curation" / "catalog.parquet"
+    CATALOG_PARQUET_PATH = NB_ROOT.parent / "cataloging" / "catalog.parquet"
     catalog_parquet = mo.watch.file(CATALOG_PARQUET_PATH)
     return (catalog_parquet,)
 

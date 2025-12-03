@@ -1,22 +1,22 @@
 import marimo
 
-__generated_with = "0.18.0"
+__generated_with = "0.18.1"
 app = marimo.App(width="columns")
 
 
-@app.cell(column=0, hide_code=True)
+@app.cell(column=0, hide_code=False)
 def _(mo):
     mo.md(r"""
-    ## The Unified Design Catalog
+    ## Catalog Construction
 
-    A holistic synthesis that bridges the gap between **academic theory** and **practitioner intuition**.
+    This notebook documents the extraction of 744 guidelines from five source categories. Each source differs in methodology and evidence type; the cataloging scheme accommodates all of them within a uniform structure.
 
-    This union harmonizes distinct epistemologies--merging **100+ cognitive science papers**, quantitative **perception rankings**, rigorous **accessibility standards**, and battle-tested **editorial heuristics**--into a single, queryable schema for intelligent visualization recommendation.
+    The resulting catalog supports the analyses in the paper: expressiveness validation, structural analysis, and grounded feedback.
     """)
     return
 
 
-@app.cell(hide_code=True)
+@app.cell(hide_code=False)
 def _(NB_ROOT, ch_catalog, dw_catalog, misc_catalog, prc_catalog, tc_catalog):
     catalog = tc_catalog + prc_catalog + ch_catalog + dw_catalog + misc_catalog
     catalog_df = catalog.df()
@@ -26,21 +26,92 @@ def _(NB_ROOT, ch_catalog, dw_catalog, misc_catalog, prc_catalog, tc_catalog):
     return
 
 
-@app.cell(column=1, hide_code=True)
+@app.cell(hide_code=False)
 def _(mo):
     mo.md(r"""
-    ## Cognitive Science & Perception
+    ### Summary Statistics
 
-    A corpus of **103 papers** cited in the foundational review *"The Science of Visual Data Communication"*.
-
-    This collection spans diverse research domains, ranging from **low-level mechanics** (saliency, ensemble coding, color perception) to **high-level cognitive factors** (bias, memory, narrative framing) and **applied contexts** (health risk communication, uncertainty visualization).
-
-    > Franconeri, Steven L., Lace M. Padilla, Priti Shah, Jeffrey M. Zacks, and Jessica Hullman. “The Science of Visual Data Communication: What Works.” Psychological Science in the Public Interest 22, no. 3 (2021): 110–61. https://doi.org/10.1177/15291006211051956.
+    The bar chart below shows the number of guidelines extracted from each source category. These counts correspond to Table 1 in the paper.
     """)
     return
 
 
-@app.cell(hide_code=True)
+@app.cell(hide_code=False)
+def _(alt, guidelines_with_source_df, mo):
+    guidelines_by_source_chart = alt.layer(
+        *[
+            alt.Chart(guidelines_with_source_df)
+            .mark_bar()
+            .encode(
+                x=alt.X("count()", title="Number of Guidelines"),
+                y=alt.Y("source", title="Source", sort="-x"),
+            ),
+            alt.Chart(guidelines_with_source_df)
+            .mark_text(align="left", dx=3)
+            .encode(
+                x=alt.X("count()", title="Number of Guidelines"),
+                y=alt.Y("source", title="Source", sort="-x"),
+                text=alt.Text("count()", format="d"),
+            ),
+        ]
+    )
+    mo.vstack(
+        [
+            mo.md("### Guidelines by Source"),
+            guidelines_by_source_chart,
+        ]
+    )
+    return
+
+
+@app.cell(hide_code=False)
+def _(catalogs_by_source, pl):
+    guidelines_with_source_df = pl.concat(
+        [
+            catalog.df().select(pl.lit(source).alias("source"), pl.all())
+            for source, catalog in catalogs_by_source.items()
+        ]
+    ).unique("id", maintain_order=True)
+    return (guidelines_with_source_df,)
+
+
+@app.cell(hide_code=False)
+def _(ch_catalog, dw_catalog, misc_catalog, prc_catalog, tc_catalog):
+    catalogs_by_source = {
+        "Collated Perception Knowledge": prc_catalog,
+        "Talking Charts": tc_catalog,
+        "Chartability Accessibility Standards": ch_catalog,
+        "Datawrapper Posts": dw_catalog,
+        "Cognitive Science & Perception Papers": misc_catalog,
+    }
+    return (catalogs_by_source,)
+
+
+@app.cell(hide_code=False)
+def _():
+    import altair as alt
+    import polars as pl
+
+    return alt, pl
+
+
+@app.cell(column=1, hide_code=False)
+def _(mo):
+    mo.md(r"""
+    ## Source 1: Cognitive Science and Perception Papers
+
+    We processed 103 papers cited in Franconeri et al.'s review *"The Science of Visual Data Communication"*. These papers report findings on low-level visual processing (saliency, ensemble coding, color discrimination), higher-order cognition (bias, memory, narrative framing), and applied domains (risk communication, uncertainty visualization).
+
+    Each paper was provided to the extraction model as a PDF. The model identified actionable design implications and mapped them to the guideline schema.
+
+    **Reference:**
+
+    > Franconeri, S. L., Padilla, L. M., Shah, P., Zacks, J. M., & Hullman, J. (2021). The science of visual data communication: What works. *Psychological Science in the Public Interest*, 22(3), 110–161.
+    """)
+    return
+
+
+@app.cell(hide_code=False)
 def _(
     Catalog,
     GUIDELINE_TEMPLATE_DIGEST,
@@ -77,7 +148,13 @@ def _(
     return (misc_catalog,)
 
 
-@app.cell(hide_code=True)
+@app.cell(hide_code=False)
+def _(display_references, misc_catalog):
+    display_references(misc_catalog)
+    return
+
+
+@app.cell(hide_code=False)
 def _(
     CatalogEntry,
     GUIDELINE_TEMPLATE,
@@ -138,7 +215,7 @@ def _(
     return (misc_paper_to_catalog_entries,)
 
 
-@app.cell(hide_code=True)
+@app.cell(hide_code=False)
 def _(ZOTERO_MISC_COLLECTION_ID, process_zot_item, zot):
     misc_items = zot.everything(zot.collection_items(ZOTERO_MISC_COLLECTION_ID))
     processed_misc_items_maybe_wo_pdf = [process_zot_item(item) for item in misc_items]
@@ -150,23 +227,25 @@ def _(ZOTERO_MISC_COLLECTION_ID, process_zot_item, zot):
     return (processed_misc_items,)
 
 
-@app.cell(hide_code=True)
+@app.cell(hide_code=False)
 def _():
     ZOTERO_MISC_COLLECTION_ID = "LXD29TR5"
     return (ZOTERO_MISC_COLLECTION_ID,)
 
 
-@app.cell(column=2, hide_code=True)
+@app.cell(column=2, hide_code=False)
 def _(mo):
     mo.md(r"""
-    ## Practitioner Wisdom (Datawrapper)
+    ## Source 2: Practitioner Heuristics (Datawrapper)
 
-    Pragmatic, editorial design heuristics extracted from Datawrapper's extensive ["Dos and Don'ts" library](https://www.datawrapper.de/blog/category/datavis-dos-and-donts) of $36$ posts. These guidelines represent the tacit knowledge of data journalism, focusing on clarity, aesthetics, and reader engagement.
+    Datawrapper's ["Dos and Don'ts" blog series](https://www.datawrapper.de/blog/category/datavis-dos-and-donts) contains 36 posts written by data journalists. These posts address practical concerns: when to use annotations, how to handle axis truncation, and how to balance aesthetics with clarity.
+
+    We saved each post as a PDF and processed it through the extraction pipeline. The resulting guidelines capture editorial heuristics that rarely appear in formal systems.
     """)
     return
 
 
-@app.cell(hide_code=True)
+@app.cell(hide_code=False)
 def _(
     Catalog,
     DATAWRAPPER_POST_PDF_PATHS,
@@ -202,7 +281,13 @@ def _(
     return (dw_catalog,)
 
 
-@app.cell(hide_code=True)
+@app.cell(hide_code=False)
+def _(display_references, dw_catalog):
+    display_references(dw_catalog)
+    return
+
+
+@app.cell(hide_code=False)
 def _(
     CatalogEntry,
     GUIDELINE_TEMPLATE,
@@ -269,7 +354,7 @@ def _(
     return (datawrapper_post_pdf_to_catalog_entries,)
 
 
-@app.cell(hide_code=True)
+@app.cell(hide_code=False)
 def _(DATAWRAPPER_REFS: list[str], ccp, pathlib):
     def _datawrapper_path_to_post_url(path: pathlib.Path) -> str:
         """
@@ -294,7 +379,7 @@ def _(DATAWRAPPER_REFS: list[str], ccp, pathlib):
     return (find_datawrapper_bibtex_entry_by_path,)
 
 
-@app.cell(hide_code=True)
+@app.cell(hide_code=False)
 def _(NB_ROOT):
     DATAWRAPPER_POST_PDF_PATHS = list((NB_ROOT / "datawrapper" / "posts").glob("*.pdf"))
     DATAWRAPPER_REFS: list[str] = (
@@ -303,21 +388,22 @@ def _(NB_ROOT):
     return DATAWRAPPER_POST_PDF_PATHS, DATAWRAPPER_REFS
 
 
-@app.cell(column=3, hide_code=True)
+@app.cell(column=3, hide_code=False)
 def _(mo):
     mo.md(r"""
-    ## Inclusive Design Standards (Chartability)
+    ## Source 3: Accessibility Standards (Chartability)
 
-    Structured accessibility heuristics that map visualization components to WCAG standards and inclusive design principles.
+    Chartability provides 50 heuristic evaluation criteria for visualization accessibility. Unlike the perception studies, these criteria derive from inclusive design principles rather than controlled experiments. They address screen reader compatibility, keyboard navigation, color contrast, and cognitive load.
 
-    > Elavsky, Frank, Cynthia Bennett, and Dominik Moritz. “How Accessible Is My Visualization? Evaluating Visualization Accessibility with Chartability.” Computer Graphics Forum 41, no. 3 (2022): 57–70. https://doi.org/10.1111/cgf.14522.
+    We extracted the structured heuristic items from the [Chartability workbook](https://chartability.github.io/POUR-CAF/) and mapped each to the guideline schema, preserving links to WCAG success criteria where applicable.
 
-    See the workbook: https://chartability.github.io/POUR-CAF/
+    **Reference:**
+    > Elavsky, F., Bennett, C., & Moritz, D. (2022). How accessible is my visualization? Evaluating visualization accessibility with Chartability. *Computer Graphics Forum*, 41(3), 57–70.
     """)
     return
 
 
-@app.cell(hide_code=True)
+@app.cell(hide_code=False)
 def _(
     CHARTABILITY_ITEMS,
     Catalog,
@@ -352,7 +438,13 @@ def _(
     return (ch_catalog,)
 
 
-@app.cell(hide_code=True)
+@app.cell(hide_code=False)
+def _(ch_catalog, display_references):
+    display_references(ch_catalog)
+    return
+
+
+@app.cell(hide_code=False)
 def _(
     CHARTABILITY_PAPER_BIBTEX,
     CHARTABILITY_PAPER_CITEKEY,
@@ -410,7 +502,7 @@ def _(
     return (chartability_item_to_catalog_entry,)
 
 
-@app.cell(hide_code=True)
+@app.cell(hide_code=False)
 def _(
     NB_ROOT,
     json,
@@ -434,19 +526,22 @@ def _(
     )
 
 
-@app.cell(column=4, hide_code=True)
+@app.cell(column=4, hide_code=False)
 def _(mo):
     mo.md(r"""
-    ## Collated Graphical Perception Knowledge
+    ## Source 4: Collated Graphical Perception Findings
 
-    A systematic collation of **graphical perception** findings—how humans visually process and decode information. This catalog aggregates performance metrics (accuracy, speed, bias) from 58 empirical studies to rank visual encodings and chart types, specifically designed to inform algorithmic recommendations.
+    Zeng and Battle systematically collated findings from 58 empirical studies on graphical perception. Their work extracts performance metrics (accuracy, response time, bias) that rank visual encodings and chart types.
 
-    > Zeng, Zehua, and Leilani Battle. “A Review and Collation of Graphical Perception Knowledge for Visualization Recommendation.” Proceedings of the 2023 CHI Conference on Human Factors in Computing Systems, ACM, April 19, 2023, 1–16. https://doi.org/10.1145/3544548.3581349.
+    For each collated paper, we retrieved both the original PDF and the structured knowledge Zeng and Battle extracted. The extraction model used both sources to generate guidelines, ensuring that the rationale traces back to specific experimental findings.
+
+    **Reference:**
+    > Zeng, Z., & Battle, L. (2023). A review and collation of graphical perception knowledge for visualization recommendation. *Proceedings of the 2023 CHI Conference on Human Factors in Computing Systems*, 1–16.
     """)
     return
 
 
-@app.cell(hide_code=True)
+@app.cell(hide_code=False)
 def _(
     Catalog,
     GUIDELINE_TEMPLATE_DIGEST,
@@ -482,7 +577,13 @@ def _(
     return (prc_catalog,)
 
 
-@app.cell(hide_code=True)
+@app.cell(hide_code=False)
+def _(display_references, prc_catalog):
+    display_references(prc_catalog)
+    return
+
+
+@app.cell(hide_code=False)
 def _(
     COLLATION_REVIEW_PAPER_BIBTEX,
     COLLATION_REVIEW_PAPER_CITEKEY,
@@ -564,7 +665,7 @@ def _(
     return (collated_item_to_catalog_entries,)
 
 
-@app.cell(hide_code=True)
+@app.cell(hide_code=False)
 def _(
     find_item_by_doi,
     processed_zot_items,
@@ -590,7 +691,7 @@ def _(
     )
 
 
-@app.cell(hide_code=True)
+@app.cell(hide_code=False)
 def _(process_zot_item, zot_items):
     processed_zot_items = [process_zot_item(item) for item in zot_items]
     collated_perception_knowledge_items = [
@@ -599,7 +700,7 @@ def _(process_zot_item, zot_items):
     return collated_perception_knowledge_items, processed_zot_items
 
 
-@app.cell(hide_code=True)
+@app.cell(hide_code=False)
 def _(json, zot):
     def find_item_by_doi(all_items: list[dict], doi: str) -> dict:
         for item in all_items:
@@ -673,21 +774,21 @@ def _(json, zot):
     )
 
 
-@app.cell(hide_code=True)
+@app.cell(hide_code=False)
 def _(PERCEPTION_KNOWLEDGE_COLLECTION_ID, VISFEEDBACK_GROUP_ID, zotero):
     zot = zotero.Zotero(VISFEEDBACK_GROUP_ID, "group", local=True)
     zot_items = zot.collection_items(PERCEPTION_KNOWLEDGE_COLLECTION_ID)
     return zot, zot_items
 
 
-@app.cell(hide_code=True)
+@app.cell(hide_code=False)
 def _():
     VISFEEDBACK_GROUP_ID = 6228570
     PERCEPTION_KNOWLEDGE_COLLECTION_ID = "FQ7DK82F"
     return PERCEPTION_KNOWLEDGE_COLLECTION_ID, VISFEEDBACK_GROUP_ID
 
 
-@app.cell(hide_code=True)
+@app.cell(hide_code=False)
 def _():
     from pyzotero import zotero
     import itertools
@@ -695,27 +796,26 @@ def _():
     return itertools, zotero
 
 
-@app.cell(column=5, hide_code=True)
+@app.cell(column=5, hide_code=False)
 def _(mo):
     mo.md(r"""
-    ## Communicative Intent (Talking Charts)
+    ## Source 5: Rhetorical Guidelines (Talking Charts)
 
-    Qualitative guidelines focusing on rhetoric, resonance, and audience connection. These checklists bridge the gap between technical correctness and the ability of a chart to "speak" to lay audiences. $32$ items extracted from the [Talking Charts](https://talking-charts.vda.univie.ac.at) project's findings drawn from a variety of publications:
+    The [Talking Charts project](https://talking-charts.vda.univie.ac.at) produced 32 findings on how producers and consumers interpret visualizations. These findings address rhetoric, audience connection, and the gap between intended and received messages—aspects that perception-focused research typically omits.
 
-    > Gregory, Kathleen, Laura Koesten, Regina Schuster, Torsten Möller, and Sarah Davies. “Data Journeys in Popular Science: Producing Climate Change and COVID-19 Data Visualizations at Scientific American.” Harvard Data Science Review 6, no. 2 (2024). https://doi.org/10.1162/99608f92.141c99cf.
+    The findings were already structured as JSON with associated references. We mapped each finding to the guideline schema, preserving citation links to the underlying publications.
 
-    > Knoll, Christian, Torsten Möller, Kathleen Gregory, and Laura Koesten. “The Gulf of Interpretation: From Chart to Message and Back Again.” Proceedings of the 2025 CHI Conference on Human Factors in Computing Systems, ACM, April 26, 2025, 1–17. https://doi.org/10.1145/3706598.3713413.
-
-    > Koesten, Laura, Kathleen Gregory, Regina Schuster, Christian Knoll, Sarah Davies, and Torsten Möller. “What Is the Message? Perspectives on Visual Data Communication.” arXiv:2304.10544. Preprint, arXiv, April 12, 2023. https://doi.org/10.48550/arXiv.2304.10544.
-
-    > Koesten, Laura, Antonia Saske, Sandra Maria Starchenko, and Kathleen Gregory. “Encountering Friction, Understanding Crises: How Do Digital Natives Make Sense of Crisis Maps?” Proceedings of the 2025 CHI Conference on Human Factors in Computing Systems, ACM, April 26, 2025, 1–15. https://doi.org/10.1145/3706598.3713520.
-
-    > Schuster, Regina, Kathleen Gregory, Torsten Möller, and Laura Koesten. “‘Being Simple on Complex Issues’ – Accounts on Visual Data Communication About Climate Change.” IEEE Transactions on Visualization and Computer Graphics 30, no. 9 (2024): 6598–611. https://doi.org/10.1109/TVCG.2024.3352282.
+    **References:**
+    > Gregory, K., Koesten, L., Schuster, R., Möller, T., & Davies, S. (2024). Data journeys in popular science. *Harvard Data Science Review*, 6(2).
+    > Knoll, C., Möller, T., Gregory, K., & Koesten, L. (2025). The gulf of interpretation. *CHI 2025*, 1–17.
+    > Koesten, L., Gregory, K., Schuster, R., Knoll, C., Davies, S., & Möller, T. (2023). What is the message? arXiv:2304.10544.
+    > Koesten, L., Saske, A., Starchenko, S. M., & Gregory, K. (2025). Encountering friction, understanding crises. *CHI 2025*, 1–15.
+    > Schuster, R., Gregory, K., Möller, T., & Koesten, L. (2024). Being simple on complex issues. *IEEE TVCG*, 30(9), 6598–6611.
     """)
     return
 
 
-@app.cell(hide_code=True)
+@app.cell(hide_code=False)
 def _(
     Catalog,
     GUIDELINE_TEMPLATE_DIGEST,
@@ -753,7 +853,7 @@ def _(
     return (tc_catalog,)
 
 
-@app.cell(hide_code=True)
+@app.cell(hide_code=False)
 def _(
     CatalogEntry,
     Guideline,
@@ -795,7 +895,7 @@ def _(
     return (tc_guideline_to_catalog_entry,)
 
 
-@app.cell(hide_code=True)
+@app.cell(hide_code=False)
 def _(GUIDELINE_TEMPLATE, fence, prepare_guideline):
     def build_tc_prompt(guideline: dict, allowed_ref_ids: list[str]) -> str:
         prepared_guideline = prepare_guideline(guideline, allowed_ref_ids)
@@ -820,7 +920,7 @@ def _(GUIDELINE_TEMPLATE, fence, prepare_guideline):
     return (build_tc_prompt,)
 
 
-@app.cell(hide_code=True)
+@app.cell(hide_code=False)
 def _(json):
     def list_tc_guideline_references(
         guideline: dict,
@@ -846,7 +946,7 @@ def _(json):
     return list_tc_guideline_references, prepare_guideline
 
 
-@app.cell(hide_code=True)
+@app.cell(hide_code=False)
 def _():
     import bibtexparser
 
@@ -868,25 +968,83 @@ def _():
     return bibtexparser, list_ref_ids, pick_refs
 
 
-@app.cell(hide_code=True)
+@app.cell(hide_code=False)
 def _(NB_ROOT, json):
     tc_findings = json.loads((NB_ROOT / "talking-charts" / "findings.json").read_text())
     tc_references = (NB_ROOT / "talking-charts" / "references.bib").read_text()
     return tc_findings, tc_references
 
 
-@app.cell(column=6, hide_code=True)
+@app.cell(column=6, hide_code=False)
 def _(mo):
     mo.md(r"""
-    ## Utilities
+    ## Extraction Pipeline
+
+    Each source follows the same three-stage pattern: retrieve the document, extract guidelines using a generative model, and write structured output.
     """)
     return
 
 
-@app.cell(hide_code=True)
+@app.cell(hide_code=False)
+def _(mo):
+    mo.mermaid("""
+    flowchart TD
+        subgraph stage1["1. Retrieve"]
+            direction TB
+            S1["Cognitive Science<br/>103 papers"]
+            S2["Graphical Perception<br/>58 papers + metadata"]
+            S3["Chartability<br/>50 heuristics"]
+            S4["Datawrapper<br/>36 blog posts"]
+            S5["Talking Charts<br/>32 findings"]
+        end
+
+        subgraph stage2["2. Extract"]
+            direction TB
+            PROMPT["Construct prompt<br/>───────────<br/>• PDF or JSON source<br/>• Guideline template<br/>• Citation format"]
+            LLM["Gemini 3 Pro Preview"]
+            PARSE["Parse response<br/>───────────<br/>• Split markdown blocks<br/>• Extract sections<br/>• Attach references"]
+        end
+
+        subgraph stage3["3. Output"]
+            direction TB
+            PARQUET["catalog.parquet<br/>744 guidelines"]
+            MD["guidelines/<br/>Markdown files"]
+        end
+
+        stage1 --> PROMPT
+        PROMPT --> LLM
+        LLM --> PARSE
+        PARSE --> stage3
+
+        classDef stageBox fill:#f8f9fa,stroke:#dee2e6
+        classDef source fill:#e3f2fd,stroke:#1976d2
+        classDef process fill:#fff8e1,stroke:#f9a825
+        classDef output fill:#e8f5e9,stroke:#43a047
+
+        class stage1,stage2,stage3 stageBox
+        class S1,S2,S3,S4,S5 source
+        class PROMPT,LLM,PARSE process
+        class PARQUET,MD output
+    """)
+    return
+
+
+@app.cell(hide_code=False)
+def _(GUIDELINE_TEMPLATE, fence, mo):
+    mo.md(rf"""
+    ## Guideline Template
+
+    The guideline template below defines the structure that each extracted guideline adheres to and is used as a prompt to LLMs to guide the extraction process. 
+
+    {fence(GUIDELINE_TEMPLATE, lang="md")}
+    """)
+    return
+
+
+@app.cell(hide_code=False)
 def _(init_genai_client, pathlib, string_hash):
     client = init_genai_client(
-        vertex_key_path="workbench/vertex-ai.json",
+        vertex_key_path="vertex-ai.json",
         project_id="vispartner",
         location="global",
     )
@@ -899,7 +1057,33 @@ def _(init_genai_client, pathlib, string_hash):
     return GUIDELINE_TEMPLATE, GUIDELINE_TEMPLATE_DIGEST, NB_ROOT, client
 
 
-@app.cell(hide_code=True)
+@app.cell(hide_code=False)
+def _(Catalog, fence, mo):
+    def display_references(catalog: Catalog):
+        refs: list[str] = (
+            catalog.df()
+            .select("references")
+            .explode("references")
+            .unique()
+            .sort("references")
+            .get_column("references")
+            .to_list()
+        )
+
+        return mo.md(
+            "\n".join(
+                [
+                    "### Ingested Literature",
+                    "",
+                    fence("\n\n".join(refs), lang="bibtex"),
+                ]
+            )
+        )
+
+    return (display_references,)
+
+
+@app.cell(hide_code=False)
 def _():
     def fence(string: str, lang: str = "json") -> str:
         return f"```{lang}\n{string}\n```"
@@ -918,7 +1102,7 @@ def _():
     return fence, string_hash, unfence
 
 
-@app.cell(hide_code=True)
+@app.cell(hide_code=False)
 def _(json):
     from typing import Callable, Iterable, ParamSpec, TypeVar
     import diskcache
@@ -991,7 +1175,7 @@ def _(json):
     return parallel_map, param_collapsed
 
 
-@app.cell(hide_code=True)
+@app.cell(hide_code=False)
 def _():
     from google import genai
     from google.genai import types
@@ -1018,7 +1202,7 @@ def _():
     return init_genai_client, types
 
 
-@app.cell(hide_code=True)
+@app.cell(hide_code=False)
 def _():
     import json
     import pathlib
