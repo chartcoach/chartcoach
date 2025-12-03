@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 authors = [
-    { name = "Péter Ferenc Gyarmati", email = "dev.petergy@gmail.com" }
+    { name = "Anonym", email = "anonym@gmail.com" }
 ]
 requires-python = ">=3.11"
 dependencies = [
@@ -28,7 +28,7 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
-    "marimo[mcp,recommended]>=0.18.0",
+    "marimo[mcp,recommended]>=0.18.1",
     "pytest>=9.0.1",
 ]
 examples = [
