@@ -2,8 +2,9 @@
 # PERMANENT ID: URL-friendly kebab-case.
 id: "unique-guideline-slug"
 
-# TITLE: A strong, imperative command (The "Do This").
-title: "Strong Action Verb Object"
+# TITLE: A highly specific, imperative command (include the condition if needed).
+# Avoid vague titles like "Use Color Carefully". Prefer "Use a diverging palette only for signed data (with a meaningful zero)".
+title: "Strong Action Verb Object (With Condition)"
 
 # METADATA:
 bibliography: references.bib
@@ -23,75 +24,188 @@ labels:
 ---
 
 <!--
-  AUTHORING TIP: STAY IN YOUR LANE
-  To make this useful for AI, keep each section pure.
-  - Don't put "Why" in the "Advice" section.
-  - Don't put "Exceptions" in the "Context" section.
-  - Trust the structure.
+  AUTHORING TIP: MAKE IT ACCESSIBLE + MAKE IT SEPARABLE
+
+  Accessibility (baseline)
+  - Write so a reader can understand it without seeing a figure: avoid "above/below/left/right" references.
+  - Prefer plain language, short sentences, and concrete terms; define jargon.
+  - Use consistent terminology (same concept, same words) so retrieval works.
+
+  Abbreviations / acronyms (body text)
+  - On first use in the BODY, expand each abbreviation once: "Full Term (ABBR)". Use ABBR after.
+  - It's fine to use ABBR in the title/slug/labels, but do not assume readers know it in the body.
+
+  Citations / citekeys ([@...])
+  - INCLUDE citekeys for traceability, but do not sprinkle them throughout the guideline.
+  - Prefer putting citekeys ONLY in the Logic section under **Evidence:**.
+  - If a non-Logic section truly needs a citekey (rare), move that claim into Logic instead.
+
+  Section titles (for the static site TOC)
+  - Do NOT leave headings as "The Rule", "The Logic", etc.
+  - Rename every H2 heading to be content-specific (include the key concept from the title).
+  - Keep the role annotation exactly: `<!-- role: ... -->`.
+
+Role purity (semantic separation)
+To make this useful for AI, keep each section pure.
+
+- Don't put "Why" in the "Advice" section.
+- Don't put "Exceptions" in the "Context" section.
+- Trust the structure.
+  -->
+
+## [Rule: Specific, content-based heading] <!-- role: advice -->
+
+<!--
+  GOAL: A delightful, scannable command that embeds cleanly.
+
+  FORMAT
+  - Start with a single imperative sentence (no rationale, no citations).
+  - Then add 2–4 keyed bullets (Do / Avoid / Prefer / Threshold).
+  - Keep it specific enough to act on without reading the rest.
+
+  DON'T
+  - Explain "why" (belongs in The Logic).
+  - List edge cases (belongs in When to Break It).
+  - Add citekeys here (keep citekeys in Logic → Evidence).
 -->
 
-## The Rule <!-- role: advice -->
+State the rule clearly and immediately.
 
-<!-- Write this as a direct command. No fluff. Imagine you only have 10 seconds to tell a designer what to do. -->
+- **Do:** [The recommended action.]
+- **Avoid:** [The common alternative to avoid.]
+- **Prefer:** [Optional: a ranked preference among options.]
+- **Threshold:** [Optional: a simple cutoff like “≥ 20 series”, “≤ 3 categories”, etc.]
 
-State the rule clearly and immediately. (e.g., "Directly label your lines. Do not use a legend.")
+## [Logic: Why this works here] <!-- role: reason -->
 
-## The Logic <!-- role: reason -->
+<!--
+  GOAL: Explain the mechanism without leaking advice/context.
 
-<!-- Why does this work? Don't just say "it's better." Explain the mechanism. Is it about how the eye moves? How the brain counts? Cite your sources. -->
+  FORMAT
+  - 1 short paragraph describing the mechanism.
+  - Then 2–3 keyed bullets: Mechanism / Evidence / Notes.
+
+  DON'T
+  - Repeat the rule verbatim.
+  - Introduce new conditions (belongs in Where to Apply / When to Break It).
+-->
 
 Explain the principle at work here. Connect the rule to human perception or clear communication.
 
-- **The Principle:** [Concept Name]
-- **The Evidence:** [@citationKey]
+- **Mechanism:** [What changes in perception/interpretation when the rule is followed?]
+- **Evidence:** [@citationKey] [Optional: effect direction + condition name.]
+- **Notes:** [Optional: clarifying nuance that is not an exception.]
 
-## Where to Apply <!-- role: context -->
+## [Context: When this applies] <!-- role: context -->
 
-<!-- Describe the specific situation where this rule applies. Be specific about the data, the user, or the goal. -->
+<!--
+  GOAL: Define the triggering situation as a schema.
 
-This advice is designed for specific moments.
+  FORMAT
+  - No prose-only paragraphs. Use keyed bullets so this section embeds as "situation" not "argument".
+  - Prefer observable signals (about the data/task/chart) over intentions.
 
-- **User Goal:** What is the user trying to see? (e.g., "Comparing values precisely")
-- **Data Type:** What does the data look like? (e.g., "High-density time series")
-- **Audience:** Who is this for? (e.g., "General public")
+  DON'T
+  - Explain why the rule works (belongs in The Logic).
+  - List break-glass edge cases (belongs in When to Break It).
+  - Add citekeys here (keep citekeys in Logic → Evidence).
+-->
 
-## When to Break It <!-- role: exceptions -->
+- **User Goal:** [What is the user trying to do/decide?]
+- **Task:** [Optional: the specific analytic task or judgment.]
+- **Data:** [Type, shape, cardinality, density, uncertainty, missingness.]
+- **Chart Setting:** [Medium, constraints, interaction, annotation, layout.]
+- **Audience:** [Who is reading; domain literacy; accessibility needs.]
+- **Success Criterion:** [What “good” means: accuracy, speed, trust, accessibility, etc.]
 
-<!-- No rule is absolute. When is this advice actually WRONG? -->
+## [Exceptions: When not to follow it] <!-- role: exceptions -->
+
+<!--
+  GOAL: Provide crisp, itemized exceptions that can be compared across guidelines.
+
+  FORMAT
+  - Use numbered items.
+  - Each item must be self-contained and have exactly: Break when / Why.
+
+  DON'T
+  - Provide the full alternative solution (belongs in How to Fix).
+  - Add citekeys here (keep citekeys in Logic → Evidence).
+-->
 
 List the specific scenarios where you should ignore this rule.
 
-- **Scenario:** [Describe the situation]
-- **Reason:** Why the rule fails here.
+1. **Break it when:** [Describe the situation.]
+   - **Why:** [Why the rule fails here.]
 
-## The Price <!-- role: costs -->
+## [Costs: Tradeoffs and risks] <!-- role: costs -->
 
-<!-- Every design choice has a cost. If I follow this rule, what do I lose? (e.g. "It takes up more space" or "It takes longer to read"). -->
+<!--
+  GOAL: Make tradeoffs explicit without introducing new advice.
+
+  FORMAT
+  - 2–4 keyed bullets.
+
+  DON'T
+  - Add citekeys here (keep citekeys in Logic → Evidence).
+-->
 
 Be honest about the downsides.
 
-- **The Sacrifice:** What are you giving up?
-- **The Risk:** What might go wrong?
+- **Sacrifice:** [What you give up: space, time, complexity, flexibility.]
+- **Risk:** [What can go wrong if applied blindly.]
+- **Mitigation:** [Optional: a non-prescriptive way to reduce the risk.]
 
-## Common Mistakes <!-- role: mistakes -->
+## [Mistakes: Common failure modes] <!-- role: mistakes -->
 
-<!-- How do people usually screw this up? What are the bad "fixes" people try? -->
+<!--
+  GOAL: Capture anti-patterns as atomic, comparable units.
+
+  FORMAT
+  - Use numbered items.
+  - Each item must have exactly: Mistake / Why it fails.
+
+  DON'T
+  - Put the proper fix here (belongs in How to Fix).
+  - Add citekeys here (keep citekeys in Logic → Evidence).
+-->
 
 Describe the common anti-patterns or "lazy fixes" people use that don't actually solve the problem.
 
-- **The Wrong Fix:** [Common bad practice]
-- **Why it fails:** [Brief explanation]
+1. **Mistake:** [Common bad practice.]
+   - **Why it fails:** [Brief explanation.]
 
-## How to Check <!-- role: check -->
+## [Check: Quick tests] <!-- role: check -->
 
-<!-- How can I tell if I've broken this rule? Give me a test. -->
+<!--
+  GOAL: Provide a quick heuristic and a stronger test.
 
-- **Visual Sign:** What does the error look like?
-- **The Test:** (e.g., "Squint your eyes," "Convert to grayscale")
+  FORMAT
+  - 2–4 keyed bullets.
+  - The check should be runnable by a person (or a simple script) without extra context.
 
-## How to Fix <!-- role: fix -->
+  DON'T
+  - Add citekeys here (keep citekeys in Logic → Evidence).
+-->
 
-<!-- I've broken the rule. How do I solve it? Give me options. -->
+- **Failure Sign:** [What the problem looks like.]
+- **Quick Check:** [A fast heuristic.]
+- **Stronger Test:** [Optional: a more reliable test, e.g., small user pilot, A/B.]
 
-- **Quick Fix:** The minimal effort change.
-- **Best Fix:** The ideal solution (even if it requires changing the chart type).
+## [Fix: What to do instead] <!-- role: fix -->
+
+<!--
+  GOAL: Actionable, ordered fixes.
+
+  FORMAT
+  - 2–5 keyed bullets, ordered from easiest → best.
+  - Each bullet should be a single action a practitioner can take.
+
+  DON'T
+  - Re-explain the rule or justify the fix (belongs in The Logic).
+  - Add citekeys here (keep citekeys in Logic → Evidence).
+-->
+
+- **Minimal Fix:** [The smallest change that resolves the failure.]
+- **Better Fix:** [A more robust change.]
+- **Best Fix:** [The ideal solution, even if it changes chart type/workflow.]
+- **If You Can't:** [Optional: what to prioritize when constraints block the best fix.]
