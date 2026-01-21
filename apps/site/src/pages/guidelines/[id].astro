@@ -1,0 +1,88 @@
+---
+import { getCollection, getEntry, render } from "astro:content";
+import StarlightPage from "@astrojs/starlight/components/StarlightPage.astro";
+import { encodeGuidelineLabelQueryValue, parseGuidelineLabel } from "@chartcoach/site/lib/guidelines/labels";
+
+export async function getStaticPaths() {
+	const guidelines = await getCollection("guidelines");
+	return guidelines.map((g) => ({
+		params: { id: g.id },
+	}));
+}
+
+const guideline = await getEntry("guidelines", Astro.params.id as string);
+if (!guideline) throw new Error(`Guideline not found: ${Astro.params.id}`);
+
+const { Content, headings } = await render(guideline);
+const pageHeadings = guideline.data.bibliographyHtml
+	? [...headings, { depth: 2, slug: "references", text: "References" }]
+	: headings;
+---
+
+<StarlightPage
+	headings={pageHeadings}
+	frontmatter={{
+		title: guideline.data.title ?? guideline.id,
+		description: guideline.data.description,
+		tableOfContents: { minHeadingLevel: 2, maxHeadingLevel: 2 },
+	}}
+>
+	<div class="guideline-detail">
+		{guideline.data.labels.length ? (
+			<div class="not-content guideline-meta" aria-label="Guideline labels">
+				{guideline.data.labels.map((label) => {
+					const parsed = parseGuidelineLabel(label);
+					const familyLower = parsed.familyLower;
+					return (
+						<span class="guideline-label">
+							{parsed.family ? (
+								<>
+									<a
+										class="guideline-label__key"
+										href={`/guidelines/?label=${encodeURIComponent(encodeGuidelineLabelQueryValue(familyLower!))}`}
+										title={`Filter: ${parsed.family}`}
+									>
+										{parsed.family}
+									</a>
+									<span class="guideline-label__sep">:</span>
+									<a
+										class="guideline-label__value"
+										href={`/guidelines/?label=${encodeURIComponent(encodeGuidelineLabelQueryValue(parsed.fullLower))}`}
+										title={`Filter: ${parsed.full}`}
+									>
+										{parsed.value}
+									</a>
+								</>
+							) : (
+								<a
+									class="guideline-label__value"
+									href={`/guidelines/?label=${encodeURIComponent(encodeGuidelineLabelQueryValue(parsed.fullLower))}`}
+									title={`Filter: ${parsed.value}`}
+								>
+									{parsed.value}
+								</a>
+							)}
+						</span>
+					);
+				})}
+			</div>
+		) : null}
+
+		<Content />
+
+		{guideline.data.bibliographyHtml ? (
+			<>
+				<hr />
+				<h2 id="references">References</h2>
+				<div class="bibliography" set:html={guideline.data.bibliographyHtml} />
+
+				{guideline.data.referencesBib ? (
+					<details class="bibtex-details">
+						<summary>BibTeX</summary>
+						<pre><code>{guideline.data.referencesBib}</code></pre>
+					</details>
+				) : null}
+			</>
+		) : null}
+	</div>
+</StarlightPage>

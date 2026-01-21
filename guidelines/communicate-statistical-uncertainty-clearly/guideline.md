@@ -1,54 +1,60 @@
 ---
 id: communicate-statistical-uncertainty-clearly
-title: Communicate Statistical Uncertainty with Visuals and Text
+title: Communicate Statistical Uncertainty with Clear Conventions and Text
 bibliography: references.bib
-description: Ensure statistical confidence intervals use clear visual conventions
-  and textual explanations to minimize cognitive load.
+description: Show statistical uncertainty using clear, conventional visual encodings
+  and a plain textual explanation so viewers can interpret confidence unambiguously.
 labels:
-- impact:clarity
-- impact:accessibility
-- data:statistical
-- visual:annotation
+- chart:general
 - task:interpret
+- visual:annotation
+- impact:clarity
+- data:statistical
 - audience:general
+- category:understandable
+- source:research
 ---
 
 ## The Rule <!-- role: advice -->
 
-If statistical confidence intervals or uncertainty data exist in your dataset, you must display them using clear, ambiguous visual conventions and accompany them with a textual explanation.
+When your chart includes statistical uncertainty (e.g., confidence intervals), encode it using clear, conventional uncertainty displays and add a plain textual explanation of what the uncertainty means.
 
 ## The Logic <!-- role: reason -->
 
-Presenting data without ambiguity is essential to minimizing cognitive load and ensuring the visualization is understandable [@elavsky_how_2022]. Research indicates that using established visual conventions—such as error bars, violin plots, or gradient shading—alongside textual explanations significantly helps viewers understand the nature of the uncertainty. This combination allows users to make better decisions compared to visualizations that lack these specific cues [@fernandes_uncertainty_displays_2018].
+Clear visual conventions paired with text reduce ambiguity about what ranges or distributions represent, improving understanding and decision-making when uncertainty is present, aligning with Chartability’s Understandable principle [@elavskyHowAccessibleMy2022].
+
+- **The Principle:** Unambiguous uncertainty communication reduces cognitive interpretation burden.
+- **The Evidence:** Uncertainty displays (e.g., error bars, violin plots, gradient shading; including quantile dotplots/CDFs) combined with textual explanation improve comprehension and decision-making [@doi_communicating_statistical; @fernandes_uncertainty_displays_2018].
 
 ## Where to Apply <!-- role: context -->
 
-This advice applies to any data-driven interface where the data is probabilistic or contains margins of error.
-*   **User Goal:** Evaluating risk, reliability, or probability ranges to make a decision.
-*   **Data Type:** Quantitative data possessing confidence intervals, standard errors, or probability distributions.
-*   **Audience:** Users who need to distinguish between precise values and estimates.
+This advice is designed for charts where uncertainty is part of the message.
+
+- **User Goal:** Understand how reliable an estimate is and make decisions with confidence information.
+- **Data Type:** Statistical estimates with confidence/uncertainty intervals or distributions.
+- **Audience:** People who may not infer uncertainty correctly without guidance (including general audiences).
 
 ## When to Break It <!-- role: exceptions -->
 
-*   **Scenario:** Highly complex ethical or cognitive contexts where standard visualizations are insufficient or misleading.
-*   **Reason:** There are contexts where the "best" way to communicate uncertainty is not yet settled, and standard methods might introduce ethical risks or fail to meet specific cognitive accessibility needs [@elavsky_how_2022].
+- **Scenario:** No statistical confidence/uncertainty is present in the underlying data or message.
+- **Reason:** Adding uncertainty encodings would introduce unnecessary complexity without representing real information [@elavskyHowAccessibleMy2022].
 
 ## The Price <!-- role: costs -->
 
-*   **The Sacrifice:** Screen real estate. Including both visual markers (like error bars or shading) and explanatory text takes up more space than a simple mean line.
-*   **The Risk:** If the textual explanation is too technical, it may fail to clarify the visual for non-expert audiences.
+- **The Sacrifice:** Additional visual elements and explanatory text consume space and attention.
+- **The Risk:** If the uncertainty explanation is unclear, the chart can become more confusing rather than less clear [@elavskyHowAccessibleMy2022].
 
 ## Common Mistakes <!-- role: mistakes -->
 
-*   **The Wrong Fix:** Displaying error bars without a label or legend entry defining them.
-*   **Why it fails:** Visuals alone are often ambiguous (e.g., is it a standard deviation or a 95% confidence interval?); without text, the user cannot be certain what is being shown [@elavsky_how_2022].
+- **The Wrong Fix:** Showing confidence intervals (or uncertainty shading) without saying what interval/distribution it represents or how to interpret it.
+- **Why it fails:** Viewers cannot reliably infer the meaning of uncertainty encodings without explicit conventions and explanation, leading to ambiguity [@doi_communicating_statistical; @fernandes_uncertainty_displays_2018].
 
 ## How to Check <!-- role: check -->
 
-*   **Visual Sign:** Look for charts that imply precision (single lines or points) where the underlying data is uncertain. Conversely, look for error bars that lack labels.
-*   **The Test:** If you remove the chart title, does the interface explicitly tell you what the shaded region or whisker represents?
+- **Visual Sign:** Uncertainty marks appear (e.g., bars/regions/dots/shading), but there is no accompanying text explaining what they represent.
+- **The Test:** Look for an explicit statement describing the uncertainty (what it is and how to read it). If you cannot find it, the uncertainty is not clearly communicated [@elavskyHowAccessibleMy2022].
 
 ## How to Fix <!-- role: fix -->
 
-*   **Quick Fix:** Add a caption or legend explicitly stating what the visual element represents (e.g., "Error bars represent the 95% confidence interval").
-*   **Best Fix:** Use advanced uncertainty displays like quantile dotplots or cumulative distribution functions (CDFs) combined with natural language descriptions to improve decision-making accuracy [@fernandes_uncertainty_displays_2018].
+- **Quick Fix:** Add a short textual explanation near the chart stating what the uncertainty display represents and how to interpret it [@doi_communicating_statistical].
+- **Best Fix:** Use a clear, conventional uncertainty display (e.g., error bars, violin plot, gradient shading, quantile dotplots or CDFs) and pair it with a textual explanation that removes ambiguity about statistical confidence/uncertainty [@doi_communicating_statistical; @fernandes_uncertainty_displays_2018; @elavskyHowAccessibleMy2022].
