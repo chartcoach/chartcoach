@@ -111,7 +111,7 @@ def embed_sections(
 
     return pl.concat(
         [
-            sections_df.select("id", "role"),
+            sections_df.select("id", "role", "content"),
             pl.DataFrame(hidden_vectors).select(
                 pl.concat_arr("*").alias(embedding_column)
             ),
