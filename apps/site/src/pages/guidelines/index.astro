@@ -1,0 +1,162 @@
+---
+import { getCollection } from "astro:content";
+import StarlightPage from "@astrojs/starlight/components/StarlightPage.astro";
+import { encodeGuidelineLabelQueryValue, parseGuidelineLabel } from "@chartcoach/site/lib/guidelines/labels";
+
+const guidelines = (await getCollection("guidelines")).sort((a, b) =>
+	(a.data.title ?? a.id).localeCompare(b.data.title ?? b.id),
+);
+
+const totalGuidelines = guidelines.length;
+const MAX_CARD_LABELS = 6;
+
+const labelSet = new Set<string>();
+const familySet = new Set<string>();
+for (const guideline of guidelines) {
+	for (const label of guideline.data.labels ?? []) {
+		const parsed = parseGuidelineLabel(label);
+		labelSet.add(parsed.fullLower);
+		if (parsed.familyLower) familySet.add(parsed.familyLower);
+	}
+}
+
+const allLabels = Array.from(labelSet).sort((a, b) => a.localeCompare(b));
+const allFamilies = Array.from(familySet).sort((a, b) => a.localeCompare(b));
+---
+
+<StarlightPage
+	frontmatter={{
+		title: "Guidelines",
+		description: "Browse the Chartcoach guideline catalog.",
+		tableOfContents: false,
+	}}
+>
+	<div class="not-content guidelines-page">
+		<div class="guidelines-controls">
+			<div class="guidelines-controls__summary">
+				<div
+					class="guidelines-controls__count"
+					id="guidelines-count"
+					data-total-guidelines={totalGuidelines}
+				>
+					{totalGuidelines.toLocaleString()} guidelines
+				</div>
+				<p class="guidelines-controls__hint">
+					Filter by labels (e.g., <code>chart</code> or <code>chart:bar</code>) or click a label in a card.
+				</p>
+			</div>
+
+			<form class="guidelines-filter-form" id="guidelines-filter-form" autocomplete="off">
+				<label class="sr-only" for="guidelines-filter-input">Add label filter</label>
+				<input
+					type="text"
+					id="guidelines-filter-input"
+					name="label"
+					placeholder="Add a label filter…"
+					autocomplete="off"
+					spellcheck="false"
+					role="combobox"
+					aria-autocomplete="list"
+					aria-expanded="false"
+					aria-controls="guidelines-label-suggestions"
+				/>
+				<button type="submit">Add</button>
+				<div
+					class="guidelines-suggestions"
+					id="guidelines-label-suggestions"
+					role="listbox"
+					hidden
+				/>
+			</form>
+		</div>
+
+			<div class="guidelines-filters" id="guidelines-filters" hidden>
+				<span class="guidelines-filters__label">Filters:</span>
+				<ul class="guidelines-filters__list" id="guidelines-filters-list"></ul>
+				<button class="guidelines-filters__clear" type="button" id="guidelines-filters-clear">
+					Clear
+				</button>
+			</div>
+
+		<ul class="guidelines-grid" id="guidelines-grid">
+			{
+				guidelines.map((g) => {
+					const title = g.data.title ?? g.id;
+					const description = g.data.description ?? "";
+					const labels = g.data.labels ?? [];
+					const cardLabels = labels.map((l) => l.toLowerCase()).join("|");
+					const labelsShown = labels.slice(0, MAX_CARD_LABELS);
+					const labelsRemaining = Math.max(0, labels.length - labelsShown.length);
+
+					return (
+						<li class="guideline-card" data-labels={cardLabels}>
+							<a class="guideline-card__title" href={`/guidelines/${g.id}/`}>
+								{title}
+							</a>
+							{description ? <p class="guideline-card__desc">{description}</p> : null}
+							{labelsShown.length ? (
+								<ul class="guideline-labels" aria-label="Guideline labels">
+									{labelsShown.map((label) => {
+										const parsed = parseGuidelineLabel(label);
+										const familyLower = parsed.familyLower;
+
+										return (
+											<li class="guideline-label">
+												{parsed.family ? (
+													<>
+														<a
+															class="guideline-label__key"
+															href={`/guidelines/?label=${encodeURIComponent(encodeGuidelineLabelQueryValue(familyLower!))}`}
+															data-filter-value={familyLower}
+															title={`Filter: ${parsed.family}`}
+														>
+															{parsed.family}
+														</a>
+														<span class="guideline-label__sep">:</span>
+														<a
+															class="guideline-label__value"
+															href={`/guidelines/?label=${encodeURIComponent(encodeGuidelineLabelQueryValue(parsed.fullLower))}`}
+															data-filter-value={parsed.fullLower}
+															title={`Filter: ${parsed.full}`}
+														>
+															{parsed.value}
+														</a>
+													</>
+												) : (
+													<a
+														class="guideline-label__value"
+														href={`/guidelines/?label=${encodeURIComponent(encodeGuidelineLabelQueryValue(parsed.fullLower))}`}
+														data-filter-value={parsed.fullLower}
+														title={`Filter: ${parsed.value}`}
+													>
+														{parsed.value}
+													</a>
+												)}
+											</li>
+										);
+									})}
+									{labelsRemaining ? (
+										<li
+											class="guideline-label guideline-label--more"
+											aria-label={`${labelsRemaining} more labels`}
+										>
+											+{labelsRemaining.toLocaleString()}
+										</li>
+									) : null}
+								</ul>
+							) : null}
+						</li>
+					);
+				})
+			}
+		</ul>
+
+			<script
+				is:inline
+				type="application/json"
+				id="guidelines-label-suggestions-data"
+				set:html={JSON.stringify({ families: allFamilies, labels: allLabels })}
+			></script>
+			<script src="@chartcoach/site/scripts/guidelines/label-filters.entry.ts"></script>
+		</div>
+	</StarlightPage>

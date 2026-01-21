@@ -1,0 +1,22 @@
+---
+title: Catalog structure
+description: How guidelines are structured for humans and retrieval systems.
+---
+
+Each guideline is written in Markdown, enriched with metadata (like labels) and linked references.
+
+## Guideline sections
+
+Guidelines follow a repeatable section structure so that systems can retrieve _the right part_ for a scenario:
+
+- **The Rule** — the actionable advice.
+- **The Logic** — the rationale and supporting evidence.
+- **Where to Apply** — context and prerequisites.
+- **When to Break It** — exceptions and trade-offs.
+- **Common Mistakes** — failure modes to watch for.
+- **How to Check** — ways to evaluate whether the issue exists.
+- **How to Fix** — concrete remedies.
+
+## References
+
+Inline citation markers like `[@someKey]` are resolved to formatted citations, backed by a `references.bib` file associated with each guideline.

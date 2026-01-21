@@ -1,0 +1,53 @@
+---
+import { BookOpen, Tags, Quote, Shapes } from "lucide-astro";
+---
+
+<div class="cc-features" aria-label="Explore Chart Coach">
+	<a class="cc-feature" href="/guidelines/">
+		<span class="cc-feature__icon" aria-hidden="true">
+			<BookOpen size="1.1rem" />
+		</span>
+		<span class="cc-feature__content">
+			<span class="cc-feature__title">Browse guidelines</span>
+			<span class="cc-feature__desc">
+				Explore the catalog with labels and formatted references in <span class="cc-feature__link">/guidelines</span>.
+			</span>
+		</span>
+	</a>
+
+	<a class="cc-feature" href="/labels/">
+		<span class="cc-feature__icon" aria-hidden="true">
+			<Tags size="1.1rem" />
+		</span>
+		<span class="cc-feature__content">
+			<span class="cc-feature__title">Use label filters</span>
+			<span class="cc-feature__desc">
+				Click labels to narrow down by chart type, task, audience, data constraints, and expected impact.
+			</span>
+		</span>
+	</a>
+
+	<a class="cc-feature" href="/catalog/">
+		<span class="cc-feature__icon" aria-hidden="true">
+			<Shapes size="1.1rem" />
+		</span>
+		<span class="cc-feature__content">
+			<span class="cc-feature__title">Understand the structure</span>
+			<span class="cc-feature__desc">
+				Guidelines use consistent sections (rule, logic, context, trade-offs, checks, fixes) to support retrieval.
+			</span>
+		</span>
+	</a>
+
+	<a class="cc-feature" href="/catalog/#references">
+		<span class="cc-feature__icon" aria-hidden="true">
+			<Quote size="1.1rem" />
+		</span>
+		<span class="cc-feature__content">
+			<span class="cc-feature__title">Trace to evidence</span>
+			<span class="cc-feature__desc">
+				Inline citations resolve to a formatted bibliography derived from each guideline’s <code>references.bib</code>.
+			</span>
+		</span>
+	</a>
+</div>

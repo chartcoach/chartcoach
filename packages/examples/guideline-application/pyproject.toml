@@ -1,0 +1,20 @@
+[project]
+name = "guideline-application"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+     "chartcoach",
+     "draco @ https://files.peter.gy/pkg/py/draco/draco-2.0.1-py3-none-any.whl",
+     "dspy>=3.1.2",
+     "httpx>=0.28.1",
+     "marimo>=0.19.4",
+     "pillow>=12.1.0",
+     "vega-lite-linter @ https://files.peter.gy/pkg/py/vega-lite-linter/vega_lite_linter-0.0.1-py3-none-any.whl",
+]
+[tool.uv.sources]
+chartcoach = { workspace = true }
+
+[tool.marimo.runtime]
+dotenv = ["../../../.env"]

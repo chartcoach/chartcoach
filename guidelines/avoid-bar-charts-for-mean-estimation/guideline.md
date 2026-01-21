@@ -1,47 +1,65 @@
 ---
 id: avoid-bar-charts-for-mean-estimation
-title: Avoid Bar Charts for Visual Mean Estimation
+title: Avoid Bar Charts for Estimating the Mean
 bibliography: references.bib
-description: Users systematically underestimate the average value of data presented
-  in bar charts.
+description: Bar charts can systematically bias viewers toward underestimating the
+  grand mean when performing aggregate judgments.
 labels:
 - chart:bar
 - task:aggregate
 - visual:length
 - impact:accuracy
 - data:quantitative
-- source:empirical
+- audience:general
+- effect:bias-underestimate
 ---
 
 ## The Rule <!-- role: advice -->
-Do not use bar charts if the primary user task is to visually estimate the mean (average) of the dataset.
+
+Avoid bar charts when your audience must estimate the overall mean (grand average) of a set of values.
 
 ## The Logic <!-- role: reason -->
-Bar charts create a systematic perceptual bias where users perceive the aggregate mean to be lower than it actually is.
-*   **The Principle:** Underestimation Bias. The visual weight of the bar (the filled area) pulls the perceived center of gravity downwards.
-*   **The Evidence:** As reviewed by Zeng and Battle [@zeng_review_2023], experiments by Godau et al. [@godau_perception_2016] demonstrate that participants consistently underestimate the mean value in bar graphs, regardless of whether the bars are high or low.
+
+Explain the principle at work here. Connect the rule to human perception or clear communication.
+
+- **The Principle:** Systematic bias in perceived central tendency from bar marks
+- **The Evidence:** Bar graphs led to systematic underestimation of the mean in an aggregate judgment task; the finding is collated for visualization recommendation contexts in [@zengReviewCollationGraphical2023] and originates from [@godauPerceptionBarGraphs2016].
 
 ## Where to Apply <!-- role: context -->
-*   **User Goal:** When the user needs to look at a distribution and intuitively grasp the "average" or "center" value without explicit annotation.
-*   **Data Type:** Quantitative data distributions presented as bar charts (area-rect marks).
-*   **Audience:** General users performing summary tasks.
+
+This advice is designed for specific moments.
+
+- **User Goal:** Estimating the grand mean / central tendency across multiple values (aggregate task)
+- **Data Type:** Quantitative values across categories (shown as bars)
+- **Audience:** General viewers making quick judgments
 
 ## When to Break It <!-- role: exceptions -->
-*   **Scenario:** When the exact mean is explicitly plotted as a line or written as text on the chart.
-*   **Reason:** Explicit annotation overrides the perceptual estimation bias.
+
+List the specific scenarios where you should ignore this rule.
+
+- **Scenario:** The task is not mean estimation (e.g., focusing on individual category values rather than the grand average).
+- **Reason:** The evidence summarized here concerns aggregate mean estimation bias specifically, not other tasks [@zengReviewCollationGraphical2023; @godauPerceptionBarGraphs2016].
 
 ## The Price <!-- role: costs -->
-*   **The Sacrifice:** You lose the familiar "volume" metaphor of bars that helps with comparing individual magnitudes.
-*   **The Risk:** Alternative charts (like strip plots) may be harder to read if the data density is extremely high.
+
+Be honest about the downsides.
+
+- **The Sacrifice:** You may lose the familiar “standard” presentation many stakeholders expect for category comparisons.
+- **The Risk:** Switching away from bars may make the chart feel less conventional for categorical comparisons, even if it reduces mean-estimation bias [@zengReviewCollationGraphical2023; @godauPerceptionBarGraphs2016].
 
 ## Common Mistakes <!-- role: mistakes -->
-*   **The Wrong Fix:** Adding a grid or a numerical scale without marking the mean.
-*   **Why it fails:** Godau et al. [@godau_perception_2016] found that while scales help slightly (Design E-3 performed better than E-1), the systematic underestimation bias persists.
+
+Describe the common anti-patterns or "lazy fixes" people use that don't actually solve the problem.
+
+- **The Wrong Fix:** Keeping the bar chart and assuming viewers will still accurately infer the mean from the bar heights.
+- **Why it fails:** The evidence indicates the mean inferred from bars can be systematically underestimated during aggregate judgments [@zengReviewCollationGraphical2023; @godauPerceptionBarGraphs2016].
 
 ## How to Check <!-- role: check -->
-*   **Visual Sign:** A bar chart used for a summary dashboard where the user is expected to judge the overall performance (mean) of a group.
-*   **The Test:** Ask a user to point to where they think the average value is on the Y-axis. Check if they point below the mathematical mean.
+
+- **Visual Sign:** Viewers’ estimated “average level” seems consistently lower than the true average when discussing the chart.
+- **The Test:** Ask a few people (unprimed) to state whether a shown mean reference should be higher/lower; compare their direction to the correct mean—systematic “should be higher” responses indicate underestimation bias risk [@zengReviewCollationGraphical2023; @godauPerceptionBarGraphs2016].
 
 ## How to Fix <!-- role: fix -->
-*   **Quick Fix:** Draw a reference line indicating the actual mean on top of the bars.
-*   **Best Fix:** Switch to a point-based visualization (dot plot) or a box plot that explicitly encodes summary statistics.
+
+- **Quick Fix:** Replace the bar display with a point-based display for the same values.
+- **Best Fix:** Use a point chart instead of bars when mean estimation is central to the task, since bar charts are associated with underestimation bias for the mean in this context [@zengReviewCollationGraphical2023; @godauPerceptionBarGraphs2016].

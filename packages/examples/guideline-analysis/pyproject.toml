@@ -1,0 +1,16 @@
+[project]
+name = "guideline-analysis"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "chartcoach[embedding]",
+    "marimo>=0.19.4",
+    "nest-asyncio>=1.6.0",
+]
+[tool.uv.sources]
+chartcoach = { workspace = true }
+
+[tool.marimo.runtime]
+dotenv = ["../../../.env"]
