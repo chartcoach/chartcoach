@@ -65,13 +65,18 @@
 
       .right-sidebar {
         padding-inline: 0.75rem;
+        width: var(--cc-right-sidebar-width);
+        left: auto;
+        right: 0;
+        overflow-x: hidden;
       }
     }
   }
 
   .right-sidebar-panel {
     .sl-container {
-      width: 75%;
+      width: 100%;
+      max-width: none;
     }
   }
 
