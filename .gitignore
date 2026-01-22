@@ -1,6 +1,7 @@
 .env
 vertex-ai.json
 .github/secrets
+guidelines/embeddings.parquet
 
 .artifacts/
 
