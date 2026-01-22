@@ -1,55 +1,62 @@
 ---
 id: iterate-with-user-centered-testing-to-avoid-curse-of-knowledge
-title: Test with Representative Users and Iterate
+title: Iterate with small user tests to catch the curse of knowledge in graph design
 bibliography: references.bib
-description: Use quick user-centered design tests to catch misreadings caused by designer
-  expertise.
+description: Use quick audience feedback loops to ensure viewers extract the intended
+  message without designer assumptions.
 labels:
 - chart:any
 - task:validate
-- visual:process
-- impact:decision-making
+- visual:attention
+- impact:clarity
 - data:any
 - audience:novice
-- complexity:advanced
+- process:user-centered-design
 ---
 
-## The Rule <!-- role: advice -->
+## Test multiple drafts with representative viewers and iterate <!-- role: advice -->
 
-Run quick tests with people like your target audience, gather feedback, and iterate the visualization until they can answer the intended questions reliably.
+Create a few plausible design variants, show them to representative viewers, and revise based on whether they can answer the target questions quickly and correctly. Do not rely on the designer’s intuition alone to judge whether the chart communicates.
 
-## The Logic <!-- role: reason -->
+## Designers can’t unsee what they know <!-- role: reason -->
 
-- **The Principle:** Designers suffer from the curse of knowledge and cannot accurately simulate novice interpretation; iteration exposes misreadings early.
-- **The Evidence:** The paper argues that principles interact and that user-centered design—showing variants, asking viewers to answer key questions, iterating—efficiently improves effectiveness [@zacksDesigningGraphsDecisionMakers2020].
+Designers suffer from the curse of knowledge: once you know the intended message, it is hard to simulate how a naïve viewer will interpret the display. Small, rapid user-centered tests reveal mismatches between intended and perceived messages that are otherwise invisible to experts.
 
-## Where to Apply <!-- role: context -->
+**Mechanism:** Prior knowledge biases attention and interpretation, causing designers to underestimate ambiguity and overestimate the visibility of key comparisons.
 
-- **User Goal:** Ensuring the chart supports the real decisions/questions it’s meant to support.
-- **Data Type:** Any, especially high-stakes policy/finance/health communication.
-- **Audience:** Any non-identical-to-you audience (especially non-experts).
+**Evidence:** Designers’ expertise makes it difficult to adopt a non-expert viewpoint, and quick, informal user-centered experiments can efficiently refine visualization designs toward clearer comprehension [@zacksDesigningGraphsDecisionMakers2020].
 
-## When to Break It <!-- role: exceptions -->
+**Notes:** These tests do not need to be formal; the key is representative users and decision-relevant questions.
 
-- **Scenario:** Trivial, low-stakes internal sketches where correctness is not required.
-- **Reason:** The cost of testing may outweigh the benefit for throwaway drafts; the paper’s emphasis is on decision/communication effectiveness [@zacksDesigningGraphsDecisionMakers2020].
+## Apply when stakes or novelty are high <!-- role: context -->
 
-## The Price <!-- role: costs -->
+- **User Goal:** Make a decision based on what the chart communicates.
+- **Task:** Answer specific decision questions; summarize the main message.
+- **Data:** Any, especially when the design is novel or the dataset is complex.
+- **Chart Setting:** Policy communication, public dashboards, regulated or high-stakes reporting.
+- **Audience:** Non-experts or mixed expertise groups.
+- **Success Criterion:** Viewers independently extract the intended message and supporting evidence.
 
-- **The Sacrifice:** Time and coordination to recruit and run feedback sessions.
-- **The Risk:** Feedback can conflict; you must decide which audience goals matter.
+## When you cannot access representative users <!-- role: exceptions -->
 
-## Common Mistakes <!-- role: mistakes -->
+**Break it when:** There is no feasible access to representative viewers within the timeline. **Why:** Feedback from non-representative users can mislead design choices.
 
-- **The Wrong Fix:** Relying on the designer’s own “it seems clear to me.”
-- **Why it fails:** Your expertise makes intended interpretations feel obvious even when they aren’t [@zacksDesigningGraphsDecisionMakers2020].
+## Tradeoffs and risks <!-- role: costs -->
 
-## How to Check <!-- role: check -->
+**Sacrifice:** Iteration costs time and coordination. **Risk:** Small samples can miss rare misunderstandings or overfit to a particular viewer’s preferences. **Mitigation:** Use consistent tasks and compare designs on the same questions rather than relying on subjective preference.
 
-- **Visual Sign:** Stakeholders interpret the chart differently or focus on irrelevant parts.
-- **The Test:** Give the chart to a few representative viewers and ask them to answer the key decision questions without guidance; measure accuracy and time.
+## Common failure modes <!-- role: mistakes -->
 
-## How to Fix <!-- role: fix -->
+- **Mistake:** Only asking viewers whether they “like” the chart. **Why it fails:** Preference does not measure comprehension or decision accuracy [@zacksDesigningGraphsDecisionMakers2020].
+- **Mistake:** Testing only with teammates who already know the message. **Why it fails:** Shared knowledge masks ambiguity and replicates the curse of knowledge [@zacksDesigningGraphsDecisionMakers2020].
 
-- **Quick Fix:** Show 2–3 alternative designs to a handful of users and choose the one that yields faster, more accurate answers.
-- **Best Fix:** Establish a lightweight iteration loop (prototype → test → revise) as a standard step for decision-critical graphics [@zacksDesigningGraphsDecisionMakers2020].
+## Quick tests <!-- role: check -->
+
+**Failure Sign:** Viewers cannot answer the intended questions without coaching or repeatedly ask what the chart means. **Quick Check:** Give the chart with no explanation and ask the top 2–3 decision questions; note hesitation and wrong answers. **Stronger Test:** Compare two variants with a small A/B test and choose the one with higher accuracy and faster responses.
+
+## What to do instead <!-- role: fix -->
+
+- Recruit a handful of representative viewers and ask them to think aloud while answering the target questions.
+- Build two or three alternative chart drafts that emphasize different encodings or layouts and test them against the same tasks.
+- Revise the design to reduce comparisons, reduce legend lookups, and add targeted annotation where users stumble.
+- Repeat the test after changes until the main questions are answered quickly and consistently.

@@ -1,57 +1,64 @@
 ---
 id: avoid-inappropriate-tab-stops-in-charts
-title: Control Tab Stops for Interactive Chart Elements
+title: Assign tab stops only to meaningful interactive controls, and avoid tabbing
+  to every chart mark
 bibliography: references.bib
-description: Ensure only meaningful interactive chart controls are focusable, and
-  prevent dense per-mark tabbing by using progressive keyboard navigation.
+description: Keep keyboard focus on real controls and provide structured entry into
+  dense charts instead of giving every mark its own tab stop.
 labels:
 - chart:interactive
 - task:navigate
-- visual:position
+- visual:interaction
 - impact:accessibility
 - data:any
-- audience:keyboard-users
-- source:chartability
+- audience:keyboard
+- a11y:operable
+- complexity:advanced
 ---
 
-## The Rule <!-- role: advice -->
+## Focus only interactive controls and stage deeper keyboard navigation for dense charts <!-- role: advice -->
 
-Give tab stops only to truly interactive chart controls, and avoid assigning a tab stop to every mark in a chart; instead, provide a small number of entry points (e.g., one root tab stop) and let users progressively navigate deeper with keyboard controls.
+Give tab stops only to interactive elements that behave like real controls (buttons, links, toggles), and do not give tab stops to non-interactive chart marks. Avoid assigning a separate tab stop to every mark in a chart unless the chart is small or tab stops are revealed progressively from a single entry point into the chart.
 
-## The Logic <!-- role: reason -->
+## Why tab stop discipline preserves operability and meaning <!-- role: reason -->
 
-- **The Principle:** Keyboard focus must preserve operability and meaning without creating unnecessary navigation burden.
-- **The Evidence:** Chartability flags “inappropriate tab stops” as a common web chart failure where authors tabindex every element, creating tedious keyboard exploration; it recommends progressive disclosure (single entry point, then structured keyboard navigation) for complex charts [@elavskyHowAccessibleMy2022]. WCAG focus order requires that focusable elements be encountered in a logical sequence that preserves meaning and operability, making predictable, structured focus critical for keyboard users [@w3c_understanding_focus_order]. A chart-component accessibility template illustrates implementing keyboard navigation, tab order, and focus management so complex charts can be explored without making every element a tab stop [@observablehq_chart_component].
+Keyboard accessibility depends on users encountering focusable elements in an order that preserves meaning and keeps operation feasible, especially when charts contain many repeated marks. When every mark becomes a tab stop, focus order becomes harder to understand and navigation becomes unnecessarily tedious, reducing operability in practice.
 
-## Where to Apply <!-- role: context -->
+**Mechanism:** Restricting focusable elements to true controls reduces the number of focus steps, keeps focus order aligned with intended structure, and makes keyboard exploration of a chart predictable instead of overwhelming.
 
-- **User Goal:** Navigating and operating interactive chart functionality efficiently using a keyboard.
-- **Data Type:** Charts with many marks (dense) and/or multi-layer interactions (e.g., stacks, groups, drilldowns) where per-mark tabbing becomes burdensome.
-- **Audience:** Keyboard-only users and users of assistive technologies that rely on keyboard APIs [@elavskyHowAccessibleMy2022].
+**Evidence:** Focus order must preserve meaning and operability for keyboard users, implying that focusable elements and their sequence should be intentional rather than exhaustive [@w3c_understanding_focus_order]. Accessible chart component patterns include managing focus and keyboard navigation so complex charts can be explored without making every rendered element part of the tab sequence [@observablehq_chart_component]. This guideline is included as an Operable heuristic for auditing visualization accessibility [@elavskyHowAccessibleMy2022].
 
-## When to Break It <!-- role: exceptions -->
+**Notes:** Progressive disclosure can use a single tab stop at the chart root and then keyboard controls to move within a chart’s internal structure, but dense internal layers still need care to avoid excessive interaction burden [@elavskyHowAccessibleMy2022].
 
-- **Scenario:** A small chart or sparse interactive display where each interactive mark can reasonably be navigated via Tab without tedium.
-- **Reason:** Chartability allows per-element tab stops only when the chart is small or when tab stops are programmatically revealed (progressive disclosure), because dense per-mark focus creates excessive navigation effort [@elavskyHowAccessibleMy2022].
+## When tab stops become a problem in visualizations <!-- role: context -->
 
-## The Price <!-- role: costs -->
+- **User Goal:** Navigate a visualization and operate its interactive features using a keyboard (often alongside assistive technology).
+- **Task:** Move focus predictably, activate controls, and explore chart structure without excessive keystrokes.
+- **Data:** Many marks or repeated elements (high density), especially when marks are not individually actionable.
+- **Chart Setting:** Web or application charts with SVG/canvas/DOM elements, interactive filtering/selection, or an interactive data table following the chart.
+- **Audience:** Keyboard-only users, screen reader users, and users of alternative input devices that rely on keyboard APIs.
+- **Success Criterion:** Only meaningful controls receive focus, focus order is logical, and the number of required tab stops stays manageable while preserving access to functionality [@elavskyHowAccessibleMy2022].
 
-- **The Sacrifice:** More engineering/design work to implement focus management and structured keyboard navigation rather than relying on default tabbing.
-- **The Risk:** If progressive navigation is implemented poorly, users may have difficulty discovering how to “enter” and “exit” chart layers, reducing operability [@elavskyHowAccessibleMy2022].
+## When not to follow it <!-- role: exceptions -->
 
-## Common Mistakes <!-- role: mistakes -->
+**Break it when:** The chart is small enough that each mark is meaningfully interactive and can be traversed without undue effort, or the chart uses progressive disclosure where additional focusable marks are revealed only after entering the chart. **Why:** In these cases, per-mark focus can be a reasonable way to operate or explore the visualization without creating an unmanageable tab sequence [@elavskyHowAccessibleMy2022].
 
-- **The Wrong Fix:** Assigning `tabindex` to every SVG mark (including non-interactive marks) so screen readers/keyboard users can reach everything.
-- **Why it fails:** It creates an overwhelming number of tab stops and makes navigation tedious; Chartability notes this is a common failure pattern and recommends progressive disclosure instead [@elavskyHowAccessibleMy2022].
-- **The Wrong Fix:** Giving non-interactive decorative elements a tab stop.
-- **Why it fails:** It adds focusable items that do not provide operable functionality, harming logical focus order expectations [@w3c_understanding_focus_order].
+## Tradeoffs of limiting tab stops <!-- role: costs -->
 
-## How to Check <!-- role: check -->
+**Sacrifice:** Less direct tab-to-every-datum access for users who want to step through marks one by one. **Risk:** If deeper keyboard navigation is not implemented well, users may reach the chart but be unable to access key interactive features. **Mitigation:** Ensure a clear single entry point and a predictable internal navigation model that preserves meaning and operability [@w3c_understanding_focus_order; @observablehq_chart_component].
 
-- **Visual Sign:** Pressing Tab causes focus to move through many chart marks that do not act like controls, or focus lands on elements that do nothing.
-- **The Test:** Use only the keyboard and press Tab through the page: confirm that (1) interactive controls have a tab stop, (2) non-interactive elements do not, and (3) the focus sequence remains logical and usable rather than forcing per-mark tabbing in dense charts [@elavskyHowAccessibleMy2022] [@w3c_understanding_focus_order].
+## Common failure modes auditors find <!-- role: mistakes -->
 
-## How to Fix <!-- role: fix -->
+**Mistake:** Adding `tabindex` to every SVG/DOM element in a chart, including non-interactive marks. **Why it fails:** It creates a long, noisy tab sequence that makes keyboard navigation tedious and can disrupt meaningful focus order [@elavskyHowAccessibleMy2022].\
+**Mistake:** Making an interactive data table focusable in multiple places (or entirely unfocusable) without considering whether it is actually interactive. **Why it fails:** It either adds unnecessary tab stops or prevents keyboard access to interactive table controls that are meant to be operable [@elavskyHowAccessibleMy2022].
 
-- **Quick Fix:** Remove tab stops from non-interactive chart elements and ensure only actual controls (buttons/links/selectable features) are focusable [@elavskyHowAccessibleMy2022].
-- **Best Fix:** Provide a single (or small number of) chart entry tab stop(s) and implement programmatic focus management and keyboard navigation to traverse chart structure/layers without requiring every mark to be a tab stop (progressive disclosure) [@elavskyHowAccessibleMy2022] [@observablehq_chart_component].
+## Quick ways to detect inappropriate tab stops <!-- role: check -->
+
+**Failure Sign:** Tabbing into a chart requires many keystrokes and focus appears on marks that do not do anything when activated. **Quick Check:** Press Tab from just before the chart and count how many focus stops occur within the visualization; if focus lands on repeated marks with no control behavior, tab stops are likely inappropriate [@elavskyHowAccessibleMy2022]. **Stronger Test:** Verify that focus order through interactive controls preserves meaning and operability across the chart and any related interactive table [@w3c_understanding_focus_order].
+
+## How to fix inappropriate tab stops in charts <!-- role: fix -->
+
+- Ensure only elements that function as controls (buttons, links, toggles, selectable features) are keyboard focusable, and remove focusability from purely visual marks [@elavskyHowAccessibleMy2022].
+- Provide a single tab stop at the chart root (or another minimal set of entry controls) and implement internal keyboard navigation to explore groups or layers without adding every mark to the tab sequence [@observablehq_chart_component].
+- Use progressive disclosure so deeper focusable elements become available only after an explicit “enter chart” action, and allow exiting back to the page-level tab order cleanly [@observablehq_chart_component].
+- If a data table follows the chart, give it at least one tab stop only when it is interactive; otherwise keep it out of the tab order [@elavskyHowAccessibleMy2022].

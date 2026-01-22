@@ -1,9 +1,9 @@
 ---
 id: use-line-charts-for-continuous-time-trends
-title: Use Line Charts to Show Continuous Change Over Time
+title: Use a line chart to show continuous developments over time
 bibliography: references.bib
-description: Use a line chart when your main message is how a value changes across
-  many time points.
+description: Use line charts as the default for showing how a value changes over months
+  or years.
 labels:
 - chart:line
 - task:trend
@@ -11,55 +11,51 @@ labels:
 - impact:clarity
 - data:temporal
 - audience:mainstream
-- source:datawrapper
+- complexity:foundational
 ---
 
-## The Rule <!-- role: advice -->
+## Use line charts for continuous time series <!-- role: advice -->
 
-Use a line chart when you need to show how one or more values develop over time across many time points.
+Use a line chart when you need to show how one or more values change across many time points. Prefer it as the default for monthly or yearly developments.
 
-## The Logic <!-- role: reason -->
+## Why line charts fit time-change judgments <!-- role: reason -->
 
-Explain the principle at work here. Connect the rule to human perception or clear communication.
+Lines encode time on a continuous axis and make direction and slope visually salient, which aligns with how readers scan for increases, decreases, and turning points.
 
-- **The Principle:** Continuous time is most intuitively read as a connected trajectory, making change (direction, pace, turning points) easy to perceive.
-- **The Evidence:** The post calls the classic line chart “intuitive to read and usually a solid choice” for showing how numbers change over months or years [@muth_chart_types_guide_2025].
+**Mechanism:** Connecting points into a line emphasizes continuity and supports quick detection of overall trend and local changes.
 
-## Where to Apply <!-- role: context -->
+**Evidence:** For mainstream audiences, the line chart is presented as an intuitive and usually solid choice for showing how numbers change over time [@muth_chart_types_guide_2025].
 
-This advice is designed for specific moments.
+**Notes:** This guideline addresses chart-type fit, not how to label, scale, or annotate a time axis.
 
-- **User Goal:** Seeing development over time (e.g., temperature, inflation, poll numbers).
-- **Data Type:** Time series with many points (months/years), one or several series.
-- **Audience:** Mainstream/general readers [@muth_chart_types_guide_2025].
+## Situations where a line chart applies <!-- role: context -->
 
-## When to Break It <!-- role: exceptions -->
+- **User Goal:** Communicate how something evolved over months/years.
+- **Task:** Identify trend direction, compare trajectories, notice peaks/dips.
+- **Data:** Temporal data with many ordered time points per series.
+- **Chart Setting:** Editorial, reporting, monitoring, and explanatory contexts.
+- **Audience:** General readers accustomed to common chart forms.
+- **Success Criterion:** Readers can describe the trajectory correctly (up/down/flat, accelerations, notable changes).
 
-List the specific scenarios where you should ignore this rule.
+## When not to use a line chart <!-- role: exceptions -->
 
-- **Scenario:** You only have a few time points.
-- **Reason:** The post suggests column charts are usually a good fit for just a few points in time [@muth_chart_types_guide_2025].
+**Break it when:** You only have a few time points and want discrete comparisons rather than a continuous story. **Why:** A column chart can be a better fit for a small number of time points [@muth_chart_types_guide_2025].
 
-## The Price <!-- role: costs -->
+## Tradeoffs of line charts <!-- role: costs -->
 
-Be honest about the downsides.
+**Sacrifice:** With many categories, multiple lines can become visually cluttered. **Risk:** Overlapping lines can hide patterns and confuse comparisons. **Mitigation:** Treat multi-series density as a constraint that may require an alternate layout.
 
-- **The Sacrifice:** With many categories, multiple lines can become visually overwhelming (“spaghetti”).
-- **The Risk:** Readers may struggle to follow individual series when many lines overlap [@muth_chart_types_guide_2025].
+## Common failure modes <!-- role: mistakes -->
 
-## Common Mistakes <!-- role: mistakes -->
+**Mistake:** Plotting too many categories as overlapping lines in one panel. **Why it fails:** The chart turns into a “spaghetti” of crossings that is hard to follow [@muth_chart_types_guide_2025].
 
-Describe the common anti-patterns or "lazy fixes" people use that don't actually solve the problem.
+## Quick tests <!-- role: check -->
 
-- **The Wrong Fix:** Plotting lots of categories as one “multiple lines” chart without changing the layout.
-- **Why it fails:** Overlap and clutter make comparison hard; the post recommends small multiples (multiple lines chart split into panels) to tame this [@muth_chart_types_guide_2025].
+**Failure Sign:** You cannot trace a single category from start to end without losing it. **Quick Check:** Count how many lines overlap heavily; if you frequently need a legend lookup, it’s likely too dense. **Stronger Test:** Ask a reader to point to the highest category at a given date; if they hesitate, the chart is too cluttered.
 
-## How to Check <!-- role: check -->
+## What to do instead <!-- role: fix -->
 
-- **Visual Sign:** A “spaghetti monster” where lines overlap and are hard to trace.
-- **The Test:** If you can’t reliably trace a single series from start to end at a glance, the single-panel multi-line approach is failing [@muth_chart_types_guide_2025].
-
-## How to Fix <!-- role: fix -->
-
-- **Quick Fix:** Reduce the number of series shown or highlight only a few key lines.
-- **Best Fix:** Use small multiples (a multiple-lines chart with each line in its own panel) when many categories overlap heavily [@muth_chart_types_guide_2025].
+- Use small multiples (multiple-line panels) so each line has its own space.
+- Use a slope chart if only the first and last time points matter.
+- Use an arrow plot when you need a more compact summary of change across many categories.
+- Reduce the number of series shown at once by focusing on key categories.

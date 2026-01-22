@@ -1,55 +1,63 @@
 ---
 id: maintain-a-consistent-visual-platform-across-steps
-title: Maintain a Consistent Visual Platform Across Steps
+title: Maintain a consistent visual platform across steps and update content within
+  it
 bibliography: references.bib
-description: Keep layout stable across slides/tabs so viewers stay oriented while
-  content changes.
+description: Keep layout and visual scaffolding stable across slides or tabs so viewers
+  stay oriented while content changes.
 labels:
-- task:orient
-- impact:clarity
-- custom:visual-structuring
-- custom:transition-guidance
-- audience:general
+- chart:multi
+- task:explain
+- visual:layout
+- impact:orientation
+- data:temporal
+- audience:novice
+- narrative:transition
 ---
 
-## The Rule <!-- role: advice -->
+## Maintain a consistent visual platform <!-- role: advice -->
 
-Keep the overall layout and interface scaffolding constant across narrative steps; change content within that stable frame.
+Maintain the same overall layout, scaffolding, and visual roles across frames (slides, tabs, or steps), changing primarily the content within the established structure. Use this stability as the backbone for transitions and pacing.
 
-## The Logic <!-- role: reason -->
+## Stability preserves orientation across narrative transitions <!-- role: reason -->
 
-The paper notes that consistent visual platforms help preserve orientation during transitions (e.g., across slides or tabs), making it easier to follow the narrative and notice what changed rather than re-learn the interface.
+In narrative visualization, scene changes can disorient readers, especially when the data is dense. Keeping the platform consistent makes transitions legible and lets the reader attribute change to data or emphasis rather than to a reconfigured interface.
 
-- **The Principle:** Stable frames reduce reorientation costs during transitions.
-- **The Evidence:** [@segelNarrativeVisualizationTelling2010]
+**Mechanism:** A stable visual platform reduces re-learning costs and supports continuity, allowing readers to track changes as meaningful narrative developments.
 
-## Where to Apply <!-- role: context -->
+**Evidence:** Case studies highlight consistent visual platforms in interactive slideshows and tabbed views as a key device for orientation during transitions, alongside progress indicators and staged updates [@segelNarrativeVisualizationTelling2010].
 
-- **User Goal:** Track changes across time/steps or compare successive narrative points.
-- **Data Type:** Multi-step explanations, especially interactive slideshows and tabbed narratives.
-- **Audience:** General audiences.
+**Notes:** Platform consistency can coexist with animated transitions that update marks while preserving the frame structure.
 
-## When to Break It <!-- role: exceptions -->
+## Where platform consistency matters most <!-- role: context -->
 
-- **Scenario:** You intentionally need to signal a major story break (a new chapter) with a distinct scene.
-- **Reason:** A strong scene change can be a deliberate narrative boundary, but should be treated as such [@segelNarrativeVisualizationTelling2010].
+- **User Goal:** Follow a guided explanation that unfolds across steps.
+- **Task:** Compare forecasts vs actuals across time, or compare facets across tabs.
+- **Data:** Temporal or multi-faceted datasets where repeated reference frames aid comparison.
+- **Chart Setting:** Slideshows, tabbed dashboards, or stepwise presentations.
+- **Audience:** Readers who are not trained analysts and need help staying oriented.
+- **Success Criterion:** Readers can describe what changed between steps without re-parsing the whole display.
 
-## The Price <!-- role: costs -->
+## When to relax platform consistency <!-- role: exceptions -->
 
-- **The Sacrifice:** Less flexibility in per-step layout optimization.
-- **The Risk:** For very different chart types, forcing the same layout can feel awkward unless transitions are carefully guided [@segelNarrativeVisualizationTelling2010].
+**Break it when:** You must explicitly signal a shift to a new topic or chart type that would be confusing if “quietly” swapped in place. **Why:** Overly subtle switching can cause misinterpretation of what the marks and axes mean.
 
-## Common Mistakes <!-- role: mistakes -->
+## Costs of a rigid platform <!-- role: costs -->
 
-- **The Wrong Fix:** Re-layouting controls and legends each step.
-- **Why it fails:** It increases cognitive load and can cause viewers to miss the narrative point of the change [@segelNarrativeVisualizationTelling2010].
+**Sacrifice:** Space for additional context or alternative layouts that might fit a new segment better. **Risk:** Forcing all segments into one platform can lead to cramped or cluttered views. **Mitigation:** Use staged transitions or clearly bounded sections to introduce platform changes.
 
-## How to Check <!-- role: check -->
+## Mistakes with “consistent platform” usage <!-- role: mistakes -->
 
-- **Visual Sign:** Viewers spend time searching for where controls/legends moved rather than reading the data change.
-- **The Test:** Flip quickly between steps; if major UI elements jump position, platform consistency is broken [@segelNarrativeVisualizationTelling2010].
+- **Mistake:** Changing axes, scales, or encodings while keeping the same layout without clear signaling. **Why it fails:** Readers may assume continuity of meaning where none exists.
+- **Mistake:** Rebuilding the interface each step (new panel arrangement, legend position, controls) for minor content changes. **Why it fails:** Readers spend attention on reorientation instead of the story.
 
-## How to Fix <!-- role: fix -->
+## Checks for orientation stability <!-- role: check -->
 
-- **Quick Fix:** Lock persistent elements (titles, axes regions, legends, nav) to fixed positions.
-- **Best Fix:** Design a reusable template grid for all steps and constrain each step’s content to that template [@segelNarrativeVisualizationTelling2010].
+**Failure Sign:** Readers lose their place after each step and re-scan legends and controls as if seeing a new chart. **Quick Check:** Flip between steps quickly; the only “moving target” should be the data emphasis, not the interface skeleton. **Stronger Test:** Ask readers what changed; if they mention layout changes first, the platform is not stable enough.
+
+## Fixes when transitions feel disorienting <!-- role: fix -->
+
+- Lock the position of titles, legends, and key panels across steps and only update their content.
+- Use animated transitions that preserve object continuity for updated marks rather than hard cuts.
+- Add explicit cues (section headers or staged transition steps) when changing chart type within the same narrative.
+- Introduce a new platform only at clear segment boundaries, not mid-argument.

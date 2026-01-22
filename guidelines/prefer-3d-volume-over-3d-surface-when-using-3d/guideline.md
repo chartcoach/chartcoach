@@ -1,57 +1,60 @@
 ---
 id: prefer-3d-volume-over-3d-surface-when-using-3d
-title: Prefer 3-D Volume Over 3-D Surface When Using 3-D
+title: Prefer 3D volume graphs over 3D surface graphs when adding depth cues
 bibliography: references.bib
-description: When choosing a 3-D treatment, use volume-style forms rather than floating
-  surface-style renderings.
+description: If using 3D styling for 2D data, choose volume-rendered forms rather
+  than floating surface forms.
 labels:
 - chart:bar
-- task:choose
+- task:communicate
 - visual:depth
 - impact:preference
 - data:quantitative
-- audience:general
-- source:levy-1996
+- audience:novice
+- complexity:intermediate
 ---
 
-## The Rule <!-- role: advice -->
+## Choose 3D volume instead of 3D surface when using 3D <!-- role: advice -->
 
-If you decide to use 3-D, choose 3-D volume graphs rather than 3-D surface graphs.
+If you decide to use a 3D-styled chart for 2D data, use a 3D volume rendering rather than a 3D surface rendering.
 
-## The Logic <!-- role: reason -->
+## Why volume renderings are preferred to surface renderings <!-- role: reason -->
 
-Participants consistently preferred 3-D graphs that implied solid volumes over those that looked like floating surfaces, indicating that not all “3-D” is treated the same by viewers.
+Different “3D” treatments are not interchangeable: viewers distinguish between depth that creates a solid-looking object and depth that creates a floating surface, and they show consistent preferences between them.
 
-- **The Principle:** Choose the 3-D style viewers find more appropriate within 3-D options
-- **The Evidence:** In Experiment 1, the 3-D volume line was chosen more often than the 3-D surface line (90 vs. 41). In the discussion, the authors summarize that subjects preferred realistic volumes to unlikely floating surfaces [@levyGratuitousGraphicsPutting1996].
+**Mechanism:** Volume renderings read as more concrete objects, while surface renderings can appear less grounded, affecting perceived suitability.
 
-## Where to Apply <!-- role: context -->
+**Evidence:** In preference selections, 3D volume variants were chosen more often than 3D surface variants within both line and bar families, and this difference appeared consistently across scenarios [@levyGratuitousGraphicsPutting1996].
 
-- **User Goal:** Add depth cues for salience/memorability/presentation
-- **Data Type:** 2-D data displayed with optional 3-D styling
-- **Audience:** General viewers evaluating or recalling the display
+**Notes:** The surveys treated “volume” and “surface” as distinct categories and found substantial preference differences.
 
-## When to Break It <!-- role: exceptions -->
+## When this applies <!-- role: context -->
 
-- **Scenario:** You are not using 3-D at all (because the goal is immediate clarity/self-use)
-- **Reason:** Across scenarios, 2-D was often preferred; the “volume vs surface” choice only matters once 3-D is selected [@levyGratuitousGraphicsPutting1996].
+- **User Goal:** Use 3D styling for rhetorical impact, memorability, or presentation.
+- **Task:** Communicate or emphasize content using depth cues.
+- **Data:** 2D quantitative data where depth does not encode additional variables.
+- **Chart Setting:** Slideware or packaged visualization tools offering multiple 3D styles.
+- **Audience:** General audiences who will interpret “3D-ness” holistically.
+- **Success Criterion:** Preference, acceptance, and perceived suitability of the display style.
 
-## The Price <!-- role: costs -->
+## When not to follow it <!-- role: exceptions -->
 
-- **The Sacrifice:** Potentially more visual mass and occlusion risk than a minimal 2-D chart
-- **The Risk:** The volume effect can dominate the figure and may be interpreted as unnecessary embellishment
+**Break it when:** You are not using 3D at all. **Why:** The rule is only about choosing among 3D styles once depth cues have already been selected [@levyGratuitousGraphicsPutting1996].
 
-## Common Mistakes <!-- role: mistakes -->
+## Tradeoffs and risks <!-- role: costs -->
 
-- **The Wrong Fix:** Treating any 3-D preset as equivalent (surface, volume, perspective variants) and picking arbitrarily
-- **Why it fails:** The study shows strong preference differences between volume and surface forms [@levyGratuitousGraphicsPutting1996].
+**Sacrifice:** Volume styling can add visual mass and occupy more apparent space. **Risk:** The chart can feel heavier or more decorative than necessary. **Mitigation:** Use volume styling only when the scenario benefits (for example, memorability-focused use).
 
-## How to Check <!-- role: check -->
+## Common failure modes <!-- role: mistakes -->
 
-- **Visual Sign:** The data appear as a thin “floating sheet” or surface in space
-- **The Test:** Compare a volume and surface variant with the same data and ask which seems more appropriate for the intended scenario (especially memorability/presentation).
+**Mistake:** Treating “3D graphs” as one uniform design option. **Why it fails:** Viewers’ preferences differed strongly between volume and surface 3D forms, indicating that the 3D subtype matters [@levyGratuitousGraphicsPutting1996].
 
-## How to Fix <!-- role: fix -->
+## Quick tests <!-- role: check -->
 
-- **Quick Fix:** Switch the chart’s 3-D rendering from a surface style to a volume style.
-- **Best Fix:** Use a volume rendering that keeps the data mapping consistent and avoids unnecessary complexity beyond what supports the goal [@levyGratuitousGraphicsPutting1996].
+**Failure Sign:** Viewers describe the chart as “weird” or “floating” rather than focusing on the data. **Quick Check:** If choosing between 3D surface and 3D volume, default to volume. **Stronger Test:** Run a quick preference check with target viewers using the intended scenario framing.
+
+## What to do instead <!-- role: fix -->
+
+- Switch from 3D surface to 3D volume if you must retain a 3D look.
+- Use a 2D area or simple version if the goal is immediate comprehension rather than presentation impact.
+- If detail reading is critical, consider whether changing chart family (bar vs line) better matches the task than changing 3D subtype.
