@@ -1,10 +1,39 @@
 // @ts-check
 import { defineConfig } from "astro/config";
 import starlight from "@astrojs/starlight";
+import sitemap from "@astrojs/sitemap";
 import { fileURLToPath } from "node:url";
 
+/**
+ * Resolve the canonical site URL for sitemap + canonical links.
+ * Prefer an explicit `SITE_URL`, but fall back to common provider env vars.
+ */
+function resolveSiteUrl() {
+  const candidates = [
+    process.env.SITE_URL,
+    process.env.PUBLIC_SITE_URL,
+    process.env.URL, // Netlify
+    process.env.DEPLOY_PRIME_URL, // Netlify previews
+    process.env.CF_PAGES_URL, // Cloudflare Pages
+    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined, // Vercel
+  ].filter((value) => typeof value === "string");
+
+  for (const candidate of candidates) {
+    try {
+      return new URL(candidate).toString();
+    } catch {
+      // ignore invalid candidate
+    }
+  }
+
+  return undefined;
+}
+
 // https://astro.build/config
+const siteUrl = resolveSiteUrl();
+
 export default defineConfig({
+  site: siteUrl,
   vite: {
     resolve: {
       alias: {
@@ -37,5 +66,6 @@ export default defineConfig({
         },
       ],
     }),
+    ...(siteUrl ? [sitemap()] : []),
   ],
 });

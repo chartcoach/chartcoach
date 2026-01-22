@@ -13,10 +13,14 @@ on:
       - ".dockerignore"
 
 env:
+  # Generic Docker registry settings
   REGISTRY: ${{ secrets.DOCKER_REGISTRY }}
   REGISTRY_USERNAME: ${{ secrets.DOCKER_REGISTRY_USER }}
   REGISTRY_PASSWORD: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
   IMAGE_NAME: chartcoach/site
+
+  # App-specific settings
+  SITE_URL: ${{ vars.SITE_URL }}
 
 jobs:
   build-and-push:
@@ -59,6 +63,8 @@ jobs:
           file: apps/site/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
+          build-args: |
+            SITE_URL=${{ env.SITE_URL }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha

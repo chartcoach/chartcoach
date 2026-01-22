@@ -4,6 +4,10 @@ FROM node:22-bookworm-slim AS build
 
 WORKDIR /repo
 
+# Used by `@astrojs/sitemap` and Astro canonical URLs.
+ARG SITE_URL
+ENV SITE_URL=$SITE_URL
+
 # pnpm via Corepack (respects `packageManager` in root package.json)
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"

@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# `@astrojs/sitemap` generates `sitemap-index.xml` (and one or more `sitemap-*.xml` files).
+Sitemap: /sitemap-index.xml
