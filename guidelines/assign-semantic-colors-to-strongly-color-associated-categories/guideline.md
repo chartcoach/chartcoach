@@ -1,9 +1,9 @@
 ---
 id: assign-semantic-colors-to-strongly-color-associated-categories
-title: Assign Semantically Resonant Colors to Color-Associated Categories
+title: Assign semantically associated colors when categories are strongly colorable
 bibliography: references.bib
-description: Use semantically meaningful colors for categories that have strong real-world
-  color associations to reduce cognitive effort.
+description: "Use semantic color encodings for categories with strong concept\u2013\
+  color associations to improve recognition and memorability."
 labels:
 - chart:categorical
 - task:identify
@@ -11,47 +11,52 @@ labels:
 - impact:clarity
 - data:categorical
 - audience:general
-- encoding:semantic
+- complexity:intermediate
 ---
 
-## The Rule <!-- role: advice -->
+## Use semantic color encodings for colorable categories <!-- role: advice -->
 
-Assign category colors that match the category’s common real-world color association (e.g., tomatoes → red, corn → yellow) instead of using an arbitrary default categorical palette.
+Assign each category a color that matches common real-world or conventional color associations when the category terms are strongly colorable.
 
-## The Logic <!-- role: reason -->
+## Why semantic colors help categorical identification <!-- role: reason -->
 
-Semantic color encodings reduce cognitive interference and shorten the “legend lookup → remember → search” loop, making categories easier to discover and remember in the visualization [@setlurLinguisticApproachCategorical2016].
+Semantic colors reduce the need to repeatedly consult and memorize legend mappings because the color itself cues the category meaning, lowering cognitive effort and potential interference when the color conflicts with expectations.
 
-- **The Principle:** Semantic resonance reduces memory load and avoids conflicts between expected and shown colors.
-- **The Evidence:** [@setlurLinguisticApproachCategorical2016]
+**Mechanism:** Matching a category to its expected color makes the mapping easier to infer and remember, while mismatched colors can create cognitive conflict (e.g., a “tomato” encoded as pink) that slows identification.
 
-## Where to Apply <!-- role: context -->
+**Evidence:** Semantic color encoding is motivated by known interference effects when color meaning conflicts with language-driven expectations and by visualization evidence that semantically meaningful categorical colors can improve comprehension and reduce reliance on legends [@setlurLinguisticApproachCategorical2016].
 
-- **User Goal:** Quickly identify and distinguish labeled categories without repeatedly consulting a legend.
-- **Data Type:** Categorical labels where items are known to have typical colors (foods, objects, brands, flags, etc.).
-- **Audience:** Any audience, especially when fast recognition matters (dashboards, exploratory analysis, broad readership).
+**Notes:** This rule is about *when* to pursue semantic mapping; distinctness and palette constraints are handled separately.
 
-## When to Break It <!-- role: exceptions -->
+## When categories have strong semantic color associations <!-- role: context -->
 
-- **Scenario:** Categories have no widely shared color association (e.g., sales team names, arbitrary regions).
-- **Reason:** A semantic mapping is unavailable or unreliable, so forcing it can mislead or add noise [@setlurLinguisticApproachCategorical2016].
+- **User Goal:** Identify, scan, or remember categories quickly without repeatedly referencing a legend.
+- **Task:** Category lookup, grouping, or comparison by label in a chart.
+- **Data:** Nominal categories where many items are objects/concepts with typical colors (e.g., foods, brands, flags, political parties).
+- **Chart Setting:** Any view using color as a categorical label (legends, marks, series).
+- **Audience:** Readers who benefit from quick “at-a-glance” recognition; includes novices.
+- **Success Criterion:** Faster, more accurate category identification with less legend use.
 
-## The Price <!-- role: costs -->
+## When not to force semantic colors <!-- role: exceptions -->
 
-- **The Sacrifice:** You may lose some freedom to use a fully optimized perceptual palette if semantic colors cluster in similar hues.
-- **The Risk:** Semantically “correct” colors can be too dark/light or too similar to each other without further palette adjustment [@setlurLinguisticApproachCategorical2016].
+**Break it when:** The categories have no conventional or stable color association (low colorability). **Why:** Semantic coloring adds effort and can imply meaning that is not present in the data [@setlurLinguisticApproachCategorical2016].
 
-## Common Mistakes <!-- role: mistakes -->
+## Tradeoffs of semantic color encoding <!-- role: costs -->
 
-- **The Wrong Fix:** Using a perceptually legible default palette even when it contradicts strong data semantics (e.g., tomatoes shown as pink).
-- **Why it fails:** It creates avoidable mismatch and slows identification because viewers must rely on legend decoding [@setlurLinguisticApproachCategorical2016].
+**Sacrifice:** You may give up some freedom to use an optimized categorical palette purely for discriminability. **Risk:** Some semantic colors may be too similar, too dark, or too light to work well as categorical labels. **Mitigation:** Combine semantic selection with a distinctness step or a fixed palette constraint [@setlurLinguisticApproachCategorical2016].
 
-## How to Check <!-- role: check -->
+## Common ways semantic color encoding fails <!-- role: mistakes -->
 
-- **Visual Sign:** Viewers must repeatedly consult the legend for obviously color-associated items.
-- **The Test:** Ask “Would a viewer guess this category’s color without reading the legend?” If “no” for common objects, the mapping likely violates semantic expectations [@setlurLinguisticApproachCategorical2016].
+- **Mistake:** Using a perceptually balanced default categorical palette even when categories have obvious color associations. **Why it fails:** The viewer must learn arbitrary legend mappings, and mismatches can conflict with expectations [@setlurLinguisticApproachCategorical2016].
+- **Mistake:** Forcing semantic colors onto categories that are not colorable. **Why it fails:** The chosen colors will feel arbitrary and may mislead by implying nonexistent semantics [@setlurLinguisticApproachCategorical2016].
 
-## How to Fix <!-- role: fix -->
+## Quick checks for whether semantic colors are needed <!-- role: check -->
 
-- **Quick Fix:** Reassign the most obvious categories to their common colors (e.g., tomato→red) and leave the rest unchanged.
-- **Best Fix:** Rebuild the whole categorical palette so each category has a semantically resonant color and then adjust for distinctness (e.g., via clustering/reassignment) [@setlurLinguisticApproachCategorical2016].
+**Failure Sign:** Viewers must repeatedly look back and forth between legend and marks to find common objects (e.g., produce) because colors are arbitrary. **Quick Check:** Ask whether most categories evoke a “typical color” for a general reader. **Stronger Test:** Compute an explicit colorability score per term and only apply semantic coloring above a threshold [@setlurLinguisticApproachCategorical2016].
+
+## What to do instead when semantic colors are not appropriate <!-- role: fix -->
+
+- Use a standard categorical palette designed for perceptual separability when no strong semantics exist.
+- Add direct labeling or grouping cues (e.g., ordering, facets) to reduce reliance on arbitrary color–legend mappings.
+- Reserve semantic coloring for the subset of categories that are demonstrably colorable and leave others in a neutral scheme.
+- Constrain semantic colors to a pre-defined palette if the design must prioritize consistent legibility over exact semantics [@setlurLinguisticApproachCategorical2016].

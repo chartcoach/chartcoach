@@ -1,58 +1,62 @@
 ---
 id: describe-visually-apparent-relationships-in-text
-title: Describe Visually Apparent Patterns and Relationships in Text
+title: Describe visually apparent patterns and relationships in text
 bibliography: references.bib
-description: Describe trends, outliers, and other visually apparent relationships
-  in text so key insights are available without vision.
+description: Provide a text description of trends, clusters, outliers, and other visually
+  apparent relationships so key insights are available without vision.
 labels:
-- chart:any
+- chart:general
 - task:interpret
 - visual:relationship
 - impact:accessibility
-- data:any
-- audience:all
-- category:assistive
-- source:chartability
+- data:multivariate
+- audience:assistive-technology
+- accessibility:assistive
 ---
 
-## The Rule <!-- role: advice -->
+## Describe chart-level patterns and relationships in text <!-- role: advice -->
 
-Describe visually apparent features and relationships—such as trends, clusters, patterns, outliers, and significant statistical findings—in text at a minimum, and optionally expose them through additional modalities like sonification.
+Describe trends, clusters, patterns, outliers, and other significant statistical semantics in text, not only through visual cues. Ensure the description communicates the relationships that a sighted viewer would likely notice quickly.
 
-## The Logic <!-- role: reason -->
+## Why relationship descriptions reduce user labor <!-- role: reason -->
 
-- **The Principle:** Visual relationships must not be exclusive to vision; they should be expressed in a form that preserves structure and meaning beyond the visual channel.
-- **The Evidence:** Chartability frames this as an Assistive, labor-reducing requirement because it lowers the cognitive and functional effort needed to access “visually apparent” semantics when they are otherwise unavailable or tedious to extract non-visually [@elavskyHowAccessibleMy2022]. WCAG’s “Info and Relationships” emphasizes that relationships conveyed visually should also be available in a way that can be determined from the content structure (not just appearance) [@w3c_understanding_info]. Highcharts documents a sonification approach as an optional multi-sensory method to convey chart structure and patterns through audio controls [@highcharts_highcharts_accessibility].
+When meaning is carried primarily by visual pattern recognition, users who cannot access those visual cues must reconstruct the same insights through higher-effort exploration or may miss them entirely. Making visually apparent relationships available in text shifts key interpretation work from painstaking element-by-element inspection toward a direct, comparable summary.
 
-## Where to Apply <!-- role: context -->
+**Mechanism:** Textual descriptions make key “info and relationships” determinable without relying on sensory characteristics, enabling access to higher-level structure (e.g., “overall increase,” “one clear outlier,” “two clusters”) rather than forcing navigation through individual marks.
 
-- **User Goal:** Detecting and understanding higher-level insights that are obvious visually (e.g., “there is an upward trend,” “there is an outlier cluster,” “two groups separate”).
-- **Data Type:** Any dataset where meaningful interpretation depends on relationships among marks (e.g., time series trends, scatterplot clusters/outliers, ranked patterns).
-- **Audience:** People who may not access or interpret the visual layer reliably, including users of assistive technologies and users who benefit from reduced interpretive labor [@elavskyHowAccessibleMy2022].
+**Evidence:** Structural meaning and relationships conveyed visually should also be available in a form that does not depend on visual perception, so users can determine relationships without relying on sensory characteristics alone [@w3c_understanding_info; @elavskyHowAccessibleMy2022]. Chart sonification can expose data patterns through audio mappings and keyboard control as an additional non-visual channel for perceiving trends and outliers [@highcharts_highcharts_accessibility; @elavskyHowAccessibleMy2022].
 
-## When to Break It <!-- role: exceptions -->
+**Notes:** This guideline targets relationship-level semantics (patterns and findings), not only mark-level values.
 
-- **Scenario:** The visualization does not present any visually apparent higher-level features (e.g., a purely decorative graphic or a chart whose intent is only to show raw values without interpretive claims).
-- **Reason:** If there are no claimed or salient visual relationships to communicate, there may be nothing meaningful to summarize beyond basic data access.
+## When “visually apparent” semantics must be described <!-- role: context -->
 
-## The Price <!-- role: costs -->
+- **User Goal:** Understand the main findings and relationships in a visualization without relying on vision.
+- **Task:** Identify trends, compare groups, notice outliers, recognize clusters, or extract the “takeaway.”
+- **Data:** Any dataset where meaning is expressed as relationships among marks (e.g., correlation patterns, temporal trends, group separation, exceptional points).
+- **Chart Setting:** Static or interactive charts where insights are primarily communicated through spatial arrangement, clustering, shape, or other emergent visual patterns.
+- **Audience:** People using assistive technologies or who cannot reliably perceive visual relationships, including screen reader users.
+- **Success Criterion:** A user can access the key patterns and findings via text at a minimum, without having to infer them solely from visual structure.
 
-- **The Sacrifice:** Additional authoring effort to write and maintain textual descriptions of insights and to keep them aligned with updates to the data or chart.
-- **The Risk:** Overstating, mischaracterizing, or selectively describing relationships can mislead users if the text does not accurately match what the visualization shows [@elavskyHowAccessibleMy2022].
+## When not to follow it <!-- role: exceptions -->
 
-## Common Mistakes <!-- role: mistakes -->
+**Break it when:** The visualization does not communicate any higher-level relationships beyond what is already fully and explicitly presented in text. **Why:** There are no additional visually apparent semantics to translate into a separate relationship description [@elavskyHowAccessibleMy2022].
 
-- **The Wrong Fix:** Providing only a generic label (e.g., “This chart shows sales over time”) without describing the actual relationships (trend direction, turning points, outliers).
-- **Why it fails:** It does not convey the visually apparent semantics (patterns/outliers/relationships) that the chart communicates by sight [@elavskyHowAccessibleMy2022].
-- **The Wrong Fix:** Relying on a 1:1 alternative modality (e.g., only mapping each point to a tone) without describing higher-level relationships.
-- **Why it fails:** The notes in Chartability highlight that semantic tools for communicating relationships (like trends or comparisons) are limited, and 1:1 mappings can leave users doing the same (or more) interpretive labor [@elavskyHowAccessibleMy2022].
+## Tradeoffs and risks <!-- role: costs -->
 
-## How to Check <!-- role: check -->
+**Sacrifice:** Additional authoring time to write and maintain relationship-level descriptions as the chart or data changes. **Risk:** Overstating findings or implying statistical significance that is not warranted by the data. **Mitigation:** Keep relationship descriptions tightly aligned to what the visualization presents as the intended, significant semantics [@elavskyHowAccessibleMy2022].
 
-- **Visual Sign:** The chart’s main takeaway is “obvious by looking,” but the surrounding text does not mention it (no trend/outlier/cluster/pattern summary).
-- **The Test:** Identify one or two visually apparent findings (e.g., the dominant trend or a clear outlier). If you cannot find those findings stated in text near the chart, the rule is broken [@elavskyHowAccessibleMy2022].
+## Common failure modes <!-- role: mistakes -->
 
-## How to Fix <!-- role: fix -->
+- **Mistake:** Providing only mark-level text (e.g., listing data points) with no chart-level patterns or findings. **Why it fails:** It forces high labor navigation to reconstruct trends, clusters, or outliers that were meant to be quickly perceived visually [@elavskyHowAccessibleMy2022].
+- **Mistake:** Describing patterns using sensory-only language (e.g., “the red line,” “the points on the left”). **Why it fails:** It depends on sensory characteristics rather than conveying relationships in a non-visual form [@w3c_understanding_info; @elavskyHowAccessibleMy2022].
 
-- **Quick Fix:** Add a short textual description that explicitly states the key visually apparent relationships (e.g., the main trend and any major outliers) [@elavskyHowAccessibleMy2022].
-- **Best Fix:** Provide a structured text summary that communicates the important relationships and, when appropriate, add an optional multi-sensory representation such as sonification following an established approach (e.g., a controllable sonification module) [@highcharts_highcharts_accessibility] while maintaining relationship clarity consistent with accessibility principles for information and relationships [@w3c_understanding_info].
+## Quick tests <!-- role: check -->
+
+**Failure Sign:** A non-visual user can access values or labels but cannot access statements about overall trends, clusters, or outliers. **Quick Check:** Remove reliance on visual inspection and verify that the chart’s key findings (trends/outliers/clusters) exist in text somewhere associated with the chart. **Stronger Test:** Confirm the relationship description communicates “info and relationships” without requiring sensory characteristics to interpret it [@w3c_understanding_info; @elavskyHowAccessibleMy2022].
+
+## What to do instead <!-- role: fix -->
+
+- Write a concise text description that explicitly states the key trends, clusters, outliers, and comparisons the visualization is meant to make apparent [@elavskyHowAccessibleMy2022].
+- Ensure the relationship description does not rely on sensory characteristics to identify elements, and instead names the relevant variables, groups, or conditions [@w3c_understanding_info; @elavskyHowAccessibleMy2022].
+- Provide an additional non-visual channel, such as chart sonification with keyboard controls, when it helps convey patterns like trend shape, peaks, or anomalies [@highcharts_highcharts_accessibility; @elavskyHowAccessibleMy2022].
+- If relationship-level meaning cannot be expressed with available semantics in the current interface, add or revise the supporting text so the intended higher-level findings remain accessible at a minimum [@elavskyHowAccessibleMy2022].

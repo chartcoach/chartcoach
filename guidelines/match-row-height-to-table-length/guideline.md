@@ -1,57 +1,59 @@
 ---
 id: match-row-height-to-table-length
-title: Adjust Row Height to Table Length
+title: Adjust table row height to table length so comparisons stay easy
 bibliography: references.bib
-description: Use roomy rows for short tables and compact rows for long tables to improve
-  comfort and comparison.
+description: Use roomier rows for short tables and compact rows for long tables to
+  balance comfort and comparability.
 labels:
 - chart:table
 - task:compare
 - visual:layout
 - impact:readability
-- data:mixed
+- data:tabular
 - audience:general
-- complexity:basic
 ---
 
-## The Rule <!-- role: advice -->
+## Scale row height to how many rows you show <!-- role: advice -->
 
-Use wider row spacing for tables with only a few rows, and a compact row height for tables with many rows.
+Use taller, airier rows when showing only a few rows, and switch to a compact row height when the table contains many rows.
 
-## The Logic <!-- role: reason -->
+## Spacing trades off comfort against density and comparability <!-- role: reason -->
 
-Short tables benefit from a more pleasant, airy layout, while long tables need compact rows to fit more information and make cross-row comparison easier; this tradeoff is described in [@muth_tables_2019].
+Row spacing affects both aesthetic comfort and the ability to compare many entries within a fixed viewport.
 
-- **The Principle:** Balance density and legibility
-- **The Evidence:** [@muth_tables_2019]
+**Mechanism:** Larger row heights improve legibility and visual comfort for small tables, while compact rows increase information density so more rows fit on screen, supporting across-row comparisons.
 
-## Where to Apply <!-- role: context -->
+**Evidence:** Wider layouts are more pleasant for tables with few rows, while compact layouts help when tables have many rows by making comparisons easier and increasing the chance the full table fits on one screen/page [@muth_tables_2019].
 
-- **User Goal:** Comparing values across multiple rows efficiently
-- **Data Type:** Tables that are either very short (few rows) or very long (many rows)
-- **Audience:** Readers viewing tables on limited screen space [@muth_tables_2019]
+**Notes:** Row height is a layout control that should respond to content volume.
 
-## When to Break It <!-- role: exceptions -->
+## When to apply row-height tuning <!-- role: context -->
 
-- **Scenario:** Rows contain multi-line text that needs space to remain readable
-- **Reason:** Over-compacting can harm legibility of longer content [@muth_tables_2019]
+- **User Goal:** Read comfortably (short tables) or compare many entries efficiently (long tables).
+- **Task:** Scanning and comparing values across many rows.
+- **Data:** Either a small curated set or a large list.
+- **Chart Setting:** Screen- or page-constrained layouts where visible rows matter.
+- **Audience:** General; especially relevant for quick-reading contexts.
+- **Success Criterion:** Readers can see enough rows to compare without feeling cramped or overwhelmed.
 
-## The Price <!-- role: costs -->
+## When a fixed row height may be necessary <!-- role: exceptions -->
 
-- **The Sacrifice:** Either space (if using roomy rows) or comfort (if using compact rows)
-- **The Risk:** Wrong density can make the table feel either sparse and scrolling-heavy or cramped and hard to read [@muth_tables_2019]
+**Break it when:** Row height is constrained by included content (e.g., multiline text, images, or embedded visuals) that cannot be compressed without losing readability. **Why:** Compressing rows would reduce legibility or truncate essential content [@muth_tables_2019].
 
-## Common Mistakes <!-- role: mistakes -->
+## Tradeoffs of changing row height <!-- role: costs -->
 
-- **The Wrong Fix:** Using a single default row height for all tables
-- **Why it fails:** The layout won’t match the table’s length and harms either readability or efficient comparison [@muth_tables_2019]
+**Sacrifice:** Airier rows reduce how much information fits at once; compact rows reduce breathing room. **Risk:** Over-compact rows can make scanning tiring; over-tall rows can hide too much of the table. **Mitigation:** Choose the smallest height that keeps text and key symbols comfortably readable at the intended device size [@muth_tables_2019].
 
-## How to Check <!-- role: check -->
+## Common row-height mistakes <!-- role: mistakes -->
 
-- **Visual Sign:** Long tables feel like they “waste space,” or short tables look cramped
-- **The Test:** Ask whether the intended portion of the table fits comfortably on one screen while remaining readable [@muth_tables_2019]
+**Mistake:** Using a spacious row height for a long table. **Why it fails:** Too few rows fit on screen, making comparisons harder and increasing scrolling [@muth_tables_2019].
 
-## How to Fix <!-- role: fix -->
+## Quick checks for row-height fit <!-- role: check -->
 
-- **Quick Fix:** Increase row height for short tables; decrease it for long ones [@muth_tables_2019]
-- **Best Fix:** Tune row height until key comparisons are easy and the table’s visible density matches its length and medium [@muth_tables_2019]
+**Failure Sign:** Readers must scroll constantly to compare nearby rows or lose context when moving through the list. **Quick Check:** If only a small handful of rows are visible in a long table, the rows are likely too tall. **Stronger Test:** Confirm whether the full table (or a meaningful chunk) fits within a screen/page for the intended reading device [@muth_tables_2019].
+
+## Fixes when row height is working against you <!-- role: fix -->
+
+- Reduce row height for long tables so more entries are visible at once [@muth_tables_2019].
+- Increase row height for short tables to improve visual comfort and perceived quality [@muth_tables_2019].
+- Reduce columns or shorten text/number formats so rows don’t need extra height due to wrapping [@muth_tables_2019].

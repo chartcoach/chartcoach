@@ -1,62 +1,63 @@
 ---
 id: make-chart-state-shareable-and-reproducible
-title: Make Chart State Easy to Share and Reproduce
+title: Make interactive chart state shareable and reproducible
 bibliography: references.bib
-description: Ensure any customized visualization view created through interaction
-  can be recreated and shared easily (e.g., via a single link, file, or saved state).
+description: Ensure any customized interactive view can be shared and reopened to
+  reproduce the same chart state with minimal effort.
 labels:
 - chart:interactive
-- task:explore
-- task:share
+- task:collaborate
 - visual:interaction
 - impact:accessibility
-- impact:usability
-- audience:analyst
+- data:multivariate
+- audience:expert
 - complexity:advanced
-- principle:compromising
-- source:community-practices
+- a11y:compromising
 ---
 
-## The Rule <!-- role: advice -->
+## Share state as a single artifact that reproduces the same view <!-- role: advice -->
 
-Provide a simple way to share and reproduce the current chart state whenever users can create a customized view through analysis or interaction (e.g., one link, file, or saved state).
+Make any user-defined chart state easy to share and reproduce as a single artifact such as a link, file, or saved state. Opening the shared artifact must restore the same parameters and view.
 
-## The Logic <!-- role: reason -->
+## Why reproducible state reduces access barriers in exploratory analysis <!-- role: reason -->
 
-Failing to preserve and transmit the exact interaction state forces people to reconstruct complex analysis steps, shifting the access burden onto collaborators and increasing cognitive effort; replacing state sharing with screenshots also removes “proof in the system” and introduces new accessibility risks that must be remediated. Chartability frames this as a Compromising issue (Understandable yet Robust) about transparent, tolerant information flows for different access needs [@elavskyHowAccessibleMy2022].
+When an interactive visualization allows filtering, drilling down, or navigating a branching narrative, people depend on stable references to communicate findings and continue work later. If state cannot be reproduced, users must reconstruct it manually, shifting cognitive labor onto collaborators and often forcing inaccessible substitutes (such as screenshots) that lose interactivity and require separate accessibility work.
 
-- **The Principle:** Reduce cognitive labor by preserving analysis context in a reproducible state.
-- **The Evidence:** URL-encoded map parameters demonstrate how sharing a single link can recreate an exact view for another person [@moz_everything_you]; dashboard/report sharing mechanisms show how collaborators can access the same interactive artifact/state rather than a static capture [@key2consulting_how_share].
+**Mechanism:** Reproducible state preserves context (filters, selections, viewpoint, and other parameters) so collaborators can return to the same evidence without re-deriving steps.
 
-## Where to Apply <!-- role: context -->
+**Evidence:** Sharing a parameterized link that recreates an exact view reduces the effort needed to communicate a specific interactive state and enables others to see the same state without manual reconstruction [@moz_everything_you]. Providing built-in report sharing workflows supports collaborators viewing and revisiting interactive dashboards in the intended state rather than relying on static exports [@key2consulting_how_share]. A visualization accessibility audit framework includes “state is not easy to share and reproduce” as an accessibility barrier in complex interactive data experiences [@elavskyHowAccessibleMy2022].
 
-This advice is designed for interactive or exploratory data experiences where users can branch, drill down, filter, or otherwise reach a personalized view.
+**Notes:** The accessibility barrier is the extra work imposed on others when the original explorer cannot transmit the “proof in the system” of their current view.
 
-- **User Goal:** Share a specific discovered view so others can see exactly what the sharer sees (and continue from there).
-- **Data Type:** Any data used in dashboards/apps with customizable interaction state (filters, selections, narrative branches).
-- **Audience:** Analysts and collaborators who need to communicate findings and reproduce analysis states reliably.
+## When state sharing is required in data experiences <!-- role: context -->
 
-## When to Break It <!-- role: exceptions -->
+- **User Goal:** Share an insight found through exploration so another person can review, verify, or continue from the same view.
+- **Task:** Collaborative analysis, review, handoff, or asynchronous discussion of findings.
+- **Data:** Multivariate datasets where filters, drilldowns, or narrative branches change what is visible.
+- **Chart Setting:** Interactive dashboards or applications with multiple controls and many possible states.
+- **Audience:** Teams with mixed abilities and mixed tool expertise, including users of assistive technologies.
+- **Success Criterion:** A recipient can open the shared artifact and see the same view and parameters without manual reconfiguration.
 
-- **Scenario:** The visualization has no interaction or cannot produce a customized view beyond the initial default.
-- **Reason:** There is no state to preserve or reproduce beyond the static baseline [@elavskyHowAccessibleMy2022].
+## When not to follow it <!-- role: exceptions -->
 
-## The Price <!-- role: costs -->
+**Break it when:** The chart has no meaningful interaction or configurable state beyond a fixed default view. **Why:** There is no state to capture or reproduce.
 
-- **The Sacrifice:** Additional engineering and product effort to persist, serialize, and restore state.
-- **The Risk:** Poorly implemented state saving/sharing can be fragile or incomplete, undermining trust in whether two viewers truly see the same state.
+## Tradeoffs of state capture and sharing <!-- role: costs -->
 
-## Common Mistakes <!-- role: mistakes -->
+**Sacrifice:** Implementing shareable state adds engineering and product complexity for storing or encoding parameters. **Risk:** Sharing may expose sensitive parameters or data access context if links/files are forwarded. **Mitigation:** Treat shared state as a controlled artifact within the system’s existing sharing model.
 
-- **The Wrong Fix:** Tell users to take a screenshot of the chart.
-- **Why it fails:** It shifts cognitive and accessibility labor onto others, loses interactive “proof in the system,” and creates a new accessibility remediation burden for the image [@elavskyHowAccessibleMy2022].
+## Common ways state sharing fails in practice <!-- role: mistakes -->
 
-## How to Check <!-- role: check -->
+- **Mistake:** Recommending screenshots as the primary sharing method for interactive findings. **Why it fails:** It removes interactive proof of the analysis and creates additional accessibility work to make the image accessible.
+- **Mistake:** Allowing “share” to open only a generic landing view rather than the current configured state. **Why it fails:** The recipient must reconstruct steps, transferring cognitive labor and increasing the chance of mismatch.
 
-- **Visual Sign:** A user can filter/drill into a unique view but can only communicate it by describing steps or sharing a screenshot.
-- **The Test:** Create a non-default view (via a realistic sequence of interactions), then attempt to share it; confirm a second person can open what you shared and see the same view/state without manual reconstruction [@elavskyHowAccessibleMy2022].
+## Quick tests for reproducible state <!-- role: check -->
 
-## How to Fix <!-- role: fix -->
+**Failure Sign:** A user cannot produce a single shareable artifact that restores their current filters/selections/view. **Quick Check:** Create a non-default state, share it, open it in a fresh session, and verify whether the same view is restored without manual steps. **Stronger Test:** Ask a collaborator to reproduce the shared view from the artifact alone and note any required reconstruction steps or missing context.
 
-- **Quick Fix:** Add an explicit “share” or “save view” output that captures the current state as a single artifact (one link or one file) [@elavskyHowAccessibleMy2022].
-- **Best Fix:** Encode all necessary parameters so the state is reproducible and transferable in a single shareable representation, analogous to shareable parameterized map URLs that recreate an exact view for another user [@moz_everything_you], and support collaboration-oriented sharing flows used for interactive reports [@key2consulting_how_share].
+## Practical ways to provide shareable, reproducible state <!-- role: fix -->
+
+- Provide a single-link “Share this view” action that encodes or references all parameters needed to recreate the current state.
+- Provide an exportable saved-state file (or internal saved view) that can be reopened to restore the same configuration.
+- Provide a “Saved views” mechanism so users can name, revisit, and share specific states without re-performing interactions.
+- If interactive state cannot be preserved, provide an accessible alternative that preserves the reasoning trail (for example, a saved report view intended for sharing rather than an ad-hoc screenshot).

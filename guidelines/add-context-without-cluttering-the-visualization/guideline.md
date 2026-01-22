@@ -1,60 +1,61 @@
 ---
 id: add-context-without-cluttering-the-visualization
-title: Add Context Without Cluttering the Visualization
+title: Add essential context without increasing visual clutter
 bibliography: references.bib
-description: Provide supporting context (e.g., uncertainty, assumptions, definitions)
-  in a way that preserves clarity while maintaining transparency.
+description: Provide the missing context viewers need to interpret the chart, using
+  lightweight in-chart cues and supporting text instead of adding visual noise.
 labels:
 - chart:general
-- task:explain
+- task:interpret
 - visual:annotation
 - impact:clarity
-- impact:trust
 - data:uncertainty
 - audience:general
-- complexity:moderate
+- complexity:reduction
 ---
 
-## The Rule <!-- role: advice -->
+## Add context with annotations or text, not extra visual encodings <!-- role: advice -->
 
-Add necessary context (definitions, assumptions, uncertainty, methodology) using lightweight annotations or accompanying text, and avoid removing critical information just to simplify the view.
+Add the minimum context needed to interpret the message while keeping the chart visually simple. Prefer concise annotations or accompanying text for details that would otherwise clutter the view.
 
-## The Logic <!-- role: reason -->
+## Context that preserves clarity and credibility <!-- role: reason -->
 
-Explainability and trust depend on transparency: reducing visual complexity can improve focus, but stripping away key context (like uncertainty) can make the message feel less credible or harder to interpret correctly.
+Reducing visual complexity can improve comprehension, but removing interpretive context can also reduce transparency and trust. The goal is to keep the main pattern easy to see while still enabling viewers to understand what the chart does and does not support.
 
-- **The Principle:** Clarity without loss of transparency
-- **The Evidence:** Interviewees valued simplification but warned it can reduce transparency; removing uncertainty ranges sometimes improved readability but could hurt credibility, and accompanying text was suggested to add depth without distracting from the core message [@schuster_being_2024].
+**Mechanism:** When context is delivered through lightweight cues (labels, short notes, captions) instead of additional marks, viewers maintain focus on the primary pattern while still having access to assumptions, uncertainty, and definitions that support correct interpretation.
 
-## Where to Apply <!-- role: context -->
+**Evidence:** Viewers reported that simplification can improve clarity, but removing contextual information (such as uncertainty ranges) can reduce perceived transparency and credibility. Providing accompanying text was suggested as a way to add depth without distracting from the core message [@schuster_being_2024].
 
-Use this when the viewer needs to understand not just the result, but what it means and how reliable it is.
+**Notes:** “Context” can include uncertainty, definitions, scope, data provenance, or key assumptions; the appropriate form depends on what the audience needs to interpret the claim.
 
-- **User Goal:** Interpret the takeaway correctly and assess confidence/limitations
-- **Data Type:** Modeled or estimated values; measurements with uncertainty; results requiring assumptions, definitions, or caveats
-- **Audience:** General audiences and decision-makers who need both clarity and trustworthiness
+## Situations where “more context” risks turning into clutter <!-- role: context -->
 
-## When to Break It <!-- role: exceptions -->
+- **User Goal:** Understand and trust the main takeaway while being able to verify what it means and what it does not mean.
+- **Task:** Interpret a claim, compare values, or make a decision under uncertainty.
+- **Data:** Has uncertainty, missingness, methodological assumptions, or multiple plausible interpretations.
+- **Chart Setting:** Space-constrained layouts (slides, dashboards), static graphics, or small multiples where extra marks quickly increase noise.
+- **Audience:** Mixed literacy audiences, stakeholders sensitive to credibility, or readers unfamiliar with measurement uncertainty.
+- **Success Criterion:** The main pattern is easy to see, and viewers can accurately explain the key caveats and limits.
 
-- **Scenario:** Ultra-small formats (e.g., thumbnails, dashboard tiles) where any added context makes the visual illegible
-- **Reason:** The context cannot be made legible at that size; move it to a detail view, tooltip, caption, or linked notes instead.
+## When to prioritize transparency over simplicity <!-- role: exceptions -->
 
-## The Price <!-- role: costs -->
+**Break it when:** The omitted context would materially change interpretation (for example, uncertainty dominates the differences or definitions are non-obvious). **Why:** A cleaner chart that hides decisive caveats can mislead and reduce trust.
 
-- **The Sacrifice:** Less whitespace and more reading effort (captions, footnotes, callouts)
-- **The Risk:** Poorly placed context can compete with the main signal and slow comprehension
+## What you trade for adding context safely <!-- role: costs -->
 
-## Common Mistakes <!-- role: mistakes -->
+**Sacrifice:** Space and attention, because captions and annotations compete with the data for room. **Risk:** Over-annotating can slow scanning and make the visualization feel busy even if the marks are simple. **Mitigation:** Keep context scoped to what is necessary for interpretation and move secondary detail to a caption, footnote, or linked drill-down.
 
-- **The Wrong Fix:** Removing uncertainty bands/error bars or caveats entirely to “clean up” the chart
-- **Why it fails:** It can increase apparent clarity while reducing transparency and credibility, leaving viewers unable to judge reliability [@schuster_being_2024].
+## Ways this goes wrong in practice <!-- role: mistakes -->
 
-## How to Check <!-- role: check -->
+**Mistake:** Removing uncertainty bands or methodological qualifiers solely to make the chart look cleaner. **Why it fails:** The chart may be easier to read but becomes less transparent and can appear less credible when viewers notice missing caveats.
 
-- **Visual Sign:** The chart looks clean but prompts obvious questions (“Compared to what?”, “How measured?”, “How certain is this?”) with no answers visible
-- **The Test:** Ask a first-time viewer to explain what the chart means and how confident they should be; if they can’t answer without you adding verbal caveats, context is missing.
+## Fast checks for “context without clutter” <!-- role: check -->
 
-## How to Fix <!-- role: fix -->
+**Failure Sign:** Viewers ask basic interpretation questions (what the metric is, what time period, what “significant” means, how uncertain the values are) or draw overconfident conclusions. **Quick Check:** If you hide the caption and notes, the chart should still be interpretable at a high level; if not, add only the missing essentials back in. **Stronger Test:** Run a brief read-out-loud test with a target reader and see whether they can state both the main message and one key limitation without prompting.
 
-- **Quick Fix:** Add a short caption/subtitle with the essential qualifier (units, time window, source, key assumption, and a one-line uncertainty note)
-- **Best Fix:** Add structured context layers: direct labels for the main message, a minimal uncertainty encoding (when essential), and an accompanying note/footnote or expandable details (tooltips, appendix, methods panel) for deeper transparency [@schuster_being_2024].
+## Practical ways to add context without adding noise <!-- role: fix -->
+
+- Add a short caption that states the claim, scope (population/time window), and one key caveat.
+- Use direct, minimal annotations (one or two callouts) for definitions, thresholds, or exceptions that viewers must know to interpret the pattern.
+- Keep uncertainty visible when it affects the conclusion, and move secondary uncertainty detail (method, intervals, assumptions) into a footnote or expandable panel.
+- If the chart cannot carry the needed context cleanly, split into two coordinated views (main pattern plus a small companion view or note block for uncertainty/definitions).

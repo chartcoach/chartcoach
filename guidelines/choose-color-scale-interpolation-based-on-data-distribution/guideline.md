@@ -1,60 +1,62 @@
 ---
 id: choose-color-scale-interpolation-based-on-data-distribution
-title: Choose Interpolation Based on Data Distribution
+title: Choose your color-scale interpolation based on the distribution of your data
 bibliography: references.bib
-description: Pick a color-scale interpolation that matches your data distribution
-  to balance pattern visibility and truthful emphasis on outliers.
+description: Pick linear, quantile, natural breaks, or custom cut points based on
+  how evenly your values are distributed and what patterns you need readers to see.
 labels:
-- chart:choropleth
+- chart:map-choropleth
 - task:encode
 - visual:color
 - impact:clarity
 - data:quantitative
 - audience:general
 - complexity:intermediate
-- source:datawrapper-blog
 ---
 
-## The Rule <!-- role: advice -->
+## Choose interpolation from the data distribution, not by default <!-- role: advice -->
 
-Choose your color-scale interpolation by first inspecting the distribution of your data (e.g., via a histogram), then select an interpolation that fits that distribution instead of defaulting to linear. [@muth_interpolation_2022]
+Choose the interpolation for your color scale only after inspecting how your values are distributed (for example with a histogram or rug plot). Use the interpolation to match how you want differences and outliers to appear.
 
-## The Logic <!-- role: reason -->
+## Interpolation changes what differences look big or small <!-- role: reason -->
 
-A single min→max linear mapping can collapse most values into a narrow, similar-looking color range when the data has strong outliers; distribution-aware interpolation re-allocates more of the color range to where values are dense, changing what patterns become visible. [@muth_interpolation_2022]
+Interpolation determines how numeric differences are translated into color differences across the map, so it can either compress most areas into similar colors or spread them across the full palette. When distributions have strong outliers, an interpolation that ignores distribution can make most regions look the same, while distribution-aware choices can reveal geographic patterns among the non-outliers.
 
-- **The Principle:** Distribution-aware color allocation
-- **The Evidence:** [@muth_interpolation_2022]
+**Mechanism:** Changing interpolation changes how much of the color range is allocated to dense versus sparse parts of the value range, which changes perceived contrast and which regions look meaningfully different.
 
-## Where to Apply <!-- role: context -->
+**Evidence:** Linear interpolation can cause most regions to share similar light colors when values are clustered with a few high outliers, while quantile- and natural-style interpolations redistribute the gradient so more regions receive mid/dark colors and patterns become easier to see [@muth_interpolation_2022]. Different interpolations can also invert perceived magnitude, making some moderate differences look larger than very large differences when the gradient is stretched unevenly across the data range [@muth_interpolation_2022].
 
-- **User Goal:** Seeing meaningful geographic (or spatial) patterns without being misled by a few extreme values
-- **Data Type:** Quantitative values with potential skew and outliers (e.g., county-level rates)
-- **Audience:** General readers who need an intuitive legend and interpretable differences [@muth_interpolation_2022]
+**Notes:** Inspecting distribution first helps you predict whether an interpolation will emphasize outliers, emphasize within-cluster variation, or balance both.
 
-## When to Break It <!-- role: exceptions -->
+## Use this when mapping values to a gradient on regions <!-- role: context -->
 
-- **Scenario:** Your main message is explicitly about extremes/outliers (e.g., “where are the worst values?”)
-- **Reason:** A linear interpolation can be the most straightforward way to emphasize outliers and preserve a direct linear mapping from value to color. [@muth_interpolation_2022]
+- **User Goal:** Understand how a quantitative variable varies across geographic areas, including outliers and/or regional patterns.
+- **Task:** Interpret relative intensity and compare areas by color.
+- **Data:** Quantitative values per region; often skewed with clusters and outliers.
+- **Chart Setting:** Choropleth maps (also applicable to other color-encoded charts like symbol maps or heat maps).
+- **Audience:** Readers who infer magnitude from color contrast and legend cut points.
+- **Success Criterion:** Regions that should look different actually look different, without implying false uniformity or false extremeness.
 
-## The Price <!-- role: costs -->
+## When not to use distribution-driven interpolation <!-- role: exceptions -->
 
-- **The Sacrifice:** You may lose the simplicity and immediate intuitiveness of a pure min→max linear scale.
-- **The Risk:** Distribution-aware interpolations can shift perceived severity by making more areas look “high” (darker) than a linear mapping would suggest. [@muth_interpolation_2022]
+**Break it when:** You need the colors to represent equal steps in the original numeric scale above all else. **Why:** Distribution-driven interpolations can intentionally distort how much color change corresponds to a given numeric change, changing how “big” differences look [@muth_interpolation_2022].
 
-## Common Mistakes <!-- role: mistakes -->
+## What you trade off by changing interpolation <!-- role: costs -->
 
-- **The Wrong Fix:** Using linear interpolation on highly skewed data and then assuming the map “has no pattern.”
-- **Why it fails:** Most regions end up in the lightest shades, hiding variation among typical values. [@muth_interpolation_2022]
-- **The Wrong Fix:** Choosing the most contrast-heavy option just because it looks dramatic.
-- **Why it fails:** It can imply stark differences where the data differences are small and compress differences among true outliers. [@muth_interpolation_2022]
+**Sacrifice:** You may lose the most straightforward “equal steps in value = equal steps in color” interpretation. **Risk:** Readers may infer that high values are common (with quantiles) or may underestimate how extreme the top outliers are (with heavily redistributed gradients). **Mitigation:** Make the legend explicit and ensure the interpolation matches the story goal (outliers vs. regional variation) [@muth_interpolation_2022].
 
-## How to Check <!-- role: check -->
+## Common ways interpolation goes wrong <!-- role: mistakes -->
 
-- **Visual Sign:** Most regions share nearly the same light color, with only a few very dark regions.
-- **The Test:** Plot or review a histogram (or rug/strip plot) of the mapped values; if values cluster tightly with long-tail outliers, a linear interpolation will likely underuse much of the gradient. [@muth_interpolation_2022]
+- **Mistake:** Using linear interpolation on heavily skewed data and accepting a map where most regions fall into the lightest color. **Why it fails:** Dense parts of the distribution get too little color range, hiding geographic structure among most regions [@muth_interpolation_2022].
+- **Mistake:** Using strong equal-count interpolations (e.g., many quantile cuts) just to make the map look dramatic. **Why it fails:** It can imply widespread high values and exaggerate small differences near dense parts while compressing large differences among outliers [@muth_interpolation_2022].
 
-## How to Fix <!-- role: fix -->
+## Quick ways to sanity-check the interpolation choice <!-- role: check -->
 
-- **Quick Fix:** Try a distribution-aware interpolation (e.g., Natural breaks / Natural interpolation) after confirming skew/outliers in the histogram. [@muth_interpolation_2022]
-- **Best Fix:** Align interpolation choice with the story goal: use linear to spotlight outliers, or use distribution-aware/quantile-style approaches to reveal regional variation among common values—then verify the legend and map still communicate the intended takeaway. [@muth_interpolation_2022]
+**Failure Sign:** Most regions share nearly the same shade, or the darkest shades appear so widely that the map suggests “many extremes.” **Quick Check:** Look at a histogram/rug plot and ask whether large parts of the distribution are being squeezed into a tiny part of the gradient. **Stronger Test:** Compare two or three interpolations side by side and check whether the implied story (outliers vs. patterns) matches the data distribution you see in the histogram [@muth_interpolation_2022].
+
+## Alternatives when the current interpolation misleads <!-- role: fix -->
+
+- Switch from linear to a distribution-aware interpolation (quantiles or natural-style) when outliers cause most regions to look the same [@muth_interpolation_2022].
+- Switch from equal-count interpolation to a more distribution-respecting option (natural-style) when equal-count makes outliers look common [@muth_interpolation_2022].
+- If you must keep distribution-aware cuts but want readability, round or manually adjust cut values to create a clearer legend while preserving the overall grouping [@muth_interpolation_2022].
+- If neither outlier emphasis nor pattern emphasis is acceptable with one interpolation, annotate the map to call out outliers explicitly and choose an interpolation that supports the primary message [@muth_interpolation_2022].

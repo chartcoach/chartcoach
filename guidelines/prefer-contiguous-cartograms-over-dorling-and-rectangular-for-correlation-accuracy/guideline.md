@@ -1,9 +1,10 @@
 ---
 id: prefer-contiguous-cartograms-over-dorling-and-rectangular-for-correlation-accuracy
-title: Prefer Contiguous Cartograms for Correlation Accuracy
+title: Prefer contiguous cartograms over Dorling and rectangular cartograms for correlation
+  accuracy
 bibliography: references.bib
-description: For correlation judgments in cartograms, contiguous cartograms produced
-  higher accuracy than Dorling and rectangular cartograms in the reported results.
+description: Contiguous cartograms achieved higher accuracy than Dorling and rectangular
+  cartograms for a correlation task among cartogram types.
 labels:
 - chart:cartogram
 - task:correlate
@@ -12,47 +13,51 @@ labels:
 - impact:accuracy
 - data:geospatial
 - audience:general
-- source:graphical-perception-collation
+- variant:contiguous
 ---
 
-## The Rule <!-- role: advice -->
+## Prefer contiguous cartograms for correlation accuracy among these types <!-- role: advice -->
 
-When users must judge **correlation over space/time** (as tested), choose a **contiguous cartogram** rather than Dorling or rectangular cartograms.
+Prefer a contiguous cartogram over Dorling and rectangular cartograms when you need higher accuracy on correlation judgments in cartogram comparisons. If you cannot use contiguous, prefer Dorling over rectangular for this correlation-accuracy scenario.
 
-## The Logic <!-- role: reason -->
+## Why contiguous cartograms can support correlation judgments here <!-- role: reason -->
 
-Correlation judgments depend on correctly interpreting spatial patterns and relative region magnitudes; the measured accuracy ranks contiguous highest among the reported set for the correlation task.
+Correlation judgments depend on perceiving spatial patterns and co-variation reliably; distortions that interfere with pattern reading can reduce correctness.
 
-- **The Principle:** Choose the cartogram type with empirically higher accuracy for correlation judgments.
-- **The Evidence:** For the correlate task, accuracy rank is **E-1 (contiguous) > E-4 (Dorling) > E-2 (rectangular)** with significant differences reported for each pair in that order [@nusratEvaluatingCartogramEffectiveness2018]. This is included as structured evidence in the collation pipeline described in [@zengReviewCollationGraphical2023].
+**Mechanism:** Preserving a more coherent geographic layout can help viewers detect co-variation patterns more accurately.
 
-## Where to Apply <!-- role: context -->
+**Evidence:** In a correlation task, contiguous cartograms ranked higher than Dorling and rectangular cartograms in accuracy, with significant pairwise differences reported (contiguous over Dorling and rectangular, and Dorling over rectangular) [@nusratEvaluatingCartogramEffectiveness2018; @zengReviewCollationGraphical2023].
 
-- **User Goal:** Determine which spatial side/area is more associated with higher values (a correlation-style judgment as captured in the dataset).
-- **Data Type:** Geo regions with quantitative values encoded by area.
-- **Audience:** General audiences interpreting geographic patterns.
+**Notes:** The provided results did not include non-contiguous for this correlation ranking.
 
-## When to Break It <!-- role: exceptions -->
+## When correlation is the primary reading goal <!-- role: context -->
 
-- **Scenario:** You are selecting among cartogram types not compared in the reported correlate ranking (e.g., non-contiguous not present in the correlate ranking here).
-- **Reason:** The evidence provided only ranks E-1, E-4, and E-2 for correlation; it does not support conclusions about other variants in this task entry [@nusratEvaluatingCartogramEffectiveness2018].
+- **User Goal:** Judge co-variation or relationship patterns accurately using a cartogram view.
+- **Task:** Correlate.
+- **Data:** Geo-referenced regions with quantitative values encoded by area.
+- **Chart Setting:** Static cartogram selection among contiguous, Dorling, and rectangular variants.
+- **Audience:** Users needing correct relationship judgments.
+- **Success Criterion:** Higher accuracy on correlation questions.
 
-## The Price <!-- role: costs -->
+## When not to follow it <!-- role: exceptions -->
 
-- **The Sacrifice:** You may not get the best performance for aggregation tasks (where Dorling ranks higher in accuracy in the reported results).
-- **The Risk:** If your “correlate” task differs from the tested correlate setup, gains may not transfer.
+**Break it when:** Your primary objective is not correlation accuracy (e.g., a different task dominates). **Why:** The evidence is specific to correlation accuracy rather than other outcomes.
 
-## Common Mistakes <!-- role: mistakes -->
+## Tradeoffs and risks <!-- role: costs -->
 
-- **The Wrong Fix:** Defaulting to rectangular cartograms for any “analytical” task because they appear structured.
-- **Why it fails:** Rectangular is lowest-ranked among the reported set for correlation accuracy (E-2 is worse than E-4 and E-1) [@nusratEvaluatingCartogramEffectiveness2018], consistent with the collation goal of avoiding weak designs [@zengReviewCollationGraphical2023].
+**Sacrifice:** You may trade off other properties that another cartogram type supports better for your overall workflow. **Risk:** If your correlation prompt differs from the tested one, the ranking may not hold. **Mitigation:** Confirm with a small pilot using your actual correlation questions.
 
-## How to Check <!-- role: check -->
+## Common mistakes <!-- role: mistakes -->
 
-- **Visual Sign:** Users disagree widely or answer incorrectly on correlation questions using Dorling/rectangular designs.
-- **The Test:** Run the same correlation question set on contiguous vs. Dorling vs. rectangular and compare accuracy.
+**Mistake:** Using a rectangular cartogram for correlation judgments because it preserves adjacency. **Why it fails:** The tested correlation accuracy ranking places rectangular lowest among the compared types.
 
-## How to Fix <!-- role: fix -->
+## Quick tests <!-- role: check -->
 
-- **Quick Fix:** Switch the correlate view to a **contiguous cartogram**.
-- **Best Fix:** Provide task-aware defaults: contiguous for correlation, other types only when the user’s task changes, using collated rankings as in [@zengReviewCollationGraphical2023; @nusratEvaluatingCartogramEffectiveness2018].
+**Failure Sign:** Users make inconsistent or incorrect correlation judgments across repeated questions. **Quick Check:** Compare correlation-answer accuracy for contiguous vs Dorling (and vs rectangular) on representative items. **Stronger Test:** Run a controlled evaluation on your prompt set and measure accuracy differences.
+
+## What to do instead <!-- role: fix -->
+
+- Use a Dorling cartogram if you cannot deploy a contiguous cartogram and still need better accuracy than rectangular.
+- Provide a second cartogram view for correlation tasks while using your preferred map type for other tasks.
+- Reduce correlation inference demands by presenting correlation results separately and using the cartogram only as contextual display.
+- Reframe the analysis question to a different task supported by your chosen cartogram type, then evaluate accuracy.
