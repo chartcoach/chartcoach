@@ -31,6 +31,10 @@ labels:
   - Prefer plain language, short sentences, and concrete terms; define jargon.
   - Use consistent terminology (same concept, same words) so retrieval works.
 
+  Embeddability (section self-contained)
+  - Assume sections are embedded without their heading: the section body must be meaningful without the title.
+  - Put the key subject in the first sentence (e.g., the encoding, chart type, task, or constraint) rather than relying on the heading for context.
+
   Abbreviations / acronyms (body text)
   - On first use in the BODY, expand each abbreviation once: "Full Term (ABBR)". Use ABBR after.
   - It's fine to use ABBR in the title/slug/labels, but do not assume readers know it in the body.
@@ -49,6 +53,8 @@ labels:
   - In the body, do not sprinkle citekeys throughout the guideline.
   - Prefer putting all in-body citekeys ONLY in the Logic section under **Evidence:**.
   - If a non-Logic section truly needs a citekey (rare), move that claim into Logic instead.
+  - Do not write meta-attribution about the source (paper/blog post/authors) or attribution verbs (states/claims/argues). State the claim directly, then cite it.
+    - Example: "X improves Y under condition Z. [@citekey]"
 
   Section titles (for the static site TOC)
   - Do NOT leave headings as "The Rule", "The Logic", etc.
@@ -94,20 +100,21 @@ To make this useful for AI, keep each section pure.
   FORMAT
   - 1 short paragraph describing the mechanism.
   - Then 1–3 short labeled paragraphs: **Mechanism:** / **Evidence:** / **Notes:**.
-  - Evidence is 1–2 short sentences: summarize the key result and, if known, name the study type or source (experiment, observational study, review, standard, blog, internal memo).
+  - Evidence is 1–2 short sentences: summarize the key result and, if helpful, name the evidence type (experiment, observational study, systematic review, standard) without referencing the paper/blog/authors.
   - End each Evidence sentence with one or more citekeys like `[@key1; @key2]` (multiple citekeys are common).
 
   DON'T
   - Repeat the rule verbatim.
   - Introduce new conditions (belongs in Where to Apply / When to Break It).
   - Write placeholders like "(No linked studies provided.)"; add a source to `references.bib` instead (paper, standard, blog, or internal memo).
+  - Attribute claims to the source ("the paper/blog post says..."); keep Evidence phrased as direct statements with citekeys at the end.
 -->
 
 Explain the principle at work here. Connect the rule to human perception or clear communication.
 
 **Mechanism:** [What changes in perception/interpretation when the rule is followed?]
 
-**Evidence:** [Write 1–2 sentences and end each with citekeys, e.g., "In Experiment 1, viewers were faster/more accurate under condition X than Y [@key1]. A review reports the same direction across related tasks [@key2]."]
+**Evidence:** [Write 1–2 sentences and end each with citekeys, e.g., "Viewers were faster/more accurate with X than Y under condition Z [@key1]. This direction holds across related tasks in synthesized evidence [@key2]."]
 
 **Notes:** [Optional: clarifying nuance that is not an exception.]
 
