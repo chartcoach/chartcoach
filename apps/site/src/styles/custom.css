@@ -6,7 +6,7 @@
     /* Layout */
     --sl-content-width: 86rem;
     --sl-sidebar-width: 13rem;
-    --cc-right-sidebar-width: 10rem;
+    --cc-right-sidebar-width: 22rem;
 
     /* Brand accents */
     --sl-color-accent-low: hsl(212, 70%, 22%);
@@ -66,6 +66,12 @@
       .right-sidebar {
         padding-inline: 0.75rem;
       }
+    }
+  }
+
+  .right-sidebar-panel {
+    .sl-container {
+      width: 75%;
     }
   }
 
