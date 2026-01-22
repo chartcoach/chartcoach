@@ -1,5 +1,6 @@
 .env
 vertex-ai.json
+.github/secrets
 
 .artifacts/
 
