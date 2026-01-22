@@ -131,7 +131,7 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(conn):
-    fix_sim_threshold = 0.75
+    fix_sim_threshold = 0.7
     mistake_diff_threshold = 0.45
 
     conn.query(f"""
@@ -510,6 +510,10 @@ def _(EmbeddingAtlasWidget, catalog, pl):
             pl.col("guideline").struct.field("labels"),
             pl.col("references"),
         ],
+        text_projector_type="litellm",
+        api_base_url="http://localhost:11434",
+        model="ollama/qwen3-embedding:4b",
+        batch_size=512,
         sync=True,
     )
     EmbeddingAtlasWidget(
@@ -610,11 +614,14 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _(index_sections, projected_sections_df):
+def _(REPO_ROOT, index_sections, projected_sections_df):
     embedded_sections_df = projected_sections_df.drop(
         "projection_x",
         "projection_y",
         "neighbors",
+    )
+    embedded_sections_df.write_parquet(
+        (REPO_ROOT / "guidelines" / "embeddings.parquet")
     )
     conn = index_sections(embedded_sections_df)
     return (conn,)
@@ -645,9 +652,10 @@ def _(Catalog, catalog_parquet, pl):
 @app.cell(hide_code=True)
 def _(mo, pathlib):
     NB_ROOT = pathlib.Path(__file__).parent
-    CATALOG_PARQUET_PATH = NB_ROOT.parent / "guideline-cataloging" / "catalog.parquet"
+    REPO_ROOT = NB_ROOT.parent.parent.parent
+    CATALOG_PARQUET_PATH = REPO_ROOT / "guidelines" / "catalog.parquet"
     catalog_parquet = mo.watch.file(CATALOG_PARQUET_PATH)
-    return (catalog_parquet,)
+    return REPO_ROOT, catalog_parquet
 
 
 @app.cell(hide_code=True)
@@ -662,13 +670,13 @@ def _():
 def _():
     import pathlib
 
+    import duckdb
     import marimo as mo
     import polars as pl
 
     from chartcoach.catalog.catalog import Catalog
     from chartcoach.catalog.embeddings import index_sections
     from embedding_atlas.widget import EmbeddingAtlasWidget
-
     return Catalog, EmbeddingAtlasWidget, index_sections, mo, pathlib, pl
 
 
