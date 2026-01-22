@@ -335,15 +335,6 @@ def _(
                         create_pdf_content_part(post_pdf_path.read_bytes()),
                         {
                             "type": "input_text",
-                            "text": "\n".join(
-                                [
-                                    "Your task is to convert all the knowledge into granular guidelines adhering to this template:",
-                                    fence(GUIDELINE_TEMPLATE, lang="md"),
-                                ]
-                            ),
-                        },
-                        {
-                            "type": "input_text",
                             "text": "\n\n".join(
                                 [
                                     "Your task is to convert all the knowledge into a single guideline adhering to this template:",
