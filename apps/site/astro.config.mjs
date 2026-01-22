@@ -29,6 +29,23 @@ function resolveSiteUrl() {
   return undefined;
 }
 
+/**
+ * @param {string | undefined} siteUrl
+ * @returns {import("astro").AstroIntegration}
+ */
+function siteUrlLogger(siteUrl) {
+  return /** @type {import("astro").AstroIntegration} */ ({
+    name: "chartcoach:site-url",
+    hooks: {
+      /** @param {import("astro").HookParameters<"astro:config:setup">} options */
+      "astro:config:setup": (options) => {
+        const { logger } = options;
+        logger.info(`site url ${siteUrl ? `resolved (${siteUrl})` : "not resolved (set SITE_URL)"}`);
+      },
+    },
+  });
+}
+
 // https://astro.build/config
 const siteUrl = resolveSiteUrl();
 
@@ -42,6 +59,7 @@ export default defineConfig({
     },
   },
   integrations: [
+    siteUrlLogger(siteUrl),
     starlight({
       title: "Chart Coach",
       customCss: ["./src/styles/custom.css"],
