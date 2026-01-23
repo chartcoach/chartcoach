@@ -9,3 +9,4 @@ guidelines/embeddings.parquet
 __pycache__/
 *.pyc
 .DS_Store
+.coverage
