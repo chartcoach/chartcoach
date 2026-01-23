@@ -98,6 +98,7 @@ def _(ch_catalog, dw_catalog, misc_catalog, prc_catalog, tc_catalog):
 def _():
     import altair as alt
     import polars as pl
+
     return alt, pl
 
 
@@ -216,8 +217,7 @@ def _(
         response_text = response.output_text
 
         guideline_objects = [
-            ccp.parse_guideline(md_content)
-            for md_content in unfence(response_text)
+            ccp.parse_guideline(md_content) for md_content in unfence(response_text)
         ]
         references = [item_bibtex]
 
@@ -225,6 +225,7 @@ def _(
             CatalogEntry(guideline=guideline_obj, references=references)
             for guideline_obj in guideline_objects
         ]
+
     return (misc_paper_to_catalog_entries,)
 
 
@@ -370,6 +371,7 @@ def _(
             CatalogEntry(guideline=guideline_obj, references=references)
             for guideline_obj in guideline_objects
         ]
+
     return (datawrapper_post_pdf_to_catalog_entries,)
 
 
@@ -394,6 +396,7 @@ def _(DATAWRAPPER_REFS: list[str], ccp, pathlib):
             raise ValueError(f"No bibtex entry found for URL: {url}")
 
         return entry[0]
+
     return (find_datawrapper_bibtex_entry_by_path,)
 
 
@@ -528,6 +531,7 @@ def _(
         references = [CHARTABILITY_PAPER_BIBTEX, *ch_item["references"]]
 
         return CatalogEntry(guideline=guideline_obj, references=references)
+
     return (chartability_item_to_catalog_entry,)
 
 
@@ -704,6 +708,7 @@ def _(
             CatalogEntry(guideline=guideline_obj, references=references)
             for guideline_obj in guideline_objects
         ]
+
     return (collated_item_to_catalog_entries,)
 
 
@@ -807,6 +812,7 @@ def _(json, zot):
         db = bibtexparser.loads(bibtex_str)
 
         return db.entries[0]["ID"]
+
     return (
         find_item_by_doi,
         process_zot_item,
@@ -833,6 +839,7 @@ def _():
 def _():
     from pyzotero import zotero
     import itertools
+
     return itertools, zotero
 
 
@@ -938,6 +945,7 @@ def _(
         )
 
         return CatalogEntry(guideline=guideline_obj, references=references)
+
     return (tc_guideline_to_catalog_entry,)
 
 
@@ -962,6 +970,7 @@ def _(GUIDELINE_TEMPLATE, fence, prepare_guideline):
 
     Respond only with the final converted guideline in markdown format, fenced, starting with "```md" and ending with "```".
     """
+
     return (build_tc_prompt,)
 
 
@@ -987,6 +996,7 @@ def _(json):
         ]
         prepared_guideline = guideline | {"evidence": evidence}
         return json.dumps(prepared_guideline, indent=2)
+
     return list_tc_guideline_references, prepare_guideline
 
 
@@ -1008,6 +1018,7 @@ def _():
         db.entries = picked_entries
 
         return bibtexparser.dumps(db)
+
     return bibtexparser, list_ref_ids, pick_refs
 
 
@@ -1117,18 +1128,21 @@ def _(Catalog, fence, mo):
                 ]
             )
         )
+
     return
 
 
 @app.cell(hide_code=True)
 def _():
     from chartcoach.utils.text import fence, string_hash, unfence
+
     return fence, string_hash, unfence
 
 
 @app.cell(hide_code=True)
 def _():
     from chartcoach.cataloging.parallel import parallel_map, param_collapsed
+
     return parallel_map, param_collapsed
 
 
@@ -1136,7 +1150,6 @@ def _():
 def _():
     import base64
     import time
-
 
     def create_pdf_content_part(pdf_bytes: bytes) -> dict[str, str]:
         encoded_file = base64.b64encode(pdf_bytes).decode("utf-8")
@@ -1148,6 +1161,7 @@ def _():
             "filename": filename,
             "file_data": base64_url,
         }
+
     return (create_pdf_content_part,)
 
 
@@ -1169,6 +1183,7 @@ def _():
     from chartcoach.catalog.catalog import Catalog
     from chartcoach.catalog.model import CatalogEntry, Guideline
     import chartcoach.catalog.parse as ccp
+
     return Catalog, CatalogEntry, Guideline, ccp, json, mo, pathlib
 
 
