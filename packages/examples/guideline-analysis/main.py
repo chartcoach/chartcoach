@@ -502,8 +502,9 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _(EmbeddingAtlasWidget, catalog, pl):
-    projected_sections_df = catalog.projected_sections_df(
+def _(CatalogEmbedder, EmbeddingAtlasWidget, catalog, pl):
+    embedder = CatalogEmbedder(catalog)
+    projected_text_df = embedder.projected_text_df(
         select=[
             pl.col("guideline").struct.field("title"),
             pl.col("guideline").struct.field("description"),
@@ -517,12 +518,12 @@ def _(EmbeddingAtlasWidget, catalog, pl):
         sync=True,
     )
     EmbeddingAtlasWidget(
-        projected_sections_df.drop("embedding").to_pandas(),
+        projected_text_df.drop("embedding").to_pandas(),
         x="projection_x",
         y="projection_y",
         neighbors="neighbors",
     )
-    return (projected_sections_df,)
+    return embedder, projected_text_df
 
 
 @app.cell(hide_code=True)
@@ -614,16 +615,15 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _(REPO_ROOT, index_sections, projected_sections_df):
-    embedded_sections_df = projected_sections_df.drop(
+def _(DuckDBVectorIndexBackend, REPO_ROOT, embedder, projected_text_df):
+    embedded_text_df = projected_text_df.drop(
         "projection_x",
         "projection_y",
         "neighbors",
     )
-    embedded_sections_df.write_parquet(
-        (REPO_ROOT / "guidelines" / "embeddings.parquet")
-    )
-    conn = index_sections(embedded_sections_df)
+    embedded_text_df.write_parquet((REPO_ROOT / "guidelines" / "embeddings.parquet"))
+    index = DuckDBVectorIndexBackend().index(embedded_text_df)
+    conn = index.conn
     return (conn,)
 
 
@@ -670,14 +670,23 @@ def _():
 def _():
     import pathlib
 
-    import duckdb
     import marimo as mo
     import polars as pl
 
     from chartcoach.catalog.catalog import Catalog
-    from chartcoach.catalog.embeddings import index_sections
+    from chartcoach.embedding import CatalogEmbedder
+    from chartcoach.index import DuckDBVectorIndexBackend
     from embedding_atlas.widget import EmbeddingAtlasWidget
-    return Catalog, EmbeddingAtlasWidget, index_sections, mo, pathlib, pl
+
+    return (
+        Catalog,
+        CatalogEmbedder,
+        DuckDBVectorIndexBackend,
+        EmbeddingAtlasWidget,
+        mo,
+        pathlib,
+        pl,
+    )
 
 
 if __name__ == "__main__":
