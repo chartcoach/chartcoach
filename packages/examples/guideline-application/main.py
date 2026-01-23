@@ -692,266 +692,49 @@ def _(catalog, grounded_vis_feedback, pl):
 
 @app.cell(hide_code=True)
 def _(
+    GuidelineBrowserStrategy,
+    ImageItem,
+    RetrievalRequest,
+    TextItem,
+    catalog,
     draco_spec,
     draco_spec_dict,
-    dspy,
     feedback_model,
-    generate_grounded_vis_feedback,
+    format_existing_chart_feedback,
     image,
-    init_lm,
+    openai_api_base,
+    openai_api_key,
     user_situation,
     vl_linter_violations,
 ):
-    with dspy.context(lm=init_lm(feedback_model)):
-        grounded_vis_feedback = generate_grounded_vis_feedback(
-            image=image,
-            situation=user_situation,
-            draco_spec_dict=draco_spec_dict,
-            vl_linter_violations=vl_linter_violations,
-            draco_features=draco_spec.features_df.to_polars().to_dicts(),
-        )
-    return (grounded_vis_feedback,)
+    from io import BytesIO
 
+    buf = BytesIO()
+    image.save(buf, format="PNG")
 
-@app.cell(hide_code=True)
-def _(
-    Image,
-    VisFeedback,
-    draco_chart_spec,
-    dspy,
-    format_existing_chart_feedback,
-    list_guideline_abstracts,
-    list_guideline_labels,
-    list_reftypes,
-    read_guidelines_by_id,
-):
-    class GroundedVisFeedback(VisFeedback):
-        """
-        An expert visualization critic that validates design choices against a rigorous knowledge catalog.
-
-        INSTRUCTIONS:
-        1. Do not rely on your internal training data for design rules.
-        2. You are an investigatory agent. You must map the user's vague requirements (e.g., "make it pop", "old audience") to specific catalog labels (e.g., "color:salience", "accessibility").
-        3. You must "show your work" by citing specific Guideline IDs found in the catalog.
-        4. Explore the catalog thoroughly: If the user mentions multiple constraints (e.g., color AND tasks), perform multiple searches to find guidelines for each aspect. Retrieve multiple guidelines related to each relevant label or aspect to ensure comprehensive coverage.
-        5. Read the full details of multiple retrieved guidelines to assess their relevance, prioritize the best and most useful ones that directly address the situation, and avoid irrelevant or redundant rules.
-        6. Always reference the retrieved guideline IDs in the feedback. Ensure every suggestion cites at least one relevant guideline ID from the catalog. Guarantee that feedback avoids content repetition by providing completely distinct suggestions with unique rationales.
-        """
-
-        used_guideline_ids: list[str] = dspy.OutputField(
-            desc="List of guideline IDs from the catalog that were definitively used to generate the rationale."
-        )
-        feedback: str = dspy.OutputField(
-            desc="\n".join(
-                [
-                    "Feedback strictly grounded in the catalog guidelines.",
-                    "Always add citations to the specific guideline IDs you used. Ensure every suggestion references at least one retrieved ID. Never cite the labels you searched for.",
-                    "Ensure that you query the catalog deeply to find relevant rules before giving feedback.",
-                    "Your feedback should be actionable, completely distinct top 5 suggestions, each with brief rationale.",
-                    "Output in markdown format without fences.",
-                ]
-            )
-        )
-
-    def generate_grounded_vis_feedback(
-        image: Image.Image,
-        situation: str,
-        draco_spec_dict: draco_chart_spec.SpecificationDict,
-        vl_linter_violations: list,
-        draco_features: list,
-    ) -> dspy.Prediction:
-        chartcoach = dspy.ReAct(
-            GroundedVisFeedback,
-            tools=[
-                list_guideline_labels,
-                list_reftypes,
-                list_guideline_abstracts,
-                read_guidelines_by_id,
-            ],
-        )
-        chart = dspy.Image.from_PIL(image)
-        chart_spec = draco_spec_dict.model_dump_json(exclude_none=True)
-        existing_chart_feedback = format_existing_chart_feedback(
-            vl_linter_violations,
-            draco_features,
-        )
-
-        return chartcoach(
-            chart=chart,
-            situation=situation,
-            chart_spec=chart_spec,
-            existing_chart_feedback=existing_chart_feedback,
-        )
-
-    return (generate_grounded_vis_feedback,)
-
-
-@app.cell(hide_code=True)
-def _(catalog, pl):
-    def _query_guidelines(
-        df: pl.DataFrame,
-        where_labels: list[str] | None = None,
-        where_reftypes: list[str] | None = None,
-    ) -> pl.DataFrame:
-        matches_df = df
-
-        if where_labels is not None:
-            matches_df = matches_df.filter(
-                pl.col("guideline")
-                .struct.field("labels")
-                .list.set_intersection(where_labels)
-                .list.len()
-                > 0
-            )
-
-        if where_reftypes is not None:
-            matches_df = matches_df.filter(
-                pl.col("references")
-                .list.join("\n\n")
-                .str.contains_any([f"@{rt}{{" for rt in where_reftypes])
-            )
-
-        return matches_df
-
-    def list_guideline_labels() -> list[str]:
-        """
-        [TAXONOMY DISCOVERY] Discover all available topic labels in the catalog.
-
-        Returns a sorted list of searchable labels covering visual design, tasks, accessibility, and other topics.
-
-        WHEN TO USE:
-        - Call this FIRST to understand the catalog's vocabulary
-        - Map user requirements to specific catalog labels before searching
-        - Identify which labels are relevant to the user's situation
-
-        OUTPUT: List of label strings you can use in `list_guideline_abstracts(where_labels=[...])`
-        """
-        return (
-            catalog.df()
-            .select("guideline")
-            .unnest("guideline")
-            .select("labels")
-            .explode("labels")
-            .unique("labels")
-            .sort("labels")["labels"]
-            .to_list()
-        )
-
-    def list_reftypes() -> list[str]:
-        """
-        [REFERENCE TYPE DISCOVERY] Discover available source types for filtering by authority.
-
-        Returns reference types available in the catalog for authority-based filtering.
-
-        WHEN TO USE:
-        - User requires specific authority levels in their feedback
-        - Need to filter for academic rigor vs. general advice
-        - Call this to discover available types, then filter in `list_guideline_abstracts(where_reftypes=[...])`
-
-        FILTERING STRATEGY:
-        - Examine the returned types and their typical authority levels
-        - Choose appropriate types based on user's rigor requirements
-        - Can combine multiple types or omit filtering entirely
-
-        OUTPUT: List of reference type strings for filtering
-        """
-        return (
-            catalog.df()
-            .select("references")
-            .explode("references")
-            .select(
-                reftype=pl.col("references").str.split("{").list.get(0).str.slice(1)
-            )
-            .drop_nulls()
-            .unique()
-        )["reftype"].to_list()
-
-    def list_guideline_abstracts(
-        where_labels: list[str] | None = None,
-        where_reftypes: list[str] | None = None,
-    ) -> str:
-        """
-        [GUIDELINE SEARCH] Search for relevant guidelines by topic and optionally filter by source authority.
-
-        Returns CSV with columns: id, title, description, labels
-
-        REQUIRED WORKFLOW:
-        1. Discover topics: Call `list_guideline_labels()` to find relevant labels
-        2. (Optional) Discover source types: Call `list_reftypes()` if filtering by authority
-        3. Search iteratively: Call THIS tool multiple times for different aspects
-
-        SEARCH STRATEGY:
-        - NEVER try to cover everything in one call - break down the user's needs
-        - Perform separate searches for different aspects of the user's situation
-        - Consider: visual encoding, analytical tasks, audience characteristics, context
-        - Each search should target a coherent subset of concerns
-
-        FILTERING BY AUTHORITY:
-        - If user specifies authority requirements: discover types first, then filter accordingly
-        - Without authority requirements: omit where_reftypes for broader coverage
-        - Discover available types with `list_reftypes()` before filtering
-
-        Args:
-            where_labels: Topic filters (OR logic). Discover with `list_guideline_labels()` first.
-            where_reftypes: Source type filters (OR logic). Discover with `list_reftypes()` first.
-
-        NEXT STEP: Note promising 'id' values, then call `read_guidelines_by_id([...])`
-        """
-        from io import StringIO
-
-        matches_df = _query_guidelines(
-            catalog.df(),
-            where_labels=where_labels,
-            where_reftypes=where_reftypes,
-        )
-
-        abstract_df = matches_df.select(
-            pl.col("id"),
-            pl.col("guideline").struct.field("title"),
-            pl.col("guideline").struct.field("description"),
-            pl.col("guideline").struct.field("labels").list.join(";"),
-        )
-        stringio = StringIO()
-        abstract_df.write_csv(stringio)
-
-        return stringio.getvalue()
-
-    def read_guidelines_by_id(ids: list[str]) -> list[dict]:
-        """
-        [DETAILED RETRIEVAL] Get full content and citations for specific guidelines.
-
-        Returns list of dicts with: id, body (full rationale + details), references
-
-        WHEN TO USE:
-        - After identifying promising guidelines via `list_guideline_abstracts()`
-        - When you need the complete rationale to cite in your feedback
-        - To access implementation details and supporting evidence
-
-        CRITICAL RULES:
-        - Abstracts alone are insufficient for strong arguments
-        - The 'body' field contains the evidence you need to cite
-        - Always retrieve before making definitive claims about a guideline
-        - Use returned 'id' values as citations in your final feedback
-
-        Args:
-            ids: List of guideline IDs from `list_guideline_abstracts()` output
-
-        OUTPUT: Full guideline content ready for citation
-        """
-        id_df = pl.DataFrame({"id": ids})
-        matched_df = id_df.join(catalog.df(), on="id", how="inner")
-        return matched_df.select(
-            "id",
-            pl.col("guideline").struct.field("body"),
-            "references",
-        ).to_dicts()
-
-    return (
-        list_guideline_abstracts,
-        list_guideline_labels,
-        list_reftypes,
-        read_guidelines_by_id,
+    existing_chart_feedback = format_existing_chart_feedback(
+        vl_linter_violations,
+        draco_spec.features_df.to_polars().to_dicts(),
     )
+    request = RetrievalRequest(
+        context=[
+            ImageItem(role="chart", data=buf.getvalue(), mime="image/png"),
+            TextItem(role="situation", text=user_situation),
+            TextItem(
+                role="chart_spec",
+                text=draco_spec_dict.model_dump_json(exclude_none=True),
+            ),
+            TextItem(role="existing_chart_feedback", text=existing_chart_feedback),
+        ]
+    )
+    strategy = GuidelineBrowserStrategy(
+        catalog=catalog,
+        model=feedback_model,
+        api_base=openai_api_base,
+        api_key=openai_api_key,
+    )
+    grounded_vis_feedback = strategy(request=request)
+    return (grounded_vis_feedback,)
 
 
 @app.cell(hide_code=True)
@@ -974,6 +757,18 @@ def _():
     from chartcoach.catalog.catalog import Catalog
 
     return (Catalog,)
+
+
+@app.cell(hide_code=True)
+def _():
+    from chartcoach.retrieval import (
+        GuidelineBrowserStrategy,
+        ImageItem,
+        RetrievalRequest,
+        TextItem,
+    )
+
+    return GuidelineBrowserStrategy, ImageItem, RetrievalRequest, TextItem
 
 
 @app.cell(column=7, hide_code=True)
@@ -1012,14 +807,40 @@ def _(mo, pathlib):
 
 
 @app.cell(hide_code=True)
-def _(os):
+def _(pathlib):
     import dspy
+
+    def _read_dotenv(path: pathlib.Path) -> dict[str, str]:
+        if not path.exists():
+            return {}
+
+        env: dict[str, str] = {}
+        for raw_line in path.read_text().splitlines():
+            line = raw_line.strip()
+            if not line or line.startswith("#"):
+                continue
+            key, sep, value = line.partition("=")
+            if sep != "=":
+                continue
+            env[key.strip()] = value.strip()
+        return env
+
+    repo_root = pathlib.Path(__file__).resolve().parents[3]
+    env = _read_dotenv(repo_root / ".env")
+    openai_api_base = env.get("OPENAI_BASE_URL", "")
+    openai_api_key = env.get("OPENAI_API_KEY", "")
+
+    if not openai_api_base or not openai_api_key:
+        raise RuntimeError(
+            "Missing OPENAI_BASE_URL/OPENAI_API_KEY. Provide them in a repo-root `.env` "
+            "or edit this notebook to pass them explicitly."
+        )
 
     def init_lm(model_name: str) -> dspy.LM:
         return dspy.LM(
             model=model_name,
-            api_base=os.environ["OPENAI_BASE_URL"],
-            api_key=os.environ["OPENAI_API_KEY"],
+            api_base=openai_api_base,
+            api_key=openai_api_key,
         )
 
     model_name = "gpt-5.1-codex-mini"
@@ -1028,7 +849,7 @@ def _(os):
         enable_disk_cache=True,
         enable_memory_cache=True,
     )
-    return dspy, init_lm
+    return dspy, init_lm, openai_api_base, openai_api_key
 
 
 @app.cell(hide_code=True)
