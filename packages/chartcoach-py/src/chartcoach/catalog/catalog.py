@@ -10,6 +10,7 @@ class Catalog:
 
     def __init__(self, entries: list[CatalogEntry] | None = None) -> None:
         self._entries = entries or []
+        self._df_cache: pl.DataFrame | None = None
 
     @classmethod
     def from_df(cls, df: pl.DataFrame) -> "Catalog":
@@ -27,13 +28,15 @@ class Catalog:
         return self._entries
 
     def df(self) -> pl.DataFrame:
-        dicts = [entry.model_dump() for entry in self._entries]
-        return (
-            pl.from_dicts(dicts)
-            .select("id", "guideline", "references")
-            .unique("id")
-            .sort("id")
-        )
+        if self._df_cache is None:
+            dicts = [entry.model_dump() for entry in self._entries]
+            self._df_cache = (
+                pl.from_dicts(dicts)
+                .select("id", "guideline", "references")
+                .unique("id")
+                .sort("id")
+            )
+        return self._df_cache.clone()
 
     def sections_df(self) -> pl.DataFrame:
         return (
@@ -49,39 +52,6 @@ class Catalog:
     def merge(self, other: "Catalog") -> "Catalog":
         merged_entries = self._entries + other.entries
         return Catalog(entries=merged_entries)
-
-    def projected_sections_df(
-        self,
-        select: list[pl.Expr | str] | None = None,
-        x: str = "projection_x",
-        y: str = "projection_y",
-        neighbors: str = "neighbors",
-        umap_args: dict[str, object] | None = None,
-        **kwargs,
-    ) -> pl.DataFrame:
-        from .embeddings import embed_sections, project_embedded_sections
-
-        df = self.df()
-        sections_df = self.sections_df()
-        embedded_sections_df = embed_sections(sections_df, **kwargs)
-
-        if select is not None:
-            id_df = df.select("id")
-            selected_df = df.select(*select)
-            join_df = pl.concat([id_df, selected_df], how="horizontal")
-            embedded_sections_df = embedded_sections_df.join(
-                join_df,
-                on="id",
-                how="left",
-            )
-
-        return project_embedded_sections(
-            embedded_sections_df,
-            x=x,
-            y=y,
-            neighbors=neighbors,
-            umap_args={} if umap_args is None else umap_args,
-        )
 
     def labels_df(self) -> pl.DataFrame:
         df = self.df()
