@@ -3,7 +3,7 @@ from __future__ import annotations
 import dspy
 import polars as pl
 
-from .types import RetrievalRequest, RetrievalResponse
+from ..types import RetrievalRequest, RetrievalResponse
 
 
 class HeadRetrievalStrategy(dspy.Module):
@@ -23,3 +23,4 @@ class HeadRetrievalStrategy(dspy.Module):
             strategy_id=self.strategy_id,
             result_df=catalog_df.head(request.k),
         )
+
