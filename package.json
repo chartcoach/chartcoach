@@ -4,10 +4,17 @@
 	"version": "0.0.1",
 	"scripts": {
 		"dev": "pnpm --filter site dev",
+		"dev:site": "pnpm --filter site dev",
+		"dev:eval": "pnpm --filter eval-ui dev",
 		"build": "pnpm --filter site build",
+		"build:site": "pnpm --filter site build",
+		"build:eval": "pnpm --filter eval-ui build",
 		"preview": "pnpm --filter site preview",
-		"lint:js": "oxlint apps/site",
-		"format:js": "oxfmt apps/site"
+		"preview:site": "pnpm --filter site preview",
+		"preview:eval": "pnpm --filter eval-ui preview",
+		"test:eval": "pnpm --filter eval-ui test",
+		"lint:js": "oxlint apps/site apps/eval-ui",
+		"format:js": "oxfmt apps/site apps/eval-ui"
 	},
 	"devDependencies": {
 		"oxfmt": "^0.26.0",
