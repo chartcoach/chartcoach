@@ -16,8 +16,20 @@ dependencies = [
 [project.optional-dependencies]
 embedding = [
     "anywidget>=0.9.21",
-    "duckdb>=1.3.2",
     "embedding-atlas>=0.15.0",
+]
+retrieval = [
+    "dspy>=3.1.2",
+]
+index = [
+    "duckdb>=1.3.2",
+    "lancedb>=0.27.0",
+]
+index-duckdb = [
+    "duckdb>=1.3.2",
+]
+index-lance = [
+    "lancedb>=0.27.0",
 ]
 cataloging = [
     "diskcache>=5.6.3",

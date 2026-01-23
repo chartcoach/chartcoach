@@ -5,7 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "chartcoach[embedding]",
+    "chartcoach[embedding,index-duckdb]",
     "marimo>=0.19.4",
     "nest-asyncio>=1.6.0",
 ]
