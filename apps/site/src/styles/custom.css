@@ -1,6 +1,8 @@
 @layer starlight.base, starlight.reset, starlight.core, starlight.content, starlight.components, starlight.utils,
 	chartcoach.overrides;
 
+@import "@chartcoach/ui/styles/guideline-card.css" layer(chartcoach.overrides);
+
 @layer chartcoach.overrides {
   :root {
     /* Layout */
@@ -21,6 +23,14 @@
     --cc-border-color: color-mix(in srgb, var(--sl-color-hairline-light) 85%, transparent);
     --cc-border: 1px solid var(--cc-border-color);
 
+    --cc-text: var(--sl-color-text);
+    --cc-text-muted: color-mix(in srgb, var(--sl-color-text) 75%, transparent);
+    --cc-card-title-color: var(--sl-color-white);
+    --cc-text-2xs: var(--sl-text-2xs);
+    --cc-text-xs: var(--sl-text-xs);
+    --cc-text-sm: var(--sl-text-sm);
+    --cc-text-base: var(--sl-text-base);
+
     --cc-card-bg: var(--sl-color-gray-6);
     --cc-card-bg-hover: color-mix(in srgb, var(--sl-color-gray-6) 92%, var(--sl-color-gray-5) 8%);
 
@@ -37,6 +47,7 @@
 
     --sl-color-bg-sidebar: var(--sl-color-gray-7);
 
+    --cc-card-title-color: var(--sl-color-gray-1);
     --cc-card-bg: var(--sl-color-black);
     --cc-card-bg-hover: var(--sl-color-gray-7);
   }
@@ -284,102 +295,6 @@
     display: grid;
     gap: 0.85rem;
     grid-template-columns: repeat(auto-fit, minmax(min(22rem, 100%), 1fr));
-  }
-
-  .guideline-card {
-    border: var(--cc-border);
-    border-radius: var(--cc-radius-lg);
-    background: var(--cc-card-bg);
-    padding: 0.95rem 1rem;
-    box-shadow: none;
-
-    &:hover {
-      border-color: var(--sl-color-hairline);
-      background: var(--cc-card-bg-hover);
-    }
-
-    &.is-hidden {
-      display: none;
-    }
-
-    .guideline-card__title {
-      display: block;
-      font-size: var(--sl-text-base);
-      line-height: 1.4;
-      font-weight: 600;
-      text-decoration: none;
-      color: var(--sl-color-white);
-      margin: 0;
-    }
-
-    .guideline-card__desc {
-      margin: 0.35rem 0 0.75rem;
-      color: color-mix(in srgb, var(--sl-color-text) 85%, transparent);
-      font-size: var(--sl-text-sm);
-      line-height: 1.5;
-    }
-  }
-
-  :root[data-theme="light"] .guideline-card .guideline-card__title {
-    color: var(--sl-color-gray-1);
-  }
-
-  .guideline-labels {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.35rem;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-    align-items: center;
-  }
-
-	  .guideline-label {
-	    display: inline-flex;
-	    align-items: center;
-	    gap: 0.25rem;
-	    padding: 0.18rem 0.45rem;
-    border-radius: 999px;
-    border: var(--cc-border);
-    background: var(--cc-label-chip-bg);
-    font-size: var(--sl-text-2xs);
-    line-height: 1.2;
-    white-space: nowrap;
-
-    a {
-      color: color-mix(in srgb, var(--sl-color-text) 82%, transparent);
-      text-decoration: none;
-    }
-
-	    a:hover {
-	      text-decoration: underline;
-	      text-underline-offset: 0.2em;
-	    }
-
-	    &:has(.guideline-label__value:hover),
-	    &:has(.guideline-label__value:focus-visible) {
-	      .guideline-label__key,
-	      .guideline-label__sep,
-	      .guideline-label__value {
-	        text-decoration: underline;
-	        text-underline-offset: 0.2em;
-	      }
-	    }
-
-	    .guideline-label__key {
-	      text-transform: uppercase;
-	      letter-spacing: 0.04em;
-      font-weight: 600;
-      color: color-mix(in srgb, var(--sl-color-text) 64%, transparent);
-    }
-
-    .guideline-label__sep {
-      color: color-mix(in srgb, var(--sl-color-text) 55%, transparent);
-    }
-
-    &.guideline-label--more {
-      color: color-mix(in srgb, var(--sl-color-text) 70%, transparent);
-    }
   }
 
   /* -------------------------------------------------------------------------- */

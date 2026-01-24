@@ -1,6 +1,6 @@
 ---
-import TableOfContentsList from "./TableOfContents/TableOfContentsList.astro";
-import { removeOverviewTocItem } from "./toc";
+import TableOfContentsList from "@chartcoach/site/components/starlight/TableOfContents/TableOfContentsList.astro";
+import { removeOverviewTocItem } from "@chartcoach/site/components/starlight/toc";
 
 const { toc } = Astro.locals.starlightRoute;
 const items = toc ? removeOverviewTocItem(toc.items) : [];
