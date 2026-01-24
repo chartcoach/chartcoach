@@ -5,6 +5,7 @@ import {
 } from '@tanstack/react-router'
 
 import { TanStackDevtoolsWidget } from '@chartcoach/eval-ui/integrations/tanstack-devtools'
+import { ServiceWorkerRegistration } from '@chartcoach/eval-ui/components/service-worker'
 
 import appCss from '../styles.css?url'
 
@@ -44,6 +45,11 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     <html lang="en">
       <head>
         <HeadContent />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var key='chartcoach:eval-ui:theme';var pref=localStorage.getItem(key)||'system';var m=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)');var dark=pref==='dark'||(pref==='system'&&m&&m.matches);document.documentElement.classList.toggle('dark',!!dark);}catch(e){}})();`,
+          }}
+        />
       </head>
       <body>
         <a
@@ -52,6 +58,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         >
           Skip to main content
         </a>
+        <ServiceWorkerRegistration />
         {children}
         <TanStackDevtoolsWidget />
         <Scripts />
