@@ -7,6 +7,7 @@ import { parse as parseYaml } from 'yaml'
 import { z } from 'zod'
 
 import { loadCatalogFromParquetFile } from '@chartcoach/catalog/node'
+import { env } from '@chartcoach/eval-ui/env'
 
 import { ScenariosFileSchema, type ScenarioSpec } from '../schemas'
 import type { EvalScenarioBundle, EvalStrategyResult } from '../types'
@@ -21,15 +22,14 @@ const ScenarioBundleInputSchema = z.object({
 })
 
 type StrategySpec = {
-  id: string
   name: string
   k: number
 }
 
 const STRATEGIES: StrategySpec[] = [
-  { id: 'head@v0', name: 'Head', k: 8 },
-  { id: 'guideline_browser@v0', name: 'Guideline Browser', k: 8 },
-  { id: 'vector@v0', name: 'Vector Search', k: 8 },
+  { name: 'Head', k: 8 },
+  { name: 'Guideline Browser', k: 8 },
+  { name: 'Vector Search', k: 8 },
 ]
 
 let scenariosPromise: Promise<ScenarioSpec[]> | undefined
@@ -70,6 +70,21 @@ function hashStringToSeed(input: string): number {
   return hash >>> 0
 }
 
+function strategyIdFromName(name: string) {
+  const hash = hashStringToSeed(`strategy:${name}`)
+  return `s_${hash.toString(16).padStart(8, '0')}`
+}
+
+function indexToLetters(index: number) {
+  let n = index
+  let letters = ''
+  while (n >= 0) {
+    letters = String.fromCharCode(65 + (n % 26)) + letters
+    n = Math.floor(n / 26) - 1
+  }
+  return letters
+}
+
 function mulberry32(seed: number): () => number {
   return () => {
     let t = (seed += 0x6d2b79f5)
@@ -91,8 +106,16 @@ function buildDummyStrategyResults(
   catalogEntries: CatalogEntry[],
   scenarioId: string,
 ): EvalStrategyResult[] {
-  return STRATEGIES.map((strategy) => {
-    const rng = mulberry32(hashStringToSeed(`${scenarioId}::${strategy.id}`))
+  const strategies = STRATEGIES.slice().sort((a, b) => a.name.localeCompare(b.name))
+
+  return strategies.map((strategy, idx) => {
+    const strategyId = strategyIdFromName(strategy.name)
+    const strategyName =
+      env.STRATEGY_DISPLAY_MODE === 'alias'
+        ? `Strategy ${indexToLetters(idx)}`
+        : strategy.name
+
+    const rng = mulberry32(hashStringToSeed(`${scenarioId}::${strategyId}`))
     const idxs = sampleUniqueIndexes(catalogEntries.length, strategy.k, rng)
 
     const guidelines = idxs.map((idx, i) => {
@@ -101,8 +124,8 @@ function buildDummyStrategyResults(
     })
 
     return {
-      strategyId: strategy.id,
-      strategyName: strategy.name,
+      strategyId,
+      strategyName,
       guidelines,
     }
   })
