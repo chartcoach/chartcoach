@@ -1,15 +1,65 @@
 import { queryOptions } from '@tanstack/react-query'
 
-import { getEvalScenarioBundle, getEvalScenarios } from './server/eval.server'
 import {
-  readCachedScenarioBundle,
-  readCachedScenarios,
-  writeCachedScenarioBundle,
-  writeCachedScenarios,
-} from './offline-cache'
+  scenarioBundlesCacheCollection,
+  scenariosCacheCollection,
+} from '@chartcoach/eval-ui/db-collections/eval-cache'
+import { getEvalScenarioBundle, getEvalScenarios } from './server/eval.server'
 
 function isClientOffline() {
   return typeof navigator !== 'undefined' && navigator && navigator.onLine === false
+}
+
+function readCachedScenarios() {
+  const docs = [...scenariosCacheCollection.state.values()]
+  if (!docs.length) return
+
+  return docs
+    .slice()
+    .sort((a, b) => a.index - b.index)
+    .map((doc) => doc.scenario)
+}
+
+function writeCachedScenarios(scenarios: Awaited<ReturnType<typeof getEvalScenarios>>) {
+  const cachedAt = new Date().toISOString()
+  const ids = new Set<string>()
+
+  scenarios.forEach((scenario, index) => {
+    ids.add(scenario.id)
+    const doc = { id: scenario.id, index, cachedAt, scenario }
+
+    if (scenariosCacheCollection.state.has(doc.id)) {
+      scenariosCacheCollection.update(doc.id, (draft) => {
+        Object.assign(draft, doc)
+      })
+    } else {
+      scenariosCacheCollection.insert(doc)
+    }
+  })
+
+  for (const existingId of scenariosCacheCollection.state.keys()) {
+    if (!ids.has(existingId)) {
+      scenariosCacheCollection.delete(existingId)
+    }
+  }
+}
+
+function readCachedScenarioBundle(scenarioId: string) {
+  const doc = scenarioBundlesCacheCollection.state.get(scenarioId)
+  return doc?.bundle
+}
+
+function writeCachedScenarioBundle(bundle: Awaited<ReturnType<typeof getEvalScenarioBundle>>) {
+  const cachedAt = new Date().toISOString()
+  const doc = { id: bundle.scenario.id, cachedAt, bundle }
+
+  if (scenarioBundlesCacheCollection.state.has(doc.id)) {
+    scenarioBundlesCacheCollection.update(doc.id, (draft) => {
+      Object.assign(draft, doc)
+    })
+  } else {
+    scenarioBundlesCacheCollection.insert(doc)
+  }
 }
 
 export const scenariosQueryOptions = queryOptions({
