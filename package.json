@@ -5,14 +5,14 @@
 	"scripts": {
 		"dev": "pnpm --filter site dev",
 		"dev:site": "pnpm --filter site dev",
-		"dev:eval": "pnpm --filter eval-ui dev",
+		"dev:eval": "pnpm --filter @chartcoach/eval-ui dev",
 		"build": "pnpm --filter site build",
 		"build:site": "pnpm --filter site build",
-		"build:eval": "pnpm --filter eval-ui build",
+		"build:eval": "pnpm --filter @chartcoach/eval-ui build",
 		"preview": "pnpm --filter site preview",
 		"preview:site": "pnpm --filter site preview",
-		"preview:eval": "pnpm --filter eval-ui preview",
-		"test:eval": "pnpm --filter eval-ui test",
+		"preview:eval": "pnpm --filter @chartcoach/eval-ui preview",
+		"test:eval": "pnpm --filter @chartcoach/eval-ui test",
 		"lint:js": "oxlint apps/site apps/eval-ui",
 		"format:js": "oxfmt apps/site apps/eval-ui"
 	},

@@ -10,7 +10,7 @@ import { nitro } from 'nitro/vite'
 
 const monorepoRoot = fileURLToPath(new URL('../..', import.meta.url))
 
-const config = defineConfig({
+export default defineConfig({
   server: {
     fs: {
       allow: [monorepoRoot],
@@ -18,7 +18,7 @@ const config = defineConfig({
   },
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
+      '@chartcoach/eval-ui': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
   plugins: [
@@ -33,5 +33,3 @@ const config = defineConfig({
     viteReact(),
   ],
 })
-
-export default config

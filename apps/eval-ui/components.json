@@ -11,11 +11,11 @@
     "prefix": ""
   },
   "aliases": {
-    "components": "@/components",
-    "utils": "@/lib/utils",
-    "ui": "@/components/ui",
-    "lib": "@/lib",
-    "hooks": "@/hooks"
+    "components": "@chartcoach/eval-ui/components",
+    "utils": "@chartcoach/eval-ui/lib/utils",
+    "ui": "@chartcoach/eval-ui/components/ui",
+    "lib": "@chartcoach/eval-ui/lib",
+    "hooks": "@chartcoach/eval-ui/eval"
   },
   "iconLibrary": "lucide"
 }
