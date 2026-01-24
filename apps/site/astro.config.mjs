@@ -2,6 +2,7 @@
 import { defineConfig } from "astro/config";
 import starlight from "@astrojs/starlight";
 import sitemap from "@astrojs/sitemap";
+import react from "@astrojs/react";
 import { fileURLToPath } from "node:url";
 
 /**
@@ -48,10 +49,16 @@ function siteUrlLogger(siteUrl) {
 
 // https://astro.build/config
 const siteUrl = resolveSiteUrl();
+const monorepoRoot = fileURLToPath(new URL("../..", import.meta.url));
 
 export default defineConfig({
   site: siteUrl,
   vite: {
+    server: {
+      fs: {
+        allow: [monorepoRoot],
+      },
+    },
     resolve: {
       alias: {
         "@chartcoach/site": fileURLToPath(new URL("./src", import.meta.url)),
@@ -60,6 +67,7 @@ export default defineConfig({
   },
   integrations: [
     siteUrlLogger(siteUrl),
+    react(),
     starlight({
       title: "Chart Coach",
       customCss: ["./src/styles/custom.css"],

@@ -2,7 +2,7 @@ import { defineCollection, z } from "astro:content";
 import { docsLoader } from "@astrojs/starlight/loaders";
 import { docsSchema } from "@astrojs/starlight/schema";
 
-import { guidelinesLoader } from "./loaders/guidelines-loader";
+import { guidelinesLoader } from "@chartcoach/site/loaders/guidelines-loader";
 
 export const collections = {
   docs: defineCollection({ loader: docsLoader(), schema: docsSchema() }),
