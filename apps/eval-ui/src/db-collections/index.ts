@@ -137,3 +137,20 @@ export function deleteRelevanceRating({
     relevanceRatingsCollection.delete(id)
   }
 }
+
+export function mergeRelevanceRatings(ratings: RelevanceRating[]) {
+  for (const rating of ratings) {
+    const existing = relevanceRatingsCollection.state.get(rating.id)
+
+    if (!existing) {
+      relevanceRatingsCollection.insert(rating)
+      continue
+    }
+
+    if (existing.updatedAt >= rating.updatedAt) continue
+
+    relevanceRatingsCollection.update(rating.id, (draft) => {
+      Object.assign(draft, rating)
+    })
+  }
+}
