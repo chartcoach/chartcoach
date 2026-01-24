@@ -1,5 +1,4 @@
 import { GuidelineCard as GuidelineCardShell, type GuidelineCardLabel } from '@chartcoach/ui'
-import { Eraser, ExternalLink } from 'lucide-react'
 
 import type { EvalGuidelineResult } from '@chartcoach/eval-ui/eval/types'
 import { getGuidelineDetailHref } from '@chartcoach/eval-ui/eval/guideline-detail-url'
@@ -29,12 +28,12 @@ export function GuidelineCard({
   const detailHref = getGuidelineDetailHref(guidelineId)
   const domId = `guideline-${encodeURIComponent(guidelineId)}`
 
-  function handleRate(next: number) {
+  function handleChange(next: number | undefined) {
+    if (next === undefined) {
+      onClear(guidelineId)
+      return
+    }
     onRate(guidelineId, next)
-  }
-
-  function handleClear() {
-    onClear(guidelineId)
   }
 
   const labelsShown = g.labels.slice(0, 4)
@@ -46,18 +45,32 @@ export function GuidelineCard({
   return (
     <div
       id={domId}
-      tabIndex={-1}
       className={cn(
-        'rounded-[calc(var(--radius)+2px)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring/60',
-        'scroll-mt-[calc(var(--app-header-height)+8rem)]',
-        isActive ? 'ring-2 ring-ring/50' : 'ring-0',
+        'eval-guideline-card',
+        'relative',
+        'rounded-[calc(var(--radius)+2px)]',
+        'scroll-mt-6',
+        detailHref ? 'cursor-pointer' : null,
+        isActive ? 'bg-muted/30' : 'bg-transparent',
       )}
     >
+      {detailHref ? (
+        <a
+          href={detailHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={`Open guideline: ${g.title}`}
+          className="absolute inset-0 z-10 rounded-[calc(var(--radius)+2px)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring/60"
+        />
+      ) : null}
+
       <GuidelineCardShell
         as="article"
-        title={<span className="line-clamp-2">{g.title}</span>}
+        title={
+          <span className="whitespace-normal">{g.title}</span>
+        }
         description={
-          g.description ? <span className="line-clamp-2">{g.description}</span> : undefined
+          g.description ? <span className="whitespace-normal">{g.description}</span> : undefined
         }
         labels={labels}
         labelsRemaining={labelsRemaining || undefined}
@@ -66,41 +79,15 @@ export function GuidelineCard({
             <span className="tabular-nums">#{result.rank}</span>
           </>
         }
-        actions={
-          <div className="flex flex-col items-end gap-2">
-            <LikertScale
-              name={`relevance:${scenarioId}:${guidelineId}`}
-              value={rating}
-              onChange={handleRate}
-            />
-            <div className="flex items-center gap-1">
-              {detailHref ? (
-                <a
-                  href={detailHref}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex size-11 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring/60"
-                  aria-label="Open guideline in browser"
-                  title="Open guideline in browser"
-                >
-                  <ExternalLink className="size-4" aria-hidden="true" />
-                  <span className="sr-only">Open</span>
-                </a>
-              ) : null}
-              <button
-                type="button"
-                onClick={handleClear}
-                className="inline-flex size-11 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring/60"
-                aria-label="Clear rating"
-                title="Clear rating"
-              >
-                <Eraser className="size-4" aria-hidden="true" />
-                <span className="sr-only">Clear</span>
-              </button>
-            </div>
-          </div>
-        }
-      />
+      >
+        <div className="relative z-20 mt-3 flex justify-center">
+          <LikertScale
+            name={`relevance:${scenarioId}:${guidelineId}`}
+            value={rating}
+            onChange={handleChange}
+          />
+        </div>
+      </GuidelineCardShell>
     </div>
   )
 }

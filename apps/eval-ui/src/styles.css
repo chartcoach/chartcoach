@@ -174,6 +174,13 @@ code {
   background: var(--cc-card-bg, transparent);
 }
 
+/* Eval UI: avoid "double border" on focus (border + outline). Use a single ring instead. */
+.guideline-card:focus-within {
+  outline: none;
+  border-color: transparent;
+  box-shadow: 0 0 0 2px var(--cc-focus-ring-color, var(--ring));
+}
+
 .guideline-label a:hover {
   text-decoration: none;
 }
@@ -185,4 +192,58 @@ code {
 .guideline-label:has(.guideline-label__value:focus-visible) .guideline-label__sep,
 .guideline-label:has(.guideline-label__value:focus-visible) .guideline-label__value {
   text-decoration: none;
+}
+
+/* Eval UI: guideline cards stack actions below content (never a horizontal split). */
+.guideline-card__header {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+}
+
+.guideline-card__actions {
+  width: 100%;
+  justify-content: center;
+  margin-top: 0.25rem;
+}
+
+/* Eval UI: keep guideline cards consistent height across strategy switches. */
+.eval-guideline-card {
+  height: var(--eval-guideline-card-height, 280px);
+}
+
+.eval-guideline-card .guideline-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.eval-guideline-card .guideline-card__content {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.eval-guideline-card .guideline-card__title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.eval-guideline-card .guideline-card__desc {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+
+.eval-guideline-card .guideline-labels {
+  max-height: 2.6rem;
+  overflow: hidden;
+}
+
+.eval-guideline-card .guideline-card__body {
+  margin-top: auto;
+  border-top: none;
+  padding-top: 0;
 }
