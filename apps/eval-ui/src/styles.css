@@ -21,6 +21,7 @@ code {
 }
 
 :root {
+  --app-header-height: 5rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.141 0.005 285.823);
   --card: oklch(1 0 0);
@@ -165,4 +166,22 @@ code {
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Eval UI: remove hover affordances on guideline cards + chips */
+.guideline-card:hover {
+  background: var(--cc-card-bg, transparent);
+}
+
+.guideline-label a:hover {
+  text-decoration: none;
+}
+
+.guideline-label:has(.guideline-label__value:hover) .guideline-label__key,
+.guideline-label:has(.guideline-label__value:hover) .guideline-label__sep,
+.guideline-label:has(.guideline-label__value:hover) .guideline-label__value,
+.guideline-label:has(.guideline-label__value:focus-visible) .guideline-label__key,
+.guideline-label:has(.guideline-label__value:focus-visible) .guideline-label__sep,
+.guideline-label:has(.guideline-label__value:focus-visible) .guideline-label__value {
+  text-decoration: none;
 }

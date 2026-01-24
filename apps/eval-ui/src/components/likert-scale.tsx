@@ -36,7 +36,7 @@ export function LikertScale({
 
   return (
     <fieldset className="min-w-0" aria-label={ariaLabel}>
-      <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-1.5">
         <div className="inline-flex overflow-hidden rounded-md border bg-background">
           {options.map((opt) => (
             <label
@@ -52,14 +52,14 @@ export function LikertScale({
                 onChange={handleChange}
                 className="peer sr-only"
               />
-              <span className="flex select-none items-center px-2.5 py-1.5 text-xs peer-checked:bg-foreground peer-checked:text-background peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-1 peer-focus-visible:outline-ring/60">
+              <span className="grid h-11 w-11 select-none place-items-center text-xs peer-checked:bg-foreground peer-checked:text-background peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-1 peer-focus-visible:outline-ring/60">
                 <span className="tabular-nums">{opt.value}</span>
               </span>
             </label>
           ))}
         </div>
-        <div className="min-w-0 text-xs text-muted-foreground">
-          {selectedLabel ?? 'Not rated'}
+        <div className="min-h-4 min-w-0 text-center text-xs text-muted-foreground">
+          <span className="block truncate">{selectedLabel ?? 'Not rated'}</span>
         </div>
       </div>
     </fieldset>
