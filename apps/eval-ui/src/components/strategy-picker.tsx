@@ -25,7 +25,7 @@ export function StrategyPicker({
   }
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0">
       {strategies.map((strategy) => {
         const active = strategy.strategyId === selectedStrategyId
         return (
@@ -36,7 +36,7 @@ export function StrategyPicker({
             onClick={handleClick}
             aria-pressed={active}
             className={cn(
-              'rounded-full border px-3 py-1.5 text-xs font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring/60',
+              'shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring/60',
               active
                 ? 'border-foreground/20 bg-muted'
                 : 'border-transparent text-muted-foreground hover:bg-muted hover:text-foreground',

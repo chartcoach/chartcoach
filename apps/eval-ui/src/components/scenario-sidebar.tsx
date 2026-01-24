@@ -50,9 +50,6 @@ export function ScenarioSidebar({
                   <div className="line-clamp-2 text-sm font-medium leading-snug">
                     {s.title}
                   </div>
-                  <div className="mt-1 truncate font-mono text-xs text-muted-foreground">
-                    {s.id}
-                  </div>
                 </button>
               </li>
             )
