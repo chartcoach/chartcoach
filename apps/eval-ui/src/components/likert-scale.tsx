@@ -18,15 +18,17 @@ export function LikertScale({
   value,
   onChange,
   options = defaultOptions,
-  ariaLabel = 'Relevance (1–5)',
+  ariaLabel = 'Relevance (1-5)',
 }: {
   name: string
   value: number | undefined
-  onChange: (next: number) => void
+  onChange: (next: number | undefined) => void
   options?: LikertOption[]
   ariaLabel?: string
 }) {
   const selectedLabel = options.find((o) => o.value === value)?.label
+  const minOption = options[0]
+  const maxOption = options[options.length - 1]
 
   function handleChange(event: ChangeEvent<HTMLInputElement>) {
     const next = Number(event.currentTarget.value)
@@ -35,32 +37,47 @@ export function LikertScale({
   }
 
   return (
-    <fieldset className="min-w-0" aria-label={ariaLabel}>
-      <div className="flex flex-col gap-1.5">
-        <div className="inline-flex overflow-hidden rounded-md border bg-background">
-          {options.map((opt) => (
-            <label
-              key={opt.value}
-              className="cursor-pointer"
-              title={`${opt.value} — ${opt.label}`}
-            >
-              <input
-                type="radio"
-                name={name}
-                value={opt.value}
-                checked={opt.value === value}
-                onChange={handleChange}
-                className="peer sr-only"
-              />
-              <span className="grid h-11 w-11 select-none place-items-center text-xs peer-checked:bg-foreground peer-checked:text-background peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-1 peer-focus-visible:outline-ring/60">
-                <span className="tabular-nums">{opt.value}</span>
-              </span>
-            </label>
-          ))}
+    <fieldset
+      className="inline-flex w-[240px] max-w-full min-w-0 flex-col gap-1.5"
+      aria-label={ariaLabel}
+    >
+      <div
+        className="grid w-full overflow-hidden rounded-md border bg-background"
+        style={{
+          gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))`,
+        }}
+      >
+        {options.map((opt) => (
+          <label key={opt.value} className="cursor-pointer" title={`${opt.value} — ${opt.label}`}>
+            <input
+              type="radio"
+              name={name}
+              value={opt.value}
+              checked={opt.value === value}
+              onChange={handleChange}
+              onClick={() => {
+                if (opt.value === value) onChange(undefined)
+              }}
+              className="peer sr-only"
+            />
+            <span className="grid h-10 w-full select-none place-items-center text-xs peer-checked:bg-foreground peer-checked:text-background peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-1 peer-focus-visible:outline-ring/60">
+              <span className="tabular-nums">{opt.value}</span>
+            </span>
+          </label>
+        ))}
+      </div>
+      {minOption && maxOption ? (
+        <div className="flex w-full min-w-0 justify-between gap-2 text-[11px] text-muted-foreground">
+          <span className="truncate">
+            <span className="tabular-nums">{minOption.value}</span> = {minOption.label}
+          </span>
+          <span className="truncate text-right">
+            <span className="tabular-nums">{maxOption.value}</span> = {maxOption.label}
+          </span>
         </div>
-        <div className="min-h-4 min-w-0 text-center text-xs text-muted-foreground">
-          <span className="block truncate">{selectedLabel ?? 'Not rated'}</span>
-        </div>
+      ) : null}
+      <div className="min-h-4 w-full min-w-0 text-center text-xs text-muted-foreground">
+        <span className="block truncate">{selectedLabel ?? 'Not rated'}</span>
       </div>
     </fieldset>
   )
