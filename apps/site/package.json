@@ -10,22 +10,22 @@
     "astro": "astro"
   },
   "dependencies": {
-    "@astrojs/react": "^4.4.0",
+    "@astrojs/react": "^4.4.2",
     "@astrojs/sitemap": "^3.7.0",
-    "@astrojs/starlight": "^0.37.3",
+    "@astrojs/starlight": "^0.37.4",
     "@chartcoach/catalog": "workspace:*",
     "@chartcoach/ui": "workspace:*",
-    "astro": "^5.6.1",
+    "astro": "^5.16.15",
     "citation-js": "^0.7.22",
     "lucide-astro": "^0.556.0",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "sharp": "^0.34.2"
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "sharp": "^0.34.5"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.6",
-    "@types/react": "^19.2.0",
-    "@types/react-dom": "^19.2.0",
+    "@types/react": "^19.2.9",
+    "@types/react-dom": "^19.2.3",
     "typescript": "^5.9.3"
   }
 }
