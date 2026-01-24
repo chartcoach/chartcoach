@@ -7,9 +7,9 @@ TanStack Start app for human relevance rating of retrieved visualization guideli
 - Loads guideline catalog entries from `guidelines/catalog.parquet` via `@chartcoach/catalog`
 - Shows each scenario’s chart + query + designer intent
 - Shows per-strategy guideline sets (retrieval backends are out of scope; current strategies are dummy)
-- Persists Likert (1–5) relevance ratings locally in the browser via TanStack DB (localStorage)
-- Supports offline use by caching scenarios + scenario bundles in localStorage
-- Allows exporting saved ratings for downstream evaluation pipelines
+- Persists Likert (1-5) relevance ratings locally in the browser via TanStack DB (localStorage)
+- Supports offline use by caching scenarios + scenario bundles locally (RxDB)
+- Allows syncing ratings to S3 and pulling the latest export from S3 (device-scoped)
 
 ## Run
 

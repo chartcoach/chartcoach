@@ -2,43 +2,19 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 
 import type { RelevanceRating } from '@chartcoach/eval-ui/eval/relevance-ratings'
 import { getDeviceId } from '@chartcoach/eval-ui/eval/device-id'
+import {
+  SYNC_LAST_SIGNATURE_STORAGE_KEY,
+  SYNC_LAST_SUCCESS_AT_STORAGE_KEY,
+  SYNC_LAST_SUCCESS_KEY_STORAGE_KEY,
+  getLocalStorageItem,
+  makeRatingsSignature,
+  setLocalStorageItem,
+} from '@chartcoach/eval-ui/eval/relevance-ratings-sync-metadata'
 import { uploadRelevanceRatingsExport } from '@chartcoach/eval-ui/eval/server/relevance-ratings-sync.server'
 import { useOnlineStatus } from '@chartcoach/eval-ui/eval/use-online-status'
 import { createRelevanceRatingsExport } from '@chartcoach/eval-ui/lib/export-relevance-ratings'
 
 type SyncStatus = 'idle' | 'queued' | 'syncing' | 'synced' | 'error' | 'disabled'
-
-const LAST_SIGNATURE_STORAGE_KEY =
-  'chartcoach/eval-ui/sync/relevance-ratings/v1:last-signature'
-const LAST_SUCCESS_AT_STORAGE_KEY =
-  'chartcoach/eval-ui/sync/relevance-ratings/v1:last-success-at'
-const LAST_SUCCESS_KEY_STORAGE_KEY =
-  'chartcoach/eval-ui/sync/relevance-ratings/v1:last-success-key'
-
-function getLocalStorageItem(key: string) {
-  if (typeof window === 'undefined') return null
-  try {
-    return window.localStorage.getItem(key)
-  } catch {
-    return null
-  }
-}
-
-function setLocalStorageItem(key: string, value: string) {
-  if (typeof window === 'undefined') return
-  try {
-    window.localStorage.setItem(key, value)
-  } catch {
-    // ignore quota / privacy errors
-  }
-}
-
-function makeRatingsSignature(ratings: RelevanceRating[]) {
-  const rows = [...ratings]
-    .sort((a, b) => a.id.localeCompare(b.id))
-    .map((r) => [r.id, r.scenarioId, r.guidelineId, r.relevance, r.createdAt, r.updatedAt])
-  return JSON.stringify(rows)
-}
 
 export function useAutoUploadRelevanceRatings(ratings: RelevanceRating[]) {
   const isOnline = useOnlineStatus()
@@ -56,10 +32,10 @@ export function useAutoUploadRelevanceRatings(ratings: RelevanceRating[]) {
   const [status, setStatus] = useState<SyncStatus>('idle')
   const [message, setMessage] = useState<string | null>(null)
   const [lastSuccessAt, setLastSuccessAt] = useState<string | null>(() =>
-    getLocalStorageItem(LAST_SUCCESS_AT_STORAGE_KEY),
+    getLocalStorageItem(SYNC_LAST_SUCCESS_AT_STORAGE_KEY),
   )
   const [lastSuccessKey, setLastSuccessKey] = useState<string | null>(() =>
-    getLocalStorageItem(LAST_SUCCESS_KEY_STORAGE_KEY),
+    getLocalStorageItem(SYNC_LAST_SUCCESS_KEY_STORAGE_KEY),
   )
 
   const uploadTimerIdRef = useRef<number | null>(null)
@@ -93,7 +69,7 @@ export function useAutoUploadRelevanceRatings(ratings: RelevanceRating[]) {
     if (!isOnline) return
     if (inFlightRef.current) return
 
-    const lastSignature = getLocalStorageItem(LAST_SIGNATURE_STORAGE_KEY)
+    const lastSignature = getLocalStorageItem(SYNC_LAST_SIGNATURE_STORAGE_KEY)
     const currentSignature = signatureRef.current
     const currentRatings = ratingsRef.current
 
@@ -117,11 +93,11 @@ export function useAutoUploadRelevanceRatings(ratings: RelevanceRating[]) {
         },
       })
 
-      setLocalStorageItem(LAST_SIGNATURE_STORAGE_KEY, currentSignature)
-      setLocalStorageItem(LAST_SUCCESS_AT_STORAGE_KEY, new Date().toISOString())
-      setLocalStorageItem(LAST_SUCCESS_KEY_STORAGE_KEY, result.key)
+      setLocalStorageItem(SYNC_LAST_SIGNATURE_STORAGE_KEY, currentSignature)
+      setLocalStorageItem(SYNC_LAST_SUCCESS_AT_STORAGE_KEY, new Date().toISOString())
+      setLocalStorageItem(SYNC_LAST_SUCCESS_KEY_STORAGE_KEY, result.key)
 
-      setLastSuccessAt(getLocalStorageItem(LAST_SUCCESS_AT_STORAGE_KEY))
+      setLastSuccessAt(getLocalStorageItem(SYNC_LAST_SUCCESS_AT_STORAGE_KEY))
       setLastSuccessKey(result.key)
       lastFailureAtRef.current = null
 
@@ -165,7 +141,7 @@ export function useAutoUploadRelevanceRatings(ratings: RelevanceRating[]) {
       return
     }
 
-    const lastSignature = getLocalStorageItem(LAST_SIGNATURE_STORAGE_KEY)
+    const lastSignature = getLocalStorageItem(SYNC_LAST_SIGNATURE_STORAGE_KEY)
     const needsSync = lastSignature !== signature
 
     if (!needsSync) {
@@ -191,4 +167,3 @@ export function useAutoUploadRelevanceRatings(ratings: RelevanceRating[]) {
     lastSuccessKey,
   }
 }
-
