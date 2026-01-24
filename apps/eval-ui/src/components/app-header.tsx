@@ -1,55 +1,40 @@
-import { useEffect, useRef } from 'react'
-
+import { Link } from '@tanstack/react-router'
 import { useLiveQuery } from '@tanstack/react-db'
+import { useIsFetching } from '@tanstack/react-query'
+import { RefreshCw } from 'lucide-react'
+import { useLayoutEffect, useRef } from 'react'
 
 import {
-  clearRelevanceRatings,
   relevanceRatingsCollection,
 } from '@chartcoach/eval-ui/db-collections'
 import type { RelevanceRating } from '@chartcoach/eval-ui/db-collections'
 import { useAutoUploadRelevanceRatings } from '@chartcoach/eval-ui/eval/use-auto-upload-relevance-ratings'
 import { useOnlineStatus } from '@chartcoach/eval-ui/eval/use-online-status'
-import { downloadRelevanceRatingsExport } from '@chartcoach/eval-ui/lib/export-relevance-ratings'
-
-const SHORTCUTS_HELP = [
-  { keys: '1–5', desc: 'rate active guideline' },
-  { keys: 'N', desc: 'next unrated' },
-  { keys: 'J / K', desc: 'next / previous guideline' },
-  { keys: 'C', desc: 'clear rating' },
-  { keys: '[ / ]', desc: 'prev / next scenario' },
-]
+import { usePullRelevanceRatingsFromS3 } from '@chartcoach/eval-ui/eval/use-pull-relevance-ratings'
+import { ThemeSelector } from '@chartcoach/eval-ui/components/theme-selector'
 
 export function AppHeader() {
   const headerRef = useRef<HTMLElement | null>(null)
-  const isOnline = useOnlineStatus()
 
-  useEffect(() => {
-    const header = headerRef.current
-    if (!header) return
+  useLayoutEffect(() => {
+    const el = headerRef.current
+    if (!el) return
 
     const root = document.documentElement
     const update = () => {
-      const height = Math.ceil(header.getBoundingClientRect().height)
-      root.style.setProperty('--app-header-height', `${height}px`)
+      root.style.setProperty('--app-header-height', `${el.offsetHeight}px`)
     }
 
     update()
 
-    const onResize = () => update()
-    window.addEventListener('resize', onResize)
-
-    if (typeof ResizeObserver === 'undefined') {
-      return () => window.removeEventListener('resize', onResize)
-    }
-
-    const ro = new ResizeObserver(() => update())
-    ro.observe(header)
-
-    return () => {
-      ro.disconnect()
-      window.removeEventListener('resize', onResize)
-    }
+    if (typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(update)
+    observer.observe(el)
+    return () => observer.disconnect()
   }, [])
+
+  const isOnline = useOnlineStatus()
+  const isFetchingCount = useIsFetching()
 
   const { data } = useLiveQuery(
     (q) =>
@@ -65,80 +50,101 @@ export function AppHeader() {
   const ratingCount = ratings.length
 
   const sync = useAutoUploadRelevanceRatings(ratings)
+  const pull = usePullRelevanceRatingsFromS3()
 
-  function onClear() {
-    const ok = window.confirm(
-      'Clear all saved ratings from this browser?\n\nThis cannot be undone.',
-    )
-    if (!ok) return
-    clearRelevanceRatings()
-    window.location.reload()
-  }
+  const syncLabel = [
+    pull.status === 'pulling'
+      ? 'Fetching remote'
+      : pull.status === 'error'
+        ? 'Remote fetch failed'
+        : pull.status === 'disabled'
+          ? 'Remote fetch disabled'
+          : null,
+    sync.status === 'syncing'
+      ? 'Uploading'
+      : sync.status === 'queued'
+        ? 'Upload queued'
+        : sync.status === 'error'
+          ? 'Upload failed'
+          : sync.status === 'disabled'
+            ? 'Upload disabled'
+            : sync.status === 'synced'
+              ? 'Upload synced'
+              : null,
+    !ratingCount ? 'No ratings yet' : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
 
-  function onExport() {
-    if (ratingCount === 0) return
-    downloadRelevanceRatingsExport(ratings)
-  }
+  const hasError = sync.status === 'error' || pull.status === 'error'
+  const isBusy =
+    sync.status === 'syncing' ||
+    sync.status === 'queued' ||
+    pull.status === 'pulling' ||
+    isFetchingCount > 0
+
+  const syncDotClass = hasError
+    ? 'bg-red-500'
+    : isBusy
+      ? 'bg-amber-500'
+      : sync.status === 'synced' || pull.status === 'synced'
+        ? 'bg-emerald-500'
+        : 'bg-muted-foreground/40'
+
+  const lastAt = sync.lastSuccessAt ?? pull.exportedAt
+  const lastKey = sync.lastSuccessKey ?? pull.key
+
+  const syncTitleParts = [
+    syncLabel,
+    !isOnline ? 'Offline' : null,
+    lastAt ? `Last: ${lastAt}` : null,
+    lastKey ? `Key: ${lastKey}` : null,
+  ].filter(Boolean)
+  const syncTitle = syncTitleParts.join(' · ')
 
   return (
-    <header
-      ref={headerRef}
-      className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur"
-    >
-      <div className="mx-auto flex max-w-[1400px] flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between lg:px-6">
-        <div className="min-w-0">
+    <header ref={headerRef} className="sticky top-0 z-50 border-b bg-background">
+      <div className="mx-auto flex w-full items-center justify-between gap-3 px-4 py-3 lg:px-6">
+        <div className="flex min-w-0 items-center gap-2">
           <div className="truncate text-sm font-semibold tracking-tight">
-            ChartCoach · Guideline Relevance Eval
-          </div>
-          <div className="truncate text-xs text-muted-foreground">
-            Shortcuts: {SHORTCUTS_HELP.map((s) => `${s.keys} ${s.desc}`).join(' · ')}
-          </div>
-        </div>
-        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
-          {sync.message ? (
-            <div
-              className="rounded-full border px-2 py-1 text-xs text-muted-foreground"
-              title={sync.lastSuccessAt ? `Last synced: ${sync.lastSuccessAt}` : undefined}
+            <Link
+              to="/"
+              className="underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring/60"
             >
-              {sync.message}
-            </div>
-          ) : sync.status === 'syncing' ? (
-            <div className="rounded-full border px-2 py-1 text-xs text-muted-foreground">
-              Syncing…
-            </div>
-          ) : sync.status === 'queued' ? (
-            <div className="rounded-full border px-2 py-1 text-xs text-muted-foreground">
-              Sync queued
-            </div>
-          ) : sync.status === 'error' ? (
-            <div className="rounded-full border px-2 py-1 text-xs text-red-600">
-              Sync failed
-            </div>
-          ) : sync.status === 'disabled' ? (
-            <div className="rounded-full border px-2 py-1 text-xs text-muted-foreground">
-              Sync disabled
-            </div>
-          ) : null}
+              ChartCoach
+            </Link>{' '}
+            <span className="text-muted-foreground">· Guideline Relevance Eval</span>
+          </div>
+
+          <div
+            className="inline-flex items-center gap-2 rounded-full border px-2 py-1"
+            title={syncTitle}
+            aria-label={syncTitle}
+          >
+            <RefreshCw
+              className={
+                sync.status === 'syncing'
+                  ? 'size-3.5 animate-spin text-muted-foreground'
+                  : 'size-3.5 text-muted-foreground'
+              }
+              aria-hidden="true"
+            />
+            <span
+              className={`inline-block size-2 rounded-full ${syncDotClass}`}
+              aria-hidden="true"
+            />
+            <span className="sr-only">{syncLabel}</span>
+          </div>
+
           {!isOnline ? (
             <div className="rounded-full border px-2 py-1 text-xs text-muted-foreground">
               Offline
             </div>
           ) : null}
-          <button
-            type="button"
-            onClick={onExport}
-            disabled={ratingCount === 0}
-            className="rounded-md border bg-background px-3 py-1.5 text-xs font-medium hover:bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring/60 disabled:opacity-50 disabled:hover:bg-background"
-          >
-            Download <span className="tabular-nums">({ratingCount})</span>
-          </button>
-          <button
-            type="button"
-            onClick={onClear}
-            className="rounded-md border bg-background px-3 py-1.5 text-xs font-medium hover:bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring/60"
-          >
-            Clear ratings
-          </button>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-2">
+          <ThemeSelector />
         </div>
       </div>
     </header>
