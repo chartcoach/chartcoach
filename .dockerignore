@@ -28,11 +28,13 @@ node_modules
 # Local-only / large
 nogit
 
-# Keep the `apps/site` build context lean (monorepo)
+# Keep the build context lean (monorepo)
 packages/*
 !packages/chartcoach-js/**
+!packages/chartcoach-ui/**
 apps/*
 !apps/site/**
+!apps/eval-ui/**
 
 # Re-ignore build artifacts inside whitelisted paths (override allowlist above)
 apps/site/dist

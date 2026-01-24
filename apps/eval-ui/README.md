@@ -40,11 +40,42 @@ pnpm lint:js
 pnpm test:eval
 ```
 
+## Docker (Self-host)
+
+Build from the monorepo root (important for pnpm workspaces):
+
+```bash
+docker build -f apps/eval-ui/Dockerfile -t chartcoach-eval-ui .
+```
+
+Run:
+
+```bash
+docker run --rm -p 3000:3000 \
+  -e NITRO_HOST=0.0.0.0 -e NITRO_PORT=3000 \
+  -e S3_REGION=us-east-1 \
+  -e S3_ACCESS_KEY_ID=... -e S3_SECRET_ACCESS_KEY=... \
+  -e S3_BUCKET=... \
+  -e S3_ENDPOINT=https://... \
+  -e S3_PREFIX=chartcoach \
+  -e S3_FORCE_PATH_STYLE=false \
+  chartcoach-eval-ui
+```
+
+If `S3_*` variables are not set, automatic rating uploads are disabled (local persistence still works).
+
 ## Storage
 
 ### Ratings
-Ratings are stored in localStorage under `chartcoach/eval-ui/relevance-ratings/v1`.
-Use the “Clear ratings” button in the header to reset.
+Ratings are stored locally via RxDB (localStorage) under the database name `chartcoach-eval-ui` (keys managed by RxDB).
+Use the “Clear ratings” button in the header to reset. Older builds used `chartcoach/eval-ui/relevance-ratings/v1` and will migrate once.
+
+## Guideline Links
+
+Set `VITE_GUIDELINE_DETAIL_URL_TEMPLATE` to link each guideline card to your guideline browser.
+Use `{id}` as the placeholder, e.g. `https://example.com/guidelines/{id}`.
+
+In development, if unset, eval-ui uses `http://localhost:4321/guidelines/{id}/` (Astro default dev URL).
 
 ### Offline cache
 Scenarios and scenario bundles are cached under:
