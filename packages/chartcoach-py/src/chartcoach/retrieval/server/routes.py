@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import inspect
-from typing import Any, Sequence
+from typing import TYPE_CHECKING, Sequence
 
 from pydantic import BaseModel
 
 from chartcoach.retrieval.strategy import RetrievalStrategy
 from chartcoach.retrieval.types import RetrievalRequest, RetrievalResponse
+
+if TYPE_CHECKING:
+    from fastapi import APIRouter
 
 
 class StrategyInfo(BaseModel):
@@ -15,16 +18,17 @@ class StrategyInfo(BaseModel):
     description: str
 
 
-def create_router(*, strategies: Sequence[RetrievalStrategy]) -> Any:
+def create_router(*, strategies: Sequence[RetrievalStrategy]) -> "APIRouter":
     try:
-        from fastapi import APIRouter, HTTPException
+        from fastapi import APIRouter as _APIRouter
+        from fastapi import HTTPException
     except ImportError as e:  # pragma: no cover
         raise RuntimeError(
             "Install `chartcoach[retrieval-server]` to use the API server."
         ) from e
 
     strategies_by_id = {s.id: s for s in strategies}
-    router = APIRouter(prefix="/v1")
+    router = _APIRouter(prefix="/v1")
 
     @router.get("/strategies", response_model=list[StrategyInfo])
     def get_strategies() -> list[StrategyInfo]:
