@@ -8,6 +8,7 @@ import dspy
 import polars as pl
 
 from chartcoach.catalog import Catalog
+from chartcoach.retrieval.strategy import RetrievalStrategy
 
 
 def _catalog_from_path(path: str) -> Catalog:
@@ -24,12 +25,16 @@ def _openai_env() -> tuple[str, str]:
     return api_base, api_key
 
 
-def create_default_strategies(*, catalog: Catalog) -> list[Any]:
+def create_guideline_browser_strategy(*, catalog: Catalog) -> RetrievalStrategy:
     from chartcoach.retrieval.guideline_browser import GuidelineBrowserStrategy
 
     api_base, api_key = _openai_env()
     guideline_browser_lm = dspy.LM(model="gpt-5.2", api_base=api_base, api_key=api_key)
-    return [GuidelineBrowserStrategy(catalog=catalog, lm=guideline_browser_lm)]
+    return GuidelineBrowserStrategy(catalog=catalog, lm=guideline_browser_lm)
+
+
+def create_default_strategies(*, catalog: Catalog) -> list[RetrievalStrategy]:
+    return [create_guideline_browser_strategy(catalog=catalog)]
 
 
 def create_app_from_env() -> Any:
