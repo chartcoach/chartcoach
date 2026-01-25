@@ -2,22 +2,28 @@ from __future__ import annotations
 
 import sys
 from collections.abc import Callable
+from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+from threading import Thread
 from types import ModuleType
 from typing import Protocol, TypedDict, cast
 
-import dspy
 import polars as pl
 import pytest
 from pydantic import ValidationError
 
 from chartcoach.env import load_env
 from chartcoach.catalog import Catalog, CatalogEntry, Guideline
-from chartcoach.retrieval.registry import catalog_from_path, create_default_strategies
+from chartcoach.retrieval.registry import (
+    catalog_from_uri,
+    create_default_strategy_registrations,
+)
 from chartcoach.retrieval.server import (
     create_app,
     create_app_from_env,
     create_router,
 )
+from chartcoach.retrieval.server.routes import StrategyRunRequest
 from chartcoach.retrieval.strategy import RetrievalStrategy, StrategyInfo
 from chartcoach.retrieval.types import (
     ImageItem,
@@ -101,7 +107,7 @@ def _install_fastapi_stub(monkeypatch) -> type[Exception]:
     return HTTPException
 
 
-def test_catalog_from_path_parquet_and_missing_folder(tmp_path) -> None:
+def test_catalog_from_uri_parquet_and_missing_folder(tmp_path) -> None:
     df = pl.DataFrame(
         [
             {
@@ -121,31 +127,155 @@ def test_catalog_from_path_parquet_and_missing_folder(tmp_path) -> None:
     parquet_path = tmp_path / "catalog.parquet"
     df.write_parquet(parquet_path)
 
-    catalog = catalog_from_path(str(parquet_path))
+    catalog = catalog_from_uri(str(parquet_path))
     assert isinstance(catalog, Catalog)
     assert len(catalog) == 1
     assert catalog.entries[0].guideline.id == "g1"
 
     with pytest.raises(Exception):  # noqa: BLE001
-        catalog_from_path(str(tmp_path / "missing_folder"))
+        catalog_from_uri(str(tmp_path / "missing_folder"))
 
 
-def test_create_default_strategies_includes_guideline_browser(monkeypatch) -> None:
+def test_catalog_from_uri_supports_pathlike(tmp_path) -> None:
+    df = pl.DataFrame(
+        [
+            {
+                "id": "g1",
+                "guideline": {
+                    "id": "g1",
+                    "title": "T",
+                    "description": "D",
+                    "labels": [],
+                    "body": "B",
+                    "bibliography": None,
+                },
+                "references": [],
+            }
+        ]
+    )
+    parquet_path = tmp_path / "catalog.parquet"
+    df.write_parquet(parquet_path)
+
+    catalog = catalog_from_uri(parquet_path)
+    assert len(catalog) == 1
+
+
+def test_catalog_from_uri_supports_file_scheme(tmp_path) -> None:
+    df = pl.DataFrame(
+        [
+            {
+                "id": "g1",
+                "guideline": {
+                    "id": "g1",
+                    "title": "T",
+                    "description": "D",
+                    "labels": [],
+                    "body": "B",
+                    "bibliography": None,
+                },
+                "references": [],
+            }
+        ]
+    )
+    parquet_path = tmp_path / "catalog.parquet"
+    df.write_parquet(parquet_path)
+
+    file_uri = f"file://{parquet_path}"
+    catalog = catalog_from_uri(file_uri)
+    assert len(catalog) == 1
+
+
+def test_catalog_from_uri_supports_http_download(tmp_path) -> None:
+    df = pl.DataFrame(
+        [
+            {
+                "id": "g1",
+                "guideline": {
+                    "id": "g1",
+                    "title": "T",
+                    "description": "D",
+                    "labels": [],
+                    "body": "B",
+                    "bibliography": None,
+                },
+                "references": [],
+            }
+        ]
+    )
+    parquet_path = tmp_path / "catalog.parquet"
+    df.write_parquet(parquet_path)
+
+    class Handler(SimpleHTTPRequestHandler):
+        def __init__(self, *args, **kwargs):  # noqa: ANN002, D401
+            super().__init__(*args, directory=str(tmp_path), **kwargs)
+
+        def log_message(self, format: str, *args: object) -> None:  # noqa: A002
+            pass
+
+    httpd = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    thread = Thread(target=httpd.serve_forever, daemon=True)
+    thread.start()
+
+    try:
+        port = httpd.server_address[1]
+        url = f"http://127.0.0.1:{port}/{parquet_path.name}"
+        catalog = catalog_from_uri(url)
+        assert len(catalog) == 1
+    finally:
+        httpd.shutdown()
+
+
+def test_catalog_from_uri_supports_s3_scheme(monkeypatch) -> None:
+    import chartcoach.retrieval.registry as retrieval_registry
+
+    df = pl.DataFrame(
+        [
+            {
+                "id": "g1",
+                "guideline": {
+                    "id": "g1",
+                    "title": "T",
+                    "description": "D",
+                    "labels": [],
+                    "body": "B",
+                    "bibliography": None,
+                },
+                "references": [],
+            }
+        ]
+    )
+    monkeypatch.setattr(
+        retrieval_registry.pl, "read_parquet", lambda *_args, **_kwargs: df
+    )
+    catalog = retrieval_registry.catalog_from_uri("s3://bucket/catalog.parquet")
+    assert len(catalog) == 1
+
+
+def test_catalog_from_uri_rejects_non_parquet_http() -> None:
+    with pytest.raises(ValueError, match="\\.parquet"):
+        catalog_from_uri("http://example.invalid/catalog.txt")
+
+
+def test_catalog_from_uri_rejects_non_parquet_s3() -> None:
+    with pytest.raises(ValueError, match="\\.parquet"):
+        catalog_from_uri("s3://bucket/catalog.txt")
+
+
+def test_default_strategy_registrations_include_guideline_browser(monkeypatch) -> None:
+    _install_fastapi_stub(monkeypatch)
+    regs = create_default_strategy_registrations()
+    assert any(cls.id == "guideline-browser@v0" for cls, _factory in regs)
+
+
+def test_default_strategy_factory_instantiates_guideline_browser(monkeypatch) -> None:
     _install_fastapi_stub(monkeypatch)
     monkeypatch.setenv("OPENAI_BASE_URL", "http://example.invalid/v1")
     monkeypatch.setenv("OPENAI_API_KEY", "k")
-    catalog = Catalog(entries=[])
-    strategies = create_default_strategies(catalog=catalog)
-    assert any(s.id == "guideline-browser@v0" for s in strategies)
-
-
-def test_create_default_strategies_instantiates(monkeypatch) -> None:
-    _install_fastapi_stub(monkeypatch)
-    monkeypatch.setenv("OPENAI_BASE_URL", "http://example.invalid/v1")
-    monkeypatch.setenv("OPENAI_API_KEY", "k")
-    catalog = Catalog(entries=[])
-    strategies = create_default_strategies(catalog=catalog)
-    assert strategies
+    regs = create_default_strategy_registrations()
+    cls, factory = next(reg for reg in regs if reg[0].id == "guideline-browser@v0")
+    strategy = factory(catalog=Catalog(entries=[]))
+    assert isinstance(strategy, RetrievalStrategy)
+    assert strategy.id == cls.id
 
 
 def test_routes_and_app_use_strategy_instances(tmp_path, monkeypatch) -> None:
@@ -154,31 +284,36 @@ def test_routes_and_app_use_strategy_instances(tmp_path, monkeypatch) -> None:
     class DummyStrategy(RetrievalStrategy):
         id = "dummy@v0"
 
-        def __init__(self, *, catalog: Catalog, lm: dspy.LM) -> None:  # noqa: ARG002
-            super().__init__(catalog)
-
         def _forward(self, request: RetrievalRequest) -> RetrievalResponse:  # noqa: ARG002
             assert any(isinstance(i, TextItem) for i in request.context)
             return RetrievalResponse(
-                catalog=Catalog(
-                    entries=[
-                        CatalogEntry(
-                            guideline=Guideline(
-                                id="g1",
-                                title="T",
-                                description="D",
-                                labels=[],
-                                body="B",
-                            ),
-                            references=[],
-                        )
-                    ]
-                ),
+                catalog=Catalog(entries=[self.catalog.entries[0]]),
                 meta={"ok": True},
             )
 
-    lm = dspy.LM(model="m", api_base="http://example.invalid/v1", api_key="k")
-    strategies = [DummyStrategy(catalog=Catalog(entries=[]), lm=lm)]
+    def create_dummy_strategy(*, catalog: Catalog) -> RetrievalStrategy:
+        return DummyStrategy(catalog)
+
+    df = pl.DataFrame(
+        [
+            {
+                "id": "g1",
+                "guideline": {
+                    "id": "g1",
+                    "title": "T",
+                    "description": "D",
+                    "labels": [],
+                    "body": "B",
+                    "bibliography": None,
+                },
+                "references": [],
+            }
+        ]
+    )
+    parquet_path = tmp_path / "catalog.parquet"
+    df.write_parquet(parquet_path)
+
+    strategies = [(DummyStrategy, create_dummy_strategy)]
 
     router = create_router(strategies=strategies)
     router_stub = cast(_RouterStub, router)
@@ -189,61 +324,44 @@ def test_routes_and_app_use_strategy_instances(tmp_path, monkeypatch) -> None:
     assert any(s.id == "dummy@v0" for s in out)
 
     post = cast(
-        Callable[[str, RetrievalRequest], RetrievalResponse],
+        Callable[[str, StrategyRunRequest], RetrievalResponse],
         next(r for r in router_stub.routes if r["method"] == "POST")["endpoint"],
     )
     resp = post(
         "dummy@v0",
-        RetrievalRequest(context=[TextItem(role="situation", text="S")]),
+        StrategyRunRequest(
+            catalog_uri=str(parquet_path),
+            request=RetrievalRequest(context=[TextItem(role="situation", text="S")]),
+        ),
     )
     assert resp.meta["ok"] is True
     assert len(resp.catalog) == 1
     assert resp.catalog.entries[0].guideline.id == "g1"
 
     with pytest.raises(HTTPException) as e:
-        post("missing@v0", RetrievalRequest())
+        post(
+            "missing@v0",
+            StrategyRunRequest(
+                catalog_uri=str(parquet_path),
+                request=RetrievalRequest(),
+            ),
+        )
     assert cast(_HTTPExceptionLike, e.value).status_code == 404
 
     app = create_app(strategies=strategies)
     assert len(cast(_AppStub, app).routers) == 1
 
-    df = pl.DataFrame(
-        [
-            {
-                "id": "g1",
-                "guideline": {
-                    "id": "g1",
-                    "title": "T",
-                    "description": "D",
-                    "labels": [],
-                    "body": "B",
-                    "bibliography": None,
-                },
-                "references": [],
-            }
-        ]
-    )
-    parquet_path = tmp_path / "catalog.parquet"
-    df.write_parquet(parquet_path)
-    monkeypatch.setenv("CHARTCOACH_CATALOG_PATH", str(parquet_path))
-    monkeypatch.setenv("OPENAI_BASE_URL", "http://example.invalid/v1")
-    monkeypatch.setenv("OPENAI_API_KEY", "k")
     env_app = create_app_from_env()
     assert len(cast(_AppStub, env_app).routers) == 1
 
 
-def test_create_app_from_env_requires_env_vars(monkeypatch) -> None:
+def test_create_app_from_env_does_not_require_env_vars(monkeypatch) -> None:
     _install_fastapi_stub(monkeypatch)
 
     monkeypatch.delenv("CHARTCOACH_CATALOG_PATH", raising=False)
     monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-    with pytest.raises(RuntimeError):
-        create_app_from_env()
-
-    monkeypatch.setenv("CHARTCOACH_CATALOG_PATH", "/tmp/does-not-matter")
-    with pytest.raises(RuntimeError):
-        create_app_from_env()
+    assert create_app_from_env() is not None
 
 
 def test_env_require_catalog_path_raises() -> None:
@@ -252,6 +370,23 @@ def test_env_require_catalog_path_raises() -> None:
     )
     with pytest.raises(RuntimeError, match="CHARTCOACH_CATALOG_PATH"):
         env.retrieval_server.require_catalog_path()
+
+
+def test_env_require_catalog_path_returns() -> None:
+    env = load_env(
+        {
+            "OPENAI_BASE_URL": "http://example.invalid/v1",
+            "OPENAI_API_KEY": "k",
+            "CHARTCOACH_CATALOG_PATH": "/tmp/catalog.parquet",
+        }
+    )
+    assert env.retrieval_server.require_catalog_path() == Path("/tmp/catalog.parquet")
+
+
+def test_env_require_openai_raises() -> None:
+    env = load_env({"CHARTCOACH_CATALOG_PATH": "/tmp/catalog.parquet"})
+    with pytest.raises(RuntimeError, match="OPENAI_BASE_URL"):
+        env.openai.require()
 
 
 def test_retrieval_request_base64_bytes_decode() -> None:

@@ -6,12 +6,19 @@ import { createServerFn } from "@tanstack/react-start";
 import { parse as parseYaml } from "yaml";
 import { z } from "zod";
 
-import { loadCatalogFromParquetFile } from "@chartcoach/catalog/node";
 import { env } from "@chartcoach/eval-ui/env";
 
 import { ScenariosFileSchema, type ScenarioSpec } from "../schemas";
 import type { EvalScenarioBundle, EvalStrategyResult } from "../types";
 import type { CatalogEntry } from "@chartcoach/catalog";
+import { ChartCoachRetrievalClient } from "@chartcoach/eval-ui/eval/retrieval/chartcoach-retrieval-client";
+import { catalogEntriesFromWire, buildRetrievalRequestFromScenario } from "../retrieval/wire";
+import {
+  buildRetrievalResultsCacheKey,
+  computeRetrievalResultsDigest,
+  readRetrievalResultsCache,
+  writeRetrievalResultsCache,
+} from "./retrieval-results-cache.server";
 
 const repoRoot = fileURLToPath(new URL("../../../../../", import.meta.url));
 const scenariosSpecPath = path.join(repoRoot, "evals/scenarios/spec.yaml");
@@ -20,17 +27,6 @@ const catalogParquetPath = path.join(repoRoot, "guidelines/catalog.parquet");
 const ScenarioBundleInputSchema = z.object({
   scenarioId: z.string().min(1),
 });
-
-type StrategySpec = {
-  name: string;
-  k: number;
-};
-
-const STRATEGIES: StrategySpec[] = [
-  { name: "Head", k: 8 },
-  { name: "Guideline Browser", k: 8 },
-  { name: "Vector Search", k: 8 },
-];
 
 let scenariosPromise: Promise<ScenarioSpec[]> | undefined;
 async function loadScenarios(): Promise<ScenarioSpec[]> {
@@ -47,34 +43,6 @@ async function loadScenarios(): Promise<ScenarioSpec[]> {
   return scenariosPromise;
 }
 
-let catalogEntriesPromise: Promise<CatalogEntry[]> | undefined;
-async function loadCatalogEntries(): Promise<CatalogEntry[]> {
-  catalogEntriesPromise ??= (async () => {
-    try {
-      const catalog = await loadCatalogFromParquetFile(catalogParquetPath);
-      return catalog.entries;
-    } catch (error) {
-      catalogEntriesPromise = undefined;
-      throw error;
-    }
-  })();
-  return catalogEntriesPromise;
-}
-
-function hashStringToSeed(input: string): number {
-  let hash = 2166136261;
-  for (let i = 0; i < input.length; i++) {
-    hash ^= input.charCodeAt(i);
-    hash = Math.imul(hash, 16777619);
-  }
-  return hash >>> 0;
-}
-
-function strategyIdFromName(name: string) {
-  const hash = hashStringToSeed(`strategy:${name}`);
-  return `s_${hash.toString(16).padStart(8, "0")}`;
-}
-
 function indexToLetters(index: number) {
   let n = index;
   let letters = "";
@@ -85,48 +53,58 @@ function indexToLetters(index: number) {
   return letters;
 }
 
-function mulberry32(seed: number): () => number {
-  return () => {
-    let t = (seed += 0x6d2b79f5);
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
+let strategiesPromise: Promise<Array<{ id: string; name: string }>> | undefined;
+async function loadStrategyInfos() {
+  strategiesPromise ??= (async () => {
+    try {
+      const client = new ChartCoachRetrievalClient({ baseUrl: env.RETRIEVAL_SERVER_BASE_URL });
+      const strategies = await client.listStrategies();
+      return strategies.map((s) => ({ id: s.id, name: s.name }));
+    } catch (error) {
+      strategiesPromise = undefined;
+      throw error;
+    }
+  })();
+  return strategiesPromise;
 }
 
-function sampleUniqueIndexes(count: number, k: number, rng: () => number) {
-  const selected = new Set<number>();
-  while (selected.size < Math.min(k, count)) {
-    selected.add(Math.floor(rng() * count));
+async function mapConcurrent<T, R>(
+  items: readonly T[],
+  concurrency: number,
+  run: (item: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  const results: R[] = [];
+  results.length = items.length;
+  const limit = Math.max(1, Math.min(concurrency, items.length));
+  let nextIndex = 0;
+
+  async function worker() {
+    while (true) {
+      const current = nextIndex++;
+      if (current >= items.length) return;
+      results[current] = await run(items[current]!, current);
+    }
   }
-  return [...selected];
+
+  await Promise.all(Array.from({ length: limit }, worker));
+  return results;
 }
 
-function buildDummyStrategyResults(
-  catalogEntries: CatalogEntry[],
-  scenarioId: string,
-): EvalStrategyResult[] {
-  const strategies = STRATEGIES.slice().sort((a, b) => a.name.localeCompare(b.name));
-
-  return strategies.map((strategy, idx) => {
-    const strategyId = strategyIdFromName(strategy.name);
-    const strategyName =
-      env.STRATEGY_DISPLAY_MODE === "alias" ? `Strategy ${indexToLetters(idx)}` : strategy.name;
-
-    const rng = mulberry32(hashStringToSeed(`${scenarioId}::${strategyId}`));
-    const idxs = sampleUniqueIndexes(catalogEntries.length, strategy.k, rng);
-
-    const guidelines = idxs.map((idx, i) => {
-      const score = Math.max(0.01, 1 - i / Math.max(1, idxs.length));
-      return { rank: i + 1, score, entry: catalogEntries[idx]! };
-    });
-
-    return {
-      strategyId,
-      strategyName,
-      guidelines,
-    };
+function buildEvalStrategyResult(args: {
+  strategyId: string;
+  strategyName: string;
+  catalogEntries: CatalogEntry[];
+}): EvalStrategyResult {
+  const guidelines = args.catalogEntries.map((entry, i) => {
+    const score = Math.max(0.01, 1 - i / Math.max(1, args.catalogEntries.length));
+    return { rank: i + 1, score, entry };
   });
+
+  return {
+    strategyId: args.strategyId,
+    strategyName: args.strategyName,
+    guidelines,
+  };
 }
 
 export const getEvalScenarios = createServerFn({ method: "GET" }).handler(
@@ -142,8 +120,59 @@ export const getEvalScenarioBundle = createServerFn({ method: "POST" })
       throw new Error(`Unknown scenarioId: ${data.scenarioId}`);
     }
 
-    const catalogEntries = await loadCatalogEntries();
-    const strategies = buildDummyStrategyResults(catalogEntries, scenario.id);
+    const catalogUri = env.RETRIEVAL_CATALOG_URI ?? catalogParquetPath;
+    const retrievalRequest = buildRetrievalRequestFromScenario(scenario);
+
+    const client = new ChartCoachRetrievalClient({ baseUrl: env.RETRIEVAL_SERVER_BASE_URL });
+    const strategiesInfo = (await loadStrategyInfos()).slice().sort((a, b) => a.id.localeCompare(b.id));
+
+    const strategies = await mapConcurrent(
+      strategiesInfo,
+      env.RETRIEVAL_STRATEGY_CONCURRENCY,
+      async (strategy, idx): Promise<EvalStrategyResult> => {
+        const strategyName =
+          env.STRATEGY_DISPLAY_MODE === "alias" ? `Strategy ${indexToLetters(idx)}` : strategy.name;
+
+        const digest = computeRetrievalResultsDigest({
+          scenarioId: scenario.id,
+          strategyId: strategy.id,
+          catalogUri,
+          request: retrievalRequest,
+          baseUrl: env.RETRIEVAL_SERVER_BASE_URL,
+        });
+        const cacheKey = buildRetrievalResultsCacheKey({
+          scenarioId: scenario.id,
+          strategyId: strategy.id,
+          digest,
+        });
+
+        const cached = await readRetrievalResultsCache(cacheKey);
+        const response =
+          cached?.response ??
+          (await client.runStrategy({
+            strategyId: strategy.id,
+            catalogUri,
+            request: retrievalRequest,
+          }));
+
+        if (!cached) {
+          await writeRetrievalResultsCache(cacheKey, {
+            scenarioId: scenario.id,
+            strategyId: strategy.id,
+            catalogUri,
+            request: retrievalRequest,
+            response,
+          });
+        }
+
+        const entries = catalogEntriesFromWire(response.catalog);
+        return buildEvalStrategyResult({
+          strategyId: strategy.id,
+          strategyName,
+          catalogEntries: entries,
+        });
+      },
+    );
 
     return { scenario, strategies };
   });
