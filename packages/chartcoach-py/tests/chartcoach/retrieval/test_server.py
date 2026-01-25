@@ -15,7 +15,6 @@ from chartcoach.retrieval.server import (
     create_app_from_env,
     create_default_strategies,
     create_router,
-    list_strategy_classes,
 )
 from chartcoach.retrieval.server.registry import _catalog_from_path
 from chartcoach.retrieval.strategy import RetrievalStrategy
@@ -111,47 +110,20 @@ def test_catalog_from_path_parquet_and_missing_folder(tmp_path) -> None:
         _catalog_from_path(str(tmp_path / "missing_folder"))
 
 
-def test_list_strategy_classes_filters_invalid_and_duplicate_ids() -> None:
-    class _EmptyId(RetrievalStrategy):
-        id = ""
-
-        def __init__(self, *, catalog: Catalog, lm: dspy.LM) -> None:  # noqa: ARG002
-            super().__init__(catalog)
-
-        def _forward(self, request: RetrievalRequest) -> RetrievalResponse:  # noqa: ARG002
-            return RetrievalResponse(catalog=Catalog(entries=[]))
-
-    class _DupId(RetrievalStrategy):
-        id = "guideline-browser@v0"
-
-        def __init__(self, *, catalog: Catalog, lm: dspy.LM) -> None:  # noqa: ARG002
-            super().__init__(catalog)
-
-        def _forward(self, request: RetrievalRequest) -> RetrievalResponse:  # noqa: ARG002
-            return RetrievalResponse(catalog=Catalog(entries=[]))
-
-    ids = [cls.id for cls in list_strategy_classes()]
-    assert "guideline-browser@v0" in ids
-    assert "" not in ids
-    assert ids.count("guideline-browser@v0") == 1
+def test_create_default_strategies_includes_guideline_browser(monkeypatch) -> None:
+    _install_fastapi_stub(monkeypatch)
+    catalog = Catalog(entries=[])
+    lm = dspy.LM(model="m", api_base="http://example.invalid/v1", api_key="k")
+    strategies = create_default_strategies(catalog=catalog, lm=lm)
+    assert any(s.id == "guideline-browser@v0" for s in strategies)
 
 
 def test_create_default_strategies_instantiates(monkeypatch) -> None:
     _install_fastapi_stub(monkeypatch)
-
-    class DummyStrategy(RetrievalStrategy):
-        id = "dummy@v0"
-
-        def __init__(self, *, catalog: Catalog, lm: dspy.LM) -> None:  # noqa: ARG002
-            super().__init__(catalog)
-
-        def _forward(self, request: RetrievalRequest) -> RetrievalResponse:  # noqa: ARG002
-            return RetrievalResponse(catalog=Catalog(entries=[]), meta={"ok": True})
-
     catalog = Catalog(entries=[])
     lm = dspy.LM(model="m", api_base="http://example.invalid/v1", api_key="k")
     strategies = create_default_strategies(catalog=catalog, lm=lm)
-    assert any(s.id == DummyStrategy.id for s in strategies)
+    assert strategies
 
 
 def test_routes_and_app_use_strategy_instances(tmp_path, monkeypatch) -> None:
@@ -226,7 +198,6 @@ def test_routes_and_app_use_strategy_instances(tmp_path, monkeypatch) -> None:
     parquet_path = tmp_path / "catalog.parquet"
     df.write_parquet(parquet_path)
     monkeypatch.setenv("CHARTCOACH_CATALOG_PATH", str(parquet_path))
-    monkeypatch.setenv("CHARTCOACH_MODEL", "m")
     monkeypatch.setenv("OPENAI_BASE_URL", "http://example.invalid/v1")
     monkeypatch.setenv("OPENAI_API_KEY", "k")
     env_app = create_app_from_env()
@@ -237,14 +208,12 @@ def test_create_app_from_env_requires_env_vars(monkeypatch) -> None:
     _install_fastapi_stub(monkeypatch)
 
     monkeypatch.delenv("CHARTCOACH_CATALOG_PATH", raising=False)
-    monkeypatch.delenv("CHARTCOACH_MODEL", raising=False)
     monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     with pytest.raises(RuntimeError):
         create_app_from_env()
 
     monkeypatch.setenv("CHARTCOACH_CATALOG_PATH", "/tmp/does-not-matter")
-    monkeypatch.delenv("CHARTCOACH_MODEL", raising=False)
     with pytest.raises(RuntimeError):
         create_app_from_env()
 
@@ -329,7 +298,6 @@ def test_cli_main_starts_uvicorn(tmp_path, monkeypatch) -> None:
     df.write_parquet(parquet_path)
 
     monkeypatch.setenv("CHARTCOACH_CATALOG_PATH", str(parquet_path))
-    monkeypatch.setenv("CHARTCOACH_MODEL", "m")
     monkeypatch.setenv("OPENAI_BASE_URL", "http://example.invalid/v1")
     monkeypatch.setenv("OPENAI_API_KEY", "k")
     monkeypatch.setenv("CHARTCOACH_HOST", "0.0.0.0")
