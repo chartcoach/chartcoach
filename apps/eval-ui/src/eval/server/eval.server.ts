@@ -124,7 +124,9 @@ export const getEvalScenarioBundle = createServerFn({ method: "POST" })
     const retrievalRequest = buildRetrievalRequestFromScenario(scenario);
 
     const client = new ChartCoachRetrievalClient({ baseUrl: env.RETRIEVAL_SERVER_BASE_URL });
-    const strategiesInfo = (await loadStrategyInfos()).slice().sort((a, b) => a.id.localeCompare(b.id));
+    const strategiesInfo = (await loadStrategyInfos())
+      .slice()
+      .sort((a, b) => a.id.localeCompare(b.id));
 
     const strategies = await mapConcurrent(
       strategiesInfo,

@@ -38,4 +38,3 @@ describe("eval retrieval wire helpers", () => {
     expect(entries[0]?.guideline.sections).toBeDefined();
   });
 });
-

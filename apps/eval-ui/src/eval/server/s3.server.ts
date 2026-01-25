@@ -93,4 +93,3 @@ export async function readObjectBody(body: unknown): Promise<string> {
 
   return String(body);
 }
-

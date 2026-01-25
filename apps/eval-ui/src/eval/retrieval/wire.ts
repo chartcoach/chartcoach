@@ -60,7 +60,8 @@ export function catalogEntriesFromWire(rows: unknown[]): CatalogEntry[] {
       guideline: {
         id,
         title: typeof guideline.title === "string" ? guideline.title : id,
-        bibliography: typeof guideline.bibliography === "string" ? guideline.bibliography : undefined,
+        bibliography:
+          typeof guideline.bibliography === "string" ? guideline.bibliography : undefined,
         description: typeof guideline.description === "string" ? guideline.description : "",
         labels: Array.isArray(guideline.labels)
           ? guideline.labels.filter((l): l is string => typeof l === "string")
@@ -81,4 +82,3 @@ export function catalogEntriesFromWire(rows: unknown[]): CatalogEntry[] {
 
   return entries;
 }
-

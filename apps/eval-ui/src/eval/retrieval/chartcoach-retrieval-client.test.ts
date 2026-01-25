@@ -57,4 +57,3 @@ describe("ChartCoachRetrievalClient", () => {
     expect(resp.catalog).toEqual([]);
   });
 });
-

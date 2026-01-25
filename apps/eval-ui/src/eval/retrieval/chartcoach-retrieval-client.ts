@@ -81,4 +81,3 @@ export class ChartCoachRetrievalClient {
     return RetrievalResponseWireSchema.parse(json);
   }
 }
-
