@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, ClassVar
 
 import dspy
 
@@ -9,6 +9,8 @@ from chartcoach.retrieval.types import RetrievalRequest, RetrievalResponse
 
 
 class RetrievalStrategy(dspy.Module):
+    id: ClassVar[str] = "retrieval@base"
+
     def __init__(self, catalog: Catalog, /, **_: Any) -> None:
         super().__init__()
         self._catalog = catalog

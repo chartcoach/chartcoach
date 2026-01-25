@@ -169,7 +169,7 @@ class GuidelineBrowserTools:
 class GuidelineBrowserStrategy(RetrievalStrategy):
     """ReAct strategy for browsing a guideline catalog to retrieve relevant guidelines."""
 
-    strategy_id = "guideline-browser@v0"
+    id = "guideline-browser@v0"
 
     def __init__(
         self,
