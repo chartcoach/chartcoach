@@ -88,13 +88,13 @@ function LandingPage() {
     <>
       <AppHeader />
 
-      <div className="mx-auto w-full max-w-[1400px] px-4 py-10 lg:px-6">
+      <div className="mx-auto w-full max-w-[1400px] px-4 py-10 lg:px-6 2xl:max-w-[1800px]">
         <main id="main" tabIndex={-1} className="min-w-0">
           <header className="space-y-3">
-            <h1 className="text-balance text-2xl font-semibold tracking-tight sm:text-3xl">
+            <h1 className="text-balance text-2xl font-semibold sm:text-3xl">
               Guideline relevance evaluation
             </h1>
-            <p className="max-w-prose text-sm text-muted-foreground">
+            <p className="max-w-prose text-sm text-muted-foreground text-pretty lg:max-w-[60rem]">
               Pick a scenario to start. Your task on each scenario page is to rate how
               relevant the listed visualization guidelines are for the scenario and
               the chart.

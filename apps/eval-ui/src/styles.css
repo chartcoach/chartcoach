@@ -209,36 +209,31 @@ code {
 
 /* Eval UI: keep guideline cards consistent height across strategy switches. */
 .eval-guideline-card {
-  height: var(--eval-guideline-card-height, 280px);
+  min-height: var(--eval-guideline-card-height, 280px);
 }
 
 .eval-guideline-card .guideline-card {
-  height: 100%;
   display: flex;
   flex-direction: column;
+  min-height: inherit;
 }
 
 .eval-guideline-card .guideline-card__content {
   min-width: 0;
-  overflow: hidden;
+  overflow-wrap: anywhere;
 }
 
 .eval-guideline-card .guideline-card__title {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
+  overflow-wrap: anywhere;
 }
 
 .eval-guideline-card .guideline-card__desc {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  overflow: hidden;
+  overflow-wrap: anywhere;
 }
 
 .eval-guideline-card .guideline-labels {
-  max-height: 2.6rem;
+  /* Allow up to ~2 rows of label chips before clipping. */
+  max-height: 3.4rem;
   overflow: hidden;
 }
 

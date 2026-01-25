@@ -1,5 +1,3 @@
-import { Link } from '@tanstack/react-router'
-
 import type { ScenarioSpec } from '@chartcoach/eval-ui/eval/schemas'
 
 export function ScenarioPanel({ scenario }: { scenario: ScenarioSpec }) {
@@ -8,24 +6,18 @@ export function ScenarioPanel({ scenario }: { scenario: ScenarioSpec }) {
       <div className="space-y-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="text-xs font-semibold text-muted-foreground">Scenario</div>
-          <Link
-            to="/"
-            className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-          >
-            All scenarios
-          </Link>
         </div>
 
         <div className="grid gap-5 2xl:grid-cols-[420px_minmax(0,1fr)] 2xl:items-start">
           <div className="min-w-0 space-y-4">
-            <div className="space-y-1">
-              <h1 className="text-balance text-lg font-semibold leading-tight tracking-tight sm:text-xl">
+            <div className="space-y-2">
+              <h1 className="text-balance text-lg font-semibold leading-tight sm:text-xl">
                 {scenario.title}
               </h1>
               {scenario.provenance?.source ? (
                 <div className="text-xs text-muted-foreground">{scenario.provenance.source}</div>
               ) : null}
-              <div className="text-sm text-muted-foreground">
+              <div className="text-sm text-muted-foreground text-pretty">
                 <span className="font-semibold text-foreground">Task:</span> rate how relevant each
                 visualization guideline is for this scenario and chart.
               </div>
@@ -34,14 +26,14 @@ export function ScenarioPanel({ scenario }: { scenario: ScenarioSpec }) {
             <div className="space-y-4">
               <div>
                 <div className="text-xs font-semibold text-muted-foreground">Designer intent</div>
-                <div className="mt-2 whitespace-pre-wrap text-sm leading-relaxed">
+                <div className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-pretty">
                   {scenario.designer_intent ?? '—'}
                 </div>
               </div>
 
               <div>
                 <div className="text-xs font-semibold text-muted-foreground">Query</div>
-                <div className="mt-2 whitespace-pre-wrap text-sm leading-relaxed">
+                <div className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-pretty">
                   {scenario.query ?? '—'}
                 </div>
               </div>
@@ -53,7 +45,7 @@ export function ScenarioPanel({ scenario }: { scenario: ScenarioSpec }) {
               <a
                 href={scenario.chart.uri}
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 className="block rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring/60"
                 title="Open full-size chart image"
               >
