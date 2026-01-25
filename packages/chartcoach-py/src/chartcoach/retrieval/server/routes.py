@@ -1,21 +1,12 @@
 from __future__ import annotations
 
-import inspect
 from typing import TYPE_CHECKING, Sequence
 
-from pydantic import BaseModel
-
-from chartcoach.retrieval.strategy import RetrievalStrategy
+from chartcoach.retrieval.strategy import RetrievalStrategy, StrategyInfo
 from chartcoach.retrieval.types import RetrievalRequest, RetrievalResponse
 
 if TYPE_CHECKING:
     from fastapi import APIRouter
-
-
-class StrategyInfo(BaseModel):
-    id: str
-    name: str
-    description: str
 
 
 def create_router(*, strategies: Sequence[RetrievalStrategy]) -> "APIRouter":
@@ -32,17 +23,7 @@ def create_router(*, strategies: Sequence[RetrievalStrategy]) -> "APIRouter":
 
     @router.get("/strategies", response_model=list[StrategyInfo])
     def get_strategies() -> list[StrategyInfo]:
-        out: list[StrategyInfo] = []
-        for strategy in strategies_by_id.values():
-            cls = strategy.__class__
-            doc = inspect.getdoc(cls) or ""
-            out.append(
-                StrategyInfo(
-                    id=strategy.id,
-                    name=cls.__name__,
-                    description=doc.splitlines()[0] if doc else "",
-                )
-            )
+        out = [s.info() for s in strategies_by_id.values()]
         return sorted(out, key=lambda s: s.id)
 
     @router.post("/strategies/{strategy_id}", response_model=RetrievalResponse)
