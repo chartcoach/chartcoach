@@ -1,30 +1,29 @@
-import { Suspense, lazy, useEffect, useState } from 'react'
+import { Suspense, lazy, useEffect, useState } from "react";
 
 const AgentationDev = import.meta.env.DEV
   ? lazy(async () => {
-      const { Agentation } = await import('agentation')
+      const { Agentation } = await import("agentation");
 
       function AgentationInner() {
-        return <Agentation />
+        return <Agentation />;
       }
 
-      return { default: AgentationInner }
+      return { default: AgentationInner };
     })
-  : null
+  : null;
 
 export function AgentationWidget() {
-  const [mounted, setMounted] = useState(false)
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true)
-  }, [])
+    setMounted(true);
+  }, []);
 
-  if (!import.meta.env.DEV || !AgentationDev || !mounted) return null
+  if (!import.meta.env.DEV || !AgentationDev || !mounted) return null;
 
   return (
     <Suspense fallback={null}>
       <AgentationDev />
     </Suspense>
-  )
+  );
 }
-

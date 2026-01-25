@@ -1,39 +1,39 @@
-import type { ChangeEvent } from 'react'
+import type { ChangeEvent } from "react";
 
 type LikertOption = {
-  value: number
-  label: string
-}
+  value: number;
+  label: string;
+};
 
 const defaultOptions: LikertOption[] = [
-  { value: 1, label: 'Irrelevant' },
-  { value: 2, label: 'Somewhat relevant' },
-  { value: 3, label: 'Relevant' },
-  { value: 4, label: 'Very relevant' },
-  { value: 5, label: 'Critical' },
-]
+  { value: 1, label: "Irrelevant" },
+  { value: 2, label: "Somewhat relevant" },
+  { value: 3, label: "Relevant" },
+  { value: 4, label: "Very relevant" },
+  { value: 5, label: "Critical" },
+];
 
 export function LikertScale({
   name,
   value,
   onChange,
   options = defaultOptions,
-  ariaLabel = 'Relevance (1-5)',
+  ariaLabel = "Relevance (1-5)",
 }: {
-  name: string
-  value: number | undefined
-  onChange: (next: number | undefined) => void
-  options?: LikertOption[]
-  ariaLabel?: string
+  name: string;
+  value: number | undefined;
+  onChange: (next: number | undefined) => void;
+  options?: LikertOption[];
+  ariaLabel?: string;
 }) {
-  const selectedLabel = options.find((o) => o.value === value)?.label
-  const minOption = options[0]
-  const maxOption = options[options.length - 1]
+  const selectedLabel = options.find((o) => o.value === value)?.label;
+  const minOption = options[0];
+  const maxOption = options[options.length - 1];
 
   function handleChange(event: ChangeEvent<HTMLInputElement>) {
-    const next = Number(event.currentTarget.value)
-    if (!Number.isFinite(next)) return
-    onChange(next)
+    const next = Number(event.currentTarget.value);
+    if (!Number.isFinite(next)) return;
+    onChange(next);
   }
 
   return (
@@ -57,7 +57,7 @@ export function LikertScale({
               aria-label={`${opt.value} — ${opt.label}`}
               onChange={handleChange}
               onClick={() => {
-                if (opt.value === value) onChange(undefined)
+                if (opt.value === value) onChange(undefined);
               }}
               className="peer sr-only"
             />
@@ -78,8 +78,8 @@ export function LikertScale({
         </div>
       ) : null}
       <div className="min-h-4 w-full min-w-0 text-center text-xs text-muted-foreground">
-        <span className="block truncate">{selectedLabel ?? 'Not rated'}</span>
+        <span className="block truncate">{selectedLabel ?? "Not rated"}</span>
       </div>
     </fieldset>
-  )
+  );
 }

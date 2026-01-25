@@ -1,62 +1,62 @@
-import { Link } from '@tanstack/react-router'
+import { Link } from "@tanstack/react-router";
 
-import type { ScenarioSpec } from '@chartcoach/eval-ui/eval/schemas'
-import { cn } from '@chartcoach/eval-ui/lib/utils'
+import type { ScenarioSpec } from "@chartcoach/eval-ui/eval/schemas";
+import { cn } from "@chartcoach/eval-ui/lib/utils";
 
 export type ScenarioProgressSummary = {
-  isLoading: boolean
-  rated: number
-  total: number | null
-  statusLabel: string
-  percent: number | null
+  isLoading: boolean;
+  rated: number;
+  total: number | null;
+  statusLabel: string;
+  percent: number | null;
   strategyBreakdown?: Array<{
-    label: string
-    rated: number
-    total: number
-    percent: number
-  }>
-}
+    label: string;
+    rated: number;
+    total: number;
+    percent: number;
+  }>;
+};
 
 function ProgressBar({
   percent,
-  tone = 'neutral',
+  tone = "neutral",
 }: {
-  percent: number
-  tone?: 'neutral' | 'success' | 'warning'
+  percent: number;
+  tone?: "neutral" | "success" | "warning";
 }) {
-  const clamped = Math.min(100, Math.max(0, percent))
+  const clamped = Math.min(100, Math.max(0, percent));
   const barClass =
-    tone === 'success'
-      ? 'bg-emerald-500'
-      : tone === 'warning'
-        ? 'bg-amber-500'
-        : 'bg-foreground/70'
+    tone === "success"
+      ? "bg-emerald-500"
+      : tone === "warning"
+        ? "bg-amber-500"
+        : "bg-foreground/70";
 
   return (
     <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
       <div
-        className={cn('h-full origin-left', barClass)}
+        className={cn("h-full origin-left", barClass)}
         style={{ transform: `scaleX(${clamped / 100})` }}
       />
     </div>
-  )
+  );
 }
 
 export function ScenarioCard({
   scenario,
   progress,
 }: {
-  scenario: ScenarioSpec
-  progress: ScenarioProgressSummary
+  scenario: ScenarioSpec;
+  progress: ScenarioProgressSummary;
 }) {
   const tone =
     progress.percent === null
-      ? 'neutral'
+      ? "neutral"
       : progress.percent >= 100
-        ? 'success'
+        ? "success"
         : progress.percent > 0
-          ? 'warning'
-          : 'neutral'
+          ? "warning"
+          : "neutral";
 
   return (
     <Link
@@ -73,9 +73,7 @@ export function ScenarioCard({
               {scenario.title}
             </h2>
             {scenario.provenance?.source ? (
-              <div className="mt-1 text-xs text-muted-foreground">
-                {scenario.provenance.source}
-              </div>
+              <div className="mt-1 text-xs text-muted-foreground">{scenario.provenance.source}</div>
             ) : null}
           </div>
 
@@ -84,7 +82,7 @@ export function ScenarioCard({
               <div className="h-5 w-14 animate-pulse rounded bg-muted" />
             ) : (
               <div className="text-xs font-semibold text-muted-foreground tabular-nums">
-                {progress.total === null ? '—' : `${progress.rated}/${progress.total}`}
+                {progress.total === null ? "—" : `${progress.rated}/${progress.total}`}
               </div>
             )}
             <div className="mt-1 text-[11px] text-muted-foreground">{progress.statusLabel}</div>
@@ -123,7 +121,7 @@ export function ScenarioCard({
                   <div className="min-w-0 flex-1">
                     <ProgressBar
                       percent={Math.round(s.percent)}
-                      tone={s.percent >= 100 ? 'success' : s.percent > 0 ? 'warning' : 'neutral'}
+                      tone={s.percent >= 100 ? "success" : s.percent > 0 ? "warning" : "neutral"}
                     />
                   </div>
                   <div className="w-12 text-right text-[11px] text-muted-foreground tabular-nums">
@@ -138,7 +136,7 @@ export function ScenarioCard({
         <div className="mt-3 space-y-2">
           {scenario.designer_intent ? (
             <div className="line-clamp-3 text-xs text-muted-foreground text-pretty">
-              <span className="font-semibold text-foreground/80">Designer intent:</span>{' '}
+              <span className="font-semibold text-foreground/80">Designer intent:</span>{" "}
               {scenario.designer_intent}
             </div>
           ) : null}
@@ -150,5 +148,5 @@ export function ScenarioCard({
         </div>
       </div>
     </Link>
-  )
+  );
 }

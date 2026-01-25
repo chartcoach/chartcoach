@@ -1,119 +1,109 @@
-import { createFileRoute, redirect } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
-import { useEffect, useMemo, useState } from 'react'
-import { z } from 'zod'
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
+import { z } from "zod";
 
-import { AppHeader } from '@chartcoach/eval-ui/components/app-header'
-import { ScenarioPanel } from '@chartcoach/eval-ui/components/scenario-eval/scenario-panel'
-import { StrategyTabs } from '@chartcoach/eval-ui/components/scenario-eval/strategy-tabs'
-import { GuidelineDeck } from '@chartcoach/eval-ui/components/scenario-eval/guideline-deck'
-import {
-  deleteRelevanceRating,
-  upsertRelevanceRating,
-} from '@chartcoach/eval-ui/db-collections'
-import type { ScenarioSpec } from '@chartcoach/eval-ui/eval/schemas'
+import { AppHeader } from "@chartcoach/eval-ui/components/app-header";
+import { ScenarioPanel } from "@chartcoach/eval-ui/components/scenario-eval/scenario-panel";
+import { StrategyTabs } from "@chartcoach/eval-ui/components/scenario-eval/strategy-tabs";
+import { GuidelineDeck } from "@chartcoach/eval-ui/components/scenario-eval/guideline-deck";
+import { deleteRelevanceRating, upsertRelevanceRating } from "@chartcoach/eval-ui/db-collections";
+import type { ScenarioSpec } from "@chartcoach/eval-ui/eval/schemas";
 import {
   scenarioBundleQueryOptions,
   scenariosQueryOptions,
-} from '@chartcoach/eval-ui/eval/queries'
-import { useScenarioRatings } from '@chartcoach/eval-ui/eval/use-scenario-ratings'
+} from "@chartcoach/eval-ui/eval/queries";
+import { useScenarioRatings } from "@chartcoach/eval-ui/eval/use-scenario-ratings";
 
-export const Route = createFileRoute('/scenarios/$scenarioId')({
+export const Route = createFileRoute("/scenarios/$scenarioId")({
   validateSearch: z.object({
     strategyId: z.string().optional(),
   }),
   ssr: false,
   loader: async ({ context, params }) => {
-    const scenarioId = params.scenarioId
-    let scenarios: ScenarioSpec[]
+    const scenarioId = params.scenarioId;
+    let scenarios: ScenarioSpec[];
     try {
-      scenarios = await context.queryClient.ensureQueryData(scenariosQueryOptions)
+      scenarios = await context.queryClient.ensureQueryData(scenariosQueryOptions);
     } catch {
-      return
+      return;
     }
 
-    const exists = scenarios.some((s) => s.id === scenarioId)
+    const exists = scenarios.some((s) => s.id === scenarioId);
     if (!exists) {
-      throw redirect({ to: '/' })
+      throw redirect({ to: "/" });
     }
 
     try {
-      await context.queryClient.ensureQueryData(scenarioBundleQueryOptions(scenarioId))
+      await context.queryClient.ensureQueryData(scenarioBundleQueryOptions(scenarioId));
     } catch {
       // component renders a dedicated error state
     }
   },
   component: ScenarioEvalPage,
-})
+});
 
 function ScenarioEvalPage() {
-  const navigate = Route.useNavigate()
-  const { scenarioId } = Route.useParams()
-  const { strategyId } = Route.useSearch()
+  const navigate = Route.useNavigate();
+  const { scenarioId } = Route.useParams();
+  const { strategyId } = Route.useSearch();
 
   const bundleQuery = useQuery({
     ...scenarioBundleQueryOptions(scenarioId),
     enabled: Boolean(scenarioId),
-  })
+  });
 
-  const bundle = bundleQuery.data
-  const activeScenario = bundle?.scenario
-  const strategies = bundle?.strategies ?? []
+  const bundle = bundleQuery.data;
+  const activeScenario = bundle?.scenario;
+  const strategies = bundle?.strategies ?? [];
 
-  const hasStrategy = Boolean(
-    strategyId && strategies.some((s) => s.strategyId === strategyId),
-  )
-  const selectedStrategyId = hasStrategy ? strategyId : strategies[0]?.strategyId
-  const activeStrategy = strategies.find((s) => s.strategyId === selectedStrategyId)
+  const hasStrategy = Boolean(strategyId && strategies.some((s) => s.strategyId === strategyId));
+  const selectedStrategyId = hasStrategy ? strategyId : strategies[0]?.strategyId;
+  const activeStrategy = strategies.find((s) => s.strategyId === selectedStrategyId);
 
-  const { getRating } = useScenarioRatings(scenarioId)
+  const { getRating } = useScenarioRatings(scenarioId);
 
-  const guidelines = activeStrategy?.guidelines ?? []
-  const guidelineIds = useMemo(
-    () => guidelines.map((g) => g.entry.guideline.id),
-    [guidelines],
-  )
+  const guidelines = activeStrategy?.guidelines ?? [];
+  const guidelineIds = useMemo(() => guidelines.map((g) => g.entry.guideline.id), [guidelines]);
 
-  const [activeGuidelineId, setActiveGuidelineId] = useState<string | undefined>(
-    undefined,
-  )
+  const [activeGuidelineId, setActiveGuidelineId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (!guidelineIds.length) {
-      setActiveGuidelineId(undefined)
-      return
+      setActiveGuidelineId(undefined);
+      return;
     }
 
-    if (activeGuidelineId && guidelineIds.includes(activeGuidelineId)) return
-    setActiveGuidelineId(guidelineIds[0])
-  }, [activeGuidelineId, guidelineIds])
+    if (activeGuidelineId && guidelineIds.includes(activeGuidelineId)) return;
+    setActiveGuidelineId(guidelineIds[0]);
+  }, [activeGuidelineId, guidelineIds]);
 
   function onSelectStrategy(nextStrategyId: string) {
     navigate({
-      to: '/scenarios/$scenarioId',
+      to: "/scenarios/$scenarioId",
       params: { scenarioId },
       search: { strategyId: nextStrategyId },
       replace: true,
-    })
-    setActiveGuidelineId(undefined)
+    });
+    setActiveGuidelineId(undefined);
   }
 
   function onRateGuideline(guidelineId: string, relevance: number) {
-    if (!scenarioId) return
+    if (!scenarioId) return;
 
     upsertRelevanceRating({
       scenarioId,
       guidelineId,
       relevance,
-    })
+    });
 
-    setActiveGuidelineId(guidelineId)
+    setActiveGuidelineId(guidelineId);
   }
 
   function onClearGuideline(guidelineId: string) {
-    if (!scenarioId) return
-    deleteRelevanceRating({ scenarioId, guidelineId })
-    setActiveGuidelineId(guidelineId)
+    if (!scenarioId) return;
+    deleteRelevanceRating({ scenarioId, guidelineId });
+    setActiveGuidelineId(guidelineId);
   }
 
   return (
@@ -130,7 +120,7 @@ function ScenarioEvalPage() {
             <div className="rounded-xl border bg-card p-6 text-sm text-red-600">
               {bundleQuery.error instanceof Error
                 ? bundleQuery.error.message
-                : 'Failed to load scenario.'}
+                : "Failed to load scenario."}
             </div>
           ) : !activeScenario ? (
             <div className="rounded-xl border bg-card p-6 text-sm text-muted-foreground">
@@ -159,9 +149,7 @@ function ScenarioEvalPage() {
                     onClear={onClearGuideline}
                   />
                 ) : (
-                  <div className="mt-4 p-2 text-sm text-muted-foreground">
-                    No guidelines.
-                  </div>
+                  <div className="mt-4 p-2 text-sm text-muted-foreground">No guidelines.</div>
                 )}
               </section>
             </div>
@@ -169,5 +157,5 @@ function ScenarioEvalPage() {
         </main>
       </div>
     </>
-  )
+  );
 }

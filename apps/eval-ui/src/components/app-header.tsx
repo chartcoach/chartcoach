@@ -1,106 +1,102 @@
-import { Link } from '@tanstack/react-router'
-import { useLiveQuery } from '@tanstack/react-db'
-import { useIsFetching } from '@tanstack/react-query'
-import { RefreshCw } from 'lucide-react'
-import { useLayoutEffect, useRef } from 'react'
+import { Link } from "@tanstack/react-router";
+import { useLiveQuery } from "@tanstack/react-db";
+import { useIsFetching } from "@tanstack/react-query";
+import { RefreshCw } from "lucide-react";
+import { useLayoutEffect, useRef } from "react";
 
-import {
-  relevanceRatingsCollection,
-} from '@chartcoach/eval-ui/db-collections'
-import type { RelevanceRating } from '@chartcoach/eval-ui/db-collections'
-import { useAutoUploadRelevanceRatings } from '@chartcoach/eval-ui/eval/use-auto-upload-relevance-ratings'
-import { useOnlineStatus } from '@chartcoach/eval-ui/eval/use-online-status'
-import { usePullRelevanceRatingsFromS3 } from '@chartcoach/eval-ui/eval/use-pull-relevance-ratings'
-import { ThemeSelector } from '@chartcoach/eval-ui/components/theme-selector'
+import { relevanceRatingsCollection } from "@chartcoach/eval-ui/db-collections";
+import type { RelevanceRating } from "@chartcoach/eval-ui/db-collections";
+import { useAutoUploadRelevanceRatings } from "@chartcoach/eval-ui/eval/use-auto-upload-relevance-ratings";
+import { useOnlineStatus } from "@chartcoach/eval-ui/eval/use-online-status";
+import { usePullRelevanceRatingsFromS3 } from "@chartcoach/eval-ui/eval/use-pull-relevance-ratings";
+import { ThemeSelector } from "@chartcoach/eval-ui/components/theme-selector";
 
 export function AppHeader() {
-  const headerRef = useRef<HTMLElement | null>(null)
+  const headerRef = useRef<HTMLElement | null>(null);
 
   useLayoutEffect(() => {
-    const el = headerRef.current
-    if (!el) return
+    const el = headerRef.current;
+    if (!el) return;
 
-    const root = document.documentElement
+    const root = document.documentElement;
     const update = () => {
-      root.style.setProperty('--app-header-height', `${el.offsetHeight}px`)
-    }
+      root.style.setProperty("--app-header-height", `${el.offsetHeight}px`);
+    };
 
-    update()
+    update();
 
-    if (typeof ResizeObserver === 'undefined') return
-    const observer = new ResizeObserver(update)
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [])
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
-  const isOnline = useOnlineStatus()
-  const isFetchingCount = useIsFetching()
+  const isOnline = useOnlineStatus();
+  const isFetchingCount = useIsFetching();
 
   const { data } = useLiveQuery(
     (q) =>
-      q
-        .from({ rating: relevanceRatingsCollection })
-        .select(({ rating }) => ({
-          ...rating,
-        })),
+      q.from({ rating: relevanceRatingsCollection }).select(({ rating }) => ({
+        ...rating,
+      })),
     [],
-  )
+  );
 
-  const ratings = (data ?? []) as RelevanceRating[]
-  const ratingCount = ratings.length
+  const ratings = (data ?? []) as RelevanceRating[];
+  const ratingCount = ratings.length;
 
-  const sync = useAutoUploadRelevanceRatings(ratings)
-  const pull = usePullRelevanceRatingsFromS3()
+  const sync = useAutoUploadRelevanceRatings(ratings);
+  const pull = usePullRelevanceRatingsFromS3();
 
   const syncLabel = [
-    pull.status === 'pulling'
-      ? 'Fetching remote'
-      : pull.status === 'error'
-        ? 'Remote fetch failed'
-        : pull.status === 'disabled'
-          ? 'Remote fetch disabled'
+    pull.status === "pulling"
+      ? "Fetching remote"
+      : pull.status === "error"
+        ? "Remote fetch failed"
+        : pull.status === "disabled"
+          ? "Remote fetch disabled"
           : null,
-    sync.status === 'syncing'
-      ? 'Uploading'
-      : sync.status === 'queued'
-        ? 'Upload queued'
-        : sync.status === 'error'
-          ? 'Upload failed'
-          : sync.status === 'disabled'
-            ? 'Upload disabled'
-            : sync.status === 'synced'
-              ? 'Upload synced'
+    sync.status === "syncing"
+      ? "Uploading"
+      : sync.status === "queued"
+        ? "Upload queued"
+        : sync.status === "error"
+          ? "Upload failed"
+          : sync.status === "disabled"
+            ? "Upload disabled"
+            : sync.status === "synced"
+              ? "Upload synced"
               : null,
-    !ratingCount ? 'No ratings yet' : null,
+    !ratingCount ? "No ratings yet" : null,
   ]
     .filter(Boolean)
-    .join(' · ')
+    .join(" · ");
 
-  const hasError = sync.status === 'error' || pull.status === 'error'
+  const hasError = sync.status === "error" || pull.status === "error";
   const isBusy =
-    sync.status === 'syncing' ||
-    sync.status === 'queued' ||
-    pull.status === 'pulling' ||
-    isFetchingCount > 0
+    sync.status === "syncing" ||
+    sync.status === "queued" ||
+    pull.status === "pulling" ||
+    isFetchingCount > 0;
 
   const syncDotClass = hasError
-    ? 'bg-red-500'
+    ? "bg-red-500"
     : isBusy
-      ? 'bg-amber-500'
-      : sync.status === 'synced' || pull.status === 'synced'
-        ? 'bg-emerald-500'
-        : 'bg-muted-foreground/40'
+      ? "bg-amber-500"
+      : sync.status === "synced" || pull.status === "synced"
+        ? "bg-emerald-500"
+        : "bg-muted-foreground/40";
 
-  const lastAt = sync.lastSuccessAt ?? pull.exportedAt
-  const lastKey = sync.lastSuccessKey ?? pull.key
+  const lastAt = sync.lastSuccessAt ?? pull.exportedAt;
+  const lastKey = sync.lastSuccessKey ?? pull.key;
 
   const syncTitleParts = [
     syncLabel,
-    !isOnline ? 'Offline' : null,
+    !isOnline ? "Offline" : null,
     lastAt ? `Last: ${lastAt}` : null,
     lastKey ? `Key: ${lastKey}` : null,
-  ].filter(Boolean)
-  const syncTitle = syncTitleParts.join(' · ')
+  ].filter(Boolean);
+  const syncTitle = syncTitleParts.join(" · ");
 
   return (
     <header ref={headerRef} className="sticky top-0 z-50 border-b bg-background">
@@ -112,7 +108,7 @@ export function AppHeader() {
               className="underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring/60"
             >
               ChartCoach
-            </Link>{' '}
+            </Link>{" "}
             <span className="text-muted-foreground">· Guideline Relevance Eval</span>
           </div>
 
@@ -123,9 +119,9 @@ export function AppHeader() {
           >
             <RefreshCw
               className={
-                sync.status === 'syncing'
-                  ? 'size-3.5 animate-spin text-muted-foreground'
-                  : 'size-3.5 text-muted-foreground'
+                sync.status === "syncing"
+                  ? "size-3.5 animate-spin text-muted-foreground"
+                  : "size-3.5 text-muted-foreground"
               }
               aria-hidden="true"
             />
@@ -148,5 +144,5 @@ export function AppHeader() {
         </div>
       </div>
     </header>
-  )
+  );
 }

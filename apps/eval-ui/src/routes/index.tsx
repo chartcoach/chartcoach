@@ -1,51 +1,52 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { useQueries, useQuery } from '@tanstack/react-query'
-import { useLiveQuery } from '@tanstack/react-db'
-import { useMemo } from 'react'
+import { createFileRoute } from "@tanstack/react-router";
+import { useQueries, useQuery } from "@tanstack/react-query";
+import { useLiveQuery } from "@tanstack/react-db";
+import { useMemo } from "react";
 
-import { AppHeader } from '@chartcoach/eval-ui/components/app-header'
-import { ScenarioCard } from '@chartcoach/eval-ui/components/scenario-card'
-import { relevanceRatingsCollection } from '@chartcoach/eval-ui/db-collections'
-import { scenarioBundleQueryOptions, scenariosQueryOptions } from '@chartcoach/eval-ui/eval/queries'
+import { AppHeader } from "@chartcoach/eval-ui/components/app-header";
+import { ScenarioCard } from "@chartcoach/eval-ui/components/scenario-card";
+import { relevanceRatingsCollection } from "@chartcoach/eval-ui/db-collections";
+import {
+  scenarioBundleQueryOptions,
+  scenariosQueryOptions,
+} from "@chartcoach/eval-ui/eval/queries";
 
-export const Route = createFileRoute('/')({
+export const Route = createFileRoute("/")({
   ssr: false,
   loader: async ({ context }) => {
     try {
-      await context.queryClient.ensureQueryData(scenariosQueryOptions)
+      await context.queryClient.ensureQueryData(scenariosQueryOptions);
     } catch {
       // component renders a dedicated error state
     }
   },
   component: LandingPage,
-})
+});
 
 function LandingPage() {
-  const scenariosQuery = useQuery(scenariosQueryOptions)
-  const scenarios = scenariosQuery.data ?? []
+  const scenariosQuery = useQuery(scenariosQueryOptions);
+  const scenarios = scenariosQuery.data ?? [];
 
   const { data: ratingsData } = useLiveQuery(
     (q) =>
-      q
-        .from({ rating: relevanceRatingsCollection })
-        .select(({ rating }) => ({
-          scenarioId: rating.scenarioId,
-          guidelineId: rating.guidelineId,
-        })),
+      q.from({ rating: relevanceRatingsCollection }).select(({ rating }) => ({
+        scenarioId: rating.scenarioId,
+        guidelineId: rating.guidelineId,
+      })),
     [],
-  )
+  );
 
   const ratingsByScenarioId = useMemo(() => {
-    const byScenario = new Map<string, Set<string>>()
+    const byScenario = new Map<string, Set<string>>();
     for (const row of ratingsData ?? []) {
-      const key = row.scenarioId as string
-      const existing = byScenario.get(key)
-      const next = existing ?? new Set<string>()
-      next.add(row.guidelineId as string)
-      if (!existing) byScenario.set(key, next)
+      const key = row.scenarioId as string;
+      const existing = byScenario.get(key);
+      const next = existing ?? new Set<string>();
+      next.add(row.guidelineId as string);
+      if (!existing) byScenario.set(key, next);
     }
-    return byScenario
-  }, [ratingsData])
+    return byScenario;
+  }, [ratingsData]);
 
   const bundleQueries = useQueries({
     queries: scenarios.map((scenario) => ({
@@ -53,35 +54,29 @@ function LandingPage() {
       enabled: scenarios.length > 0,
       staleTime: 60_000,
     })),
-  })
+  });
 
   const bundleByScenarioId = useMemo(() => {
-    const map = new Map<string, (typeof bundleQueries)[number]['data']>()
+    const map = new Map<string, (typeof bundleQueries)[number]["data"]>();
     scenarios.forEach((scenario, index) => {
-      map.set(scenario.id, bundleQueries[index]?.data)
-    })
-    return map
-  }, [bundleQueries, scenarios])
+      map.set(scenario.id, bundleQueries[index]?.data);
+    });
+    return map;
+  }, [bundleQueries, scenarios]);
 
   if (scenariosQuery.isLoading) {
     return (
-      <div className="mx-auto max-w-350 p-6 text-sm text-muted-foreground">
-        Loading scenarios…
-      </div>
-    )
+      <div className="mx-auto max-w-350 p-6 text-sm text-muted-foreground">Loading scenarios…</div>
+    );
   }
 
   if (scenariosQuery.isError) {
     const message =
       scenariosQuery.error instanceof Error
         ? scenariosQuery.error.message
-        : 'Failed to load scenarios.'
+        : "Failed to load scenarios.";
 
-    return (
-      <div className="mx-auto max-w-350 p-6 text-sm text-red-600">
-        {message}
-      </div>
-    )
+    return <div className="mx-auto max-w-350 p-6 text-sm text-red-600">{message}</div>;
   }
 
   return (
@@ -95,9 +90,8 @@ function LandingPage() {
               Guideline relevance evaluation
             </h1>
             <p className="max-w-prose text-sm text-muted-foreground text-pretty lg:max-w-240">
-              Pick a scenario to start. Your task on each scenario page is to rate how
-              relevant the listed visualization guidelines are for the scenario and
-              the chart.
+              Pick a scenario to start. Your task on each scenario page is to rate how relevant the
+              listed visualization guidelines are for the scenario and the chart.
             </p>
           </header>
 
@@ -105,9 +99,9 @@ function LandingPage() {
             <section className="mt-8">
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {scenarios.map((scenario, index) => {
-                  const bundleQuery = bundleQueries[index]
-                  const bundle = bundleByScenarioId.get(scenario.id)
-                  const ratedIds = ratingsByScenarioId.get(scenario.id) ?? new Set()
+                  const bundleQuery = bundleQueries[index];
+                  const bundle = bundleByScenarioId.get(scenario.id);
+                  const ratedIds = ratingsByScenarioId.get(scenario.id) ?? new Set();
 
                   if (!bundleQuery || bundleQuery.isLoading) {
                     return (
@@ -119,23 +113,23 @@ function LandingPage() {
                           rated: ratedIds.size,
                           total: null,
                           percent: null,
-                          statusLabel: ratedIds.size ? 'In progress' : 'Not started',
+                          statusLabel: ratedIds.size ? "In progress" : "Not started",
                         }}
                       />
-                    )
+                    );
                   }
 
                   if (bundleQuery.isError) {
                     const message =
                       bundleQuery.error instanceof Error
                         ? bundleQuery.error.message.toLowerCase()
-                        : ''
+                        : "";
 
-                    const statusLabel = message.includes('offline')
+                    const statusLabel = message.includes("offline")
                       ? ratedIds.size
-                        ? 'Offline (open once online)'
-                        : 'Offline'
-                      : 'Load failed'
+                        ? "Offline (open once online)"
+                        : "Offline"
+                      : "Load failed";
 
                     return (
                       <ScenarioCard
@@ -149,42 +143,42 @@ function LandingPage() {
                           statusLabel,
                         }}
                       />
-                    )
+                    );
                   }
 
-                  const unionIds = new Set<string>()
+                  const unionIds = new Set<string>();
                   const strategyBreakdown =
                     bundle?.strategies?.map((strategy) => {
-                      const ids = strategy.guidelines.map((g) => g.entry.guideline.id)
-                      ids.forEach((id) => unionIds.add(id))
+                      const ids = strategy.guidelines.map((g) => g.entry.guideline.id);
+                      ids.forEach((id) => unionIds.add(id));
                       const rated = ids.reduce(
                         (count, id) => (ratedIds.has(id) ? count + 1 : count),
                         0,
-                      )
-                      const total = ids.length
+                      );
+                      const total = ids.length;
                       return {
                         label: strategy.strategyName,
                         rated,
                         total,
                         percent: total ? (rated / total) * 100 : 0,
-                      }
-                    }) ?? []
+                      };
+                    }) ?? [];
 
-                  const totalUnique = unionIds.size
+                  const totalUnique = unionIds.size;
                   const ratedUnique = [...unionIds].reduce(
                     (count, id) => (ratedIds.has(id) ? count + 1 : count),
                     0,
-                  )
-                  const percent = totalUnique ? Math.round((ratedUnique / totalUnique) * 100) : 0
+                  );
+                  const percent = totalUnique ? Math.round((ratedUnique / totalUnique) * 100) : 0;
 
                   const statusLabel =
                     totalUnique === 0
-                      ? 'No guidelines'
+                      ? "No guidelines"
                       : percent >= 100
-                        ? 'Done'
+                        ? "Done"
                         : ratedUnique === 0
-                          ? 'Not started'
-                          : `${Math.max(0, totalUnique - ratedUnique)} left`
+                          ? "Not started"
+                          : `${Math.max(0, totalUnique - ratedUnique)} left`;
 
                   return (
                     <ScenarioCard
@@ -199,7 +193,7 @@ function LandingPage() {
                         strategyBreakdown,
                       }}
                     />
-                  )
+                  );
                 })}
               </div>
             </section>
@@ -211,5 +205,5 @@ function LandingPage() {
         </main>
       </div>
     </>
-  )
+  );
 }

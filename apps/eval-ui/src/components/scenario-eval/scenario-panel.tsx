@@ -1,4 +1,4 @@
-import type { ScenarioSpec } from '@chartcoach/eval-ui/eval/schemas'
+import type { ScenarioSpec } from "@chartcoach/eval-ui/eval/schemas";
 
 export function ScenarioPanel({ scenario }: { scenario: ScenarioSpec }) {
   return (
@@ -27,14 +27,14 @@ export function ScenarioPanel({ scenario }: { scenario: ScenarioSpec }) {
               <div>
                 <div className="text-xs font-semibold text-muted-foreground">Designer intent</div>
                 <div className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-pretty">
-                  {scenario.designer_intent ?? '—'}
+                  {scenario.designer_intent ?? "—"}
                 </div>
               </div>
 
               <div>
                 <div className="text-xs font-semibold text-muted-foreground">Query</div>
                 <div className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-pretty">
-                  {scenario.query ?? '—'}
+                  {scenario.query ?? "—"}
                 </div>
               </div>
             </div>
@@ -65,5 +65,5 @@ export function ScenarioPanel({ scenario }: { scenario: ScenarioSpec }) {
         </div>
       </div>
     </section>
-  )
+  );
 }
