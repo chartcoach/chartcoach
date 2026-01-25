@@ -64,6 +64,7 @@ def _(Image, pl):
 
         # Leverage Polars to parse the CSV-like data
         return pl.read_csv(stringio, separator="|")
+
     return (extract_plotted_data,)
 
 
@@ -114,6 +115,7 @@ def _(dspy, pl):
 
         rename_columns = dspy.Predict(ColumnRenamer)
         return rename_columns(columns=columns).renames
+
     return (generate_column_renames,)
 
 
@@ -131,6 +133,7 @@ def _(pl):
             res_df = res_df.with_columns(pl.col(col).cast(pl.String).str.to_date("%Y"))
 
         return res_df
+
     return (type_inferred_df,)
 
 
@@ -199,6 +202,7 @@ def _(Image, draco_chart_spec, dspy, json, pathlib, pl, schema_from_dataframe):
         ).draco_spec_json
 
         return draco_chart_spec.SpecificationDict.model_validate_json(draco_spec_json)
+
     return (chart_to_draco_spec_dict,)
 
 
@@ -211,6 +215,7 @@ def _(draco_chart_spec):
 
         # Clingo parsing fails when encountering float values like 1.0, so we convert them to int
         return eval(str(dict_without_nones).replace(".0", ""))
+
     return (clean_draco_spec_dict,)
 
 
@@ -227,6 +232,7 @@ def _():
     from draco.dracox import DracoExpress
     from draco import schema_from_dataframe
     from draco.renderer.altair.altair_renderer import AltairRenderer
+
     return (
         AltairRenderer,
         DracoExpress,
@@ -285,6 +291,7 @@ def _(alt):
                 if channel not in ["tooltip"]
             },
         }
+
     return (altair_chart_to_vl_linter_input,)
 
 
@@ -362,6 +369,7 @@ def _(drc, pl):
             *base_facts,
             *field_requires,
         ]
+
     return (construct_draco_visrec_program,)
 
 
@@ -370,6 +378,7 @@ def _():
     import vega_lite_linter as vl_linter
     import altair as alt
     import draco as drc
+
     return alt, drc, vl_linter
 
 
@@ -482,6 +491,7 @@ def _(Image, draco_chart_spec, dspy):
             chart_spec=chart_spec,
             existing_chart_feedback=existing_chart_feedback,
         ).feedback
+
     return format_existing_chart_feedback, generate_plain_vis_feedback
 
 
@@ -722,6 +732,7 @@ def _(Catalog, catalog_parquet, pl):
 @app.cell(hide_code=True)
 def _():
     from chartcoach.catalog import Catalog
+
     return (Catalog,)
 
 
@@ -733,6 +744,7 @@ def _():
         RetrievalRequest,
         TextItem,
     )
+
     return GuidelineBrowserStrategy, ImageItem, RetrievalRequest, TextItem
 
 
@@ -759,6 +771,7 @@ def _(Image, httpx):
         res = httpx.get(url)
         res.raise_for_status()
         return Image.open(BytesIO(res.content))
+
     return BytesIO, load_image
 
 
@@ -820,7 +833,6 @@ def _(pathlib):
 @app.cell(hide_code=True)
 def _():
     import json
-    import os
     import pathlib
     import warnings
 
