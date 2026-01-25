@@ -93,25 +93,80 @@ function requireBucket() {
   return env.S3_BUCKET;
 }
 
-async function sendS3(cmd: GetObjectCommand, opts?: { forcePathStyle?: boolean }): Promise<GetObjectCommandOutput>;
-async function sendS3(cmd: PutObjectCommand, opts?: { forcePathStyle?: boolean }): Promise<PutObjectCommandOutput>;
-async function sendS3(
-  cmd: ListObjectsV2Command,
-  opts?: { forcePathStyle?: boolean },
-): Promise<ListObjectsV2CommandOutput>;
-async function sendS3(
-  cmd: DeleteObjectsCommand,
-  opts?: { forcePathStyle?: boolean },
-): Promise<DeleteObjectsCommandOutput>;
-async function sendS3(
-  cmd: GetObjectCommand | PutObjectCommand | ListObjectsV2Command | DeleteObjectsCommand,
-  opts?: { forcePathStyle?: boolean },
-) {
+type SendOptions = { forcePathStyle?: boolean };
+
+async function sendGetObject(
+  cmd: GetObjectCommand,
+  opts: SendOptions = {},
+): Promise<GetObjectCommandOutput> {
   const configuredForcePathStyle = env.S3_FORCE_PATH_STYLE ?? false;
-  const shouldForcePathStyle = opts?.forcePathStyle ?? configuredForcePathStyle;
+  const shouldForcePathStyle = opts.forcePathStyle ?? configuredForcePathStyle;
 
   if (!env.S3_ENDPOINT || shouldForcePathStyle) {
     // No custom endpoint or already path-style: just send.
+    return await getS3Client({ forcePathStyle: shouldForcePathStyle }).send(cmd);
+  }
+
+  try {
+    return await getS3Client({ forcePathStyle: false }).send(cmd);
+  } catch (error) {
+    if (isLikelyCertError(error)) {
+      return await getS3Client({ forcePathStyle: true }).send(cmd);
+    }
+    throw error;
+  }
+}
+
+async function sendPutObject(
+  cmd: PutObjectCommand,
+  opts: SendOptions = {},
+): Promise<PutObjectCommandOutput> {
+  const configuredForcePathStyle = env.S3_FORCE_PATH_STYLE ?? false;
+  const shouldForcePathStyle = opts.forcePathStyle ?? configuredForcePathStyle;
+
+  if (!env.S3_ENDPOINT || shouldForcePathStyle) {
+    return await getS3Client({ forcePathStyle: shouldForcePathStyle }).send(cmd);
+  }
+
+  try {
+    return await getS3Client({ forcePathStyle: false }).send(cmd);
+  } catch (error) {
+    if (isLikelyCertError(error)) {
+      return await getS3Client({ forcePathStyle: true }).send(cmd);
+    }
+    throw error;
+  }
+}
+
+async function sendListObjects(
+  cmd: ListObjectsV2Command,
+  opts: SendOptions = {},
+): Promise<ListObjectsV2CommandOutput> {
+  const configuredForcePathStyle = env.S3_FORCE_PATH_STYLE ?? false;
+  const shouldForcePathStyle = opts.forcePathStyle ?? configuredForcePathStyle;
+
+  if (!env.S3_ENDPOINT || shouldForcePathStyle) {
+    return await getS3Client({ forcePathStyle: shouldForcePathStyle }).send(cmd);
+  }
+
+  try {
+    return await getS3Client({ forcePathStyle: false }).send(cmd);
+  } catch (error) {
+    if (isLikelyCertError(error)) {
+      return await getS3Client({ forcePathStyle: true }).send(cmd);
+    }
+    throw error;
+  }
+}
+
+async function sendDeleteObjects(
+  cmd: DeleteObjectsCommand,
+  opts: SendOptions = {},
+): Promise<DeleteObjectsCommandOutput> {
+  const configuredForcePathStyle = env.S3_FORCE_PATH_STYLE ?? false;
+  const shouldForcePathStyle = opts.forcePathStyle ?? configuredForcePathStyle;
+
+  if (!env.S3_ENDPOINT || shouldForcePathStyle) {
     return await getS3Client({ forcePathStyle: shouldForcePathStyle }).send(cmd);
   }
 
@@ -139,7 +194,7 @@ export async function readRetrievalResultsCache(
   });
 
   try {
-    const obj = await sendS3(get);
+    const obj = await sendGetObject(get);
     const raw = await readObjectBody(obj.Body);
     const parsed = CacheEntrySchema.parse(JSON.parse(raw));
     inMemoryCache.set(key, parsed);
@@ -181,7 +236,7 @@ export async function writeRetrievalResultsCache(
     ContentType: "application/json",
   });
 
-  await sendS3(put);
+  await sendPutObject(put);
 }
 
 export function clearRetrievalResultsInMemoryCache() {
@@ -214,7 +269,7 @@ export async function destroyRetrievalResultsCache(args?: {
       ContinuationToken: continuationToken,
     });
 
-    const response = await sendS3(list);
+    const response = await sendListObjects(list);
     const contents = response.Contents ?? [];
     const keys = contents.map((o) => o.Key).filter((k): k is string => Boolean(k));
 
@@ -223,7 +278,7 @@ export async function destroyRetrievalResultsCache(args?: {
         Bucket: requireBucket(),
         Delete: { Objects: keys.map((Key) => ({ Key })) },
       });
-      await sendS3(del);
+      await sendDeleteObjects(del);
       deleted += keys.length;
     }
 
