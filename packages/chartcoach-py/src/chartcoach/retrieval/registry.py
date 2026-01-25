@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from os import PathLike
 from pathlib import Path
 
 import dspy
@@ -10,10 +11,11 @@ from chartcoach.catalog import Catalog
 from chartcoach.retrieval.strategy import RetrievalStrategy
 
 
-def catalog_from_path(path: str) -> Catalog:
-    if path.endswith(".parquet"):
-        return Catalog.from_df(pl.read_parquet(path))
-    return Catalog.from_disk(Path(path))
+def catalog_from_path(path: str | PathLike[str]) -> Catalog:
+    p = Path(path)
+    if p.suffix == ".parquet":
+        return Catalog.from_df(pl.read_parquet(p))
+    return Catalog.from_disk(p)
 
 
 def openai_env() -> tuple[str, str]:
