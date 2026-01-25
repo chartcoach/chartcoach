@@ -106,7 +106,7 @@ export function AppHeader() {
     <header ref={headerRef} className="sticky top-0 z-50 border-b bg-background">
       <div className="mx-auto flex w-full items-center justify-between gap-3 px-4 py-3 lg:px-6">
         <div className="flex min-w-0 items-center gap-2">
-          <div className="truncate text-sm font-semibold tracking-tight">
+          <div className="truncate text-sm font-semibold">
             <Link
               to="/"
               className="underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring/60"

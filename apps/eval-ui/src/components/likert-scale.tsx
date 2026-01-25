@@ -54,6 +54,7 @@ export function LikertScale({
               name={name}
               value={opt.value}
               checked={opt.value === value}
+              aria-label={`${opt.value} — ${opt.label}`}
               onChange={handleChange}
               onClick={() => {
                 if (opt.value === value) onChange(undefined)

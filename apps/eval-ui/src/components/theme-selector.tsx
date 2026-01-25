@@ -62,10 +62,10 @@ export function ThemeSelector() {
           <Icon className="size-4" aria-hidden="true" />
         </span>
         <select
-          className="h-8 rounded-md border bg-background py-0 pl-8 pr-2 text-xs text-foreground"
-        aria-label={`Theme (${label})`}
-        value={theme}
-        onChange={(e) => setTheme(e.currentTarget.value as ThemeMode)}
+          className="h-8 rounded-md border bg-background py-0 pl-8 pr-8 text-xs text-foreground"
+          aria-label={`Theme (${label})`}
+          value={theme}
+          onChange={(e) => setTheme(e.currentTarget.value as ThemeMode)}
         >
           <option value="system">Auto</option>
           <option value="light">Light</option>
