@@ -13,6 +13,9 @@ dependencies = [
     "pyyaml>=6.0.0",
 ]
 
+[project.scripts]
+chartcoach-retrieval-server = "chartcoach.retrieval.server.__main__:main"
+
 [project.optional-dependencies]
 embedding = [
     "anywidget>=0.9.21",
