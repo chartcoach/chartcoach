@@ -78,4 +78,3 @@ def test_lance_backend_path_and_create_index_error_is_swallowed(
 
     index2 = LanceVectorIndexBackend(path=None, index_type="IVF_FLAT").index(df.head(1))
     assert index2.table.count_rows() == 1
-

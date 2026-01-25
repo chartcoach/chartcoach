@@ -492,11 +492,7 @@ def _(Image, draco_chart_spec, dspy):
             existing_chart_feedback=existing_chart_feedback,
         ).feedback
 
-    return (
-        VisFeedback,
-        format_existing_chart_feedback,
-        generate_plain_vis_feedback,
-    )
+    return format_existing_chart_feedback, generate_plain_vis_feedback
 
 
 @app.cell(hide_code=True)
@@ -692,6 +688,7 @@ def _(catalog, grounded_vis_feedback, pl):
 
 @app.cell(hide_code=True)
 def _(
+    BytesIO,
     GuidelineBrowserStrategy,
     ImageItem,
     RetrievalRequest,
@@ -707,8 +704,6 @@ def _(
     user_situation,
     vl_linter_violations,
 ):
-    from io import BytesIO
-
     buf = BytesIO()
     image.save(buf, format="PNG")
 
@@ -795,13 +790,14 @@ def _(Image, httpx):
         res.raise_for_status()
         return Image.open(BytesIO(res.content))
 
-    return (load_image,)
+    return BytesIO, load_image
 
 
 @app.cell(hide_code=True)
 def _(mo, pathlib):
     NB_ROOT = pathlib.Path(__file__).parent
-    CATALOG_PARQUET_PATH = NB_ROOT.parent / "guideline-cataloging" / "catalog.parquet"
+    REPO_ROOT = NB_ROOT.parent.parent.parent
+    CATALOG_PARQUET_PATH = REPO_ROOT / "guidelines" / "catalog.parquet"
     catalog_parquet = mo.watch.file(CATALOG_PARQUET_PATH)
     return (catalog_parquet,)
 
@@ -865,7 +861,7 @@ def _():
     from PIL import Image
 
     warnings.filterwarnings("ignore")
-    return Image, httpx, json, mo, os, pathlib, pl
+    return Image, httpx, json, mo, pathlib, pl
 
 
 if __name__ == "__main__":

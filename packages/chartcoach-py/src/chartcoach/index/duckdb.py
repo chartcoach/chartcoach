@@ -48,9 +48,8 @@ class DuckDBVectorIndex(VectorIndex):
             role_list = ", ".join(_sql_quote(r) for r in sorted(roles))
             where = f"WHERE role IN ({role_list})"
 
-        return (
-            self.conn.sql(
-                f"""
+        return self.conn.sql(
+            f"""
                 SELECT id,
                        role,
                        list_cosine_similarity("{self.embedding_column}", {query_lit}) AS score
@@ -59,9 +58,7 @@ class DuckDBVectorIndex(VectorIndex):
                 ORDER BY score DESC
                 LIMIT {int(k)}
                 """
-            )
-            .pl()
-        )
+        ).pl()
 
 
 @dataclass(frozen=True, slots=True)
@@ -125,4 +122,3 @@ class DuckDBVectorIndexBackend:
             tablename=self.tablename,
             embedding_column=embedding_column,
         )
-

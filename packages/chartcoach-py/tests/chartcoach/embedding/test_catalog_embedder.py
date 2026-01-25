@@ -116,4 +116,3 @@ def test_catalog_embedder_embedded_text_df_executes_embed_text(
     )
     embedded = embedder.embedded_text_df()
     assert "embedding" in embedded.columns
-

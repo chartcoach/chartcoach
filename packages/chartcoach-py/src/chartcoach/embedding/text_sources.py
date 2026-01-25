@@ -42,4 +42,3 @@ DEFAULT_TEXT_SOURCES: tuple[CatalogTextSource, ...] = (
     GuidelineFieldTextSource("title"),
     GuidelineFieldTextSource("description"),
 )
-

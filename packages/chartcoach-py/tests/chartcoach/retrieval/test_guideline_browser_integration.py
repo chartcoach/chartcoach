@@ -67,7 +67,10 @@ def test_react_grounded_vis_feedback_strategy_integration() -> None:
     request = RetrievalRequest(
         context=[
             ImageItem(role="chart", data=chart_bytes, mime="image/png"),
-            TextItem(role="situation", text="I want to communicate a key comparison to seniors."),
+            TextItem(
+                role="situation",
+                text="I want to communicate a key comparison to seniors.",
+            ),
             TextItem(role="chart_spec", text="{}"),
             TextItem(role="existing_chart_feedback", text=""),
         ]

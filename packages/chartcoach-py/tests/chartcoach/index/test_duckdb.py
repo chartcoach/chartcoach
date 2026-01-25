@@ -36,7 +36,9 @@ def test_duckdb_backend_empty_df_raises() -> None:
         backend.index(empty)
 
 
-def test_duckdb_backend_path_branches_and_search(embedding_atlas_cache_dir: Path) -> None:
+def test_duckdb_backend_path_branches_and_search(
+    embedding_atlas_cache_dir: Path,
+) -> None:
     df = pl.DataFrame(
         {
             "id": ["a", "b"],
@@ -65,4 +67,3 @@ def test_duckdb_backend_path_branches_and_search(embedding_atlas_cache_dir: Path
     row2 = index2.conn.sql("select count(*) as n from embeddings").fetchone()
     assert row2 is not None
     assert row2[0] == 2
-

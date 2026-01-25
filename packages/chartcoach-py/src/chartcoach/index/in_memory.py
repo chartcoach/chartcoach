@@ -85,4 +85,3 @@ class InMemoryVectorIndexBackend:
             roles=embedded_text_df[role_column].to_list(),
             vectors=vectors,
         )
-

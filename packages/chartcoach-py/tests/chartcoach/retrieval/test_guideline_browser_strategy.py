@@ -73,14 +73,20 @@ def test_guideline_catalog_tools_support_filters(catalog: Catalog) -> None:
 
 def test_guideline_catalog_tools_lists_taxonomy_and_reftypes(catalog: Catalog) -> None:
     tools = GuidelineBrowserTools(catalog=catalog)
-    assert tools.list_guideline_labels() == ["audience:senior", "topic:annotation", "topic:color"]
+    assert tools.list_guideline_labels() == [
+        "audience:senior",
+        "topic:annotation",
+        "topic:color",
+    ]
     assert sorted(tools.list_reftypes()) == ["article", "book"]
 
 
 def test_guideline_catalog_tools_can_read_by_id(catalog: Catalog) -> None:
     tools = GuidelineBrowserTools(catalog=catalog)
     out = tools.read_guidelines_by_id(["g2", "missing"])
-    assert out == [{"id": "g2", "body": "Body 2", "references": ["@book{b, title={B}}"]}]
+    assert out == [
+        {"id": "g2", "body": "Body 2", "references": ["@book{b, title={B}}"]}
+    ]
 
 
 def test_dspy_adapters_get_require_by_role(catalog: Catalog) -> None:
@@ -109,7 +115,9 @@ def test_image_item_to_dspy_image_supports_data_file_uri_and_path(
     tmp_path: Path,
 ) -> None:
     # `data`
-    assert isinstance(image_item_to_dspy_image(ImageItem(role="chart", data=_PNG_1X1)), dspy.Image)
+    assert isinstance(
+        image_item_to_dspy_image(ImageItem(role="chart", data=_PNG_1X1)), dspy.Image
+    )
 
     # missing `data`/`uri`
     with pytest.raises(ValueError):
@@ -119,7 +127,9 @@ def test_image_item_to_dspy_image_supports_data_file_uri_and_path(
     file_uri_path = tmp_path / "chart_file_uri.png"
     file_uri_path.write_bytes(_PNG_1X1)
     assert isinstance(
-        image_item_to_dspy_image(ImageItem(role="chart", uri=f"file://{file_uri_path}")),
+        image_item_to_dspy_image(
+            ImageItem(role="chart", uri=f"file://{file_uri_path}")
+        ),
         dspy.Image,
     )
 
