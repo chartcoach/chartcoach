@@ -6,7 +6,7 @@ import { z } from 'zod'
 import { AppHeader } from '@chartcoach/eval-ui/components/app-header'
 import { ScenarioPanel } from '@chartcoach/eval-ui/components/scenario-eval/scenario-panel'
 import { StrategyTabs } from '@chartcoach/eval-ui/components/scenario-eval/strategy-tabs'
-import { GuidelineCard } from '@chartcoach/eval-ui/components/guideline-card'
+import { GuidelineDeck } from '@chartcoach/eval-ui/components/scenario-eval/guideline-deck'
 import {
   deleteRelevanceRating,
   upsertRelevanceRating,
@@ -137,7 +137,7 @@ function ScenarioEvalPage() {
               Scenario not found.
             </div>
           ) : (
-            <div className="space-y-6 lg:grid lg:min-h-[calc(100vh-var(--app-header-height,0px)-3rem)] lg:grid-cols-[minmax(0,1fr)_560px] lg:items-stretch lg:gap-6 lg:space-y-0 [@media(min-width:2400px)]:grid-cols-[minmax(0,1fr)_1080px]">
+            <div className="space-y-6 lg:grid lg:min-h-[calc(100dvh-var(--app-header-height,0px)-3rem)] lg:grid-cols-[minmax(0,1fr)_560px] lg:items-stretch lg:gap-6 lg:space-y-0 [@media(min-width:2400px)]:grid-cols-[minmax(0,1fr)_1080px]">
               <div className="lg:sticky lg:top-[calc(var(--app-header-height,0px)+1.5rem)] lg:self-start">
                 <ScenarioPanel scenario={activeScenario} />
               </div>
@@ -150,19 +150,14 @@ function ScenarioEvalPage() {
                 />
 
                 {activeStrategy?.guidelines?.length ? (
-                  <div className="mt-4 grid grid-cols-1 gap-4 [@media(min-width:2400px)]:grid-cols-2">
-                    {activeStrategy.guidelines.map((g) => (
-                      <GuidelineCard
-                        key={g.entry.guideline.id}
-                        scenarioId={scenarioId}
-                        result={g}
-                        rating={getRating(g.entry.guideline.id)?.relevance}
-                        isActive={g.entry.guideline.id === activeGuidelineId}
-                        onRate={onRateGuideline}
-                        onClear={onClearGuideline}
-                      />
-                    ))}
-                  </div>
+                  <GuidelineDeck
+                    scenarioId={scenarioId}
+                    guidelines={activeStrategy.guidelines}
+                    activeGuidelineId={activeGuidelineId}
+                    getRating={getRating}
+                    onRate={onRateGuideline}
+                    onClear={onClearGuideline}
+                  />
                 ) : (
                   <div className="mt-4 p-2 text-sm text-muted-foreground">
                     No guidelines.
