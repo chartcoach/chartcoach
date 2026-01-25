@@ -1180,7 +1180,7 @@ def _():
 
     import marimo as mo
 
-    from chartcoach.catalog.catalog import Catalog
+    from chartcoach.catalog import Catalog
     from chartcoach.catalog.model import CatalogEntry, Guideline
     import chartcoach.catalog.parse as ccp
 

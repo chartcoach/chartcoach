@@ -5,7 +5,7 @@ from typing import Literal
 
 import polars as pl
 
-from chartcoach.catalog.catalog import Catalog
+from chartcoach.catalog import Catalog
 
 
 @dataclass(frozen=True, slots=True)

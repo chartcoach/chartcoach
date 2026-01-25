@@ -6,7 +6,7 @@ from io import StringIO
 import dspy
 import polars as pl
 
-from chartcoach.catalog.catalog import Catalog
+from chartcoach.catalog import Catalog
 
 from .adapters import guideline_browser_inputs_from_request
 from ..strategy import RetrievalStrategy

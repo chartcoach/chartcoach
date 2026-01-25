@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from chartcoach.catalog.catalog import Catalog
+from chartcoach.catalog import Catalog
 from chartcoach.retrieval.strategy import RetrievalStrategy
 from chartcoach.retrieval.types import RetrievalRequest
 

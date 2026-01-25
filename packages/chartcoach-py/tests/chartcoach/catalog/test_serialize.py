@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from chartcoach.catalog.catalog import Catalog
+from chartcoach.catalog import Catalog
 from chartcoach.catalog.model import CatalogEntry, Guideline
 from chartcoach.catalog.parse import parse_guideline
 from chartcoach.catalog.serialize import catalog_to_disk, guideline_to_markdown
