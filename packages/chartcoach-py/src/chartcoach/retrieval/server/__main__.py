@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from chartcoach.retrieval.server.factory import create_app_from_env
-from chartcoach.retrieval.env import get_retrieval_server_env
+from chartcoach.env import load_env
 
 
 def main() -> None:
@@ -12,7 +12,7 @@ def main() -> None:
             "Install `chartcoach[retrieval-server]` to run the server."
         ) from e
 
-    env = get_retrieval_server_env()
+    env = load_env().retrieval_server
     uvicorn.run(create_app_from_env(), host=env.host, port=env.port)
 
 

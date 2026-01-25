@@ -191,7 +191,7 @@ def test_strategy_forward_calls_program_with_adapted_inputs(catalog: Catalog) ->
     program = DummyProgram()
     lm = dspy.LM(model="gpt-4o-mini", api_base="http://example.invalid/v1", api_key="x")
     strategy = GuidelineBrowserStrategy(catalog=catalog, lm=lm)
-    strategy._program = program  # type: ignore[assignment]
+    strategy._program = program
 
     request = RetrievalRequest(
         context=[
