@@ -1,14 +1,16 @@
 from __future__ import annotations
 
 import sys
+from collections.abc import Callable
 from types import ModuleType
-from typing import Any
+from typing import Protocol, TypedDict, cast
 
 import dspy
 import polars as pl
 import pytest
 from pydantic import ValidationError
 
+from chartcoach.env import load_env
 from chartcoach.catalog import Catalog, CatalogEntry, Guideline
 from chartcoach.retrieval.registry import catalog_from_path, create_default_strategies
 from chartcoach.retrieval.server import (
@@ -16,6 +18,7 @@ from chartcoach.retrieval.server import (
     create_app_from_env,
     create_router,
 )
+from chartcoach.retrieval.server.routes import StrategyInfo
 from chartcoach.retrieval.strategy import RetrievalStrategy
 from chartcoach.retrieval.types import (
     ImageItem,
@@ -25,7 +28,26 @@ from chartcoach.retrieval.types import (
 )
 
 
-def _install_fastapi_stub(monkeypatch) -> type:
+class _RouteInfo(TypedDict):
+    method: str
+    path: str
+    endpoint: Callable[..., object]
+    response_model: object | None
+
+
+class _RouterStub(Protocol):
+    routes: list[_RouteInfo]
+
+
+class _AppStub(Protocol):
+    routers: list[object]
+
+
+class _HTTPExceptionLike(Protocol):
+    status_code: int
+
+
+def _install_fastapi_stub(monkeypatch) -> type[Exception]:
     class HTTPException(Exception):
         def __init__(self, status_code: int, detail: str) -> None:
             super().__init__(detail)
@@ -35,7 +57,7 @@ def _install_fastapi_stub(monkeypatch) -> type:
     class APIRouter:
         def __init__(self, *, prefix: str = "") -> None:
             self.prefix = prefix
-            self.routes: list[dict[str, Any]] = []
+            self.routes: list[_RouteInfo] = []
 
         def get(self, path: str, *, response_model: object | None = None):
             def decorator(fn):
@@ -73,9 +95,9 @@ def _install_fastapi_stub(monkeypatch) -> type:
             self.routers.append(router)
 
     fastapi_stub = ModuleType("fastapi")
-    fastapi_stub.APIRouter = APIRouter
-    fastapi_stub.FastAPI = FastAPI
-    fastapi_stub.HTTPException = HTTPException
+    setattr(fastapi_stub, "APIRouter", APIRouter)
+    setattr(fastapi_stub, "FastAPI", FastAPI)
+    setattr(fastapi_stub, "HTTPException", HTTPException)
     monkeypatch.setitem(sys.modules, "fastapi", fastapi_stub)
     return HTTPException
 
@@ -160,11 +182,17 @@ def test_routes_and_app_use_strategy_instances(tmp_path, monkeypatch) -> None:
     strategies = [DummyStrategy(catalog=Catalog(entries=[]), lm=lm)]
 
     router = create_router(strategies=strategies)
-    get_strategies = next(r for r in router.routes if r["method"] == "GET")["endpoint"]
-    out = get_strategies()
+    router_stub = cast(_RouterStub, router)
+    get_strategies = next(r for r in router_stub.routes if r["method"] == "GET")[
+        "endpoint"
+    ]
+    out = cast(list[StrategyInfo], get_strategies())
     assert any(s.id == "dummy@v0" for s in out)
 
-    post = next(r for r in router.routes if r["method"] == "POST")["endpoint"]
+    post = cast(
+        Callable[[str, RetrievalRequest], RetrievalResponse],
+        next(r for r in router_stub.routes if r["method"] == "POST")["endpoint"],
+    )
     resp = post(
         "dummy@v0",
         RetrievalRequest(context=[TextItem(role="situation", text="S")]),
@@ -175,10 +203,10 @@ def test_routes_and_app_use_strategy_instances(tmp_path, monkeypatch) -> None:
 
     with pytest.raises(HTTPException) as e:
         post("missing@v0", RetrievalRequest())
-    assert e.value.status_code == 404
+    assert cast(_HTTPExceptionLike, e.value).status_code == 404
 
     app = create_app(strategies=strategies)
-    assert len(app.routers) == 1
+    assert len(cast(_AppStub, app).routers) == 1
 
     df = pl.DataFrame(
         [
@@ -202,7 +230,7 @@ def test_routes_and_app_use_strategy_instances(tmp_path, monkeypatch) -> None:
     monkeypatch.setenv("OPENAI_BASE_URL", "http://example.invalid/v1")
     monkeypatch.setenv("OPENAI_API_KEY", "k")
     env_app = create_app_from_env()
-    assert len(env_app.routers) == 1
+    assert len(cast(_AppStub, env_app).routers) == 1
 
 
 def test_create_app_from_env_requires_env_vars(monkeypatch) -> None:
@@ -219,13 +247,19 @@ def test_create_app_from_env_requires_env_vars(monkeypatch) -> None:
         create_app_from_env()
 
 
+def test_env_require_catalog_path_raises() -> None:
+    env = load_env(
+        {"OPENAI_BASE_URL": "http://example.invalid/v1", "OPENAI_API_KEY": "k"}
+    )
+    with pytest.raises(RuntimeError, match="CHARTCOACH_CATALOG_PATH"):
+        env.retrieval_server.require_catalog_path()
+
+
 def test_retrieval_request_base64_bytes_decode() -> None:
     req = RetrievalRequest(
         context=[
-            ImageItem(
-                role="chart",
-                mime="image/png",
-                data="aGk=",  # "hi"
+            ImageItem.model_validate(
+                {"role": "chart", "mime": "image/png", "data": "aGk="}  # "hi"
             )
         ]
     )
@@ -234,9 +268,9 @@ def test_retrieval_request_base64_bytes_decode() -> None:
 
 
 def test_bytes_field_accepts_none_and_rejects_invalid_base64() -> None:
-    assert ImageItem(data=None).data is None
+    assert ImageItem.model_validate({"data": None}).data is None
     with pytest.raises(ValidationError):
-        ImageItem(data="not base64")
+        ImageItem.model_validate({"data": "not base64"})
     with pytest.raises(ValidationError):
         ImageItem(data=123)  # type: ignore[arg-type]
 
