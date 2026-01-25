@@ -463,6 +463,10 @@ retrieval = [
     { name = "dspy" },
     { name = "pillow" },
 ]
+retrieval-server = [
+    { name = "fastapi" },
+    { name = "uvicorn" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -472,6 +476,7 @@ requires-dist = [
     { name = "duckdb", marker = "extra == 'index'", specifier = ">=1.3.2" },
     { name = "duckdb", marker = "extra == 'index-duckdb'", specifier = ">=1.3.2" },
     { name = "embedding-atlas", marker = "extra == 'embedding'", specifier = ">=0.15.0" },
+    { name = "fastapi", marker = "extra == 'retrieval-server'", specifier = ">=0.115.0" },
     { name = "joblib", marker = "extra == 'cataloging'", specifier = ">=1.5.2" },
     { name = "lancedb", marker = "extra == 'index'", specifier = ">=0.27.0" },
     { name = "lancedb", marker = "extra == 'index-lance'", specifier = ">=0.27.0" },
@@ -485,8 +490,9 @@ requires-dist = [
     { name = "pyyaml", specifier = ">=6.0.0" },
     { name = "tenacity", marker = "extra == 'cataloging'", specifier = ">=9.1.2" },
     { name = "tqdm", marker = "extra == 'cataloging'", specifier = ">=4.67.1" },
+    { name = "uvicorn", marker = "extra == 'retrieval-server'", specifier = ">=0.30.0" },
 ]
-provides-extras = ["embedding", "retrieval", "index", "index-duckdb", "index-lance", "cataloging"]
+provides-extras = ["embedding", "retrieval", "retrieval-server", "index", "index-duckdb", "index-lance", "cataloging"]
 
 [[package]]
 name = "click"
