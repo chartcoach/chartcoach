@@ -2,13 +2,16 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Any
 
 import dspy
 import polars as pl
 
 from chartcoach.catalog import Catalog
 from chartcoach.retrieval.strategy import RetrievalStrategy
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from fastapi import FastAPI
 
 
 def _catalog_from_path(path: str) -> Catalog:
@@ -37,7 +40,7 @@ def create_default_strategies(*, catalog: Catalog) -> list[RetrievalStrategy]:
     return [create_guideline_browser_strategy(catalog=catalog)]
 
 
-def create_app_from_env() -> Any:
+def create_app_from_env() -> "FastAPI":
     from chartcoach.retrieval.server.app import create_app
 
     catalog_path = os.environ.get("CHARTCOACH_CATALOG_PATH")
