@@ -18,8 +18,7 @@ from chartcoach.retrieval.server import (
     create_app_from_env,
     create_router,
 )
-from chartcoach.retrieval.server.routes import StrategyInfo
-from chartcoach.retrieval.strategy import RetrievalStrategy
+from chartcoach.retrieval.strategy import RetrievalStrategy, StrategyInfo
 from chartcoach.retrieval.types import (
     ImageItem,
     RetrievalRequest,
