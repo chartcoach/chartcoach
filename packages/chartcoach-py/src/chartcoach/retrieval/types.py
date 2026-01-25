@@ -8,7 +8,7 @@ import polars as pl
 from chartcoach.catalog import Catalog
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class TextItem:
     kind: Literal["text"] = "text"
     role: str = "note"
@@ -16,7 +16,7 @@ class TextItem:
     lang: str | None = None
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class ImageItem:
     kind: Literal["image"] = "image"
     role: str = "chart"
@@ -25,7 +25,7 @@ class ImageItem:
     data: bytes | None = None
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class TableItem:
     kind: Literal["table"] = "table"
     role: str = "dataset"
@@ -34,7 +34,7 @@ class TableItem:
     mime: str | None = None
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class FileItem:
     kind: Literal["file"] = "file"
     role: str = "attachment"
@@ -46,7 +46,7 @@ class FileItem:
 ContextItem = TextItem | ImageItem | TableItem | FileItem
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class RetrievalRequest:
     """Context-first retrieval request with lean metadata.
 
@@ -60,7 +60,7 @@ class RetrievalRequest:
     k: int = 10
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class RetrievalResponse:
     """Retrieved guidelines (as a sub-catalog) plus lean telemetry metadata."""
 
