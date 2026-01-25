@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from chartcoach.catalog.catalog import Catalog
+from chartcoach.catalog import Catalog
 from chartcoach.catalog.model import CatalogEntry, Guideline
 from chartcoach.embedding import CatalogEmbedder, GuidelineFieldTextSource
 

@@ -721,7 +721,7 @@ def _(Catalog, catalog_parquet, pl):
 
 @app.cell(hide_code=True)
 def _():
-    from chartcoach.catalog.catalog import Catalog
+    from chartcoach.catalog import Catalog
     return (Catalog,)
 
 

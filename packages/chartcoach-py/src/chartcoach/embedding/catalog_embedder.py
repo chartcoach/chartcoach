@@ -5,7 +5,7 @@ from typing import Any, Sequence
 
 import polars as pl
 
-from chartcoach.catalog.catalog import Catalog
+from chartcoach.catalog import Catalog
 
 from .text_sources import CatalogTextSource, DEFAULT_TEXT_SOURCES
 

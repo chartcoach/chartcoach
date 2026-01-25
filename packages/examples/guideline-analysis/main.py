@@ -673,7 +673,7 @@ def _():
     import marimo as mo
     import polars as pl
 
-    from chartcoach.catalog.catalog import Catalog
+    from chartcoach.catalog import Catalog
     from chartcoach.embedding import CatalogEmbedder
     from chartcoach.index import DuckDBVectorIndexBackend
     from embedding_atlas.widget import EmbeddingAtlasWidget

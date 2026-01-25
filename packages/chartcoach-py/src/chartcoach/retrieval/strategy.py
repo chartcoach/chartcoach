@@ -4,7 +4,7 @@ from typing import Any
 
 import dspy
 
-from chartcoach.catalog.catalog import Catalog
+from chartcoach.catalog import Catalog
 from chartcoach.retrieval.types import RetrievalRequest, RetrievalResponse
 
 

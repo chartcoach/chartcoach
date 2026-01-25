@@ -6,7 +6,7 @@ import numpy as np
 import polars as pl
 import pytest
 
-from chartcoach.catalog.catalog import Catalog
+from chartcoach.catalog import Catalog
 from chartcoach.catalog.model import CatalogEntry, Guideline
 from chartcoach.embedding import (
     CatalogEmbedder,
