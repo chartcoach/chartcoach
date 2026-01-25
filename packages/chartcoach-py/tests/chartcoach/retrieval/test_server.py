@@ -10,13 +10,12 @@ import pytest
 from pydantic import ValidationError
 
 from chartcoach.catalog import Catalog, CatalogEntry, Guideline
+from chartcoach.retrieval.registry import catalog_from_path, create_default_strategies
 from chartcoach.retrieval.server import (
     create_app,
     create_app_from_env,
-    create_default_strategies,
     create_router,
 )
-from chartcoach.retrieval.server.registry import _catalog_from_path
 from chartcoach.retrieval.strategy import RetrievalStrategy
 from chartcoach.retrieval.types import (
     ImageItem,
@@ -101,13 +100,13 @@ def test_catalog_from_path_parquet_and_missing_folder(tmp_path) -> None:
     parquet_path = tmp_path / "catalog.parquet"
     df.write_parquet(parquet_path)
 
-    catalog = _catalog_from_path(str(parquet_path))
+    catalog = catalog_from_path(str(parquet_path))
     assert isinstance(catalog, Catalog)
     assert len(catalog) == 1
     assert catalog.entries[0].guideline.id == "g1"
 
     with pytest.raises(Exception):  # noqa: BLE001
-        _catalog_from_path(str(tmp_path / "missing_folder"))
+        catalog_from_path(str(tmp_path / "missing_folder"))
 
 
 def test_create_default_strategies_includes_guideline_browser(monkeypatch) -> None:
