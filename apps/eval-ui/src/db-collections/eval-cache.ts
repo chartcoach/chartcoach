@@ -8,6 +8,7 @@ import {
   type CachedScenarioBundleDoc,
   type CachedScenarioDoc,
 } from '@chartcoach/eval-ui/db/rxdb'
+import type { EvalScenarioBundle } from '@chartcoach/eval-ui/eval/types'
 import { ScenarioSpecSchema } from '@chartcoach/eval-ui/eval/schemas'
 
 const CachedScenarioDocSchema = z.object({
@@ -20,7 +21,7 @@ const CachedScenarioDocSchema = z.object({
 const CachedScenarioBundleDocSchema = z.object({
   id: z.string().min(1),
   cachedAt: z.string().min(1),
-  bundle: z.unknown(),
+  bundle: z.custom<EvalScenarioBundle>(() => true),
 })
 
 let scenariosRxCollection: RxCollection<CachedScenarioDoc> | undefined
@@ -62,4 +63,3 @@ export const scenarioBundlesCacheCollection = createCollection(
         schema: CachedScenarioBundleDocSchema,
       }),
 )
-
