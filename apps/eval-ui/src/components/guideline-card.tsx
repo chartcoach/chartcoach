@@ -80,7 +80,7 @@ export function GuidelineCard({
           </>
         }
       >
-        <div className="relative z-20 mt-3 flex w-full justify-start">
+        <div className="relative z-20 mt-3 flex w-full justify-center lg:justify-start">
           <LikertScale
             name={`relevance:${scenarioId}:${guidelineId}`}
             value={rating}
