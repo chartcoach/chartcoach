@@ -1,18 +1,18 @@
-import type { RelevanceRating } from '@chartcoach/eval-ui/db-collections'
-import type { EvalGuidelineResult } from '@chartcoach/eval-ui/eval/types'
-import { cn } from '@chartcoach/eval-ui/lib/utils'
+import type { RelevanceRating } from "@chartcoach/eval-ui/db-collections";
+import type { EvalGuidelineResult } from "@chartcoach/eval-ui/eval/types";
+import { cn } from "@chartcoach/eval-ui/lib/utils";
 
-import { GuidelineCard } from '../guideline-card'
+import { GuidelineCard } from "../guideline-card";
 
 type GuidelineDeckProps = {
-  scenarioId: string
-  guidelines: EvalGuidelineResult[]
-  activeGuidelineId: string | undefined
-  getRating: (guidelineId: string) => RelevanceRating | undefined
-  onRate: (guidelineId: string, relevance: number) => void
-  onClear: (guidelineId: string) => void
-  className?: string
-}
+  scenarioId: string;
+  guidelines: EvalGuidelineResult[];
+  activeGuidelineId: string | undefined;
+  getRating: (guidelineId: string) => RelevanceRating | undefined;
+  onRate: (guidelineId: string, relevance: number) => void;
+  onClear: (guidelineId: string) => void;
+  className?: string;
+};
 
 export function GuidelineDeck({
   scenarioId,
@@ -27,9 +27,9 @@ export function GuidelineDeck({
     <ul
       aria-label="Guidelines"
       className={cn(
-        'mt-4 -mx-4 flex touch-pan-x snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-4 scroll-px-4 [scrollbar-gutter:stable]',
-        'lg:mx-0 lg:grid lg:grid-cols-1 lg:gap-4 lg:overflow-visible lg:px-0 lg:pb-0 lg:snap-none lg:scroll-px-0',
-        '[@media(min-width:2400px)]:grid-cols-2',
+        "mt-4 -mx-4 flex touch-pan-x snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-4 scroll-px-4 [scrollbar-gutter:stable]",
+        "lg:mx-0 lg:grid lg:grid-cols-1 lg:gap-4 lg:overflow-visible lg:px-0 lg:pb-0 lg:snap-none lg:scroll-px-0",
+        "[@media(min-width:2400px)]:grid-cols-2",
         className,
       )}
     >
@@ -49,6 +49,5 @@ export function GuidelineDeck({
         </li>
       ))}
     </ul>
-  )
+  );
 }
-

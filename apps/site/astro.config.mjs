@@ -41,7 +41,9 @@ function siteUrlLogger(siteUrl) {
       /** @param {import("astro").HookParameters<"astro:config:setup">} options */
       "astro:config:setup": (options) => {
         const { logger } = options;
-        logger.info(`site url ${siteUrl ? `resolved (${siteUrl})` : "not resolved (set SITE_URL)"}`);
+        logger.info(
+          `site url ${siteUrl ? `resolved (${siteUrl})` : "not resolved (set SITE_URL)"}`,
+        );
       },
     },
   });

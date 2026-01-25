@@ -1,14 +1,14 @@
-import { defineConfig } from 'vite'
-import { devtools } from '@tanstack/devtools-vite'
-import { tanstackStart } from '@tanstack/react-start/plugin/vite'
-import viteReact from '@vitejs/plugin-react'
-import viteTsConfigPaths from 'vite-tsconfig-paths'
-import { fileURLToPath, URL } from 'url'
+import { defineConfig } from "vite";
+import { devtools } from "@tanstack/devtools-vite";
+import { tanstackStart } from "@tanstack/react-start/plugin/vite";
+import viteReact from "@vitejs/plugin-react";
+import viteTsConfigPaths from "vite-tsconfig-paths";
+import { fileURLToPath, URL } from "url";
 
-import tailwindcss from '@tailwindcss/vite'
-import { nitro } from 'nitro/vite'
+import tailwindcss from "@tailwindcss/vite";
+import { nitro } from "nitro/vite";
 
-const monorepoRoot = fileURLToPath(new URL('../..', import.meta.url))
+const monorepoRoot = fileURLToPath(new URL("../..", import.meta.url));
 
 export default defineConfig({
   server: {
@@ -18,7 +18,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@chartcoach/eval-ui': fileURLToPath(new URL('./src', import.meta.url)),
+      "@chartcoach/eval-ui": fileURLToPath(new URL("./src", import.meta.url)),
     },
   },
   plugins: [
@@ -26,10 +26,10 @@ export default defineConfig({
     nitro(),
     // this is the plugin that enables path aliases
     viteTsConfigPaths({
-      projects: ['./tsconfig.json'],
+      projects: ["./tsconfig.json"],
     }),
     tailwindcss(),
     tanstackStart(),
     viteReact(),
   ],
-})
+});
