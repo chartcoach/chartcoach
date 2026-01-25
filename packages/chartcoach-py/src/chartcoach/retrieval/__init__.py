@@ -9,8 +9,8 @@ from .dspy_adapters import (
     require_image_item_by_role,
     require_text_by_role,
 )
-from .head import HeadRetrievalStrategy
 from .guideline_browser import GuidelineBrowserStrategy
+from .strategy import RetrievalStrategy
 from .types import (
     ContextItem,
     FileItem,
@@ -27,9 +27,9 @@ __all__ = [
     "get_image_item_by_role",
     "get_text_by_role",
     "GuidelineBrowserStrategy",
-    "HeadRetrievalStrategy",
     "ImageItem",
     "image_item_to_dspy_image",
+    "RetrievalStrategy",
     "RetrievalRequest",
     "RetrievalResponse",
     "require_image_item_by_role",

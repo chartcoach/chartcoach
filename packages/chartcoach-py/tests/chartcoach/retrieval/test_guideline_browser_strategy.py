@@ -165,8 +165,8 @@ def test_grounded_vis_feedback_inputs_from_request_defaults_existing_feedback() 
 
 
 def test_strategy_requires_either_lm_or_llm_config(catalog: Catalog) -> None:
-    with pytest.raises(ValueError):
-        GuidelineBrowserStrategy(catalog=catalog)
+    with pytest.raises(TypeError):
+        GuidelineBrowserStrategy(catalog=catalog)  # type: ignore[call-arg]
 
 
 def test_strategy_instantiates_default_react_program_without_calling_llm(
@@ -178,23 +178,7 @@ def test_strategy_instantiates_default_react_program_without_calling_llm(
     assert isinstance(strategy.tools, GuidelineBrowserTools)
 
 
-def test_strategy_can_build_lm_from_ctor_config(catalog: Catalog) -> None:
-    class DummyProgram(dspy.Module):
-        def forward(self, **kwargs):
-            return dspy.Prediction(used_guideline_ids=[], feedback="")
-
-    strategy = GuidelineBrowserStrategy(
-        catalog=catalog,
-        model="gpt-4o-mini",
-        api_base="http://example.invalid/v1",
-        api_key="x",
-        lm_kwargs={"cache": False},
-        program=DummyProgram(),
-    )
-    assert isinstance(strategy, dspy.Module)
-
-
-def test_strategy_forward_uses_injected_program(catalog: Catalog) -> None:
+def test_strategy_forward_calls_program_with_adapted_inputs(catalog: Catalog) -> None:
     class DummyProgram(dspy.Module):
         def __init__(self) -> None:
             super().__init__()
@@ -206,7 +190,8 @@ def test_strategy_forward_uses_injected_program(catalog: Catalog) -> None:
 
     program = DummyProgram()
     lm = dspy.LM(model="gpt-4o-mini", api_base="http://example.invalid/v1", api_key="x")
-    strategy = GuidelineBrowserStrategy(catalog=catalog, lm=lm, program=program)
+    strategy = GuidelineBrowserStrategy(catalog=catalog, lm=lm)
+    strategy._program = program  # type: ignore[assignment]
 
     request = RetrievalRequest(
         context=[
