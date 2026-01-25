@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 
-from chartcoach.retrieval.server.registry import create_app_from_env
+from chartcoach.retrieval.server.factory import create_app_from_env
 
 
 def main() -> None:
