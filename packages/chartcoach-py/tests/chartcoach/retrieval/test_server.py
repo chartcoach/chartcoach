@@ -112,17 +112,19 @@ def test_catalog_from_path_parquet_and_missing_folder(tmp_path) -> None:
 
 def test_create_default_strategies_includes_guideline_browser(monkeypatch) -> None:
     _install_fastapi_stub(monkeypatch)
+    monkeypatch.setenv("OPENAI_BASE_URL", "http://example.invalid/v1")
+    monkeypatch.setenv("OPENAI_API_KEY", "k")
     catalog = Catalog(entries=[])
-    lm = dspy.LM(model="m", api_base="http://example.invalid/v1", api_key="k")
-    strategies = create_default_strategies(catalog=catalog, lm=lm)
+    strategies = create_default_strategies(catalog=catalog)
     assert any(s.id == "guideline-browser@v0" for s in strategies)
 
 
 def test_create_default_strategies_instantiates(monkeypatch) -> None:
     _install_fastapi_stub(monkeypatch)
+    monkeypatch.setenv("OPENAI_BASE_URL", "http://example.invalid/v1")
+    monkeypatch.setenv("OPENAI_API_KEY", "k")
     catalog = Catalog(entries=[])
-    lm = dspy.LM(model="m", api_base="http://example.invalid/v1", api_key="k")
-    strategies = create_default_strategies(catalog=catalog, lm=lm)
+    strategies = create_default_strategies(catalog=catalog)
     assert strategies
 
 
