@@ -4,6 +4,7 @@ import pytest
 
 from chartcoach.catalog.catalog import Catalog
 from chartcoach.retrieval.strategy import RetrievalStrategy
+from chartcoach.retrieval.types import RetrievalRequest
 
 
 def test_retrieval_strategy_stores_catalog() -> None:
@@ -17,3 +18,8 @@ def test_retrieval_strategy_catalog_is_positional_only() -> None:
     with pytest.raises(TypeError):
         RetrievalStrategy(catalog=catalog)  # type: ignore[call-arg]
 
+
+def test_retrieval_strategy_forward_delegates_to_overridable_forward() -> None:
+    strategy = RetrievalStrategy(Catalog(entries=[]))
+    with pytest.raises(NotImplementedError):
+        strategy(request=RetrievalRequest())

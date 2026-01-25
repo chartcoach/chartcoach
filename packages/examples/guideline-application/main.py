@@ -635,14 +635,7 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _(
-    feedback_model,
-    grounded_vis_feedback,
-    mo,
-    mo_image,
-    used_guidelines_df,
-    user_situation_md,
-):
+def _(feedback_model, mo, mo_image, used_guidelines_df, user_situation_md):
     mo.vstack(
         [
             user_situation_md,
@@ -650,29 +643,21 @@ def _(
             mo.md(
                 "\n\n".join(
                     [
-                        f"### Catalog-Grounded Feedback (`{feedback_model}`)",
-                        grounded_vis_feedback.feedback,
+                        f"### Retrieved Guidelines (`{feedback_model}`)",
+                        "This section shows the subset of guidelines retrieved from the catalog.",
                     ]
                 )
             ),
             mo.md("### Used Guidelines"),
             used_guidelines_df,
-            mo.md("### Agent Trajectory"),
-            grounded_vis_feedback.trajectory,
         ]
     )
     return
 
 
 @app.cell(hide_code=True)
-def _(catalog, grounded_vis_feedback, pl):
-    used_guidelines_df = pl.from_dict(
-        {"id": grounded_vis_feedback.used_guideline_ids}
-    ).join(
-        catalog.df(),
-        on="id",
-        how="left",
-    )
+def _(retrieval_response):
+    used_guidelines_df = retrieval_response.catalog.df()
     return (used_guidelines_df,)
 
 
@@ -715,8 +700,8 @@ def _(
         catalog=catalog,
         lm=init_lm(feedback_model),
     )
-    grounded_vis_feedback = strategy(request=request)
-    return (grounded_vis_feedback,)
+    retrieval_response = strategy(request=request)
+    return (retrieval_response,)
 
 
 @app.cell(hide_code=True)

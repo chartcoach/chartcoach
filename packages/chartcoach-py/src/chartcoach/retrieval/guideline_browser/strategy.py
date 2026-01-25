@@ -10,7 +10,7 @@ from chartcoach.catalog.catalog import Catalog
 
 from .adapters import guideline_browser_inputs_from_request
 from ..strategy import RetrievalStrategy
-from ..types import RetrievalRequest
+from ..types import RetrievalRequest, RetrievalResponse
 
 
 class GuidelineBrowserSignature(dspy.Signature):
@@ -167,7 +167,7 @@ class GuidelineBrowserTools:
 
 
 class GuidelineBrowserStrategy(RetrievalStrategy):
-    """ReAct strategy for browsing a guideline catalog to produce grounded feedback."""
+    """ReAct strategy for browsing a guideline catalog to retrieve relevant guidelines."""
 
     strategy_id = "guideline-browser@v0"
 
@@ -194,12 +194,21 @@ class GuidelineBrowserStrategy(RetrievalStrategy):
     def tools(self) -> GuidelineBrowserTools:
         return self._tools
 
-    def forward(self, request: RetrievalRequest) -> dspy.Prediction:
+    def _forward(self, request: RetrievalRequest) -> RetrievalResponse:
         inputs = guideline_browser_inputs_from_request(request)
         with dspy.context(lm=self._lm):
-            return self._program(
+            prediction = self._program(
                 chart=inputs.chart,
                 situation=inputs.situation,
                 chart_spec=inputs.chart_spec,
                 existing_chart_feedback=inputs.existing_chart_feedback,
             )
+
+        used_ids = list(getattr(prediction, "used_guideline_ids", []))
+        id_to_entry = {entry.id: entry for entry in self.catalog.entries}
+        retrieved_entries = [id_to_entry[gid] for gid in used_ids if gid in id_to_entry]
+
+        return RetrievalResponse(
+            catalog=Catalog(entries=retrieved_entries),
+            meta={"used_guideline_ids": used_ids},
+        )

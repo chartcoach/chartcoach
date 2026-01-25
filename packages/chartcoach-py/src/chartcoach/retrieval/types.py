@@ -5,6 +5,8 @@ from typing import Literal
 
 import polars as pl
 
+from chartcoach.catalog.catalog import Catalog
+
 
 @dataclass(frozen=True, slots=True)
 class TextItem:
@@ -60,5 +62,7 @@ class RetrievalRequest:
 
 @dataclass(frozen=True, slots=True)
 class RetrievalResponse:
-    strategy_id: str
-    result_df: pl.DataFrame
+    """Retrieved guidelines (as a sub-catalog) plus lean telemetry metadata."""
+
+    catalog: Catalog
+    meta: dict[str, object] = field(default_factory=dict)

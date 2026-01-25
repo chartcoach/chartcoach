@@ -5,6 +5,7 @@ from typing import Any
 import dspy
 
 from chartcoach.catalog.catalog import Catalog
+from chartcoach.retrieval.types import RetrievalRequest, RetrievalResponse
 
 
 class RetrievalStrategy(dspy.Module):
@@ -16,3 +17,8 @@ class RetrievalStrategy(dspy.Module):
     def catalog(self) -> Catalog:
         return self._catalog
 
+    def _forward(self, request: RetrievalRequest) -> RetrievalResponse:
+        raise NotImplementedError
+
+    def forward(self, request: RetrievalRequest) -> RetrievalResponse:
+        return self._forward(request)
