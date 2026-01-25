@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-import os
-
 from chartcoach.retrieval.server.factory import create_app_from_env
+from chartcoach.retrieval.env import get_retrieval_server_env
 
 
 def main() -> None:
@@ -13,9 +12,8 @@ def main() -> None:
             "Install `chartcoach[retrieval-server]` to run the server."
         ) from e
 
-    host = os.environ.get("CHARTCOACH_HOST", "127.0.0.1")
-    port = int(os.environ.get("CHARTCOACH_PORT", "8000"))
-    uvicorn.run(create_app_from_env(), host=host, port=port)
+    env = get_retrieval_server_env()
+    uvicorn.run(create_app_from_env(), host=env.host, port=env.port)
 
 
 if __name__ == "__main__":  # pragma: no cover
