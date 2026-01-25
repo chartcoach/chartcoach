@@ -202,7 +202,9 @@ def test_strategy_forward_calls_program_with_adapted_inputs(catalog: Catalog) ->
         ]
     )
     out = strategy(request=request)
-    assert out.feedback == "OK"
+    assert out.meta["used_guideline_ids"] == ["g1"]
+    assert len(out.catalog) == 1
+    assert out.catalog.entries[0].guideline.id == "g1"
     assert program.last_kwargs is not None
     assert isinstance(program.last_kwargs["chart"], dspy.Image)
     assert program.last_kwargs["situation"] == "S"

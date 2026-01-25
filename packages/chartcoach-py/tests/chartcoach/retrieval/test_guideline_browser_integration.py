@@ -81,5 +81,5 @@ def test_react_grounded_vis_feedback_strategy_integration() -> None:
     strategy = GuidelineBrowserStrategy(catalog=catalog, lm=lm)
     out = strategy(request=request)
 
-    assert isinstance(out.feedback, str)
-    assert isinstance(out.used_guideline_ids, list)
+    assert isinstance(out.catalog, Catalog)
+    assert isinstance(out.meta.get("used_guideline_ids"), list)
