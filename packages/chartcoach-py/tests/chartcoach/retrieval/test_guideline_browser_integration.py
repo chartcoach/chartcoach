@@ -4,6 +4,7 @@ import base64
 import os
 from pathlib import Path
 
+import dspy
 import pytest
 
 from chartcoach.catalog.catalog import Catalog
@@ -76,13 +77,8 @@ def test_react_grounded_vis_feedback_strategy_integration() -> None:
         ]
     )
 
-    strategy = GuidelineBrowserStrategy(
-        catalog=catalog,
-        model=model,
-        api_base=api_base,
-        api_key=api_key,
-        lm_kwargs={"cache": False},
-    )
+    lm = dspy.LM(model=model, api_base=api_base, api_key=api_key, cache=False)
+    strategy = GuidelineBrowserStrategy(catalog=catalog, lm=lm)
     out = strategy(request=request)
 
     assert isinstance(out.feedback, str)

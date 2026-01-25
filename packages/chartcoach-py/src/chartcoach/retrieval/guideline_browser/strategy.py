@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from io import StringIO
-from typing import Any
 
 import dspy
 import polars as pl
@@ -10,6 +9,7 @@ import polars as pl
 from chartcoach.catalog.catalog import Catalog
 
 from .adapters import guideline_browser_inputs_from_request
+from ..strategy import RetrievalStrategy
 from ..types import RetrievalRequest
 
 
@@ -166,36 +166,21 @@ class GuidelineBrowserTools:
         ).to_dicts()
 
 
-class GuidelineBrowserStrategy(dspy.Module):
+class GuidelineBrowserStrategy(RetrievalStrategy):
     """ReAct strategy for browsing a guideline catalog to produce grounded feedback."""
 
-    strategy_id = "guideline_browser@v0"
+    strategy_id = "guideline-browser@v0"
 
     def __init__(
         self,
         *,
         catalog: Catalog,
-        lm: dspy.LM | None = None,
-        model: str | None = None,
-        api_base: str | None = None,
-        api_key: str | None = None,
-        lm_kwargs: dict[str, Any] | None = None,
-        tools: GuidelineBrowserTools | None = None,
-        program: dspy.Module | None = None,
+        lm: dspy.LM,
     ) -> None:
-        super().__init__()
-        self._tools = tools or GuidelineBrowserTools(catalog=catalog)
-
-        if lm is None:
-            if model is None or api_base is None or api_key is None:
-                raise ValueError(
-                    "Either provide `lm`, or provide `model`, `api_base`, and `api_key`."
-                )
-            lm_kwargs = {} if lm_kwargs is None else dict(lm_kwargs)
-            lm = dspy.LM(model=model, api_base=api_base, api_key=api_key, **lm_kwargs)
-
+        super().__init__(catalog)
+        self._tools = GuidelineBrowserTools(catalog=catalog)
         self._lm = lm
-        self._program = program or dspy.ReAct(
+        self._program = dspy.ReAct(
             GuidelineBrowserSignature,
             tools=[
                 self._tools.list_guideline_labels,
