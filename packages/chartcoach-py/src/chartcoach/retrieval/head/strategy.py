@@ -23,4 +23,3 @@ class HeadRetrievalStrategy(dspy.Module):
             strategy_id=self.strategy_id,
             result_df=catalog_df.head(request.k),
         )
-

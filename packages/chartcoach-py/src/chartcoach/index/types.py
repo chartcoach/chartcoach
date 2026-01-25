@@ -29,4 +29,3 @@ class VectorIndexBackend(Protocol):
         id_column: str = "id",
         role_column: str = "role",
     ) -> VectorIndex: ...
-

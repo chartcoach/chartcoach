@@ -79,4 +79,3 @@ def hash_vectors_for_index(
     }
     digest = _hash_bytes(json.dumps(payload, sort_keys=True, default=str).encode())
     return digest, vectors
-

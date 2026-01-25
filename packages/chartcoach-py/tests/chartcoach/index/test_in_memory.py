@@ -41,4 +41,3 @@ def test_in_memory_index_search_validates_inputs() -> None:
 
     with pytest.raises(ValueError):
         index.search(np.array([0.0, 1.0]), k=0)
-

@@ -94,7 +94,9 @@ class LanceVectorIndexBackend:
                 "metric": self.metric,
             },
         )
-        db_dir = self.path if self.path is not None else default_indices_root() / "lance"
+        db_dir = (
+            self.path if self.path is not None else default_indices_root() / "lance"
+        )
         db_dir.mkdir(parents=True, exist_ok=True)
 
         table_name = f"catalog_{digest}"
@@ -102,7 +104,9 @@ class LanceVectorIndexBackend:
         roles = embedded_text_df[role_column].to_list()
         vectors_f32 = vectors.astype("float32", copy=False)
         flat_values = pa.array(vectors_f32.ravel())
-        vector_arr = pa.FixedSizeListArray.from_arrays(flat_values, vectors_f32.shape[1])
+        vector_arr = pa.FixedSizeListArray.from_arrays(
+            flat_values, vectors_f32.shape[1]
+        )
         data = pa.table(
             {
                 "id": pa.array(ids),
@@ -129,4 +133,3 @@ class LanceVectorIndexBackend:
                 pass
 
         return LanceVectorIndex(table=table, embedding_column=embedding_column)
-

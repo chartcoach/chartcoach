@@ -14,7 +14,9 @@ from chartcoach.index.utils import (
 )
 
 
-def test_cache_root_env_override(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_cache_root_env_override(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     monkeypatch.setenv("CHARTCOACH_CACHE_DIR", str(tmp_path / "ccache"))
     assert cache_root() == tmp_path / "ccache"
 
@@ -75,4 +77,3 @@ def test_hash_vectors_for_index_is_stable() -> None:
     d2, v2 = hash_vectors_for_index(df, embedding_column="embedding", version=1)
     assert d1 == d2
     assert np.allclose(v1, v2)
-

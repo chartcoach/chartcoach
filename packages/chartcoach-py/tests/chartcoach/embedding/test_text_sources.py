@@ -34,4 +34,3 @@ def test_text_sources_default_and_custom_roles() -> None:
     source = GuidelineFieldTextSource("title", role="headline")
     df = source.text_df(catalog)
     assert df.select("role").to_series().to_list() == ["headline"]
-
