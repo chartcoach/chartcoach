@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-01-27T00:00:00Z",
+  "digest": "fixture",
+  "scenario": {
+    "id": "population-distribution-by-continent",
+    "title": "Population distribution by continent",
+    "lang": "en",
+    "chart": {
+      "uri": "https://files.peter.gy/projects/chartcoach/evals/data-journalist-charts/Chart1.png",
+      "mime": "image/png"
+    },
+    "query": "Retrieve visualization guidelines relevant to this chart and intent, aiming to improve the visualization for a general news reader audience.",
+    "designer_intent": "The map is meant as an entry point to help readers understand the visualizations below it."
+  },
+  "strategies": [
+    {
+      "strategy_id": "fixture@v1",
+      "strategy_name": "FixtureStrategy",
+      "meta": {
+        "note": "Fixture bundle"
+      },
+      "guidelines": [
+        {
+          "rank": 1,
+          "score": 1,
+          "entry": {
+            "id": "use-direct-labels-not-legends",
+            "guideline": {
+              "id": "use-direct-labels-not-legends",
+              "title": "Use direct labels, not legends",
+              "bibliography": null,
+              "description": "Prefer direct labels to reduce cognitive load and scanning back-and-forth between marks and a legend.",
+              "labels": ["annotation:labels", "goal:comparison", "audience:general"],
+              "body": "## The Advice <!-- role: advice -->\nLabel marks directly when feasible.\n\n## Why <!-- role: reason -->\nLegends force eye travel and increase errors.\n"
+            },
+            "references": []
+          }
+        },
+        {
+          "rank": 2,
+          "score": 0.5,
+          "entry": {
+            "id": "use-consistent-color-encoding",
+            "guideline": {
+              "id": "use-consistent-color-encoding",
+              "title": "Use consistent color encoding",
+              "bibliography": null,
+              "description": "Keep color mappings stable across views so readers can carry meaning forward.",
+              "labels": ["color:encoding", "goal:comparison", "audience:general"],
+              "body": "## The Advice <!-- role: advice -->\nAssign a semantic meaning to each color and keep it consistent.\n\n## Checks <!-- role: checks -->\nVerify identical categories use identical colors.\n"
+            },
+            "references": []
+          }
+        }
+      ]
+    }
+  ]
+}
+

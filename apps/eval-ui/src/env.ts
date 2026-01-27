@@ -10,6 +10,7 @@ const getRuntimeEnv = createIsomorphicFn()
 
 export const env = createEnv({
   server: {
+    EVAL_ARTIFACTS_URL: z.string().min(1).optional(),
     EVAL_ARTIFACTS_VERSION: z.string().min(1).default("v1"),
     S3_ENDPOINT: z.url().optional(),
     S3_REGION: z.string().min(1).optional(),

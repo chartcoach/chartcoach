@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-01-27T00:00:00Z",
+  "strategies": [
+    {
+      "id": "fixture@v1",
+      "name": "FixtureStrategy",
+      "description": "Small in-repo artifact set used for local dev / smoke testing."
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "population-distribution-by-continent",
+      "title": "Population distribution by continent",
+      "lang": "en",
+      "chart": {
+        "uri": "https://files.peter.gy/projects/chartcoach/evals/data-journalist-charts/Chart1.png",
+        "mime": "image/png"
+      },
+      "query": "Retrieve visualization guidelines relevant to this chart and intent, aiming to improve the visualization for a general news reader audience.",
+      "designer_intent": "The map is meant as an entry point to help readers understand the visualizations below it."
+    },
+    {
+      "id": "austria-inflation-vs-neighbors",
+      "title": "Inflation in Austria vs neighbors",
+      "lang": "en",
+      "chart": {
+        "uri": "https://files.peter.gy/projects/chartcoach/evals/data-journalist-charts/Chart2.png",
+        "mime": "image/png"
+      },
+      "query": "Retrieve visualization guidelines relevant to this chart and intent, aiming to improve the visualization for a general news reader audience.",
+      "designer_intent": "From an Austrian perspective, the main goal is to show how inflation in Austria has developed."
+    }
+  ]
+}
+

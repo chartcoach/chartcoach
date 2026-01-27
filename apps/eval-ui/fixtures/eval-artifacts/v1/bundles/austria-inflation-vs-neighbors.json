@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-01-27T00:00:00Z",
+  "digest": "fixture",
+  "scenario": {
+    "id": "austria-inflation-vs-neighbors",
+    "title": "Inflation in Austria vs neighbors",
+    "lang": "en",
+    "chart": {
+      "uri": "https://files.peter.gy/projects/chartcoach/evals/data-journalist-charts/Chart2.png",
+      "mime": "image/png"
+    },
+    "query": "Retrieve visualization guidelines relevant to this chart and intent, aiming to improve the visualization for a general news reader audience.",
+    "designer_intent": "From an Austrian perspective, the main goal is to show how inflation in Austria has developed."
+  },
+  "strategies": [
+    {
+      "strategy_id": "fixture@v1",
+      "strategy_name": "FixtureStrategy",
+      "meta": {
+        "note": "Fixture bundle"
+      },
+      "guidelines": [
+        {
+          "rank": 1,
+          "score": 1,
+          "entry": {
+            "id": "highlight-the-primary-comparison",
+            "guideline": {
+              "id": "highlight-the-primary-comparison",
+              "title": "Highlight the primary comparison",
+              "bibliography": null,
+              "description": "Use visual emphasis to make the main comparison unambiguous (and de-emphasize context series).",
+              "labels": ["goal:comparison", "annotation:emphasis", "audience:general"],
+              "body": "## The Advice <!-- role: advice -->\nEmphasize the focal series with stronger contrast.\n\n## Considerations <!-- role: considerations -->\nContext series should remain visible but secondary.\n"
+            },
+            "references": []
+          }
+        }
+      ]
+    }
+  ]
+}
+
