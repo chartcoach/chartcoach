@@ -7,7 +7,7 @@ import dspy
 from pydantic import BaseModel, ConfigDict
 
 from chartcoach.catalog import Catalog
-from chartcoach.retrieval.types import RetrievalRequest, RetrievalResponse
+from chartcoach.retrieval.strategy.types import RetrievalRequest, RetrievalResponse
 
 
 class StrategyInfo(BaseModel):

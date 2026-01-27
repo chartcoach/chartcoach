@@ -1,4 +1,10 @@
+from __future__ import annotations
+
+from io import BytesIO
 from os import PathLike
+from pathlib import Path
+from urllib.parse import urlparse
+from urllib.request import urlopen
 
 import polars as pl
 
@@ -22,6 +28,40 @@ class Catalog:
         from .load import load_catalog
 
         return load_catalog(folder_path)
+
+    @classmethod
+    def from_uri(cls, uri: str | PathLike[str]) -> "Catalog":
+        """Load a catalog from a local path, file:// URL, http(s) URL, or s3:// URL."""
+        if not isinstance(uri, str):
+            return cls._from_path(Path(uri))
+
+        if uri.startswith("file://"):
+            return cls._from_path(Path(uri.removeprefix("file://")))
+
+        parsed = urlparse(uri)
+        if parsed.scheme in {"http", "https"}:
+            if not parsed.path.endswith(".parquet"):
+                raise ValueError("Remote catalog_uri must be a .parquet file.")
+            return cls.from_df(cls._read_parquet_df_from_url(uri))
+
+        if parsed.scheme == "s3":
+            if not parsed.path.endswith(".parquet"):
+                raise ValueError("Remote catalog_uri must be a .parquet file.")
+            return cls.from_df(pl.read_parquet(uri))
+
+        return cls._from_path(Path(uri))
+
+    @classmethod
+    def _from_path(cls, path: Path) -> "Catalog":
+        if path.suffix == ".parquet":
+            return cls.from_df(pl.read_parquet(path))
+        return cls.from_disk(path)
+
+    @staticmethod
+    def _read_parquet_df_from_url(url: str) -> pl.DataFrame:
+        with urlopen(url) as resp:  # noqa: S310
+            data = resp.read()
+        return pl.read_parquet(BytesIO(data))
 
     @property
     def entries(self) -> list[CatalogEntry]:

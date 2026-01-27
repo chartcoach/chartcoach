@@ -9,12 +9,8 @@ import pytest
 
 from chartcoach.catalog import Catalog
 from chartcoach.catalog.model import CatalogEntry, Guideline
-from chartcoach.retrieval import (
-    GuidelineBrowserStrategy,
-    ImageItem,
-    RetrievalRequest,
-    TextItem,
-)
+from chartcoach.retrieval.strategy.guideline_browser import GuidelineBrowserStrategy
+from chartcoach.retrieval.strategy.types import ImageItem, RetrievalRequest, TextItem
 
 
 def _read_dotenv(path: Path) -> dict[str, str]:

@@ -45,6 +45,47 @@ class RetrievalServerEnv(BaseModel):
         return self.catalog_path
 
 
+class S3Env(BaseModel):
+    """Optional S3 configuration (used for artifact IO and ratings sync)."""
+
+    model_config = ConfigDict(frozen=True)
+
+    endpoint: str | None = None
+    region: str | None = None
+    access_key_id: str | None = None
+    secret_access_key: str | None = None
+    bucket: str | None = None
+    prefix: str | None = None
+    force_path_style: bool | None = None
+
+    def require(self) -> S3EnvRequired:
+        if not self.access_key_id or not self.secret_access_key or not self.bucket:
+            raise RuntimeError(
+                "Missing required env vars: S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, and S3_BUCKET."
+            )
+        return S3EnvRequired(
+            endpoint=self.endpoint,
+            region=self.region,
+            access_key_id=self.access_key_id,
+            secret_access_key=self.secret_access_key,
+            bucket=self.bucket,
+            prefix=self.prefix,
+            force_path_style=self.force_path_style,
+        )
+
+
+class S3EnvRequired(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    endpoint: str | None = None
+    region: str | None = None
+    access_key_id: str
+    secret_access_key: str
+    bucket: str
+    prefix: str | None = None
+    force_path_style: bool | None = None
+
+
 class ChartCoachEnv(BaseModel):
     """Unified env snapshot.
 
@@ -56,6 +97,7 @@ class ChartCoachEnv(BaseModel):
 
     openai: OpenAIEnv = OpenAIEnv()
     retrieval_server: RetrievalServerEnv = RetrievalServerEnv()
+    s3: S3Env = S3Env()
 
 
 def load_env(environ: Mapping[str, str] | None = None) -> ChartCoachEnv:
@@ -73,4 +115,23 @@ def load_env(environ: Mapping[str, str] | None = None) -> ChartCoachEnv:
         port=int(get("CHARTCOACH_PORT") or "8000"),
     )
 
-    return ChartCoachEnv(openai=openai, retrieval_server=retrieval_server)
+    force_path_style_raw = (get("S3_FORCE_PATH_STYLE") or "").strip().lower()
+    force_path_style = (
+        True
+        if force_path_style_raw == "true"
+        else False
+        if force_path_style_raw == "false"
+        else None
+    )
+
+    s3 = S3Env(
+        endpoint=get("S3_ENDPOINT"),
+        region=get("S3_REGION"),
+        access_key_id=get("S3_ACCESS_KEY_ID"),
+        secret_access_key=get("S3_SECRET_ACCESS_KEY"),
+        bucket=get("S3_BUCKET"),
+        prefix=get("S3_PREFIX"),
+        force_path_style=force_path_style,
+    )
+
+    return ChartCoachEnv(openai=openai, retrieval_server=retrieval_server, s3=s3)

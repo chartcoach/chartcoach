@@ -1,15 +1,15 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Sequence
+from typing import TYPE_CHECKING
 
 from chartcoach.retrieval.server.routes import create_router
-from chartcoach.retrieval.registry import StrategyRegistration
+from chartcoach.retrieval.service.retrieval_service import RetrievalService
 
 if TYPE_CHECKING:
     from fastapi import FastAPI
 
 
-def create_app(*, strategies: Sequence[StrategyRegistration]) -> "FastAPI":
+def create_app(*, retrieval: RetrievalService) -> "FastAPI":
     try:
         from fastapi import FastAPI as _FastAPI
     except ImportError as e:  # pragma: no cover
@@ -18,5 +18,5 @@ def create_app(*, strategies: Sequence[StrategyRegistration]) -> "FastAPI":
         ) from e
 
     app = _FastAPI(title="ChartCoach Retrieval Server", version="0.1.0")
-    app.include_router(create_router(strategies=strategies))
+    app.include_router(create_router(retrieval=retrieval))
     return app

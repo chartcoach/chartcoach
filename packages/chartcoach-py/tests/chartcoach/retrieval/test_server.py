@@ -14,18 +14,16 @@ from pydantic import ValidationError
 
 from chartcoach.env import load_env
 from chartcoach.catalog import Catalog, CatalogEntry, Guideline
-from chartcoach.retrieval.registry import (
-    catalog_from_uri,
-    create_default_strategy_registrations,
-)
 from chartcoach.retrieval.server import (
     create_app,
     create_app_from_env,
     create_router,
 )
 from chartcoach.retrieval.server.routes import StrategyRunRequest
-from chartcoach.retrieval.strategy import RetrievalStrategy, StrategyInfo
-from chartcoach.retrieval.types import (
+from chartcoach.retrieval.service import RetrievalService
+from chartcoach.retrieval.strategy.base import RetrievalStrategy, StrategyInfo
+from chartcoach.retrieval.strategy.registry import create_default_strategy_registrations
+from chartcoach.retrieval.strategy.types import (
     ImageItem,
     RetrievalRequest,
     RetrievalResponse,
@@ -127,13 +125,13 @@ def test_catalog_from_uri_parquet_and_missing_folder(tmp_path) -> None:
     parquet_path = tmp_path / "catalog.parquet"
     df.write_parquet(parquet_path)
 
-    catalog = catalog_from_uri(str(parquet_path))
+    catalog = Catalog.from_uri(str(parquet_path))
     assert isinstance(catalog, Catalog)
     assert len(catalog) == 1
     assert catalog.entries[0].guideline.id == "g1"
 
     with pytest.raises(Exception):  # noqa: BLE001
-        catalog_from_uri(str(tmp_path / "missing_folder"))
+        Catalog.from_uri(str(tmp_path / "missing_folder"))
 
 
 def test_catalog_from_uri_supports_pathlike(tmp_path) -> None:
@@ -156,7 +154,7 @@ def test_catalog_from_uri_supports_pathlike(tmp_path) -> None:
     parquet_path = tmp_path / "catalog.parquet"
     df.write_parquet(parquet_path)
 
-    catalog = catalog_from_uri(parquet_path)
+    catalog = Catalog.from_uri(parquet_path)
     assert len(catalog) == 1
 
 
@@ -181,7 +179,7 @@ def test_catalog_from_uri_supports_file_scheme(tmp_path) -> None:
     df.write_parquet(parquet_path)
 
     file_uri = f"file://{parquet_path}"
-    catalog = catalog_from_uri(file_uri)
+    catalog = Catalog.from_uri(file_uri)
     assert len(catalog) == 1
 
 
@@ -219,15 +217,13 @@ def test_catalog_from_uri_supports_http_download(tmp_path) -> None:
     try:
         port = httpd.server_address[1]
         url = f"http://127.0.0.1:{port}/{parquet_path.name}"
-        catalog = catalog_from_uri(url)
+        catalog = Catalog.from_uri(url)
         assert len(catalog) == 1
     finally:
         httpd.shutdown()
 
 
 def test_catalog_from_uri_supports_s3_scheme(monkeypatch) -> None:
-    import chartcoach.retrieval.registry as retrieval_registry
-
     df = pl.DataFrame(
         [
             {
@@ -244,21 +240,19 @@ def test_catalog_from_uri_supports_s3_scheme(monkeypatch) -> None:
             }
         ]
     )
-    monkeypatch.setattr(
-        retrieval_registry.pl, "read_parquet", lambda *_args, **_kwargs: df
-    )
-    catalog = retrieval_registry.catalog_from_uri("s3://bucket/catalog.parquet")
+    monkeypatch.setattr(pl, "read_parquet", lambda *_args, **_kwargs: df)
+    catalog = Catalog.from_uri("s3://bucket/catalog.parquet")
     assert len(catalog) == 1
 
 
 def test_catalog_from_uri_rejects_non_parquet_http() -> None:
     with pytest.raises(ValueError, match="\\.parquet"):
-        catalog_from_uri("http://example.invalid/catalog.txt")
+        Catalog.from_uri("http://example.invalid/catalog.txt")
 
 
 def test_catalog_from_uri_rejects_non_parquet_s3() -> None:
     with pytest.raises(ValueError, match="\\.parquet"):
-        catalog_from_uri("s3://bucket/catalog.txt")
+        Catalog.from_uri("s3://bucket/catalog.txt")
 
 
 def test_default_strategy_registrations_include_guideline_browser(monkeypatch) -> None:
@@ -313,9 +307,12 @@ def test_routes_and_app_use_strategy_instances(tmp_path, monkeypatch) -> None:
     parquet_path = tmp_path / "catalog.parquet"
     df.write_parquet(parquet_path)
 
-    strategies = [(DummyStrategy, create_dummy_strategy)]
+    registrations = [(DummyStrategy, create_dummy_strategy)]
+    retrieval = RetrievalService(
+        registrations=registrations, configure_cache=lambda: None
+    )
 
-    router = create_router(strategies=strategies)
+    router = create_router(retrieval=retrieval)
     router_stub = cast(_RouterStub, router)
     get_strategies = next(r for r in router_stub.routes if r["method"] == "GET")[
         "endpoint"
@@ -348,11 +345,139 @@ def test_routes_and_app_use_strategy_instances(tmp_path, monkeypatch) -> None:
         )
     assert cast(_HTTPExceptionLike, e.value).status_code == 404
 
-    app = create_app(strategies=strategies)
+    app = create_app(retrieval=retrieval)
     assert len(cast(_AppStub, app).routers) == 1
 
     env_app = create_app_from_env()
     assert len(cast(_AppStub, env_app).routers) == 1
+
+
+def test_run_strategy_maps_common_errors_to_http_exceptions(
+    tmp_path, monkeypatch
+) -> None:
+    HTTPException = _install_fastapi_stub(monkeypatch)
+
+    df = pl.DataFrame(
+        [
+            {
+                "id": "g1",
+                "guideline": {
+                    "id": "g1",
+                    "title": "T",
+                    "description": "D",
+                    "labels": [],
+                    "body": "B",
+                    "bibliography": None,
+                },
+                "references": [],
+            }
+        ]
+    )
+    parquet_path = tmp_path / "catalog.parquet"
+    df.write_parquet(parquet_path)
+
+    class RaisesValueError(RetrievalStrategy):
+        id = "raises-value-error@v0"
+
+        def _forward(self, request: RetrievalRequest) -> RetrievalResponse:  # noqa: ARG002
+            raise ValueError("bad request")
+
+    class RaisesUpstreamError(RetrievalStrategy):
+        id = "raises-upstream-error@v0"
+
+        def _forward(self, request: RetrievalRequest) -> RetrievalResponse:  # noqa: ARG002
+            raise RuntimeError("upstream exploded")
+
+    def create_raises_value_error(*, catalog: Catalog) -> RetrievalStrategy:
+        return RaisesValueError(catalog)
+
+    def create_raises_upstream_error(*, catalog: Catalog) -> RetrievalStrategy:
+        return RaisesUpstreamError(catalog)
+
+    def create_raises_runtime_error(*, catalog: Catalog) -> RetrievalStrategy:  # noqa: ARG001
+        raise RuntimeError("misconfigured strategy factory")
+
+    # 422: catalog URI is invalid.
+    retrieval = RetrievalService(
+        registrations=[(RaisesValueError, create_raises_value_error)],
+        configure_cache=lambda: None,
+    )
+    router = create_router(retrieval=retrieval)
+    post = cast(
+        Callable[[str, StrategyRunRequest], RetrievalResponse],
+        cast(_RouterStub, router).routes[-1]["endpoint"],
+    )
+    with pytest.raises(HTTPException) as e:
+        post(
+            "raises-value-error@v0",
+            StrategyRunRequest(
+                catalog_uri="http://example.invalid/catalog.txt",
+                request=RetrievalRequest(),
+            ),
+        )
+    assert cast(_HTTPExceptionLike, e.value).status_code == 422
+
+    # 500: strategy factory fails (e.g., missing required env).
+    retrieval = RetrievalService(
+        registrations=[(RaisesValueError, create_raises_runtime_error)],
+        configure_cache=lambda: None,
+    )
+    router = create_router(retrieval=retrieval)
+    post = cast(
+        Callable[[str, StrategyRunRequest], RetrievalResponse],
+        cast(_RouterStub, router).routes[-1]["endpoint"],
+    )
+    with pytest.raises(HTTPException) as e:
+        post(
+            "raises-value-error@v0",
+            StrategyRunRequest(
+                catalog_uri=str(parquet_path),
+                request=RetrievalRequest(),
+            ),
+        )
+    assert cast(_HTTPExceptionLike, e.value).status_code == 500
+
+    # 422: strategy rejects request payload.
+    retrieval = RetrievalService(
+        registrations=[(RaisesValueError, create_raises_value_error)],
+        configure_cache=lambda: None,
+    )
+    router = create_router(retrieval=retrieval)
+    post = cast(
+        Callable[[str, StrategyRunRequest], RetrievalResponse],
+        cast(_RouterStub, router).routes[-1]["endpoint"],
+    )
+    with pytest.raises(HTTPException) as e:
+        post(
+            "raises-value-error@v0",
+            StrategyRunRequest(
+                catalog_uri=str(parquet_path),
+                request=RetrievalRequest(),
+            ),
+        )
+    assert cast(_HTTPExceptionLike, e.value).status_code == 422
+
+    # 502: unexpected upstream error during strategy run.
+    retrieval = RetrievalService(
+        registrations=[(RaisesUpstreamError, create_raises_upstream_error)],
+        configure_cache=lambda: None,
+    )
+    router = create_router(retrieval=retrieval)
+    post = cast(
+        Callable[[str, StrategyRunRequest], RetrievalResponse],
+        cast(_RouterStub, router).routes[-1]["endpoint"],
+    )
+    with pytest.raises(HTTPException) as e:
+        post(
+            "raises-upstream-error@v0",
+            StrategyRunRequest(
+                catalog_uri=str(parquet_path),
+                request=RetrievalRequest(
+                    context=[TextItem(role="situation", text="S")],
+                ),
+            ),
+        )
+    assert cast(_HTTPExceptionLike, e.value).status_code == 502
 
 
 def test_create_app_from_env_does_not_require_env_vars(monkeypatch) -> None:
@@ -387,6 +512,31 @@ def test_env_require_openai_raises() -> None:
     env = load_env({"CHARTCOACH_CATALOG_PATH": "/tmp/catalog.parquet"})
     with pytest.raises(RuntimeError, match="OPENAI_BASE_URL"):
         env.openai.require()
+
+
+def test_env_require_s3_raises() -> None:
+    env = load_env({})
+    with pytest.raises(RuntimeError, match="S3_ACCESS_KEY_ID"):
+        env.s3.require()
+
+
+def test_env_require_s3_returns() -> None:
+    env = load_env(
+        {
+            "S3_ACCESS_KEY_ID": "k",
+            "S3_SECRET_ACCESS_KEY": "s",
+            "S3_BUCKET": "bucket",
+            "S3_PREFIX": "p",
+        }
+    )
+    s3 = env.s3.require()
+    assert s3.bucket == "bucket"
+    assert s3.prefix == "p"
+
+
+def test_env_parses_force_path_style_false() -> None:
+    env = load_env({"S3_FORCE_PATH_STYLE": "false"})
+    assert env.s3.force_path_style is False
 
 
 def test_retrieval_request_base64_bytes_decode() -> None:
