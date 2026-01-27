@@ -6,9 +6,9 @@ import { env } from "@chartcoach/eval-ui/env";
 import { RelevanceRatingsExportV1Schema } from "@chartcoach/eval-ui/eval/relevance-ratings";
 import {
   getS3Client,
-  isLikelyCertError,
   normalizePrefix,
   readObjectBody,
+  sendS3,
 } from "@chartcoach/eval-ui/eval/server/s3.server";
 
 const UploadRelevanceRatingsInputSchema = z.object({
@@ -42,18 +42,7 @@ export const uploadRelevanceRatingsExport = createServerFn({ method: "POST" })
       ContentType: "application/json",
     });
 
-    try {
-      await getS3Client().send(cmd);
-    } catch (error) {
-      // When using an S3-compatible endpoint without wildcard certs, virtual-hosted style
-      // can fail TLS validation (bucket becomes a subdomain). Retry with path-style.
-      const configuredForcePathStyle = env.S3_FORCE_PATH_STYLE ?? false;
-      if (env.S3_ENDPOINT && !configuredForcePathStyle && isLikelyCertError(error)) {
-        await getS3Client({ forcePathStyle: true }).send(cmd);
-      } else {
-        throw error;
-      }
-    }
+    await sendS3((forcePathStyle) => getS3Client({ forcePathStyle }).send(cmd));
 
     return { key };
   });
@@ -71,25 +60,7 @@ export const downloadLatestRelevanceRatingsExport = createServerFn({
       Bucket: env.S3_BUCKET,
       Prefix: objectPrefix,
     });
-
-    const configuredForcePathStyle = env.S3_FORCE_PATH_STYLE ?? false;
-
-    async function listObjects() {
-      if (!env.S3_ENDPOINT || configuredForcePathStyle) {
-        return await getS3Client().send(list);
-      }
-
-      try {
-        return await getS3Client().send(list);
-      } catch (error) {
-        if (isLikelyCertError(error)) {
-          return await getS3Client({ forcePathStyle: true }).send(list);
-        }
-        throw error;
-      }
-    }
-
-    const response = await listObjects();
+    const response = await sendS3((forcePathStyle) => getS3Client({ forcePathStyle }).send(list));
     const objects = response.Contents ?? [];
 
     const latest = objects.reduce<{ Key?: string; LastModified?: Date } | null>((best, obj) => {
@@ -113,23 +84,9 @@ export const downloadLatestRelevanceRatingsExport = createServerFn({
       Bucket: env.S3_BUCKET,
       Key: latest.Key,
     });
-
-    async function getObject() {
-      if (!env.S3_ENDPOINT || configuredForcePathStyle) {
-        return await getS3Client().send(get);
-      }
-
-      try {
-        return await getS3Client().send(get);
-      } catch (error) {
-        if (isLikelyCertError(error)) {
-          return await getS3Client({ forcePathStyle: true }).send(get);
-        }
-        throw error;
-      }
-    }
-
-    const objectResponse = await getObject();
+    const objectResponse = await sendS3((forcePathStyle) =>
+      getS3Client({ forcePathStyle }).send(get),
+    );
     const raw = await readObjectBody(objectResponse.Body);
     const parsed = RelevanceRatingsExportV1Schema.parse(JSON.parse(raw));
 

@@ -1,180 +1,154 @@
-import path from "node:path";
-import { readFile } from "node:fs/promises";
-import { fileURLToPath } from "node:url";
-
+import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { createServerFn } from "@tanstack/react-start";
-import { parse as parseYaml } from "yaml";
 import { z } from "zod";
 
-import { env } from "@chartcoach/eval-ui/env";
-
-import { ScenariosFileSchema, type ScenarioSpec } from "../schemas";
-import type { EvalScenarioBundle, EvalStrategyResult } from "../types";
-import type { CatalogEntry } from "@chartcoach/catalog";
-import { ChartCoachRetrievalClient } from "@chartcoach/eval-ui/eval/retrieval/chartcoach-retrieval-client";
-import { catalogEntriesFromWire, buildRetrievalRequestFromScenario } from "../retrieval/wire";
 import {
-  buildRetrievalResultsCacheKey,
-  computeRetrievalResultsDigest,
-  readRetrievalResultsCache,
-  writeRetrievalResultsCache,
-} from "./retrieval-results-cache.server";
+  indexGuidelineSections,
+  parseGuidelineSections,
+  type CatalogEntry,
+} from "@chartcoach/catalog";
+import { env } from "@chartcoach/eval-ui/env";
+import { ScenarioSpecSchema, type ScenarioSpec } from "@chartcoach/eval-ui/eval/schemas";
+import type { EvalScenarioBundle, EvalStrategyResult } from "@chartcoach/eval-ui/eval/types";
+import {
+  getS3Client,
+  isS3Configured,
+  normalizePrefix,
+  readObjectBody,
+  sendS3,
+} from "@chartcoach/eval-ui/eval/server/s3.server";
 
-const repoRoot = fileURLToPath(new URL("../../../../../", import.meta.url));
-const scenariosSpecPath = path.join(repoRoot, "evals/scenarios/spec.yaml");
-const catalogParquetPath = path.join(repoRoot, "guidelines/catalog.parquet");
+const StrategyInfoSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  description: z.string().optional().default(""),
+});
+
+const ArtifactsIndexSchema = z.looseObject({
+  schema_version: z.literal(1),
+  generated_at: z.string().min(1).optional(),
+  strategies: z.array(StrategyInfoSchema).optional(),
+  scenarios: z.array(ScenarioSpecSchema),
+});
+
+const GuidelineResultSchema = z.object({
+  rank: z.number().int().positive(),
+  score: z.number(),
+  entry: z.unknown(),
+});
+
+const StrategyResultSchema = z.object({
+  strategy_id: z.string().min(1),
+  strategy_name: z.string().min(1),
+  meta: z.record(z.string(), z.unknown()).optional().default({}),
+  guidelines: z.array(GuidelineResultSchema).default([]),
+});
+
+const ScenarioBundleArtifactSchema = z.looseObject({
+  schema_version: z.literal(1),
+  scenario: ScenarioSpecSchema,
+  strategies: z.array(StrategyResultSchema),
+});
 
 const ScenarioBundleInputSchema = z.object({
   scenarioId: z.string().min(1),
 });
 
-let scenariosPromise: Promise<ScenarioSpec[]> | undefined;
-async function loadScenarios(): Promise<ScenarioSpec[]> {
-  scenariosPromise ??= (async () => {
-    try {
-      const raw = await readFile(scenariosSpecPath, "utf8");
-      const parsed = ScenariosFileSchema.parse(parseYaml(raw));
-      return parsed.scenarios;
-    } catch (error) {
-      scenariosPromise = undefined;
-      throw error;
-    }
-  })();
-  return scenariosPromise;
-}
-
-function indexToLetters(index: number) {
-  let n = index;
-  let letters = "";
-  while (n >= 0) {
-    letters = String.fromCharCode(65 + (n % 26)) + letters;
-    n = Math.floor(n / 26) - 1;
+function requireS3() {
+  if (!isS3Configured()) {
+    throw new Error(
+      "S3 is not configured. Set S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, and S3_BUCKET.",
+    );
   }
-  return letters;
-}
-
-let strategiesPromise: Promise<Array<{ id: string; name: string }>> | undefined;
-async function loadStrategyInfos() {
-  strategiesPromise ??= (async () => {
-    try {
-      const client = new ChartCoachRetrievalClient({ baseUrl: env.RETRIEVAL_SERVER_BASE_URL });
-      const strategies = await client.listStrategies();
-      return strategies.map((s) => ({ id: s.id, name: s.name }));
-    } catch (error) {
-      strategiesPromise = undefined;
-      throw error;
-    }
-  })();
-  return strategiesPromise;
-}
-
-async function mapConcurrent<T, R>(
-  items: readonly T[],
-  concurrency: number,
-  run: (item: T, index: number) => Promise<R>,
-): Promise<R[]> {
-  const results: R[] = [];
-  results.length = items.length;
-  const limit = Math.max(1, Math.min(concurrency, items.length));
-  let nextIndex = 0;
-
-  async function worker() {
-    while (true) {
-      const current = nextIndex++;
-      if (current >= items.length) return;
-      results[current] = await run(items[current]!, current);
-    }
+  if (!env.S3_BUCKET) {
+    throw new Error("S3 is not configured. Set S3_BUCKET.");
   }
-
-  await Promise.all(Array.from({ length: limit }, worker));
-  return results;
+  return env.S3_BUCKET;
 }
 
-function buildEvalStrategyResult(args: {
-  strategyId: string;
-  strategyName: string;
-  catalogEntries: CatalogEntry[];
-}): EvalStrategyResult {
-  const guidelines = args.catalogEntries.map((entry, i) => {
-    const score = Math.max(0.01, 1 - i / Math.max(1, args.catalogEntries.length));
-    return { rank: i + 1, score, entry };
+function artifactsBaseKey() {
+  const prefix = normalizePrefix(env.S3_PREFIX);
+  return `${prefix}eval-artifacts/${env.EVAL_ARTIFACTS_VERSION}/`;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+function catalogEntryFromWire(row: unknown): CatalogEntry | null {
+  if (!isRecord(row)) return null;
+
+  const id = row.id;
+  const guideline = row.guideline;
+  const references = row.references;
+
+  if (typeof id !== "string" || !isRecord(guideline)) return null;
+
+  const entry: CatalogEntry = {
+    guideline: {
+      id,
+      title: typeof guideline.title === "string" ? guideline.title : id,
+      bibliography: typeof guideline.bibliography === "string" ? guideline.bibliography : undefined,
+      description: typeof guideline.description === "string" ? guideline.description : "",
+      labels: Array.isArray(guideline.labels)
+        ? guideline.labels.filter((l): l is string => typeof l === "string")
+        : [],
+      body: typeof guideline.body === "string" ? guideline.body : "",
+      sections: [],
+      sectionsIndex: { byRole: {} },
+    },
+    references: Array.isArray(references)
+      ? references.filter((r): r is string => typeof r === "string")
+      : [],
+  };
+
+  entry.guideline.sections = parseGuidelineSections(entry.guideline.body);
+  entry.guideline.sectionsIndex = indexGuidelineSections(entry.guideline.sections);
+  return entry;
+}
+
+async function fetchArtifactJson(key: string) {
+  const cmd = new GetObjectCommand({
+    Bucket: requireS3(),
+    Key: key,
   });
 
-  return {
-    strategyId: args.strategyId,
-    strategyName: args.strategyName,
-    guidelines,
-  };
+  const response = await sendS3((forcePathStyle) => getS3Client({ forcePathStyle }).send(cmd));
+  const raw = await readObjectBody(response.Body);
+  return JSON.parse(raw) as unknown;
 }
 
 export const getEvalScenarios = createServerFn({ method: "GET" }).handler(
-  async () => await loadScenarios(),
+  async (): Promise<ScenarioSpec[]> => {
+    const key = `${artifactsBaseKey()}index.json`;
+    const doc = await fetchArtifactJson(key);
+    const parsed = ArtifactsIndexSchema.parse(doc);
+    return parsed.scenarios;
+  },
 );
 
 export const getEvalScenarioBundle = createServerFn({ method: "POST" })
   .inputValidator((input) => ScenarioBundleInputSchema.parse(input))
   .handler(async ({ data }): Promise<EvalScenarioBundle> => {
-    const scenarios = await loadScenarios();
-    const scenario = scenarios.find((s) => s.id === data.scenarioId);
-    if (!scenario) {
-      throw new Error(`Unknown scenarioId: ${data.scenarioId}`);
-    }
+    const key = `${artifactsBaseKey()}bundles/${encodeURIComponent(data.scenarioId)}.json`;
+    const doc = await fetchArtifactJson(key);
+    const parsed = ScenarioBundleArtifactSchema.parse(doc);
 
-    const catalogUri = env.RETRIEVAL_CATALOG_URI ?? catalogParquetPath;
-    const retrievalRequest = buildRetrievalRequestFromScenario(scenario);
+    const strategies: EvalStrategyResult[] = parsed.strategies.map((strategy) => {
+      const guidelines = strategy.guidelines
+        .map((g) => {
+          const entry = catalogEntryFromWire(g.entry);
+          if (!entry) return null;
+          return { rank: g.rank, score: g.score, entry };
+        })
+        .filter((g): g is NonNullable<typeof g> => Boolean(g));
 
-    const client = new ChartCoachRetrievalClient({ baseUrl: env.RETRIEVAL_SERVER_BASE_URL });
-    const strategiesInfo = (await loadStrategyInfos())
-      .slice()
-      .sort((a, b) => a.id.localeCompare(b.id));
+      return {
+        strategyId: strategy.strategy_id,
+        strategyName: strategy.strategy_name,
+        guidelines,
+      };
+    });
 
-    const strategies = await mapConcurrent(
-      strategiesInfo,
-      env.RETRIEVAL_STRATEGY_CONCURRENCY,
-      async (strategy, idx): Promise<EvalStrategyResult> => {
-        const strategyName =
-          env.STRATEGY_DISPLAY_MODE === "alias" ? `Strategy ${indexToLetters(idx)}` : strategy.name;
-
-        const digest = computeRetrievalResultsDigest({
-          scenarioId: scenario.id,
-          strategyId: strategy.id,
-          catalogUri,
-          request: retrievalRequest,
-          baseUrl: env.RETRIEVAL_SERVER_BASE_URL,
-        });
-        const cacheKey = buildRetrievalResultsCacheKey({
-          scenarioId: scenario.id,
-          strategyId: strategy.id,
-          digest,
-        });
-
-        const cached = await readRetrievalResultsCache(cacheKey);
-        const response =
-          cached?.response ??
-          (await client.runStrategy({
-            strategyId: strategy.id,
-            catalogUri,
-            request: retrievalRequest,
-          }));
-
-        if (!cached) {
-          await writeRetrievalResultsCache(cacheKey, {
-            scenarioId: scenario.id,
-            strategyId: strategy.id,
-            catalogUri,
-            request: retrievalRequest,
-            response,
-          });
-        }
-
-        const entries = catalogEntriesFromWire(response.catalog);
-        return buildEvalStrategyResult({
-          strategyId: strategy.id,
-          strategyName,
-          catalogEntries: entries,
-        });
-      },
-    );
-
-    return { scenario, strategies };
+    return { scenario: parsed.scenario, strategies };
   });

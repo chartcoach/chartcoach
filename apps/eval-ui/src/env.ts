@@ -10,11 +10,7 @@ const getRuntimeEnv = createIsomorphicFn()
 
 export const env = createEnv({
   server: {
-    STRATEGY_DISPLAY_MODE: z.enum(["name", "alias"]).default("name"),
-    RETRIEVAL_SERVER_BASE_URL: z.url().default("http://127.0.0.1:8000"),
-    RETRIEVAL_CATALOG_URI: z.string().min(1).optional(),
-    RETRIEVAL_RESULTS_CACHE_VERSION: z.string().min(1).default("v1"),
-    RETRIEVAL_STRATEGY_CONCURRENCY: z.coerce.number().int().positive().default(4),
+    EVAL_ARTIFACTS_VERSION: z.string().min(1).default("v1"),
     S3_ENDPOINT: z.url().optional(),
     S3_REGION: z.string().min(1).optional(),
     S3_ACCESS_KEY_ID: z.string().min(1).optional(),
