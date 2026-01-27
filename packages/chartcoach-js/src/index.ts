@@ -19,3 +19,9 @@ export {
 	indexGuidelineSections,
 	parseMarkdownWithFrontmatter,
 } from "./catalog/parse.js";
+export {
+	catalogEntryFromWire,
+	isCatalogEntryWire,
+	requireCatalogEntryFromWire,
+	type CatalogEntryWire,
+} from "./catalog/wire.js";
