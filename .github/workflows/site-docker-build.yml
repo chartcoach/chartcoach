@@ -6,6 +6,7 @@ on:
       - ".github/workflows/site-docker-build.yml"
       - "apps/site/**"
       - "packages/chartcoach-js/**"
+      - "packages/chartcoach-ui/**"
       - "guidelines/**"
       - "package.json"
       - "pnpm-lock.yaml"
