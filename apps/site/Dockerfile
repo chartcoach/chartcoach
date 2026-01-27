@@ -18,6 +18,8 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/site/package.json apps/site/package.json
 COPY packages/chartcoach-js/package.json packages/chartcoach-js/package.json
 COPY packages/chartcoach-js/tsconfig*.json packages/chartcoach-js/
+COPY packages/chartcoach-ui/package.json packages/chartcoach-ui/package.json
+COPY packages/chartcoach-ui/tsconfig*.json packages/chartcoach-ui/
 
 # 2) Prefetch deps into pnpm store (BuildKit cache speeds up rebuilds)
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
@@ -26,6 +28,7 @@ RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
 # 3) Copy sources needed for the build
 COPY apps/site apps/site
 COPY packages/chartcoach-js packages/chartcoach-js
+COPY packages/chartcoach-ui packages/chartcoach-ui
 COPY guidelines guidelines
 
 # 4) Install from the prefetched store (no network needed here)

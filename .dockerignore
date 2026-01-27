@@ -45,6 +45,8 @@ apps/site/.astro
 apps/site/.astro/**
 packages/chartcoach-js/dist
 packages/chartcoach-js/dist/**
+packages/chartcoach-ui/dist
+packages/chartcoach-ui/dist/**
 
 # Site build loads guideline Markdown; embedding vectors aren't needed.
 guidelines/embeddings.parquet
