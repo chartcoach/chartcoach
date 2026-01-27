@@ -4,7 +4,7 @@ import {
 	Catalog,
 	type CatalogEntry,
 } from "./model.js";
-import { indexGuidelineSections, parseGuidelineSections } from "./parse.js";
+import { catalogEntryFromWire } from "./wire.js";
 
 export type AsyncBuffer = {
 	byteLength: number;
@@ -37,34 +37,8 @@ export async function loadCatalogFromParquet(
 
 	const entries: CatalogEntry[] = [];
 	for (const row of rows) {
-		const guideline = row.guideline as Record<string, unknown> | undefined;
-		const id = row.id;
-		const references = row.references;
-
-		if (typeof id !== "string" || !guideline || typeof guideline !== "object") continue;
-
-		const entry: CatalogEntry = {
-			guideline: {
-				id,
-				title: typeof guideline.title === "string" ? guideline.title : id,
-				bibliography:
-					typeof guideline.bibliography === "string" ? guideline.bibliography : undefined,
-				description: typeof guideline.description === "string" ? guideline.description : "",
-				labels: Array.isArray(guideline.labels)
-					? guideline.labels.filter((l): l is string => typeof l === "string")
-					: [],
-				body: typeof guideline.body === "string" ? guideline.body : "",
-				sections: [],
-				sectionsIndex: { byRole: {} },
-			},
-			references: Array.isArray(references)
-				? references.filter((r): r is string => typeof r === "string")
-				: [],
-		};
-
-		entry.guideline.sections = parseGuidelineSections(entry.guideline.body);
-		entry.guideline.sectionsIndex = indexGuidelineSections(entry.guideline.sections);
-		entries.push(entry);
+		const entry = catalogEntryFromWire(row);
+		if (entry) entries.push(entry);
 	}
 
 	return new Catalog(entries);
