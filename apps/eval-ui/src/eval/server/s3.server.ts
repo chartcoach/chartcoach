@@ -70,6 +70,29 @@ export function normalizePrefix(prefix: string | undefined) {
   return prefix.endsWith("/") ? prefix : `${prefix}/`;
 }
 
+export type SendS3Options = { forcePathStyle?: boolean };
+
+export async function sendS3<T>(
+  send: (forcePathStyle: boolean) => Promise<T>,
+  opts: SendS3Options = {},
+): Promise<T> {
+  const configuredForcePathStyle = env.S3_FORCE_PATH_STYLE ?? false;
+  const shouldForcePathStyle = opts.forcePathStyle ?? configuredForcePathStyle;
+
+  if (!env.S3_ENDPOINT || shouldForcePathStyle) {
+    return await send(shouldForcePathStyle);
+  }
+
+  try {
+    return await send(false);
+  } catch (error) {
+    if (isLikelyCertError(error)) {
+      return await send(true);
+    }
+    throw error;
+  }
+}
+
 export async function readObjectBody(body: unknown): Promise<string> {
   if (!body) return "";
 
