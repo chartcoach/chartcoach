@@ -116,17 +116,17 @@ export function ScenarioCard({
           {progress.strategyBreakdown?.length && !progress.isLoading ? (
             <div className="grid gap-1.5">
               {progress.strategyBreakdown.map((s) => (
-                <div key={s.label} className="flex items-center gap-2">
-                  <div className="w-28 truncate text-[11px] text-muted-foreground">{s.label}</div>
-                  <div className="min-w-0 flex-1">
-                    <ProgressBar
-                      percent={Math.round(s.percent)}
-                      tone={s.percent >= 100 ? "success" : s.percent > 0 ? "warning" : "neutral"}
-                    />
+                <div key={s.label} className="space-y-1">
+                  <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+                    <div className="whitespace-nowrap">{s.label}</div>
+                    <div className="shrink-0 tabular-nums">
+                      {s.rated}/{s.total}
+                    </div>
                   </div>
-                  <div className="w-12 text-right text-[11px] text-muted-foreground tabular-nums">
-                    {s.rated}/{s.total}
-                  </div>
+                  <ProgressBar
+                    percent={Math.round(s.percent)}
+                    tone={s.percent >= 100 ? "success" : s.percent > 0 ? "warning" : "neutral"}
+                  />
                 </div>
               ))}
             </div>
