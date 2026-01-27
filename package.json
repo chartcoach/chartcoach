@@ -13,6 +13,7 @@
 		"preview:site": "pnpm --filter site preview",
 		"preview:eval": "pnpm --filter @chartcoach/eval-ui preview",
 		"test:eval": "pnpm --filter @chartcoach/eval-ui test",
+		"validate:catalog": "uv run python -m chartcoach.catalog.validate --folder guidelines --parquet guidelines/catalog.parquet",
 		"lint:js": "oxlint apps/site apps/eval-ui",
 		"format:js": "oxfmt apps/site apps/eval-ui"
 	},
