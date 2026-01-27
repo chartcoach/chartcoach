@@ -225,6 +225,36 @@ def test_strategy_forward_calls_program_with_adapted_inputs(catalog: Catalog) ->
     assert program.last_kwargs["top_k"] == 0
 
 
+def test_strategy_unbounded_k_uses_best_output_across_attempts(catalog: Catalog) -> None:
+    class DummyProgram(dspy.Module):
+        def __init__(self) -> None:
+            super().__init__()
+            self.calls = 0
+
+        def forward(self, **_kwargs):  # noqa: ANN003
+            self.calls += 1
+            if self.calls == 1:
+                return dspy.Prediction(used_guideline_ids=["g1"], feedback="")
+            return dspy.Prediction(used_guideline_ids=["g1", "g2"], feedback="")
+
+    program = DummyProgram()
+    lm = dspy.LM(model="gpt-4o-mini", api_base="http://example.invalid/v1", api_key="x")
+    strategy = GuidelineBrowserStrategy(catalog=catalog, lm=lm)
+    strategy._program = program
+
+    request = RetrievalRequest(
+        context=[
+            ImageItem(role="chart", data=_PNG_1X1, mime="image/png"),
+            TextItem(role="situation", text="S"),
+            TextItem(role="chart_spec", text="{}"),
+        ]
+    )
+    out = strategy(request=request)
+    assert program.calls == 2
+    assert out.meta["used_guideline_ids"] == ["g1", "g2"]
+    assert [entry.guideline.id for entry in out.catalog.entries] == ["g1", "g2"]
+
+
 def test_strategy_filters_and_sorts_used_guideline_ids(catalog: Catalog) -> None:
     class DummyProgram(dspy.Module):
         def forward(self, **_kwargs):  # noqa: ANN003

@@ -1,12 +1,16 @@
 from __future__ import annotations
 
-from typing import Protocol
-
-import dspy
+from typing import TYPE_CHECKING, Protocol
 
 from chartcoach.catalog import Catalog
 from chartcoach.env import load_env
 from chartcoach.retrieval.strategy.base import RetrievalStrategy
+from chartcoach.retrieval.strategy.optional import require_dspy
+
+if TYPE_CHECKING:
+    import dspy
+else:
+    dspy = require_dspy()
 
 
 class StrategyFactory(Protocol):

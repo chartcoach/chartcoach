@@ -2,10 +2,15 @@ from __future__ import annotations
 
 from io import BytesIO
 from pathlib import Path
-
-import dspy
+from typing import TYPE_CHECKING
 
 from chartcoach.retrieval.strategy.types import ImageItem, RetrievalRequest, TextItem
+from chartcoach.retrieval.strategy.optional import require_dspy
+
+if TYPE_CHECKING:
+    import dspy
+else:
+    dspy = require_dspy()
 
 
 def get_text_by_role(request: RetrievalRequest, role: str) -> str | None:

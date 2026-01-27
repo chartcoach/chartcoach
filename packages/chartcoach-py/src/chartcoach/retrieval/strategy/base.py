@@ -1,13 +1,18 @@
 from __future__ import annotations
 
 import inspect
-from typing import Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
-import dspy
 from pydantic import BaseModel, ConfigDict
 
 from chartcoach.catalog import Catalog
 from chartcoach.retrieval.strategy.types import RetrievalRequest, RetrievalResponse
+from chartcoach.retrieval.strategy.optional import require_dspy
+
+if TYPE_CHECKING:
+    import dspy
+else:
+    dspy = require_dspy()
 
 
 class StrategyInfo(BaseModel):
