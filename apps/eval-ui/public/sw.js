@@ -6,8 +6,11 @@ function isCrossOriginImageRequest(request) {
     const url = new URL(request.url);
     if (url.origin === self.location.origin) return false;
 
-    if (request.destination === "image") return true;
-    return /\.(png|jpe?g|gif|webp|svg)$/i.test(url.pathname);
+    // Only handle true <img> loads (no-cors). Avoid intercepting `fetch()` calls,
+    // which can be `cors` and will error if we return a cached opaque response.
+    if (request.destination !== "image") return false;
+    if (request.mode !== "no-cors") return false;
+    return true;
   } catch {
     return false;
   }
@@ -50,6 +53,9 @@ self.addEventListener("fetch", (event) => {
   if (!isCrossOriginImageRequest(request)) return;
 
   event.respondWith(
-    cacheFirst(request).catch(() => caches.open(IMAGE_CACHE).then((cache) => cache.match(request))),
+    cacheFirst(request).catch(async () => {
+      const cache = await caches.open(IMAGE_CACHE);
+      return (await cache.match(request)) ?? Response.error();
+    }),
   );
 });
