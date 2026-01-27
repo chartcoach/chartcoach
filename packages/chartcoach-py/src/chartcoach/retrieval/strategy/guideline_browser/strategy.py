@@ -2,17 +2,23 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from io import StringIO
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
-import dspy
 import polars as pl
-from dspy.utils.exceptions import AdapterParseError
 
 from chartcoach.catalog import Catalog
 from chartcoach.retrieval.strategy.base import RetrievalStrategy
+from chartcoach.retrieval.strategy.optional import require_dspy
 from chartcoach.retrieval.strategy.types import RetrievalRequest, RetrievalResponse
 
 from .adapters import guideline_browser_inputs_from_request
+
+if TYPE_CHECKING:
+    import dspy
+    from dspy.utils.exceptions import AdapterParseError
+else:
+    dspy = require_dspy()
+    from dspy.utils.exceptions import AdapterParseError  # noqa: E402
 
 
 class GuidelineBrowserSignature(dspy.Signature):
@@ -278,8 +284,6 @@ class GuidelineBrowserStrategy(RetrievalStrategy):
 
             return cleaned
 
-        required = request.k if request.k is not None else 1
-
         for lm in (self._lm, self._lm.copy(cache=False)):
             try:
                 with dspy.context(lm=lm):
@@ -294,7 +298,7 @@ class GuidelineBrowserStrategy(RetrievalStrategy):
                 used_ids = extract_used_ids(prediction, feedback)
                 if len(used_ids) > len(best_ids):
                     best_ids = used_ids
-                if len(used_ids) >= required:
+                if request.k is not None and len(used_ids) >= request.k:
                     break
             except AdapterParseError as e:
                 last_error = e
