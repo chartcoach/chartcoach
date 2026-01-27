@@ -25,9 +25,24 @@ export function setLocalStorageItem(key: string, value: string) {
   }
 }
 
+const FNV_OFFSET_BASIS_64 = 14695981039346656037n;
+const FNV_PRIME_64 = 1099511628211n;
+const FNV_MASK_64 = 0xffff_ffff_ffff_ffffn;
+
+function fnv1a64Hex(input: string) {
+  let hash = FNV_OFFSET_BASIS_64;
+  for (let i = 0; i < input.length; i++) {
+    hash ^= BigInt(input.charCodeAt(i));
+    hash = (hash * FNV_PRIME_64) & FNV_MASK_64;
+  }
+  return hash.toString(16).padStart(16, "0");
+}
+
 export function makeRatingsSignature(ratings: RelevanceRating[]) {
   const rows = [...ratings]
     .sort((a, b) => a.id.localeCompare(b.id))
     .map((r) => [r.id, r.scenarioId, r.guidelineId, r.relevance, r.createdAt, r.updatedAt]);
-  return JSON.stringify(rows);
+  const raw = JSON.stringify(rows);
+  const digest = fnv1a64Hex(raw);
+  return `fnv1a64:${digest}:${rows.length}`;
 }
