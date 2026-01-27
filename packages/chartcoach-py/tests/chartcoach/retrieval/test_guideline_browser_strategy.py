@@ -9,23 +9,19 @@ import dspy
 
 from chartcoach.catalog import Catalog
 from chartcoach.catalog.model import CatalogEntry, Guideline
-from chartcoach.retrieval import (
-    GuidelineBrowserStrategy,
-    ImageItem,
-    RetrievalRequest,
-    TextItem,
-)
-from chartcoach.retrieval.dspy_adapters import (
+from chartcoach.retrieval.strategy.dspy_adapters import (
     get_image_item_by_role,
     get_text_by_role,
     image_item_to_dspy_image,
     require_image_item_by_role,
     require_text_by_role,
 )
-from chartcoach.retrieval.guideline_browser import (
+from chartcoach.retrieval.strategy.guideline_browser import (
+    GuidelineBrowserStrategy,
     GuidelineBrowserTools,
     guideline_browser_inputs_from_request,
 )
+from chartcoach.retrieval.strategy.types import ImageItem, RetrievalRequest, TextItem
 
 
 _PNG_1X1 = base64.b64decode(
@@ -164,6 +160,22 @@ def test_grounded_vis_feedback_inputs_from_request_defaults_existing_feedback() 
     assert inputs.existing_chart_feedback == ""
 
 
+def test_grounded_vis_feedback_inputs_from_request_includes_query_in_situation() -> (
+    None
+):
+    request = RetrievalRequest(
+        context=[
+            ImageItem(role="chart", data=_PNG_1X1, mime="image/png"),
+            TextItem(role="situation", text="S"),
+            TextItem(role="query", text="Q"),
+            TextItem(role="chart_spec", text="{}"),
+        ]
+    )
+    inputs = guideline_browser_inputs_from_request(request)
+    assert inputs.situation.startswith("S")
+    assert "Query:\nQ" in inputs.situation
+
+
 def test_strategy_requires_either_lm_or_llm_config(catalog: Catalog) -> None:
     with pytest.raises(TypeError):
         GuidelineBrowserStrategy(catalog=catalog)  # type: ignore[call-arg]
@@ -210,3 +222,297 @@ def test_strategy_forward_calls_program_with_adapted_inputs(catalog: Catalog) ->
     assert program.last_kwargs["situation"] == "S"
     assert program.last_kwargs["chart_spec"] == "{}"
     assert program.last_kwargs["existing_chart_feedback"] == "E"
+    assert program.last_kwargs["top_k"] == 0
+
+
+def test_strategy_filters_and_sorts_used_guideline_ids(catalog: Catalog) -> None:
+    class DummyProgram(dspy.Module):
+        def forward(self, **_kwargs):  # noqa: ANN003
+            return dspy.Prediction(
+                used_guideline_ids=["g2", "", "g1", "g1"],
+                feedback="Most relevant: g1. Also see g2.",
+            )
+
+    program = DummyProgram()
+    lm = dspy.LM(model="gpt-4o-mini", api_base="http://example.invalid/v1", api_key="x")
+    strategy = GuidelineBrowserStrategy(catalog=catalog, lm=lm)
+    strategy._program = program
+
+    request = RetrievalRequest(
+        context=[
+            ImageItem(role="chart", data=_PNG_1X1, mime="image/png"),
+            TextItem(role="situation", text="S"),
+            TextItem(role="chart_spec", text="{}"),
+        ],
+        k=1,
+    )
+    out = strategy(request=request)
+    assert out.meta["used_guideline_ids"] == ["g1"]
+    assert [entry.guideline.id for entry in out.catalog.entries] == ["g1"]
+
+
+def test_strategy_extracts_used_ids_from_object_outputs(catalog: Catalog) -> None:
+    class DummyProgram(dspy.Module):
+        def forward(self, **_kwargs):  # noqa: ANN003
+            return dspy.Prediction(
+                used_guideline_ids=[{"id": "g1"}, {"guideline_id": "g2"}],
+                feedback="",
+            )
+
+    program = DummyProgram()
+    lm = dspy.LM(model="gpt-4o-mini", api_base="http://example.invalid/v1", api_key="x")
+    strategy = GuidelineBrowserStrategy(catalog=catalog, lm=lm)
+    strategy._program = program
+
+    request = RetrievalRequest(
+        context=[
+            ImageItem(role="chart", data=_PNG_1X1, mime="image/png"),
+            TextItem(role="situation", text="S"),
+            TextItem(role="chart_spec", text="{}"),
+        ],
+        k=2,
+    )
+    out = strategy(request=request)
+    assert out.meta["used_guideline_ids"] == ["g1", "g2"]
+    assert [entry.guideline.id for entry in out.catalog.entries] == ["g1", "g2"]
+
+
+def test_strategy_extracts_used_ids_from_string_and_filters_unknowns(
+    catalog: Catalog,
+) -> None:
+    class DummyProgram(dspy.Module):
+        def forward(self, **_kwargs):  # noqa: ANN003
+            return dspy.Prediction(
+                used_guideline_ids="missing",
+                feedback="Most relevant: g2. Also see g1.",
+            )
+
+    program = DummyProgram()
+    lm = dspy.LM(model="gpt-4o-mini", api_base="http://example.invalid/v1", api_key="x")
+    strategy = GuidelineBrowserStrategy(catalog=catalog, lm=lm)
+    strategy._program = program
+
+    request = RetrievalRequest(
+        context=[
+            ImageItem(role="chart", data=_PNG_1X1, mime="image/png"),
+            TextItem(role="situation", text="S"),
+            TextItem(role="chart_spec", text="{}"),
+        ],
+        k=2,
+    )
+    out = strategy(request=request)
+    assert out.meta["used_guideline_ids"] == ["g2", "g1"]
+    assert [entry.guideline.id for entry in out.catalog.entries] == ["g2", "g1"]
+
+
+def test_strategy_extracts_used_ids_from_set(catalog: Catalog) -> None:
+    class DummyProgram(dspy.Module):
+        def forward(self, **_kwargs):  # noqa: ANN003
+            return dspy.Prediction(used_guideline_ids={"g1"}, feedback="")
+
+    program = DummyProgram()
+    lm = dspy.LM(model="gpt-4o-mini", api_base="http://example.invalid/v1", api_key="x")
+    strategy = GuidelineBrowserStrategy(catalog=catalog, lm=lm)
+    strategy._program = program
+
+    request = RetrievalRequest(
+        context=[
+            ImageItem(role="chart", data=_PNG_1X1, mime="image/png"),
+            TextItem(role="situation", text="S"),
+            TextItem(role="chart_spec", text="{}"),
+        ],
+        k=1,
+    )
+    out = strategy(request=request)
+    assert out.meta["used_guideline_ids"] == ["g1"]
+
+
+def test_strategy_extracts_used_ids_when_field_is_none(catalog: Catalog) -> None:
+    class DummyProgram(dspy.Module):
+        def forward(self, **_kwargs):  # noqa: ANN003
+            return dspy.Prediction(
+                used_guideline_ids=None,
+                feedback="Most relevant: g1.",
+            )
+
+    program = DummyProgram()
+    lm = dspy.LM(model="gpt-4o-mini", api_base="http://example.invalid/v1", api_key="x")
+    strategy = GuidelineBrowserStrategy(catalog=catalog, lm=lm)
+    strategy._program = program
+
+    request = RetrievalRequest(
+        context=[
+            ImageItem(role="chart", data=_PNG_1X1, mime="image/png"),
+            TextItem(role="situation", text="S"),
+            TextItem(role="chart_spec", text="{}"),
+        ],
+        k=1,
+    )
+    out = strategy(request=request)
+    assert out.meta["used_guideline_ids"] == ["g1"]
+
+
+def test_strategy_extracts_used_ids_from_feedback_when_missing_field(
+    catalog: Catalog,
+) -> None:
+    class DummyProgram(dspy.Module):
+        def forward(self, **_kwargs):  # noqa: ANN003
+            return dspy.Prediction(
+                used_guideline_ids=[],
+                feedback="Most relevant: g2. Also see g1.",
+            )
+
+    program = DummyProgram()
+    lm = dspy.LM(model="gpt-4o-mini", api_base="http://example.invalid/v1", api_key="x")
+    strategy = GuidelineBrowserStrategy(catalog=catalog, lm=lm)
+    strategy._program = program
+
+    request = RetrievalRequest(
+        context=[
+            ImageItem(role="chart", data=_PNG_1X1, mime="image/png"),
+            TextItem(role="situation", text="S"),
+            TextItem(role="chart_spec", text="{}"),
+        ],
+        k=2,
+    )
+    out = strategy(request=request)
+    assert out.meta["used_guideline_ids"] == ["g2", "g1"]
+    assert [entry.guideline.id for entry in out.catalog.entries] == ["g2", "g1"]
+
+
+def test_strategy_raises_when_react_parse_errors(catalog: Catalog) -> None:
+    from typing import cast
+
+    from dspy.signatures.signature import Signature, make_signature
+    from dspy.utils.exceptions import AdapterParseError
+
+    class AlwaysFailProgram(dspy.Module):
+        def __init__(self) -> None:
+            super().__init__()
+            self.calls = 0
+
+        def forward(self, **_kwargs):  # noqa: ANN003
+            self.calls += 1
+            raise AdapterParseError(
+                adapter_name="ChatAdapter",
+                signature=cast(Signature, make_signature("x -> y")),
+                lm_response="bad",
+            )
+
+    lm = dspy.LM(model="gpt-4o-mini", api_base="http://example.invalid/v1", api_key="x")
+    strategy = GuidelineBrowserStrategy(catalog=catalog, lm=lm)
+    program = AlwaysFailProgram()
+    strategy._program = program
+
+    request = RetrievalRequest(
+        context=[
+            ImageItem(role="chart", data=_PNG_1X1, mime="image/png"),
+            TextItem(role="situation", text="S"),
+            TextItem(role="chart_spec", text="{}"),
+        ],
+        k=2,
+    )
+    with pytest.raises(ValueError, match="Failed to parse model output"):
+        strategy(request=request)
+    assert program.calls == 2
+
+
+def test_strategy_raises_when_model_returns_no_known_guideline_ids(
+    catalog: Catalog,
+) -> None:
+    class DummyProgram(dspy.Module):
+        def forward(self, **_kwargs):  # noqa: ANN003
+            return dspy.Prediction(used_guideline_ids=["missing"], feedback="")
+
+    lm = dspy.LM(model="gpt-4o-mini", api_base="http://example.invalid/v1", api_key="x")
+    strategy = GuidelineBrowserStrategy(catalog=catalog, lm=lm)
+    strategy._program = DummyProgram()
+
+    request = RetrievalRequest(
+        context=[
+            ImageItem(role="chart", data=_PNG_1X1, mime="image/png"),
+            TextItem(role="situation", text="Need accessible colors for readers."),
+            TextItem(role="chart_spec", text="{}"),
+        ],
+        k=1,
+    )
+
+    with pytest.raises(ValueError, match="did not return any known guideline IDs"):
+        strategy(request=request)
+
+
+def test_strategy_retries_on_adapter_parse_error(catalog: Catalog) -> None:
+    from dspy.utils.exceptions import AdapterParseError
+    from typing import cast
+    from dspy.signatures.signature import Signature
+    from dspy.signatures.signature import make_signature
+
+    class FlakyProgram(dspy.Module):
+        def __init__(self) -> None:
+            super().__init__()
+            self.calls = 0
+
+        def forward(self, **_kwargs):  # noqa: ANN003
+            self.calls += 1
+            if self.calls == 1:
+                raise AdapterParseError(
+                    adapter_name="ChatAdapter",
+                    signature=cast(Signature, make_signature("x -> y")),
+                    lm_response="bad",
+                )
+            return dspy.Prediction(used_guideline_ids=["g1"], feedback="OK")
+
+    program = FlakyProgram()
+    lm = dspy.LM(model="gpt-4o-mini", api_base="http://example.invalid/v1", api_key="x")
+    strategy = GuidelineBrowserStrategy(catalog=catalog, lm=lm)
+    strategy._program = program
+
+    request = RetrievalRequest(
+        context=[
+            ImageItem(role="chart", data=_PNG_1X1, mime="image/png"),
+            TextItem(role="situation", text="S"),
+            TextItem(role="chart_spec", text="{}"),
+        ],
+        k=1,
+    )
+    out = strategy(request=request)
+    assert program.calls == 2
+    assert out.meta["used_guideline_ids"] == ["g1"]
+
+
+def test_strategy_raises_after_repeated_adapter_parse_error(catalog: Catalog) -> None:
+    from typing import cast
+
+    from dspy.signatures.signature import Signature, make_signature
+    from dspy.utils.exceptions import AdapterParseError
+
+    class AlwaysFailProgram(dspy.Module):
+        def __init__(self) -> None:
+            super().__init__()
+            self.calls = 0
+
+        def forward(self, **_kwargs):  # noqa: ANN003
+            self.calls += 1
+            raise AdapterParseError(
+                adapter_name="ChatAdapter",
+                signature=cast(Signature, make_signature("x -> y")),
+                lm_response="bad",
+            )
+
+    program = AlwaysFailProgram()
+    lm = dspy.LM(model="gpt-4o-mini", api_base="http://example.invalid/v1", api_key="x")
+    strategy = GuidelineBrowserStrategy(catalog=catalog, lm=lm)
+    strategy._program = program
+
+    request = RetrievalRequest(
+        context=[
+            ImageItem(role="chart", data=_PNG_1X1, mime="image/png"),
+            TextItem(role="situation", text="S"),
+            TextItem(role="chart_spec", text="{}"),
+        ],
+        k=1,
+    )
+
+    with pytest.raises(ValueError, match="Failed to parse model output"):
+        strategy(request=request)
+    assert program.calls == 2

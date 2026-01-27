@@ -5,7 +5,7 @@ from pathlib import Path
 
 import dspy
 
-from .types import ImageItem, RetrievalRequest, TextItem
+from chartcoach.retrieval.strategy.types import ImageItem, RetrievalRequest, TextItem
 
 
 def get_text_by_role(request: RetrievalRequest, role: str) -> str | None:

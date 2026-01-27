@@ -2,15 +2,17 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from io import StringIO
+from typing import cast
 
 import dspy
 import polars as pl
+from dspy.utils.exceptions import AdapterParseError
 
 from chartcoach.catalog import Catalog
+from chartcoach.retrieval.strategy.base import RetrievalStrategy
+from chartcoach.retrieval.strategy.types import RetrievalRequest, RetrievalResponse
 
 from .adapters import guideline_browser_inputs_from_request
-from ..strategy import RetrievalStrategy
-from ..types import RetrievalRequest, RetrievalResponse
 
 
 class GuidelineBrowserSignature(dspy.Signature):
@@ -36,9 +38,17 @@ class GuidelineBrowserSignature(dspy.Signature):
     existing_chart_feedback: str = dspy.InputField(
         desc="Existing feedback on the chart from other sources, if any, to build upon."
     )
+    top_k: int = dspy.InputField(
+        desc=(
+            "Number of guidelines that must be retrieved and used to formulate the feedback. "
+            "If top_k is 0, retrieve all relevant guidelines."
+        ),
+        ge=0,
+        default=0,
+    )
 
     used_guideline_ids: list[str] = dspy.OutputField(
-        desc="List of guideline IDs from the catalog that were definitively used to generate the rationale."
+        desc="Unique list of guideline IDs used in your feedback, sorted from most to least relevant to the chart context."
     )
     feedback: str = dspy.OutputField(
         desc="\n".join(
@@ -196,19 +206,121 @@ class GuidelineBrowserStrategy(RetrievalStrategy):
 
     def _forward(self, request: RetrievalRequest) -> RetrievalResponse:
         inputs = guideline_browser_inputs_from_request(request)
-        with dspy.context(lm=self._lm):
-            prediction = self._program(
-                chart=inputs.chart,
-                situation=inputs.situation,
-                chart_spec=inputs.chart_spec,
-                existing_chart_feedback=inputs.existing_chart_feedback,
+        top_k = request.k if request.k is not None else 0
+        prediction: dspy.Prediction | None = None
+        last_error: AdapterParseError | None = None
+        best_ids: list[str] = []
+
+        id_to_entry = {entry.id: entry for entry in self.catalog.entries}
+
+        def normalize_guideline_id(raw: str) -> str:
+            gid = raw.strip()
+            gid = gid.strip("`").strip()
+            gid = gid.strip().strip(".,;:()[]{}")
+            return gid
+
+        def extract_used_ids(prediction: dspy.Prediction, feedback: str) -> list[str]:
+            raw_used = getattr(prediction, "used_guideline_ids", [])
+            candidates: list[object]
+            if isinstance(raw_used, str):
+                candidates = [raw_used]
+            elif isinstance(raw_used, list | tuple):
+                candidates = list(raw_used)
+            else:
+                try:
+                    candidates = list(raw_used)
+                except TypeError:
+                    candidates = []
+
+            seen: set[str] = set()
+            cleaned: list[str] = []
+
+            def maybe_add(value: str) -> None:
+                gid = normalize_guideline_id(value)
+                if not gid or gid in seen:
+                    return
+                if gid not in id_to_entry:
+                    return
+                cleaned.append(gid)
+                seen.add(gid)
+
+            for item in candidates:
+                if isinstance(item, str):
+                    maybe_add(item)
+                    continue
+                if isinstance(item, dict):
+                    item_dict = cast("dict[str, object]", item)
+                    for key in ("id", "guideline_id", "guidelineId"):
+                        value = item_dict.get(key)
+                        if isinstance(value, str):
+                            maybe_add(value)
+                            break
+
+            if not cleaned and feedback:
+                positions: list[tuple[int, str]] = []
+                for gid in id_to_entry:
+                    pos = feedback.find(gid)
+                    if pos >= 0:
+                        positions.append((pos, gid))
+                positions.sort(key=lambda item: item[0])
+                for _pos, gid in positions:
+                    maybe_add(gid)
+
+            if feedback and cleaned:
+                original_order = {gid: idx for idx, gid in enumerate(cleaned)}
+                id_positions = {gid: feedback.find(gid) for gid in cleaned}
+                cleaned.sort(
+                    key=lambda gid: (
+                        id_positions[gid] if id_positions[gid] >= 0 else 2**31 - 1,
+                        original_order[gid],
+                    )
+                )
+
+            return cleaned
+
+        required = request.k if request.k is not None else 1
+
+        for lm in (self._lm, self._lm.copy(cache=False)):
+            try:
+                with dspy.context(lm=lm):
+                    prediction = self._program(
+                        chart=inputs.chart,
+                        situation=inputs.situation,
+                        chart_spec=inputs.chart_spec,
+                        existing_chart_feedback=inputs.existing_chart_feedback,
+                        top_k=top_k,
+                    )
+                feedback = str(getattr(prediction, "feedback", "") or "")
+                used_ids = extract_used_ids(prediction, feedback)
+                if len(used_ids) > len(best_ids):
+                    best_ids = used_ids
+                if len(used_ids) >= required:
+                    break
+            except AdapterParseError as e:
+                last_error = e
+
+        if prediction is None:
+            raise ValueError(
+                "Failed to parse model output while selecting the next tool step."
+            ) from last_error
+
+        if not best_ids:
+            fallback_feedback = str(getattr(prediction, "feedback", "") or "")
+            best_ids = extract_used_ids(
+                cast(dspy.Prediction, prediction), fallback_feedback
             )
 
-        used_ids = list(getattr(prediction, "used_guideline_ids", []))
-        id_to_entry = {entry.id: entry for entry in self.catalog.entries}
-        retrieved_entries = [id_to_entry[gid] for gid in used_ids if gid in id_to_entry]
+        cleaned_ids = best_ids
+
+        if request.k is not None and cleaned_ids:
+            cleaned_ids = cleaned_ids[: request.k]
+
+        if not cleaned_ids:
+            raise ValueError("Model did not return any known guideline IDs.")
+
+        retrieved_entries = [id_to_entry[gid] for gid in cleaned_ids]
 
         return RetrievalResponse(
             catalog=Catalog(entries=retrieved_entries),
-            meta={"used_guideline_ids": used_ids},
+            meta={"used_guideline_ids": cleaned_ids},
         )

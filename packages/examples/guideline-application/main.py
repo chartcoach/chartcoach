@@ -738,8 +738,8 @@ def _():
 
 @app.cell(hide_code=True)
 def _():
-    from chartcoach.retrieval import (
-        GuidelineBrowserStrategy,
+    from chartcoach.retrieval.strategy.guideline_browser import GuidelineBrowserStrategy
+    from chartcoach.retrieval.strategy.types import (
         ImageItem,
         RetrievalRequest,
         TextItem,

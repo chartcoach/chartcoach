@@ -1,0 +1,155 @@
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+from urllib.parse import urlparse
+
+from chartcoach.env import load_env
+from chartcoach.retrieval.service import (
+    EvalArtifactsService,
+    RetrievalService,
+    create_store,
+    default_artifacts_url,
+)
+from chartcoach.retrieval.strategy.registry import create_default_strategy_registrations
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(prog="chartcoach-retrieval")
+    sub = parser.add_subparsers(dest="cmd", required=True)
+
+    list_cmd = sub.add_parser(
+        "list-strategies", help="List available retrieval strategies."
+    )
+    list_cmd.add_argument("--json", action="store_true", help="Output JSON.")
+
+    run_cmd = sub.add_parser(
+        "run", help="Run retrieval over eval scenarios and upload artifacts."
+    )
+    run_cmd.add_argument(
+        "--scenarios",
+        type=Path,
+        default=Path("evals/scenarios/spec.yaml"),
+        help="Path to scenarios spec.yaml",
+    )
+    run_cmd.add_argument(
+        "--catalog-uri",
+        type=str,
+        default=None,
+        help="Catalog URI (path/file/http(s)/s3). Defaults to CHARTCOACH_CATALOG_PATH if set.",
+    )
+    run_cmd.add_argument(
+        "--strategy",
+        dest="strategies",
+        action="append",
+        default=[],
+        help="Strategy id to run (repeatable). Defaults to all.",
+    )
+    run_cmd.add_argument(
+        "-k",
+        "--k",
+        type=int,
+        default=None,
+        help="Number of guidelines to retrieve per strategy (omit for unlimited).",
+    )
+    run_cmd.add_argument(
+        "--artifacts-url",
+        type=str,
+        default=None,
+        help="Destination store URL (e.g. s3://bucket/prefix/eval-artifacts/v1/).",
+    )
+    run_cmd.add_argument(
+        "--purge",
+        action="store_true",
+        help="Delete existing artifacts under this artifacts URL before writing.",
+    )
+
+    purge_cmd = sub.add_parser("purge", help="Delete previously generated artifacts.")
+    purge_cmd.add_argument(
+        "--artifacts-url",
+        type=str,
+        default=None,
+        help="Store URL to purge (defaults to S3_PREFIX + eval-artifacts/v1/).",
+    )
+    purge_cmd.add_argument(
+        "--prefix",
+        type=str,
+        default="",
+        help="Prefix within the artifacts store to delete (default: all).",
+    )
+
+    return parser
+
+
+def _require_catalog_uri(arg: str | None) -> str:
+    if arg:
+        return arg
+    env_catalog = load_env().retrieval_server.catalog_path
+    if env_catalog:
+        return str(env_catalog)
+    raise SystemExit(
+        "Missing --catalog-uri (or set CHARTCOACH_CATALOG_PATH in the environment)."
+    )
+
+
+def _resolve_store_url(arg: str | None) -> str:
+    if arg:
+        return arg
+    s3 = load_env().s3.require()
+    return default_artifacts_url(s3=s3)
+
+
+def _create_artifacts_store(url: str):
+    env = load_env()
+    s3 = env.s3.require() if urlparse(url).scheme == "s3" else None
+    return create_store(url, s3=s3)
+
+
+def main(argv: list[str] | None = None) -> None:
+    args = build_parser().parse_args(argv)
+
+    registrations = create_default_strategy_registrations()
+    retrieval = RetrievalService(registrations=registrations)
+
+    if args.cmd == "list-strategies":
+        infos = [info.model_dump(mode="json") for info in retrieval.list_strategies()]
+        if args.json:
+            print(json.dumps(infos, ensure_ascii=False, sort_keys=True))
+        else:
+            for info in infos:
+                print(f"{info['id']}  {info['name']}")
+        return
+
+    if args.cmd == "purge":
+        url = _resolve_store_url(args.artifacts_url)
+        store = _create_artifacts_store(url)
+        svc = EvalArtifactsService(store=store, retrieval=retrieval)
+        deleted = svc.purge(prefix=args.prefix)
+        print(f"Deleted {deleted} objects.")
+        return
+
+    if args.cmd == "run":
+        url = _resolve_store_url(args.artifacts_url)
+        store = _create_artifacts_store(url)
+        svc = EvalArtifactsService(store=store, retrieval=retrieval)
+        if args.purge:
+            svc.purge(prefix="")
+
+        catalog_uri = _require_catalog_uri(args.catalog_uri)
+
+        svc.run(
+            scenarios_path=args.scenarios,
+            catalog_uri=catalog_uri,
+            strategy_ids=args.strategies or None,
+            k=args.k,
+        )
+        print("Artifacts written.")
+        return
+
+    raise AssertionError("unreachable")  # pragma: no cover
+
+
+if __name__ == "__main__":  # pragma: no cover
+    main(sys.argv[1:])

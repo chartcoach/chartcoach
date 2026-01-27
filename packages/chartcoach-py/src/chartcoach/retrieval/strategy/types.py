@@ -113,7 +113,7 @@ class RetrievalRequest(_RetrievalBaseModel):
     context: list[ContextItem] = Field(default_factory=list)
     lang: str = "en"
     meta: dict[str, object] = Field(default_factory=dict)
-    k: int = 10
+    k: int | None = Field(default=None, ge=1)
 
 
 class RetrievalResponse(_RetrievalBaseModel):

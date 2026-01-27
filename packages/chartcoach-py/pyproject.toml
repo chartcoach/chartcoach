@@ -7,6 +7,7 @@ requires-python = ">=3.12"
 dependencies = [
     "mdformat>=1.0.0",
     "numpy>=2.3.5",
+    "obstore>=0.8.2",
     "polars>=1.32.0",
     "pyarrow>=20.0.0",
     "pydantic>=2.0.0",
@@ -15,6 +16,7 @@ dependencies = [
 
 [project.scripts]
 chartcoach-retrieval-server = "chartcoach.retrieval.server.__main__:main"
+chartcoach-retrieval = "chartcoach.retrieval.cli.__main__:main"
 
 [project.optional-dependencies]
 embedding = [
