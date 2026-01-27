@@ -49,12 +49,15 @@ export function getEvalUiRxDatabase(): Promise<EvalUiRxDatabase> {
     throw new Error("Eval UI RxDB is only available in the browser.");
   }
 
-  databasePromise ??= (async () => {
+  const globalScope = globalThis as unknown as {
+    __chartcoachEvalUiRxDbPromise?: Promise<EvalUiRxDatabase>;
+  };
+
+  databasePromise ??= globalScope.__chartcoachEvalUiRxDbPromise ??= (async () => {
     const db = await createRxDatabase<EvalUiCollections>({
       name: "chartcoach-eval-ui",
       storage: getRxStorageLocalstorage(),
       multiInstance: true,
-      ignoreDuplicate: true,
     });
 
     await db.addCollections({
