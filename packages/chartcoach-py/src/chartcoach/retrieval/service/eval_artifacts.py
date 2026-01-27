@@ -165,10 +165,14 @@ def build_strategy_result(
         for index, entry in enumerate(response_catalog_entries)
     ]
 
+    meta = dict(response_meta)
+    # `score` is currently a rank-derived placeholder, not a calibrated confidence.
+    meta.setdefault("score_kind", "rank_normalized")
+
     return EvalStrategyResult(
         strategy_id=strategy_info.id,
         strategy_name=strategy_info.name,
-        meta=response_meta,
+        meta=meta,
         guidelines=guidelines,
     )
 
