@@ -2,18 +2,21 @@ import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
+import { existsSync } from "node:fs";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
+
 import {
-  indexGuidelineSections,
-  parseGuidelineSections,
-  type CatalogEntry,
+  isCatalogEntryWire,
+  requireCatalogEntryFromWire,
+  type CatalogEntryWire,
 } from "@chartcoach/catalog";
 import { env } from "@chartcoach/eval-ui/env";
 import { ScenarioSpecSchema, type ScenarioSpec } from "@chartcoach/eval-ui/eval/schemas";
 import type { EvalScenarioBundle, EvalStrategyResult } from "@chartcoach/eval-ui/eval/types";
 import {
   getS3Client,
-  isS3Configured,
-  normalizePrefix,
   readObjectBody,
   sendS3,
 } from "@chartcoach/eval-ui/eval/server/s3.server";
@@ -31,10 +34,15 @@ const ArtifactsIndexSchema = z.looseObject({
   scenarios: z.array(ScenarioSpecSchema),
 });
 
+const CatalogEntryWireSchema = z
+  .unknown()
+  .refine(isCatalogEntryWire, { message: "Invalid catalog entry wire format." })
+  .transform((value) => value as CatalogEntryWire);
+
 const GuidelineResultSchema = z.object({
   rank: z.number().int().positive(),
   score: z.number(),
-  entry: z.unknown(),
+  entry: CatalogEntryWireSchema,
 });
 
 const StrategyResultSchema = z.object({
@@ -50,78 +58,116 @@ const ScenarioBundleArtifactSchema = z.looseObject({
   strategies: z.array(StrategyResultSchema),
 });
 
-const ScenarioBundleInputSchema = z.object({
-  scenarioId: z.string().min(1),
-});
-
-function requireS3() {
-  if (!isS3Configured()) {
-    throw new Error(
-      "S3 is not configured. Set S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, and S3_BUCKET.",
-    );
-  }
-  if (!env.S3_BUCKET) {
-    throw new Error("S3 is not configured. Set S3_BUCKET.");
-  }
-  return env.S3_BUCKET;
-}
-
-function artifactsBaseKey() {
-  const prefix = normalizePrefix(env.S3_PREFIX);
-  return `${prefix}eval-artifacts/${env.EVAL_ARTIFACTS_VERSION}/`;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value && typeof value === "object" && !Array.isArray(value));
-}
-
-function catalogEntryFromWire(row: unknown): CatalogEntry | null {
-  if (!isRecord(row)) return null;
-
-  const id = row.id;
-  const guideline = row.guideline;
-  const references = row.references;
-
-  if (typeof id !== "string" || !isRecord(guideline)) return null;
-
-  const entry: CatalogEntry = {
-    guideline: {
-      id,
-      title: typeof guideline.title === "string" ? guideline.title : id,
-      bibliography: typeof guideline.bibliography === "string" ? guideline.bibliography : undefined,
-      description: typeof guideline.description === "string" ? guideline.description : "",
-      labels: Array.isArray(guideline.labels)
-        ? guideline.labels.filter((l): l is string => typeof l === "string")
-        : [],
-      body: typeof guideline.body === "string" ? guideline.body : "",
-      sections: [],
-      sectionsIndex: { byRole: {} },
-    },
-    references: Array.isArray(references)
-      ? references.filter((r): r is string => typeof r === "string")
-      : [],
-  };
-
-  entry.guideline.sections = parseGuidelineSections(entry.guideline.body);
-  entry.guideline.sectionsIndex = indexGuidelineSections(entry.guideline.sections);
-  return entry;
-}
-
-async function fetchArtifactJson(key: string) {
-  const cmd = new GetObjectCommand({
-    Bucket: requireS3(),
-    Key: key,
+const ScenarioIdSchema = z
+  .string()
+  .min(1)
+  .regex(/^[a-z0-9][a-z0-9-]*$/i, {
+    message: "Invalid scenario id.",
   });
 
-  const response = await sendS3((forcePathStyle) => getS3Client({ forcePathStyle }).send(cmd));
-  const raw = await readObjectBody(response.Body);
-  return JSON.parse(raw) as unknown;
+const ScenarioBundleInputSchema = z.object({
+  scenarioId: ScenarioIdSchema,
+});
+
+type ArtifactsRoot =
+  | { kind: "s3"; bucket: string; keyPrefix: string }
+  | { kind: "url"; baseUrl: URL };
+
+function ensureTrailingSlash(value: string) {
+  return value.endsWith("/") ? value : `${value}/`;
+}
+
+function defaultFixtureArtifactsBaseUrl() {
+  const candidates = [
+    path.resolve(process.cwd(), "apps/eval-ui/fixtures/eval-artifacts/v1"),
+    path.resolve(process.cwd(), "fixtures/eval-artifacts/v1"),
+    fileURLToPath(new URL("../../../fixtures/eval-artifacts/v1/", import.meta.url)),
+  ];
+
+  for (const candidate of candidates) {
+    if (existsSync(path.join(candidate, "index.json"))) {
+      return pathToFileURL(ensureTrailingSlash(candidate));
+    }
+  }
+
+  throw new Error(
+    "No eval artifacts configured. Set EVAL_ARTIFACTS_URL (file://, https://, or s3://).",
+  );
+}
+
+function parseArtifactsRoot(value: string): ArtifactsRoot {
+  const raw = value.trim();
+  if (!raw) {
+    throw new Error("EVAL_ARTIFACTS_URL is empty.");
+  }
+
+  try {
+    const url = new URL(raw);
+
+    if (url.protocol === "s3:") {
+      const bucket = url.hostname;
+      if (!bucket) throw new Error("s3:// URL is missing a bucket name.");
+      const keyPrefix = ensureTrailingSlash(url.pathname.replace(/^\//, ""));
+      return { kind: "s3", bucket, keyPrefix };
+    }
+
+    if (url.protocol === "http:" || url.protocol === "https:" || url.protocol === "file:") {
+      return { kind: "url", baseUrl: new URL(ensureTrailingSlash(url.href)) };
+    }
+  } catch {
+    // Not a valid URL: treat as a filesystem path.
+  }
+
+  const absPath = path.isAbsolute(raw) ? raw : path.resolve(process.cwd(), raw);
+  return { kind: "url", baseUrl: pathToFileURL(ensureTrailingSlash(absPath)) };
+}
+
+function artifactsRoot(): ArtifactsRoot {
+  if (env.EVAL_ARTIFACTS_URL) {
+    return parseArtifactsRoot(env.EVAL_ARTIFACTS_URL);
+  }
+
+  return { kind: "url", baseUrl: defaultFixtureArtifactsBaseUrl() };
+}
+
+async function fetchArtifactJson(relativePath: string) {
+  const root = artifactsRoot();
+
+  if (root.kind === "s3") {
+    const cmd = new GetObjectCommand({
+      Bucket: root.bucket,
+      Key: `${root.keyPrefix}${relativePath}`,
+    });
+
+    const response = await sendS3((forcePathStyle) => getS3Client({ forcePathStyle }).send(cmd));
+    const raw = await readObjectBody(response.Body);
+    return JSON.parse(raw) as unknown;
+  }
+
+  if (root.baseUrl.protocol === "file:") {
+    const baseDir = fileURLToPath(root.baseUrl);
+    const filePath = path.resolve(baseDir, relativePath);
+    const relativeToBase = path.relative(baseDir, filePath);
+    if (relativeToBase === ".." || relativeToBase.startsWith(`..${path.sep}`)) {
+      throw new Error(`Artifact path escapes artifacts root: ${relativePath}`);
+    }
+    const raw = await readFile(filePath, "utf-8");
+    return JSON.parse(raw) as unknown;
+  }
+
+  const url = new URL(relativePath, root.baseUrl);
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(
+      `Failed to fetch eval artifacts (${response.status} ${response.statusText}) from ${url.toString()}.`,
+    );
+  }
+  return (await response.json()) as unknown;
 }
 
 export const getEvalScenarios = createServerFn({ method: "GET" }).handler(
   async (): Promise<ScenarioSpec[]> => {
-    const key = `${artifactsBaseKey()}index.json`;
-    const doc = await fetchArtifactJson(key);
+    const doc = await fetchArtifactJson("index.json");
     const parsed = ArtifactsIndexSchema.parse(doc);
     return parsed.scenarios;
   },
@@ -130,18 +176,17 @@ export const getEvalScenarios = createServerFn({ method: "GET" }).handler(
 export const getEvalScenarioBundle = createServerFn({ method: "POST" })
   .inputValidator((input) => ScenarioBundleInputSchema.parse(input))
   .handler(async ({ data }): Promise<EvalScenarioBundle> => {
-    const key = `${artifactsBaseKey()}bundles/${encodeURIComponent(data.scenarioId)}.json`;
-    const doc = await fetchArtifactJson(key);
+    const doc = await fetchArtifactJson(`bundles/${data.scenarioId}.json`);
     const parsed = ScenarioBundleArtifactSchema.parse(doc);
 
     const strategies: EvalStrategyResult[] = parsed.strategies.map((strategy) => {
-      const guidelines = strategy.guidelines
-        .map((g) => {
-          const entry = catalogEntryFromWire(g.entry);
-          if (!entry) return null;
-          return { rank: g.rank, score: g.score, entry };
-        })
-        .filter((g): g is NonNullable<typeof g> => Boolean(g));
+      const guidelines = strategy.guidelines.map((g) => {
+        const entry = requireCatalogEntryFromWire(
+          g.entry,
+          `scenario=${parsed.scenario.id} strategy=${strategy.strategy_id} rank=${g.rank}`,
+        );
+        return { rank: g.rank, score: g.score, entry };
+      });
 
       return {
         strategyId: strategy.strategy_id,
