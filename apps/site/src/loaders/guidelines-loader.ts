@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import Cite from "citation-js";
+import sanitizeHtml from "sanitize-html";
 
 import { loadCatalogFromFolder } from "@chartcoach/catalog/node";
 
@@ -50,6 +51,37 @@ function escapeHtmlAttribute(value: string): string {
     .replace(/'/g, "&#39;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
+}
+
+const SANITIZE_CITATION_HTML_OPTIONS: sanitizeHtml.IOptions = {
+  allowedTags: [
+    "a",
+    "div",
+    "span",
+    "p",
+    "ul",
+    "ol",
+    "li",
+    "br",
+    "i",
+    "b",
+    "em",
+    "strong",
+    "sup",
+    "sub",
+  ],
+  allowedAttributes: {
+    a: ["href", "rel", "target", "title", "class", "data-citekey"],
+    div: ["id", "class", "data-csl-entry-id"],
+    span: ["class", "title", "data-citekey"],
+    "*": ["class", "id", "title", "data-csl-entry-id", "data-citekey"],
+  },
+  allowedSchemes: ["http", "https", "mailto"],
+  allowProtocolRelative: false,
+};
+
+function sanitizeCitationHtml(html: string): string {
+  return sanitizeHtml(html, SANITIZE_CITATION_HTML_OPTIONS);
 }
 
 function renderCitationsInMarkdown(body: string, references: string[]): RenderedCitations {
@@ -100,6 +132,7 @@ function renderCitationsInMarkdown(body: string, references: string[]): Rendered
           lang: "en-US",
         }),
       );
+      ref.inlineHtml = sanitizeCitationHtml(ref.inlineHtml);
 
       ref.hoverText ??= (() => {
         try {
@@ -140,7 +173,7 @@ function renderCitationsInMarkdown(body: string, references: string[]): Rendered
           /<div data-csl-entry-id="([^"]+)"/g,
           (_m, id: string) => `<div id="${citeId(id)}" data-csl-entry-id="${id}"`,
         );
-        bibliographyHtml = linkifyHtml(bibliographyHtml);
+        bibliographyHtml = sanitizeCitationHtml(linkifyHtml(bibliographyHtml));
       } catch {
         // If bibliography formatting fails, fall back to no bibliography.
       }
