@@ -60,7 +60,7 @@ export function GuidelineCard({
           target="_blank"
           rel="noopener noreferrer"
           aria-label={`Open guideline: ${g.title}`}
-          className="absolute inset-0 z-10 rounded-[calc(var(--radius)+2px)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring/60"
+          className="absolute inset-0 z-10 rounded-[calc(var(--radius)+2px)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring/60"
         />
       ) : null}
 
