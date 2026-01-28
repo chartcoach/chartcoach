@@ -96,19 +96,21 @@ const allFamilies = Array.from(familySet).sort((a, b) => a.localeCompare(b));
 							href={`/guidelines/${g.id}/`}
 							title={title}
 							description={description || undefined}
-							labels={labelsShown.map((label) => {
-								const parsed = parseGuidelineLabel(label);
+								labels={labelsShown.map((label) => {
+									const parsed = parseGuidelineLabel(label);
 
-								if (parsed.family) {
-									return {
-										family: {
-											text: parsed.family,
-											href: `/guidelines/?label=${encodeURIComponent(encodeGuidelineLabelQueryValue(parsed.familyLower!))}`,
-											filterValue: parsed.familyLower,
-											title: `Filter: ${parsed.family}`,
-										},
-										value: {
-											text: parsed.value,
+									if (parsed.family) {
+										const familyLower = parsed.familyLower ?? parsed.family.toLowerCase();
+
+										return {
+											family: {
+												text: parsed.family,
+												href: `/guidelines/?label=${encodeURIComponent(encodeGuidelineLabelQueryValue(familyLower))}`,
+												filterValue: familyLower,
+												title: `Filter: ${parsed.family}`,
+											},
+											value: {
+												text: parsed.value,
 											href: `/guidelines/?label=${encodeURIComponent(encodeGuidelineLabelQueryValue(parsed.fullLower))}`,
 											filterValue: parsed.fullLower,
 											title: `Filter: ${parsed.full}`,
