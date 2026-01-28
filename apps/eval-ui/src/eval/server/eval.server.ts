@@ -77,6 +77,8 @@ type ArtifactsRoot =
   | { kind: "s3"; bucket: string; keyPrefix: string }
   | { kind: "url"; baseUrl: URL };
 
+let cachedArtifactsRoot: ArtifactsRoot | undefined;
+
 function ensureTrailingSlash(value: string) {
   return value.endsWith("/") ? value : `${value}/`;
 }
@@ -118,8 +120,13 @@ function parseArtifactsRoot(value: string): ArtifactsRoot {
     if (url.protocol === "http:" || url.protocol === "https:" || url.protocol === "file:") {
       return { kind: "url", baseUrl: new URL(ensureTrailingSlash(url.href)) };
     }
-  } catch {
-    // Not a valid URL: treat as a filesystem path.
+    throw new Error(`Unsupported EVAL_ARTIFACTS_URL protocol: ${url.protocol}`);
+  } catch (error) {
+    console.warn(
+      "[eval-ui][server] EVAL_ARTIFACTS_URL is not a supported URL; treating as a filesystem path.",
+      { value: raw },
+      error,
+    );
   }
 
   const absPath = path.isAbsolute(raw) ? raw : path.resolve(process.cwd(), raw);
@@ -127,11 +134,11 @@ function parseArtifactsRoot(value: string): ArtifactsRoot {
 }
 
 function artifactsRoot(): ArtifactsRoot {
-  if (env.EVAL_ARTIFACTS_URL) {
-    return parseArtifactsRoot(env.EVAL_ARTIFACTS_URL);
-  }
-
-  return { kind: "url", baseUrl: defaultFixtureArtifactsBaseUrl() };
+  cachedArtifactsRoot ??=
+    env.EVAL_ARTIFACTS_URL
+      ? parseArtifactsRoot(env.EVAL_ARTIFACTS_URL)
+      : { kind: "url", baseUrl: defaultFixtureArtifactsBaseUrl() };
+  return cachedArtifactsRoot;
 }
 
 async function fetchArtifactJson(relativePath: string) {

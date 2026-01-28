@@ -25,7 +25,8 @@ export const Route = createFileRoute("/scenarios/$scenarioId")({
     let scenarios: ScenarioSpec[];
     try {
       scenarios = await context.queryClient.ensureQueryData(scenariosQueryOptions);
-    } catch {
+    } catch (error) {
+      console.warn("[eval-ui] Failed to prefetch scenarios (route loader).", error);
       return;
     }
 
@@ -36,7 +37,11 @@ export const Route = createFileRoute("/scenarios/$scenarioId")({
 
     try {
       await context.queryClient.ensureQueryData(scenarioBundleQueryOptions(scenarioId));
-    } catch {
+    } catch (error) {
+      console.warn(
+        `[eval-ui] Failed to prefetch scenario bundle for scenarioId=${scenarioId} (route loader).`,
+        error,
+      );
       // component renders a dedicated error state
     }
   },

@@ -1,5 +1,6 @@
 const CACHE_VERSION = "v1";
 const IMAGE_CACHE = `chartcoach-eval-ui-images-${CACHE_VERSION}`;
+let warnedCacheFirstFailure = false;
 
 function isCrossOriginImageRequest(request) {
   try {
@@ -11,7 +12,8 @@ function isCrossOriginImageRequest(request) {
     if (request.destination !== "image") return false;
     if (request.mode !== "no-cors") return false;
     return true;
-  } catch {
+  } catch (error) {
+    console.warn("[eval-ui] Service worker failed to parse request URL.", request && request.url, error);
     return false;
   }
 }
@@ -53,7 +55,11 @@ self.addEventListener("fetch", (event) => {
   if (!isCrossOriginImageRequest(request)) return;
 
   event.respondWith(
-    cacheFirst(request).catch(async () => {
+    cacheFirst(request).catch(async (error) => {
+      if (!warnedCacheFirstFailure) {
+        warnedCacheFirstFailure = true;
+        console.warn("[eval-ui] Service worker cacheFirst failed; falling back to cached response.", error);
+      }
       const cache = await caches.open(IMAGE_CACHE);
       return (await cache.match(request)) ?? Response.error();
     }),
