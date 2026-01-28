@@ -13,7 +13,7 @@ import {
   scenarioBundleQueryOptions,
   scenariosQueryOptions,
 } from "@chartcoach/eval-ui/eval/queries";
-import { useScenarioRatings } from "@chartcoach/eval-ui/eval/use-scenario-ratings";
+import { useScenarioRatings } from "@chartcoach/eval-ui/eval/hooks/use-scenario-ratings";
 
 export const Route = createFileRoute("/scenarios/$scenarioId")({
   validateSearch: z.object({
