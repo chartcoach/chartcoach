@@ -48,28 +48,30 @@ export function AppHeader() {
   const sync = useAutoUploadRelevanceRatings(ratings);
   const pull = usePullRelevanceRatingsFromS3();
 
+  type PullStatus = (typeof pull)["status"];
+  type SyncStatus = (typeof sync)["status"];
+
+  const pullStatusLabel: Partial<Record<PullStatus, string>> = {
+    pulling: "Fetching remote",
+    error: "Remote fetch failed",
+    disabled: "Remote fetch disabled",
+  };
+
+  const syncStatusLabel: Partial<Record<SyncStatus, string>> = {
+    syncing: "Uploading",
+    queued: "Upload queued",
+    error: "Upload failed",
+    disabled: "Upload disabled",
+    synced: "Upload synced",
+  };
+
+  const isPresent = <T,>(value: T | null | undefined | false): value is T => Boolean(value);
   const syncLabel = [
-    pull.status === "pulling"
-      ? "Fetching remote"
-      : pull.status === "error"
-        ? "Remote fetch failed"
-        : pull.status === "disabled"
-          ? "Remote fetch disabled"
-          : null,
-    sync.status === "syncing"
-      ? "Uploading"
-      : sync.status === "queued"
-        ? "Upload queued"
-        : sync.status === "error"
-          ? "Upload failed"
-          : sync.status === "disabled"
-            ? "Upload disabled"
-            : sync.status === "synced"
-              ? "Upload synced"
-              : null,
-    !ratingCount ? "No ratings yet" : null,
+    pullStatusLabel[pull.status] ?? null,
+    syncStatusLabel[sync.status] ?? null,
+    ratingCount === 0 ? "No ratings yet" : null,
   ]
-    .filter(Boolean)
+    .filter(isPresent)
     .join(" · ");
 
   const hasError = sync.status === "error" || pull.status === "error";
@@ -79,13 +81,10 @@ export function AppHeader() {
     pull.status === "pulling" ||
     isFetchingCount > 0;
 
-  const syncDotClass = hasError
-    ? "bg-red-500"
-    : isBusy
-      ? "bg-amber-500"
-      : sync.status === "synced" || pull.status === "synced"
-        ? "bg-emerald-500"
-        : "bg-muted-foreground/40";
+  let syncDotClass = "bg-muted-foreground/40";
+  if (sync.status === "synced" || pull.status === "synced") syncDotClass = "bg-emerald-500";
+  if (isBusy) syncDotClass = "bg-amber-500";
+  if (hasError) syncDotClass = "bg-red-500";
 
   const lastAt = sync.lastSuccessAt ?? pull.exportedAt;
   const lastKey = sync.lastSuccessKey ?? pull.key;
