@@ -1,5 +1,5 @@
 import type { RelevanceRating } from "@chartcoach/eval-ui/db-collections";
-import type { EvalGuidelineResult } from "@chartcoach/eval-ui/eval/types";
+import type { EvalGuidelineResult } from "@chartcoach/eval-ui/eval/schemas";
 import { cn } from "@chartcoach/eval-ui/lib/utils";
 
 import { GuidelineCard } from "../guideline-card";

@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { RelevanceRating } from "@chartcoach/eval-ui/eval/relevance-ratings";
-import { getDeviceId } from "@chartcoach/eval-ui/eval/device-id";
 import {
   SYNC_LAST_SIGNATURE_STORAGE_KEY,
   SYNC_LAST_SUCCESS_AT_STORAGE_KEY,
@@ -11,8 +10,8 @@ import {
   setLocalStorageItem,
 } from "@chartcoach/eval-ui/eval/relevance-ratings-sync-metadata";
 import { uploadRelevanceRatingsExport } from "@chartcoach/eval-ui/eval/server/relevance-ratings-sync.server";
-import { useOnlineStatus } from "@chartcoach/eval-ui/eval/use-online-status";
 import { createRelevanceRatingsExport } from "@chartcoach/eval-ui/lib/export-relevance-ratings";
+import { getDeviceId, useOnlineStatus } from "@chartcoach/eval-ui/lib/eval-utils";
 
 type SyncStatus = "idle" | "queued" | "syncing" | "synced" | "error" | "disabled";
 

@@ -1,5 +1,5 @@
 import { Tabs, TabsList, TabsTrigger } from "@chartcoach/eval-ui/components/ui/tabs";
-import type { EvalStrategyResult } from "@chartcoach/eval-ui/eval/types";
+import type { EvalStrategyResult } from "@chartcoach/eval-ui/eval/schemas";
 
 export function StrategyTabs({
   strategies,

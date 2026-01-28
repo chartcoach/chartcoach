@@ -13,8 +13,12 @@ import {
   type CatalogEntryWire,
 } from "@chartcoach/catalog";
 import { env } from "@chartcoach/eval-ui/env";
-import { ScenarioSpecSchema, type ScenarioSpec } from "@chartcoach/eval-ui/eval/schemas";
-import type { EvalScenarioBundle, EvalStrategyResult } from "@chartcoach/eval-ui/eval/types";
+import {
+  ScenarioSpecSchema,
+  type EvalScenarioBundle,
+  type EvalStrategyResult,
+  type ScenarioSpec,
+} from "@chartcoach/eval-ui/eval/schemas";
 import {
   getS3Client,
   readObjectBody,

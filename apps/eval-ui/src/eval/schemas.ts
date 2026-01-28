@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import type { CatalogEntry } from "@chartcoach/catalog";
+
 export const ScenarioChartSchema = z
   .object({
     uri: z.string().min(1),
@@ -26,3 +28,20 @@ export const ScenariosFileSchema = z.object({
 });
 
 export type ScenarioSpec = z.infer<typeof ScenarioSpecSchema>;
+
+export type EvalGuidelineResult = {
+  rank: number;
+  score: number;
+  entry: CatalogEntry;
+};
+
+export type EvalStrategyResult = {
+  strategyId: string;
+  strategyName: string;
+  guidelines: EvalGuidelineResult[];
+};
+
+export type EvalScenarioBundle = {
+  scenario: ScenarioSpec;
+  strategies: EvalStrategyResult[];
+};
