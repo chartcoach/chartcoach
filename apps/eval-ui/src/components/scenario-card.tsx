@@ -63,7 +63,7 @@ export function ScenarioCard({
       to="/scenarios/$scenarioId"
       params={{ scenarioId: scenario.id }}
       aria-label={`Open scenario: ${scenario.title}`}
-      className="group block rounded-xl border bg-card p-5 transition-colors hover:bg-card focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring/60"
+      className="group block rounded-xl border bg-card p-5 transition-colors hover:bg-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring/60"
     >
       <div className="space-y-2">
         <div className="flex items-start justify-between gap-3">

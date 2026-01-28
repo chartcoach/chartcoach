@@ -46,7 +46,7 @@ export function ScenarioPanel({ scenario }: { scenario: ScenarioSpec }) {
                 href={scenario.chart.uri}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring/60"
+                className="block rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring/60"
                 title="Open full-size chart image"
               >
                 <img

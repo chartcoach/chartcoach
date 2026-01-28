@@ -104,7 +104,7 @@ export function AppHeader() {
           <div className="truncate text-sm font-semibold">
             <Link
               to="/"
-              className="underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring/60"
+              className="underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring/60"
             >
               ChartCoach
             </Link>{" "}

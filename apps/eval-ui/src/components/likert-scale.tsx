@@ -38,7 +38,7 @@ export function LikertScale({
 
   return (
     <fieldset
-      className="inline-flex w-[240px] max-w-full min-w-0 flex-col gap-1.5"
+      className="inline-flex w-60 max-w-full min-w-0 flex-col gap-1.5"
       aria-label={ariaLabel}
     >
       <div
@@ -61,7 +61,7 @@ export function LikertScale({
               }}
               className="peer sr-only"
             />
-            <span className="grid h-10 w-full select-none place-items-center text-xs peer-checked:bg-foreground peer-checked:text-background peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-1 peer-focus-visible:outline-ring/60">
+            <span className="grid h-10 w-full select-none place-items-center text-xs peer-checked:bg-foreground peer-checked:text-background peer-focus-visible:outline-2 peer-focus-visible:outline-offset-1 peer-focus-visible:outline-ring/60">
               <span className="tabular-nums">{opt.value}</span>
             </span>
           </label>
