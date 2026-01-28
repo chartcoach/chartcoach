@@ -24,6 +24,11 @@ pnpm dev:eval
 pnpm dev
 ```
 
+### Env vars
+
+For local dev, you can define env vars in the repo-root `.env` (see `.env.example`).
+In CI/Docker, prefer passing env vars via the environment (don’t bake a `.env` into images).
+
 ### Artifacts configuration
 
 By default (no env vars), eval-ui reads **fixture artifacts** shipped in-repo so `pnpm dev:eval` works without S3.

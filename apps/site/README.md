@@ -25,6 +25,8 @@ This site uses `@astrojs/sitemap`. To generate a sitemap (and correct canonical 
 SITE_URL="https://example.com" pnpm --filter site build
 ```
 
+For local dev, you can also define `SITE_URL` in the repo-root `.env` (see `.env.example`).
+
 When building the Docker image, pass the same value as a build arg:
 
 ```bash

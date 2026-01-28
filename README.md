@@ -13,6 +13,12 @@ Visualization guideline catalog + tooling for browsing, retrieval, and human eva
 - `packages/chartcoach-py/`: Python library for working with the catalog
 - `packages/examples/`: Python example workflows (cataloging/analysis/application)
 
+## Environment variables
+
+- Copy `.env.example` to `.env` (repo root) and fill in values.
+- `apps/site` + `apps/eval-ui` load the repo-root `.env` automatically in dev/build.
+- For Python, run from the repo root with `uv run --env-file .env ...`.
+
 ## Web apps (pnpm)
 
 ```bash
