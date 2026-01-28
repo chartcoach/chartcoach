@@ -6,7 +6,6 @@ import {
   relevanceRatingsCollection,
 } from "@chartcoach/eval-ui/db-collections";
 import type { RelevanceRatingsExportV1 } from "@chartcoach/eval-ui/eval/relevance-ratings";
-import { getDeviceId } from "@chartcoach/eval-ui/eval/device-id";
 import {
   SYNC_LAST_SIGNATURE_STORAGE_KEY,
   SYNC_LAST_SUCCESS_AT_STORAGE_KEY,
@@ -15,8 +14,8 @@ import {
   makeRatingsSignature,
   setLocalStorageItem,
 } from "@chartcoach/eval-ui/eval/relevance-ratings-sync-metadata";
-import { useOnlineStatus } from "@chartcoach/eval-ui/eval/use-online-status";
 import { downloadLatestRelevanceRatingsExport } from "@chartcoach/eval-ui/eval/server/relevance-ratings-sync.server";
+import { getDeviceId, useOnlineStatus } from "@chartcoach/eval-ui/lib/eval-utils";
 
 type PullStatus = "idle" | "pulling" | "synced" | "error" | "disabled";
 

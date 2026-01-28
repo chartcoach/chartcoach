@@ -1,7 +1,7 @@
 import { GuidelineCard as GuidelineCardShell, type GuidelineCardLabel } from "@chartcoach/ui";
 
-import type { EvalGuidelineResult } from "@chartcoach/eval-ui/eval/types";
-import { getGuidelineDetailHref } from "@chartcoach/eval-ui/eval/guideline-detail-url";
+import type { EvalGuidelineResult } from "@chartcoach/eval-ui/eval/schemas";
+import { getGuidelineDetailHref } from "@chartcoach/eval-ui/lib/eval-utils";
 import { cn } from "@chartcoach/eval-ui/lib/utils";
 
 import { LikertScale } from "./likert-scale";
