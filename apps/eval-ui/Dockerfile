@@ -1,4 +1,4 @@
-FROM node:22-slim AS builder
+FROM node:24-slim AS builder
 
 WORKDIR /app
 
@@ -14,7 +14,7 @@ RUN pnpm install --frozen-lockfile
 RUN pnpm --filter @chartcoach/eval-ui... build
 
 
-FROM node:22-slim AS runner
+FROM node:24-slim AS runner
 
 WORKDIR /app
 

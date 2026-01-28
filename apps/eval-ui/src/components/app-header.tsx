@@ -6,10 +6,10 @@ import { useLayoutEffect, useRef } from "react";
 
 import { relevanceRatingsCollection } from "@chartcoach/eval-ui/db-collections";
 import type { RelevanceRating } from "@chartcoach/eval-ui/db-collections";
-import { useAutoUploadRelevanceRatings } from "@chartcoach/eval-ui/eval/use-auto-upload-relevance-ratings";
-import { useOnlineStatus } from "@chartcoach/eval-ui/eval/use-online-status";
-import { usePullRelevanceRatingsFromS3 } from "@chartcoach/eval-ui/eval/use-pull-relevance-ratings";
+import { useAutoUploadRelevanceRatings } from "@chartcoach/eval-ui/eval/hooks/use-auto-upload-relevance-ratings";
+import { usePullRelevanceRatingsFromS3 } from "@chartcoach/eval-ui/eval/hooks/use-pull-relevance-ratings";
 import { ThemeSelector } from "@chartcoach/eval-ui/components/theme-selector";
+import { useOnlineStatus } from "@chartcoach/eval-ui/lib/eval-utils";
 
 export function AppHeader() {
   const headerRef = useRef<HTMLElement | null>(null);
