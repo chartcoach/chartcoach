@@ -4,13 +4,21 @@ import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
 import viteTsConfigPaths from "vite-tsconfig-paths";
 import { fileURLToPath, URL } from "url";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 
 import tailwindcss from "@tailwindcss/vite";
 import { nitro } from "nitro/vite";
 
 const monorepoRoot = fileURLToPath(new URL("../..", import.meta.url));
 
+const repoEnvPath = join(monorepoRoot, ".env");
+const loadEnvFile = (process as NodeJS.Process & { loadEnvFile?: (path?: string) => void })
+  .loadEnvFile;
+if (typeof loadEnvFile === "function" && existsSync(repoEnvPath)) loadEnvFile(repoEnvPath);
+
 export default defineConfig({
+  envDir: monorepoRoot,
   server: {
     fs: {
       allow: [monorepoRoot],
@@ -24,10 +32,8 @@ export default defineConfig({
   plugins: [
     devtools(),
     nitro(),
-    // this is the plugin that enables path aliases
-    viteTsConfigPaths({
-      projects: ["./tsconfig.json"],
-    }),
+    // enables path aliases
+    viteTsConfigPaths({ projects: ["./tsconfig.json"] }),
     tailwindcss(),
     tanstackStart(),
     viteReact(),

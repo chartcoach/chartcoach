@@ -4,6 +4,14 @@ import starlight from "@astrojs/starlight";
 import sitemap from "@astrojs/sitemap";
 import react from "@astrojs/react";
 import { fileURLToPath } from "node:url";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
+
+const monorepoRoot = fileURLToPath(new URL("../..", import.meta.url));
+
+const repoEnvPath = join(monorepoRoot, ".env");
+const loadEnvFile = /** @type {undefined | ((path?: string) => void)} */ (process.loadEnvFile);
+if (typeof loadEnvFile === "function" && existsSync(repoEnvPath)) loadEnvFile(repoEnvPath);
 
 /**
  * Resolve the canonical site URL for sitemap + canonical links.
@@ -51,11 +59,11 @@ function siteUrlLogger(siteUrl) {
 
 // https://astro.build/config
 const siteUrl = resolveSiteUrl();
-const monorepoRoot = fileURLToPath(new URL("../..", import.meta.url));
 
 export default defineConfig({
   site: siteUrl,
   vite: {
+    envDir: monorepoRoot,
     server: {
       fs: {
         allow: [monorepoRoot],
