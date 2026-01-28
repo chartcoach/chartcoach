@@ -103,6 +103,7 @@ export function useAutoUploadRelevanceRatings(ratings: RelevanceRating[]) {
       setStatus("synced");
       notify("Synced");
     } catch (error) {
+      console.warn("[eval-ui] Auto-upload relevance ratings failed.", error);
       lastFailureAtRef.current = Date.now();
 
       const message = error instanceof Error ? error.message : "Failed to sync ratings.";

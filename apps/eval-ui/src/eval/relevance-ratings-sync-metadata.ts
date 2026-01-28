@@ -7,11 +7,24 @@ export const SYNC_LAST_SUCCESS_AT_STORAGE_KEY =
 export const SYNC_LAST_SUCCESS_KEY_STORAGE_KEY =
   "chartcoach/eval-ui/sync/relevance-ratings/v1:last-success-key";
 
+const warnedLocalStorageOps = new Set<string>();
+
+function warnLocalStorageOnce(opts: { action: "getItem" | "setItem"; key: string; error: unknown }) {
+  const signature = `${opts.action}:${opts.key}`;
+  if (warnedLocalStorageOps.has(signature)) return;
+  warnedLocalStorageOps.add(signature);
+  console.warn(
+    `[eval-ui] localStorage.${opts.action} failed for key "${opts.key}".`,
+    opts.error,
+  );
+}
+
 export function getLocalStorageItem(key: string) {
   if (typeof window === "undefined") return null;
   try {
     return window.localStorage.getItem(key);
-  } catch {
+  } catch (error) {
+    warnLocalStorageOnce({ action: "getItem", key, error });
     return null;
   }
 }
@@ -20,8 +33,8 @@ export function setLocalStorageItem(key: string, value: string) {
   if (typeof window === "undefined") return;
   try {
     window.localStorage.setItem(key, value);
-  } catch {
-    // ignore quota / privacy errors
+  } catch (error) {
+    warnLocalStorageOnce({ action: "setItem", key, error });
   }
 }
 

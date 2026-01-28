@@ -64,7 +64,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var key='chartcoach:eval-ui:theme';var pref=localStorage.getItem(key)||'system';var m=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)');var dark=pref==='dark'||(pref==='system'&&m&&m.matches);document.documentElement.classList.toggle('dark',!!dark);}catch(e){}})();`,
+            __html: `(function(){try{var key='chartcoach:eval-ui:theme';var pref=localStorage.getItem(key)||'system';var m=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)');var dark=pref==='dark'||(pref==='system'&&m&&m.matches);document.documentElement.classList.toggle('dark',!!dark);}catch(e){console.warn('[eval-ui] Failed to read theme preference from localStorage.',e);}})();`,
           }}
         />
       </head>

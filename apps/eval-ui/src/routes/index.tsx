@@ -16,7 +16,8 @@ export const Route = createFileRoute("/")({
   loader: async ({ context }) => {
     try {
       await context.queryClient.ensureQueryData(scenariosQueryOptions);
-    } catch {
+    } catch (error) {
+      console.warn("[eval-ui] Failed to prefetch scenarios (route loader).", error);
       // component renders a dedicated error state
     }
   },
