@@ -1,15 +1,19 @@
-import type { RelevanceRating } from "@chartcoach/eval-ui/db-collections";
+import type { GuidelineRating } from "@chartcoach/eval-ui/db-collections";
 import type { EvalGuidelineResult } from "@chartcoach/eval-ui/eval/schemas";
 import { cn } from "@chartcoach/eval-ui/lib/utils";
 
 import { GuidelineCard } from "../guideline-card";
 
+type GuidelineRatingPatch = Partial<
+  Omit<GuidelineRating, "id" | "scenarioId" | "guidelineId" | "createdAt" | "updatedAt">
+>;
+
 type GuidelineDeckProps = {
   scenarioId: string;
   guidelines: EvalGuidelineResult[];
   activeGuidelineId: string | undefined;
-  getRating: (guidelineId: string) => RelevanceRating | undefined;
-  onRate: (guidelineId: string, relevance: number) => void;
+  getRating: (guidelineId: string) => GuidelineRating | undefined;
+  onRate: (guidelineId: string, patch: GuidelineRatingPatch) => void;
   onClear: (guidelineId: string) => void;
   className?: string;
 };
@@ -41,7 +45,7 @@ export function GuidelineDeck({
           <GuidelineCard
             scenarioId={scenarioId}
             result={g}
-            rating={getRating(g.entry.guideline.id)?.relevance}
+            rating={getRating(g.entry.guideline.id)}
             isActive={g.entry.guideline.id === activeGuidelineId}
             onRate={onRate}
             onClear={onClear}

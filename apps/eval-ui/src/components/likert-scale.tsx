@@ -5,26 +5,20 @@ type LikertOption = {
   label: string;
 };
 
-const defaultOptions: LikertOption[] = [
-  { value: 1, label: "Irrelevant" },
-  { value: 2, label: "Somewhat relevant" },
-  { value: 3, label: "Relevant" },
-  { value: 4, label: "Very relevant" },
-  { value: 5, label: "Critical" },
-];
-
 export function LikertScale({
   name,
   value,
   onChange,
-  options = defaultOptions,
-  ariaLabel = "Relevance (1-5)",
+  options,
+  ariaLabel,
+  disabled = false,
 }: {
   name: string;
   value: number | undefined;
   onChange: (next: number | undefined) => void;
-  options?: LikertOption[];
-  ariaLabel?: string;
+  options: LikertOption[];
+  ariaLabel: string;
+  disabled?: boolean;
 }) {
   const selectedLabel = options.find((o) => o.value === value)?.label;
   const minOption = options[0];
@@ -48,7 +42,11 @@ export function LikertScale({
         }}
       >
         {options.map((opt) => (
-          <label key={opt.value} className="cursor-pointer" title={`${opt.value} — ${opt.label}`}>
+          <label
+            key={opt.value}
+            className={disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}
+            title={`${opt.value} — ${opt.label}`}
+          >
             <input
               type="radio"
               name={name}
@@ -57,8 +55,10 @@ export function LikertScale({
               aria-label={`${opt.value} — ${opt.label}`}
               onChange={handleChange}
               onClick={() => {
+                if (disabled) return;
                 if (opt.value === value) onChange(undefined);
               }}
+              disabled={disabled}
               className="peer sr-only"
             />
             <span className="grid h-10 w-full select-none place-items-center text-xs peer-checked:bg-foreground peer-checked:text-background peer-focus-visible:outline-2 peer-focus-visible:outline-offset-1 peer-focus-visible:outline-ring/60">

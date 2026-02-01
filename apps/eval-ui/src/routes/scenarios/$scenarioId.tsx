@@ -7,7 +7,7 @@ import { AppHeader } from "@chartcoach/eval-ui/components/app-header";
 import { ScenarioPanel } from "@chartcoach/eval-ui/components/scenario-eval/scenario-panel";
 import { StrategyTabs } from "@chartcoach/eval-ui/components/scenario-eval/strategy-tabs";
 import { GuidelineDeck } from "@chartcoach/eval-ui/components/scenario-eval/guideline-deck";
-import { deleteRelevanceRating, upsertRelevanceRating } from "@chartcoach/eval-ui/db-collections";
+import { deleteGuidelineRating, upsertGuidelineRating } from "@chartcoach/eval-ui/db-collections";
 import type { ScenarioSpec } from "@chartcoach/eval-ui/eval/schemas";
 import {
   scenarioBundleQueryOptions,
@@ -93,13 +93,13 @@ function ScenarioEvalPage() {
     setActiveGuidelineId(undefined);
   }
 
-  function onRateGuideline(guidelineId: string, relevance: number) {
+  function onRateGuideline(guidelineId: string, patch: Parameters<typeof upsertGuidelineRating>[0]["patch"]) {
     if (!scenarioId) return;
 
-    upsertRelevanceRating({
+    upsertGuidelineRating({
       scenarioId,
       guidelineId,
-      relevance,
+      patch,
     });
 
     setActiveGuidelineId(guidelineId);
@@ -107,7 +107,7 @@ function ScenarioEvalPage() {
 
   function onClearGuideline(guidelineId: string) {
     if (!scenarioId) return;
-    deleteRelevanceRating({ scenarioId, guidelineId });
+    deleteGuidelineRating({ scenarioId, guidelineId });
     setActiveGuidelineId(guidelineId);
   }
 

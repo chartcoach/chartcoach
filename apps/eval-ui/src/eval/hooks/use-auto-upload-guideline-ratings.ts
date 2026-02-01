@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import type { RelevanceRating } from "@chartcoach/eval-ui/eval/relevance-ratings";
+import type { GuidelineRating } from "@chartcoach/eval-ui/eval/guideline-ratings";
 import {
   SYNC_LAST_SIGNATURE_STORAGE_KEY,
   SYNC_LAST_SUCCESS_AT_STORAGE_KEY,
@@ -8,14 +8,14 @@ import {
   getLocalStorageItem,
   makeRatingsSignature,
   setLocalStorageItem,
-} from "@chartcoach/eval-ui/eval/relevance-ratings-sync-metadata";
-import { uploadRelevanceRatingsExport } from "@chartcoach/eval-ui/eval/server/relevance-ratings-sync.server";
-import { createRelevanceRatingsExport } from "@chartcoach/eval-ui/lib/export-relevance-ratings";
+} from "@chartcoach/eval-ui/eval/guideline-ratings-sync-metadata";
+import { uploadGuidelineRatingsExport } from "@chartcoach/eval-ui/eval/server/guideline-ratings-sync.server";
+import { createGuidelineRatingsExport } from "@chartcoach/eval-ui/lib/export-guideline-ratings";
 import { getDeviceId, useOnlineStatus } from "@chartcoach/eval-ui/lib/eval-utils";
 
 type SyncStatus = "idle" | "queued" | "syncing" | "synced" | "error" | "disabled";
 
-export function useAutoUploadRelevanceRatings(ratings: RelevanceRating[]) {
+export function useAutoUploadGuidelineRatings(ratings: GuidelineRating[]) {
   const isOnline = useOnlineStatus();
 
   const ratingCount = ratings.length;
@@ -84,8 +84,8 @@ export function useAutoUploadRelevanceRatings(ratings: RelevanceRating[]) {
     setStatus("syncing");
 
     try {
-      const exportPayload = createRelevanceRatingsExport(currentRatings);
-      const result = await uploadRelevanceRatingsExport({
+      const exportPayload = createGuidelineRatingsExport(currentRatings);
+      const result = await uploadGuidelineRatingsExport({
         data: {
           deviceId: getDeviceId(),
           export: exportPayload,
@@ -103,7 +103,7 @@ export function useAutoUploadRelevanceRatings(ratings: RelevanceRating[]) {
       setStatus("synced");
       notify("Synced");
     } catch (error) {
-      console.warn("[eval-ui] Auto-upload relevance ratings failed.", error);
+      console.warn("[eval-ui] Auto-upload guideline ratings failed.", error);
       lastFailureAtRef.current = Date.now();
 
       const message = error instanceof Error ? error.message : "Failed to sync ratings.";
@@ -166,3 +166,4 @@ export function useAutoUploadRelevanceRatings(ratings: RelevanceRating[]) {
     lastSuccessKey,
   };
 }
+

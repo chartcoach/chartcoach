@@ -3,7 +3,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { env } from "@chartcoach/eval-ui/env";
-import { RelevanceRatingsExportV1Schema } from "@chartcoach/eval-ui/eval/relevance-ratings";
+import { GuidelineRatingsExportV2Schema } from "@chartcoach/eval-ui/eval/guideline-ratings";
 import {
   getS3Client,
   normalizePrefix,
@@ -11,13 +11,13 @@ import {
   sendS3,
 } from "@chartcoach/eval-ui/eval/server/s3.server";
 
-const UploadRelevanceRatingsInputSchema = z.object({
+const UploadGuidelineRatingsInputSchema = z.object({
   deviceId: z.string().min(1),
-  export: RelevanceRatingsExportV1Schema,
+  export: GuidelineRatingsExportV2Schema,
   digest: z.string().min(1).optional(),
 });
 
-const DownloadRelevanceRatingsInputSchema = z.object({
+const DownloadGuidelineRatingsInputSchema = z.object({
   deviceId: z.string().min(1),
 });
 
@@ -25,15 +25,15 @@ function normalizeObjectKeyTimestamp(isoString: string) {
   return isoString.replaceAll(":", "-").replaceAll(".", "-");
 }
 
-export const uploadRelevanceRatingsExport = createServerFn({ method: "POST" })
-  .inputValidator((input) => UploadRelevanceRatingsInputSchema.parse(input))
+export const uploadGuidelineRatingsExport = createServerFn({ method: "POST" })
+  .inputValidator((input) => UploadGuidelineRatingsInputSchema.parse(input))
   .handler(async ({ data }) => {
     const prefix = normalizePrefix(env.S3_PREFIX);
     const safeDeviceId = encodeURIComponent(data.deviceId);
     const safeExportedAt = normalizeObjectKeyTimestamp(data.export.exportedAt);
     const digestSuffix = data.digest ? `-${data.digest.slice(0, 12)}` : "";
 
-    const key = `${prefix}relevance-ratings/v1/${safeDeviceId}/${safeExportedAt}${digestSuffix}.json`;
+    const key = `${prefix}guideline-ratings/v2/${safeDeviceId}/${safeExportedAt}${digestSuffix}.json`;
 
     const cmd = new PutObjectCommand({
       Bucket: env.S3_BUCKET,
@@ -47,14 +47,14 @@ export const uploadRelevanceRatingsExport = createServerFn({ method: "POST" })
     return { key };
   });
 
-export const downloadLatestRelevanceRatingsExport = createServerFn({
+export const downloadLatestGuidelineRatingsExport = createServerFn({
   method: "POST",
 })
-  .inputValidator((input) => DownloadRelevanceRatingsInputSchema.parse(input))
+  .inputValidator((input) => DownloadGuidelineRatingsInputSchema.parse(input))
   .handler(async ({ data }) => {
     const prefix = normalizePrefix(env.S3_PREFIX);
     const safeDeviceId = encodeURIComponent(data.deviceId);
-    const objectPrefix = `${prefix}relevance-ratings/v1/${safeDeviceId}/`;
+    const objectPrefix = `${prefix}guideline-ratings/v2/${safeDeviceId}/`;
 
     const list = new ListObjectsV2Command({
       Bucket: env.S3_BUCKET,
@@ -88,7 +88,7 @@ export const downloadLatestRelevanceRatingsExport = createServerFn({
       getS3Client({ forcePathStyle }).send(get),
     );
     const raw = await readObjectBody(objectResponse.Body);
-    const parsed = RelevanceRatingsExportV1Schema.parse(JSON.parse(raw));
+    const parsed = GuidelineRatingsExportV2Schema.parse(JSON.parse(raw));
 
     return {
       found: true as const,
@@ -96,3 +96,4 @@ export const downloadLatestRelevanceRatingsExport = createServerFn({
       export: parsed,
     };
   });
+

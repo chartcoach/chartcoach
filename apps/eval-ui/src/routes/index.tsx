@@ -5,7 +5,7 @@ import { useMemo } from "react";
 
 import { AppHeader } from "@chartcoach/eval-ui/components/app-header";
 import { ScenarioCard } from "@chartcoach/eval-ui/components/scenario-card";
-import { relevanceRatingsCollection } from "@chartcoach/eval-ui/db-collections";
+import { guidelineRatingsCollection } from "@chartcoach/eval-ui/db-collections";
 import {
   scenarioBundleQueryOptions,
   scenariosQueryOptions,
@@ -30,7 +30,7 @@ function LandingPage() {
 
   const { data: ratingsData } = useLiveQuery(
     (q) =>
-      q.from({ rating: relevanceRatingsCollection }).select(({ rating }) => ({
+      q.from({ rating: guidelineRatingsCollection }).select(({ rating }) => ({
         scenarioId: rating.scenarioId,
         guidelineId: rating.guidelineId,
       })),
@@ -88,11 +88,11 @@ function LandingPage() {
         <main id="main" tabIndex={-1} className="min-w-0">
           <header className="space-y-3">
             <h1 className="text-balance text-2xl font-semibold sm:text-3xl">
-              Guideline relevance evaluation
+              Guideline evaluation
             </h1>
             <p className="max-w-prose text-sm text-muted-foreground text-pretty lg:max-w-240">
-              Pick a scenario to start. Your task on each scenario page is to rate how relevant the
-              listed visualization guidelines are for the scenario and the chart.
+              Pick a scenario to start. On each scenario page, label each guideline with a primary
+              bucket (hard/soft/not useful/not applicable) and optionally add dimension ratings.
             </p>
           </header>
 

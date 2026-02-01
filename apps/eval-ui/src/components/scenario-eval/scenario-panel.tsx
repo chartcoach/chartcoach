@@ -18,8 +18,9 @@ export function ScenarioPanel({ scenario }: { scenario: ScenarioSpec }) {
                 <div className="text-xs text-muted-foreground">{scenario.provenance.source}</div>
               ) : null}
               <div className="text-sm text-muted-foreground text-pretty">
-                <span className="font-semibold text-foreground">Task:</span> rate how relevant each
-                visualization guideline is for this scenario and chart.
+                <span className="font-semibold text-foreground">Task:</span> label each retrieved
+                guideline with a primary bucket (hard/soft/not useful/N/A) and optionally add
+                dimension ratings.
               </div>
             </div>
 

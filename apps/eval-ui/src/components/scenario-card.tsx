@@ -90,11 +90,11 @@ export function ScenarioCard({
         </div>
 
         {scenario.chart?.uri ? (
-          <div className="mt-3 overflow-hidden rounded-lg">
+          <div className="mt-3 overflow-hidden rounded-lg bg-muted/20">
             <img
               src={scenario.chart.uri}
               alt={`Chart for scenario: ${scenario.title}`}
-              className="h-32 w-full object-cover"
+              className="h-40 w-full object-contain sm:h-44 2xl:h-48"
               loading="lazy"
               decoding="async"
             />
@@ -133,19 +133,6 @@ export function ScenarioCard({
           ) : null}
         </div>
 
-        <div className="mt-3 space-y-2">
-          {scenario.designer_intent ? (
-            <div className="line-clamp-3 text-xs text-muted-foreground text-pretty">
-              <span className="font-semibold text-foreground/80">Designer intent:</span>{" "}
-              {scenario.designer_intent}
-            </div>
-          ) : null}
-          {scenario.query ? (
-            <div className="line-clamp-2 text-xs text-muted-foreground text-pretty">
-              <span className="font-semibold text-foreground/80">Query:</span> {scenario.query}
-            </div>
-          ) : null}
-        </div>
       </div>
     </Link>
   );

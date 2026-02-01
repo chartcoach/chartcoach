@@ -33,14 +33,14 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       {
         name: "description",
         content:
-          "ChartCoach eval UI for human relevance ratings of retrieved visualization guidelines.",
+          "ChartCoach eval UI for human rating of retrieved visualization guidelines.",
       },
       {
         name: "robots",
         content: "noindex, nofollow",
       },
       {
-        title: "ChartCoach · Guideline Relevance Eval",
+        title: "ChartCoach · Guideline Eval",
       },
     ],
     links: [
