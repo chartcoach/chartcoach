@@ -6,7 +6,7 @@ import numpy as np
 import polars as pl
 
 from chartcoach.catalog import Catalog
-from chartcoach.retrieval.strategy.request_text import build_situation_with_query
+from chartcoach.retrieval.strategy.request_text import get_text_by_role, require_text_by_role
 from chartcoach.retrieval.strategy.types import RetrievalRequest
 from chartcoach.retrieval.strategy.vector_index import CatalogVectorIndex
 
@@ -23,7 +23,11 @@ class GuidelineSearcher:
         _ = self.vector_index.lance()
 
     def build_query_text(self, request: RetrievalRequest) -> str:
-        return build_situation_with_query(request)
+        # Treat the scenario "query" field as meta-instructions and avoid feeding
+        # it into retrieval (it often contains IR phrasing that pollutes search).
+        title = (get_text_by_role(request, role="title") or "").strip()
+        situation = require_text_by_role(request, role="situation")
+        return f"{title}\n\n{situation}".strip() if title else situation
 
     def search_dense(
         self,
