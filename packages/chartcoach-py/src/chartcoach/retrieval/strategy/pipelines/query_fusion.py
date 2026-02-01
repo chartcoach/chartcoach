@@ -31,10 +31,18 @@ class QueryFusionSignature(dspy.Signature):
         desc="Number of queries to produce.", ge=1, le=8, default=4
     )
 
+    focused_situation: str = dspy.OutputField(
+        desc=(
+            "A short rewrite of the situation that includes ONLY the chart to improve and its intent. "
+            "Preserve key domain nouns/variables (e.g., inflation, job starters, pay gap, aid) but omit unrelated surrounding context."
+        )
+    )
     queries: list[str] = dspy.OutputField(
         desc=(
             "A list of short, diverse search queries. "
-            "Each query should focus on a different facet (chart type, task/goal, audience, risk/clarity)."
+            "Each query should focus on a different facet (chart type, task/goal, audience, risk/clarity). "
+            "If the situation implies paired comparisons (two values per category / before-after / year-over-year), "
+            "include at least one query that uses the terms 'paired values' and 'delta encoding'."
         )
     )
 
@@ -122,9 +130,15 @@ class QueryFusionHybridStrategy(RetrievalStrategy):
             except Exception as e:  # noqa: BLE001
                 lm_error = str(e)
 
+        focused_situation = str(
+            getattr(pred, "focused_situation", "") if pred is not None else ""
+        ).strip()
+        if not focused_situation:
+            focused_situation = situation
+
         queries = self._clean_queries(
             getattr(pred, "queries", None) if pred is not None else None,
-            fallback=situation,
+            fallback=focused_situation,
         )
         queries = queries[: max(1, int(self._config.n_queries))]
 
@@ -153,7 +167,7 @@ class QueryFusionHybridStrategy(RetrievalStrategy):
         cross_encoder_fallback_used = False
         cross_encoder_error: str | None = None
         if self._config.cross_encoder_model and fused:
-            qvec = self._searcher.vector_index.embed_query(situation)
+            qvec = self._searcher.vector_index.embed_query(focused_situation)
             try:
                 reranker = self._cross_encoder_reranker
                 if reranker is None:
@@ -163,7 +177,7 @@ class QueryFusionHybridStrategy(RetrievalStrategy):
                     self._cross_encoder_reranker = reranker
 
                 hits_df = self._searcher.search_hybrid(
-                    query_text=situation,
+                    query_text=focused_situation,
                     query_vector=qvec,
                     reranker=reranker,
                     k=min(len(fused), self._config.cross_encoder_candidate_limit),
@@ -197,9 +211,9 @@ class QueryFusionHybridStrategy(RetrievalStrategy):
             # If query fusion fails to yield enough candidates (e.g., empty index
             # hits), fall back to a strong hybrid retrieval for a complete top-k.
             fill_fallback_used = True
-            qvec = self._searcher.vector_index.embed_query(situation)
+            qvec = self._searcher.vector_index.embed_query(focused_situation)
             hits_df = self._searcher.search_hybrid(
-                query_text=situation,
+                query_text=focused_situation,
                 query_vector=qvec,
                 reranker=RRFReranker(K=self._config.rrf_k),
                 k=raw_k,
@@ -226,6 +240,7 @@ class QueryFusionHybridStrategy(RetrievalStrategy):
             "raw_k": raw_k,
             "score_kind": "rrf_fusion",
             "queries": queries,
+            "focused_situation": focused_situation,
             "lm_attempts": lm_attempts,
             "lm_fallback_used": pred is None,
             "lm_error": lm_error if pred is None else None,

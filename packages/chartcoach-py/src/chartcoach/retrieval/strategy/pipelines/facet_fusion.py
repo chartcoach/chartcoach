@@ -29,13 +29,24 @@ class FacetPlanSignature(dspy.Signature):
     )
     n: int = dspy.InputField(desc="Number of facet queries to return.", ge=1, le=8, default=5)
 
+    focused_situation: str = dspy.OutputField(
+        desc=(
+            "A short rewrite of the situation that includes ONLY the chart to improve and its intent. "
+            "Preserve key domain nouns/variables (e.g., inflation, job starters, pay gap, aid) but omit unrelated surrounding context."
+        )
+    )
     canonical_query: str = dspy.OutputField(
-        desc="A short, search-optimized query that captures the main design intent."
+        desc=(
+            "A short, search-optimized query that captures the main design intent. "
+            "Keep key domain nouns/variables from the situation."
+        )
     )
     facet_queries: list[str] = dspy.OutputField(
         desc=(
             "A list of short, diverse search queries, each focusing on a different facet "
-            "(chart type/encoding, task/goal, audience, common failure modes, annotation/labeling)."
+            "(chart type/encoding, task/goal, audience, common failure modes, annotation/labeling). "
+            "If the situation implies paired comparisons (two values per category / before-after / year-over-year), "
+            "include at least one facet query that uses the terms 'paired values' and 'delta encoding'."
         )
     )
     chart_terms: list[str] = dspy.OutputField(
@@ -133,12 +144,15 @@ class FacetFusionHybridStrategy(RetrievalStrategy):
                 lm_error = str(e)
 
         canonical = str(getattr(pred, "canonical_query", "") if pred else "").strip()
+        focused_situation = str(getattr(pred, "focused_situation", "") if pred else "").strip()
+        if not focused_situation:
+            focused_situation = situation
         facet_queries = self._clean_list(getattr(pred, "facet_queries", None) if pred else None)
         chart_terms = self._clean_list(getattr(pred, "chart_terms", None) if pred else None)
         task_terms = self._clean_list(getattr(pred, "task_terms", None) if pred else None)
         risk_terms = self._clean_list(getattr(pred, "risk_terms", None) if pred else None)
 
-        queries = [canonical or situation, *facet_queries]
+        queries = [canonical or focused_situation, *facet_queries]
         queries = self._dedupe([q for q in queries if q.strip()])
         queries = queries[: max(1, int(self._config.n_queries))]
 
@@ -167,7 +181,7 @@ class FacetFusionHybridStrategy(RetrievalStrategy):
         cross_encoder_fallback_used = False
         cross_encoder_error: str | None = None
         if self._config.cross_encoder_model and fused:
-            qvec = self._searcher.vector_index.embed_query(situation)
+            qvec = self._searcher.vector_index.embed_query(focused_situation)
             try:
                 reranker = self._cross_encoder_reranker
                 if reranker is None:
@@ -177,7 +191,7 @@ class FacetFusionHybridStrategy(RetrievalStrategy):
                     self._cross_encoder_reranker = reranker
 
                 hits_df = self._searcher.search_hybrid(
-                    query_text=situation,
+                    query_text=focused_situation,
                     query_vector=qvec,
                     reranker=reranker,
                     k=min(len(fused), self._config.cross_encoder_candidate_limit),
@@ -209,9 +223,9 @@ class FacetFusionHybridStrategy(RetrievalStrategy):
         fill_fallback_used = False
         if len(final_ids) < effective_k and self.catalog.entries:
             fill_fallback_used = True
-            qvec = self._searcher.vector_index.embed_query(situation)
+            qvec = self._searcher.vector_index.embed_query(focused_situation)
             hits_df = self._searcher.search_hybrid(
-                query_text=situation,
+                query_text=focused_situation,
                 query_vector=qvec,
                 reranker=RRFReranker(K=self._config.rrf_k),
                 k=raw_k,
@@ -238,6 +252,7 @@ class FacetFusionHybridStrategy(RetrievalStrategy):
             "raw_k": raw_k,
             "score_kind": "facet_rrf_fusion",
             "queries": queries,
+            "focused_situation": focused_situation,
             "lm_attempts": lm_attempts,
             "lm_fallback_used": pred is None,
             "lm_error": lm_error if pred is None else None,
