@@ -205,7 +205,7 @@ def test_main_list_strategies_json(monkeypatch) -> None:
 
     main(["list-strategies", "--json"])
     out = buf.getvalue()
-    assert "guideline-browser@v0" in out
+    assert "bm25-prf@v1" in out
 
 
 def test_main_list_strategies_text(monkeypatch) -> None:
@@ -214,7 +214,7 @@ def test_main_list_strategies_text(monkeypatch) -> None:
 
     main(["list-strategies"])
     out = buf.getvalue()
-    assert "guideline-browser@v0" in out
+    assert "bm25-prf@v1" in out
 
 
 def test_main_run_uses_injected_registry(monkeypatch, tmp_path: Path) -> None:

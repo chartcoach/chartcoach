@@ -41,7 +41,14 @@ if TYPE_CHECKING or _DSPY_AVAILABLE:
         require_image_item_by_role,
         require_text_by_role,
     )
-    from .guideline_browser import GuidelineBrowserStrategy
+    from .pipelines import (
+        AgenticHybridStrategy,
+        Bm25PrfStrategy,
+        DenseMmrStrategy,
+        HydeHybridStrategy,
+        HybridRrfStrategy,
+        QueryFusionHybridStrategy,
+    )
     from .registry import StrategyRegistration, create_default_strategy_registrations
 
     if _DSPY_AVAILABLE:
@@ -53,7 +60,12 @@ if TYPE_CHECKING or _DSPY_AVAILABLE:
             "RetrievalResponse",
             "TableItem",
             "TextItem",
-            "GuidelineBrowserStrategy",
+            "AgenticHybridStrategy",
+            "Bm25PrfStrategy",
+            "DenseMmrStrategy",
+            "HydeHybridStrategy",
+            "HybridRrfStrategy",
+            "QueryFusionHybridStrategy",
             "RetrievalStrategy",
             "StrategyInfo",
             "StrategyRegistration",

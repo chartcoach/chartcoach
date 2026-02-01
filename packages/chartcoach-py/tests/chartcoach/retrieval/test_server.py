@@ -255,18 +255,38 @@ def test_catalog_from_uri_rejects_non_parquet_s3() -> None:
         Catalog.from_uri("s3://bucket/catalog.txt")
 
 
-def test_default_strategy_registrations_include_guideline_browser(monkeypatch) -> None:
+def test_default_strategy_registrations_include_sota_strategies(monkeypatch) -> None:
     _install_fastapi_stub(monkeypatch)
     regs = create_default_strategy_registrations()
-    assert any(cls.id == "guideline-browser@v0" for cls, _factory in regs)
+    ids = {cls.id for cls, _factory in regs}
+    assert "bm25-prf@v1" in ids
+    assert "hybrid-rrf@v1" in ids
 
 
-def test_default_strategy_factory_instantiates_guideline_browser(monkeypatch) -> None:
+def test_default_strategy_factory_instantiates_bm25(
+    monkeypatch, embedding_atlas_cache_dir
+) -> None:
     _install_fastapi_stub(monkeypatch)
-    monkeypatch.setenv("OPENAI_BASE_URL", "http://example.invalid/v1")
-    monkeypatch.setenv("OPENAI_API_KEY", "k")
+    import chartcoach.embedding
+
+    def fake_embed_text(
+        df: pl.DataFrame, *, embedding_column: str = "embedding", **_kwargs
+    ):
+        vectors: list[list[float]] = []
+        for text in df["content"].to_list():
+            vectors.append([1.0, 0.0] if "color" in str(text).lower() else [0.0, 1.0])
+        return pl.concat(
+            [
+                df.select("id", "role", "content"),
+                pl.DataFrame({embedding_column: vectors}),
+            ],
+            how="horizontal",
+        )
+
+    monkeypatch.setattr(chartcoach.embedding, "embed_text", fake_embed_text)
+
     regs = create_default_strategy_registrations()
-    cls, factory = next(reg for reg in regs if reg[0].id == "guideline-browser@v0")
+    cls, factory = next(reg for reg in regs if reg[0].id == "bm25-prf@v1")
     strategy = factory(catalog=Catalog(entries=[]))
     assert isinstance(strategy, RetrievalStrategy)
     assert strategy.id == cls.id

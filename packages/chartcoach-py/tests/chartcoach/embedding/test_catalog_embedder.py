@@ -60,7 +60,7 @@ def test_catalog_embedder_select_join_branch(
         texts: list[str],
         batch_size: int,
         model: str,
-        args: dict[object, object] | None = None,
+        args: dict[str, object] | None = None,
     ) -> np.ndarray:
         return np.ones((len(texts), 4), dtype=np.float32)
 
@@ -78,7 +78,7 @@ def test_catalog_embedder_select_join_branch(
         )
 
     monkeypatch.setattr(
-        atlas, "_project_text_with_sentence_transformers", fake_projector
+        atlas, "_project_text_with_sentence_transformers_cached", fake_projector
     )
     monkeypatch.setattr(atlas, "_run_umap", fake_umap)
 

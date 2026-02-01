@@ -51,6 +51,9 @@ class InMemoryVectorIndex(VectorIndex):
         ids = self.ids if mask is None else list(np.asarray(self.ids)[mask])
         rs = self.roles if mask is None else list(np.asarray(self.roles)[mask])
 
+        if vectors.size == 0:
+            return pl.DataFrame({"id": [], "role": [], "score": []})
+
         sims = _cosine_similarity_matrix(query, vectors)
         topk = int(min(k, sims.shape[0]))
         idx = np.argsort(-sims)[:topk]
@@ -77,7 +80,9 @@ class InMemoryVectorIndexBackend:
         role_column: str = "role",
     ) -> InMemoryVectorIndex:
         if embedded_text_df.is_empty():
-            raise ValueError("Cannot index an empty embedded text DataFrame.")
+            return InMemoryVectorIndex(
+                ids=[], roles=[], vectors=np.empty((0, 0), dtype=np.float32)
+            )
 
         vectors = vector_matrix(embedded_text_df.get_column(embedding_column))
         return InMemoryVectorIndex(

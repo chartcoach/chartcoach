@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Callable, Iterable
-from typing import ParamSpec, TypeVar
+from collections.abc import Callable, Iterable, Mapping
+from typing import Any, TypeVar
 
 import diskcache
 from joblib import Parallel, delayed
@@ -12,7 +12,6 @@ from tqdm.auto import tqdm
 
 T = TypeVar("T")
 R = TypeVar("R")
-P = ParamSpec("P")
 
 
 def parallel_map(
@@ -59,8 +58,8 @@ def parallel_map(
         )
 
 
-def param_collapsed(fn: Callable[P, R]) -> Callable[[dict], R]:
-    def wrapped(item: dict) -> R:
+def param_collapsed(fn: Callable[..., R]) -> Callable[[Mapping[str, Any]], R]:
+    def wrapped(item: Mapping[str, Any]) -> R:
         return fn(**item)
 
     return wrapped

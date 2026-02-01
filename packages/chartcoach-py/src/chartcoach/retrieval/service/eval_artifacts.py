@@ -2,7 +2,12 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
+import signal
+import threading
+import time
 from collections.abc import Iterable, Sequence
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from os import PathLike
 from pathlib import Path
@@ -25,6 +30,10 @@ from chartcoach.retrieval.strategy.types import (
 
 
 ARTIFACT_SCHEMA_VERSION = 1
+# Agentic retrieval strategies can take a few minutes depending on the LM,
+# tool-call budget, and upstream provider latency. Keep a conservative default,
+# but allow overrides via CHARTCOACH_STRATEGY_TIMEOUT_SECONDS.
+DEFAULT_STRATEGY_TIMEOUT_SECONDS = 600.0
 
 
 class _EvalArtifactsBaseModel(BaseModel):
@@ -84,6 +93,51 @@ class EvalArtifactsIndexArtifact(_EvalArtifactsBaseModel):
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def _resolve_strategy_timeout_seconds() -> float | None:
+    raw = (os.environ.get("CHARTCOACH_STRATEGY_TIMEOUT_SECONDS") or "").strip()
+    if not raw:
+        return DEFAULT_STRATEGY_TIMEOUT_SECONDS
+    try:
+        value = float(raw)
+    except ValueError:
+        return DEFAULT_STRATEGY_TIMEOUT_SECONDS
+    if value <= 0:
+        return None
+    return max(1.0, value)
+
+
+class _StrategyTimeout(BaseException):
+    pass
+
+
+@contextmanager
+def _timeout(seconds: float | None, *, message: str):
+    if seconds is None or seconds <= 0:
+        yield
+        return
+
+    if (
+        not hasattr(signal, "SIGALRM")
+        or not hasattr(signal, "setitimer")
+        or threading.current_thread() is not threading.main_thread()
+    ):
+        yield
+        return
+
+    def _handler(_signum: int, _frame: object | None) -> None:
+        raise _StrategyTimeout(message)
+
+    old_handler = signal.getsignal(signal.SIGALRM)
+    old_timer = signal.getitimer(signal.ITIMER_REAL)
+    signal.signal(signal.SIGALRM, _handler)
+    signal.setitimer(signal.ITIMER_REAL, seconds)
+    try:
+        yield
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, old_timer[0], old_timer[1])
+        signal.signal(signal.SIGALRM, old_handler)
 
 
 def load_scenarios(path: str | PathLike[str]) -> list[ScenarioSpec]:
@@ -184,6 +238,7 @@ def build_scenario_bundle(
     strategies: list[tuple[StrategyInfo, RetrievalStrategy]],
     k: int | None,
 ) -> EvalScenarioBundleArtifact:
+    strategy_timeout_seconds = _resolve_strategy_timeout_seconds()
     strategy_ids = [strategy_info.id for strategy_info, _strategy in strategies]
     digest = build_bundle_digest(
         scenario=scenario,
@@ -195,24 +250,53 @@ def build_scenario_bundle(
     request = build_retrieval_request(scenario, k=k)
     results: list[EvalStrategyResult] = []
     for strategy_info, strategy in strategies:
+        lm, lm_history_len = _get_strategy_lm_history_snapshot(strategy)
+        started = time.perf_counter()
         try:
-            response = strategy(request=request)
-        except Exception as e:  # noqa: BLE001
+            with _timeout(
+                strategy_timeout_seconds,
+                message=(
+                    f"Timed out running strategy {strategy_info.id!r} for scenario"
+                    f" {scenario.id!r} after {strategy_timeout_seconds:.0f}s."
+                ),
+            ):
+                response = strategy(request=request)
+        except _StrategyTimeout as e:
+            elapsed_ms = int((time.perf_counter() - started) * 1000)
             results.append(
                 EvalStrategyResult(
                     strategy_id=strategy_info.id,
                     strategy_name=strategy_info.name,
-                    meta={"error": str(e)},
+                    meta={"error": str(e), "elapsed_ms": elapsed_ms},
+                    guidelines=[],
+                )
+            )
+            continue
+        except Exception as e:  # noqa: BLE001
+            elapsed_ms = int((time.perf_counter() - started) * 1000)
+            results.append(
+                EvalStrategyResult(
+                    strategy_id=strategy_info.id,
+                    strategy_name=strategy_info.name,
+                    meta={"error": str(e), "elapsed_ms": elapsed_ms},
                     guidelines=[],
                 )
             )
             continue
 
+        elapsed_ms = int((time.perf_counter() - started) * 1000)
+        response_meta = dict(response.meta)
+        response_meta.setdefault("elapsed_ms", elapsed_ms)
+        if lm is not None and lm_history_len is not None:
+            response_meta.setdefault(
+                "lm_usage",
+                _extract_lm_usage_delta(lm=lm, before_len=lm_history_len),
+            )
         results.append(
             build_strategy_result(
                 strategy_info=strategy_info,
                 response_catalog_entries=response.catalog.entries,
-                response_meta=response.meta,
+                response_meta=response_meta,
             )
         )
 
@@ -222,6 +306,55 @@ def build_scenario_bundle(
         scenario=scenario,
         strategies=results,
     )
+
+
+def _get_strategy_lm_history_snapshot(
+    strategy: RetrievalStrategy,
+) -> tuple[object | None, int | None]:
+    lm = getattr(strategy, "_lm", None)
+    history = getattr(lm, "history", None)
+    if not isinstance(history, list):
+        return None, None
+    return lm, len(history)
+
+
+def _extract_lm_usage_delta(*, lm: object, before_len: int) -> dict[str, object]:
+    history = getattr(lm, "history", None)
+    if not isinstance(history, list):
+        return {}
+
+    prompt_tokens = 0
+    completion_tokens = 0
+    total_tokens = 0
+    cost_usd = 0.0
+    has_cost = False
+    calls = 0
+
+    for entry in history[before_len:]:
+        if not isinstance(entry, dict):
+            continue
+        calls += 1
+
+        usage = entry.get("usage")
+        if isinstance(usage, dict):
+            prompt_tokens += int(usage.get("prompt_tokens") or 0)
+            completion_tokens += int(usage.get("completion_tokens") or 0)
+            total_tokens += int(usage.get("total_tokens") or 0)
+
+        cost = entry.get("cost")
+        if isinstance(cost, (int, float)):
+            cost_usd += float(cost)
+            has_cost = True
+
+    out: dict[str, object] = {
+        "calls": calls,
+        "prompt_tokens": prompt_tokens,
+        "completion_tokens": completion_tokens,
+        "total_tokens": total_tokens,
+    }
+    if has_cost:
+        out["cost_usd"] = cost_usd
+    return out
 
 
 def read_json(store: ObjectStore, path: str) -> dict[str, Any] | None:
@@ -259,6 +392,19 @@ class EvalArtifactsService:
         self._store = store
         self._retrieval = retrieval
 
+    @staticmethod
+    def _bundle_has_errors(bundle: dict[str, Any]) -> bool:
+        strategies = bundle.get("strategies")
+        if not isinstance(strategies, list):
+            return False
+        for strategy in strategies:
+            if not isinstance(strategy, dict):
+                continue
+            meta = strategy.get("meta")
+            if isinstance(meta, dict) and meta.get("error"):
+                return True
+        return False
+
     def purge(self, *, prefix: str = "") -> int:
         paths = list_paths(self._store, prefix=prefix)
         delete_paths(self._store, paths)
@@ -289,7 +435,11 @@ class EvalArtifactsService:
             )
             bundle_path = f"bundles/{scenario.id}.json"
             existing = read_json(self._store, bundle_path)
-            if existing and existing.get("digest") == digest:
+            if (
+                existing
+                and existing.get("digest") == digest
+                and not self._bundle_has_errors(existing)
+            ):
                 continue
 
             bundle = build_scenario_bundle(

@@ -2,7 +2,11 @@ from __future__ import annotations
 
 from chartcoach.catalog import Catalog
 from chartcoach.catalog.model import CatalogEntry, Guideline
-from chartcoach.embedding import CatalogEmbedder, GuidelineFieldTextSource
+from chartcoach.embedding import (
+    CatalogEmbedder,
+    GuidelineFieldTextSource,
+    GuidelineLabelsTextSource,
+)
 
 
 def _make_catalog(n: int = 1) -> Catalog:
@@ -34,3 +38,8 @@ def test_text_sources_default_and_custom_roles() -> None:
     source = GuidelineFieldTextSource("title", role="headline")
     df = source.text_df(catalog)
     assert df.select("role").to_series().to_list() == ["headline"]
+
+    labels_source = GuidelineLabelsTextSource(role="tags")
+    labels_df = labels_source.text_df(catalog)
+    assert labels_df.select("role").to_series().to_list() == ["tags"]
+    assert "chart:bar" in (labels_df.select("content").to_series().to_list()[0] or "")

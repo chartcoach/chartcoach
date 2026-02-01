@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from functools import lru_cache
 from typing import Literal, Protocol
 
 import numpy as np
@@ -7,7 +8,6 @@ import polars as pl
 from embedding_atlas.projection import (
     Projection,
     _project_text_with_litellm,
-    _project_text_with_sentence_transformers,
     _run_umap,
 )
 from embedding_atlas.utils import Hasher, cache_path
@@ -23,8 +23,50 @@ class TextProjector(Protocol):
         texts: list[str],
         batch_size: int,
         model: str,
-        args: dict[object, object] | None = None,
+        args: dict[str, object] | None = None,
     ) -> np.ndarray: ...
+
+
+@lru_cache(maxsize=8)
+def _get_sentence_transformer(model: str, device: str | None):
+    from sentence_transformers import SentenceTransformer
+
+    if device:
+        return SentenceTransformer(model, device=device)
+    return SentenceTransformer(model)
+
+
+def _project_text_with_sentence_transformers_cached(
+    texts: list[str],
+    batch_size: int,
+    model: str,
+    args: dict[str, object] | None = None,
+) -> np.ndarray:
+    # `embedding_atlas`' default projector reloads models frequently. Cache for
+    # retrieval loops where we embed lots of short queries.
+    device = None
+    normalize_embeddings = False
+    show_progress_bar = False
+
+    if isinstance(args, dict):
+        raw_device = args.get("device")
+        if isinstance(raw_device, str):
+            device = raw_device
+        raw_normalize = args.get("normalize_embeddings")
+        if isinstance(raw_normalize, bool):
+            normalize_embeddings = raw_normalize
+        raw_show = args.get("show_progress_bar")
+        if isinstance(raw_show, bool):
+            show_progress_bar = raw_show
+
+    model_instance = _get_sentence_transformer(model, device)
+    return model_instance.encode(
+        texts,
+        batch_size=batch_size,
+        show_progress_bar=show_progress_bar,
+        convert_to_numpy=True,
+        normalize_embeddings=normalize_embeddings,
+    )
 
 
 def embed_text(
@@ -41,7 +83,7 @@ def embed_text(
     text_projector: TextProjector = (
         _project_text_with_litellm
         if text_projector_type == "litellm"
-        else _project_text_with_sentence_transformers
+        else _project_text_with_sentence_transformers_cached
     )
 
     excluded_text_projector_args = {"api_key", "api_base", "sync"}
