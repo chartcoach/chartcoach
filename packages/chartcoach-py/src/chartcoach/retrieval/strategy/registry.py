@@ -11,10 +11,12 @@ from chartcoach.retrieval.strategy.pipelines import (
     AgenticHybridStrategy,
     Bm25PrfStrategy,
     DenseMmrStrategy,
+    FacetFusionHybridStrategy,
     HydeHybridStrategy,
     HybridRrfStrategy,
     QueryFusionHybridStrategy,
 )
+from chartcoach.retrieval.strategy.pipelines.facet_fusion import FacetFusionConfig
 from chartcoach.retrieval.strategy.pipelines.query_fusion import QueryFusionConfig
 from chartcoach.retrieval.strategy.pipelines.searcher import GuidelineSearcher
 from chartcoach.retrieval.strategy.optional import require_dspy
@@ -148,6 +150,24 @@ def create_hybrid_rrf_strategy(*, catalog: Catalog) -> RetrievalStrategy:
         searcher=_shared_searcher(catalog=catalog),
     )
 
+def create_facet_fusion_hybrid_strategy(*, catalog: Catalog) -> RetrievalStrategy:
+    lm = _create_lm()
+    config = FacetFusionConfig(
+        n_queries=int(os.environ.get("CHARTCOACH_FACET_FUSION_N_QUERIES") or "5"),
+        rrf_k=int(os.environ.get("CHARTCOACH_FACET_FUSION_RRF_K") or "60"),
+        cross_encoder_model=os.environ.get("CHARTCOACH_FACET_FUSION_CROSS_ENCODER_MODEL")
+        or "cross-encoder/ms-marco-TinyBERT-L-6",
+        cross_encoder_candidate_limit=int(
+            os.environ.get("CHARTCOACH_FACET_FUSION_XENC_CANDIDATES") or "80"
+        ),
+    )
+    return FacetFusionHybridStrategy(
+        catalog=catalog,
+        searcher=_shared_searcher(catalog=catalog),
+        lm=lm,
+        config=config,
+    )
+
 
 def create_query_fusion_hybrid_strategy(*, catalog: Catalog) -> RetrievalStrategy:
     lm = _create_lm()
@@ -192,6 +212,7 @@ def create_default_strategy_registrations() -> list[StrategyRegistration]:
         (Bm25PrfStrategy, create_bm25_prf_strategy),
         (DenseMmrStrategy, create_dense_mmr_strategy),
         (HybridRrfStrategy, create_hybrid_rrf_strategy),
+        (FacetFusionHybridStrategy, create_facet_fusion_hybrid_strategy),
         (QueryFusionHybridStrategy, create_query_fusion_hybrid_strategy),
         (HydeHybridStrategy, create_hyde_hybrid_strategy),
         (AgenticHybridStrategy, create_agentic_hybrid_strategy),
