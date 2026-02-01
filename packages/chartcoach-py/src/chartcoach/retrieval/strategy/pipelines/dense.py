@@ -18,6 +18,16 @@ from .hints_v4 import (
     should_exclude_guideline_v4,
     task_bonus_v4,
 )
+from .hints_v5 import (
+    build_search_text_v5,
+    chart_bonus_v5,
+    domain_penalty_v5,
+    infer_hints_v5,
+    multivariate_bonus_v5,
+    precision_bonus_v5,
+    should_exclude_guideline_v5,
+    task_bonus_v5,
+)
 from .ranking import mmr_select
 from .searcher import GuidelineSearcher
 
@@ -113,6 +123,147 @@ class DenseMmrStrategy(RetrievalStrategy):
             "mmr_candidates": len(candidate_ids),
             "hits": [
                 {"id": gid, "score": float(relevance.get(gid, 0.0))}
+                for gid in selected
+                if gid in relevance
+            ],
+        }
+
+        return RetrievalResponse(catalog=Catalog(entries=ordered_entries), meta=meta)
+
+
+class DenseMmrStrategyV4(RetrievalStrategy):
+    """Dense bi-encoder retrieval + MMR v4 (radial disambiguation + precision/multivariate boosting)."""
+
+    id = "dense-mmr@v4"
+
+    def __init__(
+        self,
+        *,
+        catalog: Catalog,
+        searcher: GuidelineSearcher,
+        default_k: int = 20,
+        raw_multiplier: int = 10,
+        mmr_lambda: float = 0.65,
+        mmr_candidate_limit: int = 200,
+    ) -> None:
+        super().__init__(catalog)
+        self._searcher = searcher
+        self._default_k = int(default_k)
+        self._raw_multiplier = int(raw_multiplier)
+        self._mmr_lambda = float(mmr_lambda)
+        self._mmr_candidate_limit = int(mmr_candidate_limit)
+
+        self._id_to_labels = {
+            entry.id: list(entry.guideline.labels) for entry in catalog.entries
+        }
+
+    def _forward(self, request: RetrievalRequest) -> RetrievalResponse:
+        effective_k = self._default_k if request.k is None else int(request.k)
+        if effective_k <= 0:
+            raise ValueError("k must be positive.")
+
+        title = (get_text_by_role(request, role="title") or "").strip()
+        situation = require_text_by_role(request, role="situation")
+        hints = infer_hints_v5(title=title, situation=situation)
+        search_text = build_search_text_v5(title=title, situation=situation, hints=hints)
+
+        allowed_ids = {
+            gid
+            for gid, labels in self._id_to_labels.items()
+            if not should_exclude_guideline_v5(guideline_labels=labels, hints=hints)
+        }
+
+        query_vec = self._searcher.vector_index.embed_query(search_text)
+
+        raw_k = max(20, min(3_000, effective_k * self._raw_multiplier))
+        hits_df = self._searcher.search_dense(
+            query_vector=query_vec, k=raw_k, ids=allowed_ids
+        )
+        if hits_df.is_empty():
+            return RetrievalResponse(
+                catalog=Catalog(entries=[]),
+                meta={
+                    **self._searcher.vector_index.meta(),
+                    "k": effective_k,
+                    "hits": [],
+                },
+            )
+        if "role" in hits_df.columns:
+            hits_df = hits_df.filter(pl.col("role") != "labels")
+
+        agg = self._searcher.aggregate_guideline_hits(hits_df, k=raw_k)
+        agg = agg.head(int(min(self._mmr_candidate_limit, agg.height)))
+
+        candidate_ids = [gid for gid in agg["id"].to_list() if isinstance(gid, str)]
+        relevance: dict[str, float] = {}
+        for row in agg.select("id", "score").to_dicts():
+            gid = row.get("id")
+            if not isinstance(gid, str):
+                continue
+            base = float(row.get("score") or 0.0)
+            labels = self._id_to_labels.get(gid, [])
+            relevance[gid] = (
+                base
+                + chart_bonus_v5(guideline_labels=labels, hints=hints)
+                + task_bonus_v5(guideline_labels=labels, hints=hints)
+                + multivariate_bonus_v5(guideline_labels=labels, hints=hints)
+                + precision_bonus_v5(guideline_labels=labels, hints=hints)
+                + domain_penalty_v5(guideline_labels=labels, hints=hints)
+            )
+
+        embedding_column = self._searcher.vector_index.config.embedding_column
+        embed_df = (
+            self._searcher.vector_index.embedded_text_df.filter(
+                pl.col("id").is_in(candidate_ids)
+            )
+            .filter(pl.col("role") != "labels")
+            .select("id", embedding_column)
+        )
+
+        embeddings: dict[str, np.ndarray] = {}
+        for gid in candidate_ids:
+            vecs = embed_df.filter(pl.col("id") == gid).get_column(embedding_column)
+            if vecs.len() == 0:
+                continue
+            mat = vector_matrix(vecs)
+            if mat.size == 0:
+                continue
+            embeddings[gid] = mat.mean(axis=0)
+
+        selected = mmr_select(
+            candidate_ids=candidate_ids,
+            relevance=relevance,
+            embeddings=embeddings,
+            k=min(effective_k, len(candidate_ids)),
+            lambda_mult=self._mmr_lambda,
+        )
+        if len(selected) < effective_k:
+            selected_set = set(selected)
+            selected.extend([gid for gid in candidate_ids if gid not in selected_set])
+            selected = selected[:effective_k]
+
+        id_to_entry = {entry.id: entry for entry in self.catalog.entries}
+        ordered_entries = [id_to_entry[gid] for gid in selected if gid in id_to_entry]
+
+        meta = {
+            **self._searcher.vector_index.meta(),
+            "k": effective_k,
+            "raw_k": raw_k,
+            "score_kind": "cosine_similarity_label_rerank_v4",
+            "mmr_lambda": self._mmr_lambda,
+            "mmr_candidates": len(candidate_ids),
+            "filters": {
+                "excluded_pipeline": True,
+                "hard_excluded_domains": True,
+            },
+            "hints": {
+                "title_used": bool(title),
+                "active_domains": sorted(hints.active_domains),
+                "chart_labels": sorted(hints.chart_labels),
+                "task_labels": sorted(hints.task_labels),
+            },
+            "hits": [
+                {"id": gid, "score_adj": float(relevance.get(gid, 0.0))}
                 for gid in selected
                 if gid in relevance
             ],
