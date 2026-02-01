@@ -41,8 +41,8 @@ class QueryFusionSignature(dspy.Signature):
         desc=(
             "A list of short, diverse search queries. "
             "Each query should focus on a different facet (chart type, task/goal, audience, risk/clarity). "
-            "If the situation implies paired comparisons (two values per category / before-after / year-over-year), "
-            "include at least one query that uses the terms 'paired values' and 'delta encoding'."
+            "If the situation compares exactly two time points or otherwise implies paired values (before-after / year-over-year), "
+            "you MUST include a query that contains the literal phrases 'paired values' and 'delta encoding' (and optionally 'pairwise delta')."
         )
     )
 
@@ -166,8 +166,11 @@ class QueryFusionHybridStrategy(RetrievalStrategy):
         reranked = fused
         cross_encoder_fallback_used = False
         cross_encoder_error: str | None = None
+        rerank_query_chars: int | None = None
         if self._config.cross_encoder_model and fused:
-            qvec = self._searcher.vector_index.embed_query(focused_situation)
+            rerank_query = "\n".join(queries) if queries else focused_situation
+            rerank_query_chars = len(rerank_query)
+            qvec = self._searcher.vector_index.embed_query(rerank_query)
             try:
                 reranker = self._cross_encoder_reranker
                 if reranker is None:
@@ -177,7 +180,7 @@ class QueryFusionHybridStrategy(RetrievalStrategy):
                     self._cross_encoder_reranker = reranker
 
                 hits_df = self._searcher.search_hybrid(
-                    query_text=focused_situation,
+                    query_text=rerank_query,
                     query_vector=qvec,
                     reranker=reranker,
                     k=min(len(fused), self._config.cross_encoder_candidate_limit),
@@ -252,6 +255,7 @@ class QueryFusionHybridStrategy(RetrievalStrategy):
             ),
             "cross_encoder_fallback_used": cross_encoder_fallback_used,
             "cross_encoder_error": cross_encoder_error,
+            "cross_encoder_rerank_query_chars": rerank_query_chars,
             "fill_fallback_used": fill_fallback_used,
             "hits": [{"id": gid} for gid in final_ids],
         }

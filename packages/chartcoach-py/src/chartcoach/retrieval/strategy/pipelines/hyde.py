@@ -114,8 +114,11 @@ class HydeHybridStrategy(RetrievalStrategy):
         final_ids = candidates[:effective_k]
         cross_encoder_fallback_used = False
         cross_encoder_error: str | None = None
+        rerank_query_chars: int | None = None
         if self._config.cross_encoder_model and candidates:
-            qvec = self._searcher.vector_index.embed_query(situation)
+            rerank_query = pseudo
+            rerank_query_chars = len(rerank_query)
+            qvec = self._searcher.vector_index.embed_query(rerank_query)
             try:
                 reranker = self._cross_encoder_reranker
                 if reranker is None:
@@ -125,7 +128,7 @@ class HydeHybridStrategy(RetrievalStrategy):
                     self._cross_encoder_reranker = reranker
 
                 hits_hybrid = self._searcher.search_hybrid(
-                    query_text=situation,
+                    query_text=rerank_query,
                     query_vector=qvec,
                     reranker=reranker,
                     k=min(len(candidates), self._dense_candidate_k),
@@ -198,6 +201,7 @@ class HydeHybridStrategy(RetrievalStrategy):
             ),
             "cross_encoder_fallback_used": cross_encoder_fallback_used,
             "cross_encoder_error": cross_encoder_error,
+            "cross_encoder_rerank_query_chars": rerank_query_chars,
             "fill_fallback_used": fill_fallback_used,
             "hits": [{"id": gid} for gid in final_ids[:effective_k]],
         }
