@@ -22,8 +22,9 @@ class HydeSignature(dspy.Signature):
 
     situation: str = dspy.InputField(
         desc=(
-            "Scenario context (intent + query). "
-            "Write a hypothetical high-quality critique that mentions likely chart issues and improvements."
+            "Scenario title + designer intent describing the chart to improve. "
+            "Write a hypothetical high-quality critique that mentions likely chart issues and improvements. "
+            "Focus only on the described chart, and ignore mentions of adjacent charts in the surrounding story."
         )
     )
 
@@ -185,4 +186,3 @@ class HydeHybridStrategy(RetrievalStrategy):
         }
 
         return RetrievalResponse(catalog=Catalog(entries=ordered_entries), meta=meta)
-
