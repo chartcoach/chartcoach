@@ -32,7 +32,9 @@ def test_helpers_cover_unique_and_folder_id_match() -> None:
     assert validate._validate_folder_ids_match_paths([(path, "mismatch")]) == [
         "Folder name 'g1' does not match guideline id 'mismatch'."
     ]
-    assert validate._validate_unique_ids(["g1", "g1"]) == ["Duplicate guideline ids: ['g1']"]
+    assert validate._validate_unique_ids(["g1", "g1"]) == [
+        "Duplicate guideline ids: ['g1']"
+    ]
 
 
 def test_load_folder_ids_reports_missing_root(tmp_path: Path) -> None:
@@ -42,7 +44,9 @@ def test_load_folder_ids_reports_missing_root(tmp_path: Path) -> None:
     assert errors == [f"Catalog folder does not exist: {missing}"]
 
 
-def test_load_folder_ids_skips_templates_and_collects_entry_errors(tmp_path: Path) -> None:
+def test_load_folder_ids_skips_templates_and_collects_entry_errors(
+    tmp_path: Path,
+) -> None:
     root = tmp_path / "guidelines"
     root.mkdir()
     (root / "README.txt").write_text("not a dir", encoding="utf-8")

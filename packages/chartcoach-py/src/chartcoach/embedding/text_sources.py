@@ -37,6 +37,24 @@ class GuidelineFieldTextSource:
         )
 
 
+@dataclass(frozen=True, slots=True)
+class GuidelineLabelsTextSource:
+    """Index a guideline's structured labels as a single text row."""
+
+    role: str = "labels"
+    separator: str = "; "
+
+    def text_df(self, catalog: Catalog) -> pl.DataFrame:
+        return catalog.df().select(
+            "id",
+            role=pl.lit(self.role),
+            content=pl.col("guideline")
+            .struct.field("labels")
+            .list.join(self.separator)
+            .fill_null(""),
+        )
+
+
 DEFAULT_TEXT_SOURCES: tuple[CatalogTextSource, ...] = (
     SectionsTextSource(),
     GuidelineFieldTextSource("title"),

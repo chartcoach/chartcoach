@@ -29,7 +29,9 @@ def _validate_unique_ids(ids: list[str]) -> list[str]:
     return errors
 
 
-def _load_folder_ids(folder_path: PathLike[str]) -> tuple[list[tuple[Path, str]], list[str]]:
+def _load_folder_ids(
+    folder_path: PathLike[str],
+) -> tuple[list[tuple[Path, str]], list[str]]:
     root = Path(folder_path)
     if not root.exists():
         return [], [f"Catalog folder does not exist: {root}"]
@@ -130,4 +132,3 @@ def main(argv: list[str] | None = None) -> None:
 
 if __name__ == "__main__":  # pragma: no cover
     main()
-

@@ -7,12 +7,13 @@ import pytest
 from chartcoach.index import InMemoryVectorIndexBackend
 
 
-def test_in_memory_backend_empty_df_raises() -> None:
+def test_in_memory_backend_empty_df_returns_empty_index() -> None:
     empty = pl.DataFrame(
         schema={"id": pl.String, "role": pl.String, "embedding": pl.List(pl.Float64)}
     )
-    with pytest.raises(ValueError):
-        InMemoryVectorIndexBackend().index(empty)
+    index = InMemoryVectorIndexBackend().index(empty)
+    hits = index.search(np.array([1.0, 0.0]), k=10)
+    assert hits.is_empty()
 
 
 def test_in_memory_index_search_orders_and_filters() -> None:

@@ -14,6 +14,7 @@ from .text_sources import (
     CatalogTextSource,
     DEFAULT_TEXT_SOURCES,
     GuidelineFieldTextSource,
+    GuidelineLabelsTextSource,
     SectionsTextSource,
 )
 from .vectors import vector_matrix
@@ -23,6 +24,7 @@ __all__ = [
     "CatalogTextSource",
     "DEFAULT_TEXT_SOURCES",
     "GuidelineFieldTextSource",
+    "GuidelineLabelsTextSource",
     "SectionsTextSource",
     "vector_matrix",
 ]

@@ -69,13 +69,40 @@ class Catalog:
 
     def df(self) -> pl.DataFrame:
         if self._df_cache is None:
-            dicts = [entry.model_dump() for entry in self._entries]
-            self._df_cache = (
-                pl.from_dicts(dicts)
-                .select("id", "guideline", "references")
-                .unique("id")
-                .sort("id")
-            )
+            if not self._entries:
+                section_schema = pl.Struct(
+                    [
+                        pl.Field("role", pl.String),
+                        pl.Field("title", pl.String),
+                        pl.Field("content", pl.String),
+                    ]
+                )
+                guideline_schema = pl.Struct(
+                    [
+                        pl.Field("id", pl.String),
+                        pl.Field("title", pl.String),
+                        pl.Field("bibliography", pl.String),
+                        pl.Field("description", pl.String),
+                        pl.Field("labels", pl.List(pl.String)),
+                        pl.Field("body", pl.String),
+                        pl.Field("sections", pl.List(section_schema)),
+                    ]
+                )
+                self._df_cache = pl.DataFrame(
+                    schema={
+                        "id": pl.String,
+                        "guideline": guideline_schema,
+                        "references": pl.List(pl.String),
+                    }
+                )
+            else:
+                dicts = [entry.model_dump() for entry in self._entries]
+                self._df_cache = (
+                    pl.from_dicts(dicts)
+                    .select("id", "guideline", "references")
+                    .unique("id")
+                    .sort("id")
+                )
         return self._df_cache.clone()
 
     def sections_df(self) -> pl.DataFrame:
