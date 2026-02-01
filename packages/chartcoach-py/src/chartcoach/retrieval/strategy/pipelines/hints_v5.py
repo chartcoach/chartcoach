@@ -41,7 +41,7 @@ _RADIAL_WORD_RE = re.compile(
 
 _PYRAMID_RE = re.compile(r"\b(population pyramid|pyramid)\b", re.IGNORECASE)
 _BAR_RE = re.compile(
-    r"\b(bar chart|column chart|rank|ranking|ranked|top|highest|lowest|most|least|largest|smallest)\b",
+    r"\b(bar chart|bar-chart|barchart|bar graph|column chart|column-chart|columnchart|column graph)\b",
     re.IGNORECASE,
 )
 _DOT_RE = re.compile(r"\b(dot|dots|dotplot|dot plot|icon array|pictograph)\b", re.IGNORECASE)
@@ -141,6 +141,7 @@ def infer_hints_v5(*, title: str | None, situation: str) -> ScenarioHintsV5:
 
     chart_labels: set[str] = set()
     task_labels: set[str] = set()
+    has_pyramid = False
 
     # High-salience chart forms.
     if _FLOW_RE.search(text):
@@ -169,6 +170,7 @@ def infer_hints_v5(*, title: str | None, situation: str) -> ScenarioHintsV5:
         task_labels.add("task:proportion")
 
     if _PYRAMID_RE.search(text):
+        has_pyramid = True
         # Population pyramids are effectively paired distributions (mirrored bars).
         chart_labels.update({"chart:bar", "chart:distribution"})
         task_labels.add("task:characterize-distribution")
@@ -195,10 +197,15 @@ def infer_hints_v5(*, title: str | None, situation: str) -> ScenarioHintsV5:
         task_labels.update({"task:rank", "task:sort"})
     if _CHANGE_RE.search(text):
         task_labels.add("task:detect-change")
-    if _PART_WHOLE_RE.search(text):
+    if _PART_WHOLE_RE.search(text) and not has_pyramid:
         task_labels.add("task:part-to-whole")
     if _MULTIVARIATE_RE.search(text):
         task_labels.add("task:encode-multivariate")
+
+    # If the scenario strongly signals a ranking/sorting task, prefer bar guidance by default unless we
+    # already identified a more specific chart family (map, flow, radial, etc.).
+    if not chart_labels and ({"task:rank", "task:sort"} & task_labels):
+        chart_labels.update({"chart:bar", "chart:stacked-bar"})
 
     if not chart_labels:
         chart_labels.update(_GENERAL_CHART_LABELS)
