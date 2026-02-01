@@ -32,6 +32,7 @@ class AgenticHybridSignature(dspy.Signature):
     RULES:
     - You MUST ground selections in the catalog; never invent guideline IDs.
     - Focus only on improving the chart described by the scenario title/intent, and ignore mentions of adjacent charts.
+    - If the situation implies paired comparisons (two values per category / before-after / year-over-year), search for delta encodings and pairwise-delta guidance.
     - Use multiple searches and read full guidelines before final selection.
     - Return a diverse, non-redundant list.
     - If top_k > 0, return exactly top_k IDs (unless the catalog is smaller).
