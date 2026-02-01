@@ -6,7 +6,7 @@ Visualization guideline catalog + tooling for browsing, retrieval, and human eva
 
 - `guidelines/`: guideline entries (Markdown + metadata) and `catalog.parquet`
 - `apps/site/`: Astro/Starlight guideline browser
-- `apps/eval-ui/`: TanStack Start app for rating guideline relevance per scenario
+- `apps/eval-ui/`: TanStack Start app for rating retrieved guidelines per scenario (bucket + optional utility dimensions)
 - `evals/`: evaluation scenarios (`evals/scenarios/spec.yaml`)
 - `packages/chartcoach-js/` (`@chartcoach/catalog`): JS catalog loaders/utilities
 - `packages/chartcoach-ui/`: shared UI components/styles

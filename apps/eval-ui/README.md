@@ -1,6 +1,6 @@
-# @chartcoach/eval-ui (Guideline Relevance Eval)
+# @chartcoach/eval-ui (Guideline Eval)
 
-TanStack Start app for human relevance rating of retrieved visualization guidelines.
+TanStack Start app for human rating of retrieved visualization guidelines.
 
 ## What it does
 
@@ -10,8 +10,10 @@ TanStack Start app for human relevance rating of retrieved visualization guideli
   - `s3://...` (S3 / S3-compatible)
 - Shows each scenario’s chart + query + designer intent
 - Shows per-strategy guideline sets from the artifact bundles
-- Persists Likert (1-5) relevance ratings locally in the browser via RxDB (localStorage)
-- Allows syncing ratings to S3 and pulling the latest export from S3 (device-scoped; optional)
+- Persists **guideline ratings** locally in the browser via RxDB (localStorage):
+  - required bucket: `hard_constraint | soft_constraint | not_useful | not_applicable`
+  - optional dimensions: `actionability | impact | risk | credibility | notes`
+- Optional S3 sync: auto-upload + pull latest export (device-scoped)
 
 ## Run
 
@@ -104,7 +106,11 @@ If `S3_*` variables are not set, automatic rating uploads are disabled (local pe
 ### Ratings
 
 Ratings are stored locally via RxDB (localStorage) under the database name `chartcoach-eval-ui` (keys managed by RxDB).
-Use the “Clear ratings” button in the header to reset. Older builds used `chartcoach/eval-ui/relevance-ratings/v1` and will migrate once.
+
+- Use the header actions:
+  - **Export**: download a JSON export (`chartcoach.guideline-ratings.v2`) for sharing/backup
+  - **Import**: load a JSON export and merge it into local storage
+  - **Clear**: reset all local ratings for this device
 
 ## Guideline Links
 
