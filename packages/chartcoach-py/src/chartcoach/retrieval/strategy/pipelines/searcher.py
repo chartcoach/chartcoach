@@ -29,6 +29,12 @@ class GuidelineSearcher:
         situation = require_text_by_role(request, role="situation")
         return f"{title}\n\n{situation}".strip() if title else situation
 
+    @staticmethod
+    def _sanitize_fts_query(query_text: str) -> str:
+        # Lance FTS treats double quotes as phrase-query syntax, which requires
+        # token positions that our current index does not store.
+        return query_text.replace('"', " ")
+
     def search_dense(
         self,
         *,
@@ -52,6 +58,7 @@ class GuidelineSearcher:
         roles: set[str] | None = None,
         ids: set[str] | None = None,
     ) -> pl.DataFrame:
+        query_text = self._sanitize_fts_query(query_text)
         return self.vector_index.lance().search_fts(
             query_text,
             k=k,
@@ -70,6 +77,7 @@ class GuidelineSearcher:
         ids: set[str] | None = None,
         fts_columns: str | list[str] | None = None,
     ) -> pl.DataFrame:
+        query_text = self._sanitize_fts_query(query_text)
         return self.vector_index.lance().search_hybrid(
             query_text=query_text,
             query_vector=query_vector,
