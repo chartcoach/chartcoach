@@ -10,9 +10,13 @@ from chartcoach.retrieval.strategy.base import RetrievalStrategy
 from chartcoach.retrieval.strategy.pipelines import (
     AgenticHybridStrategy,
     Bm25PrfStrategy,
+    Bm25PrfStrategyV2,
     DenseMmrStrategy,
+    DenseMmrStrategyV2,
+    HeuristicFusionHybridStrategyV2,
     HydeHybridStrategy,
     HybridRrfStrategy,
+    HybridRrfStrategyV2,
     QueryFusionHybridStrategy,
 )
 from chartcoach.retrieval.strategy.pipelines.query_fusion import QueryFusionConfig
@@ -134,6 +138,11 @@ def create_bm25_prf_strategy(*, catalog: Catalog) -> RetrievalStrategy:
         catalog=catalog, searcher=_shared_searcher(catalog=catalog)
     )
 
+def create_bm25_prf_strategy_v2(*, catalog: Catalog) -> RetrievalStrategy:
+    return Bm25PrfStrategyV2(
+        catalog=catalog, searcher=_shared_searcher(catalog=catalog)
+    )
+
 
 def create_dense_mmr_strategy(*, catalog: Catalog) -> RetrievalStrategy:
     return DenseMmrStrategy(
@@ -141,9 +150,27 @@ def create_dense_mmr_strategy(*, catalog: Catalog) -> RetrievalStrategy:
         searcher=_shared_searcher(catalog=catalog),
     )
 
+def create_dense_mmr_strategy_v2(*, catalog: Catalog) -> RetrievalStrategy:
+    return DenseMmrStrategyV2(
+        catalog=catalog,
+        searcher=_shared_searcher(catalog=catalog),
+    )
+
 
 def create_hybrid_rrf_strategy(*, catalog: Catalog) -> RetrievalStrategy:
     return HybridRrfStrategy(
+        catalog=catalog,
+        searcher=_shared_searcher(catalog=catalog),
+    )
+
+def create_hybrid_rrf_strategy_v2(*, catalog: Catalog) -> RetrievalStrategy:
+    return HybridRrfStrategyV2(
+        catalog=catalog,
+        searcher=_shared_searcher(catalog=catalog),
+    )
+
+def create_heuristic_fusion_hybrid_strategy_v2(*, catalog: Catalog) -> RetrievalStrategy:
+    return HeuristicFusionHybridStrategyV2(
         catalog=catalog,
         searcher=_shared_searcher(catalog=catalog),
     )
@@ -190,8 +217,12 @@ def create_agentic_hybrid_strategy(*, catalog: Catalog) -> RetrievalStrategy:
 def create_default_strategy_registrations() -> list[StrategyRegistration]:
     return [
         (Bm25PrfStrategy, create_bm25_prf_strategy),
+        (Bm25PrfStrategyV2, create_bm25_prf_strategy_v2),
         (DenseMmrStrategy, create_dense_mmr_strategy),
+        (DenseMmrStrategyV2, create_dense_mmr_strategy_v2),
         (HybridRrfStrategy, create_hybrid_rrf_strategy),
+        (HybridRrfStrategyV2, create_hybrid_rrf_strategy_v2),
+        (HeuristicFusionHybridStrategyV2, create_heuristic_fusion_hybrid_strategy_v2),
         (QueryFusionHybridStrategy, create_query_fusion_hybrid_strategy),
         (HydeHybridStrategy, create_hyde_hybrid_strategy),
         (AgenticHybridStrategy, create_agentic_hybrid_strategy),

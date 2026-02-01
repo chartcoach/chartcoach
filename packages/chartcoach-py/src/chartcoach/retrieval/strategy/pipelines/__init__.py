@@ -12,17 +12,22 @@ These strategies are intended as *competitive* baselines across families:
 from __future__ import annotations
 
 from .agentic_hybrid import AgenticHybridStrategy
-from .bm25 import Bm25PrfStrategy
-from .dense import DenseMmrStrategy
+from .bm25 import Bm25PrfStrategy, Bm25PrfStrategyV2
+from .dense import DenseMmrStrategy, DenseMmrStrategyV2
+from .heuristic_fusion import HeuristicFusionHybridStrategyV2
 from .hyde import HydeHybridStrategy
-from .hybrid import HybridRrfStrategy
+from .hybrid import HybridRrfStrategy, HybridRrfStrategyV2
 from .query_fusion import QueryFusionHybridStrategy
 
 __all__ = [
     "AgenticHybridStrategy",
     "Bm25PrfStrategy",
+    "Bm25PrfStrategyV2",
     "DenseMmrStrategy",
+    "DenseMmrStrategyV2",
+    "HeuristicFusionHybridStrategyV2",
     "HydeHybridStrategy",
     "HybridRrfStrategy",
+    "HybridRrfStrategyV2",
     "QueryFusionHybridStrategy",
 ]

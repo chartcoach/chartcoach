@@ -1,0 +1,179 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+import polars as pl
+
+from chartcoach.catalog import Catalog
+from chartcoach.retrieval.strategy.base import RetrievalStrategy
+from chartcoach.retrieval.strategy.request_text import require_text_by_role
+from chartcoach.retrieval.strategy.types import RetrievalRequest, RetrievalResponse
+
+from .hints import ScenarioHints, build_search_text, chart_bonus, infer_hints
+from .ranking import rrf_scores
+from .searcher import GuidelineSearcher
+
+
+_CHART_LABEL_TO_QUERY = {
+    "chart:area": "area chart",
+    "chart:bar": "bar chart",
+    "chart:cartogram": "cartogram",
+    "chart:choropleth": "choropleth map",
+    "chart:donut": "donut chart",
+    "chart:icon-array": "icon array dot chart",
+    "chart:line": "line chart time series",
+    "chart:map": "map",
+    "chart:pie": "pie chart",
+    "chart:radial": "radial chart",
+    "chart:sankey": "sankey alluvial flow diagram",
+    "chart:time-series": "time series chart",
+}
+
+
+def _derive_queries(*, situation: str, hints: ScenarioHints) -> list[str]:
+    base = build_search_text(situation=situation)
+    if not base:
+        return []
+
+    chart_terms = [
+        _CHART_LABEL_TO_QUERY[label]
+        for label in sorted(hints.chart_labels)
+        if label in _CHART_LABEL_TO_QUERY
+    ]
+    chart_facet = ""
+    if chart_terms:
+        chart_facet = f"{' '.join(chart_terms)} design guidelines"
+
+    return [
+        base,
+        chart_facet or base,
+        "news visualization annotations clarity context general audience",
+        "avoid misleading encodings annotate baselines units uncertainty if applicable",
+    ]
+
+
+@dataclass(frozen=True, slots=True)
+class HeuristicFusionConfig:
+    rrf_k: int = 60
+    per_query_raw_multiplier: int = 10
+    per_query_guideline_k: int = 40
+
+
+class HeuristicFusionHybridStrategyV2(RetrievalStrategy):
+    """Deterministic multi-query hybrid retrieval (heuristic facets + RRF + label rerank)."""
+
+    id = "heuristic-fusion-hybrid@v2"
+
+    def __init__(
+        self,
+        *,
+        catalog: Catalog,
+        searcher: GuidelineSearcher,
+        config: HeuristicFusionConfig = HeuristicFusionConfig(),
+        default_k: int = 20,
+    ) -> None:
+        super().__init__(catalog)
+        self._searcher = searcher
+        self._config = config
+        self._default_k = int(default_k)
+
+        self._id_to_labels = {entry.id: list(entry.guideline.labels) for entry in catalog.entries}
+        self._pipeline_ids = {
+            gid
+            for gid, labels in self._id_to_labels.items()
+            if any(l.startswith("pipeline:") for l in labels)
+        }
+        self._elections_ids = {
+            gid
+            for gid, labels in self._id_to_labels.items()
+            if "domain:elections" in labels
+        }
+
+    def _allowed_ids(self, *, hints: ScenarioHints) -> set[str]:
+        allowed = set(self._id_to_labels)
+        allowed -= self._pipeline_ids
+        if not hints.is_election_related:
+            allowed -= self._elections_ids
+        return allowed
+
+    def _forward(self, request: RetrievalRequest) -> RetrievalResponse:
+        from lancedb.rerankers import RRFReranker
+
+        effective_k = self._default_k if request.k is None else int(request.k)
+        if effective_k <= 0:
+            raise ValueError("k must be positive.")
+
+        situation = require_text_by_role(request, role="situation")
+        hints = infer_hints(situation=situation)
+        allowed_ids = self._allowed_ids(hints=hints)
+
+        queries = [q for q in _derive_queries(situation=situation, hints=hints) if q.strip()]
+        if not queries:
+            return RetrievalResponse(
+                catalog=Catalog(entries=[]),
+                meta={
+                    **self._searcher.vector_index.meta(),
+                    "k": effective_k,
+                    "hits": [],
+                },
+            )
+
+        raw_k = max(30, min(3_000, effective_k * int(self._config.per_query_raw_multiplier)))
+        per_query_k = max(effective_k, int(self._config.per_query_guideline_k))
+
+        per_query_rankings: list[list[str]] = []
+        for q in queries:
+            qvec = self._searcher.vector_index.embed_query(q)
+            hits_df = self._searcher.search_hybrid(
+                query_text=q,
+                query_vector=qvec,
+                reranker=RRFReranker(K=self._config.rrf_k),
+                k=raw_k,
+                ids=allowed_ids,
+                fts_columns="text",
+            )
+            if "role" in hits_df.columns:
+                hits_df = hits_df.filter(pl.col("role") != "labels")
+            agg = self._searcher.aggregate_guideline_hits(hits_df, k=per_query_k)
+            per_query_rankings.append(
+                [gid for gid in agg["id"].to_list() if isinstance(gid, str)]
+            )
+
+        fused_scores = rrf_scores(rankings=per_query_rankings, k=self._config.rrf_k)
+        adjusted: list[tuple[str, float]] = []
+        for gid, score in fused_scores.items():
+            labels = self._id_to_labels.get(gid, [])
+            adjusted.append(
+                (
+                    gid,
+                    float(score)
+                    + chart_bonus(guideline_labels=labels, hints=hints),
+                )
+            )
+        adjusted.sort(key=lambda kv: (-kv[1], kv[0]))
+        fused = [gid for gid, _score in adjusted]
+
+        final_ids = fused[:effective_k]
+
+        id_to_entry = {entry.id: entry for entry in self.catalog.entries}
+        ordered_entries = [id_to_entry[gid] for gid in final_ids if gid in id_to_entry]
+
+        meta = {
+            **self._searcher.vector_index.meta(),
+            "k": effective_k,
+            "raw_k": raw_k,
+            "score_kind": "heuristic_rrf_fusion",
+            "queries": queries,
+            "rrf_k": self._config.rrf_k,
+            "filters": {
+                "excluded_pipeline": True,
+                "excluded_domain_elections": not hints.is_election_related,
+            },
+            "hints": {
+                "is_election_related": hints.is_election_related,
+                "chart_labels": sorted(hints.chart_labels),
+            },
+            "hits": [{"id": gid} for gid in final_ids],
+        }
+
+        return RetrievalResponse(catalog=Catalog(entries=ordered_entries), meta=meta)
