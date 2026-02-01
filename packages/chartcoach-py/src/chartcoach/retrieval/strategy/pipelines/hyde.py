@@ -59,6 +59,8 @@ class HydeHybridStrategy(RetrievalStrategy):
         self._raw_multiplier = int(raw_multiplier)
         self._dense_candidate_k = int(dense_candidate_k)
         self._program = dspy.ChainOfThought(HydeSignature)
+        # Lazily initialized on first use to avoid repeatedly loading weights.
+        self._cross_encoder_reranker = None
 
     def _forward(self, request: RetrievalRequest) -> RetrievalResponse:
         from lancedb.rerankers import CrossEncoderReranker, RRFReranker
@@ -108,23 +110,34 @@ class HydeHybridStrategy(RetrievalStrategy):
 
         final_ids = candidates[:effective_k]
         cross_encoder_fallback_used = False
+        cross_encoder_error: str | None = None
         if self._config.cross_encoder_model and candidates:
             qvec = self._searcher.vector_index.embed_query(situation)
-            reranker = CrossEncoderReranker(model_name=self._config.cross_encoder_model)
-            hits_hybrid = self._searcher.search_hybrid(
-                query_text=situation,
-                query_vector=qvec,
-                reranker=reranker,
-                k=min(len(candidates), self._dense_candidate_k),
-                ids=set(candidates),
-                fts_columns="text",
-            )
-            agg = self._searcher.aggregate_guideline_hits(hits_hybrid, k=effective_k)
-            reranked = [gid for gid in agg["id"].to_list() if isinstance(gid, str)]
-            if reranked:
-                final_ids = reranked
-            else:
+            try:
+                reranker = self._cross_encoder_reranker
+                if reranker is None:
+                    reranker = CrossEncoderReranker(
+                        model_name=self._config.cross_encoder_model
+                    )
+                    self._cross_encoder_reranker = reranker
+
+                hits_hybrid = self._searcher.search_hybrid(
+                    query_text=situation,
+                    query_vector=qvec,
+                    reranker=reranker,
+                    k=min(len(candidates), self._dense_candidate_k),
+                    ids=set(candidates),
+                    fts_columns="text",
+                )
+                agg = self._searcher.aggregate_guideline_hits(hits_hybrid, k=effective_k)
+                reranked = [gid for gid in agg["id"].to_list() if isinstance(gid, str)]
+                if reranked:
+                    final_ids = reranked
+                else:
+                    cross_encoder_fallback_used = True
+            except Exception as e:  # noqa: BLE001
                 cross_encoder_fallback_used = True
+                cross_encoder_error = str(e)
 
         if len(final_ids) < effective_k and candidates:
             cross_encoder_fallback_used = True
@@ -181,6 +194,7 @@ class HydeHybridStrategy(RetrievalStrategy):
                 else None
             ),
             "cross_encoder_fallback_used": cross_encoder_fallback_used,
+            "cross_encoder_error": cross_encoder_error,
             "fill_fallback_used": fill_fallback_used,
             "hits": [{"id": gid} for gid in final_ids[:effective_k]],
         }

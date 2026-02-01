@@ -218,6 +218,8 @@ class AgenticHybridStrategy(RetrievalStrategy):
         self._lm = lm
         self._default_k = int(default_k)
         self._final_cross_encoder_model = final_cross_encoder_model
+        # Lazily initialized on first use to avoid repeatedly loading weights.
+        self._cross_encoder_reranker = None
 
         self._tools = AgenticHybridTools(catalog=catalog, searcher=searcher)
         self._program = dspy.ReAct(
@@ -314,24 +316,34 @@ class AgenticHybridStrategy(RetrievalStrategy):
 
         final_ids = candidate_ids[:effective_k]
         cross_encoder_fallback_used = False
+        cross_encoder_error: str | None = None
         if self._final_cross_encoder_model and candidate_ids:
             qvec = self._searcher.vector_index.embed_query(situation)
-            hits_df = self._searcher.search_hybrid(
-                query_text=situation,
-                query_vector=qvec,
-                reranker=CrossEncoderReranker(
-                    model_name=self._final_cross_encoder_model
-                ),
-                k=min(len(candidate_ids), 120),
-                ids=set(candidate_ids),
-                fts_columns="text",
-            )
-            agg = self._searcher.aggregate_guideline_hits(hits_df, k=effective_k)
-            reranked = [gid for gid in agg["id"].to_list() if isinstance(gid, str)]
-            if reranked:
-                final_ids = reranked
-            else:
+            try:
+                reranker = self._cross_encoder_reranker
+                if reranker is None:
+                    reranker = CrossEncoderReranker(
+                        model_name=self._final_cross_encoder_model
+                    )
+                    self._cross_encoder_reranker = reranker
+
+                hits_df = self._searcher.search_hybrid(
+                    query_text=situation,
+                    query_vector=qvec,
+                    reranker=reranker,
+                    k=min(len(candidate_ids), 120),
+                    ids=set(candidate_ids),
+                    fts_columns="text",
+                )
+                agg = self._searcher.aggregate_guideline_hits(hits_df, k=effective_k)
+                reranked = [gid for gid in agg["id"].to_list() if isinstance(gid, str)]
+                if reranked:
+                    final_ids = reranked
+                else:
+                    cross_encoder_fallback_used = True
+            except Exception as e:  # noqa: BLE001
                 cross_encoder_fallback_used = True
+                cross_encoder_error = str(e)
 
         if len(final_ids) < effective_k and candidate_ids:
             cross_encoder_fallback_used = True
@@ -354,6 +366,7 @@ class AgenticHybridStrategy(RetrievalStrategy):
             "notes": notes,
             "fallback_used": fallback_used,
             "cross_encoder_fallback_used": cross_encoder_fallback_used,
+            "cross_encoder_error": cross_encoder_error,
             "final_cross_encoder": (
                 {"model": self._final_cross_encoder_model}
                 if self._final_cross_encoder_model
