@@ -9,7 +9,7 @@ _ELECTION_RE = re.compile(
     re.IGNORECASE,
 )
 _GENDER_RE = re.compile(
-    r"\b(gender|women|woman|men|man|pay gap|childcare|pension|pensions)\b",
+    r"\b(gender|women|woman|men|man|female|male)\b",
     re.IGNORECASE,
 )
 _DEMOGRAPHICS_RE = re.compile(
@@ -27,13 +27,13 @@ _MAP_RE = re.compile(
 )
 _FLOW_RE = re.compile(r"\b(flow|flows|sankey|alluvial)\b", re.IGNORECASE)
 _TIME_RE = re.compile(
-    r"\b(over time|time series|time-series|trend|trends|developed|quarter|q[1-4])\b",
+    r"\b(over time|time series|time-series|trend|trends|quarter|q[1-4])\b",
     re.IGNORECASE,
 )
 _DONUT_RE = re.compile(r"\b(donut|pie|slice|slices|ring|radial|rose)\b", re.IGNORECASE)
 _PYRAMID_RE = re.compile(r"\b(population pyramid|pyramid)\b", re.IGNORECASE)
 _BAR_RE = re.compile(
-    r"\b(bar chart|column chart|rank|ranking|top donor|donor countries|largest donor|most important)\b",
+    r"\b(bar chart|column chart|rank|ranking|ranked|top|highest|lowest|most|least|largest|smallest)\b",
     re.IGNORECASE,
 )
 _DOT_RE = re.compile(r"\b(dot|dots|dotplot|dot plot|icon array|pictograph)\b", re.IGNORECASE)
@@ -42,7 +42,7 @@ _COMPARE_RE = re.compile(r"\b(compare|contrast|vs|versus|compared to|in comparis
 _RANK_RE = re.compile(r"\b(rank|ranking|top|largest|most|least)\b", re.IGNORECASE)
 _CHANGE_RE = re.compile(r"\b(change|changed|delta|difference|recovering|increase|decrease)\b", re.IGNORECASE)
 _PART_WHOLE_RE = re.compile(r"\b(share|shares|percent|percentage|100%|part-to-whole|proportion)\b", re.IGNORECASE)
-_MULTIVARIATE_RE = re.compile(r"\b(two goals|two goal|two variables|multivariate|per business|on average|ratio)\b", re.IGNORECASE)
+_MULTIVARIATE_RE = re.compile(r"\b(two variables|two measures|two metrics|bivariate|multivariate|multi-variate|on average|ratio)\b", re.IGNORECASE)
 
 _TIMEPOINT_RE = re.compile(
     r"\b(?:q[1-4][\s/-]?(?:19\d{2}|20\d{2})|(?:19\d{2}|20\d{2}))\b",

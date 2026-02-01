@@ -9,7 +9,7 @@ _ELECTION_RE = re.compile(
     re.IGNORECASE,
 )
 _GENDER_RE = re.compile(
-    r"\b(gender|women|woman|men|man|pay gap|childcare|pension|pensions)\b",
+    r"\b(gender|women|woman|men|man|female|male)\b",
     re.IGNORECASE,
 )
 _DEMOGRAPHICS_RE = re.compile(
@@ -27,7 +27,7 @@ _MAP_RE = re.compile(
 )
 _FLOW_RE = re.compile(r"\b(flow|flows|sankey|alluvial)\b", re.IGNORECASE)
 _TIME_RE = re.compile(
-    r"\b(over time|time series|time-series|trend|trends|developed|quarter|q[1-4])\b",
+    r"\b(over time|time series|time-series|trend|trends|quarter|q[1-4])\b",
     re.IGNORECASE,
 )
 _DONUT_RE = re.compile(
@@ -35,7 +35,7 @@ _DONUT_RE = re.compile(
 )
 _PYRAMID_RE = re.compile(r"\b(population pyramid|pyramid)\b", re.IGNORECASE)
 _BAR_RE = re.compile(
-    r"\b(bar chart|column chart|rank|ranking|top donor|donor countries|largest donor|most important)\b",
+    r"\b(bar chart|column chart|rank|ranking|ranked|top|highest|lowest|most|least|largest|smallest)\b",
     re.IGNORECASE,
 )
 
