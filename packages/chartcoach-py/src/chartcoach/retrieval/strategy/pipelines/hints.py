@@ -15,7 +15,7 @@ _MAP_RE = re.compile(
 )
 _FLOW_RE = re.compile(r"\b(flow|flows|sankey|alluvial)\b", re.IGNORECASE)
 _TIME_RE = re.compile(
-    r"\b(over time|time series|time-series|trend|trends|developed|quarter|q[1-4])\b",
+    r"\b(over time|time series|time-series|trend|trends|quarter|q[1-4])\b",
     re.IGNORECASE,
 )
 _DONUT_RE = re.compile(
@@ -104,4 +104,3 @@ def build_search_text(*, situation: str) -> str:
         f"{s}\n\n"
         "Task: improve the existing visualization for a general news reader audience."
     )
-
