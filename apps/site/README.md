@@ -19,7 +19,10 @@ pnpm --filter site build
 
 ## Sitemap
 
-This site uses `@astrojs/sitemap`. To generate a sitemap (and correct canonical URLs), set `SITE_URL` at build time:
+This site uses `@astrojs/sitemap`.
+
+- If `SITE_URL` is unset, builds fall back to `http://localhost:4321/`.
+- For deployments, set `SITE_URL` so canonical URLs and the sitemap point at the real domain.
 
 ```bash
 SITE_URL="https://example.com" pnpm --filter site build

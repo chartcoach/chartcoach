@@ -39,26 +39,27 @@ function resolveSiteUrl() {
 }
 
 /**
- * @param {string | undefined} siteUrl
+ * @param {string} siteUrl
+ * @param {"env" | "default"} source
  * @returns {import("astro").AstroIntegration}
  */
-function siteUrlLogger(siteUrl) {
+function siteUrlLogger(siteUrl, source) {
   return /** @type {import("astro").AstroIntegration} */ ({
     name: "chartcoach:site-url",
     hooks: {
       /** @param {import("astro").HookParameters<"astro:config:setup">} options */
       "astro:config:setup": (options) => {
         const { logger } = options;
-        logger.info(
-          `site url ${siteUrl ? `resolved (${siteUrl})` : "not resolved (set SITE_URL)"}`,
-        );
+        logger.info(`site url resolved (${siteUrl}) [${source}]`);
       },
     },
   });
 }
 
 // https://astro.build/config
-const siteUrl = resolveSiteUrl();
+const envSiteUrl = resolveSiteUrl();
+const siteUrl = envSiteUrl ?? "http://localhost:4321/";
+const siteUrlSource = envSiteUrl ? "env" : "default";
 
 export default defineConfig({
   site: siteUrl,
@@ -76,7 +77,7 @@ export default defineConfig({
     },
   },
   integrations: [
-    siteUrlLogger(siteUrl),
+    siteUrlLogger(siteUrl, siteUrlSource),
     react(),
     starlight({
       title: "Chart Coach",
@@ -102,6 +103,6 @@ export default defineConfig({
         },
       ],
     }),
-    ...(siteUrl ? [sitemap()] : []),
+    sitemap(),
   ],
 });
