@@ -14,10 +14,12 @@ from chartcoach.retrieval.strategy.pipelines import (
     DenseMmrStrategy,
     DenseMmrStrategyV2,
     HeuristicFusionHybridStrategyV2,
+    HeuristicFusionHybridStrategyV3,
     HydeHybridStrategy,
     HydeHybridStrategyV2,
     HybridRrfStrategy,
     HybridRrfStrategyV2,
+    HybridRrfStrategyV3,
     QueryFusionHybridStrategy,
     QueryFusionHybridStrategyV2,
 )
@@ -171,8 +173,20 @@ def create_hybrid_rrf_strategy_v2(*, catalog: Catalog) -> RetrievalStrategy:
         searcher=_shared_searcher(catalog=catalog),
     )
 
+def create_hybrid_rrf_strategy_v3(*, catalog: Catalog) -> RetrievalStrategy:
+    return HybridRrfStrategyV3(
+        catalog=catalog,
+        searcher=_shared_searcher(catalog=catalog),
+    )
+
 def create_heuristic_fusion_hybrid_strategy_v2(*, catalog: Catalog) -> RetrievalStrategy:
     return HeuristicFusionHybridStrategyV2(
+        catalog=catalog,
+        searcher=_shared_searcher(catalog=catalog),
+    )
+
+def create_heuristic_fusion_hybrid_strategy_v3(*, catalog: Catalog) -> RetrievalStrategy:
+    return HeuristicFusionHybridStrategyV3(
         catalog=catalog,
         searcher=_shared_searcher(catalog=catalog),
     )
@@ -250,7 +264,9 @@ def create_default_strategy_registrations() -> list[StrategyRegistration]:
         (DenseMmrStrategyV2, create_dense_mmr_strategy_v2),
         (HybridRrfStrategy, create_hybrid_rrf_strategy),
         (HybridRrfStrategyV2, create_hybrid_rrf_strategy_v2),
+        (HybridRrfStrategyV3, create_hybrid_rrf_strategy_v3),
         (HeuristicFusionHybridStrategyV2, create_heuristic_fusion_hybrid_strategy_v2),
+        (HeuristicFusionHybridStrategyV3, create_heuristic_fusion_hybrid_strategy_v3),
         (QueryFusionHybridStrategy, create_query_fusion_hybrid_strategy),
         (QueryFusionHybridStrategyV2, create_query_fusion_hybrid_strategy_v2),
         (HydeHybridStrategy, create_hyde_hybrid_strategy),

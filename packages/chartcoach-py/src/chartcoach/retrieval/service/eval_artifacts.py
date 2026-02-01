@@ -157,6 +157,10 @@ def build_retrieval_request(
             ImageItem(role="chart", uri=scenario.chart.uri, mime=scenario.chart.mime)
         )
 
+    title = (scenario.title or "").strip()
+    if title:
+        context.append(TextItem(role="title", text=title, lang=lang))
+
     situation = (scenario.designer_intent or "").strip()
     if not situation:
         raise ValueError(f"Scenario {scenario.id!r} is missing designer_intent.")
