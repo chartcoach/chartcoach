@@ -6,10 +6,17 @@ import polars as pl
 
 from chartcoach.catalog import Catalog
 from chartcoach.retrieval.strategy.base import RetrievalStrategy
-from chartcoach.retrieval.strategy.request_text import require_text_by_role
+from chartcoach.retrieval.strategy.request_text import get_text_by_role, require_text_by_role
 from chartcoach.retrieval.strategy.types import RetrievalRequest, RetrievalResponse
 
 from .hints import ScenarioHints, build_search_text, chart_bonus, infer_hints
+from .hints_v3 import (
+    build_search_text_v3,
+    chart_bonus_v3,
+    domain_penalty_v3,
+    infer_hints_v3,
+    should_exclude_guideline_v3,
+)
 from .ranking import rrf_scores
 from .searcher import GuidelineSearcher
 
@@ -77,7 +84,9 @@ class HeuristicFusionHybridStrategyV2(RetrievalStrategy):
         self._config = config
         self._default_k = int(default_k)
 
-        self._id_to_labels = {entry.id: list(entry.guideline.labels) for entry in catalog.entries}
+        self._id_to_labels = {
+            entry.id: list(entry.guideline.labels) for entry in catalog.entries
+        }
         self._pipeline_ids = {
             gid
             for gid, labels in self._id_to_labels.items()
@@ -118,7 +127,9 @@ class HeuristicFusionHybridStrategyV2(RetrievalStrategy):
                 },
             )
 
-        raw_k = max(30, min(3_000, effective_k * int(self._config.per_query_raw_multiplier)))
+        raw_k = max(
+            30, min(3_000, effective_k * int(self._config.per_query_raw_multiplier))
+        )
         per_query_k = max(effective_k, int(self._config.per_query_guideline_k))
 
         per_query_rankings: list[list[str]] = []
@@ -146,8 +157,7 @@ class HeuristicFusionHybridStrategyV2(RetrievalStrategy):
             adjusted.append(
                 (
                     gid,
-                    float(score)
-                    + chart_bonus(guideline_labels=labels, hints=hints),
+                    float(score) + chart_bonus(guideline_labels=labels, hints=hints),
                 )
             )
         adjusted.sort(key=lambda kv: (-kv[1], kv[0]))
@@ -177,3 +187,143 @@ class HeuristicFusionHybridStrategyV2(RetrievalStrategy):
         }
 
         return RetrievalResponse(catalog=Catalog(entries=ordered_entries), meta=meta)
+
+
+def _derive_queries_v3(*, title: str | None, situation: str, hints) -> list[str]:
+    base = build_search_text_v3(title=title, situation=situation)
+    if not base:
+        return []
+
+    chart_terms = [
+        _CHART_LABEL_TO_QUERY[label]
+        for label in sorted(getattr(hints, "chart_labels", []) or [])
+        if label in _CHART_LABEL_TO_QUERY
+    ]
+    chart_facet = ""
+    if chart_terms:
+        chart_facet = f"{' '.join(chart_terms)} design guidelines"
+
+    return [
+        base,
+        chart_facet or base,
+        "news visualization annotations clarity context general audience",
+        "bar chart sorting highlighting annotations axis baseline if applicable",
+    ]
+
+
+class HeuristicFusionHybridStrategyV3(RetrievalStrategy):
+    """Deterministic multi-query hybrid retrieval v3 (title-aware hints + domain filtering)."""
+
+    id = "heuristic-fusion-hybrid@v3"
+
+    def __init__(
+        self,
+        *,
+        catalog: Catalog,
+        searcher: GuidelineSearcher,
+        config: HeuristicFusionConfig = HeuristicFusionConfig(),
+        default_k: int = 20,
+    ) -> None:
+        super().__init__(catalog)
+        self._searcher = searcher
+        self._config = config
+        self._default_k = int(default_k)
+
+        self._id_to_labels = {
+            entry.id: list(entry.guideline.labels) for entry in catalog.entries
+        }
+
+    def _forward(self, request: RetrievalRequest) -> RetrievalResponse:
+        from lancedb.rerankers import RRFReranker
+
+        effective_k = self._default_k if request.k is None else int(request.k)
+        if effective_k <= 0:
+            raise ValueError("k must be positive.")
+
+        title = (get_text_by_role(request, role="title") or "").strip()
+        situation = require_text_by_role(request, role="situation")
+        hints = infer_hints_v3(title=title, situation=situation)
+
+        allowed_ids = {
+            gid
+            for gid, labels in self._id_to_labels.items()
+            if not should_exclude_guideline_v3(guideline_labels=labels, hints=hints)
+        }
+
+        queries = [
+            q for q in _derive_queries_v3(title=title, situation=situation, hints=hints) if q.strip()
+        ]
+        if not queries:
+            return RetrievalResponse(
+                catalog=Catalog(entries=[]),
+                meta={
+                    **self._searcher.vector_index.meta(),
+                    "k": effective_k,
+                    "hits": [],
+                },
+            )
+
+        raw_k = max(
+            30, min(3_000, effective_k * int(self._config.per_query_raw_multiplier))
+        )
+        per_query_k = max(effective_k, int(self._config.per_query_guideline_k))
+
+        per_query_rankings: list[list[str]] = []
+        for q in queries:
+            qvec = self._searcher.vector_index.embed_query(q)
+            hits_df = self._searcher.search_hybrid(
+                query_text=q,
+                query_vector=qvec,
+                reranker=RRFReranker(K=self._config.rrf_k),
+                k=raw_k,
+                ids=allowed_ids,
+                fts_columns="text",
+            )
+            if "role" in hits_df.columns:
+                hits_df = hits_df.filter(pl.col("role") != "labels")
+            agg = self._searcher.aggregate_guideline_hits(hits_df, k=per_query_k)
+            per_query_rankings.append(
+                [gid for gid in agg["id"].to_list() if isinstance(gid, str)]
+            )
+
+        fused_scores = rrf_scores(rankings=per_query_rankings, k=self._config.rrf_k)
+        adjusted: list[tuple[str, float]] = []
+        for gid, score in fused_scores.items():
+            labels = self._id_to_labels.get(gid, [])
+            adjusted.append(
+                (
+                    gid,
+                    float(score)
+                    + chart_bonus_v3(guideline_labels=labels, hints=hints)
+                    + domain_penalty_v3(guideline_labels=labels, hints=hints),
+                )
+            )
+        adjusted.sort(key=lambda kv: (-kv[1], kv[0]))
+        fused = [gid for gid, _score in adjusted]
+
+        final_ids = fused[:effective_k]
+
+        id_to_entry = {entry.id: entry for entry in self.catalog.entries}
+        ordered_entries = [id_to_entry[gid] for gid in final_ids if gid in id_to_entry]
+
+        meta = {
+            **self._searcher.vector_index.meta(),
+            "k": effective_k,
+            "raw_k": raw_k,
+            "score_kind": "heuristic_rrf_fusion_v3",
+            "queries": queries,
+            "rrf_k": self._config.rrf_k,
+            "filters": {
+                "excluded_pipeline": True,
+                "hard_excluded_domains": True,
+            },
+            "hints": {
+                "title_used": bool(title),
+                "active_domains": sorted(hints.active_domains),
+                "chart_labels": sorted(hints.chart_labels),
+            },
+            "hits": [{"id": gid} for gid in final_ids],
+        }
+
+        return RetrievalResponse(catalog=Catalog(entries=ordered_entries), meta=meta)
+

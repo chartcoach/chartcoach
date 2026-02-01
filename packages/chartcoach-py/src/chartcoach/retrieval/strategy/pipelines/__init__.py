@@ -14,9 +14,9 @@ from __future__ import annotations
 from .agentic_hybrid import AgenticHybridStrategy
 from .bm25 import Bm25PrfStrategy, Bm25PrfStrategyV2
 from .dense import DenseMmrStrategy, DenseMmrStrategyV2
-from .heuristic_fusion import HeuristicFusionHybridStrategyV2
+from .heuristic_fusion import HeuristicFusionHybridStrategyV2, HeuristicFusionHybridStrategyV3
 from .hyde import HydeHybridStrategy, HydeHybridStrategyV2
-from .hybrid import HybridRrfStrategy, HybridRrfStrategyV2
+from .hybrid import HybridRrfStrategy, HybridRrfStrategyV2, HybridRrfStrategyV3
 from .query_fusion import QueryFusionHybridStrategy, QueryFusionHybridStrategyV2
 
 __all__ = [
@@ -26,10 +26,12 @@ __all__ = [
     "DenseMmrStrategy",
     "DenseMmrStrategyV2",
     "HeuristicFusionHybridStrategyV2",
+    "HeuristicFusionHybridStrategyV3",
     "HydeHybridStrategy",
     "HydeHybridStrategyV2",
     "HybridRrfStrategy",
     "HybridRrfStrategyV2",
+    "HybridRrfStrategyV3",
     "QueryFusionHybridStrategy",
     "QueryFusionHybridStrategyV2",
 ]
