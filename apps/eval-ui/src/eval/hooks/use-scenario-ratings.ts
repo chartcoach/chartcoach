@@ -2,8 +2,8 @@ import { useMemo } from "react";
 import { eq, useLiveQuery } from "@tanstack/react-db";
 
 import {
-  relevanceRatingsCollection,
-  type RelevanceRating,
+  guidelineRatingsCollection,
+  type GuidelineRating,
 } from "@chartcoach/eval-ui/db-collections";
 
 export function useScenarioRatings(scenarioId: string | undefined) {
@@ -12,7 +12,7 @@ export function useScenarioRatings(scenarioId: string | undefined) {
   const { data } = useLiveQuery(
     (q) =>
       q
-        .from({ rating: relevanceRatingsCollection })
+        .from({ rating: guidelineRatingsCollection })
         .where(({ rating }) =>
           enabled ? eq(rating.scenarioId, scenarioId!) : eq(rating.scenarioId, "__disabled__"),
         )
@@ -22,10 +22,10 @@ export function useScenarioRatings(scenarioId: string | undefined) {
     [scenarioId],
   );
 
-  const ratings = (data ?? []) as RelevanceRating[];
+  const ratings = (data ?? []) as GuidelineRating[];
 
   const byGuidelineId = useMemo(() => {
-    const map = new Map<string, RelevanceRating>();
+    const map = new Map<string, GuidelineRating>();
     for (const r of ratings) {
       map.set(r.guidelineId, r);
     }

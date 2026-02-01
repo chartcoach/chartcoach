@@ -2,16 +2,16 @@ import { createRxDatabase } from "rxdb/plugins/core";
 import { getRxStorageLocalstorage } from "rxdb/plugins/storage-localstorage";
 import type { RxCollection, RxDatabase, RxJsonSchema } from "rxdb";
 
-import type { RelevanceRating } from "@chartcoach/eval-ui/eval/relevance-ratings";
+import type { GuidelineRating } from "@chartcoach/eval-ui/eval/guideline-ratings";
 
 type EvalUiCollections = {
-  relevance_ratings: RxCollection<RelevanceRating>;
+  guideline_ratings: RxCollection<GuidelineRating>;
 };
 
 export type EvalUiRxDatabase = RxDatabase<EvalUiCollections>;
 
-const RelevanceRatingsRxSchema: RxJsonSchema<RelevanceRating> = {
-  title: "relevance_ratings",
+const GuidelineRatingsRxSchema: RxJsonSchema<GuidelineRating> = {
+  title: "guideline_ratings",
   version: 0,
   type: "object",
   primaryKey: "id",
@@ -26,10 +26,32 @@ const RelevanceRatingsRxSchema: RxJsonSchema<RelevanceRating> = {
     guidelineId: {
       type: "string",
     },
-    relevance: {
+    bucket: {
+      type: "string",
+      enum: ["hard_constraint", "soft_constraint", "not_useful", "not_applicable"],
+    },
+    actionability: {
       type: "integer",
       minimum: 1,
       maximum: 5,
+    },
+    impact: {
+      type: "integer",
+      minimum: 1,
+      maximum: 5,
+    },
+    risk: {
+      type: "integer",
+      minimum: 1,
+      maximum: 5,
+    },
+    credibility: {
+      type: "integer",
+      minimum: 1,
+      maximum: 5,
+    },
+    notes: {
+      type: "string",
     },
     createdAt: {
       type: "string",
@@ -38,7 +60,7 @@ const RelevanceRatingsRxSchema: RxJsonSchema<RelevanceRating> = {
       type: "string",
     },
   },
-  required: ["id", "scenarioId", "guidelineId", "relevance", "createdAt", "updatedAt"],
+  required: ["id", "scenarioId", "guidelineId", "bucket", "createdAt", "updatedAt"],
   additionalProperties: false,
 };
 
@@ -61,8 +83,8 @@ export function getEvalUiRxDatabase(): Promise<EvalUiRxDatabase> {
     });
 
     await db.addCollections({
-      relevance_ratings: {
-        schema: RelevanceRatingsRxSchema,
+      guideline_ratings: {
+        schema: GuidelineRatingsRxSchema,
       },
     });
 

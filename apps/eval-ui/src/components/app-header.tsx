@@ -1,18 +1,25 @@
 import { Link } from "@tanstack/react-router";
 import { useLiveQuery } from "@tanstack/react-db";
 import { useIsFetching } from "@tanstack/react-query";
-import { RefreshCw } from "lucide-react";
+import { Download, RefreshCw, Trash2, Upload } from "lucide-react";
 import { useLayoutEffect, useRef } from "react";
 
-import { relevanceRatingsCollection } from "@chartcoach/eval-ui/db-collections";
-import type { RelevanceRating } from "@chartcoach/eval-ui/db-collections";
-import { useAutoUploadRelevanceRatings } from "@chartcoach/eval-ui/eval/hooks/use-auto-upload-relevance-ratings";
-import { usePullRelevanceRatingsFromS3 } from "@chartcoach/eval-ui/eval/hooks/use-pull-relevance-ratings";
+import {
+  clearGuidelineRatings,
+  guidelineRatingsCollection,
+  mergeGuidelineRatings,
+} from "@chartcoach/eval-ui/db-collections";
+import type { GuidelineRating } from "@chartcoach/eval-ui/db-collections";
+import { useAutoUploadGuidelineRatings } from "@chartcoach/eval-ui/eval/hooks/use-auto-upload-guideline-ratings";
+import { usePullGuidelineRatingsFromS3 } from "@chartcoach/eval-ui/eval/hooks/use-pull-guideline-ratings";
+import { GuidelineRatingsExportV2Schema } from "@chartcoach/eval-ui/eval/guideline-ratings";
 import { ThemeSelector } from "@chartcoach/eval-ui/components/theme-selector";
+import { downloadGuidelineRatingsExport } from "@chartcoach/eval-ui/lib/export-guideline-ratings";
 import { useOnlineStatus } from "@chartcoach/eval-ui/lib/eval-utils";
 
 export function AppHeader() {
   const headerRef = useRef<HTMLElement | null>(null);
+  const importInputRef = useRef<HTMLInputElement | null>(null);
 
   useLayoutEffect(() => {
     const el = headerRef.current;
@@ -36,17 +43,17 @@ export function AppHeader() {
 
   const { data } = useLiveQuery(
     (q) =>
-      q.from({ rating: relevanceRatingsCollection }).select(({ rating }) => ({
+      q.from({ rating: guidelineRatingsCollection }).select(({ rating }) => ({
         ...rating,
       })),
     [],
   );
 
-  const ratings = (data ?? []) as RelevanceRating[];
+  const ratings = (data ?? []) as GuidelineRating[];
   const ratingCount = ratings.length;
 
-  const sync = useAutoUploadRelevanceRatings(ratings);
-  const pull = usePullRelevanceRatingsFromS3();
+  const sync = useAutoUploadGuidelineRatings(ratings);
+  const pull = usePullGuidelineRatingsFromS3();
 
   type PullStatus = (typeof pull)["status"];
   type SyncStatus = (typeof sync)["status"];
@@ -97,6 +104,13 @@ export function AppHeader() {
   ].filter(Boolean);
   const syncTitle = syncTitleParts.join(" · ");
 
+  async function handleImportFromFile(file: File) {
+    const raw = await file.text();
+    const parsed = GuidelineRatingsExportV2Schema.parse(JSON.parse(raw));
+    mergeGuidelineRatings(parsed.ratings);
+    console.info(`[eval-ui] Imported ${parsed.ratings.length} guideline ratings.`);
+  }
+
   return (
     <header ref={headerRef} className="sticky top-0 z-50 border-b bg-background">
       <div className="mx-auto flex w-full items-center justify-between gap-3 px-4 py-3 lg:px-6">
@@ -108,7 +122,7 @@ export function AppHeader() {
             >
               ChartCoach
             </Link>{" "}
-            <span className="text-muted-foreground">· Guideline Relevance Eval</span>
+            <span className="text-muted-foreground">· Guideline Eval</span>
           </div>
 
           <div
@@ -139,6 +153,59 @@ export function AppHeader() {
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
+          <input
+            ref={importInputRef}
+            type="file"
+            accept="application/json"
+            className="sr-only"
+            onChange={(event) => {
+              const file = event.currentTarget.files?.[0];
+              if (!file) return;
+              event.currentTarget.value = "";
+              void handleImportFromFile(file).catch((error) => {
+                console.warn("[eval-ui] Failed to import guideline ratings.", error);
+              });
+            }}
+          />
+
+          <button
+            type="button"
+            onClick={() => downloadGuidelineRatingsExport(ratings)}
+            className="inline-flex items-center gap-2 rounded-md border px-2 py-1 text-xs text-muted-foreground hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring/60"
+            title="Download ratings as JSON"
+            aria-label="Download ratings as JSON"
+          >
+            <Download className="size-3.5" aria-hidden="true" />
+            <span className="hidden sm:inline">Export</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => importInputRef.current?.click()}
+            className="inline-flex items-center gap-2 rounded-md border px-2 py-1 text-xs text-muted-foreground hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring/60"
+            title="Import ratings from JSON"
+            aria-label="Import ratings from JSON"
+          >
+            <Upload className="size-3.5" aria-hidden="true" />
+            <span className="hidden sm:inline">Import</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              if (typeof window === "undefined") return;
+              const ok = window.confirm("Clear all local guideline ratings on this device?");
+              if (!ok) return;
+              clearGuidelineRatings();
+            }}
+            className="inline-flex items-center gap-2 rounded-md border px-2 py-1 text-xs text-muted-foreground hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring/60"
+            title="Clear all local ratings"
+            aria-label="Clear all local ratings"
+          >
+            <Trash2 className="size-3.5" aria-hidden="true" />
+            <span className="hidden sm:inline">Clear</span>
+          </button>
+
           <ThemeSelector />
         </div>
       </div>

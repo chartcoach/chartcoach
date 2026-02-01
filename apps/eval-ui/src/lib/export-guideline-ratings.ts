@@ -1,19 +1,19 @@
-import type { RelevanceRating } from "@chartcoach/eval-ui/db-collections";
+import type { GuidelineRating } from "@chartcoach/eval-ui/db-collections";
 
-type RelevanceRatingsExportV1 = {
-  format: "chartcoach.relevance-ratings.v1";
+type GuidelineRatingsExportV2 = {
+  format: "chartcoach.guideline-ratings.v2";
   exportedAt: string;
-  ratings: RelevanceRating[];
+  ratings: GuidelineRating[];
 };
 
 function normalizeExportFilenameTimestamp(date: Date) {
   return date.toISOString().replaceAll(":", "").replaceAll(".", "-");
 }
 
-export function createRelevanceRatingsExport(
-  ratings: RelevanceRating[],
+export function createGuidelineRatingsExport(
+  ratings: GuidelineRating[],
   exportedAt: Date = new Date(),
-): RelevanceRatingsExportV1 {
+): GuidelineRatingsExportV2 {
   const sortedRatings = [...ratings].sort((a, b) => {
     if (a.scenarioId !== b.scenarioId) return a.scenarioId.localeCompare(b.scenarioId);
     if (a.guidelineId !== b.guidelineId) return a.guidelineId.localeCompare(b.guidelineId);
@@ -21,13 +21,13 @@ export function createRelevanceRatingsExport(
   });
 
   return {
-    format: "chartcoach.relevance-ratings.v1",
+    format: "chartcoach.guideline-ratings.v2",
     exportedAt: exportedAt.toISOString(),
     ratings: sortedRatings,
   };
 }
 
-export function serializeRelevanceRatingsExport(payload: RelevanceRatingsExportV1) {
+export function serializeGuidelineRatingsExport(payload: GuidelineRatingsExportV2) {
   return JSON.stringify(payload, null, 2);
 }
 
@@ -47,13 +47,14 @@ export function downloadJsonFile(filename: string, json: string) {
   URL.revokeObjectURL(url);
 }
 
-export function downloadRelevanceRatingsExport(
-  ratings: RelevanceRating[],
+export function downloadGuidelineRatingsExport(
+  ratings: GuidelineRating[],
   exportedAt: Date = new Date(),
 ) {
-  const payload = createRelevanceRatingsExport(ratings, exportedAt);
-  const json = serializeRelevanceRatingsExport(payload);
-  const filename = `chartcoach-relevance-ratings-${normalizeExportFilenameTimestamp(exportedAt)}.json`;
+  const payload = createGuidelineRatingsExport(ratings, exportedAt);
+  const json = serializeGuidelineRatingsExport(payload);
+  const filename = `chartcoach-guideline-ratings-${normalizeExportFilenameTimestamp(exportedAt)}.json`;
   downloadJsonFile(filename, json);
   return { filename, count: payload.ratings.length };
 }
+

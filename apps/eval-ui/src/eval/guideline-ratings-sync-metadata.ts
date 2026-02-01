@@ -1,11 +1,11 @@
-import type { RelevanceRating } from "@chartcoach/eval-ui/eval/relevance-ratings";
+import type { GuidelineRating } from "@chartcoach/eval-ui/eval/guideline-ratings";
 
 export const SYNC_LAST_SIGNATURE_STORAGE_KEY =
-  "chartcoach/eval-ui/sync/relevance-ratings/v1:last-signature";
+  "chartcoach/eval-ui/sync/guideline-ratings/v2:last-signature";
 export const SYNC_LAST_SUCCESS_AT_STORAGE_KEY =
-  "chartcoach/eval-ui/sync/relevance-ratings/v1:last-success-at";
+  "chartcoach/eval-ui/sync/guideline-ratings/v2:last-success-at";
 export const SYNC_LAST_SUCCESS_KEY_STORAGE_KEY =
-  "chartcoach/eval-ui/sync/relevance-ratings/v1:last-success-key";
+  "chartcoach/eval-ui/sync/guideline-ratings/v2:last-success-key";
 
 const warnedLocalStorageOps = new Set<string>();
 
@@ -51,11 +51,24 @@ function fnv1a64Hex(input: string) {
   return hash.toString(16).padStart(16, "0");
 }
 
-export function makeRatingsSignature(ratings: RelevanceRating[]) {
+export function makeRatingsSignature(ratings: GuidelineRating[]) {
   const rows = [...ratings]
     .sort((a, b) => a.id.localeCompare(b.id))
-    .map((r) => [r.id, r.scenarioId, r.guidelineId, r.relevance, r.createdAt, r.updatedAt]);
+    .map((r) => [
+      r.id,
+      r.scenarioId,
+      r.guidelineId,
+      r.bucket,
+      r.actionability ?? null,
+      r.impact ?? null,
+      r.risk ?? null,
+      r.credibility ?? null,
+      r.notes ?? null,
+      r.createdAt,
+      r.updatedAt,
+    ]);
   const raw = JSON.stringify(rows);
   const digest = fnv1a64Hex(raw);
   return `fnv1a64:${digest}:${rows.length}`;
 }
+
