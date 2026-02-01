@@ -24,7 +24,10 @@ class HydeSignature(dspy.Signature):
         desc=(
             "Scenario title + designer intent describing the chart to improve. "
             "Write a hypothetical high-quality critique that mentions likely chart issues and improvements. "
-            "Focus only on the described chart, and ignore mentions of adjacent charts in the surrounding story."
+            "Focus only on the described chart, and ignore mentions of adjacent charts in the surrounding story. "
+            "Preserve key domain nouns/variables (e.g., inflation, job starters, pay gap, aid). "
+            "If the situation implies paired comparisons (two values per category / before-after / year-over-year), "
+            "explicitly mention 'paired values' and 'delta encoding' as candidate design approaches."
         )
     )
 
