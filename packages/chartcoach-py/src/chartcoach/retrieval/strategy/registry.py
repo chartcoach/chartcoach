@@ -10,30 +10,10 @@ from chartcoach.retrieval.strategy.base import RetrievalStrategy
 from chartcoach.retrieval.strategy.pipelines import (
     AgenticHybridStrategy,
     Bm25PrfStrategy,
-    Bm25PrfStrategyV2,
-    Bm25PrfStrategyV3,
-    Bm25PrfStrategyV4,
     DenseMmrStrategy,
-    DenseMmrStrategyV2,
-    DenseMmrStrategyV3,
-    DenseMmrStrategyV4,
-    HeuristicFusionHybridStrategyV2,
-    HeuristicFusionHybridStrategyV3,
-    HeuristicFusionHybridStrategyV4,
-    HeuristicFusionHybridStrategyV5,
     HydeHybridStrategy,
-    HydeHybridStrategyV2,
-    HydeHybridStrategyV3,
-    HydeHybridStrategyV4,
     HybridRrfStrategy,
-    HybridRrfStrategyV2,
-    HybridRrfStrategyV3,
-    HybridRrfStrategyV4,
-    HybridRrfStrategyV5,
     QueryFusionHybridStrategy,
-    QueryFusionHybridStrategyV2,
-    QueryFusionHybridStrategyV3,
-    QueryFusionHybridStrategyV4,
 )
 from chartcoach.retrieval.strategy.pipelines.query_fusion import QueryFusionConfig
 from chartcoach.retrieval.strategy.pipelines.searcher import GuidelineSearcher
@@ -154,21 +134,6 @@ def create_bm25_prf_strategy(*, catalog: Catalog) -> RetrievalStrategy:
         catalog=catalog, searcher=_shared_searcher(catalog=catalog)
     )
 
-def create_bm25_prf_strategy_v2(*, catalog: Catalog) -> RetrievalStrategy:
-    return Bm25PrfStrategyV2(
-        catalog=catalog, searcher=_shared_searcher(catalog=catalog)
-    )
-
-def create_bm25_prf_strategy_v3(*, catalog: Catalog) -> RetrievalStrategy:
-    return Bm25PrfStrategyV3(
-        catalog=catalog, searcher=_shared_searcher(catalog=catalog)
-    )
-
-def create_bm25_prf_strategy_v4(*, catalog: Catalog) -> RetrievalStrategy:
-    return Bm25PrfStrategyV4(
-        catalog=catalog, searcher=_shared_searcher(catalog=catalog)
-    )
-
 
 def create_dense_mmr_strategy(*, catalog: Catalog) -> RetrievalStrategy:
     return DenseMmrStrategy(
@@ -176,75 +141,9 @@ def create_dense_mmr_strategy(*, catalog: Catalog) -> RetrievalStrategy:
         searcher=_shared_searcher(catalog=catalog),
     )
 
-def create_dense_mmr_strategy_v2(*, catalog: Catalog) -> RetrievalStrategy:
-    return DenseMmrStrategyV2(
-        catalog=catalog,
-        searcher=_shared_searcher(catalog=catalog),
-    )
-
-def create_dense_mmr_strategy_v3(*, catalog: Catalog) -> RetrievalStrategy:
-    return DenseMmrStrategyV3(
-        catalog=catalog,
-        searcher=_shared_searcher(catalog=catalog),
-    )
-
-def create_dense_mmr_strategy_v4(*, catalog: Catalog) -> RetrievalStrategy:
-    return DenseMmrStrategyV4(
-        catalog=catalog,
-        searcher=_shared_searcher(catalog=catalog),
-    )
-
 
 def create_hybrid_rrf_strategy(*, catalog: Catalog) -> RetrievalStrategy:
     return HybridRrfStrategy(
-        catalog=catalog,
-        searcher=_shared_searcher(catalog=catalog),
-    )
-
-def create_hybrid_rrf_strategy_v2(*, catalog: Catalog) -> RetrievalStrategy:
-    return HybridRrfStrategyV2(
-        catalog=catalog,
-        searcher=_shared_searcher(catalog=catalog),
-    )
-
-def create_hybrid_rrf_strategy_v3(*, catalog: Catalog) -> RetrievalStrategy:
-    return HybridRrfStrategyV3(
-        catalog=catalog,
-        searcher=_shared_searcher(catalog=catalog),
-    )
-
-def create_hybrid_rrf_strategy_v4(*, catalog: Catalog) -> RetrievalStrategy:
-    return HybridRrfStrategyV4(
-        catalog=catalog,
-        searcher=_shared_searcher(catalog=catalog),
-    )
-
-def create_hybrid_rrf_strategy_v5(*, catalog: Catalog) -> RetrievalStrategy:
-    return HybridRrfStrategyV5(
-        catalog=catalog,
-        searcher=_shared_searcher(catalog=catalog),
-    )
-
-def create_heuristic_fusion_hybrid_strategy_v2(*, catalog: Catalog) -> RetrievalStrategy:
-    return HeuristicFusionHybridStrategyV2(
-        catalog=catalog,
-        searcher=_shared_searcher(catalog=catalog),
-    )
-
-def create_heuristic_fusion_hybrid_strategy_v3(*, catalog: Catalog) -> RetrievalStrategy:
-    return HeuristicFusionHybridStrategyV3(
-        catalog=catalog,
-        searcher=_shared_searcher(catalog=catalog),
-    )
-
-def create_heuristic_fusion_hybrid_strategy_v4(*, catalog: Catalog) -> RetrievalStrategy:
-    return HeuristicFusionHybridStrategyV4(
-        catalog=catalog,
-        searcher=_shared_searcher(catalog=catalog),
-    )
-
-def create_heuristic_fusion_hybrid_strategy_v5(*, catalog: Catalog) -> RetrievalStrategy:
-    return HeuristicFusionHybridStrategyV5(
         catalog=catalog,
         searcher=_shared_searcher(catalog=catalog),
     )
@@ -269,88 +168,10 @@ def create_query_fusion_hybrid_strategy(*, catalog: Catalog) -> RetrievalStrateg
         config=config,
     )
 
-def create_query_fusion_hybrid_strategy_v2(*, catalog: Catalog) -> RetrievalStrategy:
-    lm = _create_lm()
-    config = QueryFusionConfig(
-        n_queries=int(os.environ.get("CHARTCOACH_FUSION_N_QUERIES") or "4"),
-        rrf_k=int(os.environ.get("CHARTCOACH_FUSION_RRF_K") or "60"),
-        cross_encoder_model=os.environ.get("CHARTCOACH_FUSION_CROSS_ENCODER_MODEL")
-        or "cross-encoder/ms-marco-TinyBERT-L-6",
-        cross_encoder_candidate_limit=int(
-            os.environ.get("CHARTCOACH_FUSION_XENC_CANDIDATES") or "80"
-        ),
-    )
-    return QueryFusionHybridStrategyV2(
-        catalog=catalog,
-        searcher=_shared_searcher(catalog=catalog),
-        lm=lm,
-        config=config,
-    )
-
-def create_query_fusion_hybrid_strategy_v3(*, catalog: Catalog) -> RetrievalStrategy:
-    lm = _create_lm()
-    config = QueryFusionConfig(
-        n_queries=int(os.environ.get("CHARTCOACH_FUSION_N_QUERIES") or "4"),
-        rrf_k=int(os.environ.get("CHARTCOACH_FUSION_RRF_K") or "60"),
-        cross_encoder_model=os.environ.get("CHARTCOACH_FUSION_CROSS_ENCODER_MODEL")
-        or "cross-encoder/ms-marco-TinyBERT-L-6",
-        cross_encoder_candidate_limit=int(
-            os.environ.get("CHARTCOACH_FUSION_XENC_CANDIDATES") or "80"
-        ),
-    )
-    return QueryFusionHybridStrategyV3(
-        catalog=catalog,
-        searcher=_shared_searcher(catalog=catalog),
-        lm=lm,
-        config=config,
-    )
-
-def create_query_fusion_hybrid_strategy_v4(*, catalog: Catalog) -> RetrievalStrategy:
-    lm = _create_lm()
-    config = QueryFusionConfig(
-        n_queries=int(os.environ.get("CHARTCOACH_FUSION_N_QUERIES") or "4"),
-        rrf_k=int(os.environ.get("CHARTCOACH_FUSION_RRF_K") or "60"),
-        cross_encoder_model=os.environ.get("CHARTCOACH_FUSION_CROSS_ENCODER_MODEL")
-        or "cross-encoder/ms-marco-TinyBERT-L-6",
-        cross_encoder_candidate_limit=int(
-            os.environ.get("CHARTCOACH_FUSION_XENC_CANDIDATES") or "80"
-        ),
-    )
-    return QueryFusionHybridStrategyV4(
-        catalog=catalog,
-        searcher=_shared_searcher(catalog=catalog),
-        lm=lm,
-        config=config,
-    )
-
 
 def create_hyde_hybrid_strategy(*, catalog: Catalog) -> RetrievalStrategy:
     lm = _create_lm()
     return HydeHybridStrategy(
-        catalog=catalog,
-        searcher=_shared_searcher(catalog=catalog),
-        lm=lm,
-    )
-
-def create_hyde_hybrid_strategy_v2(*, catalog: Catalog) -> RetrievalStrategy:
-    lm = _create_lm()
-    return HydeHybridStrategyV2(
-        catalog=catalog,
-        searcher=_shared_searcher(catalog=catalog),
-        lm=lm,
-    )
-
-def create_hyde_hybrid_strategy_v3(*, catalog: Catalog) -> RetrievalStrategy:
-    lm = _create_lm()
-    return HydeHybridStrategyV3(
-        catalog=catalog,
-        searcher=_shared_searcher(catalog=catalog),
-        lm=lm,
-    )
-
-def create_hyde_hybrid_strategy_v4(*, catalog: Catalog) -> RetrievalStrategy:
-    lm = _create_lm()
-    return HydeHybridStrategyV4(
         catalog=catalog,
         searcher=_shared_searcher(catalog=catalog),
         lm=lm,
@@ -369,29 +190,9 @@ def create_agentic_hybrid_strategy(*, catalog: Catalog) -> RetrievalStrategy:
 def create_default_strategy_registrations() -> list[StrategyRegistration]:
     return [
         (Bm25PrfStrategy, create_bm25_prf_strategy),
-        (Bm25PrfStrategyV2, create_bm25_prf_strategy_v2),
-        (Bm25PrfStrategyV3, create_bm25_prf_strategy_v3),
-        (Bm25PrfStrategyV4, create_bm25_prf_strategy_v4),
         (DenseMmrStrategy, create_dense_mmr_strategy),
-        (DenseMmrStrategyV2, create_dense_mmr_strategy_v2),
-        (DenseMmrStrategyV3, create_dense_mmr_strategy_v3),
-        (DenseMmrStrategyV4, create_dense_mmr_strategy_v4),
         (HybridRrfStrategy, create_hybrid_rrf_strategy),
-        (HybridRrfStrategyV2, create_hybrid_rrf_strategy_v2),
-        (HybridRrfStrategyV3, create_hybrid_rrf_strategy_v3),
-        (HybridRrfStrategyV4, create_hybrid_rrf_strategy_v4),
-        (HybridRrfStrategyV5, create_hybrid_rrf_strategy_v5),
-        (HeuristicFusionHybridStrategyV2, create_heuristic_fusion_hybrid_strategy_v2),
-        (HeuristicFusionHybridStrategyV3, create_heuristic_fusion_hybrid_strategy_v3),
-        (HeuristicFusionHybridStrategyV4, create_heuristic_fusion_hybrid_strategy_v4),
-        (HeuristicFusionHybridStrategyV5, create_heuristic_fusion_hybrid_strategy_v5),
         (QueryFusionHybridStrategy, create_query_fusion_hybrid_strategy),
-        (QueryFusionHybridStrategyV2, create_query_fusion_hybrid_strategy_v2),
-        (QueryFusionHybridStrategyV3, create_query_fusion_hybrid_strategy_v3),
-        (QueryFusionHybridStrategyV4, create_query_fusion_hybrid_strategy_v4),
         (HydeHybridStrategy, create_hyde_hybrid_strategy),
-        (HydeHybridStrategyV2, create_hyde_hybrid_strategy_v2),
-        (HydeHybridStrategyV3, create_hyde_hybrid_strategy_v3),
-        (HydeHybridStrategyV4, create_hyde_hybrid_strategy_v4),
         (AgenticHybridStrategy, create_agentic_hybrid_strategy),
     ]
