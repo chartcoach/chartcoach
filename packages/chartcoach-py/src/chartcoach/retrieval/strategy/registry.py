@@ -15,9 +15,11 @@ from chartcoach.retrieval.strategy.pipelines import (
     DenseMmrStrategyV2,
     HeuristicFusionHybridStrategyV2,
     HydeHybridStrategy,
+    HydeHybridStrategyV2,
     HybridRrfStrategy,
     HybridRrfStrategyV2,
     QueryFusionHybridStrategy,
+    QueryFusionHybridStrategyV2,
 )
 from chartcoach.retrieval.strategy.pipelines.query_fusion import QueryFusionConfig
 from chartcoach.retrieval.strategy.pipelines.searcher import GuidelineSearcher
@@ -195,10 +197,36 @@ def create_query_fusion_hybrid_strategy(*, catalog: Catalog) -> RetrievalStrateg
         config=config,
     )
 
+def create_query_fusion_hybrid_strategy_v2(*, catalog: Catalog) -> RetrievalStrategy:
+    lm = _create_lm()
+    config = QueryFusionConfig(
+        n_queries=int(os.environ.get("CHARTCOACH_FUSION_N_QUERIES") or "4"),
+        rrf_k=int(os.environ.get("CHARTCOACH_FUSION_RRF_K") or "60"),
+        cross_encoder_model=os.environ.get("CHARTCOACH_FUSION_CROSS_ENCODER_MODEL")
+        or "cross-encoder/ms-marco-TinyBERT-L-6",
+        cross_encoder_candidate_limit=int(
+            os.environ.get("CHARTCOACH_FUSION_XENC_CANDIDATES") or "80"
+        ),
+    )
+    return QueryFusionHybridStrategyV2(
+        catalog=catalog,
+        searcher=_shared_searcher(catalog=catalog),
+        lm=lm,
+        config=config,
+    )
+
 
 def create_hyde_hybrid_strategy(*, catalog: Catalog) -> RetrievalStrategy:
     lm = _create_lm()
     return HydeHybridStrategy(
+        catalog=catalog,
+        searcher=_shared_searcher(catalog=catalog),
+        lm=lm,
+    )
+
+def create_hyde_hybrid_strategy_v2(*, catalog: Catalog) -> RetrievalStrategy:
+    lm = _create_lm()
+    return HydeHybridStrategyV2(
         catalog=catalog,
         searcher=_shared_searcher(catalog=catalog),
         lm=lm,
@@ -224,6 +252,8 @@ def create_default_strategy_registrations() -> list[StrategyRegistration]:
         (HybridRrfStrategyV2, create_hybrid_rrf_strategy_v2),
         (HeuristicFusionHybridStrategyV2, create_heuristic_fusion_hybrid_strategy_v2),
         (QueryFusionHybridStrategy, create_query_fusion_hybrid_strategy),
+        (QueryFusionHybridStrategyV2, create_query_fusion_hybrid_strategy_v2),
         (HydeHybridStrategy, create_hyde_hybrid_strategy),
+        (HydeHybridStrategyV2, create_hyde_hybrid_strategy_v2),
         (AgenticHybridStrategy, create_agentic_hybrid_strategy),
     ]
