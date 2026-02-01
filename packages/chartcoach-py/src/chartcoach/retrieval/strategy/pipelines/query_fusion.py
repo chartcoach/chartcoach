@@ -20,7 +20,13 @@ else:
 class QueryFusionSignature(dspy.Signature):
     """Generate diverse search queries that cover different facets of the situation."""
 
-    situation: str = dspy.InputField(desc="Full scenario context (intent + query).")
+    situation: str = dspy.InputField(
+        desc=(
+            "Scenario title + designer intent describing the chart to improve. "
+            "Focus only on the chart described by the title/intent, and ignore mentions of other charts in the surrounding story. "
+            "Do not invent domains or chart types that are not implied by the text."
+        )
+    )
     n: int = dspy.InputField(
         desc="Number of queries to produce.", ge=1, le=8, default=4
     )
@@ -222,4 +228,3 @@ class QueryFusionHybridStrategy(RetrievalStrategy):
         }
 
         return RetrievalResponse(catalog=Catalog(entries=ordered_entries), meta=meta)
-

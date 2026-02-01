@@ -22,8 +22,9 @@ class FacetPlanSignature(dspy.Signature):
 
     situation: str = dspy.InputField(
         desc=(
-            "Scenario context (intent + query). "
-            "The goal is to improve an existing visualization (not to build an IR system)."
+            "Scenario title + designer intent describing the chart to improve. "
+            "The goal is to improve an existing visualization (not to build an IR system). "
+            "Focus only on the described chart, and ignore mentions of other charts in the surrounding story."
         )
     )
     n: int = dspy.InputField(desc="Number of facet queries to return.", ge=1, le=8, default=5)
@@ -245,4 +246,3 @@ class FacetFusionHybridStrategy(RetrievalStrategy):
         }
 
         return RetrievalResponse(catalog=Catalog(entries=ordered_entries), meta=meta)
-

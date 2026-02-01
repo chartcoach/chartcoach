@@ -31,12 +31,15 @@ class AgenticHybridSignature(dspy.Signature):
 
     RULES:
     - You MUST ground selections in the catalog; never invent guideline IDs.
+    - Focus only on improving the chart described by the scenario title/intent, and ignore mentions of adjacent charts.
     - Use multiple searches and read full guidelines before final selection.
     - Return a diverse, non-redundant list.
     - If top_k > 0, return exactly top_k IDs (unless the catalog is smaller).
     """
 
-    situation: str = dspy.InputField(desc="Scenario context (intent + query).")
+    situation: str = dspy.InputField(
+        desc="Scenario title + designer intent describing the chart to improve."
+    )
     top_k: int = dspy.InputField(
         desc="How many guideline IDs to return.", ge=0, default=0
     )
