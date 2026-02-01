@@ -673,8 +673,8 @@ def _(retrieval_response):
 
 @app.cell(hide_code=True)
 def _(
+    AgenticHybridStrategy,
     BytesIO,
-    GuidelineBrowserStrategy,
     ImageItem,
     RetrievalRequest,
     TextItem,
@@ -685,6 +685,7 @@ def _(
     format_existing_chart_feedback,
     image,
     init_lm,
+    searcher,
     user_situation,
     vl_linter_violations,
 ):
@@ -706,9 +707,8 @@ def _(
             TextItem(role="existing_chart_feedback", text=existing_chart_feedback),
         ]
     )
-    strategy = GuidelineBrowserStrategy(
-        catalog=catalog,
-        lm=init_lm(feedback_model),
+    strategy = AgenticHybridStrategy(
+        catalog=catalog, searcher=searcher, lm=init_lm(feedback_model)
     )
     retrieval_response = strategy(request=request)
     return (retrieval_response,)
@@ -730,6 +730,40 @@ def _(Catalog, catalog_parquet, pl):
 
 
 @app.cell(hide_code=True)
+def _(catalog):
+    from chartcoach.embedding import (
+        GuidelineFieldTextSource,
+        GuidelineLabelsTextSource,
+        SectionsTextSource,
+    )
+    from chartcoach.index import LanceVectorIndexBackend
+    from chartcoach.retrieval.strategy.pipelines.searcher import GuidelineSearcher
+    from chartcoach.retrieval.strategy.vector_index import (
+        CatalogVectorIndex,
+        EmbeddingConfig,
+    )
+
+    embedding_config = EmbeddingConfig(
+        model="BAAI/bge-small-en-v1.5",
+        text_projector_type="sentence_transformers",
+        text_projector_args={"normalize_embeddings": True},
+    )
+    vector_index = CatalogVectorIndex.from_catalog(
+        catalog,
+        sources=[
+            SectionsTextSource(),
+            GuidelineFieldTextSource("title"),
+            GuidelineFieldTextSource("description"),
+            GuidelineLabelsTextSource(),
+        ],
+        config=embedding_config,
+        index_backend=LanceVectorIndexBackend(),
+    )
+    searcher = GuidelineSearcher(catalog=catalog, vector_index=vector_index)
+    return embedding_config, searcher, vector_index
+
+
+@app.cell(hide_code=True)
 def _():
     from chartcoach.catalog import Catalog
 
@@ -738,14 +772,37 @@ def _():
 
 @app.cell(hide_code=True)
 def _():
-    from chartcoach.retrieval.strategy.guideline_browser import GuidelineBrowserStrategy
+    from chartcoach.embedding import (
+        GuidelineFieldTextSource,
+        GuidelineLabelsTextSource,
+        SectionsTextSource,
+    )
+    from chartcoach.index import LanceVectorIndexBackend
+    from chartcoach.retrieval.strategy.pipelines import AgenticHybridStrategy
+    from chartcoach.retrieval.strategy.pipelines.searcher import GuidelineSearcher
+    from chartcoach.retrieval.strategy.vector_index import (
+        CatalogVectorIndex,
+        EmbeddingConfig,
+    )
     from chartcoach.retrieval.strategy.types import (
         ImageItem,
         RetrievalRequest,
         TextItem,
     )
 
-    return GuidelineBrowserStrategy, ImageItem, RetrievalRequest, TextItem
+    return (
+        AgenticHybridStrategy,
+        CatalogVectorIndex,
+        EmbeddingConfig,
+        GuidelineFieldTextSource,
+        GuidelineLabelsTextSource,
+        ImageItem,
+        GuidelineSearcher,
+        LanceVectorIndexBackend,
+        RetrievalRequest,
+        SectionsTextSource,
+        TextItem,
+    )
 
 
 @app.cell(column=7, hide_code=True)
