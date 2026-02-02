@@ -16,6 +16,13 @@ export const ScenarioSpecSchema = z.object({
   chart: ScenarioChartSchema.optional(),
   query: z.string().min(1).optional(),
   designer_intent: z.string().min(1).optional(),
+  audience: z.string().min(1).optional(),
+  medium: z.string().min(1).optional(),
+  constraints: z.string().min(1).optional(),
+  domain: z.string().min(1).optional(),
+  risk_tolerance: z.string().min(1).optional(),
+  time_budget: z.string().min(1).optional(),
+  counterfactual_group_id: z.string().min(1).optional(),
   provenance: z
     .object({
       source: z.string().min(1).optional(),

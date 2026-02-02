@@ -5,8 +5,12 @@ scenarios:
     chart:
       uri: https://files.peter.gy/projects/chartcoach/evals/data-journalist-charts/Chart1.png
       mime: image/png
+    audience: general news readers
+    medium: online news article
+    constraints: >-
+      Static chart for quick scanning; should remain legible on mobile and desktop.
     query: >-
-      Retrieve visualization guidelines relevant to this chart and intent, aiming to improve the visualization for a general news reader audience.
+      Retrieve visualization guidelines relevant to this chart and intent.
     designer_intent: |-
       The map is meant as an entry point to help readers understand the visualizations below it. Both the map and the following charts use 100 dots (100%) that are distributed differently.
       It also serves as a transition between the hourglass on the left (about how the world population has developed) and the charts under the map that connect population distribution to other global comparisons, such as CO2 consumption and wealth vs. poverty.
@@ -20,8 +24,12 @@ scenarios:
     chart:
       uri: https://files.peter.gy/projects/chartcoach/evals/data-journalist-charts/Chart2.png
       mime: image/png
+    audience: general news readers
+    medium: online news article
+    constraints: >-
+      Static chart for quick scanning; should remain legible on mobile and desktop.
     query: >-
-      Retrieve visualization guidelines relevant to this chart and intent, aiming to improve the visualization for a general news reader audience.
+      Retrieve visualization guidelines relevant to this chart and intent.
     designer_intent: |-
       From an Austrian perspective, the main goal is to show how inflation in Austria has developed. To put it in context, the chart also includes inflation rates for two large neighboring countries and the euro area average.
     provenance:
@@ -33,8 +41,12 @@ scenarios:
     chart:
       uri: https://files.peter.gy/projects/chartcoach/evals/data-journalist-charts/Chart3.jpg
       mime: image/jpeg
+    audience: general news readers
+    medium: online news article
+    constraints: >-
+      Static chart for quick scanning; should remain legible on mobile and desktop.
     query: >-
-      Retrieve visualization guidelines relevant to this chart and intent, aiming to improve the visualization for a general news reader audience.
+      Retrieve visualization guidelines relevant to this chart and intent.
     designer_intent: |-
       Focus on the scale of military aid from the United States, contrasted with the EU, and highlighting the most important donor countries.
     provenance:
@@ -46,8 +58,12 @@ scenarios:
     chart:
       uri: https://files.peter.gy/projects/chartcoach/evals/data-journalist-charts/Chart4.png
       mime: image/png
+    audience: general news readers
+    medium: online news article
+    constraints: >-
+      Static chart for quick scanning; should remain legible on mobile and desktop.
     query: >-
-      Retrieve visualization guidelines relevant to this chart and intent, aiming to improve the visualization for a general news reader audience.
+      Retrieve visualization guidelines relevant to this chart and intent.
     designer_intent: |-
       If I remember correctly, the plan was to first show a comparison across EU countries (and where Austria stands on the gender pay gap) and then move into Austria-specific data. This chart is essentially the Austria-specific counterpart to the EU bar chart.
       It suggests an urban-rural gap and possibly a west-east gradient. The most important message is the “level of old-age pensions in comparison”: whether someone worked full time or part time has a substantial negative impact on women later on. The topic of childcare is also included.
@@ -60,8 +76,12 @@ scenarios:
     chart:
       uri: https://files.peter.gy/projects/chartcoach/evals/data-journalist-charts/Chart5.jpg
       mime: image/jpeg
+    audience: general news readers
+    medium: online news article
+    constraints: >-
+      Static chart for quick scanning; should remain legible on mobile and desktop.
     query: >-
-      Retrieve visualization guidelines relevant to this chart and intent, aiming to improve the visualization for a general news reader audience.
+      Retrieve visualization guidelines relevant to this chart and intent.
     designer_intent: |-
       How voting behavior has changed: who benefited from other parties' losses, and which parties gained the most former non-voters.
     provenance:
@@ -73,8 +93,12 @@ scenarios:
     chart:
       uri: https://files.peter.gy/projects/chartcoach/evals/data-journalist-charts/Chart6.jpg
       mime: image/jpeg
+    audience: general news readers
+    medium: online news article
+    constraints: >-
+      Static chart for quick scanning; should remain legible on mobile and desktop.
     query: >-
-      Retrieve visualization guidelines relevant to this chart and intent, aiming to improve the visualization for a general news reader audience.
+      Retrieve visualization guidelines relevant to this chart and intent.
     designer_intent: |-
       The chart has two goals: (1) show which federal state has the most beds (slice size), and (2) show where accommodation businesses are largest on average. The further a slice extends outward, the more beds there are per business.
       Vienna has relatively few beds overall, but the most beds per business.
@@ -87,8 +111,12 @@ scenarios:
     chart:
       uri: https://files.peter.gy/projects/chartcoach/evals/data-journalist-charts/Chart7.jpg
       mime: image/jpeg
+    audience: general news readers
+    medium: online news article
+    constraints: >-
+      Static chart for quick scanning; should remain legible on mobile and desktop.
     query: >-
-      Retrieve visualization guidelines relevant to this chart and intent, aiming to improve the visualization for a general news reader audience.
+      Retrieve visualization guidelines relevant to this chart and intent.
     designer_intent: |-
       This chart was published alongside the release of new Q4/2022 data. Given COVID-19's impact on the labour market, the intent was to show whether the situation is “recovering” (i.e., change over time). Because a static chart cannot show many time points for 27 EU countries plus the EU aggregate and three EFTA countries, the chart compares Q4/2022 with one year earlier (Q4/2021).
       This lets readers see the change for every country, focusing on what users typically care about most: their own country, and comparisons to other countries of interest.
@@ -101,8 +129,12 @@ scenarios:
     chart:
       uri: https://files.peter.gy/projects/chartcoach/evals/data-journalist-charts/Chart8.jpg
       mime: image/jpeg
+    audience: general news readers
+    medium: online news article
+    constraints: >-
+      Static chart for quick scanning; should remain legible on mobile and desktop.
     query: >-
-      Retrieve visualization guidelines relevant to this chart and intent, aiming to improve the visualization for a general news reader audience.
+      Retrieve visualization guidelines relevant to this chart and intent.
     designer_intent: |-
       This chart was published alongside new population projection data. It uses a standard population pyramid split by men and women to show the age distribution today (2022) and projected for 2100.
       For orientation, ages are grouped into three broader bands (children, working age, elderly). Readers can visually see the pyramid “shift upward”: the share of older people increases substantially, changing the overall shape.
