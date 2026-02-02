@@ -221,6 +221,19 @@ def resolve_artifacts_config() -> dict[str, object]:
     return {
         "strategy_lm_model": os.environ.get("CHARTCOACH_STRATEGY_LM_MODEL") or "gpt-5.1",
         "strategy_vlm_model": os.environ.get("CHARTCOACH_STRATEGY_VLM_MODEL") or "gpt-5.2",
+        "guideline_status_lm_model": os.environ.get("CHARTCOACH_GUIDELINE_STATUS_LM_MODEL")
+        or os.environ.get("CHARTCOACH_STRATEGY_LM_MODEL")
+        or "gpt-5.1",
+        "guideline_status_timeout_seconds": os.environ.get(
+            "CHARTCOACH_GUIDELINE_STATUS_TIMEOUT_SECONDS"
+        )
+        or os.environ.get("CHARTCOACH_LM_TIMEOUT_SECONDS")
+        or "120",
+        "guideline_status_num_retries": os.environ.get(
+            "CHARTCOACH_GUIDELINE_STATUS_NUM_RETRIES"
+        )
+        or os.environ.get("CHARTCOACH_LM_NUM_RETRIES")
+        or "6",
         "lm_timeout_seconds": os.environ.get("CHARTCOACH_LM_TIMEOUT_SECONDS") or "120",
         "lm_num_retries": os.environ.get("CHARTCOACH_LM_NUM_RETRIES") or "6",
         "vlm_timeout_seconds": os.environ.get("CHARTCOACH_VLM_TIMEOUT_SECONDS")
@@ -318,7 +331,7 @@ def build_scenario_bundle(
     # scenario-agnostic: it only inspects the request context (chart image + text)
     # and never hard-codes scenario IDs or prompt fragments.
     from chartcoach.retrieval.strategy.dspy_models import (
-        create_strategy_lm,
+        create_guideline_status_lm,
         create_strategy_vlm,
     )
     from chartcoach.retrieval.strategy.pipelines.guideline_status import (
@@ -337,7 +350,7 @@ def build_scenario_bundle(
     status_config = guideline_status_config_from_env()
 
     vlm = create_strategy_vlm() if vision_config.enabled else None
-    status_lm = create_strategy_lm() if status_config.mode != "all" else None
+    status_lm = create_guideline_status_lm() if status_config.mode != "all" else None
 
     vision_meta: dict[str, object] = {}
     vision_usage: dict[str, object] | None = None
