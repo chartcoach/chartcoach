@@ -106,6 +106,33 @@ class GuidelineStatusSignature(dspy.Signature):
     )
 
 
+class GuidelineStatusBatchSignature(dspy.Signature):
+    """Predict statuses for a small batch of guidelines for the same chart."""
+
+    situation: str = dspy.InputField(
+        desc=(
+            "Scenario title + designer intent + optional chart image notes from a vision preprocessor. "
+            "Use it only as intent/context; do not invent details that are not stated in the situation."
+        )
+    )
+    guidelines: list[str] = dspy.InputField(
+        desc=(
+            "A list of guideline snippets. Each snippet starts with an `ID:` line, "
+            "followed by Title/Description/Labels and an optional excerpt."
+        )
+    )
+
+    statuses: list[GuidelineStatus] = dspy.OutputField(
+        desc=(
+            "A list of statuses aligned 1:1 with `guidelines` (same order, same length). "
+            "Valid values: violated, satisfied, unclear, not_applicable."
+        )
+    )
+    confidences: list[float] = dspy.OutputField(
+        desc="A list of confidences in [0,1] aligned 1:1 with `guidelines`."
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class GuidelineStatusConfig:
     mode: Literal["all", "violations", "satisfied"] = "all"
@@ -113,6 +140,7 @@ class GuidelineStatusConfig:
     keep_unclear: bool = True
     max_guideline_excerpt_chars: int = 900
     max_rationale_chars: int = 220
+    batch_size: int = 10
 
 
 def _bool_env(name: str, default: bool) -> bool:
@@ -153,6 +181,7 @@ def guideline_status_config_from_env() -> GuidelineStatusConfig:
         max_rationale_chars=max(
             0, _int_env("CHARTCOACH_GUIDELINE_STATUS_MAX_RATIONALE_CHARS", 220)
         ),
+        batch_size=max(1, _int_env("CHARTCOACH_GUIDELINE_STATUS_BATCH_SIZE", 10)),
     )
 
 
@@ -161,6 +190,23 @@ class GuidelineStatusModule:
         self._lm = lm
         self._config = config
         self._program = dspy.Predict(GuidelineStatusSignature)
+        self._batch_program = dspy.Predict(GuidelineStatusBatchSignature)
+
+    def _render_guideline_snippet(self, entry: CatalogEntry) -> str:
+        labels = "; ".join(entry.guideline.labels or [])
+        excerpt = _guideline_excerpt(
+            entry, max_chars=self._config.max_guideline_excerpt_chars
+        )
+        parts = [
+            f"ID: {entry.id}",
+            f"Title: {entry.guideline.title}",
+            f"Description: {entry.guideline.description}",
+        ]
+        if labels:
+            parts.append(f"Labels: {labels}")
+        if excerpt:
+            parts.append(f"Excerpt: {excerpt}")
+        return "\n".join(parts)
 
     def classify(
         self,
@@ -227,6 +273,83 @@ class GuidelineStatusModule:
         _STATUS_CACHE[cache_key] = out
         return {"id": entry.id, "cache": "miss", **out}
 
+    def classify_many(
+        self,
+        *,
+        chart_key: str,
+        situation: str,
+        entries: list[CatalogEntry],
+    ) -> list[dict[str, object]]:
+        """Classify a list of entries, using a cached + batched LM strategy."""
+
+        cached_by_id: dict[str, dict[str, object]] = {}
+        missing: list[CatalogEntry] = []
+        for entry in entries:
+            cached = _STATUS_CACHE.get((chart_key, entry.id))
+            if cached is not None:
+                cached_by_id[entry.id] = cached
+            else:
+                missing.append(entry)
+
+        if missing:
+            batch_size = max(1, int(self._config.batch_size))
+            for start in range(0, len(missing), batch_size):
+                batch = missing[start : start + batch_size]
+                snippets = [self._render_guideline_snippet(entry) for entry in batch]
+
+                pred: dspy.Prediction | None = None
+                error: str | None = None
+                attempts = 0
+                for lm in (self._lm, self._lm.copy(cache=False)):
+                    attempts += 1
+                    try:
+                        with dspy.context(lm=lm):
+                            pred = self._batch_program(
+                                situation=situation, guidelines=snippets
+                            )
+                        error = None
+                        break
+                    except Exception as e:  # noqa: BLE001
+                        error = str(e)
+
+                raw_statuses = getattr(pred, "statuses", None) if pred is not None else None
+                raw_confidences = (
+                    getattr(pred, "confidences", None) if pred is not None else None
+                )
+
+                statuses: list[GuidelineStatus] = []
+                if isinstance(raw_statuses, list):
+                    statuses = [_coerce_status(item) for item in raw_statuses]
+                confidences: list[float] = []
+                if isinstance(raw_confidences, list):
+                    confidences = [_coerce_confidence(item) for item in raw_confidences]
+
+                if len(statuses) != len(batch) or len(confidences) != len(batch):
+                    statuses = ["unclear"] * len(batch)
+                    confidences = [0.0] * len(batch)
+
+                for entry, status, confidence in zip(
+                    batch, statuses, confidences, strict=True
+                ):
+                    out = {
+                        "status": status,
+                        "confidence": confidence,
+                        "rationale": "",
+                        "attempts": attempts,
+                        "error": error,
+                    }
+                    _STATUS_CACHE[(chart_key, entry.id)] = out
+                    cached_by_id[entry.id] = out
+
+        results: list[dict[str, object]] = []
+        for entry in entries:
+            cached = cached_by_id.get(entry.id) or _STATUS_CACHE.get((chart_key, entry.id))
+            if cached is None:
+                cached = {"status": "unclear", "confidence": 0.0, "rationale": ""}
+            results.append({"id": entry.id, "cache": "memory", **cached})
+
+        return results
+
 
 def filter_guidelines_by_status(
     *,
@@ -254,15 +377,11 @@ def filter_guidelines_by_status(
 
     chart_key = _chart_fingerprint(request) or f"text:{_sha256_text(situation_text)[:16]}"
 
-    statuses: list[dict[str, object]] = []
+    statuses = status_module.classify_many(
+        chart_key=chart_key, situation=situation_text, entries=entries
+    )
     counts: dict[str, int] = {"violated": 0, "satisfied": 0, "unclear": 0, "not_applicable": 0}
-    for entry in entries:
-        scored = status_module.classify(
-            chart_key=chart_key,
-            situation=situation_text,
-            entry=entry,
-        )
-        statuses.append(scored)
+    for scored in statuses:
         s = str(scored.get("status") or "unclear")
         if s in counts:
             counts[s] += 1

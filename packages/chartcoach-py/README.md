@@ -73,6 +73,7 @@ Violation-aware post-filtering (optional):
 - `CHARTCOACH_GUIDELINE_STATUS_NUM_RETRIES` (default: `CHARTCOACH_LM_NUM_RETRIES`)
 - `CHARTCOACH_GUIDELINE_STATUS_CANDIDATE_MULTIPLIER` (default: `4`)
 - `CHARTCOACH_GUIDELINE_STATUS_KEEP_UNCLEAR` (default: `true`)
+- `CHARTCOACH_GUIDELINE_STATUS_BATCH_SIZE` (default: `10`)
 
 ### Embeddings / indexing
 
