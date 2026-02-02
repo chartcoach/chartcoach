@@ -25,6 +25,26 @@ def build_parser() -> argparse.ArgumentParser:
     )
     list_cmd.add_argument("--json", action="store_true", help="Output JSON.")
 
+    analyze_cmd = sub.add_parser(
+        "analyze-stability",
+        help="Compute retrieval stability (top-k overlap) across multiple artifact runs.",
+    )
+    analyze_cmd.add_argument(
+        "--runs",
+        type=Path,
+        action="append",
+        default=[],
+        help="Artifacts root directory containing bundles/*.json (repeatable).",
+    )
+    analyze_cmd.add_argument(
+        "-k",
+        "--k",
+        type=int,
+        default=None,
+        help="Number of top results to compare (defaults to full returned set).",
+    )
+    analyze_cmd.add_argument("--json", action="store_true", help="Output JSON.")
+
     run_cmd = sub.add_parser(
         "run", help="Run retrieval over eval scenarios and upload artifacts."
     )
@@ -120,6 +140,28 @@ def main(argv: list[str] | None = None) -> None:
         else:
             for info in infos:
                 print(f"{info['id']}  {info['name']}")
+        return
+
+    if args.cmd == "analyze-stability":
+        from chartcoach.retrieval.analysis.stability import compute_stability, format_stability_table
+
+        runs = [Path(p) for p in (args.runs or [])]
+        if len(runs) < 2:
+            raise SystemExit("Provide at least two --runs directories.")
+
+        results = compute_stability(runs=runs, k=args.k)
+        if args.json:
+            payload = [
+                {
+                    "strategy_id": r.strategy_id,
+                    "mean_jaccard": r.mean_jaccard,
+                    "scenarios": r.scenarios,
+                }
+                for r in results
+            ]
+            print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+        else:
+            print(format_stability_table(results))
         return
 
     if args.cmd == "purge":
