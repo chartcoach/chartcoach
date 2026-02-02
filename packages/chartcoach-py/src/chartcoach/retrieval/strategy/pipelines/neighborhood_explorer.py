@@ -17,7 +17,7 @@ from .focus import (
     primary_roles_for_focus,
 )
 from .guideline_status import filter_guidelines_by_status, shared_status_scorer
-from .ranking import rrf_rank
+from .ranking import rrf_rank, rrf_scores
 from .searcher import GuidelineSearcher
 from .vision import ChartVisionModule, chart_vision_config_from_env, with_chart_vision
 
@@ -118,7 +118,8 @@ class NeighborhoodExplorerStrategy(RetrievalStrategy):
             )
 
         anchor_k = max(1, min(int(self._config.anchor_k), effective_k))
-        anchors_df = self._searcher.aggregate_guideline_hits(hits_df, k=anchor_k)
+        anchors_df = self._searcher.aggregate_guideline_hits_with_evidence(hits_df, k=anchor_k)
+        anchor_rows = anchors_df.to_dicts()
         anchor_ids = [gid for gid in anchors_df["id"].to_list() if isinstance(gid, str)]
 
         id_to_entry = {entry.id: entry for entry in self.catalog.entries}
@@ -128,6 +129,25 @@ class NeighborhoodExplorerStrategy(RetrievalStrategy):
         similar_ids: list[str] = []
         exception_ids: list[str] = []
         divergent_ids: list[str] = []
+
+        evidence_by_id: dict[str, list[dict[str, object]]] = {}
+        best_role_by_id: dict[str, str] = {}
+
+        def _add_rows(rows: list[dict[str, object]]) -> None:
+            for row in rows:
+                gid = row.get("id")
+                if not isinstance(gid, str) or not gid:
+                    continue
+                ev = row.get("evidence")
+                if isinstance(ev, list) and ev:
+                    evidence_by_id.setdefault(gid, []).extend(
+                        [e for e in ev if isinstance(e, dict)]
+                    )
+                best_role = row.get("best_role")
+                if isinstance(best_role, str) and best_role:
+                    best_role_by_id.setdefault(gid, best_role)
+
+        _add_rows(anchor_rows)
 
         for anchor in anchors:
             seed_role = _seed_role_for_focus(anchor, focus_mode)
@@ -139,9 +159,10 @@ class NeighborhoodExplorerStrategy(RetrievalStrategy):
                 k=max(10, int(self._config.neighbor_k)),
                 roles={seed_role},
             ).filter(pl.col("id") != anchor.id)
-            neigh_agg = self._searcher.aggregate_guideline_hits(
+            neigh_agg = self._searcher.aggregate_guideline_hits_with_evidence(
                 neigh_df, k=max(1, int(self._config.neighbor_k))
             )
+            _add_rows(neigh_agg.to_dicts())
             neigh_ids = [
                 gid for gid in neigh_agg["id"].to_list() if isinstance(gid, str)
             ]
@@ -158,9 +179,10 @@ class NeighborhoodExplorerStrategy(RetrievalStrategy):
             ctx_df = self._searcher.search_dense(
                 query_vector=ctx_vec, k=max(20, int(self._config.neighbor_k)), roles={"context"}
             ).filter(pl.col("id") != anchor.id)
-            ctx_agg = self._searcher.aggregate_guideline_hits(
+            ctx_agg = self._searcher.aggregate_guideline_hits_with_evidence(
                 ctx_df, k=max(1, int(self._config.neighbor_k))
             )
+            _add_rows(ctx_agg.to_dicts())
             ctx_scores = {
                 str(row["id"]): float(row["score"])
                 for row in ctx_agg.select("id", "score").to_dicts()
@@ -191,14 +213,16 @@ class NeighborhoodExplorerStrategy(RetrievalStrategy):
                 k=max(20, int(self._config.neighbor_k)),
                 roles={"exceptions"},
             ).filter(pl.col("id") != anchor.id)
-            exc_agg = self._searcher.aggregate_guideline_hits(
+            exc_agg = self._searcher.aggregate_guideline_hits_with_evidence(
                 exc_df, k=max(1, int(self._config.neighbor_k))
             )
+            _add_rows(exc_agg.to_dicts())
             exc_ids = [gid for gid in exc_agg["id"].to_list() if isinstance(gid, str)]
             if exc_ids:
                 rankings.append(exc_ids)
                 exception_ids.extend(exc_ids)
 
+        fused_scores = rrf_scores(rankings=rankings, k=self._config.rrf_k)
         fused = rrf_rank(rankings=rankings, k=self._config.rrf_k)
 
         status_meta: dict[str, object] = {}
@@ -225,6 +249,12 @@ class NeighborhoodExplorerStrategy(RetrievalStrategy):
                 config=status_cfg,
             )
 
+        def _top_evidence(gid: str, *, limit: int = 3) -> list[dict[str, object]]:
+            items = evidence_by_id.get(gid) or []
+            filtered = [e for e in items if isinstance(e, dict) and str(e.get("text") or "").strip()]
+            filtered.sort(key=lambda x: float(x.get("score") or 0.0), reverse=True)
+            return filtered[: max(0, int(limit))]
+
         meta = {
             **self._searcher.vector_index.meta(),
             "k": effective_k,
@@ -242,7 +272,15 @@ class NeighborhoodExplorerStrategy(RetrievalStrategy):
                 "divergent_ids": len(set(divergent_ids)),
                 "exception_ids": len(set(exception_ids)),
             },
-            "hits": [{"id": entry.id} for entry in ordered_entries],
+            "hits": [
+                {
+                    "id": entry.id,
+                    "score": float(fused_scores.get(entry.id, 0.0)),
+                    "best_role": best_role_by_id.get(entry.id),
+                    "evidence": _top_evidence(entry.id, limit=3),
+                }
+                for entry in ordered_entries
+            ],
         }
 
         return RetrievalResponse(catalog=Catalog(entries=ordered_entries), meta=meta)

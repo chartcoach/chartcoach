@@ -657,6 +657,42 @@ def test_decompose_parallel_strategy_retries_lm_and_uses_fallback_canonical(monk
     assert out.meta["decomposition"]["lm_attempts"] == 2
 
 
+def test_decompose_parallel_strategy_includes_evidence_in_hits(monkeypatch, catalog: Catalog) -> None:
+    fake = _FakeLanceIndex()
+    fake.set_hybrid(
+        query="S",
+        df=pl.DataFrame(
+            {
+                "id": ["g1", None],
+                "role": ["advice", "advice"],
+                "score": [2.0, 0.1],
+                "text": ["axis title is missing", "ignored"],
+            }
+        ),
+    )
+    vector_index = _make_vector_index(catalog=catalog, fake=fake)
+    monkeypatch.setattr(CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0]))
+    searcher = GuidelineSearcher(catalog=catalog, vector_index=vector_index)
+
+    lm = dspy.LM(model="gpt-4o-mini", api_base="http://example.invalid/v1", api_key="x")
+    strat = DecomposeParallelStrategy(
+        catalog=catalog,
+        searcher=searcher,
+        lm=lm,
+        default_k=1,
+        focus=FocusConfig(mode="all", allow_role_fallback=True),
+    )
+
+    class DummyProgram(dspy.Module):
+        def forward(self, **_kwargs):  # noqa: ANN003
+            return dspy.Prediction(canonical_query="S", facet_queries=[], label_hints=[])
+
+    strat._program = DummyProgram()
+
+    out = strat(request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1))
+    assert out.meta["hits"][0]["evidence"]
+
+
 def test_role_aware_sections_strategy_routes_roles_and_falls_back(monkeypatch, catalog: Catalog) -> None:
     from chartcoach.retrieval.strategy.pipelines import role_aware_sections as mod
 
@@ -795,6 +831,44 @@ def test_neighborhood_explorer_strategy_emits_diverse_neighbors(monkeypatch, cat
     out = strat(request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=2))
     assert len(out.catalog.entries) == 2
     assert out.meta["exploration"]["anchor_ids"] == ["g1"]
+
+
+def test_neighborhood_explorer_strategy_includes_evidence_in_hits(monkeypatch, catalog: Catalog) -> None:
+    fake = _FakeLanceIndex()
+    fake.set_hybrid(
+        query="S",
+        df=pl.DataFrame(
+            {
+                "id": ["g1", None],
+                "role": ["advice", "advice"],
+                "score": [2.0, 0.1],
+                "text": ["axis title missing", "ignored"],
+            }
+        ),
+    )
+    fake.set_dense(
+        role="default",
+        df=pl.DataFrame(
+            {
+                "id": ["g2"],
+                "role": ["advice"],
+                "score": [1.0],
+                "text": ["neighbor snippet"],
+            }
+        ),
+    )
+    vector_index = _make_vector_index(catalog=catalog, fake=fake)
+    monkeypatch.setattr(CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0]))
+    searcher = GuidelineSearcher(catalog=catalog, vector_index=vector_index)
+
+    strat = NeighborhoodExplorerStrategy(
+        catalog=catalog,
+        searcher=searcher,
+        default_k=2,
+        focus=FocusConfig(mode="all", allow_role_fallback=True),
+    )
+    out = strat(request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=2))
+    assert out.meta["hits"][0]["evidence"]
 
 
 def test_neighborhood_explorer_seed_role_helper_branches(catalog: Catalog) -> None:

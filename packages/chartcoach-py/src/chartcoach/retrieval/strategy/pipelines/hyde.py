@@ -11,7 +11,7 @@ from chartcoach.retrieval.strategy.types import RetrievalRequest, RetrievalRespo
 
 from .focus import FocusConfig, focus_config_from_env, fallback_roles_for_focus, primary_roles_for_focus
 from .guideline_status import filter_guidelines_by_status, shared_status_scorer
-from .ranking import rrf_rank
+from .ranking import rrf_rank, rrf_scores
 from .searcher import GuidelineSearcher
 from .vision import ChartVisionModule, chart_vision_config_from_env, with_chart_vision
 
@@ -133,9 +133,10 @@ class HydeHybridStrategy(RetrievalStrategy):
             hits_fts = self._searcher.search_fts(
                 query_text=situation, k=raw_k, roles=roles_used
             )
-        agg_fts = self._searcher.aggregate_guideline_hits(
+        agg_fts = self._searcher.aggregate_guideline_hits_with_evidence(
             hits_fts, k=self._dense_candidate_k
         )
+        rows_fts = agg_fts.to_dicts()
         rank_fts = [gid for gid in agg_fts["id"].to_list() if isinstance(gid, str)]
 
         # Dense branch (semantic): HyDE pseudo-document.
@@ -143,15 +144,53 @@ class HydeHybridStrategy(RetrievalStrategy):
         hits_dense = self._searcher.search_dense(
             query_vector=pseudo_vec, k=raw_k, roles=roles_used
         )
-        agg_dense = self._searcher.aggregate_guideline_hits(
+        agg_dense = self._searcher.aggregate_guideline_hits_with_evidence(
             hits_dense, k=self._dense_candidate_k
         )
+        rows_dense = agg_dense.to_dicts()
         rank_dense = [gid for gid in agg_dense["id"].to_list() if isinstance(gid, str)]
 
+        evidence_by_id: dict[str, list[dict[str, object]]] = {}
+        best_role_by_id: dict[str, str] = {}
+        for row in [*rows_fts, *rows_dense]:
+            gid = row.get("id")
+            if not isinstance(gid, str) or not gid:
+                continue
+            ev = row.get("evidence")
+            if isinstance(ev, list) and ev:
+                evidence_by_id.setdefault(gid, []).extend(
+                    [e for e in ev if isinstance(e, dict)]
+                )
+            best_role = row.get("best_role")
+            if isinstance(best_role, str) and best_role:
+                best_role_by_id.setdefault(gid, best_role)
+
+        def _merge_evidence(
+            primary: object,
+            secondary: object,
+            *,
+            limit: int = 3,
+        ) -> list[dict[str, object]]:
+            merged: list[dict[str, object]] = []
+            for source in (primary, secondary):
+                if not isinstance(source, list):
+                    continue
+                for item in source:
+                    if not isinstance(item, dict):
+                        continue
+                    text = str(item.get("text") or "").strip()
+                    if not text:
+                        continue
+                    merged.append(item)
+            merged.sort(key=lambda x: float(x.get("score") or 0.0), reverse=True)
+            return merged[: max(0, int(limit))]
+
+        fused_scores = rrf_scores(rankings=[rank_fts, rank_dense], k=self._config.rrf_k)
         fused = rrf_rank(rankings=[rank_fts, rank_dense], k=self._config.rrf_k)
         candidates = fused[: max(effective_k, self._dense_candidate_k)]
 
         final_ids = candidates[:effective_k]
+        rerank_hits_by_id: dict[str, dict[str, object]] = {}
         cross_encoder_fallback_used = False
         cross_encoder_error: str | None = None
         rerank_query_chars: int | None = None
@@ -176,7 +215,11 @@ class HydeHybridStrategy(RetrievalStrategy):
                     roles=roles_used,
                     fts_columns="text",
                 )
-                agg = self._searcher.aggregate_guideline_hits(hits_hybrid, k=effective_k)
+                agg = self._searcher.aggregate_guideline_hits_with_evidence(hits_hybrid, k=effective_k)
+                rows = agg.to_dicts()
+                rerank_hits_by_id = {
+                    row["id"]: row for row in rows if isinstance(row.get("id"), str)
+                }
                 reranked = [gid for gid in agg["id"].to_list() if isinstance(gid, str)]
                 if reranked:
                     final_ids = reranked
@@ -198,6 +241,7 @@ class HydeHybridStrategy(RetrievalStrategy):
                     break
 
         fill_fallback_used = False
+        fill_hits_by_id: dict[str, dict[str, object]] = {}
         if len(final_ids) < effective_k and self.catalog.entries:
             # If HyDE fusion yields too few candidates (or the reranker returns
             # nothing), fall back to a strong hybrid retrieval to complete top-k.
@@ -211,7 +255,11 @@ class HydeHybridStrategy(RetrievalStrategy):
                 roles=roles_used,
                 fts_columns="text",
             )
-            agg = self._searcher.aggregate_guideline_hits(hits_df, k=max(50, raw_k))
+            agg = self._searcher.aggregate_guideline_hits_with_evidence(hits_df, k=max(50, raw_k))
+            fill_rows = agg.to_dicts()
+            fill_hits_by_id = {
+                row["id"]: row for row in fill_rows if isinstance(row.get("id"), str)
+            }
             fill_ids = [gid for gid in agg["id"].to_list() if isinstance(gid, str)]
             seen = set(final_ids)
             for gid in fill_ids:
@@ -271,7 +319,28 @@ class HydeHybridStrategy(RetrievalStrategy):
             "cross_encoder_error": cross_encoder_error,
             "cross_encoder_rerank_query_chars": rerank_query_chars,
             "fill_fallback_used": fill_fallback_used,
-            "hits": [{"id": entry.id} for entry in ordered_entries],
+            "hits": [
+                {
+                    "id": entry.id,
+                    "score": float(
+                        (rerank_hits_by_id.get(entry.id, {}).get("score"))
+                        or (fill_hits_by_id.get(entry.id, {}).get("score"))
+                        or fused_scores.get(entry.id, 0.0)
+                    ),
+                    "best_role": (
+                        rerank_hits_by_id.get(entry.id, {}).get("best_role")
+                        or fill_hits_by_id.get(entry.id, {}).get("best_role")
+                        or best_role_by_id.get(entry.id)
+                    ),
+                    "evidence": _merge_evidence(
+                        rerank_hits_by_id.get(entry.id, {}).get("evidence")
+                        or fill_hits_by_id.get(entry.id, {}).get("evidence"),
+                        evidence_by_id.get(entry.id),
+                        limit=3,
+                    ),
+                }
+                for entry in ordered_entries
+            ],
         }
 
         return RetrievalResponse(catalog=Catalog(entries=ordered_entries), meta=meta)

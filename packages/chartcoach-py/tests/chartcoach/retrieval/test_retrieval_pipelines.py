@@ -17,6 +17,7 @@ from chartcoach.retrieval.strategy.pipelines.bm25 import (
     _tokenize,
 )
 from chartcoach.retrieval.strategy.pipelines.dense import DenseMmrStrategy
+from chartcoach.retrieval.strategy.pipelines.focus import FocusConfig
 from chartcoach.retrieval.strategy.pipelines.hybrid import HybridRrfStrategy
 from chartcoach.retrieval.strategy.pipelines.hyde import HydeConfig, HydeHybridStrategy
 from chartcoach.retrieval.strategy.pipelines.query_fusion import (
@@ -676,6 +677,154 @@ def test_query_fusion_strategy_fuses_queries_and_reranks_with_cross_encoder(
     ) == ["S", "color", "annotation"]
 
 
+def test_query_fusion_strategy_includes_evidence_and_filters_bad_evidence(
+    catalog: Catalog, monkeypatch
+) -> None:
+    import chartcoach.retrieval.strategy.pipelines.searcher as searcher_mod
+    import lancedb.rerankers
+
+    class DummyCrossEncoder:  # noqa: D401
+        def __init__(self, model_name: str):  # noqa: ARG002
+            pass
+
+    monkeypatch.setattr(lancedb.rerankers, "CrossEncoderReranker", DummyCrossEncoder)
+
+    fake = _FakeLanceIndex()
+    fake.set_hybrid(
+        "S",
+        pl.DataFrame({"id": ["g1"], "role": ["advice"], "score": [1.0], "text": ["x"]}),
+    )
+    fake.set_hybrid_for_ids(
+        {"g1"},
+        pl.DataFrame({"id": ["g1"], "role": ["advice"], "score": [2.0], "text": ["y"]}),
+    )
+
+    vector_index = _make_vector_index(catalog=catalog, fake_index=fake)
+    monkeypatch.setattr(CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0]))
+    searcher = GuidelineSearcher(catalog=catalog, vector_index=vector_index)
+
+    original_agg = searcher_mod.GuidelineSearcher.aggregate_guideline_hits_with_evidence
+
+    def patched_agg(hits_df: pl.DataFrame, *, k: int, **kwargs):  # noqa: ANN001
+        if k == 40:
+            return pl.DataFrame(
+                {
+                    "id": [None, "g1"],
+                    "score": [0.1, 1.0],
+                    "best_role": ["advice", "advice"],
+                    "evidence": [
+                        [],
+                        [{"role": "advice", "text": "axis title missing", "score": 1.0}],
+                    ],
+                }
+            )
+        if k == 1:
+            evidence = pl.Series(
+                "evidence",
+                [
+                    [
+                        {"role": "advice", "text": "good", "score": 3.0},
+                        "not-a-dict",
+                        {"role": "reason", "text": "   ", "score": 0.1},
+                    ]
+                ],
+                dtype=pl.Object,
+            )
+            return pl.DataFrame(
+                {
+                    "id": ["g1"],
+                    "score": [3.0],
+                    "best_role": ["advice"],
+                    "evidence": evidence,
+                }
+            )
+        return original_agg(hits_df, k=k, **kwargs)
+
+    monkeypatch.setattr(
+        searcher_mod.GuidelineSearcher,
+        "aggregate_guideline_hits_with_evidence",
+        staticmethod(patched_agg),
+    )
+
+    lm = dspy.LM(model="gpt-4o-mini", api_base="http://example.invalid/v1", api_key="x")
+    strat = QueryFusionHybridStrategy(
+        catalog=catalog,
+        searcher=searcher,
+        lm=lm,
+        config=QueryFusionConfig(n_queries=1, cross_encoder_model="dummy"),
+        default_k=1,
+    )
+
+    class DummyProgram(dspy.Module):
+        def forward(self, **_kwargs):  # noqa: ANN003
+            return dspy.Prediction(queries=["S"])
+
+    strat._program = DummyProgram()
+    out = strat(request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1))
+    assert [e.guideline.id for e in out.catalog.entries] == ["g1"]
+    assert out.meta["hits"][0]["evidence"]
+
+
+def test_query_fusion_strategy_role_fallback_loop_records_evidence(
+    catalog: Catalog, monkeypatch
+) -> None:
+    import chartcoach.retrieval.strategy.pipelines.searcher as searcher_mod
+
+    fake = _FakeLanceIndex()
+    vector_index = _make_vector_index(catalog=catalog, fake_index=fake)
+    monkeypatch.setattr(CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0]))
+    searcher = GuidelineSearcher(catalog=catalog, vector_index=vector_index)
+
+    def patched_search_hybrid(_self, **kwargs):  # noqa: ANN001, ANN003
+        roles = kwargs.get("roles")
+        if isinstance(roles, set) and "advice" not in roles:
+            return pl.DataFrame({"id": [], "role": [], "score": [], "text": []})
+        return pl.DataFrame(
+            {"id": ["g1"], "role": ["advice"], "score": [1.0], "text": ["x"]}
+        )
+
+    monkeypatch.setattr(GuidelineSearcher, "search_hybrid", patched_search_hybrid)
+
+    original_agg = searcher_mod.GuidelineSearcher.aggregate_guideline_hits_with_evidence
+
+    def patched_agg(hits_df: pl.DataFrame, *, k: int, **kwargs):  # noqa: ANN001
+        if k == 40 and not hits_df.is_empty():
+            return pl.DataFrame(
+                {
+                    "id": [None, "g1"],
+                    "score": [0.1, 1.0],
+                    "best_role": ["advice", "advice"],
+                    "evidence": [[], [{"role": "advice", "text": "ok", "score": 1.0}]],
+                }
+            )
+        return original_agg(hits_df, k=k, **kwargs)
+
+    monkeypatch.setattr(
+        searcher_mod.GuidelineSearcher,
+        "aggregate_guideline_hits_with_evidence",
+        staticmethod(patched_agg),
+    )
+
+    lm = dspy.LM(model="gpt-4o-mini", api_base="http://example.invalid/v1", api_key="x")
+    strat = QueryFusionHybridStrategy(
+        catalog=catalog,
+        searcher=searcher,
+        lm=lm,
+        config=QueryFusionConfig(n_queries=1, cross_encoder_model=None),
+        default_k=1,
+        focus=FocusConfig(mode="violations", allow_role_fallback=True),
+    )
+
+    class DummyProgram(dspy.Module):
+        def forward(self, **_kwargs):  # noqa: ANN003
+            return dspy.Prediction(queries=["S"])
+
+    strat._program = DummyProgram()
+    out = strat(request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1))
+    assert [e.guideline.id for e in out.catalog.entries] == ["g1"]
+    assert out.meta["hits"][0]["evidence"]
+
+
 def test_query_fusion_strategy_retries_lm_and_falls_back_when_rerank_empty(
     catalog: Catalog, monkeypatch
 ) -> None:
@@ -850,16 +999,18 @@ def test_query_fusion_strategy_fill_fallback_adds_new_ids(
 
     # Force fusion to under-produce by truncating per-query aggregation while
     # keeping the fill-fallback aggregation intact (k differs: 40 vs 50).
-    original_agg = searcher_mod.GuidelineSearcher.aggregate_guideline_hits
+    original_agg = searcher_mod.GuidelineSearcher.aggregate_guideline_hits_with_evidence
 
     def patched_agg(hits_df: pl.DataFrame, *, k: int, **kwargs):  # noqa: ANN001
         if k == 40:
-            return pl.DataFrame({"id": ["g1"], "score": [1.0], "best_role": ["advice"]})
+            return pl.DataFrame(
+                {"id": ["g1"], "score": [1.0], "best_role": ["advice"], "evidence": [[]]}
+            )
         return original_agg(hits_df, k=k, **kwargs)
 
     monkeypatch.setattr(
         searcher_mod.GuidelineSearcher,
-        "aggregate_guideline_hits",
+        "aggregate_guideline_hits_with_evidence",
         staticmethod(patched_agg),
     )
 
@@ -951,6 +1102,100 @@ def test_hyde_strategy_fuses_fts_and_dense_and_reranks(
         request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1)
     )
     assert out.meta["pseudo_document_chars"] >= len("S")
+
+
+def test_hyde_strategy_includes_evidence_and_filters_bad_evidence(
+    catalog: Catalog, monkeypatch
+) -> None:
+    import chartcoach.retrieval.strategy.pipelines.searcher as searcher_mod
+    import lancedb.rerankers
+
+    class DummyCrossEncoder:  # noqa: D401
+        def __init__(self, model_name: str):  # noqa: ARG002
+            pass
+
+    monkeypatch.setattr(lancedb.rerankers, "CrossEncoderReranker", DummyCrossEncoder)
+
+    fake = _FakeLanceIndex()
+    fake.set_fts(
+        "S",
+        pl.DataFrame({"id": ["g1"], "role": ["advice"], "score": [1.0], "text": ["x"]}),
+    )
+    fake.set_dense(
+        "default",
+        pl.DataFrame({"id": ["g1"], "role": ["advice"], "score": [0.9]}),
+    )
+    fake.set_hybrid_for_ids(
+        {"g1"},
+        pl.DataFrame({"id": ["g1"], "role": ["advice"], "score": [2.0], "text": ["y"]}),
+    )
+
+    vector_index = _make_vector_index(catalog=catalog, fake_index=fake)
+    monkeypatch.setattr(CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0]))
+    searcher = GuidelineSearcher(catalog=catalog, vector_index=vector_index)
+
+    original_agg = searcher_mod.GuidelineSearcher.aggregate_guideline_hits_with_evidence
+
+    def patched_agg(hits_df: pl.DataFrame, *, k: int, **kwargs):  # noqa: ANN001
+        if k == 2:
+            return pl.DataFrame(
+                {
+                    "id": [None, "g1"],
+                    "score": [0.1, 1.0],
+                    "best_role": ["advice", "advice"],
+                    "evidence": [
+                        [],
+                        [{"role": "advice", "text": "axis title missing", "score": 1.0}],
+                    ],
+                }
+            )
+        if k == 1:
+            evidence = pl.Series(
+                "evidence",
+                [
+                    [
+                        {"role": "advice", "text": "good", "score": 3.0},
+                        "not-a-dict",
+                        {"role": "reason", "text": "   ", "score": 0.1},
+                    ]
+                ],
+                dtype=pl.Object,
+            )
+            return pl.DataFrame(
+                {
+                    "id": ["g1"],
+                    "score": [3.0],
+                    "best_role": ["advice"],
+                    "evidence": evidence,
+                }
+            )
+        return original_agg(hits_df, k=k, **kwargs)
+
+    monkeypatch.setattr(
+        searcher_mod.GuidelineSearcher,
+        "aggregate_guideline_hits_with_evidence",
+        staticmethod(patched_agg),
+    )
+
+    lm = dspy.LM(model="gpt-4o-mini", api_base="http://example.invalid/v1", api_key="x")
+    strat = HydeHybridStrategy(
+        catalog=catalog,
+        searcher=searcher,
+        lm=lm,
+        config=HydeConfig(cross_encoder_model="dummy"),
+        default_k=1,
+        dense_candidate_k=2,
+        focus=FocusConfig(mode="all"),
+    )
+
+    class DummyProgram(dspy.Module):
+        def forward(self, **_kwargs):  # noqa: ANN003
+            return dspy.Prediction(pseudo_document="S")
+
+    strat._program = DummyProgram()
+    out = strat(request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1))
+    assert [e.guideline.id for e in out.catalog.entries] == ["g1"]
+    assert out.meta["hits"][0]["evidence"]
 
 
 def test_hyde_strategy_retries_lm_and_falls_back_when_rerank_empty(
