@@ -383,6 +383,13 @@ def build_scenario_bundle(
             if status_lm is not None
             else None
         )
+        # Avoid exploding latency for highly agentic pipelines: the violation
+        # post-filter expands k to increase recall, but agentic strategies can
+        # be extremely sensitive to k. Keep their k at the output target.
+        strategy_raw_k = expanded_k
+        if expanded_k is not None and output_k is not None:
+            if str(strategy_info.id).startswith("agentic-hybrid@"):
+                strategy_raw_k = int(output_k)
         started = time.perf_counter()
         try:
             with _timeout(
@@ -393,8 +400,8 @@ def build_scenario_bundle(
                 ),
             ):
                 strategy_request = request
-                if expanded_k is not None:
-                    strategy_request = request.model_copy(update={"k": expanded_k})
+                if strategy_raw_k is not None and strategy_raw_k != request.k:
+                    strategy_request = request.model_copy(update={"k": strategy_raw_k})
                 response = strategy(request=strategy_request)
         except _StrategyTimeout as e:
             elapsed_ms = int((time.perf_counter() - started) * 1000)
@@ -438,7 +445,7 @@ def build_scenario_bundle(
                 config=status_config,
             )
             response_meta.update(status_meta)
-            response_meta.setdefault("k_raw", expanded_k)
+            response_meta.setdefault("k_raw", strategy_raw_k)
             response_meta["k"] = int(output_k)
             response_meta["hits"] = [{"id": entry.id} for entry in final_entries]
 
