@@ -81,12 +81,14 @@ def test_build_retrieval_request_shapes_context() -> None:
         chart=ScenarioChart(uri="https://example.invalid/chart.png", mime="image/png"),
         query="Retrieve guidelines.",
         designer_intent="Improve the chart.",
+        audience="general readers",
     )
     request = build_retrieval_request(scenario, k=5)
     assert request.k == 5
     assert any(i.role == "chart" for i in request.context)
-    assert any(i.role == "situation" for i in request.context)
+    assert any(i.role == "intent" for i in request.context)
     assert any(i.role == "chart_spec" for i in request.context)
+    assert any(i.role == "audience" for i in request.context)
 
 
 def test_compute_digest_is_stable() -> None:

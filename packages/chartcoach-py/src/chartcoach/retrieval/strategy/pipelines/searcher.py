@@ -6,7 +6,7 @@ import numpy as np
 import polars as pl
 
 from chartcoach.catalog import Catalog
-from chartcoach.retrieval.strategy.request_text import get_text_by_role, require_text_by_role
+from chartcoach.retrieval.situation import situation_text_parts
 from chartcoach.retrieval.strategy.types import RetrievalRequest
 from chartcoach.retrieval.strategy.vector_index import CatalogVectorIndex
 
@@ -24,22 +24,11 @@ class GuidelineSearcher:
 
     @staticmethod
     def build_base_query_text(request: RetrievalRequest) -> str:
-        # Treat the scenario "query" field as meta-instructions and avoid feeding
-        # it into retrieval (it often contains IR phrasing that pollutes search).
-        title = (get_text_by_role(request, role="title") or "").strip()
-        situation = require_text_by_role(request, role="situation")
-        return f"{title}\n\n{situation}".strip() if title else situation
+        return situation_text_parts(request).base
 
     @staticmethod
     def build_query_text(request: RetrievalRequest) -> str:
-        base = GuidelineSearcher.build_base_query_text(request)
-        chart_vision = (get_text_by_role(request, role="chart_vision") or "").strip()
-        if not chart_vision:
-            return base
-
-        # Keep the vision text clearly demarcated to avoid it being interpreted
-        # as extra instructions (it's meant as factual chart description).
-        return f"{base}\n\nChart image notes:\n{chart_vision}".strip()
+        return situation_text_parts(request).with_chart_vision
 
     @staticmethod
     def _sanitize_fts_query(query_text: str) -> str:

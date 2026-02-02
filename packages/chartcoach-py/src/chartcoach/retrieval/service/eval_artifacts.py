@@ -58,6 +58,13 @@ class ScenarioSpec(_EvalArtifactsBaseModel):
     chart: ScenarioChart | None = None
     query: str | None = None
     designer_intent: str | None = None
+    audience: str | None = None
+    medium: str | None = None
+    constraints: str | None = None
+    domain: str | None = None
+    risk_tolerance: str | None = None
+    time_budget: str | None = None
+    counterfactual_group_id: str | None = None
     provenance: ScenarioProvenance | None = None
 
 
@@ -169,8 +176,20 @@ def build_retrieval_request(
     if not situation:
         raise ValueError(f"Scenario {scenario.id!r} is missing designer_intent.")
 
-    context.append(TextItem(role="situation", text=situation, lang=lang))
+    context.append(TextItem(role="intent", text=situation, lang=lang))
     context.append(TextItem(role="chart_spec", text="{}", lang=lang))
+
+    for role, value in (
+        ("audience", scenario.audience),
+        ("medium", scenario.medium),
+        ("constraints", scenario.constraints),
+        ("domain", scenario.domain),
+        ("risk_tolerance", scenario.risk_tolerance),
+        ("time_budget", scenario.time_budget),
+    ):
+        text = (value or "").strip()
+        if text:
+            context.append(TextItem(role=role, text=text, lang=lang))
 
     query = (scenario.query or "").strip()
     if query:
