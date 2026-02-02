@@ -22,12 +22,24 @@ class GuidelineSearcher:
         # Fail fast: these pipelines require an index backend that supports hybrid + FTS.
         _ = self.vector_index.lance()
 
-    def build_query_text(self, request: RetrievalRequest) -> str:
+    @staticmethod
+    def build_base_query_text(request: RetrievalRequest) -> str:
         # Treat the scenario "query" field as meta-instructions and avoid feeding
         # it into retrieval (it often contains IR phrasing that pollutes search).
         title = (get_text_by_role(request, role="title") or "").strip()
         situation = require_text_by_role(request, role="situation")
         return f"{title}\n\n{situation}".strip() if title else situation
+
+    @staticmethod
+    def build_query_text(request: RetrievalRequest) -> str:
+        base = GuidelineSearcher.build_base_query_text(request)
+        chart_vision = (get_text_by_role(request, role="chart_vision") or "").strip()
+        if not chart_vision:
+            return base
+
+        # Keep the vision text clearly demarcated to avoid it being interpreted
+        # as extra instructions (it's meant as factual chart description).
+        return f"{base}\n\nChart image notes:\n{chart_vision}".strip()
 
     @staticmethod
     def _sanitize_fts_query(query_text: str) -> str:
