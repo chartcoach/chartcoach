@@ -57,6 +57,20 @@ Optional strategy controls:
 - `CHARTCOACH_LM_TIMEOUT_SECONDS` (default: `120`)
 - `CHARTCOACH_LM_NUM_RETRIES` (default: `6`)
 
+Vision (optional request enrichment):
+
+- `CHARTCOACH_CHART_VISION_ENABLED` (default: `false`)
+- `CHARTCOACH_STRATEGY_VLM_MODEL` (default: `gpt-5.2`)
+- `CHARTCOACH_VLM_TIMEOUT_SECONDS` (default: `CHARTCOACH_LM_TIMEOUT_SECONDS`)
+- `CHARTCOACH_VLM_NUM_RETRIES` (default: `CHARTCOACH_LM_NUM_RETRIES`)
+- `CHARTCOACH_CHART_VISION_MAX_TEXT_CHARS` (default: `1400`)
+
+Violation-aware post-filtering (optional):
+
+- `CHARTCOACH_GUIDELINE_STATUS_MODE` = `all|violations|satisfied` (default: `all`)
+- `CHARTCOACH_GUIDELINE_STATUS_CANDIDATE_MULTIPLIER` (default: `4`)
+- `CHARTCOACH_GUIDELINE_STATUS_KEEP_UNCLEAR` (default: `true`)
+
 ### Embeddings / indexing
 
 - `CHARTCOACH_EMBEDDING_MODEL` (default: `BAAI/bge-small-en-v1.5`)
