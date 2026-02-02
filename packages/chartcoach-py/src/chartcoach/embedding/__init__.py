@@ -13,6 +13,7 @@ from .catalog_embedder import CatalogEmbedder
 from .text_sources import (
     CatalogTextSource,
     DEFAULT_TEXT_SOURCES,
+    GuidelineAbstractTextSource,
     GuidelineFieldTextSource,
     GuidelineLabelsTextSource,
     SectionsTextSource,
@@ -23,6 +24,7 @@ __all__ = [
     "CatalogEmbedder",
     "CatalogTextSource",
     "DEFAULT_TEXT_SOURCES",
+    "GuidelineAbstractTextSource",
     "GuidelineFieldTextSource",
     "GuidelineLabelsTextSource",
     "SectionsTextSource",

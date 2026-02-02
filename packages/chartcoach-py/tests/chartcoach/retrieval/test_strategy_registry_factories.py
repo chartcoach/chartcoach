@@ -91,6 +91,31 @@ def test_registry_factories_instantiate_strategies(
     assert (
         registry.create_hybrid_rrf_strategy(catalog=catalog).id == "hybrid-rrf@v1"
     )
+    assert registry.create_ann_dense_strategy(catalog=catalog).id == "ann-dense@v1"
+    assert (
+        registry.create_label_gated_ann_strategy(catalog=catalog).id
+        == "label-gated-ann@v1"
+    )
+    assert (
+        registry.create_label_first_abstract_strategy(catalog=catalog).id
+        == "label-first-abstract@v1"
+    )
+    assert (
+        registry.create_decompose_parallel_strategy(catalog=catalog).id
+        == "decompose-parallel@v1"
+    )
+    assert (
+        registry.create_role_aware_sections_strategy(catalog=catalog).id
+        == "role-aware-sections@v1"
+    )
+    assert (
+        registry.create_neighborhood_explorer_strategy(catalog=catalog).id
+        == "neighborhood-explorer@v1"
+    )
+    assert (
+        registry.create_facet_fusion_hybrid_strategy(catalog=catalog).id
+        == "facet-fusion-hybrid@v1"
+    )
     assert (
         registry.create_query_fusion_hybrid_strategy(catalog=catalog).id
         == "query-fusion-hybrid@v1"
@@ -124,3 +149,27 @@ def test_create_default_strategy_registrations_includes_expected_ids() -> None:
         "hyde-hybrid@v1",
         "agentic-hybrid@v1",
     } <= ids
+
+
+def test_shared_abstract_index_uses_cache(monkeypatch, catalog: Catalog) -> None:
+    registry._ABSTRACT_INDEX_CACHE.clear()
+
+    monkeypatch.setattr(
+        registry, "_default_embedding_config", lambda: registry.EmbeddingConfig(model="fake")
+    )
+
+    created: list[object] = []
+
+    def fake_from_catalog(cls, _catalog, **_kwargs):  # noqa: ANN001
+        obj = object()
+        created.append(obj)
+        return obj
+
+    monkeypatch.setattr(
+        registry.CatalogVectorIndex, "from_catalog", classmethod(fake_from_catalog)
+    )
+
+    idx1 = registry._shared_abstract_index(catalog=catalog)
+    idx2 = registry._shared_abstract_index(catalog=catalog)
+    assert idx1 is idx2
+    assert len(created) == 1

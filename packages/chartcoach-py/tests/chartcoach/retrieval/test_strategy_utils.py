@@ -29,6 +29,10 @@ def test_build_situation_with_query_formats_and_requires_situation() -> None:
         ]
     )
     assert build_situation_with_query(request) == "S\n\nQuery:\nQ"
+    assert (
+        build_situation_with_query(RetrievalRequest(context=[TextItem(role="situation", text="S")]))
+        == "S"
+    )
 
     with pytest.raises(ValueError, match="Missing required TextItem"):
         build_situation_with_query(
@@ -119,7 +123,11 @@ def test_dspy_adapters_text_and_image_helpers(
 
 
 def test_vector_index_text_source_description_variants() -> None:
-    from chartcoach.embedding import GuidelineFieldTextSource, SectionsTextSource
+    from chartcoach.embedding import (
+        GuidelineAbstractTextSource,
+        GuidelineFieldTextSource,
+        SectionsTextSource,
+    )
 
     meta = describe_text_source(SectionsTextSource(roles={"b", "a"}))
     assert meta["type"] == "sections"
@@ -131,6 +139,10 @@ def test_vector_index_text_source_description_variants() -> None:
     assert meta["type"] == "guideline_field"
     assert meta["field"] == "title"
     assert meta["role"] == "headline"
+
+    meta = describe_text_source(GuidelineAbstractTextSource(role="abstract"))
+    assert meta["type"] == "guideline_abstract"
+    assert meta["role"] == "abstract"
 
     meta = describe_text_source(object())
     assert meta["type"] == "object"

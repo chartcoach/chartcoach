@@ -9,13 +9,19 @@ from chartcoach.index import LanceVectorIndexBackend
 from chartcoach.retrieval.strategy.base import RetrievalStrategy
 from chartcoach.retrieval.strategy.dspy_models import create_strategy_lm
 from chartcoach.retrieval.strategy.pipelines import (
+    AnnDenseStrategy,
     AgenticHybridStrategy,
     Bm25PrfStrategy,
+    DecomposeParallelStrategy,
     DenseMmrStrategy,
     FacetFusionHybridStrategy,
     HydeHybridStrategy,
     HybridRrfStrategy,
+    LabelFirstAbstractStrategy,
+    LabelGatedAnnStrategy,
+    NeighborhoodExplorerStrategy,
     QueryFusionHybridStrategy,
+    RoleAwareSectionsStrategy,
 )
 from chartcoach.retrieval.strategy.pipelines.facet_fusion import FacetFusionConfig
 from chartcoach.retrieval.strategy.pipelines.query_fusion import QueryFusionConfig
@@ -40,6 +46,7 @@ StrategyRegistration = tuple[type[RetrievalStrategy], StrategyFactory]
 
 
 _INDEX_CACHE: dict[tuple[int, str], CatalogVectorIndex] = {}
+_ABSTRACT_INDEX_CACHE: dict[tuple[int, str], CatalogVectorIndex] = {}
 
 
 def _create_lm() -> dspy.LM:
@@ -106,9 +113,41 @@ def _shared_searcher(*, catalog: Catalog) -> GuidelineSearcher:
     return GuidelineSearcher(catalog=catalog, vector_index=vector_index)
 
 
+def _shared_abstract_index(*, catalog: Catalog) -> CatalogVectorIndex:
+    config = _default_embedding_config()
+    cache_key = (id(catalog), config.digest())
+    cached = _ABSTRACT_INDEX_CACHE.get(cache_key)
+    if cached is not None:
+        return cached
+
+    from chartcoach.embedding import GuidelineAbstractTextSource
+
+    sources = [GuidelineAbstractTextSource()]
+    index = CatalogVectorIndex.from_catalog(
+        catalog,
+        sources=sources,
+        config=config,
+        index_backend=LanceVectorIndexBackend(),
+    )
+    _ABSTRACT_INDEX_CACHE[cache_key] = index
+    return index
+
+
+def _shared_abstract_searcher(*, catalog: Catalog) -> GuidelineSearcher:
+    vector_index = _shared_abstract_index(catalog=catalog)
+    return GuidelineSearcher(catalog=catalog, vector_index=vector_index)
+
+
 def create_bm25_prf_strategy(*, catalog: Catalog) -> RetrievalStrategy:
     return Bm25PrfStrategy(
         catalog=catalog, searcher=_shared_searcher(catalog=catalog)
+    )
+
+
+def create_ann_dense_strategy(*, catalog: Catalog) -> RetrievalStrategy:
+    return AnnDenseStrategy(
+        catalog=catalog,
+        searcher=_shared_searcher(catalog=catalog),
     )
 
 
@@ -121,6 +160,49 @@ def create_dense_mmr_strategy(*, catalog: Catalog) -> RetrievalStrategy:
 
 def create_hybrid_rrf_strategy(*, catalog: Catalog) -> RetrievalStrategy:
     return HybridRrfStrategy(
+        catalog=catalog,
+        searcher=_shared_searcher(catalog=catalog),
+    )
+
+
+def create_label_gated_ann_strategy(*, catalog: Catalog) -> RetrievalStrategy:
+    lm = _create_lm()
+    return LabelGatedAnnStrategy(
+        catalog=catalog,
+        searcher=_shared_searcher(catalog=catalog),
+        lm=lm,
+    )
+
+
+def create_label_first_abstract_strategy(*, catalog: Catalog) -> RetrievalStrategy:
+    lm = _create_lm()
+    return LabelFirstAbstractStrategy(
+        catalog=catalog,
+        abstract_searcher=_shared_abstract_searcher(catalog=catalog),
+        lm=lm,
+    )
+
+
+def create_decompose_parallel_strategy(*, catalog: Catalog) -> RetrievalStrategy:
+    lm = _create_lm()
+    return DecomposeParallelStrategy(
+        catalog=catalog,
+        searcher=_shared_searcher(catalog=catalog),
+        lm=lm,
+    )
+
+
+def create_role_aware_sections_strategy(*, catalog: Catalog) -> RetrievalStrategy:
+    lm = _create_lm()
+    return RoleAwareSectionsStrategy(
+        catalog=catalog,
+        searcher=_shared_searcher(catalog=catalog),
+        lm=lm,
+    )
+
+
+def create_neighborhood_explorer_strategy(*, catalog: Catalog) -> RetrievalStrategy:
+    return NeighborhoodExplorerStrategy(
         catalog=catalog,
         searcher=_shared_searcher(catalog=catalog),
     )
@@ -185,8 +267,14 @@ def create_agentic_hybrid_strategy(*, catalog: Catalog) -> RetrievalStrategy:
 def create_default_strategy_registrations() -> list[StrategyRegistration]:
     return [
         (Bm25PrfStrategy, create_bm25_prf_strategy),
+        (AnnDenseStrategy, create_ann_dense_strategy),
         (DenseMmrStrategy, create_dense_mmr_strategy),
         (HybridRrfStrategy, create_hybrid_rrf_strategy),
+        (LabelGatedAnnStrategy, create_label_gated_ann_strategy),
+        (LabelFirstAbstractStrategy, create_label_first_abstract_strategy),
+        (DecomposeParallelStrategy, create_decompose_parallel_strategy),
+        (RoleAwareSectionsStrategy, create_role_aware_sections_strategy),
+        (NeighborhoodExplorerStrategy, create_neighborhood_explorer_strategy),
         (FacetFusionHybridStrategy, create_facet_fusion_hybrid_strategy),
         (QueryFusionHybridStrategy, create_query_fusion_hybrid_strategy),
         (HydeHybridStrategy, create_hyde_hybrid_strategy),

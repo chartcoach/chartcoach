@@ -12,6 +12,7 @@ from chartcoach.catalog import Catalog
 from chartcoach.embedding import (
     CatalogEmbedder,
     CatalogTextSource,
+    GuidelineAbstractTextSource,
     GuidelineFieldTextSource,
     GuidelineLabelsTextSource,
     SectionsTextSource,
@@ -66,6 +67,11 @@ def describe_text_source(source: object) -> TextSourceMeta:
     if isinstance(source, SectionsTextSource):
         roles = None if source.roles is None else sorted(source.roles)
         return cast(TextSourceMeta, {"type": "sections", "roles": roles})
+    if isinstance(source, GuidelineAbstractTextSource):
+        return cast(
+            TextSourceMeta,
+            {"type": "guideline_abstract", "role": source.role},
+        )
     if isinstance(source, GuidelineFieldTextSource):
         return cast(
             TextSourceMeta,
