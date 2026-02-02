@@ -7,6 +7,7 @@ from chartcoach.catalog import Catalog
 from chartcoach.env import load_env
 from chartcoach.index import LanceVectorIndexBackend
 from chartcoach.retrieval.strategy.base import RetrievalStrategy
+from chartcoach.retrieval.strategy.dspy_models import create_strategy_lm
 from chartcoach.retrieval.strategy.pipelines import (
     AgenticHybridStrategy,
     Bm25PrfStrategy,
@@ -38,37 +39,11 @@ class StrategyFactory(Protocol):
 StrategyRegistration = tuple[type[RetrievalStrategy], StrategyFactory]
 
 
-DEFAULT_STRATEGY_LM_MODEL = os.environ.get("CHARTCOACH_STRATEGY_LM_MODEL") or "gpt-5.1"
-
-
 _INDEX_CACHE: dict[tuple[int, str], CatalogVectorIndex] = {}
 
 
 def _create_lm() -> dspy.LM:
-    openai = load_env().openai.require()
-    model = DEFAULT_STRATEGY_LM_MODEL
-    # DSPy 3.x relies on provider-prefixed model names (e.g. `openai/gpt-4o-mini`).
-    if "/" not in model and not model.startswith("ft:"):
-        model = f"openai/{model}"
-
-    # LiteLLM defaults can be too aggressive for local gateways and tool-using
-    # programs. Keep this configurable and conservative by default.
-    try:
-        timeout = float(os.environ.get("CHARTCOACH_LM_TIMEOUT_SECONDS") or "120")
-    except ValueError:
-        timeout = 120.0
-    try:
-        retries = int(os.environ.get("CHARTCOACH_LM_NUM_RETRIES") or "6")
-    except ValueError:
-        retries = 6
-
-    return dspy.LM(
-        model=model,
-        api_base=openai.api_base,
-        api_key=openai.api_key,
-        num_retries=max(0, retries),
-        timeout=max(1.0, timeout),
-    )
+    return create_strategy_lm()
 
 
 def _default_embedding_config() -> EmbeddingConfig:
