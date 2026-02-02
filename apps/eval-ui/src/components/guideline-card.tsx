@@ -66,6 +66,10 @@ export function GuidelineCard({
   const detailHref = getGuidelineDetailHref(guidelineId);
   const domId = `guideline-${encodeURIComponent(guidelineId)}`;
 
+  const evidence = (result.evidence ?? []).filter((e) => e.text.trim()).slice(0, 3);
+  const truncateEvidence = (text: string, maxChars = 220) =>
+    text.length > maxChars ? `${text.slice(0, maxChars).trimEnd()}...` : text;
+
   const bucket = rating?.bucket;
   const dimensionsDisabled = !bucket || bucket === "not_applicable";
   const notesDisabled = !bucket;
@@ -129,6 +133,26 @@ export function GuidelineCard({
         }
       >
         <div className="relative z-20 mt-3 w-full space-y-4">
+          {evidence.length ? (
+            <div className="rounded-md border bg-muted/20 p-3">
+              <div className="text-xs font-semibold">Evidence</div>
+              <ul className="mt-2 space-y-2">
+                {evidence.map((e, idx) => (
+                  <li key={`${guidelineId}:evidence:${idx}`} className="text-[11px] leading-relaxed">
+                    {e.role ? (
+                      <span className="mr-2 inline-flex rounded-sm border bg-background px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                        {e.role}
+                      </span>
+                    ) : null}
+                    <span className="text-muted-foreground">
+                      {truncateEvidence(e.text)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <div className="text-xs font-semibold">Bucket</div>
