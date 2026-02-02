@@ -336,12 +336,64 @@ def test_strategies_validate_k(catalog: Catalog) -> None:
             request=RetrievalRequest(context=[TextItem(role="situation", text="S")])
         )
 
+    from chartcoach.retrieval.strategy.pipelines.ann_dense import AnnDenseStrategy
+
+    with pytest.raises(ValueError, match="k must be positive"):
+        AnnDenseStrategy(catalog=catalog, searcher=searcher, default_k=0)(
+            request=RetrievalRequest(context=[TextItem(role="situation", text="S")])
+        )
+
+    from chartcoach.retrieval.strategy.pipelines.neighborhood_explorer import (
+        NeighborhoodExplorerStrategy,
+    )
+
+    with pytest.raises(ValueError, match="k must be positive"):
+        NeighborhoodExplorerStrategy(catalog=catalog, searcher=searcher, default_k=0)(
+            request=RetrievalRequest(context=[TextItem(role="situation", text="S")])
+        )
+
     lm = dspy.LM(model="gpt-4o-mini", api_base="http://example.invalid/v1", api_key="x")
 
     with pytest.raises(ValueError, match="k must be positive"):
         HydeHybridStrategy(catalog=catalog, searcher=searcher, lm=lm, default_k=0)(
             request=RetrievalRequest(context=[TextItem(role="situation", text="S")])
         )
+
+    from chartcoach.retrieval.strategy.pipelines.label_gated_ann import (
+        LabelGatedAnnStrategy,
+    )
+
+    with pytest.raises(ValueError, match="k must be positive"):
+        LabelGatedAnnStrategy(
+            catalog=catalog, searcher=searcher, lm=lm, default_k=0
+        )(request=RetrievalRequest(context=[TextItem(role="situation", text="S")]))
+
+    from chartcoach.retrieval.strategy.pipelines.label_first_abstract import (
+        LabelFirstAbstractStrategy,
+    )
+
+    with pytest.raises(ValueError, match="k must be positive"):
+        LabelFirstAbstractStrategy(
+            catalog=catalog, abstract_searcher=searcher, lm=lm, default_k=0
+        )(request=RetrievalRequest(context=[TextItem(role="situation", text="S")]))
+
+    from chartcoach.retrieval.strategy.pipelines.decompose_parallel import (
+        DecomposeParallelStrategy,
+    )
+
+    with pytest.raises(ValueError, match="k must be positive"):
+        DecomposeParallelStrategy(
+            catalog=catalog, searcher=searcher, lm=lm, default_k=0
+        )(request=RetrievalRequest(context=[TextItem(role="situation", text="S")]))
+
+    from chartcoach.retrieval.strategy.pipelines.role_aware_sections import (
+        RoleAwareSectionsStrategy,
+    )
+
+    with pytest.raises(ValueError, match="k must be positive"):
+        RoleAwareSectionsStrategy(
+            catalog=catalog, searcher=searcher, lm=lm, default_k=0
+        )(request=RetrievalRequest(context=[TextItem(role="situation", text="S")]))
 
     with pytest.raises(ValueError, match="k must be positive"):
         QueryFusionHybridStrategy(
