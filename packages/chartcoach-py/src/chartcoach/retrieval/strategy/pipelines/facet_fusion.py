@@ -4,12 +4,16 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from chartcoach.catalog import Catalog
+from chartcoach.retrieval.strategy.dspy_models import create_strategy_vlm
 from chartcoach.retrieval.strategy.base import RetrievalStrategy
 from chartcoach.retrieval.strategy.optional import require_dspy
 from chartcoach.retrieval.strategy.types import RetrievalRequest, RetrievalResponse
 
+from .focus import FocusConfig, focus_config_from_env, fallback_roles_for_focus, primary_roles_for_focus
+from .guideline_status import filter_guidelines_by_status, shared_status_scorer
 from .ranking import rrf_rank
 from .searcher import GuidelineSearcher
+from .vision import ChartVisionModule, chart_vision_config_from_env, with_chart_vision
 
 if TYPE_CHECKING:
     import dspy
@@ -28,6 +32,9 @@ class FacetPlanSignature(dspy.Signature):
         )
     )
     n: int = dspy.InputField(desc="Number of facet queries to return.", ge=1, le=8, default=5)
+    focus: str = dspy.InputField(
+        desc="One of: all, violations, satisfied. Use it to choose which facets to prioritize."
+    )
 
     focused_situation: str = dspy.OutputField(
         desc=(
@@ -83,6 +90,7 @@ class FacetFusionHybridStrategy(RetrievalStrategy):
         default_k: int = 20,
         per_query_raw_multiplier: int = 10,
         per_query_guideline_k: int = 40,
+        focus: FocusConfig | None = None,
     ) -> None:
         super().__init__(catalog)
         self._searcher = searcher
@@ -91,6 +99,10 @@ class FacetFusionHybridStrategy(RetrievalStrategy):
         self._default_k = int(default_k)
         self._per_query_raw_multiplier = int(per_query_raw_multiplier)
         self._per_query_guideline_k = int(per_query_guideline_k)
+        self._focus = focus or focus_config_from_env()
+
+        self._vision_config = chart_vision_config_from_env()
+        self._vlm = create_strategy_vlm() if self._vision_config.enabled else None
 
         self._program = dspy.Predict(FacetPlanSignature)
         # Lazily initialized on first use to avoid repeatedly loading weights.
@@ -128,7 +140,16 @@ class FacetFusionHybridStrategy(RetrievalStrategy):
         if effective_k <= 0:
             raise ValueError("k must be positive.")
 
+        vision_meta: dict[str, object] = {}
+        if self._vlm is not None and self._vision_config.enabled:
+            request, vision_meta = with_chart_vision(
+                request,
+                base_situation=self._searcher.build_base_query_text(request),
+                vision=ChartVisionModule(vlm=self._vlm, config=self._vision_config),
+            )
+
         situation = self._searcher.build_query_text(request)
+        focus_mode = self._focus.mode
 
         pred: dspy.Prediction | None = None
         lm_error: str | None = None
@@ -137,7 +158,9 @@ class FacetFusionHybridStrategy(RetrievalStrategy):
             lm_attempts += 1
             try:
                 with dspy.context(lm=lm):
-                    pred = self._program(situation=situation, n=self._config.n_queries)
+                    pred = self._program(
+                        situation=situation, n=self._config.n_queries, focus=focus_mode
+                    )
                 lm_error = None
                 break
             except Exception as e:  # noqa: BLE001
@@ -158,6 +181,8 @@ class FacetFusionHybridStrategy(RetrievalStrategy):
 
         raw_k = max(30, min(3_000, effective_k * self._per_query_raw_multiplier))
         per_query_k = max(effective_k, self._per_query_guideline_k)
+        roles = primary_roles_for_focus(focus_mode)
+        roles_used = roles
 
         per_query_rankings: list[list[str]] = []
         for q in queries:
@@ -167,6 +192,7 @@ class FacetFusionHybridStrategy(RetrievalStrategy):
                 query_vector=qvec,
                 reranker=RRFReranker(K=self._config.rrf_k),
                 k=raw_k,
+                roles=roles_used,
                 fts_columns="text",
             )
             agg = self._searcher.aggregate_guideline_hits(hits_df, k=per_query_k)
@@ -175,6 +201,24 @@ class FacetFusionHybridStrategy(RetrievalStrategy):
             )
 
         fused = rrf_rank(rankings=per_query_rankings, k=self._config.rrf_k)
+        if not fused and roles is not None and self._focus.allow_role_fallback:
+            roles_used = fallback_roles_for_focus(focus_mode)
+            per_query_rankings = []
+            for q in queries:
+                qvec = self._searcher.vector_index.embed_query(q)
+                hits_df = self._searcher.search_hybrid(
+                    query_text=q,
+                    query_vector=qvec,
+                    reranker=RRFReranker(K=self._config.rrf_k),
+                    k=raw_k,
+                    roles=roles_used,
+                    fts_columns="text",
+                )
+                agg = self._searcher.aggregate_guideline_hits(hits_df, k=per_query_k)
+                per_query_rankings.append(
+                    [gid for gid in agg["id"].to_list() if isinstance(gid, str)]
+                )
+            fused = rrf_rank(rankings=per_query_rankings, k=self._config.rrf_k)
         fused = fused[: max(effective_k, self._config.cross_encoder_candidate_limit)]
 
         reranked = fused
@@ -199,6 +243,7 @@ class FacetFusionHybridStrategy(RetrievalStrategy):
                     reranker=reranker,
                     k=min(len(fused), self._config.cross_encoder_candidate_limit),
                     ids=set(fused),
+                    roles=roles_used,
                     fts_columns="text",
                 )
                 agg = self._searcher.aggregate_guideline_hits(hits_df, k=effective_k)
@@ -223,6 +268,7 @@ class FacetFusionHybridStrategy(RetrievalStrategy):
                 if len(final_ids) >= effective_k:
                     break
 
+        fill_ids: list[str] = []
         fill_fallback_used = False
         if len(final_ids) < effective_k and self.catalog.entries:
             fill_fallback_used = True
@@ -232,6 +278,7 @@ class FacetFusionHybridStrategy(RetrievalStrategy):
                 query_vector=qvec,
                 reranker=RRFReranker(K=self._config.rrf_k),
                 k=raw_k,
+                roles=roles_used,
                 fts_columns="text",
             )
             agg = self._searcher.aggregate_guideline_hits(hits_df, k=max(50, raw_k))
@@ -247,7 +294,28 @@ class FacetFusionHybridStrategy(RetrievalStrategy):
             final_ids = final_ids[:effective_k]
 
         id_to_entry = {entry.id: entry for entry in self.catalog.entries}
-        ordered_entries = [id_to_entry[gid] for gid in final_ids if gid in id_to_entry]
+        ordered_candidate_ids: list[str] = []
+        seen_ids: set[str] = set()
+        for gid in [*final_ids, *fused, *fill_ids]:
+            if gid in seen_ids or gid not in id_to_entry:
+                continue
+            ordered_candidate_ids.append(gid)
+            seen_ids.add(gid)
+
+        candidate_entries = [id_to_entry[gid] for gid in ordered_candidate_ids]
+        ordered_entries = candidate_entries[:effective_k]
+        status_meta: dict[str, object] = {}
+        if focus_mode != "all" and ordered_entries:
+            status_lm, status_module, status_cfg = shared_status_scorer()
+            self._status_lm = status_lm
+            ordered_entries, status_meta = filter_guidelines_by_status(
+                request=request,
+                entries=candidate_entries,
+                output_k=effective_k,
+                focus=focus_mode,
+                status_module=status_module,
+                config=status_cfg,
+            )
 
         meta = {
             **self._searcher.vector_index.meta(),
@@ -256,6 +324,12 @@ class FacetFusionHybridStrategy(RetrievalStrategy):
             "score_kind": "facet_rrf_fusion",
             "queries": queries,
             "focused_situation": focused_situation,
+            "focus": {
+                "mode": focus_mode,
+                "roles": sorted(roles_used) if roles_used else None,
+            },
+            "chart_vision": vision_meta,
+            **status_meta,
             "lm_attempts": lm_attempts,
             "lm_fallback_used": pred is None,
             "lm_error": lm_error if pred is None else None,
@@ -275,7 +349,7 @@ class FacetFusionHybridStrategy(RetrievalStrategy):
                 "task_terms": task_terms,
                 "risk_terms": risk_terms,
             },
-            "hits": [{"id": gid} for gid in final_ids],
+            "hits": [{"id": entry.id} for entry in ordered_entries],
         }
 
         return RetrievalResponse(catalog=Catalog(entries=ordered_entries), meta=meta)

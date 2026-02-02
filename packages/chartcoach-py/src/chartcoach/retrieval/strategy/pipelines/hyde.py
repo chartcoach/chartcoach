@@ -4,12 +4,16 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from chartcoach.catalog import Catalog
+from chartcoach.retrieval.strategy.dspy_models import create_strategy_vlm
 from chartcoach.retrieval.strategy.base import RetrievalStrategy
 from chartcoach.retrieval.strategy.optional import require_dspy
 from chartcoach.retrieval.strategy.types import RetrievalRequest, RetrievalResponse
 
+from .focus import FocusConfig, focus_config_from_env, fallback_roles_for_focus, primary_roles_for_focus
+from .guideline_status import filter_guidelines_by_status, shared_status_scorer
 from .ranking import rrf_rank
 from .searcher import GuidelineSearcher
+from .vision import ChartVisionModule, chart_vision_config_from_env, with_chart_vision
 
 if TYPE_CHECKING:
     import dspy
@@ -23,11 +27,23 @@ class HydeSignature(dspy.Signature):
     situation: str = dspy.InputField(
         desc=(
             "Scenario title + designer intent describing the chart to improve. "
-            "Write a hypothetical high-quality critique that mentions likely chart issues and improvements. "
+            "Write a hypothetical high-quality analysis oriented by `focus`. "
             "Focus only on the described chart, and ignore mentions of adjacent charts in the surrounding story. "
             "Preserve key domain nouns/variables (e.g., inflation, job starters, pay gap, aid). "
             "If the situation implies paired comparisons (two values per category / before-after / year-over-year), "
             "explicitly mention 'paired values' and 'delta encoding' as candidate design approaches."
+        )
+    )
+    focus: str = dspy.InputField(
+        desc="One of: all, violations, satisfied. Use it to choose an analysis style."
+    )
+
+    pseudo_document: str = dspy.OutputField(
+        desc=(
+            "A search-oriented pseudo-document that will retrieve relevant guideline text. "
+            "For violations: emphasize likely problems and concrete improvements. "
+            "For satisfied: emphasize likely strengths and what to preserve/verify. "
+            "Keep it specific to the described chart."
         )
     )
 
@@ -53,6 +69,7 @@ class HydeHybridStrategy(RetrievalStrategy):
         default_k: int = 20,
         raw_multiplier: int = 12,
         dense_candidate_k: int = 80,
+        focus: FocusConfig | None = None,
     ) -> None:
         super().__init__(catalog)
         self._searcher = searcher
@@ -61,6 +78,10 @@ class HydeHybridStrategy(RetrievalStrategy):
         self._default_k = int(default_k)
         self._raw_multiplier = int(raw_multiplier)
         self._dense_candidate_k = int(dense_candidate_k)
+        self._focus = focus or focus_config_from_env()
+
+        self._vision_config = chart_vision_config_from_env()
+        self._vlm = create_strategy_vlm() if self._vision_config.enabled else None
         self._program = dspy.ChainOfThought(HydeSignature)
         # Lazily initialized on first use to avoid repeatedly loading weights.
         self._cross_encoder_reranker = None
@@ -72,7 +93,17 @@ class HydeHybridStrategy(RetrievalStrategy):
         if effective_k <= 0:
             raise ValueError("k must be positive.")
 
+        vision_meta: dict[str, object] = {}
+        if self._vlm is not None and self._vision_config.enabled:
+            request, vision_meta = with_chart_vision(
+                request,
+                base_situation=self._searcher.build_base_query_text(request),
+                vision=ChartVisionModule(vlm=self._vlm, config=self._vision_config),
+            )
+
         situation = self._searcher.build_query_text(request)
+        focus_mode = self._focus.mode
+        status_meta: dict[str, object] = {}
 
         pred: dspy.Prediction | None = None
         lm_error: str | None = None
@@ -81,7 +112,7 @@ class HydeHybridStrategy(RetrievalStrategy):
             lm_attempts += 1
             try:
                 with dspy.context(lm=lm):
-                    pred = self._program(situation=situation)
+                    pred = self._program(situation=situation, focus=focus_mode)
                 lm_error = None
                 break
             except Exception as e:  # noqa: BLE001
@@ -92,9 +123,16 @@ class HydeHybridStrategy(RetrievalStrategy):
             pseudo = situation
 
         raw_k = max(30, min(3_000, effective_k * self._raw_multiplier))
+        roles = primary_roles_for_focus(focus_mode)
+        roles_used = roles
 
         # Lexical branch (precise): original situation/query.
-        hits_fts = self._searcher.search_fts(query_text=situation, k=raw_k)
+        hits_fts = self._searcher.search_fts(query_text=situation, k=raw_k, roles=roles_used)
+        if hits_fts.is_empty() and roles is not None and self._focus.allow_role_fallback:
+            roles_used = fallback_roles_for_focus(focus_mode)
+            hits_fts = self._searcher.search_fts(
+                query_text=situation, k=raw_k, roles=roles_used
+            )
         agg_fts = self._searcher.aggregate_guideline_hits(
             hits_fts, k=self._dense_candidate_k
         )
@@ -102,7 +140,9 @@ class HydeHybridStrategy(RetrievalStrategy):
 
         # Dense branch (semantic): HyDE pseudo-document.
         pseudo_vec = self._searcher.vector_index.embed_query(pseudo)
-        hits_dense = self._searcher.search_dense(query_vector=pseudo_vec, k=raw_k)
+        hits_dense = self._searcher.search_dense(
+            query_vector=pseudo_vec, k=raw_k, roles=roles_used
+        )
         agg_dense = self._searcher.aggregate_guideline_hits(
             hits_dense, k=self._dense_candidate_k
         )
@@ -133,6 +173,7 @@ class HydeHybridStrategy(RetrievalStrategy):
                     reranker=reranker,
                     k=min(len(candidates), self._dense_candidate_k),
                     ids=set(candidates),
+                    roles=roles_used,
                     fts_columns="text",
                 )
                 agg = self._searcher.aggregate_guideline_hits(hits_hybrid, k=effective_k)
@@ -167,6 +208,7 @@ class HydeHybridStrategy(RetrievalStrategy):
                 query_vector=qvec,
                 reranker=RRFReranker(K=self._config.rrf_k),
                 k=raw_k,
+                roles=roles_used,
                 fts_columns="text",
             )
             agg = self._searcher.aggregate_guideline_hits(hits_df, k=max(50, raw_k))
@@ -182,7 +224,27 @@ class HydeHybridStrategy(RetrievalStrategy):
             final_ids = final_ids[:effective_k]
 
         id_to_entry = {entry.id: entry for entry in self.catalog.entries}
-        ordered_entries = [id_to_entry[gid] for gid in final_ids if gid in id_to_entry]
+        ordered_candidate_ids: list[str] = []
+        seen_ids: set[str] = set()
+        for gid in [*final_ids, *candidates]:
+            if gid in seen_ids or gid not in id_to_entry:
+                continue
+            ordered_candidate_ids.append(gid)
+            seen_ids.add(gid)
+
+        candidate_entries = [id_to_entry[gid] for gid in ordered_candidate_ids]
+        ordered_entries = candidate_entries[:effective_k]
+        if focus_mode != "all" and ordered_entries:
+            status_lm, status_module, status_cfg = shared_status_scorer()
+            self._status_lm = status_lm
+            ordered_entries, status_meta = filter_guidelines_by_status(
+                request=request,
+                entries=candidate_entries,
+                output_k=effective_k,
+                focus=focus_mode,
+                status_module=status_module,
+                config=status_cfg,
+            )
 
         meta = {
             **self._searcher.vector_index.meta(),
@@ -190,6 +252,12 @@ class HydeHybridStrategy(RetrievalStrategy):
             "raw_k": raw_k,
             "score_kind": "hyde_rrf_fusion",
             "rrf_k": self._config.rrf_k,
+            "focus": {
+                "mode": focus_mode,
+                "roles": sorted(roles_used) if roles_used else None,
+            },
+            "chart_vision": vision_meta,
+            **status_meta,
             "lm_attempts": lm_attempts,
             "lm_fallback_used": pred is None,
             "lm_error": lm_error if pred is None else None,
@@ -203,7 +271,7 @@ class HydeHybridStrategy(RetrievalStrategy):
             "cross_encoder_error": cross_encoder_error,
             "cross_encoder_rerank_query_chars": rerank_query_chars,
             "fill_fallback_used": fill_fallback_used,
-            "hits": [{"id": gid} for gid in final_ids[:effective_k]],
+            "hits": [{"id": entry.id} for entry in ordered_entries],
         }
 
         return RetrievalResponse(catalog=Catalog(entries=ordered_entries), meta=meta)

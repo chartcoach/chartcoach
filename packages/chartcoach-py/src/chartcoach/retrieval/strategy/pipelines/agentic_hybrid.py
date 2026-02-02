@@ -1,18 +1,22 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from io import StringIO
 from typing import TYPE_CHECKING, cast
 
 import polars as pl
 
 from chartcoach.catalog import Catalog
+from chartcoach.retrieval.strategy.dspy_models import create_strategy_vlm
 from chartcoach.retrieval.strategy.base import RetrievalStrategy
 from chartcoach.retrieval.strategy.id_extraction import extract_guideline_ids
 from chartcoach.retrieval.strategy.optional import require_dspy
 from chartcoach.retrieval.strategy.types import RetrievalRequest, RetrievalResponse
 
+from .focus import FocusConfig, focus_config_from_env, fallback_roles_for_focus, primary_roles_for_focus
+from .guideline_status import filter_guidelines_by_status, shared_status_scorer
 from .searcher import GuidelineSearcher
+from .vision import ChartVisionModule, chart_vision_config_from_env, with_chart_vision
 
 if TYPE_CHECKING:
     import dspy
@@ -39,7 +43,13 @@ class AgenticHybridSignature(dspy.Signature):
     """
 
     situation: str = dspy.InputField(
-        desc="Scenario title + designer intent describing the chart to improve."
+        desc=(
+            "Scenario title + designer intent describing the chart to improve. "
+            "It may include optional chart image notes from a vision preprocessor."
+        )
+    )
+    focus: str = dspy.InputField(
+        desc="One of: all, violations, satisfied. Use it to prioritize which guidelines to retrieve."
     )
     top_k: int = dspy.InputField(
         desc="How many guideline IDs to return.", ge=0, default=0
@@ -57,6 +67,7 @@ class AgenticHybridSignature(dspy.Signature):
 class AgenticHybridTools:
     catalog: Catalog
     searcher: GuidelineSearcher
+    focus: FocusConfig = field(default_factory=FocusConfig)
 
     def list_roles(self) -> list[str]:
         """[ROLE DISCOVERY] List indexed roles/sections that can be filtered on."""
@@ -77,6 +88,9 @@ class AgenticHybridTools:
             labels=pl.col("guideline").struct.field("labels").list.join(";"),
         )
 
+    def _default_role_filter(self) -> set[str] | None:
+        return primary_roles_for_focus(self.focus.mode)
+
     def hybrid_search(
         self,
         query: str,
@@ -96,7 +110,7 @@ class AgenticHybridTools:
             return "id,role,score,title,description,labels\n"
 
         qvec = self.searcher.vector_index.embed_query(q)
-        roles_set = None if not roles else set(roles)
+        roles_set = set(roles) if roles else self._default_role_filter()
         hits_df = self.searcher.search_hybrid(
             query_text=q,
             query_vector=qvec,
@@ -105,6 +119,15 @@ class AgenticHybridTools:
             roles=roles_set,
             fts_columns="text",
         )
+        if hits_df.is_empty() and not roles and roles_set is not None and self.focus.allow_role_fallback:
+            hits_df = self.searcher.search_hybrid(
+                query_text=q,
+                query_vector=qvec,
+                reranker=RRFReranker(),
+                k=int(max(1, k)),
+                roles=fallback_roles_for_focus(self.focus.mode),
+                fts_columns="text",
+            )
 
         out_df = hits_df.join(self._abstracts_df(), on="id", how="left").select(
             "id",
@@ -135,12 +158,18 @@ class AgenticHybridTools:
             return "id,role,score,title,description,labels\n"
 
         qvec = self.searcher.vector_index.embed_query(q)
-        roles_set = None if not roles else set(roles)
+        roles_set = set(roles) if roles else self._default_role_filter()
         hits_df = self.searcher.search_dense(
             query_vector=qvec,
             k=int(max(1, k)),
             roles=roles_set,
         )
+        if hits_df.is_empty() and not roles and roles_set is not None and self.focus.allow_role_fallback:
+            hits_df = self.searcher.search_dense(
+                query_vector=qvec,
+                k=int(max(1, k)),
+                roles=fallback_roles_for_focus(self.focus.mode),
+            )
         out_df = hits_df.join(self._abstracts_df(), on="id", how="left").select(
             "id",
             "role",
@@ -169,12 +198,18 @@ class AgenticHybridTools:
         if not q:
             return "id,role,score,title,description,labels\n"
 
-        roles_set = None if not roles else set(roles)
+        roles_set = set(roles) if roles else self._default_role_filter()
         hits_df = self.searcher.search_fts(
             query_text=q,
             k=int(max(1, k)),
             roles=roles_set,
         )
+        if hits_df.is_empty() and not roles and roles_set is not None and self.focus.allow_role_fallback:
+            hits_df = self.searcher.search_fts(
+                query_text=q,
+                k=int(max(1, k)),
+                roles=fallback_roles_for_focus(self.focus.mode),
+            )
         out_df = hits_df.join(self._abstracts_df(), on="id", how="left").select(
             "id",
             "role",
@@ -213,16 +248,23 @@ class AgenticHybridStrategy(RetrievalStrategy):
         lm: dspy.LM,
         default_k: int = 20,
         final_cross_encoder_model: str | None = "cross-encoder/ms-marco-TinyBERT-L-6",
+        focus: FocusConfig | None = None,
     ) -> None:
         super().__init__(catalog)
         self._searcher = searcher
         self._lm = lm
         self._default_k = int(default_k)
         self._final_cross_encoder_model = final_cross_encoder_model
+        self._focus = focus or focus_config_from_env()
+
+        self._vision_config = chart_vision_config_from_env()
+        self._vlm = create_strategy_vlm() if self._vision_config.enabled else None
         # Lazily initialized on first use to avoid repeatedly loading weights.
         self._cross_encoder_reranker = None
 
-        self._tools = AgenticHybridTools(catalog=catalog, searcher=searcher)
+        self._tools = AgenticHybridTools(
+            catalog=catalog, searcher=searcher, focus=self._focus
+        )
         self._program = dspy.ReAct(
             AgenticHybridSignature,
             tools=[
@@ -246,6 +288,15 @@ class AgenticHybridStrategy(RetrievalStrategy):
         if effective_k <= 0:
             raise ValueError("k must be positive.")
 
+        vision_meta: dict[str, object] = {}
+        if self._vlm is not None and self._vision_config.enabled:
+            request, vision_meta = with_chart_vision(
+                request,
+                base_situation=self._searcher.build_base_query_text(request),
+                vision=ChartVisionModule(vlm=self._vlm, config=self._vision_config),
+            )
+
+        focus_mode = self._focus.mode
         situation = self._searcher.build_query_text(request)
         top_k = request.k if request.k is not None else 0
 
@@ -258,7 +309,9 @@ class AgenticHybridStrategy(RetrievalStrategy):
         for lm in (self._lm, self._lm.copy(cache=False)):
             try:
                 with dspy.context(lm=lm):
-                    prediction = self._program(situation=situation, top_k=top_k)
+                    prediction = self._program(
+                        situation=situation, focus=focus_mode, top_k=top_k
+                    )
                 notes = str(getattr(prediction, "notes", "") or "")
                 used_ids = extract_guideline_ids(
                     known_ids=set(id_to_entry),
@@ -287,13 +340,26 @@ class AgenticHybridStrategy(RetrievalStrategy):
 
             raw_k = max(50, min(3_000, effective_k * 20))
             qvec = self._searcher.vector_index.embed_query(situation)
+            roles = primary_roles_for_focus(focus_mode)
+            roles_used = roles
             hits_df = self._searcher.search_hybrid(
                 query_text=situation,
                 query_vector=qvec,
                 reranker=RRFReranker(),
                 k=raw_k,
+                roles=roles_used,
                 fts_columns="text",
             )
+            if hits_df.is_empty() and roles is not None and self._focus.allow_role_fallback:
+                roles_used = fallback_roles_for_focus(focus_mode)
+                hits_df = self._searcher.search_hybrid(
+                    query_text=situation,
+                    query_vector=qvec,
+                    reranker=RRFReranker(),
+                    k=raw_k,
+                    roles=roles_used,
+                    fts_columns="text",
+                )
             agg = self._searcher.aggregate_guideline_hits(hits_df, k=raw_k)
             ids = [
                 gid
@@ -357,14 +423,51 @@ class AgenticHybridStrategy(RetrievalStrategy):
                 if len(final_ids) >= effective_k:
                     break
 
-        retrieved_entries = [
-            id_to_entry[gid] for gid in final_ids if gid in id_to_entry
-        ]
+        retrieved_entries = [id_to_entry[gid] for gid in final_ids if gid in id_to_entry]
+        status_meta: dict[str, object] = {}
+        if focus_mode != "all" and retrieved_entries:
+            status_lm, status_module, status_cfg = shared_status_scorer()
+            self._status_lm = status_lm
+            pool_target = max(
+                effective_k, effective_k * int(status_cfg.candidate_multiplier)
+            )
+            extra_ids = _fallback_hybrid_ids(exclude=set(final_ids))
+            extra_ids = extra_ids[: max(pool_target * 3, 60)]
+
+            ordered_candidate_ids: list[str] = []
+            seen = set()
+            for gid in [*final_ids, *extra_ids]:
+                if gid in seen or gid not in id_to_entry:
+                    continue
+                ordered_candidate_ids.append(gid)
+                seen.add(gid)
+
+            candidate_entries = [id_to_entry[gid] for gid in ordered_candidate_ids]
+            filtered, status_meta = filter_guidelines_by_status(
+                request=request,
+                entries=candidate_entries,
+                output_k=effective_k,
+                focus=focus_mode,
+                status_module=status_module,
+                config=status_cfg,
+            )
+            retrieved_entries = filtered
+            final_ids = [entry.id for entry in retrieved_entries]
         meta: dict[str, object] = {
             **cast("dict[str, object]", self._searcher.vector_index.meta()),
             "k": effective_k,
             "used_guideline_ids": final_ids,
             "notes": notes,
+            "focus": {
+                "mode": focus_mode,
+                "roles": (
+                    sorted(role_set)
+                    if (role_set := primary_roles_for_focus(focus_mode)) is not None
+                    else None
+                ),
+            },
+            "chart_vision": vision_meta,
+            **status_meta,
             "fallback_used": fallback_used,
             "cross_encoder_fallback_used": cross_encoder_fallback_used,
             "cross_encoder_error": cross_encoder_error,
