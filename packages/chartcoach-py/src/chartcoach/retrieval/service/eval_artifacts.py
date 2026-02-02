@@ -317,7 +317,10 @@ def build_scenario_bundle(
     # Optional VLM-driven request enrichment and post-filtering. This is kept
     # scenario-agnostic: it only inspects the request context (chart image + text)
     # and never hard-codes scenario IDs or prompt fragments.
-    from chartcoach.retrieval.strategy.dspy_models import create_strategy_vlm
+    from chartcoach.retrieval.strategy.dspy_models import (
+        create_strategy_lm,
+        create_strategy_vlm,
+    )
     from chartcoach.retrieval.strategy.pipelines.guideline_status import (
         GuidelineStatusModule,
         filter_guidelines_by_status,
@@ -333,9 +336,8 @@ def build_scenario_bundle(
     vision_config = chart_vision_config_from_env()
     status_config = guideline_status_config_from_env()
 
-    vlm = None
-    if vision_config.enabled or status_config.mode != "all":
-        vlm = create_strategy_vlm()
+    vlm = create_strategy_vlm() if vision_config.enabled else None
+    status_lm = create_strategy_lm() if status_config.mode != "all" else None
 
     vision_meta: dict[str, object] = {}
     vision_usage: dict[str, object] | None = None
@@ -350,8 +352,8 @@ def build_scenario_bundle(
         vision_usage = _extract_lm_usage_delta(lm=vlm, before_len=vlm_before)
 
     status_module = (
-        GuidelineStatusModule(vlm=vlm, config=status_config)
-        if vlm is not None and status_config.mode != "all"
+        GuidelineStatusModule(lm=status_lm, config=status_config)
+        if status_lm is not None and status_config.mode != "all"
         else None
     )
 
@@ -373,7 +375,14 @@ def build_scenario_bundle(
     }
     for strategy_info, strategy in strategies:
         lm, lm_history_len = _get_strategy_lm_history_snapshot(strategy)
-        vlm_history_len = len(getattr(vlm, "history", []) or []) if vlm is not None else None
+        vlm_history_len = (
+            len(getattr(vlm, "history", []) or []) if vlm is not None else None
+        )
+        status_lm_history_len = (
+            len(getattr(status_lm, "history", []) or [])
+            if status_lm is not None
+            else None
+        )
         started = time.perf_counter()
         try:
             with _timeout(
@@ -432,6 +441,12 @@ def build_scenario_bundle(
             response_meta.setdefault("k_raw", expanded_k)
             response_meta["k"] = int(output_k)
             response_meta["hits"] = [{"id": entry.id} for entry in final_entries]
+
+        if status_lm is not None and isinstance(status_lm_history_len, int):
+            response_meta.setdefault(
+                "status_lm_usage",
+                _extract_lm_usage_delta(lm=status_lm, before_len=status_lm_history_len),
+            )
 
         if vlm is not None and isinstance(vlm_history_len, int):
             response_meta.setdefault(

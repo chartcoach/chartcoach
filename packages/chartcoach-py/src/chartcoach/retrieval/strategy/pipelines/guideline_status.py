@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import hashlib
 import os
-import tempfile
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
 
@@ -31,38 +30,20 @@ def _sha256_bytes(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-def _mime_to_suffix(mime: str | None) -> str:
-    if not mime:
-        return ".img"
-    lowered = mime.lower()
-    if lowered in {"image/png"}:
-        return ".png"
-    if lowered in {"image/jpeg", "image/jpg"}:
-        return ".jpg"
-    if lowered in {"image/webp"}:
-        return ".webp"
-    return ".img"
-
-
-def _chart_image_from_request(
-    request: RetrievalRequest,
-) -> tuple[dspy.Image | None, str | None]:
-    """Return a DSPy image primitive for the chart image (if present), plus a stable fingerprint."""
+def _chart_fingerprint(request: RetrievalRequest) -> str | None:
+    """Return a stable per-chart key without downloading or decoding the image."""
 
     for item in request.context:
         if not isinstance(item, ImageItem) or item.role != "chart":
             continue
 
         if item.uri:
-            return dspy.Image.from_url(item.uri), f"uri:{_sha256_text(item.uri)[:16]}"
+            return f"uri:{_sha256_text(item.uri)[:16]}"
 
         if item.data:
-            suffix = _mime_to_suffix(item.mime)
-            with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-                tmp.write(item.data)
-                return dspy.Image.from_file(tmp.name), f"bytes:{_sha256_bytes(item.data)[:16]}"
+            return f"bytes:{_sha256_bytes(item.data)[:16]}"
 
-    return None, None
+    return None
 
 
 def _coerce_status(raw: object) -> GuidelineStatus:
@@ -92,15 +73,14 @@ def _guideline_excerpt(entry: CatalogEntry, *, max_chars: int) -> str:
 
 
 class GuidelineStatusSignature(dspy.Signature):
-    """Predict whether the chart violates or satisfies a guideline."""
+    """Predict whether the described chart violates or satisfies a guideline."""
 
     situation: str = dspy.InputField(
         desc=(
-            "Scenario title + designer intent (+ optional chart image notes). "
-            "Use it only as intent/context; do not invent details not visible in the image."
+            "Scenario title + designer intent + optional chart image notes from a vision preprocessor. "
+            "Use it only as intent/context; do not invent details that are not stated in the situation."
         )
     )
-    image: dspy.Image = dspy.InputField(desc="The chart image to judge.")
 
     guideline_title: str = dspy.InputField(desc="Guideline title (imperative advice).")
     guideline_description: str = dspy.InputField(desc="Guideline summary description.")
@@ -177,31 +157,18 @@ def guideline_status_config_from_env() -> GuidelineStatusConfig:
 
 
 class GuidelineStatusModule:
-    def __init__(self, *, vlm: dspy.LM, config: GuidelineStatusConfig) -> None:
-        self._vlm = vlm
+    def __init__(self, *, lm: dspy.LM, config: GuidelineStatusConfig) -> None:
+        self._lm = lm
         self._config = config
         self._program = dspy.Predict(GuidelineStatusSignature)
 
     def classify(
         self,
         *,
-        request: RetrievalRequest,
+        chart_key: str,
         situation: str,
         entry: CatalogEntry,
-        image: dspy.Image | None = None,
-        chart_key: str | None = None,
     ) -> dict[str, object]:
-        if image is None or chart_key is None:
-            image, chart_key = _chart_image_from_request(request)
-        if image is None or chart_key is None:
-            return {
-                "id": entry.id,
-                "status": "unclear",
-                "confidence": 0.0,
-                "rationale": "No chart image available.",
-                "cache": "no_chart",
-            }
-
         cache_key = (chart_key, entry.id)
         cached = _STATUS_CACHE.get(cache_key)
         if cached is not None:
@@ -215,13 +182,12 @@ class GuidelineStatusModule:
         pred: dspy.Prediction | None = None
         error: str | None = None
         attempts = 0
-        for lm in (self._vlm, self._vlm.copy(cache=False)):
+        for lm in (self._lm, self._lm.copy(cache=False)):
             attempts += 1
             try:
                 with dspy.context(lm=lm):
                     pred = self._program(
                         situation=situation,
-                        image=image,
                         guideline_title=entry.guideline.title,
                         guideline_description=entry.guideline.description,
                         guideline_labels=labels,
@@ -236,7 +202,9 @@ class GuidelineStatusModule:
             out = {
                 "status": "unclear",
                 "confidence": 0.0,
-                "rationale": (error or "VLM request failed.")[: self._config.max_rationale_chars],
+                "rationale": (error or "LM request failed.")[
+                    : self._config.max_rationale_chars
+                ],
                 "attempts": attempts,
                 "error": error,
             }
@@ -284,23 +252,15 @@ def filter_guidelines_by_status(
     # Build enriched situation text without requiring a searcher instance.
     situation_text = GuidelineSearcher.build_query_text(request)
 
-    image, chart_key = _chart_image_from_request(request)
-    if image is None or chart_key is None:
-        return entries[: max(0, int(output_k))], {
-            "guideline_status_mode": mode,
-            "guideline_status_used": False,
-            "guideline_status_reason": "no_chart_image",
-        }
+    chart_key = _chart_fingerprint(request) or f"text:{_sha256_text(situation_text)[:16]}"
 
     statuses: list[dict[str, object]] = []
     counts: dict[str, int] = {"violated": 0, "satisfied": 0, "unclear": 0, "not_applicable": 0}
     for entry in entries:
         scored = status_module.classify(
-            request=request,
+            chart_key=chart_key,
             situation=situation_text,
             entry=entry,
-            image=image,
-            chart_key=chart_key,
         )
         statuses.append(scored)
         s = str(scored.get("status") or "unclear")
