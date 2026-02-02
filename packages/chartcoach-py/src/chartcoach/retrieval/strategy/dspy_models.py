@@ -86,3 +86,23 @@ def create_strategy_vlm() -> dspy.LM:
         model=model, timeout_seconds=timeout, num_retries=retries
     )
 
+
+def create_guideline_status_lm() -> dspy.LM:
+    """LM used for lightweight guideline status classification/filtering."""
+
+    model = (
+        os.environ.get("CHARTCOACH_GUIDELINE_STATUS_LM_MODEL")
+        or os.environ.get("CHARTCOACH_STRATEGY_LM_MODEL")
+        or "gpt-5.1"
+    )
+    timeout = _float_env(
+        "CHARTCOACH_GUIDELINE_STATUS_TIMEOUT_SECONDS",
+        _float_env("CHARTCOACH_LM_TIMEOUT_SECONDS", 120.0),
+    )
+    retries = _int_env(
+        "CHARTCOACH_GUIDELINE_STATUS_NUM_RETRIES",
+        _int_env("CHARTCOACH_LM_NUM_RETRIES", 6),
+    )
+    return create_openai_compatible_lm(
+        model=model, timeout_seconds=timeout, num_retries=retries
+    )
