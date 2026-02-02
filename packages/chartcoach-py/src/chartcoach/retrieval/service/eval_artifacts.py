@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 import signal
+import subprocess
 import threading
 import time
 from collections.abc import Iterable, Sequence
@@ -12,6 +13,7 @@ from datetime import datetime, timezone
 from os import PathLike
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 import obstore
 import yaml
@@ -90,6 +92,7 @@ class EvalArtifactsIndexArtifact(_EvalArtifactsBaseModel):
     generated_at: str = Field(min_length=1)
     strategies: list[StrategyInfo]
     scenarios: list[ScenarioSpec]
+    meta: dict[str, object] = Field(default_factory=dict)
 
 
 def now_iso() -> str:
@@ -186,6 +189,121 @@ def compute_digest(payload: object) -> str:
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
 
 
+def _find_repo_root(start: Path) -> Path | None:
+    """Walk up from `start` to find a git repo root (directory containing `.git`)."""
+
+    current = start.resolve()
+    for candidate in [current, *current.parents]:
+        if (candidate / ".git").exists():
+            return candidate
+    return None
+
+
+def _run_git(args: list[str], *, cwd: Path) -> str | None:
+    try:
+        proc = subprocess.run(
+            ["git", *args],
+            cwd=str(cwd),
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+    except OSError:
+        return None
+    if proc.returncode != 0:
+        return None
+    return proc.stdout.strip() or None
+
+
+def resolve_repo_commit() -> str:
+    """Best-effort git commit identifier for reproducibility metadata."""
+
+    repo_root = _find_repo_root(Path.cwd()) or _find_repo_root(Path(__file__).resolve())
+    if repo_root is None:
+        return "unknown"
+
+    commit = _run_git(["rev-parse", "HEAD"], cwd=repo_root)
+    if not commit:
+        return "unknown"
+
+    dirty = False
+    # Treat both staged and unstaged changes as "dirty".
+    for cmd in (["diff", "--quiet"], ["diff", "--cached", "--quiet"]):
+        try:
+            proc = subprocess.run(
+                ["git", *cmd],
+                cwd=str(repo_root),
+                check=False,
+                capture_output=True,
+            )
+        except OSError:
+            proc = None
+        if proc is not None and proc.returncode != 0:
+            dirty = True
+            break
+
+    short = commit[:12]
+    return f"{short}-dirty" if dirty else short
+
+
+def _sha256_file(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def resolve_catalog_digest(catalog_uri: str) -> str:
+    """Compute a stable digest for the catalog backing a run.
+
+    This is best-effort: for local paths and file:// URLs, hash file/directory
+    contents; for remote URIs, fall back to a digest of the URI string.
+    """
+
+    uri = str(catalog_uri or "").strip()
+    if not uri:
+        return "unknown"
+
+    parsed = urlparse(uri)
+    if parsed.scheme == "file":
+        path = Path(parsed.path)
+    elif parsed.scheme in {"", "s3"}:
+        path = Path(uri) if parsed.scheme == "" else None
+    else:
+        path = None
+
+    if path is None or not path.exists():
+        return compute_digest({"catalog_uri": uri})
+
+    if path.is_file():
+        return _sha256_file(path)[:16]
+
+    # Directory: prefer hashing a catalog parquet if present, otherwise hash the tree.
+    parquet = path / "catalog.parquet"
+    if parquet.exists() and parquet.is_file():
+        return _sha256_file(parquet)[:16]
+
+    h = hashlib.sha256()
+    for child in sorted(p for p in path.rglob("*") if p.is_file()):
+        rel = child.relative_to(path).as_posix().encode("utf-8")
+        h.update(rel)
+        h.update(b"\0")
+        h.update(_sha256_file(child).encode("utf-8"))
+        h.update(b"\0")
+    return h.hexdigest()[:16]
+
+
+def resolve_scenarios_digest(scenarios_path: Path) -> str:
+    """Compute a stable digest for the scenario spec file."""
+
+    try:
+        raw = scenarios_path.read_bytes()
+    except OSError:
+        return "unknown"
+    return hashlib.sha256(raw).hexdigest()[:16]
+
+
 def build_bundle_digest(
     *,
     scenario: ScenarioSpec,
@@ -219,6 +337,7 @@ def resolve_artifacts_config() -> dict[str, object]:
     vision_cfg = chart_vision_config_from_env()
 
     return {
+        "repo_commit": resolve_repo_commit(),
         "strategy_lm_model": os.environ.get("CHARTCOACH_STRATEGY_LM_MODEL") or "gpt-5.1",
         "strategy_vlm_model": os.environ.get("CHARTCOACH_STRATEGY_VLM_MODEL") or "gpt-5.2",
         "guideline_status_lm_model": os.environ.get("CHARTCOACH_GUIDELINE_STATUS_LM_MODEL")
@@ -325,6 +444,9 @@ def build_scenario_bundle(
 
     request = build_retrieval_request(scenario, k=k)
     bundle_meta: dict[str, object] = {"config": config or {}}
+    for key in ("repo_commit", "catalog_digest", "scenario_digest"):
+        if config and key in config:
+            bundle_meta.setdefault(key, config[key])
     results: list[EvalStrategyResult] = []
 
     for strategy_info, strategy in strategies:
@@ -514,6 +636,11 @@ class EvalArtifactsService:
         # strategy ids are needed for stable digests even when some scenarios are skipped
         resolved_strategy_ids = [info.id for info, _strategy in strategies]
         config = resolve_artifacts_config()
+        config = {
+            **config,
+            "catalog_digest": resolve_catalog_digest(catalog_uri),
+            "scenario_digest": resolve_scenarios_digest(scenarios_path),
+        }
 
         for scenario in scenarios:
             digest = build_bundle_digest(
@@ -545,5 +672,11 @@ class EvalArtifactsService:
             generated_at=now_iso(),
             strategies=[info for info, _strategy in strategies],
             scenarios=scenarios,
+            meta={
+                "config": config,
+                "repo_commit": config.get("repo_commit"),
+                "catalog_digest": config.get("catalog_digest"),
+                "scenario_digest": config.get("scenario_digest"),
+            },
         )
         write_json(self._store, "index.json", index.model_dump(mode="json"))

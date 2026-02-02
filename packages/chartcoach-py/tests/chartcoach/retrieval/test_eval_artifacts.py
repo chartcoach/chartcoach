@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from typing import cast
 
@@ -21,6 +22,9 @@ from chartcoach.retrieval.service.eval_artifacts import (
     load_scenarios,
     now_iso,
     read_json,
+    resolve_catalog_digest,
+    resolve_repo_commit,
+    resolve_scenarios_digest,
     write_json,
 )
 from chartcoach.retrieval.strategy.base import RetrievalStrategy, StrategyInfo
@@ -180,6 +184,7 @@ def test_build_scenario_bundle_runs_strategies() -> None:
             )
         ],
         k=3,
+        config={"repo_commit": "deadbeef", "catalog_digest": "cafe", "scenario_digest": "babe"},
     )
     assert bundle.schema_version == 1
     assert bundle.scenario.id == scenario.id
@@ -187,6 +192,9 @@ def test_build_scenario_bundle_runs_strategies() -> None:
     assert bundle.strategies[0].meta["k"] == 3
     assert bundle.strategies[0].guidelines[0].rank == 1
     assert bundle.strategies[0].guidelines[0].entry.guideline.id == "g1"
+    assert bundle.meta["repo_commit"] == "deadbeef"
+    assert bundle.meta["catalog_digest"] == "cafe"
+    assert bundle.meta["scenario_digest"] == "babe"
 
     # bundle is JSON-serializable
     json.dumps(bundle.model_dump(mode="json"))
@@ -491,3 +499,152 @@ def test_get_strategy_lm_history_snapshot_handles_strategy_lm() -> None:
     )
     assert before_len == 1
     assert getattr(lm, "history", None)
+
+
+def test_resolve_repo_commit_returns_string() -> None:
+    value = resolve_repo_commit()
+    assert isinstance(value, str)
+    assert value
+
+
+def test_resolve_catalog_digest_hashes_local_file(tmp_path) -> None:
+    path = tmp_path / "catalog.parquet"
+    path.write_bytes(b"hello")
+    digest = resolve_catalog_digest(str(path))
+    assert digest == hashlib.sha256(b"hello").hexdigest()[:16]
+
+
+def test_resolve_scenarios_digest_hashes_file(tmp_path) -> None:
+    path = tmp_path / "spec.yaml"
+    path.write_text("scenarios: []\n", encoding="utf-8")
+    digest = resolve_scenarios_digest(path)
+    assert digest == hashlib.sha256(path.read_bytes()).hexdigest()[:16]
+
+
+def test_git_helpers_cover_edge_branches(tmp_path, monkeypatch) -> None:
+    import chartcoach.retrieval.service.eval_artifacts as eval_artifacts
+
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    assert eval_artifacts._find_repo_root(repo) is None
+
+    (repo / ".git").mkdir()
+    assert eval_artifacts._find_repo_root(repo) == repo
+
+    # _run_git: subprocess errors / non-zero / empty stdout.
+    def boom_run(*_args, **_kwargs):  # noqa: ANN001
+        raise OSError("no git")
+
+    monkeypatch.setattr(eval_artifacts.subprocess, "run", boom_run)
+    assert eval_artifacts._run_git(["rev-parse", "HEAD"], cwd=repo) is None
+
+    class Proc:
+        def __init__(self, returncode: int, stdout: str) -> None:
+            self.returncode = returncode
+            self.stdout = stdout
+
+    monkeypatch.setattr(
+        eval_artifacts.subprocess,
+        "run",
+        lambda *_args, **_kwargs: Proc(1, "abc\n"),
+    )
+    assert eval_artifacts._run_git(["rev-parse", "HEAD"], cwd=repo) is None
+
+    monkeypatch.setattr(
+        eval_artifacts.subprocess,
+        "run",
+        lambda *_args, **_kwargs: Proc(0, ""),
+    )
+    assert eval_artifacts._run_git(["rev-parse", "HEAD"], cwd=repo) is None
+
+    monkeypatch.setattr(
+        eval_artifacts.subprocess,
+        "run",
+        lambda *_args, **_kwargs: Proc(0, "abc\n"),
+    )
+    assert eval_artifacts._run_git(["rev-parse", "HEAD"], cwd=repo) == "abc"
+
+
+def test_resolve_repo_commit_covers_unknown_and_dirty(monkeypatch, tmp_path) -> None:
+    import chartcoach.retrieval.service.eval_artifacts as eval_artifacts
+
+    # Unknown when no repo root.
+    monkeypatch.setattr(eval_artifacts, "_find_repo_root", lambda _p: None)
+    assert eval_artifacts.resolve_repo_commit() == "unknown"
+
+    # Unknown when commit can't be read.
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    monkeypatch.setattr(eval_artifacts, "_find_repo_root", lambda _p: repo)
+    monkeypatch.setattr(eval_artifacts, "_run_git", lambda _args, *, cwd: None)
+    assert eval_artifacts.resolve_repo_commit() == "unknown"
+
+    # Dirty branch when git diff returns non-zero.
+    monkeypatch.setattr(eval_artifacts, "_run_git", lambda _args, *, cwd: "1234567890abcdef")
+
+    class Proc:
+        def __init__(self, returncode: int) -> None:
+            self.returncode = returncode
+
+    calls: list[list[str]] = []
+
+    def fake_run(cmd, **_kwargs):  # noqa: ANN001
+        calls.append(list(cmd))
+        if cmd[:2] == ["git", "diff"] and cmd[-1] == "--quiet":
+            return Proc(1)
+        return Proc(0)
+
+    monkeypatch.setattr(eval_artifacts.subprocess, "run", fake_run)
+    assert eval_artifacts.resolve_repo_commit().endswith("-dirty")
+
+    # Clean branch when both diff checks return 0 (and tolerate OSError).
+    def fake_run_clean(cmd, **_kwargs):  # noqa: ANN001
+        if cmd[:2] == ["git", "diff"] and cmd[-1] == "--quiet":
+            raise OSError("ignore")
+        return Proc(0)
+
+    monkeypatch.setattr(eval_artifacts.subprocess, "run", fake_run_clean)
+    assert eval_artifacts.resolve_repo_commit() == "1234567890ab"
+
+
+def test_resolve_catalog_digest_covers_uri_and_dir_branches(tmp_path) -> None:
+    # Empty.
+    assert resolve_catalog_digest("") == "unknown"
+
+    # Remote URI falls back to digest of the URI string.
+    assert len(resolve_catalog_digest("https://example.invalid/catalog.parquet")) == 16
+
+    # Missing local path falls back to digest of the string.
+    assert len(resolve_catalog_digest(str(tmp_path / "missing.parquet"))) == 16
+
+    # file:// URL.
+    path = tmp_path / "cat.parquet"
+    path.write_bytes(b"x")
+    assert resolve_catalog_digest(f"file://{path}") == hashlib.sha256(b"x").hexdigest()[:16]
+
+    # Directory with catalog.parquet uses that file.
+    d1 = tmp_path / "d1"
+    d1.mkdir()
+    (d1 / "catalog.parquet").write_bytes(b"y")
+    assert resolve_catalog_digest(str(d1)) == hashlib.sha256(b"y").hexdigest()[:16]
+
+    # Directory without parquet hashes the tree.
+    d2 = tmp_path / "d2"
+    d2.mkdir()
+    (d2 / "a.txt").write_text("a", encoding="utf-8")
+    (d2 / "b.txt").write_text("b", encoding="utf-8")
+    digest1 = resolve_catalog_digest(str(d2))
+    digest2 = resolve_catalog_digest(str(d2))
+    assert digest1 == digest2
+
+
+def test_resolve_scenarios_digest_handles_missing_file(tmp_path) -> None:
+    assert resolve_scenarios_digest(tmp_path / "missing.yaml") == "unknown"
+
+
+def test_resolve_artifacts_config_includes_commit(monkeypatch) -> None:
+    import chartcoach.retrieval.service.eval_artifacts as eval_artifacts
+
+    monkeypatch.setattr(eval_artifacts, "resolve_repo_commit", lambda: "cafebabe")
+    cfg = eval_artifacts.resolve_artifacts_config()
+    assert cfg["repo_commit"] == "cafebabe"

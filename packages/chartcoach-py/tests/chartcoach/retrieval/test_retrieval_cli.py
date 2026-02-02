@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+import json
 import sys
 from pathlib import Path
 
@@ -215,6 +216,72 @@ def test_main_list_strategies_text(monkeypatch) -> None:
     main(["list-strategies"])
     out = buf.getvalue()
     assert "bm25-prf@v1" in out
+
+
+def test_main_analyze_stability_requires_two_runs() -> None:
+    with pytest.raises(SystemExit, match="at least two"):
+        main(["analyze-stability", "--runs", "/tmp/run1"])
+
+
+def test_main_analyze_stability_outputs_table_and_json(monkeypatch, tmp_path: Path) -> None:
+    run1 = tmp_path / "run1"
+    run2 = tmp_path / "run2"
+    (run1 / "bundles").mkdir(parents=True)
+    (run2 / "bundles").mkdir(parents=True)
+
+    payload1 = {
+        "schema_version": 1,
+        "scenario": {"id": "s1", "title": "T", "lang": "en"},
+        "strategies": [
+            {
+                "strategy_id": "hybrid@v1",
+                "strategy_name": "Hybrid",
+                "meta": {},
+                "guidelines": [
+                    {"rank": 1, "score": 1.0, "entry": {"guideline": {"id": "a"}, "references": []}},
+                ],
+            }
+        ],
+    }
+    payload2 = {
+        **payload1,
+        "strategies": [
+            {
+                "strategy_id": "hybrid@v1",
+                "strategy_name": "Hybrid",
+                "meta": {},
+                "guidelines": [
+                    {"rank": 1, "score": 1.0, "entry": {"guideline": {"id": "a"}, "references": []}},
+                ],
+            }
+        ],
+    }
+    (run1 / "bundles" / "s1.json").write_text(json.dumps(payload1), encoding="utf-8")
+    (run2 / "bundles" / "s1.json").write_text(json.dumps(payload2), encoding="utf-8")
+
+    buf = io.StringIO()
+    monkeypatch.setattr(sys, "stdout", buf)
+
+    main(["analyze-stability", "--runs", str(run1), "--runs", str(run2), "-k", "1"])
+    out = buf.getvalue()
+    assert "hybrid@v1" in out
+
+    buf = io.StringIO()
+    monkeypatch.setattr(sys, "stdout", buf)
+    main(
+        [
+            "analyze-stability",
+            "--runs",
+            str(run1),
+            "--runs",
+            str(run2),
+            "-k",
+            "1",
+            "--json",
+        ]
+    )
+    out = buf.getvalue()
+    assert "hybrid@v1" in out
 
 
 def test_main_run_uses_injected_registry(monkeypatch, tmp_path: Path) -> None:
