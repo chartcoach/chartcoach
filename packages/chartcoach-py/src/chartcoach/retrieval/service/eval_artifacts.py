@@ -82,6 +82,7 @@ class EvalScenarioBundleArtifact(_EvalArtifactsBaseModel):
     digest: str = Field(min_length=1)
     scenario: ScenarioSpec
     strategies: list[EvalStrategyResult]
+    meta: dict[str, object] = Field(default_factory=dict)
 
 
 class EvalArtifactsIndexArtifact(_EvalArtifactsBaseModel):
@@ -191,6 +192,7 @@ def build_bundle_digest(
     catalog_uri: str,
     strategy_ids: list[str],
     k: int | None,
+    config: dict[str, object] | None = None,
 ) -> str:
     return compute_digest(
         {
@@ -198,8 +200,63 @@ def build_bundle_digest(
             "catalog_uri": catalog_uri,
             "strategy_ids": strategy_ids,
             "k": k,
+            "config": config or {},
         }
     )
+
+
+def resolve_artifacts_config() -> dict[str, object]:
+    """Resolve a non-secret configuration snapshot for digesting + debugging."""
+
+    from dataclasses import asdict
+
+    from chartcoach.retrieval.strategy.pipelines.guideline_status import (
+        guideline_status_config_from_env,
+    )
+    from chartcoach.retrieval.strategy.pipelines.vision import chart_vision_config_from_env
+
+    status_cfg = guideline_status_config_from_env()
+    vision_cfg = chart_vision_config_from_env()
+
+    return {
+        "strategy_lm_model": os.environ.get("CHARTCOACH_STRATEGY_LM_MODEL") or "gpt-5.1",
+        "strategy_vlm_model": os.environ.get("CHARTCOACH_STRATEGY_VLM_MODEL") or "gpt-5.2",
+        "lm_timeout_seconds": os.environ.get("CHARTCOACH_LM_TIMEOUT_SECONDS") or "120",
+        "lm_num_retries": os.environ.get("CHARTCOACH_LM_NUM_RETRIES") or "6",
+        "vlm_timeout_seconds": os.environ.get("CHARTCOACH_VLM_TIMEOUT_SECONDS")
+        or os.environ.get("CHARTCOACH_LM_TIMEOUT_SECONDS")
+        or "120",
+        "vlm_num_retries": os.environ.get("CHARTCOACH_VLM_NUM_RETRIES")
+        or os.environ.get("CHARTCOACH_LM_NUM_RETRIES")
+        or "6",
+        "embedding_model": os.environ.get("CHARTCOACH_EMBEDDING_MODEL")
+        or "BAAI/bge-small-en-v1.5",
+        "embedding_projector": os.environ.get("CHARTCOACH_EMBEDDING_PROJECTOR")
+        or "sentence_transformers",
+        "strategy_timeout_seconds": _resolve_strategy_timeout_seconds(),
+        "chart_vision": asdict(vision_cfg),
+        "guideline_status": asdict(status_cfg),
+        "query_fusion": {
+            "n_queries": os.environ.get("CHARTCOACH_FUSION_N_QUERIES") or "4",
+            "rrf_k": os.environ.get("CHARTCOACH_FUSION_RRF_K") or "60",
+            "cross_encoder_model": os.environ.get("CHARTCOACH_FUSION_CROSS_ENCODER_MODEL")
+            or "cross-encoder/ms-marco-TinyBERT-L-6",
+            "cross_encoder_candidate_limit": os.environ.get("CHARTCOACH_FUSION_XENC_CANDIDATES")
+            or "80",
+        },
+        "facet_fusion": {
+            "n_queries": os.environ.get("CHARTCOACH_FACET_FUSION_N_QUERIES") or "5",
+            "rrf_k": os.environ.get("CHARTCOACH_FACET_FUSION_RRF_K") or "60",
+            "cross_encoder_model": os.environ.get(
+                "CHARTCOACH_FACET_FUSION_CROSS_ENCODER_MODEL"
+            )
+            or "cross-encoder/ms-marco-TinyBERT-L-6",
+            "cross_encoder_candidate_limit": os.environ.get(
+                "CHARTCOACH_FACET_FUSION_XENC_CANDIDATES"
+            )
+            or "80",
+        },
+    }
 
 
 def entry_score(index: int, total: int) -> float:
@@ -241,6 +298,7 @@ def build_scenario_bundle(
     catalog_uri: str,
     strategies: list[tuple[StrategyInfo, RetrievalStrategy]],
     k: int | None,
+    config: dict[str, object] | None = None,
 ) -> EvalScenarioBundleArtifact:
     strategy_timeout_seconds = _resolve_strategy_timeout_seconds()
     strategy_ids = [strategy_info.id for strategy_info, _strategy in strategies]
@@ -249,12 +307,73 @@ def build_scenario_bundle(
         catalog_uri=catalog_uri,
         strategy_ids=strategy_ids,
         k=k,
+        config=config,
     )
 
     request = build_retrieval_request(scenario, k=k)
+    bundle_meta: dict[str, object] = {"config": config or {}}
     results: list[EvalStrategyResult] = []
+
+    # Optional VLM-driven request enrichment and post-filtering. This is kept
+    # scenario-agnostic: it only inspects the request context (chart image + text)
+    # and never hard-codes scenario IDs or prompt fragments.
+    from chartcoach.retrieval.strategy.dspy_models import create_strategy_vlm
+    from chartcoach.retrieval.strategy.pipelines.guideline_status import (
+        GuidelineStatusModule,
+        filter_guidelines_by_status,
+        guideline_status_config_from_env,
+    )
+    from chartcoach.retrieval.strategy.pipelines.searcher import GuidelineSearcher
+    from chartcoach.retrieval.strategy.pipelines.vision import (
+        ChartVisionModule,
+        chart_vision_config_from_env,
+        with_chart_vision,
+    )
+
+    vision_config = chart_vision_config_from_env()
+    status_config = guideline_status_config_from_env()
+
+    vlm = None
+    if vision_config.enabled or status_config.mode != "all":
+        vlm = create_strategy_vlm()
+
+    vision_meta: dict[str, object] = {}
+    vision_usage: dict[str, object] | None = None
+    if vlm is not None and vision_config.enabled:
+        vlm_before = len(getattr(vlm, "history", []) or [])
+        base_situation = GuidelineSearcher.build_base_query_text(request)
+        request, vision_meta = with_chart_vision(
+            request,
+            base_situation=base_situation,
+            vision=ChartVisionModule(vlm=vlm, config=vision_config),
+        )
+        vision_usage = _extract_lm_usage_delta(lm=vlm, before_len=vlm_before)
+
+    status_module = (
+        GuidelineStatusModule(vlm=vlm, config=status_config)
+        if vlm is not None and status_config.mode != "all"
+        else None
+    )
+
+    output_k = request.k
+    expanded_k: int | None = None
+    if output_k is not None and status_config.mode != "all":
+        expanded_k = max(int(output_k), int(output_k) * int(status_config.candidate_multiplier))
+        expanded_k = min(200, expanded_k)
+
+    bundle_meta["chart_vision"] = vision_meta
+    if vision_usage is not None:
+        bundle_meta["chart_vision_vlm_usage"] = vision_usage
+    bundle_meta["guideline_status"] = {
+        "mode": status_config.mode,
+        "candidate_multiplier": status_config.candidate_multiplier,
+        "keep_unclear": status_config.keep_unclear,
+        "expanded_k": expanded_k,
+        "output_k": output_k,
+    }
     for strategy_info, strategy in strategies:
         lm, lm_history_len = _get_strategy_lm_history_snapshot(strategy)
+        vlm_history_len = len(getattr(vlm, "history", []) or []) if vlm is not None else None
         started = time.perf_counter()
         try:
             with _timeout(
@@ -264,7 +383,10 @@ def build_scenario_bundle(
                     f" {scenario.id!r} after {strategy_timeout_seconds:.0f}s."
                 ),
             ):
-                response = strategy(request=request)
+                strategy_request = request
+                if expanded_k is not None:
+                    strategy_request = request.model_copy(update={"k": expanded_k})
+                response = strategy(request=strategy_request)
         except _StrategyTimeout as e:
             elapsed_ms = int((time.perf_counter() - started) * 1000)
             results.append(
@@ -296,10 +418,30 @@ def build_scenario_bundle(
                 "lm_usage",
                 _extract_lm_usage_delta(lm=lm, before_len=lm_history_len),
             )
+
+        final_entries = list(response.catalog.entries)
+        if status_module is not None and output_k is not None:
+            final_entries, status_meta = filter_guidelines_by_status(
+                request=request,
+                entries=list(response.catalog.entries),
+                output_k=int(output_k),
+                status_module=status_module,
+                config=status_config,
+            )
+            response_meta.update(status_meta)
+            response_meta.setdefault("k_raw", expanded_k)
+            response_meta["k"] = int(output_k)
+            response_meta["hits"] = [{"id": entry.id} for entry in final_entries]
+
+        if vlm is not None and isinstance(vlm_history_len, int):
+            response_meta.setdefault(
+                "vlm_usage",
+                _extract_lm_usage_delta(lm=vlm, before_len=vlm_history_len),
+            )
         results.append(
             build_strategy_result(
                 strategy_info=strategy_info,
-                response_catalog_entries=response.catalog.entries,
+                response_catalog_entries=final_entries,
                 response_meta=response_meta,
             )
         )
@@ -309,6 +451,7 @@ def build_scenario_bundle(
         digest=digest,
         scenario=scenario,
         strategies=results,
+        meta=bundle_meta,
     )
 
 
@@ -429,6 +572,7 @@ class EvalArtifactsService:
         )
         # strategy ids are needed for stable digests even when some scenarios are skipped
         resolved_strategy_ids = [info.id for info, _strategy in strategies]
+        config = resolve_artifacts_config()
 
         for scenario in scenarios:
             digest = build_bundle_digest(
@@ -436,6 +580,7 @@ class EvalArtifactsService:
                 catalog_uri=catalog_uri,
                 strategy_ids=resolved_strategy_ids,
                 k=k,
+                config=config,
             )
             bundle_path = f"bundles/{scenario.id}.json"
             existing = read_json(self._store, bundle_path)
@@ -451,6 +596,7 @@ class EvalArtifactsService:
                 catalog_uri=catalog_uri,
                 strategies=strategies,
                 k=k,
+                config=config,
             )
             write_json(self._store, bundle_path, bundle.model_dump(mode="json"))
 
