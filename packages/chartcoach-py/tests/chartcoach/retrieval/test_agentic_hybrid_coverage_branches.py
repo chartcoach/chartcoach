@@ -171,7 +171,7 @@ def test_agentic_strategy_calls_chart_vision_and_status_filter(monkeypatch, cata
         catalog=catalog,
         searcher=searcher,
         lm=lm,
-        default_k=1,
+        default_k=2,
         final_cross_encoder_model=None,
         focus=FocusConfig(mode="violations", allow_role_fallback=True),
     )
@@ -194,6 +194,10 @@ def test_agentic_strategy_calls_chart_vision_and_status_filter(monkeypatch, cata
         ),
     )
 
+    # Include an unknown id so the final status-filter candidate pool hits the
+    # `gid not in id_to_entry` branch.
+    monkeypatch.setattr(mod, "extract_guideline_ids", lambda **_kwargs: ["g1", "bogus", "g2"])
+
     monkeypatch.setattr(
         mod,
         "shared_status_scorer",
@@ -205,7 +209,7 @@ def test_agentic_strategy_calls_chart_vision_and_status_filter(monkeypatch, cata
         lambda *, entries, output_k, **_kwargs: (entries[:output_k], {"guideline_status_used": True}),
     )
 
-    out = strat(request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1))
+    out = strat(request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=2))
     assert out.meta["chart_vision"]["chart_vision_used"] is True
     assert out.meta["guideline_status_used"] is True
 

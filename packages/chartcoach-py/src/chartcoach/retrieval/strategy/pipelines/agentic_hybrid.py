@@ -431,8 +431,8 @@ class AgenticHybridStrategy(RetrievalStrategy):
             pool_target = max(
                 effective_k, effective_k * int(status_cfg.candidate_multiplier)
             )
-            extra_ids = _fallback_hybrid_ids(exclude=set(final_ids))
-            extra_ids = extra_ids[: max(pool_target * 3, 60)]
+            extra_needed = max(0, pool_target - len(final_ids))
+            extra_ids = _fallback_hybrid_ids(exclude=set(final_ids))[:extra_needed]
 
             ordered_candidate_ids: list[str] = []
             seen = set()
