@@ -327,82 +327,14 @@ def build_scenario_bundle(
     bundle_meta: dict[str, object] = {"config": config or {}}
     results: list[EvalStrategyResult] = []
 
-    # Optional VLM-driven request enrichment and post-filtering. This is kept
-    # scenario-agnostic: it only inspects the request context (chart image + text)
-    # and never hard-codes scenario IDs or prompt fragments.
-    from chartcoach.retrieval.strategy.dspy_models import (
-        create_guideline_status_lm,
-        create_strategy_vlm,
-    )
-    from chartcoach.retrieval.strategy.pipelines.guideline_status import (
-        GuidelineStatusModule,
-        filter_guidelines_by_status,
-        guideline_status_config_from_env,
-    )
-    from chartcoach.retrieval.strategy.pipelines.searcher import GuidelineSearcher
-    from chartcoach.retrieval.strategy.pipelines.vision import (
-        ChartVisionModule,
-        chart_vision_config_from_env,
-        with_chart_vision,
-    )
-
-    vision_config = chart_vision_config_from_env()
-    status_config = guideline_status_config_from_env()
-
-    vlm = create_strategy_vlm() if vision_config.enabled else None
-    status_lm = create_guideline_status_lm() if status_config.mode != "all" else None
-
-    vision_meta: dict[str, object] = {}
-    vision_usage: dict[str, object] | None = None
-    if vlm is not None and vision_config.enabled:
-        vlm_before = len(getattr(vlm, "history", []) or [])
-        base_situation = GuidelineSearcher.build_base_query_text(request)
-        request, vision_meta = with_chart_vision(
-            request,
-            base_situation=base_situation,
-            vision=ChartVisionModule(vlm=vlm, config=vision_config),
-        )
-        vision_usage = _extract_lm_usage_delta(lm=vlm, before_len=vlm_before)
-
-    status_module = (
-        GuidelineStatusModule(lm=status_lm, config=status_config)
-        if status_lm is not None and status_config.mode != "all"
-        else None
-    )
-
-    output_k = request.k
-    expanded_k: int | None = None
-    if output_k is not None and status_config.mode != "all":
-        expanded_k = max(int(output_k), int(output_k) * int(status_config.candidate_multiplier))
-        expanded_k = min(200, expanded_k)
-
-    bundle_meta["chart_vision"] = vision_meta
-    if vision_usage is not None:
-        bundle_meta["chart_vision_vlm_usage"] = vision_usage
-    bundle_meta["guideline_status"] = {
-        "mode": status_config.mode,
-        "candidate_multiplier": status_config.candidate_multiplier,
-        "keep_unclear": status_config.keep_unclear,
-        "expanded_k": expanded_k,
-        "output_k": output_k,
-    }
     for strategy_info, strategy in strategies:
-        lm, lm_history_len = _get_strategy_lm_history_snapshot(strategy)
-        vlm_history_len = (
-            len(getattr(vlm, "history", []) or []) if vlm is not None else None
-        )
-        status_lm_history_len = (
-            len(getattr(status_lm, "history", []) or [])
-            if status_lm is not None
-            else None
-        )
-        # Avoid exploding latency for highly agentic pipelines: the violation
-        # post-filter expands k to increase recall, but agentic strategies can
-        # be extremely sensitive to k. Keep their k at the output target.
-        strategy_raw_k = expanded_k
-        if expanded_k is not None and output_k is not None:
-            if str(strategy_info.id).startswith("agentic-hybrid@"):
-                strategy_raw_k = int(output_k)
+        usage_snapshots = {
+            "lm_usage": _get_strategy_lm_history_snapshot(strategy, attr="_lm"),
+            "vlm_usage": _get_strategy_lm_history_snapshot(strategy, attr="_vlm"),
+            "status_lm_usage": _get_strategy_lm_history_snapshot(
+                strategy, attr="_status_lm"
+            ),
+        }
         started = time.perf_counter()
         try:
             with _timeout(
@@ -412,10 +344,7 @@ def build_scenario_bundle(
                     f" {scenario.id!r} after {strategy_timeout_seconds:.0f}s."
                 ),
             ):
-                strategy_request = request
-                if strategy_raw_k is not None and strategy_raw_k != request.k:
-                    strategy_request = request.model_copy(update={"k": strategy_raw_k})
-                response = strategy(request=strategy_request)
+                response = strategy(request=request)
         except _StrategyTimeout as e:
             elapsed_ms = int((time.perf_counter() - started) * 1000)
             results.append(
@@ -442,41 +371,18 @@ def build_scenario_bundle(
         elapsed_ms = int((time.perf_counter() - started) * 1000)
         response_meta = dict(response.meta)
         response_meta.setdefault("elapsed_ms", elapsed_ms)
-        if lm is not None and lm_history_len is not None:
-            response_meta.setdefault(
-                "lm_usage",
-                _extract_lm_usage_delta(lm=lm, before_len=lm_history_len),
-            )
 
-        final_entries = list(response.catalog.entries)
-        if status_module is not None and output_k is not None:
-            final_entries, status_meta = filter_guidelines_by_status(
-                request=request,
-                entries=list(response.catalog.entries),
-                output_k=int(output_k),
-                status_module=status_module,
-                config=status_config,
-            )
-            response_meta.update(status_meta)
-            response_meta.setdefault("k_raw", strategy_raw_k)
-            response_meta["k"] = int(output_k)
-            response_meta["hits"] = [{"id": entry.id} for entry in final_entries]
-
-        if status_lm is not None and isinstance(status_lm_history_len, int):
+        for key, (lm, before_len) in usage_snapshots.items():
+            if lm is None or before_len is None:
+                continue
             response_meta.setdefault(
-                "status_lm_usage",
-                _extract_lm_usage_delta(lm=status_lm, before_len=status_lm_history_len),
-            )
-
-        if vlm is not None and isinstance(vlm_history_len, int):
-            response_meta.setdefault(
-                "vlm_usage",
-                _extract_lm_usage_delta(lm=vlm, before_len=vlm_history_len),
+                key,
+                _extract_lm_usage_delta(lm=lm, before_len=before_len),
             )
         results.append(
             build_strategy_result(
                 strategy_info=strategy_info,
-                response_catalog_entries=final_entries,
+                response_catalog_entries=list(response.catalog.entries),
                 response_meta=response_meta,
             )
         )
@@ -491,9 +397,9 @@ def build_scenario_bundle(
 
 
 def _get_strategy_lm_history_snapshot(
-    strategy: RetrievalStrategy,
+    strategy: RetrievalStrategy, *, attr: str
 ) -> tuple[object | None, int | None]:
-    lm = getattr(strategy, "_lm", None)
+    lm = getattr(strategy, attr, None)
     history = getattr(lm, "history", None)
     if not isinstance(history, list):
         return None, None
