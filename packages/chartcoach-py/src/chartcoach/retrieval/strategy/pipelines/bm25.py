@@ -5,10 +5,14 @@ import re
 import polars as pl
 
 from chartcoach.catalog import Catalog
+from chartcoach.retrieval.strategy.dspy_models import create_strategy_vlm
 from chartcoach.retrieval.strategy.base import RetrievalStrategy
 from chartcoach.retrieval.strategy.types import RetrievalRequest, RetrievalResponse
 
+from .focus import FocusConfig, focus_config_from_env, fallback_roles_for_focus, primary_roles_for_focus
+from .guideline_status import filter_guidelines_by_status, shared_status_scorer
 from .searcher import GuidelineSearcher
+from .vision import ChartVisionModule, chart_vision_config_from_env, with_chart_vision
 
 
 _STOPWORDS = {
@@ -99,26 +103,46 @@ class Bm25PrfStrategy(RetrievalStrategy):
         searcher: GuidelineSearcher,
         default_k: int = 20,
         raw_multiplier: int = 12,
+        focus: FocusConfig | None = None,
     ) -> None:
         super().__init__(catalog)
         self._searcher = searcher
         self._default_k = int(default_k)
         self._raw_multiplier = int(raw_multiplier)
+        self._focus = focus or focus_config_from_env()
+
+        self._vision_config = chart_vision_config_from_env()
+        self._vlm = create_strategy_vlm() if self._vision_config.enabled else None
 
     def _forward(self, request: RetrievalRequest) -> RetrievalResponse:
         effective_k = self._default_k if request.k is None else int(request.k)
         if effective_k <= 0:
             raise ValueError("k must be positive.")
 
+        vision_meta: dict[str, object] = {}
+        if self._vlm is not None and self._vision_config.enabled:
+            request, vision_meta = with_chart_vision(
+                request,
+                base_situation=self._searcher.build_base_query_text(request),
+                vision=ChartVisionModule(vlm=self._vlm, config=self._vision_config),
+            )
+
+        roles = primary_roles_for_focus(self._focus.mode)
+        roles_used = roles
         query_text = self._searcher.build_query_text(request)
         raw_k = max(10, min(2_000, effective_k * self._raw_multiplier))
 
-        hits_0 = self._searcher.search_fts(query_text=query_text, k=raw_k)
+        hits_0 = self._searcher.search_fts(query_text=query_text, k=raw_k, roles=roles_used)
+        if hits_0.is_empty() and roles is not None and self._focus.allow_role_fallback:
+            roles_used = fallback_roles_for_focus(self._focus.mode)
+            hits_0 = self._searcher.search_fts(
+                query_text=query_text, k=raw_k, roles=roles_used
+            )
         expanded = _expand_query_from_hits(query_text=query_text, hits_df=hits_0)
         hits_1 = (
             hits_0
             if expanded == query_text
-            else self._searcher.search_fts(query_text=expanded, k=raw_k)
+            else self._searcher.search_fts(query_text=expanded, k=raw_k, roles=roles_used)
         )
 
         hits_df = hits_1
@@ -130,15 +154,37 @@ class Bm25PrfStrategy(RetrievalStrategy):
                 .sort("score", descending=True)
             )
 
-        agg = self._searcher.aggregate_guideline_hits(hits_df, k=effective_k)
-        ranked_ids = agg.select("id", "score", "best_role").to_dicts()
+        focus_mode = self._focus.mode
+        status_meta: dict[str, object] = {}
+        candidate_k = effective_k
+        if focus_mode != "all":
+            status_lm, _, status_cfg = shared_status_scorer()
+            self._status_lm = status_lm
+            candidate_k = max(
+                effective_k, effective_k * int(status_cfg.candidate_multiplier)
+            )
+
+        agg = self._searcher.aggregate_guideline_hits(hits_df, k=candidate_k)
+        candidate_rows = agg.select("id", "score", "best_role").to_dicts()
 
         id_to_entry = {entry.id: entry for entry in self.catalog.entries}
-        ordered_entries = [
+        candidate_entries = [
             id_to_entry[row["id"]]
-            for row in ranked_ids
+            for row in candidate_rows
             if isinstance(row.get("id"), str) and row["id"] in id_to_entry
         ]
+        ordered_entries = candidate_entries[:effective_k]
+        if focus_mode != "all" and ordered_entries:
+            _status_lm, status_module, status_cfg = shared_status_scorer()
+            self._status_lm = _status_lm
+            ordered_entries, status_meta = filter_guidelines_by_status(
+                request=request,
+                entries=candidate_entries,
+                output_k=effective_k,
+                focus=focus_mode,
+                status_module=status_module,
+                config=status_cfg,
+            )
 
         meta = {
             **self._searcher.vector_index.meta(),
@@ -146,13 +192,19 @@ class Bm25PrfStrategy(RetrievalStrategy):
             "raw_k": raw_k,
             "score_kind": "bm25",
             "query_expanded": expanded != query_text,
+            "focus": {
+                "mode": focus_mode,
+                "roles": sorted(roles_used) if roles_used else None,
+            },
+            "chart_vision": vision_meta,
+            **status_meta,
             "hits": [
                 {
                     "id": row["id"],
                     "score": float(row["score"]),
                     "best_role": row.get("best_role"),
                 }
-                for row in ranked_ids
+                for row in candidate_rows[:effective_k]
                 if isinstance(row.get("id"), str)
             ],
         }

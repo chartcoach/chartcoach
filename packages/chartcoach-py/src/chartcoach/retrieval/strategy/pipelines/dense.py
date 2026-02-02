@@ -5,11 +5,15 @@ import polars as pl
 
 from chartcoach.catalog import Catalog
 from chartcoach.embedding.vectors import vector_matrix
+from chartcoach.retrieval.strategy.dspy_models import create_strategy_vlm
 from chartcoach.retrieval.strategy.base import RetrievalStrategy
 from chartcoach.retrieval.strategy.types import RetrievalRequest, RetrievalResponse
 
+from .focus import FocusConfig, focus_config_from_env, fallback_roles_for_focus, primary_roles_for_focus
+from .guideline_status import filter_guidelines_by_status, shared_status_scorer
 from .ranking import mmr_select
 from .searcher import GuidelineSearcher
+from .vision import ChartVisionModule, chart_vision_config_from_env, with_chart_vision
 
 
 class DenseMmrStrategy(RetrievalStrategy):
@@ -26,6 +30,7 @@ class DenseMmrStrategy(RetrievalStrategy):
         raw_multiplier: int = 10,
         mmr_lambda: float = 0.65,
         mmr_candidate_limit: int = 200,
+        focus: FocusConfig | None = None,
     ) -> None:
         super().__init__(catalog)
         self._searcher = searcher
@@ -33,23 +38,48 @@ class DenseMmrStrategy(RetrievalStrategy):
         self._raw_multiplier = int(raw_multiplier)
         self._mmr_lambda = float(mmr_lambda)
         self._mmr_candidate_limit = int(mmr_candidate_limit)
+        self._focus = focus or focus_config_from_env()
+
+        self._vision_config = chart_vision_config_from_env()
+        self._vlm = create_strategy_vlm() if self._vision_config.enabled else None
 
     def _forward(self, request: RetrievalRequest) -> RetrievalResponse:
         effective_k = self._default_k if request.k is None else int(request.k)
         if effective_k <= 0:
             raise ValueError("k must be positive.")
 
+        vision_meta: dict[str, object] = {}
+        if self._vlm is not None and self._vision_config.enabled:
+            request, vision_meta = with_chart_vision(
+                request,
+                base_situation=self._searcher.build_base_query_text(request),
+                vision=ChartVisionModule(vlm=self._vlm, config=self._vision_config),
+            )
+
+        focus_mode = self._focus.mode
         query_text = self._searcher.build_query_text(request)
         query_vec = self._searcher.vector_index.embed_query(query_text)
 
         raw_k = max(20, min(3_000, effective_k * self._raw_multiplier))
-        hits_df = self._searcher.search_dense(query_vector=query_vec, k=raw_k)
+        roles = primary_roles_for_focus(focus_mode)
+        roles_used = roles
+        hits_df = self._searcher.search_dense(query_vector=query_vec, k=raw_k, roles=roles_used)
+        if hits_df.is_empty() and roles is not None and self._focus.allow_role_fallback:
+            roles_used = fallback_roles_for_focus(focus_mode)
+            hits_df = self._searcher.search_dense(
+                query_vector=query_vec, k=raw_k, roles=roles_used
+            )
         if hits_df.is_empty():
             return RetrievalResponse(
                 catalog=Catalog(entries=[]),
                 meta={
                     **self._searcher.vector_index.meta(),
                     "k": effective_k,
+                    "focus": {
+                        "mode": focus_mode,
+                        "roles": sorted(roles_used) if roles_used else None,
+                    },
+                    "chart_vision": vision_meta,
                     "hits": [],
                 },
             )
@@ -79,20 +109,41 @@ class DenseMmrStrategy(RetrievalStrategy):
                 continue
             embeddings[gid] = mat.mean(axis=0)
 
+        status_meta: dict[str, object] = {}
+        output_candidates = effective_k
+        if focus_mode != "all":
+            status_lm, _, status_cfg = shared_status_scorer()
+            self._status_lm = status_lm
+            output_candidates = max(
+                effective_k, effective_k * int(status_cfg.candidate_multiplier)
+            )
+
         selected = mmr_select(
             candidate_ids=candidate_ids,
             relevance=relevance,
             embeddings=embeddings,
-            k=min(effective_k, len(candidate_ids)),
+            k=min(output_candidates, len(candidate_ids)),
             lambda_mult=self._mmr_lambda,
         )
-        if len(selected) < effective_k:
+        if len(selected) < output_candidates:
             selected_set = set(selected)
             selected.extend([gid for gid in candidate_ids if gid not in selected_set])
-            selected = selected[:effective_k]
+            selected = selected[:output_candidates]
 
         id_to_entry = {entry.id: entry for entry in self.catalog.entries}
-        ordered_entries = [id_to_entry[gid] for gid in selected if gid in id_to_entry]
+        candidate_entries = [id_to_entry[gid] for gid in selected if gid in id_to_entry]
+        ordered_entries = candidate_entries[:effective_k]
+        if focus_mode != "all" and ordered_entries:
+            _status_lm, status_module, status_cfg = shared_status_scorer()
+            self._status_lm = _status_lm
+            ordered_entries, status_meta = filter_guidelines_by_status(
+                request=request,
+                entries=candidate_entries,
+                output_k=effective_k,
+                focus=focus_mode,
+                status_module=status_module,
+                config=status_cfg,
+            )
 
         meta = {
             **self._searcher.vector_index.meta(),
@@ -101,9 +152,15 @@ class DenseMmrStrategy(RetrievalStrategy):
             "score_kind": "cosine_similarity",
             "mmr_lambda": self._mmr_lambda,
             "mmr_candidates": len(candidate_ids),
+            "focus": {
+                "mode": focus_mode,
+                "roles": sorted(roles_used) if roles_used else None,
+            },
+            "chart_vision": vision_meta,
+            **status_meta,
             "hits": [
                 {"id": gid, "score": float(relevance.get(gid, 0.0))}
-                for gid in selected
+                for gid in [entry.id for entry in ordered_entries]
                 if gid in relevance
             ],
         }

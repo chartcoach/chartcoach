@@ -211,11 +211,11 @@ def resolve_artifacts_config() -> dict[str, object]:
     from dataclasses import asdict
 
     from chartcoach.retrieval.strategy.pipelines.guideline_status import (
-        guideline_status_config_from_env,
+        status_scorer_config_from_env,
     )
     from chartcoach.retrieval.strategy.pipelines.vision import chart_vision_config_from_env
 
-    status_cfg = guideline_status_config_from_env()
+    status_cfg = status_scorer_config_from_env()
     vision_cfg = chart_vision_config_from_env()
 
     return {
@@ -397,7 +397,7 @@ def build_scenario_bundle(
 
 
 def _get_strategy_lm_history_snapshot(
-    strategy: RetrievalStrategy, *, attr: str
+    strategy: RetrievalStrategy, *, attr: str = "_lm"
 ) -> tuple[object | None, int | None]:
     lm = getattr(strategy, attr, None)
     history = getattr(lm, "history", None)

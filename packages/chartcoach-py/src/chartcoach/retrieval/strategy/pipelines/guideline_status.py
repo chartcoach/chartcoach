@@ -6,7 +6,9 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
 
 from chartcoach.catalog import CatalogEntry
+from chartcoach.retrieval.strategy.dspy_models import create_guideline_status_lm
 from chartcoach.retrieval.strategy.optional import require_dspy
+from chartcoach.retrieval.strategy.pipelines.focus import FocusMode
 from chartcoach.retrieval.strategy.pipelines.searcher import GuidelineSearcher
 from chartcoach.retrieval.strategy.types import ImageItem, RetrievalRequest
 
@@ -20,6 +22,7 @@ GuidelineStatus = Literal["violated", "satisfied", "unclear", "not_applicable"]
 
 
 _STATUS_CACHE: dict[tuple[str, str], dict[str, object]] = {}
+_SHARED_STATUS_SCORER: tuple[object, "GuidelineStatusModule", "StatusScorerConfig"] | None = None
 
 
 def _sha256_text(text: str) -> str:
@@ -134,8 +137,7 @@ class GuidelineStatusBatchSignature(dspy.Signature):
 
 
 @dataclass(frozen=True, slots=True)
-class GuidelineStatusConfig:
-    mode: Literal["all", "violations", "satisfied"] = "all"
+class StatusScorerConfig:
     candidate_multiplier: int = 4
     keep_unclear: bool = True
     max_guideline_excerpt_chars: int = 900
@@ -143,50 +145,103 @@ class GuidelineStatusConfig:
     batch_size: int = 10
 
 
-def _bool_env(name: str, default: bool) -> bool:
-    raw = (os.environ.get(name) or "").strip().lower()
-    if not raw:
-        return default
-    if raw in {"1", "true", "t", "yes", "y", "on"}:
-        return True
-    if raw in {"0", "false", "f", "no", "n", "off"}:
-        return False
+def _int_env_first(names: list[str], default: int) -> int:
+    for name in names:
+        raw = (os.environ.get(name) or "").strip()
+        if not raw:
+            continue
+        try:
+            return int(raw)
+        except ValueError:
+            continue
     return default
 
 
-def _int_env(name: str, default: int) -> int:
-    raw = (os.environ.get(name) or "").strip()
-    if not raw:
-        return default
-    try:
-        return int(raw)
-    except ValueError:
-        return default
+def _bool_env_first(names: list[str], default: bool) -> bool:
+    for name in names:
+        raw = (os.environ.get(name) or "").strip().lower()
+        if not raw:
+            continue
+        if raw in {"1", "true", "t", "yes", "y", "on"}:
+            return True
+        if raw in {"0", "false", "f", "no", "n", "off"}:
+            return False
+    return default
 
 
-def guideline_status_config_from_env() -> GuidelineStatusConfig:
-    mode = (os.environ.get("CHARTCOACH_GUIDELINE_STATUS_MODE") or "all").strip().lower()
-    if mode not in {"all", "violations", "satisfied"}:
-        mode = "all"
-
-    return GuidelineStatusConfig(
-        mode=mode,  # type: ignore[arg-type]
+def status_scorer_config_from_env() -> StatusScorerConfig:
+    return StatusScorerConfig(
         candidate_multiplier=max(
-            1, _int_env("CHARTCOACH_GUIDELINE_STATUS_CANDIDATE_MULTIPLIER", 4)
+            1,
+            _int_env_first(
+                [
+                    "CHARTCOACH_STATUS_CANDIDATE_MULTIPLIER",
+                    "CHARTCOACH_GUIDELINE_STATUS_CANDIDATE_MULTIPLIER",
+                ],
+                4,
+            ),
         ),
-        keep_unclear=_bool_env("CHARTCOACH_GUIDELINE_STATUS_KEEP_UNCLEAR", True),
+        keep_unclear=_bool_env_first(
+            [
+                "CHARTCOACH_STATUS_KEEP_UNCLEAR",
+                "CHARTCOACH_GUIDELINE_STATUS_KEEP_UNCLEAR",
+            ],
+            True,
+        ),
         max_guideline_excerpt_chars=max(
-            0, _int_env("CHARTCOACH_GUIDELINE_STATUS_MAX_EXCERPT_CHARS", 900)
+            0,
+            _int_env_first(
+                [
+                    "CHARTCOACH_STATUS_MAX_EXCERPT_CHARS",
+                    "CHARTCOACH_GUIDELINE_STATUS_MAX_EXCERPT_CHARS",
+                ],
+                900,
+            ),
         ),
         max_rationale_chars=max(
-            0, _int_env("CHARTCOACH_GUIDELINE_STATUS_MAX_RATIONALE_CHARS", 220)
+            0,
+            _int_env_first(
+                [
+                    "CHARTCOACH_STATUS_MAX_RATIONALE_CHARS",
+                    "CHARTCOACH_GUIDELINE_STATUS_MAX_RATIONALE_CHARS",
+                ],
+                220,
+            ),
         ),
-        batch_size=max(1, _int_env("CHARTCOACH_GUIDELINE_STATUS_BATCH_SIZE", 10)),
+        batch_size=max(
+            1,
+            _int_env_first(
+                [
+                    "CHARTCOACH_STATUS_BATCH_SIZE",
+                    "CHARTCOACH_GUIDELINE_STATUS_BATCH_SIZE",
+                ],
+                10,
+            ),
+        ),
     )
 
 
+def shared_status_scorer() -> tuple[object, "GuidelineStatusModule", "StatusScorerConfig"]:
+    """Return a process-wide shared status scorer (LM + program + config).
+
+    This avoids repeated LM initialization across strategies while keeping the scorer
+    usable by any single strategy in isolation.
+    """
+
+    global _SHARED_STATUS_SCORER  # noqa: PLW0603
+    cached = _SHARED_STATUS_SCORER
+    if cached is not None:
+        return cached
+
+    config = status_scorer_config_from_env()
+    lm = create_guideline_status_lm()
+    module = GuidelineStatusModule(lm=lm, config=config)
+    _SHARED_STATUS_SCORER = (lm, module, config)
+    return _SHARED_STATUS_SCORER
+
+
 class GuidelineStatusModule:
-    def __init__(self, *, lm: dspy.LM, config: GuidelineStatusConfig) -> None:
+    def __init__(self, *, lm: dspy.LM, config: StatusScorerConfig) -> None:
         self._lm = lm
         self._config = config
         self._program = dspy.Predict(GuidelineStatusSignature)
@@ -356,19 +411,20 @@ def filter_guidelines_by_status(
     request: RetrievalRequest,
     entries: list[CatalogEntry],
     output_k: int,
+    focus: FocusMode,
     status_module: GuidelineStatusModule,
-    config: GuidelineStatusConfig,
+    config: StatusScorerConfig,
 ) -> tuple[list[CatalogEntry], dict[str, object]]:
     """Stable-filter retrieved guidelines by (likely) violation/satisfaction status.
 
-    The status model is only used when config.mode != "all"; otherwise, we return
-    the original ranking unchanged.
+    The caller controls whether the returned set prioritizes violated or satisfied
+    guidelines via `focus`. This function is intended to be invoked inside a
+    strategy pipeline (not as a global eval post-processor).
     """
 
-    mode = config.mode
-    if mode == "all" or output_k <= 0 or not entries:
+    if focus == "all" or output_k <= 0 or not entries:
         return entries[: max(0, int(output_k))], {
-            "guideline_status_mode": mode,
+            "guideline_status_focus": focus,
             "guideline_status_used": False,
         }
 
@@ -387,9 +443,9 @@ def filter_guidelines_by_status(
             counts[s] += 1
 
     primary: set[str]
-    if mode == "violations":
+    if focus == "violations":
         primary = {"violated"}
-    elif mode == "satisfied":
+    elif focus == "satisfied":
         primary = {"satisfied"}
     else:
         primary = {"violated", "satisfied", "unclear", "not_applicable"}
@@ -418,7 +474,7 @@ def filter_guidelines_by_status(
     status_by_id = {str(s["id"]): s for s in statuses if isinstance(s, dict) and s.get("id")}
 
     return selected, {
-        "guideline_status_mode": mode,
+        "guideline_status_focus": focus,
         "guideline_status_used": True,
         "guideline_status_candidate_n": len(entries),
         "guideline_status_output_k": int(output_k),
