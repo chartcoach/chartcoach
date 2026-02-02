@@ -43,10 +43,17 @@ const CatalogEntryWireSchema = z
   .refine(isCatalogEntryWire, { message: "Invalid catalog entry wire format." })
   .transform((value) => value as CatalogEntryWire);
 
+const EvidenceSnippetSchema = z.object({
+  role: z.string().min(1).optional(),
+  text: z.string().min(1),
+  score: z.number().optional(),
+});
+
 const GuidelineResultSchema = z.object({
   rank: z.number().int().positive(),
   score: z.number(),
   entry: CatalogEntryWireSchema,
+  evidence: z.array(EvidenceSnippetSchema).optional(),
 });
 
 const StrategyResultSchema = z.object({
@@ -196,7 +203,7 @@ export const getEvalScenarioBundle = createServerFn({ method: "POST" })
           g.entry,
           `scenario=${parsed.scenario.id} strategy=${strategy.strategy_id} rank=${g.rank}`,
         );
-        return { rank: g.rank, score: g.score, entry };
+        return { rank: g.rank, score: g.score, entry, evidence: g.evidence };
       });
 
       return {

@@ -36,10 +36,17 @@ export const ScenariosFileSchema = z.object({
 
 export type ScenarioSpec = z.infer<typeof ScenarioSpecSchema>;
 
+export type EvidenceSnippet = {
+  role?: string;
+  text: string;
+  score?: number;
+};
+
 export type EvalGuidelineResult = {
   rank: number;
   score: number;
   entry: CatalogEntry;
+  evidence?: EvidenceSnippet[];
 };
 
 export type EvalStrategyResult = {
