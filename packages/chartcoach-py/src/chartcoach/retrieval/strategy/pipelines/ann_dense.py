@@ -78,8 +78,8 @@ class AnnDenseStrategy(RetrievalStrategy):
                 effective_k, effective_k * int(status_cfg.candidate_multiplier)
             )
 
-        agg = self._searcher.aggregate_guideline_hits(hits_df, k=candidate_k)
-        candidate_rows = agg.select("id", "score", "best_role").to_dicts()
+        agg = self._searcher.aggregate_guideline_hits_with_evidence(hits_df, k=candidate_k)
+        candidate_rows = agg.to_dicts()
         id_to_entry = {entry.id: entry for entry in self.catalog.entries}
         candidate_entries = [
             id_to_entry[row["id"]]
@@ -120,6 +120,7 @@ class AnnDenseStrategy(RetrievalStrategy):
                     "id": entry.id,
                     "score": float(row_by_id.get(entry.id, {}).get("score") or 0.0),
                     "best_role": row_by_id.get(entry.id, {}).get("best_role"),
+                    "evidence": row_by_id.get(entry.id, {}).get("evidence") or [],
                 }
                 for entry in ordered_entries
             ],

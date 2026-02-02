@@ -11,7 +11,7 @@ from chartcoach.retrieval.strategy.types import RetrievalRequest, RetrievalRespo
 
 from .focus import FocusConfig, focus_config_from_env, fallback_roles_for_focus, primary_roles_for_focus
 from .guideline_status import filter_guidelines_by_status, shared_status_scorer
-from .ranking import rrf_rank
+from .ranking import rrf_rank, rrf_scores
 from .searcher import GuidelineSearcher
 from .vision import ChartVisionModule, chart_vision_config_from_env, with_chart_vision
 
@@ -184,7 +184,29 @@ class FacetFusionHybridStrategy(RetrievalStrategy):
         roles = primary_roles_for_focus(focus_mode)
         roles_used = roles
 
+        def _merge_evidence(
+            primary: object,
+            secondary: object,
+            *,
+            limit: int = 3,
+        ) -> list[dict[str, object]]:
+            merged: list[dict[str, object]] = []
+            for source in (primary, secondary):
+                if not isinstance(source, list):
+                    continue
+                for item in source:
+                    if not isinstance(item, dict):
+                        continue
+                    text = str(item.get("text") or "").strip()
+                    if not text:
+                        continue
+                    merged.append(item)
+            merged.sort(key=lambda x: float(x.get("score") or 0.0), reverse=True)
+            return merged[: max(0, int(limit))]
+
         per_query_rankings: list[list[str]] = []
+        evidence_by_id: dict[str, list[dict[str, object]]] = {}
+        best_role_by_id: dict[str, str] = {}
         for q in queries:
             qvec = self._searcher.vector_index.embed_query(q)
             hits_df = self._searcher.search_hybrid(
@@ -195,15 +217,31 @@ class FacetFusionHybridStrategy(RetrievalStrategy):
                 roles=roles_used,
                 fts_columns="text",
             )
-            agg = self._searcher.aggregate_guideline_hits(hits_df, k=per_query_k)
-            per_query_rankings.append(
-                [gid for gid in agg["id"].to_list() if isinstance(gid, str)]
-            )
+            agg = self._searcher.aggregate_guideline_hits_with_evidence(hits_df, k=per_query_k)
+            rows = agg.to_dicts()
+            ranking: list[str] = []
+            for row in rows:
+                gid = row.get("id")
+                if not isinstance(gid, str) or not gid:
+                    continue
+                ranking.append(gid)
+                ev = row.get("evidence")
+                if isinstance(ev, list) and ev:
+                    evidence_by_id.setdefault(gid, []).extend(
+                        [e for e in ev if isinstance(e, dict)]
+                    )
+                best_role = row.get("best_role")
+                if isinstance(best_role, str) and best_role:
+                    best_role_by_id.setdefault(gid, best_role)
+            per_query_rankings.append(ranking)
 
+        fused_scores = rrf_scores(rankings=per_query_rankings, k=self._config.rrf_k)
         fused = rrf_rank(rankings=per_query_rankings, k=self._config.rrf_k)
         if not fused and roles is not None and self._focus.allow_role_fallback:
             roles_used = fallback_roles_for_focus(focus_mode)
             per_query_rankings = []
+            evidence_by_id = {}
+            best_role_by_id = {}
             for q in queries:
                 qvec = self._searcher.vector_index.embed_query(q)
                 hits_df = self._searcher.search_hybrid(
@@ -214,14 +252,29 @@ class FacetFusionHybridStrategy(RetrievalStrategy):
                     roles=roles_used,
                     fts_columns="text",
                 )
-                agg = self._searcher.aggregate_guideline_hits(hits_df, k=per_query_k)
-                per_query_rankings.append(
-                    [gid for gid in agg["id"].to_list() if isinstance(gid, str)]
-                )
+                agg = self._searcher.aggregate_guideline_hits_with_evidence(hits_df, k=per_query_k)
+                rows = agg.to_dicts()
+                ranking: list[str] = []
+                for row in rows:
+                    gid = row.get("id")
+                    if not isinstance(gid, str) or not gid:
+                        continue
+                    ranking.append(gid)
+                    ev = row.get("evidence")
+                    if isinstance(ev, list) and ev:
+                        evidence_by_id.setdefault(gid, []).extend(
+                            [e for e in ev if isinstance(e, dict)]
+                        )
+                    best_role = row.get("best_role")
+                    if isinstance(best_role, str) and best_role:
+                        best_role_by_id.setdefault(gid, best_role)
+                per_query_rankings.append(ranking)
+            fused_scores = rrf_scores(rankings=per_query_rankings, k=self._config.rrf_k)
             fused = rrf_rank(rankings=per_query_rankings, k=self._config.rrf_k)
         fused = fused[: max(effective_k, self._config.cross_encoder_candidate_limit)]
 
         reranked = fused
+        rerank_hits_by_id: dict[str, dict[str, object]] = {}
         cross_encoder_fallback_used = False
         cross_encoder_error: str | None = None
         rerank_query_chars: int | None = None
@@ -246,8 +299,14 @@ class FacetFusionHybridStrategy(RetrievalStrategy):
                     roles=roles_used,
                     fts_columns="text",
                 )
-                agg = self._searcher.aggregate_guideline_hits(hits_df, k=effective_k)
-                proposed = [gid for gid in agg["id"].to_list() if isinstance(gid, str)]
+                agg = self._searcher.aggregate_guideline_hits_with_evidence(hits_df, k=effective_k)
+                rows = agg.to_dicts()
+                proposed = [
+                    gid for gid in agg["id"].to_list() if isinstance(gid, str) and gid
+                ]
+                rerank_hits_by_id = {
+                    row["id"]: row for row in rows if isinstance(row.get("id"), str)
+                }
                 if proposed:
                     reranked = proposed
                 else:
@@ -269,6 +328,7 @@ class FacetFusionHybridStrategy(RetrievalStrategy):
                     break
 
         fill_ids: list[str] = []
+        fill_hits_by_id: dict[str, dict[str, object]] = {}
         fill_fallback_used = False
         if len(final_ids) < effective_k and self.catalog.entries:
             fill_fallback_used = True
@@ -281,7 +341,11 @@ class FacetFusionHybridStrategy(RetrievalStrategy):
                 roles=roles_used,
                 fts_columns="text",
             )
-            agg = self._searcher.aggregate_guideline_hits(hits_df, k=max(50, raw_k))
+            agg = self._searcher.aggregate_guideline_hits_with_evidence(hits_df, k=max(50, raw_k))
+            fill_rows = agg.to_dicts()
+            fill_hits_by_id = {
+                row["id"]: row for row in fill_rows if isinstance(row.get("id"), str)
+            }
             fill_ids = [gid for gid in agg["id"].to_list() if isinstance(gid, str)]
             seen = set(final_ids)
             for gid in fill_ids:
@@ -349,7 +413,28 @@ class FacetFusionHybridStrategy(RetrievalStrategy):
                 "task_terms": task_terms,
                 "risk_terms": risk_terms,
             },
-            "hits": [{"id": entry.id} for entry in ordered_entries],
+            "hits": [
+                {
+                    "id": entry.id,
+                    "score": float(
+                        (rerank_hits_by_id.get(entry.id, {}).get("score"))
+                        or (fill_hits_by_id.get(entry.id, {}).get("score"))
+                        or fused_scores.get(entry.id, 0.0)
+                    ),
+                    "best_role": (
+                        rerank_hits_by_id.get(entry.id, {}).get("best_role")
+                        or fill_hits_by_id.get(entry.id, {}).get("best_role")
+                        or best_role_by_id.get(entry.id)
+                    ),
+                    "evidence": _merge_evidence(
+                        rerank_hits_by_id.get(entry.id, {}).get("evidence")
+                        or fill_hits_by_id.get(entry.id, {}).get("evidence"),
+                        evidence_by_id.get(entry.id),
+                        limit=3,
+                    ),
+                }
+                for entry in ordered_entries
+            ],
         }
 
         return RetrievalResponse(catalog=Catalog(entries=ordered_entries), meta=meta)

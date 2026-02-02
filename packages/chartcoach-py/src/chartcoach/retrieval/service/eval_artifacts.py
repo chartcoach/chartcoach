@@ -71,11 +71,17 @@ class ScenarioSpec(_EvalArtifactsBaseModel):
 class ScenariosFile(_EvalArtifactsBaseModel):
     scenarios: list[ScenarioSpec]
 
+class EvalEvidenceSnippet(_EvalArtifactsBaseModel):
+    role: str | None = None
+    text: str = Field(min_length=1)
+    score: float | None = None
+
 
 class EvalGuidelineResult(_EvalArtifactsBaseModel):
     rank: int = Field(ge=1)
     score: float = Field(gt=0)
     entry: CatalogEntry
+    evidence: list[EvalEvidenceSnippet] | None = None
 
 
 class EvalStrategyResult(_EvalArtifactsBaseModel):
@@ -422,11 +428,42 @@ def build_strategy_result(
     response_meta: dict[str, object],
 ) -> EvalStrategyResult:
     total = len(response_catalog_entries)
+
+    hit_evidence: dict[str, list[dict[str, object]]] = {}
+    raw_hits = response_meta.get("hits")
+    if isinstance(raw_hits, list):
+        for hit in raw_hits:
+            if not isinstance(hit, dict):
+                continue
+            gid = hit.get("id")
+            if not isinstance(gid, str) or not gid:
+                continue
+            raw_evidence = hit.get("evidence")
+            if not isinstance(raw_evidence, list):
+                continue
+            cleaned: list[dict[str, object]] = []
+            for item in raw_evidence:
+                if not isinstance(item, dict):
+                    continue
+                text = str(item.get("text") or "").strip()
+                if not text:
+                    continue
+                cleaned.append(
+                    {
+                        "role": item.get("role"),
+                        "text": text,
+                        "score": item.get("score"),
+                    }
+                )
+            if cleaned:
+                hit_evidence[gid] = cleaned
+
     guidelines = [
         EvalGuidelineResult(
             rank=index + 1,
             score=entry_score(index, total),
             entry=entry,
+            evidence=hit_evidence.get(entry.id) or None,
         )
         for index, entry in enumerate(response_catalog_entries)
     ]

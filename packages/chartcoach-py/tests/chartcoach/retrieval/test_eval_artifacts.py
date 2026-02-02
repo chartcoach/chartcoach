@@ -165,7 +165,18 @@ def test_build_scenario_bundle_runs_strategies() -> None:
             )
             return RetrievalResponse(
                 catalog=Catalog(entries=[entry]),
-                meta={"k": request.k},
+                meta={
+                    "k": request.k,
+                    "hits": [
+                        {
+                            "id": "g1",
+                            "evidence": [
+                                {"role": "advice", "text": "Use colorblind-safe palettes.", "score": 1.0},
+                                {"role": "reason", "text": "This improves accessibility.", "score": 0.5},
+                            ],
+                        }
+                    ],
+                },
             )
 
     scenario = ScenarioSpec(
@@ -194,12 +205,73 @@ def test_build_scenario_bundle_runs_strategies() -> None:
     assert bundle.strategies[0].meta["k"] == 3
     assert bundle.strategies[0].guidelines[0].rank == 1
     assert bundle.strategies[0].guidelines[0].entry.guideline.id == "g1"
+    assert bundle.strategies[0].guidelines[0].evidence
     assert bundle.meta["repo_commit"] == "deadbeef"
     assert bundle.meta["catalog_digest"] == "cafe"
     assert bundle.meta["scenario_digest"] == "babe"
 
     # bundle is JSON-serializable
     json.dumps(bundle.model_dump(mode="json"))
+
+
+def test_build_scenario_bundle_filters_bad_evidence_hits() -> None:
+    class DummyStrategy(RetrievalStrategy):
+        id = "dummy@v1"
+
+        def _forward(self, request: RetrievalRequest) -> RetrievalResponse:
+            entry = CatalogEntry(
+                guideline=Guideline(
+                    id="g1",
+                    title="T",
+                    description="D",
+                    labels=[],
+                    body="B",
+                ),
+                references=[],
+            )
+            return RetrievalResponse(
+                catalog=Catalog(entries=[entry]),
+                meta={
+                    "k": request.k,
+                    "hits": [
+                        "not-a-dict",
+                        {"id": None, "evidence": []},
+                        {"id": "g1", "evidence": "nope"},
+                        {
+                            "id": "g1",
+                            "evidence": [
+                                "not-a-dict",
+                                {"role": "reason", "text": "   ", "score": 0.1},
+                                {"role": "advice", "text": "ok", "score": 1.0},
+                            ],
+                        },
+                    ],
+                },
+            )
+
+    scenario = ScenarioSpec(
+        id="s1",
+        title="Scenario 1",
+        lang="en",
+        chart=ScenarioChart(uri="https://example.invalid/chart.png", mime="image/png"),
+        query="Retrieve guidelines.",
+        designer_intent="Improve the chart.",
+    )
+    bundle = build_scenario_bundle(
+        scenario=scenario,
+        catalog_uri="file:///tmp/catalog.parquet",
+        strategies=[
+            (
+                StrategyInfo(id="dummy@v1", name="DummyStrategy", description=""),
+                DummyStrategy(Catalog(entries=[])),
+            )
+        ],
+        k=3,
+        config={"repo_commit": "deadbeef", "catalog_digest": "cafe", "scenario_digest": "babe"},
+    )
+    evidence = bundle.strategies[0].guidelines[0].evidence
+    assert evidence is not None
+    assert [e.text for e in evidence] == ["ok"]
 
 
 def test_build_scenario_bundle_records_lm_usage_meta() -> None:

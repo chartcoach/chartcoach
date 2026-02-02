@@ -86,8 +86,13 @@ class HybridRrfStrategy(RetrievalStrategy):
                 effective_k, effective_k * int(status_cfg.candidate_multiplier)
             )
 
-        agg = self._searcher.aggregate_guideline_hits(hits_df, k=candidate_k)
-        candidate_rows = agg.select("id", "score", "best_role").to_dicts()
+        agg = self._searcher.aggregate_guideline_hits_with_evidence(hits_df, k=candidate_k)
+        candidate_rows = agg.to_dicts()
+        hit_by_id = {
+            row["id"]: row
+            for row in candidate_rows
+            if isinstance(row.get("id"), str)
+        }
 
         id_to_entry = {entry.id: entry for entry in self.catalog.entries}
         candidate_entries = [
@@ -122,12 +127,12 @@ class HybridRrfStrategy(RetrievalStrategy):
             **status_meta,
             "hits": [
                 {
-                    "id": row["id"],
-                    "score": float(row["score"]),
-                    "best_role": row.get("best_role"),
+                    "id": entry.id,
+                    "score": float(hit_by_id.get(entry.id, {}).get("score") or 0.0),
+                    "best_role": hit_by_id.get(entry.id, {}).get("best_role"),
+                    "evidence": hit_by_id.get(entry.id, {}).get("evidence") or [],
                 }
-                for row in candidate_rows[:effective_k]
-                if isinstance(row.get("id"), str)
+                for entry in ordered_entries
             ],
         }
 

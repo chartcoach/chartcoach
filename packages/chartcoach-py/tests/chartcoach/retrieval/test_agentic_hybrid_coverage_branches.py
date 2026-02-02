@@ -258,6 +258,64 @@ def test_agentic_strategy_cross_encoder_exception_sets_error(monkeypatch, catalo
 
     monkeypatch.setattr(GuidelineSearcher, "search_hybrid", raising_search_hybrid)
 
+
+def test_agentic_strategy_evidence_collection_error_is_swallowed(
+    monkeypatch, catalog: Catalog
+) -> None:
+    fake = _FakeLanceIndex()
+    fake.set_hybrid("S", pl.DataFrame({"id": ["g1"], "role": ["advice"], "score": [1.0]}))
+    vector_index = _make_vector_index(catalog=catalog, fake=fake)
+    monkeypatch.setattr(CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0]))
+    searcher = GuidelineSearcher(catalog=catalog, vector_index=vector_index)
+
+    orig_search_hybrid = GuidelineSearcher.search_hybrid
+
+    def raising_search_hybrid(  # noqa: PLR0913
+        self,
+        *,
+        query_text: str,
+        query_vector: np.ndarray,
+        k: int,
+        reranker=None,
+        roles=None,
+        ids=None,
+        fts_columns=None,
+    ):
+        if ids is not None:
+            raise RuntimeError("boom")
+        return orig_search_hybrid(
+            self,
+            query_text=query_text,
+            query_vector=query_vector,
+            k=k,
+            reranker=reranker,
+            roles=roles,
+            ids=ids,
+            fts_columns=fts_columns,
+        )
+
+    monkeypatch.setattr(GuidelineSearcher, "search_hybrid", raising_search_hybrid)
+
+    lm = dspy.LM(model="gpt-4o-mini", api_base="http://example.invalid/v1", api_key="x")
+    strat = AgenticHybridStrategy(
+        catalog=catalog,
+        searcher=searcher,
+        lm=lm,
+        default_k=1,
+        final_cross_encoder_model=None,
+        focus=FocusConfig(mode="all", allow_role_fallback=True),
+    )
+
+    class DummyProgram(dspy.Module):
+        def forward(self, **_kwargs):  # noqa: ANN003
+            return dspy.Prediction(used_guideline_ids=["g1"], notes="g1")
+
+    strat._program = DummyProgram()
+
+    out = strat(request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1))
+    assert [e.guideline.id for e in out.catalog.entries] == ["g1"]
+    assert out.meta["hits"][0]["id"] == "g1"
+
     lm = dspy.LM(model="gpt-4o-mini", api_base="http://example.invalid/v1", api_key="x")
     strat = AgenticHybridStrategy(
         catalog=catalog,

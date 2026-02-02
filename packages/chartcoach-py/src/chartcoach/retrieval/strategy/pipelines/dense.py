@@ -84,14 +84,16 @@ class DenseMmrStrategy(RetrievalStrategy):
                 },
             )
 
-        agg = self._searcher.aggregate_guideline_hits(hits_df, k=raw_k)
+        agg = self._searcher.aggregate_guideline_hits_with_evidence(hits_df, k=raw_k)
         agg = agg.head(int(min(self._mmr_candidate_limit, agg.height)))
 
         candidate_ids = [gid for gid in agg["id"].to_list() if isinstance(gid, str)]
+        hit_by_id = {
+            row["id"]: row for row in agg.to_dicts() if isinstance(row.get("id"), str)
+        }
         relevance = {
-            row["id"]: float(row["score"])
-            for row in agg.select("id", "score").to_dicts()
-            if isinstance(row.get("id"), str)
+            gid: float(hit_by_id.get(gid, {}).get("score") or 0.0)
+            for gid in candidate_ids
         }
 
         embedding_column = self._searcher.vector_index.config.embedding_column
@@ -159,9 +161,13 @@ class DenseMmrStrategy(RetrievalStrategy):
             "chart_vision": vision_meta,
             **status_meta,
             "hits": [
-                {"id": gid, "score": float(relevance.get(gid, 0.0))}
-                for gid in [entry.id for entry in ordered_entries]
-                if gid in relevance
+                {
+                    "id": entry.id,
+                    "score": float(relevance.get(entry.id, 0.0)),
+                    "best_role": hit_by_id.get(entry.id, {}).get("best_role"),
+                    "evidence": hit_by_id.get(entry.id, {}).get("evidence") or [],
+                }
+                for entry in ordered_entries
             ],
         }
 

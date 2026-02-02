@@ -453,6 +453,53 @@ class AgenticHybridStrategy(RetrievalStrategy):
             )
             retrieved_entries = filtered
             final_ids = [entry.id for entry in retrieved_entries]
+
+        # Attach evidence snippets for the final guideline set by running a small
+        # hybrid search restricted to the output IDs.
+        hits_by_id: dict[str, dict[str, object]] = {}
+        if final_ids:
+            try:
+                from lancedb.rerankers import RRFReranker
+
+                qvec = self._searcher.vector_index.embed_query(situation)
+                roles = primary_roles_for_focus(focus_mode)
+                roles_used = roles
+                raw_k = min(3_000, max(50, len(final_ids) * 10))
+                hits_df = self._searcher.search_hybrid(
+                    query_text=situation,
+                    query_vector=qvec,
+                    reranker=RRFReranker(),
+                    k=raw_k,
+                    roles=roles_used,
+                    ids=set(final_ids),
+                    fts_columns="text",
+                )
+                if (
+                    hits_df.is_empty()
+                    and roles is not None
+                    and self._focus.allow_role_fallback
+                ):
+                    roles_used = fallback_roles_for_focus(focus_mode)
+                    hits_df = self._searcher.search_hybrid(
+                        query_text=situation,
+                        query_vector=qvec,
+                        reranker=RRFReranker(),
+                        k=raw_k,
+                        roles=roles_used,
+                        ids=set(final_ids),
+                        fts_columns="text",
+                    )
+
+                agg = self._searcher.aggregate_guideline_hits_with_evidence(
+                    hits_df, k=len(final_ids)
+                )
+                hits_by_id = {
+                    row["id"]: row
+                    for row in agg.to_dicts()
+                    if isinstance(row.get("id"), str)
+                }
+            except Exception:  # noqa: BLE001
+                hits_by_id = {}
         meta: dict[str, object] = {
             **cast("dict[str, object]", self._searcher.vector_index.meta()),
             "k": effective_k,
@@ -476,6 +523,15 @@ class AgenticHybridStrategy(RetrievalStrategy):
                 if self._final_cross_encoder_model
                 else None
             ),
+            "hits": [
+                {
+                    "id": entry.id,
+                    "score": float(hits_by_id.get(entry.id, {}).get("score") or 0.0),
+                    "best_role": hits_by_id.get(entry.id, {}).get("best_role"),
+                    "evidence": hits_by_id.get(entry.id, {}).get("evidence") or [],
+                }
+                for entry in retrieved_entries
+            ],
         }
 
         return RetrievalResponse(catalog=Catalog(entries=retrieved_entries), meta=meta)

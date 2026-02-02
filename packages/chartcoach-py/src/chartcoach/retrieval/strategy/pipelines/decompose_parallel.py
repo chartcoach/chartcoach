@@ -17,7 +17,7 @@ from .focus import (
 )
 from .guideline_status import filter_guidelines_by_status, shared_status_scorer
 from .label_hints import match_catalog_ids_by_label_hints
-from .ranking import rrf_rank
+from .ranking import rrf_rank, rrf_scores
 from .searcher import GuidelineSearcher
 from .vision import ChartVisionModule, chart_vision_config_from_env, with_chart_vision
 
@@ -166,6 +166,8 @@ class DecomposeParallelStrategy(RetrievalStrategy):
         per_query_k = max(effective_k, int(self._config.per_query_guideline_k))
 
         rankings: list[list[str]] = []
+        evidence_by_id: dict[str, list[dict[str, object]]] = {}
+        best_role_by_id: dict[str, str] = {}
         for q in queries:
             qvec = self._searcher.vector_index.embed_query(q)
             hits_df = self._searcher.search_hybrid(
@@ -202,9 +204,25 @@ class DecomposeParallelStrategy(RetrievalStrategy):
                     ids=None,
                     fts_columns="text",
                 )
-            agg = self._searcher.aggregate_guideline_hits(hits_df, k=per_query_k)
-            rankings.append([gid for gid in agg["id"].to_list() if isinstance(gid, str)])
+            agg = self._searcher.aggregate_guideline_hits_with_evidence(hits_df, k=per_query_k)
+            rows = agg.to_dicts()
+            ranking: list[str] = []
+            for row in rows:
+                gid = row.get("id")
+                if not isinstance(gid, str) or not gid:
+                    continue
+                ranking.append(gid)
+                ev = row.get("evidence")
+                if isinstance(ev, list) and ev:
+                    evidence_by_id.setdefault(gid, []).extend(
+                        [e for e in ev if isinstance(e, dict)]
+                    )
+                best_role = row.get("best_role")
+                if isinstance(best_role, str) and best_role:
+                    best_role_by_id.setdefault(gid, best_role)
+            rankings.append(ranking)
 
+        fused_scores = rrf_scores(rankings=rankings, k=self._config.rrf_k)
         fused = rrf_rank(rankings=rankings, k=self._config.rrf_k)
 
         status_meta: dict[str, object] = {}
@@ -232,6 +250,12 @@ class DecomposeParallelStrategy(RetrievalStrategy):
                 config=status_cfg,
             )
 
+        def _top_evidence(gid: str, *, limit: int = 3) -> list[dict[str, object]]:
+            items = evidence_by_id.get(gid) or []
+            filtered = [e for e in items if isinstance(e, dict) and str(e.get("text") or "").strip()]
+            filtered.sort(key=lambda x: float(x.get("score") or 0.0), reverse=True)
+            return filtered[: max(0, int(limit))]
+
         meta = {
             **self._searcher.vector_index.meta(),
             "k": effective_k,
@@ -254,8 +278,15 @@ class DecomposeParallelStrategy(RetrievalStrategy):
                 "lm_fallback_used": pred is None,
                 "lm_error": lm_error if pred is None else None,
             },
-            "hits": [{"id": entry.id} for entry in ordered_entries],
+            "hits": [
+                {
+                    "id": entry.id,
+                    "score": float(fused_scores.get(entry.id, 0.0)),
+                    "best_role": best_role_by_id.get(entry.id),
+                    "evidence": _top_evidence(entry.id, limit=3),
+                }
+                for entry in ordered_entries
+            ],
         }
 
         return RetrievalResponse(catalog=Catalog(entries=ordered_entries), meta=meta)
-

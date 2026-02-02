@@ -97,26 +97,79 @@ class GuidelineSearcher:
         score_column: str = "score",
         score_boost: float = 0.25,
     ) -> pl.DataFrame:
-        """Aggregate row-level hits into guideline-level ranking.
+        return GuidelineSearcher.aggregate_guideline_hits_with_evidence(
+            hits_df,
+            k=k,
+            score_column=score_column,
+            score_boost=score_boost,
+            evidence_per_guideline=0,
+        ).select("id", "score", "best_role")
 
-        We use a conservative scoring scheme:
+    @staticmethod
+    def aggregate_guideline_hits_with_evidence(
+        hits_df: pl.DataFrame,
+        *,
+        k: int,
+        score_column: str = "score",
+        score_boost: float = 0.25,
+        evidence_per_guideline: int = 3,
+        evidence_max_chars: int = 280,
+    ) -> pl.DataFrame:
+        """Aggregate row-level hits into a guideline-level ranking, retaining evidence snippets.
+
+        Scoring:
         - base score = max score over matched rows
         - boost = score_boost * mean score over matched rows
+
+        Evidence:
+        - per-guideline, keep the top `evidence_per_guideline` matched rows (highest score).
+        - each snippet includes (role, text, score) pulled from the index row.
         """
 
         if hits_df.is_empty() or k <= 0:
-            return pl.DataFrame({"id": [], "score": [], "best_role": []})
+            return pl.DataFrame({"id": [], "score": [], "best_role": [], "evidence": []})
 
         if score_column not in hits_df.columns:
             raise ValueError(f"Missing required column {score_column!r}.")
 
         sorted_hits = hits_df.sort(score_column, descending=True)
+
+        has_text = "text" in sorted_hits.columns
+        keep_evidence = evidence_per_guideline > 0 and has_text
+        if keep_evidence:
+            text_expr = (
+                pl.col("text")
+                .cast(pl.String)
+                .fill_null("")
+                .str.replace_all("\r", " ")
+                .str.replace_all("\n", " ")
+                .str.replace_all("\t", " ")
+                .str.strip_chars()
+            )
+            if evidence_max_chars > 0:
+                text_expr = text_expr.str.slice(0, int(evidence_max_chars))
+
+            evidence_expr = (
+                pl.struct(
+                    [
+                        pl.col("role").alias("role"),
+                        text_expr.alias("text"),
+                        pl.col(score_column).alias("score"),
+                    ]
+                )
+                .head(int(evidence_per_guideline))
+                .alias("evidence")
+            )
+        else:
+            evidence_expr = pl.lit([]).alias("evidence")
+
         agg = (
-            sorted_hits.group_by("id")
+            sorted_hits.group_by("id", maintain_order=True)
             .agg(
                 pl.first(score_column).alias("max_score"),
                 pl.mean(score_column).alias("mean_score"),
                 pl.first("role").alias("best_role"),
+                evidence_expr,
             )
             .with_columns(
                 score=pl.col("max_score") + (pl.col("mean_score") * float(score_boost))
@@ -124,4 +177,4 @@ class GuidelineSearcher:
             .sort("score", descending=True)
             .head(int(k))
         )
-        return agg.select("id", "score", "best_role")
+        return agg.select("id", "score", "best_role", "evidence")

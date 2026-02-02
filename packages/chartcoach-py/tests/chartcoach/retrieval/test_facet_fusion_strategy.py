@@ -415,3 +415,153 @@ def test_facet_fusion_hybrid_fills_from_fused_when_cross_encoder_partial(
     out = strat(request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=2))
     assert [e.id for e in out.catalog.entries] == ["g1", "g2"]
     assert out.meta["cross_encoder_fallback_used"] is True
+
+
+def test_facet_fusion_hybrid_includes_evidence_and_filters_bad_evidence(
+    monkeypatch, catalog: Catalog
+) -> None:
+    _patch_strategy_deps(monkeypatch)
+
+    import chartcoach.retrieval.strategy.pipelines.searcher as searcher_mod
+    import lancedb.rerankers
+
+    class DummyCrossEncoder:  # noqa: D401
+        def __init__(self, model_name: str):  # noqa: ARG002
+            pass
+
+    monkeypatch.setattr(lancedb.rerankers, "CrossEncoderReranker", DummyCrossEncoder)
+
+    fake = _FakeLanceIndex()
+    fake.set_hybrid("q1", pl.DataFrame({"id": ["g1"], "role": ["advice"], "score": [2.0], "text": ["x"]}))
+    fake.set_hybrid("q1\nq2", pl.DataFrame({"id": ["g1"], "role": ["advice"], "score": [3.0], "text": ["y"]}))
+
+    searcher = _make_searcher(catalog=catalog, fake=fake)
+
+    original_agg = searcher_mod.GuidelineSearcher.aggregate_guideline_hits_with_evidence
+
+    def patched_agg(hits_df: pl.DataFrame, *, k: int, **kwargs):  # noqa: ANN001
+        if k == 40:
+            return pl.DataFrame(
+                {
+                    "id": [None, "g1"],
+                    "score": [0.1, 1.0],
+                    "best_role": ["advice", "advice"],
+                    "evidence": [
+                        [],
+                        [{"role": "advice", "text": "axis title missing", "score": 1.0}],
+                    ],
+                }
+            )
+        if k == 1:
+            evidence = pl.Series(
+                "evidence",
+                [
+                    [
+                        {"role": "advice", "text": "good", "score": 3.0},
+                        "not-a-dict",
+                        {"role": "reason", "text": "   ", "score": 0.1},
+                    ]
+                ],
+                dtype=pl.Object,
+            )
+            return pl.DataFrame(
+                {
+                    "id": ["g1"],
+                    "score": [3.0],
+                    "best_role": ["advice"],
+                    "evidence": evidence,
+                }
+            )
+        return original_agg(hits_df, k=k, **kwargs)
+
+    monkeypatch.setattr(
+        searcher_mod.GuidelineSearcher,
+        "aggregate_guideline_hits_with_evidence",
+        staticmethod(patched_agg),
+    )
+
+    lm = dspy.LM(model="gpt-4o-mini", api_base="http://example.invalid/v1", api_key="x")
+    strat = FacetFusionHybridStrategy(
+        catalog=catalog,
+        searcher=searcher,
+        lm=lm,
+        config=FacetFusionConfig(n_queries=2, cross_encoder_model="dummy"),
+        default_k=1,
+        focus=FocusConfig(mode="all"),
+    )
+
+    class DummyPlan(dspy.Module):
+        def forward(self, **_kwargs):  # noqa: ANN003
+            return dspy.Prediction(
+                focused_situation="S",
+                canonical_query="q1",
+                facet_queries=["q2"],
+                chart_terms=[],
+                task_terms=[],
+                risk_terms=[],
+            )
+
+    strat._program = DummyPlan()
+    out = strat(request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1))
+    assert out.meta["hits"][0]["evidence"]
+
+
+def test_facet_fusion_hybrid_role_fallback_loop_records_evidence(monkeypatch, catalog: Catalog) -> None:
+    _patch_strategy_deps(monkeypatch)
+
+    import chartcoach.retrieval.strategy.pipelines.searcher as searcher_mod
+
+    fake = _FakeLanceIndex()
+    fake.set_hybrid("q1", pl.DataFrame({"id": ["g1"], "role": ["advice"], "score": [2.0], "text": ["x"]}))
+
+    searcher = _make_searcher(catalog=catalog, fake=fake)
+
+    original_agg = searcher_mod.GuidelineSearcher.aggregate_guideline_hits_with_evidence
+
+    def patched_agg(hits_df: pl.DataFrame, *, k: int, **kwargs):  # noqa: ANN001
+        if k == 40 and hits_df.is_empty():
+            return pl.DataFrame({"id": [None], "score": [0.1], "best_role": ["advice"], "evidence": [[]]})
+        if k == 40:
+            return pl.DataFrame(
+                {
+                    "id": [None, "g1"],
+                    "score": [0.1, 1.0],
+                    "best_role": ["advice", "advice"],
+                    "evidence": [
+                        [],
+                        [{"role": "advice", "text": "ok", "score": 1.0}],
+                    ],
+                }
+            )
+        return original_agg(hits_df, k=k, **kwargs)
+
+    monkeypatch.setattr(
+        searcher_mod.GuidelineSearcher,
+        "aggregate_guideline_hits_with_evidence",
+        staticmethod(patched_agg),
+    )
+
+    lm = dspy.LM(model="gpt-4o-mini", api_base="http://example.invalid/v1", api_key="x")
+    strat = FacetFusionHybridStrategy(
+        catalog=catalog,
+        searcher=searcher,
+        lm=lm,
+        config=FacetFusionConfig(n_queries=1, cross_encoder_model=None),
+        default_k=1,
+        focus=FocusConfig(mode="violations", allow_role_fallback=True),
+    )
+
+    class DummyPlan(dspy.Module):
+        def forward(self, **_kwargs):  # noqa: ANN003
+            return dspy.Prediction(
+                focused_situation="S",
+                canonical_query="q1",
+                facet_queries=[],
+                chart_terms=[],
+                task_terms=[],
+                risk_terms=[],
+            )
+
+    strat._program = DummyPlan()
+    out = strat(request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1))
+    assert out.meta["hits"][0]["evidence"]
