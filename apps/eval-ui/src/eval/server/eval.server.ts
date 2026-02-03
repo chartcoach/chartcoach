@@ -44,16 +44,16 @@ const CatalogEntryWireSchema = z
   .transform((value) => value as CatalogEntryWire);
 
 const EvidenceSnippetSchema = z.object({
-  role: z.string().min(1).optional(),
+  role: z.string().min(1).nullish(),
   text: z.string().min(1),
-  score: z.number().optional(),
+  score: z.number().nullish(),
 });
 
 const GuidelineResultSchema = z.object({
   rank: z.number().int().positive(),
   score: z.number(),
   entry: CatalogEntryWireSchema,
-  evidence: z.array(EvidenceSnippetSchema).optional(),
+  evidence: z.array(EvidenceSnippetSchema).nullish(),
 });
 
 const StrategyResultSchema = z.object({
