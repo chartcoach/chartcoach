@@ -17,7 +17,7 @@ from .focus import (
 from .guideline_status import StatusScorer
 from .ranking import rrf_rank, rrf_scores
 from .searcher import GuidelineSearcher
-from .vision import ChartVisionModule, with_chart_vision
+from .vision import ChartVisionModule, prepare_chart_vision
 
 if TYPE_CHECKING:
     import dspy
@@ -149,13 +149,20 @@ class FacetFusionHybridStrategy(RetrievalStrategy):
 
         vision_meta: dict[str, object] = {}
         if self._vision is not None:
-            request, vision_meta = with_chart_vision(
+            request, vision_tokens_query, vision_meta = prepare_chart_vision(
                 request,
                 base_situation=self._searcher.build_base_query_text(request),
                 vision=self._vision,
             )
+        else:
+            vision_tokens_query = None
 
         situation = self._searcher.build_query_text(request)
+        situation_for_lm = (
+            f"{situation}\n\nChart tokens:\n{vision_tokens_query}"
+            if vision_tokens_query
+            else situation
+        )
         focus_mode = self._focus.mode
 
         pred: dspy.Prediction | None = None
@@ -166,7 +173,9 @@ class FacetFusionHybridStrategy(RetrievalStrategy):
             try:
                 with dspy.context(lm=lm):
                     pred = self._program(
-                        situation=situation, n=self._config.n_queries, focus=focus_mode
+                        situation=situation_for_lm,
+                        n=self._config.n_queries,
+                        focus=focus_mode,
                     )
                 lm_error = None
                 break
@@ -195,6 +204,14 @@ class FacetFusionHybridStrategy(RetrievalStrategy):
         queries = [canonical or focused_situation, *facet_queries]
         queries = self._dedupe([q for q in queries if q.strip()])
         queries = queries[: max(1, int(self._config.n_queries))]
+        query_weights: list[float] = [1.0 for _ in queries]
+        if vision_tokens_query:
+            assert self._vision is not None
+            norm_seen = {" ".join(q.lower().split()) for q in queries}
+            norm_tokens = " ".join(vision_tokens_query.lower().split())
+            if norm_tokens and norm_tokens not in norm_seen:
+                queries.append(vision_tokens_query)
+                query_weights.append(float(self._vision.config.fusion_weight))
 
         raw_k = max(30, min(3_000, effective_k * self._per_query_raw_multiplier))
         per_query_k = max(effective_k, self._per_query_guideline_k)
@@ -223,9 +240,10 @@ class FacetFusionHybridStrategy(RetrievalStrategy):
             return merged[: max(0, int(limit))]
 
         per_query_rankings: list[list[str]] = []
+        per_query_weights: list[float] = []
         evidence_by_id: dict[str, list[dict[str, object]]] = {}
         best_role_by_id: dict[str, str] = {}
-        for q in queries:
+        for q, weight in zip(queries, query_weights, strict=True):
             qvec = self._searcher.vector_index.embed_query(q)
             hits_df = self._searcher.search_hybrid(
                 query_text=q,
@@ -254,15 +272,21 @@ class FacetFusionHybridStrategy(RetrievalStrategy):
                 if isinstance(best_role, str) and best_role:
                     best_role_by_id.setdefault(gid, best_role)
             per_query_rankings.append(ranking)
+            per_query_weights.append(float(weight))
 
-        fused_scores = rrf_scores(rankings=per_query_rankings, k=self._config.rrf_k)
-        fused = rrf_rank(rankings=per_query_rankings, k=self._config.rrf_k)
+        fused_scores = rrf_scores(
+            rankings=per_query_rankings, k=self._config.rrf_k, weights=per_query_weights
+        )
+        fused = rrf_rank(
+            rankings=per_query_rankings, k=self._config.rrf_k, weights=per_query_weights
+        )
         if not fused and roles is not None and self._focus.allow_role_fallback:
             roles_used = fallback_roles_for_focus(focus_mode)
             per_query_rankings = []
+            per_query_weights = []
             evidence_by_id = {}
             best_role_by_id = {}
-            for q in queries:
+            for q, weight in zip(queries, query_weights, strict=True):
                 qvec = self._searcher.vector_index.embed_query(q)
                 hits_df = self._searcher.search_hybrid(
                     query_text=q,
@@ -291,8 +315,17 @@ class FacetFusionHybridStrategy(RetrievalStrategy):
                     if isinstance(best_role, str) and best_role:
                         best_role_by_id.setdefault(gid, best_role)
                 per_query_rankings.append(ranking)
-            fused_scores = rrf_scores(rankings=per_query_rankings, k=self._config.rrf_k)
-            fused = rrf_rank(rankings=per_query_rankings, k=self._config.rrf_k)
+                per_query_weights.append(float(weight))
+            fused_scores = rrf_scores(
+                rankings=per_query_rankings,
+                k=self._config.rrf_k,
+                weights=per_query_weights,
+            )
+            fused = rrf_rank(
+                rankings=per_query_rankings,
+                k=self._config.rrf_k,
+                weights=per_query_weights,
+            )
         fused = fused[: max(effective_k, self._config.cross_encoder_candidate_limit)]
 
         reranked = fused
@@ -437,6 +470,7 @@ class FacetFusionHybridStrategy(RetrievalStrategy):
             "raw_k": raw_k,
             "score_kind": "facet_rrf_fusion",
             "queries": queries,
+            "query_weights": query_weights,
             "focused_situation": focused_situation,
             "focus": {
                 "mode": focus_mode,

@@ -1,10 +1,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import cast
+
+import numpy as np
 
 from chartcoach.catalog import Catalog
-from chartcoach.retrieval.operators import search_hybrid_with_roles_fallback
+from chartcoach.retrieval.operators import (
+    extract_guideline_ranking,
+    merge_evidence,
+    search_hybrid_with_roles_fallback,
+)
 from chartcoach.retrieval.strategy.base import RetrievalStrategy
 from chartcoach.retrieval.strategy.types import RetrievalRequest, RetrievalResponse
 
@@ -15,7 +20,7 @@ from .focus import (
 )
 from .ranking import rrf_rank, rrf_scores
 from .searcher import GuidelineSearcher
-from .vision import ChartVisionModule, with_chart_vision
+from .vision import ChartVisionModule, prepare_chart_vision
 
 
 @dataclass(frozen=True, slots=True)
@@ -50,23 +55,6 @@ class MultiReprFusionStrategy(RetrievalStrategy):
         self._default_k = int(default_k)
         self._focus = focus or FocusConfig()
         self._vision = vision
-
-    @staticmethod
-    def _merge_evidence(*sources: object, limit: int = 3) -> list[dict[str, object]]:
-        merged: list[dict[str, object]] = []
-        for source in sources:
-            if not isinstance(source, list):
-                continue
-            for item in source:
-                if not isinstance(item, dict):
-                    continue
-                item_obj = cast("dict[str, object]", item)
-                text = str(item_obj.get("text") or "").strip()
-                if not text:
-                    continue
-                merged.append(item_obj)
-        merged.sort(key=lambda x: float(x.get("score") or 0.0), reverse=True)
-        return merged[: max(0, int(limit))]
 
     def _representation_plan(
         self, focus_mode: str
@@ -104,8 +92,9 @@ class MultiReprFusionStrategy(RetrievalStrategy):
             raise ValueError("k must be positive.")
 
         vision_meta: dict[str, object] = {}
+        vision_tokens_query: str | None = None
         if self._vision is not None:
-            request, vision_meta = with_chart_vision(
+            request, vision_tokens_query, vision_meta = prepare_chart_vision(
                 request,
                 base_situation=self._searcher.build_base_query_text(request),
                 vision=self._vision,
@@ -113,7 +102,12 @@ class MultiReprFusionStrategy(RetrievalStrategy):
 
         focus_mode = self._focus.mode
         query_text = self._searcher.build_query_text(request)
-        query_vec = self._searcher.vector_index.embed_query(query_text)
+        query_vec: np.ndarray = self._searcher.vector_index.embed_query(query_text)
+        vision_vec = (
+            self._searcher.vector_index.embed_query(vision_tokens_query)
+            if vision_tokens_query
+            else None
+        )
 
         raw_k = max(20, min(3_000, effective_k * int(self._config.raw_multiplier)))
         candidate_k = max(
@@ -128,49 +122,59 @@ class MultiReprFusionStrategy(RetrievalStrategy):
         best_role_by_id: dict[str, str] = {}
         repr_meta: list[dict[str, object]] = []
 
-        for name, searcher, roles, weight in plan:
-            hits_df, roles_used = search_hybrid_with_roles_fallback(
-                searcher=searcher,
-                query_text=query_text,
-                query_vector=query_vec,
-                k=raw_k,
-                reranker=RRFReranker(K=self._config.rrf_k),
-                roles=roles,
-                fallback_roles=fallback_roles_for_focus(focus_mode),
-                allow_role_fallback=self._focus.allow_role_fallback,
-                fts_columns="text",
-            )
+        reranker = RRFReranker(K=self._config.rrf_k)
 
-            agg = searcher.aggregate_guideline_hits_with_evidence(
-                hits_df, k=candidate_k
-            )
-            rows = agg.to_dicts()
-            ranking: list[str] = []
-            for row in rows:
-                gid = row.get("id")
-                if not isinstance(gid, str) or not gid:
+        def _run_channel(
+            *,
+            channel: str,
+            qtext: str,
+            qvec: np.ndarray,
+            weight_scale: float,
+        ) -> None:
+            for name, searcher, roles, weight in plan:
+                hits_df, roles_used = search_hybrid_with_roles_fallback(
+                    searcher=searcher,
+                    query_text=qtext,
+                    query_vector=qvec,
+                    k=raw_k,
+                    reranker=reranker,
+                    roles=roles,
+                    fallback_roles=fallback_roles_for_focus(focus_mode),
+                    allow_role_fallback=self._focus.allow_role_fallback,
+                    fts_columns="text",
+                )
+                agg = searcher.aggregate_guideline_hits_with_evidence(
+                    hits_df, k=candidate_k
+                )
+                ranking, ev_by_id, role_by_id, _score_by_id = extract_guideline_ranking(
+                    agg
+                )
+                if not ranking:
                     continue
-                ranking.append(gid)
-                ev = row.get("evidence")
-                if isinstance(ev, list) and ev:
-                    evidence_by_id.setdefault(gid, []).extend(
-                        [e for e in ev if isinstance(e, dict)]
-                    )
-                best_role = row.get("best_role")
-                if isinstance(best_role, str) and best_role:
-                    best_role_by_id.setdefault(gid, best_role)
-
-            if ranking:
                 rankings.append(ranking)
-                weights.append(float(weight))
+                weights.append(float(weight) * float(weight_scale))
+                for gid, ev in ev_by_id.items():
+                    evidence_by_id.setdefault(gid, []).extend(ev)
+                best_role_by_id.update(role_by_id)
                 repr_meta.append(
                     {
                         "name": name,
+                        "channel": channel,
                         "roles": sorted(roles_used) if roles_used else None,
-                        "weight": float(weight),
+                        "weight": float(weight) * float(weight_scale),
                         "guidelines": len(ranking),
                     }
                 )
+
+        _run_channel(channel="intent", qtext=query_text, qvec=query_vec, weight_scale=1.0)
+        if vision_tokens_query and vision_vec is not None:
+            assert self._vision is not None
+            _run_channel(
+                channel="vision_tokens",
+                qtext=vision_tokens_query,
+                qvec=vision_vec,
+                weight_scale=float(self._vision.config.fusion_weight),
+            )
 
         fused_scores = rrf_scores(
             rankings=rankings, k=self._config.rrf_k, weights=weights
@@ -202,9 +206,7 @@ class MultiReprFusionStrategy(RetrievalStrategy):
                     "id": entry.id,
                     "score": float(fused_scores.get(entry.id, 0.0)),
                     "best_role": best_role_by_id.get(entry.id),
-                    "evidence": self._merge_evidence(
-                        evidence_by_id.get(entry.id), limit=3
-                    ),
+                    "evidence": merge_evidence(evidence_by_id.get(entry.id), limit=3),
                 }
                 for entry in ordered_entries
             ],

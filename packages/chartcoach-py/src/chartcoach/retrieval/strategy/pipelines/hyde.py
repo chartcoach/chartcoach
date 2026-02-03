@@ -21,7 +21,7 @@ from .focus import (
 from .guideline_status import StatusScorer
 from .ranking import rrf_rank, rrf_scores
 from .searcher import GuidelineSearcher
-from .vision import ChartVisionModule, with_chart_vision
+from .vision import ChartVisionModule, prepare_chart_vision
 
 if TYPE_CHECKING:
     import dspy
@@ -104,13 +104,20 @@ class HydeHybridStrategy(RetrievalStrategy):
 
         vision_meta: dict[str, object] = {}
         if self._vision is not None:
-            request, vision_meta = with_chart_vision(
+            request, vision_tokens_query, vision_meta = prepare_chart_vision(
                 request,
                 base_situation=self._searcher.build_base_query_text(request),
                 vision=self._vision,
             )
+        else:
+            vision_tokens_query = None
 
         situation = self._searcher.build_query_text(request)
+        situation_for_lm = (
+            f"{situation}\n\nChart tokens:\n{vision_tokens_query}"
+            if vision_tokens_query
+            else situation
+        )
         focus_mode = self._focus.mode
         status_meta: dict[str, object] = {}
         status_scorer = self._status_scorer
@@ -128,7 +135,7 @@ class HydeHybridStrategy(RetrievalStrategy):
             lm_attempts += 1
             try:
                 with dspy.context(lm=lm):
-                    pred = self._program(situation=situation, focus=focus_mode)
+                    pred = self._program(situation=situation_for_lm, focus=focus_mode)
                 lm_error = None
                 break
             except Exception as e:  # noqa: BLE001
@@ -169,16 +176,40 @@ class HydeHybridStrategy(RetrievalStrategy):
         rows_dense = agg_dense.to_dicts()
         rank_dense = [gid for gid in agg_dense["id"].to_list() if isinstance(gid, str)]
 
+        rank_sources: list[list[str]] = [rank_fts, rank_dense]
+        rank_weights: list[float] = [1.0, 1.0]
+        rows_vision: list[dict[str, object]] = []
+        if vision_tokens_query:
+            assert self._vision is not None
+            vision_vec = self._searcher.vector_index.embed_query(vision_tokens_query)
+            hits_vision = self._searcher.search_dense(
+                query_vector=vision_vec, k=raw_k, roles=roles_used
+            )
+            agg_vision = self._searcher.aggregate_guideline_hits_with_evidence(
+                hits_vision, k=self._dense_candidate_k
+            )
+            rows_vision = [
+                cast("dict[str, object]", row)
+                for row in agg_vision.to_dicts()
+                if isinstance(row.get("id"), str)
+            ]
+            rank_vision = [
+                gid for gid in agg_vision["id"].to_list() if isinstance(gid, str)
+            ]
+            if rank_vision:
+                rank_sources.append(rank_vision)
+                rank_weights.append(float(self._vision.config.fusion_weight))
+
         evidence_by_id: dict[str, list[dict[str, object]]] = {}
         best_role_by_id: dict[str, str] = {}
-        for row in [*rows_fts, *rows_dense]:
+        for row in [*rows_fts, *rows_dense, *rows_vision]:
             gid = row.get("id")
             if not isinstance(gid, str) or not gid:
                 continue
             ev = row.get("evidence")
             if isinstance(ev, list) and ev:
                 evidence_by_id.setdefault(gid, []).extend(
-                    [e for e in ev if isinstance(e, dict)]
+                    [cast("dict[str, object]", e) for e in ev if isinstance(e, dict)]
                 )
             best_role = row.get("best_role")
             if isinstance(best_role, str) and best_role:
@@ -217,8 +248,12 @@ class HydeHybridStrategy(RetrievalStrategy):
             merged.sort(key=_score, reverse=True)
             return merged[: max(0, int(limit))]
 
-        fused_scores = rrf_scores(rankings=[rank_fts, rank_dense], k=self._config.rrf_k)
-        fused = rrf_rank(rankings=[rank_fts, rank_dense], k=self._config.rrf_k)
+        fused_scores = rrf_scores(
+            rankings=rank_sources, k=self._config.rrf_k, weights=rank_weights
+        )
+        fused = rrf_rank(
+            rankings=rank_sources, k=self._config.rrf_k, weights=rank_weights
+        )
         candidates = fused[: max(effective_k, self._dense_candidate_k)]
 
         final_ids = candidates[:effective_k]

@@ -4,7 +4,12 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from chartcoach.catalog import Catalog
-from chartcoach.retrieval.operators import apply_status_filter, plan_status_filter
+from chartcoach.retrieval.operators import (
+    apply_status_filter,
+    extract_guideline_ranking,
+    merge_evidence,
+    plan_status_filter,
+)
 from chartcoach.retrieval.strategy.base import RetrievalStrategy
 from chartcoach.retrieval.strategy.optional import require_dspy
 from chartcoach.retrieval.strategy.types import RetrievalRequest, RetrievalResponse
@@ -16,8 +21,9 @@ from .label_hints import (
     LabelHintsSignature,
     match_catalog_ids_by_label_hints,
 )
+from .ranking import rrf_rank, rrf_scores
 from .searcher import GuidelineSearcher
-from .vision import ChartVisionModule, with_chart_vision
+from .vision import ChartVisionModule, prepare_chart_vision
 
 if TYPE_CHECKING:
     import dspy
@@ -86,8 +92,9 @@ class LabelFirstAbstractStrategy(RetrievalStrategy):
             raise ValueError("k must be positive.")
 
         vision_meta: dict[str, object] = {}
+        vision_tokens_query: str | None = None
         if self._vision is not None:
-            request, vision_meta = with_chart_vision(
+            request, vision_tokens_query, vision_meta = prepare_chart_vision(
                 request,
                 base_situation=self._abstract_searcher.build_base_query_text(request),
                 vision=self._vision,
@@ -95,6 +102,11 @@ class LabelFirstAbstractStrategy(RetrievalStrategy):
 
         focus_mode = self._focus.mode
         situation = self._abstract_searcher.build_query_text(request)
+        situation_for_lm = (
+            f"{situation}\n\nChart tokens:\n{vision_tokens_query}"
+            if vision_tokens_query
+            else situation
+        )
 
         pred: dspy.Prediction | None = None
         lm_error: str | None = None
@@ -104,7 +116,9 @@ class LabelFirstAbstractStrategy(RetrievalStrategy):
             try:
                 with dspy.context(lm=lm):
                     pred = self._program(
-                        situation=situation, focus=focus_mode, n=self._config.labels.n
+                        situation=situation_for_lm,
+                        focus=focus_mode,
+                        n=self._config.labels.n,
                     )
                 lm_error = None
                 break
@@ -157,16 +171,76 @@ class LabelFirstAbstractStrategy(RetrievalStrategy):
         )
         candidate_k = status_plan.candidate_k
 
-        agg = self._abstract_searcher.aggregate_guideline_hits_with_evidence(
+        base_agg = self._abstract_searcher.aggregate_guideline_hits_with_evidence(
             hits_df, k=candidate_k
         )
-        candidate_rows = agg.to_dicts()
+        (
+            base_ranking,
+            base_evidence,
+            base_roles,
+            base_score_by_id,
+        ) = extract_guideline_ranking(base_agg)
+
+        rankings: list[list[str]] = []
+        weights: list[float] = []
+        evidence_by_id: dict[str, list[dict[str, object]]] = {}
+        best_role_by_id: dict[str, str] = {}
+
+        if base_ranking:
+            rankings.append(base_ranking)
+            weights.append(1.0)
+            evidence_by_id.update(base_evidence)
+            best_role_by_id.update(base_roles)
+
+        if vision_tokens_query:
+            assert self._vision is not None
+            vision_vec = self._abstract_searcher.vector_index.embed_query(
+                vision_tokens_query
+            )
+            vision_hits_df = self._abstract_searcher.search_hybrid(
+                query_text=vision_tokens_query,
+                query_vector=vision_vec,
+                reranker=RRFReranker(),
+                k=raw_k,
+                ids=ids_filter,
+                fts_columns="text",
+            )
+            if vision_hits_df.is_empty() and ids_filter is not None:
+                vision_hits_df = self._abstract_searcher.search_hybrid(
+                    query_text=vision_tokens_query,
+                    query_vector=vision_vec,
+                    reranker=RRFReranker(),
+                    k=raw_k,
+                    ids=None,
+                    fts_columns="text",
+                )
+            vision_agg = self._abstract_searcher.aggregate_guideline_hits_with_evidence(
+                vision_hits_df, k=candidate_k
+            )
+            (
+                vision_ranking,
+                vision_evidence,
+                vision_roles,
+                _vision_score_by_id,
+            ) = extract_guideline_ranking(vision_agg)
+            if vision_ranking:
+                rankings.append(vision_ranking)
+                weights.append(float(self._vision.config.fusion_weight))
+                for gid, ev in vision_evidence.items():
+                    evidence_by_id.setdefault(gid, []).extend(ev)
+                best_role_by_id.update(vision_roles)
+
+        fused_scores: dict[str, float] | None = None
+        candidate_ids = base_ranking
+        score_kind = "hybrid_relevance"
+        if len(rankings) > 1:
+            fused_scores = rrf_scores(rankings=rankings, k=60, weights=weights)
+            candidate_ids = rrf_rank(rankings=rankings, k=60, weights=weights)
+            score_kind = "vision_fused_weighted_rrf"
 
         id_to_entry = {entry.id: entry for entry in self.catalog.entries}
-        candidate_entries = [
-            id_to_entry[row["id"]]
-            for row in candidate_rows
-            if isinstance(row.get("id"), str) and row["id"] in id_to_entry
+        candidate_entries = [id_to_entry[gid] for gid in candidate_ids if gid in id_to_entry][
+            :candidate_k
         ]
         ordered_entries = candidate_entries[:effective_k]
         if status_plan.use_status_filter and ordered_entries:
@@ -178,17 +252,11 @@ class LabelFirstAbstractStrategy(RetrievalStrategy):
                 focus_mode=focus_mode,
                 status_scorer=status_scorer,
             )
-
-        row_by_id = {
-            str(row.get("id")): row
-            for row in candidate_rows
-            if isinstance(row.get("id"), str)
-        }
         meta = {
             **self._abstract_searcher.vector_index.meta(),
             "k": effective_k,
             "raw_k": raw_k,
-            "score_kind": "hybrid_relevance",
+            "score_kind": score_kind,
             "focus": {"mode": focus_mode, "roles": None},
             "chart_vision": vision_meta,
             **status_meta,
@@ -205,9 +273,13 @@ class LabelFirstAbstractStrategy(RetrievalStrategy):
             "hits": [
                 {
                     "id": entry.id,
-                    "score": float(row_by_id.get(entry.id, {}).get("score") or 0.0),
-                    "best_role": row_by_id.get(entry.id, {}).get("best_role"),
-                    "evidence": row_by_id.get(entry.id, {}).get("evidence") or [],
+                    "score": float(
+                        (fused_scores or {}).get(entry.id, 0.0)
+                        if fused_scores is not None
+                        else base_score_by_id.get(entry.id, 0.0)
+                    ),
+                    "best_role": best_role_by_id.get(entry.id),
+                    "evidence": merge_evidence(evidence_by_id.get(entry.id), limit=3),
                 }
                 for entry in ordered_entries
             ],

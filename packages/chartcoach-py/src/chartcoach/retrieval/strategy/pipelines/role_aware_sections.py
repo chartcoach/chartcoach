@@ -16,7 +16,7 @@ from chartcoach.retrieval.strategy.types import RetrievalRequest, RetrievalRespo
 from .focus import FocusConfig, fallback_roles_for_focus
 from .guideline_status import StatusScorer
 from .searcher import GuidelineSearcher
-from .vision import ChartVisionModule, with_chart_vision
+from .vision import ChartVisionModule, prepare_chart_vision
 
 if TYPE_CHECKING:
     import dspy
@@ -122,8 +122,9 @@ class RoleAwareSectionsStrategy(RetrievalStrategy):
             raise ValueError("k must be positive.")
 
         vision_meta: dict[str, object] = {}
+        vision_tokens_query: str | None = None
         if self._vision is not None:
-            request, vision_meta = with_chart_vision(
+            request, vision_tokens_query, vision_meta = prepare_chart_vision(
                 request,
                 base_situation=self._searcher.build_base_query_text(request),
                 vision=self._vision,
@@ -131,6 +132,11 @@ class RoleAwareSectionsStrategy(RetrievalStrategy):
 
         focus_mode = self._focus.mode
         situation = self._searcher.build_query_text(request)
+        situation_for_lm = (
+            f"{situation}\n\nChart tokens:\n{vision_tokens_query}"
+            if vision_tokens_query
+            else situation
+        )
 
         pred: dspy.Prediction | None = None
         lm_error: str | None = None
@@ -139,7 +145,7 @@ class RoleAwareSectionsStrategy(RetrievalStrategy):
             lm_attempts += 1
             try:
                 with dspy.context(lm=lm):
-                    pred = self._program(situation=situation, focus=focus_mode)
+                    pred = self._program(situation=situation_for_lm, focus=focus_mode)
                 lm_error = None
                 break
             except Exception as e:  # noqa: BLE001

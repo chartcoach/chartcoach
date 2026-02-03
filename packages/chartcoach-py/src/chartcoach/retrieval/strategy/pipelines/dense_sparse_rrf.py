@@ -143,6 +143,7 @@ class DenseSparseRrfStrategy(RetrievalStrategy):
         hit_dense_v_by_id: dict[str, dict[str, object]] = {}
         hit_sparse_v_by_id: dict[str, dict[str, object]] = {}
         if vision_tokens_query:
+            assert self._vision is not None
             vision_vec = self._searcher.vector_index.embed_query(vision_tokens_query)
             vision_dense, _vision_roles_used = search_dense_with_focus(
                 searcher=self._searcher,
