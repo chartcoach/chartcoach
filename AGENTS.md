@@ -30,6 +30,12 @@ uv run ty check .
 uv run pytest
 ```
 
+## Paper-Grade Repro (Manifests)
+
+- For any run intended to be compared or reported, prefer an explicit manifest:
+  - `chartcoach-retrieval run --manifest <path>`
+- Manifests freeze run arguments (strategy list, `k`, store URL) and include a run-config override document (models, temperatures, retrieval knobs) without relying on ambient env defaults.
+
 ## Commit Messages
 
 Use Conventional Commits:
@@ -64,3 +70,6 @@ Keep scopes meaningful (e.g., `retrieval`, `eval-ui`, `catalog`) and avoid over-
 - Avoid monkeypatch-heavy “line-hitting” tests unless they protect a real interface contract.
 - If a test doesn’t increase confidence for a paper claim or an engineering contract, delete it.
 
+## Practical Notes
+
+- If `uv run ...` starts failing with `No space left on device`, clear the uv cache at `~/.cache/uv` and retry.
