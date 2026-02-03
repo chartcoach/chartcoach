@@ -5,19 +5,12 @@ import os
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, cast
 
-import pytest
-
 from chartcoach.retrieval.strategy.pipelines import vision as mod
 from chartcoach.retrieval.strategy.pipelines.searcher import GuidelineSearcher
 from chartcoach.retrieval.strategy.types import ImageItem, RetrievalRequest, TextItem
 
 if TYPE_CHECKING:
     import dspy
-
-
-@pytest.fixture(autouse=True)
-def _clear_vision_cache() -> None:
-    mod._VISION_CACHE.clear()
 
 
 def test_mime_to_suffix_variants() -> None:

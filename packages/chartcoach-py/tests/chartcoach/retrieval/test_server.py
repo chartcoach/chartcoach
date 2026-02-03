@@ -21,6 +21,7 @@ from chartcoach.retrieval.server import (
 )
 from chartcoach.retrieval.server.routes import StrategyRunRequest
 from chartcoach.retrieval.service import RetrievalService
+from chartcoach.retrieval.runtime import StrategyRuntime
 from chartcoach.retrieval.strategy.base import RetrievalStrategy, StrategyInfo
 from chartcoach.retrieval.strategy.registry import create_default_strategy_registrations
 from chartcoach.retrieval.strategy.types import (
@@ -289,7 +290,10 @@ def test_default_strategy_factory_instantiates_bm25(
 
     regs = create_default_strategy_registrations()
     cls, factory = next(reg for reg in regs if reg[0].id == "bm25-prf@v1")
-    strategy = factory(catalog=Catalog(entries=[]), run_config=retrieval_run_config)
+    runtime = StrategyRuntime(
+        catalog=Catalog(entries=[]), run_config=retrieval_run_config
+    )
+    strategy = factory(runtime=runtime)
     assert isinstance(strategy, RetrievalStrategy)
     assert strategy.id == cls.id
 
@@ -309,8 +313,8 @@ def test_routes_and_app_use_strategy_instances(
                 meta={"ok": True},
             )
 
-    def create_dummy_strategy(*, catalog: Catalog, run_config) -> RetrievalStrategy:  # noqa: ARG001
-        return DummyStrategy(catalog)
+    def create_dummy_strategy(*, runtime: StrategyRuntime) -> RetrievalStrategy:  # noqa: ARG001
+        return DummyStrategy(runtime.catalog)
 
     df = pl.DataFrame(
         [
@@ -414,17 +418,13 @@ def test_run_strategy_maps_common_errors_to_http_exceptions(
         def _forward(self, request: RetrievalRequest) -> RetrievalResponse:  # noqa: ARG002
             raise RuntimeError("upstream exploded")
 
-    def create_raises_value_error(*, catalog: Catalog, run_config) -> RetrievalStrategy:  # noqa: ARG001
-        return RaisesValueError(catalog)
+    def create_raises_value_error(*, runtime: StrategyRuntime) -> RetrievalStrategy:  # noqa: ARG001
+        return RaisesValueError(runtime.catalog)
 
-    def create_raises_upstream_error(
-        *, catalog: Catalog, run_config
-    ) -> RetrievalStrategy:  # noqa: ARG001
-        return RaisesUpstreamError(catalog)
+    def create_raises_upstream_error(*, runtime: StrategyRuntime) -> RetrievalStrategy:  # noqa: ARG001
+        return RaisesUpstreamError(runtime.catalog)
 
-    def create_raises_runtime_error(
-        *, catalog: Catalog, run_config
-    ) -> RetrievalStrategy:  # noqa: ARG001
+    def create_raises_runtime_error(*, runtime: StrategyRuntime) -> RetrievalStrategy:  # noqa: ARG001
         raise RuntimeError("misconfigured strategy factory")
 
     # 422: catalog URI is invalid.

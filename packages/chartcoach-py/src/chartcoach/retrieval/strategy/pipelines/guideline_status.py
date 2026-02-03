@@ -19,9 +19,6 @@ else:
 GuidelineStatus = Literal["violated", "satisfied", "unclear", "not_applicable"]
 
 
-_STATUS_CACHE: dict[tuple[str, str], dict[str, object]] = {}
-
-
 def _sha256_text(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
@@ -158,9 +155,16 @@ def create_status_scorer(*, lm: dspy.LM, config: StatusScorerConfig) -> StatusSc
 
 
 class GuidelineStatusModule:
-    def __init__(self, *, lm: dspy.LM, config: StatusScorerConfig) -> None:
+    def __init__(
+        self,
+        *,
+        lm: dspy.LM,
+        config: StatusScorerConfig,
+        cache: dict[tuple[str, str], dict[str, object]] | None = None,
+    ) -> None:
         self._lm = lm
         self._config = config
+        self._cache = cache if cache is not None else {}
         self._program = dspy.Predict(GuidelineStatusSignature)
         self._batch_program = dspy.Predict(GuidelineStatusBatchSignature)
 
@@ -188,7 +192,7 @@ class GuidelineStatusModule:
         entry: CatalogEntry,
     ) -> dict[str, object]:
         cache_key = (chart_key, entry.id)
-        cached = _STATUS_CACHE.get(cache_key)
+        cached = self._cache.get(cache_key)
         if cached is not None:
             return {"id": entry.id, "cache": "memory", **cached}
 
@@ -226,7 +230,7 @@ class GuidelineStatusModule:
                 "attempts": attempts,
                 "error": error,
             }
-            _STATUS_CACHE[cache_key] = out
+            self._cache[cache_key] = out
             return {"id": entry.id, "cache": "error", **out}
 
         status = _coerce_status(getattr(pred, "status", None))
@@ -242,7 +246,7 @@ class GuidelineStatusModule:
             "attempts": attempts,
             "error": None,
         }
-        _STATUS_CACHE[cache_key] = out
+        self._cache[cache_key] = out
         return {"id": entry.id, "cache": "miss", **out}
 
     def classify_many(
@@ -257,7 +261,7 @@ class GuidelineStatusModule:
         cached_by_id: dict[str, dict[str, object]] = {}
         missing: list[CatalogEntry] = []
         for entry in entries:
-            cached = _STATUS_CACHE.get((chart_key, entry.id))
+            cached = self._cache.get((chart_key, entry.id))
             if cached is not None:
                 cached_by_id[entry.id] = cached
             else:
@@ -312,12 +316,12 @@ class GuidelineStatusModule:
                         "attempts": attempts,
                         "error": error,
                     }
-                    _STATUS_CACHE[(chart_key, entry.id)] = out
+                    self._cache[(chart_key, entry.id)] = out
                     cached_by_id[entry.id] = out
 
         results: list[dict[str, object]] = []
         for entry in entries:
-            cached = cached_by_id.get(entry.id) or _STATUS_CACHE.get(
+            cached = cached_by_id.get(entry.id) or self._cache.get(
                 (chart_key, entry.id)
             )
             if cached is None:
