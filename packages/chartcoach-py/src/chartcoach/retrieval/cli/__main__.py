@@ -104,6 +104,42 @@ def build_parser() -> argparse.ArgumentParser:
     )
     neg_cmd.add_argument("--json", action="store_true", help="Output JSON.")
 
+    paper_cmd = sub.add_parser(
+        "paper-assets",
+        help="Generate paper-facing tables (CSV/Markdown) from one or more artifact runs.",
+    )
+    paper_cmd.add_argument(
+        "--run",
+        type=Path,
+        action="append",
+        default=[],
+        help="Artifacts root directory containing index.json and bundles/*.json (repeatable).",
+    )
+    paper_cmd.add_argument(
+        "--out",
+        type=Path,
+        required=True,
+        help="Output directory to write CSV/Markdown assets into.",
+    )
+    paper_cmd.add_argument(
+        "--taxonomy",
+        type=Path,
+        default=Path("docs/retrieval/strategy_taxonomy.yaml"),
+        help="Path to the strategy taxonomy YAML used for grouping.",
+    )
+    paper_cmd.add_argument(
+        "-k",
+        "--k",
+        type=int,
+        default=None,
+        help="Number of top results to analyze (defaults to full returned set).",
+    )
+    paper_cmd.add_argument(
+        "--plots",
+        action="store_true",
+        help="Also render PNG plots (requires optional 'paper' deps).",
+    )
+
     run_cmd = sub.add_parser(
         "run", help="Run retrieval over eval scenarios and upload artifacts."
     )
@@ -302,6 +338,22 @@ def main(argv: list[str] | None = None) -> None:
             print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
         else:
             print(format_negative_hit_table(results))
+        return
+
+    if args.cmd == "paper-assets":
+        from chartcoach.retrieval.analysis.paper_assets import write_paper_assets
+
+        runs = [Path(p) for p in (args.run or [])]
+        if not runs:
+            raise SystemExit("Provide at least one --run directory.")
+        write_paper_assets(
+            runs=runs,
+            out_dir=Path(args.out),
+            taxonomy_path=Path(args.taxonomy),
+            k=args.k,
+            plots=bool(getattr(args, "plots", False)),
+        )
+        print(str(args.out))
         return
 
     if args.cmd == "purge":
