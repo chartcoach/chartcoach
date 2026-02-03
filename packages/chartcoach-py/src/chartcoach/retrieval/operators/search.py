@@ -54,6 +54,7 @@ def search_dense_with_focus(
     searcher: _DenseSearcher,
     query_vector: np.ndarray,
     k: int,
+    ids: set[str] | None = None,
     focus: FocusConfig,
     focus_mode: FocusMode,
 ) -> tuple[pl.DataFrame, set[str] | None]:
@@ -61,12 +62,12 @@ def search_dense_with_focus(
     roles_used = roles
 
     hits_df = searcher.search_dense(
-        query_vector=query_vector, k=int(k), roles=roles_used
+        query_vector=query_vector, k=int(k), roles=roles_used, ids=ids
     )
     if hits_df.is_empty() and roles is not None and focus.allow_role_fallback:
         roles_used = fallback_roles_for_focus(focus_mode)
         hits_df = searcher.search_dense(
-            query_vector=query_vector, k=int(k), roles=roles_used
+            query_vector=query_vector, k=int(k), roles=roles_used, ids=ids
         )
 
     return hits_df, roles_used
@@ -77,16 +78,21 @@ def search_fts_with_focus(
     searcher: _FtsSearcher,
     query_text: str,
     k: int,
+    ids: set[str] | None = None,
     focus: FocusConfig,
     focus_mode: FocusMode,
 ) -> tuple[pl.DataFrame, set[str] | None]:
     roles = primary_roles_for_focus(focus_mode)
     roles_used = roles
 
-    hits_df = searcher.search_fts(query_text=query_text, k=int(k), roles=roles_used)
+    hits_df = searcher.search_fts(
+        query_text=query_text, k=int(k), roles=roles_used, ids=ids
+    )
     if hits_df.is_empty() and roles is not None and focus.allow_role_fallback:
         roles_used = fallback_roles_for_focus(focus_mode)
-        hits_df = searcher.search_fts(query_text=query_text, k=int(k), roles=roles_used)
+        hits_df = searcher.search_fts(
+            query_text=query_text, k=int(k), roles=roles_used, ids=ids
+        )
 
     return hits_df, roles_used
 
@@ -98,6 +104,7 @@ def search_hybrid_with_focus(
     query_vector: np.ndarray,
     k: int,
     reranker: object | None,
+    ids: set[str] | None = None,
     focus: FocusConfig,
     focus_mode: FocusMode,
     fts_columns: str | list[str] | None = None,
@@ -111,6 +118,7 @@ def search_hybrid_with_focus(
         reranker=reranker,
         k=int(k),
         roles=roles_used,
+        ids=ids,
         fts_columns=fts_columns,
     )
     if hits_df.is_empty() and roles is not None and focus.allow_role_fallback:
@@ -121,6 +129,7 @@ def search_hybrid_with_focus(
             reranker=reranker,
             k=int(k),
             roles=roles_used,
+            ids=ids,
             fts_columns=fts_columns,
         )
 
