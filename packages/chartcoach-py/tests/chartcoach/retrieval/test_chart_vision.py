@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import contextlib
-import os
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, cast
 
@@ -35,42 +34,27 @@ def test_searcher_build_query_text_includes_chart_vision() -> None:
 
 
 def test_chart_image_from_request_supports_uri_and_bytes(monkeypatch, tmp_path) -> None:
-    seen: dict[str, str] = {}
-
-    class DummyImage:
-        @staticmethod
-        def from_url(url: str) -> str:
-            seen["url"] = url
-            return f"URL:{url}"
-
-        @staticmethod
-        def from_file(path: str) -> str:
-            seen["path"] = path
-            return f"FILE:{path}"
-
-    monkeypatch.setattr(mod.dspy, "Image", DummyImage)
-
+    # Unit-test the fingerprinting logic without requiring network access.
     req = RetrievalRequest(
         context=[ImageItem(role="chart", uri="http://example.com/x.png")]
     )
-    image, fp = mod._chart_image_from_request(req)
-    assert image == "URL:http://example.com/x.png"
+    item, fp = mod._chart_image_item_from_request(req)
+    assert item is not None
+    assert item.uri == "http://example.com/x.png"
     assert fp and fp.startswith("uri:")
 
-    # Bytes path writes a temp file; remove it after the call.
     data = b"abc123"
     req = RetrievalRequest(
         context=[ImageItem(role="chart", data=data, mime="image/png")]
     )
-    image, fp = mod._chart_image_from_request(req)
-    assert isinstance(image, str) and image.startswith("FILE:")
+    item, fp = mod._chart_image_item_from_request(req)
+    assert item is not None
+    assert item.data == data
     assert fp and fp.startswith("bytes:")
-    assert "path" in seen
-    os.unlink(seen["path"])
 
     req = RetrievalRequest(context=[TextItem(role="situation", text="S")])
-    image, fp = mod._chart_image_from_request(req)
-    assert image is None
+    item, fp = mod._chart_image_item_from_request(req)
+    assert item is None
     assert fp is None
 
 
@@ -162,9 +146,15 @@ def test_chart_vision_analyze_caches_and_retries(monkeypatch) -> None:
         yield
 
     monkeypatch.setattr(mod.dspy, "context", noop_context)
-    monkeypatch.setattr(
-        mod.dspy, "Image", SimpleNamespace(from_url=lambda _u: object())
-    )
+    monkeypatch.setattr(mod.dspy, "Image", SimpleNamespace(from_file=lambda _p: object()))
+
+    download_calls = {"n": 0}
+
+    def fake_download(*, url: str, mime, timeout_seconds, max_bytes):  # noqa: ANN001, ARG001
+        download_calls["n"] += 1
+        return __file__
+
+    monkeypatch.setattr(mod, "_download_image_to_tempfile", fake_download)
 
     vision = mod.ChartVisionModule(
         vlm=cast("dspy.LM", DummyLM("lm")), config=mod.ChartVisionConfig(enabled=True)
@@ -206,6 +196,7 @@ def test_chart_vision_analyze_caches_and_retries(monkeypatch) -> None:
     assert summary == "Short summary."
     assert meta["chart_vision_cache"] == "memory"
     assert calls["n"] == 2
+    assert download_calls["n"] == 1
 
 
 def test_chart_vision_analyze_returns_error_meta(monkeypatch) -> None:
@@ -218,9 +209,9 @@ def test_chart_vision_analyze_returns_error_meta(monkeypatch) -> None:
         yield
 
     monkeypatch.setattr(mod.dspy, "context", noop_context)
-    monkeypatch.setattr(
-        mod.dspy, "Image", SimpleNamespace(from_url=lambda _u: object())
-    )
+    monkeypatch.setattr(mod.dspy, "Image", SimpleNamespace(from_file=lambda _p: object()))
+
+    monkeypatch.setattr(mod, "_download_image_to_tempfile", lambda **_k: __file__)
 
     vision = mod.ChartVisionModule(
         vlm=cast("dspy.LM", DummyLM()), config=mod.ChartVisionConfig(enabled=True)

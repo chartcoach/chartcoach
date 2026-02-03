@@ -205,11 +205,25 @@ def _resolve_focus_config_from_env() -> FocusConfig:
 
 
 def _resolve_chart_vision_config_from_env() -> ChartVisionConfig:
+    integration_raw = (os.environ.get("CHARTCOACH_CHART_VISION_INTEGRATION") or "").strip()
+    integration: Literal["append", "fuse_tokens"]
+    raw = integration_raw.lower()
+    if raw in {"fuse_tokens", "fuse"}:
+        integration = "fuse_tokens"
+    else:
+        integration = "append"
     return ChartVisionConfig(
         enabled=_bool_env("CHARTCOACH_CHART_VISION_ENABLED", False),
+        integration=integration,
+        fusion_weight=_float_env("CHARTCOACH_CHART_VISION_FUSION_WEIGHT", 0.75),
+        download_timeout_seconds=_float_env(
+            "CHARTCOACH_CHART_VISION_DOWNLOAD_TIMEOUT_SECONDS", 20.0
+        ),
+        max_image_bytes=_int_env("CHARTCOACH_CHART_VISION_MAX_IMAGE_BYTES", 12_000_000),
         max_keywords=_int_env("CHARTCOACH_CHART_VISION_MAX_KEYWORDS", 16),
         max_issues=_int_env("CHARTCOACH_CHART_VISION_MAX_ISSUES", 10),
         max_visible_text=_int_env("CHARTCOACH_CHART_VISION_MAX_VISIBLE_TEXT", 10),
+        max_tokens_chars=_int_env("CHARTCOACH_CHART_VISION_MAX_TOKENS_CHARS", 700),
         max_text_chars=_int_env("CHARTCOACH_CHART_VISION_MAX_TEXT_CHARS", 1400),
     )
 
@@ -489,14 +503,38 @@ def load_run_config_from_doc(
     )
     vision_override = _deep_get(doc, ["chart_vision"])
     if isinstance(vision_override, Mapping):
+        integration_raw = str(
+            vision_override.get("integration", chart_vision.integration)
+        ).strip()
+        integration: Literal["append", "fuse_tokens"]
+        raw = integration_raw.lower()
+        if raw in {"fuse_tokens", "fuse"}:
+            integration = "fuse_tokens"
+        else:
+            integration = "append"
         chart_vision = ChartVisionConfig(
             enabled=bool(vision_override.get("enabled", chart_vision.enabled)),
+            integration=integration,
+            fusion_weight=float(
+                vision_override.get("fusion_weight", chart_vision.fusion_weight)
+            ),
+            download_timeout_seconds=float(
+                vision_override.get(
+                    "download_timeout_seconds", chart_vision.download_timeout_seconds
+                )
+            ),
+            max_image_bytes=int(
+                vision_override.get("max_image_bytes", chart_vision.max_image_bytes)
+            ),
             max_keywords=int(
                 vision_override.get("max_keywords", chart_vision.max_keywords)
             ),
             max_issues=int(vision_override.get("max_issues", chart_vision.max_issues)),
             max_visible_text=int(
                 vision_override.get("max_visible_text", chart_vision.max_visible_text)
+            ),
+            max_tokens_chars=int(
+                vision_override.get("max_tokens_chars", chart_vision.max_tokens_chars)
             ),
             max_text_chars=int(
                 vision_override.get("max_text_chars", chart_vision.max_text_chars)
