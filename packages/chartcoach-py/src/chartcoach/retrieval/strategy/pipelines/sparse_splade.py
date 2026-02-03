@@ -2,14 +2,20 @@ from __future__ import annotations
 
 from chartcoach.catalog import Catalog
 from chartcoach.index.sparse import CatalogSparseIndex
-from chartcoach.retrieval.operators import apply_status_filter, plan_status_filter
+from chartcoach.retrieval.operators import (
+    apply_status_filter,
+    extract_guideline_ranking,
+    merge_evidence,
+    plan_status_filter,
+)
 from chartcoach.retrieval.strategy.base import RetrievalStrategy
 from chartcoach.retrieval.strategy.types import RetrievalRequest, RetrievalResponse
 
 from .focus import FocusConfig, primary_roles_for_focus
 from .guideline_status import StatusScorer
+from .ranking import rrf_rank, rrf_scores
 from .searcher import GuidelineSearcher
-from .vision import ChartVisionModule, with_chart_vision
+from .vision import ChartVisionModule, prepare_chart_vision
 
 
 class SparseSpladeStrategy(RetrievalStrategy):
@@ -42,8 +48,9 @@ class SparseSpladeStrategy(RetrievalStrategy):
             raise ValueError("k must be positive.")
 
         vision_meta: dict[str, object] = {}
+        vision_tokens_query: str | None = None
         if self._vision is not None:
-            request, vision_meta = with_chart_vision(
+            request, vision_tokens_query, vision_meta = prepare_chart_vision(
                 request,
                 base_situation=GuidelineSearcher.build_base_query_text(request),
                 vision=self._vision,
@@ -64,20 +71,60 @@ class SparseSpladeStrategy(RetrievalStrategy):
         )
         candidate_k = status_plan.candidate_k
 
-        hits_df = self._sparse_index.search_sparse(query_text, k=raw_k)
-        agg = GuidelineSearcher.aggregate_guideline_hits_with_evidence(
-            hits_df, k=candidate_k
+        base_hits_df = self._sparse_index.search_sparse(query_text, k=raw_k)
+        base_agg = GuidelineSearcher.aggregate_guideline_hits_with_evidence(
+            base_hits_df, k=candidate_k
         )
-        candidate_rows = agg.to_dicts()
-        hit_by_id = {
-            row["id"]: row for row in candidate_rows if isinstance(row.get("id"), str)
-        }
+        (
+            base_ranking,
+            base_evidence,
+            base_roles,
+            base_score_by_id,
+        ) = extract_guideline_ranking(base_agg)
+
+        rankings: list[list[str]] = []
+        weights: list[float] = []
+        evidence_by_id: dict[str, list[dict[str, object]]] = {}
+        best_role_by_id: dict[str, str] = {}
+
+        if base_ranking:
+            rankings.append(base_ranking)
+            weights.append(1.0)
+            evidence_by_id.update(base_evidence)
+            best_role_by_id.update(base_roles)
+
+        if vision_tokens_query:
+            assert self._vision is not None
+            vision_hits_df = self._sparse_index.search_sparse(
+                vision_tokens_query, k=raw_k
+            )
+            vision_agg = GuidelineSearcher.aggregate_guideline_hits_with_evidence(
+                vision_hits_df, k=candidate_k
+            )
+            (
+                vision_ranking,
+                vision_evidence,
+                vision_roles,
+                _vision_score_by_id,
+            ) = extract_guideline_ranking(vision_agg)
+            if vision_ranking:
+                rankings.append(vision_ranking)
+                weights.append(float(self._vision.config.fusion_weight))
+                for gid, ev in vision_evidence.items():
+                    evidence_by_id.setdefault(gid, []).extend(ev)
+                best_role_by_id.update(vision_roles)
+
+        fused_scores: dict[str, float] | None = None
+        candidate_ids = base_ranking
+        score_kind = "sparse_relevance"
+        if len(rankings) > 1:
+            fused_scores = rrf_scores(rankings=rankings, k=60, weights=weights)
+            candidate_ids = rrf_rank(rankings=rankings, k=60, weights=weights)
+            score_kind = "vision_fused_weighted_rrf"
 
         id_to_entry = {entry.id: entry for entry in self.catalog.entries}
-        candidate_entries = [
-            id_to_entry[row["id"]]
-            for row in candidate_rows
-            if isinstance(row.get("id"), str) and row["id"] in id_to_entry
+        candidate_entries = [id_to_entry[gid] for gid in candidate_ids if gid in id_to_entry][
+            :candidate_k
         ]
 
         ordered_entries = candidate_entries[:effective_k]
@@ -96,7 +143,7 @@ class SparseSpladeStrategy(RetrievalStrategy):
             "sparse_index": self._sparse_index.meta(),
             "k": effective_k,
             "raw_k": raw_k,
-            "score_kind": "sparse_relevance",
+            "score_kind": score_kind,
             "focus": {
                 "mode": focus_mode,
                 "roles": sorted(roles) if roles else None,
@@ -106,9 +153,13 @@ class SparseSpladeStrategy(RetrievalStrategy):
             "hits": [
                 {
                     "id": entry.id,
-                    "score": float(hit_by_id.get(entry.id, {}).get("score") or 0.0),
-                    "best_role": hit_by_id.get(entry.id, {}).get("best_role"),
-                    "evidence": hit_by_id.get(entry.id, {}).get("evidence") or [],
+                    "score": float(
+                        (fused_scores or {}).get(entry.id, 0.0)
+                        if fused_scores is not None
+                        else base_score_by_id.get(entry.id, 0.0)
+                    ),
+                    "best_role": best_role_by_id.get(entry.id),
+                    "evidence": merge_evidence(evidence_by_id.get(entry.id), limit=3),
                 }
                 for entry in ordered_entries
             ],

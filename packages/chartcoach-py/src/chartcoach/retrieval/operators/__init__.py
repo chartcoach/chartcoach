@@ -13,10 +13,13 @@ from .search import (
     search_hybrid_with_focus,
     search_hybrid_with_roles_fallback,
 )
+from .fusion import extract_guideline_ranking, merge_evidence
 from .status import apply_status_filter, plan_status_filter
 
 __all__ = [
     "apply_status_filter",
+    "extract_guideline_ranking",
+    "merge_evidence",
     "plan_status_filter",
     "search_dense_with_focus",
     "search_dense_with_roles_fallback",
