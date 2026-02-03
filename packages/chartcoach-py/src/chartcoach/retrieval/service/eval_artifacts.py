@@ -11,16 +11,18 @@ from contextlib import contextmanager
 from datetime import datetime, timezone
 from os import PathLike
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 from urllib.parse import urlparse
 
 import obstore
 import yaml
 from obstore.store import ObjectStore
 from pydantic import BaseModel, ConfigDict, Field
+from pydantic import ValidationError
 
 from chartcoach.catalog import CatalogEntry
 from chartcoach.retrieval.config import RetrievalRunConfig
+from chartcoach.retrieval.trace import StrategyTrace
 from chartcoach.retrieval.service.retrieval_service import RetrievalService
 from chartcoach.retrieval.strategy.base import RetrievalStrategy, StrategyInfo
 from chartcoach.retrieval.strategy.types import (
@@ -355,45 +357,22 @@ def build_strategy_result(
 ) -> EvalStrategyResult:
     total = len(response_catalog_entries)
 
+    try:
+        trace = StrategyTrace.model_validate(response_meta)
+    except ValidationError as e:
+        raise ValueError(
+            f"Strategy meta for {strategy_info.id!r} did not match the trace schema."
+        ) from e
     hit_evidence: dict[str, list[EvalEvidenceSnippet]] = {}
-    raw_hits = response_meta.get("hits")
-    if isinstance(raw_hits, list):
-        for hit in raw_hits:
-            if not isinstance(hit, dict):
-                continue
-            hit_obj = cast("dict[str, object]", hit)
-            gid = hit_obj.get("id")
-            if not isinstance(gid, str) or not gid:
-                continue
-            raw_evidence = hit_obj.get("evidence")
-            if not isinstance(raw_evidence, list):
-                continue
-            cleaned: list[EvalEvidenceSnippet] = []
-            for item in raw_evidence:
-                if not isinstance(item, dict):
-                    continue
-                item_obj = cast("dict[str, object]", item)
-                text = str(item_obj.get("text") or "").strip()
-                if not text:
-                    continue
-                role = item_obj.get("role")
-                role_str = str(role).strip() if isinstance(role, str) else None
-                score = item_obj.get("score")
-                score_f: float | None
-                if isinstance(score, (int, float)):
-                    score_f = float(score)
-                elif isinstance(score, str):
-                    try:
-                        score_f = float(score)
-                    except ValueError:
-                        score_f = None
-                else:
-                    score_f = None
-                cleaned.append(
-                    EvalEvidenceSnippet(role=role_str, text=text, score=score_f)
-                )
-            if cleaned:
-                hit_evidence[gid] = cleaned
+    for hit in trace.hits:
+        if not hit.evidence:
+            continue
+        hit_evidence[hit.id] = [
+            EvalEvidenceSnippet(
+                role=snippet.role, text=snippet.text, score=snippet.score
+            )
+            for snippet in hit.evidence
+        ]
 
     guidelines = [
         EvalGuidelineResult(
@@ -405,7 +384,7 @@ def build_strategy_result(
         for index, entry in enumerate(response_catalog_entries)
     ]
 
-    meta = dict(response_meta)
+    meta = dict(trace.model_dump(mode="json", exclude_none=True))
     # `score` is currently a rank-derived placeholder, not a calibrated confidence.
     meta.setdefault("score_kind", "rank_normalized")
 

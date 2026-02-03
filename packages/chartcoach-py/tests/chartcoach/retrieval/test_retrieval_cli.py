@@ -168,7 +168,19 @@ scenarios:
                 references=[],
             )
             return RetrievalResponse(
-                catalog=Catalog(entries=[entry]), meta={"ok": True}
+                catalog=Catalog(entries=[entry]),
+                meta={
+                    "k": int(request.k or 1),
+                    "hits": [
+                        {
+                            "id": "g1",
+                            "score": 1.0,
+                            "best_role": "advice",
+                            "evidence": [],
+                        }
+                    ],
+                    "ok": True,
+                },
             )
 
     def create_dummy(*, runtime) -> RetrievalStrategy:  # noqa: ANN001
@@ -354,7 +366,20 @@ scenarios:
                 ),
                 references=[],
             )
-            return RetrievalResponse(catalog=Catalog(entries=[entry]))
+            return RetrievalResponse(
+                catalog=Catalog(entries=[entry]),
+                meta={
+                    "k": int(request.k or 1),
+                    "hits": [
+                        {
+                            "id": "g1",
+                            "score": 1.0,
+                            "best_role": "advice",
+                            "evidence": [],
+                        }
+                    ],
+                },
+            )
 
     def create_dummy(*, runtime) -> RetrievalStrategy:  # noqa: ANN001
         return DummyStrategy(runtime.catalog)
