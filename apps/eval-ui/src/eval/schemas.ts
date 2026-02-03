@@ -4,8 +4,8 @@ import type { CatalogEntry } from "@chartcoach/catalog";
 
 export const ScenarioChartSchema = z
   .object({
-    uri: z.string().min(1),
-    mime: z.string().min(1),
+    uri: z.string().min(1).nullish(),
+    mime: z.string().min(1).nullish(),
   })
   .partial();
 
@@ -13,22 +13,22 @@ export const ScenarioSpecSchema = z.object({
   id: z.string().min(1),
   title: z.string().min(1),
   lang: z.string().min(1).default("en"),
-  chart: ScenarioChartSchema.optional(),
-  query: z.string().min(1).optional(),
-  designer_intent: z.string().min(1).optional(),
-  audience: z.string().min(1).optional(),
-  medium: z.string().min(1).optional(),
-  constraints: z.string().min(1).optional(),
-  domain: z.string().min(1).optional(),
-  risk_tolerance: z.string().min(1).optional(),
-  time_budget: z.string().min(1).optional(),
-  counterfactual_group_id: z.string().min(1).optional(),
-  negative_guideline_ids: z.array(z.string().min(1)).optional(),
+  chart: ScenarioChartSchema.nullish(),
+  query: z.string().min(1).nullish(),
+  designer_intent: z.string().min(1).nullish(),
+  audience: z.string().min(1).nullish(),
+  medium: z.string().min(1).nullish(),
+  constraints: z.string().min(1).nullish(),
+  domain: z.string().min(1).nullish(),
+  risk_tolerance: z.string().min(1).nullish(),
+  time_budget: z.string().min(1).nullish(),
+  counterfactual_group_id: z.string().min(1).nullish(),
+  negative_guideline_ids: z.array(z.string().min(1)).nullish(),
   provenance: z
     .object({
-      source: z.string().min(1).optional(),
+      source: z.string().min(1).nullish(),
     })
-    .optional(),
+    .nullish(),
 });
 
 export const ScenariosFileSchema = z.object({
