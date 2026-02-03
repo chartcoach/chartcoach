@@ -23,6 +23,7 @@ export const ScenarioSpecSchema = z.object({
   risk_tolerance: z.string().min(1).optional(),
   time_budget: z.string().min(1).optional(),
   counterfactual_group_id: z.string().min(1).optional(),
+  negative_guideline_ids: z.array(z.string().min(1)).optional(),
   provenance: z
     .object({
       source: z.string().min(1).optional(),

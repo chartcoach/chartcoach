@@ -32,6 +32,55 @@ export function ScenarioPanel({ scenario }: { scenario: ScenarioSpec }) {
                 </div>
               </div>
 
+              {scenario.audience ||
+              scenario.medium ||
+              scenario.constraints ||
+              scenario.domain ||
+              scenario.risk_tolerance ||
+              scenario.time_budget ? (
+                <div>
+                  <div className="text-xs font-semibold text-muted-foreground">Context</div>
+                  <dl className="mt-2 grid gap-2 text-sm">
+                    {scenario.audience ? (
+                      <div className="grid grid-cols-[120px_minmax(0,1fr)] gap-2">
+                        <dt className="font-medium text-muted-foreground">Audience</dt>
+                        <dd className="min-w-0">{scenario.audience}</dd>
+                      </div>
+                    ) : null}
+                    {scenario.medium ? (
+                      <div className="grid grid-cols-[120px_minmax(0,1fr)] gap-2">
+                        <dt className="font-medium text-muted-foreground">Medium</dt>
+                        <dd className="min-w-0">{scenario.medium}</dd>
+                      </div>
+                    ) : null}
+                    {scenario.constraints ? (
+                      <div className="grid grid-cols-[120px_minmax(0,1fr)] gap-2">
+                        <dt className="font-medium text-muted-foreground">Constraints</dt>
+                        <dd className="min-w-0 whitespace-pre-wrap">{scenario.constraints}</dd>
+                      </div>
+                    ) : null}
+                    {scenario.domain ? (
+                      <div className="grid grid-cols-[120px_minmax(0,1fr)] gap-2">
+                        <dt className="font-medium text-muted-foreground">Domain</dt>
+                        <dd className="min-w-0">{scenario.domain}</dd>
+                      </div>
+                    ) : null}
+                    {scenario.risk_tolerance ? (
+                      <div className="grid grid-cols-[120px_minmax(0,1fr)] gap-2">
+                        <dt className="font-medium text-muted-foreground">Risk</dt>
+                        <dd className="min-w-0">{scenario.risk_tolerance}</dd>
+                      </div>
+                    ) : null}
+                    {scenario.time_budget ? (
+                      <div className="grid grid-cols-[120px_minmax(0,1fr)] gap-2">
+                        <dt className="font-medium text-muted-foreground">Time</dt>
+                        <dd className="min-w-0">{scenario.time_budget}</dd>
+                      </div>
+                    ) : null}
+                  </dl>
+                </div>
+              ) : null}
+
               <div>
                 <div className="text-xs font-semibold text-muted-foreground">Query</div>
                 <div className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-pretty">

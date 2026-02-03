@@ -3,9 +3,11 @@ import { getRxStorageLocalstorage } from "rxdb/plugins/storage-localstorage";
 import type { RxCollection, RxDatabase, RxJsonSchema } from "rxdb";
 
 import type { GuidelineRating } from "@chartcoach/eval-ui/eval/guideline-ratings";
+import type { ScenarioSetRating } from "@chartcoach/eval-ui/eval/set-ratings";
 
 type EvalUiCollections = {
   guideline_ratings: RxCollection<GuidelineRating>;
+  set_ratings: RxCollection<ScenarioSetRating>;
 };
 
 export type EvalUiRxDatabase = RxDatabase<EvalUiCollections>;
@@ -64,6 +66,56 @@ const GuidelineRatingsRxSchema: RxJsonSchema<GuidelineRating> = {
   additionalProperties: false,
 };
 
+const SetRatingsRxSchema: RxJsonSchema<ScenarioSetRating> = {
+  title: "set_ratings",
+  version: 0,
+  type: "object",
+  primaryKey: "id",
+  properties: {
+    id: {
+      type: "string",
+      maxLength: 260,
+    },
+    scenarioId: {
+      type: "string",
+    },
+    strategyId: {
+      type: "string",
+    },
+    sufficiency: {
+      type: "integer",
+      minimum: 1,
+      maximum: 5,
+    },
+    redundancy: {
+      type: "integer",
+      minimum: 1,
+      maximum: 5,
+    },
+    coherence: {
+      type: "integer",
+      minimum: 1,
+      maximum: 5,
+    },
+    harm: {
+      type: "integer",
+      minimum: 1,
+      maximum: 5,
+    },
+    notes: {
+      type: "string",
+    },
+    createdAt: {
+      type: "string",
+    },
+    updatedAt: {
+      type: "string",
+    },
+  },
+  required: ["id", "scenarioId", "strategyId", "createdAt", "updatedAt"],
+  additionalProperties: false,
+};
+
 let databasePromise: Promise<EvalUiRxDatabase> | undefined;
 
 export function getEvalUiRxDatabase(): Promise<EvalUiRxDatabase> {
@@ -85,6 +137,9 @@ export function getEvalUiRxDatabase(): Promise<EvalUiRxDatabase> {
     await db.addCollections({
       guideline_ratings: {
         schema: GuidelineRatingsRxSchema,
+      },
+      set_ratings: {
+        schema: SetRatingsRxSchema,
       },
     });
 
