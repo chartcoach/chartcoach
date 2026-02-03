@@ -2,12 +2,10 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal, cast
 
 from chartcoach.catalog import CatalogEntry
-from chartcoach.retrieval.strategy.dspy_models import create_strategy_lm
 from chartcoach.retrieval.strategy.optional import require_dspy
 from chartcoach.retrieval.strategy.types import ImageItem, RetrievalRequest
 
@@ -21,9 +19,6 @@ Applicability = Literal["applicable", "not_applicable", "unclear"]
 
 
 _UTILITY_CACHE: dict[tuple[str, str], dict[str, object]] = {}
-_SHARED_UTILITY_RERANKER: (
-    tuple[object, "GuidelineUtilityModule", "UtilityRerankerConfig"] | None
-) = None
 
 
 def _sha256_text(text: str) -> str:
@@ -109,54 +104,21 @@ class UtilityRerankerConfig:
     unclear_penalty: float = 1.5
 
 
-def _int_env(name: str, default: int) -> int:
-    raw = (os.environ.get(name) or "").strip()
-    if not raw:
-        return default
-    try:
-        return int(raw)
-    except ValueError:
-        return default
+@dataclass(frozen=True, slots=True)
+class UtilityReranker:
+    lm: dspy.LM
+    module: "GuidelineUtilityModule"
+    config: UtilityRerankerConfig
 
 
-def _float_env(name: str, default: float) -> float:
-    raw = (os.environ.get(name) or "").strip()
-    if not raw:
-        return default
-    try:
-        return float(raw)
-    except ValueError:
-        return default
-
-
-def utility_reranker_config_from_env() -> UtilityRerankerConfig:
-    return UtilityRerankerConfig(
-        candidate_k=max(1, _int_env("CHARTCOACH_UTILITY_CANDIDATE_K", 80)),
-        batch_size=max(1, _int_env("CHARTCOACH_UTILITY_BATCH_SIZE", 8)),
-        max_evidence_chars=max(
-            0, _int_env("CHARTCOACH_UTILITY_MAX_EVIDENCE_CHARS", 600)
-        ),
-        max_rationale_chars=max(
-            0, _int_env("CHARTCOACH_UTILITY_MAX_RATIONALE_CHARS", 220)
-        ),
-        risk_weight=max(0.0, _float_env("CHARTCOACH_UTILITY_RISK_WEIGHT", 1.0)),
-        unclear_penalty=max(0.0, _float_env("CHARTCOACH_UTILITY_UNCLEAR_PENALTY", 1.5)),
+def create_utility_reranker(
+    *, lm: dspy.LM, config: UtilityRerankerConfig
+) -> UtilityReranker:
+    return UtilityReranker(
+        lm=lm,
+        module=GuidelineUtilityModule(lm=lm, config=config),
+        config=config,
     )
-
-
-def shared_utility_reranker() -> tuple[
-    object, "GuidelineUtilityModule", UtilityRerankerConfig
-]:
-    global _SHARED_UTILITY_RERANKER  # noqa: PLW0603
-    cached = _SHARED_UTILITY_RERANKER
-    if cached is not None:
-        return cached
-
-    cfg = utility_reranker_config_from_env()
-    lm = create_strategy_lm()
-    module = GuidelineUtilityModule(lm=lm, config=cfg)
-    _SHARED_UTILITY_RERANKER = (lm, module, cfg)
-    return _SHARED_UTILITY_RERANKER
 
 
 class GuidelineUtilityModule:

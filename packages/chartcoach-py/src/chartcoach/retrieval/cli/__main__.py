@@ -7,6 +7,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 from chartcoach.env import load_env
+from chartcoach.retrieval.config import load_run_config
 from chartcoach.retrieval.service import (
     EvalArtifactsService,
     RetrievalService,
@@ -141,6 +142,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--purge",
         action="store_true",
         help="Delete existing artifacts under this artifacts URL before writing.",
+    )
+    run_cmd.add_argument(
+        "--config",
+        type=Path,
+        default=None,
+        help="Path to retrieval run config YAML (defaults + env if omitted).",
     )
 
     purge_cmd = sub.add_parser("purge", help="Delete previously generated artifacts.")
@@ -299,6 +306,7 @@ def main(argv: list[str] | None = None) -> None:
         return
 
     if args.cmd == "run":
+        run_config = load_run_config(args.config)
         url = _resolve_store_url(args.artifacts_url)
         store = _create_artifacts_store(url)
         svc = EvalArtifactsService(store=store, retrieval=retrieval)
@@ -312,6 +320,7 @@ def main(argv: list[str] | None = None) -> None:
             catalog_uri=catalog_uri,
             strategy_ids=args.strategies or None,
             k=args.k,
+            run_config=run_config,
         )
         print("Artifacts written.")
         return

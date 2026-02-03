@@ -7,20 +7,18 @@ import numpy as np
 import polars as pl
 
 from chartcoach.catalog import Catalog
-from chartcoach.retrieval.strategy.dspy_models import create_strategy_vlm
 from chartcoach.retrieval.strategy.base import RetrievalStrategy
 from chartcoach.retrieval.strategy.types import RetrievalRequest, RetrievalResponse
 
 from .focus import (
     FocusConfig,
     fallback_roles_for_focus,
-    focus_config_from_env,
     primary_roles_for_focus,
 )
-from .guideline_status import filter_guidelines_by_status, shared_status_scorer
+from .guideline_status import StatusScorer, filter_guidelines_by_status
 from .ranking import facility_location_select, label_round_robin_select
 from .searcher import GuidelineSearcher
-from .vision import ChartVisionModule, chart_vision_config_from_env, with_chart_vision
+from .vision import ChartVisionModule, with_chart_vision
 
 
 @dataclass(frozen=True, slots=True)
@@ -43,22 +41,23 @@ class _HybridSetSelectBase(RetrievalStrategy):
         searcher: GuidelineSearcher,
         method: str,
         config: SetSelectConfig,
+        vision: ChartVisionModule | None = None,
+        status_scorer: StatusScorer | None = None,
         default_k: int = 20,
         raw_multiplier: int = 12,
         rrf_k: int = 60,
         focus: FocusConfig | None = None,
     ) -> None:
         super().__init__(catalog)
-        self._searcher = searcher
-        self._method = method
-        self._config = config
-        self._default_k = int(default_k)
-        self._raw_multiplier = int(raw_multiplier)
-        self._rrf_k = int(rrf_k)
-        self._focus = focus or focus_config_from_env()
-
-        self._vision_config = chart_vision_config_from_env()
-        self._vlm = create_strategy_vlm() if self._vision_config.enabled else None
+        self._searcher: GuidelineSearcher = searcher
+        self._method: str = method
+        self._config: SetSelectConfig = config
+        self._default_k: int = int(default_k)
+        self._raw_multiplier: int = int(raw_multiplier)
+        self._rrf_k: int = int(rrf_k)
+        self._focus: FocusConfig = focus or FocusConfig()
+        self._vision: ChartVisionModule | None = vision
+        self._status_scorer: StatusScorer | None = status_scorer
 
     def _mean_embeddings(self, ids: list[str]) -> dict[str, np.ndarray]:
         embedding_col = self._searcher.vector_index.config.embedding_column
@@ -90,11 +89,11 @@ class _HybridSetSelectBase(RetrievalStrategy):
             raise ValueError("k must be positive.")
 
         vision_meta: dict[str, object] = {}
-        if self._vlm is not None and self._vision_config.enabled:
+        if self._vision is not None:
             request, vision_meta = with_chart_vision(
                 request,
                 base_situation=self._searcher.build_base_query_text(request),
-                vision=ChartVisionModule(vlm=self._vlm, config=self._vision_config),
+                vision=self._vision,
             )
 
         focus_mode = self._focus.mode
@@ -125,13 +124,18 @@ class _HybridSetSelectBase(RetrievalStrategy):
             )
 
         status_meta: dict[str, object] = {}
-        use_status_filter = focus_mode != "all" and self._focus.use_status_filter
+        status_scorer = self._status_scorer
+        use_status_filter = (
+            focus_mode != "all"
+            and self._focus.use_status_filter
+            and status_scorer is not None
+        )
         candidate_k = max(
             effective_k, effective_k * int(self._config.candidate_multiplier)
         )
         if use_status_filter:
-            status_lm, _, status_cfg = shared_status_scorer()
-            self._status_lm = status_lm
+            assert status_scorer is not None
+            status_cfg = status_scorer.config
             candidate_k = max(
                 candidate_k, effective_k * int(status_cfg.candidate_multiplier)
             )
@@ -152,8 +156,9 @@ class _HybridSetSelectBase(RetrievalStrategy):
         ]
 
         if use_status_filter and candidate_entries:
-            _status_lm, status_module, status_cfg = shared_status_scorer()
-            self._status_lm = _status_lm
+            assert status_scorer is not None
+            status_module = status_scorer.module
+            status_cfg = status_scorer.config
             candidate_entries, status_meta = filter_guidelines_by_status(
                 request=request,
                 entries=candidate_entries,
@@ -241,12 +246,23 @@ class HybridRrfLabelSetSelectStrategy(_HybridSetSelectBase):
 
     id = "hybrid-rrf-setselect-label@v1"
 
-    def __init__(self, *, catalog: Catalog, searcher: GuidelineSearcher) -> None:
+    def __init__(
+        self,
+        *,
+        catalog: Catalog,
+        searcher: GuidelineSearcher,
+        focus: FocusConfig | None = None,
+        vision: ChartVisionModule | None = None,
+        status_scorer: StatusScorer | None = None,
+    ) -> None:
         super().__init__(
             catalog=catalog,
             searcher=searcher,
             method="label_round_robin",
             config=SetSelectConfig(),
+            focus=focus,
+            vision=vision,
+            status_scorer=status_scorer,
         )
 
 
@@ -255,10 +271,21 @@ class HybridRrfFacilitySetSelectStrategy(_HybridSetSelectBase):
 
     id = "hybrid-rrf-setselect-facility@v1"
 
-    def __init__(self, *, catalog: Catalog, searcher: GuidelineSearcher) -> None:
+    def __init__(
+        self,
+        *,
+        catalog: Catalog,
+        searcher: GuidelineSearcher,
+        focus: FocusConfig | None = None,
+        vision: ChartVisionModule | None = None,
+        status_scorer: StatusScorer | None = None,
+    ) -> None:
         super().__init__(
             catalog=catalog,
             searcher=searcher,
             method="facility_location",
             config=SetSelectConfig(),
+            focus=focus,
+            vision=vision,
+            status_scorer=status_scorer,
         )

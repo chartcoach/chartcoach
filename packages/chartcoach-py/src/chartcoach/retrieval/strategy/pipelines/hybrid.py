@@ -1,19 +1,17 @@
 from __future__ import annotations
 
 from chartcoach.catalog import Catalog
-from chartcoach.retrieval.strategy.dspy_models import create_strategy_vlm
 from chartcoach.retrieval.strategy.base import RetrievalStrategy
 from chartcoach.retrieval.strategy.types import RetrievalRequest, RetrievalResponse
 
 from .focus import (
     FocusConfig,
-    focus_config_from_env,
     fallback_roles_for_focus,
     primary_roles_for_focus,
 )
-from .guideline_status import filter_guidelines_by_status, shared_status_scorer
+from .guideline_status import StatusScorer, filter_guidelines_by_status
 from .searcher import GuidelineSearcher
-from .vision import ChartVisionModule, chart_vision_config_from_env, with_chart_vision
+from .vision import ChartVisionModule, with_chart_vision
 
 
 class HybridRrfStrategy(RetrievalStrategy):
@@ -26,20 +24,21 @@ class HybridRrfStrategy(RetrievalStrategy):
         *,
         catalog: Catalog,
         searcher: GuidelineSearcher,
+        vision: ChartVisionModule | None = None,
+        status_scorer: StatusScorer | None = None,
         default_k: int = 20,
         raw_multiplier: int = 12,
         rrf_k: int = 60,
         focus: FocusConfig | None = None,
     ) -> None:
         super().__init__(catalog)
-        self._searcher = searcher
-        self._default_k = int(default_k)
-        self._raw_multiplier = int(raw_multiplier)
-        self._rrf_k = int(rrf_k)
-        self._focus = focus or focus_config_from_env()
-
-        self._vision_config = chart_vision_config_from_env()
-        self._vlm = create_strategy_vlm() if self._vision_config.enabled else None
+        self._searcher: GuidelineSearcher = searcher
+        self._default_k: int = int(default_k)
+        self._raw_multiplier: int = int(raw_multiplier)
+        self._rrf_k: int = int(rrf_k)
+        self._focus: FocusConfig = focus or FocusConfig()
+        self._vision: ChartVisionModule | None = vision
+        self._status_scorer: StatusScorer | None = status_scorer
 
     def _forward(self, request: RetrievalRequest) -> RetrievalResponse:
         from lancedb.rerankers import RRFReranker
@@ -49,11 +48,11 @@ class HybridRrfStrategy(RetrievalStrategy):
             raise ValueError("k must be positive.")
 
         vision_meta: dict[str, object] = {}
-        if self._vlm is not None and self._vision_config.enabled:
+        if self._vision is not None:
             request, vision_meta = with_chart_vision(
                 request,
                 base_situation=self._searcher.build_base_query_text(request),
-                vision=ChartVisionModule(vlm=self._vlm, config=self._vision_config),
+                vision=self._vision,
             )
 
         focus_mode = self._focus.mode
@@ -83,11 +82,16 @@ class HybridRrfStrategy(RetrievalStrategy):
             )
 
         status_meta: dict[str, object] = {}
-        use_status_filter = focus_mode != "all" and self._focus.use_status_filter
+        status_scorer = self._status_scorer
+        use_status_filter = (
+            focus_mode != "all"
+            and self._focus.use_status_filter
+            and status_scorer is not None
+        )
         candidate_k = effective_k
         if use_status_filter:
-            status_lm, _, status_cfg = shared_status_scorer()
-            self._status_lm = status_lm
+            assert status_scorer is not None
+            status_cfg = status_scorer.config
             candidate_k = max(
                 effective_k, effective_k * int(status_cfg.candidate_multiplier)
             )
@@ -108,8 +112,9 @@ class HybridRrfStrategy(RetrievalStrategy):
         ]
         ordered_entries = candidate_entries[:effective_k]
         if use_status_filter and ordered_entries:
-            _status_lm, status_module, status_cfg = shared_status_scorer()
-            self._status_lm = _status_lm
+            assert status_scorer is not None
+            status_module = status_scorer.module
+            status_cfg = status_scorer.config
             ordered_entries, status_meta = filter_guidelines_by_status(
                 request=request,
                 entries=candidate_entries,

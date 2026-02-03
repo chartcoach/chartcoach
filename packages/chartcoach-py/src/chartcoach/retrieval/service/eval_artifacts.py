@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
 import signal
 import subprocess
 import threading
@@ -21,6 +20,7 @@ from obstore.store import ObjectStore
 from pydantic import BaseModel, ConfigDict, Field
 
 from chartcoach.catalog import CatalogEntry
+from chartcoach.retrieval.config import RetrievalRunConfig
 from chartcoach.retrieval.service.retrieval_service import RetrievalService
 from chartcoach.retrieval.strategy.base import RetrievalStrategy, StrategyInfo
 from chartcoach.retrieval.strategy.types import (
@@ -32,10 +32,6 @@ from chartcoach.retrieval.strategy.types import (
 
 
 ARTIFACT_SCHEMA_VERSION = 1
-# Agentic retrieval strategies can take a few minutes depending on the LM,
-# tool-call budget, and upstream provider latency. Keep a conservative default,
-# but allow overrides via CHARTCOACH_STRATEGY_TIMEOUT_SECONDS.
-DEFAULT_STRATEGY_TIMEOUT_SECONDS = 600.0
 
 
 class _EvalArtifactsBaseModel(BaseModel):
@@ -112,19 +108,6 @@ class EvalArtifactsIndexArtifact(_EvalArtifactsBaseModel):
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
-
-
-def _resolve_strategy_timeout_seconds() -> float | None:
-    raw = (os.environ.get("CHARTCOACH_STRATEGY_TIMEOUT_SECONDS") or "").strip()
-    if not raw:
-        return DEFAULT_STRATEGY_TIMEOUT_SECONDS
-    try:
-        value = float(raw)
-    except ValueError:
-        return DEFAULT_STRATEGY_TIMEOUT_SECONDS
-    if value <= 0:
-        return None
-    return max(1.0, value)
 
 
 class _StrategyTimeout(BaseException):
@@ -350,81 +333,12 @@ def build_bundle_digest(
     )
 
 
-def resolve_artifacts_config() -> dict[str, object]:
+def resolve_artifacts_config(*, run_config: RetrievalRunConfig) -> dict[str, object]:
     """Resolve a non-secret configuration snapshot for digesting + debugging."""
-
-    from dataclasses import asdict
-
-    from chartcoach.retrieval.strategy.pipelines.guideline_status import (
-        status_scorer_config_from_env,
-    )
-    from chartcoach.retrieval.strategy.pipelines.vision import (
-        chart_vision_config_from_env,
-    )
-
-    status_cfg = status_scorer_config_from_env()
-    vision_cfg = chart_vision_config_from_env()
 
     return {
         "repo_commit": resolve_repo_commit(),
-        "strategy_lm_model": os.environ.get("CHARTCOACH_STRATEGY_LM_MODEL")
-        or "gpt-5.1",
-        "strategy_vlm_model": os.environ.get("CHARTCOACH_STRATEGY_VLM_MODEL")
-        or "gpt-5.2",
-        "guideline_status_lm_model": os.environ.get(
-            "CHARTCOACH_GUIDELINE_STATUS_LM_MODEL"
-        )
-        or os.environ.get("CHARTCOACH_STRATEGY_LM_MODEL")
-        or "gpt-5.1",
-        "guideline_status_timeout_seconds": os.environ.get(
-            "CHARTCOACH_GUIDELINE_STATUS_TIMEOUT_SECONDS"
-        )
-        or os.environ.get("CHARTCOACH_LM_TIMEOUT_SECONDS")
-        or "120",
-        "guideline_status_num_retries": os.environ.get(
-            "CHARTCOACH_GUIDELINE_STATUS_NUM_RETRIES"
-        )
-        or os.environ.get("CHARTCOACH_LM_NUM_RETRIES")
-        or "6",
-        "lm_timeout_seconds": os.environ.get("CHARTCOACH_LM_TIMEOUT_SECONDS") or "120",
-        "lm_num_retries": os.environ.get("CHARTCOACH_LM_NUM_RETRIES") or "6",
-        "vlm_timeout_seconds": os.environ.get("CHARTCOACH_VLM_TIMEOUT_SECONDS")
-        or os.environ.get("CHARTCOACH_LM_TIMEOUT_SECONDS")
-        or "120",
-        "vlm_num_retries": os.environ.get("CHARTCOACH_VLM_NUM_RETRIES")
-        or os.environ.get("CHARTCOACH_LM_NUM_RETRIES")
-        or "6",
-        "embedding_model": os.environ.get("CHARTCOACH_EMBEDDING_MODEL")
-        or "BAAI/bge-small-en-v1.5",
-        "embedding_projector": os.environ.get("CHARTCOACH_EMBEDDING_PROJECTOR")
-        or "sentence_transformers",
-        "strategy_timeout_seconds": _resolve_strategy_timeout_seconds(),
-        "chart_vision": asdict(vision_cfg),
-        "guideline_status": asdict(status_cfg),
-        "query_fusion": {
-            "n_queries": os.environ.get("CHARTCOACH_FUSION_N_QUERIES") or "4",
-            "rrf_k": os.environ.get("CHARTCOACH_FUSION_RRF_K") or "60",
-            "cross_encoder_model": os.environ.get(
-                "CHARTCOACH_FUSION_CROSS_ENCODER_MODEL"
-            )
-            or "cross-encoder/ms-marco-TinyBERT-L-6",
-            "cross_encoder_candidate_limit": os.environ.get(
-                "CHARTCOACH_FUSION_XENC_CANDIDATES"
-            )
-            or "80",
-        },
-        "facet_fusion": {
-            "n_queries": os.environ.get("CHARTCOACH_FACET_FUSION_N_QUERIES") or "5",
-            "rrf_k": os.environ.get("CHARTCOACH_FACET_FUSION_RRF_K") or "60",
-            "cross_encoder_model": os.environ.get(
-                "CHARTCOACH_FACET_FUSION_CROSS_ENCODER_MODEL"
-            )
-            or "cross-encoder/ms-marco-TinyBERT-L-6",
-            "cross_encoder_candidate_limit": os.environ.get(
-                "CHARTCOACH_FACET_FUSION_XENC_CANDIDATES"
-            )
-            or "80",
-        },
+        **run_config.public_dict(),
     }
 
 
@@ -509,9 +423,9 @@ def build_scenario_bundle(
     catalog_uri: str,
     strategies: list[tuple[StrategyInfo, RetrievalStrategy]],
     k: int | None,
+    strategy_timeout_seconds: float | None,
     config: dict[str, object] | None = None,
 ) -> EvalScenarioBundleArtifact:
-    strategy_timeout_seconds = _resolve_strategy_timeout_seconds()
     strategy_ids = [strategy_info.id for strategy_info, _strategy in strategies]
     digest = build_bundle_digest(
         scenario=scenario,
@@ -538,11 +452,16 @@ def build_scenario_bundle(
         }
         started = time.perf_counter()
         try:
+            timeout_desc = (
+                "no-timeout"
+                if strategy_timeout_seconds is None
+                else f"{strategy_timeout_seconds:.0f}s"
+            )
             with _timeout(
                 strategy_timeout_seconds,
                 message=(
                     f"Timed out running strategy {strategy_info.id!r} for scenario"
-                    f" {scenario.id!r} after {strategy_timeout_seconds:.0f}s."
+                    f" {scenario.id!r} after {timeout_desc}."
                 ),
             ):
                 response = strategy(request=request)
@@ -706,15 +625,16 @@ class EvalArtifactsService:
         catalog_uri: str,
         strategy_ids: Sequence[str] | None,
         k: int | None,
+        run_config: RetrievalRunConfig,
     ) -> None:
         scenarios = load_scenarios(scenarios_path)
 
         strategies = self._retrieval.instantiate_strategies(
-            catalog_uri=catalog_uri, strategy_ids=strategy_ids
+            catalog_uri=catalog_uri, strategy_ids=strategy_ids, run_config=run_config
         )
         # strategy ids are needed for stable digests even when some scenarios are skipped
         resolved_strategy_ids = [info.id for info, _strategy in strategies]
-        config = resolve_artifacts_config()
+        config = resolve_artifacts_config(run_config=run_config)
         config = {
             **config,
             "catalog_digest": resolve_catalog_digest(catalog_uri),
@@ -743,6 +663,7 @@ class EvalArtifactsService:
                 catalog_uri=catalog_uri,
                 strategies=strategies,
                 k=k,
+                strategy_timeout_seconds=run_config.strategy_timeout_seconds,
                 config=config,
             )
             write_json(self._store, bundle_path, bundle.model_dump(mode="json"))

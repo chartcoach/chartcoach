@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import cast
+from typing import Any, cast
 
 import numpy as np
 import polars as pl
@@ -14,6 +14,8 @@ from chartcoach.retrieval.strategy.pipelines.utility_rerank_hybrid import (
     UtilityRerankHybridStrategy,
 )
 from chartcoach.retrieval.strategy.pipelines.utility_reranker import (
+    GuidelineUtilityModule,
+    UtilityReranker,
     UtilityRerankerConfig,
 )
 from chartcoach.retrieval.strategy.types import RetrievalRequest, TextItem
@@ -107,8 +109,6 @@ def catalog() -> Catalog:
 
 
 def test_utility_rerank_hybrid_orders_by_utility(monkeypatch, catalog: Catalog) -> None:
-    import chartcoach.retrieval.strategy.pipelines.utility_rerank_hybrid as strat_mod
-
     fake = _FakeLanceIndex()
     fake.set_hybrid(
         pl.DataFrame(
@@ -134,14 +134,15 @@ def test_utility_rerank_hybrid_orders_by_utility(monkeypatch, catalog: Catalog) 
                 "applicability": "applicable",
             }
 
-    def fake_shared_utility_reranker():  # noqa: ANN001
-        return object(), DummyModule(), UtilityRerankerConfig(candidate_k=10)
-
-    monkeypatch.setattr(
-        strat_mod, "shared_utility_reranker", fake_shared_utility_reranker
+    utility = UtilityReranker(
+        lm=cast(Any, object()),
+        module=cast(GuidelineUtilityModule, DummyModule()),
+        config=UtilityRerankerConfig(candidate_k=10),
     )
 
-    strat = UtilityRerankHybridStrategy(catalog=catalog, searcher=searcher, default_k=2)
+    strat = UtilityRerankHybridStrategy(
+        catalog=catalog, searcher=searcher, default_k=2, utility_reranker=utility
+    )
     out = strat(
         request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=2)
     )

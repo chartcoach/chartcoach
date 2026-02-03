@@ -81,32 +81,6 @@ def test_chart_image_from_request_supports_uri_and_bytes(monkeypatch, tmp_path) 
     assert fp is None
 
 
-def test_chart_vision_config_from_env(monkeypatch) -> None:
-    monkeypatch.setenv("CHARTCOACH_CHART_VISION_ENABLED", "true")
-    monkeypatch.setenv("CHARTCOACH_CHART_VISION_MAX_KEYWORDS", "7")
-    monkeypatch.setenv("CHARTCOACH_CHART_VISION_MAX_ISSUES", "3")
-    monkeypatch.setenv("CHARTCOACH_CHART_VISION_MAX_VISIBLE_TEXT", "2")
-    monkeypatch.setenv("CHARTCOACH_CHART_VISION_MAX_TEXT_CHARS", "10")
-
-    cfg = mod.chart_vision_config_from_env()
-    assert cfg.enabled is True
-    assert cfg.max_keywords == 7
-    assert cfg.max_issues == 3
-    assert cfg.max_visible_text == 2
-    assert cfg.max_text_chars == 10
-
-    monkeypatch.setenv("CHARTCOACH_CHART_VISION_ENABLED", "nope")
-    monkeypatch.setenv("CHARTCOACH_CHART_VISION_MAX_KEYWORDS", "nope")
-    cfg = mod.chart_vision_config_from_env()
-    assert cfg.enabled is False
-    assert cfg.max_keywords == 16
-
-    # Explicit false values map to False (vs falling back to the default).
-    monkeypatch.setenv("CHARTCOACH_CHART_VISION_ENABLED", "0")
-    cfg = mod.chart_vision_config_from_env()
-    assert cfg.enabled is False
-
-
 def test_clean_list_coerces_strings_and_limits() -> None:
     cfg = mod.ChartVisionConfig(enabled=True)
 

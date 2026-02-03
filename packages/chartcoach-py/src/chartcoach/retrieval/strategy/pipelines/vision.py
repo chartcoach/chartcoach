@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import hashlib
-import os
 import tempfile
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
@@ -119,37 +118,6 @@ class ChartVisionConfig:
     max_issues: int = 10
     max_visible_text: int = 10
     max_text_chars: int = 1400
-
-
-def _bool_env(name: str, default: bool) -> bool:
-    raw = (os.environ.get(name) or "").strip().lower()
-    if not raw:
-        return default
-    if raw in {"1", "true", "t", "yes", "y", "on"}:
-        return True
-    if raw in {"0", "false", "f", "no", "n", "off"}:
-        return False
-    return default
-
-
-def _int_env(name: str, default: int) -> int:
-    raw = (os.environ.get(name) or "").strip()
-    if not raw:
-        return default
-    try:
-        return int(raw)
-    except ValueError:
-        return default
-
-
-def chart_vision_config_from_env() -> ChartVisionConfig:
-    return ChartVisionConfig(
-        enabled=_bool_env("CHARTCOACH_CHART_VISION_ENABLED", False),
-        max_keywords=_int_env("CHARTCOACH_CHART_VISION_MAX_KEYWORDS", 16),
-        max_issues=_int_env("CHARTCOACH_CHART_VISION_MAX_ISSUES", 10),
-        max_visible_text=_int_env("CHARTCOACH_CHART_VISION_MAX_VISIBLE_TEXT", 10),
-        max_text_chars=_int_env("CHARTCOACH_CHART_VISION_MAX_TEXT_CHARS", 1400),
-    )
 
 
 class ChartVisionModule:

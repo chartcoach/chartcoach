@@ -18,7 +18,6 @@ if TYPE_CHECKING:
 @pytest.fixture(autouse=True)
 def _clear_status_cache() -> None:
     mod._STATUS_CACHE.clear()
-    mod._SHARED_STATUS_SCORER = None
 
 
 def _entry(gid: str, *, body: str = "## Advice\nDo X.") -> CatalogEntry:
@@ -63,58 +62,6 @@ def test_coerce_helpers_and_excerpt() -> None:
         mod._guideline_excerpt(_entry("g1", body="a" * 50), max_chars=10)
         == ("a" * 10) + "..."
     )
-
-
-def test_status_scorer_config_from_env_supports_aliases(monkeypatch) -> None:
-    monkeypatch.delenv("CHARTCOACH_STATUS_CANDIDATE_MULTIPLIER", raising=False)
-    monkeypatch.delenv(
-        "CHARTCOACH_GUIDELINE_STATUS_CANDIDATE_MULTIPLIER", raising=False
-    )
-    cfg = mod.status_scorer_config_from_env()
-    assert cfg.candidate_multiplier == 4
-
-    monkeypatch.setenv("CHARTCOACH_GUIDELINE_STATUS_CANDIDATE_MULTIPLIER", "2")
-    monkeypatch.setenv("CHARTCOACH_STATUS_KEEP_UNCLEAR", "0")
-    monkeypatch.setenv("CHARTCOACH_STATUS_MAX_EXCERPT_CHARS", "1")
-    monkeypatch.setenv("CHARTCOACH_STATUS_MAX_RATIONALE_CHARS", "2")
-    monkeypatch.setenv("CHARTCOACH_STATUS_BATCH_SIZE", "3")
-    cfg = mod.status_scorer_config_from_env()
-    assert cfg.candidate_multiplier == 2
-    assert cfg.keep_unclear is False
-    assert cfg.max_guideline_excerpt_chars == 1
-    assert cfg.max_rationale_chars == 2
-    assert cfg.batch_size == 3
-
-    # Invalid env values fall back to defaults and clamp.
-    monkeypatch.setenv("CHARTCOACH_STATUS_BATCH_SIZE", "nope")
-    monkeypatch.setenv("CHARTCOACH_STATUS_CANDIDATE_MULTIPLIER", "0")
-    cfg = mod.status_scorer_config_from_env()
-    assert cfg.batch_size == 10
-    # Candidate multiplier clamps to >=1.
-    assert cfg.candidate_multiplier == 1
-
-    # True values are accepted explicitly (exercise the True branch).
-    monkeypatch.setenv("CHARTCOACH_STATUS_KEEP_UNCLEAR", "true")
-    cfg = mod.status_scorer_config_from_env()
-    assert cfg.keep_unclear is True
-
-
-def test_shared_status_scorer_caches(monkeypatch) -> None:
-    created: list[str] = []
-
-    class DummyModule:
-        def __init__(self, *, lm, config):  # noqa: ANN001
-            created.append("module")
-            self._lm = lm
-            self._config = config
-
-    monkeypatch.setattr(mod, "GuidelineStatusModule", DummyModule)
-    monkeypatch.setattr(mod, "create_guideline_status_lm", lambda: "lm")
-
-    lm1, module1, cfg1 = mod.shared_status_scorer()
-    lm2, module2, cfg2 = mod.shared_status_scorer()
-    assert (lm1, module1, cfg1) == (lm2, module2, cfg2)
-    assert created == ["module"]
 
 
 def test_guideline_status_module_classify_caches_and_truncates(monkeypatch) -> None:

@@ -205,6 +205,7 @@ def test_build_scenario_bundle_runs_strategies() -> None:
             )
         ],
         k=3,
+        strategy_timeout_seconds=None,
         config={
             "repo_commit": "deadbeef",
             "catalog_digest": "cafe",
@@ -279,6 +280,7 @@ def test_build_scenario_bundle_filters_bad_evidence_hits() -> None:
             )
         ],
         k=3,
+        strategy_timeout_seconds=None,
         config={
             "repo_commit": "deadbeef",
             "catalog_digest": "cafe",
@@ -334,6 +336,7 @@ def test_build_scenario_bundle_records_lm_usage_meta() -> None:
             )
         ],
         k=3,
+        strategy_timeout_seconds=None,
     )
 
     lm_usage = bundle.strategies[0].meta.get("lm_usage")
@@ -372,28 +375,11 @@ def test_build_scenario_bundle_records_strategy_errors() -> None:
             )
         ],
         k=3,
+        strategy_timeout_seconds=None,
     )
     assert bundle.strategies[0].strategy_id == "failing@v0"
     assert "boom" in str(bundle.strategies[0].meta.get("error"))
     assert bundle.strategies[0].guidelines == []
-
-
-def test_resolve_strategy_timeout_seconds_parses_env(monkeypatch) -> None:
-    from chartcoach.retrieval.service.eval_artifacts import (
-        _resolve_strategy_timeout_seconds,
-    )
-
-    monkeypatch.delenv("CHARTCOACH_STRATEGY_TIMEOUT_SECONDS", raising=False)
-    assert _resolve_strategy_timeout_seconds() is not None
-
-    monkeypatch.setenv("CHARTCOACH_STRATEGY_TIMEOUT_SECONDS", "not-a-number")
-    assert _resolve_strategy_timeout_seconds() is not None
-
-    monkeypatch.setenv("CHARTCOACH_STRATEGY_TIMEOUT_SECONDS", "-1")
-    assert _resolve_strategy_timeout_seconds() is None
-
-    monkeypatch.setenv("CHARTCOACH_STRATEGY_TIMEOUT_SECONDS", "0.1")
-    assert _resolve_strategy_timeout_seconds() == 1.0
 
 
 def test_timeout_context_manager_is_noop_for_none_or_zero() -> None:
@@ -480,6 +466,7 @@ def test_build_scenario_bundle_records_timeout_branch(monkeypatch) -> None:
             )
         ],
         k=3,
+        strategy_timeout_seconds=None,
     )
 
     meta = bundle.strategies[0].meta
@@ -487,13 +474,17 @@ def test_build_scenario_bundle_records_timeout_branch(monkeypatch) -> None:
     assert isinstance(meta.get("elapsed_ms"), int)
 
 
-def test_bundle_has_errors_handles_non_list_and_non_dict() -> None:
+def test_bundle_has_errors_handles_non_list_and_non_dict(retrieval_run_config) -> None:
     from chartcoach.retrieval.service.eval_artifacts import EvalArtifactsService
     from chartcoach.retrieval.service.retrieval_service import RetrievalService
 
     svc = EvalArtifactsService(
         store=MemoryStore(),
-        retrieval=RetrievalService(registrations=[], configure_cache=lambda: None),
+        retrieval=RetrievalService(
+            registrations=[],
+            configure_cache=lambda: None,
+            run_config=retrieval_run_config,
+        ),
     )
     assert svc._bundle_has_errors({"strategies": "nope"}) is False
     assert svc._bundle_has_errors({"strategies": [1, 2]}) is False
@@ -737,9 +728,11 @@ def test_resolve_scenarios_digest_handles_missing_file(tmp_path) -> None:
     assert resolve_scenarios_digest(tmp_path / "missing.yaml") == "unknown"
 
 
-def test_resolve_artifacts_config_includes_commit(monkeypatch) -> None:
+def test_resolve_artifacts_config_includes_commit(
+    monkeypatch, retrieval_run_config
+) -> None:
     import chartcoach.retrieval.service.eval_artifacts as eval_artifacts
 
     monkeypatch.setattr(eval_artifacts, "resolve_repo_commit", lambda: "cafebabe")
-    cfg = eval_artifacts.resolve_artifacts_config()
+    cfg = eval_artifacts.resolve_artifacts_config(run_config=retrieval_run_config)
     assert cfg["repo_commit"] == "cafebabe"

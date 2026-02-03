@@ -1,12 +1,10 @@
 from __future__ import annotations
 
 import hashlib
-import os
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal, Protocol
 
 from chartcoach.catalog import CatalogEntry
-from chartcoach.retrieval.strategy.dspy_models import create_guideline_status_lm
 from chartcoach.retrieval.strategy.optional import require_dspy
 from chartcoach.retrieval.strategy.pipelines.focus import FocusMode
 from chartcoach.retrieval.strategy.pipelines.searcher import GuidelineSearcher
@@ -22,9 +20,6 @@ GuidelineStatus = Literal["violated", "satisfied", "unclear", "not_applicable"]
 
 
 _STATUS_CACHE: dict[tuple[str, str], dict[str, object]] = {}
-_SHARED_STATUS_SCORER: (
-    tuple[object, "GuidelineStatusModule", "StatusScorerConfig"] | None
-) = None
 
 
 def _sha256_text(text: str) -> str:
@@ -149,101 +144,17 @@ class StatusScorerConfig:
     batch_size: int = 10
 
 
-def _int_env_first(names: list[str], default: int) -> int:
-    for name in names:
-        raw = (os.environ.get(name) or "").strip()
-        if not raw:
-            continue
-        try:
-            return int(raw)
-        except ValueError:
-            continue
-    return default
+@dataclass(frozen=True, slots=True)
+class StatusScorer:
+    lm: dspy.LM
+    module: "GuidelineStatusModule"
+    config: StatusScorerConfig
 
 
-def _bool_env_first(names: list[str], default: bool) -> bool:
-    for name in names:
-        raw = (os.environ.get(name) or "").strip().lower()
-        if not raw:
-            continue
-        if raw in {"1", "true", "t", "yes", "y", "on"}:
-            return True
-        if raw in {"0", "false", "f", "no", "n", "off"}:
-            return False
-    return default
-
-
-def status_scorer_config_from_env() -> StatusScorerConfig:
-    return StatusScorerConfig(
-        candidate_multiplier=max(
-            1,
-            _int_env_first(
-                [
-                    "CHARTCOACH_STATUS_CANDIDATE_MULTIPLIER",
-                    "CHARTCOACH_GUIDELINE_STATUS_CANDIDATE_MULTIPLIER",
-                ],
-                4,
-            ),
-        ),
-        keep_unclear=_bool_env_first(
-            [
-                "CHARTCOACH_STATUS_KEEP_UNCLEAR",
-                "CHARTCOACH_GUIDELINE_STATUS_KEEP_UNCLEAR",
-            ],
-            True,
-        ),
-        max_guideline_excerpt_chars=max(
-            0,
-            _int_env_first(
-                [
-                    "CHARTCOACH_STATUS_MAX_EXCERPT_CHARS",
-                    "CHARTCOACH_GUIDELINE_STATUS_MAX_EXCERPT_CHARS",
-                ],
-                900,
-            ),
-        ),
-        max_rationale_chars=max(
-            0,
-            _int_env_first(
-                [
-                    "CHARTCOACH_STATUS_MAX_RATIONALE_CHARS",
-                    "CHARTCOACH_GUIDELINE_STATUS_MAX_RATIONALE_CHARS",
-                ],
-                220,
-            ),
-        ),
-        batch_size=max(
-            1,
-            _int_env_first(
-                [
-                    "CHARTCOACH_STATUS_BATCH_SIZE",
-                    "CHARTCOACH_GUIDELINE_STATUS_BATCH_SIZE",
-                ],
-                10,
-            ),
-        ),
+def create_status_scorer(*, lm: dspy.LM, config: StatusScorerConfig) -> StatusScorer:
+    return StatusScorer(
+        lm=lm, module=GuidelineStatusModule(lm=lm, config=config), config=config
     )
-
-
-def shared_status_scorer() -> tuple[
-    object, "GuidelineStatusModule", "StatusScorerConfig"
-]:
-    """Return a process-wide shared status scorer (LM + program + config).
-
-    This avoids repeated LM initialization across strategies while keeping the scorer
-    usable by any single strategy in isolation.
-    """
-
-    global _SHARED_STATUS_SCORER  # noqa: PLW0603
-    cached = _SHARED_STATUS_SCORER
-    if cached is not None:
-        return cached
-
-    config = status_scorer_config_from_env()
-    lm = create_guideline_status_lm()
-    module = GuidelineStatusModule(lm=lm, config=config)
-    _SHARED_STATUS_SCORER = (lm, module, config)
-    return _SHARED_STATUS_SCORER
 
 
 class GuidelineStatusModule:

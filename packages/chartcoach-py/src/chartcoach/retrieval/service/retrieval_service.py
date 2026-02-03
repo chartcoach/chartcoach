@@ -4,6 +4,7 @@ from collections.abc import Callable, Sequence
 from os import PathLike
 
 from chartcoach.catalog import Catalog
+from chartcoach.retrieval.config import RetrievalRunConfig, load_run_config
 from chartcoach.retrieval.strategy.base import StrategyInfo
 from chartcoach.retrieval.strategy.base import RetrievalStrategy
 from chartcoach.retrieval.strategy.registry import StrategyRegistration
@@ -64,9 +65,11 @@ class RetrievalService:
         registrations: Sequence[StrategyRegistration],
         catalog_loader: CatalogLoader = Catalog.from_uri,
         configure_cache: Callable[[], None] = configure_dspy_cache,
+        run_config: RetrievalRunConfig | None = None,
     ) -> None:
         self._catalog_loader = catalog_loader
         self._configure_cache = configure_cache
+        self._run_config = run_config or load_run_config()
         self._by_id = {
             strategy_cls.id: (strategy_cls, factory)
             for strategy_cls, factory in registrations
@@ -88,11 +91,17 @@ class RetrievalService:
         except (OSError, ValueError) as e:
             raise CatalogLoadError(str(e)) from e
 
-    def instantiate_strategy(self, strategy_id: str, *, catalog: Catalog):
+    def instantiate_strategy(
+        self,
+        strategy_id: str,
+        *,
+        catalog: Catalog,
+        run_config: RetrievalRunConfig | None = None,
+    ):
         self._configure_cache()
         _strategy_cls, factory = self._require_registration(strategy_id)
         try:
-            return factory(catalog=catalog)
+            return factory(catalog=catalog, run_config=run_config or self._run_config)
         except RuntimeError as e:
             raise StrategyInitError(str(e)) from e
 
@@ -101,9 +110,11 @@ class RetrievalService:
         *,
         catalog_uri: str,
         strategy_ids: Sequence[str] | None = None,
+        run_config: RetrievalRunConfig | None = None,
     ) -> list[tuple[StrategyInfo, RetrievalStrategy]]:
         catalog = self.load_catalog(catalog_uri)
         self._configure_cache()
+        effective_config = run_config or self._run_config
 
         registrations = list(self._by_id.values())
         if strategy_ids:
@@ -114,7 +125,7 @@ class RetrievalService:
                 raise UnknownStrategyError(f"Unknown strategy ids: {sorted(missing)}")
 
         strategies = [
-            (strategy_cls.info(), factory(catalog=catalog))
+            (strategy_cls.info(), factory(catalog=catalog, run_config=effective_config))
             for strategy_cls, factory in registrations
         ]
         strategies.sort(key=lambda s: s[0].id)
