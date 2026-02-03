@@ -4,6 +4,11 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, cast
 
 from chartcoach.catalog import Catalog
+from chartcoach.retrieval.operators import (
+    apply_status_filter,
+    plan_status_filter,
+    search_fts_with_roles_fallback,
+)
 from chartcoach.retrieval.strategy.base import RetrievalStrategy
 from chartcoach.retrieval.strategy.optional import require_dspy
 from chartcoach.retrieval.strategy.types import RetrievalRequest, RetrievalResponse
@@ -13,7 +18,7 @@ from .focus import (
     fallback_roles_for_focus,
     primary_roles_for_focus,
 )
-from .guideline_status import StatusScorer, filter_guidelines_by_status
+from .guideline_status import StatusScorer
 from .ranking import rrf_rank, rrf_scores
 from .searcher import GuidelineSearcher
 from .vision import ChartVisionModule, with_chart_vision
@@ -109,10 +114,11 @@ class HydeHybridStrategy(RetrievalStrategy):
         focus_mode = self._focus.mode
         status_meta: dict[str, object] = {}
         status_scorer = self._status_scorer
-        use_status_filter = (
-            focus_mode != "all"
-            and self._focus.use_status_filter
-            and status_scorer is not None
+        status_plan = plan_status_filter(
+            focus_mode=focus_mode,
+            requested_k=effective_k,
+            status_scorer=status_scorer,
+            status_filter_enabled=self._focus.use_status_filter,
         )
 
         pred: dspy.Prediction | None = None
@@ -135,20 +141,17 @@ class HydeHybridStrategy(RetrievalStrategy):
         raw_k = max(30, min(3_000, effective_k * self._raw_multiplier))
         roles = primary_roles_for_focus(focus_mode)
         roles_used = roles
+        fallback_roles = fallback_roles_for_focus(focus_mode)
 
         # Lexical branch (precise): original situation/query.
-        hits_fts = self._searcher.search_fts(
-            query_text=situation, k=raw_k, roles=roles_used
+        hits_fts, roles_used = search_fts_with_roles_fallback(
+            searcher=self._searcher,
+            query_text=situation,
+            k=raw_k,
+            roles=roles_used,
+            fallback_roles=fallback_roles,
+            allow_role_fallback=self._focus.allow_role_fallback,
         )
-        if (
-            hits_fts.is_empty()
-            and roles is not None
-            and self._focus.allow_role_fallback
-        ):
-            roles_used = fallback_roles_for_focus(focus_mode)
-            hits_fts = self._searcher.search_fts(
-                query_text=situation, k=raw_k, roles=roles_used
-            )
         agg_fts = self._searcher.aggregate_guideline_hits_with_evidence(
             hits_fts, k=self._dense_candidate_k
         )
@@ -315,17 +318,14 @@ class HydeHybridStrategy(RetrievalStrategy):
 
         candidate_entries = [id_to_entry[gid] for gid in ordered_candidate_ids]
         ordered_entries = candidate_entries[:effective_k]
-        if use_status_filter and ordered_entries:
+        if status_plan.use_status_filter and ordered_entries:
             assert status_scorer is not None
-            status_module = status_scorer.module
-            status_cfg = status_scorer.config
-            ordered_entries, status_meta = filter_guidelines_by_status(
+            ordered_entries, status_meta = apply_status_filter(
                 request=request,
                 entries=candidate_entries,
                 output_k=effective_k,
-                focus=focus_mode,
-                status_module=status_module,
-                config=status_cfg,
+                focus_mode=focus_mode,
+                status_scorer=status_scorer,
             )
 
         def _coerce_float(raw: object, *, fallback: float = 0.0) -> float:

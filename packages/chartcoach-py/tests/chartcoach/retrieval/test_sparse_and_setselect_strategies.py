@@ -293,7 +293,9 @@ def test_sparse_splade_strategy_returns_hits_and_respects_focus(
         entries = list(kwargs["entries"])
         return entries[: kwargs["output_k"]], {"guideline_status_used": True}
 
-    monkeypatch.setattr(sparse_mod, "filter_guidelines_by_status", fake_filter)
+    monkeypatch.setattr(
+        sparse_mod, "apply_status_filter", lambda **kwargs: fake_filter(**kwargs)
+    )
 
     strat = SparseSpladeStrategy(
         catalog=catalog,
@@ -415,7 +417,9 @@ def test_dense_sparse_rrf_strategy_role_fallback_and_status_filter(
         entries = list(kwargs["entries"])
         return entries[: kwargs["output_k"]], {"guideline_status_used": True}
 
-    monkeypatch.setattr(dense_sparse_mod, "filter_guidelines_by_status", fake_filter)
+    monkeypatch.setattr(
+        dense_sparse_mod, "apply_status_filter", lambda **kwargs: fake_filter(**kwargs)
+    )
 
     monkeypatch.setattr(
         CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0])
@@ -492,7 +496,9 @@ def test_hybrid_setselect_strategies_cover_methods_and_focus(
         entries = list(kwargs["entries"])
         return entries[: kwargs["output_k"]], {"guideline_status_used": True}
 
-    monkeypatch.setattr(setselect_mod, "filter_guidelines_by_status", fake_filter)
+    monkeypatch.setattr(
+        setselect_mod, "apply_status_filter", lambda **kwargs: fake_filter(**kwargs)
+    )
 
     focus = FocusConfig(mode="violations", allow_role_fallback=True)
     bad = _HybridSetSelectBase(

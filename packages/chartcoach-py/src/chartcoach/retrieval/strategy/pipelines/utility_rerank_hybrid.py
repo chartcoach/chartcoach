@@ -1,14 +1,11 @@
 from __future__ import annotations
 
 from chartcoach.catalog import Catalog
+from chartcoach.retrieval.operators import search_hybrid_with_focus
 from chartcoach.retrieval.strategy.base import RetrievalStrategy
 from chartcoach.retrieval.strategy.types import RetrievalRequest, RetrievalResponse
 
-from .focus import (
-    FocusConfig,
-    fallback_roles_for_focus,
-    primary_roles_for_focus,
-)
+from .focus import FocusConfig
 from .searcher import GuidelineSearcher
 from .utility_reranker import UtilityReranker, rank_by_utility
 from .vision import ChartVisionModule, with_chart_vision
@@ -62,27 +59,16 @@ class UtilityRerankHybridStrategy(RetrievalStrategy):
         query_vec = self._searcher.vector_index.embed_query(query_text)
 
         raw_k = max(20, min(3_000, effective_k * self._raw_multiplier))
-        roles = primary_roles_for_focus(focus_mode)
-        roles_used = roles
-
-        hits_df = self._searcher.search_hybrid(
+        hits_df, roles_used = search_hybrid_with_focus(
+            searcher=self._searcher,
             query_text=query_text,
             query_vector=query_vec,
-            reranker=RRFReranker(K=60),
             k=raw_k,
-            roles=roles_used,
+            reranker=RRFReranker(K=60),
+            focus=self._focus,
+            focus_mode=focus_mode,
             fts_columns="text",
         )
-        if hits_df.is_empty() and roles is not None and self._focus.allow_role_fallback:
-            roles_used = fallback_roles_for_focus(focus_mode)
-            hits_df = self._searcher.search_hybrid(
-                query_text=query_text,
-                query_vector=query_vec,
-                reranker=RRFReranker(K=60),
-                k=raw_k,
-                roles=roles_used,
-                fts_columns="text",
-            )
 
         module = self._utility.module
         cfg = self._utility.config
