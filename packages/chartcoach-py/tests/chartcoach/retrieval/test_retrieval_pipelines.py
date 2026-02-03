@@ -365,9 +365,9 @@ def test_strategies_validate_k(catalog: Catalog) -> None:
     )
 
     with pytest.raises(ValueError, match="k must be positive"):
-        LabelGatedAnnStrategy(
-            catalog=catalog, searcher=searcher, lm=lm, default_k=0
-        )(request=RetrievalRequest(context=[TextItem(role="situation", text="S")]))
+        LabelGatedAnnStrategy(catalog=catalog, searcher=searcher, lm=lm, default_k=0)(
+            request=RetrievalRequest(context=[TextItem(role="situation", text="S")])
+        )
 
     from chartcoach.retrieval.strategy.pipelines.label_first_abstract import (
         LabelFirstAbstractStrategy,
@@ -700,7 +700,9 @@ def test_query_fusion_strategy_includes_evidence_and_filters_bad_evidence(
     )
 
     vector_index = _make_vector_index(catalog=catalog, fake_index=fake)
-    monkeypatch.setattr(CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0]))
+    monkeypatch.setattr(
+        CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0])
+    )
     searcher = GuidelineSearcher(catalog=catalog, vector_index=vector_index)
 
     original_agg = searcher_mod.GuidelineSearcher.aggregate_guideline_hits_with_evidence
@@ -714,7 +716,13 @@ def test_query_fusion_strategy_includes_evidence_and_filters_bad_evidence(
                     "best_role": ["advice", "advice"],
                     "evidence": [
                         [],
-                        [{"role": "advice", "text": "axis title missing", "score": 1.0}],
+                        [
+                            {
+                                "role": "advice",
+                                "text": "axis title missing",
+                                "score": 1.0,
+                            }
+                        ],
                     ],
                 }
             )
@@ -760,7 +768,9 @@ def test_query_fusion_strategy_includes_evidence_and_filters_bad_evidence(
             return dspy.Prediction(queries=["S"])
 
     strat._program = DummyProgram()
-    out = strat(request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1))
+    out = strat(
+        request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1)
+    )
     assert [e.guideline.id for e in out.catalog.entries] == ["g1"]
     assert out.meta["hits"][0]["evidence"]
 
@@ -772,7 +782,9 @@ def test_query_fusion_strategy_role_fallback_loop_records_evidence(
 
     fake = _FakeLanceIndex()
     vector_index = _make_vector_index(catalog=catalog, fake_index=fake)
-    monkeypatch.setattr(CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0]))
+    monkeypatch.setattr(
+        CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0])
+    )
     searcher = GuidelineSearcher(catalog=catalog, vector_index=vector_index)
 
     def patched_search_hybrid(_self, **kwargs):  # noqa: ANN001, ANN003
@@ -820,7 +832,9 @@ def test_query_fusion_strategy_role_fallback_loop_records_evidence(
             return dspy.Prediction(queries=["S"])
 
     strat._program = DummyProgram()
-    out = strat(request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1))
+    out = strat(
+        request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1)
+    )
     assert [e.guideline.id for e in out.catalog.entries] == ["g1"]
     assert out.meta["hits"][0]["evidence"]
 
@@ -1004,7 +1018,12 @@ def test_query_fusion_strategy_fill_fallback_adds_new_ids(
     def patched_agg(hits_df: pl.DataFrame, *, k: int, **kwargs):  # noqa: ANN001
         if k == 40:
             return pl.DataFrame(
-                {"id": ["g1"], "score": [1.0], "best_role": ["advice"], "evidence": [[]]}
+                {
+                    "id": ["g1"],
+                    "score": [1.0],
+                    "best_role": ["advice"],
+                    "evidence": [[]],
+                }
             )
         return original_agg(hits_df, k=k, **kwargs)
 
@@ -1131,7 +1150,9 @@ def test_hyde_strategy_includes_evidence_and_filters_bad_evidence(
     )
 
     vector_index = _make_vector_index(catalog=catalog, fake_index=fake)
-    monkeypatch.setattr(CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0]))
+    monkeypatch.setattr(
+        CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0])
+    )
     searcher = GuidelineSearcher(catalog=catalog, vector_index=vector_index)
 
     original_agg = searcher_mod.GuidelineSearcher.aggregate_guideline_hits_with_evidence
@@ -1145,7 +1166,13 @@ def test_hyde_strategy_includes_evidence_and_filters_bad_evidence(
                     "best_role": ["advice", "advice"],
                     "evidence": [
                         [],
-                        [{"role": "advice", "text": "axis title missing", "score": 1.0}],
+                        [
+                            {
+                                "role": "advice",
+                                "text": "axis title missing",
+                                "score": 1.0,
+                            }
+                        ],
                     ],
                 }
             )
@@ -1193,7 +1220,9 @@ def test_hyde_strategy_includes_evidence_and_filters_bad_evidence(
             return dspy.Prediction(pseudo_document="S")
 
     strat._program = DummyProgram()
-    out = strat(request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1))
+    out = strat(
+        request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1)
+    )
     assert [e.guideline.id for e in out.catalog.entries] == ["g1"]
     assert out.meta["hits"][0]["evidence"]
 
@@ -1471,9 +1500,7 @@ def test_agentic_tools_and_strategy(catalog: Catalog, monkeypatch) -> None:
     )
     tools_no_role = AgenticHybridTools(
         catalog=catalog,
-        searcher=GuidelineSearcher(
-            catalog=catalog, vector_index=vector_index_no_role
-        ),
+        searcher=GuidelineSearcher(catalog=catalog, vector_index=vector_index_no_role),
     )
     assert tools_no_role.list_roles() == []
 

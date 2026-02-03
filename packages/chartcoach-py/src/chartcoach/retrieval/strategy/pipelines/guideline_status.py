@@ -22,7 +22,9 @@ GuidelineStatus = Literal["violated", "satisfied", "unclear", "not_applicable"]
 
 
 _STATUS_CACHE: dict[tuple[str, str], dict[str, object]] = {}
-_SHARED_STATUS_SCORER: tuple[object, "GuidelineStatusModule", "StatusScorerConfig"] | None = None
+_SHARED_STATUS_SCORER: (
+    tuple[object, "GuidelineStatusModule", "StatusScorerConfig"] | None
+) = None
 
 
 def _sha256_text(text: str) -> str:
@@ -87,7 +89,9 @@ class GuidelineStatusSignature(dspy.Signature):
 
     guideline_title: str = dspy.InputField(desc="Guideline title (imperative advice).")
     guideline_description: str = dspy.InputField(desc="Guideline summary description.")
-    guideline_labels: str = dspy.InputField(desc="Semicolon-separated guideline labels.")
+    guideline_labels: str = dspy.InputField(
+        desc="Semicolon-separated guideline labels."
+    )
     guideline_excerpt: str = dspy.InputField(
         desc="A short excerpt of the guideline body for extra context (may be empty)."
     )
@@ -221,7 +225,9 @@ def status_scorer_config_from_env() -> StatusScorerConfig:
     )
 
 
-def shared_status_scorer() -> tuple[object, "GuidelineStatusModule", "StatusScorerConfig"]:
+def shared_status_scorer() -> tuple[
+    object, "GuidelineStatusModule", "StatusScorerConfig"
+]:
     """Return a process-wide shared status scorer (LM + program + config).
 
     This avoids repeated LM initialization across strategies while keeping the scorer
@@ -367,7 +373,9 @@ class GuidelineStatusModule:
                     except Exception as e:  # noqa: BLE001
                         error = str(e)
 
-                raw_statuses = getattr(pred, "statuses", None) if pred is not None else None
+                raw_statuses = (
+                    getattr(pred, "statuses", None) if pred is not None else None
+                )
                 raw_confidences = (
                     getattr(pred, "confidences", None) if pred is not None else None
                 )
@@ -398,7 +406,9 @@ class GuidelineStatusModule:
 
         results: list[dict[str, object]] = []
         for entry in entries:
-            cached = cached_by_id.get(entry.id) or _STATUS_CACHE.get((chart_key, entry.id))
+            cached = cached_by_id.get(entry.id) or _STATUS_CACHE.get(
+                (chart_key, entry.id)
+            )
             if cached is None:
                 cached = {"status": "unclear", "confidence": 0.0, "rationale": ""}
             results.append({"id": entry.id, "cache": "memory", **cached})
@@ -431,12 +441,19 @@ def filter_guidelines_by_status(
     # Build enriched situation text without requiring a searcher instance.
     situation_text = GuidelineSearcher.build_query_text(request)
 
-    chart_key = _chart_fingerprint(request) or f"text:{_sha256_text(situation_text)[:16]}"
+    chart_key = (
+        _chart_fingerprint(request) or f"text:{_sha256_text(situation_text)[:16]}"
+    )
 
     statuses = status_module.classify_many(
         chart_key=chart_key, situation=situation_text, entries=entries
     )
-    counts: dict[str, int] = {"violated": 0, "satisfied": 0, "unclear": 0, "not_applicable": 0}
+    counts: dict[str, int] = {
+        "violated": 0,
+        "satisfied": 0,
+        "unclear": 0,
+        "not_applicable": 0,
+    }
     for scored in statuses:
         s = str(scored.get("status") or "unclear")
         if s in counts:
@@ -471,7 +488,9 @@ def filter_guidelines_by_status(
         _take({"violated", "satisfied", "not_applicable"})
 
     selected = selected[: max(0, int(output_k))]
-    status_by_id = {str(s["id"]): s for s in statuses if isinstance(s, dict) and s.get("id")}
+    status_by_id = {
+        str(s["id"]): s for s in statuses if isinstance(s, dict) and s.get("id")
+    }
 
     return selected, {
         "guideline_status_focus": focus,

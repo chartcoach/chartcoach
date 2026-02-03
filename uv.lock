@@ -464,6 +464,10 @@ retrieval-server = [
     { name = "fastapi" },
     { name = "uvicorn" },
 ]
+retrieval-sparse = [
+    { name = "torch" },
+    { name = "transformers" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -487,10 +491,12 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.0.0" },
     { name = "pyyaml", specifier = ">=6.0.0" },
     { name = "tenacity", marker = "extra == 'cataloging'", specifier = ">=9.1.2" },
+    { name = "torch", marker = "extra == 'retrieval-sparse'", specifier = ">=2.5.0" },
     { name = "tqdm", marker = "extra == 'cataloging'", specifier = ">=4.67.1" },
+    { name = "transformers", marker = "extra == 'retrieval-sparse'", specifier = ">=4.48.0" },
     { name = "uvicorn", marker = "extra == 'retrieval-server'", specifier = ">=0.30.0" },
 ]
-provides-extras = ["embedding", "retrieval", "retrieval-server", "index", "index-duckdb", "index-lance", "cataloging"]
+provides-extras = ["embedding", "retrieval", "retrieval-sparse", "retrieval-server", "index", "index-duckdb", "index-lance", "cataloging"]
 
 [[package]]
 name = "click"

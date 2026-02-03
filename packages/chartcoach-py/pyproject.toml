@@ -27,6 +27,10 @@ retrieval = [
     "dspy>=3.1.2",
     "pillow>=10.0.0",
 ]
+retrieval-sparse = [
+    "torch>=2.5.0",
+    "transformers>=4.48.0",
+]
 retrieval-server = [
     "fastapi>=0.115.0",
     "uvicorn>=0.30.0",

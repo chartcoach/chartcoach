@@ -34,7 +34,9 @@ def test_chart_fingerprint_variants() -> None:
     req = RetrievalRequest(context=[ImageItem(role="chart", uri="file:///tmp/x.png")])
     assert (fp := mod._chart_fingerprint(req)) and fp.startswith("uri:")
 
-    req = RetrievalRequest(context=[ImageItem(role="chart", data=b"abc", mime="image/png")])
+    req = RetrievalRequest(
+        context=[ImageItem(role="chart", data=b"abc", mime="image/png")]
+    )
     assert (fp := mod._chart_fingerprint(req)) and fp.startswith("bytes:")
 
     req = RetrievalRequest(context=[TextItem(role="situation", text="S")])
@@ -53,12 +55,17 @@ def test_coerce_helpers_and_excerpt() -> None:
 
     assert mod._guideline_excerpt(_entry("g1", body=""), max_chars=10) == ""
     assert mod._guideline_excerpt(_entry("g1", body="abc"), max_chars=10) == "abc"
-    assert mod._guideline_excerpt(_entry("g1", body="a" * 50), max_chars=10) == ("a" * 10) + "..."
+    assert (
+        mod._guideline_excerpt(_entry("g1", body="a" * 50), max_chars=10)
+        == ("a" * 10) + "..."
+    )
 
 
 def test_status_scorer_config_from_env_supports_aliases(monkeypatch) -> None:
     monkeypatch.delenv("CHARTCOACH_STATUS_CANDIDATE_MULTIPLIER", raising=False)
-    monkeypatch.delenv("CHARTCOACH_GUIDELINE_STATUS_CANDIDATE_MULTIPLIER", raising=False)
+    monkeypatch.delenv(
+        "CHARTCOACH_GUIDELINE_STATUS_CANDIDATE_MULTIPLIER", raising=False
+    )
     cfg = mod.status_scorer_config_from_env()
     assert cfg.candidate_multiplier == 4
 
@@ -152,7 +159,9 @@ def test_guideline_status_module_classify_returns_error(monkeypatch) -> None:
 
     monkeypatch.setattr(mod.dspy, "context", noop_context)
 
-    status = mod.GuidelineStatusModule(lm=DummyLM(), config=mod.StatusScorerConfig(max_rationale_chars=10))
+    status = mod.GuidelineStatusModule(
+        lm=DummyLM(), config=mod.StatusScorerConfig(max_rationale_chars=10)
+    )
 
     def program(**_kwargs):  # noqa: ANN003
         raise RuntimeError("boom")
@@ -167,7 +176,9 @@ def test_guideline_status_module_classify_returns_error(monkeypatch) -> None:
     assert out["error"]
 
 
-def test_guideline_status_module_classify_many_batches_and_handles_mismatch(monkeypatch) -> None:
+def test_guideline_status_module_classify_many_batches_and_handles_mismatch(
+    monkeypatch,
+) -> None:
     class DummyLM:
         def copy(self, **_kwargs):  # noqa: ANN003
             return self
@@ -237,7 +248,9 @@ def test_guideline_status_module_classify_many_records_exceptions(monkeypatch) -
     assert out[0]["error"]
 
 
-def test_guideline_status_module_classify_many_fallbacks_when_cache_missing(monkeypatch) -> None:
+def test_guideline_status_module_classify_many_fallbacks_when_cache_missing(
+    monkeypatch,
+) -> None:
     # Cover the defensive `cached is None` fallback in `classify_many`.
     class DummyLM:
         def copy(self, **_kwargs):  # noqa: ANN003
