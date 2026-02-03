@@ -12,3 +12,10 @@ __pycache__/
 *.pyc
 .DS_Store
 .coverage
+
+# Repo-wide planning docs are intentionally tracked for shared context.
+# Some environments have global ignore rules for these directories; we override them here.
+!tasks/
+!tasks/**
+!docs/plans/
+!docs/plans/**
