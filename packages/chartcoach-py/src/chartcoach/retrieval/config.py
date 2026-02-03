@@ -25,6 +25,8 @@ class LmEndpointConfig:
     model: str
     timeout_seconds: float = 120.0
     num_retries: int = 6
+    temperature: float = 0.0
+    max_tokens: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -133,12 +135,27 @@ def _resolve_sparse_embedding_config_from_env() -> SparseEmbeddingConfig:
 def _resolve_lm_models_from_env() -> LmModelsConfig:
     lm_timeout = _float_env("CHARTCOACH_LM_TIMEOUT_SECONDS", 120.0)
     lm_retries = _int_env("CHARTCOACH_LM_NUM_RETRIES", 6)
+    lm_temperature = _float_env("CHARTCOACH_LM_TEMPERATURE", 0.0)
+    raw_max_tokens = (os.environ.get("CHARTCOACH_LM_MAX_TOKENS") or "").strip()
+    lm_max_tokens = int(raw_max_tokens) if raw_max_tokens.isdigit() else None
     vlm_timeout = _float_env("CHARTCOACH_VLM_TIMEOUT_SECONDS", lm_timeout)
     vlm_retries = _int_env("CHARTCOACH_VLM_NUM_RETRIES", lm_retries)
+    vlm_temperature = _float_env("CHARTCOACH_VLM_TEMPERATURE", lm_temperature)
+    raw_vlm_max = (os.environ.get("CHARTCOACH_VLM_MAX_TOKENS") or "").strip()
+    vlm_max_tokens = int(raw_vlm_max) if raw_vlm_max.isdigit() else lm_max_tokens
     status_timeout = _float_env(
         "CHARTCOACH_GUIDELINE_STATUS_TIMEOUT_SECONDS", lm_timeout
     )
     status_retries = _int_env("CHARTCOACH_GUIDELINE_STATUS_NUM_RETRIES", lm_retries)
+    status_temperature = _float_env(
+        "CHARTCOACH_GUIDELINE_STATUS_TEMPERATURE", lm_temperature
+    )
+    raw_status_max = (
+        os.environ.get("CHARTCOACH_GUIDELINE_STATUS_MAX_TOKENS") or ""
+    ).strip()
+    status_max_tokens = (
+        int(raw_status_max) if raw_status_max.isdigit() else lm_max_tokens
+    )
 
     strategy_model = os.environ.get("CHARTCOACH_STRATEGY_LM_MODEL") or "gpt-5.1"
     vlm_model = os.environ.get("CHARTCOACH_STRATEGY_VLM_MODEL") or "gpt-5.2"
@@ -153,16 +170,22 @@ def _resolve_lm_models_from_env() -> LmModelsConfig:
             model=strategy_model,
             timeout_seconds=lm_timeout,
             num_retries=lm_retries,
+            temperature=lm_temperature,
+            max_tokens=lm_max_tokens,
         ),
         vlm=LmEndpointConfig(
             model=vlm_model,
             timeout_seconds=vlm_timeout,
             num_retries=vlm_retries,
+            temperature=vlm_temperature,
+            max_tokens=vlm_max_tokens,
         ),
         guideline_status=LmEndpointConfig(
             model=status_model,
             timeout_seconds=status_timeout,
             num_retries=status_retries,
+            temperature=status_temperature,
+            max_tokens=status_max_tokens,
         ),
     )
 
@@ -338,19 +361,33 @@ class RetrievalRunConfig:
         }
 
 
-def load_run_config(config_path: str | Path | None = None) -> RetrievalRunConfig:
-    """Load retrieval run config with precedence: defaults < env < YAML overrides."""
+def _default_embedding_config() -> EmbeddingConfig:
+    return EmbeddingConfig(
+        model="BAAI/bge-small-en-v1.5",
+        text_projector_type="sentence_transformers",
+        text_projector_args={"normalize_embeddings": True},
+    )
 
-    doc: dict[str, Any] = {}
-    if config_path:
-        path = Path(config_path)
-        loaded = yaml.safe_load(path.read_text(encoding="utf-8"))
-        if isinstance(loaded, dict):
-            doc = loaded
-        else:
-            raise ValueError("Expected YAML mapping at --config path.")
 
-    embedding = _resolve_embedding_config_from_env()
+def _default_sparse_embedding_config() -> SparseEmbeddingConfig:
+    return SparseEmbeddingConfig(model="prithivida/Splade_PP_en_v1")
+
+
+def load_run_config_from_doc(
+    doc: Mapping[str, Any] | None,
+    *,
+    use_env: bool,
+) -> RetrievalRunConfig:
+    """Load retrieval run config from an in-memory YAML document.
+
+    Precedence: defaults < (optional env) < YAML overrides.
+    """
+
+    doc = dict(doc or {})
+
+    embedding = (
+        _resolve_embedding_config_from_env() if use_env else _default_embedding_config()
+    )
     embedding_override = _deep_get(doc, ["embedding"])
     if isinstance(embedding_override, Mapping):
         model = embedding_override.get("model")
@@ -381,14 +418,18 @@ def load_run_config(config_path: str | Path | None = None) -> RetrievalRunConfig
                 text_projector_args=args,
             )
 
-    sparse_embedding = _resolve_sparse_embedding_config_from_env()
+    sparse_embedding = (
+        _resolve_sparse_embedding_config_from_env()
+        if use_env
+        else _default_sparse_embedding_config()
+    )
     sparse_override = _deep_get(doc, ["sparse_embedding"])
     if isinstance(sparse_override, Mapping):
         model = sparse_override.get("model")
         if isinstance(model, str) and model.strip():
             sparse_embedding = SparseEmbeddingConfig(model=model.strip())
 
-    lms = _resolve_lm_models_from_env()
+    lms = _resolve_lm_models_from_env() if use_env else LmModelsConfig()
     lms_override = _deep_get(doc, ["lms"])
     strategy_lm = lms.strategy
     vlm = lms.vlm
@@ -404,6 +445,8 @@ def load_run_config(config_path: str | Path | None = None) -> RetrievalRunConfig
             model = endpoint.get("model")
             timeout = endpoint.get("timeout_seconds")
             retries = endpoint.get("num_retries")
+            temperature = endpoint.get("temperature")
+            max_tokens = endpoint.get("max_tokens")
             updated = LmEndpointConfig(
                 model=str(model).strip() if model else current.model,
                 timeout_seconds=float(timeout)
@@ -412,6 +455,12 @@ def load_run_config(config_path: str | Path | None = None) -> RetrievalRunConfig
                 num_retries=int(retries)
                 if isinstance(retries, int)
                 else current.num_retries,
+                temperature=float(temperature)
+                if isinstance(temperature, (int, float))
+                else current.temperature,
+                max_tokens=int(max_tokens)
+                if isinstance(max_tokens, int)
+                else current.max_tokens,
             )
             if key == "strategy":
                 strategy_lm = updated
@@ -422,7 +471,7 @@ def load_run_config(config_path: str | Path | None = None) -> RetrievalRunConfig
 
         lms = LmModelsConfig(strategy=strategy_lm, vlm=vlm, guideline_status=status_lm)
 
-    focus = _resolve_focus_config_from_env()
+    focus = _resolve_focus_config_from_env() if use_env else FocusConfig()
     focus_override = _deep_get(doc, ["focus"])
     if isinstance(focus_override, Mapping):
         focus = FocusConfig(
@@ -435,7 +484,9 @@ def load_run_config(config_path: str | Path | None = None) -> RetrievalRunConfig
             ),
         )
 
-    chart_vision = _resolve_chart_vision_config_from_env()
+    chart_vision = (
+        _resolve_chart_vision_config_from_env() if use_env else ChartVisionConfig()
+    )
     vision_override = _deep_get(doc, ["chart_vision"])
     if isinstance(vision_override, Mapping):
         chart_vision = ChartVisionConfig(
@@ -452,7 +503,9 @@ def load_run_config(config_path: str | Path | None = None) -> RetrievalRunConfig
             ),
         )
 
-    status_scorer = _resolve_status_scorer_config_from_env()
+    status_scorer = (
+        _resolve_status_scorer_config_from_env() if use_env else StatusScorerConfig()
+    )
     status_override = _deep_get(doc, ["status_scorer"])
     if isinstance(status_override, Mapping):
         status_scorer = StatusScorerConfig(
@@ -478,7 +531,9 @@ def load_run_config(config_path: str | Path | None = None) -> RetrievalRunConfig
             batch_size=int(status_override.get("batch_size", status_scorer.batch_size)),
         )
 
-    query_fusion = _resolve_query_fusion_config_from_env()
+    query_fusion = (
+        _resolve_query_fusion_config_from_env() if use_env else QueryFusionConfig()
+    )
     qf_override = _deep_get(doc, ["query_fusion"])
     if isinstance(qf_override, Mapping):
         query_fusion = QueryFusionConfig(
@@ -495,7 +550,9 @@ def load_run_config(config_path: str | Path | None = None) -> RetrievalRunConfig
             ),
         )
 
-    facet_fusion = _resolve_facet_fusion_config_from_env()
+    facet_fusion = (
+        _resolve_facet_fusion_config_from_env() if use_env else FacetFusionConfig()
+    )
     ff_override = _deep_get(doc, ["facet_fusion"])
     if isinstance(ff_override, Mapping):
         facet_fusion = FacetFusionConfig(
@@ -512,7 +569,11 @@ def load_run_config(config_path: str | Path | None = None) -> RetrievalRunConfig
             ),
         )
 
-    utility_reranker = _resolve_utility_reranker_config_from_env()
+    utility_reranker = (
+        _resolve_utility_reranker_config_from_env()
+        if use_env
+        else UtilityRerankerConfig()
+    )
     util_override = _deep_get(doc, ["utility_reranker"])
     if isinstance(util_override, Mapping):
         utility_reranker = UtilityRerankerConfig(
@@ -541,7 +602,7 @@ def load_run_config(config_path: str | Path | None = None) -> RetrievalRunConfig
         )
 
     timeout_override = _deep_get(doc, ["strategy_timeout_seconds"])
-    timeout_env = _resolve_strategy_timeout_seconds_from_env()
+    timeout_env = _resolve_strategy_timeout_seconds_from_env() if use_env else 600.0
     timeout = timeout_env
     if isinstance(timeout_override, (int, float)):
         timeout = None if float(timeout_override) <= 0 else float(timeout_override)
@@ -558,3 +619,22 @@ def load_run_config(config_path: str | Path | None = None) -> RetrievalRunConfig
         utility_reranker=utility_reranker,
         strategy_timeout_seconds=timeout,
     )
+
+
+def load_run_config(
+    config_path: str | Path | None = None,
+    *,
+    use_env: bool = True,
+) -> RetrievalRunConfig:
+    """Load retrieval run config with precedence: defaults < (optional env) < YAML overrides."""
+
+    doc: dict[str, Any] = {}
+    if config_path:
+        path = Path(config_path)
+        loaded = yaml.safe_load(path.read_text(encoding="utf-8"))
+        if isinstance(loaded, dict):
+            doc = loaded
+        else:
+            raise ValueError("Expected YAML mapping at --config path.")
+
+    return load_run_config_from_doc(doc, use_env=use_env)

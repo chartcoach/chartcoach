@@ -52,6 +52,8 @@ class StrategyRuntime:
             model=cfg.model,
             timeout_seconds=cfg.timeout_seconds,
             num_retries=cfg.num_retries,
+            temperature=cfg.temperature,
+            max_tokens=cfg.max_tokens,
         )
 
     def _require_vlm(self) -> dspy.LM:
@@ -62,6 +64,8 @@ class StrategyRuntime:
             model=cfg.model,
             timeout_seconds=cfg.timeout_seconds,
             num_retries=cfg.num_retries,
+            temperature=cfg.temperature,
+            max_tokens=cfg.max_tokens,
         )
         return self._vlm
 
@@ -73,6 +77,8 @@ class StrategyRuntime:
             model=cfg.model,
             timeout_seconds=cfg.timeout_seconds,
             num_retries=cfg.num_retries,
+            temperature=cfg.temperature,
+            max_tokens=cfg.max_tokens,
         )
         return self._status_lm
 

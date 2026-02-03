@@ -34,7 +34,11 @@ def test_create_openai_compatible_lm_uses_env_and_clamps(monkeypatch) -> None:
     monkeypatch.setattr(mod.dspy, "LM", DummyLM)
 
     lm = mod.create_openai_compatible_lm(
-        model="gpt-4o-mini", timeout_seconds=0.25, num_retries=-5
+        model="gpt-4o-mini",
+        timeout_seconds=0.25,
+        num_retries=-5,
+        temperature=0.0,
+        max_tokens=None,
     )
     assert isinstance(lm, DummyLM)
     assert created["model"] == "openai/gpt-4o-mini"

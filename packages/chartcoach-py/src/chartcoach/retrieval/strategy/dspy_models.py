@@ -27,6 +27,8 @@ def create_openai_compatible_lm(
     model: str,
     timeout_seconds: float,
     num_retries: int,
+    temperature: float,
+    max_tokens: int | None,
 ) -> dspy.LM:
     openai = load_env().openai.require()
     return dspy.LM(
@@ -35,10 +37,23 @@ def create_openai_compatible_lm(
         api_key=openai.api_key,
         num_retries=max(0, int(num_retries)),
         timeout=max(1.0, float(timeout_seconds)),
+        temperature=float(temperature),
+        max_tokens=int(max_tokens) if max_tokens is not None else None,
     )
 
 
-def create_lm(*, model: str, timeout_seconds: float, num_retries: int) -> dspy.LM:
+def create_lm(
+    *,
+    model: str,
+    timeout_seconds: float,
+    num_retries: int,
+    temperature: float = 0.0,
+    max_tokens: int | None = None,
+) -> dspy.LM:
     return create_openai_compatible_lm(
-        model=model, timeout_seconds=timeout_seconds, num_retries=num_retries
+        model=model,
+        timeout_seconds=timeout_seconds,
+        num_retries=num_retries,
+        temperature=temperature,
+        max_tokens=max_tokens,
     )
