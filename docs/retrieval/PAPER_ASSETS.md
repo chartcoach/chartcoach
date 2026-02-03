@@ -27,6 +27,7 @@ Manifest examples:
 - Main: `docs/manifests/paper-main-v20.yaml`
 - Ablation (no vision): `docs/manifests/paper-ablation-no-vision-v20.yaml`
 - Ablation (focus=all): `docs/manifests/paper-ablation-focus-all-v20.yaml`
+- Ablation (vision as fused channel): `docs/manifests/paper-ablation-vision-fuse-tokens-v20.yaml`
 
 ## Taxonomy Source of Truth
 
