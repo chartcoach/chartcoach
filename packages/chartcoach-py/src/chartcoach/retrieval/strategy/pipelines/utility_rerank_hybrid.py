@@ -39,6 +39,11 @@ class UtilityRerankHybridStrategy(RetrievalStrategy):
         self._vision_config = chart_vision_config_from_env()
         self._vlm = create_strategy_vlm() if self._vision_config.enabled else None
 
+        # Expose the LM to the eval harness so it can snapshot and report
+        # per-scenario LM usage deltas (via strategy._lm.history).
+        lm, _module, _cfg = shared_utility_reranker()
+        self._lm = lm
+
     def _forward(self, request: RetrievalRequest) -> RetrievalResponse:
         from lancedb.rerankers import RRFReranker
 
@@ -81,18 +86,17 @@ class UtilityRerankHybridStrategy(RetrievalStrategy):
                 fts_columns="text",
             )
 
-        lm, module, cfg = shared_utility_reranker()
-        self._utility_lm = lm
+        _lm, module, cfg = shared_utility_reranker()
 
         agg = self._searcher.aggregate_guideline_hits_with_evidence(
             hits_df, k=int(cfg.candidate_k)
         )
         rows = agg.to_dicts()
-        evidence_by_id = {
-            row.get("id"): row.get("evidence")
-            for row in rows
-            if isinstance(row.get("id"), str)
-        }
+        evidence_by_id: dict[str, object] = {}
+        for row in rows:
+            gid = row.get("id")
+            if isinstance(gid, str) and gid:
+                evidence_by_id[gid] = row.get("evidence")
 
         id_to_entry = {entry.id: entry for entry in self.catalog.entries}
         candidates = [
@@ -109,7 +113,37 @@ class UtilityRerankHybridStrategy(RetrievalStrategy):
             module=module,
         )
         ordered_entries = [entry for entry, _score in scored[:effective_k]]
-        score_by_id = {entry.id: score for entry, score in scored}
+        score_by_id: dict[str, dict[str, object]] = {
+            entry.id: score for entry, score in scored
+        }
+
+        def _coerce_float(raw: object, *, fallback: float = 0.0) -> float:
+            if isinstance(raw, (int, float)):
+                return float(raw)
+            if isinstance(raw, str):
+                try:
+                    return float(raw)
+                except ValueError:
+                    return fallback
+            return fallback
+
+        hits: list[dict[str, object]] = []
+        for entry in ordered_entries:
+            score_payload = score_by_id.get(entry.id)
+            score = _coerce_float(
+                score_payload.get("utility") if score_payload is not None else None,
+                fallback=0.0,
+            )
+            ev = evidence_by_id.get(entry.id)
+            hits.append(
+                {
+                    "id": entry.id,
+                    "score": score,
+                    "best_role": None,
+                    "evidence": ev if isinstance(ev, list) else [],
+                    "utility": score_payload,
+                }
+            )
 
         meta = {
             **self._searcher.vector_index.meta(),
@@ -127,16 +161,7 @@ class UtilityRerankHybridStrategy(RetrievalStrategy):
                 "risk_weight": float(cfg.risk_weight),
                 "unclear_penalty": float(cfg.unclear_penalty),
             },
-            "hits": [
-                {
-                    "id": entry.id,
-                    "score": float(score_by_id.get(entry.id, {}).get("utility") or 0.0),
-                    "best_role": None,
-                    "evidence": evidence_by_id.get(entry.id) or [],
-                    "utility": score_by_id.get(entry.id),
-                }
-                for entry in ordered_entries
-            ],
+            "hits": hits,
         }
 
         return RetrievalResponse(catalog=Catalog(entries=ordered_entries), meta=meta)

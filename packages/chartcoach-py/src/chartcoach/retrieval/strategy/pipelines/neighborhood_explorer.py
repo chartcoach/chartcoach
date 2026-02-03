@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import cast
 
 import numpy as np
 import polars as pl
@@ -143,7 +144,11 @@ class NeighborhoodExplorerStrategy(RetrievalStrategy):
                 ev = row.get("evidence")
                 if isinstance(ev, list) and ev:
                     evidence_by_id.setdefault(gid, []).extend(
-                        [e for e in ev if isinstance(e, dict)]
+                        [
+                            cast("dict[str, object]", e)
+                            for e in ev
+                            if isinstance(e, dict)
+                        ]
                     )
                 best_role = row.get("best_role")
                 if isinstance(best_role, str) and best_role:

@@ -424,7 +424,9 @@ def test_dense_sparse_rrf_strategy_role_fallback_and_status_filter(
         searcher=searcher,
         sparse_index=sparse_index,
         default_k=1,
-        focus=FocusConfig(mode="violations", allow_role_fallback=True, use_status_filter=True),
+        focus=FocusConfig(
+            mode="violations", allow_role_fallback=True, use_status_filter=True
+        ),
         candidate_multiplier=2,
     )
     out = strat(

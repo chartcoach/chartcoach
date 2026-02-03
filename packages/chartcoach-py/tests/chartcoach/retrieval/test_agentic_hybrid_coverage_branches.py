@@ -204,7 +204,9 @@ def test_agentic_strategy_calls_chart_vision_and_status_filter(
         lm=lm,
         default_k=2,
         final_cross_encoder_model=None,
-        focus=FocusConfig(mode="violations", allow_role_fallback=True, use_status_filter=True),
+        focus=FocusConfig(
+            mode="violations", allow_role_fallback=True, use_status_filter=True
+        ),
     )
 
     class DummyProgram(dspy.Module):

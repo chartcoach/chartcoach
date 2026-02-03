@@ -4,7 +4,7 @@ import hashlib
 import json
 import os
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, cast
 
 from chartcoach.catalog import CatalogEntry
 from chartcoach.retrieval.strategy.dspy_models import create_strategy_lm
@@ -177,8 +177,9 @@ class GuidelineUtilityModule:
         for item in evidence:
             if not isinstance(item, dict):
                 continue
-            role = str(item.get("role") or "").strip()
-            text = str(item.get("text") or "").strip()
+            payload = cast("dict[str, object]", item)
+            role = str(payload.get("role") or "").strip()
+            text = str(payload.get("text") or "").strip()
             if not text:
                 continue
             prefix = f"[{role}] " if role else ""
@@ -446,7 +447,7 @@ def rank_by_utility(
     scored: list[tuple[CatalogEntry, dict[str, object]]] = []
     if hasattr(module, "score_guidelines"):
         try:
-            scores = module.score_guidelines(  # type: ignore[call-arg]
+            scores = module.score_guidelines(
                 request=request,
                 situation_text=situation_text,
                 entries=entries,

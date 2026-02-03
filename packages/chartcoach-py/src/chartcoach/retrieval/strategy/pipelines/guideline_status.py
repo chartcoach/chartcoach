@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 import os
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, Protocol
 
 from chartcoach.catalog import CatalogEntry
 from chartcoach.retrieval.strategy.dspy_models import create_guideline_status_lm
@@ -388,7 +388,7 @@ class GuidelineStatusModule:
                     confidences = [_coerce_confidence(item) for item in raw_confidences]
 
                 if len(statuses) != len(batch) or len(confidences) != len(batch):
-                    statuses = ["unclear"] * len(batch)
+                    statuses = [_coerce_status(None) for _ in batch]
                     confidences = [0.0] * len(batch)
 
                 for entry, status, confidence in zip(
@@ -416,13 +416,23 @@ class GuidelineStatusModule:
         return results
 
 
+class GuidelineStatusScorer(Protocol):
+    def classify_many(
+        self,
+        *,
+        chart_key: str,
+        situation: str,
+        entries: list[CatalogEntry],
+    ) -> list[dict[str, object]]: ...
+
+
 def filter_guidelines_by_status(
     *,
     request: RetrievalRequest,
     entries: list[CatalogEntry],
     output_k: int,
     focus: FocusMode,
-    status_module: GuidelineStatusModule,
+    status_module: GuidelineStatusScorer,
     config: StatusScorerConfig,
 ) -> tuple[list[CatalogEntry], dict[str, object]]:
     """Stable-filter retrieved guidelines by (likely) violation/satisfaction status.

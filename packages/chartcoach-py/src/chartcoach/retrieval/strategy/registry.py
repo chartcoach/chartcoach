@@ -40,6 +40,7 @@ from chartcoach.retrieval.strategy.vector_index import (
 
 if TYPE_CHECKING:
     import dspy
+    from chartcoach.index.sparse import CatalogSparseIndex
 else:
     dspy = require_dspy()
 
@@ -53,7 +54,7 @@ StrategyRegistration = tuple[type[RetrievalStrategy], StrategyFactory]
 
 _INDEX_CACHE: dict[tuple[int, str], CatalogVectorIndex] = {}
 _ABSTRACT_INDEX_CACHE: dict[tuple[int, str], CatalogVectorIndex] = {}
-_SPARSE_INDEX_CACHE: dict[tuple[int, str], object] = {}
+_SPARSE_INDEX_CACHE: dict[tuple[int, str], CatalogSparseIndex] = {}
 
 
 def _create_lm() -> dspy.LM:
@@ -156,7 +157,7 @@ def _default_sparse_embedding_config():
     return SparseEmbeddingConfig(model=model)
 
 
-def _shared_sparse_index(*, catalog: Catalog):
+def _shared_sparse_index(*, catalog: Catalog) -> CatalogSparseIndex:
     from chartcoach.index.sparse import CatalogSparseIndex
     from chartcoach.embedding import GuidelineAbstractTextSource
 
@@ -164,7 +165,7 @@ def _shared_sparse_index(*, catalog: Catalog):
     cache_key = (id(catalog), config.digest())
     cached = _SPARSE_INDEX_CACHE.get(cache_key)
     if cached is not None:
-        return cached  # type: ignore[return-value]
+        return cached
 
     sources = [GuidelineAbstractTextSource()]
     index = CatalogSparseIndex.from_catalog(catalog, sources=sources, config=config)

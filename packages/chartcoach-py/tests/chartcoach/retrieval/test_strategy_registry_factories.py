@@ -142,10 +142,9 @@ def test_registry_factories_instantiate_strategies(
         registry.create_multirepr_fusion_strategy(catalog=catalog).id
         == "multirepr-rrf@v1"
     )
-    assert (
-        registry.create_utility_rerank_hybrid_strategy(catalog=catalog).id
-        == "utility-rerank-hybrid@v1"
-    )
+    utility = registry.create_utility_rerank_hybrid_strategy(catalog=catalog)
+    assert utility.id == "utility-rerank-hybrid@v1"
+    assert getattr(utility, "_lm", None) is not None
     assert (
         registry.create_dense_sparse_rrf_strategy(catalog=catalog).id
         == "dense-sparse-rrf@v1"

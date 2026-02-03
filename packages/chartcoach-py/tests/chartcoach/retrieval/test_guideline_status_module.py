@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import contextlib
 from types import SimpleNamespace
+from typing import TYPE_CHECKING, cast
 
 import pytest
 
@@ -9,6 +10,9 @@ from chartcoach.catalog.model import CatalogEntry, Guideline
 from chartcoach.retrieval.strategy.pipelines import guideline_status as mod
 from chartcoach.retrieval.strategy.pipelines.focus import FocusMode
 from chartcoach.retrieval.strategy.types import ImageItem, RetrievalRequest, TextItem
+
+if TYPE_CHECKING:
+    import dspy
 
 
 @pytest.fixture(autouse=True)
@@ -128,7 +132,7 @@ def test_guideline_status_module_classify_caches_and_truncates(monkeypatch) -> N
     monkeypatch.setattr(mod.dspy, "context", noop_context)
 
     cfg = mod.StatusScorerConfig(max_rationale_chars=5, max_guideline_excerpt_chars=3)
-    status = mod.GuidelineStatusModule(lm=DummyLM("lm"), config=cfg)
+    status = mod.GuidelineStatusModule(lm=cast("dspy.LM", DummyLM("lm")), config=cfg)
 
     def program(**_kwargs):  # noqa: ANN003
         return SimpleNamespace(status="violated", confidence="0.8", rationale="abcdefg")
@@ -160,7 +164,8 @@ def test_guideline_status_module_classify_returns_error(monkeypatch) -> None:
     monkeypatch.setattr(mod.dspy, "context", noop_context)
 
     status = mod.GuidelineStatusModule(
-        lm=DummyLM(), config=mod.StatusScorerConfig(max_rationale_chars=10)
+        lm=cast("dspy.LM", DummyLM()),
+        config=mod.StatusScorerConfig(max_rationale_chars=10),
     )
 
     def program(**_kwargs):  # noqa: ANN003
@@ -190,7 +195,8 @@ def test_guideline_status_module_classify_many_batches_and_handles_mismatch(
     monkeypatch.setattr(mod.dspy, "context", noop_context)
 
     status = mod.GuidelineStatusModule(
-        lm=DummyLM(), config=mod.StatusScorerConfig(batch_size=2)
+        lm=cast("dspy.LM", DummyLM()),
+        config=mod.StatusScorerConfig(batch_size=2),
     )
 
     calls = {"n": 0}
@@ -233,7 +239,8 @@ def test_guideline_status_module_classify_many_records_exceptions(monkeypatch) -
     monkeypatch.setattr(mod.dspy, "context", noop_context)
 
     status = mod.GuidelineStatusModule(
-        lm=DummyLM(), config=mod.StatusScorerConfig(batch_size=10)
+        lm=cast("dspy.LM", DummyLM()),
+        config=mod.StatusScorerConfig(batch_size=10),
     )
 
     def batch_program(**_kwargs):  # noqa: ANN003
@@ -263,7 +270,8 @@ def test_guideline_status_module_classify_many_fallbacks_when_cache_missing(
     monkeypatch.setattr(mod.dspy, "context", noop_context)
 
     status = mod.GuidelineStatusModule(
-        lm=DummyLM(), config=mod.StatusScorerConfig(batch_size=10)
+        lm=cast("dspy.LM", DummyLM()),
+        config=mod.StatusScorerConfig(batch_size=10),
     )
 
     class FlakyCache(dict):
@@ -308,7 +316,9 @@ def test_filter_guidelines_by_status_supports_focus_modes(monkeypatch) -> None:
         config=cfg,
     )
     assert [e.id for e in selected] == ["g2", "g3"]
-    assert meta["guideline_status_counts"]["violated"] == 1
+    counts = meta.get("guideline_status_counts")
+    assert isinstance(counts, dict)
+    assert cast("dict[str, int]", counts).get("violated") == 1
 
     selected, meta = mod.filter_guidelines_by_status(
         request=req,

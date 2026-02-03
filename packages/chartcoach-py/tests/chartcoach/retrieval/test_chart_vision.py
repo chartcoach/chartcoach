@@ -3,12 +3,16 @@ from __future__ import annotations
 import contextlib
 import os
 from types import SimpleNamespace
+from typing import TYPE_CHECKING, cast
 
 import pytest
 
 from chartcoach.retrieval.strategy.pipelines import vision as mod
 from chartcoach.retrieval.strategy.pipelines.searcher import GuidelineSearcher
 from chartcoach.retrieval.strategy.types import ImageItem, RetrievalRequest, TextItem
+
+if TYPE_CHECKING:
+    import dspy
 
 
 @pytest.fixture(autouse=True)
@@ -110,7 +114,7 @@ def test_clean_list_coerces_strings_and_limits() -> None:
         def copy(self, **_kwargs):  # noqa: ANN003
             return self
 
-    vision = mod.ChartVisionModule(vlm=DummyLM(), config=cfg)
+    vision = mod.ChartVisionModule(vlm=cast("dspy.LM", DummyLM()), config=cfg)
 
     assert vision._clean_list([" a ", "", "b", 1], limit=10) == ["a", "b"]
     assert vision._clean_list(" x ", limit=10) == ["x"]
@@ -124,7 +128,7 @@ def test_chart_vision_analyze_disabled_and_no_image(monkeypatch) -> None:
             return self
 
     vision = mod.ChartVisionModule(
-        vlm=DummyLM(), config=mod.ChartVisionConfig(enabled=False)
+        vlm=cast("dspy.LM", DummyLM()), config=mod.ChartVisionConfig(enabled=False)
     )
     summary, meta = vision.analyze(
         RetrievalRequest(context=[TextItem(role="situation", text="S")]),
@@ -135,7 +139,7 @@ def test_chart_vision_analyze_disabled_and_no_image(monkeypatch) -> None:
     assert meta["chart_vision_used"] is False
 
     vision = mod.ChartVisionModule(
-        vlm=DummyLM(), config=mod.ChartVisionConfig(enabled=True)
+        vlm=cast("dspy.LM", DummyLM()), config=mod.ChartVisionConfig(enabled=True)
     )
     summary, meta = vision.analyze(
         RetrievalRequest(context=[TextItem(role="situation", text="S")]),
@@ -154,7 +158,7 @@ def test_chart_vision_analyze_respects_existing_chart_vision(monkeypatch) -> Non
 
     # If the request already contains chart_vision, we should not call the program.
     vision = mod.ChartVisionModule(
-        vlm=DummyLM(), config=mod.ChartVisionConfig(enabled=True)
+        vlm=cast("dspy.LM", DummyLM()), config=mod.ChartVisionConfig(enabled=True)
     )
 
     def boom(**_kwargs):  # noqa: ANN003
@@ -196,7 +200,7 @@ def test_chart_vision_analyze_caches_and_retries(monkeypatch) -> None:
     )
 
     vision = mod.ChartVisionModule(
-        vlm=DummyLM("lm"), config=mod.ChartVisionConfig(enabled=True)
+        vlm=cast("dspy.LM", DummyLM("lm")), config=mod.ChartVisionConfig(enabled=True)
     )
     calls = {"n": 0}
 
@@ -252,7 +256,7 @@ def test_chart_vision_analyze_returns_error_meta(monkeypatch) -> None:
     )
 
     vision = mod.ChartVisionModule(
-        vlm=DummyLM(), config=mod.ChartVisionConfig(enabled=True)
+        vlm=cast("dspy.LM", DummyLM()), config=mod.ChartVisionConfig(enabled=True)
     )
 
     def program(**_kwargs):  # noqa: ANN003
@@ -279,7 +283,7 @@ def test_format_and_with_chart_vision_truncates(monkeypatch) -> None:
             return self
 
     vision = mod.ChartVisionModule(
-        vlm=DummyLM(),
+        vlm=cast("dspy.LM", DummyLM()),
         config=mod.ChartVisionConfig(enabled=True, max_text_chars=20),
     )
 

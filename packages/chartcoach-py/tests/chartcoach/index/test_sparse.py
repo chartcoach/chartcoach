@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any, cast
+
 import pytest
 
 from chartcoach.catalog import Catalog
@@ -86,8 +88,8 @@ def test_create_sparse_embedder_supports_transformers_via_injection(
 
     with pytest.raises(ValueError, match="Unknown sparse embedding provider"):
         sparse_mod.create_sparse_embedder(
-            SparseEmbeddingConfig(  # type: ignore[arg-type]
-                provider="nope",
+            SparseEmbeddingConfig(
+                provider=cast(Any, "nope"),
                 model="x",
                 max_length=16,
                 top_k_terms=8,

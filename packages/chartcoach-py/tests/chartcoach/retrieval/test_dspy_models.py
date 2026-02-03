@@ -59,32 +59,36 @@ def test_create_strategy_lm_vlm_and_status_use_env(monkeypatch) -> None:
     monkeypatch.setenv("CHARTCOACH_STRATEGY_LM_MODEL", "gpt-4o-mini")
     monkeypatch.setenv("CHARTCOACH_LM_TIMEOUT_SECONDS", "123.5")
     monkeypatch.setenv("CHARTCOACH_LM_NUM_RETRIES", "7")
-    out = mod.create_strategy_lm()
-    assert out["model"] == "gpt-4o-mini"
-    assert out["timeout_seconds"] == 123.5
-    assert out["num_retries"] == 7
+    mod.create_strategy_lm()
+    last = calls[-1]
+    assert last["model"] == "gpt-4o-mini"
+    assert last["timeout_seconds"] == 123.5
+    assert last["num_retries"] == 7
 
     # Strategy VLM (falls back to LM timeout/retries when not set).
     monkeypatch.setenv("CHARTCOACH_STRATEGY_VLM_MODEL", "gpt-4.1-mini")
     monkeypatch.delenv("CHARTCOACH_VLM_TIMEOUT_SECONDS", raising=False)
     monkeypatch.delenv("CHARTCOACH_VLM_NUM_RETRIES", raising=False)
-    out = mod.create_strategy_vlm()
-    assert out["model"] == "gpt-4.1-mini"
-    assert out["timeout_seconds"] == 123.5
-    assert out["num_retries"] == 7
+    mod.create_strategy_vlm()
+    last = calls[-1]
+    assert last["model"] == "gpt-4.1-mini"
+    assert last["timeout_seconds"] == 123.5
+    assert last["num_retries"] == 7
 
     # Guideline status LM (prefers dedicated env vars).
     monkeypatch.setenv("CHARTCOACH_GUIDELINE_STATUS_LM_MODEL", "gpt-4o-mini")
     monkeypatch.setenv("CHARTCOACH_GUIDELINE_STATUS_TIMEOUT_SECONDS", "9")
     monkeypatch.setenv("CHARTCOACH_GUIDELINE_STATUS_NUM_RETRIES", "2")
-    out = mod.create_guideline_status_lm()
-    assert out["model"] == "gpt-4o-mini"
-    assert out["timeout_seconds"] == 9.0
-    assert out["num_retries"] == 2
+    mod.create_guideline_status_lm()
+    last = calls[-1]
+    assert last["model"] == "gpt-4o-mini"
+    assert last["timeout_seconds"] == 9.0
+    assert last["num_retries"] == 2
 
     # Invalid env values fall back to defaults.
     monkeypatch.setenv("CHARTCOACH_LM_TIMEOUT_SECONDS", "nope")
     monkeypatch.setenv("CHARTCOACH_LM_NUM_RETRIES", "nope")
-    out = mod.create_strategy_lm()
-    assert out["timeout_seconds"] == 120.0
-    assert out["num_retries"] == 6
+    mod.create_strategy_lm()
+    last = calls[-1]
+    assert last["timeout_seconds"] == 120.0
+    assert last["num_retries"] == 6
