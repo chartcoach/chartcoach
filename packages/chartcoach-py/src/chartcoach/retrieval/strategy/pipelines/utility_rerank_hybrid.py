@@ -8,7 +8,7 @@ from chartcoach.retrieval.strategy.types import RetrievalRequest, RetrievalRespo
 from .focus import FocusConfig
 from .searcher import GuidelineSearcher
 from .utility_reranker import UtilityReranker, rank_by_utility
-from .vision import ChartVisionModule, with_chart_vision
+from .vision import ChartVisionModule, prepare_chart_vision
 
 
 class UtilityRerankHybridStrategy(RetrievalStrategy):
@@ -47,8 +47,9 @@ class UtilityRerankHybridStrategy(RetrievalStrategy):
             raise ValueError("k must be positive.")
 
         vision_meta: dict[str, object] = {}
+        vision_tokens_query: str | None = None
         if self._vision is not None:
-            request, vision_meta = with_chart_vision(
+            request, vision_tokens_query, vision_meta = prepare_chart_vision(
                 request,
                 base_situation=self._searcher.build_base_query_text(request),
                 vision=self._vision,
@@ -56,6 +57,11 @@ class UtilityRerankHybridStrategy(RetrievalStrategy):
 
         focus_mode = self._focus.mode
         query_text = self._searcher.build_query_text(request)
+        situation_for_rerank = (
+            f"{query_text}\n\nChart tokens:\n{vision_tokens_query}"
+            if vision_tokens_query
+            else query_text
+        )
         query_vec = self._searcher.vector_index.embed_query(query_text)
 
         raw_k = max(20, min(3_000, effective_k * self._raw_multiplier))
@@ -92,7 +98,7 @@ class UtilityRerankHybridStrategy(RetrievalStrategy):
 
         scored = rank_by_utility(
             request=request,
-            situation_text=query_text,
+            situation_text=situation_for_rerank,
             entries=candidates,
             evidence_by_id=evidence_by_id,
             module=module,

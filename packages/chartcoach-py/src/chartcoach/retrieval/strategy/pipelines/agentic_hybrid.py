@@ -20,7 +20,7 @@ from .focus import (
 )
 from .guideline_status import StatusScorer
 from .searcher import GuidelineSearcher
-from .vision import ChartVisionModule, with_chart_vision
+from .vision import ChartVisionModule, prepare_chart_vision
 
 if TYPE_CHECKING:
     import dspy
@@ -309,8 +309,9 @@ class AgenticHybridStrategy(RetrievalStrategy):
             raise ValueError("k must be positive.")
 
         vision_meta: dict[str, object] = {}
+        vision_tokens_query: str | None = None
         if self._vision is not None:
-            request, vision_meta = with_chart_vision(
+            request, vision_tokens_query, vision_meta = prepare_chart_vision(
                 request,
                 base_situation=self._searcher.build_base_query_text(request),
                 vision=self._vision,
@@ -318,6 +319,11 @@ class AgenticHybridStrategy(RetrievalStrategy):
 
         focus_mode = self._focus.mode
         situation = self._searcher.build_query_text(request)
+        situation_for_lm = (
+            f"{situation}\n\nChart tokens:\n{vision_tokens_query}"
+            if vision_tokens_query
+            else situation
+        )
         top_k = request.k if request.k is not None else 0
 
         id_to_entry = {entry.id: entry for entry in self.catalog.entries}
@@ -330,7 +336,7 @@ class AgenticHybridStrategy(RetrievalStrategy):
             try:
                 with dspy.context(lm=lm):
                     prediction = self._program(
-                        situation=situation, focus=focus_mode, top_k=top_k
+                        situation=situation_for_lm, focus=focus_mode, top_k=top_k
                     )
                 notes = str(getattr(prediction, "notes", "") or "")
                 used_ids = extract_guideline_ids(

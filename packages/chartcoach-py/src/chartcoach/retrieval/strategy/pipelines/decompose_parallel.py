@@ -22,7 +22,7 @@ from .guideline_status import StatusScorer
 from .label_hints import match_catalog_ids_by_label_hints
 from .ranking import rrf_rank, rrf_scores
 from .searcher import GuidelineSearcher
-from .vision import ChartVisionModule, with_chart_vision
+from .vision import ChartVisionModule, prepare_chart_vision
 
 if TYPE_CHECKING:
     import dspy
@@ -125,14 +125,21 @@ class DecomposeParallelStrategy(RetrievalStrategy):
 
         vision_meta: dict[str, object] = {}
         if self._vision is not None:
-            request, vision_meta = with_chart_vision(
+            request, vision_tokens_query, vision_meta = prepare_chart_vision(
                 request,
                 base_situation=self._searcher.build_base_query_text(request),
                 vision=self._vision,
             )
+        else:
+            vision_tokens_query = None
 
         focus_mode = self._focus.mode
         situation = self._searcher.build_query_text(request)
+        situation_for_lm = (
+            f"{situation}\n\nChart tokens:\n{vision_tokens_query}"
+            if vision_tokens_query
+            else situation
+        )
 
         pred: dspy.Prediction | None = None
         lm_error: str | None = None
@@ -142,7 +149,9 @@ class DecomposeParallelStrategy(RetrievalStrategy):
             try:
                 with dspy.context(lm=lm):
                     pred = self._program(
-                        situation=situation, focus=focus_mode, n=self._config.n_facets
+                        situation=situation_for_lm,
+                        focus=focus_mode,
+                        n=self._config.n_facets,
                     )
                 lm_error = None
                 break
@@ -161,6 +170,14 @@ class DecomposeParallelStrategy(RetrievalStrategy):
             canonical = situation
         queries = [canonical, *facets]
         queries = self._clean_list(queries)
+        query_weights: list[float] = [1.0 for _ in queries]
+        if vision_tokens_query:
+            assert self._vision is not None
+            norm_seen = {" ".join(q.lower().split()) for q in queries}
+            norm_tokens = " ".join(vision_tokens_query.lower().split())
+            if norm_tokens and norm_tokens not in norm_seen:
+                queries.append(vision_tokens_query)
+                query_weights.append(float(self._vision.config.fusion_weight))
 
         candidate_ids, matched_labels_by_hint = match_catalog_ids_by_label_hints(
             catalog=self.catalog,
@@ -177,9 +194,10 @@ class DecomposeParallelStrategy(RetrievalStrategy):
         per_query_k = max(effective_k, int(self._config.per_query_guideline_k))
 
         rankings: list[list[str]] = []
+        ranking_weights: list[float] = []
         evidence_by_id: dict[str, list[dict[str, object]]] = {}
         best_role_by_id: dict[str, str] = {}
-        for q in queries:
+        for q, weight in zip(queries, query_weights, strict=True):
             qvec = self._searcher.vector_index.embed_query(q)
             reranker = RRFReranker(K=self._config.rrf_k)
             hits_df, roles_used = search_hybrid_with_roles_fallback(
@@ -226,9 +244,12 @@ class DecomposeParallelStrategy(RetrievalStrategy):
                 if isinstance(best_role, str) and best_role:
                     best_role_by_id.setdefault(gid, best_role)
             rankings.append(ranking)
+            ranking_weights.append(float(weight))
 
-        fused_scores = rrf_scores(rankings=rankings, k=self._config.rrf_k)
-        fused = rrf_rank(rankings=rankings, k=self._config.rrf_k)
+        fused_scores = rrf_scores(
+            rankings=rankings, k=self._config.rrf_k, weights=ranking_weights
+        )
+        fused = rrf_rank(rankings=rankings, k=self._config.rrf_k, weights=ranking_weights)
 
         status_meta: dict[str, object] = {}
         status_scorer = self._status_scorer

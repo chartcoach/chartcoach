@@ -140,8 +140,8 @@ def _patch_strategy_deps(monkeypatch) -> None:
 
     monkeypatch.setattr(
         mod,
-        "with_chart_vision",
-        lambda request, **_kwargs: (request, {"chart_vision_used": True}),
+        "prepare_chart_vision",
+        lambda request, **_kwargs: (request, None, {"chart_vision_used": True}),
     )
     monkeypatch.setattr(
         mod,

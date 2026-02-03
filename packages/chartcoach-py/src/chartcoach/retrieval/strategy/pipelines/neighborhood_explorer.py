@@ -19,7 +19,7 @@ from .focus import FocusConfig
 from .guideline_status import StatusScorer
 from .ranking import rrf_rank, rrf_scores
 from .searcher import GuidelineSearcher
-from .vision import ChartVisionModule, with_chart_vision
+from .vision import ChartVisionModule, prepare_chart_vision
 
 
 def _section_text(entry, role: str) -> str:  # noqa: ANN001
@@ -84,8 +84,9 @@ class NeighborhoodExplorerStrategy(RetrievalStrategy):
             raise ValueError("k must be positive.")
 
         vision_meta: dict[str, object] = {}
+        vision_tokens_query: str | None = None
         if self._vision is not None:
-            request, vision_meta = with_chart_vision(
+            request, vision_tokens_query, vision_meta = prepare_chart_vision(
                 request,
                 base_situation=self._searcher.build_base_query_text(request),
                 vision=self._vision,
@@ -119,6 +120,7 @@ class NeighborhoodExplorerStrategy(RetrievalStrategy):
         anchors = [id_to_entry[gid] for gid in anchor_ids if gid in id_to_entry]
 
         rankings: list[list[str]] = [anchor_ids]
+        weights: list[float] = [1.0]
         similar_ids: list[str] = []
         exception_ids: list[str] = []
         divergent_ids: list[str] = []
@@ -146,6 +148,32 @@ class NeighborhoodExplorerStrategy(RetrievalStrategy):
 
         _add_rows(anchor_rows)
 
+        if vision_tokens_query:
+            assert self._vision is not None
+            vision_vec = self._searcher.vector_index.embed_query(vision_tokens_query)
+            vision_hits_df, _vision_roles_used = search_hybrid_with_focus(
+                searcher=self._searcher,
+                query_text=vision_tokens_query,
+                query_vector=vision_vec,
+                k=raw_k,
+                reranker=RRFReranker(K=self._config.rrf_k),
+                focus=self._focus,
+                focus_mode=focus_mode,
+                fts_columns="text",
+            )
+            vision_anchors_df = self._searcher.aggregate_guideline_hits_with_evidence(
+                vision_hits_df, k=anchor_k
+            )
+            vision_anchor_ids = [
+                gid
+                for gid in vision_anchors_df["id"].to_list()
+                if isinstance(gid, str)
+            ]
+            if vision_anchor_ids:
+                rankings.append(vision_anchor_ids)
+                weights.append(float(self._vision.config.fusion_weight))
+                _add_rows(vision_anchors_df.to_dicts())
+
         for anchor in anchors:
             seed_role = _seed_role_for_focus(anchor, focus_mode)
             seed_text = _section_text(anchor, seed_role) or anchor.guideline.description
@@ -165,6 +193,7 @@ class NeighborhoodExplorerStrategy(RetrievalStrategy):
             ]
             if neigh_ids:
                 rankings.append(neigh_ids)
+                weights.append(1.0)
                 similar_ids.extend(neigh_ids)
 
             context_text = _section_text(anchor, "context")
@@ -205,6 +234,7 @@ class NeighborhoodExplorerStrategy(RetrievalStrategy):
             top_div = [gid for gid, _s in scored[: int(self._config.diverge_k)]]
             if top_div:
                 rankings.append(top_div)
+                weights.append(1.0)
                 divergent_ids.extend(top_div)
 
             exc_df = self._searcher.search_dense(
@@ -219,10 +249,11 @@ class NeighborhoodExplorerStrategy(RetrievalStrategy):
             exc_ids = [gid for gid in exc_agg["id"].to_list() if isinstance(gid, str)]
             if exc_ids:
                 rankings.append(exc_ids)
+                weights.append(1.0)
                 exception_ids.extend(exc_ids)
 
-        fused_scores = rrf_scores(rankings=rankings, k=self._config.rrf_k)
-        fused = rrf_rank(rankings=rankings, k=self._config.rrf_k)
+        fused_scores = rrf_scores(rankings=rankings, k=self._config.rrf_k, weights=weights)
+        fused = rrf_rank(rankings=rankings, k=self._config.rrf_k, weights=weights)
 
         status_meta: dict[str, object] = {}
         status_scorer = self._status_scorer
