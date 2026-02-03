@@ -141,7 +141,8 @@ class RoleAwareSectionsStrategy(RetrievalStrategy):
                 lm_error = str(e)
 
         routed_roles = self._clean_roles(
-            getattr(pred, "roles", None) if pred else None, max_roles=self._config.max_roles
+            getattr(pred, "roles", None) if pred else None,
+            max_roles=self._config.max_roles,
         )
         roles_used = set(routed_roles) if routed_roles else None
 
@@ -168,15 +169,18 @@ class RoleAwareSectionsStrategy(RetrievalStrategy):
             )
 
         status_meta: dict[str, object] = {}
+        use_status_filter = focus_mode != "all" and self._focus.use_status_filter
         candidate_k = effective_k
-        if focus_mode != "all":
+        if use_status_filter:
             status_lm, _, status_cfg = shared_status_scorer()
             self._status_lm = status_lm
             candidate_k = max(
                 effective_k, effective_k * int(status_cfg.candidate_multiplier)
             )
 
-        agg = self._searcher.aggregate_guideline_hits_with_evidence(hits_df, k=candidate_k)
+        agg = self._searcher.aggregate_guideline_hits_with_evidence(
+            hits_df, k=candidate_k
+        )
         candidate_rows = agg.to_dicts()
         row_by_id = {
             str(row.get("id")): row
@@ -190,7 +194,7 @@ class RoleAwareSectionsStrategy(RetrievalStrategy):
             if isinstance(row.get("id"), str) and row["id"] in id_to_entry
         ]
         ordered_entries = candidate_entries[:effective_k]
-        if focus_mode != "all" and ordered_entries:
+        if use_status_filter and ordered_entries:
             status_lm, status_module, status_cfg = shared_status_scorer()
             self._status_lm = status_lm
             ordered_entries, status_meta = filter_guidelines_by_status(

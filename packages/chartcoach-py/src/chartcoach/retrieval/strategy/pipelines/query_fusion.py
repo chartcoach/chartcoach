@@ -9,7 +9,12 @@ from chartcoach.retrieval.strategy.base import RetrievalStrategy
 from chartcoach.retrieval.strategy.optional import require_dspy
 from chartcoach.retrieval.strategy.types import RetrievalRequest, RetrievalResponse
 
-from .focus import FocusConfig, focus_config_from_env, fallback_roles_for_focus, primary_roles_for_focus
+from .focus import (
+    FocusConfig,
+    focus_config_from_env,
+    fallback_roles_for_focus,
+    primary_roles_for_focus,
+)
 from .guideline_status import filter_guidelines_by_status, shared_status_scorer
 from .ranking import rrf_rank, rrf_scores
 from .searcher import GuidelineSearcher
@@ -41,15 +46,15 @@ class QueryFusionSignature(dspy.Signature):
     focused_situation: str = dspy.OutputField(
         desc=(
             "A short rewrite of the situation that includes ONLY the chart to improve and its intent. "
-            "Preserve key domain nouns/variables (e.g., inflation, job starters, pay gap, aid) but omit unrelated surrounding context."
+            "Preserve key domain-specific nouns/variables from the situation, but omit unrelated surrounding context."
         )
     )
     queries: list[str] = dspy.OutputField(
         desc=(
             "A list of short, diverse search queries. "
             "Each query should focus on a different facet (chart type, task/goal, audience, risk/clarity). "
-            "If the situation compares exactly two time points or otherwise implies paired values (before-after / year-over-year), "
-            "you MUST include a query that contains the literal phrases 'paired values' and 'delta encoding' (and optionally 'pairwise delta')."
+            "If the situation implies paired comparisons (e.g., before-after / year-over-year / two values per category), "
+            "include at least one query about representing change or differences clearly."
         )
     )
 
@@ -203,7 +208,9 @@ class QueryFusionHybridStrategy(RetrievalStrategy):
                 roles=roles_used,
                 fts_columns="text",
             )
-            agg = self._searcher.aggregate_guideline_hits_with_evidence(hits_df, k=per_query_k)
+            agg = self._searcher.aggregate_guideline_hits_with_evidence(
+                hits_df, k=per_query_k
+            )
             rows = agg.to_dicts()
             ranking: list[str] = []
             for row in rows:
@@ -238,7 +245,9 @@ class QueryFusionHybridStrategy(RetrievalStrategy):
                     roles=roles_used,
                     fts_columns="text",
                 )
-                agg = self._searcher.aggregate_guideline_hits_with_evidence(hits_df, k=per_query_k)
+                agg = self._searcher.aggregate_guideline_hits_with_evidence(
+                    hits_df, k=per_query_k
+                )
                 rows = agg.to_dicts()
                 ranking: list[str] = []
                 for row in rows:
@@ -285,7 +294,9 @@ class QueryFusionHybridStrategy(RetrievalStrategy):
                     roles=roles_used,
                     fts_columns="text",
                 )
-                agg = self._searcher.aggregate_guideline_hits_with_evidence(hits_df, k=effective_k)
+                agg = self._searcher.aggregate_guideline_hits_with_evidence(
+                    hits_df, k=effective_k
+                )
                 rows = agg.to_dicts()
                 proposed = [
                     gid for gid in agg["id"].to_list() if isinstance(gid, str) and gid
@@ -329,7 +340,9 @@ class QueryFusionHybridStrategy(RetrievalStrategy):
                 roles=roles_used,
                 fts_columns="text",
             )
-            agg = self._searcher.aggregate_guideline_hits_with_evidence(hits_df, k=max(50, raw_k))
+            agg = self._searcher.aggregate_guideline_hits_with_evidence(
+                hits_df, k=max(50, raw_k)
+            )
             fill_rows = agg.to_dicts()
             fill_hits_by_id = {
                 row["id"]: row for row in fill_rows if isinstance(row.get("id"), str)
@@ -357,7 +370,8 @@ class QueryFusionHybridStrategy(RetrievalStrategy):
         candidate_entries = [id_to_entry[gid] for gid in ordered_candidate_ids]
         ordered_entries = candidate_entries[:effective_k]
         status_meta: dict[str, object] = {}
-        if focus_mode != "all" and ordered_entries:
+        use_status_filter = focus_mode != "all" and self._focus.use_status_filter
+        if use_status_filter and ordered_entries:
             status_lm, status_module, status_cfg = shared_status_scorer()
             self._status_lm = status_lm
             ordered_entries, status_meta = filter_guidelines_by_status(

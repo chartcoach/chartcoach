@@ -146,8 +146,12 @@ class DecomposeParallelStrategy(RetrievalStrategy):
                 lm_error = str(e)
 
         canonical = str(getattr(pred, "canonical_query", "") if pred else "").strip()
-        facets = self._clean_list(getattr(pred, "facet_queries", None) if pred else None)
-        label_hints = self._clean_list(getattr(pred, "label_hints", None) if pred else None)
+        facets = self._clean_list(
+            getattr(pred, "facet_queries", None) if pred else None
+        )
+        label_hints = self._clean_list(
+            getattr(pred, "label_hints", None) if pred else None
+        )
 
         if not canonical:
             canonical = situation
@@ -162,7 +166,9 @@ class DecomposeParallelStrategy(RetrievalStrategy):
 
         roles = primary_roles_for_focus(focus_mode)
         roles_used = roles
-        raw_k = max(30, min(5_000, effective_k * int(self._config.per_query_raw_multiplier)))
+        raw_k = max(
+            30, min(5_000, effective_k * int(self._config.per_query_raw_multiplier))
+        )
         per_query_k = max(effective_k, int(self._config.per_query_guideline_k))
 
         rankings: list[list[str]] = []
@@ -204,7 +210,9 @@ class DecomposeParallelStrategy(RetrievalStrategy):
                     ids=None,
                     fts_columns="text",
                 )
-            agg = self._searcher.aggregate_guideline_hits_with_evidence(hits_df, k=per_query_k)
+            agg = self._searcher.aggregate_guideline_hits_with_evidence(
+                hits_df, k=per_query_k
+            )
             rows = agg.to_dicts()
             ranking: list[str] = []
             for row in rows:
@@ -226,8 +234,9 @@ class DecomposeParallelStrategy(RetrievalStrategy):
         fused = rrf_rank(rankings=rankings, k=self._config.rrf_k)
 
         status_meta: dict[str, object] = {}
+        use_status_filter = focus_mode != "all" and self._focus.use_status_filter
         candidate_k = max(effective_k, effective_k)
-        if focus_mode != "all":
+        if use_status_filter:
             status_lm, _, status_cfg = shared_status_scorer()
             self._status_lm = status_lm
             candidate_k = max(
@@ -236,9 +245,11 @@ class DecomposeParallelStrategy(RetrievalStrategy):
 
         candidate_ids_ranked = fused[:candidate_k]
         id_to_entry = {entry.id: entry for entry in self.catalog.entries}
-        candidate_entries = [id_to_entry[gid] for gid in candidate_ids_ranked if gid in id_to_entry]
+        candidate_entries = [
+            id_to_entry[gid] for gid in candidate_ids_ranked if gid in id_to_entry
+        ]
         ordered_entries = candidate_entries[:effective_k]
-        if focus_mode != "all" and ordered_entries:
+        if use_status_filter and ordered_entries:
             status_lm, status_module, status_cfg = shared_status_scorer()
             self._status_lm = status_lm
             ordered_entries, status_meta = filter_guidelines_by_status(
@@ -252,7 +263,11 @@ class DecomposeParallelStrategy(RetrievalStrategy):
 
         def _top_evidence(gid: str, *, limit: int = 3) -> list[dict[str, object]]:
             items = evidence_by_id.get(gid) or []
-            filtered = [e for e in items if isinstance(e, dict) and str(e.get("text") or "").strip()]
+            filtered = [
+                e
+                for e in items
+                if isinstance(e, dict) and str(e.get("text") or "").strip()
+            ]
             filtered.sort(key=lambda x: float(x.get("score") or 0.0), reverse=True)
             return filtered[: max(0, int(limit))]
 

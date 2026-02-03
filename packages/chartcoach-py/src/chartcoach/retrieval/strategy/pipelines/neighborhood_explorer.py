@@ -118,7 +118,9 @@ class NeighborhoodExplorerStrategy(RetrievalStrategy):
             )
 
         anchor_k = max(1, min(int(self._config.anchor_k), effective_k))
-        anchors_df = self._searcher.aggregate_guideline_hits_with_evidence(hits_df, k=anchor_k)
+        anchors_df = self._searcher.aggregate_guideline_hits_with_evidence(
+            hits_df, k=anchor_k
+        )
         anchor_rows = anchors_df.to_dicts()
         anchor_ids = [gid for gid in anchors_df["id"].to_list() if isinstance(gid, str)]
 
@@ -177,7 +179,9 @@ class NeighborhoodExplorerStrategy(RetrievalStrategy):
 
             ctx_vec = self._searcher.vector_index.embed_query(context_text)
             ctx_df = self._searcher.search_dense(
-                query_vector=ctx_vec, k=max(20, int(self._config.neighbor_k)), roles={"context"}
+                query_vector=ctx_vec,
+                k=max(20, int(self._config.neighbor_k)),
+                roles={"context"},
             ).filter(pl.col("id") != anchor.id)
             ctx_agg = self._searcher.aggregate_guideline_hits_with_evidence(
                 ctx_df, k=max(1, int(self._config.neighbor_k))
@@ -227,7 +231,8 @@ class NeighborhoodExplorerStrategy(RetrievalStrategy):
 
         status_meta: dict[str, object] = {}
         candidate_k = effective_k
-        if focus_mode != "all":
+        use_status_filter = focus_mode != "all" and self._focus.use_status_filter
+        if use_status_filter:
             status_lm, _, status_cfg = shared_status_scorer()
             self._status_lm = status_lm
             candidate_k = max(
@@ -235,9 +240,11 @@ class NeighborhoodExplorerStrategy(RetrievalStrategy):
             )
 
         candidate_ids = fused[:candidate_k]
-        candidate_entries = [id_to_entry[gid] for gid in candidate_ids if gid in id_to_entry]
+        candidate_entries = [
+            id_to_entry[gid] for gid in candidate_ids if gid in id_to_entry
+        ]
         ordered_entries = candidate_entries[:effective_k]
-        if focus_mode != "all" and ordered_entries:
+        if use_status_filter and ordered_entries:
             status_lm, status_module, status_cfg = shared_status_scorer()
             self._status_lm = status_lm
             ordered_entries, status_meta = filter_guidelines_by_status(
@@ -251,7 +258,11 @@ class NeighborhoodExplorerStrategy(RetrievalStrategy):
 
         def _top_evidence(gid: str, *, limit: int = 3) -> list[dict[str, object]]:
             items = evidence_by_id.get(gid) or []
-            filtered = [e for e in items if isinstance(e, dict) and str(e.get("text") or "").strip()]
+            filtered = [
+                e
+                for e in items
+                if isinstance(e, dict) and str(e.get("text") or "").strip()
+            ]
             filtered.sort(key=lambda x: float(x.get("score") or 0.0), reverse=True)
             return filtered[: max(0, int(limit))]
 

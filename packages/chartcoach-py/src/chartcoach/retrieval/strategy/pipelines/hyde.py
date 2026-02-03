@@ -9,7 +9,12 @@ from chartcoach.retrieval.strategy.base import RetrievalStrategy
 from chartcoach.retrieval.strategy.optional import require_dspy
 from chartcoach.retrieval.strategy.types import RetrievalRequest, RetrievalResponse
 
-from .focus import FocusConfig, focus_config_from_env, fallback_roles_for_focus, primary_roles_for_focus
+from .focus import (
+    FocusConfig,
+    focus_config_from_env,
+    fallback_roles_for_focus,
+    primary_roles_for_focus,
+)
 from .guideline_status import filter_guidelines_by_status, shared_status_scorer
 from .ranking import rrf_rank, rrf_scores
 from .searcher import GuidelineSearcher
@@ -29,9 +34,9 @@ class HydeSignature(dspy.Signature):
             "Scenario title + designer intent describing the chart to improve. "
             "Write a hypothetical high-quality analysis oriented by `focus`. "
             "Focus only on the described chart, and ignore mentions of adjacent charts in the surrounding story. "
-            "Preserve key domain nouns/variables (e.g., inflation, job starters, pay gap, aid). "
-            "If the situation implies paired comparisons (two values per category / before-after / year-over-year), "
-            "explicitly mention 'paired values' and 'delta encoding' as candidate design approaches."
+            "Preserve key domain-specific nouns/variables from the situation. "
+            "If the situation implies paired comparisons (e.g., before-after / year-over-year / two values per category), "
+            "mention change-focused design considerations (without inventing data details)."
         )
     )
     focus: str = dspy.InputField(
@@ -104,6 +109,7 @@ class HydeHybridStrategy(RetrievalStrategy):
         situation = self._searcher.build_query_text(request)
         focus_mode = self._focus.mode
         status_meta: dict[str, object] = {}
+        use_status_filter = focus_mode != "all" and self._focus.use_status_filter
 
         pred: dspy.Prediction | None = None
         lm_error: str | None = None
@@ -127,8 +133,14 @@ class HydeHybridStrategy(RetrievalStrategy):
         roles_used = roles
 
         # Lexical branch (precise): original situation/query.
-        hits_fts = self._searcher.search_fts(query_text=situation, k=raw_k, roles=roles_used)
-        if hits_fts.is_empty() and roles is not None and self._focus.allow_role_fallback:
+        hits_fts = self._searcher.search_fts(
+            query_text=situation, k=raw_k, roles=roles_used
+        )
+        if (
+            hits_fts.is_empty()
+            and roles is not None
+            and self._focus.allow_role_fallback
+        ):
             roles_used = fallback_roles_for_focus(focus_mode)
             hits_fts = self._searcher.search_fts(
                 query_text=situation, k=raw_k, roles=roles_used
@@ -215,7 +227,9 @@ class HydeHybridStrategy(RetrievalStrategy):
                     roles=roles_used,
                     fts_columns="text",
                 )
-                agg = self._searcher.aggregate_guideline_hits_with_evidence(hits_hybrid, k=effective_k)
+                agg = self._searcher.aggregate_guideline_hits_with_evidence(
+                    hits_hybrid, k=effective_k
+                )
                 rows = agg.to_dicts()
                 rerank_hits_by_id = {
                     row["id"]: row for row in rows if isinstance(row.get("id"), str)
@@ -255,7 +269,9 @@ class HydeHybridStrategy(RetrievalStrategy):
                 roles=roles_used,
                 fts_columns="text",
             )
-            agg = self._searcher.aggregate_guideline_hits_with_evidence(hits_df, k=max(50, raw_k))
+            agg = self._searcher.aggregate_guideline_hits_with_evidence(
+                hits_df, k=max(50, raw_k)
+            )
             fill_rows = agg.to_dicts()
             fill_hits_by_id = {
                 row["id"]: row for row in fill_rows if isinstance(row.get("id"), str)
@@ -282,7 +298,7 @@ class HydeHybridStrategy(RetrievalStrategy):
 
         candidate_entries = [id_to_entry[gid] for gid in ordered_candidate_ids]
         ordered_entries = candidate_entries[:effective_k]
-        if focus_mode != "all" and ordered_entries:
+        if use_status_filter and ordered_entries:
             status_lm, status_module, status_cfg = shared_status_scorer()
             self._status_lm = status_lm
             ordered_entries, status_meta = filter_guidelines_by_status(
