@@ -1,0 +1,55 @@
+schema_version: 1
+
+run:
+  # Paths can be absolute or repo-relative. Prefer committing repo-relative paths.
+  scenarios: evals/scenarios/spec.yaml
+  catalog_uri: guidelines/catalog.parquet
+  # artifacts_url is intentionally omitted: use `--artifacts-url ...` or env defaults.
+  purge: false
+  k: 16
+  strategies:
+    - ann-dense@v1
+    - bm25-prf@v1
+    - hybrid-rrf@v1
+    - dense-mmr@v1
+    - sparse-splade@v1
+    - dense-sparse-rrf@v1
+    - multirepr-rrf@v1
+    - query-fusion-hybrid@v1
+    - facet-fusion-hybrid@v1
+    - hyde-hybrid@v1
+    - decompose-parallel@v1
+    - role-aware-sections@v1
+    - label-gated-ann@v1
+    - label-first-abstract@v1
+    - neighborhood-explorer@v1
+    - hybrid-rrf-setselect-label@v1
+    - hybrid-rrf-setselect-facility@v1
+    - utility-rerank-hybrid@v1
+    - agentic-hybrid@v1
+
+config:
+  # Paper runs should be explicit about models + decoding settings (temperature=0).
+  lms:
+    strategy:
+      model: gpt-5.1
+      temperature: 0.0
+    vlm:
+      model: gpt-5.2
+      temperature: 0.0
+    guideline_status:
+      model: gpt-5.1
+      temperature: 0.0
+
+  focus:
+    mode: violations
+    allow_role_fallback: true
+    use_status_filter: true
+
+  chart_vision:
+    enabled: true
+
+  embedding:
+    projector: litellm
+    model: text-embedding-3-small
+
