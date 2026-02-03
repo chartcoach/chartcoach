@@ -7,6 +7,8 @@ from chartcoach.catalog import Catalog
 from chartcoach.embedding.vectors import vector_matrix
 from chartcoach.retrieval.operators import (
     apply_status_filter,
+    extract_guideline_ranking,
+    merge_evidence,
     plan_status_filter,
     search_dense_with_focus,
 )
@@ -15,9 +17,9 @@ from chartcoach.retrieval.strategy.types import RetrievalRequest, RetrievalRespo
 
 from .focus import FocusConfig
 from .guideline_status import StatusScorer
-from .ranking import mmr_select
+from .ranking import mmr_select, rrf_rank, rrf_scores
 from .searcher import GuidelineSearcher
-from .vision import ChartVisionModule, with_chart_vision
+from .vision import ChartVisionModule, prepare_chart_vision
 
 
 class DenseMmrStrategy(RetrievalStrategy):
@@ -54,8 +56,9 @@ class DenseMmrStrategy(RetrievalStrategy):
             raise ValueError("k must be positive.")
 
         vision_meta: dict[str, object] = {}
+        vision_tokens_query: str | None = None
         if self._vision is not None:
-            request, vision_meta = with_chart_vision(
+            request, vision_tokens_query, vision_meta = prepare_chart_vision(
                 request,
                 base_situation=self._searcher.build_base_query_text(request),
                 vision=self._vision,
@@ -73,12 +76,76 @@ class DenseMmrStrategy(RetrievalStrategy):
             focus=self._focus,
             focus_mode=focus_mode,
         )
-        if hits_df.is_empty():
+        base_agg = self._searcher.aggregate_guideline_hits_with_evidence(
+            hits_df, k=raw_k
+        )
+        base_agg = base_agg.head(int(min(self._mmr_candidate_limit, base_agg.height)))
+
+        (
+            base_ranking,
+            base_evidence,
+            base_roles,
+            base_score_by_id,
+        ) = extract_guideline_ranking(base_agg)
+
+        rankings: list[list[str]] = []
+        weights: list[float] = []
+        evidence_by_id: dict[str, list[dict[str, object]]] = {}
+        best_role_by_id: dict[str, str] = {}
+
+        if base_ranking:
+            rankings.append(base_ranking)
+            weights.append(1.0)
+            evidence_by_id.update(base_evidence)
+            best_role_by_id.update(base_roles)
+
+        if vision_tokens_query:
+            assert self._vision is not None
+            vision_vec = self._searcher.vector_index.embed_query(vision_tokens_query)
+            vision_hits_df, _vision_roles_used = search_dense_with_focus(
+                searcher=self._searcher,
+                query_vector=vision_vec,
+                k=raw_k,
+                focus=self._focus,
+                focus_mode=focus_mode,
+            )
+            vision_agg = self._searcher.aggregate_guideline_hits_with_evidence(
+                vision_hits_df, k=raw_k
+            )
+            vision_agg = vision_agg.head(
+                int(min(self._mmr_candidate_limit, vision_agg.height))
+            )
+            (
+                vision_ranking,
+                vision_evidence,
+                vision_roles,
+                _vision_score_by_id,
+            ) = extract_guideline_ranking(vision_agg)
+            if vision_ranking:
+                rankings.append(vision_ranking)
+                weights.append(float(self._vision.config.fusion_weight))
+                for gid, ev in vision_evidence.items():
+                    evidence_by_id.setdefault(gid, []).extend(ev)
+                best_role_by_id.update(vision_roles)
+
+        fused_scores: dict[str, float] | None = None
+        candidate_ids = base_ranking
+        relevance = dict(base_score_by_id)
+        score_kind = "cosine_similarity"
+        if len(rankings) > 1:
+            fused_scores = rrf_scores(rankings=rankings, k=60, weights=weights)
+            candidate_ids = rrf_rank(rankings=rankings, k=60, weights=weights)
+            relevance = fused_scores
+            score_kind = "vision_fused_weighted_rrf"
+
+        if not candidate_ids:
             return RetrievalResponse(
                 catalog=Catalog(entries=[]),
                 meta={
                     **self._searcher.vector_index.meta(),
                     "k": effective_k,
+                    "raw_k": raw_k,
+                    "score_kind": score_kind,
                     "focus": {
                         "mode": focus_mode,
                         "roles": sorted(roles_used) if roles_used else None,
@@ -87,18 +154,6 @@ class DenseMmrStrategy(RetrievalStrategy):
                     "hits": [],
                 },
             )
-
-        agg = self._searcher.aggregate_guideline_hits_with_evidence(hits_df, k=raw_k)
-        agg = agg.head(int(min(self._mmr_candidate_limit, agg.height)))
-
-        candidate_ids = [gid for gid in agg["id"].to_list() if isinstance(gid, str)]
-        hit_by_id = {
-            row["id"]: row for row in agg.to_dicts() if isinstance(row.get("id"), str)
-        }
-        relevance = {
-            gid: float(hit_by_id.get(gid, {}).get("score") or 0.0)
-            for gid in candidate_ids
-        }
 
         embedding_column = self._searcher.vector_index.config.embedding_column
         embed_df = self._searcher.vector_index.embedded_text_df.filter(
@@ -154,7 +209,7 @@ class DenseMmrStrategy(RetrievalStrategy):
             **self._searcher.vector_index.meta(),
             "k": effective_k,
             "raw_k": raw_k,
-            "score_kind": "cosine_similarity",
+            "score_kind": score_kind,
             "mmr_lambda": self._mmr_lambda,
             "mmr_candidates": len(candidate_ids),
             "focus": {
@@ -167,8 +222,8 @@ class DenseMmrStrategy(RetrievalStrategy):
                 {
                     "id": entry.id,
                     "score": float(relevance.get(entry.id, 0.0)),
-                    "best_role": hit_by_id.get(entry.id, {}).get("best_role"),
-                    "evidence": hit_by_id.get(entry.id, {}).get("evidence") or [],
+                    "best_role": best_role_by_id.get(entry.id),
+                    "evidence": merge_evidence(evidence_by_id.get(entry.id), limit=3),
                 }
                 for entry in ordered_entries
             ],

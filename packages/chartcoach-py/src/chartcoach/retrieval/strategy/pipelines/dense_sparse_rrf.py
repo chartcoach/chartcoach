@@ -6,6 +6,7 @@ from chartcoach.catalog import Catalog
 from chartcoach.index.sparse import CatalogSparseIndex
 from chartcoach.retrieval.operators import (
     apply_status_filter,
+    merge_evidence,
     plan_status_filter,
     search_dense_with_focus,
 )
@@ -16,7 +17,7 @@ from .focus import FocusConfig
 from .guideline_status import StatusScorer
 from .ranking import rrf_rank, rrf_scores
 from .searcher import GuidelineSearcher
-from .vision import ChartVisionModule, with_chart_vision
+from .vision import ChartVisionModule, prepare_chart_vision
 
 
 class DenseSparseRrfStrategy(RetrievalStrategy):
@@ -77,8 +78,9 @@ class DenseSparseRrfStrategy(RetrievalStrategy):
             raise ValueError("k must be positive.")
 
         vision_meta: dict[str, object] = {}
+        vision_tokens_query: str | None = None
         if self._vision is not None:
-            request, vision_meta = with_chart_vision(
+            request, vision_tokens_query, vision_meta = prepare_chart_vision(
                 request,
                 base_situation=self._searcher.build_base_query_text(request),
                 vision=self._vision,
@@ -133,9 +135,58 @@ class DenseSparseRrfStrategy(RetrievalStrategy):
             row["id"]: row for row in rows_sparse if isinstance(row.get("id"), str)
         }
 
+        rank_base = rrf_rank(rankings=[rank_dense, rank_sparse], k=self._rrf_k)
         fused_scores = rrf_scores(rankings=[rank_dense, rank_sparse], k=self._rrf_k)
-        fused = rrf_rank(rankings=[rank_dense, rank_sparse], k=self._rrf_k)
-        fused_candidates = fused[:candidate_k]
+        fused_candidates = rank_base[:candidate_k]
+        score_kind = "dense_sparse_rrf"
+
+        hit_dense_v_by_id: dict[str, dict[str, object]] = {}
+        hit_sparse_v_by_id: dict[str, dict[str, object]] = {}
+        if vision_tokens_query:
+            vision_vec = self._searcher.vector_index.embed_query(vision_tokens_query)
+            vision_dense, _vision_roles_used = search_dense_with_focus(
+                searcher=self._searcher,
+                query_vector=vision_vec,
+                k=raw_k,
+                focus=self._focus,
+                focus_mode=focus_mode,
+            )
+            vision_sparse = self._sparse_index.search_sparse(vision_tokens_query, k=raw_k)
+
+            vision_dense_agg = self._searcher.aggregate_guideline_hits_with_evidence(
+                vision_dense, k=candidate_k
+            )
+            vision_sparse_agg = self._searcher.aggregate_guideline_hits_with_evidence(
+                vision_sparse, k=candidate_k
+            )
+            rank_dense_v = [
+                gid for gid in vision_dense_agg["id"].to_list() if isinstance(gid, str)
+            ]
+            rank_sparse_v = [
+                gid for gid in vision_sparse_agg["id"].to_list() if isinstance(gid, str)
+            ]
+            rank_vision = rrf_rank(rankings=[rank_dense_v, rank_sparse_v], k=self._rrf_k)
+
+            for row in vision_dense_agg.to_dicts():
+                gid = row.get("id")
+                if isinstance(gid, str) and gid:
+                    hit_dense_v_by_id[gid] = cast("dict[str, object]", row)
+            for row in vision_sparse_agg.to_dicts():
+                gid = row.get("id")
+                if isinstance(gid, str) and gid:
+                    hit_sparse_v_by_id[gid] = cast("dict[str, object]", row)
+
+            fused_scores = rrf_scores(
+                rankings=[rank_base, rank_vision],
+                k=self._rrf_k,
+                weights=[1.0, float(self._vision.config.fusion_weight)],
+            )
+            fused_candidates = rrf_rank(
+                rankings=[rank_base, rank_vision],
+                k=self._rrf_k,
+                weights=[1.0, float(self._vision.config.fusion_weight)],
+            )[:candidate_k]
+            score_kind = "vision_fused_weighted_rrf"
 
         id_to_entry = {entry.id: entry for entry in self.catalog.entries}
         candidate_entries = [
@@ -159,7 +210,7 @@ class DenseSparseRrfStrategy(RetrievalStrategy):
             "k": effective_k,
             "raw_k": raw_k,
             "candidate_k": candidate_k,
-            "score_kind": "dense_sparse_rrf",
+            "score_kind": score_kind,
             "fusion": {"type": "rrf", "k": self._rrf_k},
             "focus": {
                 "mode": focus_mode,
@@ -174,10 +225,20 @@ class DenseSparseRrfStrategy(RetrievalStrategy):
                     "best_role": (
                         hit_dense_by_id.get(entry.id, {}).get("best_role")
                         or hit_sparse_by_id.get(entry.id, {}).get("best_role")
+                        or hit_dense_v_by_id.get(entry.id, {}).get("best_role")
+                        or hit_sparse_v_by_id.get(entry.id, {}).get("best_role")
                     ),
-                    "evidence": self._merge_evidence(
-                        hit_dense_by_id.get(entry.id, {}).get("evidence"),
-                        hit_sparse_by_id.get(entry.id, {}).get("evidence"),
+                    "evidence": merge_evidence(
+                        self._merge_evidence(
+                            hit_dense_by_id.get(entry.id, {}).get("evidence"),
+                            hit_sparse_by_id.get(entry.id, {}).get("evidence"),
+                            limit=3,
+                        ),
+                        self._merge_evidence(
+                            hit_dense_v_by_id.get(entry.id, {}).get("evidence"),
+                            hit_sparse_v_by_id.get(entry.id, {}).get("evidence"),
+                            limit=3,
+                        ),
                         limit=3,
                     ),
                 }
