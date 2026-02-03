@@ -19,7 +19,10 @@ from chartcoach.retrieval.strategy.pipelines.focus import FocusConfig
 from chartcoach.retrieval.strategy.pipelines.guideline_status import StatusScorerConfig
 from chartcoach.retrieval.strategy.pipelines.searcher import GuidelineSearcher
 from chartcoach.retrieval.strategy.types import RetrievalRequest, TextItem
-from chartcoach.retrieval.strategy.vector_index import CatalogVectorIndex, EmbeddingConfig
+from chartcoach.retrieval.strategy.vector_index import (
+    CatalogVectorIndex,
+    EmbeddingConfig,
+)
 
 
 class _FakeLanceIndex:
@@ -65,7 +68,9 @@ class _FakeLanceIndex:
         fts_columns=None,  # noqa: ANN001, ARG002
     ):
         _ = reranker
-        df = self._hybrid_by_query.get(query_text, pl.DataFrame({"id": [], "role": [], "score": []}))
+        df = self._hybrid_by_query.get(
+            query_text, pl.DataFrame({"id": [], "role": [], "score": []})
+        )
         df = self._role_filter(df, roles)
         df = self._ids_filter(df, ids)
         return df.head(k)
@@ -120,7 +125,9 @@ def catalog() -> Catalog:
 
 @pytest.fixture(autouse=True)
 def _patch_embed_query(monkeypatch) -> None:
-    monkeypatch.setattr(CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0]))
+    monkeypatch.setattr(
+        CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0])
+    )
 
 
 def _patch_strategy_deps(monkeypatch) -> None:
@@ -141,7 +148,10 @@ def _patch_strategy_deps(monkeypatch) -> None:
     monkeypatch.setattr(
         mod,
         "filter_guidelines_by_status",
-        lambda *, entries, output_k, **_kwargs: (entries[:output_k], {"guideline_status_used": True}),
+        lambda *, entries, output_k, **_kwargs: (
+            entries[:output_k],
+            {"guideline_status_used": True},
+        ),
     )
 
 
@@ -159,11 +169,17 @@ def test_facet_fusion_hybrid_role_fallback_and_cross_encoder_rerank(
     monkeypatch.setattr(lancedb.rerankers, "CrossEncoderReranker", DummyCrossEncoder)
 
     fake = _FakeLanceIndex()
-    fake.set_hybrid("q1", pl.DataFrame({"id": ["g1"], "role": ["advice"], "score": [2.0]}))
-    fake.set_hybrid("q2", pl.DataFrame({"id": ["g2"], "role": ["advice"], "score": [2.0]}))
+    fake.set_hybrid(
+        "q1", pl.DataFrame({"id": ["g1"], "role": ["advice"], "score": [2.0]})
+    )
+    fake.set_hybrid(
+        "q2", pl.DataFrame({"id": ["g2"], "role": ["advice"], "score": [2.0]})
+    )
     fake.set_hybrid(
         "q1\nq2",
-        pl.DataFrame({"id": ["g2", "g1"], "role": ["advice", "advice"], "score": [3.0, 2.0]}),
+        pl.DataFrame(
+            {"id": ["g2", "g1"], "role": ["advice", "advice"], "score": [3.0, 2.0]}
+        ),
     )
 
     searcher = _make_searcher(catalog=catalog, fake=fake)
@@ -175,7 +191,7 @@ def test_facet_fusion_hybrid_role_fallback_and_cross_encoder_rerank(
         lm=lm,
         config=FacetFusionConfig(n_queries=2, cross_encoder_model="dummy"),
         default_k=2,
-        focus=FocusConfig(mode="violations", allow_role_fallback=True),
+        focus=FocusConfig(mode="violations", allow_role_fallback=True, use_status_filter=True),
     )
 
     class DummyPlan(dspy.Module):
@@ -191,19 +207,27 @@ def test_facet_fusion_hybrid_role_fallback_and_cross_encoder_rerank(
 
     strat._program = DummyPlan()
 
-    out = strat(request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=2))
+    out = strat(
+        request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=2)
+    )
     assert out.meta["chart_vision"]["chart_vision_used"] is True
     assert out.meta["guideline_status_used"] is True
 
 
-def test_facet_fusion_hybrid_runs_fill_fallback_when_underfilled(monkeypatch, catalog: Catalog) -> None:
+def test_facet_fusion_hybrid_runs_fill_fallback_when_underfilled(
+    monkeypatch, catalog: Catalog
+) -> None:
     _patch_strategy_deps(monkeypatch)
 
     fake = _FakeLanceIndex()
-    fake.set_hybrid("q1", pl.DataFrame({"id": ["g1"], "role": ["advice"], "score": [2.0]}))
+    fake.set_hybrid(
+        "q1", pl.DataFrame({"id": ["g1"], "role": ["advice"], "score": [2.0]})
+    )
     fake.set_hybrid(
         "S",
-        pl.DataFrame({"id": ["g1", "g2"], "role": ["advice", "advice"], "score": [2.0, 1.0]}),
+        pl.DataFrame(
+            {"id": ["g1", "g2"], "role": ["advice", "advice"], "score": [2.0, 1.0]}
+        ),
     )
     searcher = _make_searcher(catalog=catalog, fake=fake)
 
@@ -230,15 +254,21 @@ def test_facet_fusion_hybrid_runs_fill_fallback_when_underfilled(monkeypatch, ca
 
     strat._program = DummyPlan()
 
-    out = strat(request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=2))
+    out = strat(
+        request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=2)
+    )
     assert out.meta["fill_fallback_used"] is True
 
 
-def test_facet_fusion_hybrid_records_lm_error_when_plan_fails(monkeypatch, catalog: Catalog) -> None:
+def test_facet_fusion_hybrid_records_lm_error_when_plan_fails(
+    monkeypatch, catalog: Catalog
+) -> None:
     _patch_strategy_deps(monkeypatch)
 
     fake = _FakeLanceIndex()
-    fake.set_hybrid("S", pl.DataFrame({"id": ["g1"], "role": ["advice"], "score": [2.0]}))
+    fake.set_hybrid(
+        "S", pl.DataFrame({"id": ["g1"], "role": ["advice"], "score": [2.0]})
+    )
     searcher = _make_searcher(catalog=catalog, fake=fake)
 
     lm = dspy.LM(model="gpt-4o-mini", api_base="http://example.invalid/v1", api_key="x")
@@ -257,12 +287,16 @@ def test_facet_fusion_hybrid_records_lm_error_when_plan_fails(monkeypatch, catal
 
     strat._program = AlwaysFails()
 
-    out = strat(request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1))
+    out = strat(
+        request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1)
+    )
     assert out.meta["lm_fallback_used"] is True
     assert out.meta["lm_error"]
 
 
-def test_facet_fusion_hybrid_cross_encoder_empty_sets_fallback(monkeypatch, catalog: Catalog) -> None:
+def test_facet_fusion_hybrid_cross_encoder_empty_sets_fallback(
+    monkeypatch, catalog: Catalog
+) -> None:
     _patch_strategy_deps(monkeypatch)
 
     import lancedb.rerankers
@@ -274,8 +308,12 @@ def test_facet_fusion_hybrid_cross_encoder_empty_sets_fallback(monkeypatch, cata
     monkeypatch.setattr(lancedb.rerankers, "CrossEncoderReranker", DummyCrossEncoder)
 
     fake = _FakeLanceIndex()
-    fake.set_hybrid("q1", pl.DataFrame({"id": ["g1"], "role": ["advice"], "score": [2.0]}))
-    fake.set_hybrid("q2", pl.DataFrame({"id": ["g2"], "role": ["advice"], "score": [2.0]}))
+    fake.set_hybrid(
+        "q1", pl.DataFrame({"id": ["g1"], "role": ["advice"], "score": [2.0]})
+    )
+    fake.set_hybrid(
+        "q2", pl.DataFrame({"id": ["g2"], "role": ["advice"], "score": [2.0]})
+    )
     # Cross-encoder rerank step sees the joined query text; make it empty so `proposed` is empty.
     fake.set_hybrid("q1\nq2", pl.DataFrame({"id": [], "role": [], "score": []}))
     searcher = _make_searcher(catalog=catalog, fake=fake)
@@ -292,14 +330,20 @@ def test_facet_fusion_hybrid_cross_encoder_empty_sets_fallback(monkeypatch, cata
 
     class DummyPlan(dspy.Module):
         def forward(self, **_kwargs):  # noqa: ANN003
-            return dspy.Prediction(focused_situation="S", canonical_query="q1", facet_queries=["q2"])
+            return dspy.Prediction(
+                focused_situation="S", canonical_query="q1", facet_queries=["q2"]
+            )
 
     strat._program = DummyPlan()
-    out = strat(request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1))
+    out = strat(
+        request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1)
+    )
     assert out.meta["cross_encoder_fallback_used"] is True
 
 
-def test_facet_fusion_hybrid_cross_encoder_exception_sets_error(monkeypatch, catalog: Catalog) -> None:
+def test_facet_fusion_hybrid_cross_encoder_exception_sets_error(
+    monkeypatch, catalog: Catalog
+) -> None:
     _patch_strategy_deps(monkeypatch)
 
     import lancedb.rerankers
@@ -311,7 +355,9 @@ def test_facet_fusion_hybrid_cross_encoder_exception_sets_error(monkeypatch, cat
     monkeypatch.setattr(lancedb.rerankers, "CrossEncoderReranker", DummyCrossEncoder)
 
     fake = _FakeLanceIndex()
-    fake.set_hybrid("q1", pl.DataFrame({"id": ["g1"], "role": ["advice"], "score": [2.0]}))
+    fake.set_hybrid(
+        "q1", pl.DataFrame({"id": ["g1"], "role": ["advice"], "score": [2.0]})
+    )
     searcher = _make_searcher(catalog=catalog, fake=fake)
 
     orig_search_hybrid = GuidelineSearcher.search_hybrid
@@ -354,15 +400,21 @@ def test_facet_fusion_hybrid_cross_encoder_exception_sets_error(monkeypatch, cat
 
     class DummyPlan(dspy.Module):
         def forward(self, **_kwargs):  # noqa: ANN003
-            return dspy.Prediction(focused_situation="S", canonical_query="q1", facet_queries=[])
+            return dspy.Prediction(
+                focused_situation="S", canonical_query="q1", facet_queries=[]
+            )
 
     strat._program = DummyPlan()
-    out = strat(request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1))
+    out = strat(
+        request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1)
+    )
     assert out.meta["cross_encoder_fallback_used"] is True
     assert out.meta["cross_encoder_error"]
 
 
-def test_facet_fusion_hybrid_validates_k_is_positive(monkeypatch, catalog: Catalog) -> None:
+def test_facet_fusion_hybrid_validates_k_is_positive(
+    monkeypatch, catalog: Catalog
+) -> None:
     fake = _FakeLanceIndex()
     searcher = _make_searcher(catalog=catalog, fake=fake)
     lm = dspy.LM(model="gpt-4o-mini", api_base="http://example.invalid/v1", api_key="x")
@@ -391,10 +443,16 @@ def test_facet_fusion_hybrid_fills_from_fused_when_cross_encoder_partial(
     monkeypatch.setattr(lancedb.rerankers, "CrossEncoderReranker", DummyCrossEncoder)
 
     fake = _FakeLanceIndex()
-    fake.set_hybrid("q1", pl.DataFrame({"id": ["g1"], "role": ["advice"], "score": [2.0]}))
-    fake.set_hybrid("q2", pl.DataFrame({"id": ["g2"], "role": ["advice"], "score": [2.0]}))
+    fake.set_hybrid(
+        "q1", pl.DataFrame({"id": ["g1"], "role": ["advice"], "score": [2.0]})
+    )
+    fake.set_hybrid(
+        "q2", pl.DataFrame({"id": ["g2"], "role": ["advice"], "score": [2.0]})
+    )
     # Cross-encoder step only returns a subset (g1); strategy should fill g2 from fused.
-    fake.set_hybrid("q1\nq2", pl.DataFrame({"id": ["g1"], "role": ["advice"], "score": [3.0]}))
+    fake.set_hybrid(
+        "q1\nq2", pl.DataFrame({"id": ["g1"], "role": ["advice"], "score": [3.0]})
+    )
 
     searcher = _make_searcher(catalog=catalog, fake=fake)
     lm = dspy.LM(model="gpt-4o-mini", api_base="http://example.invalid/v1", api_key="x")
@@ -409,10 +467,14 @@ def test_facet_fusion_hybrid_fills_from_fused_when_cross_encoder_partial(
 
     class DummyPlan(dspy.Module):
         def forward(self, **_kwargs):  # noqa: ANN003
-            return dspy.Prediction(focused_situation="S", canonical_query="q1", facet_queries=["q2"])
+            return dspy.Prediction(
+                focused_situation="S", canonical_query="q1", facet_queries=["q2"]
+            )
 
     strat._program = DummyPlan()
-    out = strat(request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=2))
+    out = strat(
+        request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=2)
+    )
     assert [e.id for e in out.catalog.entries] == ["g1", "g2"]
     assert out.meta["cross_encoder_fallback_used"] is True
 
@@ -432,8 +494,14 @@ def test_facet_fusion_hybrid_includes_evidence_and_filters_bad_evidence(
     monkeypatch.setattr(lancedb.rerankers, "CrossEncoderReranker", DummyCrossEncoder)
 
     fake = _FakeLanceIndex()
-    fake.set_hybrid("q1", pl.DataFrame({"id": ["g1"], "role": ["advice"], "score": [2.0], "text": ["x"]}))
-    fake.set_hybrid("q1\nq2", pl.DataFrame({"id": ["g1"], "role": ["advice"], "score": [3.0], "text": ["y"]}))
+    fake.set_hybrid(
+        "q1",
+        pl.DataFrame({"id": ["g1"], "role": ["advice"], "score": [2.0], "text": ["x"]}),
+    )
+    fake.set_hybrid(
+        "q1\nq2",
+        pl.DataFrame({"id": ["g1"], "role": ["advice"], "score": [3.0], "text": ["y"]}),
+    )
 
     searcher = _make_searcher(catalog=catalog, fake=fake)
 
@@ -448,7 +516,13 @@ def test_facet_fusion_hybrid_includes_evidence_and_filters_bad_evidence(
                     "best_role": ["advice", "advice"],
                     "evidence": [
                         [],
-                        [{"role": "advice", "text": "axis title missing", "score": 1.0}],
+                        [
+                            {
+                                "role": "advice",
+                                "text": "axis title missing",
+                                "score": 1.0,
+                            }
+                        ],
                     ],
                 }
             )
@@ -502,17 +576,24 @@ def test_facet_fusion_hybrid_includes_evidence_and_filters_bad_evidence(
             )
 
     strat._program = DummyPlan()
-    out = strat(request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1))
+    out = strat(
+        request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1)
+    )
     assert out.meta["hits"][0]["evidence"]
 
 
-def test_facet_fusion_hybrid_role_fallback_loop_records_evidence(monkeypatch, catalog: Catalog) -> None:
+def test_facet_fusion_hybrid_role_fallback_loop_records_evidence(
+    monkeypatch, catalog: Catalog
+) -> None:
     _patch_strategy_deps(monkeypatch)
 
     import chartcoach.retrieval.strategy.pipelines.searcher as searcher_mod
 
     fake = _FakeLanceIndex()
-    fake.set_hybrid("q1", pl.DataFrame({"id": ["g1"], "role": ["advice"], "score": [2.0], "text": ["x"]}))
+    fake.set_hybrid(
+        "q1",
+        pl.DataFrame({"id": ["g1"], "role": ["advice"], "score": [2.0], "text": ["x"]}),
+    )
 
     searcher = _make_searcher(catalog=catalog, fake=fake)
 
@@ -520,7 +601,14 @@ def test_facet_fusion_hybrid_role_fallback_loop_records_evidence(monkeypatch, ca
 
     def patched_agg(hits_df: pl.DataFrame, *, k: int, **kwargs):  # noqa: ANN001
         if k == 40 and hits_df.is_empty():
-            return pl.DataFrame({"id": [None], "score": [0.1], "best_role": ["advice"], "evidence": [[]]})
+            return pl.DataFrame(
+                {
+                    "id": [None],
+                    "score": [0.1],
+                    "best_role": ["advice"],
+                    "evidence": [[]],
+                }
+            )
         if k == 40:
             return pl.DataFrame(
                 {
@@ -563,5 +651,7 @@ def test_facet_fusion_hybrid_role_fallback_loop_records_evidence(monkeypatch, ca
             )
 
     strat._program = DummyPlan()
-    out = strat(request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1))
+    out = strat(
+        request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1)
+    )
     assert out.meta["hits"][0]["evidence"]

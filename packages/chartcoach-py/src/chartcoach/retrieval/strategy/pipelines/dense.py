@@ -9,7 +9,12 @@ from chartcoach.retrieval.strategy.dspy_models import create_strategy_vlm
 from chartcoach.retrieval.strategy.base import RetrievalStrategy
 from chartcoach.retrieval.strategy.types import RetrievalRequest, RetrievalResponse
 
-from .focus import FocusConfig, focus_config_from_env, fallback_roles_for_focus, primary_roles_for_focus
+from .focus import (
+    FocusConfig,
+    focus_config_from_env,
+    fallback_roles_for_focus,
+    primary_roles_for_focus,
+)
 from .guideline_status import filter_guidelines_by_status, shared_status_scorer
 from .ranking import mmr_select
 from .searcher import GuidelineSearcher
@@ -63,7 +68,9 @@ class DenseMmrStrategy(RetrievalStrategy):
         raw_k = max(20, min(3_000, effective_k * self._raw_multiplier))
         roles = primary_roles_for_focus(focus_mode)
         roles_used = roles
-        hits_df = self._searcher.search_dense(query_vector=query_vec, k=raw_k, roles=roles_used)
+        hits_df = self._searcher.search_dense(
+            query_vector=query_vec, k=raw_k, roles=roles_used
+        )
         if hits_df.is_empty() and roles is not None and self._focus.allow_role_fallback:
             roles_used = fallback_roles_for_focus(focus_mode)
             hits_df = self._searcher.search_dense(
@@ -112,8 +119,9 @@ class DenseMmrStrategy(RetrievalStrategy):
             embeddings[gid] = mat.mean(axis=0)
 
         status_meta: dict[str, object] = {}
+        use_status_filter = focus_mode != "all" and self._focus.use_status_filter
         output_candidates = effective_k
-        if focus_mode != "all":
+        if use_status_filter:
             status_lm, _, status_cfg = shared_status_scorer()
             self._status_lm = status_lm
             output_candidates = max(
@@ -135,7 +143,7 @@ class DenseMmrStrategy(RetrievalStrategy):
         id_to_entry = {entry.id: entry for entry in self.catalog.entries}
         candidate_entries = [id_to_entry[gid] for gid in selected if gid in id_to_entry]
         ordered_entries = candidate_entries[:effective_k]
-        if focus_mode != "all" and ordered_entries:
+        if use_status_filter and ordered_entries:
             _status_lm, status_module, status_cfg = shared_status_scorer()
             self._status_lm = _status_lm
             ordered_entries, status_meta = filter_guidelines_by_status(

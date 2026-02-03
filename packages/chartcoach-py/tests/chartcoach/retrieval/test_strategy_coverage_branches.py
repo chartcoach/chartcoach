@@ -23,7 +23,10 @@ from chartcoach.retrieval.strategy.pipelines.query_fusion import (
 from chartcoach.retrieval.strategy.pipelines.searcher import GuidelineSearcher
 from chartcoach.retrieval.strategy.pipelines.guideline_status import StatusScorerConfig
 from chartcoach.retrieval.strategy.types import RetrievalRequest, TextItem
-from chartcoach.retrieval.strategy.vector_index import CatalogVectorIndex, EmbeddingConfig
+from chartcoach.retrieval.strategy.vector_index import (
+    CatalogVectorIndex,
+    EmbeddingConfig,
+)
 
 
 class _FakeLanceIndex:
@@ -65,7 +68,9 @@ class _FakeLanceIndex:
         return df.head(k)
 
     def search_fts(self, query: str, *, k: int = 10, roles=None, ids=None):  # noqa: ANN001
-        df = self._fts_by_query.get(query, pl.DataFrame({"id": [], "role": [], "score": [], "text": []}))
+        df = self._fts_by_query.get(
+            query, pl.DataFrame({"id": [], "role": [], "score": [], "text": []})
+        )
         df = self._role_filter(df, roles)
         df = self._ids_filter(df, ids)
         return df.head(k)
@@ -82,13 +87,17 @@ class _FakeLanceIndex:
         fts_columns=None,  # noqa: ANN001, ARG002
     ):
         _ = reranker
-        df = self._hybrid_by_query.get(query_text, pl.DataFrame({"id": [], "role": [], "score": []}))
+        df = self._hybrid_by_query.get(
+            query_text, pl.DataFrame({"id": [], "role": [], "score": []})
+        )
         df = self._role_filter(df, roles)
         df = self._ids_filter(df, ids)
         return df.head(k)
 
 
-def _make_vector_index(*, catalog: Catalog, fake: _FakeLanceIndex) -> CatalogVectorIndex:
+def _make_vector_index(
+    *, catalog: Catalog, fake: _FakeLanceIndex
+) -> CatalogVectorIndex:
     embedded = pl.DataFrame(
         {
             "id": [e.id for e in catalog.entries],
@@ -140,18 +149,26 @@ def test_bm25_dense_and_hybrid_cover_vision_role_fallback_and_status(
     monkeypatch.setenv("CHARTCOACH_CHART_VISION_ENABLED", "1")
 
     fake = _FakeLanceIndex()
-    fake.set_dense_default(pl.DataFrame({"id": ["g1", "g2"], "role": ["advice", "advice"], "score": [2.0, 1.0]}))
+    fake.set_dense_default(
+        pl.DataFrame(
+            {"id": ["g1", "g2"], "role": ["advice", "advice"], "score": [2.0, 1.0]}
+        )
+    )
     fake.set_fts(
         "S",
         pl.DataFrame({"id": ["g1"], "role": ["advice"], "score": [2.0], "text": ["x"]}),
     )
     fake.set_hybrid(
         "S",
-        pl.DataFrame({"id": ["g1", "g2"], "role": ["advice", "advice"], "score": [2.0, 1.0]}),
+        pl.DataFrame(
+            {"id": ["g1", "g2"], "role": ["advice", "advice"], "score": [2.0, 1.0]}
+        ),
     )
 
     vector_index = _make_vector_index(catalog=catalog, fake=fake)
-    monkeypatch.setattr(CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0]))
+    monkeypatch.setattr(
+        CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0])
+    )
     searcher = GuidelineSearcher(catalog=catalog, vector_index=vector_index)
 
     # Patch vision hook to avoid VLM calls while covering the strategy branch.
@@ -192,11 +209,16 @@ def test_bm25_dense_and_hybrid_cover_vision_role_fallback_and_status(
         monkeypatch.setattr(
             m,
             "filter_guidelines_by_status",
-            lambda *, entries, output_k, **_kwargs: (entries[:output_k], {"guideline_status_used": True}),
+            lambda *, entries, output_k, **_kwargs: (
+                entries[:output_k],
+                {"guideline_status_used": True},
+            ),
         )
 
     # Avoid PRF expansion so the test data stays small.
-    monkeypatch.setattr(bm25_mod, "_expand_query_from_hits", lambda *, query_text, **_kwargs: query_text)
+    monkeypatch.setattr(
+        bm25_mod, "_expand_query_from_hits", lambda *, query_text, **_kwargs: query_text
+    )
 
     req = RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1)
 
@@ -204,7 +226,7 @@ def test_bm25_dense_and_hybrid_cover_vision_role_fallback_and_status(
         catalog=catalog,
         searcher=searcher,
         default_k=1,
-        focus=FocusConfig(mode="violations", allow_role_fallback=True),
+        focus=FocusConfig(mode="violations", allow_role_fallback=True, use_status_filter=True),
     )(request=req)
     assert out.meta["chart_vision"]["chart_vision_used"] is True
     assert out.meta["guideline_status_used"] is True
@@ -213,7 +235,7 @@ def test_bm25_dense_and_hybrid_cover_vision_role_fallback_and_status(
         catalog=catalog,
         searcher=searcher,
         default_k=1,
-        focus=FocusConfig(mode="violations", allow_role_fallback=True),
+        focus=FocusConfig(mode="violations", allow_role_fallback=True, use_status_filter=True),
     )(request=req)
     assert out.meta["chart_vision"]["chart_vision_used"] is True
     assert out.meta["guideline_status_used"] is True
@@ -222,7 +244,7 @@ def test_bm25_dense_and_hybrid_cover_vision_role_fallback_and_status(
         catalog=catalog,
         searcher=searcher,
         default_k=1,
-        focus=FocusConfig(mode="violations", allow_role_fallback=True),
+        focus=FocusConfig(mode="violations", allow_role_fallback=True, use_status_filter=True),
     )(request=req)
     assert out.meta["chart_vision"]["chart_vision_used"] is True
     assert out.meta["guideline_status_used"] is True
@@ -234,7 +256,9 @@ def test_query_fusion_and_hyde_cover_role_fallback_cross_encoder_exception_and_s
     monkeypatch.setenv("CHARTCOACH_CHART_VISION_ENABLED", "1")
 
     fake = _FakeLanceIndex()
-    fake.set_dense_default(pl.DataFrame({"id": ["g1"], "role": ["advice"], "score": [1.0]}))
+    fake.set_dense_default(
+        pl.DataFrame({"id": ["g1"], "role": ["advice"], "score": [1.0]})
+    )
     fake.set_fts(
         "S",
         pl.DataFrame({"id": ["g1"], "role": ["advice"], "score": [1.0], "text": ["x"]}),
@@ -255,7 +279,9 @@ def test_query_fusion_and_hyde_cover_role_fallback_cross_encoder_exception_and_s
     )
 
     vector_index = _make_vector_index(catalog=catalog, fake=fake)
-    monkeypatch.setattr(CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0]))
+    monkeypatch.setattr(
+        CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0])
+    )
     searcher = GuidelineSearcher(catalog=catalog, vector_index=vector_index)
 
     import lancedb.rerankers
@@ -296,7 +322,10 @@ def test_query_fusion_and_hyde_cover_role_fallback_cross_encoder_exception_and_s
         monkeypatch.setattr(
             m,
             "filter_guidelines_by_status",
-            lambda *, entries, output_k, **_kwargs: (entries[:output_k], {"guideline_status_used": True}),
+            lambda *, entries, output_k, **_kwargs: (
+                entries[:output_k],
+                {"guideline_status_used": True},
+            ),
         )
 
     # Raise on cross-encoder rerank calls to exercise the exception branches.
@@ -336,7 +365,7 @@ def test_query_fusion_and_hyde_cover_role_fallback_cross_encoder_exception_and_s
         lm=lm,
         config=QueryFusionConfig(n_queries=2, cross_encoder_model="dummy"),
         default_k=2,
-        focus=FocusConfig(mode="violations", allow_role_fallback=True),
+        focus=FocusConfig(mode="violations", allow_role_fallback=True, use_status_filter=True),
     )
 
     class DummyQFProgram(dspy.Module):
@@ -344,7 +373,9 @@ def test_query_fusion_and_hyde_cover_role_fallback_cross_encoder_exception_and_s
             return dspy.Prediction(queries=["q1", "q2"], focused_situation="S")
 
     qf._program = DummyQFProgram()
-    out = qf(request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=2))
+    out = qf(
+        request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=2)
+    )
     assert out.meta["chart_vision"]["chart_vision_used"] is True
     assert out.meta["cross_encoder_fallback_used"] is True
     assert out.meta["guideline_status_used"] is True
@@ -355,7 +386,7 @@ def test_query_fusion_and_hyde_cover_role_fallback_cross_encoder_exception_and_s
         lm=lm,
         config=HydeConfig(cross_encoder_model="dummy"),
         default_k=1,
-        focus=FocusConfig(mode="violations", allow_role_fallback=True),
+        focus=FocusConfig(mode="violations", allow_role_fallback=True, use_status_filter=True),
     )
 
     class DummyHydeProgram(dspy.Module):
@@ -363,7 +394,9 @@ def test_query_fusion_and_hyde_cover_role_fallback_cross_encoder_exception_and_s
             return dspy.Prediction(pseudo_document="pseudo")
 
     hyde._program = DummyHydeProgram()
-    out = hyde(request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1))
+    out = hyde(
+        request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1)
+    )
     assert out.meta["chart_vision"]["chart_vision_used"] is True
     assert out.meta["cross_encoder_fallback_used"] is True
     assert out.meta["guideline_status_used"] is True

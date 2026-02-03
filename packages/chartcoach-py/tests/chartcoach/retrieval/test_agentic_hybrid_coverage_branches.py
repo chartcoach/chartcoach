@@ -19,7 +19,10 @@ from chartcoach.retrieval.strategy.pipelines.focus import FocusConfig
 from chartcoach.retrieval.strategy.pipelines.guideline_status import StatusScorerConfig
 from chartcoach.retrieval.strategy.pipelines.searcher import GuidelineSearcher
 from chartcoach.retrieval.strategy.types import RetrievalRequest, TextItem
-from chartcoach.retrieval.strategy.vector_index import CatalogVectorIndex, EmbeddingConfig
+from chartcoach.retrieval.strategy.vector_index import (
+    CatalogVectorIndex,
+    EmbeddingConfig,
+)
 
 
 class _FakeLanceIndex:
@@ -59,7 +62,9 @@ class _FakeLanceIndex:
         return df.head(k)
 
     def search_fts(self, query: str, *, k: int = 10, roles=None, ids=None):  # noqa: ANN001
-        df = self._fts_by_query.get(query, pl.DataFrame({"id": [], "role": [], "score": [], "text": []}))
+        df = self._fts_by_query.get(
+            query, pl.DataFrame({"id": [], "role": [], "score": [], "text": []})
+        )
         df = self._role_filter(df, roles)
         df = self._ids_filter(df, ids)
         return df.head(k)
@@ -76,13 +81,17 @@ class _FakeLanceIndex:
         fts_columns=None,  # noqa: ANN001, ARG002
     ):
         _ = reranker
-        df = self._hybrid_by_query.get(query_text, pl.DataFrame({"id": [], "role": [], "score": []}))
+        df = self._hybrid_by_query.get(
+            query_text, pl.DataFrame({"id": [], "role": [], "score": []})
+        )
         df = self._role_filter(df, roles)
         df = self._ids_filter(df, ids)
         return df.head(k)
 
 
-def _make_vector_index(*, catalog: Catalog, fake: _FakeLanceIndex) -> CatalogVectorIndex:
+def _make_vector_index(
+    *, catalog: Catalog, fake: _FakeLanceIndex
+) -> CatalogVectorIndex:
     embedded = pl.DataFrame(
         {
             "id": [e.id for e in catalog.entries],
@@ -130,12 +139,21 @@ def catalog() -> Catalog:
 
 def test_agentic_tools_role_fallback_branches(monkeypatch, catalog: Catalog) -> None:
     fake = _FakeLanceIndex()
-    fake.set_dense_default(pl.DataFrame({"id": ["g1"], "role": ["advice"], "score": [1.0]}))
-    fake.set_fts("S", pl.DataFrame({"id": ["g1"], "role": ["advice"], "score": [1.0], "text": ["x"]}))
-    fake.set_hybrid("S", pl.DataFrame({"id": ["g1"], "role": ["advice"], "score": [1.0]}))
+    fake.set_dense_default(
+        pl.DataFrame({"id": ["g1"], "role": ["advice"], "score": [1.0]})
+    )
+    fake.set_fts(
+        "S",
+        pl.DataFrame({"id": ["g1"], "role": ["advice"], "score": [1.0], "text": ["x"]}),
+    )
+    fake.set_hybrid(
+        "S", pl.DataFrame({"id": ["g1"], "role": ["advice"], "score": [1.0]})
+    )
 
     vector_index = _make_vector_index(catalog=catalog, fake=fake)
-    monkeypatch.setattr(CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0]))
+    monkeypatch.setattr(
+        CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0])
+    )
     searcher = GuidelineSearcher(catalog=catalog, vector_index=vector_index)
 
     tools = AgenticHybridTools(
@@ -148,7 +166,9 @@ def test_agentic_tools_role_fallback_branches(monkeypatch, catalog: Catalog) -> 
     assert "g1" in tools.fts_search("S")
 
 
-def test_agentic_strategy_calls_chart_vision_and_status_filter(monkeypatch, catalog: Catalog) -> None:
+def test_agentic_strategy_calls_chart_vision_and_status_filter(
+    monkeypatch, catalog: Catalog
+) -> None:
     import chartcoach.retrieval.strategy.pipelines.agentic_hybrid as mod
 
     monkeypatch.setenv("CHARTCOACH_CHART_VISION_ENABLED", "1")
@@ -160,10 +180,21 @@ def test_agentic_strategy_calls_chart_vision_and_status_filter(monkeypatch, cata
     )
 
     fake = _FakeLanceIndex()
-    fake.set_dense_default(pl.DataFrame({"id": ["g1", "g2"], "role": ["advice", "advice"], "score": [2.0, 1.0]}))
-    fake.set_hybrid("S", pl.DataFrame({"id": ["g1", "g2"], "role": ["advice", "advice"], "score": [2.0, 1.0]}))
+    fake.set_dense_default(
+        pl.DataFrame(
+            {"id": ["g1", "g2"], "role": ["advice", "advice"], "score": [2.0, 1.0]}
+        )
+    )
+    fake.set_hybrid(
+        "S",
+        pl.DataFrame(
+            {"id": ["g1", "g2"], "role": ["advice", "advice"], "score": [2.0, 1.0]}
+        ),
+    )
     vector_index = _make_vector_index(catalog=catalog, fake=fake)
-    monkeypatch.setattr(CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0]))
+    monkeypatch.setattr(
+        CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0])
+    )
     searcher = GuidelineSearcher(catalog=catalog, vector_index=vector_index)
 
     lm = dspy.LM(model="gpt-4o-mini", api_base="http://example.invalid/v1", api_key="x")
@@ -173,7 +204,7 @@ def test_agentic_strategy_calls_chart_vision_and_status_filter(monkeypatch, cata
         lm=lm,
         default_k=2,
         final_cross_encoder_model=None,
-        focus=FocusConfig(mode="violations", allow_role_fallback=True),
+        focus=FocusConfig(mode="violations", allow_role_fallback=True, use_status_filter=True),
     )
 
     class DummyProgram(dspy.Module):
@@ -189,14 +220,20 @@ def test_agentic_strategy_calls_chart_vision_and_status_filter(monkeypatch, cata
         "aggregate_guideline_hits",
         staticmethod(
             lambda _hits_df, *, k, **_kwargs: pl.DataFrame(
-                {"id": ["g2", "g2", "g1"][:k], "score": [1.0, 0.9, 0.8][:k], "best_role": ["advice"] * min(3, k)}
+                {
+                    "id": ["g2", "g2", "g1"][:k],
+                    "score": [1.0, 0.9, 0.8][:k],
+                    "best_role": ["advice"] * min(3, k),
+                }
             )
         ),
     )
 
     # Include an unknown id so the final status-filter candidate pool hits the
     # `gid not in id_to_entry` branch.
-    monkeypatch.setattr(mod, "extract_guideline_ids", lambda **_kwargs: ["g1", "bogus", "g2"])
+    monkeypatch.setattr(
+        mod, "extract_guideline_ids", lambda **_kwargs: ["g1", "bogus", "g2"]
+    )
 
     monkeypatch.setattr(
         mod,
@@ -206,16 +243,22 @@ def test_agentic_strategy_calls_chart_vision_and_status_filter(monkeypatch, cata
     monkeypatch.setattr(
         mod,
         "filter_guidelines_by_status",
-        lambda *, entries, output_k, **_kwargs: (entries[:output_k], {"guideline_status_used": True}),
+        lambda *, entries, output_k, **_kwargs: (
+            entries[:output_k],
+            {"guideline_status_used": True},
+        ),
     )
 
-    out = strat(request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=2))
+    out = strat(
+        request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=2)
+    )
     assert out.meta["chart_vision"]["chart_vision_used"] is True
     assert out.meta["guideline_status_used"] is True
 
 
-def test_agentic_strategy_cross_encoder_exception_sets_error(monkeypatch, catalog: Catalog) -> None:
-    import chartcoach.retrieval.strategy.pipelines.agentic_hybrid as mod
+def test_agentic_strategy_cross_encoder_exception_sets_error(
+    monkeypatch, catalog: Catalog
+) -> None:
     import lancedb.rerankers
 
     class DummyCrossEncoder:  # noqa: D401
@@ -225,9 +268,13 @@ def test_agentic_strategy_cross_encoder_exception_sets_error(monkeypatch, catalo
     monkeypatch.setattr(lancedb.rerankers, "CrossEncoderReranker", DummyCrossEncoder)
 
     fake = _FakeLanceIndex()
-    fake.set_hybrid("S", pl.DataFrame({"id": ["g1"], "role": ["advice"], "score": [1.0]}))
+    fake.set_hybrid(
+        "S", pl.DataFrame({"id": ["g1"], "role": ["advice"], "score": [1.0]})
+    )
     vector_index = _make_vector_index(catalog=catalog, fake=fake)
-    monkeypatch.setattr(CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0]))
+    monkeypatch.setattr(
+        CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0])
+    )
     searcher = GuidelineSearcher(catalog=catalog, vector_index=vector_index)
 
     orig_search_hybrid = GuidelineSearcher.search_hybrid
@@ -258,14 +305,42 @@ def test_agentic_strategy_cross_encoder_exception_sets_error(monkeypatch, catalo
 
     monkeypatch.setattr(GuidelineSearcher, "search_hybrid", raising_search_hybrid)
 
+    lm = dspy.LM(model="gpt-4o-mini", api_base="http://example.invalid/v1", api_key="x")
+    strat = AgenticHybridStrategy(
+        catalog=catalog,
+        searcher=searcher,
+        lm=lm,
+        default_k=1,
+        final_cross_encoder_model="dummy",
+        focus=FocusConfig(mode="all", allow_role_fallback=True),
+    )
+
+    class DummyProgram(dspy.Module):
+        def forward(self, **_kwargs):  # noqa: ANN003
+            return dspy.Prediction(used_guideline_ids=["g1"], notes="g1")
+
+    strat._program = DummyProgram()
+
+    out = strat(
+        request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1)
+    )
+    assert [e.guideline.id for e in out.catalog.entries] == ["g1"]
+    assert out.meta["cross_encoder_fallback_used"] is True
+    assert out.meta["cross_encoder_error"]
+    assert "boom" in out.meta["cross_encoder_error"]
+
 
 def test_agentic_strategy_evidence_collection_error_is_swallowed(
     monkeypatch, catalog: Catalog
 ) -> None:
     fake = _FakeLanceIndex()
-    fake.set_hybrid("S", pl.DataFrame({"id": ["g1"], "role": ["advice"], "score": [1.0]}))
+    fake.set_hybrid(
+        "S", pl.DataFrame({"id": ["g1"], "role": ["advice"], "score": [1.0]})
+    )
     vector_index = _make_vector_index(catalog=catalog, fake=fake)
-    monkeypatch.setattr(CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0]))
+    monkeypatch.setattr(
+        CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0])
+    )
     searcher = GuidelineSearcher(catalog=catalog, vector_index=vector_index)
 
     orig_search_hybrid = GuidelineSearcher.search_hybrid
@@ -312,7 +387,9 @@ def test_agentic_strategy_evidence_collection_error_is_swallowed(
 
     strat._program = DummyProgram()
 
-    out = strat(request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1))
+    out = strat(
+        request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1)
+    )
     assert [e.guideline.id for e in out.catalog.entries] == ["g1"]
     assert out.meta["hits"][0]["id"] == "g1"
 
@@ -332,6 +409,8 @@ def test_agentic_strategy_evidence_collection_error_is_swallowed(
 
     strat._program = DummyProgram()
 
-    out = strat(request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1))
+    out = strat(
+        request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1)
+    )
     assert out.meta["cross_encoder_fallback_used"] is True
     assert out.meta["cross_encoder_error"]

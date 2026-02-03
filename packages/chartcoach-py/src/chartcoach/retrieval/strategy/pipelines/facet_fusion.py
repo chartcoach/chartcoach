@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from chartcoach.catalog import Catalog
 from chartcoach.retrieval.strategy.dspy_models import create_strategy_vlm
@@ -9,7 +9,12 @@ from chartcoach.retrieval.strategy.base import RetrievalStrategy
 from chartcoach.retrieval.strategy.optional import require_dspy
 from chartcoach.retrieval.strategy.types import RetrievalRequest, RetrievalResponse
 
-from .focus import FocusConfig, focus_config_from_env, fallback_roles_for_focus, primary_roles_for_focus
+from .focus import (
+    FocusConfig,
+    focus_config_from_env,
+    fallback_roles_for_focus,
+    primary_roles_for_focus,
+)
 from .guideline_status import filter_guidelines_by_status, shared_status_scorer
 from .ranking import rrf_rank, rrf_scores
 from .searcher import GuidelineSearcher
@@ -31,7 +36,9 @@ class FacetPlanSignature(dspy.Signature):
             "Focus only on the described chart, and ignore mentions of other charts in the surrounding story."
         )
     )
-    n: int = dspy.InputField(desc="Number of facet queries to return.", ge=1, le=8, default=5)
+    n: int = dspy.InputField(
+        desc="Number of facet queries to return.", ge=1, le=8, default=5
+    )
     focus: str = dspy.InputField(
         desc="One of: all, violations, satisfied. Use it to choose which facets to prioritize."
     )
@@ -39,7 +46,7 @@ class FacetPlanSignature(dspy.Signature):
     focused_situation: str = dspy.OutputField(
         desc=(
             "A short rewrite of the situation that includes ONLY the chart to improve and its intent. "
-            "Preserve key domain nouns/variables (e.g., inflation, job starters, pay gap, aid) but omit unrelated surrounding context."
+            "Preserve key domain-specific nouns/variables from the situation, but omit unrelated surrounding context."
         )
     )
     canonical_query: str = dspy.OutputField(
@@ -52,8 +59,8 @@ class FacetPlanSignature(dspy.Signature):
         desc=(
             "A list of short, diverse search queries, each focusing on a different facet "
             "(chart type/encoding, task/goal, audience, common failure modes, annotation/labeling). "
-            "If the situation implies paired comparisons (two values per category / before-after / year-over-year), "
-            "include at least one facet query that uses the terms 'paired values' and 'delta encoding'."
+            "If the situation implies paired comparisons (e.g., before-after / year-over-year / two values per category), "
+            "include at least one facet query about representing change or differences clearly."
         )
     )
     chart_terms: list[str] = dspy.OutputField(
@@ -167,13 +174,23 @@ class FacetFusionHybridStrategy(RetrievalStrategy):
                 lm_error = str(e)
 
         canonical = str(getattr(pred, "canonical_query", "") if pred else "").strip()
-        focused_situation = str(getattr(pred, "focused_situation", "") if pred else "").strip()
+        focused_situation = str(
+            getattr(pred, "focused_situation", "") if pred else ""
+        ).strip()
         if not focused_situation:
             focused_situation = situation
-        facet_queries = self._clean_list(getattr(pred, "facet_queries", None) if pred else None)
-        chart_terms = self._clean_list(getattr(pred, "chart_terms", None) if pred else None)
-        task_terms = self._clean_list(getattr(pred, "task_terms", None) if pred else None)
-        risk_terms = self._clean_list(getattr(pred, "risk_terms", None) if pred else None)
+        facet_queries = self._clean_list(
+            getattr(pred, "facet_queries", None) if pred else None
+        )
+        chart_terms = self._clean_list(
+            getattr(pred, "chart_terms", None) if pred else None
+        )
+        task_terms = self._clean_list(
+            getattr(pred, "task_terms", None) if pred else None
+        )
+        risk_terms = self._clean_list(
+            getattr(pred, "risk_terms", None) if pred else None
+        )
 
         queries = [canonical or focused_situation, *facet_queries]
         queries = self._dedupe([q for q in queries if q.strip()])
@@ -197,10 +214,11 @@ class FacetFusionHybridStrategy(RetrievalStrategy):
                 for item in source:
                     if not isinstance(item, dict):
                         continue
-                    text = str(item.get("text") or "").strip()
+                    item_obj = cast("dict[str, object]", item)
+                    text = str(item_obj.get("text") or "").strip()
                     if not text:
                         continue
-                    merged.append(item)
+                    merged.append(item_obj)
             merged.sort(key=lambda x: float(x.get("score") or 0.0), reverse=True)
             return merged[: max(0, int(limit))]
 
@@ -217,7 +235,9 @@ class FacetFusionHybridStrategy(RetrievalStrategy):
                 roles=roles_used,
                 fts_columns="text",
             )
-            agg = self._searcher.aggregate_guideline_hits_with_evidence(hits_df, k=per_query_k)
+            agg = self._searcher.aggregate_guideline_hits_with_evidence(
+                hits_df, k=per_query_k
+            )
             rows = agg.to_dicts()
             ranking: list[str] = []
             for row in rows:
@@ -252,7 +272,9 @@ class FacetFusionHybridStrategy(RetrievalStrategy):
                     roles=roles_used,
                     fts_columns="text",
                 )
-                agg = self._searcher.aggregate_guideline_hits_with_evidence(hits_df, k=per_query_k)
+                agg = self._searcher.aggregate_guideline_hits_with_evidence(
+                    hits_df, k=per_query_k
+                )
                 rows = agg.to_dicts()
                 ranking: list[str] = []
                 for row in rows:
@@ -299,7 +321,9 @@ class FacetFusionHybridStrategy(RetrievalStrategy):
                     roles=roles_used,
                     fts_columns="text",
                 )
-                agg = self._searcher.aggregate_guideline_hits_with_evidence(hits_df, k=effective_k)
+                agg = self._searcher.aggregate_guideline_hits_with_evidence(
+                    hits_df, k=effective_k
+                )
                 rows = agg.to_dicts()
                 proposed = [
                     gid for gid in agg["id"].to_list() if isinstance(gid, str) and gid
@@ -341,7 +365,9 @@ class FacetFusionHybridStrategy(RetrievalStrategy):
                 roles=roles_used,
                 fts_columns="text",
             )
-            agg = self._searcher.aggregate_guideline_hits_with_evidence(hits_df, k=max(50, raw_k))
+            agg = self._searcher.aggregate_guideline_hits_with_evidence(
+                hits_df, k=max(50, raw_k)
+            )
             fill_rows = agg.to_dicts()
             fill_hits_by_id = {
                 row["id"]: row for row in fill_rows if isinstance(row.get("id"), str)
@@ -369,7 +395,8 @@ class FacetFusionHybridStrategy(RetrievalStrategy):
         candidate_entries = [id_to_entry[gid] for gid in ordered_candidate_ids]
         ordered_entries = candidate_entries[:effective_k]
         status_meta: dict[str, object] = {}
-        if focus_mode != "all" and ordered_entries:
+        use_status_filter = focus_mode != "all" and self._focus.use_status_filter
+        if use_status_filter and ordered_entries:
             status_lm, status_module, status_cfg = shared_status_scorer()
             self._status_lm = status_lm
             ordered_entries, status_meta = filter_guidelines_by_status(
@@ -380,6 +407,25 @@ class FacetFusionHybridStrategy(RetrievalStrategy):
                 status_module=status_module,
                 config=status_cfg,
             )
+
+        def _hit_get(hit: dict[str, object] | None, key: str) -> object | None:
+            return hit.get(key) if hit is not None else None
+
+        def _coerce_score(
+            primary: dict[str, object] | None,
+            secondary: dict[str, object] | None,
+            fallback: float,
+        ) -> float:
+            for hit in (primary, secondary):
+                raw = _hit_get(hit, "score")
+                if isinstance(raw, (int, float)):
+                    return float(raw)
+                if isinstance(raw, str):
+                    try:
+                        return float(raw)
+                    except ValueError:
+                        continue
+            return float(fallback)
 
         meta = {
             **self._searcher.vector_index.meta(),
@@ -416,19 +462,19 @@ class FacetFusionHybridStrategy(RetrievalStrategy):
             "hits": [
                 {
                     "id": entry.id,
-                    "score": float(
-                        (rerank_hits_by_id.get(entry.id, {}).get("score"))
-                        or (fill_hits_by_id.get(entry.id, {}).get("score"))
-                        or fused_scores.get(entry.id, 0.0)
+                    "score": _coerce_score(
+                        rerank_hits_by_id.get(entry.id),
+                        fill_hits_by_id.get(entry.id),
+                        fused_scores.get(entry.id, 0.0),
                     ),
                     "best_role": (
-                        rerank_hits_by_id.get(entry.id, {}).get("best_role")
-                        or fill_hits_by_id.get(entry.id, {}).get("best_role")
+                        _hit_get(rerank_hits_by_id.get(entry.id), "best_role")
+                        or _hit_get(fill_hits_by_id.get(entry.id), "best_role")
                         or best_role_by_id.get(entry.id)
                     ),
                     "evidence": _merge_evidence(
-                        rerank_hits_by_id.get(entry.id, {}).get("evidence")
-                        or fill_hits_by_id.get(entry.id, {}).get("evidence"),
+                        _hit_get(rerank_hits_by_id.get(entry.id), "evidence")
+                        or _hit_get(fill_hits_by_id.get(entry.id), "evidence"),
                         evidence_by_id.get(entry.id),
                         limit=3,
                     ),

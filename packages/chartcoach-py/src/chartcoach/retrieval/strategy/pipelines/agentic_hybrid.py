@@ -13,7 +13,12 @@ from chartcoach.retrieval.strategy.id_extraction import extract_guideline_ids
 from chartcoach.retrieval.strategy.optional import require_dspy
 from chartcoach.retrieval.strategy.types import RetrievalRequest, RetrievalResponse
 
-from .focus import FocusConfig, focus_config_from_env, fallback_roles_for_focus, primary_roles_for_focus
+from .focus import (
+    FocusConfig,
+    focus_config_from_env,
+    fallback_roles_for_focus,
+    primary_roles_for_focus,
+)
 from .guideline_status import filter_guidelines_by_status, shared_status_scorer
 from .searcher import GuidelineSearcher
 from .vision import ChartVisionModule, chart_vision_config_from_env, with_chart_vision
@@ -36,7 +41,7 @@ class AgenticHybridSignature(dspy.Signature):
     RULES:
     - You MUST ground selections in the catalog; never invent guideline IDs.
     - Focus only on improving the chart described by the scenario title/intent, and ignore mentions of adjacent charts.
-    - If the situation implies paired comparisons (two values per category / before-after / year-over-year), search for delta encodings and pairwise-delta guidance.
+    - If the situation implies paired comparisons (e.g., before-after / year-over-year / two values per category), include at least one search about representing change or differences clearly.
     - Use multiple searches and read full guidelines before final selection.
     - Return a diverse, non-redundant list.
     - If top_k > 0, return exactly top_k IDs (unless the catalog is smaller).
@@ -119,7 +124,12 @@ class AgenticHybridTools:
             roles=roles_set,
             fts_columns="text",
         )
-        if hits_df.is_empty() and not roles and roles_set is not None and self.focus.allow_role_fallback:
+        if (
+            hits_df.is_empty()
+            and not roles
+            and roles_set is not None
+            and self.focus.allow_role_fallback
+        ):
             hits_df = self.searcher.search_hybrid(
                 query_text=q,
                 query_vector=qvec,
@@ -164,7 +174,12 @@ class AgenticHybridTools:
             k=int(max(1, k)),
             roles=roles_set,
         )
-        if hits_df.is_empty() and not roles and roles_set is not None and self.focus.allow_role_fallback:
+        if (
+            hits_df.is_empty()
+            and not roles
+            and roles_set is not None
+            and self.focus.allow_role_fallback
+        ):
             hits_df = self.searcher.search_dense(
                 query_vector=qvec,
                 k=int(max(1, k)),
@@ -204,7 +219,12 @@ class AgenticHybridTools:
             k=int(max(1, k)),
             roles=roles_set,
         )
-        if hits_df.is_empty() and not roles and roles_set is not None and self.focus.allow_role_fallback:
+        if (
+            hits_df.is_empty()
+            and not roles
+            and roles_set is not None
+            and self.focus.allow_role_fallback
+        ):
             hits_df = self.searcher.search_fts(
                 query_text=q,
                 k=int(max(1, k)),
@@ -350,7 +370,11 @@ class AgenticHybridStrategy(RetrievalStrategy):
                 roles=roles_used,
                 fts_columns="text",
             )
-            if hits_df.is_empty() and roles is not None and self._focus.allow_role_fallback:
+            if (
+                hits_df.is_empty()
+                and roles is not None
+                and self._focus.allow_role_fallback
+            ):
                 roles_used = fallback_roles_for_focus(focus_mode)
                 hits_df = self._searcher.search_hybrid(
                     query_text=situation,
@@ -423,9 +447,12 @@ class AgenticHybridStrategy(RetrievalStrategy):
                 if len(final_ids) >= effective_k:
                     break
 
-        retrieved_entries = [id_to_entry[gid] for gid in final_ids if gid in id_to_entry]
+        retrieved_entries = [
+            id_to_entry[gid] for gid in final_ids if gid in id_to_entry
+        ]
         status_meta: dict[str, object] = {}
-        if focus_mode != "all" and retrieved_entries:
+        use_status_filter = focus_mode != "all" and self._focus.use_status_filter
+        if use_status_filter and retrieved_entries:
             status_lm, status_module, status_cfg = shared_status_scorer()
             self._status_lm = status_lm
             pool_target = max(

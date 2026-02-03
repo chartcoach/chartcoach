@@ -9,7 +9,12 @@ from chartcoach.retrieval.strategy.dspy_models import create_strategy_vlm
 from chartcoach.retrieval.strategy.base import RetrievalStrategy
 from chartcoach.retrieval.strategy.types import RetrievalRequest, RetrievalResponse
 
-from .focus import FocusConfig, focus_config_from_env, fallback_roles_for_focus, primary_roles_for_focus
+from .focus import (
+    FocusConfig,
+    focus_config_from_env,
+    fallback_roles_for_focus,
+    primary_roles_for_focus,
+)
 from .guideline_status import filter_guidelines_by_status, shared_status_scorer
 from .searcher import GuidelineSearcher
 from .vision import ChartVisionModule, chart_vision_config_from_env, with_chart_vision
@@ -132,7 +137,9 @@ class Bm25PrfStrategy(RetrievalStrategy):
         query_text = self._searcher.build_query_text(request)
         raw_k = max(10, min(2_000, effective_k * self._raw_multiplier))
 
-        hits_0 = self._searcher.search_fts(query_text=query_text, k=raw_k, roles=roles_used)
+        hits_0 = self._searcher.search_fts(
+            query_text=query_text, k=raw_k, roles=roles_used
+        )
         if hits_0.is_empty() and roles is not None and self._focus.allow_role_fallback:
             roles_used = fallback_roles_for_focus(self._focus.mode)
             hits_0 = self._searcher.search_fts(
@@ -142,7 +149,9 @@ class Bm25PrfStrategy(RetrievalStrategy):
         hits_1 = (
             hits_0
             if expanded == query_text
-            else self._searcher.search_fts(query_text=expanded, k=raw_k, roles=roles_used)
+            else self._searcher.search_fts(
+                query_text=expanded, k=raw_k, roles=roles_used
+            )
         )
 
         hits_df = hits_1
@@ -155,20 +164,21 @@ class Bm25PrfStrategy(RetrievalStrategy):
 
         focus_mode = self._focus.mode
         status_meta: dict[str, object] = {}
+        use_status_filter = focus_mode != "all" and self._focus.use_status_filter
         candidate_k = effective_k
-        if focus_mode != "all":
+        if use_status_filter:
             status_lm, _, status_cfg = shared_status_scorer()
             self._status_lm = status_lm
             candidate_k = max(
                 effective_k, effective_k * int(status_cfg.candidate_multiplier)
             )
 
-        agg = self._searcher.aggregate_guideline_hits_with_evidence(hits_df, k=candidate_k)
+        agg = self._searcher.aggregate_guideline_hits_with_evidence(
+            hits_df, k=candidate_k
+        )
         candidate_rows = agg.to_dicts()
         hit_by_id = {
-            row["id"]: row
-            for row in candidate_rows
-            if isinstance(row.get("id"), str)
+            row["id"]: row for row in candidate_rows if isinstance(row.get("id"), str)
         }
 
         id_to_entry = {entry.id: entry for entry in self.catalog.entries}
@@ -178,7 +188,7 @@ class Bm25PrfStrategy(RetrievalStrategy):
             if isinstance(row.get("id"), str) and row["id"] in id_to_entry
         ]
         ordered_entries = candidate_entries[:effective_k]
-        if focus_mode != "all" and ordered_entries:
+        if use_status_filter and ordered_entries:
             _status_lm, status_module, status_cfg = shared_status_scorer()
             self._status_lm = _status_lm
             ordered_entries, status_meta = filter_guidelines_by_status(

@@ -13,7 +13,9 @@ from chartcoach.catalog.model import CatalogEntry, Guideline
 from chartcoach.embedding import GuidelineAbstractTextSource
 from chartcoach.index import VectorIndex
 from chartcoach.retrieval.strategy.pipelines.ann_dense import AnnDenseStrategy
-from chartcoach.retrieval.strategy.pipelines.decompose_parallel import DecomposeParallelStrategy
+from chartcoach.retrieval.strategy.pipelines.decompose_parallel import (
+    DecomposeParallelStrategy,
+)
 from chartcoach.retrieval.strategy.pipelines.focus import (
     FocusConfig,
     fallback_roles_for_focus,
@@ -27,7 +29,9 @@ from chartcoach.retrieval.strategy.pipelines.guideline_status import (
 from chartcoach.retrieval.strategy.pipelines.label_first_abstract import (
     LabelFirstAbstractStrategy,
 )
-from chartcoach.retrieval.strategy.pipelines.label_gated_ann import LabelGatedAnnStrategy
+from chartcoach.retrieval.strategy.pipelines.label_gated_ann import (
+    LabelGatedAnnStrategy,
+)
 from chartcoach.retrieval.strategy.pipelines.label_hints import (
     match_catalog_ids_by_label_hints,
 )
@@ -39,7 +43,10 @@ from chartcoach.retrieval.strategy.pipelines.role_aware_sections import (
 )
 from chartcoach.retrieval.strategy.pipelines.searcher import GuidelineSearcher
 from chartcoach.retrieval.strategy.types import ImageItem, RetrievalRequest, TextItem
-from chartcoach.retrieval.strategy.vector_index import CatalogVectorIndex, EmbeddingConfig
+from chartcoach.retrieval.strategy.vector_index import (
+    CatalogVectorIndex,
+    EmbeddingConfig,
+)
 
 
 class _FakeLanceIndex:
@@ -92,7 +99,9 @@ class _FakeLanceIndex:
         return df.head(k)
 
 
-def _make_vector_index(*, catalog: Catalog, fake: _FakeLanceIndex) -> CatalogVectorIndex:
+def _make_vector_index(
+    *, catalog: Catalog, fake: _FakeLanceIndex
+) -> CatalogVectorIndex:
     embedded = pl.DataFrame(
         {
             "id": ["g1", "g2", "g3"],
@@ -155,40 +164,55 @@ def catalog() -> Catalog:
 def test_focus_env_and_role_helpers(monkeypatch) -> None:
     monkeypatch.delenv("CHARTCOACH_STRATEGY_FOCUS", raising=False)
     monkeypatch.delenv("CHARTCOACH_STRATEGY_FOCUS_ROLE_FALLBACK", raising=False)
+    monkeypatch.delenv("CHARTCOACH_STRATEGY_STATUS_FILTER", raising=False)
     cfg = focus_config_from_env()
     assert cfg.mode == "all"
     assert cfg.allow_role_fallback is True
+    assert cfg.use_status_filter is False
 
     monkeypatch.setenv("CHARTCOACH_STRATEGY_FOCUS", "violations")
     monkeypatch.setenv("CHARTCOACH_STRATEGY_FOCUS_ROLE_FALLBACK", "0")
     cfg = focus_config_from_env(default="satisfied")
     assert cfg.mode == "violations"
     assert cfg.allow_role_fallback is False
+    assert cfg.use_status_filter is False
 
     monkeypatch.setenv("CHARTCOACH_STRATEGY_FOCUS", "not-a-mode")
     cfg = focus_config_from_env(default="satisfied")
     assert cfg.mode == "satisfied"
 
+    monkeypatch.setenv("CHARTCOACH_STRATEGY_STATUS_FILTER", "1")
+    cfg = focus_config_from_env()
+    assert cfg.use_status_filter is True
+
     assert primary_roles_for_focus("all") is None
-    assert primary_roles_for_focus("violations") == {"fix", "mistakes", "exceptions", "check"}
-    assert primary_roles_for_focus("satisfied") == {"check", "reason", "context"}
-    assert primary_roles_for_focus("other") is None  # type: ignore[arg-type]
-    assert fallback_roles_for_focus("violations") == {
+    assert primary_roles_for_focus("violations") == {
         "fix",
         "mistakes",
         "exceptions",
         "check",
-        "advice",
     }
+    assert primary_roles_for_focus("satisfied") == {"check", "reason", "context"}
+    assert primary_roles_for_focus("other") is None  # type: ignore[arg-type]
+    fallback = fallback_roles_for_focus("violations")
+    assert fallback is not None
+    # When role-filtered retrieval yields empty results, broaden to include
+    # guideline-level fields and untagged sections for recall.
+    assert {"fix", "mistakes", "exceptions", "check", "advice"} <= fallback
+    assert {"title", "description", "labels", "__dangling__"} <= fallback
     assert fallback_roles_for_focus("all") is None
 
 
 def test_label_matching_helpers(catalog: Catalog) -> None:
-    ids, matched = match_catalog_ids_by_label_hints(catalog=catalog, label_hints=["topic:annotation"])
+    ids, matched = match_catalog_ids_by_label_hints(
+        catalog=catalog, label_hints=["topic:annotation"]
+    )
     assert ids == {"g2", "g3"}
     assert "topic:annotation" in matched
 
-    ids, matched = match_catalog_ids_by_label_hints(catalog=catalog, label_hints=["annotation"])
+    ids, matched = match_catalog_ids_by_label_hints(
+        catalog=catalog, label_hints=["annotation"]
+    )
     assert ids == {"g2", "g3"}
     assert matched
 
@@ -235,7 +259,9 @@ def test_guideline_abstract_text_source_variants(catalog: Catalog) -> None:
     assert "Labels:" not in "\n".join(df_no_labels.get_column("content").to_list())
 
 
-def test_filter_guidelines_by_status_selects_focus_and_uses_chart_key(monkeypatch, catalog: Catalog) -> None:
+def test_filter_guidelines_by_status_selects_focus_and_uses_chart_key(
+    monkeypatch, catalog: Catalog
+) -> None:
     request = RetrievalRequest(
         context=[
             TextItem(role="title", text="T"),
@@ -298,10 +324,14 @@ def test_ann_dense_strategy_applies_role_fallback_and_status_focus(
     fake = _FakeLanceIndex()
     fake.set_dense(
         role="default",
-        df=pl.DataFrame({"id": ["g1", "g2"], "role": ["advice", "advice"], "score": [2.0, 1.0]}),
+        df=pl.DataFrame(
+            {"id": ["g1", "g2"], "role": ["advice", "advice"], "score": [2.0, 1.0]}
+        ),
     )
     vector_index = _make_vector_index(catalog=catalog, fake=fake)
-    monkeypatch.setattr(CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0]))
+    monkeypatch.setattr(
+        CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0])
+    )
     searcher = GuidelineSearcher(catalog=catalog, vector_index=vector_index)
 
     class DummyStatus:
@@ -322,15 +352,19 @@ def test_ann_dense_strategy_applies_role_fallback_and_status_focus(
         catalog=catalog,
         searcher=searcher,
         default_k=1,
-        focus=FocusConfig(mode="violations", allow_role_fallback=True),
+        focus=FocusConfig(mode="violations", allow_role_fallback=True, use_status_filter=True),
     )
-    out = strat(request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1))
+    out = strat(
+        request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1)
+    )
     assert [e.id for e in out.catalog.entries] == ["g2"]
     assert out.meta["focus"]["mode"] == "violations"
     assert out.meta["guideline_status_used"] is True
 
 
-def test_ann_dense_strategy_calls_chart_vision_when_enabled(monkeypatch, catalog: Catalog) -> None:
+def test_ann_dense_strategy_calls_chart_vision_when_enabled(
+    monkeypatch, catalog: Catalog
+) -> None:
     from chartcoach.retrieval.strategy.pipelines import ann_dense as mod
 
     monkeypatch.setenv("CHARTCOACH_CHART_VISION_ENABLED", "1")
@@ -358,12 +392,16 @@ def test_ann_dense_strategy_calls_chart_vision_when_enabled(monkeypatch, catalog
     monkeypatch.setattr(mod, "with_chart_vision", fake_with_chart_vision)
 
     strat = AnnDenseStrategy(catalog=catalog, searcher=searcher, default_k=1)
-    out = strat(request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1))
+    out = strat(
+        request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1)
+    )
     assert seen["called"] is True
     assert out.meta["chart_vision"]["chart_vision_used"] is True
 
 
-def test_label_gated_ann_strategy_falls_back_when_gate_empty(monkeypatch, catalog: Catalog) -> None:
+def test_label_gated_ann_strategy_falls_back_when_gate_empty(
+    monkeypatch, catalog: Catalog
+) -> None:
     from chartcoach.retrieval.strategy.pipelines import label_gated_ann as mod
 
     fake = _FakeLanceIndex()
@@ -373,7 +411,9 @@ def test_label_gated_ann_strategy_falls_back_when_gate_empty(monkeypatch, catalo
         df=pl.DataFrame({"id": ["g1"], "role": ["advice"], "score": [2.0]}),
     )
     vector_index = _make_vector_index(catalog=catalog, fake=fake)
-    monkeypatch.setattr(CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0]))
+    monkeypatch.setattr(
+        CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0])
+    )
     searcher = GuidelineSearcher(catalog=catalog, vector_index=vector_index)
 
     lm = dspy.LM(model="gpt-4o-mini", api_base="http://example.invalid/v1", api_key="x")
@@ -387,7 +427,9 @@ def test_label_gated_ann_strategy_falls_back_when_gate_empty(monkeypatch, catalo
 
     class DummyProgram(dspy.Module):
         def forward(self, **_kwargs):  # noqa: ANN003
-            return dspy.Prediction(canonical_query="S", label_hints=["impact:credibility"])
+            return dspy.Prediction(
+                canonical_query="S", label_hints=["impact:credibility"]
+            )
 
     strat._program = DummyProgram()
 
@@ -402,29 +444,41 @@ def test_label_gated_ann_strategy_falls_back_when_gate_empty(monkeypatch, catalo
         lambda: ("lm", DummyStatus(), StatusScorerConfig(candidate_multiplier=2)),
     )
 
-    out = strat(request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1))
+    out = strat(
+        request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1)
+    )
     assert [e.id for e in out.catalog.entries] == ["g1"]
     assert out.meta["label_gating"]["candidate_filter_used"] is True
 
 
 def test_label_strategies_clean_list_support_string_and_dedupe() -> None:
-    assert LabelGatedAnnStrategy._clean_list(" topic:annotation ") == ["topic:annotation"]
+    assert LabelGatedAnnStrategy._clean_list(" topic:annotation ") == [
+        "topic:annotation"
+    ]
     assert LabelGatedAnnStrategy._clean_list(["a", "A", "b"]) == ["a", "b"]
 
-    assert LabelFirstAbstractStrategy._clean_list(" topic:annotation ") == ["topic:annotation"]
+    assert LabelFirstAbstractStrategy._clean_list(" topic:annotation ") == [
+        "topic:annotation"
+    ]
     assert LabelFirstAbstractStrategy._clean_list(["a", "A", "b"]) == ["a", "b"]
 
 
-def test_label_first_abstract_strategy_falls_back_on_id_filter(monkeypatch, catalog: Catalog) -> None:
+def test_label_first_abstract_strategy_falls_back_on_id_filter(
+    monkeypatch, catalog: Catalog
+) -> None:
     from chartcoach.retrieval.strategy.pipelines import label_first_abstract as mod
 
     fake = _FakeLanceIndex()
     fake.set_hybrid(
         query="S",
-        df=pl.DataFrame({"id": ["g1", "g2"], "role": ["abstract", "abstract"], "score": [2.0, 1.0]}),
+        df=pl.DataFrame(
+            {"id": ["g1", "g2"], "role": ["abstract", "abstract"], "score": [2.0, 1.0]}
+        ),
     )
     vector_index = _make_vector_index(catalog=catalog, fake=fake)
-    monkeypatch.setattr(CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0]))
+    monkeypatch.setattr(
+        CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0])
+    )
     abstract_searcher = GuidelineSearcher(catalog=catalog, vector_index=vector_index)
 
     lm = dspy.LM(model="gpt-4o-mini", api_base="http://example.invalid/v1", api_key="x")
@@ -439,7 +493,9 @@ def test_label_first_abstract_strategy_falls_back_on_id_filter(monkeypatch, cata
     class DummyProgram(dspy.Module):
         def forward(self, **_kwargs):  # noqa: ANN003
             # Gate to g3 (not returned by fake index), forcing fallback to ids=None.
-            return dspy.Prediction(canonical_query="S", label_hints=["impact:credibility"])
+            return dspy.Prediction(
+                canonical_query="S", label_hints=["impact:credibility"]
+            )
 
     strat._program = DummyProgram()
 
@@ -454,12 +510,16 @@ def test_label_first_abstract_strategy_falls_back_on_id_filter(monkeypatch, cata
         lambda: ("lm", DummyStatus(), StatusScorerConfig(candidate_multiplier=2)),
     )
 
-    out = strat(request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1))
+    out = strat(
+        request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1)
+    )
     assert [e.id for e in out.catalog.entries] == ["g1"]
     assert out.meta["label_plan"]["candidate_filter_used"] is True
 
 
-def test_label_gated_ann_strategy_retries_lm_and_uses_vision(monkeypatch, catalog: Catalog) -> None:
+def test_label_gated_ann_strategy_retries_lm_and_uses_vision(
+    monkeypatch, catalog: Catalog
+) -> None:
     from chartcoach.retrieval.strategy.pipelines import label_gated_ann as mod
 
     monkeypatch.setenv("CHARTCOACH_CHART_VISION_ENABLED", "1")
@@ -470,7 +530,9 @@ def test_label_gated_ann_strategy_retries_lm_and_uses_vision(monkeypatch, catalo
         df=pl.DataFrame({"id": ["g1"], "role": ["advice"], "score": [2.0]}),
     )
     vector_index = _make_vector_index(catalog=catalog, fake=fake)
-    monkeypatch.setattr(CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0]))
+    monkeypatch.setattr(
+        CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0])
+    )
     searcher = GuidelineSearcher(catalog=catalog, vector_index=vector_index)
 
     monkeypatch.setattr(mod, "create_strategy_vlm", lambda: object())
@@ -499,13 +561,17 @@ def test_label_gated_ann_strategy_retries_lm_and_uses_vision(monkeypatch, catalo
             return dspy.Prediction(canonical_query="", label_hints=[])
 
     strat._program = FlakyProgram()
-    out = strat(request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1))
+    out = strat(
+        request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1)
+    )
     assert out.meta["chart_vision"]["chart_vision_used"] is True
     assert out.meta["label_gating"]["lm_attempts"] == 2
     assert out.meta["label_gating"]["canonical_query"] == "S"
 
 
-def test_label_first_abstract_strategy_retries_lm_and_uses_vision(monkeypatch, catalog: Catalog) -> None:
+def test_label_first_abstract_strategy_retries_lm_and_uses_vision(
+    monkeypatch, catalog: Catalog
+) -> None:
     from chartcoach.retrieval.strategy.pipelines import label_first_abstract as mod
 
     monkeypatch.setenv("CHARTCOACH_CHART_VISION_ENABLED", "1")
@@ -516,7 +582,9 @@ def test_label_first_abstract_strategy_retries_lm_and_uses_vision(monkeypatch, c
         df=pl.DataFrame({"id": ["g1"], "role": ["abstract"], "score": [2.0]}),
     )
     vector_index = _make_vector_index(catalog=catalog, fake=fake)
-    monkeypatch.setattr(CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0]))
+    monkeypatch.setattr(
+        CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0])
+    )
     abstract_searcher = GuidelineSearcher(catalog=catalog, vector_index=vector_index)
 
     monkeypatch.setattr(mod, "create_strategy_vlm", lambda: object())
@@ -545,13 +613,17 @@ def test_label_first_abstract_strategy_retries_lm_and_uses_vision(monkeypatch, c
             return dspy.Prediction(canonical_query="", label_hints=[])
 
     strat._program = FlakyProgram()
-    out = strat(request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1))
+    out = strat(
+        request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1)
+    )
     assert out.meta["chart_vision"]["chart_vision_used"] is True
     assert out.meta["label_plan"]["lm_attempts"] == 2
     assert out.meta["label_plan"]["canonical_query"] == "S"
 
 
-def test_decompose_parallel_strategy_runs_parallel_and_merges(monkeypatch, catalog: Catalog) -> None:
+def test_decompose_parallel_strategy_runs_parallel_and_merges(
+    monkeypatch, catalog: Catalog
+) -> None:
     from chartcoach.retrieval.strategy.pipelines import decompose_parallel as mod
 
     fake = _FakeLanceIndex()
@@ -564,7 +636,9 @@ def test_decompose_parallel_strategy_runs_parallel_and_merges(monkeypatch, catal
         df=pl.DataFrame({"id": ["g2"], "role": ["advice"], "score": [2.0]}),
     )
     vector_index = _make_vector_index(catalog=catalog, fake=fake)
-    monkeypatch.setattr(CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0]))
+    monkeypatch.setattr(
+        CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0])
+    )
     searcher = GuidelineSearcher(catalog=catalog, vector_index=vector_index)
 
     lm = dspy.LM(model="gpt-4o-mini", api_base="http://example.invalid/v1", api_key="x")
@@ -597,12 +671,16 @@ def test_decompose_parallel_strategy_runs_parallel_and_merges(monkeypatch, catal
         lambda: ("lm", DummyStatus(), StatusScorerConfig(candidate_multiplier=2)),
     )
 
-    out = strat(request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=2))
+    out = strat(
+        request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=2)
+    )
     assert [e.id for e in out.catalog.entries] == ["g1", "g2"]
     assert out.meta["decomposition"]["facet_queries"] == ["facet"]
 
 
-def test_decompose_parallel_strategy_retries_lm_and_uses_fallback_canonical(monkeypatch, catalog: Catalog) -> None:
+def test_decompose_parallel_strategy_retries_lm_and_uses_fallback_canonical(
+    monkeypatch, catalog: Catalog
+) -> None:
     from chartcoach.retrieval.strategy.pipelines import decompose_parallel as mod
 
     monkeypatch.setenv("CHARTCOACH_CHART_VISION_ENABLED", "1")
@@ -617,7 +695,9 @@ def test_decompose_parallel_strategy_retries_lm_and_uses_fallback_canonical(monk
         df=pl.DataFrame({"id": ["g2"], "role": ["advice"], "score": [2.0]}),
     )
     vector_index = _make_vector_index(catalog=catalog, fake=fake)
-    monkeypatch.setattr(CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0]))
+    monkeypatch.setattr(
+        CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0])
+    )
     searcher = GuidelineSearcher(catalog=catalog, vector_index=vector_index)
 
     monkeypatch.setattr(mod, "create_strategy_vlm", lambda: object())
@@ -651,13 +731,17 @@ def test_decompose_parallel_strategy_retries_lm_and_uses_fallback_canonical(monk
 
     strat._program = FlakyProgram()
 
-    out = strat(request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=2))
+    out = strat(
+        request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=2)
+    )
     assert out.meta["chart_vision"]["chart_vision_used"] is True
     assert out.meta["decomposition"]["canonical_query"] == "S"
     assert out.meta["decomposition"]["lm_attempts"] == 2
 
 
-def test_decompose_parallel_strategy_includes_evidence_in_hits(monkeypatch, catalog: Catalog) -> None:
+def test_decompose_parallel_strategy_includes_evidence_in_hits(
+    monkeypatch, catalog: Catalog
+) -> None:
     fake = _FakeLanceIndex()
     fake.set_hybrid(
         query="S",
@@ -671,7 +755,9 @@ def test_decompose_parallel_strategy_includes_evidence_in_hits(monkeypatch, cata
         ),
     )
     vector_index = _make_vector_index(catalog=catalog, fake=fake)
-    monkeypatch.setattr(CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0]))
+    monkeypatch.setattr(
+        CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0])
+    )
     searcher = GuidelineSearcher(catalog=catalog, vector_index=vector_index)
 
     lm = dspy.LM(model="gpt-4o-mini", api_base="http://example.invalid/v1", api_key="x")
@@ -685,15 +771,21 @@ def test_decompose_parallel_strategy_includes_evidence_in_hits(monkeypatch, cata
 
     class DummyProgram(dspy.Module):
         def forward(self, **_kwargs):  # noqa: ANN003
-            return dspy.Prediction(canonical_query="S", facet_queries=[], label_hints=[])
+            return dspy.Prediction(
+                canonical_query="S", facet_queries=[], label_hints=[]
+            )
 
     strat._program = DummyProgram()
 
-    out = strat(request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1))
+    out = strat(
+        request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1)
+    )
     assert out.meta["hits"][0]["evidence"]
 
 
-def test_role_aware_sections_strategy_routes_roles_and_falls_back(monkeypatch, catalog: Catalog) -> None:
+def test_role_aware_sections_strategy_routes_roles_and_falls_back(
+    monkeypatch, catalog: Catalog
+) -> None:
     from chartcoach.retrieval.strategy.pipelines import role_aware_sections as mod
 
     fake = _FakeLanceIndex()
@@ -702,7 +794,9 @@ def test_role_aware_sections_strategy_routes_roles_and_falls_back(monkeypatch, c
         df=pl.DataFrame({"id": ["g1"], "role": ["advice"], "score": [2.0]}),
     )
     vector_index = _make_vector_index(catalog=catalog, fake=fake)
-    monkeypatch.setattr(CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0]))
+    monkeypatch.setattr(
+        CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0])
+    )
     searcher = GuidelineSearcher(catalog=catalog, vector_index=vector_index)
 
     lm = dspy.LM(model="gpt-4o-mini", api_base="http://example.invalid/v1", api_key="x")
@@ -732,17 +826,23 @@ def test_role_aware_sections_strategy_routes_roles_and_falls_back(monkeypatch, c
         lambda: ("lm", DummyStatus(), StatusScorerConfig(candidate_multiplier=2)),
     )
 
-    out = strat(request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1))
+    out = strat(
+        request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1)
+    )
     assert [e.id for e in out.catalog.entries] == ["g1"]
     assert out.meta["role_router"]["roles"] == ["fix", "mistakes"]
 
 
 def test_role_aware_sections_clean_roles_supports_string_and_dedupe() -> None:
     assert RoleAwareSectionsStrategy._clean_roles(" Advice ", max_roles=2) == ["advice"]
-    assert RoleAwareSectionsStrategy._clean_roles(["advice", "advice"], max_roles=2) == ["advice"]
+    assert RoleAwareSectionsStrategy._clean_roles(
+        ["advice", "advice"], max_roles=2
+    ) == ["advice"]
 
 
-def test_role_aware_sections_strategy_retries_lm_and_uses_vision(monkeypatch, catalog: Catalog) -> None:
+def test_role_aware_sections_strategy_retries_lm_and_uses_vision(
+    monkeypatch, catalog: Catalog
+) -> None:
     from chartcoach.retrieval.strategy.pipelines import role_aware_sections as mod
 
     monkeypatch.setenv("CHARTCOACH_CHART_VISION_ENABLED", "1")
@@ -753,7 +853,9 @@ def test_role_aware_sections_strategy_retries_lm_and_uses_vision(monkeypatch, ca
         df=pl.DataFrame({"id": ["g1"], "role": ["advice"], "score": [2.0]}),
     )
     vector_index = _make_vector_index(catalog=catalog, fake=fake)
-    monkeypatch.setattr(CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0]))
+    monkeypatch.setattr(
+        CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0])
+    )
     searcher = GuidelineSearcher(catalog=catalog, vector_index=vector_index)
 
     monkeypatch.setattr(mod, "create_strategy_vlm", lambda: object())
@@ -782,20 +884,22 @@ def test_role_aware_sections_strategy_retries_lm_and_uses_vision(monkeypatch, ca
             return dspy.Prediction(roles="advice")
 
     strat._program = FlakyProgram()
-    out = strat(request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1))
+    out = strat(
+        request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1)
+    )
     assert out.meta["chart_vision"]["chart_vision_used"] is True
     assert out.meta["role_router"]["lm_attempts"] == 2
 
 
-def test_neighborhood_explorer_strategy_emits_diverse_neighbors(monkeypatch, catalog: Catalog) -> None:
+def test_neighborhood_explorer_strategy_emits_diverse_neighbors(
+    monkeypatch, catalog: Catalog
+) -> None:
     from chartcoach.retrieval.strategy.pipelines import neighborhood_explorer as mod
 
     fake = _FakeLanceIndex()
     fake.set_hybrid(
         query="S",
-        df=pl.DataFrame(
-            {"id": ["g1"], "role": ["advice"], "score": [2.0]}
-        ),
+        df=pl.DataFrame({"id": ["g1"], "role": ["advice"], "score": [2.0]}),
     )
     fake.set_dense(
         role="default",
@@ -808,7 +912,9 @@ def test_neighborhood_explorer_strategy_emits_diverse_neighbors(monkeypatch, cat
         ),
     )
     vector_index = _make_vector_index(catalog=catalog, fake=fake)
-    monkeypatch.setattr(CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0]))
+    monkeypatch.setattr(
+        CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0])
+    )
     searcher = GuidelineSearcher(catalog=catalog, vector_index=vector_index)
 
     class DummyStatus:
@@ -828,12 +934,16 @@ def test_neighborhood_explorer_strategy_emits_diverse_neighbors(monkeypatch, cat
         default_k=2,
         focus=FocusConfig(mode="violations", allow_role_fallback=True),
     )
-    out = strat(request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=2))
+    out = strat(
+        request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=2)
+    )
     assert len(out.catalog.entries) == 2
     assert out.meta["exploration"]["anchor_ids"] == ["g1"]
 
 
-def test_neighborhood_explorer_strategy_includes_evidence_in_hits(monkeypatch, catalog: Catalog) -> None:
+def test_neighborhood_explorer_strategy_includes_evidence_in_hits(
+    monkeypatch, catalog: Catalog
+) -> None:
     fake = _FakeLanceIndex()
     fake.set_hybrid(
         query="S",
@@ -858,7 +968,9 @@ def test_neighborhood_explorer_strategy_includes_evidence_in_hits(monkeypatch, c
         ),
     )
     vector_index = _make_vector_index(catalog=catalog, fake=fake)
-    monkeypatch.setattr(CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0]))
+    monkeypatch.setattr(
+        CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0])
+    )
     searcher = GuidelineSearcher(catalog=catalog, vector_index=vector_index)
 
     strat = NeighborhoodExplorerStrategy(
@@ -867,7 +979,9 @@ def test_neighborhood_explorer_strategy_includes_evidence_in_hits(monkeypatch, c
         default_k=2,
         focus=FocusConfig(mode="all", allow_role_fallback=True),
     )
-    out = strat(request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=2))
+    out = strat(
+        request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=2)
+    )
     assert out.meta["hits"][0]["evidence"]
 
 
@@ -953,7 +1067,9 @@ def test_neighborhood_explorer_strategy_hits_continue_branches(monkeypatch) -> N
     )
 
     vector_index = _make_vector_index(catalog=catalog, fake=fake)
-    monkeypatch.setattr(CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0]))
+    monkeypatch.setattr(
+        CatalogVectorIndex, "embed_query", lambda _self, _t: np.array([1.0, 0.0])
+    )
     searcher = GuidelineSearcher(catalog=catalog, vector_index=vector_index)
 
     monkeypatch.setattr(mod, "create_strategy_vlm", lambda: object())
@@ -970,7 +1086,10 @@ def test_neighborhood_explorer_strategy_hits_continue_branches(monkeypatch) -> N
     monkeypatch.setattr(
         mod,
         "filter_guidelines_by_status",
-        lambda *, entries, output_k, **_kwargs: (entries[:output_k], {"guideline_status_used": True}),
+        lambda *, entries, output_k, **_kwargs: (
+            entries[:output_k],
+            {"guideline_status_used": True},
+        ),
     )
 
     strat = NeighborhoodExplorerStrategy(
@@ -979,5 +1098,7 @@ def test_neighborhood_explorer_strategy_hits_continue_branches(monkeypatch) -> N
         default_k=2,
         focus=FocusConfig(mode="violations", allow_role_fallback=True),
     )
-    out = strat(request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=2))
+    out = strat(
+        request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=2)
+    )
     assert out.meta["chart_vision"]["chart_vision_used"] is True
