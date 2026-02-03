@@ -221,6 +221,78 @@ scenarios:
     assert index["scenarios"][0]["id"] == "s1"
 
 
+def test_main_run_manifest_invokes_eval_service(monkeypatch, tmp_path: Path) -> None:
+    import chartcoach.retrieval.cli.__main__ as cli
+
+    scenarios_path = tmp_path / "spec.yaml"
+    scenarios_path.write_text(
+        """
+scenarios:
+  - id: s1
+    title: Scenario 1
+    lang: en
+    designer_intent: Improve the chart.
+""".lstrip(),
+        encoding="utf-8",
+    )
+
+    manifest_path = tmp_path / "manifest.yaml"
+    manifest_path.write_text(
+        f"""
+schema_version: 1
+run:
+  scenarios: {scenarios_path}
+  catalog_uri: file:///tmp/catalog.parquet
+  artifacts_url: memory://
+  purge: false
+  strategies: ["hybrid-rrf@v1"]
+  k: 16
+config:
+  focus:
+    mode: violations
+""".lstrip(),
+        encoding="utf-8",
+    )
+
+    calls: dict[str, object] = {}
+
+    class FakeEvalArtifactsService:
+        def __init__(self, *, store, retrieval):  # noqa: ANN001
+            self._store = store
+            self._retrieval = retrieval
+
+        def purge(self, *, prefix: str = "") -> int:  # noqa: ARG002
+            calls["purged"] = True
+            return 0
+
+        def run(  # noqa: PLR0913
+            self,
+            *,
+            scenarios_path: Path,
+            catalog_uri: str,
+            strategy_ids,
+            k: int | None,
+            run_config,
+            manifest=None,  # noqa: ANN001
+        ) -> None:
+            calls["scenarios_path"] = scenarios_path
+            calls["catalog_uri"] = catalog_uri
+            calls["strategy_ids"] = strategy_ids
+            calls["k"] = k
+            calls["focus"] = run_config.focus.mode
+            calls["manifest"] = manifest
+
+    monkeypatch.setattr(cli, "EvalArtifactsService", FakeEvalArtifactsService)
+
+    buf = io.StringIO()
+    monkeypatch.setattr(sys, "stdout", buf)
+    cli.main(["run", "--manifest", str(manifest_path)])
+    assert calls["k"] == 16
+    assert calls["strategy_ids"] == ["hybrid-rrf@v1"]
+    assert calls["focus"] == "violations"
+    assert isinstance(calls["manifest"], dict)
+
+
 def test_main_list_strategies_json(monkeypatch) -> None:
     buf = io.StringIO()
     monkeypatch.setattr(sys, "stdout", buf)

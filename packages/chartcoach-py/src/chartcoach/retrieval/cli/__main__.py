@@ -7,7 +7,8 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 from chartcoach.env import load_env
-from chartcoach.retrieval.config import load_run_config
+from chartcoach.retrieval.config import load_run_config, load_run_config_from_doc
+from chartcoach.retrieval.manifest import load_manifest
 from chartcoach.retrieval.service import (
     EvalArtifactsService,
     RetrievalService,
@@ -148,6 +149,12 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         default=None,
         help="Path to retrieval run config YAML (defaults + env if omitted).",
+    )
+    run_cmd.add_argument(
+        "--manifest",
+        type=Path,
+        default=None,
+        help="Path to an experiment manifest YAML (freezes run args + config; ignores env defaults).",
     )
 
     purge_cmd = sub.add_parser("purge", help="Delete previously generated artifacts.")
@@ -306,21 +313,50 @@ def main(argv: list[str] | None = None) -> None:
         return
 
     if args.cmd == "run":
-        run_config = load_run_config(args.config)
-        url = _resolve_store_url(args.artifacts_url)
+        if args.manifest:
+            if (
+                args.config is not None
+                or args.catalog_uri is not None
+                or args.artifacts_url is not None
+                or args.purge
+                or args.k is not None
+                or args.strategies
+            ):
+                raise SystemExit(
+                    "When using --manifest, do not pass --config/--catalog-uri/--artifacts-url/--purge/-k/--strategy."
+                )
+
+            manifest = load_manifest(args.manifest)
+            run_config = load_run_config_from_doc(manifest.config, use_env=False)
+            url = _resolve_store_url(manifest.run.artifacts_url)
+            scenarios_path = Path(manifest.run.scenarios)
+            catalog_uri = manifest.run.catalog_uri
+            strategy_ids = manifest.run.strategies or None
+            k = manifest.run.k
+            purge = bool(manifest.run.purge)
+            manifest_meta = manifest.public_dict()
+        else:
+            run_config = load_run_config(args.config)
+            url = _resolve_store_url(args.artifacts_url)
+            scenarios_path = args.scenarios
+            catalog_uri = _require_catalog_uri(args.catalog_uri)
+            strategy_ids = args.strategies or None
+            k = args.k
+            purge = bool(args.purge)
+            manifest_meta = None
+
         store = _create_artifacts_store(url)
         svc = EvalArtifactsService(store=store, retrieval=retrieval)
-        if args.purge:
+        if purge:
             svc.purge(prefix="")
 
-        catalog_uri = _require_catalog_uri(args.catalog_uri)
-
         svc.run(
-            scenarios_path=args.scenarios,
+            scenarios_path=scenarios_path,
             catalog_uri=catalog_uri,
-            strategy_ids=args.strategies or None,
-            k=args.k,
+            strategy_ids=strategy_ids,
+            k=k,
             run_config=run_config,
+            manifest=manifest_meta,
         )
         print("Artifacts written.")
         return
