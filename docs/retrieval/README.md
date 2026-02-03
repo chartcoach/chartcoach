@@ -5,6 +5,7 @@ This folder documents how ChartCoach runs retrieval strategies and produces eval
 Quick links:
 - Artifact schema: `docs/artifacts/schema-v1.json` (generated from Python pydantic models)
 - Paper run manifest example: `docs/manifests/paper-freeze-v20.yaml`
+- Paper assets (tables/figures + ablation matrix): `docs/retrieval/PAPER_ASSETS.md`
 - How to add a strategy: `docs/retrieval/ADDING_STRATEGY.md`
 
 ## Key Concepts
@@ -43,4 +44,3 @@ Validate drift checks:
 uv run pytest
 pnpm test:eval
 ```
-
