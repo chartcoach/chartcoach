@@ -1,0 +1,82 @@
+schema_version: 1
+
+# This file is for paper/reporting only (NOT used by retrieval strategies).
+# It defines a compact "family" taxonomy so analysis scripts can generate
+# reproducible tables/figures without scattering one-off mappings in code.
+strategies:
+  - id: ann-dense@v1
+    family: dense
+    label: Dense ANN
+
+  - id: dense-mmr@v1
+    family: dense
+    label: Dense + MMR
+
+  - id: bm25-prf@v1
+    family: lexical
+    label: BM25 + PRF
+
+  - id: hybrid-rrf@v1
+    family: hybrid
+    label: Hybrid (Dense + BM25) + RRF
+
+  - id: sparse-splade@v1
+    family: sparse
+    label: Neural sparse (SPLADE)
+
+  - id: dense-sparse-rrf@v1
+    family: hybrid
+    label: Dense + SPLADE (RRF fusion)
+
+  - id: multirepr-rrf@v1
+    family: structure
+    label: Multi-representation RRF
+
+  - id: role-aware-sections@v1
+    family: structure
+    label: Role-aware sections (LLM router)
+
+  - id: label-gated-ann@v1
+    family: structure
+    label: Label-gated dense
+
+  - id: label-first-abstract@v1
+    family: structure
+    label: Label-first abstract retrieval
+
+  - id: query-fusion-hybrid@v1
+    family: llm-query
+    label: Query fusion + hybrid
+
+  - id: facet-fusion-hybrid@v1
+    family: llm-query
+    label: Facet fusion + hybrid
+
+  - id: hyde-hybrid@v1
+    family: llm-query
+    label: HyDE + hybrid
+
+  - id: decompose-parallel@v1
+    family: llm-query
+    label: Decompose + parallel retrieval
+
+  - id: hybrid-rrf-setselect-label@v1
+    family: setselect
+    label: Set selection (label coverage)
+
+  - id: hybrid-rrf-setselect-facility@v1
+    family: setselect
+    label: Set selection (facility location)
+
+  - id: utility-rerank-hybrid@v1
+    family: rerank
+    label: Utility/harm rerank (LLM)
+
+  - id: neighborhood-explorer@v1
+    family: explore
+    label: Neighborhood explorer
+
+  - id: agentic-hybrid@v1
+    family: agentic
+    label: Agentic hybrid (ReAct)
+
