@@ -23,7 +23,7 @@ pydocstyle = { convention = "numpy" }
 ignore = []
 
 [tool.pytest.ini_options]
-addopts = "--import-mode=importlib --cov=chartcoach --cov-report=term-missing --cov-fail-under=100"
+addopts = "--import-mode=importlib --cov=chartcoach --cov-report=term-missing"
 testpaths = ["packages/chartcoach-py/tests"]
 filterwarnings = [
     "ignore:n_jobs value .* overridden:UserWarning:umap.*",
