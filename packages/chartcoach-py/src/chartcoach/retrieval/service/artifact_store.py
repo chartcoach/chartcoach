@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
@@ -25,6 +26,11 @@ def default_artifacts_url(*, s3: S3EnvRequired, version: str = "v1") -> str:
 def create_store(url: str, *, s3: S3EnvRequired | None = None) -> ObjectStore:
     parsed = urlparse(url)
     if parsed.scheme != "s3":
+        if parsed.scheme in {"", "file"}:
+            # `obstore.from_url` expects the local filesystem root to exist.
+            # Artifact stores are directory-shaped by convention.
+            root = Path(parsed.path if parsed.scheme == "file" else url)
+            root.mkdir(parents=True, exist_ok=True)
         return from_url(url)
 
     if s3 is None:

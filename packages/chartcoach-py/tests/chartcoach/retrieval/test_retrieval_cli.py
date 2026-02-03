@@ -37,6 +37,14 @@ def test_create_store_memory_scheme() -> None:
     assert isinstance(store, MemoryStore)
 
 
+def test_create_store_file_scheme_creates_root_dir(tmp_path: Path) -> None:
+    root = tmp_path / "artifacts" / "v1"
+    assert not root.exists()
+
+    _store = create_store(f"file://{root}/")
+    assert root.exists()
+
+
 def test_cli_helpers_cover_catalog_and_store_url_branches(monkeypatch) -> None:
     import chartcoach.retrieval.cli.__main__ as cli
 
