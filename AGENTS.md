@@ -36,6 +36,15 @@ uv run pytest
   - `chartcoach-retrieval run --manifest <path>`
 - Manifests freeze run arguments (strategy list, `k`, store URL) and include a run-config override document (models, temperatures, retrieval knobs) without relying on ambient env defaults.
 
+## Artifact Schema (Single Source of Truth)
+
+- The eval artifact schema is generated from pydantic models and committed at `docs/artifacts/schema-v1.json`.
+- Regenerate it with:
+
+```bash
+uv run python -m chartcoach.retrieval.service.artifact_schema --out docs/artifacts/schema-v1.json
+```
+
 ## Commit Messages
 
 Use Conventional Commits:
@@ -69,6 +78,7 @@ Keep scopes meaningful (e.g., `retrieval`, `eval-ui`, `catalog`) and avoid over-
 - Prefer contract/invariant tests over branch-coverage tests.
 - Avoid monkeypatch-heavy “line-hitting” tests unless they protect a real interface contract.
 - If a test doesn’t increase confidence for a paper claim or an engineering contract, delete it.
+- Guardrails are enforced in tests (scenario-id leakage + `hints_*.py`). See `packages/chartcoach-py/tests/chartcoach/retrieval/test_repo_guardrails.py`.
 
 ## Practical Notes
 
