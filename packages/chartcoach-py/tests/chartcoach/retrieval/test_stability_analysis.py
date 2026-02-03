@@ -6,10 +6,15 @@ from pathlib import Path
 import pytest
 
 import chartcoach.retrieval.analysis.stability as stability
-from chartcoach.retrieval.analysis.stability import compute_stability, format_stability_table
+from chartcoach.retrieval.analysis.stability import (
+    compute_stability,
+    format_stability_table,
+)
 
 
-def _write_bundle(root: Path, *, scenario_id: str, strategy_id: str, guideline_ids: list[str]) -> None:
+def _write_bundle(
+    root: Path, *, scenario_id: str, strategy_id: str, guideline_ids: list[str]
+) -> None:
     bundles = root / "bundles"
     bundles.mkdir(parents=True, exist_ok=True)
     payload = {
@@ -38,8 +43,12 @@ def test_compute_stability_pairwise_jaccard(tmp_path) -> None:
     run1 = tmp_path / "run1"
     run2 = tmp_path / "run2"
 
-    _write_bundle(run1, scenario_id="s1", strategy_id="hybrid@v1", guideline_ids=["a", "b", "c"])
-    _write_bundle(run2, scenario_id="s1", strategy_id="hybrid@v1", guideline_ids=["b", "c", "d"])
+    _write_bundle(
+        run1, scenario_id="s1", strategy_id="hybrid@v1", guideline_ids=["a", "b", "c"]
+    )
+    _write_bundle(
+        run2, scenario_id="s1", strategy_id="hybrid@v1", guideline_ids=["b", "c", "d"]
+    )
 
     results = compute_stability(runs=[run1, run2], k=3)
     assert len(results) == 1
@@ -83,17 +92,25 @@ def test_load_run_bundle_sets_skips_invalid_records(tmp_path) -> None:
     bundles.mkdir(parents=True)
 
     # scenario not dict
-    (bundles / "bad1.json").write_text(json.dumps({"scenario": "nope"}), encoding="utf-8")
+    (bundles / "bad1.json").write_text(
+        json.dumps({"scenario": "nope"}), encoding="utf-8"
+    )
     # scenario missing id
-    (bundles / "bad2.json").write_text(json.dumps({"scenario": {"id": ""}}), encoding="utf-8")
+    (bundles / "bad2.json").write_text(
+        json.dumps({"scenario": {"id": ""}}), encoding="utf-8"
+    )
     # strategies not list
     (bundles / "bad3.json").write_text(
-        json.dumps({"scenario": {"id": "s1", "title": "T", "lang": "en"}, "strategies": "nope"}),
+        json.dumps(
+            {"scenario": {"id": "s1", "title": "T", "lang": "en"}, "strategies": "nope"}
+        ),
         encoding="utf-8",
     )
     # strategy not dict
     (bundles / "bad4.json").write_text(
-        json.dumps({"scenario": {"id": "s2", "title": "T", "lang": "en"}, "strategies": [1]}),
+        json.dumps(
+            {"scenario": {"id": "s2", "title": "T", "lang": "en"}, "strategies": [1]}
+        ),
         encoding="utf-8",
     )
     # invalid strategy_id + invalid guidelines shapes

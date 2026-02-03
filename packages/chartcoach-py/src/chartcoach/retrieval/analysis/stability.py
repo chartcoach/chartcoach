@@ -4,6 +4,7 @@ import json
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
+from typing import cast
 
 
 @dataclass(frozen=True, slots=True)
@@ -37,13 +38,15 @@ def _extract_guideline_id(entry: Mapping[str, object] | None) -> str | None:
         return None
     guideline = entry.get("guideline")
     if isinstance(guideline, dict):
-        gid = guideline.get("id")
+        gid = cast("dict[str, object]", guideline).get("id")
         return gid if isinstance(gid, str) and gid else None
     gid = entry.get("id")
     return gid if isinstance(gid, str) and gid else None
 
 
-def load_run_bundle_sets(*, artifacts_root: Path, k: int | None = None) -> dict[str, dict[str, list[str]]]:
+def load_run_bundle_sets(
+    *, artifacts_root: Path, k: int | None = None
+) -> dict[str, dict[str, list[str]]]:
     """Load per-scenario per-strategy top-k guideline ids from an artifacts directory."""
 
     bundles_dir = artifacts_root / "bundles"
@@ -102,9 +105,7 @@ def compute_stability(
     loaded = [load_run_bundle_sets(artifacts_root=r, k=k) for r in runs]
 
     # Collect all scenario ids present in all runs (intersection).
-    scenario_ids: set[str] = set.intersection(
-        *(set(run.keys()) for run in loaded)
-    )
+    scenario_ids: set[str] = set.intersection(*(set(run.keys()) for run in loaded))
     if not scenario_ids:
         return []
 
@@ -130,7 +131,9 @@ def compute_stability(
 
         mean = sum(per_scenario.values()) / max(1, len(per_scenario))
         results.append(
-            StabilityResult(strategy_id=strategy_id, mean_jaccard=mean, scenarios=per_scenario)
+            StabilityResult(
+                strategy_id=strategy_id, mean_jaccard=mean, scenarios=per_scenario
+            )
         )
     return sorted(results, key=lambda r: (-r.mean_jaccard, r.strategy_id))
 

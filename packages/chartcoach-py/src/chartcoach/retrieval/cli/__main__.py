@@ -45,6 +45,63 @@ def build_parser() -> argparse.ArgumentParser:
     )
     analyze_cmd.add_argument("--json", action="store_true", help="Output JSON.")
 
+    counter_cmd = sub.add_parser(
+        "analyze-counterfactual",
+        help="Compute overlap across counterfactual scenario variants for each strategy.",
+    )
+    counter_cmd.add_argument(
+        "--run",
+        type=Path,
+        required=True,
+        help="Artifacts root directory containing index.json and bundles/*.json.",
+    )
+    counter_cmd.add_argument(
+        "-k",
+        "--k",
+        type=int,
+        default=None,
+        help="Number of top results to compare (defaults to full returned set).",
+    )
+    counter_cmd.add_argument("--json", action="store_true", help="Output JSON.")
+
+    pool_cmd = sub.add_parser(
+        "analyze-pool",
+        help="Compute per-scenario pool coverage (unique guidelines in union of top-k across strategies).",
+    )
+    pool_cmd.add_argument(
+        "--run",
+        type=Path,
+        required=True,
+        help="Artifacts root directory containing bundles/*.json.",
+    )
+    pool_cmd.add_argument(
+        "-k",
+        "--k",
+        type=int,
+        default=None,
+        help="Pool depth per strategy (defaults to full returned set).",
+    )
+    pool_cmd.add_argument("--json", action="store_true", help="Output JSON.")
+
+    neg_cmd = sub.add_parser(
+        "analyze-negatives",
+        help="Compute negative-hit rates for scenarios that define negative guideline ids.",
+    )
+    neg_cmd.add_argument(
+        "--run",
+        type=Path,
+        required=True,
+        help="Artifacts root directory containing index.json and bundles/*.json.",
+    )
+    neg_cmd.add_argument(
+        "-k",
+        "--k",
+        type=int,
+        default=None,
+        help="Number of top results to evaluate (defaults to full returned set).",
+    )
+    neg_cmd.add_argument("--json", action="store_true", help="Output JSON.")
+
     run_cmd = sub.add_parser(
         "run", help="Run retrieval over eval scenarios and upload artifacts."
     )
@@ -143,7 +200,10 @@ def main(argv: list[str] | None = None) -> None:
         return
 
     if args.cmd == "analyze-stability":
-        from chartcoach.retrieval.analysis.stability import compute_stability, format_stability_table
+        from chartcoach.retrieval.analysis.stability import (
+            compute_stability,
+            format_stability_table,
+        )
 
         runs = [Path(p) for p in (args.runs or [])]
         if len(runs) < 2:
@@ -162,6 +222,72 @@ def main(argv: list[str] | None = None) -> None:
             print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
         else:
             print(format_stability_table(results))
+        return
+
+    if args.cmd == "analyze-counterfactual":
+        from chartcoach.retrieval.analysis.counterfactual import (
+            compute_counterfactual_sensitivity,
+            format_counterfactual_table,
+        )
+
+        results = compute_counterfactual_sensitivity(
+            artifacts_root=Path(args.run), k=args.k
+        )
+        if args.json:
+            payload = [
+                {
+                    "strategy_id": r.strategy_id,
+                    "mean_jaccard": r.mean_jaccard,
+                    "groups": r.groups,
+                }
+                for r in results
+            ]
+            print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+        else:
+            print(format_counterfactual_table(results))
+        return
+
+    if args.cmd == "analyze-pool":
+        from chartcoach.retrieval.analysis.pooling import (
+            compute_pool_coverage,
+            format_pool_table,
+        )
+
+        results = compute_pool_coverage(artifacts_root=Path(args.run), k=args.k)
+        if args.json:
+            payload = [
+                {
+                    "scenario_id": r.scenario_id,
+                    "strategies": r.strategies,
+                    "unique_guidelines": r.unique_guidelines,
+                }
+                for r in results
+            ]
+            print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+        else:
+            print(format_pool_table(results))
+        return
+
+    if args.cmd == "analyze-negatives":
+        from chartcoach.retrieval.analysis.negatives import (
+            compute_negative_hit_rates,
+            format_negative_hit_table,
+        )
+
+        results = compute_negative_hit_rates(artifacts_root=Path(args.run), k=args.k)
+        if args.json:
+            payload = [
+                {
+                    "strategy_id": r.strategy_id,
+                    "mean_negative_fraction": r.mean_negative_fraction,
+                    "any_negative_fraction": r.any_negative_fraction,
+                    "scenarios": r.scenarios,
+                }
+                for r in results
+            ]
+            print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+        else:
+            print(format_negative_hit_table(results))
         return
 
     if args.cmd == "purge":
