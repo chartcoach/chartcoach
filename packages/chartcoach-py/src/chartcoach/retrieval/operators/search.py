@@ -1,0 +1,127 @@
+from __future__ import annotations
+
+from typing import Protocol
+
+import numpy as np
+import polars as pl
+
+from chartcoach.retrieval.strategy.pipelines.focus import (
+    FocusConfig,
+    FocusMode,
+    fallback_roles_for_focus,
+    primary_roles_for_focus,
+)
+
+
+class _DenseSearcher(Protocol):
+    def search_dense(
+        self,
+        *,
+        query_vector: np.ndarray,
+        k: int,
+        roles: set[str] | None = None,
+        ids: set[str] | None = None,
+    ) -> pl.DataFrame: ...
+
+
+class _FtsSearcher(Protocol):
+    def search_fts(
+        self,
+        *,
+        query_text: str,
+        k: int,
+        roles: set[str] | None = None,
+        ids: set[str] | None = None,
+    ) -> pl.DataFrame: ...
+
+
+class _HybridSearcher(Protocol):
+    def search_hybrid(
+        self,
+        *,
+        query_text: str,
+        query_vector: np.ndarray,
+        k: int,
+        reranker: object | None = None,
+        roles: set[str] | None = None,
+        ids: set[str] | None = None,
+        fts_columns: str | list[str] | None = None,
+    ) -> pl.DataFrame: ...
+
+
+def search_dense_with_focus(
+    *,
+    searcher: _DenseSearcher,
+    query_vector: np.ndarray,
+    k: int,
+    focus: FocusConfig,
+    focus_mode: FocusMode,
+) -> tuple[pl.DataFrame, set[str] | None]:
+    roles = primary_roles_for_focus(focus_mode)
+    roles_used = roles
+
+    hits_df = searcher.search_dense(
+        query_vector=query_vector, k=int(k), roles=roles_used
+    )
+    if hits_df.is_empty() and roles is not None and focus.allow_role_fallback:
+        roles_used = fallback_roles_for_focus(focus_mode)
+        hits_df = searcher.search_dense(
+            query_vector=query_vector, k=int(k), roles=roles_used
+        )
+
+    return hits_df, roles_used
+
+
+def search_fts_with_focus(
+    *,
+    searcher: _FtsSearcher,
+    query_text: str,
+    k: int,
+    focus: FocusConfig,
+    focus_mode: FocusMode,
+) -> tuple[pl.DataFrame, set[str] | None]:
+    roles = primary_roles_for_focus(focus_mode)
+    roles_used = roles
+
+    hits_df = searcher.search_fts(query_text=query_text, k=int(k), roles=roles_used)
+    if hits_df.is_empty() and roles is not None and focus.allow_role_fallback:
+        roles_used = fallback_roles_for_focus(focus_mode)
+        hits_df = searcher.search_fts(query_text=query_text, k=int(k), roles=roles_used)
+
+    return hits_df, roles_used
+
+
+def search_hybrid_with_focus(
+    *,
+    searcher: _HybridSearcher,
+    query_text: str,
+    query_vector: np.ndarray,
+    k: int,
+    reranker: object | None,
+    focus: FocusConfig,
+    focus_mode: FocusMode,
+    fts_columns: str | list[str] | None = None,
+) -> tuple[pl.DataFrame, set[str] | None]:
+    roles = primary_roles_for_focus(focus_mode)
+    roles_used = roles
+
+    hits_df = searcher.search_hybrid(
+        query_text=query_text,
+        query_vector=query_vector,
+        reranker=reranker,
+        k=int(k),
+        roles=roles_used,
+        fts_columns=fts_columns,
+    )
+    if hits_df.is_empty() and roles is not None and focus.allow_role_fallback:
+        roles_used = fallback_roles_for_focus(focus_mode)
+        hits_df = searcher.search_hybrid(
+            query_text=query_text,
+            query_vector=query_vector,
+            reranker=reranker,
+            k=int(k),
+            roles=roles_used,
+            fts_columns=fts_columns,
+        )
+
+    return hits_df, roles_used
