@@ -317,23 +317,21 @@ def main(argv: list[str] | None = None) -> None:
             if (
                 args.config is not None
                 or args.catalog_uri is not None
-                or args.artifacts_url is not None
-                or args.purge
                 or args.k is not None
                 or args.strategies
             ):
                 raise SystemExit(
-                    "When using --manifest, do not pass --config/--catalog-uri/--artifacts-url/--purge/-k/--strategy."
+                    "When using --manifest, do not pass --config/--catalog-uri/-k/--strategy."
                 )
 
             manifest = load_manifest(args.manifest)
             run_config = load_run_config_from_doc(manifest.config, use_env=False)
-            url = _resolve_store_url(manifest.run.artifacts_url)
+            url = _resolve_store_url(args.artifacts_url or manifest.run.artifacts_url)
             scenarios_path = Path(manifest.run.scenarios)
             catalog_uri = manifest.run.catalog_uri
             strategy_ids = manifest.run.strategies or None
             k = manifest.run.k
-            purge = bool(manifest.run.purge)
+            purge = bool(args.purge or manifest.run.purge)
             manifest_meta = manifest.public_dict()
         else:
             run_config = load_run_config(args.config)
