@@ -8,18 +8,25 @@ import {
   clearGuidelineRatings,
   guidelineRatingsCollection,
   mergeGuidelineRatings,
+  clearSetRatings,
+  mergeSetRatings,
+  setRatingsCollection,
 } from "@chartcoach/eval-ui/db-collections";
 import type { GuidelineRating } from "@chartcoach/eval-ui/db-collections";
+import type { ScenarioSetRating } from "@chartcoach/eval-ui/db-collections";
 import { useAutoUploadGuidelineRatings } from "@chartcoach/eval-ui/eval/hooks/use-auto-upload-guideline-ratings";
 import { usePullGuidelineRatingsFromS3 } from "@chartcoach/eval-ui/eval/hooks/use-pull-guideline-ratings";
 import { GuidelineRatingsExportV2Schema } from "@chartcoach/eval-ui/eval/guideline-ratings";
+import { SetRatingsExportV1Schema } from "@chartcoach/eval-ui/eval/set-ratings";
 import { ThemeSelector } from "@chartcoach/eval-ui/components/theme-selector";
 import { downloadGuidelineRatingsExport } from "@chartcoach/eval-ui/lib/export-guideline-ratings";
+import { downloadSetRatingsExport } from "@chartcoach/eval-ui/lib/export-set-ratings";
 import { useOnlineStatus } from "@chartcoach/eval-ui/lib/eval-utils";
 
 export function AppHeader() {
   const headerRef = useRef<HTMLElement | null>(null);
   const importInputRef = useRef<HTMLInputElement | null>(null);
+  const setImportInputRef = useRef<HTMLInputElement | null>(null);
 
   useLayoutEffect(() => {
     const el = headerRef.current;
@@ -51,6 +58,16 @@ export function AppHeader() {
 
   const ratings = (data ?? []) as GuidelineRating[];
   const ratingCount = ratings.length;
+
+  const { data: setData } = useLiveQuery(
+    (q) =>
+      q.from({ rating: setRatingsCollection }).select(({ rating }) => ({
+        ...rating,
+      })),
+    [],
+  );
+
+  const setRatings = (setData ?? []) as ScenarioSetRating[];
 
   const sync = useAutoUploadGuidelineRatings(ratings);
   const pull = usePullGuidelineRatingsFromS3();
@@ -111,6 +128,13 @@ export function AppHeader() {
     console.info(`[eval-ui] Imported ${parsed.ratings.length} guideline ratings.`);
   }
 
+  async function handleImportSetRatingsFromFile(file: File) {
+    const raw = await file.text();
+    const parsed = SetRatingsExportV1Schema.parse(JSON.parse(raw));
+    mergeSetRatings(parsed.ratings);
+    console.info(`[eval-ui] Imported ${parsed.ratings.length} set ratings.`);
+  }
+
   return (
     <header ref={headerRef} className="sticky top-0 z-50 border-b bg-background">
       <div className="mx-auto flex w-full items-center justify-between gap-3 px-4 py-3 lg:px-6">
@@ -168,6 +192,21 @@ export function AppHeader() {
             }}
           />
 
+          <input
+            ref={setImportInputRef}
+            type="file"
+            accept="application/json"
+            className="sr-only"
+            onChange={(event) => {
+              const file = event.currentTarget.files?.[0];
+              if (!file) return;
+              event.currentTarget.value = "";
+              void handleImportSetRatingsFromFile(file).catch((error) => {
+                console.warn("[eval-ui] Failed to import set ratings.", error);
+              });
+            }}
+          />
+
           <button
             type="button"
             onClick={() => downloadGuidelineRatingsExport(ratings)}
@@ -204,6 +243,44 @@ export function AppHeader() {
           >
             <Trash2 className="size-3.5" aria-hidden="true" />
             <span className="hidden sm:inline">Clear</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => downloadSetRatingsExport(setRatings)}
+            className="inline-flex items-center gap-2 rounded-md border px-2 py-1 text-xs text-muted-foreground hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring/60"
+            title="Download set ratings as JSON"
+            aria-label="Download set ratings as JSON"
+          >
+            <Download className="size-3.5" aria-hidden="true" />
+            <span className="hidden sm:inline">Export sets</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setImportInputRef.current?.click()}
+            className="inline-flex items-center gap-2 rounded-md border px-2 py-1 text-xs text-muted-foreground hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring/60"
+            title="Import set ratings from JSON"
+            aria-label="Import set ratings from JSON"
+          >
+            <Upload className="size-3.5" aria-hidden="true" />
+            <span className="hidden sm:inline">Import sets</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              if (typeof window === "undefined") return;
+              const ok = window.confirm("Clear all local set ratings on this device?");
+              if (!ok) return;
+              clearSetRatings();
+            }}
+            className="inline-flex items-center gap-2 rounded-md border px-2 py-1 text-xs text-muted-foreground hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring/60"
+            title="Clear all local set ratings"
+            aria-label="Clear all local set ratings"
+          >
+            <Trash2 className="size-3.5" aria-hidden="true" />
+            <span className="hidden sm:inline">Clear sets</span>
           </button>
 
           <ThemeSelector />

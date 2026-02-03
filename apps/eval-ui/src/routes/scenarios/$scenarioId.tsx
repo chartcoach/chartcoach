@@ -7,6 +7,7 @@ import { AppHeader } from "@chartcoach/eval-ui/components/app-header";
 import { ScenarioPanel } from "@chartcoach/eval-ui/components/scenario-eval/scenario-panel";
 import { StrategyTabs } from "@chartcoach/eval-ui/components/scenario-eval/strategy-tabs";
 import { GuidelineDeck } from "@chartcoach/eval-ui/components/scenario-eval/guideline-deck";
+import { SetRatingPanel } from "@chartcoach/eval-ui/components/scenario-eval/set-rating-panel";
 import { deleteGuidelineRating, upsertGuidelineRating } from "@chartcoach/eval-ui/db-collections";
 import type { ScenarioSpec } from "@chartcoach/eval-ui/eval/schemas";
 import {
@@ -14,6 +15,7 @@ import {
   scenariosQueryOptions,
 } from "@chartcoach/eval-ui/eval/queries";
 import { useScenarioRatings } from "@chartcoach/eval-ui/eval/hooks/use-scenario-ratings";
+import { useScenarioSetRatings } from "@chartcoach/eval-ui/eval/hooks/use-scenario-set-ratings";
 
 export const Route = createFileRoute("/scenarios/$scenarioId")({
   validateSearch: z.object({
@@ -67,6 +69,7 @@ function ScenarioEvalPage() {
   const activeStrategy = strategies.find((s) => s.strategyId === selectedStrategyId);
 
   const { getRating } = useScenarioRatings(scenarioId);
+  const { getRating: getSetRating } = useScenarioSetRatings(scenarioId);
 
   const guidelines = activeStrategy?.guidelines ?? [];
   const guidelineIds = useMemo(() => guidelines.map((g) => g.entry.guideline.id), [guidelines]);
@@ -145,14 +148,23 @@ function ScenarioEvalPage() {
                 />
 
                 {activeStrategy?.guidelines?.length ? (
-                  <GuidelineDeck
-                    scenarioId={scenarioId}
-                    guidelines={activeStrategy.guidelines}
-                    activeGuidelineId={activeGuidelineId}
-                    getRating={getRating}
-                    onRate={onRateGuideline}
-                    onClear={onClearGuideline}
-                  />
+                  <>
+                    <GuidelineDeck
+                      scenarioId={scenarioId}
+                      guidelines={activeStrategy.guidelines}
+                      activeGuidelineId={activeGuidelineId}
+                      getRating={getRating}
+                      onRate={onRateGuideline}
+                      onClear={onClearGuideline}
+                    />
+                    {selectedStrategyId ? (
+                      <SetRatingPanel
+                        scenarioId={scenarioId}
+                        strategyId={selectedStrategyId}
+                        rating={getSetRating(selectedStrategyId)}
+                      />
+                    ) : null}
+                  </>
                 ) : (
                   <div className="mt-4 p-2 text-sm text-muted-foreground">No guidelines.</div>
                 )}

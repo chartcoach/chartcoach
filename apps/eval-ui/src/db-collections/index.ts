@@ -139,3 +139,13 @@ export function mergeGuidelineRatings(ratings: GuidelineRating[]) {
     });
   }
 }
+
+export {
+  clearSetRatings,
+  deleteSetRating,
+  makeSetRatingId,
+  mergeSetRatings,
+  setRatingsCollection,
+  upsertSetRating,
+} from "./set-ratings";
+export type { ScenarioSetRating } from "./set-ratings";
