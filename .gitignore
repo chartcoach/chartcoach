@@ -4,6 +4,8 @@ vertex-ai.json
 guidelines/embeddings.parquet
 
 .artifacts/
+.playwright-cli/
+output/playwright/
 
 *.egg-info
 __pycache__/
