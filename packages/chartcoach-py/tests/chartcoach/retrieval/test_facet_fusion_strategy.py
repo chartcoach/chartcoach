@@ -191,7 +191,9 @@ def test_facet_fusion_hybrid_role_fallback_and_cross_encoder_rerank(
         lm=lm,
         config=FacetFusionConfig(n_queries=2, cross_encoder_model="dummy"),
         default_k=2,
-        focus=FocusConfig(mode="violations", allow_role_fallback=True, use_status_filter=True),
+        focus=FocusConfig(
+            mode="violations", allow_role_fallback=True, use_status_filter=True
+        ),
     )
 
     class DummyPlan(dspy.Module):

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from chartcoach.catalog import Catalog
 from chartcoach.retrieval.strategy.dspy_models import create_strategy_vlm
@@ -190,11 +190,24 @@ class HydeHybridStrategy(RetrievalStrategy):
                 for item in source:
                     if not isinstance(item, dict):
                         continue
-                    text = str(item.get("text") or "").strip()
+                    payload = cast("dict[str, object]", item)
+                    text = str(payload.get("text") or "").strip()
                     if not text:
                         continue
-                    merged.append(item)
-            merged.sort(key=lambda x: float(x.get("score") or 0.0), reverse=True)
+                    merged.append(payload)
+
+            def _score(item: dict[str, object]) -> float:
+                raw = item.get("score")
+                if isinstance(raw, (int, float)):
+                    return float(raw)
+                if isinstance(raw, str):
+                    try:
+                        return float(raw)
+                    except ValueError:
+                        return 0.0
+                return 0.0
+
+            merged.sort(key=_score, reverse=True)
             return merged[: max(0, int(limit))]
 
         fused_scores = rrf_scores(rankings=[rank_fts, rank_dense], k=self._config.rrf_k)
@@ -310,6 +323,53 @@ class HydeHybridStrategy(RetrievalStrategy):
                 config=status_cfg,
             )
 
+        def _coerce_float(raw: object, *, fallback: float = 0.0) -> float:
+            if isinstance(raw, (int, float)):
+                return float(raw)
+            if isinstance(raw, str):
+                try:
+                    return float(raw)
+                except ValueError:
+                    return fallback
+            return fallback
+
+        hits: list[dict[str, object]] = []
+        for entry in ordered_entries:
+            rerank_hit = rerank_hits_by_id.get(entry.id)
+            if not isinstance(rerank_hit, dict):
+                rerank_hit = {}
+            fill_hit = fill_hits_by_id.get(entry.id)
+            if not isinstance(fill_hit, dict):
+                fill_hit = {}
+
+            score = _coerce_float(
+                rerank_hit.get("score")
+                if rerank_hit.get("score") is not None
+                else fill_hit.get("score")
+                if fill_hit.get("score") is not None
+                else fused_scores.get(entry.id),
+                fallback=0.0,
+            )
+
+            best_role = (
+                rerank_hit.get("best_role")
+                or fill_hit.get("best_role")
+                or best_role_by_id.get(entry.id)
+            )
+            evidence = _merge_evidence(
+                rerank_hit.get("evidence") or fill_hit.get("evidence"),
+                evidence_by_id.get(entry.id),
+                limit=3,
+            )
+            hits.append(
+                {
+                    "id": entry.id,
+                    "score": score,
+                    "best_role": best_role,
+                    "evidence": evidence,
+                }
+            )
+
         meta = {
             **self._searcher.vector_index.meta(),
             "k": effective_k,
@@ -335,28 +395,7 @@ class HydeHybridStrategy(RetrievalStrategy):
             "cross_encoder_error": cross_encoder_error,
             "cross_encoder_rerank_query_chars": rerank_query_chars,
             "fill_fallback_used": fill_fallback_used,
-            "hits": [
-                {
-                    "id": entry.id,
-                    "score": float(
-                        (rerank_hits_by_id.get(entry.id, {}).get("score"))
-                        or (fill_hits_by_id.get(entry.id, {}).get("score"))
-                        or fused_scores.get(entry.id, 0.0)
-                    ),
-                    "best_role": (
-                        rerank_hits_by_id.get(entry.id, {}).get("best_role")
-                        or fill_hits_by_id.get(entry.id, {}).get("best_role")
-                        or best_role_by_id.get(entry.id)
-                    ),
-                    "evidence": _merge_evidence(
-                        rerank_hits_by_id.get(entry.id, {}).get("evidence")
-                        or fill_hits_by_id.get(entry.id, {}).get("evidence"),
-                        evidence_by_id.get(entry.id),
-                        limit=3,
-                    ),
-                }
-                for entry in ordered_entries
-            ],
+            "hits": hits,
         }
 
         return RetrievalResponse(catalog=Catalog(entries=ordered_entries), meta=meta)

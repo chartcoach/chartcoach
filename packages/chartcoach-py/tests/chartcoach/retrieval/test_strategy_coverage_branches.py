@@ -226,7 +226,9 @@ def test_bm25_dense_and_hybrid_cover_vision_role_fallback_and_status(
         catalog=catalog,
         searcher=searcher,
         default_k=1,
-        focus=FocusConfig(mode="violations", allow_role_fallback=True, use_status_filter=True),
+        focus=FocusConfig(
+            mode="violations", allow_role_fallback=True, use_status_filter=True
+        ),
     )(request=req)
     assert out.meta["chart_vision"]["chart_vision_used"] is True
     assert out.meta["guideline_status_used"] is True
@@ -235,7 +237,9 @@ def test_bm25_dense_and_hybrid_cover_vision_role_fallback_and_status(
         catalog=catalog,
         searcher=searcher,
         default_k=1,
-        focus=FocusConfig(mode="violations", allow_role_fallback=True, use_status_filter=True),
+        focus=FocusConfig(
+            mode="violations", allow_role_fallback=True, use_status_filter=True
+        ),
     )(request=req)
     assert out.meta["chart_vision"]["chart_vision_used"] is True
     assert out.meta["guideline_status_used"] is True
@@ -244,7 +248,9 @@ def test_bm25_dense_and_hybrid_cover_vision_role_fallback_and_status(
         catalog=catalog,
         searcher=searcher,
         default_k=1,
-        focus=FocusConfig(mode="violations", allow_role_fallback=True, use_status_filter=True),
+        focus=FocusConfig(
+            mode="violations", allow_role_fallback=True, use_status_filter=True
+        ),
     )(request=req)
     assert out.meta["chart_vision"]["chart_vision_used"] is True
     assert out.meta["guideline_status_used"] is True
@@ -365,7 +371,9 @@ def test_query_fusion_and_hyde_cover_role_fallback_cross_encoder_exception_and_s
         lm=lm,
         config=QueryFusionConfig(n_queries=2, cross_encoder_model="dummy"),
         default_k=2,
-        focus=FocusConfig(mode="violations", allow_role_fallback=True, use_status_filter=True),
+        focus=FocusConfig(
+            mode="violations", allow_role_fallback=True, use_status_filter=True
+        ),
     )
 
     class DummyQFProgram(dspy.Module):
@@ -386,7 +394,9 @@ def test_query_fusion_and_hyde_cover_role_fallback_cross_encoder_exception_and_s
         lm=lm,
         config=HydeConfig(cross_encoder_model="dummy"),
         default_k=1,
-        focus=FocusConfig(mode="violations", allow_role_fallback=True, use_status_filter=True),
+        focus=FocusConfig(
+            mode="violations", allow_role_fallback=True, use_status_filter=True
+        ),
     )
 
     class DummyHydeProgram(dspy.Module):

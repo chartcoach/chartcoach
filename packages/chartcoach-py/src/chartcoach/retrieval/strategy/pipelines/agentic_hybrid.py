@@ -527,6 +527,32 @@ class AgenticHybridStrategy(RetrievalStrategy):
                 }
             except Exception:  # noqa: BLE001
                 hits_by_id = {}
+
+        def _coerce_float(raw: object, *, fallback: float = 0.0) -> float:
+            if isinstance(raw, (int, float)):
+                return float(raw)
+            if isinstance(raw, str):
+                try:
+                    return float(raw)
+                except ValueError:
+                    return fallback
+            return fallback
+
+        hits: list[dict[str, object]] = []
+        for entry in retrieved_entries:
+            raw_hit = hits_by_id.get(entry.id)
+            hit = raw_hit if isinstance(raw_hit, dict) else {}
+            score = _coerce_float(hit.get("score"), fallback=0.0)
+            evidence = hit.get("evidence")
+            hits.append(
+                {
+                    "id": entry.id,
+                    "score": score,
+                    "best_role": hit.get("best_role"),
+                    "evidence": evidence if isinstance(evidence, list) else [],
+                }
+            )
+
         meta: dict[str, object] = {
             **cast("dict[str, object]", self._searcher.vector_index.meta()),
             "k": effective_k,
@@ -550,15 +576,7 @@ class AgenticHybridStrategy(RetrievalStrategy):
                 if self._final_cross_encoder_model
                 else None
             ),
-            "hits": [
-                {
-                    "id": entry.id,
-                    "score": float(hits_by_id.get(entry.id, {}).get("score") or 0.0),
-                    "best_role": hits_by_id.get(entry.id, {}).get("best_role"),
-                    "evidence": hits_by_id.get(entry.id, {}).get("evidence") or [],
-                }
-                for entry in retrieved_entries
-            ],
+            "hits": hits,
         }
 
         return RetrievalResponse(catalog=Catalog(entries=retrieved_entries), meta=meta)

@@ -292,9 +292,16 @@ def _format_chart_vision_text(
         if joined:
             lines.append(f"Encodings: {joined}")
     if isinstance(issues, list) and issues:
-        joined = ", ".join(str(i).strip() for i in issues[:5] if str(i).strip())
-        if joined:
-            lines.append(f"Likely issues: {joined}")
+        top: list[str] = []
+        for item in issues:
+            s = str(item).strip()
+            if not s:
+                continue
+            top.append(s)
+            if len(top) >= 5:
+                break
+        if top:
+            lines.append(f"Likely issues: {', '.join(top)}")
 
     if summary and summary.strip():
         lines.append(summary.strip())

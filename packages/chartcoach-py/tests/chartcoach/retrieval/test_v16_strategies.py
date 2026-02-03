@@ -352,7 +352,9 @@ def test_ann_dense_strategy_applies_role_fallback_and_status_focus(
         catalog=catalog,
         searcher=searcher,
         default_k=1,
-        focus=FocusConfig(mode="violations", allow_role_fallback=True, use_status_filter=True),
+        focus=FocusConfig(
+            mode="violations", allow_role_fallback=True, use_status_filter=True
+        ),
     )
     out = strat(
         request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1)
