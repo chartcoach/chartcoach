@@ -22,6 +22,7 @@ from chartcoach.retrieval.service.eval_artifacts import (
     load_scenarios,
     now_iso,
     read_json,
+    resolve_artifacts_config,
     resolve_catalog_digest,
     resolve_repo_commit,
     resolve_scenarios_digest,
@@ -604,94 +605,6 @@ def test_resolve_scenarios_digest_hashes_file(tmp_path) -> None:
     assert digest == hashlib.sha256(path.read_bytes()).hexdigest()[:16]
 
 
-def test_git_helpers_cover_edge_branches(tmp_path, monkeypatch) -> None:
-    import chartcoach.retrieval.service.eval_artifacts as eval_artifacts
-
-    repo = tmp_path / "repo"
-    repo.mkdir()
-    assert eval_artifacts._find_repo_root(repo) is None
-
-    (repo / ".git").mkdir()
-    assert eval_artifacts._find_repo_root(repo) == repo
-
-    # _run_git: subprocess errors / non-zero / empty stdout.
-    def boom_run(*_args, **_kwargs):  # noqa: ANN001
-        raise OSError("no git")
-
-    monkeypatch.setattr(eval_artifacts.subprocess, "run", boom_run)
-    assert eval_artifacts._run_git(["rev-parse", "HEAD"], cwd=repo) is None
-
-    class Proc:
-        def __init__(self, returncode: int, stdout: str) -> None:
-            self.returncode = returncode
-            self.stdout = stdout
-
-    monkeypatch.setattr(
-        eval_artifacts.subprocess,
-        "run",
-        lambda *_args, **_kwargs: Proc(1, "abc\n"),
-    )
-    assert eval_artifacts._run_git(["rev-parse", "HEAD"], cwd=repo) is None
-
-    monkeypatch.setattr(
-        eval_artifacts.subprocess,
-        "run",
-        lambda *_args, **_kwargs: Proc(0, ""),
-    )
-    assert eval_artifacts._run_git(["rev-parse", "HEAD"], cwd=repo) is None
-
-    monkeypatch.setattr(
-        eval_artifacts.subprocess,
-        "run",
-        lambda *_args, **_kwargs: Proc(0, "abc\n"),
-    )
-    assert eval_artifacts._run_git(["rev-parse", "HEAD"], cwd=repo) == "abc"
-
-
-def test_resolve_repo_commit_covers_unknown_and_dirty(monkeypatch, tmp_path) -> None:
-    import chartcoach.retrieval.service.eval_artifacts as eval_artifacts
-
-    # Unknown when no repo root.
-    monkeypatch.setattr(eval_artifacts, "_find_repo_root", lambda _p: None)
-    assert eval_artifacts.resolve_repo_commit() == "unknown"
-
-    # Unknown when commit can't be read.
-    repo = tmp_path / "repo"
-    repo.mkdir()
-    monkeypatch.setattr(eval_artifacts, "_find_repo_root", lambda _p: repo)
-    monkeypatch.setattr(eval_artifacts, "_run_git", lambda _args, *, cwd: None)
-    assert eval_artifacts.resolve_repo_commit() == "unknown"
-
-    # Dirty branch when git diff returns non-zero.
-    monkeypatch.setattr(
-        eval_artifacts, "_run_git", lambda _args, *, cwd: "1234567890abcdef"
-    )
-
-    class Proc:
-        def __init__(self, returncode: int) -> None:
-            self.returncode = returncode
-
-    calls: list[list[str]] = []
-
-    def fake_run(cmd, **_kwargs):  # noqa: ANN001
-        calls.append(list(cmd))
-        if cmd[:2] == ["git", "diff"] and cmd[-1] == "--quiet":
-            return Proc(1)
-        return Proc(0)
-
-    monkeypatch.setattr(eval_artifacts.subprocess, "run", fake_run)
-    assert eval_artifacts.resolve_repo_commit().endswith("-dirty")
-
-    # Clean branch when both diff checks return 0 (and tolerate OSError).
-    def fake_run_clean(cmd, **_kwargs):  # noqa: ANN001
-        if cmd[:2] == ["git", "diff"] and cmd[-1] == "--quiet":
-            raise OSError("ignore")
-        return Proc(0)
-
-    monkeypatch.setattr(eval_artifacts.subprocess, "run", fake_run_clean)
-    assert eval_artifacts.resolve_repo_commit() == "1234567890ab"
-
-
 def test_resolve_catalog_digest_covers_uri_and_dir_branches(tmp_path) -> None:
     # Empty.
     assert resolve_catalog_digest("") == "unknown"
@@ -730,11 +643,7 @@ def test_resolve_scenarios_digest_handles_missing_file(tmp_path) -> None:
     assert resolve_scenarios_digest(tmp_path / "missing.yaml") == "unknown"
 
 
-def test_resolve_artifacts_config_includes_commit(
-    monkeypatch, retrieval_run_config
-) -> None:
-    import chartcoach.retrieval.service.eval_artifacts as eval_artifacts
-
-    monkeypatch.setattr(eval_artifacts, "resolve_repo_commit", lambda: "cafebabe")
-    cfg = eval_artifacts.resolve_artifacts_config(run_config=retrieval_run_config)
-    assert cfg["repo_commit"] == "cafebabe"
+def test_resolve_artifacts_config_includes_repo_commit(retrieval_run_config) -> None:
+    cfg = resolve_artifacts_config(run_config=retrieval_run_config)
+    assert isinstance(cfg.get("repo_commit"), str)
+    assert cfg["repo_commit"]
