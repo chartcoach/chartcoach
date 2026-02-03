@@ -30,7 +30,9 @@ def test_build_situation_with_query_formats_and_requires_situation() -> None:
     )
     assert build_situation_with_query(request) == "S\n\nQuery:\nQ"
     assert (
-        build_situation_with_query(RetrievalRequest(context=[TextItem(role="situation", text="S")]))
+        build_situation_with_query(
+            RetrievalRequest(context=[TextItem(role="situation", text="S")])
+        )
         == "S"
     )
 

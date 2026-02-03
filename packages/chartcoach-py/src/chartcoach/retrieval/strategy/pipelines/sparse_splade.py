@@ -1,0 +1,118 @@
+from __future__ import annotations
+
+from chartcoach.catalog import Catalog
+from chartcoach.index.sparse import CatalogSparseIndex
+from chartcoach.retrieval.strategy.base import RetrievalStrategy
+from chartcoach.retrieval.strategy.dspy_models import create_strategy_vlm
+from chartcoach.retrieval.strategy.types import RetrievalRequest, RetrievalResponse
+
+from .focus import FocusConfig, focus_config_from_env, primary_roles_for_focus
+from .guideline_status import filter_guidelines_by_status, shared_status_scorer
+from .searcher import GuidelineSearcher
+from .vision import ChartVisionModule, chart_vision_config_from_env, with_chart_vision
+
+
+class SparseSpladeStrategy(RetrievalStrategy):
+    """Neural sparse retrieval baseline (SPLADE-like) over guideline texts."""
+
+    id = "sparse-splade@v1"
+
+    def __init__(
+        self,
+        *,
+        catalog: Catalog,
+        sparse_index: CatalogSparseIndex,
+        default_k: int = 20,
+        raw_multiplier: int = 18,
+        focus: FocusConfig | None = None,
+    ) -> None:
+        super().__init__(catalog)
+        self._sparse_index = sparse_index
+        self._default_k = int(default_k)
+        self._raw_multiplier = int(raw_multiplier)
+        self._focus = focus or focus_config_from_env()
+
+        self._vision_config = chart_vision_config_from_env()
+        self._vlm = create_strategy_vlm() if self._vision_config.enabled else None
+
+    def _forward(self, request: RetrievalRequest) -> RetrievalResponse:
+        effective_k = self._default_k if request.k is None else int(request.k)
+        if effective_k <= 0:
+            raise ValueError("k must be positive.")
+
+        vision_meta: dict[str, object] = {}
+        if self._vlm is not None and self._vision_config.enabled:
+            request, vision_meta = with_chart_vision(
+                request,
+                base_situation=GuidelineSearcher.build_base_query_text(request),
+                vision=ChartVisionModule(vlm=self._vlm, config=self._vision_config),
+            )
+
+        focus_mode = self._focus.mode
+        query_text = GuidelineSearcher.build_query_text(request)
+
+        raw_k = max(20, min(3_000, effective_k * self._raw_multiplier))
+
+        status_meta: dict[str, object] = {}
+        use_status_filter = focus_mode != "all" and self._focus.use_status_filter
+        candidate_k = effective_k
+        if use_status_filter:
+            status_lm, _, status_cfg = shared_status_scorer()
+            self._status_lm = status_lm
+            candidate_k = max(
+                effective_k, effective_k * int(status_cfg.candidate_multiplier)
+            )
+
+        hits_df = self._sparse_index.search_sparse(query_text, k=raw_k)
+        agg = GuidelineSearcher.aggregate_guideline_hits_with_evidence(
+            hits_df, k=candidate_k
+        )
+        candidate_rows = agg.to_dicts()
+        hit_by_id = {
+            row["id"]: row for row in candidate_rows if isinstance(row.get("id"), str)
+        }
+
+        id_to_entry = {entry.id: entry for entry in self.catalog.entries}
+        candidate_entries = [
+            id_to_entry[row["id"]]
+            for row in candidate_rows
+            if isinstance(row.get("id"), str) and row["id"] in id_to_entry
+        ]
+
+        ordered_entries = candidate_entries[:effective_k]
+        if use_status_filter and ordered_entries:
+            _status_lm, status_module, status_cfg = shared_status_scorer()
+            self._status_lm = _status_lm
+            ordered_entries, status_meta = filter_guidelines_by_status(
+                request=request,
+                entries=candidate_entries,
+                output_k=effective_k,
+                focus=focus_mode,
+                status_module=status_module,
+                config=status_cfg,
+            )
+
+        roles = primary_roles_for_focus(focus_mode)
+        meta = {
+            "sparse_index": self._sparse_index.meta(),
+            "k": effective_k,
+            "raw_k": raw_k,
+            "score_kind": "sparse_relevance",
+            "focus": {
+                "mode": focus_mode,
+                "roles": sorted(roles) if roles else None,
+            },
+            "chart_vision": vision_meta,
+            **status_meta,
+            "hits": [
+                {
+                    "id": entry.id,
+                    "score": float(hit_by_id.get(entry.id, {}).get("score") or 0.0),
+                    "best_role": hit_by_id.get(entry.id, {}).get("best_role"),
+                    "evidence": hit_by_id.get(entry.id, {}).get("evidence") or [],
+                }
+                for entry in ordered_entries
+            ],
+        }
+
+        return RetrievalResponse(catalog=Catalog(entries=ordered_entries), meta=meta)

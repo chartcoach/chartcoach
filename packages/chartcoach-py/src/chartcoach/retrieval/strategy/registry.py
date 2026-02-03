@@ -14,14 +14,20 @@ from chartcoach.retrieval.strategy.pipelines import (
     Bm25PrfStrategy,
     DecomposeParallelStrategy,
     DenseMmrStrategy,
+    DenseSparseRrfStrategy,
     FacetFusionHybridStrategy,
     HydeHybridStrategy,
     HybridRrfStrategy,
+    HybridRrfFacilitySetSelectStrategy,
+    HybridRrfLabelSetSelectStrategy,
     LabelFirstAbstractStrategy,
     LabelGatedAnnStrategy,
+    MultiReprFusionStrategy,
     NeighborhoodExplorerStrategy,
     QueryFusionHybridStrategy,
     RoleAwareSectionsStrategy,
+    SparseSpladeStrategy,
+    UtilityRerankHybridStrategy,
 )
 from chartcoach.retrieval.strategy.pipelines.facet_fusion import FacetFusionConfig
 from chartcoach.retrieval.strategy.pipelines.query_fusion import QueryFusionConfig
@@ -47,6 +53,7 @@ StrategyRegistration = tuple[type[RetrievalStrategy], StrategyFactory]
 
 _INDEX_CACHE: dict[tuple[int, str], CatalogVectorIndex] = {}
 _ABSTRACT_INDEX_CACHE: dict[tuple[int, str], CatalogVectorIndex] = {}
+_SPARSE_INDEX_CACHE: dict[tuple[int, str], object] = {}
 
 
 def _create_lm() -> dspy.LM:
@@ -89,11 +96,11 @@ def _shared_index(*, catalog: Catalog) -> CatalogVectorIndex:
     from chartcoach.embedding import (
         GuidelineFieldTextSource,
         GuidelineLabelsTextSource,
-        SectionsTextSource,
+        SectionsWithTitleTextSource,
     )
 
     sources = [
-        SectionsTextSource(),
+        SectionsWithTitleTextSource(),
         GuidelineFieldTextSource("title"),
         GuidelineFieldTextSource("description"),
         GuidelineLabelsTextSource(),
@@ -138,10 +145,35 @@ def _shared_abstract_searcher(*, catalog: Catalog) -> GuidelineSearcher:
     return GuidelineSearcher(catalog=catalog, vector_index=vector_index)
 
 
-def create_bm25_prf_strategy(*, catalog: Catalog) -> RetrievalStrategy:
-    return Bm25PrfStrategy(
-        catalog=catalog, searcher=_shared_searcher(catalog=catalog)
+def _default_sparse_embedding_config():
+    from chartcoach.index.sparse import SparseEmbeddingConfig
+
+    model = (
+        os.environ.get("CHARTCOACH_SPARSE_EMBEDDING_MODEL")
+        or os.environ.get("CHARTCOACH_SPARSE_MODEL")
+        or "prithivida/Splade_PP_en_v1"
     )
+    return SparseEmbeddingConfig(model=model)
+
+
+def _shared_sparse_index(*, catalog: Catalog):
+    from chartcoach.index.sparse import CatalogSparseIndex
+    from chartcoach.embedding import GuidelineAbstractTextSource
+
+    config = _default_sparse_embedding_config()
+    cache_key = (id(catalog), config.digest())
+    cached = _SPARSE_INDEX_CACHE.get(cache_key)
+    if cached is not None:
+        return cached  # type: ignore[return-value]
+
+    sources = [GuidelineAbstractTextSource()]
+    index = CatalogSparseIndex.from_catalog(catalog, sources=sources, config=config)
+    _SPARSE_INDEX_CACHE[cache_key] = index
+    return index
+
+
+def create_bm25_prf_strategy(*, catalog: Catalog) -> RetrievalStrategy:
+    return Bm25PrfStrategy(catalog=catalog, searcher=_shared_searcher(catalog=catalog))
 
 
 def create_ann_dense_strategy(*, catalog: Catalog) -> RetrievalStrategy:
@@ -160,6 +192,39 @@ def create_dense_mmr_strategy(*, catalog: Catalog) -> RetrievalStrategy:
 
 def create_hybrid_rrf_strategy(*, catalog: Catalog) -> RetrievalStrategy:
     return HybridRrfStrategy(
+        catalog=catalog,
+        searcher=_shared_searcher(catalog=catalog),
+    )
+
+
+def create_multirepr_fusion_strategy(*, catalog: Catalog) -> RetrievalStrategy:
+    return MultiReprFusionStrategy(
+        catalog=catalog,
+        searcher=_shared_searcher(catalog=catalog),
+        abstract_searcher=_shared_abstract_searcher(catalog=catalog),
+    )
+
+
+def create_utility_rerank_hybrid_strategy(*, catalog: Catalog) -> RetrievalStrategy:
+    return UtilityRerankHybridStrategy(
+        catalog=catalog,
+        searcher=_shared_searcher(catalog=catalog),
+    )
+
+
+def create_hybrid_rrf_setselect_label_strategy(
+    *, catalog: Catalog
+) -> RetrievalStrategy:
+    return HybridRrfLabelSetSelectStrategy(
+        catalog=catalog,
+        searcher=_shared_searcher(catalog=catalog),
+    )
+
+
+def create_hybrid_rrf_setselect_facility_strategy(
+    *, catalog: Catalog
+) -> RetrievalStrategy:
+    return HybridRrfFacilitySetSelectStrategy(
         catalog=catalog,
         searcher=_shared_searcher(catalog=catalog),
     )
@@ -207,12 +272,15 @@ def create_neighborhood_explorer_strategy(*, catalog: Catalog) -> RetrievalStrat
         searcher=_shared_searcher(catalog=catalog),
     )
 
+
 def create_facet_fusion_hybrid_strategy(*, catalog: Catalog) -> RetrievalStrategy:
     lm = _create_lm()
     config = FacetFusionConfig(
         n_queries=int(os.environ.get("CHARTCOACH_FACET_FUSION_N_QUERIES") or "5"),
         rrf_k=int(os.environ.get("CHARTCOACH_FACET_FUSION_RRF_K") or "60"),
-        cross_encoder_model=os.environ.get("CHARTCOACH_FACET_FUSION_CROSS_ENCODER_MODEL")
+        cross_encoder_model=os.environ.get(
+            "CHARTCOACH_FACET_FUSION_CROSS_ENCODER_MODEL"
+        )
         or "cross-encoder/ms-marco-TinyBERT-L-6",
         cross_encoder_candidate_limit=int(
             os.environ.get("CHARTCOACH_FACET_FUSION_XENC_CANDIDATES") or "80"
@@ -264,12 +332,36 @@ def create_agentic_hybrid_strategy(*, catalog: Catalog) -> RetrievalStrategy:
     )
 
 
+def create_sparse_splade_strategy(*, catalog: Catalog) -> RetrievalStrategy:
+    return SparseSpladeStrategy(
+        catalog=catalog,
+        sparse_index=_shared_sparse_index(catalog=catalog),
+    )
+
+
+def create_dense_sparse_rrf_strategy(*, catalog: Catalog) -> RetrievalStrategy:
+    return DenseSparseRrfStrategy(
+        catalog=catalog,
+        searcher=_shared_searcher(catalog=catalog),
+        sparse_index=_shared_sparse_index(catalog=catalog),
+    )
+
+
 def create_default_strategy_registrations() -> list[StrategyRegistration]:
     return [
         (Bm25PrfStrategy, create_bm25_prf_strategy),
         (AnnDenseStrategy, create_ann_dense_strategy),
         (DenseMmrStrategy, create_dense_mmr_strategy),
+        (DenseSparseRrfStrategy, create_dense_sparse_rrf_strategy),
         (HybridRrfStrategy, create_hybrid_rrf_strategy),
+        (MultiReprFusionStrategy, create_multirepr_fusion_strategy),
+        (UtilityRerankHybridStrategy, create_utility_rerank_hybrid_strategy),
+        (HybridRrfLabelSetSelectStrategy, create_hybrid_rrf_setselect_label_strategy),
+        (
+            HybridRrfFacilitySetSelectStrategy,
+            create_hybrid_rrf_setselect_facility_strategy,
+        ),
+        (SparseSpladeStrategy, create_sparse_splade_strategy),
         (LabelGatedAnnStrategy, create_label_gated_ann_strategy),
         (LabelFirstAbstractStrategy, create_label_first_abstract_strategy),
         (DecomposeParallelStrategy, create_decompose_parallel_strategy),

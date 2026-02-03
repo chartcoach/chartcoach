@@ -16,6 +16,7 @@ from chartcoach.embedding import (
     GuidelineFieldTextSource,
     GuidelineLabelsTextSource,
     SectionsTextSource,
+    SectionsWithTitleTextSource,
     vector_matrix,
 )
 from chartcoach.index import (
@@ -67,6 +68,15 @@ def describe_text_source(source: object) -> TextSourceMeta:
     if isinstance(source, SectionsTextSource):
         roles = None if source.roles is None else sorted(source.roles)
         return cast(TextSourceMeta, {"type": "sections", "roles": roles})
+    if isinstance(source, SectionsWithTitleTextSource):
+        roles = None if source.roles is None else sorted(source.roles)
+        return cast(
+            TextSourceMeta,
+            {
+                "type": "sections_with_title",
+                "roles": roles,
+            },
+        )
     if isinstance(source, GuidelineAbstractTextSource):
         return cast(
             TextSourceMeta,

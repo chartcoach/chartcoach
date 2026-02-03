@@ -17,6 +17,7 @@ from .text_sources import (
     GuidelineFieldTextSource,
     GuidelineLabelsTextSource,
     SectionsTextSource,
+    SectionsWithTitleTextSource,
 )
 from .vectors import vector_matrix
 
@@ -28,6 +29,7 @@ __all__ = [
     "GuidelineFieldTextSource",
     "GuidelineLabelsTextSource",
     "SectionsTextSource",
+    "SectionsWithTitleTextSource",
     "vector_matrix",
 ]
 
