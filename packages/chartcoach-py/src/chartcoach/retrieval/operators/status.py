@@ -21,6 +21,7 @@ def plan_status_filter(
     *,
     focus_mode: FocusMode,
     requested_k: int,
+    base_candidate_k: int | None = None,
     status_scorer: StatusScorer | None,
     status_filter_enabled: bool,
 ) -> StatusFilterPlan:
@@ -33,16 +34,17 @@ def plan_status_filter(
     """
 
     output_k = max(0, int(requested_k))
+    candidate_k = max(output_k, int(base_candidate_k or output_k))
     if (
         focus_mode == "all"
         or not status_filter_enabled
         or status_scorer is None
         or output_k <= 0
     ):
-        return StatusFilterPlan(use_status_filter=False, candidate_k=output_k)
+        return StatusFilterPlan(use_status_filter=False, candidate_k=candidate_k)
 
     cfg = status_scorer.config
-    candidate_k = max(output_k, output_k * int(cfg.candidate_multiplier))
+    candidate_k = max(candidate_k, output_k * int(cfg.candidate_multiplier))
     return StatusFilterPlan(use_status_filter=True, candidate_k=candidate_k)
 
 

@@ -4,12 +4,13 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from chartcoach.catalog import Catalog
+from chartcoach.retrieval.operators import apply_status_filter, plan_status_filter
 from chartcoach.retrieval.strategy.base import RetrievalStrategy
 from chartcoach.retrieval.strategy.optional import require_dspy
 from chartcoach.retrieval.strategy.types import RetrievalRequest, RetrievalResponse
 
 from .focus import FocusConfig
-from .guideline_status import StatusScorer, filter_guidelines_by_status
+from .guideline_status import StatusScorer
 from .label_hints import (
     LabelHintsConfig,
     LabelHintsSignature,
@@ -148,18 +149,13 @@ class LabelFirstAbstractStrategy(RetrievalStrategy):
 
         status_meta: dict[str, object] = {}
         status_scorer = self._status_scorer
-        use_status_filter = (
-            focus_mode != "all"
-            and self._focus.use_status_filter
-            and status_scorer is not None
+        status_plan = plan_status_filter(
+            focus_mode=focus_mode,
+            requested_k=effective_k,
+            status_scorer=status_scorer,
+            status_filter_enabled=self._focus.use_status_filter,
         )
-        candidate_k = effective_k
-        if use_status_filter:
-            assert status_scorer is not None
-            status_cfg = status_scorer.config
-            candidate_k = max(
-                effective_k, effective_k * int(status_cfg.candidate_multiplier)
-            )
+        candidate_k = status_plan.candidate_k
 
         agg = self._abstract_searcher.aggregate_guideline_hits_with_evidence(
             hits_df, k=candidate_k
@@ -173,17 +169,14 @@ class LabelFirstAbstractStrategy(RetrievalStrategy):
             if isinstance(row.get("id"), str) and row["id"] in id_to_entry
         ]
         ordered_entries = candidate_entries[:effective_k]
-        if use_status_filter and ordered_entries:
+        if status_plan.use_status_filter and ordered_entries:
             assert status_scorer is not None
-            status_module = status_scorer.module
-            status_cfg = status_scorer.config
-            ordered_entries, status_meta = filter_guidelines_by_status(
+            ordered_entries, status_meta = apply_status_filter(
                 request=request,
                 entries=candidate_entries,
                 output_k=effective_k,
-                focus=focus_mode,
-                status_module=status_module,
-                config=status_cfg,
+                focus_mode=focus_mode,
+                status_scorer=status_scorer,
             )
 
         row_by_id = {

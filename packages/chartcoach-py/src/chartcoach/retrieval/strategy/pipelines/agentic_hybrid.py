@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, cast
 import polars as pl
 
 from chartcoach.catalog import Catalog
+from chartcoach.retrieval.operators import apply_status_filter, plan_status_filter
 from chartcoach.retrieval.strategy.base import RetrievalStrategy
 from chartcoach.retrieval.strategy.id_extraction import extract_guideline_ids
 from chartcoach.retrieval.strategy.optional import require_dspy
@@ -17,7 +18,7 @@ from .focus import (
     fallback_roles_for_focus,
     primary_roles_for_focus,
 )
-from .guideline_status import StatusScorer, filter_guidelines_by_status
+from .guideline_status import StatusScorer
 from .searcher import GuidelineSearcher
 from .vision import ChartVisionModule, with_chart_vision
 
@@ -451,18 +452,15 @@ class AgenticHybridStrategy(RetrievalStrategy):
         ]
         status_meta: dict[str, object] = {}
         status_scorer = self._status_scorer
-        use_status_filter = (
-            focus_mode != "all"
-            and self._focus.use_status_filter
-            and status_scorer is not None
+        status_plan = plan_status_filter(
+            focus_mode=focus_mode,
+            requested_k=effective_k,
+            status_scorer=status_scorer,
+            status_filter_enabled=self._focus.use_status_filter,
         )
-        if use_status_filter and retrieved_entries:
+        if status_plan.use_status_filter and retrieved_entries:
             assert status_scorer is not None
-            status_module = status_scorer.module
-            status_cfg = status_scorer.config
-            pool_target = max(
-                effective_k, effective_k * int(status_cfg.candidate_multiplier)
-            )
+            pool_target = status_plan.candidate_k
             extra_needed = max(0, pool_target - len(final_ids))
             extra_ids = _fallback_hybrid_ids(exclude=set(final_ids))[:extra_needed]
 
@@ -475,13 +473,12 @@ class AgenticHybridStrategy(RetrievalStrategy):
                 seen.add(gid)
 
             candidate_entries = [id_to_entry[gid] for gid in ordered_candidate_ids]
-            filtered, status_meta = filter_guidelines_by_status(
+            filtered, status_meta = apply_status_filter(
                 request=request,
                 entries=candidate_entries,
                 output_k=effective_k,
-                focus=focus_mode,
-                status_module=status_module,
-                config=status_cfg,
+                focus_mode=focus_mode,
+                status_scorer=status_scorer,
             )
             retrieved_entries = filtered
             final_ids = [entry.id for entry in retrieved_entries]

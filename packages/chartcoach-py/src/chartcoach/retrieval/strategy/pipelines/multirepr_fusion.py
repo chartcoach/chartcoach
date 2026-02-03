@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import cast
 
 from chartcoach.catalog import Catalog
+from chartcoach.retrieval.operators import search_hybrid_with_roles_fallback
 from chartcoach.retrieval.strategy.base import RetrievalStrategy
 from chartcoach.retrieval.strategy.types import RetrievalRequest, RetrievalResponse
 
@@ -128,29 +129,17 @@ class MultiReprFusionStrategy(RetrievalStrategy):
         repr_meta: list[dict[str, object]] = []
 
         for name, searcher, roles, weight in plan:
-            roles_used = roles
-            hits_df = searcher.search_hybrid(
+            hits_df, roles_used = search_hybrid_with_roles_fallback(
+                searcher=searcher,
                 query_text=query_text,
                 query_vector=query_vec,
-                reranker=RRFReranker(K=self._config.rrf_k),
                 k=raw_k,
-                roles=roles_used,
+                reranker=RRFReranker(K=self._config.rrf_k),
+                roles=roles,
+                fallback_roles=fallback_roles_for_focus(focus_mode),
+                allow_role_fallback=self._focus.allow_role_fallback,
                 fts_columns="text",
             )
-            if (
-                hits_df.is_empty()
-                and roles_used is not None
-                and self._focus.allow_role_fallback
-            ):
-                roles_used = fallback_roles_for_focus(focus_mode)
-                hits_df = searcher.search_hybrid(
-                    query_text=query_text,
-                    query_vector=query_vec,
-                    reranker=RRFReranker(K=self._config.rrf_k),
-                    k=raw_k,
-                    roles=roles_used,
-                    fts_columns="text",
-                )
 
             agg = searcher.aggregate_guideline_hits_with_evidence(
                 hits_df, k=candidate_k

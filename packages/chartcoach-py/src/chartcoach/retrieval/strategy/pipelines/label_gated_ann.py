@@ -4,16 +4,17 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from chartcoach.catalog import Catalog
+from chartcoach.retrieval.operators import (
+    apply_status_filter,
+    plan_status_filter,
+    search_dense_with_focus,
+)
 from chartcoach.retrieval.strategy.base import RetrievalStrategy
 from chartcoach.retrieval.strategy.optional import require_dspy
 from chartcoach.retrieval.strategy.types import RetrievalRequest, RetrievalResponse
 
-from .focus import (
-    FocusConfig,
-    fallback_roles_for_focus,
-    primary_roles_for_focus,
-)
-from .guideline_status import StatusScorer, filter_guidelines_by_status
+from .focus import FocusConfig
+from .guideline_status import StatusScorer
 from .label_hints import (
     LabelHintsConfig,
     LabelHintsSignature,
@@ -127,25 +128,17 @@ class LabelGatedAnnStrategy(RetrievalStrategy):
         )
         ids_filter = candidate_ids or None
 
-        roles = primary_roles_for_focus(focus_mode)
-        roles_used = roles
         query_vec = self._searcher.vector_index.embed_query(canonical_query)
         raw_k = max(20, min(3_000, effective_k * int(self._config.raw_multiplier)))
 
-        hits_df = self._searcher.search_dense(
+        hits_df, roles_used = search_dense_with_focus(
+            searcher=self._searcher,
             query_vector=query_vec,
             k=raw_k,
-            roles=roles_used,
             ids=ids_filter,
+            focus=self._focus,
+            focus_mode=focus_mode,
         )
-        if hits_df.is_empty() and roles is not None and self._focus.allow_role_fallback:
-            roles_used = fallback_roles_for_focus(focus_mode)
-            hits_df = self._searcher.search_dense(
-                query_vector=query_vec,
-                k=raw_k,
-                roles=roles_used,
-                ids=ids_filter,
-            )
         if hits_df.is_empty() and ids_filter is not None:
             # If gating becomes too strict, fall back to the full catalog.
             hits_df = self._searcher.search_dense(
@@ -157,18 +150,13 @@ class LabelGatedAnnStrategy(RetrievalStrategy):
 
         status_meta: dict[str, object] = {}
         status_scorer = self._status_scorer
-        use_status_filter = (
-            focus_mode != "all"
-            and self._focus.use_status_filter
-            and status_scorer is not None
+        status_plan = plan_status_filter(
+            focus_mode=focus_mode,
+            requested_k=effective_k,
+            status_scorer=status_scorer,
+            status_filter_enabled=self._focus.use_status_filter,
         )
-        candidate_k = effective_k
-        if use_status_filter:
-            assert status_scorer is not None
-            status_cfg = status_scorer.config
-            candidate_k = max(
-                effective_k, effective_k * int(status_cfg.candidate_multiplier)
-            )
+        candidate_k = status_plan.candidate_k
 
         agg = self._searcher.aggregate_guideline_hits_with_evidence(
             hits_df, k=candidate_k
@@ -181,17 +169,14 @@ class LabelGatedAnnStrategy(RetrievalStrategy):
             if isinstance(row.get("id"), str) and row["id"] in id_to_entry
         ]
         ordered_entries = candidate_entries[:effective_k]
-        if use_status_filter and ordered_entries:
+        if status_plan.use_status_filter and ordered_entries:
             assert status_scorer is not None
-            status_module = status_scorer.module
-            status_cfg = status_scorer.config
-            ordered_entries, status_meta = filter_guidelines_by_status(
+            ordered_entries, status_meta = apply_status_filter(
                 request=request,
                 entries=candidate_entries,
                 output_k=effective_k,
-                focus=focus_mode,
-                status_module=status_module,
-                config=status_cfg,
+                focus_mode=focus_mode,
+                status_scorer=status_scorer,
             )
 
         row_by_id = {

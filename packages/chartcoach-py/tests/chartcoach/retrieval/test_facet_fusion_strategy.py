@@ -145,7 +145,7 @@ def _patch_strategy_deps(monkeypatch) -> None:
     )
     monkeypatch.setattr(
         mod,
-        "filter_guidelines_by_status",
+        "apply_status_filter",
         lambda *, entries, output_k, **_kwargs: (
             entries[:output_k],
             {"guideline_status_used": True},

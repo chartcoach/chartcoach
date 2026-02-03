@@ -4,15 +4,16 @@ from typing import cast
 
 from chartcoach.catalog import Catalog
 from chartcoach.index.sparse import CatalogSparseIndex
+from chartcoach.retrieval.operators import (
+    apply_status_filter,
+    plan_status_filter,
+    search_dense_with_focus,
+)
 from chartcoach.retrieval.strategy.base import RetrievalStrategy
 from chartcoach.retrieval.strategy.types import RetrievalRequest, RetrievalResponse
 
-from .focus import (
-    FocusConfig,
-    fallback_roles_for_focus,
-    primary_roles_for_focus,
-)
-from .guideline_status import StatusScorer, filter_guidelines_by_status
+from .focus import FocusConfig
+from .guideline_status import StatusScorer
 from .ranking import rrf_rank, rrf_scores
 from .searcher import GuidelineSearcher
 from .vision import ChartVisionModule, with_chart_vision
@@ -89,37 +90,27 @@ class DenseSparseRrfStrategy(RetrievalStrategy):
 
         raw_k = max(20, min(3_000, effective_k * self._raw_multiplier))
 
-        roles = primary_roles_for_focus(focus_mode)
-        roles_used = roles
-        hits_dense = self._searcher.search_dense(
-            query_vector=query_vec, k=raw_k, roles=roles_used
+        hits_dense, roles_used = search_dense_with_focus(
+            searcher=self._searcher,
+            query_vector=query_vec,
+            k=raw_k,
+            focus=self._focus,
+            focus_mode=focus_mode,
         )
-        if (
-            hits_dense.is_empty()
-            and roles is not None
-            and self._focus.allow_role_fallback
-        ):
-            roles_used = fallback_roles_for_focus(focus_mode)
-            hits_dense = self._searcher.search_dense(
-                query_vector=query_vec, k=raw_k, roles=roles_used
-            )
 
         hits_sparse = self._sparse_index.search_sparse(query_text, k=raw_k)
 
         status_meta: dict[str, object] = {}
         status_scorer = self._status_scorer
-        use_status_filter = (
-            focus_mode != "all"
-            and self._focus.use_status_filter
-            and status_scorer is not None
+        base_candidate_k = max(effective_k, effective_k * self._candidate_multiplier)
+        status_plan = plan_status_filter(
+            focus_mode=focus_mode,
+            requested_k=effective_k,
+            base_candidate_k=base_candidate_k,
+            status_scorer=status_scorer,
+            status_filter_enabled=self._focus.use_status_filter,
         )
-        candidate_k = max(effective_k, effective_k * self._candidate_multiplier)
-        if use_status_filter:
-            assert status_scorer is not None
-            status_cfg = status_scorer.config
-            candidate_k = max(
-                candidate_k, effective_k * int(status_cfg.candidate_multiplier)
-            )
+        candidate_k = status_plan.candidate_k
 
         agg_dense = self._searcher.aggregate_guideline_hits_with_evidence(
             hits_dense, k=candidate_k
@@ -152,17 +143,14 @@ class DenseSparseRrfStrategy(RetrievalStrategy):
         ]
 
         ordered_entries = candidate_entries[:effective_k]
-        if use_status_filter and ordered_entries:
+        if status_plan.use_status_filter and ordered_entries:
             assert status_scorer is not None
-            status_module = status_scorer.module
-            status_cfg = status_scorer.config
-            ordered_entries, status_meta = filter_guidelines_by_status(
+            ordered_entries, status_meta = apply_status_filter(
                 request=request,
                 entries=candidate_entries,
                 output_k=effective_k,
-                focus=focus_mode,
-                status_module=status_module,
-                config=status_cfg,
+                focus_mode=focus_mode,
+                status_scorer=status_scorer,
             )
 
         meta = {
