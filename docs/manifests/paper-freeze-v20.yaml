@@ -50,6 +50,5 @@ config:
     enabled: true
 
   embedding:
-    projector: litellm
-    model: text-embedding-3-small
-
+    projector: sentence_transformers
+    model: BAAI/bge-small-en-v1.5
