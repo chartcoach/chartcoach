@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import cast
+from typing import Any, cast
 
 import numpy as np
 import polars as pl
@@ -277,21 +277,22 @@ def test_sparse_splade_strategy_returns_hits_and_respects_focus(
 
     import chartcoach.retrieval.strategy.pipelines.sparse_splade as sparse_mod
 
-    class DummyStatusModule:  # noqa: D401
-        pass
+    from chartcoach.retrieval.strategy.pipelines.guideline_status import (
+        GuidelineStatusModule,
+        StatusScorer,
+        StatusScorerConfig,
+    )
 
-    def fake_shared_status_scorer():  # noqa: ANN001
-        from chartcoach.retrieval.strategy.pipelines.guideline_status import (
-            StatusScorerConfig,
-        )
-
-        return object(), DummyStatusModule(), StatusScorerConfig(candidate_multiplier=2)
+    status_scorer = StatusScorer(
+        lm=cast(Any, object()),
+        module=cast(GuidelineStatusModule, object()),
+        config=StatusScorerConfig(candidate_multiplier=2),
+    )
 
     def fake_filter(**kwargs):  # noqa: ANN001
         entries = list(kwargs["entries"])
         return entries[: kwargs["output_k"]], {"guideline_status_used": True}
 
-    monkeypatch.setattr(sparse_mod, "shared_status_scorer", fake_shared_status_scorer)
     monkeypatch.setattr(sparse_mod, "filter_guidelines_by_status", fake_filter)
 
     strat = SparseSpladeStrategy(
@@ -299,6 +300,7 @@ def test_sparse_splade_strategy_returns_hits_and_respects_focus(
         sparse_index=sparse_index,
         default_k=1,
         focus=FocusConfig(mode="violations", use_status_filter=True),
+        status_scorer=status_scorer,
     )
     out = strat(
         request=RetrievalRequest(
@@ -397,23 +399,22 @@ def test_dense_sparse_rrf_strategy_role_fallback_and_status_filter(
     searcher = _make_searcher(catalog=catalog, fake=fake)
     sparse_index = _make_sparse_index(catalog=catalog)
 
-    class DummyStatusModule:  # noqa: D401
-        pass
+    from chartcoach.retrieval.strategy.pipelines.guideline_status import (
+        GuidelineStatusModule,
+        StatusScorer,
+        StatusScorerConfig,
+    )
 
-    def fake_shared_status_scorer():  # noqa: ANN001
-        from chartcoach.retrieval.strategy.pipelines.guideline_status import (
-            StatusScorerConfig,
-        )
-
-        return object(), DummyStatusModule(), StatusScorerConfig(candidate_multiplier=2)
+    status_scorer = StatusScorer(
+        lm=cast(Any, object()),
+        module=cast(GuidelineStatusModule, object()),
+        config=StatusScorerConfig(candidate_multiplier=2),
+    )
 
     def fake_filter(**kwargs):  # noqa: ANN001
         entries = list(kwargs["entries"])
         return entries[: kwargs["output_k"]], {"guideline_status_used": True}
 
-    monkeypatch.setattr(
-        dense_sparse_mod, "shared_status_scorer", fake_shared_status_scorer
-    )
     monkeypatch.setattr(dense_sparse_mod, "filter_guidelines_by_status", fake_filter)
 
     monkeypatch.setattr(
@@ -427,6 +428,7 @@ def test_dense_sparse_rrf_strategy_role_fallback_and_status_filter(
         focus=FocusConfig(
             mode="violations", allow_role_fallback=True, use_status_filter=True
         ),
+        status_scorer=status_scorer,
         candidate_multiplier=2,
     )
     out = strat(
@@ -474,23 +476,22 @@ def test_hybrid_setselect_strategies_cover_methods_and_focus(
     assert out.meta["set_select"]["method"] == "facility_location"
     assert facility._mean_embeddings([]) == {}
 
-    class DummyStatusModule:  # noqa: D401
-        pass
+    from chartcoach.retrieval.strategy.pipelines.guideline_status import (
+        GuidelineStatusModule,
+        StatusScorer,
+        StatusScorerConfig,
+    )
 
-    def fake_shared_status_scorer():  # noqa: ANN001
-        from chartcoach.retrieval.strategy.pipelines.guideline_status import (
-            StatusScorerConfig,
-        )
-
-        return object(), DummyStatusModule(), StatusScorerConfig(candidate_multiplier=2)
+    status_scorer = StatusScorer(
+        lm=cast(Any, object()),
+        module=cast(GuidelineStatusModule, object()),
+        config=StatusScorerConfig(candidate_multiplier=2),
+    )
 
     def fake_filter(**kwargs):  # noqa: ANN001
         entries = list(kwargs["entries"])
         return entries[: kwargs["output_k"]], {"guideline_status_used": True}
 
-    monkeypatch.setattr(
-        setselect_mod, "shared_status_scorer", fake_shared_status_scorer
-    )
     monkeypatch.setattr(setselect_mod, "filter_guidelines_by_status", fake_filter)
 
     focus = FocusConfig(mode="violations", allow_role_fallback=True)
@@ -507,3 +508,16 @@ def test_hybrid_setselect_strategies_cover_methods_and_focus(
                 context=[TextItem(role="situation", text="S")], k=1
             )
         )
+
+    label = HybridRrfLabelSetSelectStrategy(
+        catalog=catalog,
+        searcher=searcher,
+        focus=FocusConfig(
+            mode="violations", allow_role_fallback=True, use_status_filter=True
+        ),
+        status_scorer=status_scorer,
+    )
+    out = label(
+        request=RetrievalRequest(context=[TextItem(role="situation", text="S")], k=1)
+    )
+    assert out.meta["guideline_status_used"] is True

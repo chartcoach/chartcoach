@@ -264,9 +264,11 @@ def test_default_strategy_registrations_include_sota_strategies(monkeypatch) -> 
 
 
 def test_default_strategy_factory_instantiates_bm25(
-    monkeypatch, embedding_atlas_cache_dir
+    monkeypatch, embedding_atlas_cache_dir, retrieval_run_config
 ) -> None:
     _install_fastapi_stub(monkeypatch)
+    monkeypatch.setenv("OPENAI_BASE_URL", "http://example.invalid/v1")
+    monkeypatch.setenv("OPENAI_API_KEY", "x")
     import chartcoach.embedding
 
     def fake_embed_text(
@@ -287,12 +289,14 @@ def test_default_strategy_factory_instantiates_bm25(
 
     regs = create_default_strategy_registrations()
     cls, factory = next(reg for reg in regs if reg[0].id == "bm25-prf@v1")
-    strategy = factory(catalog=Catalog(entries=[]))
+    strategy = factory(catalog=Catalog(entries=[]), run_config=retrieval_run_config)
     assert isinstance(strategy, RetrievalStrategy)
     assert strategy.id == cls.id
 
 
-def test_routes_and_app_use_strategy_instances(tmp_path, monkeypatch) -> None:
+def test_routes_and_app_use_strategy_instances(
+    tmp_path, monkeypatch, retrieval_run_config
+) -> None:
     HTTPException = _install_fastapi_stub(monkeypatch)
 
     class DummyStrategy(RetrievalStrategy):
@@ -305,7 +309,7 @@ def test_routes_and_app_use_strategy_instances(tmp_path, monkeypatch) -> None:
                 meta={"ok": True},
             )
 
-    def create_dummy_strategy(*, catalog: Catalog) -> RetrievalStrategy:
+    def create_dummy_strategy(*, catalog: Catalog, run_config) -> RetrievalStrategy:  # noqa: ARG001
         return DummyStrategy(catalog)
 
     df = pl.DataFrame(
@@ -329,7 +333,9 @@ def test_routes_and_app_use_strategy_instances(tmp_path, monkeypatch) -> None:
 
     registrations = [(DummyStrategy, create_dummy_strategy)]
     retrieval = RetrievalService(
-        registrations=registrations, configure_cache=lambda: None
+        registrations=registrations,
+        configure_cache=lambda: None,
+        run_config=retrieval_run_config,
     )
 
     router = create_router(retrieval=retrieval)
@@ -373,7 +379,7 @@ def test_routes_and_app_use_strategy_instances(tmp_path, monkeypatch) -> None:
 
 
 def test_run_strategy_maps_common_errors_to_http_exceptions(
-    tmp_path, monkeypatch
+    tmp_path, monkeypatch, retrieval_run_config
 ) -> None:
     HTTPException = _install_fastapi_stub(monkeypatch)
 
@@ -408,19 +414,24 @@ def test_run_strategy_maps_common_errors_to_http_exceptions(
         def _forward(self, request: RetrievalRequest) -> RetrievalResponse:  # noqa: ARG002
             raise RuntimeError("upstream exploded")
 
-    def create_raises_value_error(*, catalog: Catalog) -> RetrievalStrategy:
+    def create_raises_value_error(*, catalog: Catalog, run_config) -> RetrievalStrategy:  # noqa: ARG001
         return RaisesValueError(catalog)
 
-    def create_raises_upstream_error(*, catalog: Catalog) -> RetrievalStrategy:
+    def create_raises_upstream_error(
+        *, catalog: Catalog, run_config
+    ) -> RetrievalStrategy:  # noqa: ARG001
         return RaisesUpstreamError(catalog)
 
-    def create_raises_runtime_error(*, catalog: Catalog) -> RetrievalStrategy:  # noqa: ARG001
+    def create_raises_runtime_error(
+        *, catalog: Catalog, run_config
+    ) -> RetrievalStrategy:  # noqa: ARG001
         raise RuntimeError("misconfigured strategy factory")
 
     # 422: catalog URI is invalid.
     retrieval = RetrievalService(
         registrations=[(RaisesValueError, create_raises_value_error)],
         configure_cache=lambda: None,
+        run_config=retrieval_run_config,
     )
     router = create_router(retrieval=retrieval)
     post = cast(
@@ -441,6 +452,7 @@ def test_run_strategy_maps_common_errors_to_http_exceptions(
     retrieval = RetrievalService(
         registrations=[(RaisesValueError, create_raises_runtime_error)],
         configure_cache=lambda: None,
+        run_config=retrieval_run_config,
     )
     router = create_router(retrieval=retrieval)
     post = cast(
@@ -461,6 +473,7 @@ def test_run_strategy_maps_common_errors_to_http_exceptions(
     retrieval = RetrievalService(
         registrations=[(RaisesValueError, create_raises_value_error)],
         configure_cache=lambda: None,
+        run_config=retrieval_run_config,
     )
     router = create_router(retrieval=retrieval)
     post = cast(
@@ -481,6 +494,7 @@ def test_run_strategy_maps_common_errors_to_http_exceptions(
     retrieval = RetrievalService(
         registrations=[(RaisesUpstreamError, create_raises_upstream_error)],
         configure_cache=lambda: None,
+        run_config=retrieval_run_config,
     )
     router = create_router(retrieval=retrieval)
     post = cast(

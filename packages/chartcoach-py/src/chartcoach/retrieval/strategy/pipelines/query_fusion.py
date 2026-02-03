@@ -4,21 +4,19 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, cast
 
 from chartcoach.catalog import Catalog
-from chartcoach.retrieval.strategy.dspy_models import create_strategy_vlm
 from chartcoach.retrieval.strategy.base import RetrievalStrategy
 from chartcoach.retrieval.strategy.optional import require_dspy
 from chartcoach.retrieval.strategy.types import RetrievalRequest, RetrievalResponse
 
 from .focus import (
     FocusConfig,
-    focus_config_from_env,
     fallback_roles_for_focus,
     primary_roles_for_focus,
 )
-from .guideline_status import filter_guidelines_by_status, shared_status_scorer
+from .guideline_status import StatusScorer, filter_guidelines_by_status
 from .ranking import rrf_rank, rrf_scores
 from .searcher import GuidelineSearcher
-from .vision import ChartVisionModule, chart_vision_config_from_env, with_chart_vision
+from .vision import ChartVisionModule, with_chart_vision
 
 if TYPE_CHECKING:
     import dspy
@@ -78,6 +76,8 @@ class QueryFusionHybridStrategy(RetrievalStrategy):
         catalog: Catalog,
         searcher: GuidelineSearcher,
         lm: dspy.LM,
+        vision: ChartVisionModule | None = None,
+        status_scorer: StatusScorer | None = None,
         config: QueryFusionConfig = QueryFusionConfig(),
         default_k: int = 20,
         per_query_raw_multiplier: int = 10,
@@ -85,16 +85,15 @@ class QueryFusionHybridStrategy(RetrievalStrategy):
         focus: FocusConfig | None = None,
     ) -> None:
         super().__init__(catalog)
-        self._searcher = searcher
-        self._lm = lm
-        self._config = config
-        self._default_k = int(default_k)
-        self._per_query_raw_multiplier = int(per_query_raw_multiplier)
-        self._per_query_guideline_k = int(per_query_guideline_k)
-        self._focus = focus or focus_config_from_env()
-
-        self._vision_config = chart_vision_config_from_env()
-        self._vlm = create_strategy_vlm() if self._vision_config.enabled else None
+        self._searcher: GuidelineSearcher = searcher
+        self._lm: dspy.LM = lm
+        self._config: QueryFusionConfig = config
+        self._default_k: int = int(default_k)
+        self._per_query_raw_multiplier: int = int(per_query_raw_multiplier)
+        self._per_query_guideline_k: int = int(per_query_guideline_k)
+        self._focus: FocusConfig = focus or FocusConfig()
+        self._vision: ChartVisionModule | None = vision
+        self._status_scorer: StatusScorer | None = status_scorer
 
         self._program = dspy.Predict(QueryFusionSignature)
         # Lazily initialized on first use to avoid repeatedly loading weights.
@@ -133,11 +132,11 @@ class QueryFusionHybridStrategy(RetrievalStrategy):
             raise ValueError("k must be positive.")
 
         vision_meta: dict[str, object] = {}
-        if self._vlm is not None and self._vision_config.enabled:
+        if self._vision is not None:
             request, vision_meta = with_chart_vision(
                 request,
                 base_situation=self._searcher.build_base_query_text(request),
-                vision=ChartVisionModule(vlm=self._vlm, config=self._vision_config),
+                vision=self._vision,
             )
 
         situation = self._searcher.build_query_text(request)
@@ -383,10 +382,16 @@ class QueryFusionHybridStrategy(RetrievalStrategy):
         candidate_entries = [id_to_entry[gid] for gid in ordered_candidate_ids]
         ordered_entries = candidate_entries[:effective_k]
         status_meta: dict[str, object] = {}
-        use_status_filter = focus_mode != "all" and self._focus.use_status_filter
+        status_scorer = self._status_scorer
+        use_status_filter = (
+            focus_mode != "all"
+            and self._focus.use_status_filter
+            and status_scorer is not None
+        )
         if use_status_filter and ordered_entries:
-            status_lm, status_module, status_cfg = shared_status_scorer()
-            self._status_lm = status_lm
+            assert status_scorer is not None
+            status_module = status_scorer.module
+            status_cfg = status_scorer.config
             ordered_entries, status_meta = filter_guidelines_by_status(
                 request=request,
                 entries=candidate_entries,

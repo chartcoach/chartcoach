@@ -2,18 +2,16 @@ from __future__ import annotations
 
 from chartcoach.catalog import Catalog
 from chartcoach.retrieval.strategy.base import RetrievalStrategy
-from chartcoach.retrieval.strategy.dspy_models import create_strategy_vlm
 from chartcoach.retrieval.strategy.types import RetrievalRequest, RetrievalResponse
 
 from .focus import (
     FocusConfig,
     fallback_roles_for_focus,
-    focus_config_from_env,
     primary_roles_for_focus,
 )
 from .searcher import GuidelineSearcher
-from .utility_reranker import rank_by_utility, shared_utility_reranker
-from .vision import ChartVisionModule, chart_vision_config_from_env, with_chart_vision
+from .utility_reranker import UtilityReranker, rank_by_utility
+from .vision import ChartVisionModule, with_chart_vision
 
 
 class UtilityRerankHybridStrategy(RetrievalStrategy):
@@ -26,23 +24,23 @@ class UtilityRerankHybridStrategy(RetrievalStrategy):
         *,
         catalog: Catalog,
         searcher: GuidelineSearcher,
+        utility_reranker: UtilityReranker,
+        vision: ChartVisionModule | None = None,
         default_k: int = 20,
         raw_multiplier: int = 18,
         focus: FocusConfig | None = None,
     ) -> None:
         super().__init__(catalog)
         self._searcher = searcher
+        self._utility = utility_reranker
+        self._vision = vision
         self._default_k = int(default_k)
         self._raw_multiplier = int(raw_multiplier)
-        self._focus = focus or focus_config_from_env()
-
-        self._vision_config = chart_vision_config_from_env()
-        self._vlm = create_strategy_vlm() if self._vision_config.enabled else None
+        self._focus = focus or FocusConfig()
 
         # Expose the LM to the eval harness so it can snapshot and report
         # per-scenario LM usage deltas (via strategy._lm.history).
-        lm, _module, _cfg = shared_utility_reranker()
-        self._lm = lm
+        self._lm = self._utility.lm
 
     def _forward(self, request: RetrievalRequest) -> RetrievalResponse:
         from lancedb.rerankers import RRFReranker
@@ -52,11 +50,11 @@ class UtilityRerankHybridStrategy(RetrievalStrategy):
             raise ValueError("k must be positive.")
 
         vision_meta: dict[str, object] = {}
-        if self._vlm is not None and self._vision_config.enabled:
+        if self._vision is not None:
             request, vision_meta = with_chart_vision(
                 request,
                 base_situation=self._searcher.build_base_query_text(request),
-                vision=ChartVisionModule(vlm=self._vlm, config=self._vision_config),
+                vision=self._vision,
             )
 
         focus_mode = self._focus.mode
@@ -86,7 +84,8 @@ class UtilityRerankHybridStrategy(RetrievalStrategy):
                 fts_columns="text",
             )
 
-        _lm, module, cfg = shared_utility_reranker()
+        module = self._utility.module
+        cfg = self._utility.config
 
         agg = self._searcher.aggregate_guideline_hits_with_evidence(
             hits_df, k=int(cfg.candidate_k)

@@ -5,18 +5,16 @@ from typing import cast
 
 from chartcoach.catalog import Catalog
 from chartcoach.retrieval.strategy.base import RetrievalStrategy
-from chartcoach.retrieval.strategy.dspy_models import create_strategy_vlm
 from chartcoach.retrieval.strategy.types import RetrievalRequest, RetrievalResponse
 
 from .focus import (
     FocusConfig,
     fallback_roles_for_focus,
-    focus_config_from_env,
     primary_roles_for_focus,
 )
 from .ranking import rrf_rank, rrf_scores
 from .searcher import GuidelineSearcher
-from .vision import ChartVisionModule, chart_vision_config_from_env, with_chart_vision
+from .vision import ChartVisionModule, with_chart_vision
 
 
 @dataclass(frozen=True, slots=True)
@@ -39,6 +37,7 @@ class MultiReprFusionStrategy(RetrievalStrategy):
         catalog: Catalog,
         searcher: GuidelineSearcher,
         abstract_searcher: GuidelineSearcher,
+        vision: ChartVisionModule | None = None,
         config: MultiReprFusionConfig = MultiReprFusionConfig(),
         default_k: int = 20,
         focus: FocusConfig | None = None,
@@ -48,10 +47,8 @@ class MultiReprFusionStrategy(RetrievalStrategy):
         self._abstract_searcher = abstract_searcher
         self._config = config
         self._default_k = int(default_k)
-        self._focus = focus or focus_config_from_env()
-
-        self._vision_config = chart_vision_config_from_env()
-        self._vlm = create_strategy_vlm() if self._vision_config.enabled else None
+        self._focus = focus or FocusConfig()
+        self._vision = vision
 
     @staticmethod
     def _merge_evidence(*sources: object, limit: int = 3) -> list[dict[str, object]]:
@@ -106,11 +103,11 @@ class MultiReprFusionStrategy(RetrievalStrategy):
             raise ValueError("k must be positive.")
 
         vision_meta: dict[str, object] = {}
-        if self._vlm is not None and self._vision_config.enabled:
+        if self._vision is not None:
             request, vision_meta = with_chart_vision(
                 request,
                 base_situation=self._searcher.build_base_query_text(request),
-                vision=ChartVisionModule(vlm=self._vlm, config=self._vision_config),
+                vision=self._vision,
             )
 
         focus_mode = self._focus.mode

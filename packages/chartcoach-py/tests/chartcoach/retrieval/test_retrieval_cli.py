@@ -81,7 +81,7 @@ def test_create_store_s3_scheme_requires_s3_config() -> None:
         create_store("s3://bucket/prefix/eval-artifacts/v1/")
 
 
-def test_retrieval_service_filters_and_errors() -> None:
+def test_retrieval_service_filters_and_errors(retrieval_run_config) -> None:
     class A(RetrievalStrategy):
         id = "a"
 
@@ -94,11 +94,15 @@ def test_retrieval_service_filters_and_errors() -> None:
         def _forward(self, request: RetrievalRequest) -> RetrievalResponse:  # noqa: ARG002
             return RetrievalResponse(catalog=Catalog(entries=[]))
 
-    regs = [(A, lambda *, catalog: A(catalog)), (B, lambda *, catalog: B(catalog))]
+    regs = [
+        (A, lambda *, catalog, run_config: A(catalog)),
+        (B, lambda *, catalog, run_config: B(catalog)),
+    ]
     retrieval = RetrievalService(
         registrations=regs,
         catalog_loader=lambda _uri: Catalog(entries=[]),
         configure_cache=lambda: None,
+        run_config=retrieval_run_config,
     )
     selected = retrieval.instantiate_strategies(
         catalog_uri="file:///tmp/catalog.parquet", strategy_ids=["b"]
@@ -111,7 +115,9 @@ def test_retrieval_service_filters_and_errors() -> None:
         )
 
 
-def test_eval_artifacts_service_writes_bundle_and_index(tmp_path: Path) -> None:
+def test_eval_artifacts_service_writes_bundle_and_index(
+    tmp_path: Path, retrieval_run_config
+) -> None:
     df = pl.DataFrame(
         [
             {
@@ -165,7 +171,7 @@ scenarios:
                 catalog=Catalog(entries=[entry]), meta={"ok": True}
             )
 
-    def create_dummy(*, catalog: Catalog) -> RetrievalStrategy:
+    def create_dummy(*, catalog: Catalog, run_config) -> RetrievalStrategy:  # noqa: ARG001
         return DummyStrategy(catalog)
 
     store = MemoryStore()
@@ -173,6 +179,7 @@ scenarios:
         registrations=[(DummyStrategy, create_dummy)],
         catalog_loader=lambda _uri: Catalog(entries=[]),
         configure_cache=lambda: None,
+        run_config=retrieval_run_config,
     )
     svc = EvalArtifactsService(store=store, retrieval=retrieval)
     svc.run(
@@ -180,6 +187,7 @@ scenarios:
         catalog_uri=str(parquet_path),
         strategy_ids=None,
         k=2,
+        run_config=retrieval_run_config,
     )
     # Second run hits the digest fast-path.
     svc.run(
@@ -187,6 +195,7 @@ scenarios:
         catalog_uri=str(parquet_path),
         strategy_ids=None,
         k=2,
+        run_config=retrieval_run_config,
     )
 
     # bundle exists
@@ -295,6 +304,7 @@ def test_main_analyze_stability_outputs_table_and_json(
 
 
 def test_main_run_uses_injected_registry(monkeypatch, tmp_path: Path) -> None:
+    monkeypatch.setenv("CHARTCOACH_EMBEDDING_PROJECTOR", "sentence_transformers")
     df = pl.DataFrame(
         [
             {
@@ -346,7 +356,7 @@ scenarios:
             )
             return RetrievalResponse(catalog=Catalog(entries=[entry]))
 
-    def create_dummy(*, catalog: Catalog) -> RetrievalStrategy:
+    def create_dummy(*, catalog: Catalog, run_config) -> RetrievalStrategy:  # noqa: ARG001
         return DummyStrategy(catalog)
 
     monkeypatch.setattr(

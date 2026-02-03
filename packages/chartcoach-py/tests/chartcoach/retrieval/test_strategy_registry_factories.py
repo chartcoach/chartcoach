@@ -37,30 +37,8 @@ def catalog() -> Catalog:
     )
 
 
-def test_default_embedding_config_supports_sentence_transformers(monkeypatch) -> None:
-    monkeypatch.delenv("CHARTCOACH_EMBEDDING_MODEL", raising=False)
-    monkeypatch.delenv("CHARTCOACH_EMBEDDING_PROJECTOR", raising=False)
-
-    cfg = registry._default_embedding_config()
-    assert cfg.model
-    assert cfg.text_projector_type == "sentence_transformers"
-    assert cfg.text_projector_args.get("normalize_embeddings") is True
-
-
-def test_default_embedding_config_supports_litellm(monkeypatch) -> None:
-    monkeypatch.setenv("CHARTCOACH_EMBEDDING_PROJECTOR", "litellm")
-    monkeypatch.setenv("OPENAI_BASE_URL", "http://example.invalid/v1")
-    monkeypatch.setenv("OPENAI_API_KEY", "x")
-
-    cfg = registry._default_embedding_config()
-    assert cfg.text_projector_type == "litellm"
-    assert cfg.text_projector_args.get("api_base") == "http://example.invalid/v1"
-    assert cfg.text_projector_args.get("api_key") == "x"
-    assert cfg.text_projector_args.get("normalize_embeddings") is True
-
-
 def test_registry_factories_instantiate_strategies(
-    embedding_atlas_cache_dir, monkeypatch, catalog: Catalog
+    embedding_atlas_cache_dir, monkeypatch, catalog: Catalog, retrieval_run_config
 ) -> None:
     monkeypatch.setenv("OPENAI_BASE_URL", "http://example.invalid/v1")
     monkeypatch.setenv("OPENAI_API_KEY", "x")
@@ -93,84 +71,19 @@ def test_registry_factories_instantiate_strategies(
     fake_sparse = CatalogSparseIndex.from_catalog(
         catalog,
         sources=[GuidelineFieldTextSource("title")],
-        config=SparseEmbeddingConfig(),
+        config=SparseEmbeddingConfig(model="fake", max_length=16, top_k_terms=8),
         embedder=DummySparseEmbedder(),
     )
     monkeypatch.setattr(
-        registry, "_shared_sparse_index", lambda *, catalog: fake_sparse
+        registry,
+        "_shared_sparse_index",
+        lambda *, catalog, run_config: fake_sparse,  # noqa: ARG005
     )
 
-    # Strategies should instantiate without making network calls.
-    assert registry.create_bm25_prf_strategy(catalog=catalog).id == "bm25-prf@v1"
-    assert registry.create_dense_mmr_strategy(catalog=catalog).id == "dense-mmr@v1"
-    assert registry.create_hybrid_rrf_strategy(catalog=catalog).id == "hybrid-rrf@v1"
-    assert registry.create_ann_dense_strategy(catalog=catalog).id == "ann-dense@v1"
-    assert (
-        registry.create_label_gated_ann_strategy(catalog=catalog).id
-        == "label-gated-ann@v1"
-    )
-    assert (
-        registry.create_label_first_abstract_strategy(catalog=catalog).id
-        == "label-first-abstract@v1"
-    )
-    assert (
-        registry.create_decompose_parallel_strategy(catalog=catalog).id
-        == "decompose-parallel@v1"
-    )
-    assert (
-        registry.create_role_aware_sections_strategy(catalog=catalog).id
-        == "role-aware-sections@v1"
-    )
-    assert (
-        registry.create_neighborhood_explorer_strategy(catalog=catalog).id
-        == "neighborhood-explorer@v1"
-    )
-    assert (
-        registry.create_facet_fusion_hybrid_strategy(catalog=catalog).id
-        == "facet-fusion-hybrid@v1"
-    )
-    assert (
-        registry.create_query_fusion_hybrid_strategy(catalog=catalog).id
-        == "query-fusion-hybrid@v1"
-    )
-    assert registry.create_hyde_hybrid_strategy(catalog=catalog).id == "hyde-hybrid@v1"
-    assert (
-        registry.create_agentic_hybrid_strategy(catalog=catalog).id
-        == "agentic-hybrid@v1"
-    )
-    assert (
-        registry.create_multirepr_fusion_strategy(catalog=catalog).id
-        == "multirepr-rrf@v1"
-    )
-    utility = registry.create_utility_rerank_hybrid_strategy(catalog=catalog)
-    assert utility.id == "utility-rerank-hybrid@v1"
-    assert getattr(utility, "_lm", None) is not None
-    assert (
-        registry.create_dense_sparse_rrf_strategy(catalog=catalog).id
-        == "dense-sparse-rrf@v1"
-    )
-    assert (
-        registry.create_sparse_splade_strategy(catalog=catalog).id == "sparse-splade@v1"
-    )
-    assert (
-        registry.create_hybrid_rrf_setselect_label_strategy(catalog=catalog).id
-        == "hybrid-rrf-setselect-label@v1"
-    )
-    assert (
-        registry.create_hybrid_rrf_setselect_facility_strategy(catalog=catalog).id
-        == "hybrid-rrf-setselect-facility@v1"
-    )
-
-
-def test_create_lm_uses_defaults_on_invalid_env(monkeypatch) -> None:
-    monkeypatch.setenv("OPENAI_BASE_URL", "http://example.invalid/v1")
-    monkeypatch.setenv("OPENAI_API_KEY", "x")
-    monkeypatch.setenv("CHARTCOACH_LM_TIMEOUT_SECONDS", "not-a-number")
-    monkeypatch.setenv("CHARTCOACH_LM_NUM_RETRIES", "not-a-number")
-
-    lm = registry._create_lm()
-    assert lm.num_retries == 6
-    assert lm.kwargs.get("timeout") == 120.0
+    factories = registry.create_default_strategy_registrations()
+    for strategy_cls, factory in factories:
+        strategy = factory(catalog=catalog, run_config=retrieval_run_config)
+        assert strategy.id == strategy_cls.id
 
 
 def test_create_default_strategy_registrations_includes_expected_ids() -> None:
@@ -190,71 +103,3 @@ def test_create_default_strategy_registrations_includes_expected_ids() -> None:
         "dense-sparse-rrf@v1",
         "sparse-splade@v1",
     } <= ids
-
-
-def test_default_sparse_embedding_config_reads_env(monkeypatch) -> None:
-    monkeypatch.delenv("CHARTCOACH_SPARSE_EMBEDDING_MODEL", raising=False)
-    monkeypatch.delenv("CHARTCOACH_SPARSE_MODEL", raising=False)
-
-    cfg = registry._default_sparse_embedding_config()
-    assert cfg.model
-
-    monkeypatch.setenv("CHARTCOACH_SPARSE_MODEL", "example-model")
-    cfg = registry._default_sparse_embedding_config()
-    assert cfg.model == "example-model"
-
-
-def test_shared_sparse_index_uses_cache(monkeypatch, catalog: Catalog) -> None:
-    registry._SPARSE_INDEX_CACHE.clear()
-
-    from chartcoach.index.sparse import CatalogSparseIndex, SparseEmbeddingConfig
-
-    monkeypatch.setattr(
-        registry,
-        "_default_sparse_embedding_config",
-        lambda: SparseEmbeddingConfig(model="fake", max_length=16, top_k_terms=8),
-    )
-
-    created: list[object] = []
-
-    def fake_from_catalog(cls, _catalog, **_kwargs):  # noqa: ANN001
-        obj = object()
-        created.append(obj)
-        return obj
-
-    monkeypatch.setattr(
-        CatalogSparseIndex,
-        "from_catalog",
-        classmethod(fake_from_catalog),
-    )
-
-    idx1 = registry._shared_sparse_index(catalog=catalog)
-    idx2 = registry._shared_sparse_index(catalog=catalog)
-    assert idx1 is idx2
-    assert len(created) == 1
-
-
-def test_shared_abstract_index_uses_cache(monkeypatch, catalog: Catalog) -> None:
-    registry._ABSTRACT_INDEX_CACHE.clear()
-
-    monkeypatch.setattr(
-        registry,
-        "_default_embedding_config",
-        lambda: registry.EmbeddingConfig(model="fake"),
-    )
-
-    created: list[object] = []
-
-    def fake_from_catalog(cls, _catalog, **_kwargs):  # noqa: ANN001
-        obj = object()
-        created.append(obj)
-        return obj
-
-    monkeypatch.setattr(
-        registry.CatalogVectorIndex, "from_catalog", classmethod(fake_from_catalog)
-    )
-
-    idx1 = registry._shared_abstract_index(catalog=catalog)
-    idx2 = registry._shared_abstract_index(catalog=catalog)
-    assert idx1 is idx2
-    assert len(created) == 1

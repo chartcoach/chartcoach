@@ -16,8 +16,13 @@ from chartcoach.retrieval.strategy.pipelines.facet_fusion import (
     FacetFusionHybridStrategy,
 )
 from chartcoach.retrieval.strategy.pipelines.focus import FocusConfig
-from chartcoach.retrieval.strategy.pipelines.guideline_status import StatusScorerConfig
+from chartcoach.retrieval.strategy.pipelines.guideline_status import (
+    GuidelineStatusModule,
+    StatusScorer,
+    StatusScorerConfig,
+)
 from chartcoach.retrieval.strategy.pipelines.searcher import GuidelineSearcher
+from chartcoach.retrieval.strategy.pipelines.vision import ChartVisionModule
 from chartcoach.retrieval.strategy.types import RetrievalRequest, TextItem
 from chartcoach.retrieval.strategy.vector_index import (
     CatalogVectorIndex,
@@ -133,17 +138,10 @@ def _patch_embed_query(monkeypatch) -> None:
 def _patch_strategy_deps(monkeypatch) -> None:
     import chartcoach.retrieval.strategy.pipelines.facet_fusion as mod
 
-    monkeypatch.setenv("CHARTCOACH_CHART_VISION_ENABLED", "1")
-    monkeypatch.setattr(mod, "create_strategy_vlm", lambda: object())
     monkeypatch.setattr(
         mod,
         "with_chart_vision",
         lambda request, **_kwargs: (request, {"chart_vision_used": True}),
-    )
-    monkeypatch.setattr(
-        mod,
-        "shared_status_scorer",
-        lambda: ("lm", object(), StatusScorerConfig(candidate_multiplier=2)),
     )
     monkeypatch.setattr(
         mod,
@@ -185,10 +183,17 @@ def test_facet_fusion_hybrid_role_fallback_and_cross_encoder_rerank(
     searcher = _make_searcher(catalog=catalog, fake=fake)
 
     lm = dspy.LM(model="gpt-4o-mini", api_base="http://example.invalid/v1", api_key="x")
+    status_scorer = StatusScorer(
+        lm=lm,
+        module=cast(GuidelineStatusModule, object()),
+        config=StatusScorerConfig(candidate_multiplier=2),
+    )
     strat = FacetFusionHybridStrategy(
         catalog=catalog,
         searcher=searcher,
         lm=lm,
+        vision=cast("ChartVisionModule", object()),
+        status_scorer=status_scorer,
         config=FacetFusionConfig(n_queries=2, cross_encoder_model="dummy"),
         default_k=2,
         focus=FocusConfig(

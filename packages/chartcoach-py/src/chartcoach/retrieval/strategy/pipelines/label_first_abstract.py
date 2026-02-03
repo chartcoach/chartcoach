@@ -5,19 +5,18 @@ from typing import TYPE_CHECKING
 
 from chartcoach.catalog import Catalog
 from chartcoach.retrieval.strategy.base import RetrievalStrategy
-from chartcoach.retrieval.strategy.dspy_models import create_strategy_vlm
 from chartcoach.retrieval.strategy.optional import require_dspy
 from chartcoach.retrieval.strategy.types import RetrievalRequest, RetrievalResponse
 
-from .focus import FocusConfig, focus_config_from_env
-from .guideline_status import filter_guidelines_by_status, shared_status_scorer
+from .focus import FocusConfig
+from .guideline_status import StatusScorer, filter_guidelines_by_status
 from .label_hints import (
     LabelHintsConfig,
     LabelHintsSignature,
     match_catalog_ids_by_label_hints,
 )
 from .searcher import GuidelineSearcher
-from .vision import ChartVisionModule, chart_vision_config_from_env, with_chart_vision
+from .vision import ChartVisionModule, with_chart_vision
 
 if TYPE_CHECKING:
     import dspy
@@ -42,19 +41,20 @@ class LabelFirstAbstractStrategy(RetrievalStrategy):
         catalog: Catalog,
         abstract_searcher: GuidelineSearcher,
         lm: dspy.LM,
+        vision: ChartVisionModule | None = None,
+        status_scorer: StatusScorer | None = None,
         config: LabelFirstAbstractConfig = LabelFirstAbstractConfig(),
         default_k: int = 20,
         focus: FocusConfig | None = None,
     ) -> None:
         super().__init__(catalog)
-        self._abstract_searcher = abstract_searcher
-        self._lm = lm
-        self._config = config
-        self._default_k = int(default_k)
-        self._focus = focus or focus_config_from_env()
-
-        self._vision_config = chart_vision_config_from_env()
-        self._vlm = create_strategy_vlm() if self._vision_config.enabled else None
+        self._abstract_searcher: GuidelineSearcher = abstract_searcher
+        self._lm: dspy.LM = lm
+        self._config: LabelFirstAbstractConfig = config
+        self._default_k: int = int(default_k)
+        self._focus: FocusConfig = focus or FocusConfig()
+        self._vision: ChartVisionModule | None = vision
+        self._status_scorer: StatusScorer | None = status_scorer
 
         self._program = dspy.Predict(LabelHintsSignature)
 
@@ -85,11 +85,11 @@ class LabelFirstAbstractStrategy(RetrievalStrategy):
             raise ValueError("k must be positive.")
 
         vision_meta: dict[str, object] = {}
-        if self._vlm is not None and self._vision_config.enabled:
+        if self._vision is not None:
             request, vision_meta = with_chart_vision(
                 request,
                 base_situation=self._abstract_searcher.build_base_query_text(request),
-                vision=ChartVisionModule(vlm=self._vlm, config=self._vision_config),
+                vision=self._vision,
             )
 
         focus_mode = self._focus.mode
@@ -147,11 +147,16 @@ class LabelFirstAbstractStrategy(RetrievalStrategy):
             )
 
         status_meta: dict[str, object] = {}
-        use_status_filter = focus_mode != "all" and self._focus.use_status_filter
+        status_scorer = self._status_scorer
+        use_status_filter = (
+            focus_mode != "all"
+            and self._focus.use_status_filter
+            and status_scorer is not None
+        )
         candidate_k = effective_k
         if use_status_filter:
-            status_lm, _, status_cfg = shared_status_scorer()
-            self._status_lm = status_lm
+            assert status_scorer is not None
+            status_cfg = status_scorer.config
             candidate_k = max(
                 effective_k, effective_k * int(status_cfg.candidate_multiplier)
             )
@@ -169,8 +174,9 @@ class LabelFirstAbstractStrategy(RetrievalStrategy):
         ]
         ordered_entries = candidate_entries[:effective_k]
         if use_status_filter and ordered_entries:
-            status_lm, status_module, status_cfg = shared_status_scorer()
-            self._status_lm = status_lm
+            assert status_scorer is not None
+            status_module = status_scorer.module
+            status_cfg = status_scorer.config
             ordered_entries, status_meta = filter_guidelines_by_status(
                 request=request,
                 entries=candidate_entries,
