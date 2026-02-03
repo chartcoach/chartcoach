@@ -166,10 +166,11 @@ def test_build_scenario_bundle_runs_strategies() -> None:
             return RetrievalResponse(
                 catalog=Catalog(entries=[entry]),
                 meta={
-                    "k": request.k,
+                    "k": int(request.k or 1),
                     "hits": [
                         {
                             "id": "g1",
+                            "score": 1.0,
                             "evidence": [
                                 {
                                     "role": "advice",
@@ -245,7 +246,7 @@ def test_build_scenario_bundle_filters_bad_evidence_hits() -> None:
             return RetrievalResponse(
                 catalog=Catalog(entries=[entry]),
                 meta={
-                    "k": request.k,
+                    "k": int(request.k or 1),
                     "hits": [
                         "not-a-dict",
                         {"id": None, "evidence": []},
@@ -270,26 +271,24 @@ def test_build_scenario_bundle_filters_bad_evidence_hits() -> None:
         query="Retrieve guidelines.",
         designer_intent="Improve the chart.",
     )
-    bundle = build_scenario_bundle(
-        scenario=scenario,
-        catalog_uri="file:///tmp/catalog.parquet",
-        strategies=[
-            (
-                StrategyInfo(id="dummy@v1", name="DummyStrategy", description=""),
-                DummyStrategy(Catalog(entries=[])),
-            )
-        ],
-        k=3,
-        strategy_timeout_seconds=None,
-        config={
-            "repo_commit": "deadbeef",
-            "catalog_digest": "cafe",
-            "scenario_digest": "babe",
-        },
-    )
-    evidence = bundle.strategies[0].guidelines[0].evidence
-    assert evidence is not None
-    assert [e.text for e in evidence] == ["ok"]
+    with pytest.raises(ValueError, match="did not match the trace schema"):
+        build_scenario_bundle(
+            scenario=scenario,
+            catalog_uri="file:///tmp/catalog.parquet",
+            strategies=[
+                (
+                    StrategyInfo(id="dummy@v1", name="DummyStrategy", description=""),
+                    DummyStrategy(Catalog(entries=[])),
+                )
+            ],
+            k=3,
+            strategy_timeout_seconds=None,
+            config={
+                "repo_commit": "deadbeef",
+                "catalog_digest": "cafe",
+                "scenario_digest": "babe",
+            },
+        )
 
 
 def test_build_scenario_bundle_records_lm_usage_meta() -> None:
@@ -316,7 +315,10 @@ def test_build_scenario_bundle_records_lm_usage_meta() -> None:
                     "cost": 0.01,
                 }
             )
-            return RetrievalResponse(catalog=Catalog(entries=[]), meta={})
+            return RetrievalResponse(
+                catalog=Catalog(entries=[]),
+                meta={"k": int(request.k or 1), "hits": []},
+            )
 
     scenario = ScenarioSpec(
         id="s1",
