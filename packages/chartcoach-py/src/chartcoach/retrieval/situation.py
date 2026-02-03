@@ -104,7 +104,11 @@ class Situation(BaseModel):
 
         # Keep the title+intent backbone compatible with existing retrieval
         # baselines, then append typed facets in clearly demarcated blocks.
-        base = f"{self.title}\n\n{self.intent}".strip() if self.title else self.intent.strip()
+        base = (
+            f"{self.title}\n\n{self.intent}".strip()
+            if self.title
+            else self.intent.strip()
+        )
 
         context_lines: list[str] = []
         for role in _CONTEXT_ROLES:

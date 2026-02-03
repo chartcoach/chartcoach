@@ -171,8 +171,16 @@ def test_build_scenario_bundle_runs_strategies() -> None:
                         {
                             "id": "g1",
                             "evidence": [
-                                {"role": "advice", "text": "Use colorblind-safe palettes.", "score": 1.0},
-                                {"role": "reason", "text": "This improves accessibility.", "score": 0.5},
+                                {
+                                    "role": "advice",
+                                    "text": "Use colorblind-safe palettes.",
+                                    "score": 1.0,
+                                },
+                                {
+                                    "role": "reason",
+                                    "text": "This improves accessibility.",
+                                    "score": 0.5,
+                                },
                             ],
                         }
                     ],
@@ -197,7 +205,11 @@ def test_build_scenario_bundle_runs_strategies() -> None:
             )
         ],
         k=3,
-        config={"repo_commit": "deadbeef", "catalog_digest": "cafe", "scenario_digest": "babe"},
+        config={
+            "repo_commit": "deadbeef",
+            "catalog_digest": "cafe",
+            "scenario_digest": "babe",
+        },
     )
     assert bundle.schema_version == 1
     assert bundle.scenario.id == scenario.id
@@ -267,7 +279,11 @@ def test_build_scenario_bundle_filters_bad_evidence_hits() -> None:
             )
         ],
         k=3,
-        config={"repo_commit": "deadbeef", "catalog_digest": "cafe", "scenario_digest": "babe"},
+        config={
+            "repo_commit": "deadbeef",
+            "catalog_digest": "cafe",
+            "scenario_digest": "babe",
+        },
     )
     evidence = bundle.strategies[0].guidelines[0].evidence
     assert evidence is not None
@@ -654,7 +670,9 @@ def test_resolve_repo_commit_covers_unknown_and_dirty(monkeypatch, tmp_path) -> 
     assert eval_artifacts.resolve_repo_commit() == "unknown"
 
     # Dirty branch when git diff returns non-zero.
-    monkeypatch.setattr(eval_artifacts, "_run_git", lambda _args, *, cwd: "1234567890abcdef")
+    monkeypatch.setattr(
+        eval_artifacts, "_run_git", lambda _args, *, cwd: "1234567890abcdef"
+    )
 
     class Proc:
         def __init__(self, returncode: int) -> None:
@@ -694,7 +712,10 @@ def test_resolve_catalog_digest_covers_uri_and_dir_branches(tmp_path) -> None:
     # file:// URL.
     path = tmp_path / "cat.parquet"
     path.write_bytes(b"x")
-    assert resolve_catalog_digest(f"file://{path}") == hashlib.sha256(b"x").hexdigest()[:16]
+    assert (
+        resolve_catalog_digest(f"file://{path}")
+        == hashlib.sha256(b"x").hexdigest()[:16]
+    )
 
     # Directory with catalog.parquet uses that file.
     d1 = tmp_path / "d1"

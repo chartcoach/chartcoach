@@ -53,14 +53,18 @@ def test_chart_image_from_request_supports_uri_and_bytes(monkeypatch, tmp_path) 
 
     monkeypatch.setattr(mod.dspy, "Image", DummyImage)
 
-    req = RetrievalRequest(context=[ImageItem(role="chart", uri="http://example.com/x.png")])
+    req = RetrievalRequest(
+        context=[ImageItem(role="chart", uri="http://example.com/x.png")]
+    )
     image, fp = mod._chart_image_from_request(req)
     assert image == "URL:http://example.com/x.png"
     assert fp and fp.startswith("uri:")
 
     # Bytes path writes a temp file; remove it after the call.
     data = b"abc123"
-    req = RetrievalRequest(context=[ImageItem(role="chart", data=data, mime="image/png")])
+    req = RetrievalRequest(
+        context=[ImageItem(role="chart", data=data, mime="image/png")]
+    )
     image, fp = mod._chart_image_from_request(req)
     assert isinstance(image, str) and image.startswith("FILE:")
     assert fp and fp.startswith("bytes:")
@@ -119,7 +123,9 @@ def test_chart_vision_analyze_disabled_and_no_image(monkeypatch) -> None:
         def copy(self, **_kwargs):  # noqa: ANN003
             return self
 
-    vision = mod.ChartVisionModule(vlm=DummyLM(), config=mod.ChartVisionConfig(enabled=False))
+    vision = mod.ChartVisionModule(
+        vlm=DummyLM(), config=mod.ChartVisionConfig(enabled=False)
+    )
     summary, meta = vision.analyze(
         RetrievalRequest(context=[TextItem(role="situation", text="S")]),
         base_situation="S",
@@ -128,7 +134,9 @@ def test_chart_vision_analyze_disabled_and_no_image(monkeypatch) -> None:
     assert meta["chart_vision_enabled"] is False
     assert meta["chart_vision_used"] is False
 
-    vision = mod.ChartVisionModule(vlm=DummyLM(), config=mod.ChartVisionConfig(enabled=True))
+    vision = mod.ChartVisionModule(
+        vlm=DummyLM(), config=mod.ChartVisionConfig(enabled=True)
+    )
     summary, meta = vision.analyze(
         RetrievalRequest(context=[TextItem(role="situation", text="S")]),
         base_situation="S",
@@ -145,14 +153,18 @@ def test_chart_vision_analyze_respects_existing_chart_vision(monkeypatch) -> Non
             return self
 
     # If the request already contains chart_vision, we should not call the program.
-    vision = mod.ChartVisionModule(vlm=DummyLM(), config=mod.ChartVisionConfig(enabled=True))
+    vision = mod.ChartVisionModule(
+        vlm=DummyLM(), config=mod.ChartVisionConfig(enabled=True)
+    )
 
     def boom(**_kwargs):  # noqa: ANN003
         raise AssertionError("Should not be called")
 
     vision._program = boom
 
-    monkeypatch.setattr(mod.dspy, "Image", SimpleNamespace(from_url=lambda _u: object()))
+    monkeypatch.setattr(
+        mod.dspy, "Image", SimpleNamespace(from_url=lambda _u: object())
+    )
 
     req = RetrievalRequest(
         context=[
@@ -179,9 +191,13 @@ def test_chart_vision_analyze_caches_and_retries(monkeypatch) -> None:
         yield
 
     monkeypatch.setattr(mod.dspy, "context", noop_context)
-    monkeypatch.setattr(mod.dspy, "Image", SimpleNamespace(from_url=lambda _u: object()))
+    monkeypatch.setattr(
+        mod.dspy, "Image", SimpleNamespace(from_url=lambda _u: object())
+    )
 
-    vision = mod.ChartVisionModule(vlm=DummyLM("lm"), config=mod.ChartVisionConfig(enabled=True))
+    vision = mod.ChartVisionModule(
+        vlm=DummyLM("lm"), config=mod.ChartVisionConfig(enabled=True)
+    )
     calls = {"n": 0}
 
     def program(**_kwargs):  # noqa: ANN003
@@ -201,7 +217,12 @@ def test_chart_vision_analyze_caches_and_retries(monkeypatch) -> None:
 
     vision._program = program
 
-    req = RetrievalRequest(context=[TextItem(role="situation", text="S"), ImageItem(role="chart", uri="http://x")])
+    req = RetrievalRequest(
+        context=[
+            TextItem(role="situation", text="S"),
+            ImageItem(role="chart", uri="http://x"),
+        ]
+    )
     summary, meta = vision.analyze(req, base_situation="S")
     assert summary == "Short summary."
     assert meta["chart_vision_used"] is True
@@ -226,16 +247,25 @@ def test_chart_vision_analyze_returns_error_meta(monkeypatch) -> None:
         yield
 
     monkeypatch.setattr(mod.dspy, "context", noop_context)
-    monkeypatch.setattr(mod.dspy, "Image", SimpleNamespace(from_url=lambda _u: object()))
+    monkeypatch.setattr(
+        mod.dspy, "Image", SimpleNamespace(from_url=lambda _u: object())
+    )
 
-    vision = mod.ChartVisionModule(vlm=DummyLM(), config=mod.ChartVisionConfig(enabled=True))
+    vision = mod.ChartVisionModule(
+        vlm=DummyLM(), config=mod.ChartVisionConfig(enabled=True)
+    )
 
     def program(**_kwargs):  # noqa: ANN003
         raise RuntimeError("boom")
 
     vision._program = program
 
-    req = RetrievalRequest(context=[TextItem(role="situation", text="S"), ImageItem(role="chart", uri="http://x")])
+    req = RetrievalRequest(
+        context=[
+            TextItem(role="situation", text="S"),
+            ImageItem(role="chart", uri="http://x"),
+        ]
+    )
     summary, meta = vision.analyze(req, base_situation="S")
     assert summary is None
     assert meta["chart_vision_used"] is False
@@ -269,7 +299,11 @@ def test_format_and_with_chart_vision_truncates(monkeypatch) -> None:
     req = RetrievalRequest(context=[TextItem(role="situation", text="S")])
     out_req, meta = mod.with_chart_vision(req, base_situation="S", vision=vision)
     assert meta["chart_type"] == "bar chart"
-    chart_notes = [i for i in out_req.context if isinstance(i, TextItem) and i.role == "chart_vision"]
+    chart_notes = [
+        i
+        for i in out_req.context
+        if isinstance(i, TextItem) and i.role == "chart_vision"
+    ]
     assert chart_notes
     assert chart_notes[0].text.endswith("...")
 

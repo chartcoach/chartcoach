@@ -2,7 +2,11 @@ from __future__ import annotations
 
 import pytest
 
-from chartcoach.retrieval.situation import Situation, iter_context_roles, situation_text_parts
+from chartcoach.retrieval.situation import (
+    Situation,
+    iter_context_roles,
+    situation_text_parts,
+)
 from chartcoach.retrieval.strategy.types import ImageItem, RetrievalRequest, TextItem
 
 
@@ -57,7 +61,10 @@ def test_situation_query_text_includes_facets_and_vision() -> None:
 
 def test_situation_text_parts_wrapper() -> None:
     req = RetrievalRequest(
-        context=[TextItem(role="intent", text="I"), TextItem(role="chart_vision", text="V")]
+        context=[
+            TextItem(role="intent", text="I"),
+            TextItem(role="chart_vision", text="V"),
+        ]
     )
     parts = situation_text_parts(req)
     assert "Chart image notes:" not in parts.base
