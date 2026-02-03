@@ -223,7 +223,9 @@ def test_main_analyze_stability_requires_two_runs() -> None:
         main(["analyze-stability", "--runs", "/tmp/run1"])
 
 
-def test_main_analyze_stability_outputs_table_and_json(monkeypatch, tmp_path: Path) -> None:
+def test_main_analyze_stability_outputs_table_and_json(
+    monkeypatch, tmp_path: Path
+) -> None:
     run1 = tmp_path / "run1"
     run2 = tmp_path / "run2"
     (run1 / "bundles").mkdir(parents=True)
@@ -238,7 +240,11 @@ def test_main_analyze_stability_outputs_table_and_json(monkeypatch, tmp_path: Pa
                 "strategy_name": "Hybrid",
                 "meta": {},
                 "guidelines": [
-                    {"rank": 1, "score": 1.0, "entry": {"guideline": {"id": "a"}, "references": []}},
+                    {
+                        "rank": 1,
+                        "score": 1.0,
+                        "entry": {"guideline": {"id": "a"}, "references": []},
+                    },
                 ],
             }
         ],
@@ -251,7 +257,11 @@ def test_main_analyze_stability_outputs_table_and_json(monkeypatch, tmp_path: Pa
                 "strategy_name": "Hybrid",
                 "meta": {},
                 "guidelines": [
-                    {"rank": 1, "score": 1.0, "entry": {"guideline": {"id": "a"}, "references": []}},
+                    {
+                        "rank": 1,
+                        "score": 1.0,
+                        "entry": {"guideline": {"id": "a"}, "references": []},
+                    },
                 ],
             }
         ],
