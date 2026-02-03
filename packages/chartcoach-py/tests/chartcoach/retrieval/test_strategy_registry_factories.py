@@ -6,6 +6,7 @@ import pytest
 
 from chartcoach.catalog import Catalog
 from chartcoach.catalog.model import CatalogEntry, Guideline
+from chartcoach.retrieval.runtime import StrategyRuntime
 from chartcoach.retrieval.strategy import registry
 
 
@@ -74,15 +75,12 @@ def test_registry_factories_instantiate_strategies(
         config=SparseEmbeddingConfig(model="fake", max_length=16, top_k_terms=8),
         embedder=DummySparseEmbedder(),
     )
-    monkeypatch.setattr(
-        registry,
-        "_shared_sparse_index",
-        lambda *, catalog, run_config: fake_sparse,  # noqa: ARG005
-    )
+    monkeypatch.setattr(StrategyRuntime, "sparse_index", lambda _self: fake_sparse)
 
     factories = registry.create_default_strategy_registrations()
     for strategy_cls, factory in factories:
-        strategy = factory(catalog=catalog, run_config=retrieval_run_config)
+        runtime = StrategyRuntime(catalog=catalog, run_config=retrieval_run_config)
+        strategy = factory(runtime=runtime)
         assert strategy.id == strategy_cls.id
 
 

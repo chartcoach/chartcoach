@@ -15,9 +15,6 @@ else:
     dspy = require_dspy()
 
 
-_VISION_CACHE: dict[str, dict[str, object]] = {}
-
-
 def _sha256_text(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
@@ -121,9 +118,16 @@ class ChartVisionConfig:
 
 
 class ChartVisionModule:
-    def __init__(self, *, vlm: dspy.LM, config: ChartVisionConfig) -> None:
+    def __init__(
+        self,
+        *,
+        vlm: dspy.LM,
+        config: ChartVisionConfig,
+        cache: dict[str, dict[str, object]] | None = None,
+    ) -> None:
         self._vlm = vlm
         self._config = config
+        self._cache = cache if cache is not None else {}
         self._program = dspy.Predict(ChartVisionSignature)
 
     @property
@@ -169,7 +173,7 @@ class ChartVisionModule:
             }
 
         key = _sha256_text(f"{fingerprint or '<chart>'}\n{base_situation}")[:16]
-        cached = _VISION_CACHE.get(key)
+        cached = self._cache.get(key)
         if cached is not None:
             return str(cached.get("vision_summary") or "").strip() or None, {
                 "chart_vision_enabled": True,
@@ -227,7 +231,7 @@ class ChartVisionModule:
         }
         if summary:
             cached_payload["vision_summary"] = summary
-        _VISION_CACHE[key] = cached_payload
+        self._cache[key] = cached_payload
 
         return summary or None, {
             "chart_vision_enabled": True,

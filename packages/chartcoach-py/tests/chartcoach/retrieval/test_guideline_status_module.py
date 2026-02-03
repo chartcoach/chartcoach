@@ -15,11 +15,6 @@ if TYPE_CHECKING:
     import dspy
 
 
-@pytest.fixture(autouse=True)
-def _clear_status_cache() -> None:
-    mod._STATUS_CACHE.clear()
-
-
 def _entry(gid: str, *, body: str = "## Advice\nDo X.") -> CatalogEntry:
     return CatalogEntry(
         guideline=Guideline(
@@ -216,11 +211,6 @@ def test_guideline_status_module_classify_many_fallbacks_when_cache_missing(
 
     monkeypatch.setattr(mod.dspy, "context", noop_context)
 
-    status = mod.GuidelineStatusModule(
-        lm=cast("dspy.LM", DummyLM()),
-        config=mod.StatusScorerConfig(batch_size=10),
-    )
-
     class FlakyCache(dict):
         calls = 0
 
@@ -232,7 +222,11 @@ def test_guideline_status_module_classify_many_fallbacks_when_cache_missing(
                 return None
             return super().get(key, default)
 
-    monkeypatch.setattr(mod, "_STATUS_CACHE", FlakyCache())
+    status = mod.GuidelineStatusModule(
+        lm=cast("dspy.LM", DummyLM()),
+        config=mod.StatusScorerConfig(batch_size=10),
+        cache=FlakyCache(),
+    )
 
     out = status.classify_many(chart_key="chart", situation="S", entries=[_entry("g1")])
     assert out[0]["status"] == "unclear"

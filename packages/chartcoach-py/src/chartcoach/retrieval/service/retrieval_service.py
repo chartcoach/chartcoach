@@ -5,6 +5,7 @@ from os import PathLike
 
 from chartcoach.catalog import Catalog
 from chartcoach.retrieval.config import RetrievalRunConfig, load_run_config
+from chartcoach.retrieval.runtime import StrategyRuntime
 from chartcoach.retrieval.strategy.base import StrategyInfo
 from chartcoach.retrieval.strategy.base import RetrievalStrategy
 from chartcoach.retrieval.strategy.registry import StrategyRegistration
@@ -100,8 +101,11 @@ class RetrievalService:
     ):
         self._configure_cache()
         _strategy_cls, factory = self._require_registration(strategy_id)
+        runtime = StrategyRuntime(
+            catalog=catalog, run_config=run_config or self._run_config
+        )
         try:
-            return factory(catalog=catalog, run_config=run_config or self._run_config)
+            return factory(runtime=runtime)
         except RuntimeError as e:
             raise StrategyInitError(str(e)) from e
 
@@ -115,6 +119,7 @@ class RetrievalService:
         catalog = self.load_catalog(catalog_uri)
         self._configure_cache()
         effective_config = run_config or self._run_config
+        runtime = StrategyRuntime(catalog=catalog, run_config=effective_config)
 
         registrations = list(self._by_id.values())
         if strategy_ids:
@@ -125,7 +130,7 @@ class RetrievalService:
                 raise UnknownStrategyError(f"Unknown strategy ids: {sorted(missing)}")
 
         strategies = [
-            (strategy_cls.info(), factory(catalog=catalog, run_config=effective_config))
+            (strategy_cls.info(), factory(runtime=runtime))
             for strategy_cls, factory in registrations
         ]
         strategies.sort(key=lambda s: s[0].id)

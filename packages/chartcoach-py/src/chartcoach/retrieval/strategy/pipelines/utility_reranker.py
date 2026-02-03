@@ -18,9 +18,6 @@ else:
 Applicability = Literal["applicable", "not_applicable", "unclear"]
 
 
-_UTILITY_CACHE: dict[tuple[str, str], dict[str, object]] = {}
-
-
 def _sha256_text(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
@@ -122,9 +119,16 @@ def create_utility_reranker(
 
 
 class GuidelineUtilityModule:
-    def __init__(self, *, lm: dspy.LM, config: UtilityRerankerConfig) -> None:
+    def __init__(
+        self,
+        *,
+        lm: dspy.LM,
+        config: UtilityRerankerConfig,
+        cache: dict[tuple[str, str], dict[str, object]] | None = None,
+    ) -> None:
         self._lm = lm
         self._config = config
+        self._cache = cache if cache is not None else {}
         self._program = dspy.Predict(GuidelineUtilitySignature)
         self._batch_program = dspy.Predict(GuidelineUtilityBatchSignature)
 
@@ -185,7 +189,7 @@ class GuidelineUtilityModule:
         pending: list[CatalogEntry] = []
         for entry in entries:
             cache_key = (chart_key, f"{situation_digest}:{entry.id}")
-            cached = _UTILITY_CACHE.get(cache_key)
+            cached = self._cache.get(cache_key)
             if cached is not None:
                 out[entry.id] = {**cached, "cache": "memory"}
             else:
@@ -289,7 +293,7 @@ class GuidelineUtilityModule:
                     }
 
                     cache_key = (chart_key, f"{situation_digest}:{gid}")
-                    _UTILITY_CACHE[cache_key] = payload
+                    self._cache[cache_key] = payload
                     out[gid] = {**payload, "cache": "miss"}
 
             # Fill any missing ids with a conservative default (treated as unusable).
@@ -306,7 +310,7 @@ class GuidelineUtilityModule:
                     "attempts": attempts,
                 }
                 cache_key = (chart_key, f"{situation_digest}:{gid}")
-                _UTILITY_CACHE[cache_key] = payload
+                self._cache[cache_key] = payload
                 out[gid] = {**payload, "cache": "miss"}
 
         return out
@@ -322,7 +326,7 @@ class GuidelineUtilityModule:
         chart_key = _chart_fingerprint(request) or "<no-chart>"
         situation_digest = _sha256_text(situation_text)[:16]
         cache_key = (chart_key, f"{situation_digest}:{entry.id}")
-        cached = _UTILITY_CACHE.get(cache_key)
+        cached = self._cache.get(cache_key)
         if cached is not None:
             return {**cached, "cache": "memory"}
 
@@ -360,7 +364,7 @@ class GuidelineUtilityModule:
                 "error": err,
                 "attempts": attempts,
             }
-            _UTILITY_CACHE[cache_key] = payload
+            self._cache[cache_key] = payload
             return {**payload, "cache": "miss"}
 
         applicability = self._coerce_applicability(getattr(pred, "applicability", None))
@@ -394,7 +398,7 @@ class GuidelineUtilityModule:
             "error": None,
             "attempts": attempts,
         }
-        _UTILITY_CACHE[cache_key] = payload
+        self._cache[cache_key] = payload
         return {**payload, "cache": "miss"}
 
 

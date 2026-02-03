@@ -95,8 +95,8 @@ def test_retrieval_service_filters_and_errors(retrieval_run_config) -> None:
             return RetrievalResponse(catalog=Catalog(entries=[]))
 
     regs = [
-        (A, lambda *, catalog, run_config: A(catalog)),
-        (B, lambda *, catalog, run_config: B(catalog)),
+        (A, lambda *, runtime: A(runtime.catalog)),
+        (B, lambda *, runtime: B(runtime.catalog)),
     ]
     retrieval = RetrievalService(
         registrations=regs,
@@ -171,8 +171,8 @@ scenarios:
                 catalog=Catalog(entries=[entry]), meta={"ok": True}
             )
 
-    def create_dummy(*, catalog: Catalog, run_config) -> RetrievalStrategy:  # noqa: ARG001
-        return DummyStrategy(catalog)
+    def create_dummy(*, runtime) -> RetrievalStrategy:  # noqa: ANN001
+        return DummyStrategy(runtime.catalog)
 
     store = MemoryStore()
     retrieval = RetrievalService(
@@ -356,8 +356,8 @@ scenarios:
             )
             return RetrievalResponse(catalog=Catalog(entries=[entry]))
 
-    def create_dummy(*, catalog: Catalog, run_config) -> RetrievalStrategy:  # noqa: ARG001
-        return DummyStrategy(catalog)
+    def create_dummy(*, runtime) -> RetrievalStrategy:  # noqa: ANN001
+        return DummyStrategy(runtime.catalog)
 
     monkeypatch.setattr(
         "chartcoach.retrieval.cli.__main__.create_default_strategy_registrations",
