@@ -51,7 +51,9 @@ def test_create_strategy_lm_vlm_and_status_use_env(monkeypatch) -> None:
         calls.append(dict(kwargs))
         return kwargs
 
-    monkeypatch.setattr(mod, "create_openai_compatible_lm", fake_create_openai_compatible_lm)
+    monkeypatch.setattr(
+        mod, "create_openai_compatible_lm", fake_create_openai_compatible_lm
+    )
 
     # Strategy LM.
     monkeypatch.setenv("CHARTCOACH_STRATEGY_LM_MODEL", "gpt-4o-mini")

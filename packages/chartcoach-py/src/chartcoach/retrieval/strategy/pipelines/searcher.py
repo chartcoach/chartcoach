@@ -127,7 +127,9 @@ class GuidelineSearcher:
         """
 
         if hits_df.is_empty() or k <= 0:
-            return pl.DataFrame({"id": [], "score": [], "best_role": [], "evidence": []})
+            return pl.DataFrame(
+                {"id": [], "score": [], "best_role": [], "evidence": []}
+            )
 
         if score_column not in hits_df.columns:
             raise ValueError(f"Missing required column {score_column!r}.")

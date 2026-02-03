@@ -12,7 +12,7 @@ from contextlib import contextmanager
 from datetime import datetime, timezone
 from os import PathLike
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 from urllib.parse import urlparse
 
 import obstore
@@ -65,11 +65,13 @@ class ScenarioSpec(_EvalArtifactsBaseModel):
     risk_tolerance: str | None = None
     time_budget: str | None = None
     counterfactual_group_id: str | None = None
+    negative_guideline_ids: list[str] | None = None
     provenance: ScenarioProvenance | None = None
 
 
 class ScenariosFile(_EvalArtifactsBaseModel):
     scenarios: list[ScenarioSpec]
+
 
 class EvalEvidenceSnippet(_EvalArtifactsBaseModel):
     role: str | None = None
@@ -356,16 +358,22 @@ def resolve_artifacts_config() -> dict[str, object]:
     from chartcoach.retrieval.strategy.pipelines.guideline_status import (
         status_scorer_config_from_env,
     )
-    from chartcoach.retrieval.strategy.pipelines.vision import chart_vision_config_from_env
+    from chartcoach.retrieval.strategy.pipelines.vision import (
+        chart_vision_config_from_env,
+    )
 
     status_cfg = status_scorer_config_from_env()
     vision_cfg = chart_vision_config_from_env()
 
     return {
         "repo_commit": resolve_repo_commit(),
-        "strategy_lm_model": os.environ.get("CHARTCOACH_STRATEGY_LM_MODEL") or "gpt-5.1",
-        "strategy_vlm_model": os.environ.get("CHARTCOACH_STRATEGY_VLM_MODEL") or "gpt-5.2",
-        "guideline_status_lm_model": os.environ.get("CHARTCOACH_GUIDELINE_STATUS_LM_MODEL")
+        "strategy_lm_model": os.environ.get("CHARTCOACH_STRATEGY_LM_MODEL")
+        or "gpt-5.1",
+        "strategy_vlm_model": os.environ.get("CHARTCOACH_STRATEGY_VLM_MODEL")
+        or "gpt-5.2",
+        "guideline_status_lm_model": os.environ.get(
+            "CHARTCOACH_GUIDELINE_STATUS_LM_MODEL"
+        )
         or os.environ.get("CHARTCOACH_STRATEGY_LM_MODEL")
         or "gpt-5.1",
         "guideline_status_timeout_seconds": os.environ.get(
@@ -396,9 +404,13 @@ def resolve_artifacts_config() -> dict[str, object]:
         "query_fusion": {
             "n_queries": os.environ.get("CHARTCOACH_FUSION_N_QUERIES") or "4",
             "rrf_k": os.environ.get("CHARTCOACH_FUSION_RRF_K") or "60",
-            "cross_encoder_model": os.environ.get("CHARTCOACH_FUSION_CROSS_ENCODER_MODEL")
+            "cross_encoder_model": os.environ.get(
+                "CHARTCOACH_FUSION_CROSS_ENCODER_MODEL"
+            )
             or "cross-encoder/ms-marco-TinyBERT-L-6",
-            "cross_encoder_candidate_limit": os.environ.get("CHARTCOACH_FUSION_XENC_CANDIDATES")
+            "cross_encoder_candidate_limit": os.environ.get(
+                "CHARTCOACH_FUSION_XENC_CANDIDATES"
+            )
             or "80",
         },
         "facet_fusion": {
@@ -429,31 +441,42 @@ def build_strategy_result(
 ) -> EvalStrategyResult:
     total = len(response_catalog_entries)
 
-    hit_evidence: dict[str, list[dict[str, object]]] = {}
+    hit_evidence: dict[str, list[EvalEvidenceSnippet]] = {}
     raw_hits = response_meta.get("hits")
     if isinstance(raw_hits, list):
         for hit in raw_hits:
             if not isinstance(hit, dict):
                 continue
-            gid = hit.get("id")
+            hit_obj = cast("dict[str, object]", hit)
+            gid = hit_obj.get("id")
             if not isinstance(gid, str) or not gid:
                 continue
-            raw_evidence = hit.get("evidence")
+            raw_evidence = hit_obj.get("evidence")
             if not isinstance(raw_evidence, list):
                 continue
-            cleaned: list[dict[str, object]] = []
+            cleaned: list[EvalEvidenceSnippet] = []
             for item in raw_evidence:
                 if not isinstance(item, dict):
                     continue
-                text = str(item.get("text") or "").strip()
+                item_obj = cast("dict[str, object]", item)
+                text = str(item_obj.get("text") or "").strip()
                 if not text:
                     continue
+                role = item_obj.get("role")
+                role_str = str(role).strip() if isinstance(role, str) else None
+                score = item_obj.get("score")
+                score_f: float | None
+                if isinstance(score, (int, float)):
+                    score_f = float(score)
+                elif isinstance(score, str):
+                    try:
+                        score_f = float(score)
+                    except ValueError:
+                        score_f = None
+                else:
+                    score_f = None
                 cleaned.append(
-                    {
-                        "role": item.get("role"),
-                        "text": text,
-                        "score": item.get("score"),
-                    }
+                    EvalEvidenceSnippet(role=role_str, text=text, score=score_f)
                 )
             if cleaned:
                 hit_evidence[gid] = cleaned

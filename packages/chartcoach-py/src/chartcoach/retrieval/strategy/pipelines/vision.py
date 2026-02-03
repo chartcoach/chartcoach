@@ -56,7 +56,9 @@ def _chart_image_from_request(
             suffix = _mime_to_suffix(item.mime)
             with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
                 tmp.write(item.data)
-                return dspy.Image.from_file(tmp.name), f"bytes:{_sha256_bytes(item.data)[:16]}"
+                return dspy.Image.from_file(
+                    tmp.name
+                ), f"bytes:{_sha256_bytes(item.data)[:16]}"
 
     return None, None
 
@@ -173,7 +175,9 @@ class ChartVisionModule:
             out.append(raw.strip())
         return out[: max(0, int(limit))]
 
-    def analyze(self, request: RetrievalRequest, *, base_situation: str) -> tuple[str | None, dict[str, object]]:
+    def analyze(
+        self, request: RetrievalRequest, *, base_situation: str
+    ) -> tuple[str | None, dict[str, object]]:
         """Return (vision_summary_text, meta)."""
 
         if not self._config.enabled:
