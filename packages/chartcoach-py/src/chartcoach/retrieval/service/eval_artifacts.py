@@ -1,204 +1,47 @@
 from __future__ import annotations
 
-import hashlib
-import json
-import signal
 import subprocess
-import threading
-import time
-from collections.abc import Iterable, Sequence
-from contextlib import contextmanager
-from datetime import datetime, timezone
-from os import PathLike
 from pathlib import Path
-from typing import Any
-from urllib.parse import urlparse
 
-import obstore
-import yaml
-from obstore.store import ObjectStore
-from pydantic import BaseModel, ConfigDict, Field
-from pydantic import ValidationError
-
-from chartcoach.catalog import CatalogEntry
 from chartcoach.retrieval.config import RetrievalRunConfig
-from chartcoach.retrieval.trace import StrategyTrace
-from chartcoach.retrieval.service.retrieval_service import RetrievalService
-from chartcoach.retrieval.strategy.base import RetrievalStrategy, StrategyInfo
-from chartcoach.retrieval.strategy.types import (
-    ContextItem,
-    ImageItem,
-    RetrievalRequest,
-    TextItem,
+from chartcoach.retrieval.service import eval_artifacts_builder as _builder
+from chartcoach.retrieval.service.eval_artifacts_builder import (
+    _StrategyTimeout,
+    _timeout,
+    _extract_lm_usage_delta,
+    _get_strategy_lm_history_snapshot,
+    build_retrieval_request,
+    build_strategy_result,
+    entry_score,
+    load_scenarios,
 )
-
-
-ARTIFACT_SCHEMA_VERSION = 1
-
-
-class _EvalArtifactsBaseModel(BaseModel):
-    model_config = ConfigDict(frozen=True)
-
-
-class ScenarioChart(_EvalArtifactsBaseModel):
-    uri: str = Field(min_length=1)
-    mime: str | None = None
-
-
-class ScenarioProvenance(_EvalArtifactsBaseModel):
-    source: str | None = None
-
-
-class ScenarioSpec(_EvalArtifactsBaseModel):
-    id: str = Field(min_length=1)
-    title: str = Field(min_length=1)
-    lang: str = "en"
-    chart: ScenarioChart | None = None
-    query: str | None = None
-    designer_intent: str | None = None
-    audience: str | None = None
-    medium: str | None = None
-    constraints: str | None = None
-    domain: str | None = None
-    risk_tolerance: str | None = None
-    time_budget: str | None = None
-    counterfactual_group_id: str | None = None
-    negative_guideline_ids: list[str] | None = None
-    provenance: ScenarioProvenance | None = None
-
-
-class ScenariosFile(_EvalArtifactsBaseModel):
-    scenarios: list[ScenarioSpec]
-
-
-class EvalEvidenceSnippet(_EvalArtifactsBaseModel):
-    role: str | None = None
-    text: str = Field(min_length=1)
-    score: float | None = None
-
-
-class EvalGuidelineResult(_EvalArtifactsBaseModel):
-    rank: int = Field(ge=1)
-    score: float = Field(gt=0)
-    entry: CatalogEntry
-    evidence: list[EvalEvidenceSnippet] | None = None
-
-
-class EvalStrategyResult(_EvalArtifactsBaseModel):
-    strategy_id: str = Field(min_length=1)
-    strategy_name: str = Field(min_length=1)
-    meta: dict[str, object] = Field(default_factory=dict)
-    guidelines: list[EvalGuidelineResult] = Field(default_factory=list)
-
-
-class EvalScenarioBundleArtifact(_EvalArtifactsBaseModel):
-    schema_version: int = Field(default=ARTIFACT_SCHEMA_VERSION, frozen=True)
-    generated_at: str = Field(min_length=1)
-    digest: str = Field(min_length=1)
-    scenario: ScenarioSpec
-    strategies: list[EvalStrategyResult]
-    meta: dict[str, object] = Field(default_factory=dict)
-
-
-class EvalArtifactsIndexArtifact(_EvalArtifactsBaseModel):
-    schema_version: int = Field(default=ARTIFACT_SCHEMA_VERSION, frozen=True)
-    generated_at: str = Field(min_length=1)
-    strategies: list[StrategyInfo]
-    scenarios: list[ScenarioSpec]
-    meta: dict[str, object] = Field(default_factory=dict)
-
-
-def now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
-
-
-class _StrategyTimeout(BaseException):
-    pass
-
-
-@contextmanager
-def _timeout(seconds: float | None, *, message: str):
-    if seconds is None or seconds <= 0:
-        yield
-        return
-
-    if (
-        not hasattr(signal, "SIGALRM")
-        or not hasattr(signal, "setitimer")
-        or threading.current_thread() is not threading.main_thread()
-    ):
-        yield
-        return
-
-    def _handler(_signum: int, _frame: object | None) -> None:
-        raise _StrategyTimeout(message)
-
-    old_handler = signal.getsignal(signal.SIGALRM)
-    old_timer = signal.getitimer(signal.ITIMER_REAL)
-    signal.signal(signal.SIGALRM, _handler)
-    signal.setitimer(signal.ITIMER_REAL, seconds)
-    try:
-        yield
-    finally:
-        signal.setitimer(signal.ITIMER_REAL, old_timer[0], old_timer[1])
-        signal.signal(signal.SIGALRM, old_handler)
-
-
-def load_scenarios(path: str | PathLike[str]) -> list[ScenarioSpec]:
-    doc = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
-    parsed = ScenariosFile.model_validate(doc)
-    return parsed.scenarios
-
-
-def build_retrieval_request(
-    scenario: ScenarioSpec, *, k: int | None
-) -> RetrievalRequest:
-    lang = scenario.lang or "en"
-    context: list[ContextItem] = []
-
-    if scenario.chart and scenario.chart.uri:
-        context.append(
-            ImageItem(role="chart", uri=scenario.chart.uri, mime=scenario.chart.mime)
-        )
-
-    title = (scenario.title or "").strip()
-    if title:
-        context.append(TextItem(role="title", text=title, lang=lang))
-
-    situation = (scenario.designer_intent or "").strip()
-    if not situation:
-        raise ValueError(f"Scenario {scenario.id!r} is missing designer_intent.")
-
-    context.append(TextItem(role="intent", text=situation, lang=lang))
-    context.append(TextItem(role="chart_spec", text="{}", lang=lang))
-
-    for role, value in (
-        ("audience", scenario.audience),
-        ("medium", scenario.medium),
-        ("constraints", scenario.constraints),
-        ("domain", scenario.domain),
-        ("risk_tolerance", scenario.risk_tolerance),
-        ("time_budget", scenario.time_budget),
-    ):
-        text = (value or "").strip()
-        if text:
-            context.append(TextItem(role=role, text=text, lang=lang))
-
-    query = (scenario.query or "").strip()
-    if query:
-        context.append(TextItem(role="query", text=query, lang=lang))
-
-    return RetrievalRequest(
-        context=context,
-        lang=lang,
-        meta={"scenarioId": scenario.id},
-        k=k,
-    )
-
-
-def compute_digest(payload: object) -> str:
-    raw = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
-    return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
+from chartcoach.retrieval.strategy.base import RetrievalStrategy, StrategyInfo
+from chartcoach.retrieval.service.eval_artifacts_digests import (
+    build_bundle_digest,
+    compute_digest,
+    resolve_catalog_digest,
+    resolve_scenarios_digest,
+)
+from chartcoach.retrieval.service.eval_artifacts_schema import (
+    ARTIFACT_SCHEMA_VERSION,
+    EvalArtifactsIndexArtifact,
+    EvalEvidenceSnippet,
+    EvalGuidelineResult,
+    EvalScenarioBundleArtifact,
+    EvalStrategyResult,
+    ScenarioChart,
+    ScenarioProvenance,
+    ScenarioSpec,
+    ScenariosFile,
+    now_iso,
+)
+from chartcoach.retrieval.service.eval_artifacts_service import EvalArtifactsService
+from chartcoach.retrieval.service.eval_artifacts_store import (
+    delete_paths,
+    list_paths,
+    read_json,
+    write_json,
+)
 
 
 def _find_repo_root(start: Path) -> Path | None:
@@ -258,83 +101,6 @@ def resolve_repo_commit() -> str:
     return f"{short}-dirty" if dirty else short
 
 
-def _sha256_file(path: Path) -> str:
-    h = hashlib.sha256()
-    with path.open("rb") as f:
-        for chunk in iter(lambda: f.read(1024 * 1024), b""):
-            h.update(chunk)
-    return h.hexdigest()
-
-
-def resolve_catalog_digest(catalog_uri: str) -> str:
-    """Compute a stable digest for the catalog backing a run.
-
-    This is best-effort: for local paths and file:// URLs, hash file/directory
-    contents; for remote URIs, fall back to a digest of the URI string.
-    """
-
-    uri = str(catalog_uri or "").strip()
-    if not uri:
-        return "unknown"
-
-    parsed = urlparse(uri)
-    if parsed.scheme == "file":
-        path = Path(parsed.path)
-    elif parsed.scheme in {"", "s3"}:
-        path = Path(uri) if parsed.scheme == "" else None
-    else:
-        path = None
-
-    if path is None or not path.exists():
-        return compute_digest({"catalog_uri": uri})
-
-    if path.is_file():
-        return _sha256_file(path)[:16]
-
-    # Directory: prefer hashing a catalog parquet if present, otherwise hash the tree.
-    parquet = path / "catalog.parquet"
-    if parquet.exists() and parquet.is_file():
-        return _sha256_file(parquet)[:16]
-
-    h = hashlib.sha256()
-    for child in sorted(p for p in path.rglob("*") if p.is_file()):
-        rel = child.relative_to(path).as_posix().encode("utf-8")
-        h.update(rel)
-        h.update(b"\0")
-        h.update(_sha256_file(child).encode("utf-8"))
-        h.update(b"\0")
-    return h.hexdigest()[:16]
-
-
-def resolve_scenarios_digest(scenarios_path: Path) -> str:
-    """Compute a stable digest for the scenario spec file."""
-
-    try:
-        raw = scenarios_path.read_bytes()
-    except OSError:
-        return "unknown"
-    return hashlib.sha256(raw).hexdigest()[:16]
-
-
-def build_bundle_digest(
-    *,
-    scenario: ScenarioSpec,
-    catalog_uri: str,
-    strategy_ids: list[str],
-    k: int | None,
-    config: dict[str, object] | None = None,
-) -> str:
-    return compute_digest(
-        {
-            "scenario": scenario.model_dump(mode="json"),
-            "catalog_uri": catalog_uri,
-            "strategy_ids": strategy_ids,
-            "k": k,
-            "config": config or {},
-        }
-    )
-
-
 def resolve_artifacts_config(*, run_config: RetrievalRunConfig) -> dict[str, object]:
     """Resolve a non-secret configuration snapshot for digesting + debugging."""
 
@@ -342,58 +108,6 @@ def resolve_artifacts_config(*, run_config: RetrievalRunConfig) -> dict[str, obj
         "repo_commit": resolve_repo_commit(),
         **run_config.public_dict(),
     }
-
-
-def entry_score(index: int, total: int) -> float:
-    denom = max(1, total)
-    return max(0.01, 1.0 - (index / denom))
-
-
-def build_strategy_result(
-    *,
-    strategy_info: StrategyInfo,
-    response_catalog_entries: list[CatalogEntry],
-    response_meta: dict[str, object],
-) -> EvalStrategyResult:
-    total = len(response_catalog_entries)
-
-    try:
-        trace = StrategyTrace.model_validate(response_meta)
-    except ValidationError as e:
-        raise ValueError(
-            f"Strategy meta for {strategy_info.id!r} did not match the trace schema."
-        ) from e
-    hit_evidence: dict[str, list[EvalEvidenceSnippet]] = {}
-    for hit in trace.hits:
-        if not hit.evidence:
-            continue
-        hit_evidence[hit.id] = [
-            EvalEvidenceSnippet(
-                role=snippet.role, text=snippet.text, score=snippet.score
-            )
-            for snippet in hit.evidence
-        ]
-
-    guidelines = [
-        EvalGuidelineResult(
-            rank=index + 1,
-            score=entry_score(index, total),
-            entry=entry,
-            evidence=hit_evidence.get(entry.id) or None,
-        )
-        for index, entry in enumerate(response_catalog_entries)
-    ]
-
-    meta = dict(trace.model_dump(mode="json", exclude_none=True))
-    # `score` is currently a rank-derived placeholder, not a calibrated confidence.
-    meta.setdefault("score_kind", "rank_normalized")
-
-    return EvalStrategyResult(
-        strategy_id=strategy_info.id,
-        strategy_name=strategy_info.name,
-        meta=meta,
-        guidelines=guidelines,
-    )
 
 
 def build_scenario_bundle(
@@ -405,257 +119,53 @@ def build_scenario_bundle(
     strategy_timeout_seconds: float | None,
     config: dict[str, object] | None = None,
 ) -> EvalScenarioBundleArtifact:
-    strategy_ids = [strategy_info.id for strategy_info, _strategy in strategies]
-    digest = build_bundle_digest(
+    def _timeout_cm(seconds: float | None, message: str):  # noqa: ANN001
+        return _timeout(seconds, message=message)
+
+    return _builder.build_scenario_bundle(
         scenario=scenario,
         catalog_uri=catalog_uri,
-        strategy_ids=strategy_ids,
+        strategies=strategies,
         k=k,
+        strategy_timeout_seconds=strategy_timeout_seconds,
         config=config,
-    )
-
-    request = build_retrieval_request(scenario, k=k)
-    bundle_meta: dict[str, object] = {"config": config or {}}
-    for key in ("repo_commit", "catalog_digest", "scenario_digest"):
-        if config and key in config:
-            bundle_meta.setdefault(key, config[key])
-    results: list[EvalStrategyResult] = []
-
-    for strategy_info, strategy in strategies:
-        usage_snapshots = {
-            "lm_usage": _get_strategy_lm_history_snapshot(strategy, attr="_lm"),
-            "vlm_usage": _get_strategy_lm_history_snapshot(strategy, attr="_vlm"),
-            "status_lm_usage": _get_strategy_lm_history_snapshot(
-                strategy, attr="_status_lm"
-            ),
-        }
-        started = time.perf_counter()
-        try:
-            timeout_desc = (
-                "no-timeout"
-                if strategy_timeout_seconds is None
-                else f"{strategy_timeout_seconds:.0f}s"
-            )
-            with _timeout(
-                strategy_timeout_seconds,
-                message=(
-                    f"Timed out running strategy {strategy_info.id!r} for scenario"
-                    f" {scenario.id!r} after {timeout_desc}."
-                ),
-            ):
-                response = strategy(request=request)
-        except _StrategyTimeout as e:
-            elapsed_ms = int((time.perf_counter() - started) * 1000)
-            results.append(
-                EvalStrategyResult(
-                    strategy_id=strategy_info.id,
-                    strategy_name=strategy_info.name,
-                    meta={"error": str(e), "elapsed_ms": elapsed_ms},
-                    guidelines=[],
-                )
-            )
-            continue
-        except Exception as e:  # noqa: BLE001
-            elapsed_ms = int((time.perf_counter() - started) * 1000)
-            results.append(
-                EvalStrategyResult(
-                    strategy_id=strategy_info.id,
-                    strategy_name=strategy_info.name,
-                    meta={"error": str(e), "elapsed_ms": elapsed_ms},
-                    guidelines=[],
-                )
-            )
-            continue
-
-        elapsed_ms = int((time.perf_counter() - started) * 1000)
-        response_meta = dict(response.meta)
-        response_meta.setdefault("elapsed_ms", elapsed_ms)
-
-        for key, (lm, before_len) in usage_snapshots.items():
-            if lm is None or before_len is None:
-                continue
-            response_meta.setdefault(
-                key,
-                _extract_lm_usage_delta(lm=lm, before_len=before_len),
-            )
-        results.append(
-            build_strategy_result(
-                strategy_info=strategy_info,
-                response_catalog_entries=list(response.catalog.entries),
-                response_meta=response_meta,
-            )
-        )
-
-    return EvalScenarioBundleArtifact(
-        generated_at=now_iso(),
-        digest=digest,
-        scenario=scenario,
-        strategies=results,
-        meta=bundle_meta,
+        _timeout_cm=_timeout_cm,
+        _timeout_exc=_StrategyTimeout,
     )
 
 
-def _get_strategy_lm_history_snapshot(
-    strategy: RetrievalStrategy, *, attr: str = "_lm"
-) -> tuple[object | None, int | None]:
-    lm = getattr(strategy, attr, None)
-    history = getattr(lm, "history", None)
-    if not isinstance(history, list):
-        return None, None
-    return lm, len(history)
-
-
-def _extract_lm_usage_delta(*, lm: object, before_len: int) -> dict[str, object]:
-    history = getattr(lm, "history", None)
-    if not isinstance(history, list):
-        return {}
-
-    prompt_tokens = 0
-    completion_tokens = 0
-    total_tokens = 0
-    cost_usd = 0.0
-    has_cost = False
-    calls = 0
-
-    for entry in history[before_len:]:
-        if not isinstance(entry, dict):
-            continue
-        calls += 1
-
-        usage = entry.get("usage")
-        if isinstance(usage, dict):
-            prompt_tokens += int(usage.get("prompt_tokens") or 0)
-            completion_tokens += int(usage.get("completion_tokens") or 0)
-            total_tokens += int(usage.get("total_tokens") or 0)
-
-        cost = entry.get("cost")
-        if isinstance(cost, (int, float)):
-            cost_usd += float(cost)
-            has_cost = True
-
-    out: dict[str, object] = {
-        "calls": calls,
-        "prompt_tokens": prompt_tokens,
-        "completion_tokens": completion_tokens,
-        "total_tokens": total_tokens,
-    }
-    if has_cost:
-        out["cost_usd"] = cost_usd
-    return out
-
-
-def read_json(store: ObjectStore, path: str) -> dict[str, Any] | None:
-    try:
-        result = obstore.get(store, path)
-    except FileNotFoundError:
-        return None
-
-    raw = bytes(result.bytes()).decode("utf-8")
-    value = json.loads(raw)
-    if not isinstance(value, dict):
-        raise ValueError(f"Expected JSON object at {path!r}.")
-    return value
-
-
-def write_json(store: ObjectStore, path: str, value: dict[str, Any]) -> None:
-    data = json.dumps(value, ensure_ascii=False, sort_keys=True).encode("utf-8")
-    obstore.put(store, path, data)
-
-
-def list_paths(store: ObjectStore, *, prefix: str) -> list[str]:
-    items = obstore.list(store, prefix=prefix).collect()
-    return [item["path"] for item in items if isinstance(item.get("path"), str)]
-
-
-def delete_paths(store: ObjectStore, paths: Iterable[str]) -> None:
-    normalized = [p for p in paths if p]
-    if not normalized:
-        return
-    obstore.delete(store, normalized)
-
-
-class EvalArtifactsService:
-    def __init__(self, *, store: ObjectStore, retrieval: RetrievalService) -> None:
-        self._store = store
-        self._retrieval = retrieval
-
-    @staticmethod
-    def _bundle_has_errors(bundle: dict[str, Any]) -> bool:
-        strategies = bundle.get("strategies")
-        if not isinstance(strategies, list):
-            return False
-        for strategy in strategies:
-            if not isinstance(strategy, dict):
-                continue
-            meta = strategy.get("meta")
-            if isinstance(meta, dict) and meta.get("error"):
-                return True
-        return False
-
-    def purge(self, *, prefix: str = "") -> int:
-        paths = list_paths(self._store, prefix=prefix)
-        delete_paths(self._store, paths)
-        return len(paths)
-
-    def run(
-        self,
-        *,
-        scenarios_path: Path,
-        catalog_uri: str,
-        strategy_ids: Sequence[str] | None,
-        k: int | None,
-        run_config: RetrievalRunConfig,
-    ) -> None:
-        scenarios = load_scenarios(scenarios_path)
-
-        strategies = self._retrieval.instantiate_strategies(
-            catalog_uri=catalog_uri, strategy_ids=strategy_ids, run_config=run_config
-        )
-        # strategy ids are needed for stable digests even when some scenarios are skipped
-        resolved_strategy_ids = [info.id for info, _strategy in strategies]
-        config = resolve_artifacts_config(run_config=run_config)
-        config = {
-            **config,
-            "catalog_digest": resolve_catalog_digest(catalog_uri),
-            "scenario_digest": resolve_scenarios_digest(scenarios_path),
-        }
-
-        for scenario in scenarios:
-            digest = build_bundle_digest(
-                scenario=scenario,
-                catalog_uri=catalog_uri,
-                strategy_ids=resolved_strategy_ids,
-                k=k,
-                config=config,
-            )
-            bundle_path = f"bundles/{scenario.id}.json"
-            existing = read_json(self._store, bundle_path)
-            if (
-                existing
-                and existing.get("digest") == digest
-                and not self._bundle_has_errors(existing)
-            ):
-                continue
-
-            bundle = build_scenario_bundle(
-                scenario=scenario,
-                catalog_uri=catalog_uri,
-                strategies=strategies,
-                k=k,
-                strategy_timeout_seconds=run_config.strategy_timeout_seconds,
-                config=config,
-            )
-            write_json(self._store, bundle_path, bundle.model_dump(mode="json"))
-
-        index = EvalArtifactsIndexArtifact(
-            generated_at=now_iso(),
-            strategies=[info for info, _strategy in strategies],
-            scenarios=scenarios,
-            meta={
-                "config": config,
-                "repo_commit": config.get("repo_commit"),
-                "catalog_digest": config.get("catalog_digest"),
-                "scenario_digest": config.get("scenario_digest"),
-            },
-        )
-        write_json(self._store, "index.json", index.model_dump(mode="json"))
+__all__ = [
+    "ARTIFACT_SCHEMA_VERSION",
+    "EvalArtifactsIndexArtifact",
+    "EvalArtifactsService",
+    "EvalEvidenceSnippet",
+    "EvalGuidelineResult",
+    "EvalScenarioBundleArtifact",
+    "EvalStrategyResult",
+    "ScenarioChart",
+    "ScenarioProvenance",
+    "ScenarioSpec",
+    "ScenariosFile",
+    "build_bundle_digest",
+    "build_retrieval_request",
+    "build_scenario_bundle",
+    "build_strategy_result",
+    "compute_digest",
+    "delete_paths",
+    "entry_score",
+    "list_paths",
+    "load_scenarios",
+    "now_iso",
+    "read_json",
+    "resolve_artifacts_config",
+    "resolve_catalog_digest",
+    "resolve_repo_commit",
+    "resolve_scenarios_digest",
+    "write_json",
+    "_StrategyTimeout",
+    "_extract_lm_usage_delta",
+    "_find_repo_root",
+    "_get_strategy_lm_history_snapshot",
+    "_run_git",
+    "_timeout",
+]
