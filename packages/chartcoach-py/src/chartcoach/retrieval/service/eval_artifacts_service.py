@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
@@ -76,6 +77,13 @@ class EvalArtifactsService:
         if manifest:
             config["manifest"] = dict(manifest)
 
+        runtime_env: dict[str, object] = {}
+        dspy_cachedir = (
+            os.environ.get("DSP_CACHEDIR") or os.environ.get("DSPY_CACHEDIR") or ""
+        ).strip() or None
+        if dspy_cachedir:
+            runtime_env["dspy_cachedir"] = dspy_cachedir
+
         for scenario in scenarios:
             digest = build_bundle_digest(
                 scenario=scenario,
@@ -107,5 +115,6 @@ class EvalArtifactsService:
             scenarios=scenarios,
             strategies=strategies,
             config=config,
+            runtime_env=runtime_env,
         )
         write_json(self._store, "index.json", index.model_dump(mode="json"))

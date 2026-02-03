@@ -328,6 +328,7 @@ def build_artifacts_index(
     scenarios: list[ScenarioSpec],
     strategies: list[tuple[StrategyInfo, RetrievalStrategy]],
     config: dict[str, object],
+    runtime_env: dict[str, object] | None = None,
 ) -> EvalArtifactsIndexArtifact:
     return EvalArtifactsIndexArtifact(
         generated_at=now_iso(),
@@ -335,6 +336,7 @@ def build_artifacts_index(
         scenarios=scenarios,
         meta={
             "config": config,
+            "runtime_env": runtime_env or {},
             "repo_commit": config.get("repo_commit"),
             "catalog_digest": config.get("catalog_digest"),
             "scenario_digest": config.get("scenario_digest"),
