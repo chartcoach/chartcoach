@@ -5,9 +5,9 @@ Optimize for correctness, reproducibility, and clarity over “demo speed”.
 
 ## Workflow (Required)
 
-- Plan any non-trivial change (3+ steps, refactors, architectural decisions) in `tasks/todo.md`.
+- Plan any non-trivial change (3+ steps, refactors, architectural decisions) in `docs/plans/` (or `task_plan.md`).
 - Track progress by checking items off as you complete them.
-- After *any* correction or surprise, record the lesson in `tasks/lessons.md` as a guardrail.
+- After *any* correction or surprise, record the lesson in `notes.md` (or the relevant plan doc) as a guardrail.
 - Don’t mark work done until you can prove it with a command (tests/typecheck/build/UI smoke test as relevant).
 
 ## Repo Layout (Orientation)
