@@ -3,7 +3,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { env } from "@chartcoach/eval-ui/env";
-import { GuidelineRatingsExportV2Schema } from "@chartcoach/eval-ui/eval/guideline-ratings";
+import { EvalDataExportV1Schema } from "@chartcoach/eval-ui/eval/eval-data";
 import {
   getS3Client,
   normalizePrefix,
@@ -11,13 +11,13 @@ import {
   sendS3,
 } from "@chartcoach/eval-ui/eval/server/s3.server";
 
-const UploadGuidelineRatingsInputSchema = z.object({
+const UploadEvalDataInputSchema = z.object({
   deviceId: z.string().min(1),
-  export: GuidelineRatingsExportV2Schema,
+  export: EvalDataExportV1Schema,
   digest: z.string().min(1).optional(),
 });
 
-const DownloadGuidelineRatingsInputSchema = z.object({
+const DownloadEvalDataInputSchema = z.object({
   deviceId: z.string().min(1),
 });
 
@@ -25,15 +25,15 @@ function normalizeObjectKeyTimestamp(isoString: string) {
   return isoString.replaceAll(":", "-").replaceAll(".", "-");
 }
 
-export const uploadGuidelineRatingsExport = createServerFn({ method: "POST" })
-  .inputValidator((input) => UploadGuidelineRatingsInputSchema.parse(input))
+export const uploadEvalDataExport = createServerFn({ method: "POST" })
+  .inputValidator((input) => UploadEvalDataInputSchema.parse(input))
   .handler(async ({ data }) => {
     const prefix = normalizePrefix(env.S3_PREFIX);
     const safeDeviceId = encodeURIComponent(data.deviceId);
     const safeExportedAt = normalizeObjectKeyTimestamp(data.export.exportedAt);
     const digestSuffix = data.digest ? `-${data.digest.slice(0, 12)}` : "";
 
-    const key = `${prefix}guideline-ratings/v2/${safeDeviceId}/${safeExportedAt}${digestSuffix}.json`;
+    const key = `${prefix}eval-data/v1/${safeDeviceId}/${safeExportedAt}${digestSuffix}.json`;
 
     const cmd = new PutObjectCommand({
       Bucket: env.S3_BUCKET,
@@ -47,14 +47,14 @@ export const uploadGuidelineRatingsExport = createServerFn({ method: "POST" })
     return { key };
   });
 
-export const downloadLatestGuidelineRatingsExport = createServerFn({
+export const downloadLatestEvalDataExport = createServerFn({
   method: "POST",
 })
-  .inputValidator((input) => DownloadGuidelineRatingsInputSchema.parse(input))
+  .inputValidator((input) => DownloadEvalDataInputSchema.parse(input))
   .handler(async ({ data }) => {
     const prefix = normalizePrefix(env.S3_PREFIX);
     const safeDeviceId = encodeURIComponent(data.deviceId);
-    const objectPrefix = `${prefix}guideline-ratings/v2/${safeDeviceId}/`;
+    const objectPrefix = `${prefix}eval-data/v1/${safeDeviceId}/`;
 
     const pickLatest = (
       best: { Key?: string; LastModified?: Date } | null,
@@ -105,7 +105,7 @@ export const downloadLatestGuidelineRatingsExport = createServerFn({
       getS3Client({ forcePathStyle }).send(get),
     );
     const raw = await readObjectBody(objectResponse.Body);
-    const parsed = GuidelineRatingsExportV2Schema.parse(JSON.parse(raw));
+    const parsed = EvalDataExportV1Schema.parse(JSON.parse(raw));
 
     return {
       found: true as const,
