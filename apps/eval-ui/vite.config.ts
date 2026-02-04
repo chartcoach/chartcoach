@@ -17,6 +17,16 @@ const loadEnvFile = (process as NodeJS.Process & { loadEnvFile?: (path?: string)
   .loadEnvFile;
 if (typeof loadEnvFile === "function" && existsSync(repoEnvPath)) loadEnvFile(repoEnvPath);
 
+function parsePort(value: string | undefined, fallback: number) {
+  if (!value) return fallback;
+  const port = Number(value);
+  return Number.isFinite(port) ? port : fallback;
+}
+
+const devtoolsBusEnabled = process.env.TANSTACK_DEVTOOLS_EVENT_BUS !== "false";
+// Avoid collisions when multiple ChartCoach Vite dev servers run simultaneously (default is 42069).
+const devtoolsBusPort = parsePort(process.env.TANSTACK_DEVTOOLS_EVENT_BUS_PORT, 45_000);
+
 export default defineConfig({
   envDir: monorepoRoot,
   build: {
@@ -46,7 +56,12 @@ export default defineConfig({
     },
   },
   plugins: [
-    devtools(),
+    devtools({
+      eventBusConfig: {
+        enabled: devtoolsBusEnabled,
+        port: devtoolsBusPort,
+      },
+    }),
     nitro({
       rollupConfig: {
         onwarn(warning, warn) {
