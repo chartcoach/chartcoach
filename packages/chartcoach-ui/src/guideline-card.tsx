@@ -76,7 +76,10 @@ export function GuidelineCard({
   );
 
   return (
-    <Tag className={["guideline-card", className].filter(Boolean).join(" ")} data-labels={dataLabels}>
+    <Tag
+      className={["guideline-card", className].filter(Boolean).join(" ")}
+      data-labels={dataLabels}
+    >
       <div className="guideline-card__header">
         <div className="guideline-card__content">
           {meta ? <div className="guideline-card__meta">{meta}</div> : null}
@@ -86,7 +89,10 @@ export function GuidelineCard({
           {labels?.length ? (
             <ul className="guideline-labels" aria-label={labelsAriaLabel}>
               {labels.map((label, idx) => (
-                <li key={`${label.family?.text ?? "value"}:${label.value.text}:${idx}`} className="guideline-label">
+                <li
+                  key={`${label.family?.text ?? "value"}:${label.value.text}:${idx}`}
+                  className="guideline-label"
+                >
                   {label.family ? (
                     <>
                       {renderLabelLink(label.family, "guideline-label__key")}

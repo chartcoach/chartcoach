@@ -39,7 +39,6 @@ packages/*
 !packages/chartcoach-ui/**
 apps/*
 !apps/site/**
-!apps/eval-ui/**
 
 # Re-ignore build artifacts inside whitelisted paths (override allowlist above)
 apps/site/dist

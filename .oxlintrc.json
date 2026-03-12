@@ -2,23 +2,5 @@
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "jsPlugins": ["eslint-plugin-better-tailwindcss"],
   "ignorePatterns": ["**/node_modules/**", "**/dist/**", "**/.output/**", "**/nogit/**"],
-  "overrides": [
-    {
-      "files": ["apps/eval-ui/src/**/*.{ts,tsx,js,jsx}"],
-      "rules": {
-        "better-tailwindcss/no-conflicting-classes": [
-          "error",
-          { "entryPoint": "apps/eval-ui/src/styles.css" }
-        ],
-        "better-tailwindcss/no-duplicate-classes": [
-          "warn",
-          { "entryPoint": "apps/eval-ui/src/styles.css" }
-        ],
-        "better-tailwindcss/no-unnecessary-whitespace": [
-          "warn",
-          { "entryPoint": "apps/eval-ui/src/styles.css" }
-        ]
-      }
-    }
-  ]
+  "overrides": []
 }

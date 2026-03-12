@@ -4,7 +4,9 @@
   background: var(--cc-card-bg, transparent);
   padding: 0.95rem 1rem;
   box-shadow: none;
-  transition: background-color 120ms ease, border-color 120ms ease;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease;
 }
 
 .guideline-card:hover {
@@ -70,7 +72,10 @@ a.guideline-card__title:focus-visible {
 
 .guideline-card__desc {
   margin: 0.35rem 0 0.75rem;
-  color: var(--cc-card-desc-color, color-mix(in srgb, var(--cc-text, currentColor) 85%, transparent));
+  color: var(
+    --cc-card-desc-color,
+    color-mix(in srgb, var(--cc-text, currentColor) 85%, transparent)
+  );
   font-size: var(--cc-text-sm, 0.875rem);
   line-height: 1.55;
 }
