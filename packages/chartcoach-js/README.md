@@ -10,21 +10,20 @@ TypeScript/Node.js utilities to load and parse the Chartcoach guideline catalog:
 ```ts
 import { loadCatalogFromParquet } from "@chartcoach/catalog";
 import { loadCatalogFromFolder, loadCatalogFromParquetFile } from "@chartcoach/catalog/node";
-import { loadCatalogFromParquetBytes, loadCatalogFromParquetUrl } from "@chartcoach/catalog/browser";
+import {
+  loadCatalogFromParquetBytes,
+  loadCatalogFromParquetUrl,
+} from "@chartcoach/catalog/browser";
 
 // Environment-agnostic: provide an ArrayBuffer or AsyncBuffer
 const catalog = await loadCatalogFromParquet(arrayBuffer);
 
 // Node.js
 const fromFolder = await loadCatalogFromFolder("../../guidelines");
-const fromParquetFile = await loadCatalogFromParquetFile(
-	"../../guidelines/catalog.parquet",
-);
+const fromParquetFile = await loadCatalogFromParquetFile("../../guidelines/catalog.parquet");
 
 // Browser
-const fromParquetUrl = await loadCatalogFromParquetUrl(
-	"https://example.com/catalog.parquet",
-);
+const fromParquetUrl = await loadCatalogFromParquetUrl("https://example.com/catalog.parquet");
 
 // Browser (bytes)
 const bytes = await (await fetch("https://example.com/catalog.parquet")).arrayBuffer();
