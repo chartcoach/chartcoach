@@ -46,7 +46,7 @@ class Guideline(BaseModel):
         Returns:
             A list of GuidelineSection objects representing the structured sections of the guideline body.
         """
-        from .parse import parse_guideline_sections
+        from .utils import parse_guideline_sections
 
         return parse_guideline_sections(self.body)
 
@@ -56,7 +56,7 @@ class Guideline(BaseModel):
         Returns:
             The markdown string representation of the guideline.
         """
-        from .serialize import guideline_to_markdown
+        from .utils import guideline_to_markdown
 
         return guideline_to_markdown(self)
 

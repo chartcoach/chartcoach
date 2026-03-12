@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.19.4"
+__generated_with = "0.20.4"
 app = marimo.App(width="columns")
 
 
@@ -26,80 +26,11 @@ def _(
     tc_catalog,
 ):
     catalog = tc_catalog + prc_catalog + ch_catalog + dw_catalog + misc_catalog
-    catalog_df = catalog.df()
+    catalog_df = catalog.df
     catalog_df.write_parquet(REPO_ROOT / "guidelines" / "catalog.parquet")
-    catalog.write_folders(REPO_ROOT / "guidelines")
+    # catalog.write_folders(REPO_ROOT / "guidelines")
     catalog_df
     return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ### Summary Statistics
-
-    The bar chart below shows the number of guidelines extracted from each source category. These counts correspond to Table 1 in the paper.
-    """)
-    return
-
-
-@app.cell(hide_code=True)
-def _(alt, guidelines_with_source_df, mo):
-    guidelines_by_source_chart = alt.layer(
-        *[
-            alt.Chart(guidelines_with_source_df)
-            .mark_bar()
-            .encode(
-                x=alt.X("count()", title="Number of Guidelines"),
-                y=alt.Y("source", title="Source", sort="-x"),
-            ),
-            alt.Chart(guidelines_with_source_df)
-            .mark_text(align="left", dx=3)
-            .encode(
-                x=alt.X("count()", title="Number of Guidelines"),
-                y=alt.Y("source", title="Source", sort="-x"),
-                text=alt.Text("count()", format="d"),
-            ),
-        ]
-    )
-    mo.vstack(
-        [
-            mo.md("### Guidelines by Source"),
-            guidelines_by_source_chart,
-        ]
-    )
-    return
-
-
-@app.cell(hide_code=True)
-def _(catalogs_by_source, pl):
-    guidelines_with_source_df = pl.concat(
-        [
-            catalog.df().select(pl.lit(source).alias("source"), pl.all())
-            for source, catalog in catalogs_by_source.items()
-        ]
-    ).unique("id", maintain_order=True)
-    return (guidelines_with_source_df,)
-
-
-@app.cell(hide_code=True)
-def _(ch_catalog, dw_catalog, misc_catalog, prc_catalog, tc_catalog):
-    catalogs_by_source = {
-        "Collated Perception Knowledge": prc_catalog,
-        "Talking Charts": tc_catalog,
-        "Chartability Accessibility Standards": ch_catalog,
-        "Datawrapper Posts": dw_catalog,
-        "Cognitive Science & Perception Papers": misc_catalog,
-    }
-    return (catalogs_by_source,)
-
-
-@app.cell(hide_code=True)
-def _():
-    import altair as alt
-    import polars as pl
-
-    return alt, pl
 
 
 @app.cell(column=1, hide_code=True)
@@ -121,8 +52,8 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(
     Catalog,
-    DEFAULT_MODEL,
-    GUIDELINE_TEMPLATE_DIGEST,
+    DEFAULT_CLIENT_CONFIG,
+    MISC_PROMPT_DIGEST,
     itertools,
     misc_paper_to_catalog_entries,
     parallel_map,
@@ -132,7 +63,8 @@ def _(
     misc_tasks = [
         {
             "misc_item": item,
-            "model": DEFAULT_MODEL,
+            "model": DEFAULT_CLIENT_CONFIG["model"],
+            "reasoning": DEFAULT_CLIENT_CONFIG["reasoning"],
         }
         for item in processed_misc_items
     ]
@@ -146,13 +78,13 @@ def _(
                 "misc",
                 inp["model"],
                 inp["misc_item"]["data"]["DOI"],
-                GUIDELINE_TEMPLATE_DIGEST,
+                MISC_PROMPT_DIGEST,
             ]
         ),
     )
     misc_entries = list(itertools.chain.from_iterable(misc_entry_lists))
     misc_catalog = Catalog(misc_entries)
-    misc_catalog.df()
+    misc_catalog.df
     return (misc_catalog,)
 
 
@@ -160,6 +92,8 @@ def _(
 def _(
     CatalogEntry,
     GUIDELINE_TEMPLATE,
+    MISC_PROMPT_SPEC,
+    build_guideline_extraction_prompt,
     ccp,
     client,
     create_pdf_content_part,
@@ -171,6 +105,7 @@ def _(
     def misc_paper_to_catalog_entries(
         misc_item: dict,
         model: str,
+        reasoning: dict | None = None,
     ) -> list[CatalogEntry]:
         misc_item_title = misc_item["data"]["title"]
         item_bibtex = zot_item_bibtex(misc_item["data"]["key"])
@@ -178,6 +113,7 @@ def _(
 
         response = client.responses.create(
             model=model,
+            reasoning=reasoning,
             input=[
                 {
                     "role": "user",
@@ -191,23 +127,23 @@ def _(
                             "type": "input_text",
                             "text": "\n".join(
                                 [
-                                    "Your task is to convert all the knowledge it has into granular guidelines adhering to this template:",
+                                    "Your task is to convert the paper into directly actionable visualization guidelines adhering to this template:",
                                     fence(GUIDELINE_TEMPLATE, lang="md"),
                                 ]
                             ),
                         },
                         {
                             "type": "input_text",
-                            "text": "\n".join(
-                                [
-                                    "If content is not relevant for visualization design guidelines, respond with an empty string",
-                                    "Otherwise, make sure that each guideline's scope is well-defined, isolated, granular.",
-                                    "Strictly base each guideline on the evidence provided in the paper and nothing else.",
-                                    "Extract multiple guidelines if present. Output each in fenced ```md blocks separately.",
-                                    "Split different guidelines in the output by new lines, so they can be easily separated.",
-                                    f"In each guideline cite the paper as [@{item_citekey}] smoothly, naturally in the guideline body.",
-                                    "Never include the meta comments in the final output from the guideline template, only the section role annotations.",
-                                ]
+                            "text": build_guideline_extraction_prompt(
+                                evidence_scope=MISC_PROMPT_SPEC["evidence_scope"],
+                                cardinality_instruction=MISC_PROMPT_SPEC[
+                                    "cardinality_instruction"
+                                ],
+                                source_specific_rules=MISC_PROMPT_SPEC[
+                                    "source_specific_rules"
+                                ],
+                                required_citations=[f"[@{item_citekey}]"],
+                                allow_empty=MISC_PROMPT_SPEC["allow_empty"],
                             ),
                         },
                     ],
@@ -227,6 +163,33 @@ def _(
         ]
 
     return (misc_paper_to_catalog_entries,)
+
+
+@app.cell(hide_code=True)
+def _(prompt_contract_digest):
+    MISC_PROMPT_SPEC = {
+        "allow_empty": True,
+        "cardinality_instruction": (
+            "Extract multiple guidelines if present. "
+            "Output each in fenced ```md blocks separately, separated by blank lines."
+        ),
+        "evidence_scope": "Strictly base each guideline on the evidence provided in the paper and nothing else.",
+        "source_specific_rules": [
+            (
+                "Extract only findings whose design implication is clear enough "
+                "to support a concrete chart choice, critique check, or revision step."
+            ),
+            (
+                "Omit empirical observations that are interesting but "
+                "do not tell the practitioner what to choose, inspect, test, or change in a visualization."
+            ),
+        ],
+    }
+    MISC_PROMPT_DIGEST = prompt_contract_digest(
+        MISC_PROMPT_SPEC,
+        ["[@paper]"],
+    )
+    return MISC_PROMPT_DIGEST, MISC_PROMPT_SPEC
 
 
 @app.cell(hide_code=True)
@@ -263,8 +226,8 @@ def _(mo):
 def _(
     Catalog,
     DATAWRAPPER_POST_PDF_PATHS,
-    DEFAULT_MODEL,
-    GUIDELINE_TEMPLATE_DIGEST,
+    DATAWRAPPER_PROMPT_DIGEST,
+    DEFAULT_CLIENT_CONFIG,
     datawrapper_post_pdf_to_catalog_entries,
     itertools,
     parallel_map,
@@ -273,7 +236,8 @@ def _(
     dw_tasks = [
         {
             "post_pdf_path": post_pdf_path,
-            "model": DEFAULT_MODEL,
+            "model": DEFAULT_CLIENT_CONFIG["model"],
+            "reasoning": DEFAULT_CLIENT_CONFIG["reasoning"],
         }
         for post_pdf_path in DATAWRAPPER_POST_PDF_PATHS
     ]
@@ -286,21 +250,23 @@ def _(
             [
                 inp["model"],
                 inp["post_pdf_path"].stem,
-                GUIDELINE_TEMPLATE_DIGEST,
+                DATAWRAPPER_PROMPT_DIGEST,
             ]
         ),
     )
     dw_entries = list(itertools.chain.from_iterable(dw_entry_lists))
     dw_catalog = Catalog(dw_entries)
-    dw_catalog.df()
+    dw_catalog.df
     return (dw_catalog,)
 
 
 @app.cell(hide_code=True)
 def _(
     CatalogEntry,
+    DATAWRAPPER_PROMPT_SPEC,
     GUIDELINE_TEMPLATE,
     bibtexparser,
+    build_guideline_extraction_prompt,
     ccp,
     client,
     create_pdf_content_part,
@@ -312,6 +278,7 @@ def _(
     def datawrapper_post_pdf_to_catalog_entries(
         post_pdf_path: pathlib.Path,
         model: str,
+        reasoning: dict | None = None,
     ) -> list[CatalogEntry]:
         bibtex_entry = find_datawrapper_bibtex_entry_by_path(post_pdf_path)
         bibtex_entry_parsed = bibtexparser.loads(bibtex_entry).entries[0]
@@ -320,6 +287,7 @@ def _(
 
         response = client.responses.create(
             model=model,
+            reasoning=reasoning,
             input=[
                 {
                     "role": "user",
@@ -338,22 +306,25 @@ def _(
                             "type": "input_text",
                             "text": "\n\n".join(
                                 [
-                                    "Your task is to convert all the knowledge into a single guideline adhering to this template:",
+                                    "Your task is to convert the post into directly actionable visualization guidelines adhering to this template:",
                                     fence(GUIDELINE_TEMPLATE, lang="md"),
                                 ]
                             ),
                         },
                         {
                             "type": "input_text",
-                            "text": "\n".join(
-                                [
-                                    "Make sure that each guideline's scope is well-defined, isolated, granular.",
-                                    "Strictly base each guideline on the evidence provided in the blog post and nothing else.",
-                                    "Extract multiple guidelines if present. Output each in fenced ```md blocks separately.",
-                                    "Split different guidelines in the output by new lines, so they can be easily separated.",
-                                    f"In each guideline cite the blog post as [@{citekey}] smoothly, naturally in the guideline body.",
-                                    "Never include the meta comments in the final output from the guideline template, only the section role annotations.",
-                                ]
+                            "text": build_guideline_extraction_prompt(
+                                evidence_scope=DATAWRAPPER_PROMPT_SPEC[
+                                    "evidence_scope"
+                                ],
+                                cardinality_instruction=DATAWRAPPER_PROMPT_SPEC[
+                                    "cardinality_instruction"
+                                ],
+                                source_specific_rules=DATAWRAPPER_PROMPT_SPEC[
+                                    "source_specific_rules"
+                                ],
+                                required_citations=[f"[@{citekey}]"],
+                                allow_empty=DATAWRAPPER_PROMPT_SPEC["allow_empty"],
                             ),
                         },
                     ],
@@ -373,6 +344,30 @@ def _(
         ]
 
     return (datawrapper_post_pdf_to_catalog_entries,)
+
+
+@app.cell(hide_code=True)
+def _(prompt_contract_digest):
+    DATAWRAPPER_PROMPT_SPEC = {
+        "allow_empty": True,
+        "cardinality_instruction": (
+            "Extract multiple guidelines if present. "
+            "Output each in fenced ```md blocks separately, separated by blank lines."
+        ),
+        "evidence_scope": "Strictly base each guideline on the evidence provided in the blog post and nothing else.",
+        "source_specific_rules": [
+            "Extract reusable editorial heuristics rather than retelling the blog narrative.",
+            (
+                "Keep platform-specific advice only when it changes "
+                "a concrete visualization decision, critique step, or revision move."
+            ),
+        ],
+    }
+    DATAWRAPPER_PROMPT_DIGEST = prompt_contract_digest(
+        DATAWRAPPER_PROMPT_SPEC,
+        ["[@blog-post]"],
+    )
+    return DATAWRAPPER_PROMPT_DIGEST, DATAWRAPPER_PROMPT_SPEC
 
 
 @app.cell(hide_code=True)
@@ -429,9 +424,9 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(
     CHARTABILITY_ITEMS,
+    CHARTABILITY_PROMPT_DIGEST,
     Catalog,
-    DEFAULT_MODEL,
-    GUIDELINE_TEMPLATE_DIGEST,
+    DEFAULT_CLIENT_CONFIG,
     chartability_item_to_catalog_entry,
     json,
     parallel_map,
@@ -441,7 +436,8 @@ def _(
     ch_tasks = [
         {
             "ch_item": ch_item,
-            "model": DEFAULT_MODEL,
+            "model": DEFAULT_CLIENT_CONFIG["model"],
+            "reasoning": DEFAULT_CLIENT_CONFIG["reasoning"],
         }
         for ch_item in CHARTABILITY_ITEMS
     ]
@@ -453,12 +449,13 @@ def _(
         cache_key_provider=lambda inp: "___".join(
             [
                 string_hash(json.dumps(inp["ch_item"])),
-                GUIDELINE_TEMPLATE_DIGEST,
+                CHARTABILITY_PROMPT_DIGEST,
             ]
         ),
     )
+    ch_entries = [entry for entry in ch_entries if entry is not None]
     ch_catalog = Catalog(ch_entries)
-    ch_catalog.df()
+    ch_catalog.df
     return (ch_catalog,)
 
 
@@ -467,8 +464,10 @@ def _(
     CHARTABILITY_PAPER_BIBTEX,
     CHARTABILITY_PAPER_CITEKEY,
     CHARTABILITY_PAPER_ITEM,
+    CHARTABILITY_PROMPT_SPEC,
     CatalogEntry,
     GUIDELINE_TEMPLATE,
+    build_guideline_extraction_prompt,
     ccp,
     client,
     create_pdf_content_part,
@@ -479,9 +478,11 @@ def _(
     def chartability_item_to_catalog_entry(
         ch_item: dict,
         model: str,
-    ) -> CatalogEntry:
+        reasoning: dict | None = None,
+    ) -> CatalogEntry | None:
         response = client.responses.create(
             model=model,
+            reasoning=reasoning,
             input=[
                 {
                     "role": "user",
@@ -504,21 +505,25 @@ def _(
                             "type": "input_text",
                             "text": "\n\n".join(
                                 [
-                                    "Your task is to convert all the knowledge into a single guideline adhering to this template:",
+                                    "Your task is to convert this accessibility item into one directly actionable visualization guideline adhering to this template:",
                                     fence(GUIDELINE_TEMPLATE, lang="md"),
                                 ]
                             ),
                         },
                         {
                             "type": "input_text",
-                            "text": "\n".join(
-                                [
-                                    "Strictly base each guideline on the evidence provided in the structured knowledge and nothing else.",
-                                    "Output the response in fenced ```md and do not include anything else.",
-                                    "Always include relevant references smoothly into the text with the format [@citekey]. Strictly follow this format, do not deviate from it by adding anything extra into the brackets.",
-                                    f"In each guideline cite the collation paper [@{CHARTABILITY_PAPER_CITEKEY}] and the related references smoothly, naturally in the guideline body.",
-                                    "Never include the meta comments in the final output from the guideline template, only the section role annotations.",
-                                ]
+                            "text": build_guideline_extraction_prompt(
+                                evidence_scope=CHARTABILITY_PROMPT_SPEC[
+                                    "evidence_scope"
+                                ],
+                                cardinality_instruction=CHARTABILITY_PROMPT_SPEC[
+                                    "cardinality_instruction"
+                                ],
+                                source_specific_rules=CHARTABILITY_PROMPT_SPEC[
+                                    "source_specific_rules"
+                                ],
+                                required_citations=[f"[@{CHARTABILITY_PAPER_CITEKEY}]"],
+                                allow_empty=CHARTABILITY_PROMPT_SPEC["allow_empty"],
                             ),
                         },
                     ],
@@ -526,13 +531,44 @@ def _(
             ],
         )
         response_text = response.output_text
-        guideline_md = unfence(response_text)[0]
+        if not response_text.strip():
+            return None
+
+        fenced_guidelines = unfence(response_text)
+        if not fenced_guidelines:
+            return None
+
+        guideline_md = fenced_guidelines[0]
         guideline_obj = ccp.parse_guideline(guideline_md)
         references = [CHARTABILITY_PAPER_BIBTEX, *ch_item["references"]]
 
         return CatalogEntry(guideline=guideline_obj, references=references)
 
     return (chartability_item_to_catalog_entry,)
+
+
+@app.cell(hide_code=True)
+def _(prompt_contract_digest):
+    CHARTABILITY_PROMPT_SPEC = {
+        "allow_empty": True,
+        "cardinality_instruction": (
+            "Return exactly one fenced ```md block if the item supports one "
+            "directly actionable guideline. Otherwise, return an empty string."
+        ),
+        "evidence_scope": (
+            "Strictly base the guideline on the structured accessibility knowledge provided here and nothing else."
+        ),
+        "source_specific_rules": [
+            "Translate the accessibility criterion into concrete design actions, reviewer checks, or remediation steps.",
+            "Use the Chartability paper citation plus any directly relevant linked references from the provided item.",
+            "If the item describes a principle without a concrete chart change, critique procedure, or rework step, omit it.",
+        ],
+    }
+    CHARTABILITY_PROMPT_DIGEST = prompt_contract_digest(
+        CHARTABILITY_PROMPT_SPEC,
+        ["[@chartability-paper]"],
+    )
+    return CHARTABILITY_PROMPT_DIGEST, CHARTABILITY_PROMPT_SPEC
 
 
 @app.cell(hide_code=True)
@@ -576,9 +612,9 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(
+    COLLATED_PROMPT_DIGEST,
     Catalog,
-    DEFAULT_MODEL,
-    GUIDELINE_TEMPLATE_DIGEST,
+    DEFAULT_CLIENT_CONFIG,
     collated_item_to_catalog_entries,
     collated_perception_knowledge_items,
     itertools,
@@ -588,7 +624,8 @@ def _(
     prc_tasks = [
         {
             "collated_item": collated_item,
-            "model": DEFAULT_MODEL,
+            "model": DEFAULT_CLIENT_CONFIG["model"],
+            "reasoning": DEFAULT_CLIENT_CONFIG["reasoning"],
         }
         for collated_item in collated_perception_knowledge_items
     ]
@@ -601,23 +638,25 @@ def _(
             [
                 inp["model"],
                 inp["collated_item"]["data"]["DOI"],
-                GUIDELINE_TEMPLATE_DIGEST,
+                COLLATED_PROMPT_DIGEST,
             ]
         ),
     )
     prc_entries = list(itertools.chain.from_iterable(prc_entry_lists))
     prc_catalog = Catalog(prc_entries)
-    prc_catalog.df()
+    prc_catalog.df
     return (prc_catalog,)
 
 
 @app.cell(hide_code=True)
 def _(
+    COLLATED_PROMPT_SPEC,
     COLLATION_REVIEW_PAPER_BIBTEX,
     COLLATION_REVIEW_PAPER_CITEKEY,
     COLLATION_REVIEW_PAPER_ITEM,
     CatalogEntry,
     GUIDELINE_TEMPLATE,
+    build_guideline_extraction_prompt,
     ccp,
     client,
     create_pdf_content_part,
@@ -630,11 +669,13 @@ def _(
     def collated_item_to_catalog_entries(
         collated_item: dict,
         model: str,
+        reasoning: dict | None = None,
     ) -> list[CatalogEntry]:
         collated_item_citekey = zot_item_bibtex_key(collated_item["data"]["key"])
 
         response = client.responses.create(
             model=model,
+            reasoning=reasoning,
             input=[
                 {
                     "role": "user",
@@ -670,23 +711,26 @@ def _(
                             "type": "input_text",
                             "text": "\n".join(
                                 [
-                                    "Your task is to convert all the knowledge into granular guidelines adhering to this template:",
+                                    "Your task is to convert the structured graphical-perception knowledge into directly actionable visualization guidelines adhering to this template:",
                                     fence(GUIDELINE_TEMPLATE, lang="md"),
                                 ]
                             ),
                         },
                         {
                             "type": "input_text",
-                            "text": "\n".join(
-                                [
-                                    "Make sure that each guideline's scope is well-defined, isolated, granular.",
-                                    "Strictly base each guideline on the evidence provided in the structured knowledge and nothing else.",
-                                    "Extract multiple guidelines if present. Output each in fenced ```md blocks separately.",
-                                    "Split different guidelines in the output by new lines, so they can be easily separated.",
-                                    "Always include relevant references smoothly into the text with the format [@citekey]. Strictly follow this format, do not deviate from it by adding anything extra into the brackets.",
-                                    f"In each guideline cite both the collation review paper [@{COLLATION_REVIEW_PAPER_CITEKEY}] and the original paper [@{collated_item_citekey}] smoothly, naturally in the guideline body.",
-                                    "Never include the meta comments in the final output from the guideline template, only the section role annotations.",
-                                ]
+                            "text": build_guideline_extraction_prompt(
+                                evidence_scope=COLLATED_PROMPT_SPEC["evidence_scope"],
+                                cardinality_instruction=COLLATED_PROMPT_SPEC[
+                                    "cardinality_instruction"
+                                ],
+                                source_specific_rules=COLLATED_PROMPT_SPEC[
+                                    "source_specific_rules"
+                                ],
+                                required_citations=[
+                                    f"[@{COLLATION_REVIEW_PAPER_CITEKEY}]",
+                                    f"[@{collated_item_citekey}]",
+                                ],
+                                allow_empty=COLLATED_PROMPT_SPEC["allow_empty"],
                             ),
                         },
                     ],
@@ -710,6 +754,30 @@ def _(
         ]
 
     return (collated_item_to_catalog_entries,)
+
+
+@app.cell(hide_code=True)
+def _(prompt_contract_digest):
+    COLLATED_PROMPT_SPEC = {
+        "allow_empty": True,
+        "cardinality_instruction": (
+            "Extract multiple guidelines if present. "
+            "Output each in fenced ```md blocks separately, separated by blank lines."
+        ),
+        "evidence_scope": (
+            "Strictly base each guideline on the structured knowledge provided here. "
+            "Use the PDFs only to disambiguate wording or evidence and nothing else."
+        ),
+        "source_specific_rules": [
+            "Treat the structured knowledge as the primary signal.",
+            "Discard raw comparative findings unless they imply a concrete chart decision, critique check, or revision step.",
+        ],
+    }
+    COLLATED_PROMPT_DIGEST = prompt_contract_digest(
+        COLLATED_PROMPT_SPEC,
+        ["[@collation-review]", "[@original-paper]"],
+    )
+    return COLLATED_PROMPT_DIGEST, COLLATED_PROMPT_SPEC
 
 
 @app.cell(hide_code=True)
@@ -865,8 +933,8 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(
     Catalog,
-    DEFAULT_MODEL,
-    GUIDELINE_TEMPLATE_DIGEST,
+    DEFAULT_CLIENT_CONFIG,
+    TALKING_CHARTS_PROMPT_DIGEST,
     json,
     parallel_map,
     param_collapsed,
@@ -879,7 +947,8 @@ def _(
         {
             "guideline": guideline,
             "references": tc_references,
-            "model": DEFAULT_MODEL,
+            "model": DEFAULT_CLIENT_CONFIG["model"],
+            "reasoning": DEFAULT_CLIENT_CONFIG["reasoning"],
         }
         for guideline in tc_findings["guidelines"]
     ]
@@ -892,12 +961,13 @@ def _(
         cache_key_provider=lambda inp: "___".join(
             [
                 string_hash(json.dumps(inp)),
-                GUIDELINE_TEMPLATE_DIGEST,
+                TALKING_CHARTS_PROMPT_DIGEST,
             ]
         ),
     )
+    tc_entries = [entry for entry in tc_entries if entry is not None]
     tc_catalog = Catalog(tc_entries)
-    tc_catalog.df()
+    tc_catalog.df
     return (tc_catalog,)
 
 
@@ -917,14 +987,19 @@ def _(
         guideline: dict,
         references: list[str],
         model: str,
-    ) -> CatalogEntry:
+        reasoning: dict | None = None,
+    ) -> CatalogEntry | None:
         # Enumerate all the reference IDs available for Talking Charts
         allowed_ref_ids = list_ref_ids(references)
+        required_ref_ids = sorted(
+            list_tc_guideline_references(guideline, allowed_ref_ids)
+        )
 
         # Map knowledge to our representation
-        prompt = build_tc_prompt(guideline, allowed_ref_ids)
+        prompt = build_tc_prompt(guideline, required_ref_ids, allowed_ref_ids)
         response = client.responses.create(
             model=model,
+            reasoning=reasoning,
             input=[
                 {
                     "role": "user",
@@ -935,11 +1010,18 @@ def _(
         response_text = response.output_text
 
         # Parse response and associate the references with the entry
-        md_content = unfence(response_text)[0]
+        if not response_text.strip():
+            return None
+
+        fenced_guidelines = unfence(response_text)
+        if not fenced_guidelines:
+            return None
+
+        md_content = fenced_guidelines[0]
         guideline_obj: Guideline = ccp.parse_guideline(md_content)
         references: list[str] = ccp.parse_bibtex(
             pick_refs(
-                list_tc_guideline_references(guideline, allowed_ref_ids),
+                required_ref_ids,
                 references,
             )
         )
@@ -950,22 +1032,67 @@ def _(
 
 
 @app.cell(hide_code=True)
-def _(GUIDELINE_TEMPLATE, fence, prepare_guideline):
-    def build_tc_prompt(guideline: dict, allowed_ref_ids: list[str]) -> str:
+def _(prompt_contract_digest):
+    TALKING_CHARTS_PROMPT_SPEC = {
+        "allow_empty": True,
+        "cardinality_instruction": (
+            "Return exactly one fenced ```md block if the finding supports one directly actionable guideline. "
+            "Otherwise, return an empty string."
+        ),
+        "evidence_scope": "Strictly base the guideline on the codified knowledge provided here and nothing else.",
+        "source_specific_rules": [
+            (
+                "Translate rhetorical or interpretive findings into concrete framing, "
+                "annotation, titling, grouping, or revision guidance."
+            ),
+            "If the finding cannot be operationalized into chart creation, feedback, or rework, omit it.",
+        ],
+    }
+    TALKING_CHARTS_PROMPT_DIGEST = prompt_contract_digest(
+        TALKING_CHARTS_PROMPT_SPEC,
+        ["[@linked-study]"],
+    )
+    return TALKING_CHARTS_PROMPT_DIGEST, TALKING_CHARTS_PROMPT_SPEC
+
+
+@app.cell(hide_code=True)
+def _(
+    GUIDELINE_TEMPLATE,
+    TALKING_CHARTS_PROMPT_SPEC,
+    build_guideline_extraction_prompt,
+    fence,
+    prepare_guideline,
+):
+    def build_tc_prompt(
+        guideline: dict,
+        required_ref_ids: list[str],
+        allowed_ref_ids: list[str],
+    ) -> str:
         prepared_guideline = prepare_guideline(guideline, allowed_ref_ids)
+        required_citations = [f"[@{ref_id}]" for ref_id in required_ref_ids]
 
         return rf"""Peruse this codified piece of knowledge:
 
     {fence(prepared_guideline, lang="json")}
 
-    Your task is to convert it into this representation:
+    Your task is to convert it into one directly actionable visualization guideline in this representation:
 
     {fence(GUIDELINE_TEMPLATE, lang="md")}
 
-    The only comments you are allowed to include in the final output are the role-tagging comments after section headers.
-    Exclude comments both from the YAML frontmatter and from below the section headers too.
+    {
+            build_guideline_extraction_prompt(
+                evidence_scope=TALKING_CHARTS_PROMPT_SPEC["evidence_scope"],
+                cardinality_instruction=TALKING_CHARTS_PROMPT_SPEC[
+                    "cardinality_instruction"
+                ],
+                source_specific_rules=TALKING_CHARTS_PROMPT_SPEC[
+                    "source_specific_rules"
+                ],
+                required_citations=required_citations,
+                allow_empty=TALKING_CHARTS_PROMPT_SPEC["allow_empty"],
+            )
+        }
 
-    Make sure to smoothly reference all the linked studies in the suggested format.
     In the YAML frontmatter always add bibliography: `references.bib`.
 
     Respond only with the final converted guideline in markdown format, fenced, starting with "```md" and ending with "```".
@@ -1096,14 +1223,104 @@ def _(pathlib, string_hash):
     )
     GUIDELINE_TEMPLATE = GUIDELINE_TEMPLATE_PATH.read_text()
     GUIDELINE_TEMPLATE_DIGEST = string_hash(GUIDELINE_TEMPLATE)
-    DEFAULT_MODEL = "gpt-5.2"
+    DEFAULT_CLIENT_CONFIG = {
+        "model": "gpt-5.4",
+        "reasoning": {"effort": "high"},
+    }
     return (
         ASSETS_ROOT,
-        DEFAULT_MODEL,
+        DEFAULT_CLIENT_CONFIG,
         GUIDELINE_TEMPLATE,
         GUIDELINE_TEMPLATE_DIGEST,
         REPO_ROOT,
     )
+
+
+@app.cell(hide_code=True)
+def _(GUIDELINE_TEMPLATE_DIGEST, string_hash):
+    WORKFLOW_LABELS = [
+        "workflow:create",
+        "workflow:feedback",
+        "workflow:rework",
+    ]
+
+    def build_guideline_extraction_prompt(
+        *,
+        evidence_scope: str,
+        cardinality_instruction: str,
+        source_specific_rules: list[str],
+        required_citations: list[str],
+        allow_empty: bool = True,
+    ) -> str:
+        lines = [
+            "Only extract guidelines that are directly actionable during visualization creation from scratch, feedback on an existing visualization, or rework of an existing visualization.",
+        ]
+
+        if allow_empty:
+            lines.append(
+                "If the source material cannot be translated into directly actionable visualization guidance, respond with an empty string."
+            )
+
+        lines.extend(
+            [
+                cardinality_instruction,
+                evidence_scope,
+                "Each emitted guideline is well-defined, isolated, and granular.",
+                "A valid guideline changes a concrete chart decision, critique step, or revision step that a practitioner can apply without rereading the source.",
+                "Reject candidates that only summarize theory, taxonomy, historical context, methodology, study setup, or narrative commentary.",
+                "Reject candidates that are visualization-relevant but do not tell the practitioner what to choose, inspect, test, or change in a chart.",
+                "Operationalize descriptive findings in the form 'When [condition], do [change] to achieve [goal].' If that rewrite is not supported by the source, omit the candidate.",
+                "Prefer guidance that changes a concrete design lever such as chart type, encoding, scale, ordering, grouping, titling, annotation, labeling, legend design, layout, interaction, accessibility treatment, or rhetorical framing that can be implemented in a chart.",
+                f"Every emitted guideline includes at least one workflow label from: {', '.join(WORKFLOW_LABELS)}.",
+                "Multiple workflow labels are used only when the same guideline genuinely supports multiple workflows.",
+                "The title is a specific imperative action on a concrete chart or design object.",
+                "The description states the action, benefit, and triggering situation.",
+                "The `check` section contains an observable failure sign and a concrete review procedure that a reviewer can run.",
+                "The `fix` section consists of concrete edit operations, not abstract restatements of the advice.",
+                "Bad candidate: 'Color affects interpretation.' Good candidate: 'Use a colorblind-safe sequential palette when color encodes magnitude and hue identity is not the message.'",
+                "Bad candidate: 'Crowding hurts readability.' Good candidate: 'Reduce mark density or split the display into small multiples when crowding prevents item-level reading.'",
+                *source_specific_rules,
+                "Place all citekeys only in the `reason` section under `**Evidence:**`.",
+                "Never place citekeys in advice, context, exceptions, costs, mistakes, check, or fix.",
+                "Do not repeat the same citekey within a section. If one source supports multiple points, synthesize them into one evidence span and cite it once.",
+                "Use only the exact citekey format [@citekey]. Do not add anything else inside the brackets.",
+            ]
+        )
+
+        if required_citations:
+            if len(required_citations) == 1:
+                lines.append(
+                    f"Required citation for every emitted guideline: {required_citations[0]}."
+                )
+            else:
+                lines.append(
+                    "Required citations for every emitted guideline: "
+                    + ", ".join(required_citations[:-1])
+                    + f", and {required_citations[-1]}."
+                )
+
+        lines.append(
+            "Never include the meta comments in the final output from the guideline template, only the section role annotations."
+        )
+        return "\n".join(lines)
+
+    def prompt_contract_digest(spec: dict, required_citations: list[str]) -> str:
+        return string_hash(
+            "\n\n".join(
+                [
+                    GUIDELINE_TEMPLATE_DIGEST,
+                    build_guideline_extraction_prompt(
+                        evidence_scope=spec["evidence_scope"],
+                        cardinality_instruction=spec["cardinality_instruction"],
+                        source_specific_rules=spec["source_specific_rules"],
+                        required_citations=required_citations,
+                        allow_empty=spec["allow_empty"],
+                    ),
+                ]
+            )
+        )
+
+    return build_guideline_extraction_prompt, prompt_contract_digest
 
 
 @app.cell(hide_code=True)
@@ -1134,14 +1351,83 @@ def _(Catalog, fence, mo):
 
 @app.cell(hide_code=True)
 def _():
-    from chartcoach.utils.text import fence, string_hash, unfence
+    import hashlib
+    import re
+
+    def fence(text: str, lang: str = "json") -> str:
+        return f"```{lang}\n{text}\n```"
+
+    def unfence(text: str) -> list[str]:
+        pattern = r"```(?:\w+)?\n(.*?)\n```"
+        return [match.strip() for match in re.findall(pattern, text, re.DOTALL)]
+
+    def string_hash(text: str) -> str:
+        return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
     return fence, string_hash, unfence
 
 
 @app.cell(hide_code=True)
-def _():
-    from chartcoach.cataloging.parallel import parallel_map, param_collapsed
+def _(json):
+    from collections.abc import Callable, Iterable, Mapping
+    from typing import Any, TypeVar
+
+    import diskcache
+    from joblib import Parallel, delayed
+    from tenacity import retry, stop_after_attempt, wait_fixed
+    from tqdm.auto import tqdm
+
+    T = TypeVar("T")
+    R = TypeVar("R")
+
+    def parallel_map(
+        fn: Callable[[T], R],
+        inputs: Iterable[T],
+        *,
+        n_jobs: int = -1,
+        backend: str = "threading",
+        desc: str | None = None,
+        cache_dir: str | None = ".cache",
+        cache_key_provider: Callable[[T], str] | None = None,
+    ) -> list[R]:
+        inputs_list = list(inputs)
+        cache = diskcache.Cache(cache_dir) if cache_dir else None
+
+        with tqdm(total=len(inputs_list), desc=desc) as pbar:
+
+            @retry(wait=wait_fixed(1), stop=stop_after_attempt(3), reraise=True)
+            def _wrapper(inp: T) -> R:
+                cache_key: str | None = None
+                if cache is not None:
+                    cache_key = (
+                        json.dumps(inp, sort_keys=True, default=str)
+                        if cache_key_provider is None
+                        else cache_key_provider(inp)
+                    )
+                    cached = cache.get(cache_key)
+                    if cached is not None:
+                        pbar.update(1)
+                        return cached
+
+                result = fn(inp)
+
+                if cache is not None and cache_key is not None:
+                    cache.set(cache_key, result)
+
+                pbar.update(1)
+                return result
+
+            return list(
+                Parallel(n_jobs=n_jobs, backend=backend, return_as="generator")(
+                    delayed(_wrapper)(inp) for inp in inputs_list
+                )
+            )
+
+    def param_collapsed(fn: Callable[..., R]) -> Callable[[Mapping[str, Any]], R]:
+        def wrapped(item: Mapping[str, Any]) -> R:
+            return fn(**item)
+
+        return wrapped
 
     return parallel_map, param_collapsed
 
@@ -1180,9 +1466,8 @@ def _():
 
     import marimo as mo
 
-    from chartcoach.catalog import Catalog
-    from chartcoach.catalog.model import CatalogEntry, Guideline
-    import chartcoach.catalog.parse as ccp
+    from chartcoach import Catalog, CatalogEntry, Guideline
+    import chartcoach.utils as ccp
 
     return Catalog, CatalogEntry, Guideline, ccp, json, mo, pathlib
 

@@ -1,5 +1,15 @@
-from __future__ import annotations
+from importlib.metadata import version
+from .catalog import Catalog
+from .model import CatalogEntry, Guideline, GuidelineSection
+from .index import CatalogIndex
 
-__all__ = ["__version__"]
+__version__ = version("chartcoach")
 
-__version__ = "0.1.0"
+__all__ = [
+    "__version__",
+    "Catalog",
+    "CatalogEntry",
+    "CatalogIndex",
+    "Guideline",
+    "GuidelineSection",
+]

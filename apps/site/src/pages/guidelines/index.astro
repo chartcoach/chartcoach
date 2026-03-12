@@ -2,7 +2,7 @@
 import { getCollection } from "astro:content";
 import StarlightPage from "@astrojs/starlight/components/StarlightPage.astro";
 import { encodeGuidelineLabelQueryValue, parseGuidelineLabel } from "@chartcoach/site/lib/guidelines/labels";
-import { GuidelineCard } from "@chartcoach/ui";
+import GuidelineCard from "@chartcoach/site/components/guidelines/GuidelineCard.astro";
 
 const guidelines = (await getCollection("guidelines")).sort((a, b) =>
 	(a.data.title ?? a.id).localeCompare(b.data.title ?? b.id),
@@ -71,13 +71,13 @@ const allFamilies = Array.from(familySet).sort((a, b) => a.localeCompare(b));
 			</form>
 		</div>
 
-			<div class="guidelines-filters" id="guidelines-filters" hidden>
-				<span class="guidelines-filters__label">Filters:</span>
-				<ul class="guidelines-filters__list" id="guidelines-filters-list"></ul>
-				<button class="guidelines-filters__clear" type="button" id="guidelines-filters-clear">
-					Clear
-				</button>
-			</div>
+		<div class="guidelines-filters" id="guidelines-filters" hidden>
+			<span class="guidelines-filters__label">Filters:</span>
+			<ul class="guidelines-filters__list" id="guidelines-filters-list"></ul>
+			<button class="guidelines-filters__clear" type="button" id="guidelines-filters-clear">
+				Clear
+			</button>
+		</div>
 
 		<ul class="guidelines-grid" id="guidelines-grid">
 			{
@@ -91,26 +91,25 @@ const allFamilies = Array.from(familySet).sort((a, b) => a.localeCompare(b));
 
 					return (
 						<GuidelineCard
-							as="li"
 							dataLabels={cardLabels}
 							href={`/guidelines/${g.id}/`}
 							title={title}
 							description={description || undefined}
-								labels={labelsShown.map((label) => {
-									const parsed = parseGuidelineLabel(label);
+							labels={labelsShown.map((label) => {
+								const parsed = parseGuidelineLabel(label);
 
-									if (parsed.family) {
-										const familyLower = parsed.familyLower ?? parsed.family.toLowerCase();
+								if (parsed.family) {
+									const familyLower = parsed.familyLower ?? parsed.family.toLowerCase();
 
-										return {
-											family: {
-												text: parsed.family,
-												href: `/guidelines/?label=${encodeURIComponent(encodeGuidelineLabelQueryValue(familyLower))}`,
-												filterValue: familyLower,
-												title: `Filter: ${parsed.family}`,
-											},
-											value: {
-												text: parsed.value,
+									return {
+										family: {
+											text: parsed.family,
+											href: `/guidelines/?label=${encodeURIComponent(encodeGuidelineLabelQueryValue(familyLower))}`,
+											filterValue: familyLower,
+											title: `Filter: ${parsed.family}`,
+										},
+										value: {
+											text: parsed.value,
 											href: `/guidelines/?label=${encodeURIComponent(encodeGuidelineLabelQueryValue(parsed.fullLower))}`,
 											filterValue: parsed.fullLower,
 											title: `Filter: ${parsed.full}`,
@@ -134,12 +133,12 @@ const allFamilies = Array.from(familySet).sort((a, b) => a.localeCompare(b));
 			}
 		</ul>
 
-			<script
-				is:inline
-				type="application/json"
-				id="guidelines-label-suggestions-data"
-				set:html={JSON.stringify({ families: allFamilies, labels: allLabels })}
-			></script>
-			<script src="@chartcoach/site/scripts/guidelines/label-filters.entry.ts"></script>
-		</div>
-	</StarlightPage>
+		<script
+			is:inline
+			type="application/json"
+			id="guidelines-label-suggestions-data"
+			set:html={JSON.stringify({ families: allFamilies, labels: allLabels })}
+		></script>
+		<script src="@chartcoach/site/scripts/guidelines/label-filters.entry.ts"></script>
+	</div>
+</StarlightPage>
