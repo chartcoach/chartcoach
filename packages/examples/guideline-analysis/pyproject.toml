@@ -5,7 +5,9 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+  "anywidget>=0.9.21",
   "chartcoach",
+  "embedding-atlas>=0.18.0",
   "marimo",
   "nest-asyncio>=1.6.0",
   "scikit-learn>=1.8.0",

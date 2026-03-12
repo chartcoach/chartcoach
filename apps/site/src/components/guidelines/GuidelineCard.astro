@@ -1,0 +1,110 @@
+---
+type GuidelineCardLabelLink = {
+  text: string;
+  href?: string;
+  filterValue?: string;
+  title?: string;
+};
+
+type GuidelineCardLabel = {
+  family?: GuidelineCardLabelLink;
+  value: GuidelineCardLabelLink;
+};
+
+interface Props {
+  href: string;
+  title: string;
+  description?: string;
+  dataLabels?: string;
+  labels: GuidelineCardLabel[];
+  labelsRemaining?: number;
+}
+
+const { href, title, description, dataLabels, labels = [], labelsRemaining } = Astro.props as Props;
+---
+
+<li class="guideline-card" data-labels={dataLabels}>
+  <div class="guideline-card__header">
+    <div class="guideline-card__content">
+      <a class="guideline-card__title" href={href}>
+        {title}
+      </a>
+      {description ? <p class="guideline-card__desc">{description}</p> : null}
+
+      {labels.length ? (
+        <ul class="guideline-labels" aria-label="Guideline labels">
+          {labels.map((label) => (
+            <li class="guideline-label">
+              {label.family ? (
+                <>
+                  {label.family.href ? (
+                    <a
+                      class="guideline-label__key"
+                      href={label.family.href}
+                      data-filter-value={label.family.filterValue}
+                      title={label.family.title}
+                    >
+                      {label.family.text}
+                    </a>
+                  ) : (
+                    <span
+                      class="guideline-label__key"
+                      data-filter-value={label.family.filterValue}
+                      title={label.family.title}
+                    >
+                      {label.family.text}
+                    </span>
+                  )}
+                  <span class="guideline-label__sep">:</span>
+                  {label.value.href ? (
+                    <a
+                      class="guideline-label__value"
+                      href={label.value.href}
+                      data-filter-value={label.value.filterValue}
+                      title={label.value.title}
+                    >
+                      {label.value.text}
+                    </a>
+                  ) : (
+                    <span
+                      class="guideline-label__value"
+                      data-filter-value={label.value.filterValue}
+                      title={label.value.title}
+                    >
+                      {label.value.text}
+                    </span>
+                  )}
+                </>
+              ) : label.value.href ? (
+                <a
+                  class="guideline-label__value"
+                  href={label.value.href}
+                  data-filter-value={label.value.filterValue}
+                  title={label.value.title}
+                >
+                  {label.value.text}
+                </a>
+              ) : (
+                <span
+                  class="guideline-label__value"
+                  data-filter-value={label.value.filterValue}
+                  title={label.value.title}
+                >
+                  {label.value.text}
+                </span>
+              )}
+            </li>
+          ))}
+          {labelsRemaining ? (
+            <li
+              class="guideline-label guideline-label--more"
+              aria-label={`${labelsRemaining} more labels`}
+            >
+              +{labelsRemaining.toLocaleString()}
+            </li>
+          ) : null}
+        </ul>
+      ) : null}
+    </div>
+  </div>
+</li>

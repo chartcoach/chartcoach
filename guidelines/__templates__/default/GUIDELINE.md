@@ -2,235 +2,161 @@
 # PERMANENT ID: URL-friendly kebab-case.
 id: "unique-guideline-slug"
 
-# TITLE: A highly specific, imperative command (include the condition if needed).
-# Avoid vague titles like "Use Color Carefully". Prefer "Use a diverging palette only for signed data (with a meaningful zero)".
-title: "Strong Action Verb Object (With Condition)"
+# TITLE: Specific imperative instruction. Name the design lever and condition plainly.
+title: "Use a precise action when the condition is met"
 
-# METADATA:
+# METADATA
 bibliography: references.bib
-description: "A single-sentence summary for search results."
+description: "One-sentence summary for retrieval, ranking, and disambiguation."
 
-# LABELS: DISCOVERY & FILTERING
-# Use the standard categories below to ensure your guideline is found in common searches.
-# You are also free to add CUSTOM tags for your specific domain (e.g., tool:tableau, industry:finance).
+# LABELS: High-signal key:value tags for filtering and retrieval.
 labels:
-  - "chart:[type]" # e.g., chart:bar, chart:scatter
-  - "task:[action]" # e.g., task:compare, task:rank
-  - "visual:[channel]" # e.g., visual:color, visual:position
-  - "impact:[goal]" # e.g., impact:clarity, impact:accessibility
-  - "data:[type]" # e.g., data:temporal, data:categorical
-  - "audience:[group]" # e.g., audience:novice, audience:expert
-  - "[custom]:[value]" # e.g., complexity:advanced, tool:tableau, industry:finance
+  - "chart:[type]"
+  - "task:[action]"
+  - "visual:[channel]"
+  - "impact:[goal]"
+  - "data:[type]"
+  - "audience:[group]"
+  - "workflow:[create|feedback|rework]"
+  - "[custom]:[value]"
 ---
 
 <!--
-  AUTHORING TIP: MAKE IT ACCESSIBLE + MAKE IT SEPARABLE
-
-  Accessibility (baseline)
-  - Write so a reader can understand it without seeing a figure: avoid "above/below/left/right" references.
-  - Prefer plain language, short sentences, and concrete terms; define jargon.
-  - Use consistent terminology (same concept, same words) so retrieval works.
-
-  Embeddability (section self-contained)
-  - Assume sections are embedded without their heading: the section body must be meaningful without the title.
-  - Put the key subject in the first sentence (e.g., the encoding, chart type, task, or constraint) rather than relying on the heading for context.
-
-  Abbreviations / acronyms (body text)
-  - On first use in the BODY, expand each abbreviation once: "Full Term (ABBR)". Use ABBR after.
-  - It's fine to use ABBR in the title/slug/labels, but do not assume readers know it in the body.
-
-  List formatting
-  - Never use numbered lists anywhere in the guideline. Use bullets only.
-  - Prefer short paragraphs over bullets unless list structure improves comparability (Context, Exceptions, Mistakes, Fix).
-
-  Lint checklist (quick)
-  - Advice section is 1–2 sentences, with no lists and no citekeys.
-  - Citekeys ([@...]) appear only in Logic → **Evidence:**.
-  - Exceptions and Mistakes use single-line items with: “Break it when … Why …” / “Mistake … Why it fails …” (use bullets only if you have multiple items).
-  - Every H2 title is content-specific (do not leave bracket placeholders or generic headings).
-
-  Citations / citekeys ([@...])
-  - In the body, do not sprinkle citekeys throughout the guideline.
-  - Prefer putting all in-body citekeys ONLY in the Logic section under **Evidence:**.
-  - If a non-Logic section truly needs a citekey (rare), move that claim into Logic instead.
-  - Do not write meta-attribution about the source (paper/blog post/authors) or attribution verbs (states/claims/argues). State the claim directly, then cite it.
-    - Example: "X improves Y under condition Z. [@citekey]"
-
-  Section titles (for the static site TOC)
-  - Do NOT leave headings as "The Rule", "The Logic", etc.
-  - Rename every H2 heading to be content-specific (include the key concept from the title).
-  - Keep the role annotation exactly: `<!-- role: ... -->`.
-
-Role purity (semantic separation)
-To make this useful for AI, keep each section pure.
-
-- Don't put "Why" in the "Advice" section.
-- Don't put "Exceptions" in the "Context" section.
-- Trust the structure.
-  -->
-
-## [Rule: Specific, content-based heading] <!-- role: advice -->
-
-<!--
-  GOAL: A delightful, scannable command that embeds cleanly.
-
-  FORMAT
-  - Start with a single imperative sentence (no rationale, no citations).
-  - Optionally add ONE short clarifying sentence (still no rationale, no citations).
-  - Do not use lists here (no bullets, no numbering).
-  - Keep it specific enough to act on without reading the rest.
-
-  EXAMPLE (turn checklist-y guidance into text)
-  Bad: "Use X. Don't use Y. Choose Z. Apply cutoff T."
-  Good: "Use X when Y. If T, switch to Z instead."
-
-  DON'T
-  - Explain "why" (belongs in The Logic).
-  - List edge cases (belongs in When to Break It).
-  - Add citekeys here (keep citekeys in Logic → Evidence).
+STRICT CONTRACT
+- This document records one directly actionable visualization guideline.
+- The language is clear, direct, precise, and accessible. It avoids fluff, hype, academic padding, and narrative source attribution.
+- Technical terms appear only when they add meaning. When a technical term is needed, it is used plainly and consistently.
+- Each section is semantically pure, self-contained, and efficient for embedding. The first sentence names the concrete chart element, encoding, task, audience, or constraint directly.
+- The same design lever is named with the same words across sections. Decorative synonyms and pronoun-only openings are avoided.
+- Each sentence carries one main idea. Stacked caveats and abstract framing are kept out of the section body.
+- The H2 titles are content-specific and name the actual concept rather than generic placeholders such as "Rule" or "Logic".
+- Citekeys appear only in the reason section, only inside **Evidence:**, and each citekey appears at most once within that section.
+- If one source supports multiple points, those points are synthesized into one evidence span and cited once.
+- All non-reason sections contain zero citekeys.
+- Advice and mistakes use mirrored vocabulary when they address the same design lever. Context and exceptions describe the same situation space from different sides. Fixes remain concrete enough to compare against mistakes and alternative fixes.
+- The label set includes at least one workflow label when the guideline is generated for create, feedback, or rework retrieval.
+- The generated output retains only the role comments after headings; all other comments are omitted.
 -->
 
-[Write the rule here in 1–2 sentences.]
-
-## [Logic: Why this works here] <!-- role: reason -->
+## [Specific advice heading about X] <!-- role: advice -->
 
 <!--
-  GOAL: Explain the mechanism without leaking advice/context.
-
-  FORMAT
-  - 1 short paragraph describing the mechanism.
-  - Then 1–3 short labeled paragraphs: **Mechanism:** / **Evidence:** / **Notes:**.
-  - Evidence is 1–2 short sentences: summarize the key result and, if helpful, name the evidence type (experiment, observational study, systematic review, standard) without referencing the paper/blog/authors.
-  - End each Evidence sentence with one or more citekeys like `[@key1; @key2]` (multiple citekeys are common).
-
-  DON'T
-  - Repeat the rule verbatim.
-  - Introduce new conditions (belongs in Where to Apply / When to Break It).
-  - Write placeholders like "(No linked studies provided.)"; add a source to `references.bib` instead (paper, standard, blog, or internal memo).
-  - Attribute claims to the source ("the paper/blog post says..."); keep Evidence phrased as direct statements with citekeys at the end.
+Section form:
+- 1-2 imperative sentences.
+- The first sentence names one controllable design lever directly.
+- The structure is action + object + condition or goal.
+- Multi-part recommendations appear only when the parts are inseparable.
+- No rationale.
+- No citations.
+- No lists.
 -->
 
-Explain the principle at work here. Connect the rule to human perception or clear communication.
+[1-2 imperative sentences naming one concrete design move.]
 
-**Mechanism:** [What changes in perception/interpretation when the rule is followed?]
-
-**Evidence:** [Write 1–2 sentences and end each with citekeys, e.g., "Viewers were faster/more accurate with X than Y under condition Z [@key1]. This direction holds across related tasks in synthesized evidence [@key2]."]
-
-**Notes:** [Optional: clarifying nuance that is not an exception.]
-
-## [Context: When this applies] <!-- role: context -->
+## [Specific evidence heading about why X works] <!-- role: reason -->
 
 <!--
-  GOAL: Define the triggering situation as a schema.
-
-  FORMAT
-  - No prose-only paragraphs. Use keyed bullets so this section embeds as "situation" not "argument".
-  - Prefer observable signals (about the data/task/chart) over intentions.
-
-  DON'T
-  - Explain why the rule works (belongs in The Logic).
-  - List break-glass edge cases (belongs in When to Break It).
-  - Add citekeys here (keep citekeys in Logic → Evidence).
+Section form:
+- One short mechanism paragraph.
+- One **Mechanism:** field.
+- One **Evidence:** field.
+- One optional **Notes:** field.
+- Concrete reader, task, or interpretation language rather than abstract scientific phrasing.
+- Direct claims rather than source-attribution phrasing.
+- Citekeys only at the end of **Evidence:** sentences.
 -->
 
-- **User Goal:** [What is the user trying to do/decide?]
-- **Task:** [Optional: the specific analytic task or judgment.]
-- **Data:** [Type, shape, cardinality, density, uncertainty, missingness.]
-- **Chart Setting:** [Medium, constraints, interaction, annotation, layout.]
-- **Audience:** [Who is reading; domain literacy; accessibility needs.]
-- **Success Criterion:** [What “good” means: accuracy, speed, trust, accessibility, etc.]
+[One short paragraph explaining the mechanism in concrete terms.]
 
-## [Exceptions: When not to follow it] <!-- role: exceptions -->
+**Mechanism:** [What changes in reading, comparison, interpretation, or workflow when the advice is followed?]
+
+**Evidence:** [1-2 short evidence sentences with citekeys at the end, e.g. "... [@key1; @key2]".]
+
+**Notes:** [Optional nuance that is not context, exception, or fix.]
+
+## [Specific context heading for where X applies] <!-- role: context -->
 
 <!--
-  GOAL: Provide crisp, itemized exceptions that can be compared across guidelines.
-
-  FORMAT
-  - If there is only ONE exception, write it as a single sentence (no list).
-  - If there are multiple exceptions, use bullets (not numbered lists).
-  - Each item must be self-contained and include exactly: Break it when / Why.
-
-  DON'T
-  - Provide the full alternative solution (belongs in How to Fix).
-  - Add citekeys here (keep citekeys in Logic → Evidence).
+Section form:
+- Keyed bullets only.
+- Retrieval-oriented situation cues.
+- Observable conditions rather than abstract intent alone.
+- The same dimension names are reused across guidelines when possible.
+- No citations.
 -->
 
-List the specific scenarios where you should ignore this rule.
+- **User Goal:** [Decision, comparison, explanation, recall, monitoring, etc.]
+- **Task:** [Optional analytic or communicative task.]
+- **Data:** [Type, structure, density, uncertainty, missingness.]
+- **Chart Setting:** [Medium, constraints, interaction, layout, annotation.]
+- **Audience:** [Who is reading, including domain literacy or accessibility needs.]
+- **Success Criterion:** [What counts as good: accuracy, speed, trust, accessibility, recall, etc.]
 
-**Break it when:** [Describe the situation.] **Why:** [Why the rule fails here.]
-
-## [Costs: Tradeoffs and risks] <!-- role: costs -->
+## [Specific exception heading for when X fails] <!-- role: exceptions -->
 
 <!--
-  GOAL: Make tradeoffs explicit without introducing new advice.
-
-  FORMAT
-  - 2–4 short sentences (no lists).
-  - Prefer labeled sentences: **Sacrifice:** … **Risk:** … **Mitigation:** …
-
-  DON'T
-  - Add citekeys here (keep citekeys in Logic → Evidence).
+Section form:
+- One sentence when there is one exception.
+- Bullets only when there are several exceptions.
+- Each item includes **Break it when:** and **Why:**.
+- The wording reuses the same situation dimensions named in `context` when possible.
+- No citations.
 -->
 
-Be honest about the downsides.
+**Break it when:** [Describe the boundary condition in the same situation space used in context.] **Why:** [Explain why the rule fails here.]
 
-**Sacrifice:** [What you give up: space, time, complexity, flexibility.]
+## [Specific tradeoff heading for the costs of X] <!-- role: costs -->
+
+<!--
+Section form:
+- 2-4 short labeled sentences.
+- The tradeoff stays tied to the same design lever named in `advice`.
+- No citations.
+-->
+
+**Sacrifice:** [What you give up.]
 **Risk:** [What can go wrong if applied blindly.]
-**Mitigation:** [Optional: a non-prescriptive way to reduce the risk.]
+**Mitigation:** [Optional: how to reduce the risk without restating the rule.]
 
-## [Mistakes: Common failure modes] <!-- role: mistakes -->
+## [Specific mistake heading for common failure modes around X] <!-- role: mistakes -->
 
 <!--
-  GOAL: Capture anti-patterns as atomic, comparable units.
-
-  FORMAT
-  - If there is only ONE mistake, write it as a single sentence (no list).
-  - If there are multiple mistakes, use bullets (not numbered lists).
-  - Each item must have exactly: Mistake / Why it fails.
-
-  DON'T
-  - Put the proper fix here (belongs in How to Fix).
-  - Add citekeys here (keep citekeys in Logic → Evidence).
+Section form:
+- One sentence when there is one mistake.
+- Bullets only when there are several mistakes.
+- Each item includes **Mistake:** and **Why it fails:**.
+- The mistake names the same design lever vocabulary used in `advice` when possible.
+- The failure is described in direct operational terms, not broad moral judgment.
+- No citations.
 -->
 
-Describe the common anti-patterns or "lazy fixes" people use that don't actually solve the problem.
+**Mistake:** [Common failure mode on the same design lever.] **Why it fails:** [Why it does not solve the problem in practice.]
 
-**Mistake:** [Common bad practice.] **Why it fails:** [Brief explanation.]
-
-## [Check: Quick tests] <!-- role: check -->
+## [Specific check heading for how to test X] <!-- role: check -->
 
 <!--
-  GOAL: Provide a quick heuristic and a stronger test.
-
-  FORMAT
-  - 2–4 short sentences (no lists).
-  - The check should be runnable by a person (or a simple script) without extra context.
-  - Prefer labeled sentences: **Failure Sign:** … **Quick Check:** … **Stronger Test:** …
-
-  DON'T
-  - Add citekeys here (keep citekeys in Logic → Evidence).
+Section form:
+- 2-4 short labeled sentences.
+- Runnable by a reviewer or a simple script.
+- Observable and concrete enough to support comparison across guidelines.
+- No citations.
 -->
 
 **Failure Sign:** [What the problem looks like.]
-**Quick Check:** [A fast heuristic.]
-**Stronger Test:** [Optional: a more reliable test, e.g., small user pilot, A/B.]
+**Quick Check:** [Fast heuristic.]
+**Stronger Test:** [Optional: more reliable validation.]
 
-## [Fix: What to do instead] <!-- role: fix -->
+## [Specific fix heading for what to change] <!-- role: fix -->
 
 <!--
-  GOAL: Actionable alternatives.
-
-  FORMAT
-  - 2–4 bullets (not numbered), each a distinct action a practitioner can take.
-  - Write each bullet as a complete imperative sentence.
-  - Avoid tier ladders ("minimal/better/best") and avoid near-duplicates that only differ by intensity.
-
-  DON'T
-  - Re-explain the rule or justify the fix (belongs in The Logic).
-  - Add citekeys here (keep citekeys in Logic → Evidence).
+Section form:
+- 2-4 imperative bullets.
+- Each bullet is a distinct edit operation.
+- The edits stay concrete enough to compare fixes across related guidelines.
+- No citations.
 -->
 
 - [A small change that addresses the failure mode.]
-- [A different approach that avoids the failure mode (e.g., change encoding, layout, annotation strategy, or interaction).]
-- [A structural change if the current form cannot support the task (e.g., switch chart type/workflow).]
-- [Optional: a constraint-aware fallback that preserves the core intent.]
+- [A different change that avoids the failure mode.]
+- [A structural change if the current form cannot support the task.]
+- [Optional: a constraint-aware fallback.]

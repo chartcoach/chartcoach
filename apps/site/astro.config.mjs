@@ -2,7 +2,6 @@
 import { defineConfig } from "astro/config";
 import starlight from "@astrojs/starlight";
 import sitemap from "@astrojs/sitemap";
-import react from "@astrojs/react";
 import { fileURLToPath } from "node:url";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
@@ -78,7 +77,6 @@ export default defineConfig({
   },
   integrations: [
     siteUrlLogger(siteUrl, siteUrlSource),
-    react(),
     starlight({
       title: "Chart Coach",
       customCss: ["./src/styles/custom.css"],

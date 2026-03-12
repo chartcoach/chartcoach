@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.19.4"
+__generated_with = "0.20.4"
 app = marimo.App(width="columns")
 
 
@@ -51,16 +51,16 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(conn):
-    advice_sim_threshold = 0.6
+    advice_sim_threshold = 0.5
     context_diff_threshold = 0.4
 
     conn.query(f"""
     WITH 
     advice AS (
-        SELECT id, embedding FROM embeddings WHERE role = 'advice'
+        SELECT id, embedding FROM embeddings WHERE role = 'section.advice'
     ),
     contexts AS (
-        SELECT id, embedding FROM embeddings WHERE role = 'context'
+        SELECT id, embedding FROM embeddings WHERE role = 'section.context'
     )
     SELECT 
         a1.id AS domain_A, 
@@ -97,7 +97,7 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(catalog, pl):
-    catalog.df().filter(
+    catalog.df.filter(
         pl.col("id").is_in(
             [
                 "separate-severity-from-probability",
@@ -137,10 +137,10 @@ def _(conn):
     conn.query(f"""
     WITH 
     fixes AS (
-        SELECT id, embedding FROM embeddings WHERE role = 'fix'
+        SELECT id, embedding FROM embeddings WHERE role = 'section.fix'
     ),
     mistakes AS (
-        SELECT id, embedding FROM embeddings WHERE role = 'mistakes'
+        SELECT id, embedding FROM embeddings WHERE role = 'section.mistakes'
     )
     SELECT 
         f1.id AS problem_A, 
@@ -176,7 +176,7 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(catalog, pl):
-    catalog.df().filter(
+    catalog.df.filter(
         pl.col("id").is_in(
             [
                 "avoid-redundant-retinal-encodings",
@@ -214,10 +214,10 @@ def _(conn):
     conn.sql(f"""
     WITH 
     situations AS (
-        SELECT id, embedding FROM embeddings WHERE role = 'context'
+        SELECT id, embedding FROM embeddings WHERE role = 'section.context'
     ),
     exceptions AS (
-        SELECT id, embedding FROM embeddings WHERE role = 'exceptions'
+        SELECT id, embedding FROM embeddings WHERE role = 'section.exceptions'
     )
     SELECT 
         s.id AS standard_rule_id,
@@ -250,7 +250,7 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(catalog, pl):
-    catalog.df().filter(
+    catalog.df.filter(
         pl.col("id").is_in(
             [
                 "group-bars-adjacently",
@@ -290,10 +290,10 @@ def _(conn):
     conn.query(f"""
     WITH 
     situations AS (
-        SELECT id, embedding FROM embeddings WHERE role = 'context'
+        SELECT id, embedding FROM embeddings WHERE role = 'section.context'
     ),
     advice AS (
-        SELECT id, embedding FROM embeddings WHERE role = 'advice'
+        SELECT id, embedding FROM embeddings WHERE role = 'overview'
     )
     SELECT 
         s1.id AS id_A, 
@@ -331,7 +331,7 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(catalog, pl):
-    catalog.df().filter(
+    catalog.df.filter(
         pl.col("id").is_in(
             [
                 "avoid-extreme-donut-thinness",
@@ -369,10 +369,10 @@ def _(conn):
     conn.query("""
     WITH 
     fixes AS (
-        SELECT id, embedding FROM embeddings WHERE role = 'fix'
+        SELECT id, embedding FROM embeddings WHERE role = 'section.fix'
     ),
     mistakes AS (
-        SELECT id, embedding FROM embeddings WHERE role = 'mistakes'
+        SELECT id, embedding FROM embeddings WHERE role = 'section.mistakes'
     )
     SELECT 
         f.id,
@@ -402,7 +402,7 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(catalog, pl):
-    catalog.df().filter(
+    catalog.df.filter(
         pl.col("id").is_in(
             [
                 "group-small-pie-slices",
@@ -439,10 +439,10 @@ def _(conn):
     conn.query(f"""
     WITH 
     advice_vectors AS (
-        SELECT id, embedding FROM embeddings WHERE role = 'advice'
+        SELECT id, embedding FROM embeddings WHERE role = 'section.advice'
     ),
     mistake_vectors AS (
-        SELECT id, embedding FROM embeddings WHERE role = 'mistakes'
+        SELECT id, embedding FROM embeddings WHERE role = 'section.mistakes'
     )
     SELECT 
         a.id AS recommender_id,
@@ -475,7 +475,7 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(catalog, pl):
-    catalog.df().filter(
+    catalog.df.filter(
         pl.col("id").is_in(
             [
                 "replace-rainbow-with-uniform-multi-hue",
@@ -502,28 +502,9 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _(CatalogEmbedder, EmbeddingAtlasWidget, catalog, pl):
-    embedder = CatalogEmbedder(catalog)
-    projected_text_df = embedder.projected_text_df(
-        select=[
-            pl.col("guideline").struct.field("title"),
-            pl.col("guideline").struct.field("description"),
-            pl.col("guideline").struct.field("labels"),
-            pl.col("references"),
-        ],
-        text_projector_type="litellm",
-        api_base_url="http://localhost:11434",
-        model="ollama/qwen3-embedding:4b",
-        batch_size=512,
-        sync=True,
-    )
-    EmbeddingAtlasWidget(
-        projected_text_df.drop("embedding").to_pandas(),
-        x="projection_x",
-        y="projection_y",
-        neighbors="neighbors",
-    )
-    return embedder, projected_text_df
+def _(index):
+    index.embedding_atlas()
+    return
 
 
 @app.cell(hide_code=True)
@@ -615,19 +596,6 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _(DuckDBVectorIndexBackend, REPO_ROOT, embedder, projected_text_df):
-    embedded_text_df = projected_text_df.drop(
-        "projection_x",
-        "projection_y",
-        "neighbors",
-    )
-    embedded_text_df.write_parquet((REPO_ROOT / "guidelines" / "embeddings.parquet"))
-    index = DuckDBVectorIndexBackend().index(embedded_text_df)
-    conn = index.conn
-    return (conn,)
-
-
-@app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
     ## Setup
@@ -645,8 +613,36 @@ def _(mo):
 @app.cell(column=9, hide_code=True)
 def _(Catalog, catalog_parquet, pl):
     catalog = Catalog.from_df(pl.read_parquet(catalog_parquet.absolute()))
-    catalog.df()
     return (catalog,)
+
+
+@app.cell
+def _(create_default_chroma_client):
+    # import chromadb
+    import chromadb.utils.embedding_functions as embedding_functions
+    import os
+
+    openrouter_ef = embedding_functions.OpenAIEmbeddingFunction(
+        api_key=os.environ["OPENROUTER_API_KEY"],
+        api_base="https://openrouter.ai/api/v1",
+        model_name="openai/text-embedding-3-small",
+    )
+
+    client = create_default_chroma_client(recreate=True)
+
+    collection = client.get_or_create_collection(
+        name="catalog",
+        embedding_function=openrouter_ef,
+    )
+    return (collection,)
+
+
+@app.cell
+def _(CatalogIndex, catalog, collection, create_default_duckdb_conn):
+    conn = create_default_duckdb_conn(recreate=True)
+    index = CatalogIndex(catalog, collection=collection, conn=conn)
+    index.build()
+    return conn, index
 
 
 @app.cell(hide_code=True)
@@ -655,7 +651,7 @@ def _(mo, pathlib):
     REPO_ROOT = NB_ROOT.parent.parent.parent
     CATALOG_PARQUET_PATH = REPO_ROOT / "guidelines" / "catalog.parquet"
     catalog_parquet = mo.watch.file(CATALOG_PARQUET_PATH)
-    return REPO_ROOT, catalog_parquet
+    return (catalog_parquet,)
 
 
 @app.cell(hide_code=True)
@@ -673,16 +669,17 @@ def _():
     import marimo as mo
     import polars as pl
 
-    from chartcoach.catalog import Catalog
-    from chartcoach.embedding import CatalogEmbedder
-    from chartcoach.index import DuckDBVectorIndexBackend
-    from embedding_atlas.widget import EmbeddingAtlasWidget
+    from chartcoach import Catalog, CatalogIndex
+    from chartcoach.index import (
+        create_default_chroma_client,
+        create_default_duckdb_conn,
+    )
 
     return (
         Catalog,
-        CatalogEmbedder,
-        DuckDBVectorIndexBackend,
-        EmbeddingAtlasWidget,
+        CatalogIndex,
+        create_default_chroma_client,
+        create_default_duckdb_conn,
         mo,
         pathlib,
         pl,

@@ -9,13 +9,8 @@ members = [
 [dependency-groups]
 dev = [
     "pytest>=8.4.0",
-    "pytest-cov>=6.3.0",
     "ruff>=0.14.5",
     "ty>=0.0.11",
-]
-paper = [
-    # Paper-facing plots are optional; core retrieval should not depend on these.
-    "matplotlib>=3.10.0",
 ]
 
 # https://github.com/charliermarsh/ruff
@@ -25,13 +20,6 @@ extend-include = ["*.ipynb"]
 [tool.ruff.lint]
 pydocstyle = { convention = "numpy" }
 ignore = []
-
-[tool.pytest.ini_options]
-addopts = "--import-mode=importlib --cov=chartcoach --cov-report=term-missing"
-testpaths = ["packages/chartcoach-py/tests"]
-filterwarnings = [
-    "ignore:n_jobs value .* overridden:UserWarning:umap.*",
-]
 
 [tool.coverage.run]
 branch = false
