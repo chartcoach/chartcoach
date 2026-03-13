@@ -736,7 +736,7 @@ def _(catalog):
         GuidelineLabelsTextSource,
         SectionsTextSource,
     )
-    from chartcoach.index import LanceVectorIndexBackend
+    from chartcoach.catalog.index import LanceVectorIndexBackend
     from chartcoach.retrieval.strategy.pipelines.searcher import GuidelineSearcher
     from chartcoach.retrieval.strategy.vector_index import (
         CatalogVectorIndex,
@@ -777,7 +777,7 @@ def _():
         GuidelineLabelsTextSource,
         SectionsTextSource,
     )
-    from chartcoach.index import LanceVectorIndexBackend
+    from chartcoach.catalog.index import LanceVectorIndexBackend
     from chartcoach.retrieval.strategy.pipelines import AgenticHybridStrategy
     from chartcoach.retrieval.strategy.pipelines.searcher import GuidelineSearcher
     from chartcoach.retrieval.strategy.vector_index import (

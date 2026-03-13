@@ -1,7 +1,7 @@
 from importlib.metadata import version
-from .catalog import Catalog
-from .model import CatalogEntry, Guideline, GuidelineSection
-from .index import CatalogIndex
+
+from .catalog import Catalog, CatalogEntry, CatalogIndex
+from .guideline import Guideline, GuidelineSection
 
 __version__ = version("chartcoach")
 
