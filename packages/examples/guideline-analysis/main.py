@@ -628,7 +628,7 @@ def _(create_default_chroma_client):
         model_name="openai/text-embedding-3-small",
     )
 
-    client = create_default_chroma_client(recreate=True)
+    client = create_default_chroma_client()
 
     collection = client.get_or_create_collection(
         name="catalog",
@@ -639,7 +639,7 @@ def _(create_default_chroma_client):
 
 @app.cell
 def _(CatalogIndex, catalog, collection, create_default_duckdb_conn):
-    conn = create_default_duckdb_conn(recreate=True)
+    conn = create_default_duckdb_conn()
     index = CatalogIndex(catalog, collection=collection, conn=conn)
     index.build()
     return conn, index
@@ -670,7 +670,7 @@ def _():
     import polars as pl
 
     from chartcoach import Catalog, CatalogIndex
-    from chartcoach.index import (
+    from chartcoach.catalog import (
         create_default_chroma_client,
         create_default_duckdb_conn,
     )

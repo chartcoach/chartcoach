@@ -1,6 +1,10 @@
+from __future__ import annotations
+
 from typing import ClassVar
 
 from pydantic import BaseModel, Field, computed_field
+
+from .markdown import guideline_to_markdown, parse_guideline_section_records
 
 
 class Guideline(BaseModel):
@@ -41,23 +45,14 @@ class Guideline(BaseModel):
     @computed_field
     @property
     def sections(self) -> list["GuidelineSection"]:
-        """Parse the body content into structured sections based on role annotations.
-
-        Returns:
-            A list of GuidelineSection objects representing the structured sections of the guideline body.
-        """
-        from .utils import parse_guideline_sections
-
-        return parse_guideline_sections(self.body)
+        """Parse the body content into structured sections based on role annotations."""
+        return [
+            GuidelineSection.model_validate(section)
+            for section in parse_guideline_section_records(self.body)
+        ]
 
     def to_markdown(self) -> str:
-        """Convert the guideline back to its markdown representation.
-
-        Returns:
-            The markdown string representation of the guideline.
-        """
-        from .utils import guideline_to_markdown
-
+        """Convert the guideline back to its markdown representation."""
         return guideline_to_markdown(self)
 
 
@@ -77,25 +72,3 @@ class GuidelineSection(BaseModel):
     content: str = Field(
         description="The markdown content of the section",
     )
-
-
-class CatalogEntry(BaseModel):
-    """Base class for entries in the catalog. A catalog entry is a folder that contains a guideline and all its assets, such as the reference .bib file, images, and example code."""
-
-    guideline: Guideline = Field(
-        description="The guideline entry associated with this catalog entry."
-    )
-    references: list[str] = Field(
-        default_factory=list,
-        description="BibTeX-formatted bibliography content for citations used in the guideline.",
-    )
-
-    @computed_field
-    @property
-    def id(self) -> str:
-        """Get the unique identifier of the catalog entry.
-
-        Returns:
-            str: The unique identifier of the catalog entry.
-        """
-        return self.guideline.id

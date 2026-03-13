@@ -1463,11 +1463,17 @@ def _():
 def _():
     import json
     import pathlib
+    from types import SimpleNamespace
 
     import marimo as mo
 
     from chartcoach import Catalog, CatalogEntry, Guideline
-    import chartcoach.utils as ccp
+    from chartcoach.guideline import parse_bibtex, parse_guideline
+
+    ccp = SimpleNamespace(
+        parse_bibtex=parse_bibtex,
+        parse_guideline=parse_guideline,
+    )
 
     return Catalog, CatalogEntry, Guideline, ccp, json, mo, pathlib
 
