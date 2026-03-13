@@ -645,6 +645,26 @@ def _(CatalogIndex, catalog, collection, create_default_duckdb_conn):
     return conn, index
 
 
+@app.cell
+def _(CatalogIndex, catalog):
+    ci = CatalogIndex.in_memory(catalog)
+    return (ci,)
+
+
+@app.cell
+def _(ci):
+    from chartcoach.tools import CatalogIndexTools
+
+    tools = CatalogIndexTools(ci)
+    return (tools,)
+
+
+@app.cell
+def _(tools):
+    tools.duckdb_info()
+    return
+
+
 @app.cell(hide_code=True)
 def _(mo, pathlib):
     NB_ROOT = pathlib.Path(__file__).parent

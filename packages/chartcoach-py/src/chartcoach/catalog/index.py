@@ -20,6 +20,8 @@ APP_CACHEDIR = pathlib.Path(platformdirs.user_cache_dir("chartcoach"))
 APP_CACHEDIR.mkdir(parents=True, exist_ok=True)
 EMBEDDING_COL = "embedding"
 EMBEDDINGS_TABLE = "embeddings"
+CATALOG_DF_RELATION = "catalog_df"
+EMBEDDINGS_DF_RELATION = "embeddings_df"
 logger = logging.getLogger(__name__)
 
 
@@ -100,7 +102,7 @@ def _duckdb_setup_sql(ndims: int) -> str:
                doc,
                role,
                "{EMBEDDING_COL}"::FLOAT[{ndims}] AS "{EMBEDDING_COL}"
-        FROM embeddings_df
+        FROM {EMBEDDINGS_DF_RELATION}
     );
 
     DROP INDEX IF EXISTS idx;
@@ -141,6 +143,28 @@ class CatalogIndex:
             "Initialized CatalogIndex with %s catalog entries",
             len(self._catalog),
         )
+
+    @classmethod
+    def in_memory(
+        cls,
+        catalog: Catalog,
+        *,
+        collection_name: str = "catalog",
+        build: bool = True,
+    ) -> "CatalogIndex":
+        """Create a CatalogIndex backed by in-memory DuckDB and Chroma clients."""
+        logger.debug(
+            "Creating in-memory CatalogIndex for %s entries with collection '%s'",
+            len(catalog),
+            collection_name,
+        )
+        client = chromadb.EphemeralClient()
+        collection = client.get_or_create_collection(collection_name)
+        conn = duckdb.connect(":memory:")
+        index = cls(catalog, collection=collection, conn=conn)
+        if build:
+            index.build()
+        return index
 
     def build(self):
         logger.debug("Building catalog index for %s entries", len(self.catalog))
@@ -193,12 +217,14 @@ class CatalogIndex:
             embeddings_df.height,
             ndims,
         )
-        self.conn.register("embeddings_df", embeddings_df)
+        self.conn.register(EMBEDDINGS_DF_RELATION, embeddings_df)
         self.conn.execute(_duckdb_setup_sql(ndims))
-        self.conn.unregister("embeddings_df")
-        self.conn.register("catalog_df", self.catalog_df)
+        self.conn.unregister(EMBEDDINGS_DF_RELATION)
+        self.conn.register(CATALOG_DF_RELATION, self.catalog_df)
         logger.debug(
-            "Registered catalog_df in DuckDB with %s rows", self.catalog_df.height
+            "Registered %s in DuckDB with %s rows",
+            CATALOG_DF_RELATION,
+            self.catalog_df.height,
         )
 
     @cached_property
@@ -222,3 +248,16 @@ class CatalogIndex:
             y="projection_y",
             neighbors="neighbors",
         )
+
+
+__all__ = [
+    "APP_CACHEDIR",
+    "CATALOG_DF_RELATION",
+    "CatalogIndex",
+    "EMBEDDING_COL",
+    "EMBEDDINGS_DF_RELATION",
+    "EMBEDDINGS_TABLE",
+    "create_default_chroma_client",
+    "create_default_duckdb_conn",
+    "destroy_cache",
+]
