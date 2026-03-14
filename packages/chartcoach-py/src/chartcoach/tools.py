@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from datetime import date, datetime, time
 from decimal import Decimal
-from typing import Any
+from typing import Any, cast
 
 from chromadb.api.types import Include, Where, WhereDocument
 from pydantic import BaseModel
@@ -15,6 +15,10 @@ DEFAULT_CHROMA_QUERY_INCLUDE: Include = ["documents", "metadatas", "distances"]
 DEFAULT_CHROMA_GET_INCLUDE: Include = ["documents", "metadatas"]
 VECTOR_PREVIEW_LIMIT = 8
 VECTOR_ROW_PREVIEW_LIMIT = 2
+READ_ONLY_SQL_PREFIXES = {"SELECT", "WITH", "SHOW", "DESCRIBE", "DESC", "EXPLAIN"}
+MetadataFilter = dict[str, Any]
+DocumentFilter = dict[str, Any]
+IncludeFields = list[str]
 
 
 class CatalogIndexTools:
@@ -27,7 +31,7 @@ class CatalogIndexTools:
     The surface is intentionally thin. Instead of wrapping every likely analysis
     into a custom method, it gives agents:
 
-    - rich discovery via ``duckdb_info()`` and ``chroma_info()``
+    - one consolidated discovery call via ``read_info()``
     - direct raw SQL over DuckDB for flexible relational analysis
     - thin access to Chroma ``query`` and ``get`` for semantic retrieval and
       metadata/document filtering
@@ -58,25 +62,41 @@ class CatalogIndexTools:
         """Return the wrapped ``CatalogIndex`` instance."""
         return self._index
 
-    def agent_context(self) -> dict[str, Any]:
-        """Return a compact machine-readable summary for agent planning.
+    def read_info(self, *, sample_limit: int | None = None) -> dict[str, Any]:
+        """Return the canonical read-only discovery payload for the live index.
 
-        This is the shortest discovery surface in the module. It is designed for
-        agents that want a reliable picture of what they can query before moving
-        on to ``duckdb_info()``, ``chroma_info()``, raw SQL, or raw Chroma calls.
+        This consolidates the previously separate context, DuckDB, and Chroma
+        discovery surfaces into one bounded response so clients can plan read
+        queries without wading through duplicated metadata.
 
-        The payload is intentionally compact:
+        The payload includes:
 
-        - index-level defaults and counts
-        - canonical join paths between DuckDB, Chroma, and full guideline rows
-        - live DuckDB relation schemas with row counts but no sample rows
-        - Chroma metadata keys and default include behavior
-        - the top-level guideline and section field shapes
+        - index defaults and collection/catalog counts
+        - canonical join paths across DuckDB and Chroma
+        - shared role values for embedded text chunks
+        - live DuckDB relations with schema, row counts, notes, and sample rows
+        - Chroma collection metadata plus a representative sample payload
+        - top-level guideline and section field shapes
+
+        Args:
+            sample_limit: Maximum sample rows or sample documents to include in
+                the consolidated discovery payload. Defaults to the tool's
+                configured sample limit.
 
         Returns:
-            A JSON-safe dictionary describing the live index structure without
-            the larger sample payloads returned by ``duckdb_info()`` and ``chroma_info()``.
+            A JSON-safe dictionary describing the full read surface with bounded
+            sample data and no duplicated discovery branches.
         """
+        applied_sample_limit = sample_limit or self._default_sample_limit
+        table_rows = self._duckdb_table_rows()
+        role_values = self._embedding_roles()
+        join_hints = self._join_hints()
+        sample_payload = self.index.collection.peek(limit=applied_sample_limit)
+        normalized_sample = _summarize_info_embeddings(
+            _normalize_for_json(sample_payload)
+        )
+        sample_metadatas = normalized_sample.get("metadatas", [])
+
         return {
             "index": {
                 "catalog_entry_count": len(self.index.catalog),
@@ -84,75 +104,42 @@ class CatalogIndexTools:
                 "default_row_limit": self._default_row_limit,
                 "default_top_k": self._default_top_k,
                 "default_sample_limit": self._default_sample_limit,
+                "sample_limit": applied_sample_limit,
                 "auto_build": self._auto_build,
+                "duckdb_relation_count": len(table_rows),
+                "chroma_document_count": self.index.collection.count(),
             },
-            "joins": self._join_hints(),
+            "joins": join_hints,
+            "role_values": role_values,
             "duckdb": {
-                "relations": self._duckdb_relations(include_samples=False),
-                "role_values": self._embedding_roles(),
+                "relations": self._duckdb_relations(
+                    include_samples=True,
+                    sample_limit=applied_sample_limit,
+                    table_rows=table_rows,
+                ),
+                "query_notes": [
+                    f"Use {EMBEDDINGS_TABLE} for vector-indexed text chunks and chunk-level roles.",
+                    f"Use {CATALOG_DF_RELATION} for full guideline structure, labels, sections, and references.",
+                    f"Join {EMBEDDINGS_TABLE}.id to {CATALOG_DF_RELATION}.id when combining semantic chunks with full guideline data.",
+                ],
             },
             "chroma": {
-                "count": self.index.collection.count(),
                 "metadata_keys": self._chroma_metadata_keys(),
+                "sample": normalized_sample,
+                "sample_metadata_keys": sorted(
+                    {
+                        key
+                        for metadata in sample_metadatas
+                        for key in (metadata or {}).keys()
+                    }
+                ),
                 "default_query_include": list(DEFAULT_CHROMA_QUERY_INCLUDE),
                 "default_get_include": list(DEFAULT_CHROMA_GET_INCLUDE),
-                "role_values": self._embedding_roles(),
             },
             "guideline_shape": {
                 "guideline_fields": self._model_field_summaries(Guideline),
                 "section_fields": self._model_field_summaries(GuidelineSection),
             },
-        }
-
-    def duckdb_info(self, *, sample_limit: int | None = None) -> dict[str, Any]:
-        """Describe the live DuckDB relations registered by ``CatalogIndex``.
-
-        This is the primary discovery method for relational access. It returns
-        schema, counts, and sample rows for every non-system relation currently
-        visible on the DuckDB connection, including the relations that matter most
-        for catalog analysis:
-
-        - ``embeddings``: one row per embedded text fragment
-        - ``catalog_df``: one row per guideline with full structured fields
-
-        Useful structure hints:
-
-        - ``embeddings.id`` joins to ``catalog_df.id``.
-        - ``embeddings.slug`` is the per-document identifier used in vector
-          indexing.
-        - ``embeddings.role`` identifies the semantic chunk type such as
-          ``overview`` or ``section.advice``.
-        - ``catalog_df.sections`` contains structured section objects with
-          ``role``, ``title``, and ``content``.
-
-        Args:
-            sample_limit: Maximum sample rows to include per relation. Defaults
-                to the tool's configured sample limit.
-
-        Returns:
-            A JSON-safe dictionary with relation metadata, row counts, sample
-            rows, and lightweight join hints that help agents write their own
-            SQL creatively.
-        """
-        applied_sample_limit = sample_limit or self._default_sample_limit
-        tables_result = self._execute_duckdb_query("SHOW ALL TABLES", row_limit=None)
-        tables = tables_result["rows"]
-
-        return {
-            "default_row_limit": self._default_row_limit,
-            "sample_limit": applied_sample_limit,
-            "registered_relation_count": len(tables),
-            "relations": self._duckdb_relations(
-                include_samples=True,
-                sample_limit=applied_sample_limit,
-            ),
-            "join_hints": self._join_hints(),
-            "role_values": self._embedding_roles(),
-            "query_notes": [
-                f"Use {EMBEDDINGS_TABLE} for vector-indexed text chunks and chunk-level roles.",
-                f"Use {CATALOG_DF_RELATION} for full guideline structure, labels, sections, and references.",
-                f"Join {EMBEDDINGS_TABLE}.id to {CATALOG_DF_RELATION}.id when combining semantic chunks with full guideline data.",
-            ],
         }
 
     def duckdb_query(
@@ -165,7 +152,8 @@ class CatalogIndexTools:
 
         This method is intentionally raw because agents are often good at writing
         analysis SQL once they understand the available relations.
-        Use ``duckdb_info()`` first to inspect the live schema, counts, and samples.
+        Use ``read_info()`` first to inspect the live schema, counts, joins,
+        and representative samples.
 
         Typical patterns:
 
@@ -177,7 +165,7 @@ class CatalogIndexTools:
           is easier in SQL than through a curated helper
 
         Args:
-            sql: One DuckDB SQL statement.
+            sql: One read-only DuckDB SQL statement.
             row_limit: Optional maximum number of rows to return. If omitted, a
                 default cap is applied when the statement returns rows.
 
@@ -188,69 +176,14 @@ class CatalogIndexTools:
         """
         return self._execute_duckdb_query(sql, row_limit=row_limit)
 
-    def chroma_info(
-        self,
-        *,
-        sample_limit: int | None = None,
-    ) -> dict[str, Any]:
-        """Describe the bound Chroma collection and return a representative sample.
-
-        This method is the Chroma-side discovery tool. It combines a collection
-        count, a sample payload, and high-value shape hints so agents can write
-        their own semantic or filter queries without requiring a large wrapper surface.
-
-        Useful structure hints:
-
-        - returned ``ids`` correspond to the document slug used in DuckDB as ``embeddings.slug``
-        - metadata typically includes ``parent_id``, ``role``, ``labels``, and ``content_hash``
-        - metadata ``parent_id`` links back to the guideline id in DuckDB
-        - metadata ``role`` mirrors the chunk role used in DuckDB
-
-        Args:
-            sample_limit: Number of sample documents to return from the collection.
-                          Defaults to the tool's configured sample limit.
-
-        Returns:
-            A JSON-safe dictionary with collection count, a sample payload,
-            metadata keys, common role values, and the default include behavior
-            for ``chroma_query()`` and ``chroma_get()``.
-        """
-        applied_sample_limit = sample_limit or self._default_sample_limit
-        sample_payload = self.index.collection.peek(limit=applied_sample_limit)
-        normalized_sample = _summarize_info_embeddings(
-            _normalize_for_json(sample_payload)
-        )
-
-        metadata_keys = self._chroma_metadata_keys()
-        sample_metadatas = normalized_sample.get("metadatas", [])
-
-        return {
-            "name": getattr(self.index.collection, "name", None),
-            "count": self.index.collection.count(),
-            "sample_limit": applied_sample_limit,
-            "sample": normalized_sample,
-            "metadata_keys": metadata_keys,
-            "sample_metadata_keys": sorted(
-                {
-                    key
-                    for metadata in sample_metadatas
-                    for key in (metadata or {}).keys()
-                }
-            ),
-            "role_values": self._embedding_roles(),
-            "default_query_include": list(DEFAULT_CHROMA_QUERY_INCLUDE),
-            "default_get_include": list(DEFAULT_CHROMA_GET_INCLUDE),
-            "join_hints": self._join_hints(),
-        }
-
     def chroma_query(
         self,
         query_texts: list[str],
         *,
         n_results: int | None = None,
-        where: Where | None = None,
-        where_document: WhereDocument | None = None,
-        include: Include | None = None,
+        where: MetadataFilter | None = None,
+        where_document: DocumentFilter | None = None,
+        include: IncludeFields | None = None,
     ) -> dict[str, Any]:
         """Run semantic search over the bound Chroma collection.
 
@@ -272,6 +205,9 @@ class CatalogIndexTools:
 
         - ``{"$contains": "legend"}``
         - ``{"$and": [{"$contains": "legend"}, {"$not_contains": "map"}]}``
+
+        Use ``read_info()`` first if you need the consolidated relation, join,
+        and metadata overview before constructing a search.
 
         The tool does not constrain your search strategy. It simply exposes the
         live collection with defaults that are useful for analysis and agentic
@@ -296,9 +232,9 @@ class CatalogIndexTools:
         result = self.index.collection.query(
             query_texts=query_texts,
             n_results=n_results or self._default_top_k,
-            where=where,
-            where_document=where_document,
-            include=include or list(DEFAULT_CHROMA_QUERY_INCLUDE),
+            where=cast(Where | None, where),
+            where_document=cast(WhereDocument | None, where_document),
+            include=cast(Include, include or list(DEFAULT_CHROMA_QUERY_INCLUDE)),
         )
         return _normalize_for_json(result)
 
@@ -306,9 +242,9 @@ class CatalogIndexTools:
         self,
         *,
         ids: list[str] | None = None,
-        where: Where | None = None,
-        where_document: WhereDocument | None = None,
-        include: Include | None = None,
+        where: MetadataFilter | None = None,
+        where_document: DocumentFilter | None = None,
+        include: IncludeFields | None = None,
         limit: int | None = None,
         offset: int | None = None,
     ) -> dict[str, Any]:
@@ -339,9 +275,9 @@ class CatalogIndexTools:
         """
         result = self.index.collection.get(
             ids=ids,
-            where=where,
-            where_document=where_document,
-            include=include or list(DEFAULT_CHROMA_GET_INCLUDE),
+            where=cast(Where | None, where),
+            where_document=cast(WhereDocument | None, where_document),
+            include=cast(Include, include or list(DEFAULT_CHROMA_GET_INCLUDE)),
             limit=limit,
             offset=offset,
         )
@@ -367,8 +303,9 @@ class CatalogIndexTools:
         *,
         include_samples: bool,
         sample_limit: int | None = None,
+        table_rows: list[dict[str, Any]] | None = None,
     ) -> list[dict[str, Any]]:
-        tables = self._execute_duckdb_query("SHOW ALL TABLES", row_limit=None)["rows"]
+        tables = table_rows or self._duckdb_table_rows()
         relations: list[dict[str, Any]] = []
         for relation in tables:
             relation_name = str(relation["name"])
@@ -395,6 +332,9 @@ class CatalogIndexTools:
                 )
             relations.append(info)
         return relations
+
+    def _duckdb_table_rows(self) -> list[dict[str, Any]]:
+        return self._execute_duckdb_query("SHOW ALL TABLES", row_limit=None)["rows"]
 
     @staticmethod
     def _join_hints() -> list[dict[str, str]]:
@@ -470,14 +410,13 @@ class CatalogIndexTools:
         *,
         row_limit: int | None,
     ) -> dict[str, Any]:
-        if not sql.strip():
-            raise ValueError("SQL cannot be empty.")
+        normalized_sql = _validate_read_only_sql(sql)
 
         applied_row_limit = row_limit or self._default_row_limit
-        cursor = self.index.conn.execute(sql)
+        cursor = self.index.conn.execute(normalized_sql)
         if cursor.description is None:
             return {
-                "sql": sql,
+                "sql": normalized_sql,
                 "columns": [],
                 "rows": [],
                 "row_count": 0,
@@ -508,7 +447,7 @@ class CatalogIndexTools:
         ]
 
         return {
-            "sql": sql,
+            "sql": normalized_sql,
             "columns": normalized_columns,
             "rows": normalized_rows,
             "row_count": len(normalized_rows),
@@ -605,6 +544,23 @@ def _summarize_embeddings_like(value: Any) -> Any:
 
 def _is_numeric_sequence(value: list[Any]) -> bool:
     return all(isinstance(item, int | float) for item in value)
+
+
+def _validate_read_only_sql(sql: str) -> str:
+    normalized_sql = sql.strip()
+    if not normalized_sql:
+        raise ValueError("SQL cannot be empty.")
+
+    statements = [part.strip() for part in normalized_sql.split(";") if part.strip()]
+    if len(statements) != 1:
+        raise ValueError("duckdb_query only allows a single read-only SQL statement.")
+
+    statement = statements[0]
+    keyword = statement.split(maxsplit=1)[0].upper()
+    if keyword not in READ_ONLY_SQL_PREFIXES:
+        raise ValueError("duckdb_query only allows read-only SQL statements.")
+
+    return statement
 
 
 __all__ = ["CatalogIndexTools"]

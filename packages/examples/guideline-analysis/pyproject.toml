@@ -8,7 +8,7 @@ dependencies = [
   "anywidget>=0.9.21",
   "chartcoach",
   "embedding-atlas>=0.18.0",
-  "marimo",
+  "marimo[recommended]",
   "nest-asyncio>=1.6.0",
   "scikit-learn>=1.8.0",
   "sqlglot>=29.0.1",
