@@ -1,5 +1,6 @@
 from importlib.metadata import version
 
+from .coach import ChartCoach
 from .catalog import Catalog, CatalogEntry, CatalogIndex
 from .guideline import Guideline, GuidelineSection
 
@@ -10,6 +11,7 @@ __all__ = [
     "Catalog",
     "CatalogEntry",
     "CatalogIndex",
+    "ChartCoach",
     "Guideline",
     "GuidelineSection",
 ]

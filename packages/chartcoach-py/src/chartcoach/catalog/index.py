@@ -1,51 +1,22 @@
 from __future__ import annotations
 
 import logging
-import pathlib
-import shutil
 from functools import cached_property
 from typing import Mapping, Sequence, cast
 
 import chromadb
 import duckdb
-import platformdirs
 import polars as pl
-from chromadb.api import ClientAPI
 from chromadb.api.types import Metadata
 from tqdm import tqdm
 
 from .collection import Catalog
 
-APP_CACHEDIR = pathlib.Path(platformdirs.user_cache_dir("chartcoach"))
-APP_CACHEDIR.mkdir(parents=True, exist_ok=True)
 EMBEDDING_COL = "embedding"
 EMBEDDINGS_TABLE = "embeddings"
 CATALOG_DF_RELATION = "catalog_df"
 EMBEDDINGS_DF_RELATION = "embeddings_df"
 logger = logging.getLogger(__name__)
-
-
-def create_default_chroma_client(*, recreate: bool = False) -> ClientAPI:
-    path = APP_CACHEDIR / "chroma_db"
-    if recreate:
-        logger.debug("Recreating Chroma cache at %s", path)
-        shutil.rmtree(path, ignore_errors=True)
-    logger.debug("Opening Chroma persistent client at %s", path)
-    return chromadb.PersistentClient(path)
-
-
-def create_default_duckdb_conn(*, recreate: bool = False) -> duckdb.DuckDBPyConnection:
-    path = APP_CACHEDIR / "duckdb_catalog.db"
-    if recreate:
-        logger.debug("Recreating DuckDB catalog at %s", path)
-        path.unlink(missing_ok=True)
-    logger.debug("Opening DuckDB connection at %s", path)
-    return duckdb.connect(path)
-
-
-def destroy_cache():
-    logger.debug("Removing chartcoach cache directory at %s", APP_CACHEDIR)
-    shutil.rmtree(APP_CACHEDIR, ignore_errors=True)
 
 
 def _collection_payload(
@@ -130,41 +101,16 @@ class CatalogIndex:
     def __init__(
         self,
         catalog: Catalog,
-        collection: chromadb.Collection | None = None,
-        conn: duckdb.DuckDBPyConnection | None = None,
+        collection: chromadb.Collection,
+        conn: duckdb.DuckDBPyConnection,
     ):
         self._catalog = catalog
-        self._collection = (
-            collection
-            or create_default_chroma_client().get_or_create_collection("catalog")
-        )
-        self._conn = conn or create_default_duckdb_conn()
+        self._collection = collection
+        self._conn = conn
         logger.debug(
             "Initialized CatalogIndex with %s catalog entries",
             len(self._catalog),
         )
-
-    @classmethod
-    def in_memory(
-        cls,
-        catalog: Catalog,
-        *,
-        collection_name: str = "catalog",
-        build: bool = True,
-    ) -> "CatalogIndex":
-        """Create a CatalogIndex backed by in-memory DuckDB and Chroma clients."""
-        logger.debug(
-            "Creating in-memory CatalogIndex for %s entries with collection '%s'",
-            len(catalog),
-            collection_name,
-        )
-        client = chromadb.EphemeralClient()
-        collection = client.get_or_create_collection(collection_name)
-        conn = duckdb.connect(":memory:")
-        index = cls(catalog, collection=collection, conn=conn)
-        if build:
-            index.build()
-        return index
 
     def build(self):
         logger.debug("Building catalog index for %s entries", len(self.catalog))
@@ -251,13 +197,9 @@ class CatalogIndex:
 
 
 __all__ = [
-    "APP_CACHEDIR",
     "CATALOG_DF_RELATION",
     "CatalogIndex",
     "EMBEDDING_COL",
     "EMBEDDINGS_DF_RELATION",
     "EMBEDDINGS_TABLE",
-    "create_default_chroma_client",
-    "create_default_duckdb_conn",
-    "destroy_cache",
 ]

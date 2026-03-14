@@ -9,7 +9,7 @@ dependencies = [
   "bibtexparser>=1.4.3",
   "chartcoach",
   "joblib>=1.5.3",
-  "marimo",
+  "marimo[recommended]",
   "pyzotero>=1.8.0",
   "tenacity>=9.1.4",
   "tqdm>=4.67.3",

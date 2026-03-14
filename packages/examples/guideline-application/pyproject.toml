@@ -9,7 +9,7 @@ dependencies = [
   "draco @ https://files.peter.gy/pkg/py/draco/draco-2.0.1-py3-none-any.whl",
   "dspy>=3.1.2",
   "httpx>=0.28.1",
-  "marimo",
+  "marimo[recommended]",
   "pillow>=12.1.0",
   "vega-lite-linter @ https://files.peter.gy/pkg/py/vega-lite-linter/vega_lite_linter-0.0.1-py3-none-any.whl",
 ]

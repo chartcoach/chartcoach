@@ -4,6 +4,7 @@ members = [
     "packages/examples/guideline-cataloging",
     "packages/examples/guideline-analysis",
     "packages/examples/guideline-application",
+    "apps/visground",
 ]
 
 [dependency-groups]
@@ -16,15 +17,8 @@ dev = [
 # https://github.com/charliermarsh/ruff
 [tool.ruff]
 extend-include = ["*.ipynb"]
+extend-exclude = ["apps/visground/data/**"]
 
 [tool.ruff.lint]
 pydocstyle = { convention = "numpy" }
 ignore = []
-
-[tool.coverage.run]
-branch = false
-source = ["chartcoach"]
-
-[tool.coverage.report]
-show_missing = true
-skip_covered = true

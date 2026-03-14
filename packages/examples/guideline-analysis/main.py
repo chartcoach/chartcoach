@@ -617,7 +617,7 @@ def _(Catalog, catalog_parquet, pl):
 
 
 @app.cell
-def _(create_default_chroma_client):
+def _(cache_dir, create_chroma_client):
     # import chromadb
     import chromadb.utils.embedding_functions as embedding_functions
     import os
@@ -628,7 +628,7 @@ def _(create_default_chroma_client):
         model_name="openai/text-embedding-3-small",
     )
 
-    client = create_default_chroma_client()
+    client = create_chroma_client(cache_dir / "chroma_db")
 
     collection = client.get_or_create_collection(
         name="catalog",
@@ -638,31 +638,11 @@ def _(create_default_chroma_client):
 
 
 @app.cell
-def _(CatalogIndex, catalog, collection, create_default_duckdb_conn):
-    conn = create_default_duckdb_conn()
+def _(CatalogIndex, cache_dir, catalog, collection, create_duckdb_conn):
+    conn = create_duckdb_conn(cache_dir / "duckdb_catalog.db")
     index = CatalogIndex(catalog, collection=collection, conn=conn)
     index.build()
     return conn, index
-
-
-@app.cell
-def _(CatalogIndex, catalog):
-    ci = CatalogIndex.in_memory(catalog)
-    return (ci,)
-
-
-@app.cell
-def _(ci):
-    from chartcoach.tools import CatalogIndexTools
-
-    tools = CatalogIndexTools(ci)
-    return (tools,)
-
-
-@app.cell
-def _(tools):
-    tools.duckdb_info()
-    return
 
 
 @app.cell(hide_code=True)
@@ -688,18 +668,19 @@ def _():
 
     import marimo as mo
     import polars as pl
+    import platformdirs
 
     from chartcoach import Catalog, CatalogIndex
-    from chartcoach.catalog import (
-        create_default_chroma_client,
-        create_default_duckdb_conn,
-    )
+    from chartcoach.catalog.clients import create_chroma_client, create_duckdb_conn
+
+    cache_dir = pathlib.Path(platformdirs.user_cache_dir("chartcoach"))
 
     return (
         Catalog,
         CatalogIndex,
-        create_default_chroma_client,
-        create_default_duckdb_conn,
+        cache_dir,
+        create_chroma_client,
+        create_duckdb_conn,
         mo,
         pathlib,
         pl,
