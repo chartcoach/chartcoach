@@ -137,6 +137,26 @@ class Catalog:
         return self._labels_df.clone()
 
     @cached_property
+    def _guideline_labels_df(self) -> pl.DataFrame:
+        from .tables import build_guideline_labels_df
+
+        return build_guideline_labels_df(self._guidelines_df)
+
+    @property
+    def guideline_labels_df(self) -> pl.DataFrame:
+        return self._guideline_labels_df.clone()
+
+    @cached_property
+    def _guideline_references_df(self) -> pl.DataFrame:
+        from .tables import build_guideline_references_df
+
+        return build_guideline_references_df(self._df)
+
+    @property
+    def guideline_references_df(self) -> pl.DataFrame:
+        return self._guideline_references_df.clone()
+
+    @cached_property
     def _docs_df(self) -> pl.DataFrame:
         from .documents import build_docs_df
 

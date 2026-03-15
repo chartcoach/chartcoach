@@ -632,7 +632,7 @@ def _(cache_dir, create_chroma_client):
 
     collection = client.get_or_create_collection(
         name="catalog",
-        embedding_function=openrouter_ef,
+        # embedding_function=openrouter_ef,
     )
     return (collection,)
 
@@ -674,7 +674,6 @@ def _():
     from chartcoach.catalog.clients import create_chroma_client, create_duckdb_conn
 
     cache_dir = pathlib.Path(platformdirs.user_cache_dir("chartcoach"))
-
     return (
         Catalog,
         CatalogIndex,

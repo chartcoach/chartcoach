@@ -1,0 +1,2 @@
+# Skip repo data artifacts during JS formatting.
+apps/visground/data/

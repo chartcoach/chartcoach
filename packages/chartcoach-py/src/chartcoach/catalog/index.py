@@ -15,7 +15,19 @@ from .collection import Catalog
 EMBEDDING_COL = "embedding"
 EMBEDDINGS_TABLE = "embeddings"
 CATALOG_DF_RELATION = "catalog_df"
+SECTIONS_RELATION = "sections"
+GUIDELINE_LABELS_RELATION = "guideline_labels"
+REFERENCES_RELATION = "reference_entries"
+GUIDELINE_REFERENCES_RELATION = "guideline_references"
 EMBEDDINGS_DF_RELATION = "embeddings_df"
+STRUCTURED_DUCKDB_RELATIONS = (
+    (CATALOG_DF_RELATION, "catalog_df"),
+    (SECTIONS_RELATION, "sections_df"),
+    (GUIDELINE_LABELS_RELATION, "guideline_labels_df"),
+    (REFERENCES_RELATION, "references_df"),
+    (GUIDELINE_REFERENCES_RELATION, "guideline_references_df"),
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -63,24 +75,6 @@ def _embedding_dimensions(embeddings_df: pl.DataFrame) -> int:
     return len(first_embedding)
 
 
-def _duckdb_setup_sql(ndims: int) -> str:
-    return f"""
-    INSTALL vss; LOAD vss; SET hnsw_enable_experimental_persistence = true;
-
-    CREATE OR REPLACE TABLE "{EMBEDDINGS_TABLE}" as (
-        SELECT id AS slug,
-               parent_id AS id,
-               doc,
-               role,
-               "{EMBEDDING_COL}"::FLOAT[{ndims}] AS "{EMBEDDING_COL}"
-        FROM {EMBEDDINGS_DF_RELATION}
-    );
-
-    DROP INDEX IF EXISTS idx;
-    CREATE INDEX idx ON "{EMBEDDINGS_TABLE}" USING HNSW ("{EMBEDDING_COL}");
-    """
-
-
 def _embeddings_response_to_frame(
     res: Mapping[str, Sequence[object]],
 ) -> pl.DataFrame:
@@ -112,7 +106,7 @@ class CatalogIndex:
             len(self._catalog),
         )
 
-    def build(self):
+    def build(self) -> None:
         logger.debug("Building catalog index for %s entries", len(self.catalog))
         self._init_collection()
         self._init_duckdb_conn()
@@ -159,23 +153,95 @@ class CatalogIndex:
         embeddings_df = self.embeddings_df
         ndims = _embedding_dimensions(embeddings_df)
         logger.debug(
-            "Registering %s embeddings with DuckDB using %s dimensions",
+            "Persisting %s embeddings and structured catalog relations into DuckDB",
             embeddings_df.height,
-            ndims,
         )
-        self.conn.register(EMBEDDINGS_DF_RELATION, embeddings_df)
-        self.conn.execute(_duckdb_setup_sql(ndims))
-        self.conn.unregister(EMBEDDINGS_DF_RELATION)
-        self.conn.register(CATALOG_DF_RELATION, self.catalog_df)
+
+        relations = [(EMBEDDINGS_DF_RELATION, embeddings_df)] + [
+            (self._source_relation_name(relation_name), getattr(self, frame_attr))
+            for relation_name, frame_attr in STRUCTURED_DUCKDB_RELATIONS
+        ]
+        for relation_name, frame in relations:
+            self.conn.register(relation_name, frame)
+
+        try:
+            self._configure_duckdb_extensions()
+            self._persist_embeddings_table(ndims)
+            self._persist_structured_duckdb_relations()
+        finally:
+            for relation_name, _ in relations:
+                self.conn.unregister(relation_name)
+
         logger.debug(
-            "Registered %s in DuckDB with %s rows",
-            CATALOG_DF_RELATION,
-            self.catalog_df.height,
+            "Persisted DuckDB relations: %s",
+            [
+                CATALOG_DF_RELATION,
+                SECTIONS_RELATION,
+                GUIDELINE_LABELS_RELATION,
+                REFERENCES_RELATION,
+                GUIDELINE_REFERENCES_RELATION,
+                EMBEDDINGS_TABLE,
+            ],
         )
+
+    @staticmethod
+    def _source_relation_name(relation_name: str) -> str:
+        return f"{relation_name}_source"
+
+    def _persist_relation(self, relation_name: str, source_relation_name: str) -> None:
+        self.conn.execute(
+            f'create or replace table "{relation_name}" as (select * from "{source_relation_name}")'
+        )
+
+    def _configure_duckdb_extensions(self) -> None:
+        self.conn.execute(
+            "INSTALL vss; LOAD vss; SET hnsw_enable_experimental_persistence = true;"
+        )
+
+    def _persist_embeddings_table(self, ndims: int) -> None:
+        self.conn.execute(
+            f'''
+            create or replace table "{EMBEDDINGS_TABLE}" as (
+                select
+                    id as slug,
+                    parent_id as id,
+                    doc,
+                    role,
+                    "{EMBEDDING_COL}"::float[{ndims}] as "{EMBEDDING_COL}"
+                from "{EMBEDDINGS_DF_RELATION}"
+            )
+            '''
+        )
+        self.conn.execute("drop index if exists idx;")
+        self.conn.execute(
+            f'create index idx on "{EMBEDDINGS_TABLE}" using hnsw ("{EMBEDDING_COL}");'
+        )
+
+    def _persist_structured_duckdb_relations(self) -> None:
+        for relation_name, _ in STRUCTURED_DUCKDB_RELATIONS:
+            self._persist_relation(
+                relation_name, self._source_relation_name(relation_name)
+            )
 
     @cached_property
     def catalog_df(self) -> pl.DataFrame:
-        return self.catalog.df.drop("id").unnest("guideline").drop("bibliography")
+        return self.catalog.guidelines_df.drop("bibliography")
+
+    @cached_property
+    def sections_df(self) -> pl.DataFrame:
+        return self.catalog.sections_df
+
+    @cached_property
+    def guideline_labels_df(self) -> pl.DataFrame:
+        return self.catalog.guideline_labels_df
+
+    @cached_property
+    def references_df(self) -> pl.DataFrame:
+        return self.catalog.references_df
+
+    @cached_property
+    def guideline_references_df(self) -> pl.DataFrame:
+        return self.catalog.guideline_references_df
 
     @cached_property
     def embeddings_df(self) -> pl.DataFrame:
@@ -202,4 +268,8 @@ __all__ = [
     "EMBEDDING_COL",
     "EMBEDDINGS_DF_RELATION",
     "EMBEDDINGS_TABLE",
+    "GUIDELINE_LABELS_RELATION",
+    "GUIDELINE_REFERENCES_RELATION",
+    "REFERENCES_RELATION",
+    "SECTIONS_RELATION",
 ]

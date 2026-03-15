@@ -17,7 +17,11 @@ dev = [
 # https://github.com/charliermarsh/ruff
 [tool.ruff]
 extend-include = ["*.ipynb"]
-extend-exclude = ["apps/visground/data/**"]
+extend-exclude = ["apps/visground/data"]
+force-exclude = true
+
+[tool.ruff.format]
+exclude = ["apps/visground/data"]
 
 [tool.ruff.lint]
 pydocstyle = { convention = "numpy" }
