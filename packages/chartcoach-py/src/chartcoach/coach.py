@@ -11,9 +11,29 @@ from typing import Any
 
 import platformdirs
 
-from .catalog import Catalog, CatalogIndex
+from .catalog import (
+    CATALOG_DF_RELATION,
+    EMBEDDINGS_TABLE,
+    GUIDELINE_LABELS_RELATION,
+    GUIDELINE_REFERENCES_RELATION,
+    REFERENCES_RELATION,
+    SECTIONS_RELATION,
+    Catalog,
+    CatalogIndex,
+)
 from .catalog.clients import create_chroma_client, create_duckdb_conn
 from .tools import CatalogIndexTools
+
+REQUIRED_DUCKDB_RELATIONS = frozenset(
+    {
+        CATALOG_DF_RELATION,
+        EMBEDDINGS_TABLE,
+        GUIDELINE_LABELS_RELATION,
+        GUIDELINE_REFERENCES_RELATION,
+        REFERENCES_RELATION,
+        SECTIONS_RELATION,
+    }
+)
 
 
 def _default_cache_dir() -> Path:
@@ -104,6 +124,10 @@ class ChartCoach:
             raise FileNotFoundError(
                 f"Cached catalog parquet not found at {resolved_config.catalog_cache_path}."
             )
+        if not _has_required_duckdb_relations(resolved_config.duckdb_path):
+            raise ValueError(
+                "Cached DuckDB file does not expose the required ChartCoach relations."
+            )
 
         expected_collection = str(
             manifest.get("collection_name", resolved_config.collection_name)
@@ -125,16 +149,19 @@ class ChartCoach:
     ) -> dict[str, Any]:
         resolved_config = config or ChartCoachConfig()
         manifest = _load_manifest(resolved_config.manifest_path)
+        duckdb_ready = _has_required_duckdb_relations(resolved_config.duckdb_path)
 
         return {
             "cache_dir": str(resolved_config.cache_dir),
             "collection_name": resolved_config.collection_name,
             "catalog_uri": resolved_config.catalog_uri,
             "ready": (
-                resolved_config.manifest_path.exists()
+                manifest is not None
+                and resolved_config.manifest_path.exists()
                 and resolved_config.catalog_cache_path.exists()
                 and resolved_config.chroma_cache_path.exists()
                 and resolved_config.duckdb_path.exists()
+                and duckdb_ready
             ),
             "artifacts": {
                 "manifest": str(resolved_config.manifest_path),
@@ -300,10 +327,29 @@ def _cache_matches(
         and config.catalog_cache_path.exists()
         and config.chroma_cache_path.exists()
         and config.duckdb_path.exists()
+        and _has_required_duckdb_relations(config.duckdb_path)
         and manifest.get("collection_name") == config.collection_name
         and manifest.get("catalog_uri") == config.catalog_uri
         and manifest.get("catalog_digest") == catalog_digest
     )
+
+
+def _has_required_duckdb_relations(path: Path) -> bool:
+    if not path.exists():
+        return False
+
+    conn = None
+    try:
+        conn = create_duckdb_conn(path, read_only=True)
+        relation_rows = conn.execute("show all tables").fetchall()
+    except Exception:
+        return False
+    finally:
+        if conn is not None:
+            conn.close()
+
+    relation_names = {str(row[2]) for row in relation_rows}
+    return REQUIRED_DUCKDB_RELATIONS.issubset(relation_names)
 
 
 def _swap_cache_dirs(*, staged_dir: Path, target_dir: Path) -> None:

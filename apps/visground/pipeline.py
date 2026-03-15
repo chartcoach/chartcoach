@@ -13,43 +13,52 @@ def _(VisEvalDataset, VisJudgeBenchDataset):
 
 @app.cell
 def _(viseval_dataset):
-    viseval_dataset.queries_df
+    viseval_dataset.vis_tasks_df
     return
-
-
-@app.cell
-def _(nl_query_intent_df, pl, viseval_dataset):
-    viseval_dataset.queries_df.join(nl_query_intent_df, on="nl_query").select(
-        "id",
-        "nl_query_intent",
-        "nl_query",
-        pl.exclude("id", "nl_query_intent", "nl_query"),
-    )
-    return
-
-
-@app.cell
-def _(VISGROUND_DATA_ROOT, pl):
-    nl_query_intent_df = pl.read_json(
-        VISGROUND_DATA_ROOT / "vis-eval" / "enrichment" / "nl_query_intent.json"
-    )
-    nl_query_intent_df
-    return (nl_query_intent_df,)
 
 
 @app.cell
 def _(viseval_dataset):
-    viseval_dataset.df.unnest('data')
+    viseval_dataset.vis_tasks_df.select('nl_query_canonical').sample(10)
+    return
+
+
+@app.cell
+def _(viseval_dataset):
+    viseval_dataset.nl_query_canonical_df.join(viseval_dataset.vis_tasks_df, on="nl_query_canonical", how="left").sample(32)
+    return
+
+
+@app.cell
+def _(pl, viseval_dataset):
+    tdf = (
+        viseval_dataset.df.unnest("data").select(
+            "id",
+            "db_id",
+            sql=pl.col("vis_query")
+            .struct.field("data_part")
+            .struct.field("sql_part"),
+            nl_query=pl.col("nl_queries").list.first(),
+        )
+    )
+    tdf
     return
 
 
 @app.cell
 def _():
+    return
+
+
+@app.cell(hide_code=True)
+def _():
     import marimo as mo
-    from visground.datasets import VisEvalDataset, VisJudgeBenchDataset, VISGROUND_DATA_ROOT
     import polars as pl
 
-    return VISGROUND_DATA_ROOT, VisEvalDataset, VisJudgeBenchDataset, pl
+    from visground.datasets import VISGROUND_DATA_ROOT, VisEvalDataset, VisJudgeBenchDataset
+    from visground.executor import pyexecute
+
+    return VisEvalDataset, VisJudgeBenchDataset, pl
 
 
 if __name__ == "__main__":

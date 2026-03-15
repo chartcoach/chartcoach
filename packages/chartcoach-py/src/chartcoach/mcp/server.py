@@ -1,21 +1,59 @@
 from __future__ import annotations
 
 import logging
-from functools import cache
-from typing import Any
+import os
+from dataclasses import dataclass, replace
+from pathlib import Path
+from typing import Any, Literal, cast
 
 from mcp.server import FastMCP
+from mcp.server.transport_security import TransportSecuritySettings
 
 from ..coach import ChartCoach, ChartCoachConfig
 
+TransportName = Literal["stdio", "sse", "streamable-http"]
+LogLevelName = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+
+DEFAULT_TRANSPORT = "stdio"
+DEFAULT_HOST = "127.0.0.1"
+DEFAULT_PORT = 8000
+DEFAULT_LOG_LEVEL = "INFO"
+
+TRANSPORT_CHOICES: tuple[TransportName, ...] = ("stdio", "sse", "streamable-http")
+LOG_LEVEL_CHOICES: tuple[LogLevelName, ...] = (
+    "DEBUG",
+    "INFO",
+    "WARNING",
+    "ERROR",
+    "CRITICAL",
+)
+LOCALHOST_HOSTS = {"127.0.0.1", "localhost", "::1"}
+
+
+@dataclass(frozen=True)
+class RuntimeConfig:
+    transport: TransportName = DEFAULT_TRANSPORT
+    host: str = DEFAULT_HOST
+    port: int = DEFAULT_PORT
+    log_level: LogLevelName = DEFAULT_LOG_LEVEL
+
+
 mcp = FastMCP("chartcoach", json_response=True)
 _coach: ChartCoach | None = None
+_resolved_config: ChartCoachConfig | None = None
 logger = logging.getLogger(__name__)
 
 
-@cache
 def _config() -> ChartCoachConfig:
-    return ChartCoachConfig.from_env()
+    global _resolved_config
+    if _resolved_config is None:
+        _resolved_config = ChartCoachConfig.from_env()
+    return _resolved_config
+
+
+def _set_config(config: ChartCoachConfig) -> None:
+    global _resolved_config
+    _resolved_config = config
 
 
 def _coach_from_cache() -> ChartCoach:
@@ -26,72 +64,90 @@ def _coach_from_cache() -> ChartCoach:
 
 
 def _reset_cached_state() -> None:
-    global _coach
+    global _coach, _resolved_config
     _coach = None
-    _config.cache_clear()
+    _resolved_config = None
 
 
-@mcp.tool()
-def index_status() -> dict[str, Any]:
-    """Check whether the server is pointing at a ready, queryable local index.
+def _resolve_config(
+    *,
+    cache_dir: str | Path | None = None,
+    collection_name: str | None = None,
+    catalog_uri: str | None = None,
+) -> ChartCoachConfig:
+    config = ChartCoachConfig.from_env()
+    overrides: dict[str, str | Path] = {}
 
-    Call this when you need operational confidence before issuing larger reads.
-    The result tells you where the frozen artifacts live, whether each expected
-    file exists, and whether the server considers the cache ready overall.
+    if cache_dir is not None:
+        overrides["cache_dir"] = Path(cache_dir)
+    if collection_name is not None:
+        overrides["collection_name"] = collection_name
+    if catalog_uri is not None:
+        overrides["catalog_uri"] = catalog_uri
 
-    The most useful fields for clients are usually:
-
-    - ``ready``: whether all required artifacts are present
-    - ``artifacts``: concrete local paths for manifest, parquet, Chroma, and DuckDB
-    - ``manifest``: catalog source, digest, build time, and entry count
-
-    Use this tool for health checks, debugging configuration issues, or
-    confirming which catalog snapshot the server has loaded.
-    """
-    return ChartCoach.cache_status(config=_config())
+    return replace(config, **overrides) if overrides else config
 
 
-@mcp.tool()
-def read_info(sample_limit: int | None = None) -> dict[str, Any]:
-    """Get the one-stop map of the ChartCoach read surface before querying it.
+def _resolve_runtime(
+    *,
+    transport: str | None = None,
+    host: str | None = None,
+    port: int | None = None,
+    log_level: str | None = None,
+) -> RuntimeConfig:
+    resolved_transport = (
+        transport or os.getenv("MCP_TRANSPORT") or DEFAULT_TRANSPORT
+    ).lower()
+    if resolved_transport not in TRANSPORT_CHOICES:
+        choices = ", ".join(TRANSPORT_CHOICES)
+        raise ValueError(
+            f"Unsupported MCP transport {resolved_transport!r}. Expected one of: {choices}."
+        )
 
-    This is the best first tool for a client that has not seen the server
-    before. It explains how the relational and vector sides fit together and
-    gives just enough sample data to plan follow-up calls without guessing.
+    resolved_host = host or os.getenv("MCP_HOST") or DEFAULT_HOST
 
-    The response is especially useful for:
+    raw_port = port if port is not None else os.getenv("MCP_PORT")
+    resolved_port = int(raw_port) if raw_port is not None else DEFAULT_PORT
 
-    - finding the main DuckDB relations and their columns
-    - understanding how Chroma ids and metadata join back to DuckDB rows
-    - seeing the available chunk roles and default query settings
-    - inspecting representative documents, metadata, and field shapes
+    resolved_log_level = (
+        log_level or os.getenv("MCP_LOG_LEVEL") or DEFAULT_LOG_LEVEL
+    ).upper()
+    if resolved_log_level not in LOG_LEVEL_CHOICES:
+        choices = ", ".join(LOG_LEVEL_CHOICES)
+        raise ValueError(
+            f"Unsupported MCP log level {resolved_log_level!r}. Expected one of: {choices}."
+        )
 
-    ``sample_limit`` controls how much example data is included in the payload.
-    Keep it small when you only need orientation; increase it when you want a
-    richer sample before writing SQL or retrieval filters.
-    """
-    return (
-        _coach_from_cache().tools(auto_build=False).read_info(sample_limit=sample_limit)
+    return RuntimeConfig(
+        transport=cast(TransportName, resolved_transport),
+        host=resolved_host,
+        port=resolved_port,
+        log_level=cast(LogLevelName, resolved_log_level),
     )
+
+
+def _transport_security_for_host(host: str) -> TransportSecuritySettings | None:
+    if host not in LOCALHOST_HOSTS:
+        return None
+
+    return TransportSecuritySettings(
+        enable_dns_rebinding_protection=True,
+        allowed_hosts=["127.0.0.1:*", "localhost:*", "[::1]:*"],
+        allowed_origins=["http://127.0.0.1:*", "http://localhost:*", "http://[::1]:*"],
+    )
+
+
+def _configure_logging(log_level: LogLevelName) -> None:
+    logging.basicConfig(
+        level=getattr(logging, log_level),
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    )
+    logging.getLogger().setLevel(getattr(logging, log_level))
 
 
 @mcp.tool()
 def duckdb_query(sql: str, row_limit: int | None = None) -> dict[str, Any]:
-    """Run a read-only DuckDB query when you want exact relational analysis.
-
-    Use this after ``read_info`` when you need counting, grouping, joins, or
-    filtering over the structured catalog tables. This is the right tool when
-    you already know the shape of the data and want precise tabular results.
-
-    Typical client patterns include:
-
-    - counting chunk roles or labels
-    - joining ``embeddings`` back to ``catalog_df`` by guideline id
-    - filtering guidelines by labels, sections, or text-derived summaries
-
-    ``row_limit`` caps the returned rows, and the response tells you whether the
-    output was truncated. Only a single read-only SQL statement is allowed.
-    """
+    """Run one read-only DuckDB statement against the persisted catalog relations."""
     return (
         _coach_from_cache()
         .tools(auto_build=False)
@@ -110,24 +166,7 @@ def chroma_query(
     where_document: dict[str, Any] | None = None,
     include: list[str] | None = None,
 ) -> dict[str, Any]:
-    """Run semantic retrieval over the ChartCoach document chunks.
-
-    Use this when you want the most relevant guidance for a natural-language
-    question such as a design problem, a critique target, or a rewrite goal.
-    Start with plain ``query_texts`` and add filters only when you need to
-    narrow the search to a role or a known guideline family.
-
-    Practical examples:
-
-    - search for advice about legends, labels, clutter, or color use
-    - restrict results to one chunk type with ``where={"role": "section.advice"}``
-    - combine semantic search with content filters when you need a specific phrase
-
-    ``n_results`` controls how many matches you get per query text. By default
-    the response includes documents, metadata, and distances, which is usually
-    enough to rank results and decide whether to follow up with ``chroma_get``
-    or a DuckDB query.
-    """
+    """Run semantic search over the ChartCoach Chroma collection."""
     return (
         _coach_from_cache()
         .tools(auto_build=False)
@@ -150,22 +189,7 @@ def chroma_get(
     limit: int | None = None,
     offset: int | None = None,
 ) -> dict[str, Any]:
-    """Fetch Chroma documents directly by id or by filter instead of by similarity.
-
-    Use this when you already know what you want to retrieve: a specific chunk,
-    all chunks for one guideline, or a paginated slice of documents that match
-    a metadata condition.
-
-    Common client uses include:
-
-    - fetching ids returned earlier by ``chroma_query``
-    - listing all chunks for one guideline via ``where={"parent_id": "..."}``
-    - browsing a role such as ``section.advice`` with ``limit`` and ``offset``
-
-    This is the best tool for deterministic retrieval. By default it returns
-    documents and metadata, and you can narrow or expand the payload with
-    ``include`` when needed.
-    """
+    """Fetch Chroma documents directly by id or metadata filter."""
     return (
         _coach_from_cache()
         .tools(auto_build=False)
@@ -180,29 +204,61 @@ def chroma_get(
     )
 
 
-def main() -> None:
+def main(
+    *,
+    cache_dir: str | Path | None = None,
+    collection_name: str | None = None,
+    catalog_uri: str | None = None,
+    transport: str | None = None,
+    host: str | None = None,
+    port: int | None = None,
+    log_level: str | None = None,
+) -> None:
     """Ensure frozen artifacts exist, then run the ChartCoach MCP server."""
     global _coach
+
+    _reset_cached_state()
+    config = _resolve_config(
+        cache_dir=cache_dir,
+        collection_name=collection_name,
+        catalog_uri=catalog_uri,
+    )
+    runtime = _resolve_runtime(
+        transport=transport,
+        host=host,
+        port=port,
+        log_level=log_level,
+    )
+    _set_config(config)
+
+    mcp.settings.host = runtime.host
+    mcp.settings.port = runtime.port
+    mcp.settings.log_level = runtime.log_level
+    mcp.settings.transport_security = _transport_security_for_host(runtime.host)
+    _configure_logging(runtime.log_level)
+
     try:
-        config = _config()
         logger.info(
-            "🚀 Starting ChartCoach MCP server with cache_dir=%s collection_name=%s catalog_uri=%s",
+            "Starting ChartCoach MCP server with cache_dir=%s collection_name=%s catalog_uri=%s transport=%s host=%s port=%s",
             config.cache_dir,
             config.collection_name,
             config.catalog_uri,
+            runtime.transport,
+            runtime.host,
+            runtime.port,
         )
 
-        logger.info("🧱 Ensuring ChartCoach cache artifacts exist before server start")
+        logger.info("Ensuring ChartCoach cache artifacts exist before server start")
         ChartCoach.ensure_cache(config=config)
 
-        logger.info("📦 Loading ChartCoach cache-backed runtime")
+        logger.info("Loading ChartCoach cache-backed runtime")
         _coach = ChartCoach.from_cache(config=config)
 
-        logger.info("🔎 Loading cached ChartCoach index into memory")
+        logger.info("Loading cached ChartCoach index into memory")
         _coach.load_index()
 
-        logger.info("🟢 ChartCoach MCP startup complete; entering FastMCP run loop")
-        mcp.run()
+        logger.info("ChartCoach MCP startup complete; entering FastMCP run loop")
+        mcp.run(transport=runtime.transport)
     except Exception:
         logger.exception("ChartCoach MCP startup failed")
         raise
