@@ -14,7 +14,6 @@ dev = [
     "ty>=0.0.11",
 ]
 
-# https://github.com/charliermarsh/ruff
 [tool.ruff]
 extend-include = ["*.ipynb"]
 extend-exclude = ["apps/visground/data"]
