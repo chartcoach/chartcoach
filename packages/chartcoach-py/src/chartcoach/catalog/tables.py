@@ -5,10 +5,10 @@ from typing import TYPE_CHECKING
 
 import polars as pl
 
-from ..guideline import format_bibtex_entry, parse_bibtex_entry
+from ..guideline.bibliography import format_bibtex_entry, parse_bibtex_entry
 
 if TYPE_CHECKING:
-    from .collection import CatalogEntry
+    from .collection import Entry
 
 
 SECTION_SCHEMA = pl.Struct(
@@ -67,7 +67,7 @@ REFERENCES_SCHEMA = {
 }
 
 
-def build_catalog_df(entries: Sequence[CatalogEntry]) -> pl.DataFrame:
+def build_catalog_df(entries: Sequence[Entry]) -> pl.DataFrame:
     """Build the canonical catalog dataframe."""
     if not entries:
         return pl.DataFrame(schema=CATALOG_SCHEMA)

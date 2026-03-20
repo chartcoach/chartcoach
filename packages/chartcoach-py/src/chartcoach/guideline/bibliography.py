@@ -1,5 +1,20 @@
 from __future__ import annotations
 
+import io
+import re
+import warnings
+from typing import Any
+
+import bibtexparser
+from citeproc import (
+    Citation,
+    CitationItem,
+    CitationStylesBibliography,
+    CitationStylesStyle,
+    formatter,
+)
+from citeproc.source.bibtex import BibTeX
+
 MACRO_REPLACE_MAP = {
     "textraquo": "»",
     "textgreater": ">",
@@ -15,8 +30,6 @@ MACRO_REPLACE_MAP = {
 
 def parse_bibtex(bibtex_content: str) -> list[str]:
     """Split BibTeX content into individual entries."""
-    import re
-
     comment_free = "\n".join(
         line for line in bibtex_content.splitlines() if not line.strip().startswith("%")
     )
@@ -25,10 +38,8 @@ def parse_bibtex(bibtex_content: str) -> list[str]:
     ]
 
 
-def parse_bibtex_entry(bibtex_str: str) -> dict:
+def parse_bibtex_entry(bibtex_str: str) -> dict[str, Any]:
     """Parse a single BibTeX entry into a dictionary of fields."""
-    import bibtexparser
-
     return bibtexparser.loads(bibtex_str).entries[0]
 
 
@@ -41,18 +52,6 @@ def _normalize_bibtex_entry(bibtex_str: str) -> str:
 
 def try_format_bibtex_entry(bibtex_entry: str, style: str = "harvard1") -> str:
     """Format a BibTeX entry with citeproc, raising on failures."""
-    import io
-    import warnings
-
-    from citeproc import (
-        Citation,
-        CitationItem,
-        CitationStylesBibliography,
-        CitationStylesStyle,
-        formatter,
-    )
-    from citeproc.source.bibtex import BibTeX
-
     normalized_entry = _normalize_bibtex_entry(bibtex_entry)
 
     with warnings.catch_warnings():

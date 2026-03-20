@@ -41,6 +41,10 @@ class VisEvalDataset:
         ).sort("db_id")
 
     @cached_property
+    def raw(self) -> dict[str, dict]:
+        return json.loads((self._root / "visEval.json").read_text(encoding="utf-8"))
+
+    @cached_property
     def df(self) -> pl.DataFrame:
         return (
             duckdb.query(f"""select * from '{self._root / "visEval.json"}'""")
@@ -58,6 +62,26 @@ class VisEvalDataset:
             self.df.unnest("data")
             .explode("nl_queries")
             .rename({"nl_queries": "nl_query"})
+        )
+
+    @cached_property
+    def queries_enriched_df(self) -> pl.DataFrame:
+        enrichment_columns = self.vis_tasks_df.columns
+        return (
+            self.queries_df.join(
+                self.nl_query_canonical_df,
+                on="nl_query",
+                how="left",
+            )
+            .join(
+                self.vis_tasks_df,
+                on="nl_query_canonical",
+                how="left",
+            )
+            .select(
+                pl.exclude(enrichment_columns),
+                enrichment=pl.struct(enrichment_columns),
+            )
         )
 
     @cached_property
@@ -89,7 +113,7 @@ class VisEvalDataset:
         conn = duckdb.connect()
         tables = self.databases.get(db_id, [])
         stmts = [
-            f'CREATE TABLE IF NOT EXISTS "{table}" AS SELECT * FROM "{self._root / "databases" / db_id / f"{table}.csv"}";'
+            f"""CREATE TABLE IF NOT EXISTS "{table}" AS SELECT * FROM read_csv('{self._root / "databases" / db_id / f"{table}.csv"}', sample_size = -1);"""
             for table in tables
         ]
         conn.execute("\n".join(stmts))
@@ -107,4 +131,5 @@ class VisEvalDataset:
         sql = data["vis_query"]["data_part"]["sql_part"]
 
         db = self.database(db_id)
+
         return db.query(sql)

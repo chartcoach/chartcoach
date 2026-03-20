@@ -1,17 +1,26 @@
+"""ChartCoach helps you search and inspect a catalog of chart guidance."""
+
 from importlib.metadata import version
 
-from .coach import ChartCoach
-from .catalog import Catalog, CatalogEntry, CatalogIndex
-from .guideline import Guideline, GuidelineSection
+from .catalog.collection import Catalog, Entry
+from .catalog.index import Index
+from .coach import Coach
+from .create import CacheMode, Settings, create
+from .guideline.core import Guideline, Section
+from .tools import Tools
 
 __version__ = version("chartcoach")
 
 __all__ = [
     "__version__",
+    "CacheMode",
     "Catalog",
-    "CatalogEntry",
-    "CatalogIndex",
-    "ChartCoach",
+    "Coach",
+    "Entry",
     "Guideline",
-    "GuidelineSection",
+    "Index",
+    "Section",
+    "Settings",
+    "Tools",
+    "create",
 ]

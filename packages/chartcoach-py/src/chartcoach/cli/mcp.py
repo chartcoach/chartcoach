@@ -6,12 +6,14 @@ from typing import Any
 
 import click
 
+CONTEXT_SETTINGS = {"help_option_names": ["-h", "--help"]}
 TRANSPORT_CHOICES = ("stdio", "sse", "streamable-http")
 LOG_LEVEL_CHOICES = ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL")
-CONTEXT_SETTINGS = {"help_option_names": ["-h", "--help"]}
-MCP_HELP = """Start the ChartCoach MCP server and ensure the local cache is ready before serving requests.
+MCP_HELP = """Start the ChartCoach MCP server.
 
-CLI options override environment variables. When an option is omitted, the command falls back to the matching env var and then the built-in default.
+ChartCoach creates a ready coach at startup, then exposes its tools over MCP.
+CLI options override environment variables. When an option is omitted, the command falls
+back to the matching env var and then the built-in default.
 """
 
 
@@ -36,18 +38,14 @@ def _load_server_module() -> Any:
     "--catalog-path",
     metavar="PATH_OR_URL",
     help=(
-        "Catalog parquet source to cache before startup. Overrides CHARTCOACH_CATALOG_PATH. "
-        "Required unless CHARTCOACH_CATALOG_PATH is already set."
+        "Catalog source to load before building or reusing cached search data. "
+        "Overrides CHARTCOACH_CATALOG_PATH."
     ),
 )
 @click.option(
     "--cache-dir",
     type=click.Path(file_okay=False, dir_okay=True, path_type=Path),
-    help="Directory for the cached parquet, Chroma, DuckDB, and manifest artifacts. Overrides CHARTCOACH_CACHE_DIR.",
-)
-@click.option(
-    "--collection-name",
-    help="Collection name for the cached Chroma artifacts. Overrides CHARTCOACH_COLLECTION_NAME.",
+    help="Directory root for cached catalog, Chroma, and DuckDB artifacts. Overrides CHARTCOACH_CACHE_DIR.",
 )
 @click.option(
     "--transport",
@@ -71,22 +69,27 @@ def _load_server_module() -> Any:
 def mcp_command(
     catalog_path: str | None,
     cache_dir: Path | None,
-    collection_name: str | None,
     transport: str | None,
     host: str | None,
     port: int | None,
     log_level: str | None,
 ) -> None:
     """Start the ChartCoach MCP server."""
+
     server = _load_server_module()
-    server.main(
-        catalog_uri=catalog_path,
+    resolved_settings = server._resolve_settings(
         cache_dir=cache_dir,
-        collection_name=collection_name,
+        catalog=catalog_path,
+    )
+    resolved_runtime = server._resolve_runtime(
         transport=transport.lower() if transport is not None else None,
         host=host,
         port=port,
         log_level=log_level.upper() if log_level is not None else None,
+    )
+    server.main(
+        settings=resolved_settings,
+        runtime=resolved_runtime,
     )
 
 

@@ -3,14 +3,13 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 
 import polars as pl
+import polars_hash as plh
 
 
 def build_docs_df(
     guidelines_df: pl.DataFrame, references_df: pl.DataFrame
 ) -> pl.DataFrame:
-    """Build the embedding/document dataframe used by CatalogIndex."""
-    import polars_hash as plh
-
+    """Build the text records used by the search index."""
     docs_df = pl.concat(
         [
             _build_toplevel_docs_df(guidelines_df),
@@ -34,6 +33,7 @@ def _build_toplevel_docs_df(guidelines_df: pl.DataFrame) -> pl.DataFrame:
         guidelines_df.select(
             "id",
             overview=pl.concat_str(["title", "description"], separator="\n\n"),
+            document=pl.concat_str(["title", "description", "body"], separator="\n\n"),
             labels="labels",
         )
         .unpivot(

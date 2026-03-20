@@ -3,83 +3,78 @@ from __future__ import annotations
 from collections.abc import Mapping
 from datetime import date, datetime, time
 from decimal import Decimal
-from typing import Any, cast
+from typing import Any, TypeAlias, cast
 
 from chromadb.api.types import Include, Where, WhereDocument
 
-from .catalog import CatalogIndex
+from .catalog.index import Index
+from .constants import DEFAULT_CHROMA_TOP_K, DEFAULT_DUCKDB_ROW_LIMIT
 
-DEFAULT_CHROMA_QUERY_INCLUDE: Include = ["documents", "metadatas", "distances"]
-DEFAULT_CHROMA_GET_INCLUDE: Include = ["documents", "metadatas"]
-READ_ONLY_SQL_PREFIXES = {"SELECT", "WITH", "SHOW", "DESCRIBE", "DESC", "EXPLAIN"}
+DEFAULT_SEARCH_INCLUDE: Include = ["documents", "metadatas", "distances"]
+DEFAULT_GET_INCLUDE: Include = ["documents", "metadatas"]
 MetadataFilter = dict[str, Any]
 DocumentFilter = dict[str, Any]
 IncludeFields = list[str]
+QueryInput: TypeAlias = str | list[str]
 
 
-class CatalogIndexTools:
-    """Transport-neutral query surface over a built ``CatalogIndex``."""
+class Tools:
+    """Small API for semantic search, direct lookup, and SQL."""
 
     def __init__(
         self,
-        index: CatalogIndex,
+        index: Index,
         *,
-        default_row_limit: int = 200,
-        default_top_k: int = 10,
-        auto_build: bool = True,
+        default_row_limit: int = DEFAULT_DUCKDB_ROW_LIMIT,
+        default_top_k: int = DEFAULT_CHROMA_TOP_K,
     ) -> None:
         self._index = index
         self._default_row_limit = default_row_limit
         self._default_top_k = default_top_k
-        self._auto_build = auto_build
-        if self._auto_build:
-            self._index.build()
 
     @property
-    def index(self) -> CatalogIndex:
-        """Return the wrapped ``CatalogIndex`` instance."""
+    def index(self) -> Index:
+        """Return the prepared search data behind these tools."""
+
         return self._index
 
-    def duckdb_query(
+    def sql(
         self,
         sql: str,
         *,
         row_limit: int | None = None,
     ) -> dict[str, Any]:
-        """Execute one read-only DuckDB statement against the persisted relations.
+        """Run SQL against the prepared DuckDB file."""
 
-        Use standard SQL discovery when you need orientation, for example:
-        ``show all tables``, ``describe <table>``, or ``select * from "<table>" limit ...``.
-        """
-        return self._execute_duckdb_query(sql, row_limit=row_limit)
+        return self._execute_sql(sql, row_limit=row_limit)
 
-    def chroma_query(
+    def search(
         self,
-        query_texts: list[str],
+        query_texts: QueryInput,
         *,
-        n_results: int | None = None,
+        limit: int | None = None,
         where: MetadataFilter | None = None,
         where_document: DocumentFilter | None = None,
         include: IncludeFields | None = None,
     ) -> dict[str, Any]:
-        """Run semantic search over the bound Chroma collection.
+        """Search by meaning, with optional metadata filters before scoring."""
 
-        Metadata filters are passed through directly. For list-valued labels,
-        use the live collection syntax ``{"labels": {"$contains": "<label>"}}``.
-        """
-        if not query_texts:
-            raise ValueError("The 'query_texts' list cannot be empty.")
+        resolved_queries = (
+            [query_texts] if isinstance(query_texts, str) else query_texts
+        )
+        if not resolved_queries:
+            raise ValueError("query_texts cannot be empty.")
 
         result = self.index.collection.query(
-            query_texts=query_texts,
-            n_results=n_results or self._default_top_k,
+            query_texts=resolved_queries,
+            n_results=self._default_top_k if limit is None else limit,
             where=cast(Where | None, where),
             where_document=cast(WhereDocument | None, where_document),
-            include=cast(Include, include or list(DEFAULT_CHROMA_QUERY_INCLUDE)),
+            include=cast(Include, include or list(DEFAULT_SEARCH_INCLUDE)),
         )
         return _normalize_for_json(result)
 
-    def chroma_get(
+    def get(
         self,
         *,
         ids: list[str] | None = None,
@@ -89,30 +84,28 @@ class CatalogIndexTools:
         limit: int | None = None,
         offset: int | None = None,
     ) -> dict[str, Any]:
-        """Fetch documents directly from the bound Chroma collection.
+        """Fetch stored search documents directly by id or filter."""
 
-        Metadata filters are passed through directly. For list-valued labels,
-        use the live collection syntax ``{"labels": {"$contains": "<label>"}}``.
-        """
         result = self.index.collection.get(
             ids=ids,
             where=cast(Where | None, where),
             where_document=cast(WhereDocument | None, where_document),
-            include=cast(Include, include or list(DEFAULT_CHROMA_GET_INCLUDE)),
+            include=cast(Include, include or list(DEFAULT_GET_INCLUDE)),
             limit=limit,
             offset=offset,
         )
         return _normalize_for_json(result)
 
-    def _execute_duckdb_query(
+    def _execute_sql(
         self,
         sql: str,
         *,
         row_limit: int | None,
     ) -> dict[str, Any]:
-        normalized_sql = _validate_read_only_sql(sql)
-
-        applied_row_limit = row_limit or self._default_row_limit
+        normalized_sql = sql.strip()
+        if not normalized_sql:
+            raise ValueError("SQL cannot be empty.")
+        applied_row_limit = self._default_row_limit if row_limit is None else row_limit
         cursor = self.index.conn.execute(normalized_sql)
         if cursor.description is None:
             return {
@@ -120,9 +113,7 @@ class CatalogIndexTools:
                 "columns": [],
                 "rows": [],
                 "row_count": 0,
-                "row_limit": applied_row_limit
-                if row_limit is not None
-                else self._default_row_limit,
+                "row_limit": applied_row_limit,
                 "truncated": False,
             }
 
@@ -151,9 +142,7 @@ class CatalogIndexTools:
             "columns": normalized_columns,
             "rows": normalized_rows,
             "row_count": len(normalized_rows),
-            "row_limit": applied_row_limit
-            if row_limit is not None
-            else self._default_row_limit,
+            "row_limit": applied_row_limit,
             "truncated": truncated,
         }
 
@@ -176,21 +165,4 @@ def _normalize_for_json(value: Any) -> Any:
     return str(value)
 
 
-def _validate_read_only_sql(sql: str) -> str:
-    normalized_sql = sql.strip()
-    if not normalized_sql:
-        raise ValueError("SQL cannot be empty.")
-
-    statements = [part.strip() for part in normalized_sql.split(";") if part.strip()]
-    if len(statements) != 1:
-        raise ValueError("duckdb_query only allows a single read-only SQL statement.")
-
-    statement = statements[0]
-    keyword = statement.split(maxsplit=1)[0].upper()
-    if keyword not in READ_ONLY_SQL_PREFIXES:
-        raise ValueError("duckdb_query only allows read-only SQL statements.")
-
-    return statement
-
-
-__all__ = ["CatalogIndexTools"]
+__all__ = ["Tools"]

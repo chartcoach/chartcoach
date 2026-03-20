@@ -27,6 +27,16 @@ STRUCTURED_DUCKDB_RELATIONS = (
     (REFERENCES_RELATION, "references_df"),
     (GUIDELINE_REFERENCES_RELATION, "guideline_references_df"),
 )
+PERSISTED_DUCKDB_RELATIONS = frozenset(
+    {
+        CATALOG_DF_RELATION,
+        EMBEDDINGS_TABLE,
+        GUIDELINE_LABELS_RELATION,
+        GUIDELINE_REFERENCES_RELATION,
+        REFERENCES_RELATION,
+        SECTIONS_RELATION,
+    }
+)
 
 logger = logging.getLogger(__name__)
 
@@ -50,13 +60,13 @@ def _batch_add_documents(
     batch_size: int,
 ) -> None:
     logger.debug(
-        "Adding %s documents to Chroma collection in batches of %s",
+        "Adding %s documents to the search store in batches of %s",
         len(ids),
         batch_size,
     )
     for i in tqdm(
         range(0, len(ids), batch_size),
-        desc=f"Indexing catalog into ChromaDB in batches of {batch_size}",
+        desc=f"Indexing catalog in batches of {batch_size}",
     ):
         collection.add(
             ids=ids[i : i + batch_size],
@@ -91,36 +101,41 @@ def _embeddings_response_to_frame(
     ).unnest("metadata")
 
 
-class CatalogIndex:
+class Index:
+    """Prepared search data and SQL tables for a catalog."""
+
     def __init__(
         self,
         catalog: Catalog,
         collection: chromadb.Collection,
         conn: duckdb.DuckDBPyConnection,
-    ):
+    ) -> None:
         self._catalog = catalog
         self._collection = collection
         self._conn = conn
-        logger.debug(
-            "Initialized CatalogIndex with %s catalog entries",
-            len(self._catalog),
-        )
 
     def build(self) -> None:
-        logger.debug("Building catalog index for %s entries", len(self.catalog))
+        """Populate the search store and SQL tables for this catalog."""
+
         self._init_collection()
         self._init_duckdb_conn()
 
     @property
     def catalog(self) -> Catalog:
+        """Return the catalog this index was built from."""
+
         return self._catalog
 
     @property
     def collection(self) -> chromadb.Collection:
+        """Return the stored search collection used for semantic lookup."""
+
         return self._collection
 
     @property
     def conn(self) -> duckdb.DuckDBPyConnection:
+        """Return the DuckDB connection with the prepared tables."""
+
         return self._conn
 
     def _init_collection(self, batch_size: int = 768) -> None:
@@ -129,17 +144,15 @@ class CatalogIndex:
 
         if existing_count == target_count:
             logger.debug(
-                "Skipping Chroma indexing; collection already has %s documents",
+                "Skipping search-store indexing; collection already has %s documents",
                 existing_count,
             )
             return
+        if existing_count != 0:
+            raise ValueError(
+                "Search collection is partially populated. Rebuild the cache namespace from scratch."
+            )
 
-        logger.debug(
-            "Preparing Chroma indexing: existing=%s target=%s batch_size=%s",
-            existing_count,
-            target_count,
-            batch_size,
-        )
         ids, documents, metadatas = _collection_payload(self.catalog)
         _batch_add_documents(
             self.collection,
@@ -152,10 +165,6 @@ class CatalogIndex:
     def _init_duckdb_conn(self) -> None:
         embeddings_df = self.embeddings_df
         ndims = _embedding_dimensions(embeddings_df)
-        logger.debug(
-            "Persisting %s embeddings and structured catalog relations into DuckDB",
-            embeddings_df.height,
-        )
 
         relations = [(EMBEDDINGS_DF_RELATION, embeddings_df)] + [
             (self._source_relation_name(relation_name), getattr(self, frame_attr))
@@ -171,18 +180,6 @@ class CatalogIndex:
         finally:
             for relation_name, _ in relations:
                 self.conn.unregister(relation_name)
-
-        logger.debug(
-            "Persisted DuckDB relations: %s",
-            [
-                CATALOG_DF_RELATION,
-                SECTIONS_RELATION,
-                GUIDELINE_LABELS_RELATION,
-                REFERENCES_RELATION,
-                GUIDELINE_REFERENCES_RELATION,
-                EMBEDDINGS_TABLE,
-            ],
-        )
 
     @staticmethod
     def _source_relation_name(relation_name: str) -> str:
@@ -225,30 +222,44 @@ class CatalogIndex:
 
     @cached_property
     def catalog_df(self) -> pl.DataFrame:
+        """Return one row per guideline."""
+
         return self.catalog.guidelines_df.drop("bibliography")
 
     @cached_property
     def sections_df(self) -> pl.DataFrame:
+        """Return one row per guideline section."""
+
         return self.catalog.sections_df
 
     @cached_property
     def guideline_labels_df(self) -> pl.DataFrame:
+        """Return labels attached to each guideline."""
+
         return self.catalog.guideline_labels_df
 
     @cached_property
     def references_df(self) -> pl.DataFrame:
+        """Return parsed reference rows."""
+
         return self.catalog.references_df
 
     @cached_property
     def guideline_references_df(self) -> pl.DataFrame:
+        """Return links between guidelines and references."""
+
         return self.catalog.guideline_references_df
 
     @cached_property
     def embeddings_df(self) -> pl.DataFrame:
+        """Return the embedded text rows stored in the search collection."""
+
         res = self._collection.get(include=["documents", "embeddings", "metadatas"])
         return _embeddings_response_to_frame(cast(Mapping[str, Sequence[object]], res))
 
-    def embedding_atlas(self):
+    def atlas(self):
+        """Return an Embedding Atlas widget for exploring the stored vectors."""
+
         from embedding_atlas.projection import compute_vector_projection
         from embedding_atlas.widget import EmbeddingAtlasWidget
 
@@ -264,12 +275,13 @@ class CatalogIndex:
 
 __all__ = [
     "CATALOG_DF_RELATION",
-    "CatalogIndex",
     "EMBEDDING_COL",
     "EMBEDDINGS_DF_RELATION",
     "EMBEDDINGS_TABLE",
     "GUIDELINE_LABELS_RELATION",
     "GUIDELINE_REFERENCES_RELATION",
+    "Index",
+    "PERSISTED_DUCKDB_RELATIONS",
     "REFERENCES_RELATION",
     "SECTIONS_RELATION",
 ]

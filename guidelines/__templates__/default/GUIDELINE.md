@@ -7,34 +7,64 @@ title: "Use a precise action when the condition is met"
 
 # METADATA
 bibliography: references.bib
-description: "One-sentence summary for retrieval, ranking, and disambiguation."
+
+# DESCRIPTION: A structured summary capturing the guideline's logic.
+# Use [use/prefer] and [improve/maximize] for constructive guidance.
+# Use [avoid/minimize] and [prevent/mitigate] for proscriptive guidance.
+description: "For [task/scope/time context], [use|prefer|avoid] [design lever] on [chart/structure/data context] to [improve|maximize|prevent] [quality target or risk] and [mitigate|address] [common mistakes] for [audience/literacy/situational context]."
 
 # LABELS: High-signal key:value tags for filtering and retrieval.
+# Treat labels as a sparse retrieval index, not a full summary of the guideline.
+# Most guidelines should have 4-8 labels total; include more only when each extra label materially changes retrieval.
+# Use only the taxonomy below. Do not invent new categories or `custom:*` labels.
+# By default, emit at most one label per category. Add multiple values only for explicit contrasts or inseparable multi-condition guidance.
+# Only include contextual labels when they materially narrow applicability. Omit generic defaults and broad chart/data/task enumerations.
+# Format: "category:value" (NEUTRAL) indicates the guideline applies when this condition is true.
+# Format: "category:value:use" (PRESCRIPTIVE) indicates the guideline recommends this choice.
+# Format: "category:value:avoid" (PROSCRIPTIVE) indicates the guideline warns against this choice.
 labels:
-  - "chart:[type]"
-  - "task:[action]"
-  - "visual:[channel]"
-  - "impact:[goal]"
-  - "data:[type]"
-  - "audience:[group]"
-  - "workflow:[create|feedback|rework]"
-  - "[custom]:[value]"
+  # REQUIRED CORE (Low-cardinality)
+  - "purpose:[select|refine]"
+  - "task:[retrieve|compare|distribute|trend|compose|relate|extreme][:use|:avoid]?"
+  - "scope:[single-result|record-list|grouped-result][:use|:avoid]?"
+  - "time:[non-temporal|timepoint|ordered-time|cyclic-time|time-interval][:use|:avoid]?"
+  - "chart:[bar|line|area|dotplot|scatter|histogram|box-violin|heatmap|pie-donut|map|choropleth|table|treemap|network|parallel|timeline|candlestick|funnel|gauge|radar|sankey|word-cloud|text][:use|:avoid]?"
+  - "structure:[single-view|multi-view|small-multiples|dashboard][:use|:avoid]?"
+  - "data:[quantitative|categorical|ordinal|temporal|geospatial|hierarchical|network|text|tabular][:use|:avoid]?"
+  - "quality:[fidelity|readability|insight|aesthetics|accessibility|trust][:use|:avoid]?"
+
+  # RECOMMENDED EXTENSIONS (Use for specific design levers)
+  - "aesthetic:[style|composition|color][:use|avoid]?"
+  - "channel:[position|length|angle|area|color-hue|color-lightness|color-saturation|shape|texture|line-style|opacity|orientation|text][:use|:avoid]?"
+  - "component:[axis|legend|label|annotation|title|caption|tooltip][:use|:avoid]?"
+  - "literacy:[novice|general|expert]"
+  - "audience:[general-public|domain-expert|analyst|decision-maker|designer|reviewer]"
+  - "needs:[low-vision|screen-reader|color-vision-deficiency|keyboard-only|motor|cognitive|low-domain-knowledge]"
+  - "access:[contrast|noncolor|screen-reader|keyboard|reflow|zoom|plain-language|motion-safe][:use|:avoid]?"
 ---
 
 <!--
 STRICT CONTRACT
 - This document records one directly actionable visualization guideline.
 - The language is clear, direct, precise, and accessible. It avoids fluff, hype, academic padding, and narrative source attribution.
-- Technical terms appear only when they add meaning. When a technical term is needed, it is used plainly and consistently.
 - Each section is semantically pure, self-contained, and efficient for embedding. The first sentence names the concrete chart element, encoding, task, audience, or constraint directly.
 - The same design lever is named with the same words across sections. Decorative synonyms and pronoun-only openings are avoided.
 - Each sentence carries one main idea. Stacked caveats and abstract framing are kept out of the section body.
-- The H2 titles are content-specific and name the actual concept rather than generic placeholders such as "Rule" or "Logic".
 - Citekeys appear only in the reason section, only inside **Evidence:**, and each citekey appears at most once within that section.
-- If one source supports multiple points, those points are synthesized into one evidence span and cited once.
-- All non-reason sections contain zero citekeys.
 - Advice and mistakes use mirrored vocabulary when they address the same design lever. Context and exceptions describe the same situation space from different sides. Fixes remain concrete enough to compare against mistakes and alternative fixes.
-- The label set includes at least one workflow label when the guideline is generated for create, feedback, or rework retrieval.
+- Every emitted guideline includes exactly one purpose label: "purpose:select" (choice between chart families) or "purpose:refine" (improvement of a chosen chart type).
+- Directional guidance uses a tripartite "category:value:polarity" format.
+    1. Polarity is ":use" if the guideline explicitly RECOMMENDS or PROMOTES a choice.
+    2. Polarity is ":avoid" if the guideline explicitly WARNS AGAINST or DISCOURAGES a choice.
+    3. NO polarity (Neutral) is used if the label represents a CONTEXTUAL CONDITION (e.g., "task:compare" means "this guideline applies when the user wants to compare").
+- Guidelines with "purpose:select" MUST include at least one ":use" label and at least one ":avoid" label for the relevant chart families or encodings to clarify the recommended design choice.
+- Guidelines with "purpose:refine" primarily use neutral contextual labels and ":use" labels for the specific components or channels being polished.
+- Labels are a sparse retrieval index rather than a restatement of the whole guideline.
+- Most guidelines carry 4-8 labels total. Prefer omission to a weak, generic, or speculative label.
+- Use only the declared taxonomy below. Never invent freeform categories such as `custom:*`.
+- By default, use at most one label per category. Multiple labels in one category require an explicit contrast or an inseparable multi-condition rule.
+- Contextual labels appear only when they materially narrow applicability. Broad defaults and exhaustive chart/data/task lists are omitted.
+- When advice applies across many charts, encode the shared lever (component, channel, quality, access, or audience need) instead of enumerating many chart families.
 - The generated output retains only the role comments after headings; all other comments are omitted.
 -->
 

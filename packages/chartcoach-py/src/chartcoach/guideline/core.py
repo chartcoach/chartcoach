@@ -4,30 +4,28 @@ from typing import ClassVar
 
 from pydantic import BaseModel, Field, computed_field
 
-from .markdown import guideline_to_markdown, parse_guideline_section_records
-
 
 class Guideline(BaseModel):
-    """Structured representation of a visualization design guideline."""
+    """One piece of chart guidance, with its summary, labels, and full text."""
 
     id: str = Field(
-        description="Unique, URL-friendly identifier serving as the guideline's permanent address",
+        description="Unique, URL-friendly identifier for the guideline.",
         examples=["use-direct-labels-not-legends"],
     )
     title: str = Field(
-        description="Actionable imperative instruction that serves as the main headline",
+        description="Short action-oriented title.",
         examples=["Use direct labels, not legends"],
     )
     bibliography: str | None = Field(
         None,
-        description="Path to the bibliography file for citations",
+        description="Path to the bibliography file for citations.",
     )
     description: str = Field(
-        description="Compelling summary of the advice, its core benefit, and when it's most needed -- optimized for both human and AI relevance determination"
+        description="Short summary of what the guideline helps with.",
     )
     labels: list[str] = Field(
         default_factory=list,
-        description="Structured key:value tags for discoverability and filtering",
+        description="Structured tags used for filtering and grouping.",
         examples=[
             [
                 "chart:bar",
@@ -39,36 +37,45 @@ class Guideline(BaseModel):
         ],
     )
     body: str = Field(
-        description="Full markdown content containing structured sections with role annotations (e.g. advice, reason, situation, considerations, checks, improvements)",
+        description="Full markdown body of the guideline.",
     )
 
     @computed_field
     @property
-    def sections(self) -> list["GuidelineSection"]:
-        """Parse the body content into structured sections based on role annotations."""
+    def sections(self) -> list["Section"]:
+        """Return the titled parts parsed from the guideline body."""
+
+        from .markdown import parse_guideline_section_records
+
         return [
-            GuidelineSection.model_validate(section)
+            Section.model_validate(section)
             for section in parse_guideline_section_records(self.body)
         ]
 
     def to_markdown(self) -> str:
-        """Convert the guideline back to its markdown representation."""
+        """Return the guideline in the markdown format used on disk."""
+
+        from .markdown import guideline_to_markdown
+
         return guideline_to_markdown(self)
 
 
-class GuidelineSection(BaseModel):
-    """Representation of a specific section within a guideline."""
+class Section(BaseModel):
+    """One titled part of a guideline."""
 
     DANGLING_ROLE: ClassVar[str] = "__dangling__"
 
     role: str = Field(
-        description="The role or type of the section",
+        description="The role of the section.",
         examples=["advice", "reason", "situation"],
     )
     title: str = Field(
-        description="The title of the section",
+        description="Section heading text.",
         examples=["The Advice", "Why This Matters"],
     )
     content: str = Field(
-        description="The markdown content of the section",
+        description="Markdown content for this section.",
     )
+
+
+__all__ = ["Guideline", "Section"]
