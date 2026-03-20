@@ -1,3 +1,1 @@
-from .server import main, mcp
-
-__all__ = ["main", "mcp"]
+"""MCP transport package."""

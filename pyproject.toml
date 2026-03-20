@@ -26,3 +26,6 @@ exclude = ["apps/visground/data"]
 [tool.ruff.lint]
 pydocstyle = { convention = "numpy" }
 ignore = []
+
+[tool.ty.src]
+exclude = ["scripts", "apps/visground/data"]

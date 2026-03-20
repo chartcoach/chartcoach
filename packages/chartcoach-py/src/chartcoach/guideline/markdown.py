@@ -1,27 +1,24 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
-if TYPE_CHECKING:
-    from .core import Guideline
+import mdformat
+import yaml
 
+from .core import Guideline, Section
 
 SECTION_HEADING_RE = re.compile(r"^##\s+(.+?)\s*<!--\s*role:\s*(\S+)\s*-->\s*$")
 
 
-def parse_guideline(markdown: str):
+def parse_guideline(markdown: str) -> Guideline:
     """Parse markdown with YAML frontmatter into a Guideline model."""
-    from .core import Guideline
-
     frontmatter, body = parse_markdown_with_frontmatter(markdown)
     return Guideline.model_validate({**frontmatter, "body": body})
 
 
 def parse_guideline_section_records(body: str) -> list[dict[str, str]]:
     """Parse section headings and content into raw section records."""
-    from .core import GuidelineSection
-
     sections: list[dict[str, str]] = []
     current_section: dict[str, str] | None = None
     current_content_lines: list[str] = []
@@ -32,7 +29,7 @@ def parse_guideline_section_records(body: str) -> list[dict[str, str]]:
             return
         sections.append(
             {
-                "role": GuidelineSection.DANGLING_ROLE,
+                "role": Section.DANGLING_ROLE,
                 "title": "",
                 "content": content,
             }
@@ -70,20 +67,16 @@ def parse_guideline_section_records(body: str) -> list[dict[str, str]]:
     return sections
 
 
-def parse_guideline_sections(body: str):
-    """Parse the guideline body into GuidelineSection models."""
-    from .core import GuidelineSection
-
+def parse_guideline_sections(body: str) -> list[Section]:
+    """Parse the guideline body into Section models."""
     return [
-        GuidelineSection.model_validate(section)
+        Section.model_validate(section)
         for section in parse_guideline_section_records(body)
     ]
 
 
 def parse_markdown_with_frontmatter(markdown: str) -> tuple[dict[str, Any], str]:
     """Parse markdown with optional YAML frontmatter."""
-    import yaml
-
     if not markdown.startswith("---"):
         return {}, markdown
 
@@ -99,9 +92,6 @@ def parse_markdown_with_frontmatter(markdown: str) -> tuple[dict[str, Any], str]
 
 def guideline_to_markdown(guideline: Guideline) -> str:
     """Serialize a Guideline model back to markdown."""
-    import mdformat
-    import yaml
-
     frontmatter = {
         "id": guideline.id,
         "title": guideline.title,

@@ -1,26 +1,5 @@
-from .collection import Catalog, CatalogEntry
-from .index import (
-    CATALOG_DF_RELATION,
-    CatalogIndex,
-    EMBEDDING_COL,
-    EMBEDDINGS_DF_RELATION,
-    EMBEDDINGS_TABLE,
-    GUIDELINE_LABELS_RELATION,
-    GUIDELINE_REFERENCES_RELATION,
-    REFERENCES_RELATION,
-    SECTIONS_RELATION,
-)
+from .collection import Catalog, Entry
+from .index import Index
 
-__all__ = [
-    "CATALOG_DF_RELATION",
-    "Catalog",
-    "CatalogEntry",
-    "CatalogIndex",
-    "EMBEDDING_COL",
-    "EMBEDDINGS_DF_RELATION",
-    "EMBEDDINGS_TABLE",
-    "GUIDELINE_LABELS_RELATION",
-    "GUIDELINE_REFERENCES_RELATION",
-    "REFERENCES_RELATION",
-    "SECTIONS_RELATION",
-]
+
+__all__ = ["Catalog", "Entry", "Index"]

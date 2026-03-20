@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.20.4"
+__generated_with = "0.21.0"
 app = marimo.App(width="columns")
 
 
@@ -634,13 +634,19 @@ def _(cache_dir, create_chroma_client):
         name="catalog",
         # embedding_function=openrouter_ef,
     )
-    return (collection,)
+    return collection, openrouter_ef
 
 
 @app.cell
-def _(CatalogIndex, cache_dir, catalog, collection, create_duckdb_conn):
+def _(openrouter_ef):
+    openrouter_ef.get_config()
+    return
+
+
+@app.cell
+def _(Index, cache_dir, catalog, collection, create_duckdb_conn):
     conn = create_duckdb_conn(cache_dir / "duckdb_catalog.db")
-    index = CatalogIndex(catalog, collection=collection, conn=conn)
+    index = Index(catalog, collection=collection, conn=conn)
     index.build()
     return conn, index
 
@@ -670,13 +676,13 @@ def _():
     import polars as pl
     import platformdirs
 
-    from chartcoach import Catalog, CatalogIndex
+    from chartcoach import Catalog, Index
     from chartcoach.catalog.clients import create_chroma_client, create_duckdb_conn
 
     cache_dir = pathlib.Path(platformdirs.user_cache_dir("chartcoach"))
     return (
         Catalog,
-        CatalogIndex,
+        Index,
         cache_dir,
         create_chroma_client,
         create_duckdb_conn,

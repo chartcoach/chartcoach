@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.20.4"
+__generated_with = "0.21.1"
 app = marimo.App(width="columns")
 
 
@@ -90,7 +90,7 @@ def _(
 
 @app.cell(hide_code=True)
 def _(
-    CatalogEntry,
+    Entry,
     GUIDELINE_TEMPLATE,
     MISC_PROMPT_SPEC,
     build_guideline_extraction_prompt,
@@ -106,7 +106,7 @@ def _(
         misc_item: dict,
         model: str,
         reasoning: dict | None = None,
-    ) -> list[CatalogEntry]:
+    ) -> list[Entry]:
         misc_item_title = misc_item["data"]["title"]
         item_bibtex = zot_item_bibtex(misc_item["data"]["key"])
         item_citekey = zot_item_bibtex_key(misc_item["data"]["key"])
@@ -158,7 +158,7 @@ def _(
         references = [item_bibtex]
 
         return [
-            CatalogEntry(guideline=guideline_obj, references=references)
+            Entry(guideline=guideline_obj, references=references)
             for guideline_obj in guideline_objects
         ]
 
@@ -262,8 +262,8 @@ def _(
 
 @app.cell(hide_code=True)
 def _(
-    CatalogEntry,
     DATAWRAPPER_PROMPT_SPEC,
+    Entry,
     GUIDELINE_TEMPLATE,
     bibtexparser,
     build_guideline_extraction_prompt,
@@ -279,7 +279,7 @@ def _(
         post_pdf_path: pathlib.Path,
         model: str,
         reasoning: dict | None = None,
-    ) -> list[CatalogEntry]:
+    ) -> list[Entry]:
         bibtex_entry = find_datawrapper_bibtex_entry_by_path(post_pdf_path)
         bibtex_entry_parsed = bibtexparser.loads(bibtex_entry).entries[0]
         post_title = bibtex_entry_parsed["title"]
@@ -339,7 +339,7 @@ def _(
         references = [bibtex_entry]
 
         return [
-            CatalogEntry(guideline=guideline_obj, references=references)
+            Entry(guideline=guideline_obj, references=references)
             for guideline_obj in guideline_objects
         ]
 
@@ -465,7 +465,7 @@ def _(
     CHARTABILITY_PAPER_CITEKEY,
     CHARTABILITY_PAPER_ITEM,
     CHARTABILITY_PROMPT_SPEC,
-    CatalogEntry,
+    Entry,
     GUIDELINE_TEMPLATE,
     build_guideline_extraction_prompt,
     ccp,
@@ -479,7 +479,7 @@ def _(
         ch_item: dict,
         model: str,
         reasoning: dict | None = None,
-    ) -> CatalogEntry | None:
+    ) -> Entry | None:
         response = client.responses.create(
             model=model,
             reasoning=reasoning,
@@ -542,7 +542,7 @@ def _(
         guideline_obj = ccp.parse_guideline(guideline_md)
         references = [CHARTABILITY_PAPER_BIBTEX, *ch_item["references"]]
 
-        return CatalogEntry(guideline=guideline_obj, references=references)
+        return Entry(guideline=guideline_obj, references=references)
 
     return (chartability_item_to_catalog_entry,)
 
@@ -654,7 +654,7 @@ def _(
     COLLATION_REVIEW_PAPER_BIBTEX,
     COLLATION_REVIEW_PAPER_CITEKEY,
     COLLATION_REVIEW_PAPER_ITEM,
-    CatalogEntry,
+    Entry,
     GUIDELINE_TEMPLATE,
     build_guideline_extraction_prompt,
     ccp,
@@ -670,7 +670,7 @@ def _(
         collated_item: dict,
         model: str,
         reasoning: dict | None = None,
-    ) -> list[CatalogEntry]:
+    ) -> list[Entry]:
         collated_item_citekey = zot_item_bibtex_key(collated_item["data"]["key"])
 
         response = client.responses.create(
@@ -749,7 +749,7 @@ def _(
             zot_item_bibtex(collated_item["data"]["key"]),
         ]
         return [
-            CatalogEntry(guideline=guideline_obj, references=references)
+            Entry(guideline=guideline_obj, references=references)
             for guideline_obj in guideline_objects
         ]
 
@@ -973,7 +973,7 @@ def _(
 
 @app.cell(hide_code=True)
 def _(
-    CatalogEntry,
+    Entry,
     Guideline,
     build_tc_prompt,
     ccp,
@@ -988,7 +988,7 @@ def _(
         references: list[str],
         model: str,
         reasoning: dict | None = None,
-    ) -> CatalogEntry | None:
+    ) -> Entry | None:
         # Enumerate all the reference IDs available for Talking Charts
         allowed_ref_ids = list_ref_ids(references)
         required_ref_ids = sorted(
@@ -1026,7 +1026,7 @@ def _(
             )
         )
 
-        return CatalogEntry(guideline=guideline_obj, references=references)
+        return Entry(guideline=guideline_obj, references=references)
 
     return (tc_guideline_to_catalog_entry,)
 
@@ -1238,10 +1238,9 @@ def _(pathlib, string_hash):
 
 @app.cell(hide_code=True)
 def _(GUIDELINE_TEMPLATE_DIGEST, string_hash):
-    WORKFLOW_LABELS = [
-        "workflow:create",
-        "workflow:feedback",
-        "workflow:rework",
+    PURPOSE_LABELS = [
+        "purpose:select",
+        "purpose:refine",
     ]
 
     def build_guideline_extraction_prompt(
@@ -1253,7 +1252,28 @@ def _(GUIDELINE_TEMPLATE_DIGEST, string_hash):
         allow_empty: bool = True,
     ) -> str:
         lines = [
-            "Only extract guidelines that are directly actionable during visualization creation from scratch, feedback on an existing visualization, or rework of an existing visualization.",
+            "Your primary task is to extract and structure directly actionable visualization guidelines.",
+            # CONTRACT 1: PURPOSE
+            "First, classify each guideline by its primary `purpose`:",
+            "- `purpose:select`: Guidance for CHOOSING BETWEEN chart families or high-level encoding strategies (the WHAT of design). Example: 'Replace a pie chart with a bar chart for comparison.'",
+            "- `purpose:refine`: Guidance for IMPROVING the implementation, polish, or readability of an ALREADY-CHOSEN chart type (the HOW of design). Example: 'Sort the bars of a bar chart in descending order.'",
+            f"Every emitted guideline MUST include exactly one purpose label from: {', '.join(PURPOSE_LABELS)}.",
+            # CONTRACT 2: DIRECTIONAL LABELS (POLARITY)
+            "\nSecond, assign directional polarity to labels using a tripartite 'category:value:polarity' format:",
+            "- Use ':use' if the guideline explicitly RECOMMENDS or PROMOTES a choice. Example: 'chart:bar:use'.",
+            "- Use ':avoid' if the guideline explicitly WARNS AGAINST or DISCOURAGES a choice. Example: 'chart:pie-donut:avoid'.",
+            "- Use NO polarity (Neutral) if the label represents a CONTEXTUAL CONDITION. Example: 'task:compare' means 'this guideline applies when the user wants to compare'.",
+            "Guidelines with 'purpose:select' MUST include both a ':use' label and an ':avoid' label to clarify the design choice.",
+            "\nThird, keep labels sparse and high-signal:",
+            "- Treat labels as a retrieval index, not as an exhaustive summary of the guideline.",
+            "- Use only the taxonomy declared in the template. Do NOT invent new categories or emit `custom:*` labels. If no allowed label fits cleanly, omit the label.",
+            "- Most guidelines should have 4-8 labels total. Include more only when each extra label materially changes retrieval; rarely exceed 10.",
+            "- By default, emit at most one label per category. Add multiple labels in one category only when the guideline explicitly contrasts alternatives or inseparably spans several conditions.",
+            "- Add contextual labels (`task`, `scope`, `time`, `chart`, `structure`, `data`, `audience`, `literacy`, `needs`, `access`) only when the advice truly depends on that condition. Do not enumerate all plausible charts, data types, audiences, or workflows.",
+            "- Prefer the most discriminative design-lever label. If the rule is mainly about a component, channel, quality, or accessibility treatment, label that directly instead of attaching many broad chart-type labels.",
+            "- Avoid weak default labels such as `audience:general-public`, `literacy:general`, `structure:single-view`, `time:non-temporal`, or `data:quantitative` unless that applicability is explicit and materially important.",
+            "- Bad label behavior: turning one broad accessibility rule into a long list of every plausible task, chart, time mode, data type, and audience.",
+            "- Good label behavior: keep only the smallest label set that captures the recommendation, its main design lever, and the one or two conditions that materially narrow where it applies.",
         ]
 
         if allow_empty:
@@ -1270,15 +1290,17 @@ def _(GUIDELINE_TEMPLATE_DIGEST, string_hash):
                 "Reject candidates that only summarize theory, taxonomy, historical context, methodology, study setup, or narrative commentary.",
                 "Reject candidates that are visualization-relevant but do not tell the practitioner what to choose, inspect, test, or change in a chart.",
                 "Operationalize descriptive findings in the form 'When [condition], do [change] to achieve [goal].' If that rewrite is not supported by the source, omit the candidate.",
-                "Prefer guidance that changes a concrete design lever such as chart type, encoding, scale, ordering, grouping, titling, annotation, labeling, legend design, layout, interaction, accessibility treatment, or rhetorical framing that can be implemented in a chart.",
-                f"Every emitted guideline includes at least one workflow label from: {', '.join(WORKFLOW_LABELS)}.",
-                "Multiple workflow labels are used only when the same guideline genuinely supports multiple workflows.",
+                # CONTRACT 4: DESCRIPTION
+                "",
+                "The `description` MUST follow this semantic contract: "
+                "'For [task/scope/time context], [use|prefer|avoid] [design lever] on [chart/structure/data context] "
+                "to [improve|maximize|prevent] [quality target or risk] and [mitigate|address] [common mistakes] "
+                "for [audience/literacy/situational context].'",
+                "Ensure the choice of verbs in the description (e.g., use vs avoid) exactly matches the directional polarity of the labels.",
                 "The title is a specific imperative action on a concrete chart or design object.",
-                "The description states the action, benefit, and triggering situation.",
                 "The `check` section contains an observable failure sign and a concrete review procedure that a reviewer can run.",
                 "The `fix` section consists of concrete edit operations, not abstract restatements of the advice.",
                 "Bad candidate: 'Color affects interpretation.' Good candidate: 'Use a colorblind-safe sequential palette when color encodes magnitude and hue identity is not the message.'",
-                "Bad candidate: 'Crowding hurts readability.' Good candidate: 'Reduce mark density or split the display into small multiples when crowding prevents item-level reading.'",
                 *source_specific_rules,
                 "Place all citekeys only in the `reason` section under `**Evidence:**`.",
                 "Never place citekeys in advice, context, exceptions, costs, mistakes, check, or fix.",
@@ -1467,15 +1489,14 @@ def _():
 
     import marimo as mo
 
-    from chartcoach import Catalog, CatalogEntry, Guideline
+    from chartcoach import Catalog, Entry, Guideline
     from chartcoach.guideline import parse_bibtex, parse_guideline
 
     ccp = SimpleNamespace(
         parse_bibtex=parse_bibtex,
         parse_guideline=parse_guideline,
     )
-
-    return Catalog, CatalogEntry, Guideline, ccp, json, mo, pathlib
+    return Catalog, Entry, Guideline, ccp, json, mo, pathlib
 
 
 if __name__ == "__main__":

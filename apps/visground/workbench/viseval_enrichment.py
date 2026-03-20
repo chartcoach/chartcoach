@@ -8,6 +8,22 @@ app = marimo.App(width="columns")
 def _(mo):
     mo.md(r"""
     # Visualization Task Classification
+
+    To characterize analytical intent beyond the data-structural facts (such as SQL schemas and result table statistics) already present in the original dataset, we enrich the corpus with high-level, task-oriented metadata.
+
+    We classify each canonical query along three orthogonal axes:
+
+    - `task`
+    - `scope`
+    - `time_mode`
+
+    This operationalizes established abstractions from visualization research for a richer dataset.
+
+    We define the primary analytical **task** (e.g., *retrieve, compare, relate*) based on the low-level components of analytic activity identified by **Amar et al. (2005)**.
+
+    To capture the structural cardinality of the intended output, we classify the **scope** (e.g., *single-result, record-list, grouped-result*) following the "What" dimension of the multi-level task typology proposed by **Brehmer and Munzner (2013)**, a distinction **Munzner (2009)** highlights as a critical upstream characterization for ensuring visualization validity.
+
+    Finally, we specify the **time_mode** (e.g., *ordered, cyclic, interval*) to reflect the fundamental structural temporal distinctions established by **Aigner et al. (2007)** and integrated as an orthogonal axis in the general design space of visualization tasks by **Schulz et al. (2013)**. This enrichment transforms the dataset from a collection of data-to-code implementation tasks into a repository of situated analytical intents suitable for grounding generative reasoning.
     """)
     return
 
@@ -37,6 +53,22 @@ def _(
     )
 
     task_classifications_df
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    **Aigner, W., Miksch, S., Müller, W., Schumann, H., and Tominski, C. (2007).** "Visualizing time-oriented data—A systematic view." *Computers & Graphics*, 31(3), 401–409. https://doi.org/10.1016/j.cag.2007.01.030
+
+    **Amar, R., Eagan, J., and Stasko, J. (2005).** "Low-level components of analytic activity in information visualization." *IEEE Symposium on Information Visualization (InfoVis 05)*, 111–117. https://doi.org/10.1109/INFVIS.2005.1532136
+
+    **Brehmer, M., and Munzner, T. (2013).** "A Multi-Level Typology of Abstract Visualization Tasks." *IEEE Transactions on Visualization and Computer Graphics*, 19(12), 2376–2385. https://doi.org/10.1109/TVCG.2013.124
+
+    **Munzner, T. (2009).** "A Nested Model for Visualization Design and Validation." *IEEE Transactions on Visualization and Computer Graphics*, 15(6), 921–928. https://doi.org/10.1109/TVCG.2009.111
+
+    **Schulz, H.-J., Nocke, T., Heitzler, M., and Schumann, H. (2013).** "A Design Space of Visualization Tasks." *IEEE Transactions on Visualization and Computer Graphics*, 19(12), 2366–2375. https://doi.org/10.1109/TVCG.2013.120
+    """)
     return
 
 
@@ -225,9 +257,13 @@ def _():
 
 
 @app.cell(column=1, hide_code=True)
-def _(mo):
-    mo.md(r"""
+def _(mapping_df, mo):
+    mo.md(rf"""
     # Natural Language Query Canonicalization
+
+    To ensure we can test design reasoning capabilities of models, it is desirable to have a canonincal representation of these natural language queries which **perfectly preserve the analytical intent**, but **omit the design decision**.
+
+    > {" ---> ".join(mapping_df.head(1).to_dicts()[0].values())}
     """)
     return
 
@@ -435,11 +471,25 @@ def _():
 
 
 @app.cell(column=2, hide_code=True)
-def _(mo):
-    mo.md(r"""
+def _(base_example, mo):
+    mo.md(rf"""
     # Base Dataset
+
+    The [VisEval](https://github.com/microsoft/VisEval) dataset provides us with natural language queries such as:
+
+    > {base_example["nl_query"]}
+
+    Each query explicitly prescribes the type of visualization the user expects to see, such as *{base_example["chart"].lower()}* in this case. This means that when an LLM is tasked to produce a visualization based on the query, it is only responsible for figuring out a valid implementation in a given chart grammar / programming language + charting library.
+
+    Therefore, using these items, we are not able to evaluate a model's capability in reasoning about *WHAT* design is ideal to satisfy the analytical intent. All we get to see is *HOW* good a model is at implementing the predefined design in a given grammar.
     """)
     return
+
+
+@app.cell(hide_code=True)
+def _(viseval_dataset):
+    base_example = viseval_dataset.queries_df.head(1).to_dicts()[0]
+    return (base_example,)
 
 
 @app.cell(hide_code=True)
