@@ -172,6 +172,18 @@ class Catalog:
 
         return Catalog(entries=self._entries + other.entries)
 
+    def subset(self, doc_ids: list[str]) -> "Catalog":
+        """Return a new catalog that contains only the entries corresponding to the given doc_ids."""
+
+        df = (
+            pl.from_dict({"id": doc_ids})
+            .join(self.docs_df, how="left", on="id")
+            .select(id=pl.col("metadata").struct.field("parent_id"))
+            .unique("id", maintain_order=True)
+            .join(self.df, how="left", on="id")
+        )
+        return Catalog.from_df(df)
+
     def __add__(self, other: "Catalog") -> "Catalog":
         return self.merge(other)
 

@@ -18,6 +18,7 @@ coach = cc.create()
 ```
 
 `create()` loads the default catalog, reuses cached work when it can, and builds the missing pieces when it has to.
+It also wraps the active embedding function in a persistent per-text embedding cache by default.
 
 ## Common Tasks
 
@@ -27,6 +28,14 @@ Create a coach with a custom cache directory:
 import chartcoach as cc
 
 coach = cc.create(cache_dir="./.cache/chartcoach")
+```
+
+Disable embedding caching for one coach:
+
+```python
+import chartcoach as cc
+
+coach = cc.create(cache_embeddings=False)
 ```
 
 Search for related guidance with plain language:
@@ -72,10 +81,14 @@ coach = cc.create(embedding_fn=openrouter_ef)
 ```
 
 Custom embeddings are supported through actual Chroma embedding function instances.
+ChartCoach caches embeddings for custom functions by default too. Pass `cache_embeddings=False` if you want to use the raw embedding function instance unchanged.
 ChartCoach uses `embedding_fn.model_name` when it exists, otherwise `embedding_fn.name()`.
 For the cache directory name, `/` is replaced with `-` so model names such as `openai/text-embedding-3-small` stay readable.
 
 ## Cache Behavior
+
+By default, `create()` also enables a persistent embedding cache for the active embedding function, including Chroma's default embedding function when you do not pass `embedding_fn`.
+Disable that wrapper with `cache_embeddings=False`.
 
 ChartCoach stores cached artifacts under your cache directory in a folder chosen from:
 

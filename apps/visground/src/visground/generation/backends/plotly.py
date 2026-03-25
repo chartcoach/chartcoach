@@ -3,8 +3,9 @@ import io
 import PIL.Image
 import plotly.graph_objects as go
 
-from visground.generation.backends import VisualizationBackend
 from visground.generation.models import VisualizationRequestRecord
+
+from .base import VisualizationBackend
 
 
 class PlotlyBackend(VisualizationBackend[go.Figure]):

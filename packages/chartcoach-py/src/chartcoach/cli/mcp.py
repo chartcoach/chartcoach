@@ -17,11 +17,16 @@ back to the matching env var and then the built-in default.
 """
 
 
+def _is_missing_mcp_dependency(exc: ModuleNotFoundError) -> bool:
+    name = exc.name
+    return name == "mcp" or (name is not None and name.startswith("mcp."))
+
+
 def _load_server_module() -> Any:
     try:
         return import_module("chartcoach.mcp.server")
     except ModuleNotFoundError as exc:  # pragma: no cover - depends on install extras
-        if exc.name == "mcp" or (exc.name is not None and exc.name.startswith("mcp.")):
+        if _is_missing_mcp_dependency(exc):
             raise click.ClickException(
                 "The `chartcoach mcp` command requires the optional MCP dependencies. Install `chartcoach[mcp]` to use it."
             ) from exc
@@ -87,10 +92,17 @@ def mcp_command(
         port=port,
         log_level=log_level.upper() if log_level is not None else None,
     )
-    server.main(
-        settings=resolved_settings,
-        runtime=resolved_runtime,
-    )
+    try:
+        server.main(
+            settings=resolved_settings,
+            runtime=resolved_runtime,
+        )
+    except ModuleNotFoundError as exc:  # pragma: no cover - depends on install extras
+        if _is_missing_mcp_dependency(exc):
+            raise click.ClickException(
+                "The `chartcoach mcp` command requires the optional MCP dependencies. Install `chartcoach[mcp]` to use it."
+            ) from exc
+        raise
 
 
 __all__ = ["mcp_command"]

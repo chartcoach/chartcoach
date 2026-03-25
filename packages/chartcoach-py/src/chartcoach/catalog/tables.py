@@ -147,12 +147,14 @@ def build_labels_df(guidelines_df: pl.DataFrame) -> pl.DataFrame:
     return (
         guidelines_df.select("labels")
         .explode("labels")
+        .unique("labels")
+        .select(parts=pl.col("labels").str.split(":"))
         .select(
-            category=pl.col("labels").str.split(":").list.get(0),
-            subcategory=pl.col("labels").str.split(":").list.get(1),
+            category=pl.col("parts").list.get(0),
+            subcategory=pl.col("parts").list.get(1),
+            polarity=pl.col("parts").list.get(2, null_on_oob=True),
         )
-        .unique()
-        .sort("category", "subcategory")
+        .sort("category", "subcategory", "polarity")
     )
 
 

@@ -20,7 +20,7 @@ def extract_json(text: str) -> dict[str, Any]:
 
     data = repair_json(blocks[0], return_objects=True)
     if not isinstance(data, dict):
-        raise ValueError("Expected a JSON object.")
+        raise ValueError(f"Expected a JSON object. Got {type(data).__name__}.")
 
     return data
 

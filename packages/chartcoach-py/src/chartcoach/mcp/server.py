@@ -3,10 +3,9 @@ from __future__ import annotations
 import dataclasses as dc
 import logging
 import os
+from importlib import import_module
 from pathlib import Path
-from typing import Literal, cast
-
-from mcp.server import FastMCP
+from typing import Any, Callable, Literal, Protocol, cast
 
 from ..coach import Coach
 from ..create import Settings, create
@@ -40,6 +39,37 @@ class RuntimeConfig:
 
 
 logger = logging.getLogger(__name__)
+
+
+class _MCPSettings(Protocol):
+    host: str
+    port: int
+    log_level: str
+    transport_security: Any | None
+
+
+class _MCPServer(Protocol):
+    settings: _MCPSettings
+
+    def add_tool(self, tool: Any, /) -> None: ...
+
+    def run(self, *, transport: str) -> None: ...
+
+
+def _is_missing_mcp_dependency(exc: ModuleNotFoundError) -> bool:
+    name = exc.name
+    return name == "mcp" or (name is not None and name.startswith("mcp."))
+
+
+def _load_fast_mcp() -> Callable[..., _MCPServer]:
+    """Load the optional MCP dependency lazily so static analysis stays install-agnostic."""
+
+    try:
+        return cast(Callable[..., _MCPServer], import_module("mcp.server").FastMCP)
+    except ModuleNotFoundError as exc:
+        if _is_missing_mcp_dependency(exc):
+            exc.add_note("Install `chartcoach[mcp]` to use the ChartCoach MCP server.")
+        raise
 
 
 def _resolve_settings(
@@ -101,8 +131,8 @@ def _configure_logging(log_level: LogLevelName) -> None:
     logging.getLogger().setLevel(getattr(logging, log_level))
 
 
-def _build_server(coach: Coach, runtime: RuntimeConfig) -> FastMCP:
-    server = FastMCP("chartcoach", json_response=True)
+def _build_server(coach: Coach, runtime: RuntimeConfig) -> _MCPServer:
+    server = _load_fast_mcp()("chartcoach", json_response=True)
     server.settings.host = runtime.host
     server.settings.port = runtime.port
     server.settings.log_level = runtime.log_level
