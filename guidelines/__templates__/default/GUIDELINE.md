@@ -14,32 +14,75 @@ bibliography: references.bib
 description: "For [task/scope/time context], [use|prefer|avoid] [design lever] on [chart/structure/data context] to [improve|maximize|prevent] [quality target or risk] and [mitigate|address] [common mistakes] for [audience/literacy/situational context]."
 
 # LABELS: High-signal key:value tags for filtering and retrieval.
-# Treat labels as a sparse retrieval index, not a full summary of the guideline.
-# Most guidelines should have 4-8 labels total; include more only when each extra label materially changes retrieval.
-# Use only the taxonomy below. Do not invent new categories or `custom:*` labels.
-# By default, emit at most one label per category. Add multiple values only for explicit contrasts or inseparable multi-condition guidance.
-# Only include contextual labels when they materially narrow applicability. Omit generic defaults and broad chart/data/task enumerations.
-# Format: "category:value" (NEUTRAL) indicates the guideline applies when this condition is true.
-# Format: "category:value:use" (PRESCRIPTIVE) indicates the guideline recommends this choice.
-# Format: "category:value:avoid" (PROSCRIPTIVE) indicates the guideline warns against this choice.
+# Treat labels as a sparse retrieval index, not a restatement of the whole guideline.
+# Most guidelines should have 4-8 labels total; add more only when each extra label materially changes retrieval.
+# Use only the taxonomy below. Never invent new categories or `custom:*` labels.
+# By default, emit at most one value per category. Add multiple values only for explicit, inseparable contrasts.
+# Only include a label when the source makes that condition materially relevant to applicability.
+# Format: "category:value" (NEUTRAL) means "this rule applies under this condition."
+# Format: "category:value:use" means "this rule recommends this choice."
+# Format: "category:value:avoid" means "this rule warns against this choice."
 labels:
   # REQUIRED CORE (Low-cardinality)
+  # purpose: emit exactly one. Use `select` only for bounded design contrasts. Use `refine` only for improving an already-chosen design.
   - "purpose:[select|refine]"
+  # basis: emit exactly one conceptual evidence role. Use empirical for controlled findings, heuristic for practitioner/editorial rules, accessibility for inclusive-design criteria, rhetorical for framing/communication guidance.
+  - "basis:[empirical|heuristic|accessibility|rhetorical]"
+  # task: emit only if the rule materially changes with analytic intent. Do not emit just because the source mentions a task in passing.
   - "task:[retrieve|compare|distribute|trend|compose|relate|extreme][:use|:avoid]?"
+  # scope: emit only if single-result vs record-list vs grouped-result changes applicability.
   - "scope:[single-result|record-list|grouped-result][:use|:avoid]?"
+  # time: emit only when temporal structure is causal to the advice. Do not default `non-temporal`.
   - "time:[non-temporal|timepoint|ordered-time|cyclic-time|time-interval][:use|:avoid]?"
+  # chart: emit only when chart family is the actual intervention target. For `select`, `:use` and `:avoid` must belong to the same decision contrast.
   - "chart:[bar|line|area|dotplot|scatter|histogram|box-violin|heatmap|pie-donut|map|choropleth|table|treemap|network|parallel|timeline|candlestick|funnel|gauge|radar|sankey|word-cloud|text][:use|:avoid]?"
+  # structure: emit only when layout arrangement is the manipulated object of the rule.
   - "structure:[single-view|multi-view|small-multiples|dashboard][:use|:avoid]?"
+  # data: emit only when data modality materially gates the rule.
   - "data:[quantitative|categorical|ordinal|temporal|geospatial|hierarchical|network|text|tabular][:use|:avoid]?"
+  # quality: emit one primary intended outcome the rule optimizes.
   - "quality:[fidelity|readability|insight|aesthetics|accessibility|trust][:use|:avoid]?"
 
-  # RECOMMENDED EXTENSIONS (Use for specific design levers)
+  # DECISION / APPLICABILITY EXTENSIONS
+  # lever: emit exactly one primary design object being changed.
+  - "lever:[chart-family|encoding|scale-order|layout-structure|text-annotation|interaction-access]"
+  # operator: emit only when a specific readout or comparison mode is essential to the rule.
+  - "operator:[lookup|rank|difference|part-whole|association|distribution|uncertainty]"
+  # reading-mode: emit only when overview vs lookup vs exact reading materially changes the advice.
+  - "reading-mode:[overview|lookup|exact]"
+  # density: emit only when sparse vs dense displays materially change the rule.
+  - "density:[sparse|dense]"
+  # measure: emit only when single vs multi-measure structure changes the advice.
+  - "measure:[single|multi]"
+  # group-cardinality: emit only when binary/few/many grouping materially changes the choice.
+  - "group-cardinality:[binary|few|many]"
+  # shape: emit only when skew or outlier structure is essential.
+  - "shape:[skewed|outlier-rich]"
+  # temporal-pattern: emit only when dynamic temporal behavior is essential.
+  - "temporal-pattern:[dynamic]"
+
+  # RHETORIC / POLISH EXTENSIONS
+  # communication: emit only when the rule is about framing, context, credibility, resonance, or workflow rather than the base chart choice itself.
+  - "communication:[framing|context|credibility|resonance|workflow]"
+  # polish: emit only when the rule is a cross-grammar finishing move that makes charts visibly better.
+  - "polish:[declutter|hierarchy|spacing|palette|annotation|focus|consistency]"
+  # aesthetic: emit only when visible style, composition, or color treatment is the core lever.
   - "aesthetic:[style|composition|color][:use|avoid]?"
+  # channel: emit only when a visual encoding channel is the manipulated object.
   - "channel:[position|length|angle|area|color-hue|color-lightness|color-saturation|shape|texture|line-style|opacity|orientation|text][:use|:avoid]?"
+  # component: emit only when a chart component is the manipulated object.
   - "component:[axis|legend|label|annotation|title|caption|tooltip][:use|:avoid]?"
+
+  # AUDIENCE / ACCESS EXTENSIONS
+  # knowledge: emit only when reader capability level materially changes applicability.
+  - "knowledge:[low|mixed|high]"
+  # literacy: emit only when chart literacy explicitly changes applicability.
   - "literacy:[novice|general|expert]"
+  # audience: emit only when reader type is explicit and causal.
   - "audience:[general-public|domain-expert|analyst|decision-maker|designer|reviewer]"
+  # needs: emit only when accessibility or knowledge needs are causal to the rule.
   - "needs:[low-vision|screen-reader|color-vision-deficiency|keyboard-only|motor|cognitive|low-domain-knowledge]"
+  # access: emit only when accessibility treatment is the direct intervention.
   - "access:[contrast|noncolor|screen-reader|keyboard|reflow|zoom|plain-language|motion-safe][:use|:avoid]?"
 ---
 
@@ -53,17 +96,21 @@ STRICT CONTRACT
 - Citekeys appear only in the reason section, only inside **Evidence:**, and each citekey appears at most once within that section.
 - Advice and mistakes use mirrored vocabulary when they address the same design lever. Context and exceptions describe the same situation space from different sides. Fixes remain concrete enough to compare against mistakes and alternative fixes.
 - Every emitted guideline includes exactly one purpose label: "purpose:select" (choice between chart families) or "purpose:refine" (improvement of a chosen chart type).
+- Every emitted guideline includes exactly one basis label describing the conceptual role of the evidence: empirical, heuristic, accessibility, or rhetorical.
 - Directional guidance uses a tripartite "category:value:polarity" format.
     1. Polarity is ":use" if the guideline explicitly RECOMMENDS or PROMOTES a choice.
     2. Polarity is ":avoid" if the guideline explicitly WARNS AGAINST or DISCOURAGES a choice.
     3. NO polarity (Neutral) is used if the label represents a CONTEXTUAL CONDITION (e.g., "task:compare" means "this guideline applies when the user wants to compare").
 - Guidelines with "purpose:select" MUST include at least one ":use" label and at least one ":avoid" label for the relevant chart families or encodings to clarify the recommended design choice.
+- Guidelines with "purpose:select" MUST encode a bounded contrast. If the rule cannot state when to use X instead of Y, it should be emitted as `refine` or omitted.
 - Guidelines with "purpose:refine" primarily use neutral contextual labels and ":use" labels for the specific components or channels being polished.
 - Labels are a sparse retrieval index rather than a restatement of the whole guideline.
 - Most guidelines carry 4-8 labels total. Prefer omission to a weak, generic, or speculative label.
 - Use only the declared taxonomy below. Never invent freeform categories such as `custom:*`.
 - By default, use at most one label per category. Multiple labels in one category require an explicit contrast or an inseparable multi-condition rule.
 - Contextual labels appear only when they materially narrow applicability. Broad defaults and exhaustive chart/data/task lists are omitted.
+- Emit profile-facing labels (`density`, `measure`, `group-cardinality`, `shape`, `temporal-pattern`, `reading-mode`, `operator`, `lever`) only when the source makes that condition explicit enough to guide retrieval.
+- `communication` and `polish` are orthogonal lanes: use them only for framing/communication or cross-grammar finishing guidance, not as broad style decoration.
 - When advice applies across many charts, encode the shared lever (component, channel, quality, access, or audience need) instead of enumerating many chart families.
 - The generated output retains only the role comments after headings; all other comments are omitted.
 -->

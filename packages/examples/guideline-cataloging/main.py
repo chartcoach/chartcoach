@@ -16,6 +16,12 @@ def _(mo):
     return
 
 
+@app.cell
+def _():
+    NUM_ITEMS_FOR_EVOLUTION = 1
+    return (NUM_ITEMS_FOR_EVOLUTION,)
+
+
 @app.cell(hide_code=True)
 def _(
     REPO_ROOT,
@@ -54,6 +60,7 @@ def _(
     Catalog,
     DEFAULT_CLIENT_CONFIG,
     MISC_PROMPT_DIGEST,
+    NUM_ITEMS_FOR_EVOLUTION,
     itertools,
     misc_paper_to_catalog_entries,
     parallel_map,
@@ -67,7 +74,7 @@ def _(
             "reasoning": DEFAULT_CLIENT_CONFIG["reasoning"],
         }
         for item in processed_misc_items
-    ]
+    ][:NUM_ITEMS_FOR_EVOLUTION]
     misc_entry_lists = parallel_map(
         fn=param_collapsed(misc_paper_to_catalog_entries),
         inputs=misc_tasks,
@@ -98,6 +105,7 @@ def _(
     client,
     create_pdf_content_part,
     fence,
+    finalize_guideline_batch,
     unfence,
     zot_item_bibtex,
     zot_item_bibtex_key,
@@ -136,6 +144,7 @@ def _(
                             "type": "input_text",
                             "text": build_guideline_extraction_prompt(
                                 evidence_scope=MISC_PROMPT_SPEC["evidence_scope"],
+                                required_basis=MISC_PROMPT_SPEC["required_basis"],
                                 cardinality_instruction=MISC_PROMPT_SPEC[
                                     "cardinality_instruction"
                                 ],
@@ -155,6 +164,10 @@ def _(
         guideline_objects = [
             ccp.parse_guideline(md_content) for md_content in unfence(response_text)
         ]
+        guideline_objects = finalize_guideline_batch(
+            guideline_objects,
+            required_basis=MISC_PROMPT_SPEC["required_basis"],
+        )
         references = [item_bibtex]
 
         return [
@@ -168,6 +181,7 @@ def _(
 @app.cell(hide_code=True)
 def _(prompt_contract_digest):
     MISC_PROMPT_SPEC = {
+        "required_basis": "basis:empirical",
         "allow_empty": True,
         "cardinality_instruction": (
             "Extract multiple guidelines if present. "
@@ -228,6 +242,7 @@ def _(
     DATAWRAPPER_POST_PDF_PATHS,
     DATAWRAPPER_PROMPT_DIGEST,
     DEFAULT_CLIENT_CONFIG,
+    NUM_ITEMS_FOR_EVOLUTION,
     datawrapper_post_pdf_to_catalog_entries,
     itertools,
     parallel_map,
@@ -240,7 +255,7 @@ def _(
             "reasoning": DEFAULT_CLIENT_CONFIG["reasoning"],
         }
         for post_pdf_path in DATAWRAPPER_POST_PDF_PATHS
-    ]
+    ][:NUM_ITEMS_FOR_EVOLUTION]
     dw_entry_lists = parallel_map(
         fn=param_collapsed(datawrapper_post_pdf_to_catalog_entries),
         inputs=dw_tasks,
@@ -271,6 +286,7 @@ def _(
     client,
     create_pdf_content_part,
     fence,
+    finalize_guideline_batch,
     find_datawrapper_bibtex_entry_by_path,
     pathlib,
     unfence,
@@ -317,6 +333,9 @@ def _(
                                 evidence_scope=DATAWRAPPER_PROMPT_SPEC[
                                     "evidence_scope"
                                 ],
+                                required_basis=DATAWRAPPER_PROMPT_SPEC[
+                                    "required_basis"
+                                ],
                                 cardinality_instruction=DATAWRAPPER_PROMPT_SPEC[
                                     "cardinality_instruction"
                                 ],
@@ -336,6 +355,10 @@ def _(
         guideline_objects = [
             ccp.parse_guideline(md_content) for md_content in unfence(response_text)
         ]
+        guideline_objects = finalize_guideline_batch(
+            guideline_objects,
+            required_basis=DATAWRAPPER_PROMPT_SPEC["required_basis"],
+        )
         references = [bibtex_entry]
 
         return [
@@ -349,6 +372,7 @@ def _(
 @app.cell(hide_code=True)
 def _(prompt_contract_digest):
     DATAWRAPPER_PROMPT_SPEC = {
+        "required_basis": "basis:heuristic",
         "allow_empty": True,
         "cardinality_instruction": (
             "Extract multiple guidelines if present. "
@@ -360,6 +384,9 @@ def _(prompt_contract_digest):
             (
                 "Keep platform-specific advice only when it changes "
                 "a concrete visualization decision, critique step, or revision move."
+            ),
+            (
+                "When a rule is a reusable cross-grammar finishing move, emit an appropriate `polish:*` label."
             ),
         ],
     }
@@ -427,6 +454,7 @@ def _(
     CHARTABILITY_PROMPT_DIGEST,
     Catalog,
     DEFAULT_CLIENT_CONFIG,
+    NUM_ITEMS_FOR_EVOLUTION,
     chartability_item_to_catalog_entry,
     json,
     parallel_map,
@@ -440,7 +468,7 @@ def _(
             "reasoning": DEFAULT_CLIENT_CONFIG["reasoning"],
         }
         for ch_item in CHARTABILITY_ITEMS
-    ]
+    ][:NUM_ITEMS_FOR_EVOLUTION]
     ch_entries = parallel_map(
         fn=param_collapsed(chartability_item_to_catalog_entry),
         inputs=ch_tasks,
@@ -472,6 +500,7 @@ def _(
     client,
     create_pdf_content_part,
     fence,
+    finalize_guideline_batch,
     json,
     unfence,
 ):
@@ -516,6 +545,9 @@ def _(
                                 evidence_scope=CHARTABILITY_PROMPT_SPEC[
                                     "evidence_scope"
                                 ],
+                                required_basis=CHARTABILITY_PROMPT_SPEC[
+                                    "required_basis"
+                                ],
                                 cardinality_instruction=CHARTABILITY_PROMPT_SPEC[
                                     "cardinality_instruction"
                                 ],
@@ -539,7 +571,13 @@ def _(
             return None
 
         guideline_md = fenced_guidelines[0]
-        guideline_obj = ccp.parse_guideline(guideline_md)
+        guideline_batch = finalize_guideline_batch(
+            [ccp.parse_guideline(guideline_md)],
+            required_basis=CHARTABILITY_PROMPT_SPEC["required_basis"],
+        )
+        if not guideline_batch:
+            return None
+        guideline_obj = guideline_batch[0]
         references = [CHARTABILITY_PAPER_BIBTEX, *ch_item["references"]]
 
         return Entry(guideline=guideline_obj, references=references)
@@ -550,6 +588,7 @@ def _(
 @app.cell(hide_code=True)
 def _(prompt_contract_digest):
     CHARTABILITY_PROMPT_SPEC = {
+        "required_basis": "basis:accessibility",
         "allow_empty": True,
         "cardinality_instruction": (
             "Return exactly one fenced ```md block if the item supports one "
@@ -561,6 +600,9 @@ def _(prompt_contract_digest):
         "source_specific_rules": [
             "Translate the accessibility criterion into concrete design actions, reviewer checks, or remediation steps.",
             "Use the Chartability paper citation plus any directly relevant linked references from the provided item.",
+            (
+                "Emit `polish:*` only when the accessibility guidance also produces a visible decluttering, hierarchy, spacing, annotation, or palette improvement."
+            ),
             "If the item describes a principle without a concrete chart change, critique procedure, or rework step, omit it.",
         ],
     }
@@ -615,6 +657,7 @@ def _(
     COLLATED_PROMPT_DIGEST,
     Catalog,
     DEFAULT_CLIENT_CONFIG,
+    NUM_ITEMS_FOR_EVOLUTION,
     collated_item_to_catalog_entries,
     collated_perception_knowledge_items,
     itertools,
@@ -628,7 +671,7 @@ def _(
             "reasoning": DEFAULT_CLIENT_CONFIG["reasoning"],
         }
         for collated_item in collated_perception_knowledge_items
-    ]
+    ][:NUM_ITEMS_FOR_EVOLUTION]
     prc_entry_lists = parallel_map(
         fn=param_collapsed(collated_item_to_catalog_entries),
         inputs=prc_tasks,
@@ -661,6 +704,7 @@ def _(
     client,
     create_pdf_content_part,
     fence,
+    finalize_guideline_batch,
     json,
     unfence,
     zot_item_bibtex,
@@ -720,6 +764,7 @@ def _(
                             "type": "input_text",
                             "text": build_guideline_extraction_prompt(
                                 evidence_scope=COLLATED_PROMPT_SPEC["evidence_scope"],
+                                required_basis=COLLATED_PROMPT_SPEC["required_basis"],
                                 cardinality_instruction=COLLATED_PROMPT_SPEC[
                                     "cardinality_instruction"
                                 ],
@@ -743,6 +788,10 @@ def _(
         guideline_objects = [
             ccp.parse_guideline(md_content) for md_content in unfence(response_text)
         ]
+        guideline_objects = finalize_guideline_batch(
+            guideline_objects,
+            required_basis=COLLATED_PROMPT_SPEC["required_basis"],
+        )
 
         references = [
             COLLATION_REVIEW_PAPER_BIBTEX,
@@ -759,6 +808,7 @@ def _(
 @app.cell(hide_code=True)
 def _(prompt_contract_digest):
     COLLATED_PROMPT_SPEC = {
+        "required_basis": "basis:empirical",
         "allow_empty": True,
         "cardinality_instruction": (
             "Extract multiple guidelines if present. "
@@ -771,6 +821,9 @@ def _(prompt_contract_digest):
         "source_specific_rules": [
             "Treat the structured knowledge as the primary signal.",
             "Discard raw comparative findings unless they imply a concrete chart decision, critique check, or revision step.",
+            (
+                "Emit `polish:*` only when the evidence clearly supports a visible cross-grammar finishing move, not just a chart-family ranking."
+            ),
         ],
     }
     COLLATED_PROMPT_DIGEST = prompt_contract_digest(
@@ -934,6 +987,7 @@ def _(mo):
 def _(
     Catalog,
     DEFAULT_CLIENT_CONFIG,
+    NUM_ITEMS_FOR_EVOLUTION,
     TALKING_CHARTS_PROMPT_DIGEST,
     json,
     parallel_map,
@@ -951,7 +1005,7 @@ def _(
             "reasoning": DEFAULT_CLIENT_CONFIG["reasoning"],
         }
         for guideline in tc_findings["guidelines"]
-    ]
+    ][:NUM_ITEMS_FOR_EVOLUTION]
 
     tc_entries = parallel_map(
         fn=param_collapsed(tc_guideline_to_catalog_entry),
@@ -975,9 +1029,11 @@ def _(
 def _(
     Entry,
     Guideline,
+    TALKING_CHARTS_PROMPT_SPEC,
     build_tc_prompt,
     ccp,
     client,
+    finalize_guideline_batch,
     list_ref_ids,
     list_tc_guideline_references,
     pick_refs,
@@ -1018,7 +1074,13 @@ def _(
             return None
 
         md_content = fenced_guidelines[0]
-        guideline_obj: Guideline = ccp.parse_guideline(md_content)
+        guideline_batch = finalize_guideline_batch(
+            [ccp.parse_guideline(md_content)],
+            required_basis=TALKING_CHARTS_PROMPT_SPEC["required_basis"],
+        )
+        if not guideline_batch:
+            return None
+        guideline_obj: Guideline = guideline_batch[0]
         references: list[str] = ccp.parse_bibtex(
             pick_refs(
                 required_ref_ids,
@@ -1034,6 +1096,7 @@ def _(
 @app.cell(hide_code=True)
 def _(prompt_contract_digest):
     TALKING_CHARTS_PROMPT_SPEC = {
+        "required_basis": "basis:rhetorical",
         "allow_empty": True,
         "cardinality_instruction": (
             "Return exactly one fenced ```md block if the finding supports one directly actionable guideline. "
@@ -1044,6 +1107,12 @@ def _(prompt_contract_digest):
             (
                 "Translate rhetorical or interpretive findings into concrete framing, "
                 "annotation, titling, grouping, or revision guidance."
+            ),
+            (
+                "When the finding is mainly about framing, context, credibility, resonance, or workflow, emit an appropriate `communication:*` label."
+            ),
+            (
+                "When the finding is a cross-grammar finishing move that makes charts visibly clearer or stronger, emit an appropriate `polish:*` label."
             ),
             "If the finding cannot be operationalized into chart creation, feedback, or rework, omit it.",
         ],
@@ -1081,6 +1150,7 @@ def _(
 
     {
             build_guideline_extraction_prompt(
+                required_basis=TALKING_CHARTS_PROMPT_SPEC["required_basis"],
                 evidence_scope=TALKING_CHARTS_PROMPT_SPEC["evidence_scope"],
                 cardinality_instruction=TALKING_CHARTS_PROMPT_SPEC[
                     "cardinality_instruction"
@@ -1242,9 +1312,16 @@ def _(GUIDELINE_TEMPLATE_DIGEST, string_hash):
         "purpose:select",
         "purpose:refine",
     ]
+    BASIS_LABELS = [
+        "basis:empirical",
+        "basis:heuristic",
+        "basis:accessibility",
+        "basis:rhetorical",
+    ]
 
     def build_guideline_extraction_prompt(
         *,
+        required_basis: str,
         evidence_scope: str,
         cardinality_instruction: str,
         source_specific_rules: list[str],
@@ -1258,12 +1335,13 @@ def _(GUIDELINE_TEMPLATE_DIGEST, string_hash):
             "- `purpose:select`: Guidance for CHOOSING BETWEEN chart families or high-level encoding strategies (the WHAT of design). Example: 'Replace a pie chart with a bar chart for comparison.'",
             "- `purpose:refine`: Guidance for IMPROVING the implementation, polish, or readability of an ALREADY-CHOSEN chart type (the HOW of design). Example: 'Sort the bars of a bar chart in descending order.'",
             f"Every emitted guideline MUST include exactly one purpose label from: {', '.join(PURPOSE_LABELS)}.",
+            f"Every emitted guideline MUST include exactly one basis label and it MUST be `{required_basis}`. Allowed basis labels are: {', '.join(BASIS_LABELS)}.",
             # CONTRACT 2: DIRECTIONAL LABELS (POLARITY)
             "\nSecond, assign directional polarity to labels using a tripartite 'category:value:polarity' format:",
             "- Use ':use' if the guideline explicitly RECOMMENDS or PROMOTES a choice. Example: 'chart:bar:use'.",
             "- Use ':avoid' if the guideline explicitly WARNS AGAINST or DISCOURAGES a choice. Example: 'chart:pie-donut:avoid'.",
             "- Use NO polarity (Neutral) if the label represents a CONTEXTUAL CONDITION. Example: 'task:compare' means 'this guideline applies when the user wants to compare'.",
-            "Guidelines with 'purpose:select' MUST include both a ':use' label and an ':avoid' label to clarify the design choice.",
+            "Guidelines with 'purpose:select' MUST include both a ':use' label and an ':avoid' label in the SAME decision family (`chart`, `structure`, `channel`, or `component`).",
             "\nThird, keep labels sparse and high-signal:",
             "- Treat labels as a retrieval index, not as an exhaustive summary of the guideline.",
             "- Use only the taxonomy declared in the template. Do NOT invent new categories or emit `custom:*` labels. If no allowed label fits cleanly, omit the label.",
@@ -1274,6 +1352,8 @@ def _(GUIDELINE_TEMPLATE_DIGEST, string_hash):
             "- Avoid weak default labels such as `audience:general-public`, `literacy:general`, `structure:single-view`, `time:non-temporal`, or `data:quantitative` unless that applicability is explicit and materially important.",
             "- Bad label behavior: turning one broad accessibility rule into a long list of every plausible task, chart, time mode, data type, and audience.",
             "- Good label behavior: keep only the smallest label set that captures the recommendation, its main design lever, and the one or two conditions that materially narrow where it applies.",
+            "- Emit the new generic families (`lever`, `operator`, `reading-mode`, `density`, `measure`, `group-cardinality`, `shape`, `temporal-pattern`, `communication`, `polish`) only when the source makes them explicit enough to drive retrieval. If unsure, omit.",
+            "- `communication` is only for framing, context, credibility, resonance, or workflow guidance. `polish` is only for cross-grammar finishing moves that visibly improve charts.",
         ]
 
         if allow_empty:
@@ -1290,6 +1370,8 @@ def _(GUIDELINE_TEMPLATE_DIGEST, string_hash):
                 "Reject candidates that only summarize theory, taxonomy, historical context, methodology, study setup, or narrative commentary.",
                 "Reject candidates that are visualization-relevant but do not tell the practitioner what to choose, inspect, test, or change in a chart.",
                 "Operationalize descriptive findings in the form 'When [condition], do [change] to achieve [goal].' If that rewrite is not supported by the source, omit the candidate.",
+                "Prefer omission to broad but plausible guidance. If the candidate lacks a clear trigger condition, clear break condition, or clear reviewer check, omit it.",
+                "If two candidates overlap, keep only the narrower and more condition-bounded one.",
                 # CONTRACT 4: DESCRIPTION
                 "",
                 "The `description` MUST follow this semantic contract: "
@@ -1298,7 +1380,10 @@ def _(GUIDELINE_TEMPLATE_DIGEST, string_hash):
                 "for [audience/literacy/situational context].'",
                 "Ensure the choice of verbs in the description (e.g., use vs avoid) exactly matches the directional polarity of the labels.",
                 "The title is a specific imperative action on a concrete chart or design object.",
+                "The `context` section must read like 'Use when (all true)' and include at least two observable constraints.",
+                "The `exceptions` section must read like 'Do not use when (any true)' and explicitly mirror the context condition space.",
                 "The `check` section contains an observable failure sign and a concrete review procedure that a reviewer can run.",
+                "For `purpose:select`, the `check` section must include a direct A/B style decision test between the chosen and rejected options.",
                 "The `fix` section consists of concrete edit operations, not abstract restatements of the advice.",
                 "Bad candidate: 'Color affects interpretation.' Good candidate: 'Use a colorblind-safe sequential palette when color encodes magnitude and hue identity is not the message.'",
                 *source_specific_rules,
@@ -1332,6 +1417,7 @@ def _(GUIDELINE_TEMPLATE_DIGEST, string_hash):
                 [
                     GUIDELINE_TEMPLATE_DIGEST,
                     build_guideline_extraction_prompt(
+                        required_basis=spec["required_basis"],
                         evidence_scope=spec["evidence_scope"],
                         cardinality_instruction=spec["cardinality_instruction"],
                         source_specific_rules=spec["source_specific_rules"],
@@ -1343,6 +1429,108 @@ def _(GUIDELINE_TEMPLATE_DIGEST, string_hash):
         )
 
     return build_guideline_extraction_prompt, prompt_contract_digest
+
+
+@app.cell(hide_code=True)
+def _(Guideline):
+    def _dedupe_labels(labels: list[str]) -> list[str]:
+        return list(dict.fromkeys(labels))
+
+    def _with_required_basis(guideline: Guideline, required_basis: str) -> Guideline:
+        labels = [label for label in guideline.labels if not label.startswith("basis:")]
+        labels.insert(
+            1 if labels and labels[0].startswith("purpose:") else 0, required_basis
+        )
+        return guideline.model_copy(update={"labels": _dedupe_labels(labels)})
+
+    def _has_self_conflict(labels: list[str]) -> bool:
+        states: dict[str, set[str]] = {}
+        for label in labels:
+            parts = label.split(":")
+            if len(parts) == 3 and parts[-1] in {"use", "avoid"}:
+                key = ":".join(parts[:-1])
+                states.setdefault(key, set()).add(parts[-1])
+        return any(polarities == {"use", "avoid"} for polarities in states.values())
+
+    def _same_family_select_contrast(labels: list[str]) -> bool:
+        decision_categories = {"chart", "structure", "channel", "component"}
+        decisions: dict[str, set[str]] = {}
+        for label in labels:
+            parts = label.split(":")
+            if len(parts) != 3 or parts[-1] not in {"use", "avoid"}:
+                continue
+            if parts[0] not in decision_categories:
+                continue
+            decisions.setdefault(parts[0], set()).add(parts[-1])
+        return any(polarities == {"use", "avoid"} for polarities in decisions.values())
+
+    def _section_map(guideline: Guideline) -> dict[str, str]:
+        return {
+            section.role: section.content.strip()
+            for section in guideline.sections
+            if section.role != "__dangling__"
+        }
+
+    def _validate_guideline(
+        guideline: Guideline,
+        *,
+        required_basis: str,
+    ) -> Guideline | None:
+        guideline = _with_required_basis(guideline, required_basis)
+        labels = guideline.labels
+
+        purpose_labels = [label for label in labels if label.startswith("purpose:")]
+        if len(purpose_labels) != 1:
+            return None
+        basis_labels = [label for label in labels if label.startswith("basis:")]
+        if basis_labels != [required_basis]:
+            return None
+        if _has_self_conflict(labels):
+            return None
+
+        sections = _section_map(guideline)
+        required_roles = {"context", "exceptions", "check"}
+        if any(len(sections.get(role, "")) < 24 for role in required_roles):
+            return None
+
+        if purpose_labels[0] == "purpose:select" and not _same_family_select_contrast(
+            labels
+        ):
+            return None
+
+        return guideline
+
+    def finalize_guideline_batch(
+        guideline_objects: list[Guideline],
+        *,
+        required_basis: str,
+    ) -> list[Guideline]:
+        validated = [
+            validated_guideline
+            for guideline_obj in guideline_objects
+            if (
+                validated_guideline := _validate_guideline(
+                    guideline_obj,
+                    required_basis=required_basis,
+                )
+            )
+            is not None
+        ]
+        seen: set[tuple[str, str, tuple[str, ...]]] = set()
+        unique_guidelines: list[Guideline] = []
+        for guideline in validated:
+            signature = (
+                guideline.title.strip().lower(),
+                guideline.description.strip().lower(),
+                tuple(guideline.labels),
+            )
+            if signature in seen:
+                continue
+            seen.add(signature)
+            unique_guidelines.append(guideline)
+        return unique_guidelines
+
+    return (finalize_guideline_batch,)
 
 
 @app.cell(hide_code=True)

@@ -3,8 +3,9 @@ import io
 import altair as alt
 import PIL.Image
 
-from visground.generation.backends import VisualizationBackend
 from visground.generation.models import VisualizationRequestRecord
+
+from .base import VisualizationBackend
 
 
 class AltairBackend(VisualizationBackend[alt.Chart]):

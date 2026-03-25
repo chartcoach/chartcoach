@@ -11,10 +11,12 @@ from typing import Any, Literal, TypeAlias, TypedDict, Unpack, cast
 import platformdirs
 from chromadb.api.types import (
     DefaultEmbeddingFunction,
+    Documents,
     EmbeddingFunction,
     validate_embedding_function,
 )
 
+from .catalog.cached_ef import CachedEmbeddingFunction, with_embedding_cache
 from .catalog.clients import create_chroma_client, create_duckdb_conn
 from .catalog.collection import Catalog
 from .catalog.index import Index, PERSISTED_DUCKDB_RELATIONS
@@ -35,6 +37,7 @@ class Settings(TypedDict, total=False):
     catalog: Catalog | str | PathLike[str]
     cache_dir: str | PathLike[str]
     cache_mode: CacheMode
+    cache_embeddings: bool
     embedding_fn: EmbeddingFunction[Any] | None
 
 
@@ -43,6 +46,12 @@ class _ResolvedSettings:
     catalog: Catalog
     cache_root: Path
     cache_mode: CacheMode
+    embedding_fn: EmbeddingFunction[Any]
+    embedding_name: str
+
+
+@dc.dataclass(frozen=True)
+class _ResolvedEmbedding:
     embedding_fn: EmbeddingFunction[Any]
     embedding_name: str
 
@@ -123,28 +132,48 @@ def _resolve_settings(settings: Settings) -> _ResolvedSettings:
         allowed = ", ".join(sorted(_CACHE_MODES))
         raise ValueError(f"cache_mode must be one of: {allowed}.")
 
-    embedding_fn = _resolve_embedding_fn(settings.get("embedding_fn"))
-    embedding_name = _embedding_name(embedding_fn)
+    raw_cache_embeddings = settings.get("cache_embeddings", True)
+    if not isinstance(raw_cache_embeddings, bool):
+        raise ValueError("cache_embeddings must be a bool.")
+
+    resolved_embedding = _resolve_effective_embedding_fn(
+        settings.get("embedding_fn"),
+        cache_embeddings=raw_cache_embeddings,
+    )
 
     return _ResolvedSettings(
         catalog=catalog,
         cache_root=cache_root,
         cache_mode=raw_cache_mode,
-        embedding_fn=embedding_fn,
-        embedding_name=embedding_name,
+        embedding_fn=resolved_embedding.embedding_fn,
+        embedding_name=resolved_embedding.embedding_name,
     )
 
 
-def _resolve_embedding_fn(
+def _resolve_effective_embedding_fn(
     embedding_fn: EmbeddingFunction[Any] | None,
-) -> EmbeddingFunction[Any]:
+    *,
+    cache_embeddings: bool,
+) -> _ResolvedEmbedding:
     resolved = (
         cast(EmbeddingFunction[Any], DefaultEmbeddingFunction())
         if embedding_fn is None
         else cast(EmbeddingFunction[Any], embedding_fn)
     )
-    validate_embedding_function(resolved)
-    return resolved
+    if cache_embeddings and not isinstance(resolved, CachedEmbeddingFunction):
+        resolved = cast(
+            EmbeddingFunction[Any],
+            with_embedding_cache(
+                cast(EmbeddingFunction[Documents], resolved),
+                app_name=CACHE_APP_NAME,
+            ),
+        )
+
+    validate_embedding_function(cast(Any, resolved))
+    return _ResolvedEmbedding(
+        embedding_fn=resolved,
+        embedding_name=_embedding_name(resolved),
+    )
 
 
 def _embedding_name(embedding_fn: EmbeddingFunction[Any]) -> str:

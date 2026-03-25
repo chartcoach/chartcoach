@@ -15,6 +15,7 @@ from __future__ import annotations
 import base64
 import binascii
 import logging
+from contextlib import asynccontextmanager
 from functools import lru_cache
 from io import BytesIO
 from time import perf_counter
@@ -82,7 +83,7 @@ class VisJudgeService:
         base_model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
             BASE_MODEL_ID,
             torch_dtype=torch.bfloat16,
-            device_map="auto",
+            device_map={"": 0},
         )
         logger.info(
             "Loaded base model in %.2fs",
@@ -275,7 +276,15 @@ def to_service_run_input(item: RunRequest) -> ServiceRunInput:
     }
 
 
-app = FastAPI(title="VisJudge API", version="1.0.0")
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    logger.info("Preloading cached VisJudgeService instance at application startup")
+    get_service()
+    logger.info("Finished preloading cached VisJudgeService instance")
+    yield
+
+
+app = FastAPI(title="VisJudge API", version="1.0.0", lifespan=lifespan)
 
 
 @app.get("/health", response_model=HealthResponse)

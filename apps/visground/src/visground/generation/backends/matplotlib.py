@@ -4,8 +4,9 @@ import matplotlib.figure
 import matplotlib.pyplot as plt
 import PIL.Image
 
-from visground.generation.backends import VisualizationBackend
 from visground.generation.models import VisualizationRequestRecord
+
+from .base import VisualizationBackend
 
 
 class MatplotlibBackend(VisualizationBackend[matplotlib.figure.Figure]):

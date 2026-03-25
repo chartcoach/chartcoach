@@ -14,6 +14,7 @@ class WriteVisualizationCode(dspy.Signature):
     - Follow every item in `requirements` strictly. These may include required imports,
       library constraints, design guidance, or output conventions.
     - Assign the final visualization object to a variable named `chart`.
+    - Keep all non-code outputs concise and evaluable, not essay-like.
     """
 
     id: str = dspy.InputField()
@@ -39,6 +40,25 @@ class WriteVisualizationCode(dspy.Signature):
     )
     visualization_type: str = dspy.OutputField(
         desc="Short, ideally single-word, canonical name of the visualization type you generated without suffixes like 'chart' or 'plot'"
+    )
+    query_interpretation: str = dspy.OutputField(
+        desc=(
+            "One short sentence restating what the chart should help the user see "
+            "or compare."
+        )
+    )
+    design_rationale: list[str] = dspy.OutputField(
+        desc=(
+            "Two to four short bullets explaining why the chosen chart type and "
+            "encoding was chosen"
+        )
+    )
+    grounding_trace: list[str] = dspy.OutputField(
+        desc=(
+            "Zero to three short bullets naming the requirement or guidance items "
+            "that most influenced the design choice. Quote brief phrases from the requirements when possible. "
+            "Empty list if you were not provided with any design-specific guidance. Library-specific rules are not considered design guidance."
+        )
     )
 
 

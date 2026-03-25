@@ -1,18 +1,28 @@
 import json
-from typing import Callable, cast
+from typing import Callable, TypedDict, cast
 
 import dspy
-from typing_extensions import TypedDict
 
 from .backends import VisualizationBackend
 from .models import VisualizationRequestRecord
 from .signatures import WriteVisualizationCode
+
+_VIS_GEN_OUTPUT_FIELDS = (
+    "code",
+    "visualization_type",
+    "query_interpretation",
+    "design_rationale",
+    "grounding_trace",
+)
 
 
 class VisGenOutput(TypedDict):
     id: str
     code: str
     visualization_type: str
+    query_interpretation: str
+    design_rationale: list[str]
+    grounding_trace: list[str]
 
 
 class VisGenRunner:
@@ -39,6 +49,7 @@ class VisGenRunner:
         cache_obj = {
             "example": example.inputs().toDict(),
             "lm": lm.model,
+            "output_fields": _VIS_GEN_OUTPUT_FIELDS,
         }
         return json.dumps(
             cache_obj,
@@ -51,6 +62,9 @@ class VisGenRunner:
         return {
             "code": prediction.code,
             "visualization_type": prediction.visualization_type,
+            "query_interpretation": prediction.query_interpretation,
+            "design_rationale": prediction.design_rationale,
+            "grounding_trace": prediction.grounding_trace,
         }
 
     def generate(
@@ -84,7 +98,7 @@ class VisGenRunner:
         results = parallel(inputs) if fresh_examples else []
 
         for example, result in zip(fresh_examples, results):
-            self._cache_put(self._cache_key(example), dict(result))
+            self._cache_put(self._cache_key(example), self._cache_value(result))
 
         return [
             cast(

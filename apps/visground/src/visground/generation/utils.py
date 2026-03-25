@@ -1,6 +1,7 @@
 from typing import Any, Type
 
 import polars as pl
+from slugify import slugify
 
 
 def pyexecute(
@@ -72,3 +73,13 @@ def describe_dataframe(
             for field, dtype in zip(df.columns, df.dtypes)
         },
     }
+
+
+def _snake_case_df_column_names(df: pl.DataFrame) -> pl.DataFrame:
+    return df.rename({col: slugify(col, separator="_") for col in df.columns})
+
+
+def normalize_df(df: pl.DataFrame) -> pl.DataFrame:
+    return _snake_case_df_column_names(df).with_columns(
+        pl.col(pl.Decimal).cast(pl.Float64)
+    )
