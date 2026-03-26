@@ -17,6 +17,7 @@ _GENERATED_CANDIDATE_COLUMNS: Final[tuple[str, ...]] = (
     "vis_id",
     "query",
     "audience",
+    "data_profile",
     "guideline_ids",
     "model",
     "grammar",
@@ -75,6 +76,7 @@ def flatten_generated_candidates_df(
                 .then(pl.lit("select"))
                 .otherwise(pl.lit(None).cast(pl.String)),
                 audience=pl.col("request").struct.field("audience"),
+                data_profile=pl.col("request").struct.field("data_profile"),
                 guideline_ids=pl.col("result").struct.field("guideline_ids"),
             ),
             on="grounding_id",
@@ -88,6 +90,7 @@ def flatten_generated_candidates_df(
             pl.col("id").alias("vis_id"),
             "query",
             "audience",
+            "data_profile",
             "guideline_ids",
             "model",
             "grammar",
@@ -120,6 +123,12 @@ class VisGroundDataset:
 
     def judgements_path(self) -> Path:
         return self._root / "04_judgements.parquet"
+
+    def analysis_dir(self) -> Path:
+        return self._root / "05_analysis"
+
+    def analysis_artifact_path(self, artifact_name: str) -> Path:
+        return self.analysis_dir() / f"{artifact_name}.parquet"
 
     def charts_dir(self) -> Path:
         return self._root / "charts"
@@ -172,6 +181,20 @@ class VisGroundDataset:
 
     def write_judgements_df(self, df: pl.DataFrame) -> Path:
         return self._write_df(df, self.judgements_path())
+
+    def read_analysis_artifact_df(self, artifact_name: str) -> pl.DataFrame:
+        return self._read_df(
+            self.analysis_artifact_path(artifact_name),
+            label=f"05_analysis/{artifact_name}.parquet",
+            producer="05_analysis.py",
+        )
+
+    def write_analysis_artifact_df(
+        self,
+        artifact_name: str,
+        df: pl.DataFrame,
+    ) -> Path:
+        return self._write_df(df, self.analysis_artifact_path(artifact_name))
 
     def chart_exists(self, visgen_id: str) -> bool:
         return self.chart_path(visgen_id).exists()

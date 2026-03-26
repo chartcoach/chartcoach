@@ -5,36 +5,6 @@ app = marimo.App(width="medium")
 
 
 @app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    # 02 Grounding
-
-    Build the grounding artifact that the generation stage consumes.
-    """)
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ## Stage Contract
-
-    - Input: `01_cohort.parquet`
-    - Output: `02_grounding.parquet`
-    - Responsibility: turn each cohort request into one or more grounding bundles
-    """)
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ## Setup
-    """)
-    return
-
-
-@app.cell(hide_code=True)
 def _():
     flat_strategy_config = {
         "n_results": 10,
@@ -44,19 +14,11 @@ def _():
 
     structured_strategy_config = {
         "n_results": 12,
-        "top_k": 4,
+        "top_k": 3,
         "rrf_k": 20,
-        "max_items": 8,
+        "max_items": 4,
     }
-    return flat_strategy_config, structured_strategy_config
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ## Load Input Artifact
-    """)
-    return
+    return (structured_strategy_config,)
 
 
 @app.cell(hide_code=True)
@@ -64,24 +26,6 @@ def _(store):
     vis_request_df = store.read_cohort_df()
     vis_request_df
     return (vis_request_df,)
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ## Build Grounding Requests
-    """)
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ### Refinement Requests
-
-    These requests already prescribe a chart type, so we do not expand them by audience.
-    """)
-    return
 
 
 @app.cell(hide_code=True)
@@ -99,16 +43,6 @@ def _(pl, vis_request_df):
     )
     refinement_requests_df
     return (refinement_requests_df,)
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ### Selection Requests
-
-    These requests omit chart type, so we expand them across audience conditions.
-    """)
-    return
 
 
 @app.cell(hide_code=True)
@@ -136,20 +70,10 @@ def _(pl, refinement_requests_df, selection_requests_df):
 
 
 @app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ## Configure Retrieval Strategies
-    """)
-    return
-
-
-@app.cell(hide_code=True)
 def _(
-    FlatGroundingStrategy,
     NoneGroundingStrategy,
     StructuredGroundingStrategy,
     coach,
-    flat_strategy_config,
     structured_strategy_config,
 ):
     structured_grounder = StructuredGroundingStrategy(
@@ -158,17 +82,6 @@ def _(
     )
     none_grounder = NoneGroundingStrategy()
     return none_grounder, structured_grounder
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ## Run Grounding
-
-    Flat retrieval is only run when audience is absent. For audience-conditioned
-    requests we keep the focus on structured retrieval.
-    """)
-    return
 
 
 @app.cell(hide_code=True)
@@ -214,28 +127,12 @@ def _(build_grounding_results_df, grounding_requests_df):
 
 
 @app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ## Inspect Grounding Artifact
-    """)
-    return
-
-
-@app.cell(hide_code=True)
 def _(grounding_results_df, pl):
     (
         grounding_results_df.group_by("grounding_mode", "request")
         .agg(count=pl.len())
         .head()
     )
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ## Persist Artifact
-    """)
     return
 
 
@@ -279,7 +176,6 @@ def _():
     )
     return (
         AUDIENCE_MODIFIER_IDS,
-        FlatGroundingStrategy,
         GroundingStrategy,
         NoneGroundingStrategy,
         StructuredGroundingStrategy,

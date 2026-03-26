@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import base64
 import io
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Final
 
 from PIL import Image
@@ -10,8 +10,9 @@ from PIL import Image
 from visground.datasets import VisEvalDataset, VisGroundDataset
 from visground.generation.backends import resolve_visualization_backend
 
-_IMAGE_VARIANTS: Final[dict[str, tuple[tuple[int, int], int]]] = {
+_DEFAULT_IMAGE_VARIANTS: Final[dict[str, tuple[tuple[int, int], int]]] = {
     "panel": ((720, 520), 82),
+    "hover": ((1080, 820), 86),
     "detail": ((960, 680), 84),
 }
 
@@ -40,6 +41,9 @@ def read_or_render_chart_image(
 class ChartImageService:
     store: VisGroundDataset
     dataset: VisEvalDataset
+    image_variants: dict[str, tuple[tuple[int, int], int]] = field(
+        default_factory=lambda: dict(_DEFAULT_IMAGE_VARIANTS)
+    )
 
     def __post_init__(self) -> None:
         self._encoded_cache: dict[tuple[str, str], str] = {}
@@ -54,11 +58,11 @@ class ChartImageService:
         return self._backend_cache[grammar]
 
     def image_data_url(self, candidate: dict[str, Any], variant: str) -> str:
-        if variant not in _IMAGE_VARIANTS:
+        if variant not in self.image_variants:
             raise ValueError(f"Unsupported viewer image variant '{variant}'.")
         cache_key = (candidate["visgen_id"], variant)
         if cache_key not in self._encoded_cache:
-            size, quality = _IMAGE_VARIANTS[variant]
+            size, quality = self.image_variants[variant]
             image = self._read_or_render(candidate)
             self._encoded_cache[cache_key] = image_to_data_url(
                 image,

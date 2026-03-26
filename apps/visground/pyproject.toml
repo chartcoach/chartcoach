@@ -24,6 +24,7 @@ dependencies = [
   "polars>=1.38.1",
   "pyarrow>=23.0.1",
   "python-slugify>=8.0.4",
+  "statsmodels>=0.14.6",
   "vl-convert-python>=1.9.0.post1",
 ]
 

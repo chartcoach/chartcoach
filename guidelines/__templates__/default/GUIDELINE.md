@@ -2,13 +2,15 @@
 # PERMANENT ID: URL-friendly kebab-case.
 id: "unique-guideline-slug"
 
-# TITLE: Specific imperative instruction. Name the design lever and condition plainly.
+# TITLE: Specific imperative instruction. State the portable principle at the design-lever level.
+# Avoid source-shaped named examples, tools, palettes, devices, or domains in the title unless that named item is itself the supported finding.
 title: "Use a precise action when the condition is met"
 
 # METADATA
 bibliography: references.bib
 
 # DESCRIPTION: A structured summary capturing the guideline's logic.
+# Keep the description retrieval-stable and principle-level. Do not narrow a broader supported principle into a niche named recommendation unless the source makes that narrow form the real finding.
 # Use [use/prefer] and [improve/maximize] for constructive guidance.
 # Use [avoid/minimize] and [prevent/mitigate] for proscriptive guidance.
 description: "For [task/scope/time context], [use|prefer|avoid] [design lever] on [chart/structure/data context] to [improve|maximize|prevent] [quality target or risk] and [mitigate|address] [common mistakes] for [audience/literacy/situational context]."
@@ -19,12 +21,13 @@ description: "For [task/scope/time context], [use|prefer|avoid] [design lever] o
 # Use only the taxonomy below. Never invent new categories or `custom:*` labels.
 # By default, emit at most one value per category. Add multiple values only for explicit, inseparable contrasts.
 # Only include a label when the source makes that condition materially relevant to applicability.
+# Never backfill likely defaults from general datavis knowledge.
 # Format: "category:value" (NEUTRAL) means "this rule applies under this condition."
 # Format: "category:value:use" means "this rule recommends this choice."
 # Format: "category:value:avoid" means "this rule warns against this choice."
 labels:
   # REQUIRED CORE (Low-cardinality)
-  # purpose: emit exactly one. Use `select` only for bounded design contrasts. Use `refine` only for improving an already-chosen design.
+  # purpose: emit exactly one. Use `select` only for bounded chart-family or structure contrasts. Use `refine` for improving an already-chosen design, including encoding, annotation, palette, accessibility, and rhetoric moves inside that design.
   - "purpose:[select|refine]"
   # basis: emit exactly one conceptual evidence role. Use empirical for controlled findings, heuristic for practitioner/editorial rules, accessibility for inclusive-design criteria, rhetorical for framing/communication guidance.
   - "basis:[empirical|heuristic|accessibility|rhetorical]"
@@ -90,19 +93,24 @@ labels:
 STRICT CONTRACT
 - This document records one directly actionable visualization guideline.
 - The language is clear, direct, precise, and accessible. It avoids fluff, hype, academic padding, and narrative source attribution.
+- Source faithfulness is strict. Every claim, condition, label, exception, check, fix, and example must be explicitly discussed in the processed source or be a minimal operational rewrite of it.
+- Primary retrieval surfaces are `title`, `description`, and `advice`. Keep them portable across grammars and models whenever the source supports a broader principle.
+- Named exemplars, tools, palettes, devices, platforms, or domain-specific artifacts stay out of `title`, `description`, and `advice` unless they are themselves the supported finding.
+- Prefer omission to hallucinated specificity, generic cleanup advice, or plausible-but-unsupported applicability.
 - Each section is semantically pure, self-contained, and efficient for embedding. The first sentence names the concrete chart element, encoding, task, audience, or constraint directly.
 - The same design lever is named with the same words across sections. Decorative synonyms and pronoun-only openings are avoided.
 - Each sentence carries one main idea. Stacked caveats and abstract framing are kept out of the section body.
 - Citekeys appear only in the reason section, only inside **Evidence:**, and each citekey appears at most once within that section.
 - Advice and mistakes use mirrored vocabulary when they address the same design lever. Context and exceptions describe the same situation space from different sides. Fixes remain concrete enough to compare against mistakes and alternative fixes.
-- Every emitted guideline includes exactly one purpose label: "purpose:select" (choice between chart families) or "purpose:refine" (improvement of a chosen chart type).
+- Every emitted guideline includes exactly one purpose label: "purpose:select" (choice between chart families or structural arrangements) or "purpose:refine" (improvement of a chosen chart type or chosen structure).
 - Every emitted guideline includes exactly one basis label describing the conceptual role of the evidence: empirical, heuristic, accessibility, or rhetorical.
 - Directional guidance uses a tripartite "category:value:polarity" format.
     1. Polarity is ":use" if the guideline explicitly RECOMMENDS or PROMOTES a choice.
     2. Polarity is ":avoid" if the guideline explicitly WARNS AGAINST or DISCOURAGES a choice.
     3. NO polarity (Neutral) is used if the label represents a CONTEXTUAL CONDITION (e.g., "task:compare" means "this guideline applies when the user wants to compare").
-- Guidelines with "purpose:select" MUST include at least one ":use" label and at least one ":avoid" label for the relevant chart families or encodings to clarify the recommended design choice.
+- Guidelines with "purpose:select" MUST include at least one ":use" label and at least one ":avoid" label for the relevant chart or structure contrast to clarify the recommended design choice.
 - Guidelines with "purpose:select" MUST encode a bounded contrast. If the rule cannot state when to use X instead of Y, it should be emitted as `refine` or omitted.
+- Encoding, channel, component, palette, caption, annotation, accessibility, and framing choices belong to `purpose:refine` even when they contrast alternatives.
 - Guidelines with "purpose:refine" primarily use neutral contextual labels and ":use" labels for the specific components or channels being polished.
 - Labels are a sparse retrieval index rather than a restatement of the whole guideline.
 - Most guidelines carry 4-8 labels total. Prefer omission to a weak, generic, or speculative label.
@@ -112,6 +120,7 @@ STRICT CONTRACT
 - Emit profile-facing labels (`density`, `measure`, `group-cardinality`, `shape`, `temporal-pattern`, `reading-mode`, `operator`, `lever`) only when the source makes that condition explicit enough to guide retrieval.
 - `communication` and `polish` are orthogonal lanes: use them only for framing/communication or cross-grammar finishing guidance, not as broad style decoration.
 - When advice applies across many charts, encode the shared lever (component, channel, quality, access, or audience need) instead of enumerating many chart families.
+- `context`, `exceptions`, `check`, `fix`, and labels may include only conditions and actions that the source actually supports. Do not fill missing sections with generic datavis defaults.
 - The generated output retains only the role comments after headings; all other comments are omitted.
 -->
 
@@ -121,6 +130,7 @@ STRICT CONTRACT
 Section form:
 - 1-2 imperative sentences.
 - The first sentence names one controllable design lever directly.
+- State the portable principle first. Keep named examples or source-specific artifacts out unless they are the actual finding.
 - The structure is action + object + condition or goal.
 - Multi-part recommendations appear only when the parts are inseparable.
 - No rationale.
@@ -158,6 +168,7 @@ Section form:
 - Keyed bullets only.
 - Retrieval-oriented situation cues.
 - Observable conditions rather than abstract intent alone.
+- Include only conditions that are explicitly supported by the source.
 - The same dimension names are reused across guidelines when possible.
 - No citations.
 -->
@@ -177,6 +188,7 @@ Section form:
 - Bullets only when there are several exceptions.
 - Each item includes **Break it when:** and **Why:**.
 - The wording reuses the same situation dimensions named in `context` when possible.
+- Do not invent boundary conditions to make the section look complete. Omit the guideline instead if no real source-supported boundary exists.
 - No citations.
 -->
 
@@ -216,6 +228,7 @@ Section form:
 - 2-4 short labeled sentences.
 - Runnable by a reviewer or a simple script.
 - Observable and concrete enough to support comparison across guidelines.
+- Keep checks source-faithful. Do not add generic QA procedures that the source does not support.
 - No citations.
 -->
 
@@ -230,6 +243,7 @@ Section form:
 - 2-4 imperative bullets.
 - Each bullet is a distinct edit operation.
 - The edits stay concrete enough to compare fixes across related guidelines.
+- Only include edits that the source supports directly or as a minimal operational rewrite.
 - No citations.
 -->
 
