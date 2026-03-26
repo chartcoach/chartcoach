@@ -44,12 +44,10 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _():
-    import random
-
     cohort_config = {
-        "target_n": 7 * 1,
+        "target_n": 7 * 10,
         "max_tasks_per_db": 6,
-        "seed": random.randint(0, 1000000),
+        "seed": 42,
     }
     return (cohort_config,)
 

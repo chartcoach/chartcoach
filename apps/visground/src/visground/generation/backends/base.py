@@ -39,6 +39,7 @@ class VisualizationBackend(ABC, Generic[T]):
         requirements = [
             *self.build_requirements(req),
             "---",
+            "**Design Guidance**",
             *req["requirements"],
         ]
         return dspy.Example(

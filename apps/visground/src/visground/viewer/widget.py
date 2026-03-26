@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
 from typing import Any, cast
 
@@ -11,9 +12,10 @@ from anywidget.experimental import command
 from visground.datasets import VisEvalDataset, VisGroundDataset
 
 from .data import (
-    GROUNDING_MODES,
     build_catalog,
     build_grounding_model_matrix,
+    build_ui_schema,
+    discover_registry,
     enrich_candidates_with_scores,
     normalize_selection,
     resolve_focus_key,
@@ -34,7 +36,7 @@ class VisGroundViewer(anywidget.AnyWidget):
         store: VisGroundDataset | None = None,
         dataset: VisEvalDataset | None = None,
         initial_vis_id: str | None = None,
-        initial_objective: str = "refine",
+        initial_objective: str | None = None,
         initial_grammar: str | None = None,
         initial_audience: str | None = None,
         show_scores: bool = True,
@@ -55,6 +57,8 @@ class VisGroundViewer(anywidget.AnyWidget):
             )
 
         self._candidates_df = candidates_df
+        self._registry = discover_registry(candidates_df)
+        self._asset_version = self._compute_asset_version()
         self._catalog_vis_ids = self._ordered_vis_ids()
         if not self._catalog_vis_ids:
             raise ValueError("Viewer requires at least one generated vis_id.")
@@ -114,7 +118,7 @@ class VisGroundViewer(anywidget.AnyWidget):
                 **payload,
                 "value": value,
                 "config": {
-                    "grounding_modes": list(GROUNDING_MODES),
+                    "asset_version": self._asset_version,
                     "scores_enabled": bool(
                         self._show_scores
                         and "overall_score" in self._candidates_df.columns
@@ -242,22 +246,24 @@ class VisGroundViewer(anywidget.AnyWidget):
                 cells.append(
                     {
                         "grounding_mode": cell["grounding_mode"],
+                        "grounding_label": cell["grounding_label"],
                         "model": cell["model"],
                         "missing": record is None,
                         "placeholder_reason": cell["placeholder_reason"],
                         "candidate": (
                             None
                             if record is None
-                            else serialize_candidate_record(
-                                record,
-                                image_loader=self._image_service.image_data_url,
-                                image_variant="panel",
-                                include_detail=False,
-                            )
+                            else self._overview_candidate_payload(record)
                         ),
                     }
                 )
-            rows.append({"grounding_mode": row["grounding_mode"], "cells": cells})
+            rows.append(
+                {
+                    "grounding_mode": row["grounding_mode"],
+                    "grounding_label": row["grounding_label"],
+                    "cells": cells,
+                }
+            )
 
         payload = {
             "vis_id": vis_id,
@@ -265,12 +271,35 @@ class VisGroundViewer(anywidget.AnyWidget):
             "page_count": len(self._catalog_vis_ids),
             "nl_query": normalized["objective_df"].item(0, "query"),
             "selection": selection,
-            "options": normalized["options"],
-            "models": matrix["models"],
-            "rows": rows,
+            "ui_schema": build_ui_schema(
+                registry=self._registry,
+                selection=selection,
+                asset_version=self._asset_version,
+            ),
+            "matrix": {
+                "columns": matrix["columns"],
+                "rows": rows,
+            },
         }
         self._overview_cache[selection_key] = payload
         self._record_cache[selection_key] = record_map
+        return payload
+
+    def _overview_candidate_payload(self, record: dict[str, Any]) -> dict[str, Any]:
+        payload = serialize_candidate_record(
+            record,
+            image_loader=self._image_service.image_data_url,
+            image_variant="panel",
+            include_detail=False,
+        )
+        try:
+            payload["hover_image_url"] = self._image_service.image_data_url(
+                record, "hover"
+            )
+        except (
+            Exception
+        ):  # pragma: no cover - exercised through existing image handling
+            payload["hover_image_url"] = payload.get("image_url")
         return payload
 
     def _inspect_payload(
@@ -320,20 +349,16 @@ class VisGroundViewer(anywidget.AnyWidget):
     ) -> dict[str, Any]:
         return normalize_selection(
             self._case_df(vis_id),
+            registry=self._registry,
             objective=objective,
             grammar=grammar,
             audience=audience,
         )
 
     def _ordered_vis_ids(self) -> list[str]:
-        first_seen = (
-            self._candidates_df.select("vis_id")
-            .unique(maintain_order=True)
-            .get_column("vis_id")
-            .to_list()
-        )
+        first_seen = self._registry["vis_ids"]
         if not self._store.cohort_path().exists():
-            return first_seen
+            return list(first_seen)
 
         cohort_ids = [
             cohort_id
@@ -342,6 +367,16 @@ class VisGroundViewer(anywidget.AnyWidget):
         ]
         seen = set(cohort_ids)
         return [*cohort_ids, *(vis_id for vis_id in first_seen if vis_id not in seen)]
+
+    def _compute_asset_version(self) -> str:
+        digest = hashlib.sha1()
+        for path in (
+            Path(__file__).with_name("widget.js"),
+            Path(__file__).with_name("widget.css"),
+            Path(__file__),
+        ):
+            digest.update(path.read_bytes())
+        return digest.hexdigest()[:12]
 
     def _case_df(self, vis_id: str) -> pl.DataFrame:
         if vis_id not in self._case_cache:

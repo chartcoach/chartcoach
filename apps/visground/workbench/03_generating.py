@@ -36,10 +36,10 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(Literal):
-    # ModelName = Literal["gpt-5.4", "claude-sonnet-4.6", "gemini-3.1-pro-preview"]
-    ModelName = Literal["gpt-5.4", "claude-sonnet-4.6"]
-    # GrammarName = Literal["matplotlib", "altair", "plotly"]
-    GrammarName = Literal["matplotlib", "altair"]
+    ModelName = Literal["gpt-5.4", "claude-sonnet-4.6", "gemini-3.1-pro-preview"]
+    # ModelName = Literal["gpt-5.4", "claude-sonnet-4.6"]
+    GrammarName = Literal["matplotlib", "altair", "plotly"]
+    # GrammarName = Literal["matplotlib", "altair"]
     SITUATED_GRAMMARS = {"matplotlib"}
     return GrammarName, ModelName, SITUATED_GRAMMARS
 

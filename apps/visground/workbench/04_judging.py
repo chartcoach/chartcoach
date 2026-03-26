@@ -50,14 +50,14 @@ def _(mo):
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(store):
     grounding_df = store.read_grounding_df()
     grounding_df
     return (grounding_df,)
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(store):
     generated_vis_df = store.read_generated_df()
     generated_vis_df.head()
@@ -315,7 +315,7 @@ def _(VisEvalDataset, VisGroundDataset, VisJudgeLmClient, lm_cliproxy):
     viseval_dataset = VisEvalDataset()
     # visjudge_client = VisJudgeApiClient()
     visjudge_client = VisJudgeLmClient(
-        lm=lm_cliproxy("gpt-5.4-mini"),
+        lm=lm_cliproxy("gpt-5.4"),
     )
     return store, viseval_dataset, visjudge_client
 

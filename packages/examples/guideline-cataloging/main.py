@@ -18,7 +18,7 @@ def _(mo):
 
 @app.cell
 def _():
-    NUM_ITEMS_FOR_EVOLUTION = 1
+    NUM_ITEMS_FOR_EVOLUTION = 5000000
     return (NUM_ITEMS_FOR_EVOLUTION,)
 
 
@@ -187,7 +187,9 @@ def _(prompt_contract_digest):
             "Extract multiple guidelines if present. "
             "Output each in fenced ```md blocks separately, separated by blank lines."
         ),
-        "evidence_scope": "Strictly base each guideline on the evidence provided in the paper and nothing else.",
+        "evidence_scope": (
+            "Strictly base each guideline on the evidence provided in this processed paper and nothing else."
+        ),
         "source_specific_rules": [
             (
                 "Extract only findings whose design implication is clear enough "
@@ -196,6 +198,12 @@ def _(prompt_contract_digest):
             (
                 "Omit empirical observations that are interesting but "
                 "do not tell the practitioner what to choose, inspect, test, or change in a visualization."
+            ),
+            (
+                "Do not import design advice, labels, domain assumptions, or remediation steps that the paper does not actually discuss."
+            ),
+            (
+                "If the paper reports an effect but does not justify a concrete operational chart move, omit it rather than guessing."
             ),
         ],
     }
@@ -378,7 +386,9 @@ def _(prompt_contract_digest):
             "Extract multiple guidelines if present. "
             "Output each in fenced ```md blocks separately, separated by blank lines."
         ),
-        "evidence_scope": "Strictly base each guideline on the evidence provided in the blog post and nothing else.",
+        "evidence_scope": (
+            "Strictly base each guideline on the evidence provided in this processed blog post and nothing else."
+        ),
         "source_specific_rules": [
             "Extract reusable editorial heuristics rather than retelling the blog narrative.",
             (
@@ -387,6 +397,12 @@ def _(prompt_contract_digest):
             ),
             (
                 "When a rule is a reusable cross-grammar finishing move, emit an appropriate `polish:*` label."
+            ),
+            (
+                "Do not upgrade a local example or platform-specific workflow into a broader best practice unless the post itself states that broader rule."
+            ),
+            (
+                "Do not add off-source tooltip, caption, or annotation advice just because it sounds like common editorial practice."
             ),
         ],
     }
@@ -595,13 +611,19 @@ def _(prompt_contract_digest):
             "directly actionable guideline. Otherwise, return an empty string."
         ),
         "evidence_scope": (
-            "Strictly base the guideline on the structured accessibility knowledge provided here and nothing else."
+            "Strictly base the guideline on the structured accessibility knowledge provided here and nothing else. Do not add accessibility guidance that is not actually present in this processed material."
         ),
         "source_specific_rules": [
             "Translate the accessibility criterion into concrete design actions, reviewer checks, or remediation steps.",
             "Use the Chartability paper citation plus any directly relevant linked references from the provided item.",
             (
                 "Emit `polish:*` only when the accessibility guidance also produces a visible decluttering, hierarchy, spacing, annotation, or palette improvement."
+            ),
+            (
+                "Only include actions, checks, and fixes that are supported by the provided item or its linked references included here."
+            ),
+            (
+                "Do not import extra WCAG or general accessibility best practices that are not actually present in the provided material."
             ),
             "If the item describes a principle without a concrete chart change, critique procedure, or rework step, omit it.",
         ],
@@ -816,13 +838,19 @@ def _(prompt_contract_digest):
         ),
         "evidence_scope": (
             "Strictly base each guideline on the structured knowledge provided here. "
-            "Use the PDFs only to disambiguate wording or evidence and nothing else."
+            "Use the PDFs only to disambiguate wording or evidence and nothing else. Do not add design guidance that is not actually supported by this processed evidence."
         ),
         "source_specific_rules": [
             "Treat the structured knowledge as the primary signal.",
             "Discard raw comparative findings unless they imply a concrete chart decision, critique check, or revision step.",
             (
                 "Emit `polish:*` only when the evidence clearly supports a visible cross-grammar finishing move, not just a chart-family ranking."
+            ),
+            (
+                "Do not infer broader design rules, applicability conditions, or fixes that the collated item and cited paper do not actually support."
+            ),
+            (
+                "When the evidence compares named alternatives, express the smallest portable principle clearly supported by that comparison and keep named exemplars in supporting sections unless the name itself is the finding."
             ),
         ],
     }
@@ -1102,7 +1130,9 @@ def _(prompt_contract_digest):
             "Return exactly one fenced ```md block if the finding supports one directly actionable guideline. "
             "Otherwise, return an empty string."
         ),
-        "evidence_scope": "Strictly base the guideline on the codified knowledge provided here and nothing else.",
+        "evidence_scope": (
+            "Strictly base the guideline on the codified knowledge provided here and nothing else. Do not add rhetorical or framing advice that is not actually discussed in this processed finding."
+        ),
         "source_specific_rules": [
             (
                 "Translate rhetorical or interpretive findings into concrete framing, "
@@ -1113,6 +1143,12 @@ def _(prompt_contract_digest):
             ),
             (
                 "When the finding is a cross-grammar finishing move that makes charts visibly clearer or stronger, emit an appropriate `polish:*` label."
+            ),
+            (
+                "Do not convert a general communication observation into a generic chart best practice unless the codified finding clearly supports that action."
+            ),
+            (
+                "Keep source-specific caption, context, or credibility examples out of title and advice unless that specific example is the finding."
             ),
             "If the finding cannot be operationalized into chart creation, feedback, or rework, omit it.",
         ],
@@ -1332,8 +1368,9 @@ def _(GUIDELINE_TEMPLATE_DIGEST, string_hash):
             "Your primary task is to extract and structure directly actionable visualization guidelines.",
             # CONTRACT 1: PURPOSE
             "First, classify each guideline by its primary `purpose`:",
-            "- `purpose:select`: Guidance for CHOOSING BETWEEN chart families or high-level encoding strategies (the WHAT of design). Example: 'Replace a pie chart with a bar chart for comparison.'",
-            "- `purpose:refine`: Guidance for IMPROVING the implementation, polish, or readability of an ALREADY-CHOSEN chart type (the HOW of design). Example: 'Sort the bars of a bar chart in descending order.'",
+            "- `purpose:select`: Guidance for CHOOSING BETWEEN chart families or structural arrangements (the WHAT of design). Example: 'Replace a pie chart with a bar chart for comparison.'",
+            "- `purpose:refine`: Guidance for IMPROVING the implementation, polish, readability, annotation, accessibility, rhetoric, or encoding of an ALREADY-CHOSEN chart or structure (the HOW of design). Example: 'Sort the bars of a bar chart in descending order.'",
+            "- If the intervention changes channel, component, palette, annotation, caption, accessibility treatment, or framing inside an already-chosen chart or layout, it is `purpose:refine`, not `purpose:select`.",
             f"Every emitted guideline MUST include exactly one purpose label from: {', '.join(PURPOSE_LABELS)}.",
             f"Every emitted guideline MUST include exactly one basis label and it MUST be `{required_basis}`. Allowed basis labels are: {', '.join(BASIS_LABELS)}.",
             # CONTRACT 2: DIRECTIONAL LABELS (POLARITY)
@@ -1341,7 +1378,7 @@ def _(GUIDELINE_TEMPLATE_DIGEST, string_hash):
             "- Use ':use' if the guideline explicitly RECOMMENDS or PROMOTES a choice. Example: 'chart:bar:use'.",
             "- Use ':avoid' if the guideline explicitly WARNS AGAINST or DISCOURAGES a choice. Example: 'chart:pie-donut:avoid'.",
             "- Use NO polarity (Neutral) if the label represents a CONTEXTUAL CONDITION. Example: 'task:compare' means 'this guideline applies when the user wants to compare'.",
-            "Guidelines with 'purpose:select' MUST include both a ':use' label and an ':avoid' label in the SAME decision family (`chart`, `structure`, `channel`, or `component`).",
+            "Guidelines with 'purpose:select' MUST include both a ':use' label and an ':avoid' label in the SAME decision family (`chart` or `structure`).",
             "\nThird, keep labels sparse and high-signal:",
             "- Treat labels as a retrieval index, not as an exhaustive summary of the guideline.",
             "- Use only the taxonomy declared in the template. Do NOT invent new categories or emit `custom:*` labels. If no allowed label fits cleanly, omit the label.",
@@ -1354,22 +1391,32 @@ def _(GUIDELINE_TEMPLATE_DIGEST, string_hash):
             "- Good label behavior: keep only the smallest label set that captures the recommendation, its main design lever, and the one or two conditions that materially narrow where it applies.",
             "- Emit the new generic families (`lever`, `operator`, `reading-mode`, `density`, `measure`, `group-cardinality`, `shape`, `temporal-pattern`, `communication`, `polish`) only when the source makes them explicit enough to drive retrieval. If unsure, omit.",
             "- `communication` is only for framing, context, credibility, resonance, or workflow guidance. `polish` is only for cross-grammar finishing moves that visibly improve charts.",
+            "\nFourth, be strictly source-faithful:",
+            "- Every claim, trigger condition, boundary condition, label, audience, check, fix, and example MUST be explicitly discussed in the processed source or be a direct minimal operational rewrite of it.",
+            "- Include only what is actually discussed or clearly evidenced in the processed source. Never fill gaps from general datavis knowledge, common best practices, or likely defaults.",
+            "- If the source supports a broader portable principle, express that principle in the title, description, and advice. Keep named exemplars, tools, palettes, devices, platforms, or domains in supporting sections only when the source explicitly discusses them.",
+            "- Do not over-specify a portable principle into a narrow named recommendation unless that narrow named form is itself the important finding in the source.",
+            "- Do not add generic provenance, tooltip, caption, annotation, or accessibility advice unless the processed source makes that intervention causal to the guidance.",
+            "- If a candidate, label, exception, audience, or fix is only plausible, partial, or guessed, omit it.",
         ]
 
         if allow_empty:
             lines.append(
-                "If the source material cannot be translated into directly actionable visualization guidance, respond with an empty string."
+                "If the source material cannot be translated into directly actionable visualization guidance without guessing or filling gaps, respond with an empty string."
             )
 
         lines.extend(
             [
                 cardinality_instruction,
                 evidence_scope,
+                "Faithfulness outranks coverage. It is better to skip a possible guideline than to hallucinate, broaden, or pollute one.",
+                "Use only evidence from the processed source material in this prompt. Do not import facts from neighboring studies, general datavis knowledge, or your prior beliefs.",
                 "Each emitted guideline is well-defined, isolated, and granular.",
                 "A valid guideline changes a concrete chart decision, critique step, or revision step that a practitioner can apply without rereading the source.",
                 "Reject candidates that only summarize theory, taxonomy, historical context, methodology, study setup, or narrative commentary.",
                 "Reject candidates that are visualization-relevant but do not tell the practitioner what to choose, inspect, test, or change in a chart.",
                 "Operationalize descriptive findings in the form 'When [condition], do [change] to achieve [goal].' If that rewrite is not supported by the source, omit the candidate.",
+                "Do not invent task, scope, time, chart, structure, data, audience, access, or literacy conditions that the source does not actually support.",
                 "Prefer omission to broad but plausible guidance. If the candidate lacks a clear trigger condition, clear break condition, or clear reviewer check, omit it.",
                 "If two candidates overlap, keep only the narrower and more condition-bounded one.",
                 # CONTRACT 4: DESCRIPTION
@@ -1379,12 +1426,12 @@ def _(GUIDELINE_TEMPLATE_DIGEST, string_hash):
                 "to [improve|maximize|prevent] [quality target or risk] and [mitigate|address] [common mistakes] "
                 "for [audience/literacy/situational context].'",
                 "Ensure the choice of verbs in the description (e.g., use vs avoid) exactly matches the directional polarity of the labels.",
-                "The title is a specific imperative action on a concrete chart or design object.",
-                "The `context` section must read like 'Use when (all true)' and include at least two observable constraints.",
-                "The `exceptions` section must read like 'Do not use when (any true)' and explicitly mirror the context condition space.",
+                "The title is a specific imperative action on a concrete design lever stated at the portable-principle level. Do not put a named tool, palette, device, or source-specific exemplar in the title unless it is itself the finding.",
+                "The `context` section must read like 'Use when (all true)' and include at least two observable constraints taken from the source-supported condition space.",
+                "The `exceptions` section must read like 'Do not use when (any true)' and explicitly mirror the context condition space. If the source does not support a real boundary condition, omit the guideline rather than inventing one.",
                 "The `check` section contains an observable failure sign and a concrete review procedure that a reviewer can run.",
                 "For `purpose:select`, the `check` section must include a direct A/B style decision test between the chosen and rejected options.",
-                "The `fix` section consists of concrete edit operations, not abstract restatements of the advice.",
+                "The `fix` section consists of concrete edit operations, not abstract restatements of the advice. Do not add generic cleanup steps that are not supported by the source.",
                 "Bad candidate: 'Color affects interpretation.' Good candidate: 'Use a colorblind-safe sequential palette when color encodes magnitude and hue identity is not the message.'",
                 *source_specific_rules,
                 "Place all citekeys only in the `reason` section under `**Evidence:**`.",
@@ -1453,7 +1500,7 @@ def _(Guideline):
         return any(polarities == {"use", "avoid"} for polarities in states.values())
 
     def _same_family_select_contrast(labels: list[str]) -> bool:
-        decision_categories = {"chart", "structure", "channel", "component"}
+        decision_categories = {"chart", "structure"}
         decisions: dict[str, set[str]] = {}
         for label in labels:
             parts = label.split(":")
