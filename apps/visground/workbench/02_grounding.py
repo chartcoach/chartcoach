@@ -5,20 +5,18 @@ app = marimo.App(width="medium")
 
 
 @app.cell(hide_code=True)
-def _():
-    flat_strategy_config = {
-        "n_results": 10,
-        "rrf_k": 10,
-        "max_items": 5,
-    }
-
+def _(lm_cliproxy):
     structured_strategy_config = {
         "n_results": 12,
         "top_k": 3,
         "rrf_k": 20,
         "max_items": 4,
     }
-    return (structured_strategy_config,)
+    hybrid_strategy_config = {
+        "lm": lm_cliproxy("gpt-5.4-mini"),
+        "num_threads": 5,
+    }
+    return hybrid_strategy_config, structured_strategy_config
 
 
 @app.cell(hide_code=True)
@@ -37,7 +35,6 @@ def _(pl, vis_request_df):
         "scope",
         "time_mode",
         "chart",
-        "data_profile",
         pl.lit("refine").alias("objective"),
         pl.lit(None).cast(pl.String).alias("audience"),
     )
@@ -54,7 +51,6 @@ def _(AUDIENCE_MODIFIER_IDS, pl, vis_request_df):
         "scope",
         "time_mode",
         pl.lit(None).alias("chart"),
-        "data_profile",
         pl.lit("select").alias("objective"),
         pl.lit([*AUDIENCE_MODIFIER_IDS, None]).alias("audience"),
     ).explode("audience")
@@ -71,21 +67,29 @@ def _(pl, refinement_requests_df, selection_requests_df):
 
 @app.cell(hide_code=True)
 def _(
+    HybridGroundingStrategy,
     NoneGroundingStrategy,
     StructuredGroundingStrategy,
     coach,
+    hybrid_strategy_config,
     structured_strategy_config,
+    viseval_dataset,
 ):
-    structured_grounder = StructuredGroundingStrategy(
+    hybrid_grounder = HybridGroundingStrategy(
+        catalog=coach.catalog,
+        viseval_dataset=viseval_dataset,
+        config=hybrid_strategy_config,
+    )
+    _structured_grounder = StructuredGroundingStrategy(
         coach,
         config=structured_strategy_config,
     )
     none_grounder = NoneGroundingStrategy()
-    return none_grounder, structured_grounder
+    return hybrid_grounder, none_grounder
 
 
 @app.cell(hide_code=True)
-def _(GroundingStrategy, mo, none_grounder, pl, structured_grounder):
+def _(GroundingStrategy, hybrid_grounder, mo, none_grounder, pl):
     def build_grounding_item(strategy: GroundingStrategy, req: dict) -> dict:
         result = strategy.retrieve(req)
         return {
@@ -111,7 +115,8 @@ def _(GroundingStrategy, mo, none_grounder, pl, structured_grounder):
             grounding_requests_df.to_dicts(),
             total=grounding_requests_df.height,
         ):
-            grounding_results.append(build_grounding_item(structured_grounder, req))
+            # grounding_results.append(build_grounding_item(structured_grounder, req))
+            grounding_results.append(build_grounding_item(hybrid_grounder, req))
             grounding_results.append(build_grounding_item(none_grounder, req))
 
         return pl.from_dicts(grounding_results)
@@ -143,9 +148,10 @@ def _(grounding_results_df, store):
 
 
 @app.cell(hide_code=True)
-def _(VisGroundDataset):
+def _(VisEvalDataset, VisGroundDataset):
     store = VisGroundDataset()
-    return (store,)
+    viseval_dataset = VisEvalDataset()
+    return store, viseval_dataset
 
 
 @app.cell(hide_code=True)
@@ -156,14 +162,15 @@ def _():
     import chromadb.utils.embedding_functions as embedding_functions
     import marimo as mo
     import polars as pl
-    from visground.datasets import VisGroundDataset
+    from visground.datasets import VisGroundDataset, VisEvalDataset
     from visground.grounding import (
         AUDIENCE_MODIFIER_IDS,
-        FlatGroundingStrategy,
         GroundingStrategy,
+        HybridGroundingStrategy,
         NoneGroundingStrategy,
         StructuredGroundingStrategy,
     )
+    from visground.lm import lm_cliproxy
 
     openai_large_ef = embedding_functions.OpenAIEmbeddingFunction(
         api_key=os.environ["OPENROUTER_API_KEY"],
@@ -177,10 +184,13 @@ def _():
     return (
         AUDIENCE_MODIFIER_IDS,
         GroundingStrategy,
+        HybridGroundingStrategy,
         NoneGroundingStrategy,
         StructuredGroundingStrategy,
+        VisEvalDataset,
         VisGroundDataset,
         coach,
+        lm_cliproxy,
         mo,
         pl,
     )

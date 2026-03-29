@@ -5,210 +5,64 @@ from typing import Any
 
 import polars as pl
 
-from ..evaluation import SCORE_FIELDS, overall_score_expr
-
-_SOFT_DEFAULTS = {
-    "objective": "select",
-    "grammar": "matplotlib",
-    "audience": None,
-}
-_SOFT_ORDERS = {
-    "objective": {"select": 0, "refine": 1},
-    "grounding_mode": {"none": 0, "structured": 1},
-}
-_DIMENSION_LABELS = {
-    "objective": "Objective",
-    "grammar": "Grammar",
-    "audience": "Audience",
-    "grounding_mode": "Condition",
-    "model": "Model",
-}
-_DISPLAY_ALIASES: dict[str, dict[str | None, str]] = {
-    "grounding_mode": {
-        "none": "Ungrounded",
-        "structured": "Grounded",
-    }
-}
-_COPY = {
-    "title": "Compare design outcomes",
-    "subtitle": (
-        "Review how the same request changes across the available conditions "
-        "and model outputs."
-    ),
-    "case_label": "Case",
-    "search_placeholder": "Search by case ID or request",
-    "request_label": "Request",
-    "controls_label": "Controls",
-    "controls_aside": "Adjust the current slice without losing the comparison.",
-    "comparison_label": "Comparison",
-    "comparison_aside": "Hover for a quick preview. Click a chart for deeper details.",
-    "detail_label": "Selected chart",
-    "detail_preview_label": "Chart preview",
-    "detail_guidelines_label": "Guidelines used",
-    "detail_story_label": "How it was grounded",
-    "detail_interpretation_label": "Interpretation",
-    "detail_rationale_label": "Why this design",
-    "detail_review_label": "Reviewer notes",
-    "detail_advanced_label": "Advanced details",
-    "detail_trace_label": "Grounding trace",
-    "detail_judge_label": "Detailed reviewer notes",
-    "detail_code_label": "Chart code",
-    "detail_metadata_label": "Dataset notes",
-    "hover_label": "Quick preview",
-    "hover_guidelines_label": "Guidelines used",
-    "hover_story_label": "How it was grounded",
-    "empty_guidelines": "No guidelines were retrieved for this chart.",
-    "empty_grounding_story": "No grounding notes were recorded for this chart.",
-    "empty_interpretation": "No interpretation was recorded for this chart.",
-    "empty_rationale": "No rationale was recorded for this chart.",
-    "empty_review": "No reviewer notes are available for this chart.",
-    "empty_metadata": "No dataset notes were recorded for this chart.",
-}
+from ..evaluation import overall_score_expr
+from .spec import (
+    DEFAULT_SELECTION,
+    DEFAULT_SELECTION_DIMENSION_FILTERS,
+    DIMENSION_SPECS,
+    SCORE_BREAKDOWN_SPECS,
+    VARIANT_SPECS,
+    display_label,
+    label_for_dimension,
+)
 
 
 def discover_registry(candidates_df: pl.DataFrame) -> dict[str, Any]:
-    objectives = _sort_with_preference(
-        _non_null_values(candidates_df, "objective"),
-        _SOFT_ORDERS["objective"],
-    )
-    grammars_by_objective = {
-        objective: _non_null_values(
-            candidates_df.filter(pl.col("objective") == objective),
-            "grammar",
-        )
-        for objective in objectives
-    }
-    audiences_by_objective = {
-        objective: _values(
-            candidates_df.filter(pl.col("objective") == objective),
-            "audience",
-        )
-        for objective in objectives
-    }
-    models = _non_null_values(candidates_df, "model")
-    grounding_modes = _sort_with_preference(
-        _non_null_values(candidates_df, "grounding_mode"),
-        _SOFT_ORDERS["grounding_mode"],
-    )
-    vis_ids = _non_null_values(candidates_df, "vis_id")
     return {
-        "vis_ids": vis_ids,
-        "objectives": objectives,
-        "grammars_by_objective": grammars_by_objective,
-        "audiences_by_objective": audiences_by_objective,
-        "models": models,
-        "grounding_modes": grounding_modes,
+        "vis_ids": _non_null_values(candidates_df, "vis_id"),
+        "objectives": _sort_with_preference(
+            _non_null_values(candidates_df, "objective"),
+            DIMENSION_SPECS["objective"].get("order", {}),
+        ),
     }
 
 
-def default_selection_from_registry(
-    registry: Mapping[str, Any],
-) -> dict[str, str | None]:
+def default_selection_from_registry(registry: Mapping[str, Any]) -> dict[str, Any]:
     objective = _choose_requested_value(
         None,
         tuple(registry["objectives"]),
-        preferred=_SOFT_DEFAULTS["objective"],
-    )
-    grammar = _choose_requested_value(
-        None,
-        tuple(registry["grammars_by_objective"][objective]),
-        preferred=_SOFT_DEFAULTS["grammar"],
-    )
-    audience_options = tuple(registry["audiences_by_objective"][objective])
-    preferred_audience = (
-        None if audience_options == (None,) else _SOFT_DEFAULTS["audience"]
-    )
-    audience = _choose_requested_value(
-        None,
-        audience_options,
-        preferred=preferred_audience,
+        preferred=DEFAULT_SELECTION["objective"],
     )
     return {
         "objective": objective,
-        "grammar": grammar,
-        "audience": audience,
-    }
-
-
-def build_ui_schema(
-    *,
-    registry: Mapping[str, Any],
-    selection: Mapping[str, str | None],
-    asset_version: str,
-) -> dict[str, Any]:
-    defaults = default_selection_from_registry(registry)
-    filters = [
-        _filter_schema(
-            dimension="objective",
-            options=tuple(registry["objectives"]),
-            value=selection["objective"],
-            disabled=False,
-        ),
-        _filter_schema(
-            dimension="grammar",
-            options=tuple(registry["grammars_by_objective"][selection["objective"]]),
-            value=selection["grammar"],
-            disabled=False,
-        ),
-    ]
-
-    audience_options = tuple(registry["audiences_by_objective"][selection["objective"]])
-    filters.append(
-        _filter_schema(
-            dimension="audience",
-            options=audience_options,
-            value=selection["audience"],
-            disabled=len(audience_options) == 1 and audience_options[0] is None,
-        )
-    )
-
-    return {
-        "asset_version": asset_version,
-        "copy": dict(_COPY),
-        "filters": filters,
-        "matrix_axes": {
-            "row_dimension": "grounding_mode",
-            "row_label": label_for_dimension("grounding_mode"),
-            "column_dimension": "model",
-            "column_label": label_for_dimension("model"),
+        "request_chart": DEFAULT_SELECTION["request_chart"],
+        "overview_variant": DEFAULT_SELECTION["overview_variant"],
+        "dimension_filters": {
+            key: value for key, value in DEFAULT_SELECTION_DIMENSION_FILTERS.items()
         },
-        "display_labels": {
-            dimension: {
-                _schema_value_key(value): display_label(dimension, value)
-                for value in values
-            }
-            for dimension, values in (
-                ("objective", registry["objectives"]),
-                ("grammar", registry["grammars_by_objective"][selection["objective"]]),
-                ("audience", audience_options),
-                ("grounding_mode", registry["grounding_modes"]),
-                ("model", registry["models"]),
-            )
-        },
-        "defaults": defaults,
-        "advanced_sections": [
-            "grounding_trace",
-            "judge_feedback",
-            "dataset_notes",
-            "chart_code",
-        ],
     }
 
 
 def build_catalog(
     candidates_df: pl.DataFrame,
     vis_ids: Sequence[str],
+    *,
+    request_chart_by_vis_id: Mapping[str, str | None] | None = None,
 ) -> list[dict[str, Any]]:
     catalog: list[dict[str, Any]] = []
-    for page_index, vis_id in enumerate(vis_ids):
+    for vis_id in vis_ids:
         case_df = candidates_df.filter(pl.col("vis_id") == vis_id)
         query = case_df.item(0, "query")
+        request_chart = (
+            request_chart_by_vis_id.get(vis_id)
+            if request_chart_by_vis_id is not None
+            else _first_non_null(case_df.get_column("request_chart").to_list())
+        )
         catalog.append(
             {
                 "vis_id": vis_id,
-                "page_index": page_index,
                 "nl_query": query,
-                "search_label": f"{vis_id} · {_truncate(query, 88)}",
+                "request_chart": request_chart,
             }
         )
     return catalog
@@ -239,6 +93,320 @@ def enrich_candidates_with_scores(
     return candidates_df.join(score_df, on="visgen_id", how="left")
 
 
+def normalize_selection(
+    case_df: pl.DataFrame,
+    *,
+    registry: Mapping[str, Any],
+    request_chart: str | None,
+    objective: str | None,
+    overview_variant: str | None,
+    dimension_filters: Mapping[str, Any] | None,
+    request_chart_options: Sequence[str | None],
+) -> dict[str, Any]:
+    defaults = default_selection_from_registry(registry)
+
+    objective_options = tuple(
+        _sort_with_preference(
+            _non_null_values(case_df, "objective"),
+            DIMENSION_SPECS["objective"].get("order", {}),
+        )
+    )
+    chosen_objective = _choose_requested_value(
+        objective,
+        objective_options,
+        preferred=defaults["objective"],
+    )
+    objective_df = apply_dimension_filters(case_df, {"objective": chosen_objective})
+
+    requested_filters = dict(dimension_filters or {})
+    audience_options = tuple(_values(objective_df, "audience"))
+    chosen_audience = _choose_requested_value(
+        requested_filters.get("audience"),
+        audience_options,
+        preferred=defaults["dimension_filters"]["audience"],
+    )
+    scoped_df = apply_dimension_filters(objective_df, {"audience": chosen_audience})
+
+    valid_variants = [
+        spec for spec in VARIANT_SPECS if _variant_is_valid(scoped_df, spec)
+    ]
+    if not valid_variants:
+        raise ValueError("Viewer has no valid overview variant for the active slice.")
+
+    valid_variant_ids = tuple(spec["id"] for spec in valid_variants)
+    chosen_variant_id = _choose_requested_value(
+        overview_variant,
+        valid_variant_ids,
+        preferred=defaults["overview_variant"],
+    )
+    chosen_variant = next(
+        spec for spec in valid_variants if spec["id"] == chosen_variant_id
+    )
+
+    normalized_request_chart = (
+        request_chart if request_chart in request_chart_options else None
+    )
+    selection = {
+        "vis_id": str(case_df.item(0, "vis_id")),
+        "request_chart": normalized_request_chart,
+        "objective": chosen_objective,
+        "overview_variant": chosen_variant["id"],
+        "dimension_filters": {
+            "audience": chosen_audience,
+        },
+    }
+    return {
+        "selection": selection,
+        "objective_df": objective_df,
+        "scoped_df": scoped_df,
+        "variant": chosen_variant,
+        "valid_variants": valid_variants,
+    }
+
+
+def build_ui_schema(
+    *,
+    registry: Mapping[str, Any],
+    selection: Mapping[str, Any],
+    valid_variants: Sequence[Mapping[str, Any]],
+    request_chart_options: Sequence[str | None],
+    variant: Mapping[str, Any],
+    audience_options: Sequence[Any],
+) -> dict[str, Any]:
+    toolbar_pills = [
+        {
+            "id": "objective",
+            "label": display_label("objective", selection["objective"]),
+        }
+    ]
+    if len(valid_variants) > 1:
+        toolbar_pills.append(
+            {
+                "id": "compare",
+                "label": str(variant["label"]),
+            }
+        )
+
+    scope_filters = [
+        _filter_schema(
+            dimension="request_chart",
+            options=request_chart_options,
+            value=selection["request_chart"],
+        ),
+        _filter_schema(
+            dimension="objective",
+            options=tuple(registry["objectives"]),
+            value=selection["objective"],
+        ),
+    ]
+    if len(audience_options) > 1:
+        scope_filters.append(
+            _filter_schema(
+                dimension="audience",
+                options=tuple(audience_options),
+                value=selection["dimension_filters"].get("audience"),
+            )
+        )
+
+    matrix_axes = {
+        "group_label": (
+            label_for_dimension(variant["group_dimension"])
+            if variant.get("group_dimension")
+            else None
+        ),
+        "row_label": label_for_dimension(variant["row_dimension"]),
+        "column_label": label_for_dimension(variant["column_dimension"]),
+    }
+
+    schema: dict[str, Any] = {
+        "toolbar": {"pills": toolbar_pills},
+        "scope_filters": scope_filters,
+        "matrix_axes": matrix_axes,
+    }
+    if len(valid_variants) > 1:
+        schema["variant_controls"] = {
+            "label": "Compare",
+            "value": selection["overview_variant"],
+            "options": [
+                {
+                    "value": spec["id"],
+                    "label": str(spec["label"]),
+                }
+                for spec in valid_variants
+            ],
+        }
+    return schema
+
+
+def build_overview_matrix(
+    *,
+    objective_df: pl.DataFrame,
+    scoped_df: pl.DataFrame,
+    variant: Mapping[str, Any],
+    image_loader: Callable[[dict[str, Any]], str],
+    image_metadata_loader: Callable[[dict[str, Any]], dict[str, Any]],
+) -> dict[str, Any]:
+    group_dimension = variant.get("group_dimension")
+    row_dimension = str(variant["row_dimension"])
+    column_dimension = str(variant["column_dimension"])
+    group_fields = (
+        [str(group_dimension), row_dimension, column_dimension]
+        if group_dimension
+        else [row_dimension, column_dimension]
+    )
+
+    duplicate_cells = (
+        scoped_df.group_by(*group_fields)
+        .agg(pl.len().alias("count"))
+        .filter(pl.col("count") > 1)
+    )
+    if not duplicate_cells.is_empty():
+        raise ValueError(
+            "Expected at most one candidate per overview cell, got "
+            + str(duplicate_cells.to_dicts())
+        )
+
+    if group_dimension:
+        available = {
+            (
+                record[str(group_dimension)],
+                record[row_dimension],
+                record[column_dimension],
+            ): record
+            for record in scoped_df.to_dicts()
+        }
+        group_values = _non_null_values(scoped_df, str(group_dimension))
+        row_values = _non_null_values(scoped_df, row_dimension)
+        column_values = _non_null_values(scoped_df, column_dimension)
+
+        groups = []
+        for group_value in group_values:
+            rows = []
+            for row_value in row_values:
+                cells = []
+                for column_value in column_values:
+                    record = available.get((group_value, row_value, column_value))
+                    cells.append(
+                        _matrix_cell_payload(
+                            objective_df=objective_df,
+                            record=record,
+                            group_dimension=str(group_dimension),
+                            group_value=group_value,
+                            row_dimension=row_dimension,
+                            row_value=row_value,
+                            column_dimension=column_dimension,
+                            column_value=column_value,
+                            image_loader=image_loader,
+                            image_metadata_loader=image_metadata_loader,
+                        )
+                    )
+                rows.append(
+                    {
+                        "value": row_value,
+                        "label": display_label(row_dimension, row_value),
+                        "cells": cells,
+                    }
+                )
+            groups.append(
+                {
+                    "value": group_value,
+                    "label": display_label(str(group_dimension), group_value),
+                    "columns": [
+                        {
+                            "value": column_value,
+                            "label": display_label(column_dimension, column_value),
+                        }
+                        for column_value in column_values
+                    ],
+                    "rows": rows,
+                }
+            )
+        return {
+            "kind": "grouped",
+            "groups": groups,
+        }
+
+    available = {
+        (record[row_dimension], record[column_dimension]): record
+        for record in scoped_df.to_dicts()
+    }
+    row_values = _non_null_values(scoped_df, row_dimension)
+    column_values = _non_null_values(scoped_df, column_dimension)
+    rows = []
+    for row_value in row_values:
+        cells = []
+        for column_value in column_values:
+            record = available.get((row_value, column_value))
+            cells.append(
+                _matrix_cell_payload(
+                    objective_df=objective_df,
+                    record=record,
+                    group_dimension=None,
+                    group_value=None,
+                    row_dimension=row_dimension,
+                    row_value=row_value,
+                    column_dimension=column_dimension,
+                    column_value=column_value,
+                    image_loader=image_loader,
+                    image_metadata_loader=image_metadata_loader,
+                )
+            )
+        rows.append(
+            {
+                "value": row_value,
+                "label": display_label(row_dimension, row_value),
+                "cells": cells,
+            }
+        )
+    return {
+        "kind": "flat",
+        "columns": [
+            {
+                "value": column_value,
+                "label": display_label(column_dimension, column_value),
+            }
+            for column_value in column_values
+        ],
+        "rows": rows,
+    }
+
+
+def serialize_candidate_record(
+    record: Mapping[str, Any],
+    *,
+    image_loader: Callable[[dict[str, Any]], str],
+    image_metadata_loader: Callable[[dict[str, Any]], dict[str, Any]],
+) -> dict[str, Any]:
+    judgement = record.get("judgement")
+    payload: dict[str, Any] = {
+        "visgen_id": str(record["visgen_id"]),
+        "overall_score": record.get("overall_score"),
+        "guideline_count": len(list(dict.fromkeys(record.get("guideline_ids") or []))),
+        "score_breakdown": [
+            {
+                "id": spec["id"],
+                "label": spec["label"],
+                "dimension": spec["dimension"],
+                "score": _score_value(
+                    record=record,
+                    judgement=judgement,
+                    score_id=spec["id"],
+                ),
+            }
+            for spec in SCORE_BREAKDOWN_SPECS
+        ],
+    }
+    try:
+        payload["image_url"] = image_loader(dict(record))
+        payload["image_meta"] = image_metadata_loader(dict(record))
+        payload["error"] = None
+    except Exception as exc:
+        payload["image_url"] = None
+        payload["image_meta"] = None
+        payload["error"] = str(exc)
+    return payload
+
+
 def apply_dimension_filters(
     df: pl.DataFrame,
     filters: Mapping[str, Any],
@@ -252,295 +420,16 @@ def apply_dimension_filters(
     return filtered
 
 
-def normalize_selection(
-    case_df: pl.DataFrame,
-    *,
-    registry: Mapping[str, Any],
-    objective: str | None,
-    grammar: str | None,
-    audience: str | None,
-) -> dict[str, Any]:
-    defaults = default_selection_from_registry(registry)
-    objectives = tuple(registry["objectives"])
-    chosen_objective = _choose_requested_value(
-        objective,
-        objectives,
-        preferred=defaults["objective"],
-    )
-
-    objective_df = apply_dimension_filters(case_df, {"objective": chosen_objective})
-
-    grammar_options = tuple(registry["grammars_by_objective"][chosen_objective])
-    chosen_grammar = _choose_requested_value(
-        grammar,
-        grammar_options,
-        preferred=defaults["grammar"]
-        if chosen_objective == defaults["objective"]
-        else None,
-    )
-    objective_grammar_df = apply_dimension_filters(
-        objective_df,
-        {"grammar": chosen_grammar},
-    )
-
-    audience_options = tuple(registry["audiences_by_objective"][chosen_objective])
-    preferred_audience = (
-        defaults["audience"] if chosen_objective == defaults["objective"] else None
-    )
-    if audience_options == (None,):
-        preferred_audience = None
-    chosen_audience = _choose_requested_value(
-        audience,
-        audience_options,
-        preferred=preferred_audience,
-    )
-    selection_df = apply_dimension_filters(
-        objective_grammar_df,
-        {"audience": chosen_audience},
-    )
-
-    return {
-        "selection": {
-            "objective": chosen_objective,
-            "grammar": chosen_grammar,
-            "audience": chosen_audience,
-        },
-        "options": {
-            "objectives": list(objectives),
-            "grammars": list(grammar_options),
-            "audiences": list(audience_options),
-            "audience_enabled": not (
-                len(audience_options) == 1 and audience_options[0] is None
-            ),
-        },
-        "objective_df": objective_df,
-        "objective_grammar_df": objective_grammar_df,
-        "selection_df": selection_df,
-    }
-
-
-def build_grounding_model_matrix(
-    *,
-    objective_grammar_df: pl.DataFrame,
-    selection_df: pl.DataFrame,
-    audience: str | None,
-) -> dict[str, Any]:
-    models = _non_null_values(objective_grammar_df, "model")
-    grounding_modes = _sort_with_preference(
-        _non_null_values(objective_grammar_df, "grounding_mode"),
-        _SOFT_ORDERS["grounding_mode"],
-    )
-
-    duplicate_cells = (
-        selection_df.group_by("grounding_mode", "model")
-        .agg(pl.len().alias("count"))
-        .filter(pl.col("count") > 1)
-    )
-    if not duplicate_cells.is_empty():
-        raise ValueError(
-            "Expected at most one candidate per grounding/model cell, got "
-            + str(duplicate_cells.to_dicts())
-        )
-
-    available_pairs = {
-        (record["grounding_mode"], record["model"]): record
-        for record in selection_df.to_dicts()
-    }
-    objective_grammar_pairs = {
-        (record["grounding_mode"], record["model"]): record
-        for record in objective_grammar_df.to_dicts()
-    }
-
-    rows = []
-    for grounding_mode in grounding_modes:
-        row_cells = []
-        for model in models:
-            record = available_pairs.get((grounding_mode, model))
-            row_cells.append(
-                {
-                    "grounding_mode": grounding_mode,
-                    "grounding_label": display_label("grounding_mode", grounding_mode),
-                    "model": model,
-                    "model_label": display_label("model", model),
-                    "record": record,
-                    "placeholder_reason": (
-                        None
-                        if record is not None
-                        else placeholder_reason(
-                            objective_grammar_pairs=objective_grammar_pairs,
-                            grounding_mode=grounding_mode,
-                            model=model,
-                            audience=audience,
-                        )
-                    ),
-                }
-            )
-        rows.append(
-            {
-                "grounding_mode": grounding_mode,
-                "grounding_label": display_label("grounding_mode", grounding_mode),
-                "cells": row_cells,
-            }
-        )
-
-    return {
-        "columns": [
-            {
-                "value": model,
-                "label": display_label("model", model),
-            }
-            for model in models
-        ],
-        "rows": rows,
-        "record_map": available_pairs,
-    }
-
-
-def serialize_candidate_record(
-    record: Mapping[str, Any],
-    *,
-    image_loader: Callable[[dict[str, Any], str], str],
-    image_variant: str,
-    include_detail: bool,
-) -> dict[str, Any]:
-    image_record = dict(record)
-    guideline_ids = list(dict.fromkeys(record.get("guideline_ids") or []))
-    payload: dict[str, Any] = {
-        "visgen_id": record["visgen_id"],
-        "vis_id": record["vis_id"],
-        "grounding_mode": record["grounding_mode"],
-        "grounding_label": display_label("grounding_mode", record["grounding_mode"]),
-        "objective": record["objective"],
-        "objective_label": display_label("objective", record["objective"]),
-        "model": record["model"],
-        "model_label": display_label("model", record["model"]),
-        "grammar": record["grammar"],
-        "grammar_label": display_label("grammar", record["grammar"]),
-        "audience": record["audience"],
-        "audience_label": display_label("audience", record["audience"]),
-        "data_profile": record.get("data_profile"),
-        "visualization_type": record["visualization_type"],
-        "overall_score": record.get("overall_score"),
-        "guideline_ids": guideline_ids,
-        "guideline_count": len(guideline_ids),
-        "grounding_trace": record["grounding_trace"],
-        "grounding_story": grounding_story(
-            record.get("grounding_trace"),
-            guideline_count=len(guideline_ids),
-        ),
-    }
-    if include_detail:
-        payload |= {
-            "nl_query": record["query"],
-            "query_interpretation": record["query_interpretation"],
-            "design_rationale": record["design_rationale"],
-            "code": record["code"],
-            "judgement_dimensions": judgement_dimensions(record.get("judgement")),
-        }
-    try:
-        payload["image_url"] = image_loader(image_record, image_variant)
-        payload["error"] = None
-    except Exception as exc:  # pragma: no cover - exercised by tests
-        payload["image_url"] = None
-        payload["error"] = str(exc)
-    return payload
-
-
-def judgement_dimensions(judgement: object) -> list[dict[str, Any]]:
-    if not isinstance(judgement, Mapping):
-        return []
-    judgement_map = dict(judgement)
-    rows: list[dict[str, Any]] = []
-    for score_field in SCORE_FIELDS:
-        entry = judgement_map.get(score_field)
-        if not isinstance(entry, Mapping):
-            continue
-        rows.append(
-            {
-                "dimension": score_field,
-                "dimension_label": _humanize(score_field, title_case=True),
-                "score": entry.get("score"),
-                "reasoning": entry.get("reasoning"),
-            }
-        )
-    return rows
-
-
-def grounding_story(
-    trace: object,
-    *,
-    guideline_count: int,
-) -> list[str]:
-    trace_items = (
-        [str(item) for item in trace if item]
-        if isinstance(trace, Sequence) and not isinstance(trace, str)
-        else []
-    )
-    if trace_items:
-        return trace_items[:2]
-    if guideline_count:
-        return [f"Retrieved {guideline_count} guideline IDs for this chart."]
-    return []
-
-
-def display_label(dimension: str, value: str | None) -> str:
-    alias = _DISPLAY_ALIASES.get(dimension, {}).get(value)
-    if alias is not None:
-        return alias
-    if dimension == "model" and value is not None:
-        return str(value)
-    return _humanize(value, title_case=False)
-
-
-def label_for_dimension(dimension: str) -> str:
-    return _DIMENSION_LABELS.get(dimension, _humanize(dimension, title_case=True))
-
-
-def placeholder_reason(
-    *,
-    objective_grammar_pairs: Mapping[tuple[str, str], dict[str, Any]],
-    grounding_mode: str,
-    model: str,
-    audience: str | None,
-) -> str:
-    if (grounding_mode, model) not in objective_grammar_pairs:
-        return "not generated for this grammar"
-    if audience is not None:
-        return "not run for this audience"
-    return "missing candidate"
-
-
-def resolve_focus_key(
-    record_map: Mapping[tuple[str, str], dict[str, Any]],
-    *,
-    focused_grounding_mode: str | None,
-    focused_model: str | None,
-) -> tuple[str, str] | None:
-    if focused_grounding_mode is not None and focused_model is not None:
-        key = (focused_grounding_mode, focused_model)
-        if key in record_map:
-            return key
-
-    if focused_grounding_mode is not None:
-        for mode, model in record_map:
-            if mode == focused_grounding_mode:
-                return (mode, model)
-
-    return next(iter(record_map), None)
-
-
 def _filter_schema(
     *,
     dimension: str,
-    options: Sequence[str | None],
-    value: str | None,
-    disabled: bool,
+    options: Sequence[Any],
+    value: Any,
 ) -> dict[str, Any]:
     return {
         "id": dimension,
         "label": label_for_dimension(dimension),
         "value": value,
-        "disabled": disabled,
         "options": [
             {
                 "value": option,
@@ -551,29 +440,177 @@ def _filter_schema(
     }
 
 
-def _schema_value_key(value: str | None) -> str:
+def _matrix_cell_payload(
+    *,
+    objective_df: pl.DataFrame,
+    record: Mapping[str, Any] | None,
+    group_dimension: str | None,
+    group_value: Any,
+    row_dimension: str,
+    row_value: Any,
+    column_dimension: str,
+    column_value: Any,
+    image_loader: Callable[[dict[str, Any]], str],
+    image_metadata_loader: Callable[[dict[str, Any]], dict[str, Any]],
+) -> dict[str, Any]:
+    return {
+        "cell_key": _cell_key(group_value, row_value, column_value),
+        "group_value": group_value,
+        "group_label": (
+            display_label(group_dimension, group_value) if group_dimension else None
+        ),
+        "row_value": row_value,
+        "row_label": display_label(row_dimension, row_value),
+        "column_value": column_value,
+        "column_label": display_label(column_dimension, column_value),
+        "missing": record is None,
+        "placeholder_reason": (
+            None
+            if record is not None
+            else _missing_reason(
+                objective_df=objective_df,
+                group_dimension=group_dimension,
+                group_value=group_value,
+                row_dimension=row_dimension,
+                row_value=row_value,
+                column_dimension=column_dimension,
+                column_value=column_value,
+            )
+        ),
+        "candidate": (
+            None
+            if record is None
+            else serialize_candidate_record(
+                record,
+                image_loader=image_loader,
+                image_metadata_loader=image_metadata_loader,
+            )
+        ),
+    }
+
+
+def _missing_reason(
+    *,
+    objective_df: pl.DataFrame,
+    group_dimension: str | None,
+    group_value: Any,
+    row_dimension: str,
+    row_value: Any,
+    column_dimension: str,
+    column_value: Any,
+) -> str:
+    filters: dict[str, Any] = {
+        row_dimension: row_value,
+        column_dimension: column_value,
+    }
+    if group_dimension is not None:
+        filters[group_dimension] = group_value
+    has_other_audience = not apply_dimension_filters(
+        objective_df,
+        {key: value for key, value in filters.items() if key != "audience"},
+    ).is_empty()
+    if has_other_audience:
+        return "not run for this audience"
+    return "missing candidate"
+
+
+def _variant_is_valid(df: pl.DataFrame, variant: Mapping[str, Any]) -> bool:
+    group_dimension = variant.get("group_dimension")
+    row_dimension = str(variant["row_dimension"])
+    column_dimension = str(variant["column_dimension"])
+
+    if len(_non_null_values(df, row_dimension)) <= 1:
+        return False
+    if len(_non_null_values(df, column_dimension)) <= 1:
+        return False
+    if (
+        group_dimension is not None
+        and len(_non_null_values(df, str(group_dimension))) <= 1
+    ):
+        return False
+
+    group_fields = (
+        [str(group_dimension), row_dimension, column_dimension]
+        if group_dimension
+        else [row_dimension, column_dimension]
+    )
+    duplicates = (
+        df.group_by(*group_fields)
+        .agg(pl.len().alias("count"))
+        .filter(pl.col("count") > 1)
+    )
+    return duplicates.is_empty()
+
+
+def _score_value(
+    *,
+    record: Mapping[str, Any],
+    judgement: Any,
+    score_id: str,
+) -> float | None:
+    if score_id == "overall":
+        value = record.get("overall_score")
+        return float(value) if value is not None else None
+
+    if score_id in record:
+        value = record.get(score_id)
+        return float(value) if value is not None else None
+
+    if isinstance(judgement, Mapping):
+        score_entry = judgement.get(score_id)
+        if isinstance(score_entry, Mapping):
+            value = score_entry.get("score")
+            return float(value) if value is not None else None
+
+    return None
+
+
+def _cell_key(group_value: Any, row_value: Any, column_value: Any) -> str:
+    return f"{_schema_value_key(group_value)}::{_schema_value_key(row_value)}::{_schema_value_key(column_value)}"
+
+
+def _schema_value_key(value: Any) -> str:
     return "__none__" if value is None else str(value)
 
 
-def _values(df: pl.DataFrame, dimension: str) -> list[str | None]:
-    return (
+def _values(df: pl.DataFrame, dimension: str) -> list[Any]:
+    order = DIMENSION_SPECS.get(dimension, {}).get("order")
+    values = (
         df.select(pl.col(dimension))
         .unique(maintain_order=True)
         .get_column(dimension)
         .to_list()
     )
+    if not order:
+        return values
+
+    def key(value: Any) -> tuple[int, str]:
+        return (int(order.get(value, 999)), str(value))
+
+    non_null = [value for value in values if value is not None]
+    non_null.sort(key=key)
+    if any(value is None for value in values):
+        return [None, *non_null]
+    return non_null
 
 
 def _non_null_values(df: pl.DataFrame, dimension: str) -> list[str]:
     return [value for value in _values(df, dimension) if value is not None]
 
 
+def _sort_with_preference(
+    values: Sequence[str],
+    preferences: Mapping[str, int],
+) -> list[str]:
+    return sorted(values, key=lambda value: (preferences.get(value, 999), value))
+
+
 def _choose_requested_value(
-    requested: str | None,
-    options: Sequence[str | None],
+    requested: Any,
+    options: Sequence[Any],
     *,
-    preferred: str | None = None,
-) -> str | None:
+    preferred: Any = None,
+) -> Any:
     if not options:
         raise ValueError("Viewer selection has no valid options.")
     if requested in options:
@@ -583,24 +620,12 @@ def _choose_requested_value(
     return options[0]
 
 
-def _humanize(value: str | None, *, title_case: bool = False) -> str:
-    if value is None:
-        return "none"
-    normalized = str(value).replace("_", " ").replace("-", " ")
-    return normalized.title() if title_case else normalized
+def _first_non_null(values: Sequence[str | None]) -> str | None:
+    for value in values:
+        if value is not None:
+            return value
+    return None
 
 
-def _sort_with_preference(
-    values: Sequence[str],
-    preference: Mapping[str, int],
-) -> list[str]:
-    return sorted(
-        values,
-        key=lambda value: (preference.get(value, len(preference)), value),
-    )
-
-
-def _truncate(text: str, limit: int) -> str:
-    if len(text) <= limit:
-        return text
-    return text[: limit - 1].rstrip() + "…"
+def _non_null_sequence(values: Sequence[str | None]) -> list[str]:
+    return list(dict.fromkeys(value for value in values if value is not None))

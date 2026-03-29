@@ -1,0 +1,297 @@
+.vg-matrix-section {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.vg-matrix-wrap {
+  --vg-row-head-width: 1.08rem;
+  --vg-cell-min-width: 12.8rem;
+  --vg-cell-gap-x: 0.18rem;
+  --vg-cell-gap-y: 0.2rem;
+  --vg-group-gap: 0.3rem;
+  --vg-group-label-gap: 0.18rem;
+  --vg-thumb-ratio: 1 / 0.88;
+  --vg-score-icon-size: 0.9rem;
+  --vg-score-font-size: 0.72rem;
+  position: relative;
+  overflow-x: auto;
+  padding-bottom: 0;
+}
+
+.vg-axis-dimension-label {
+  font-family: "JetBrains Mono", "SFMono-Regular", "SF Mono", Menlo, monospace;
+  font-size: 0.58rem;
+  line-height: 1.02;
+  letter-spacing: 0.07em;
+  text-transform: lowercase;
+  font-weight: 600;
+  color: var(--vg-muted);
+}
+
+.vg-axis-dimension-label.is-placeholder {
+  visibility: hidden;
+}
+
+.vg-axis-value-label {
+  font-family: "JetBrains Mono", "SFMono-Regular", "SF Mono", Menlo, monospace;
+  font-size: 0.75rem;
+  line-height: 1.1;
+  font-weight: 700;
+  color: var(--vg-text);
+}
+
+.vg-axis-stack {
+  display: grid;
+  gap: 0.1rem;
+  align-content: start;
+}
+
+.vg-overview-stack {
+  display: grid;
+  gap: var(--vg-group-gap);
+  min-width: 0;
+  width: 100%;
+}
+
+.vg-overview-group {
+  display: grid;
+  gap: var(--vg-group-label-gap);
+  min-width: 0;
+  width: 100%;
+}
+
+.vg-overview-group-header {
+  display: grid;
+  grid-template-columns: minmax(var(--vg-row-head-width), auto) repeat(
+      var(--vg-overview-group-cols, 1),
+      minmax(var(--vg-cell-min-width), 1fr)
+    );
+  column-gap: var(--vg-cell-gap-x);
+  align-items: end;
+  min-width: 0;
+  width: 100%;
+}
+
+.vg-overview-group-grid,
+.vg-overview-flat-grid {
+  display: grid;
+  column-gap: var(--vg-cell-gap-x);
+  row-gap: var(--vg-cell-gap-y);
+  align-items: start;
+  min-width: 0;
+}
+
+.vg-overview-group-grid {
+  grid-template-columns: minmax(var(--vg-row-head-width), auto) repeat(
+      var(--vg-overview-group-cols, 1),
+      minmax(var(--vg-cell-min-width), 1fr)
+    );
+  width: 100%;
+}
+
+.vg-overview-flat-grid {
+  grid-template-columns: minmax(var(--vg-row-head-width), auto) repeat(
+      var(--vg-overview-cols, 1),
+      minmax(var(--vg-cell-min-width), 1fr)
+    );
+  width: 100%;
+}
+
+.vg-overview-corner,
+.vg-group-head,
+.vg-column-head,
+.vg-row-head {
+  min-width: 0;
+}
+
+.vg-group-head {
+  display: grid;
+  gap: 0.06rem;
+  min-height: 0.72rem;
+  grid-column: 2 / -1;
+  padding: 0.04rem 0 0.04rem;
+  align-content: start;
+  border-bottom: 1px solid rgba(17, 17, 17, 0.06);
+}
+
+.vg-group-head .vg-axis-stack {
+  display: grid;
+  gap: 0.06rem;
+  justify-items: start;
+}
+
+.vg-group-head .vg-axis-dimension-label,
+.vg-group-head .vg-axis-value-label {
+  white-space: nowrap;
+}
+
+.vg-column-head .vg-axis-stack {
+  grid-template-rows: 0.62rem auto;
+  gap: 0.06rem;
+  justify-items: start;
+}
+
+.vg-column-head,
+.vg-row-head {
+  min-height: 1.5rem;
+}
+
+.vg-row-head {
+  position: relative;
+  display: flex;
+  width: var(--vg-row-head-width);
+  justify-self: start;
+  align-self: stretch;
+  justify-content: flex-start;
+  align-items: flex-end;
+  min-height: 100%;
+  padding-bottom: 0;
+  overflow: visible;
+}
+
+.vg-row-head .vg-axis-stack {
+  position: absolute;
+  left: -0.12rem;
+  bottom: 0;
+  width: max-content;
+  transform: rotate(-90deg) translateY(100%);
+  transform-origin: bottom left;
+  gap: 0.04rem;
+}
+
+.vg-row-head .vg-axis-dimension-label,
+.vg-row-head .vg-axis-value-label {
+  white-space: nowrap;
+}
+
+.vg-matrix-cell {
+  display: grid;
+  min-width: 0;
+  gap: 0.06rem;
+  padding: 0.01rem;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    opacity 140ms ease,
+    filter 140ms ease,
+    box-shadow 140ms ease,
+    background 120ms ease,
+    transform 120ms ease;
+}
+
+.vg-matrix-cell > * {
+  min-width: 0;
+}
+
+.vg-matrix-cell:hover:not(:disabled),
+.vg-matrix-cell:focus-visible {
+  outline: none;
+}
+
+.vg-cell-stack {
+  display: grid;
+  gap: 0;
+}
+
+.vg-matrix-cell.is-focused .vg-chart-frame {
+  box-shadow: 0 0 0 1px rgba(17, 17, 17, 0.16);
+}
+
+.vg-matrix-cell.is-missing {
+  min-height: 6.8rem;
+  place-items: center;
+  background: rgba(17, 17, 17, 0.02);
+  opacity: 0.72;
+  padding: 0.55rem;
+}
+
+.vg-chart-frame,
+.vg-hover-image,
+.vg-detail-image-frame {
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.vg-chart-frame {
+  position: relative;
+  aspect-ratio: var(--vg-thumb-ratio);
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 1px rgba(17, 17, 17, 0.05);
+}
+
+.vg-matrix-cell.is-chart {
+  justify-self: stretch;
+  width: 100%;
+}
+
+.vg-hover-image,
+.vg-detail-image-frame {
+  min-height: 15rem;
+  overflow: auto;
+}
+
+.vg-chart-canvas {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.vg-chart-canvas.is-panel {
+  padding: 0.18rem;
+  overflow: hidden;
+}
+
+.vg-chart-canvas.is-hover {
+  min-height: 18rem;
+  padding: 0.9rem;
+  overflow: auto;
+  place-items: start center;
+}
+
+.vg-chart-canvas.is-detail {
+  min-height: 22rem;
+  padding: 1rem;
+  overflow: auto;
+  place-items: start center;
+}
+
+.vg-image {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
+.vg-image.is-extreme-aspect.surface-hover,
+.vg-image.is-extreme-aspect.surface-detail {
+  max-width: none;
+  max-height: none;
+}
+
+.vg-image.is-extreme-aspect.is-landscape.surface-hover,
+.vg-image.is-extreme-aspect.is-landscape.surface-detail,
+.vg-image.is-extreme-aspect.is-portrait.surface-hover,
+.vg-image.is-extreme-aspect.is-portrait.surface-detail {
+  width: auto;
+  height: auto;
+}
+
+@media (max-width: 1180px) {
+  .vg-matrix-wrap {
+    --vg-cell-min-width: 11.8rem;
+  }
+}
+
+@media (max-width: 980px) {
+  .vg-matrix-wrap {
+    --vg-cell-min-width: 10.6rem;
+  }
+}

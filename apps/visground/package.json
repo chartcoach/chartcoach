@@ -1,0 +1,20 @@
+{
+  "name": "@chartcoach/visground-anywidget",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev:anywidget": "vite --config vite.config.anywidget.js",
+    "build:anywidget": "vite build --config vite.config.anywidget.js",
+    "build": "pnpm --filter @chartcoach/visground-viewer build && vite build --config vite.config.anywidget.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@chartcoach/visground-viewer": "workspace:*"
+  },
+  "devDependencies": {
+    "@anywidget/vite": "^0.2.2",
+    "typescript": "^5.9.3",
+    "vite": "^7.2.0"
+  }
+}
