@@ -14,7 +14,7 @@ def _(lm_cliproxy):
     }
     hybrid_strategy_config = {
         "lm": lm_cliproxy("gpt-5.4"),
-        "num_threads": 6,
+        "num_threads": 8,
     }
     return hybrid_strategy_config, structured_strategy_config
 
@@ -43,7 +43,7 @@ def _(pl, vis_request_df):
 
 
 @app.cell(hide_code=True)
-def _(AUDIENCE_MODIFIER_IDS, pl, vis_request_df):
+def _(pl, vis_request_df):
     selection_requests_df = vis_request_df.select(
         "id",
         pl.col("nl_query_canonical").alias("query"),
@@ -52,8 +52,9 @@ def _(AUDIENCE_MODIFIER_IDS, pl, vis_request_df):
         "time_mode",
         pl.lit(None).alias("chart"),
         pl.lit("select").alias("objective"),
-        pl.lit([*AUDIENCE_MODIFIER_IDS, None]).alias("audience"),
-    ).explode("audience")
+        # pl.lit([*AUDIENCE_MODIFIER_IDS, None]).alias("audience"),
+        pl.lit(None).cast(pl.String).alias("audience"),
+    )
     selection_requests_df
     return (selection_requests_df,)
 
@@ -182,7 +183,6 @@ def _():
         embedding_fn=openai_large_ef,
     )
     return (
-        AUDIENCE_MODIFIER_IDS,
         GroundingStrategy,
         HybridGroundingStrategy,
         NoneGroundingStrategy,
