@@ -109,8 +109,9 @@ def _(cohort_df, store):
 def _():
     import marimo as mo
     import polars as pl
-    from visground import VisEvalCohortBuilder, VisEvalDataset
+    from visground.cohorts import VisEvalCohortBuilder
     from visground.datasets import VisGroundDataset
+    from visground.datasets import VisEvalDataset
 
     return VisEvalCohortBuilder, VisEvalDataset, VisGroundDataset, mo, pl
 

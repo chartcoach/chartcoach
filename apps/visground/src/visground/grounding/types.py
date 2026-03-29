@@ -2,9 +2,7 @@ from __future__ import annotations
 
 from typing import Literal, NotRequired, Protocol, TypedDict
 
-from ..data_profile import GroundingProfile
-
-GroundingMode = Literal["none", "flat", "structured"]
+GroundingMode = Literal["none", "flat", "structured", "hybrid"]
 AudienceModifierId = Literal[
     "novice",
     "casual",
@@ -70,19 +68,20 @@ class GroundingRequest(TypedDict):
     chart: str | None
     objective: Literal["refine", "select"]
     audience: AudienceModifierId | None
-    data_profile: NotRequired[GroundingProfile]
 
 
 class GroundingRecord(TypedDict):
     doc_ids: list[str]
     guideline_ids: list[str]
     guidance: list[str]
+    trace: NotRequired[dict[str, object]]
 
 
-GroundingStrategyMode = Literal["flat", "structured", "none"]
+GroundingStrategyMode = Literal["flat", "structured", "none", "hybrid"]
 
 
 class GroundingStrategy(Protocol):
     mode: GroundingStrategyMode
 
     def retrieve(self, req: GroundingRequest) -> GroundingRecord: ...
+    def retrieve_many(self, reqs: list[GroundingRequest]) -> list[GroundingRecord]: ...

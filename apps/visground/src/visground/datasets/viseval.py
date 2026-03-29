@@ -2,12 +2,10 @@ import json
 import pathlib
 from functools import cached_property
 from os import PathLike
-from typing import Sequence
 
 import duckdb
 import polars as pl
 
-from ..data_profile import compact_profile, interestingness_score, profile_dataframe
 from .paths import VISGROUND_DATA_ROOT
 
 VISEVAL_DATASET_ROOT = VISGROUND_DATA_ROOT / "vis-eval" / "VisEval" / "dataset"
@@ -23,7 +21,6 @@ class VisEvalDataset:
         self._root = pathlib.Path(dataset_root)
         self._enrichment_root = pathlib.Path(enrichment_root)
         self._db_connections: dict[str, duckdb.DuckDBPyConnection] = {}
-        self._profile_cache: dict[str, dict] = {}
 
     @property
     def root(self) -> pathlib.Path:
@@ -136,41 +133,3 @@ class VisEvalDataset:
         db = self.database(db_id)
 
         return db.query(sql)
-
-    def profile(
-        self,
-        vis_id: str,
-        *,
-        compact: bool = True,
-        use_cache: bool = True,
-    ) -> dict:
-        if use_cache and vis_id in self._profile_cache:
-            return dict(self._profile_cache[vis_id])
-
-        profile = profile_dataframe(self.vis_relation(vis_id).pl())
-        payload = {
-            "id": vis_id,
-            "interestingness_score": interestingness_score(profile),
-            "data_profile": compact_profile(profile) if compact else profile,
-        }
-        if use_cache:
-            self._profile_cache[vis_id] = payload
-        return dict(payload)
-
-    def profiles_df(
-        self,
-        vis_ids: Sequence[str],
-        *,
-        compact: bool = True,
-        use_cache: bool = True,
-    ) -> pl.DataFrame:
-        return pl.from_dicts(
-            [
-                self.profile(
-                    vis_id,
-                    compact=compact,
-                    use_cache=use_cache,
-                )
-                for vis_id in vis_ids
-            ]
-        )

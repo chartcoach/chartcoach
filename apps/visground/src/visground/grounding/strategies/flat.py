@@ -78,3 +78,6 @@ class FlatGroundingStrategy:
                 : self.config.get("max_items", 4)
             ],
         )
+
+    def retrieve_many(self, reqs: list[GroundingRequest]) -> list[GroundingRecord]:
+        return [self.retrieve(req) for req in reqs]

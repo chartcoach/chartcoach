@@ -215,7 +215,6 @@ def _label_groups_for_refinement(
             keyword=req["scope"],
             polarities=None,
         ),
-        *_profile_label_groups(coach, req),
     ]
 
 
@@ -230,23 +229,7 @@ def _label_groups_for_selection(
             keyword=req["task"],
             polarities=None,
         ),
-        *_profile_label_groups(coach, req),
     ]
-
-
-def _profile_label_groups(
-    coach: cc.Coach,
-    req: GroundingRequest,
-) -> list[list[str]]:
-    if (profile := req.get("data_profile")) is None:
-        return []
-
-    retrieval_labels = profile.get("retrieval_labels", [])
-    labels_by_family: dict[str, list[str]] = defaultdict(list)
-    for label in retrieval_labels:
-        family = label.split(":", 1)[0]
-        labels_by_family[family].append(label)
-    return list(labels_by_family.values())
 
 
 def _rhetoric_label_groups(
@@ -263,7 +246,6 @@ def _rhetoric_label_groups(
 
 def _polish_label_groups(
     coach: cc.Coach,
-    req: GroundingRequest,
 ) -> list[list[str]]:
     groups = [labels_for_family(coach, "polish", polarities=["use", None])]
     if not any(groups):
@@ -273,7 +255,6 @@ def _polish_label_groups(
                 for family in ["aesthetic", "component", "channel", "access", "quality"]
             ]
         )
-    groups.extend(_profile_label_groups(coach, req))
     return groups
 
 
@@ -543,7 +524,7 @@ def _refine_search_jobs(
             role,
             "polish",
             _dedupe_query_texts(query_texts),
-            _polish_label_groups(coach, req),
+            _polish_label_groups(coach),
         )
         for role, query_texts in _polish_search_specs(req)
     )
@@ -625,7 +606,7 @@ def _select_search_jobs(
             role,
             "polish",
             _dedupe_query_texts(query_texts),
-            _polish_label_groups(coach, req),
+            _polish_label_groups(coach),
         )
         for role, query_texts in _polish_search_specs(req)
     )
@@ -753,9 +734,6 @@ def _request_family_keys(
 
     if (audience_modifier := _audience_modifier(req["audience"])) is not None:
         add_labels(cast(list[str], audience_modifier["labels"]))
-
-    if (profile := req.get("data_profile")) is not None:
-        add_labels(profile.get("retrieval_labels", []))
 
     return request_family_keys
 
@@ -932,22 +910,6 @@ def _time_label_adjustment(
     if parent_time_keys & request_keys:
         return 0.15
     return -0.5
-
-
-def _profile_match_bonus(
-    labels: list[str],
-    *,
-    profile: Any,
-) -> float:
-    if profile is None:
-        return 0.0
-
-    expected_labels = cast(list[str], profile.get("retrieval_labels", []))
-    if not expected_labels:
-        return 0.0
-
-    matches = len(set(expected_labels) & set(labels))
-    return 0.15 * matches
 
 
 def _has_chart_structure_select_contrast(labels: list[str]) -> bool:
@@ -1133,6 +1095,9 @@ class StructuredGroundingStrategy:
     config: StructuredGroundingConfig
     mode: GroundingStrategyMode = "structured"
 
+    def retrieve_many(self, reqs: list[GroundingRequest]) -> list[GroundingRecord]:
+        return [self.retrieve(req) for req in reqs]
+
     def retrieve(self, req: GroundingRequest) -> GroundingRecord:
         """Retrieve one grounding record using section-aware catalog search."""
 
@@ -1297,10 +1262,6 @@ class StructuredGroundingStrategy:
                 request_time_labels=request_time_labels,
             )
             decision_scores[parent_id] += time_adjustment
-            decision_scores[parent_id] += _profile_match_bonus(
-                parent_labels.get(parent_id, []),
-                profile=req.get("data_profile"),
-            )
             if req["objective"] == "select":
                 if _has_chart_structure_select_contrast(
                     parent_labels.get(parent_id, []),

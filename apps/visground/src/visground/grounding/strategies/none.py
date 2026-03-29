@@ -11,3 +11,6 @@ class NoneGroundingStrategy:
 
     def retrieve(self, req: GroundingRequest) -> GroundingRecord:
         return {"doc_ids": [], "guideline_ids": [], "guidance": []}
+
+    def retrieve_many(self, reqs: list[GroundingRequest]) -> list[GroundingRecord]:
+        return [self.retrieve(req) for req in reqs]

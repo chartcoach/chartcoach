@@ -1,0 +1,109 @@
+.vg-score-ledger {
+  display: flex;
+  gap: 0.22rem;
+  align-items: center;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.vg-score-ledger.is-matrix {
+  display: flex;
+  gap: 0.3rem;
+  align-items: center;
+  white-space: nowrap;
+  padding: 0;
+  width: 100%;
+}
+
+.vg-score-ledger.is-floating {
+  gap: 0.24rem;
+}
+
+.vg-score-ledger-overall {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.18rem;
+  min-width: 0;
+}
+
+.vg-score-ledger-subscores {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.2rem 0.56rem;
+  align-items: center;
+  min-width: 0;
+}
+
+.vg-score-ledger.is-matrix .vg-score-ledger-subscores {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.2rem 0.56rem;
+  align-items: center;
+}
+
+.vg-score-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.14rem;
+  min-width: 0;
+  color: var(--vg-text-soft);
+  font-family: "JetBrains Mono", "SFMono-Regular", "SF Mono", Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.vg-score-item.is-matrix.is-overall {
+  gap: 0.12rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  font-size: calc(var(--vg-score-font-size, 0.56rem) + 0.1rem);
+  font-weight: 800;
+  color: var(--vg-text);
+  background: transparent;
+}
+
+.vg-score-item.is-floating.is-overall {
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: var(--vg-text);
+}
+
+.vg-score-item.is-matrix.is-subscore {
+  gap: 0.12rem;
+  font-size: calc(var(--vg-score-font-size, 0.56rem) + 0.02rem);
+  color: var(--vg-text-soft);
+  opacity: 1;
+}
+
+.vg-score-item.is-floating.is-subscore {
+  font-size: 0.6rem;
+  color: var(--vg-muted);
+}
+
+.vg-score-item-icon {
+  width: var(--vg-score-icon-size, 0.72rem);
+  height: var(--vg-score-icon-size, 0.72rem);
+  flex: 0 0 auto;
+}
+
+.vg-score-item.is-floating .vg-score-item-icon {
+  width: 0.86rem;
+  height: 0.86rem;
+}
+
+.vg-score-item.is-subscore .vg-score-item-icon {
+  opacity: 0.76;
+}
+
+.vg-score-item-value {
+  min-width: 0;
+}
+
+.vg-score-ledger-divider {
+  width: 1px;
+  height: 0.92rem;
+  flex: 0 0 auto;
+  background: var(--vg-divider);
+  opacity: 0.62;
+}

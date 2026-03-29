@@ -34,7 +34,7 @@ def _(mo):
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(VisualizationBackend, resolve_visualization_backend, viseval_dataset):
     def get_vis_backend(grammar: str) -> VisualizationBackend:
         return resolve_visualization_backend(grammar, viseval_dataset)
@@ -327,20 +327,18 @@ def _():
     import marimo as mo
     import polars as pl
     from PIL import Image
-    from visground import VisEvalDataset
-    from visground.datasets import VisGroundDataset
+    from visground.datasets import VisEvalDataset, VisGroundDataset
     from visground.generation import VisualizationBackend
     from visground.generation.backends import resolve_visualization_backend
     from visground.grounding import get_audience_description
     from visground.judge import (
-        VisJudgeApiClient,
         VisJudgeLmClient,
         VisJudgeClient,
         VisJudgeRequest,
         build_visjudge_prompt,
     )
     from visground.utils import extract_json
-    from visground.lm import lm_cliproxy, lm_openrouter
+    from visground.lm import lm_cliproxy
 
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger(__name__)
