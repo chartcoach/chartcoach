@@ -13,8 +13,8 @@ def _(lm_cliproxy):
         "max_items": 4,
     }
     hybrid_strategy_config = {
-        "lm": lm_cliproxy("gpt-5.4-mini"),
-        "num_threads": 5,
+        "lm": lm_cliproxy("gpt-5.4"),
+        "num_threads": 6,
     }
     return hybrid_strategy_config, structured_strategy_config
 
