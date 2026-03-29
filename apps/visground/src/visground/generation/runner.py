@@ -72,10 +72,10 @@ class VisGenRunner:
         requests: list[VisualizationRequestRecord],
         num_threads: int = 20,
     ) -> list[VisGenOutput]:
-        coder = dspy.Predict(self.coder_signature)
+        coder = dspy.ChainOfThought(self.coder_signature)
         generate_code = dspy.Refine(
             module=coder,
-            N=3,
+            N=10,
             reward_fn=self._reward_fn,
             threshold=1.0,
         )
