@@ -54,6 +54,7 @@ export type MatrixAxes = {
   group_label: string | null;
   row_label: string;
   column_label: string;
+  hidden_labels: string[];
 };
 
 export type CandidateImageMeta = {
@@ -75,6 +76,7 @@ export type CandidateScore = {
 
 export type CandidateRecord = {
   visgen_id: string;
+  dimension_values: Record<string, string | null>;
   error?: string | null;
   image_url?: string | null;
   image_meta?: CandidateImageMeta | null;
@@ -83,14 +85,25 @@ export type CandidateRecord = {
   score_breakdown: CandidateScore[];
 };
 
+export type CellVariant = {
+  variant_key: string;
+  variant_label: string | null;
+  candidate: CandidateRecord;
+};
+
 export type MatrixAxisValue = {
   value: string | null;
   label: string;
+  meta_label?: string | null;
+  meta_kind?: "guidelines" | null;
 };
 
 export type MatrixCell = {
   cell_key: string;
-  candidate: CandidateRecord | null;
+  variants: CellVariant[];
+  variant_count: number;
+  hidden_axes: string[];
+  hidden_axis_labels: string[];
   missing?: boolean;
   placeholder_reason?: string | null;
   group_value?: string | null;
@@ -146,6 +159,7 @@ export type ViewerStatePayload = {
 
 export type ViewerHoverState = {
   cell: MatrixCell;
+  variantIndex: number;
   anchor: HTMLElement;
 };
 
@@ -161,6 +175,7 @@ export type ViewerState = {
   error: string | null;
   hover: ViewerHoverState | null;
   inspectCellKey: string | null;
+  inspectVariantIndex: number;
   activePopoverId: "case" | "filters" | "layout" | null;
   popoverAnchor: HTMLElement | null;
 };
@@ -181,9 +196,9 @@ export type ViewerActions = {
   ): void;
   togglePopover(popoverId: "case" | "filters" | "layout", anchor: HTMLElement): void;
   closePopover(): void;
-  openInspect(cellKey: string): void;
+  openInspect(cellKey: string, variantIndex?: number): void;
   closeInspect(): void;
-  showHover(cell: MatrixCell, anchor: HTMLElement): void;
+  showHover(cell: MatrixCell, variantIndex: number, anchor: HTMLElement): void;
   scheduleHoverHide(): void;
   cancelHoverHide(): void;
   hideHover(immediate?: boolean): void;

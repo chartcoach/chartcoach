@@ -79,7 +79,7 @@ def _(ViewerConfig, ViewerDimensionSpec, ViewerLayout, os):
                 label="Grounding",
                 aliases={
                     "none": "Ungrounded",
-                    "hybrid": "Hybrid",
+                    "hybrid": "Grounded",
                     "structured": "Structured",
                 },
                 order={"none": 0, "hybrid": 1, "structured": 2},
@@ -117,34 +117,35 @@ def _(ViewerConfig, ViewerDimensionSpec, ViewerLayout, os):
 @app.cell(hide_code=True)
 def _(mo, os):
     debug_default = os.getenv("VISGROUND_VIEWER_DEBUG", "0") == "1"
-    debug_switch = mo.ui.switch(debug_default, label="Debug")
-    debug_switch
-    return (debug_switch,)
+    show_debug_controls = os.getenv("VISGROUND_VIEWER_DEBUG_CONTROLS", "0") == "1"
+    debug_switch = (
+        mo.ui.switch(debug_default, label="Debug") if show_debug_controls else None
+    )
+    if debug_switch is not None:
+        debug_switch
+    return debug_default, debug_switch
 
 
 @app.cell(hide_code=True)
 def _(
     VisGroundViewer,
     candidates_df,
+    debug_default,
     debug_switch,
     judgements_df,
     mo,
     viewer_config,
 ):
+    debug_enabled = debug_switch.value if debug_switch is not None else debug_default
     widget = mo.ui.anywidget(
         VisGroundViewer(
             candidates_df=candidates_df,
             judgements_df=judgements_df,
             viewer_config=viewer_config,
-            debug=debug_switch.value,
+            debug=debug_enabled,
         )
     )
     widget
-    return
-
-
-@app.cell
-def _():
     return
 
 

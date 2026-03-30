@@ -1,11 +1,17 @@
 import type { ViewerActions, ViewerState } from "@/viewer/contract/types";
-import { getCellByKey, orientationLabel, renderImage } from "@/viewer/render/utils";
+import {
+  getCellByKey,
+  getVariantByIndex,
+  orientationLabel,
+  renderImage,
+} from "@/viewer/render/utils";
 import { ScoreLedger } from "@/viewer/render/score-ledger";
 
 export function DetailDrawer({ state, actions }: { state: ViewerState; actions: ViewerActions }) {
   const cell = getCellByKey(state.overview, state.inspectCellKey);
-  const candidate = cell?.candidate;
-  if (!cell || !candidate) {
+  const variant = getVariantByIndex(cell, state.inspectVariantIndex);
+  const candidate = variant?.candidate ?? null;
+  if (!cell || !candidate || !variant) {
     return <section className="vg-detail-section" hidden />;
   }
 
@@ -40,6 +46,25 @@ export function DetailDrawer({ state, actions }: { state: ViewerState; actions: 
         </div>
         <div className="vg-detail-drawer-body">
           <section className="vg-detail-block">
+            {cell.variants.length > 1 ? (
+              <div className="vg-detail-variant-list">
+                {cell.variants.map((entry, index) => (
+                  <button
+                    className={`vg-variant-chip ${index === state.inspectVariantIndex ? "is-active" : ""}`.trim()}
+                    key={entry.variant_key}
+                    onClick={() => actions.openInspect(cell.cell_key, index)}
+                    type="button"
+                  >
+                    <span className="vg-variant-chip-label">
+                      {entry.variant_label ?? entry.candidate.visgen_id}
+                    </span>
+                    <span className="vg-variant-chip-score">
+                      {entry.candidate.overall_score?.toFixed(2) ?? "—"}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            ) : null}
             <div className="vg-detail-image-frame">
               <div className="vg-chart-canvas is-detail">
                 {candidate.error ? (
@@ -56,6 +81,9 @@ export function DetailDrawer({ state, actions }: { state: ViewerState; actions: 
             </div>
             <ScoreLedger candidate={candidate} mode="floating" />
             <div className="vg-detail-facts">
+              {variant.variant_label ? (
+                <span className="vg-detail-fact">{variant.variant_label}</span>
+              ) : null}
               {candidate.guideline_count > 0 ? (
                 <span className="vg-detail-fact">
                   {`${candidate.guideline_count} ${candidate.guideline_count === 1 ? "guideline" : "guidelines"}`}

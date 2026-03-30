@@ -1,6 +1,6 @@
 import type { ViewerActions, ViewerRefs, ViewerState } from "@/viewer/contract/types";
 import { ScoreLedger } from "@/viewer/render/score-ledger";
-import { orientationLabel, renderImage } from "@/viewer/render/utils";
+import { getVariantByIndex, orientationLabel, renderImage } from "@/viewer/render/utils";
 
 export function HoverCard({
   state,
@@ -11,11 +11,15 @@ export function HoverCard({
   actions: ViewerActions;
   refs: ViewerRefs;
 }) {
-  if (!state.hover || !state.hover.cell?.candidate) {
+  if (!state.hover) {
     return <div className="vg-hovercard" hidden ref={refs.hoverCardRef} />;
   }
 
-  const candidate = state.hover.cell.candidate;
+  const variant = getVariantByIndex(state.hover.cell, state.hover.variantIndex);
+  if (!variant) {
+    return <div className="vg-hovercard" hidden ref={refs.hoverCardRef} />;
+  }
+  const candidate = variant.candidate;
   const label = orientationLabel([
     state.hover.cell.group_label,
     state.hover.cell.row_label,
@@ -40,6 +44,9 @@ export function HoverCard({
       </div>
       <div className="vg-hover-footer">
         <div className="vg-hover-orientation">{label}</div>
+        {variant.variant_label ? (
+          <div className="vg-hover-variant">{variant.variant_label}</div>
+        ) : null}
         <ScoreLedger candidate={candidate} mode="floating" />
       </div>
     </aside>

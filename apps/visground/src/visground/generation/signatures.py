@@ -16,6 +16,9 @@ class WriteVisualizationCode(dspy.Signature):
       None of them are optional.
     - Do not treat any requirement as an example, hint, or loose style direction.
       Treat each requirement literally and satisfy it directly in code.
+    - Every requirement should be traceable to explicit code. Do not rely on a
+      library default, an implicit side effect, or vague nearby code when the
+      requirement can be implemented directly and inspectably.
     - Requirements override your prior preferences, default heuristics, and
       stylistic instincts. Do not weaken, reinterpret, or replace a supplied
       requirement with a nearby alternative that you prefer.
@@ -44,6 +47,18 @@ class WriteVisualizationCode(dspy.Signature):
       marks, scales, legends, labels, annotations, ordering, faceting, and any
       interactive or compositional pieces must work together coherently rather
       than each being handled in isolation.
+    - Treat decoding aids as mandatory implementation, not optional polish. If
+      any semantically meaningful visual distinction is not already spelled out
+      directly on the marks or by nearby text, the chart must include a legend
+      or another equally explicit visible decoding aid.
+    - Never rely on the reader to infer what a color, shape, line style, size,
+      facet, highlight, reference region, layer role, or other visible chart
+      decision means from context alone. If that meaning is not self-evident in
+      the rendered chart, make it explicit.
+    - Missing decode aids are correctness failures, not tasteful omissions. If
+      multiple parts of the chart would otherwise be hard to identify or map
+      back to their meaning, add the legend, direct labels, or local callouts
+      needed to remove that ambiguity.
     - Whenever requirements constrain the result, do not perturb or mutate
       unrelated design decisions. Keep the chart coherent and as close as
       possible to only the supplied requirements plus the query.
@@ -56,10 +71,20 @@ class WriteVisualizationCode(dspy.Signature):
     - Prefer omission over invention. If a design move is not required by the
       query, the library, or the supplied requirements, do not add it just
       because it seems tasteful or clever.
+    - If the query or requirements imply filtering, grouping, aggregation,
+      sorting, ranking, binning, reshaping, or derived fields, write those
+      operations explicitly in code so a reviewer can point to where they
+      happen. Do not rely on plotting-library shorthand to hide required data
+      logic when explicit dataframe operations would make the implementation
+      clearer and more faithful.
     - When grounded design guidance is present, only non-design implementation
       defaults remain allowed: valid library usage, readable labels implied by
       the query, syntactic completeness, and the minimum operational defaults
       required to produce a functioning chart.
+    - Those allowed implementation defaults include the minimum visible
+      decoding aids needed to make the chart understandable, such as legends,
+      direct labels, or short local explanations for otherwise unlabeled
+      encodings, highlights, or visual distinctions.
     - If no grounded design guidance is present in `requirements`, use your own
       embedded visualization knowledge to the fullest degree, especially for
       chart-family, encoding, and comparison decisions. In that ungrounded case,
@@ -92,6 +117,11 @@ class WriteVisualizationCode(dspy.Signature):
       padding, spacing, label rotation, legend placement, facet spacing, and
       mark sizing so there are no clips, overlaps, truncation, crowding,
       cropped legends, cropped labels, or other layout defects.
+    - Do not rely on hope or a single generic auto-layout call when the
+      composition is tight. Adjust figure size, constrained or tight layout,
+      subplot parameters, legend anchors, and surrounding whitespace
+      deliberately until titles, labels, legends, and annotations have enough
+      room.
     - Treat clipping, overlap, truncation, and cropped elements as failures to
       fix in code, not as optional polish to ignore.
     - Whenever you add text for any purpose, place it deliberately. Text should
@@ -148,9 +178,14 @@ class WriteVisualizationCode(dspy.Signature):
             "requirement specifies a non-default design decision, implement that "
             "decision with extra library-specific care rather than approximating it "
             "loosely or semantically degrading it. Treat the resulting chart as a "
-            "coherent system, not as a bag of disconnected custom tweaks. Before "
-            "returning code, internally review the likely rendered output for "
-            "quality and correctness."
+            "coherent system, not as a bag of disconnected custom tweaks. Also "
+            "treat basic decoding aids as mandatory implementation: if an "
+            "important visible distinction is not directly labeled on the marks "
+            "or by nearby text, include a legend or equally explicit visible "
+            "decode aid rather than making the viewer guess. Make each "
+            "requirement inspectably traceable in code, including required data "
+            "operations. Before returning code, internally review the likely "
+            "rendered output for quality and correctness."
         )
     )
 
@@ -177,6 +212,12 @@ class WriteVisualizationCode(dspy.Signature):
             "work together coherently rather than appearing locally fixed but "
             "globally inconsistent. Before returning, the code should already "
             "reflect an internal render-level QA pass over likely failure modes. "
+            "Required dataframe operations should be explicit and easy to audit "
+            "in code rather than hidden in ambiguous shorthand. "
+            "Any meaningful visible distinction that is not directly labeled on "
+            "the marks must be decoded by a legend or equally explicit visible "
+            "aid; unexplained encodings or highlights are implementation "
+            "failures. "
             "The rendered chart must have clean layout and sizing with no "
             "clipping, overlap, truncation, crowding, or cropped elements."
         )
@@ -197,47 +238,84 @@ class WriteVisualizationCode(dspy.Signature):
 
 class ReviewVisualizationImplementation(dspy.Signature):
     """
-    Review only the visible implementation quality of a rendered visualization.
+    Review the implementation quality of a generated visualization using the
+    rendered image and the generated code.
 
     Rules:
-    - Judge the final chart against the rendered image and the supplied
-      `requirements`.
-    - Treat visible requirements and design guidance as mandatory. If a
-      requirement or guidance item should be visible in the chart and is not
-      clearly reflected, mark `requirements_followed` as `False`.
-    - Ignore non-visual backend/runtime-only requirements when judging visible
-      compliance, such as whether code is valid or whether the chart object had
-      the right Python type.
+    - Judge the final chart against `query`, `tablespec`, `requirements`,
+      generated `code`, and the rendered image.
+    - Treat every supplied requirement as mandatory. If any requirement is
+      missing, only approximately implemented, or only implied rather than
+      explicitly realized in code and/or the chart, mark
+      `requirements_followed` as `False`.
+    - Use code evidence for non-visual or data-operation requirements, and use
+      rendered-image evidence for visible requirements.
     - If the final chart makes visible non-default, opinionated design
       decisions that are not prescribed by the query or the supplied
       requirements, mark `no_unprescribed_design` as `False`.
     - Treat unprescribed visible design drift as a hard negative. If it occurs,
       `implementation_acceptable` should also be `False`.
-    - For each visible requirement or guidance item, add one short entry to
-      `requirement_trace` explaining whether it was visibly satisfied, missed,
-      or over-interpreted and how.
+    - For each requirement or guidance item, add one short entry to
+      `requirement_trace` explaining whether it was explicitly implemented,
+      missed, or over-interpreted, and cite code evidence and visible evidence
+      when applicable.
     - Use the grounded guideline id as the key when the requirement comes from
-      `Guideline `<id>` states: ...`. For other visible requirements, use
-      deterministic keys like `requirement_1`, `requirement_2`, in their input
-      order among visible non-guideline requirements.
+      `Guideline `<id>` states: ...`. For other requirements, use deterministic
+      keys like `requirement_1`, `requirement_2`, in their input order among
+      non-guideline requirements.
     - Still judge execution quality visible in the image, including clipping,
-      overlap, and readability.
+      overlap, readability, and layout balance.
+    - Judge code-level faithfulness too. If the query or requirements imply
+      filtering, grouping, aggregation, sorting, ranking, binning, reshaping,
+      or derived fields, verify those operations are present and semantically
+      aligned with the rendered chart. If they are missing or wrong, mark
+      `data_operations_correct` as `False`.
+    - Judge understandability, not just cleanliness. The chart should be easy
+      to decode without guesswork: important encodings, highlights, groups,
+      layers, and focal marks must be explained by legends, direct labels, or
+      other explicit visible cues when they are not already self-labeled.
+    - If a meaningful visible distinction lacks a legend or another explicit
+      decoding aid, mark `self_explanatory` as `False` even if the chart is
+      otherwise attractive and uncluttered.
+    - Treat missing or ambiguous legends, unexplained color/style mappings,
+      unexplained highlights, weak series identification, or other "the reader
+      can probably figure it out" situations as failures of understandability.
+    - Be strict about cramped layout even when nothing is literally clipped.
+      If titles, legends, annotations, or plotting regions feel crowded or do
+      not have enough padding and whitespace to read comfortably, mark
+      `layout_balanced` as `False`.
     - Be strict about cropped, clipped, truncated, overlapped, or partly
       obscured text and marks. Do not give benefit of the doubt just because a
       reader could guess what the text says or infer the intended mapping.
     - If text is cut off, annotation boxes collide with marks, labels overlap,
       or the viewer would need effort to reconstruct the intended reading, mark
       the relevant booleans as `False`.
-    - Keep `reasoning` and `feedback` crisp, concrete, and tied to visible
-      compliance or execution quality.
+    - Keep `reasoning` and `feedback` crisp, concrete, and tied to requirement
+      compliance, data operations, or execution quality.
     """
 
     vis: dspy.Image = dspy.InputField(desc="Rendered visualization image to inspect.")
+    code: str = dspy.InputField(
+        desc=(
+            "Generated Python code for the chart. Use it to verify that "
+            "requirements and required data operations are implemented "
+            "explicitly rather than merely implied."
+        )
+    )
+    query: str = dspy.InputField(
+        desc="Original natural-language visualization request."
+    )
+    tablespec: str = dspy.InputField(
+        desc=(
+            "Serialized dataframe schema and samples. Use it to sanity-check "
+            "column usage and requirement-bound data operations."
+        )
+    )
     requirements: list[str] = dspy.InputField(
         desc=(
             "Full generation requirements list. Use it to judge whether visible "
-            "requirements and guidance are reflected in the chart, while ignoring "
-            "non-visual backend/runtime-only rules."
+            "and non-visual requirements are explicitly implemented in the code "
+            "and reflected in the chart when applicable."
         )
     )
 
@@ -269,19 +347,48 @@ class ReviewVisualizationImplementation(dspy.Signature):
             "If overlaps or occlusion materially hinder reading, make this `False`."
         )
     )
+    layout_balanced: bool = dspy.OutputField(
+        desc=(
+            "True when figure size, padding, spacing, legend placement, title "
+            "placement, and surrounding whitespace feel deliberate and roomy "
+            "enough to read comfortably. If the chart feels cramped, crowded, "
+            "or awkwardly packed even without literal clipping, make this `False`."
+        )
+    )
+    data_operations_correct: bool = dspy.OutputField(
+        desc=(
+            "True when the code explicitly includes the filtering, grouping, "
+            "aggregation, sorting, ranking, binning, reshaping, or derivations "
+            "required by the query and requirements, and those operations align "
+            "with the rendered chart. Missing or mismatched operations should "
+            "make this `False`."
+        )
+    )
+    self_explanatory: bool = dspy.OutputField(
+        desc=(
+            "True when a normal reader can understand what the important visual "
+            "distinctions mean without guesswork because legends, direct labels, "
+            "axis/context labels, or nearby annotations decode them clearly. "
+            "Missing or ambiguous legends, unlabeled encodings, or unexplained "
+            "highlights should make this `False`."
+        )
+    )
     implementation_acceptable: bool = dspy.OutputField(
         desc=(
             "True when the chart looks decently implemented overall, regardless "
             "of whether the design choice is good or bad, as long as it follows "
-            "the visible requirements and does not add unprescribed visible "
-            "design drift. If any core visual-quality boolean is `False`, this "
-            "should also be `False`."
+            "the requirements and does not add unprescribed visible design "
+            "drift. If any core visual-quality boolean is `False`, if required "
+            "data operations are wrong, or if the chart is not self-explanatory, "
+            "this should also be `False`."
         )
     )
     requirements_followed: bool = dspy.OutputField(
         desc=(
-            "True when the visible requirements and supplied design guidance are "
-            "clearly reflected in the final chart."
+            "True when every supplied requirement and guidance item is "
+            "explicitly implemented in code and reflected in the chart when it "
+            "should be visible. Implicit, partial, or approximate compliance "
+            "should make this `False`."
         )
     )
     no_unprescribed_design: bool = dspy.OutputField(
@@ -293,23 +400,24 @@ class ReviewVisualizationImplementation(dspy.Signature):
     )
     requirement_trace: dict[str, str] = dspy.OutputField(
         desc=(
-            "Dictionary keyed by guideline id or deterministic visible "
-            "requirement key. Each value should briefly say whether that "
-            "requirement was visibly satisfied, missed, or over-interpreted and how."
+            "Dictionary keyed by guideline id or deterministic requirement key. "
+            "Each value should briefly say whether that requirement was "
+            "explicitly implemented, missed, or over-interpreted, with code "
+            "evidence and visible evidence when applicable."
         )
     )
     reasoning: str = dspy.OutputField(
         desc=(
-            "One or two short sentences summarizing visible requirement "
-            "compliance, execution quality, and whether unprescribed visible "
-            "design drift was detected."
+            "One or two short sentences summarizing requirement compliance, "
+            "data-operation correctness, execution quality, and whether "
+            "unprescribed visible design drift was detected."
         )
     )
     feedback: list[str] = dspy.OutputField(
         desc=(
-            "Zero to three short actionable fixes for visible compliance or "
-            "execution issues only. Return an empty list if the implementation "
-            "already looks clean and requirement-faithful."
+            "Zero to three short actionable fixes for requirement, data-"
+            "operation, or execution issues. Return an empty list if the "
+            "implementation already looks clean and requirement-faithful."
         )
     )
 

@@ -10,16 +10,18 @@ def pyexecute(
     expected_type: Type[Any] | tuple[Type[Any], ...] | None = None,
     result_name: str = "result",
 ) -> Any:
-    globals_dict = {"__builtins__": __builtins__}
-    locals_dict = dict(context or {})
+    namespace = {
+        "__builtins__": __builtins__,
+        **(context or {}),
+    }
 
     compiled = compile(code, "<dynamic>", "exec")
-    exec(compiled, globals_dict, locals_dict)
+    exec(compiled, namespace, namespace)
 
-    if result_name not in locals_dict:
+    if result_name not in namespace:
         raise ValueError(f"Code must assign `{result_name}`")
 
-    result = locals_dict[result_name]
+    result = namespace[result_name]
 
     if expected_type is not None and not isinstance(result, expected_type):
         raise TypeError(f"Expected {expected_type}, got {type(result)}")

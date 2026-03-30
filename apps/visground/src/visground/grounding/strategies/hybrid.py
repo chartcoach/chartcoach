@@ -75,11 +75,18 @@ class RetrieveGuidelines(dspy.Signature):
     Retrieve the best design-guidance bundle for one visualization request.
 
     Goal:
-    - return 7-10 guidelines that maximize distinct design volume for one chart
+    - usually return about 6-8 guidelines
+    - fewer is often better if the bundle already feels complete
     - every kept guideline must add a different visible design move
     - think in terms of bundle slots: every slot must pay for itself
+    - favor guidelines that say what to do, not only what to avoid
     - prefer concrete, situation-matched guidance that is clearly implementable
       in Python charting libraries
+    - assume the target output is a static chart for printed publication, not
+      an interactive screen experience
+    - the final set must be not only orthogonal but also highly synergetic:
+      it should read like one coherent chart recipe where the selected
+      guidelines strengthen each other
     - return fewer items instead of weak, generic, or redundant extras
 
     Read `context["objective"]` first. Use all of `context` to infer the real
@@ -88,15 +95,25 @@ class RetrieveGuidelines(dspy.Signature):
     `guidelines` is organized into dynamic basis groups. Each basis group is one
     retrieval lane with `select` and `refine` buckets plus short summaries.
 
+    Medium rule:
+    - select for static printed publication
+    - do not choose guidelines whose value depends on hover, click, tooltip,
+      zoom, pan, toggle, brushing, scrolling, animation, or any other
+      interactive behavior
+    - prefer guidance whose effect is fully visible in one static published
+      figure
+
     Selection procedure:
     1. Identify the primary design decision the request needs first.
-    2. Inspect every basis group. In each group, inspect the bucket matching
+    2. Sketch the minimum bundle jobs needed before selecting, such as one
+       structural decision plus the few strongest compatible refinements.
+    3. Inspect every basis group. In each group, inspect the bucket matching
        `context["objective"]` first.
-    3. Nominate only the strongest candidate from each useful basis group.
-    4. Remove same-effect candidates before final ranking.
-    5. Build the final bundle from candidates that change different visible
+    4. Nominate only the strongest candidate from each useful basis group.
+    5. Remove same-effect candidates before final ranking.
+    6. Build the final bundle from candidates that change different visible
        design levers.
-    6. Only after distinct design volume is strong may you add low-priority
+    7. Only after distinct design volume is strong may you add low-priority
        generic hygiene guidance.
 
     Design-lever rule:
@@ -107,6 +124,15 @@ class RetrieveGuidelines(dspy.Signature):
     - keep two guidelines on the same lever only when both produce clearly
       different visible edits that can coexist without collapsing into the same
       code change
+
+    Actionability rule:
+    - prefer guidelines that prescribe a concrete positive edit such as use,
+      choose, place, sort, label, annotate, align, group, or separate
+    - treat avoid-only or warning-only guidance as lower priority when a more
+      actionable positive guideline would lead to the same good result
+    - keep an avoid-style guideline only when it prevents a major failure that
+      is not already covered by a stronger positive guideline, or when it still
+      implies one clear concrete edit
 
     Dominance test:
     - before keeping any guideline, ask: what unique visible chart change would
@@ -119,18 +145,37 @@ class RetrieveGuidelines(dspy.Signature):
     Bundle budget:
     - usually spend most slots on decisive structure plus orthogonal
       refinements
+    - prefer a smaller stronger bundle over a larger repetitive one
+    - if the main design decision plus the strongest orthogonal refinements are
+      already covered, stop
+    - do not add weak extra guidelines just because the bundle feels short
     - reserve at most one slot for generic hygiene guidance
     - never spend multiple slots on broad reminders that mostly say "make the
       chart clear"
     - if two selected guidelines would mostly turn into the same code edit,
       keep only the stronger one
 
+    No-quota rule:
+    - basis groups are search lanes, not coverage quotas
+    - do not keep a guideline merely to represent one more basis group
+    - if only a few basis groups offer strong non-overlapping guidance, return
+      a short bundle
+
+    Implementation-step rule:
+    - every selected guideline should imply at least one concrete, inspectable
+      chart change that an implementer could point to in code
+    - if two guidelines would naturally be implemented in one code change or
+      one localized visual mutation, keep only the stronger one
+    - prefer guidelines whose effect would be obvious both in the final chart
+      and in the implementation
+
     Same-effect rule:
     - if one kept guideline already determines the chart family, arrangement,
       baseline strategy, ordering, direct-labeling strategy, annotation
       strategy, or accessibility treatment, drop any more generic guideline
       that would produce the same visible result
-    - prefer the more specific, higher-leverage, more situation-matched
+    - prefer the more specific, higher-leverage, more situation-matched, more
+      actionable
       guideline
     - example: if a kept guideline already says to use grouped bars for
       within-category comparison, do not also keep a generic guideline about
@@ -139,7 +184,7 @@ class RetrieveGuidelines(dspy.Signature):
     Hygiene rule:
     - axis labels, descriptive title/caption, contrast, minimum text size, and
       similar universal chart hygiene guidance are fill-only
-    - usually include zero or one hygiene guideline
+    - usually include zero or one hygiene guideline; zero is often correct
     - prefer the single hygiene guideline with the broadest useful effect if
       one is needed at all
     - never let hygiene dominate the bundle when stronger structural,
@@ -158,14 +203,26 @@ class RetrieveGuidelines(dspy.Signature):
       mutation or same implementation step
     - if removing one selected guideline would leave the chart essentially the
       same, drop it
+    - if the last-ranked guideline does not materially expand design volume,
+      drop it
 
     For `select`:
     - choose one coherent chart or structure direction first
-    - use `refine` bucket items only after that direction is clear
+    - good `select` bundles often look like one decisive structure guideline
+      plus only the 2-4 strongest compatible refinements, with at most one
+      hygiene item
+    - once that direction is clear, deliberately add compatible `refine`
+      bucket items that polish, clarify, order, annotate, label, or improve
+      accessibility of the chosen design
+    - do not stop at a bare chart-family decision; the final `select` bundle
+      should already contain nice touches that make the chosen design more
+      complete and publication-ready
     - do not return mutually exclusive chart, structure, or channel guidance
 
     For `refine`:
     - preserve the fixed chart type and core structure
+    - good `refine` bundles are often only 3-5 concrete upgrades that clearly
+      improve the existing design
     - prefer strong improvements that make the current design better without
       reopening the primary chart-choice decision
     - only use `select` bucket items when they are directly applicable without
@@ -175,6 +232,11 @@ class RetrieveGuidelines(dspy.Signature):
     - decisive structure first
     - orthogonal refinements next
     - hygiene last
+    - within a tie, prefer the guideline that tells the implementer exactly
+      what to add or change over one that mostly warns what not to do
+    - the final ranked set should feel internally coherent and mutually
+      reinforcing, not like a pile of unrelated tips
+    - the final set should be as small as possible while still feeling complete
     """
 
     context: dict = dspy.InputField(
@@ -190,8 +252,7 @@ class RetrieveGuidelines(dspy.Signature):
         desc=(
             "Candidate visualization design guidelines grouped by basis label. "
             "Each basis group contains purpose buckets plus compact group "
-            "summaries and compact guideline cards with labels, context, and "
-            "advice excerpts."
+            "summaries and compact guideline cards with labels and context excerpts."
         )
     )
 
@@ -413,7 +474,8 @@ def build_retrieval_context(*, req: GroundingRequest, profile: DataProfile) -> d
     if req["objective"] == "select":
         objective_summary = (
             "Choose the best primary chart or structure for the task, then add "
-            "only compatible refinements that strengthen that chosen direction."
+            "compatible refinements that strengthen, polish, and clarify that "
+            "chosen direction."
         )
         chart_state = "Chart type is not fixed yet."
         must_preserve = [
@@ -424,10 +486,11 @@ def build_retrieval_context(*, req: GroundingRequest, profile: DataProfile) -> d
         retrieval_stages = [
             "1. Lock one coherent chart or structure direction first.",
             "2. Keep only the strongest candidate per visible design lever; drop generic restatements of more specific kept guidelines.",
-            "3. Add orthogonal guidelines from other useful basis groups, with at most one hygiene fill slot at the end.",
+            "3. Add orthogonal refine-style touches from other useful basis groups so the chosen design is already polished and publication-ready, with at most one hygiene fill slot at the end.",
         ]
         avoid = [
             "sets that imply multiple incompatible chart or structure choices",
+            "interactive-only guidance whose value depends on hover, click, zoom, toggles, tooltips, or animation",
             "same-effect generic guidance that adds no new visible design decision beyond a more specific kept guideline",
             "multiple selected guidelines that would mostly collapse into the same code edit",
             "more than one low-priority hygiene reminder in the same bundle",
@@ -453,6 +516,7 @@ def build_retrieval_context(*, req: GroundingRequest, profile: DataProfile) -> d
         ]
         avoid = [
             "guidelines whose main effect is to switch chart type",
+            "interactive-only guidance whose value depends on hover, click, zoom, toggles, tooltips, or animation",
             "guidelines that reopen the core chart-choice decision",
             "same-effect generic guidance that adds no new visible design decision beyond a more specific kept guideline",
             "multiple selected guidelines that would mostly collapse into the same code edit",
@@ -469,14 +533,19 @@ def build_retrieval_context(*, req: GroundingRequest, profile: DataProfile) -> d
         "request": req,
         "retrieval_stages": retrieval_stages,
         "implementation_medium": (
-            "The final chart will be implemented in Python charting libraries. "
-            "Prefer guidance that can be executed robustly, correctly, and with "
-            "clearly visible effect in that medium."
+            "The final chart will be implemented in Python charting libraries "
+            "as a static figure for printed publication. Prefer guidance that "
+            "can be executed robustly, correctly, and with a clearly visible "
+            "effect in one non-interactive published chart. Reject guidance "
+            "whose value depends on hover, click, tooltips, zoom, toggles, "
+            "animation, or other interactive behavior."
         ),
         "application_budget": (
             "The final guideline set should be compact enough to apply together "
             "in one chart without clutter, overengineering, or too many "
-            "simultaneous moving parts."
+            "simultaneous moving parts. A strong bundle usually maps to only "
+            "about 3-6 concrete implementation moves; if that already feels "
+            "complete, return fewer guidelines."
         ),
         "avoid": avoid,
         "data_profile": profile,
@@ -589,7 +658,7 @@ class HybridGroundingStrategy:
         examples = [{"req": req} for req in reqs]
         exec_pairs = [(self.observed_retriever, example) for example in examples]
         parallel = dspy.Parallel(
-            num_threads=self.config.get("num_threads", 4),
+            num_threads=self.config.get("num_threads", 8),
             disable_progress_bar=False,
         )
         with dspy.context(lm=self.config["lm"]):

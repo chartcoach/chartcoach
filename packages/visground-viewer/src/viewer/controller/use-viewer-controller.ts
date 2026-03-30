@@ -57,6 +57,7 @@ function makeInitialState(model: AnywidgetModelLike): ViewerState {
     error: payload.error,
     hover: null,
     inspectCellKey: null,
+    inspectVariantIndex: 0,
     activePopoverId: null,
     popoverAnchor: null,
   };
@@ -112,6 +113,7 @@ export function useViewerController(model: AnywidgetModelLike): ViewerController
       error: nextPayload.error,
       hover: null,
       inspectCellKey: null,
+      inspectVariantIndex: 0,
       activePopoverId: null,
       popoverAnchor: null,
     });
@@ -124,6 +126,7 @@ export function useViewerController(model: AnywidgetModelLike): ViewerController
       error: null,
       hover: null,
       inspectCellKey: null,
+      inspectVariantIndex: 0,
       activePopoverId: null,
       popoverAnchor: null,
     });
@@ -194,6 +197,7 @@ export function useViewerController(model: AnywidgetModelLike): ViewerController
         activePopoverId: isOpen ? null : popoverId,
         popoverAnchor: isOpen ? null : anchor,
         inspectCellKey: isOpen ? stateRef.current.inspectCellKey : null,
+        inspectVariantIndex: isOpen ? stateRef.current.inspectVariantIndex : 0,
         hover: isOpen ? stateRef.current.hover : null,
       });
     },
@@ -203,18 +207,20 @@ export function useViewerController(model: AnywidgetModelLike): ViewerController
         popoverAnchor: null,
       });
     },
-    openInspect(cellKey) {
+    openInspect(cellKey, variantIndex = 0) {
       patch({
         inspectCellKey: cellKey,
+        inspectVariantIndex: variantIndex,
         hover: null,
       });
     },
     closeInspect() {
       patch({
         inspectCellKey: null,
+        inspectVariantIndex: 0,
       });
     },
-    showHover(cell, anchor) {
+    showHover(cell, variantIndex, anchor) {
       if (hoverHideTimerRef.current) {
         window.clearTimeout(hoverHideTimerRef.current);
         hoverHideTimerRef.current = null;
@@ -222,6 +228,7 @@ export function useViewerController(model: AnywidgetModelLike): ViewerController
       patch({
         hover: {
           cell,
+          variantIndex,
           anchor,
         },
       });

@@ -13,8 +13,8 @@ def _(lm_cliproxy):
         "max_items": 4,
     }
     hybrid_strategy_config = {
-        "lm": lm_cliproxy("gpt-5.4"),
-        "num_threads": 8,
+        "lm": lm_cliproxy("gpt-5.3-codex"),
+        "num_threads": 12,
     }
     return hybrid_strategy_config, structured_strategy_config
 
@@ -165,7 +165,6 @@ def _():
     import polars as pl
     from visground.datasets import VisGroundDataset, VisEvalDataset
     from visground.grounding import (
-        AUDIENCE_MODIFIER_IDS,
         GroundingStrategy,
         HybridGroundingStrategy,
         NoneGroundingStrategy,

@@ -160,6 +160,7 @@ class VisGroundViewerBackend(anywidget.AnyWidget):
             "label": label,
             "ui_schema": build_ui_schema(
                 selection=selection,
+                axis_dimensions=normalized["axis_dimensions"],
                 filter_controls=normalized["filter_controls"],
                 layout_controls=normalized["layout_controls"],
                 config=self._config,
