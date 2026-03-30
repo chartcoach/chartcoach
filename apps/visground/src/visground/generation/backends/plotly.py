@@ -14,8 +14,8 @@ class PlotlyBackend(VisualizationBackend[go.Figure]):
         req: VisualizationRequestRecord,
     ) -> list[str]:
         return [
-            "Write valid plotly code to implement the visualization, using best practices from the library.",
-            "Ensure that the assigned chart result is a plotly `Figure` object.",
+            "`library-choice`: Write valid plotly code to implement the visualization, using best practices from the library.",
+            "`return-rule`: Ensure that the assigned chart result is a plotly `Figure` object.",
         ]
 
     def rasterize(self, chart: go.Figure) -> PIL.Image.Image:

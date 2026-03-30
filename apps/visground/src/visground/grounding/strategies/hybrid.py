@@ -1,10 +1,15 @@
+from __future__ import annotations
+
 import dataclasses
-from typing import NotRequired, TypedDict
+import re
+from collections import Counter, defaultdict
+from typing import Literal, NotRequired, TypedDict, cast
 
 import chartcoach as cc
 import dspy
 from visground.cohorts import DataProfile, profile_dataframe
 from visground.datasets import VisEvalDataset
+from visground.lm import make_observed_dspy_module
 
 from ..types import (
     GroundingRecord,
@@ -12,6 +17,52 @@ from ..types import (
     GroundingStrategyMode,
     get_audience_description,
 )
+
+DESCRIPTION_CHAR_LIMIT = 1000
+EXCERPT_CHAR_LIMIT = 1000
+GUIDELINE_LABEL_LIMIT = 16
+GROUP_LABEL_LIMIT = 16
+GROUP_FAMILY_LIMIT = 16
+DANGLING_ROLE = "__dangling__"
+WHITESPACE_RE = re.compile(r"\s+")
+PurposeBucket = Literal["select", "refine"]
+PURPOSE_BUCKETS: tuple[PurposeBucket, ...] = ("select", "refine")
+
+
+class GuidelineCard(TypedDict):
+    id: str
+    title: str
+    description: str
+    labels: list[str]
+    context_excerpt: str
+
+
+class PurposeBuckets(TypedDict):
+    select: list[GuidelineCard]
+    refine: list[GuidelineCard]
+
+
+class PurposeCounts(TypedDict):
+    select: int
+    refine: int
+
+
+class BasisGroup(TypedDict):
+    basis_label: str
+    basis_subcategory: str
+    counts_by_purpose: PurposeCounts
+    label_families: list[str]
+    common_labels: list[str]
+    by_purpose: PurposeBuckets
+
+
+class GuidelinesPayload(TypedDict):
+    basis_groups: list[BasisGroup]
+
+
+class LabelInfo(TypedDict):
+    label: str
+    subcategory: str
 
 
 class HybridGroundingStrategyConfig(TypedDict):
@@ -44,23 +95,29 @@ class RetrieveGuidelines(dspy.Signature):
     Build the final set like a coherent playbook for one chart, not like a bag
     of separately relevant snippets.
 
+    `guidelines` is organized into dynamic basis groups. Every basis group
+    contains purpose buckets plus short group summaries. Treat each basis group
+    as one retrieval lane.
+
+    Required workflow:
+    - inspect every basis group before finalizing the set
+    - use the group-level summaries to quickly understand what each basis lane
+      specializes in before drilling into its cards
+    - within each basis group, inspect the bucket matching
+      `context["objective"]` first
+    - inspect the opposite-purpose bucket only when it adds a genuinely useful
+      complementary item
+    - compare the strongest compatible candidates across basis groups before
+      taking a second item from any one basis group
+
     For `select`:
     - the chart type and core structure are not fixed yet
     - first retrieve decisive guidelines that make one primary design direction
       clearly preferable for this task
     - the set must converge on a single chart or structure choice rather than
       presenting several incompatible alternatives
-    - after the design direction is clear, add only compatible refinement
-      guidelines that make that chosen design richer, clearer, and more
-      well-rounded
-    - once the main design direction is clear, use compatible refinements from
-      other relevant lanes such as annotation/detail, rhetoric/tone/wording,
-      accessibility, color, and polish so the chosen design is not only correct
-      but also well-rounded
-    - use the remaining slots after the decisive design-choice guidelines on
-      orthogonal, compatible refinements rather than on more of the same lane
-    - do not spend most of the budget on generic polish, titles, captions,
-      labels, or annotations before the core design choice is settled
+    - use `refine` bucket items only after the main design direction is clear
+      and only when they strengthen that chosen direction
     - do not return mutually exclusive chart, structure, or channel guidance
 
     For `refine`:
@@ -68,8 +125,8 @@ class RetrieveGuidelines(dspy.Signature):
     - retrieve guidelines that improve the specified design's readability,
       interpretability, comparison support, ordering, labeling, annotation,
       scale choices, accessibility, or polish
-    - exclude guidelines whose main effect is to switch chart type, change the
-      core structure, or reopen the primary design decision
+    - only use `select` bucket items when they are directly applicable without
+      reopening the fixed chart decision
 
     Global rules:
     - every selected guideline should introduce a distinct visible change to the
@@ -79,41 +136,28 @@ class RetrieveGuidelines(dspy.Signature):
     - the selected set must fit within a realistic application budget for one
       chart; do not choose so many simultaneous changes that the final result
       would become cluttered, overengineered, or hard to execute cleanly
-    - after selecting the core high-leverage guidelines, prefer orthogonal
-      guidelines from different compatible lanes rather than stacking many items
-      that all operate on the same narrow aspect
     - prefer situation-specific guidance over generic good practice
     - prefer guidelines whose advice text specifies concrete edits
     - prefer changes that would be fully visible when applied
     - prefer guidelines that can be implemented robustly, correctly, and
       visibly in Python charting libraries rather than guidelines that are only
       theoretically good or likely to become brittle in implementation
-    - prefer strong, bounded guidance over vague, generic, or mostly cautionary
-      guidance
-    - when it improves the set, balance across different relevant topic lanes
-      such as core design choice, rhetoric, tone, wording, accessibility,
-      color, annotation/detail, and polish so the result is well-rounded rather
-      than clustered in one narrow area
+    - balance across useful basis groups when it improves the set, but do not
+      use weak guidelines just to cover a group
+    - large basis groups must not dominate only because they contain more
+      candidates
     - avoid near-duplicates or guidelines that collapse into the same edit
-    - avoid diversity for its own sake; do not add a topic lane unless the
-      guideline is truly situation-matched, compatible, and visibly useful
-    - avoid over-clustering in one lane unless each additional guideline brings
-      a clearly different visible contribution that the set would otherwise miss
-    - avoid sets that would force too many competing visual priorities,
-      annotations, embellishments, or implementation burdens into one chart
     - if two candidates conflict, keep the one that better fits the request and
       discard the other
     - if two candidates are similarly relevant, prefer the one that is more
       realistically executable in chart code and less likely to become buggy,
       fragile, or only weakly visible after implementation
-    - if two candidate sets are similarly strong, prefer the more compact and
-      higher-leverage set that can be applied together without overloading the chart
     - return fewer items instead of padding with weak, ambiguous, or low-value
       guidelines
 
     Usually return 5-8 deeply situation-matched, complementary, synergetic
     guidelines. For `select`, rank decisive selection guidelines first and
-    follow them with compatible refinements from other relevant lanes. For
+    follow them with compatible refinements from other useful basis groups. For
     `refine`, rank the highest-value visible improvements first.
     """
 
@@ -126,13 +170,12 @@ class RetrieveGuidelines(dspy.Signature):
         )
     )
 
-    guidelines: dict[str, str] = dspy.InputField(
+    guidelines: GuidelinesPayload = dspy.InputField(
         desc=(
-            "Candidate visualization design guidelines keyed by guideline ID, where each "
-            "value contains compatibility labels plus the guideline's context and advice "
-            "markdown so actionability, visibility, deep situational fit, "
-            "Python-charting implementability, and cross-guideline synergy can "
-            "be judged"
+            "Candidate visualization design guidelines grouped by basis label. "
+            "Each basis group contains purpose buckets plus compact group "
+            "summaries and compact guideline cards with labels, context, and "
+            "advice excerpts."
         )
     )
 
@@ -140,60 +183,208 @@ class RetrieveGuidelines(dspy.Signature):
         desc=(
             "Ranked list of the best mutually reinforcing guideline IDs to apply. "
             "For select, order the list so decisive chart-choice guidelines come "
-            "first and compatible refinements from other relevant lanes come "
-            "after. For refine, order by highest-value visible improvements first."
+            "first and compatible refinements come after. For refine, order by "
+            "highest-value visible improvements first."
         )
     )
 
 
 def _first_section(guideline: cc.Guideline, role: str) -> cc.Section | None:
     return next(
-        (section for section in guideline.sections if section.role == role), None
+        (section for section in guideline.sections if section.role == role),
+        None,
     )
 
 
-def _selection_labels(guideline: cc.Guideline) -> list[str]:
-    prefixes = (
-        "purpose:",
-        "chart:",
-        "structure:",
-        "channel:",
-        "task:",
-        "scope:",
-        "time:",
-        "literacy:",
-        "audience:",
-        "needs:",
+def _first_non_dangling_section(guideline: cc.Guideline) -> cc.Section | None:
+    return next(
+        (section for section in guideline.sections if section.role != DANGLING_ROLE),
+        None,
     )
-    return sorted(label for label in guideline.labels if label.startswith(prefixes))
 
 
-def guideline_to_selection_md(guideline: cc.Guideline) -> str:
-    context = _first_section(guideline, "context")
-    selection_labels = _selection_labels(guideline)
+def _normalize_and_truncate(text: str, *, limit: int) -> str:
+    normalized = WHITESPACE_RE.sub(" ", text).strip()
+    if len(normalized) <= limit:
+        return normalized
 
-    parts = [
-        "---",
-        f"id: {guideline.id}",
-        f"labels: {guideline.labels}",
-        f"selection_labels: {selection_labels}",
-        "---",
-        "",
-        f"# {guideline.title}",
-        "",
-        f"> {guideline.description}",
+    cutoff = max(limit - 3, 0)
+    truncated = normalized[:cutoff].rstrip()
+    if not truncated:
+        return normalized[:limit]
+    return f"{truncated}..."
+
+
+def _guideline_labels(guideline: cc.Guideline) -> list[str]:
+    labels: list[str] = []
+
+    for label in guideline.labels:
+        if label.startswith(("purpose:", "basis:")):
+            continue
+        if label in labels:
+            continue
+        labels.append(label)
+        if len(labels) >= GUIDELINE_LABEL_LIMIT:
+            break
+
+    return labels
+
+
+def _non_structural_labels(guideline: cc.Guideline) -> list[str]:
+    return [
+        label
+        for label in guideline.labels
+        if not label.startswith(("purpose:", "basis:"))
     ]
 
-    if context is not None:
-        parts.extend(
-            [
-                "",
-                f"## {context.title}",
-                context.content,
-            ]
+
+def _guideline_card(guideline: cc.Guideline) -> GuidelineCard:
+    context = _first_section(guideline, "context")
+
+    return {
+        "id": guideline.id,
+        "title": guideline.title.strip(),
+        "description": _normalize_and_truncate(
+            guideline.description,
+            limit=DESCRIPTION_CHAR_LIMIT,
+        ),
+        "labels": _guideline_labels(guideline),
+        "context_excerpt": (
+            _normalize_and_truncate(context.content, limit=EXCERPT_CHAR_LIMIT)
+            if context is not None
+            else ""
+        ),
+    }
+
+
+def _top_group_label_families(labels: list[str]) -> list[str]:
+    family_counts = Counter(label.split(":", 1)[0] for label in labels)
+    return [
+        family
+        for family, _ in sorted(
+            family_counts.items(),
+            key=lambda item: (-item[1], item[0]),
+        )[:GROUP_FAMILY_LIMIT]
+    ]
+
+
+def _top_group_labels(labels: list[str]) -> list[str]:
+    label_counts = Counter(labels)
+    return [
+        label
+        for label, _ in sorted(
+            label_counts.items(),
+            key=lambda item: (-item[1], item[0]),
+        )[:GROUP_LABEL_LIMIT]
+    ]
+
+
+def _single_label_info_by_guideline(
+    catalog: cc.Catalog,
+    *,
+    category: str,
+    allowed_subcategories: set[str] | None = None,
+) -> dict[str, LabelInfo]:
+    labels_by_guideline: dict[str, list[LabelInfo]] = defaultdict(list)
+
+    for row in catalog.guideline_labels_df.to_dicts():
+        if cast(str, row["category"]) != category:
+            continue
+        labels_by_guideline[cast(str, row["guideline_id"])].append(
+            {
+                "label": cast(str, row["label"]),
+                "subcategory": cast(str, row["subcategory"]),
+            }
         )
 
-    return "\n".join(parts)
+    invalid: list[str] = []
+    label_info_by_guideline: dict[str, LabelInfo] = {}
+
+    for entry in catalog.entries:
+        guideline_id = entry.guideline.id
+        label_infos = labels_by_guideline.get(guideline_id, [])
+
+        if len(label_infos) != 1:
+            invalid.append(
+                f"{guideline_id}: expected exactly one {category} label, "
+                f"got {len(label_infos)}"
+            )
+            continue
+
+        label_info = label_infos[0]
+        if (
+            allowed_subcategories is not None
+            and label_info["subcategory"] not in allowed_subcategories
+        ):
+            invalid.append(
+                f"{guideline_id}: invalid {category} subcategory "
+                f"{label_info['subcategory']!r}"
+            )
+            continue
+
+        label_info_by_guideline[guideline_id] = label_info
+
+    if invalid:
+        raise ValueError(
+            f"Invalid guideline {category} labels:\n" + "\n".join(sorted(invalid))
+        )
+
+    return label_info_by_guideline
+
+
+def _build_guidelines_payload(catalog: cc.Catalog) -> GuidelinesPayload:
+    basis_by_guideline = _single_label_info_by_guideline(
+        catalog,
+        category="basis",
+    )
+    purpose_by_guideline = _single_label_info_by_guideline(
+        catalog,
+        category="purpose",
+        allowed_subcategories=set(PURPOSE_BUCKETS),
+    )
+
+    groups_by_basis: dict[str, BasisGroup] = {}
+    labels_by_basis: dict[str, list[str]] = defaultdict(list)
+
+    for entry in catalog.entries:
+        guideline = entry.guideline
+        basis_info = basis_by_guideline[guideline.id]
+        purpose_info = purpose_by_guideline[guideline.id]
+        purpose = cast(PurposeBucket, purpose_info["subcategory"])
+
+        group = groups_by_basis.setdefault(
+            basis_info["label"],
+            {
+                "basis_label": basis_info["label"],
+                "basis_subcategory": basis_info["subcategory"],
+                "counts_by_purpose": {
+                    "select": 0,
+                    "refine": 0,
+                },
+                "label_families": [],
+                "common_labels": [],
+                "by_purpose": {
+                    "select": [],
+                    "refine": [],
+                },
+            },
+        )
+        group["counts_by_purpose"][purpose] += 1
+        group["by_purpose"][purpose].append(_guideline_card(guideline))
+        labels_by_basis[basis_info["label"]].extend(_non_structural_labels(guideline))
+
+    basis_groups = [
+        groups_by_basis[basis_label] for basis_label in sorted(groups_by_basis)
+    ]
+
+    for basis_group in basis_groups:
+        basis_labels = labels_by_basis[basis_group["basis_label"]]
+        basis_group["label_families"] = _top_group_label_families(basis_labels)
+        basis_group["common_labels"] = _top_group_labels(basis_labels)
+        for purpose in PURPOSE_BUCKETS:
+            basis_group["by_purpose"][purpose].sort(key=lambda card: card["id"])
+
+    return {"basis_groups": basis_groups}
 
 
 def build_retrieval_context(*, req: GroundingRequest, profile: DataProfile) -> dict:
@@ -216,16 +407,8 @@ def build_retrieval_context(*, req: GroundingRequest, profile: DataProfile) -> d
         ]
         retrieval_stages = [
             "1. Pick decisive guidelines that converge on one best chart or structure choice.",
-            "2. Add only compatible refinement guidelines once that choice is clear.",
-            "3. Spend the remaining slots on orthogonal refinements from other relevant lanes so the final set is well-rounded.",
-        ]
-        topic_lanes = [
-            "core design choice",
-            "annotation/detail",
-            "rhetoric/tone/wording",
-            "accessibility",
-            "color",
-            "polish",
+            "2. Compare strong candidates across different basis groups before doubling up within one group.",
+            "3. Add only compatible refinements once the main design direction is clear.",
         ]
         avoid = [
             "sets that imply multiple incompatible chart or structure choices",
@@ -246,16 +429,8 @@ def build_retrieval_context(*, req: GroundingRequest, profile: DataProfile) -> d
         ]
         retrieval_stages = [
             "1. Preserve the prescribed chart and core structure.",
-            "2. Choose only visible refinements that make the current design stronger.",
-            "3. Prefer orthogonal refinements from different useful lanes when they make the final chart more well-rounded.",
-        ]
-        topic_lanes = [
-            "readability/detail",
-            "annotation/wording",
-            "rhetoric/tone",
-            "accessibility",
-            "color",
-            "polish",
+            "2. Prefer one strong compatible improvement from each useful basis group before doubling up.",
+            "3. Keep only visible refinements that strengthen the current design.",
         ]
         avoid = [
             "guidelines whose main effect is to switch chart type",
@@ -271,7 +446,6 @@ def build_retrieval_context(*, req: GroundingRequest, profile: DataProfile) -> d
         "audience_description": audience_description,
         "request": req,
         "retrieval_stages": retrieval_stages,
-        "topic_lanes": topic_lanes,
         "implementation_medium": (
             "The final chart will be implemented in Python charting libraries. "
             "Prefer guidance that can be executed robustly, correctly, and with "
@@ -291,63 +465,90 @@ class GuidelineRetriever(dspy.Module):
     def __init__(
         self,
         viseval_dataset: VisEvalDataset,
-        catalog: cc.Catalog,
+        guidelines: GuidelinesPayload,
     ):
         self._retrieve = dspy.ChainOfThought(RetrieveGuidelines)
         self._viseval_dataset = viseval_dataset
-        self._catalog = catalog
+        self._guidelines = guidelines
 
     def forward(self, *, req: GroundingRequest) -> dspy.Prediction:
         df = self._viseval_dataset.vis_relation(req["id"]).pl()
         profile = profile_dataframe(df)
         return self._retrieve(
             context=build_retrieval_context(req=req, profile=profile),
-            guidelines={
-                entry.guideline.id: guideline_to_selection_md(entry.guideline)
-                for entry in self._catalog.entries
-                if "avoid" not in entry.id
-            },
+            guidelines=self._guidelines,
         )
 
 
 def guideline_to_guidance(guideline: cc.Guideline) -> str:
-    advice = [s for s in guideline.sections if s.role == "advice"][0]
+    section = _first_section(guideline, "advice") or _first_non_dangling_section(
+        guideline
+    )
+    if section is None:
+        return "\n".join(
+            [
+                f"# {guideline.title}",
+                "",
+                f"> {guideline.description}",
+                "",
+                guideline.body,
+            ]
+        )
+
     return "\n".join(
         [
             f"# {guideline.title}",
             "",
             f"> {guideline.description}",
             "",
-            f"## {advice.title}",
-            f"{advice.content}",
+            f"## {section.title}",
+            f"{section.content}",
         ]
     )
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(slots=True)
 class HybridGroundingStrategy:
     catalog: cc.Catalog
     config: HybridGroundingStrategyConfig
     viseval_dataset: VisEvalDataset
     mode: GroundingStrategyMode = "hybrid"
+    retriever: GuidelineRetriever = dataclasses.field(init=False, repr=False)
+    _guidelines_by_id: dict[str, cc.Guideline] = dataclasses.field(
+        init=False,
+        repr=False,
+    )
 
     def __post_init__(self):
+        self._guidelines_by_id = {
+            entry.guideline.id: entry.guideline for entry in self.catalog.entries
+        }
         self.retriever = GuidelineRetriever(
             viseval_dataset=self.viseval_dataset,
-            catalog=self.catalog,
+            guidelines=_build_guidelines_payload(self.catalog),
+        )
+
+    @property
+    def observed_retriever(self) -> dspy.Module:
+        return make_observed_dspy_module(
+            self.retriever,
+            classname="HybridGrounder",
+            observe_kwargs={
+                "name": "hybrid-grounder",
+                "as_type": "retriever",
+                "capture_input": False,
+            },
+            attributes={"tags": ["grounding"]},
         )
 
     def _prediction_to_record(self, pred: dspy.Prediction) -> GroundingRecord:
-        guidelines_by_id = {
-            entry.guideline.id: entry.guideline for entry in self.catalog.entries
-        }
         guideline_ids = [
             guideline_id
             for guideline_id in dict.fromkeys(pred.guideline_ids)
-            if guideline_id in guidelines_by_id
+            if guideline_id in self._guidelines_by_id
         ]
         guidance = [
-            guideline_to_guidance(guidelines_by_id[guideline_id])
+            guideline_to_guidance(self._guidelines_by_id[guideline_id])
             for guideline_id in guideline_ids
         ]
         return {
@@ -358,13 +559,13 @@ class HybridGroundingStrategy:
 
     def retrieve(self, req: GroundingRequest) -> GroundingRecord:
         with dspy.context(lm=self.config["lm"]):
-            res = self.retriever(req=req)
+            res = self.observed_retriever(req=req)
 
         return self._prediction_to_record(res)
 
     def retrieve_many(self, reqs: list[GroundingRequest]) -> list[GroundingRecord]:
         examples = [{"req": req} for req in reqs]
-        exec_pairs = [(self.retriever, example) for example in examples]
+        exec_pairs = [(self.observed_retriever, example) for example in examples]
         parallel = dspy.Parallel(
             num_threads=self.config.get("num_threads", 4),
             disable_progress_bar=False,

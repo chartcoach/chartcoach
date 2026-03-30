@@ -121,6 +121,19 @@ class VisEvalDataset:
 
         return conn
 
+    def database_schema(self, db_id: str) -> list[dict]:
+        conn = self.database(db_id)
+        schema_df = conn.execute("""
+        SELECT
+            table_name,
+            column_name,
+            data_type,
+        FROM information_schema.columns
+        WHERE table_schema NOT IN ('information_schema', 'pg_catalog')
+        ORDER BY table_schema, table_name, ordinal_position
+        """).pl()
+        return schema_df.group_by("table_name").agg(pl.struct("*")).to_dicts()
+
     def vis_relation(self, id: str) -> duckdb.DuckDBPyRelation:
         matched_df = self.df.filter(id=id)
         if matched_df.is_empty():

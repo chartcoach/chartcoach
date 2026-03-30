@@ -7,3 +7,29 @@ class VisualizationRequestRecord(TypedDict):
     id: str
     query: str
     requirements: list[str]
+
+
+class ImplementationReviewResult(TypedDict):
+    """Normalized implementation-review payload attached to generation attempts."""
+
+    no_truncation: bool
+    no_overlap: bool
+    text_readable: bool
+    data_readable: bool
+    implementation_acceptable: bool
+    requirements_followed: bool
+    no_unprescribed_design: bool
+    requirement_trace: dict[str, str]
+    implementation_reasoning: str
+    implementation_feedback: list[str]
+
+
+class VisGenOutput(TypedDict):
+    """Public generation output persisted by the workbench."""
+
+    id: str
+    code: str
+    visualization_type: str
+    query_interpretation: str
+    design_rationale: list[str]
+    grounding_trace: dict[str, str]

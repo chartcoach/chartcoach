@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import marimo
 
 __generated_with = "0.21.1"
@@ -7,6 +5,116 @@ app = marimo.App(width="columns")
 
 
 @app.cell(column=0, hide_code=True)
+def _(mo):
+    mo.md(r"""
+    # SQL - NL Query Consistency
+    """)
+    return
+
+
+@app.cell
+def _(viseval_dataset):
+    viseval_dataset.df
+    return
+
+
+@app.cell(hide_code=True)
+def _(
+    SQLNLQueryConsistencyChecker,
+    consistency_reward_fn,
+    dspy,
+    row_to_consistency_check_input,
+    viseval_dataset,
+):
+    base_consistency_checker = dspy.Predict(SQLNLQueryConsistencyChecker)
+    consistency_checker = dspy.Refine(
+        module=base_consistency_checker,
+        N=3,
+        reward_fn=consistency_reward_fn,
+        threshold=1.0,
+    )
+
+    exec_pairs = [
+        (consistency_checker, row_to_consistency_check_input(row))
+        for row in viseval_dataset.df.iter_rows(named=True)
+    ]
+    parallel = dspy.Parallel(num_threads=8)
+    return
+
+
+@app.cell(hide_code=True)
+def _(dspy, viseval_dataset):
+    def row_to_consistency_check_input(row: dict) -> dspy.Example:
+        id = row["id"]
+        data = row["data"]
+        db_id = data["db_id"]
+        database_schema = viseval_dataset.database_schema(db_id)
+        nl_query = data["nl_queries"][0]
+        sql = data["vis_query"]["data_part"]["sql_part"]
+
+        return dspy.Example(
+            id=id,
+            database_schema=database_schema,
+            nl_query=nl_query,
+            sql=sql,
+        ).with_inputs(
+            "id",
+            "database_schema",
+            "nl_query",
+            "sql",
+        )
+
+    def consistency_reward_fn(args: dict, pred: dspy.Prediction) -> float:
+        # No need to check SQL executability when the prediction is already consistent
+        if pred.consistent and pred.repaired_sql is None:
+            return 1.0
+
+        # If the prediction is inconsistent but no repaired SQL is provided, it's a failure
+        if not pred.consistent and pred.repaired_sql is None:
+            return 0.0
+
+        # Ensure that the generated repaired SQL can be executed
+        conn = viseval_dataset.vis_relation(args["id"])
+        try:
+            conn.query(args["sql"])
+            return 1.0
+        except Exception:
+            return 0.0
+
+    return consistency_reward_fn, row_to_consistency_check_input
+
+
+@app.cell(hide_code=True)
+def _(dspy):
+    class SQLNLQueryConsistencyChecker(dspy.Signature):
+        """Check whether a SQL query is semantically consistent with a natural-language query and repair it if needed."""
+
+        id: str = dspy.InputField(
+            desc="Unique identifier for the consistency check example."
+        )
+        database_schema: list[dict] = dspy.InputField(
+            desc="Database schema as structured metadata for available tables, columns, and relationships."
+        )
+        nl_query: str = dspy.InputField(
+            desc="Natural-language request describing the intended result or visualization."
+        )
+        sql: str = dspy.InputField(
+            desc="SQL query to evaluate against the natural-language request and schema."
+        )
+        consistent: bool = dspy.OutputField(
+            desc="True if the SQL can reasonably answer the natural-language request given the schema; otherwise False."
+        )
+        reason: str | None = dspy.OutputField(
+            desc="If consistent is False, provide a brief explanation of the inconsistency. Otherwise, return null."
+        )
+        repaired_sql: str | None = dspy.OutputField(
+            desc="A minimally edited SQL query that makes the query consistent with the natural-language request while staying as close as possible to the original. Return null if the original SQL is already consistent."
+        )
+
+    return (SQLNLQueryConsistencyChecker,)
+
+
+@app.cell(column=1, hide_code=True)
 def _(mo):
     mo.md(r"""
     # SQL Non-Determinism Fixes
@@ -47,7 +155,7 @@ def _(pl, viseval_dataset):
     return (discover_nondeterministic_queries,)
 
 
-@app.cell(column=1, hide_code=True)
+@app.cell(column=2, hide_code=True)
 def _(mo):
     mo.md(r"""
     # SQL Execution Fixes
@@ -228,7 +336,7 @@ def _():
     return json, pathlib
 
 
-@app.cell(column=2, hide_code=True)
+@app.cell(column=3, hide_code=True)
 def _(mo):
     mo.md(r"""
     # Database Fixes
@@ -247,7 +355,7 @@ def _(attempt, viseval_dataset):
     return
 
 
-@app.cell(column=3, hide_code=True)
+@app.cell(column=4, hide_code=True)
 def _(mo):
     mo.md(r"""
     # VisEval Dataset
@@ -298,7 +406,7 @@ def _():
 
 
 @app.cell(hide_code=True)
-def _():
+def _(lm_cliproxy):
     import dspy
 
     dspy.configure_cache(
@@ -306,15 +414,8 @@ def _():
         enable_memory_cache=True,
     )
 
-    def lm(model: str) -> dspy.LM:
-        return dspy.LM(
-            f"openai/{model}",
-            api_base="http://localhost:8317/v1",
-            api_key="sk-",
-        )
-
     dspy.configure(
-        lm=lm("gpt-5.4"),
+        lm=lm_cliproxy("gpt-5.4"),
         track_usage=True,
     )
     return (dspy,)
@@ -325,8 +426,9 @@ def _():
     import marimo as mo
     import polars as pl
     from visground.datasets import VisEvalDataset
+    from visground.lm import lm_cliproxy
 
-    return VisEvalDataset, mo, pl
+    return VisEvalDataset, lm_cliproxy, mo, pl
 
 
 if __name__ == "__main__":

@@ -47,7 +47,7 @@ def _():
     cohort_config = {
         "target_n": 7 * 1,
         "max_tasks_per_db": 6,
-        "seed": 420,
+        "seed": 42,
     }
     return (cohort_config,)
 

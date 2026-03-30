@@ -16,12 +16,6 @@ def _(mo):
     return
 
 
-@app.cell
-def _():
-    NUM_ITEMS_FOR_EVOLUTION = 5000000
-    return (NUM_ITEMS_FOR_EVOLUTION,)
-
-
 @app.cell(hide_code=True)
 def _(
     REPO_ROOT,
@@ -60,7 +54,6 @@ def _(
     Catalog,
     DEFAULT_CLIENT_CONFIG,
     MISC_PROMPT_DIGEST,
-    NUM_ITEMS_FOR_EVOLUTION,
     itertools,
     misc_paper_to_catalog_entries,
     parallel_map,
@@ -74,7 +67,7 @@ def _(
             "reasoning": DEFAULT_CLIENT_CONFIG["reasoning"],
         }
         for item in processed_misc_items
-    ][:NUM_ITEMS_FOR_EVOLUTION]
+    ]
     misc_entry_lists = parallel_map(
         fn=param_collapsed(misc_paper_to_catalog_entries),
         inputs=misc_tasks,
@@ -250,7 +243,6 @@ def _(
     DATAWRAPPER_POST_PDF_PATHS,
     DATAWRAPPER_PROMPT_DIGEST,
     DEFAULT_CLIENT_CONFIG,
-    NUM_ITEMS_FOR_EVOLUTION,
     datawrapper_post_pdf_to_catalog_entries,
     itertools,
     parallel_map,
@@ -263,7 +255,7 @@ def _(
             "reasoning": DEFAULT_CLIENT_CONFIG["reasoning"],
         }
         for post_pdf_path in DATAWRAPPER_POST_PDF_PATHS
-    ][:NUM_ITEMS_FOR_EVOLUTION]
+    ]
     dw_entry_lists = parallel_map(
         fn=param_collapsed(datawrapper_post_pdf_to_catalog_entries),
         inputs=dw_tasks,
@@ -470,7 +462,6 @@ def _(
     CHARTABILITY_PROMPT_DIGEST,
     Catalog,
     DEFAULT_CLIENT_CONFIG,
-    NUM_ITEMS_FOR_EVOLUTION,
     chartability_item_to_catalog_entry,
     json,
     parallel_map,
@@ -484,7 +475,7 @@ def _(
             "reasoning": DEFAULT_CLIENT_CONFIG["reasoning"],
         }
         for ch_item in CHARTABILITY_ITEMS
-    ][:NUM_ITEMS_FOR_EVOLUTION]
+    ]
     ch_entries = parallel_map(
         fn=param_collapsed(chartability_item_to_catalog_entry),
         inputs=ch_tasks,
@@ -679,7 +670,6 @@ def _(
     COLLATED_PROMPT_DIGEST,
     Catalog,
     DEFAULT_CLIENT_CONFIG,
-    NUM_ITEMS_FOR_EVOLUTION,
     collated_item_to_catalog_entries,
     collated_perception_knowledge_items,
     itertools,
@@ -693,7 +683,7 @@ def _(
             "reasoning": DEFAULT_CLIENT_CONFIG["reasoning"],
         }
         for collated_item in collated_perception_knowledge_items
-    ][:NUM_ITEMS_FOR_EVOLUTION]
+    ]
     prc_entry_lists = parallel_map(
         fn=param_collapsed(collated_item_to_catalog_entries),
         inputs=prc_tasks,
@@ -1015,7 +1005,6 @@ def _(mo):
 def _(
     Catalog,
     DEFAULT_CLIENT_CONFIG,
-    NUM_ITEMS_FOR_EVOLUTION,
     TALKING_CHARTS_PROMPT_DIGEST,
     json,
     parallel_map,
@@ -1027,27 +1016,41 @@ def _(
 ):
     tc_tasks = [
         {
+            "guideline_index": guideline_index,
             "guideline": guideline,
             "references": tc_references,
             "model": DEFAULT_CLIENT_CONFIG["model"],
             "reasoning": DEFAULT_CLIENT_CONFIG["reasoning"],
         }
-        for guideline in tc_findings["guidelines"]
-    ][:NUM_ITEMS_FOR_EVOLUTION]
+        for guideline_index, guideline in enumerate(tc_findings["guidelines"], start=1)
+    ]
 
-    tc_entries = parallel_map(
+    tc_results = parallel_map(
         fn=param_collapsed(tc_guideline_to_catalog_entry),
         inputs=tc_tasks,
         n_jobs=16,
         desc="Processing Talking Charts guidelines",
         cache_key_provider=lambda inp: "___".join(
             [
-                string_hash(json.dumps(inp)),
+                "talking-charts-v2",
+                string_hash(json.dumps(inp, sort_keys=True)),
                 TALKING_CHARTS_PROMPT_DIGEST,
             ]
         ),
     )
-    tc_entries = [entry for entry in tc_entries if entry is not None]
+    tc_failures = [failure for entry, failure in tc_results if failure is not None]
+    if tc_failures:
+        raise ValueError(
+            "Talking Charts extraction failed for the following findings:\n- "
+            + "\n- ".join(tc_failures)
+        )
+
+    tc_entries = [entry for entry, _ in tc_results if entry is not None]
+    if len(tc_entries) != len(tc_tasks):
+        raise ValueError(
+            f"Talking Charts extraction produced {len(tc_entries)} entries for "
+            f"{len(tc_tasks)} findings."
+        )
     tc_catalog = Catalog(tc_entries)
     tc_catalog.df
     return (tc_catalog,)
@@ -1061,6 +1064,8 @@ def _(
     build_tc_prompt,
     ccp,
     client,
+    explain_guideline_rejection,
+    fence,
     finalize_guideline_batch,
     list_ref_ids,
     list_tc_guideline_references,
@@ -1068,11 +1073,77 @@ def _(
     unfence,
 ):
     def tc_guideline_to_catalog_entry(
+        guideline_index: int,
         guideline: dict,
         references: list[str],
         model: str,
         reasoning: dict | None = None,
-    ) -> Entry | None:
+    ) -> tuple[Entry | None, str | None]:
+        def preview_response(text: str, limit: int = 280) -> str:
+            compact = " ".join(text.split())
+            if len(compact) <= limit:
+                return compact
+            return compact[: limit - 3] + "..."
+
+        def parse_single_guideline_response(
+            response_text: str,
+        ) -> tuple[Guideline | None, str | None]:
+            if not response_text.strip():
+                return None, "model returned empty output"
+
+            fenced_guidelines = unfence(response_text)
+            if len(fenced_guidelines) != 1:
+                return (
+                    None,
+                    "expected exactly one fenced guideline block, "
+                    f"got {len(fenced_guidelines)}",
+                )
+
+            try:
+                parsed_guideline = ccp.parse_guideline(fenced_guidelines[0])
+            except Exception as exc:  # noqa: BLE001
+                return None, f"guideline markdown could not be parsed: {exc}"
+
+            failure_reason = explain_guideline_rejection(
+                parsed_guideline,
+                required_basis=TALKING_CHARTS_PROMPT_SPEC["required_basis"],
+            )
+            if failure_reason is not None:
+                return None, failure_reason
+
+            guideline_batch = finalize_guideline_batch(
+                [parsed_guideline],
+                required_basis=TALKING_CHARTS_PROMPT_SPEC["required_basis"],
+            )
+            if not guideline_batch:
+                return None, "guideline failed final deduplication"
+            return guideline_batch[0], None
+
+        def build_retry_prompt(
+            *,
+            base_prompt: str,
+            response_text: str,
+            failure_reason: str,
+        ) -> str:
+            previous_response = response_text.strip() or "<empty response>"
+            return "\n\n".join(
+                [
+                    base_prompt,
+                    "The previous response was invalid and must be repaired.",
+                    f"Validation failure: {failure_reason}.",
+                    (
+                        "Do not omit or skip this Talking Charts finding. "
+                        "Repair the same item into exactly one valid guideline."
+                    ),
+                    (
+                        "Return only one fenced ```md block with valid frontmatter "
+                        "and source-faithful context, exceptions, check, and fix sections."
+                    ),
+                    "Previous invalid response:",
+                    fence(previous_response, lang="text"),
+                ]
+            )
+
         # Enumerate all the reference IDs available for Talking Charts
         allowed_ref_ids = list_ref_ids(references)
         required_ref_ids = sorted(
@@ -1080,35 +1151,50 @@ def _(
         )
 
         # Map knowledge to our representation
-        prompt = build_tc_prompt(guideline, required_ref_ids, allowed_ref_ids)
-        response = client.responses.create(
-            model=model,
-            reasoning=reasoning,
-            input=[
-                {
-                    "role": "user",
-                    "content": prompt,
-                }
-            ],
-        )
-        response_text = response.output_text
+        base_prompt = build_tc_prompt(guideline, required_ref_ids, allowed_ref_ids)
+        prompt = base_prompt
+        last_failure = "unknown failure"
+        last_response_text = ""
+        guideline_obj: Guideline | None = None
 
-        # Parse response and associate the references with the entry
-        if not response_text.strip():
-            return None
+        for _ in range(3):
+            response = client.responses.create(
+                model=model,
+                reasoning=reasoning,
+                input=[
+                    {
+                        "role": "user",
+                        "content": prompt,
+                    }
+                ],
+            )
+            response_text = response.output_text
+            candidate_guideline, failure_reason = parse_single_guideline_response(
+                response_text
+            )
+            if candidate_guideline is not None:
+                guideline_obj = candidate_guideline
+                break
 
-        fenced_guidelines = unfence(response_text)
-        if not fenced_guidelines:
-            return None
+            last_failure = failure_reason or "unknown failure"
+            last_response_text = response_text
+            prompt = build_retry_prompt(
+                base_prompt=base_prompt,
+                response_text=response_text,
+                failure_reason=last_failure,
+            )
 
-        md_content = fenced_guidelines[0]
-        guideline_batch = finalize_guideline_batch(
-            [ccp.parse_guideline(md_content)],
-            required_basis=TALKING_CHARTS_PROMPT_SPEC["required_basis"],
-        )
-        if not guideline_batch:
-            return None
-        guideline_obj: Guideline = guideline_batch[0]
+        if guideline_obj is None:
+            failure = (
+                f"#{guideline_index} {guideline['checklist_group']} / "
+                f"{guideline['item']}: {last_failure}"
+            )
+            if last_response_text.strip():
+                failure += " | response preview: " + preview_response(
+                    last_response_text
+                )
+            return None, failure
+
         references: list[str] = ccp.parse_bibtex(
             pick_refs(
                 required_ref_ids,
@@ -1116,7 +1202,7 @@ def _(
             )
         )
 
-        return Entry(guideline=guideline_obj, references=references)
+        return Entry(guideline=guideline_obj, references=references), None
 
     return (tc_guideline_to_catalog_entry,)
 
@@ -1125,18 +1211,24 @@ def _(
 def _(prompt_contract_digest):
     TALKING_CHARTS_PROMPT_SPEC = {
         "required_basis": "basis:rhetorical",
-        "allow_empty": True,
+        "allow_empty": False,
         "cardinality_instruction": (
-            "Return exactly one fenced ```md block if the finding supports one directly actionable guideline. "
-            "Otherwise, return an empty string."
+            "Return exactly one fenced ```md block. Every Talking Charts finding in this dataset must be converted into one guideline; do not omit, merge, or skip any item. "
         ),
         "evidence_scope": (
             "Strictly base the guideline on the codified knowledge provided here and nothing else. Do not add rhetorical or framing advice that is not actually discussed in this processed finding."
         ),
         "source_specific_rules": [
             (
+                "Every Talking Charts item in this curated set must become one guideline. "
+                "If a finding is broad or evaluative, rewrite it as the narrowest source-faithful critique, framing, context, annotation, or workflow step rather than omitting it."
+            ),
+            (
                 "Translate rhetorical or interpretive findings into concrete framing, "
                 "annotation, titling, grouping, or revision guidance."
+            ),
+            (
+                "Workflow, audience-testing, or review-process findings may become review or testing guidance when that is the actionable move directly supported by the evidence."
             ),
             (
                 "When the finding is mainly about framing, context, credibility, resonance, or workflow, emit an appropriate `communication:*` label."
@@ -1145,12 +1237,9 @@ def _(prompt_contract_digest):
                 "When the finding is a cross-grammar finishing move that makes charts visibly clearer or stronger, emit an appropriate `polish:*` label."
             ),
             (
-                "Do not convert a general communication observation into a generic chart best practice unless the codified finding clearly supports that action."
-            ),
-            (
                 "Keep source-specific caption, context, or credibility examples out of title and advice unless that specific example is the finding."
             ),
-            "If the finding cannot be operationalized into chart creation, feedback, or rework, omit it.",
+            "Ensure that you convert every single item to a dedicated guideline with no exception. For 32 items I need 32 output guidelines.",
         ],
     }
     TALKING_CHARTS_PROMPT_DIGEST = prompt_contract_digest(
@@ -1518,30 +1607,55 @@ def _(Guideline):
             if section.role != "__dangling__"
         }
 
+    def explain_guideline_rejection(
+        guideline: Guideline,
+        *,
+        required_basis: str,
+    ) -> str | None:
+        guideline = _with_required_basis(guideline, required_basis)
+        labels = guideline.labels
+
+        purpose_labels = [label for label in labels if label.startswith("purpose:")]
+        if len(purpose_labels) != 1:
+            return f"expected exactly one purpose label, got {purpose_labels or 'none'}"
+
+        basis_labels = [label for label in labels if label.startswith("basis:")]
+        if basis_labels != [required_basis]:
+            return (
+                f"expected basis label {required_basis}, got {basis_labels or 'none'}"
+            )
+
+        if _has_self_conflict(labels):
+            return "guideline contains conflicting use and avoid labels for the same choice"
+
+        sections = _section_map(guideline)
+        required_roles = {"context", "exceptions", "check"}
+        for role in sorted(required_roles):
+            if len(sections.get(role, "")) < 24:
+                return f"section '{role}' is missing or too short"
+
+        if purpose_labels[0] == "purpose:select" and not _same_family_select_contrast(
+            labels
+        ):
+            return (
+                "purpose:select guidelines must contrast a same-family "
+                "use label and avoid label"
+            )
+
+        return None
+
     def _validate_guideline(
         guideline: Guideline,
         *,
         required_basis: str,
     ) -> Guideline | None:
         guideline = _with_required_basis(guideline, required_basis)
-        labels = guideline.labels
-
-        purpose_labels = [label for label in labels if label.startswith("purpose:")]
-        if len(purpose_labels) != 1:
-            return None
-        basis_labels = [label for label in labels if label.startswith("basis:")]
-        if basis_labels != [required_basis]:
-            return None
-        if _has_self_conflict(labels):
-            return None
-
-        sections = _section_map(guideline)
-        required_roles = {"context", "exceptions", "check"}
-        if any(len(sections.get(role, "")) < 24 for role in required_roles):
-            return None
-
-        if purpose_labels[0] == "purpose:select" and not _same_family_select_contrast(
-            labels
+        if (
+            explain_guideline_rejection(
+                guideline,
+                required_basis=required_basis,
+            )
+            is not None
         ):
             return None
 
@@ -1577,7 +1691,7 @@ def _(Guideline):
             unique_guidelines.append(guideline)
         return unique_guidelines
 
-    return (finalize_guideline_batch,)
+    return explain_guideline_rejection, finalize_guideline_batch
 
 
 @app.cell(hide_code=True)

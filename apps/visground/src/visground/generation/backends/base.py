@@ -38,10 +38,15 @@ class VisualizationBackend(ABC, Generic[T]):
         tablespec_dict = describe_dataframe(df)
         requirements = [
             *self.build_requirements(req),
-            "---",
-            "**Design Guidance**",
-            *req["requirements"],
         ]
+        if req["requirements"]:
+            requirements.extend(
+                [
+                    "**Design Guidance**",
+                    *req["requirements"],
+                ]
+            )
+
         return dspy.Example(
             id=req["id"],
             query=req["query"],
