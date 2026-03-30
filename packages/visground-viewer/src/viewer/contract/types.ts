@@ -6,30 +6,28 @@ export type AnywidgetModelLike = {
   save_changes(): void;
   on(name: string, callback: (...args: unknown[]) => void): void;
   off(name: string, callback: (...args: unknown[]) => void): void;
-  send?(content: unknown): void;
+};
+
+export type ViewerLayoutSelection = {
+  row_dimension: string;
+  column_dimension: string;
+  group_dimension: string | null;
 };
 
 export type ViewerSelection = {
   vis_id: string;
-  request_chart: string | null;
-  objective: string;
-  overview_variant: string;
-  dimension_filters: Record<string, string | null>;
+  filters: Record<string, string | null>;
+  layout: ViewerLayoutSelection;
 };
 
 export type CatalogEntry = {
   vis_id: string;
-  nl_query: string;
-  request_chart: string | null;
+  label: string;
+  search_text: string;
 };
 
 export type ViewerOption = {
   value: string | null;
-  label: string;
-};
-
-export type ViewerVariantOption = {
-  value: string;
   label: string;
 };
 
@@ -40,8 +38,15 @@ export type ViewerFilterControl = {
   value: string | null;
 };
 
+export type ViewerLayoutControl = {
+  id: "row_dimension" | "column_dimension" | "group_dimension";
+  label: string;
+  options: ViewerOption[];
+  value: string | null;
+};
+
 export type ViewerToolbarPill = {
-  id: "objective" | "compare";
+  id: "filters" | "layout";
   label: string;
 };
 
@@ -76,18 +81,6 @@ export type CandidateRecord = {
   guideline_count: number;
   overall_score?: number | null;
   score_breakdown: CandidateScore[];
-};
-
-export type AssetPayload = {
-  visgen_id: string;
-  variant: "hover" | "detail";
-  image_url: string | null;
-  image_meta: CandidateImageMeta | null;
-  error?: string | null;
-};
-
-export type AssetPayloads = {
-  assets: AssetPayload[];
 };
 
 export type MatrixAxisValue = {
@@ -134,17 +127,13 @@ export type ViewerUiSchema = {
   toolbar?: {
     pills: ViewerToolbarPill[];
   };
-  scope_filters: ViewerFilterControl[];
-  variant_controls?: {
-    label: string;
-    value: string;
-    options: ViewerVariantOption[];
-  };
+  filters: ViewerFilterControl[];
+  layout_controls: ViewerLayoutControl[];
   matrix_axes: MatrixAxes;
 };
 
 export type OverviewPayload = {
-  nl_query: string;
+  label: string;
   matrix: MatrixPayload;
   ui_schema: ViewerUiSchema;
 };
@@ -160,11 +149,11 @@ export type ViewerHoverState = {
   anchor: HTMLElement;
 };
 
-export type ViewerAssetsState = Record<string, Partial<Record<"hover" | "detail", AssetPayload>>>;
 export type ViewerBusyState = "initial" | "case" | "update" | null;
 
 export type ViewerState = {
   catalog: CatalogEntry[];
+  debug: boolean;
   selection: ViewerSelection;
   overview: OverviewPayload | null;
   searchTerm: string;
@@ -172,9 +161,8 @@ export type ViewerState = {
   error: string | null;
   hover: ViewerHoverState | null;
   inspectCellKey: string | null;
-  activePopoverId: "case" | "objective" | "compare" | null;
+  activePopoverId: "case" | "filters" | "layout" | null;
   popoverAnchor: HTMLElement | null;
-  assets: ViewerAssetsState;
 };
 
 export type ViewerRefs = {
@@ -186,9 +174,12 @@ export type ViewerRefs = {
 export type ViewerActions = {
   stepCase(delta: number): void;
   jumpToCase(visId: string): void;
-  changeScopeFilter(filterId: string, value: string | null): void;
-  changeOverviewVariant(value: string): void;
-  togglePopover(popoverId: "case" | "objective" | "compare", anchor: HTMLElement): void;
+  changeFilter(filterId: string, value: string | null): void;
+  changeLayout(
+    controlId: "row_dimension" | "column_dimension" | "group_dimension",
+    value: string | null,
+  ): void;
+  togglePopover(popoverId: "case" | "filters" | "layout", anchor: HTMLElement): void;
   closePopover(): void;
   openInspect(cellKey: string): void;
   closeInspect(): void;

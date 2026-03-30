@@ -3,14 +3,16 @@
 id: "unique-guideline-slug"
 
 # TITLE: Specific imperative instruction. State the portable principle at the design-lever level.
-# Avoid source-shaped named examples, tools, palettes, devices, or domains in the title unless that named item is itself the supported finding.
+# Keep the title retrieval-stable and principle-level. Reserve concrete supported instances for `advice`, not the title,
+# unless that named item is itself the supported finding.
 title: "Use a precise action when the condition is met"
 
 # METADATA
 bibliography: references.bib
 
 # DESCRIPTION: A structured summary capturing the guideline's logic.
-# Keep the description retrieval-stable and principle-level. Do not narrow a broader supported principle into a niche named recommendation unless the source makes that narrow form the real finding.
+# Keep the description retrieval-stable and principle-level. Let `advice` carry the concrete supported instances.
+# Do not narrow a broader supported principle into a niche named recommendation here unless the source makes that narrow form the real finding.
 # Use [use/prefer] and [improve/maximize] for constructive guidance.
 # Use [avoid/minimize] and [prevent/mitigate] for proscriptive guidance.
 description: "For [task/scope/time context], [use|prefer|avoid] [design lever] on [chart/structure/data context] to [improve|maximize|prevent] [quality target or risk] and [mitigate|address] [common mistakes] for [audience/literacy/situational context]."
@@ -94,8 +96,13 @@ STRICT CONTRACT
 - This document records one directly actionable visualization guideline.
 - The language is clear, direct, precise, and accessible. It avoids fluff, hype, academic padding, and narrative source attribution.
 - Source faithfulness is strict. Every claim, condition, label, exception, check, fix, and example must be explicitly discussed in the processed source or be a minimal operational rewrite of it.
-- Primary retrieval surfaces are `title`, `description`, and `advice`. Keep them portable across grammars and models whenever the source supports a broader principle.
-- Named exemplars, tools, palettes, devices, platforms, or domain-specific artifacts stay out of `title`, `description`, and `advice` unless they are themselves the supported finding.
+- `title` and `description` are the portable retrieval surfaces. Keep them principle-level whenever the source supports a broader rule.
+- `advice` is the operational generation surface. It starts with the portable rule, then immediately grounds that rule in 1-3 concrete source-faithful instances.
+- Named exemplars, tools, palettes, devices, platforms, or domain-specific artifacts stay out of `title` and `description` unless they are themselves the supported finding. `advice` may name supported concrete instances when that is necessary to make the rule directly actionable.
+- Concrete instances in `advice` should stay portable. Abstract away source-specific domain nouns, row labels, one-off measures, literal question text, and scenario details unless that specificity is itself the supported finding.
+- `advice` must not stop at broad adjectives such as `familiar`, `basic`, `clear`, `readable`, `simple`, or `appropriate` without also naming the manipulated design lever and at least one concrete action or contrast.
+- Each guideline advocates one well-defined principle or one bounded contrast. Do not mix multiple acceptable alternatives into the same guideline.
+- If X is appropriate in one condition and Y is appropriate in another, emit separate guidelines with separate contexts rather than one `use X or Y` rule.
 - Prefer omission to hallucinated specificity, generic cleanup advice, or plausible-but-unsupported applicability.
 - Each section is semantically pure, self-contained, and efficient for embedding. The first sentence names the concrete chart element, encoding, task, audience, or constraint directly.
 - The same design lever is named with the same words across sections. Decorative synonyms and pronoun-only openings are avoided.
@@ -109,7 +116,7 @@ STRICT CONTRACT
     2. Polarity is ":avoid" if the guideline explicitly WARNS AGAINST or DISCOURAGES a choice.
     3. NO polarity (Neutral) is used if the label represents a CONTEXTUAL CONDITION (e.g., "task:compare" means "this guideline applies when the user wants to compare").
 - Guidelines with "purpose:select" MUST include at least one ":use" label and at least one ":avoid" label for the relevant chart or structure contrast to clarify the recommended design choice.
-- Guidelines with "purpose:select" MUST encode a bounded contrast. If the rule cannot state when to use X instead of Y, it should be emitted as `refine` or omitted.
+- Guidelines with "purpose:select" MUST encode one bounded contrast. Recommend one option against one alternative in the same family; do not bundle several acceptable choices into the same rule. If the rule cannot state when to use X instead of Y, it should be emitted as `refine` or omitted.
 - Encoding, channel, component, palette, caption, annotation, accessibility, and framing choices belong to `purpose:refine` even when they contrast alternatives.
 - Guidelines with "purpose:refine" primarily use neutral contextual labels and ":use" labels for the specific components or channels being polished.
 - Labels are a sparse retrieval index rather than a restatement of the whole guideline.
@@ -124,21 +131,30 @@ STRICT CONTRACT
 - The generated output retains only the role comments after headings; all other comments are omitted.
 -->
 
-## [Specific advice heading about X] <!-- role: advice -->
+## [Portable advice heading naming the design move] <!-- role: advice -->
 
 <!--
 Section form:
-- 1-2 imperative sentences.
-- The first sentence names one controllable design lever directly.
-- State the portable principle first. Keep named examples or source-specific artifacts out unless they are the actual finding.
+- The heading is short, portable, and design-lever focused.
+- The heading names the action or manipulated object, not the exact source scenario, domain entity, row label, or literal question text.
+- The heading should read like a reusable control label for downstream generation, not like a source-specific note.
+- Two short imperative sentences.
+- The first sentence names one controllable design lever directly and states the portable principle.
+- The second sentence gives 1-3 inline concrete source-faithful instances, preferably introduced with `For example, ...`.
+- Concrete instances name chart families, components, annotations, labels, layout changes, or other explicit design actions, not only broad quality words.
+- Keep the concrete example portable. Name the design role, comparison, summary field, annotation, or structural move, not the exact source scenario, domain entity, or literal question text unless that specificity is itself the finding.
+- For `purpose:select`, name at least one supported `use` option and one supported `avoid` option when the evidence supports a contrast.
+- For `purpose:refine`, name at least one explicit manipulated object such as the axis, legend, label, annotation, title, caption, baseline, order, palette, mark size, or spacing.
+- Do not pad the advice with unsupported canonical option lists or generic chart inventories.
+- Do not hedge with unresolved `or` choices between alternative chart types, components, or actions. If the alternatives require different contexts, they belong in separate guidelines.
 - The structure is action + object + condition or goal.
-- Multi-part recommendations appear only when the parts are inseparable.
+- Multi-part recommendations appear only when the parts are inseparable steps of one action, not alternative branches.
 - No rationale.
 - No citations.
 - No lists.
 -->
 
-[1-2 imperative sentences naming one concrete design move.]
+[Portable advice heading plus two short imperative sentences: first the portable principle, then an inline concrete `For example, ...` sentence naming 1-3 supported portable actions.]
 
 ## [Specific evidence heading about why X works] <!-- role: reason -->
 

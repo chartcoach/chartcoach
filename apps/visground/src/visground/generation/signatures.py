@@ -184,32 +184,6 @@ class WriteVisualizationCode(dspy.Signature):
     visualization_type: str = dspy.OutputField(
         desc="Short, ideally single-word, canonical name of the visualization type you generated without suffixes like 'chart' or 'plot'"
     )
-    query_interpretation: str = dspy.OutputField(
-        desc=(
-            "One short sentence restating what the chart should help the user see "
-            "or compare, without broadening the request beyond the query and the "
-            "supplied requirements or generalizing narrow requirements into a "
-            "larger redesign story."
-        )
-    )
-    design_rationale: list[str] = dspy.OutputField(
-        desc=(
-            "Two to four short bullets explaining why the chosen chart type and "
-            "encoding was chosen. If grounded design guidance is present, explain "
-            "the choice through those supplied requirements rather than through "
-            "invented extra visualization heuristics, and do not claim a "
-            "requirement was followed unless the emitted code actually implements it. "
-            "When requirements constrain only part of the design, explain how the "
-            "remaining choices stayed conservative and coherent. If text or "
-            "annotations were added, explain how their placement stays readable, "
-            "discoverable, and appropriately sparse. If a non-default design was "
-            "required, explain how the implementation makes it correct, apparent, "
-            "polished, semantically faithful, library-appropriate, and coherent "
-            "across all interacting chart components. Mention any important render-"
-            "level failure modes you actively avoided when that was material to "
-            "the design."
-        )
-    )
     grounding_trace: dict[str, str] = dspy.OutputField(
         desc=(
             "Dictionary keyed by grounded guideline id. Each value should be a "
@@ -248,6 +222,12 @@ class ReviewVisualizationImplementation(dspy.Signature):
       order among visible non-guideline requirements.
     - Still judge execution quality visible in the image, including clipping,
       overlap, and readability.
+    - Be strict about cropped, clipped, truncated, overlapped, or partly
+      obscured text and marks. Do not give benefit of the doubt just because a
+      reader could guess what the text says or infer the intended mapping.
+    - If text is cut off, annotation boxes collide with marks, labels overlap,
+      or the viewer would need effort to reconstruct the intended reading, mark
+      the relevant booleans as `False`.
     - Keep `reasoning` and `feedback` crisp, concrete, and tied to visible
       compliance or execution quality.
     """
@@ -264,25 +244,29 @@ class ReviewVisualizationImplementation(dspy.Signature):
     no_truncation: bool = dspy.OutputField(
         desc=(
             "True when titles, axes, ticks, legends, labels, annotations, and "
-            "marks are not visibly clipped, cropped, or cut off by the canvas."
+            "marks are not visibly clipped, cropped, or cut off by the canvas. "
+            "Any cut-off or truncated text should make this `False`."
         )
     )
     no_overlap: bool = dspy.OutputField(
         desc=(
             "True when text, legends, annotations, and plotted marks do not "
-            "collide or occlude each other enough to hurt reading."
+            "collide or occlude each other enough to hurt reading. Any overlap "
+            "that requires inference rather than easy reading should make this `False`."
         )
     )
     text_readable: bool = dspy.OutputField(
         desc=(
             "True when textual elements such as titles, axis labels, tick "
-            "labels, legends, and annotations are readable at normal viewing size."
+            "labels, legends, and annotations are readable at normal viewing size. "
+            "If text is cramped, partly hidden, clipped, or hard to parse, make this `False`."
         )
     )
     data_readable: bool = dspy.OutputField(
         desc=(
             "True when the plotted data itself is visually decipherable: marks, "
-            "lines, bars, points, and relevant distinctions are clear enough to read."
+            "lines, bars, points, and relevant distinctions are clear enough to read. "
+            "If overlaps or occlusion materially hinder reading, make this `False`."
         )
     )
     implementation_acceptable: bool = dspy.OutputField(
@@ -290,7 +274,8 @@ class ReviewVisualizationImplementation(dspy.Signature):
             "True when the chart looks decently implemented overall, regardless "
             "of whether the design choice is good or bad, as long as it follows "
             "the visible requirements and does not add unprescribed visible "
-            "design drift."
+            "design drift. If any core visual-quality boolean is `False`, this "
+            "should also be `False`."
         )
     )
     requirements_followed: bool = dspy.OutputField(

@@ -1,9 +1,4 @@
-import type {
-  AssetPayload,
-  CandidateImageMeta,
-  MatrixCell,
-  OverviewPayload,
-} from "@/viewer/contract/types";
+import type { CandidateImageMeta, MatrixCell, OverviewPayload } from "@/viewer/contract/types";
 
 export function toOptionValue(value: unknown): string {
   return value === null ? "__none__" : String(value);
@@ -77,18 +72,6 @@ export function getCellByKey(
     }
   }
   return null;
-}
-
-export function resolveAsset(
-  fallbackUrl: string | null | undefined,
-  fallbackMeta: CandidateImageMeta | null | undefined,
-  asset: AssetPayload | null | undefined,
-) {
-  return {
-    imageUrl: asset?.image_url ?? fallbackUrl ?? null,
-    imageMeta: asset?.image_meta ?? fallbackMeta ?? null,
-    error: asset?.error ?? null,
-  };
 }
 
 export function orientationLabel(parts: Array<string | null | undefined>): string {

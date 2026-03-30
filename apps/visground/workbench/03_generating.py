@@ -38,8 +38,8 @@ def _(mo):
 def _(Literal):
     # ModelName = Literal["gpt-5.4", "claude-sonnet-4.6", "gemini-3.1-pro-preview"]
     ModelName = Literal["gpt-5.4"]
-    GrammarName = Literal["matplotlib", "altair", "plotly"]
-    # GrammarName = Literal["matplotlib", "altair"]
+    # GrammarName = Literal["matplotlib", "altair", "plotly"]
+    GrammarName = Literal["matplotlib"]
     SITUATED_GRAMMARS = {"matplotlib"}
     return GrammarName, ModelName, SITUATED_GRAMMARS
 
@@ -87,8 +87,15 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _(store):
-    grounding_df = store.read_grounding_df()
+def _(mo, store):
+    grounding_df_path = mo.watch.file(store.grounding_path())
+    return (grounding_df_path,)
+
+
+@app.cell(hide_code=True)
+def _(grounding_df_path, pl):
+    # grounding_df = store.read_grounding_df()
+    grounding_df = pl.read_parquet(grounding_df_path.read_bytes())
     grounding_df
     return (grounding_df,)
 
@@ -109,13 +116,11 @@ def _(VisualizationRequestRecord, get_audience_description):
             row["result"]["guideline_ids"],
             row["result"]["guidance"],
         ):
-            requirements.append(f"`{guideline_id}`:\n{guidance}")
+            requirements.append(f"Guideline `{guideline_id}` states:\n{guidance}")
 
         audience = row["request"]["audience"]
         if row["grounding_mode"] == "none" and audience is not None:
-            requirements.append(
-                f"`audience`: {get_audience_description(audience)}"
-            )
+            requirements.append(f"`audience`: {get_audience_description(audience)}")
 
         return {
             "id": row["request"]["id"],

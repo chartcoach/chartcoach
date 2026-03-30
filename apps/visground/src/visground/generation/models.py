@@ -30,6 +30,4 @@ class VisGenOutput(TypedDict):
     id: str
     code: str
     visualization_type: str
-    query_interpretation: str
-    design_rationale: list[str]
     grounding_trace: dict[str, str]

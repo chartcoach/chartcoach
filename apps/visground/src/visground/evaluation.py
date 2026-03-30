@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from collections.abc import Collection
+from collections.abc import Collection, Mapping
+from typing import Any
 
 import polars as pl
 
@@ -51,8 +52,43 @@ def overall_score_expr(
     return expr
 
 
+def score_value(
+    judgement: Mapping[str, Any] | None,
+    score_field: str,
+) -> float | None:
+    if judgement is None:
+        return None
+
+    score_entry = judgement.get(score_field)
+    if not isinstance(score_entry, Mapping):
+        return None
+
+    score = score_entry.get("score")
+    if score is None:
+        return None
+    return float(score)
+
+
+def overall_score_value(
+    judgement: Mapping[str, Any] | None,
+) -> float | None:
+    if judgement is None:
+        return None
+
+    scores = [
+        score
+        for score_field in SCORE_FIELDS
+        if (score := score_value(judgement, score_field)) is not None
+    ]
+    if not scores:
+        return None
+    return sum(scores) / len(scores)
+
+
 __all__ = [
     "SCORE_FIELDS",
     "overall_score_expr",
+    "overall_score_value",
+    "score_value",
     "score_expr",
 ]

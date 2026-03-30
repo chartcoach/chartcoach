@@ -3,7 +3,6 @@ import type { ViewerActions, ViewerState } from "@/viewer/contract/types";
 
 export function CasePopover({ state, actions }: { state: ViewerState; actions: ViewerActions }) {
   const jumpEntries = getCatalogSubset(state, {
-    requestChart: state.selection.request_chart,
     searchTerm: state.searchTerm,
   });
 
@@ -32,7 +31,7 @@ export function CasePopover({ state, actions }: { state: ViewerState; actions: V
           >
             {jumpEntries.map((entry) => (
               <option key={entry.vis_id} value={entry.vis_id}>
-                {entry.vis_id}
+                {`${entry.vis_id} · ${entry.label}`}
               </option>
             ))}
           </select>

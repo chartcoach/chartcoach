@@ -4,7 +4,7 @@
 }
 
 .vg-matrix-wrap {
-  --vg-row-head-width: 1.08rem;
+  --vg-row-head-width: 2rem;
   --vg-cell-min-width: 12.8rem;
   --vg-cell-gap-x: 0.18rem;
   --vg-cell-gap-y: 0.2rem;
@@ -20,12 +20,12 @@
 
 .vg-axis-dimension-label {
   font-family: "JetBrains Mono", "SFMono-Regular", "SF Mono", Menlo, monospace;
-  font-size: 0.58rem;
-  line-height: 1.02;
+  font-size: 0.62rem;
+  line-height: 1.06;
   letter-spacing: 0.07em;
   text-transform: lowercase;
   font-weight: 600;
-  color: var(--vg-muted);
+  color: var(--vg-text-soft);
 }
 
 .vg-axis-dimension-label.is-placeholder {
@@ -34,8 +34,8 @@
 
 .vg-axis-value-label {
   font-family: "JetBrains Mono", "SFMono-Regular", "SF Mono", Menlo, monospace;
-  font-size: 0.75rem;
-  line-height: 1.1;
+  font-size: 0.8rem;
+  line-height: 1.14;
   font-weight: 700;
   color: var(--vg-text);
 }
@@ -151,7 +151,7 @@
 
 .vg-row-head .vg-axis-stack {
   position: absolute;
-  left: -0.12rem;
+  left: 0;
   bottom: 0;
   width: max-content;
   transform: rotate(-90deg) translateY(100%);
@@ -177,8 +177,7 @@
     opacity 140ms ease,
     filter 140ms ease,
     box-shadow 140ms ease,
-    background 120ms ease,
-    transform 120ms ease;
+    background 120ms ease;
 }
 
 .vg-matrix-cell > * {
