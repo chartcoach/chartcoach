@@ -37,10 +37,10 @@
 .vg-hovercard {
   position: fixed;
   z-index: 60;
-  width: clamp(21rem, 32vw, 29rem);
-  max-height: 76vh;
-  overflow: auto;
-  padding: 0.72rem;
+  width: clamp(18rem, 25vw, 23rem);
+  max-height: min(70vh, 30rem);
+  overflow: hidden;
+  padding: 0.62rem;
   background: #ffffff;
   border: 1px solid rgba(17, 17, 17, 0.08);
   box-shadow: 0 14px 30px rgba(17, 17, 17, 0.1);
@@ -62,6 +62,6 @@
 
 @media (max-width: 860px) {
   .vg-hovercard {
-    width: min(22rem, calc(100vw - 1.25rem));
+    width: min(19rem, calc(100vw - 1.25rem));
   }
 }
