@@ -14,8 +14,9 @@ class AltairBackend(VisualizationBackend[alt.Chart]):
         req: VisualizationRequestRecord,
     ) -> list[str]:
         return [
-            "Write valid altair code to implement the visualization, using best practices from the library.",
-            "Ensure that the assigned chart result is an altair `Chart` object.",
+            "`library-choice`: Write valid altair code to implement the visualization, using best practices from the library.",
+            "`return-rule`: Ensure that the assigned chart result is an altair `Chart` object.",
+            "`direct-values`: When visible requirements or guidance call for direct values, explicit callouts, or local annotation on emphasized marks, implement them with explicit layered Altair text and/or annotation marks in the chart itself rather than only through titles, subtitles, or axis-label hacks.",
         ]
 
     def rasterize(self, chart: alt.Chart) -> PIL.Image.Image:

@@ -1,28 +1,22 @@
-import json
-from typing import Callable, TypedDict, cast
+from __future__ import annotations
 
-import dspy
+from typing import TYPE_CHECKING
+
+from visground.lm import make_observed_dspy_module
 
 from .backends import VisualizationBackend
-from .models import VisualizationRequestRecord
-from .signatures import WriteVisualizationCode
-
-_VIS_GEN_OUTPUT_FIELDS = (
-    "code",
-    "visualization_type",
-    "query_interpretation",
-    "design_rationale",
-    "grounding_trace",
+from .cache import VisGenCache
+from .models import VisGenOutput, VisualizationRequestRecord
+from .programs import (
+    DEFAULT_REFINE_ROLLOUTS,
+    DEFAULT_REFINE_THRESHOLD,
+    build_refine_generator,
+    run_generation,
 )
+from .signatures import ReviewVisualizationImplementation, WriteVisualizationCode
 
-
-class VisGenOutput(TypedDict):
-    id: str
-    code: str
-    visualization_type: str
-    query_interpretation: str
-    design_rationale: list[str]
-    grounding_trace: list[str]
+if TYPE_CHECKING:
+    import dspy
 
 
 class VisGenRunner:
@@ -30,99 +24,54 @@ class VisGenRunner:
         self,
         backend: VisualizationBackend,
         coder_signature: type[dspy.Signature] = WriteVisualizationCode,
+        review_signature: type[dspy.Signature] = ReviewVisualizationImplementation,
+        reviewer_lm: dspy.LM | None = None,
     ):
         self.backend = backend
         self.coder_signature = coder_signature
-        self._reward_fn = _build_reward_function(backend)
-
-    def _cache(self):
-        return dspy.cache
-
-    def _cache_put(self, cache_key: str, value: dict) -> None:
-        self._cache().put({"key": cache_key}, value)
-
-    def _cache_get(self, cache_key: str) -> dict | None:
-        return self._cache().get({"key": cache_key})
-
-    def _cache_key(self, example: dspy.Example) -> str:
-        lm = dspy.settings.lm
-        cache_obj = {
-            "example": example.inputs().toDict(),
-            "lm": lm.model,
-            "output_fields": _VIS_GEN_OUTPUT_FIELDS,
-        }
-        return json.dumps(
-            cache_obj,
-            ensure_ascii=False,
-            separators=(",", ":"),
-            sort_keys=True,
-        )
-
-    def _cache_value(self, prediction: dspy.Prediction) -> dict:
-        return {
-            "code": prediction.code,
-            "visualization_type": prediction.visualization_type,
-            "query_interpretation": prediction.query_interpretation,
-            "design_rationale": prediction.design_rationale,
-            "grounding_trace": prediction.grounding_trace,
-        }
+        self.review_signature = review_signature
+        self.reviewer_lm = reviewer_lm
 
     def generate(
         self,
         requests: list[VisualizationRequestRecord],
         num_threads: int = 20,
     ) -> list[VisGenOutput]:
-        coder = dspy.ChainOfThought(self.coder_signature)
-        generate_code = dspy.Refine(
-            module=coder,
-            N=10,
-            reward_fn=self._reward_fn,
-            threshold=1.0,
-        )
         examples = [self.backend.build_example(req) for req in requests]
-        fresh_examples = [
-            example
-            for example in examples
-            if self._cache_get(self._cache_key(example)) is None
-        ]
+        cache = VisGenCache.for_runtime(
+            backend=self.backend,
+            coder_signature=self.coder_signature,
+            review_signature=self.review_signature,
+            reviewer_lm=self.reviewer_lm,
+            refine_rollouts=DEFAULT_REFINE_ROLLOUTS,
+            refine_threshold=DEFAULT_REFINE_THRESHOLD,
+        )
+        cached_outputs, indexed_misses = cache.get_many(examples)
 
-        inputs = [
-            (
-                generate_code,
-                example,
+        if indexed_misses:
+            fresh_examples = [example for _, example in indexed_misses]
+            _generator = build_refine_generator(
+                backend=self.backend,
+                coder_signature=self.coder_signature,
+                review_signature=self.review_signature,
+                reviewer_lm=self.reviewer_lm,
             )
-            for example in fresh_examples
-        ]
-
-        parallel = dspy.Parallel(num_threads=num_threads)
-        results = parallel(inputs) if fresh_examples else []
-
-        for example, result in zip(fresh_examples, results):
-            self._cache_put(self._cache_key(example), self._cache_value(result))
-
-        return [
-            cast(
-                VisGenOutput,
-                {
-                    "id": req["id"],
-                    **output,
+            generator = make_observed_dspy_module(
+                _generator,
+                classname="VisualizationCodeGenerator",
+                observe_kwargs={
+                    "name": "vis-code-generator",
+                    "as_type": "agent",
                 },
+                attributes={"tags": ["generating"]},
             )
-            for req, example in zip(requests, examples)
-            if (output := self._cache_get(self._cache_key(example))) is not None
-        ]
+            fresh_outputs = run_generation(
+                generator,
+                fresh_examples,
+                num_threads=num_threads,
+            )
+            cache.put_many(fresh_examples, fresh_outputs)
+            for (index, _), output in zip(indexed_misses, fresh_outputs):
+                cached_outputs[index] = output
 
-
-def _build_reward_function(
-    backend: VisualizationBackend,
-) -> Callable[[dict, dspy.Prediction], float]:
-    def fn(args: dict, pred: dspy.Prediction) -> float:
-        id = args["id"]
-        code = pred.code
-        try:
-            vis = backend.materialize_visualization(id, code)
-            return float(vis is not None)
-        except Exception:
-            return 0.0
-
-    return fn
+        return [output for output in cached_outputs if output is not None]

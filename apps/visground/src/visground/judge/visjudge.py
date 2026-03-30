@@ -15,6 +15,8 @@ import platformdirs
 from diskcache import Cache
 from PIL import Image
 
+from visground.lm import make_observed_dspy_module
+
 
 class VisJudgeRequest(TypedDict):
     """Input for one VisJudge call."""
@@ -246,7 +248,15 @@ class VisJudgeLmClient(VisJudgeClient):
     ) -> None:
         self._lm = lm
         self._cache = Cache(cache_dir or _default_cache_dir())
-        self._predict = dspy.Predict(_VisJudgeLmSignature)
+        self._predict = make_observed_dspy_module(
+            dspy.Predict(_VisJudgeLmSignature),
+            classname="VisJudge",
+            observe_kwargs={
+                "name": "vis-judge",
+                "as_type": "agent",
+            },
+            attributes={"tags": ["judging"]},
+        )
         self._finalizer = weakref.finalize(
             self,
             _close_cache,

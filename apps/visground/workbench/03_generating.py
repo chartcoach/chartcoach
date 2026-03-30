@@ -36,8 +36,8 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(Literal):
-    ModelName = Literal["gpt-5.4", "claude-sonnet-4.6", "gemini-3.1-pro-preview"]
-    # ModelName = Literal["gpt-5.4", "claude-sonnet-4.6"]
+    # ModelName = Literal["gpt-5.4", "claude-sonnet-4.6", "gemini-3.1-pro-preview"]
+    ModelName = Literal["gpt-5.4"]
     GrammarName = Literal["matplotlib", "altair", "plotly"]
     # GrammarName = Literal["matplotlib", "altair"]
     SITUATED_GRAMMARS = {"matplotlib"}
@@ -64,7 +64,10 @@ def _(ModelName, dspy, lm_cliproxy, lm_openrouter):
         lm, num_threads = model_map[model].values()
         return lm, num_threads
 
-    return (get_lm_config,)
+    def get_review_lm() -> dspy.LM:
+        return lm_cliproxy("gpt-5.4")
+
+    return get_lm_config, get_review_lm
 
 
 @app.cell(hide_code=True)
@@ -106,11 +109,13 @@ def _(VisualizationRequestRecord, get_audience_description):
             row["result"]["guideline_ids"],
             row["result"]["guidance"],
         ):
-            requirements.append(f"Guideline `{guideline_id}` states: {guidance}")
+            requirements.append(f"`{guideline_id}`:\n{guidance}")
 
         audience = row["request"]["audience"]
         if row["grounding_mode"] == "none" and audience is not None:
-            requirements.append(get_audience_description(audience))
+            requirements.append(
+                f"`audience`: {get_audience_description(audience)}"
+            )
 
         return {
             "id": row["request"]["id"],
@@ -194,7 +199,15 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _(VisGenRunner, dspy, get_lm_config, get_vis_backend, mo, pl):
+def _(
+    VisGenRunner,
+    dspy,
+    get_lm_config,
+    get_review_lm,
+    get_vis_backend,
+    mo,
+    pl,
+):
     def run_scenarios(scenario_df: pl.DataFrame) -> pl.DataFrame:
         scenario_results = []
 
@@ -207,10 +220,11 @@ def _(VisGenRunner, dspy, get_lm_config, get_vis_backend, mo, pl):
             scenario = item["scenario"]
 
             lm, num_threads = get_lm_config(model)
+            review_lm = get_review_lm()
             vis_backend = get_vis_backend(grammar)
 
             with dspy.context(lm=lm):
-                runner = VisGenRunner(vis_backend)
+                runner = VisGenRunner(vis_backend, reviewer_lm=review_lm)
                 inputs = [d["input"] for d in scenario]
                 outputs = runner.generate(inputs, num_threads=num_threads)
                 scenario_results.append(
@@ -255,7 +269,6 @@ def _(VisEvalDataset, VisGroundDataset):
 
 @app.cell(hide_code=True)
 def _():
-    import os
     from typing import Literal, get_args
 
     import dspy

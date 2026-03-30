@@ -97,6 +97,12 @@ class WriteVisualizationCode(dspy.Signature):
     - Whenever you add text for any purpose, place it deliberately. Text should
       be easy to notice, easy to read, and clearly associated with the marks,
       region, or evidence it explains.
+    - When the requirements or guidance make one specific mark, bar, point, or
+      region the intended focal comparison, implement the visible explanation
+      as one coherent local package. If the prescribed effect calls for
+      highlighting, direct value display, and a short explanatory callout,
+      satisfy those visibly on or near the focal mark rather than scattering
+      them across disconnected surfaces like only the title, subtitle, or axis.
     - Keep added text sparse and high-signal. Do not add so many labels or
       annotations that the chart becomes crowded, noisy, or harder to read.
     - Be especially careful with annotations or text placed inside the plot
@@ -204,16 +210,123 @@ class WriteVisualizationCode(dspy.Signature):
             "the design."
         )
     )
-    grounding_trace: list[str] = dspy.OutputField(
+    grounding_trace: dict[str, str] = dspy.OutputField(
         desc=(
-            "Zero to three short bullets naming the requirement or guidance items "
-            "that most influenced the design choice. Quote brief phrases from the requirements when possible. "
-            "If grounded design guidance is present, only cite actually supplied requirement items. "
-            "Never cite a requirement that the emitted code does not implement. "
-            "Empty list if you were not provided with any design-specific guidance. "
-            "Library-specific rules are not considered design guidance."
+            "Dictionary keyed by grounded guideline id. Each value should be a "
+            "brief, highly contextualized note explaining how that specific "
+            "guideline was applied for this particular query/chart. Include only "
+            "guideline ids from grounded design guidance, never backend/runtime "
+            "requirements. Return {} when there is no grounded design guidance."
         )
     )
 
 
-__all__ = ["WriteVisualizationCode"]
+class ReviewVisualizationImplementation(dspy.Signature):
+    """
+    Review only the visible implementation quality of a rendered visualization.
+
+    Rules:
+    - Judge the final chart against the rendered image and the supplied
+      `requirements`.
+    - Treat visible requirements and design guidance as mandatory. If a
+      requirement or guidance item should be visible in the chart and is not
+      clearly reflected, mark `requirements_followed` as `False`.
+    - Ignore non-visual backend/runtime-only requirements when judging visible
+      compliance, such as whether code is valid or whether the chart object had
+      the right Python type.
+    - If the final chart makes visible non-default, opinionated design
+      decisions that are not prescribed by the query or the supplied
+      requirements, mark `no_unprescribed_design` as `False`.
+    - Treat unprescribed visible design drift as a hard negative. If it occurs,
+      `implementation_acceptable` should also be `False`.
+    - For each visible requirement or guidance item, add one short entry to
+      `requirement_trace` explaining whether it was visibly satisfied, missed,
+      or over-interpreted and how.
+    - Use the grounded guideline id as the key when the requirement comes from
+      `Guideline `<id>` states: ...`. For other visible requirements, use
+      deterministic keys like `requirement_1`, `requirement_2`, in their input
+      order among visible non-guideline requirements.
+    - Still judge execution quality visible in the image, including clipping,
+      overlap, and readability.
+    - Keep `reasoning` and `feedback` crisp, concrete, and tied to visible
+      compliance or execution quality.
+    """
+
+    vis: dspy.Image = dspy.InputField(desc="Rendered visualization image to inspect.")
+    requirements: list[str] = dspy.InputField(
+        desc=(
+            "Full generation requirements list. Use it to judge whether visible "
+            "requirements and guidance are reflected in the chart, while ignoring "
+            "non-visual backend/runtime-only rules."
+        )
+    )
+
+    no_truncation: bool = dspy.OutputField(
+        desc=(
+            "True when titles, axes, ticks, legends, labels, annotations, and "
+            "marks are not visibly clipped, cropped, or cut off by the canvas."
+        )
+    )
+    no_overlap: bool = dspy.OutputField(
+        desc=(
+            "True when text, legends, annotations, and plotted marks do not "
+            "collide or occlude each other enough to hurt reading."
+        )
+    )
+    text_readable: bool = dspy.OutputField(
+        desc=(
+            "True when textual elements such as titles, axis labels, tick "
+            "labels, legends, and annotations are readable at normal viewing size."
+        )
+    )
+    data_readable: bool = dspy.OutputField(
+        desc=(
+            "True when the plotted data itself is visually decipherable: marks, "
+            "lines, bars, points, and relevant distinctions are clear enough to read."
+        )
+    )
+    implementation_acceptable: bool = dspy.OutputField(
+        desc=(
+            "True when the chart looks decently implemented overall, regardless "
+            "of whether the design choice is good or bad, as long as it follows "
+            "the visible requirements and does not add unprescribed visible "
+            "design drift."
+        )
+    )
+    requirements_followed: bool = dspy.OutputField(
+        desc=(
+            "True when the visible requirements and supplied design guidance are "
+            "clearly reflected in the final chart."
+        )
+    )
+    no_unprescribed_design: bool = dspy.OutputField(
+        desc=(
+            "True when the final chart does not introduce visible non-default, "
+            "opinionated design decisions that were not prescribed by the query "
+            "or requirements."
+        )
+    )
+    requirement_trace: dict[str, str] = dspy.OutputField(
+        desc=(
+            "Dictionary keyed by guideline id or deterministic visible "
+            "requirement key. Each value should briefly say whether that "
+            "requirement was visibly satisfied, missed, or over-interpreted and how."
+        )
+    )
+    reasoning: str = dspy.OutputField(
+        desc=(
+            "One or two short sentences summarizing visible requirement "
+            "compliance, execution quality, and whether unprescribed visible "
+            "design drift was detected."
+        )
+    )
+    feedback: list[str] = dspy.OutputField(
+        desc=(
+            "Zero to three short actionable fixes for visible compliance or "
+            "execution issues only. Return an empty list if the implementation "
+            "already looks clean and requirement-faithful."
+        )
+    )
+
+
+__all__ = ["ReviewVisualizationImplementation", "WriteVisualizationCode"]

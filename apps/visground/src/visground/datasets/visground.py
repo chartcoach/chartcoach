@@ -52,7 +52,7 @@ def flatten_generated_candidates_df(
                 ("visualization_type", pl.String),
                 ("query_interpretation", pl.String),
                 ("design_rationale", pl.List(pl.String)),
-                ("grounding_trace", pl.List(pl.String)),
+                ("grounding_trace", pl.Struct({})),
             ]
         )
 

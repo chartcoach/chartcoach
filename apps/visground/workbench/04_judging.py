@@ -58,8 +58,9 @@ def _(store):
 
 
 @app.cell(hide_code=True)
-def _(store):
-    generated_vis_df = store.read_generated_df()
+def _(mo, pl, store):
+    # generated_vis_df = store.read_generated_df()
+    generated_vis_df = pl.read_parquet(mo.watch.file(store.generate_path()).absolute())
     generated_vis_df.head()
     return (generated_vis_df,)
 
