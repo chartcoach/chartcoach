@@ -72,93 +72,109 @@ class HybridGroundingStrategyConfig(TypedDict):
 
 class RetrieveGuidelines(dspy.Signature):
     """
-    Retrieve the highest-value visualization design guidelines for the request.
+    Retrieve the best design-guidance bundle for one visualization request.
 
-    Optimize for application value, not generic relevance. The selected guidelines
-    will be handed to a later model that must actually apply them, so every chosen
-    guideline must be:
-    - unambiguous to apply from the advice text
-    - visibly testable in the final rendered chart
-    - distinct from the other chosen guidelines
-    - compatible with the rest of the set
-    - deeply matched to the exact situation described by the full context
-    - realistically actionable and correctly implementable in Python charting
-      libraries
-    - realistically applicable together with the rest of the set in one chart
+    Goal:
+    - return 7-10 guidelines that maximize distinct design volume for one chart
+    - every kept guideline must add a different visible design move
+    - think in terms of bundle slots: every slot must pay for itself
+    - prefer concrete, situation-matched guidance that is clearly implementable
+      in Python charting libraries
+    - return fewer items instead of weak, generic, or redundant extras
 
-    Read `context["objective"]` first.
-    Infer the situation from everything available in `context`, including the
-    query wording, task, scope, time mode, audience, fixed chart decisions,
-    retrieval stages, and data profile. Prefer guidelines that fit this full
-    situation deeply rather than guidelines that only overlap on one broad topic
-    or one shared keyword.
-    Build the final set like a coherent playbook for one chart, not like a bag
-    of separately relevant snippets.
+    Read `context["objective"]` first. Use all of `context` to infer the real
+    design problem the bundle must solve. Use `guidelines` second.
 
-    `guidelines` is organized into dynamic basis groups. Every basis group
-    contains purpose buckets plus short group summaries. Treat each basis group
-    as one retrieval lane.
+    `guidelines` is organized into dynamic basis groups. Each basis group is one
+    retrieval lane with `select` and `refine` buckets plus short summaries.
 
-    Required workflow:
-    - inspect every basis group before finalizing the set
-    - use the group-level summaries to quickly understand what each basis lane
-      specializes in before drilling into its cards
-    - within each basis group, inspect the bucket matching
-      `context["objective"]` first
-    - inspect the opposite-purpose bucket only when it adds a genuinely useful
-      complementary item
-    - compare the strongest compatible candidates across basis groups before
-      taking a second item from any one basis group
+    Selection procedure:
+    1. Identify the primary design decision the request needs first.
+    2. Inspect every basis group. In each group, inspect the bucket matching
+       `context["objective"]` first.
+    3. Nominate only the strongest candidate from each useful basis group.
+    4. Remove same-effect candidates before final ranking.
+    5. Build the final bundle from candidates that change different visible
+       design levers.
+    6. Only after distinct design volume is strong may you add low-priority
+       generic hygiene guidance.
+
+    Design-lever rule:
+    - think in visible design levers such as chart family, view structure,
+      comparison geometry, baseline/scale strategy, ordering, direct-labeling,
+      annotation, accessibility encoding, and framing/context
+    - usually keep at most one guideline per visible design lever
+    - keep two guidelines on the same lever only when both produce clearly
+      different visible edits that can coexist without collapsing into the same
+      code change
+
+    Dominance test:
+    - before keeping any guideline, ask: what unique visible chart change would
+      disappear if this guideline were removed?
+    - if the answer is "almost nothing" or is already covered by another kept
+      guideline, drop it
+    - do not keep both a specific structural decision and a more generic
+      heuristic that merely endorses the same decision
+
+    Bundle budget:
+    - usually spend most slots on decisive structure plus orthogonal
+      refinements
+    - reserve at most one slot for generic hygiene guidance
+    - never spend multiple slots on broad reminders that mostly say "make the
+      chart clear"
+    - if two selected guidelines would mostly turn into the same code edit,
+      keep only the stronger one
+
+    Same-effect rule:
+    - if one kept guideline already determines the chart family, arrangement,
+      baseline strategy, ordering, direct-labeling strategy, annotation
+      strategy, or accessibility treatment, drop any more generic guideline
+      that would produce the same visible result
+    - prefer the more specific, higher-leverage, more situation-matched
+      guideline
+    - example: if a kept guideline already says to use grouped bars for
+      within-category comparison, do not also keep a generic guideline about
+      choosing a familiar basic chart type
+
+    Hygiene rule:
+    - axis labels, descriptive title/caption, contrast, minimum text size, and
+      similar universal chart hygiene guidance are fill-only
+    - usually include zero or one hygiene guideline
+    - prefer the single hygiene guideline with the broadest useful effect if
+      one is needed at all
+    - never let hygiene dominate the bundle when stronger structural,
+      comparison, ordering, annotation, or accessibility moves are available
+
+    Basis rule:
+    - inspect every basis group
+    - prefer cross-basis coverage when it increases design volume
+    - skip a basis group when its best candidate is weak, redundant, or
+      incompatible
+    - large basis groups must not dominate only because they contain more items
+
+    Final bundle audit:
+    - each selected guideline must have one clear unique job in the bundle
+    - no pair of selected guidelines should mostly collapse into the same chart
+      mutation or same implementation step
+    - if removing one selected guideline would leave the chart essentially the
+      same, drop it
 
     For `select`:
-    - the chart type and core structure are not fixed yet
-    - first retrieve decisive guidelines that make one primary design direction
-      clearly preferable for this task
-    - the set must converge on a single chart or structure choice rather than
-      presenting several incompatible alternatives
-    - use `refine` bucket items only after the main design direction is clear
-      and only when they strengthen that chosen direction
+    - choose one coherent chart or structure direction first
+    - use `refine` bucket items only after that direction is clear
     - do not return mutually exclusive chart, structure, or channel guidance
 
     For `refine`:
-    - the chart type and core structure are already fixed and must be preserved
-    - retrieve guidelines that improve the specified design's readability,
-      interpretability, comparison support, ordering, labeling, annotation,
-      scale choices, accessibility, or polish
+    - preserve the fixed chart type and core structure
+    - prefer strong improvements that make the current design better without
+      reopening the primary chart-choice decision
     - only use `select` bucket items when they are directly applicable without
-      reopening the fixed chart decision
+      changing the fixed design direction
 
-    Global rules:
-    - every selected guideline should introduce a distinct visible change to the
-      chart; do not waste slots on invisible or low-impact guidance
-    - the selected set must be complementary and synergetic; each guideline
-      should make the others more useful rather than redundant or disconnected
-    - the selected set must fit within a realistic application budget for one
-      chart; do not choose so many simultaneous changes that the final result
-      would become cluttered, overengineered, or hard to execute cleanly
-    - prefer situation-specific guidance over generic good practice
-    - prefer guidelines whose advice text specifies concrete edits
-    - prefer changes that would be fully visible when applied
-    - prefer guidelines that can be implemented robustly, correctly, and
-      visibly in Python charting libraries rather than guidelines that are only
-      theoretically good or likely to become brittle in implementation
-    - balance across useful basis groups when it improves the set, but do not
-      use weak guidelines just to cover a group
-    - large basis groups must not dominate only because they contain more
-      candidates
-    - avoid near-duplicates or guidelines that collapse into the same edit
-    - if two candidates conflict, keep the one that better fits the request and
-      discard the other
-    - if two candidates are similarly relevant, prefer the one that is more
-      realistically executable in chart code and less likely to become buggy,
-      fragile, or only weakly visible after implementation
-    - return fewer items instead of padding with weak, ambiguous, or low-value
-      guidelines
-
-    Usually return 5-8 deeply situation-matched, complementary, synergetic
-    guidelines. For `select`, rank decisive selection guidelines first and
-    follow them with compatible refinements from other useful basis groups. For
-    `refine`, rank the highest-value visible improvements first.
+    Ranking:
+    - decisive structure first
+    - orthogonal refinements next
+    - hygiene last
     """
 
     context: dict = dspy.InputField(
@@ -182,9 +198,9 @@ class RetrieveGuidelines(dspy.Signature):
     guideline_ids: list[str] = dspy.OutputField(
         desc=(
             "Ranked list of the best mutually reinforcing guideline IDs to apply. "
-            "For select, order the list so decisive chart-choice guidelines come "
-            "first and compatible refinements come after. For refine, order by "
-            "highest-value visible improvements first."
+            "Prefer bundles where each selected guideline adds a distinct visible "
+            "design move rather than repeating the same effect or collapsing into "
+            "the same code edit at different levels of generality."
         )
     )
 
@@ -406,13 +422,16 @@ def build_retrieval_context(*, req: GroundingRequest, profile: DataProfile) -> d
             f"time_mode={req['time_mode']}",
         ]
         retrieval_stages = [
-            "1. Pick decisive guidelines that converge on one best chart or structure choice.",
-            "2. Compare strong candidates across different basis groups before doubling up within one group.",
-            "3. Add only compatible refinements once the main design direction is clear.",
+            "1. Lock one coherent chart or structure direction first.",
+            "2. Keep only the strongest candidate per visible design lever; drop generic restatements of more specific kept guidelines.",
+            "3. Add orthogonal guidelines from other useful basis groups, with at most one hygiene fill slot at the end.",
         ]
         avoid = [
             "sets that imply multiple incompatible chart or structure choices",
-            "generic polish before the main design choice is clear",
+            "same-effect generic guidance that adds no new visible design decision beyond a more specific kept guideline",
+            "multiple selected guidelines that would mostly collapse into the same code edit",
+            "more than one low-priority hygiene reminder in the same bundle",
+            "bundles dominated by generic chart hygiene before the main design choice is clear",
             "low-visibility communication boilerplate that does not help choose or improve the chosen design",
         ]
     else:
@@ -429,13 +448,16 @@ def build_retrieval_context(*, req: GroundingRequest, profile: DataProfile) -> d
         ]
         retrieval_stages = [
             "1. Preserve the prescribed chart and core structure.",
-            "2. Prefer one strong compatible improvement from each useful basis group before doubling up.",
-            "3. Keep only visible refinements that strengthen the current design.",
+            "2. Keep only the strongest improvement per visible design lever; drop generic restatements of more specific kept guidelines.",
+            "3. Prefer orthogonal refinements from useful basis groups before doubling up, with at most one hygiene fill slot at the end.",
         ]
         avoid = [
             "guidelines whose main effect is to switch chart type",
             "guidelines that reopen the core chart-choice decision",
-            "generic advice that is not clearly applicable to the prescribed chart",
+            "same-effect generic guidance that adds no new visible design decision beyond a more specific kept guideline",
+            "multiple selected guidelines that would mostly collapse into the same code edit",
+            "more than one low-priority hygiene reminder in the same bundle",
+            "bundles dominated by generic hygiene instead of stronger design changes",
         ]
 
     return {

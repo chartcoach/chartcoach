@@ -1,27 +1,27 @@
 import { startTransition, useEffect, useRef, useState } from "react";
 import type {
   AnywidgetModelLike,
-  AssetPayload,
   ViewerActions,
   ViewerBusyState,
   ViewerController,
+  ViewerLayoutSelection,
   ViewerSelection,
   ViewerState,
   ViewerStatePayload,
 } from "@/viewer/contract/types";
 import { getCatalogIndex, getCatalogSubset } from "@/viewer/controller/catalog";
-import { createCommandInvoker } from "@/viewer/controller/command-invoker";
 import { HOVER_HIDE_DELAY_MS, positionHoverCard } from "@/viewer/controller/hover";
 import { createRootKeydownHandler } from "@/viewer/controller/keyboard";
 import { positionPopover } from "@/viewer/controller/popover";
-import { getCellByKey } from "@/viewer/render/utils";
 
 const EMPTY_SELECTION: ViewerSelection = {
   vis_id: "",
-  request_chart: null,
-  objective: "",
-  overview_variant: "by-grounding",
-  dimension_filters: {},
+  filters: {},
+  layout: {
+    row_dimension: "",
+    column_dimension: "",
+    group_dimension: null,
+  },
 };
 
 const EMPTY_STATE_PAYLOAD: ViewerStatePayload = {
@@ -45,9 +45,11 @@ function makeInitialState(model: AnywidgetModelLike): ViewerState {
   const payload = cloneJson(
     (model.get("_state") as ViewerStatePayload | null) ?? EMPTY_STATE_PAYLOAD,
   );
+  const debug = Boolean(model.get("debug"));
 
   return {
     catalog: payload.catalog,
+    debug,
     selection,
     overview: payload.overview,
     searchTerm: "",
@@ -57,15 +59,12 @@ function makeInitialState(model: AnywidgetModelLike): ViewerState {
     inspectCellKey: null,
     activePopoverId: null,
     popoverAnchor: null,
-    assets: {},
   };
 }
 
 export function useViewerController(model: AnywidgetModelLike): ViewerController {
-  const invokeRef = useRef(createCommandInvoker(model));
   const stateRef = useRef<ViewerState>(makeInitialState(model));
   const hoverHideTimerRef = useRef<number | null>(null);
-  const pendingAssetKeysRef = useRef<Set<string>>(new Set());
   const rootRef = useRef<HTMLDivElement | null>(null);
   const hoverCardRef = useRef<HTMLDivElement | null>(null);
   const popoverRef = useRef<HTMLDivElement | null>(null);
@@ -92,8 +91,10 @@ export function useViewerController(model: AnywidgetModelLike): ViewerController
     const nextPayload = cloneJson(
       (model.get("_state") as ViewerStatePayload | null) ?? EMPTY_STATE_PAYLOAD,
     );
+    const nextDebug = Boolean(model.get("debug"));
 
     if (
+      nextDebug === stateRef.current.debug &&
       isEqualJson(nextSelection, stateRef.current.selection) &&
       isEqualJson(nextPayload.catalog, stateRef.current.catalog) &&
       isEqualJson(nextPayload.overview, stateRef.current.overview) &&
@@ -104,6 +105,7 @@ export function useViewerController(model: AnywidgetModelLike): ViewerController
 
     patch({
       catalog: nextPayload.catalog,
+      debug: nextDebug,
       selection: nextSelection,
       overview: nextPayload.overview,
       busy: nextPayload.overview || nextPayload.error ? null : stateRef.current.busy,
@@ -130,56 +132,9 @@ export function useViewerController(model: AnywidgetModelLike): ViewerController
     model.save_changes();
   }
 
-  function cacheAssets(assets: AssetPayload[]) {
-    const nextAssets = {
-      ...stateRef.current.assets,
-    };
-    for (const asset of assets) {
-      if (!asset.visgen_id) {
-        continue;
-      }
-      nextAssets[asset.visgen_id] = {
-        ...nextAssets[asset.visgen_id],
-        [asset.variant]: asset,
-      };
-    }
-    patch({ assets: nextAssets });
-  }
-
-  function requestAsset(visgenId: string | undefined, variant: "hover" | "detail") {
-    if (!visgenId) {
-      return;
-    }
-    const cacheKey = `${visgenId}:${variant}`;
-    if (pendingAssetKeysRef.current.has(cacheKey)) {
-      return;
-    }
-    if (stateRef.current.assets[visgenId]?.[variant]) {
-      return;
-    }
-
-    pendingAssetKeysRef.current.add(cacheKey);
-    void invokeRef
-      .current("load_assets", {
-        requests: [{ visgen_id: visgenId, variant }],
-      })
-      .then((payload) => {
-        cacheAssets(payload.assets);
-      })
-      .catch((error) => {
-        patch({
-          error: error instanceof Error ? error.message : String(error),
-        });
-      })
-      .finally(() => {
-        pendingAssetKeysRef.current.delete(cacheKey);
-      });
-  }
-
   const actions: ViewerActions = {
     stepCase(delta) {
       const filteredCatalog = getCatalogSubset(stateRef.current, {
-        requestChart: stateRef.current.selection.request_chart,
         searchTerm: stateRef.current.searchTerm,
       });
       const currentIndex = getCatalogIndex(filteredCatalog, stateRef.current.selection.vis_id);
@@ -208,53 +163,27 @@ export function useViewerController(model: AnywidgetModelLike): ViewerController
         "case",
       );
     },
-    changeScopeFilter(filterId, value) {
-      const current = stateRef.current.selection;
-      if (filterId === "request_chart") {
-        const nextCatalog = getCatalogSubset(stateRef.current, {
-          requestChart: value,
-          searchTerm: "",
-        });
-        const nextEntry =
-          nextCatalog.find((entry) => entry.vis_id === current.vis_id) ?? nextCatalog[0];
-        commitSelection(
-          {
-            ...current,
-            vis_id: nextEntry?.vis_id ?? current.vis_id,
-            request_chart: value,
-          },
-          value !== current.request_chart ? "case" : "update",
-        );
-        return;
-      }
-
-      if (filterId === "objective") {
-        commitSelection(
-          {
-            ...current,
-            objective: String(value ?? ""),
-          },
-          "update",
-        );
-        return;
-      }
-
+    changeFilter(filterId, value) {
       commitSelection(
         {
-          ...current,
-          dimension_filters: {
-            ...current.dimension_filters,
+          ...stateRef.current.selection,
+          filters: {
+            ...stateRef.current.selection.filters,
             [filterId]: value,
           },
         },
         "update",
       );
     },
-    changeOverviewVariant(value) {
+    changeLayout(controlId, value) {
+      const nextLayout: ViewerLayoutSelection = {
+        ...stateRef.current.selection.layout,
+        [controlId]: value,
+      };
       commitSelection(
         {
           ...stateRef.current.selection,
-          overview_variant: value,
+          layout: nextLayout,
         },
         "update",
       );
@@ -275,12 +204,10 @@ export function useViewerController(model: AnywidgetModelLike): ViewerController
       });
     },
     openInspect(cellKey) {
-      const cell = getCellByKey(stateRef.current.overview, cellKey);
       patch({
         inspectCellKey: cellKey,
         hover: null,
       });
-      requestAsset(cell?.candidate?.visgen_id, "detail");
     },
     closeInspect() {
       patch({
@@ -298,7 +225,6 @@ export function useViewerController(model: AnywidgetModelLike): ViewerController
           anchor,
         },
       });
-      requestAsset(cell.candidate?.visgen_id, "hover");
     },
     scheduleHoverHide() {
       if (hoverHideTimerRef.current) {
@@ -338,7 +264,6 @@ export function useViewerController(model: AnywidgetModelLike): ViewerController
   };
 
   useEffect(() => {
-    invokeRef.current = createCommandInvoker(model);
     const hydrationRetryTimers: number[] = [];
 
     function onModelSelectionChange() {
@@ -346,6 +271,10 @@ export function useViewerController(model: AnywidgetModelLike): ViewerController
     }
 
     function onModelStateChange() {
+      hydrateFromModel();
+    }
+
+    function onModelDebugChange() {
       hydrateFromModel();
     }
 
@@ -370,6 +299,7 @@ export function useViewerController(model: AnywidgetModelLike): ViewerController
 
     model.on("change:_selection", onModelSelectionChange);
     model.on("change:_state", onModelStateChange);
+    model.on("change:debug", onModelDebugChange);
     window.addEventListener("resize", onViewportChange);
     window.addEventListener("scroll", onViewportChange, true);
     root?.addEventListener("keydown", onKeydown);
@@ -389,6 +319,7 @@ export function useViewerController(model: AnywidgetModelLike): ViewerController
     return () => {
       model.off("change:_selection", onModelSelectionChange);
       model.off("change:_state", onModelStateChange);
+      model.off("change:debug", onModelDebugChange);
       window.removeEventListener("resize", onViewportChange);
       window.removeEventListener("scroll", onViewportChange, true);
       root?.removeEventListener("keydown", onKeydown);

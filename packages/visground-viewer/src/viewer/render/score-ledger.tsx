@@ -55,10 +55,12 @@ function ScoreItem({
   const Icon = ICONS_BY_SCORE_ID[score.id] ?? Sigma;
   const value = formatScoreValue(score);
   const classes = ["vg-score-item", `is-${mode}`, `is-${variant}`].filter(Boolean).join(" ");
+  const showLabel = mode === "floating";
 
   return (
     <span aria-label={`${score.label}: ${value ?? "—"}`} className={classes}>
       <Icon aria-hidden className="vg-score-item-icon" strokeWidth={1.75} />
+      {showLabel ? <span className="vg-score-item-label">{score.label}</span> : null}
       <span className="vg-score-item-value">{value ?? "—"}</span>
     </span>
   );
@@ -81,6 +83,7 @@ export function ScoreLedger({
   const overall = scores.find((score) => score.id === "overall") ?? null;
   const subscores = scores.filter((score) => score.id !== "overall");
   const showSubscores = subscores.length > 0;
+  const showDivider = mode === "matrix" && overall && showSubscores;
   const tooltip = buildScoreTooltip(scores);
 
   return (
@@ -90,7 +93,7 @@ export function ScoreLedger({
           <ScoreItem mode={mode} score={overall} variant="overall" />
         </div>
       ) : null}
-      {overall && showSubscores ? <span aria-hidden className="vg-score-ledger-divider" /> : null}
+      {showDivider ? <span aria-hidden className="vg-score-ledger-divider" /> : null}
       {showSubscores ? (
         <div className="vg-score-ledger-subscores">
           {subscores.map((score) => (

@@ -5,6 +5,8 @@ from typing import cast
 
 import dspy
 
+from visground.lm import make_observed_dspy_module
+
 from .backends import VisualizationBackend
 from .models import ImplementationReviewResult, VisGenOutput
 from .signatures import ReviewVisualizationImplementation, WriteVisualizationCode
@@ -80,6 +82,29 @@ def build_refine_generator(
     )
 
 
+def build_observed_refine_generator(
+    backend: VisualizationBackend,
+    coder_signature: type[dspy.Signature] = WriteVisualizationCode,
+    review_signature: type[dspy.Signature] = ReviewVisualizationImplementation,
+    reviewer_lm: dspy.LM | None = None,
+) -> dspy.Module:
+    generator = build_refine_generator(
+        backend=backend,
+        coder_signature=coder_signature,
+        review_signature=review_signature,
+        reviewer_lm=reviewer_lm,
+    )
+    return make_observed_dspy_module(
+        generator,
+        classname="VisualizationCodeGenerator",
+        observe_kwargs={
+            "name": "vis-code-generator",
+            "as_type": "agent",
+        },
+        attributes={"tags": ["generating"]},
+    )
+
+
 def run_generation(
     generator: dspy.Module,
     examples: Sequence[dspy.Example],
@@ -108,8 +133,6 @@ def prediction_to_output(
             "id": example_inputs["id"],
             "code": prediction.code,
             "visualization_type": prediction.visualization_type,
-            "query_interpretation": prediction.query_interpretation,
-            "design_rationale": prediction.design_rationale,
             "grounding_trace": prediction.grounding_trace,
         },
     )
@@ -156,6 +179,10 @@ def _review_generated_visualization(
     requirement_trace = review.requirement_trace
     implementation_acceptable = (
         review.implementation_acceptable
+        and review.no_truncation
+        and review.no_overlap
+        and review.text_readable
+        and review.data_readable
         and requirements_followed
         and no_unprescribed_design
     )

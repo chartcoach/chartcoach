@@ -1,6 +1,6 @@
 import type { ViewerActions, ViewerRefs, ViewerState } from "@/viewer/contract/types";
 import { ScoreLedger } from "@/viewer/render/score-ledger";
-import { orientationLabel, renderImage, resolveAsset } from "@/viewer/render/utils";
+import { orientationLabel, renderImage } from "@/viewer/render/utils";
 
 export function HoverCard({
   state,
@@ -21,11 +21,6 @@ export function HoverCard({
     state.hover.cell.row_label,
     state.hover.cell.column_label,
   ]);
-  const asset = resolveAsset(
-    candidate.image_url || null,
-    candidate.image_meta || null,
-    state.assets[candidate.visgen_id]?.hover,
-  );
 
   return (
     <aside
@@ -36,10 +31,10 @@ export function HoverCard({
     >
       <div className="vg-hover-image">
         <div className="vg-chart-canvas is-hover">
-          {candidate.error || asset.error ? (
-            <p className="vg-error">{candidate.error || asset.error}</p>
+          {candidate.error ? (
+            <p className="vg-error">{candidate.error}</p>
           ) : (
-            renderImage(asset.imageUrl, label, asset.imageMeta, "hover")
+            renderImage(candidate.image_url || null, label, candidate.image_meta || null, "hover")
           )}
         </div>
       </div>

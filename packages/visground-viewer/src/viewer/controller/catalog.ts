@@ -1,20 +1,19 @@
 import type { CatalogEntry, ViewerState } from "@/viewer/contract/types";
 
 export function getCatalogSubset(
-  state: Pick<ViewerState, "catalog" | "searchTerm" | "selection">,
-  {
-    requestChart = state.selection.request_chart,
-    searchTerm = "",
-  }: { requestChart?: string | null; searchTerm?: string } = {},
+  state: Pick<ViewerState, "catalog" | "searchTerm">,
+  { searchTerm = "" }: { searchTerm?: string } = {},
 ): CatalogEntry[] {
   const needle = searchTerm.trim().toLowerCase();
   return state.catalog.filter((entry) => {
-    const chartMatches = requestChart == null || entry.request_chart === requestChart;
-    const searchMatches =
-      !needle ||
+    if (!needle) {
+      return true;
+    }
+    return (
       entry.vis_id.toLowerCase().includes(needle) ||
-      entry.nl_query.toLowerCase().includes(needle);
-    return chartMatches && searchMatches;
+      entry.label.toLowerCase().includes(needle) ||
+      entry.search_text.toLowerCase().includes(needle)
+    );
   });
 }
 

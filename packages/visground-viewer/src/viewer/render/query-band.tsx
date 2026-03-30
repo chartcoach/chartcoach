@@ -8,8 +8,8 @@ export function QueryBand({ state }: { state: ViewerState }) {
   return (
     <div className="vg-query-band">
       <div className="vg-query-block">
-        <p className="vg-query-text" title={state.overview.nl_query}>
-          {state.overview.nl_query}
+        <p className="vg-query-text" title={state.overview.label}>
+          {state.overview.label}
         </p>
       </div>
     </div>

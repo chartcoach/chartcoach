@@ -1,55 +1,74 @@
 from __future__ import annotations
 
-from typing import Any
+from dataclasses import dataclass, field
+from typing import Any, Mapping, Sequence
 
-DIMENSION_SPECS: dict[str, dict[str, Any]] = {
-    "request_chart": {
-        "label": "Chart type",
-        "null_label": "All chart types",
-    },
-    "objective": {
-        "label": "Objective",
-        "order": {"select": 0, "refine": 1},
-        "aliases": {
-            "select": "Select",
-            "refine": "Refine",
-        },
-    },
-    "grammar": {
-        "label": "Grammar",
-        "aliases": {
-            "altair": "Altair",
-            "matplotlib": "Matplotlib",
-            "plotly": "Plotly",
-        },
-    },
-    "audience": {
-        "label": "Audience",
-        "null_label": "No audience",
-        "aliases": {
-            "novice": "Novice",
-            "casual": "Casual",
-            "expert": "Expert",
-        },
-    },
-    "grounding_mode": {
-        "label": "Grounding",
-        "aliases": {
-            "none": "Ungrounded",
-            "hybrid": "Hybrid",
-            "structured": "Structured",
-        },
-        "order": {"none": 0, "hybrid": 1, "structured": 2},
-    },
-    "model": {
-        "label": "Model",
-        "aliases": {
-            "claude-sonnet-4.6": "Claude 4.6",
-            "gemini-3.1-pro-preview": "Gemini 3.1",
-            "gpt-5.4": "GPT-5.4",
-        },
-    },
-}
+
+@dataclass(frozen=True, slots=True)
+class ViewerDimensionSpec:
+    id: str
+    label: str
+    null_label: str = "None"
+    aliases: Mapping[str, str] = field(default_factory=dict)
+    order: Mapping[str, int] = field(default_factory=dict)
+
+
+@dataclass(frozen=True, slots=True)
+class ViewerLayout:
+    row_dimension: str
+    column_dimension: str
+    group_dimension: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ViewerConfig:
+    case_id_field: str
+    dimensions: Sequence[ViewerDimensionSpec]
+    filter_dimensions: Sequence[str]
+    axis_dimensions: Sequence[str]
+    default_filters: Mapping[str, str | None]
+    default_layout: ViewerLayout
+    image_base_url: str
+    case_label_field: str | None = None
+    search_fields: Sequence[str] = ()
+
+    def __post_init__(self) -> None:
+        dimension_ids = {dimension.id for dimension in self.dimensions}
+
+        if not self.image_base_url.strip():
+            raise ValueError("image_base_url must not be empty.")
+        if len(dimension_ids) != len(tuple(self.dimensions)):
+            raise ValueError("dimension ids must be unique.")
+
+        for dimension_id in [*self.filter_dimensions, *self.axis_dimensions]:
+            if dimension_id not in dimension_ids:
+                raise ValueError(f"Unknown viewer dimension '{dimension_id}'.")
+
+        if self.default_layout.row_dimension not in self.axis_dimensions:
+            raise ValueError("default row_dimension must be in axis_dimensions.")
+        if self.default_layout.column_dimension not in self.axis_dimensions:
+            raise ValueError("default column_dimension must be in axis_dimensions.")
+        if self.default_layout.row_dimension == self.default_layout.column_dimension:
+            raise ValueError("default row_dimension and column_dimension must differ.")
+        if (
+            self.default_layout.group_dimension is not None
+            and self.default_layout.group_dimension not in self.axis_dimensions
+        ):
+            raise ValueError("default group_dimension must be in axis_dimensions.")
+        if self.default_layout.group_dimension in {
+            self.default_layout.row_dimension,
+            self.default_layout.column_dimension,
+        }:
+            raise ValueError(
+                "default group_dimension must differ from row_dimension and column_dimension."
+            )
+
+        for dimension_id in self.default_filters:
+            if dimension_id not in self.filter_dimensions:
+                raise ValueError(
+                    f"default filter '{dimension_id}' is not in filter_dimensions."
+                )
+
 
 SCORE_BREAKDOWN_SPECS: tuple[dict[str, str], ...] = (
     {
@@ -89,60 +108,53 @@ SCORE_BREAKDOWN_SPECS: tuple[dict[str, str], ...] = (
     },
 )
 
-VARIANT_SPECS: tuple[dict[str, Any], ...] = (
-    {
-        "id": "by-grounding",
-        "label": "Grounding",
-        "group_dimension": "grammar",
-        "row_dimension": "model",
-        "column_dimension": "grounding_mode",
-    },
-    {
-        "id": "by-model",
-        "label": "Model",
-        "group_dimension": "grammar",
-        "row_dimension": "grounding_mode",
-        "column_dimension": "model",
-    },
-    {
-        "id": "flat-by-grounding",
-        "label": "Grounding",
-        "group_dimension": None,
-        "row_dimension": "model",
-        "column_dimension": "grounding_mode",
-    },
-    {
-        "id": "flat-by-model",
-        "label": "Model",
-        "group_dimension": None,
-        "row_dimension": "grounding_mode",
-        "column_dimension": "model",
-    },
-)
 
-DEFAULT_SELECTION = {
-    "objective": "select",
-    "request_chart": None,
-    "overview_variant": "by-grounding",
-    "dimension_filters": {
-        "audience": None,
-    },
-}
-
-DEFAULT_SELECTION_DIMENSION_FILTERS = DEFAULT_SELECTION["dimension_filters"]
+def dimension_map(config: ViewerConfig) -> dict[str, ViewerDimensionSpec]:
+    return {dimension.id: dimension for dimension in config.dimensions}
 
 
-def display_label(dimension: str, value: Any) -> str:
-    spec = DIMENSION_SPECS.get(dimension, {})
+def resolved_case_label_field(config: ViewerConfig) -> str:
+    return config.case_label_field or config.case_id_field
+
+
+def resolved_search_fields(config: ViewerConfig) -> tuple[str, ...]:
+    return tuple(
+        dict.fromkeys(
+            [
+                config.case_id_field,
+                resolved_case_label_field(config),
+                *config.search_fields,
+            ]
+        )
+    )
+
+
+def display_label(config: ViewerConfig, dimension: str, value: Any) -> str:
+    spec = dimension_map(config).get(dimension)
+    if spec is None:
+        return str(value)
     if value is None:
-        return str(spec.get("null_label", "None"))
-    aliases = spec.get("aliases", {})
-    if value in aliases:
-        return str(aliases[value])
+        return spec.null_label
+    if value in spec.aliases:
+        return str(spec.aliases[value])
     return str(value)
 
 
-def label_for_dimension(dimension: str | None) -> str:
+def label_for_dimension(config: ViewerConfig, dimension: str | None) -> str:
     if dimension is None:
         return ""
-    return str(DIMENSION_SPECS.get(dimension, {}).get("label", dimension))
+    spec = dimension_map(config).get(dimension)
+    return spec.label if spec is not None else dimension
+
+
+__all__ = [
+    "SCORE_BREAKDOWN_SPECS",
+    "ViewerConfig",
+    "ViewerDimensionSpec",
+    "ViewerLayout",
+    "dimension_map",
+    "display_label",
+    "label_for_dimension",
+    "resolved_case_label_field",
+    "resolved_search_fields",
+]

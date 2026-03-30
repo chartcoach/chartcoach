@@ -1,5 +1,5 @@
 import type { ViewerActions, ViewerState } from "@/viewer/contract/types";
-import { getCellByKey, orientationLabel, renderImage, resolveAsset } from "@/viewer/render/utils";
+import { getCellByKey, orientationLabel, renderImage } from "@/viewer/render/utils";
 import { ScoreLedger } from "@/viewer/render/score-ledger";
 
 export function DetailDrawer({ state, actions }: { state: ViewerState; actions: ViewerActions }) {
@@ -13,11 +13,6 @@ export function DetailDrawer({ state, actions }: { state: ViewerState; actions: 
     (part): part is string => Boolean(part),
   );
   const label = orientationLabel(labelParts);
-  const asset = resolveAsset(
-    candidate.image_url || null,
-    candidate.image_meta || null,
-    state.assets[candidate.visgen_id]?.detail,
-  );
 
   return (
     <section className="vg-detail-section is-open">
@@ -47,10 +42,15 @@ export function DetailDrawer({ state, actions }: { state: ViewerState; actions: 
           <section className="vg-detail-block">
             <div className="vg-detail-image-frame">
               <div className="vg-chart-canvas is-detail">
-                {candidate.error || asset.error ? (
-                  <p className="vg-error">{candidate.error || asset.error}</p>
+                {candidate.error ? (
+                  <p className="vg-error">{candidate.error}</p>
                 ) : (
-                  renderImage(asset.imageUrl, label, asset.imageMeta, "detail")
+                  renderImage(
+                    candidate.image_url || null,
+                    label,
+                    candidate.image_meta || null,
+                    "detail",
+                  )
                 )}
               </div>
             </div>

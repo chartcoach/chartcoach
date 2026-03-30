@@ -1,5 +1,6 @@
 import type { AnywidgetModelLike } from "@/viewer/contract/types";
 import { useViewerController } from "@/viewer/controller/use-viewer-controller";
+import { AgentationDebug } from "@/viewer/render/agentation-debug";
 import { DetailDrawer } from "@/viewer/render/detail-drawer";
 import { ErrorBanner } from "@/viewer/render/error-banner";
 import { FigureBar } from "@/viewer/render/figure-bar";
@@ -16,6 +17,7 @@ export function ViewerRoot({ model }: { model: AnywidgetModelLike }) {
   return (
     <div className="vg-root" ref={refs.rootRef} tabIndex={0}>
       <div className="vg-shell">
+        <AgentationDebug enabled={state.debug} />
         <header className="vg-header">
           <FigureBar actions={actions} state={state} />
           <PopoverLayer actions={actions} refs={refs} state={state} />

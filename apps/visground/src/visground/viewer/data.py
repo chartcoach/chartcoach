@@ -1,45 +1,60 @@
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Mapping, Sequence
+from urllib.parse import quote
 from typing import Any
 
 import polars as pl
 
 from ..evaluation import overall_score_expr
 from .spec import (
-    DEFAULT_SELECTION,
-    DEFAULT_SELECTION_DIMENSION_FILTERS,
-    DIMENSION_SPECS,
     SCORE_BREAKDOWN_SPECS,
-    VARIANT_SPECS,
+    ViewerConfig,
+    ViewerLayout,
+    dimension_map,
     display_label,
     label_for_dimension,
+    resolved_case_label_field,
+    resolved_search_fields,
 )
 
 
-def discover_registry(candidates_df: pl.DataFrame) -> dict[str, Any]:
+def discover_registry(
+    candidates_df: pl.DataFrame,
+    *,
+    config: ViewerConfig,
+) -> dict[str, Any]:
     return {
-        "vis_ids": _non_null_values(candidates_df, "vis_id"),
-        "objectives": _sort_with_preference(
-            _non_null_values(candidates_df, "objective"),
-            DIMENSION_SPECS["objective"].get("order", {}),
-        ),
+        "vis_ids": _non_null_values(candidates_df, config.case_id_field, config=config),
+        "dimension_values": {
+            dimension.id: _values(candidates_df, dimension.id, config=config)
+            for dimension in config.dimensions
+            if dimension.id in candidates_df.columns
+        },
     }
 
 
-def default_selection_from_registry(registry: Mapping[str, Any]) -> dict[str, Any]:
-    objective = _choose_requested_value(
-        None,
-        tuple(registry["objectives"]),
-        preferred=DEFAULT_SELECTION["objective"],
+def default_selection_from_registry(
+    registry: Mapping[str, Any],
+    *,
+    config: ViewerConfig,
+) -> dict[str, Any]:
+    filters = {
+        dimension_id: _choose_requested_value(
+            None,
+            tuple(registry["dimension_values"].get(dimension_id, [None])),
+            preferred=config.default_filters.get(dimension_id),
+        )
+        for dimension_id in config.filter_dimensions
+    }
+    layout = _normalize_layout(
+        requested={},
+        axis_dimensions=tuple(config.axis_dimensions),
+        preferred=config.default_layout,
     )
     return {
-        "objective": objective,
-        "request_chart": DEFAULT_SELECTION["request_chart"],
-        "overview_variant": DEFAULT_SELECTION["overview_variant"],
-        "dimension_filters": {
-            key: value for key, value in DEFAULT_SELECTION_DIMENSION_FILTERS.items()
-        },
+        "filters": filters,
+        "layout": layout,
     }
 
 
@@ -47,22 +62,31 @@ def build_catalog(
     candidates_df: pl.DataFrame,
     vis_ids: Sequence[str],
     *,
-    request_chart_by_vis_id: Mapping[str, str | None] | None = None,
+    config: ViewerConfig,
 ) -> list[dict[str, Any]]:
     catalog: list[dict[str, Any]] = []
+    label_field = resolved_case_label_field(config)
+    search_fields = resolved_search_fields(config)
     for vis_id in vis_ids:
-        case_df = candidates_df.filter(pl.col("vis_id") == vis_id)
-        query = case_df.item(0, "query")
-        request_chart = (
-            request_chart_by_vis_id.get(vis_id)
-            if request_chart_by_vis_id is not None
-            else _first_non_null(case_df.get_column("request_chart").to_list())
+        case_df = candidates_df.filter(pl.col(config.case_id_field) == vis_id)
+        label = (
+            _first_non_null(case_df.get_column(label_field).cast(pl.String).to_list())
+            or vis_id
+        )
+        search_text = " ".join(
+            _non_null_sequence(
+                [
+                    str(value)
+                    for field in search_fields
+                    for value in case_df.get_column(field).cast(pl.String).to_list()
+                ]
+            )
         )
         catalog.append(
             {
                 "vis_id": vis_id,
-                "nl_query": query,
-                "request_chart": request_chart,
+                "label": label,
+                "search_text": search_text,
             }
         )
     return catalog
@@ -97,161 +121,121 @@ def normalize_selection(
     case_df: pl.DataFrame,
     *,
     registry: Mapping[str, Any],
-    request_chart: str | None,
-    objective: str | None,
-    overview_variant: str | None,
-    dimension_filters: Mapping[str, Any] | None,
-    request_chart_options: Sequence[str | None],
+    config: ViewerConfig,
+    filters: Mapping[str, Any] | None,
+    layout: Mapping[str, Any] | None,
 ) -> dict[str, Any]:
-    defaults = default_selection_from_registry(registry)
+    defaults = default_selection_from_registry(registry, config=config)
+    requested_filters = dict(filters or {})
 
-    objective_options = tuple(
-        _sort_with_preference(
-            _non_null_values(case_df, "objective"),
-            DIMENSION_SPECS["objective"].get("order", {}),
+    normalized_filters: dict[str, Any] = {}
+    filter_controls: list[dict[str, Any]] = []
+    for dimension_id in config.filter_dimensions:
+        options = tuple(_values(case_df, dimension_id, config=config))
+        chosen = _choose_requested_value(
+            requested_filters.get(dimension_id),
+            options,
+            preferred=config.default_filters.get(
+                dimension_id,
+                defaults["filters"].get(dimension_id),
+            ),
         )
-    )
-    chosen_objective = _choose_requested_value(
-        objective,
-        objective_options,
-        preferred=defaults["objective"],
-    )
-    objective_df = apply_dimension_filters(case_df, {"objective": chosen_objective})
+        normalized_filters[dimension_id] = chosen
+        if len(options) > 1:
+            filter_controls.append(
+                {
+                    "id": dimension_id,
+                    "label": label_for_dimension(config, dimension_id),
+                    "value": chosen,
+                    "options": [
+                        {
+                            "value": option,
+                            "label": display_label(config, dimension_id, option),
+                        }
+                        for option in options
+                    ],
+                }
+            )
 
-    requested_filters = dict(dimension_filters or {})
-    audience_options = tuple(_values(objective_df, "audience"))
-    chosen_audience = _choose_requested_value(
-        requested_filters.get("audience"),
-        audience_options,
-        preferred=defaults["dimension_filters"]["audience"],
+    scoped_df = apply_dimension_filters(case_df, normalized_filters)
+    axis_dimensions = tuple(
+        dimension_id
+        for dimension_id in config.axis_dimensions
+        if dimension_id in case_df.columns
     )
-    scoped_df = apply_dimension_filters(objective_df, {"audience": chosen_audience})
-
-    valid_variants = [
-        spec for spec in VARIANT_SPECS if _variant_is_valid(scoped_df, spec)
-    ]
-    if not valid_variants:
-        raise ValueError("Viewer has no valid overview variant for the active slice.")
-
-    valid_variant_ids = tuple(spec["id"] for spec in valid_variants)
-    chosen_variant_id = _choose_requested_value(
-        overview_variant,
-        valid_variant_ids,
-        preferred=defaults["overview_variant"],
-    )
-    chosen_variant = next(
-        spec for spec in valid_variants if spec["id"] == chosen_variant_id
+    normalized_layout = _normalize_layout(
+        requested=layout or {},
+        axis_dimensions=axis_dimensions,
+        preferred=config.default_layout,
     )
 
-    normalized_request_chart = (
-        request_chart if request_chart in request_chart_options else None
+    layout_controls = _build_layout_controls(
+        axis_dimensions=axis_dimensions,
+        layout=normalized_layout,
+        config=config,
     )
+
     selection = {
-        "vis_id": str(case_df.item(0, "vis_id")),
-        "request_chart": normalized_request_chart,
-        "objective": chosen_objective,
-        "overview_variant": chosen_variant["id"],
-        "dimension_filters": {
-            "audience": chosen_audience,
-        },
+        "vis_id": str(case_df.item(0, config.case_id_field)),
+        "filters": normalized_filters,
+        "layout": normalized_layout,
     }
     return {
         "selection": selection,
-        "objective_df": objective_df,
         "scoped_df": scoped_df,
-        "variant": chosen_variant,
-        "valid_variants": valid_variants,
+        "layout_controls": layout_controls,
+        "filter_controls": filter_controls,
     }
 
 
 def build_ui_schema(
     *,
-    registry: Mapping[str, Any],
     selection: Mapping[str, Any],
-    valid_variants: Sequence[Mapping[str, Any]],
-    request_chart_options: Sequence[str | None],
-    variant: Mapping[str, Any],
-    audience_options: Sequence[Any],
+    filter_controls: Sequence[Mapping[str, Any]],
+    layout_controls: Sequence[Mapping[str, Any]],
+    config: ViewerConfig,
 ) -> dict[str, Any]:
-    toolbar_pills = [
-        {
-            "id": "objective",
-            "label": display_label("objective", selection["objective"]),
-        }
-    ]
-    if len(valid_variants) > 1:
-        toolbar_pills.append(
-            {
-                "id": "compare",
-                "label": str(variant["label"]),
-            }
-        )
+    pills = []
+    if filter_controls:
+        pills.append({"id": "filters", "label": "Filters"})
+    if layout_controls:
+        pills.append({"id": "layout", "label": "Layout"})
 
-    scope_filters = [
-        _filter_schema(
-            dimension="request_chart",
-            options=request_chart_options,
-            value=selection["request_chart"],
-        ),
-        _filter_schema(
-            dimension="objective",
-            options=tuple(registry["objectives"]),
-            value=selection["objective"],
-        ),
-    ]
-    if len(audience_options) > 1:
-        scope_filters.append(
-            _filter_schema(
-                dimension="audience",
-                options=tuple(audience_options),
-                value=selection["dimension_filters"].get("audience"),
+    return {
+        "toolbar": {"pills": pills},
+        "filters": list(filter_controls),
+        "layout_controls": list(layout_controls),
+        "matrix_axes": {
+            "group_label": label_for_dimension(
+                config,
+                selection["layout"]["group_dimension"],
             )
-        )
-
-    matrix_axes = {
-        "group_label": (
-            label_for_dimension(variant["group_dimension"])
-            if variant.get("group_dimension")
-            else None
-        ),
-        "row_label": label_for_dimension(variant["row_dimension"]),
-        "column_label": label_for_dimension(variant["column_dimension"]),
+            if selection["layout"]["group_dimension"] is not None
+            else None,
+            "row_label": label_for_dimension(
+                config,
+                selection["layout"]["row_dimension"],
+            ),
+            "column_label": label_for_dimension(
+                config,
+                selection["layout"]["column_dimension"],
+            ),
+        },
     }
-
-    schema: dict[str, Any] = {
-        "toolbar": {"pills": toolbar_pills},
-        "scope_filters": scope_filters,
-        "matrix_axes": matrix_axes,
-    }
-    if len(valid_variants) > 1:
-        schema["variant_controls"] = {
-            "label": "Compare",
-            "value": selection["overview_variant"],
-            "options": [
-                {
-                    "value": spec["id"],
-                    "label": str(spec["label"]),
-                }
-                for spec in valid_variants
-            ],
-        }
-    return schema
 
 
 def build_overview_matrix(
     *,
-    objective_df: pl.DataFrame,
     scoped_df: pl.DataFrame,
-    variant: Mapping[str, Any],
-    image_loader: Callable[[dict[str, Any]], str],
-    image_metadata_loader: Callable[[dict[str, Any]], dict[str, Any]],
+    layout: Mapping[str, Any],
+    config: ViewerConfig,
 ) -> dict[str, Any]:
-    group_dimension = variant.get("group_dimension")
-    row_dimension = str(variant["row_dimension"])
-    column_dimension = str(variant["column_dimension"])
+    group_dimension = layout.get("group_dimension")
+    row_dimension = str(layout["row_dimension"])
+    column_dimension = str(layout["column_dimension"])
     group_fields = (
         [str(group_dimension), row_dimension, column_dimension]
-        if group_dimension
+        if group_dimension is not None
         else [row_dimension, column_dimension]
     )
 
@@ -266,7 +250,7 @@ def build_overview_matrix(
             + str(duplicate_cells.to_dicts())
         )
 
-    if group_dimension:
+    if group_dimension is not None:
         available = {
             (
                 record[str(group_dimension)],
@@ -275,9 +259,9 @@ def build_overview_matrix(
             ): record
             for record in scoped_df.to_dicts()
         }
-        group_values = _non_null_values(scoped_df, str(group_dimension))
-        row_values = _non_null_values(scoped_df, row_dimension)
-        column_values = _non_null_values(scoped_df, column_dimension)
+        group_values = _values(scoped_df, str(group_dimension), config=config)
+        row_values = _values(scoped_df, row_dimension, config=config)
+        column_values = _values(scoped_df, column_dimension, config=config)
 
         groups = []
         for group_value in group_values:
@@ -288,33 +272,35 @@ def build_overview_matrix(
                     record = available.get((group_value, row_value, column_value))
                     cells.append(
                         _matrix_cell_payload(
-                            objective_df=objective_df,
                             record=record,
+                            config=config,
                             group_dimension=str(group_dimension),
                             group_value=group_value,
                             row_dimension=row_dimension,
                             row_value=row_value,
                             column_dimension=column_dimension,
                             column_value=column_value,
-                            image_loader=image_loader,
-                            image_metadata_loader=image_metadata_loader,
                         )
                     )
                 rows.append(
                     {
                         "value": row_value,
-                        "label": display_label(row_dimension, row_value),
+                        "label": display_label(config, row_dimension, row_value),
                         "cells": cells,
                     }
                 )
             groups.append(
                 {
                     "value": group_value,
-                    "label": display_label(str(group_dimension), group_value),
+                    "label": display_label(config, str(group_dimension), group_value),
                     "columns": [
                         {
                             "value": column_value,
-                            "label": display_label(column_dimension, column_value),
+                            "label": display_label(
+                                config,
+                                column_dimension,
+                                column_value,
+                            ),
                         }
                         for column_value in column_values
                     ],
@@ -330,8 +316,8 @@ def build_overview_matrix(
         (record[row_dimension], record[column_dimension]): record
         for record in scoped_df.to_dicts()
     }
-    row_values = _non_null_values(scoped_df, row_dimension)
-    column_values = _non_null_values(scoped_df, column_dimension)
+    row_values = _values(scoped_df, row_dimension, config=config)
+    column_values = _values(scoped_df, column_dimension, config=config)
     rows = []
     for row_value in row_values:
         cells = []
@@ -339,22 +325,20 @@ def build_overview_matrix(
             record = available.get((row_value, column_value))
             cells.append(
                 _matrix_cell_payload(
-                    objective_df=objective_df,
                     record=record,
+                    config=config,
                     group_dimension=None,
                     group_value=None,
                     row_dimension=row_dimension,
                     row_value=row_value,
                     column_dimension=column_dimension,
                     column_value=column_value,
-                    image_loader=image_loader,
-                    image_metadata_loader=image_metadata_loader,
                 )
             )
         rows.append(
             {
                 "value": row_value,
-                "label": display_label(row_dimension, row_value),
+                "label": display_label(config, row_dimension, row_value),
                 "cells": cells,
             }
         )
@@ -363,7 +347,7 @@ def build_overview_matrix(
         "columns": [
             {
                 "value": column_value,
-                "label": display_label(column_dimension, column_value),
+                "label": display_label(config, column_dimension, column_value),
             }
             for column_value in column_values
         ],
@@ -374,12 +358,12 @@ def build_overview_matrix(
 def serialize_candidate_record(
     record: Mapping[str, Any],
     *,
-    image_loader: Callable[[dict[str, Any]], str],
-    image_metadata_loader: Callable[[dict[str, Any]], dict[str, Any]],
+    config: ViewerConfig,
 ) -> dict[str, Any]:
     judgement = record.get("judgement")
-    payload: dict[str, Any] = {
-        "visgen_id": str(record["visgen_id"]),
+    visgen_id = str(record["visgen_id"])
+    return {
+        "visgen_id": visgen_id,
         "overall_score": record.get("overall_score"),
         "guideline_count": len(list(dict.fromkeys(record.get("guideline_ids") or []))),
         "score_breakdown": [
@@ -395,16 +379,10 @@ def serialize_candidate_record(
             }
             for spec in SCORE_BREAKDOWN_SPECS
         ],
+        "image_url": _build_image_url(config.image_base_url, visgen_id),
+        "image_meta": None,
+        "error": record.get("error"),
     }
-    try:
-        payload["image_url"] = image_loader(dict(record))
-        payload["image_meta"] = image_metadata_loader(dict(record))
-        payload["error"] = None
-    except Exception as exc:
-        payload["image_url"] = None
-        payload["image_meta"] = None
-        payload["error"] = str(exc)
-    return payload
 
 
 def apply_dimension_filters(
@@ -420,20 +398,76 @@ def apply_dimension_filters(
     return filtered
 
 
-def _filter_schema(
+def _build_layout_controls(
     *,
-    dimension: str,
-    options: Sequence[Any],
-    value: Any,
+    axis_dimensions: Sequence[str],
+    layout: Mapping[str, Any],
+    config: ViewerConfig,
+) -> list[dict[str, Any]]:
+    row_dimension = str(layout["row_dimension"])
+    column_dimension = str(layout["column_dimension"])
+    group_dimension = layout.get("group_dimension")
+
+    return [
+        _layout_control(
+            control_id="row_dimension",
+            label="Rows",
+            options=[
+                dimension_id
+                for dimension_id in axis_dimensions
+                if dimension_id not in {column_dimension, group_dimension}
+            ],
+            value=row_dimension,
+            config=config,
+        ),
+        _layout_control(
+            control_id="column_dimension",
+            label="Columns",
+            options=[
+                dimension_id
+                for dimension_id in axis_dimensions
+                if dimension_id not in {row_dimension, group_dimension}
+            ],
+            value=column_dimension,
+            config=config,
+        ),
+        _layout_control(
+            control_id="group_dimension",
+            label="Groups",
+            options=[
+                None,
+                *[
+                    dimension_id
+                    for dimension_id in axis_dimensions
+                    if dimension_id not in {row_dimension, column_dimension}
+                ],
+            ],
+            value=group_dimension,
+            config=config,
+        ),
+    ]
+
+
+def _layout_control(
+    *,
+    control_id: str,
+    label: str,
+    options: Sequence[str | None],
+    value: str | None,
+    config: ViewerConfig,
 ) -> dict[str, Any]:
     return {
-        "id": dimension,
-        "label": label_for_dimension(dimension),
+        "id": control_id,
+        "label": label,
         "value": value,
         "options": [
             {
                 "value": option,
-                "label": display_label(dimension, option),
+                "label": (
+                    "No grouping"
+                    if option is None
+                    else label_for_dimension(config, option)
+                ),
             }
             for option in options
         ],
@@ -442,104 +476,81 @@ def _filter_schema(
 
 def _matrix_cell_payload(
     *,
-    objective_df: pl.DataFrame,
     record: Mapping[str, Any] | None,
+    config: ViewerConfig,
     group_dimension: str | None,
     group_value: Any,
     row_dimension: str,
     row_value: Any,
     column_dimension: str,
     column_value: Any,
-    image_loader: Callable[[dict[str, Any]], str],
-    image_metadata_loader: Callable[[dict[str, Any]], dict[str, Any]],
 ) -> dict[str, Any]:
     return {
         "cell_key": _cell_key(group_value, row_value, column_value),
         "group_value": group_value,
         "group_label": (
-            display_label(group_dimension, group_value) if group_dimension else None
+            display_label(config, group_dimension, group_value)
+            if group_dimension is not None
+            else None
         ),
         "row_value": row_value,
-        "row_label": display_label(row_dimension, row_value),
+        "row_label": display_label(config, row_dimension, row_value),
         "column_value": column_value,
-        "column_label": display_label(column_dimension, column_value),
+        "column_label": display_label(config, column_dimension, column_value),
         "missing": record is None,
-        "placeholder_reason": (
-            None
-            if record is not None
-            else _missing_reason(
-                objective_df=objective_df,
-                group_dimension=group_dimension,
-                group_value=group_value,
-                row_dimension=row_dimension,
-                row_value=row_value,
-                column_dimension=column_dimension,
-                column_value=column_value,
-            )
-        ),
+        "placeholder_reason": None if record is not None else "missing candidate",
         "candidate": (
             None
             if record is None
-            else serialize_candidate_record(
-                record,
-                image_loader=image_loader,
-                image_metadata_loader=image_metadata_loader,
-            )
+            else serialize_candidate_record(record, config=config)
         ),
     }
 
 
-def _missing_reason(
+def _normalize_layout(
     *,
-    objective_df: pl.DataFrame,
-    group_dimension: str | None,
-    group_value: Any,
-    row_dimension: str,
-    row_value: Any,
-    column_dimension: str,
-    column_value: Any,
-) -> str:
-    filters: dict[str, Any] = {
-        row_dimension: row_value,
-        column_dimension: column_value,
+    requested: Mapping[str, Any],
+    axis_dimensions: Sequence[str],
+    preferred: ViewerLayout,
+) -> dict[str, str | None]:
+    if len(axis_dimensions) < 2:
+        raise ValueError("Viewer requires at least two axis dimensions.")
+
+    row_dimension = _choose_requested_value(
+        requested.get("row_dimension"),
+        axis_dimensions,
+        preferred=preferred.row_dimension,
+    )
+    column_candidates = tuple(
+        dimension_id
+        for dimension_id in axis_dimensions
+        if dimension_id != row_dimension
+    )
+    column_dimension = _choose_requested_value(
+        requested.get("column_dimension"),
+        column_candidates,
+        preferred=preferred.column_dimension,
+    )
+
+    group_candidates = tuple(
+        [None]
+        + [
+            dimension_id
+            for dimension_id in axis_dimensions
+            if dimension_id not in {row_dimension, column_dimension}
+        ]
+    )
+    group_dimension = _choose_requested_value(
+        requested.get("group_dimension"),
+        group_candidates,
+        preferred=preferred.group_dimension,
+    )
+
+    return {
+        "row_dimension": str(row_dimension),
+        "column_dimension": str(column_dimension),
+        "group_dimension": None if group_dimension is None else str(group_dimension),
     }
-    if group_dimension is not None:
-        filters[group_dimension] = group_value
-    has_other_audience = not apply_dimension_filters(
-        objective_df,
-        {key: value for key, value in filters.items() if key != "audience"},
-    ).is_empty()
-    if has_other_audience:
-        return "not run for this audience"
-    return "missing candidate"
-
-
-def _variant_is_valid(df: pl.DataFrame, variant: Mapping[str, Any]) -> bool:
-    group_dimension = variant.get("group_dimension")
-    row_dimension = str(variant["row_dimension"])
-    column_dimension = str(variant["column_dimension"])
-
-    if len(_non_null_values(df, row_dimension)) <= 1:
-        return False
-    if len(_non_null_values(df, column_dimension)) <= 1:
-        return False
-    if (
-        group_dimension is not None
-        and len(_non_null_values(df, str(group_dimension))) <= 1
-    ):
-        return False
-
-    group_fields = (
-        [str(group_dimension), row_dimension, column_dimension]
-        if group_dimension
-        else [row_dimension, column_dimension]
-    )
-    duplicates = (
-        df.group_by(*group_fields)
-        .agg(pl.len().alias("count"))
-        .filter(pl.col("count") > 1)
-    )
-    return duplicates.is_empty()
 
 
 def _score_value(
@@ -566,15 +577,25 @@ def _score_value(
 
 
 def _cell_key(group_value: Any, row_value: Any, column_value: Any) -> str:
-    return f"{_schema_value_key(group_value)}::{_schema_value_key(row_value)}::{_schema_value_key(column_value)}"
+    return (
+        f"{_schema_value_key(group_value)}::"
+        f"{_schema_value_key(row_value)}::"
+        f"{_schema_value_key(column_value)}"
+    )
 
 
 def _schema_value_key(value: Any) -> str:
     return "__none__" if value is None else str(value)
 
 
-def _values(df: pl.DataFrame, dimension: str) -> list[Any]:
-    order = DIMENSION_SPECS.get(dimension, {}).get("order")
+def _values(
+    df: pl.DataFrame,
+    dimension: str,
+    *,
+    config: ViewerConfig,
+) -> list[Any]:
+    spec = dimension_map(config).get(dimension)
+    order = spec.order if spec is not None else {}
     values = (
         df.select(pl.col(dimension))
         .unique(maintain_order=True)
@@ -594,15 +615,15 @@ def _values(df: pl.DataFrame, dimension: str) -> list[Any]:
     return non_null
 
 
-def _non_null_values(df: pl.DataFrame, dimension: str) -> list[str]:
-    return [value for value in _values(df, dimension) if value is not None]
-
-
-def _sort_with_preference(
-    values: Sequence[str],
-    preferences: Mapping[str, int],
+def _non_null_values(
+    df: pl.DataFrame,
+    dimension: str,
+    *,
+    config: ViewerConfig,
 ) -> list[str]:
-    return sorted(values, key=lambda value: (preferences.get(value, 999), value))
+    return [
+        value for value in _values(df, dimension, config=config) if value is not None
+    ]
 
 
 def _choose_requested_value(
@@ -629,3 +650,19 @@ def _first_non_null(values: Sequence[str | None]) -> str | None:
 
 def _non_null_sequence(values: Sequence[str | None]) -> list[str]:
     return list(dict.fromkeys(value for value in values if value is not None))
+
+
+def _build_image_url(image_base_url: str, visgen_id: str) -> str:
+    return f"{image_base_url.rstrip('/')}/{quote(visgen_id)}.png"
+
+
+__all__ = [
+    "apply_dimension_filters",
+    "build_catalog",
+    "build_overview_matrix",
+    "build_ui_schema",
+    "default_selection_from_registry",
+    "discover_registry",
+    "enrich_candidates_with_scores",
+    "normalize_selection",
+]

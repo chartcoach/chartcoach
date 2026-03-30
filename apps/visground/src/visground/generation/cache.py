@@ -9,7 +9,7 @@ import dspy
 from .models import VisGenOutput
 from .signatures import ReviewVisualizationImplementation, WriteVisualizationCode
 
-_CACHE_NAMESPACE = "visground.generation.v3"
+_CACHE_NAMESPACE = "visground.generation.v4"
 
 
 class VisGenCache:
@@ -90,8 +90,6 @@ def _is_visgen_output(value: object) -> bool:
         "id",
         "code",
         "visualization_type",
-        "query_interpretation",
-        "design_rationale",
         "grounding_trace",
     }
     if not keys.issubset(value_dict):

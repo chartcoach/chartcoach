@@ -23,8 +23,6 @@ _GENERATED_CANDIDATE_COLUMNS: Final[tuple[str, ...]] = (
     "grammar",
     "code",
     "visualization_type",
-    "query_interpretation",
-    "design_rationale",
     "grounding_trace",
 )
 
@@ -50,8 +48,6 @@ def flatten_generated_candidates_df(
                 ("grammar", pl.String),
                 ("code", pl.String),
                 ("visualization_type", pl.String),
-                ("query_interpretation", pl.String),
-                ("design_rationale", pl.List(pl.String)),
                 ("grounding_trace", pl.Struct({})),
             ]
         )
@@ -97,8 +93,6 @@ def flatten_generated_candidates_df(
             "grammar",
             "code",
             "visualization_type",
-            "query_interpretation",
-            "design_rationale",
             "grounding_trace",
         )
         .select(*_GENERATED_CANDIDATE_COLUMNS)
@@ -124,6 +118,9 @@ class VisGroundDataset:
 
     def judgements_path(self) -> Path:
         return self._root / "04_judgements.parquet"
+
+    def judgement_runs_path(self) -> Path:
+        return self._root / "04_judgement_runs.parquet"
 
     def analysis_dir(self) -> Path:
         return self._root / "05_analysis"
@@ -183,6 +180,16 @@ class VisGroundDataset:
     def write_judgements_df(self, df: pl.DataFrame) -> Path:
         return self._write_df(df, self.judgements_path())
 
+    def read_judgement_runs_df(self) -> pl.DataFrame:
+        return self._read_df(
+            self.judgement_runs_path(),
+            label="04_judgement_runs.parquet",
+            producer="04_judging.py",
+        )
+
+    def write_judgement_runs_df(self, df: pl.DataFrame) -> Path:
+        return self._write_df(df, self.judgement_runs_path())
+
     def read_analysis_artifact_df(self, artifact_name: str) -> pl.DataFrame:
         return self._read_df(
             self.analysis_artifact_path(artifact_name),
@@ -207,7 +214,8 @@ class VisGroundDataset:
                 f"Missing chart image for visgen_id '{visgen_id}' at {path}. "
                 "Generate or save the chart image first."
             )
-        return Image.open(path)
+        with Image.open(path) as image:
+            return image.copy()
 
     def write_chart_image(self, visgen_id: str, image: Image.Image) -> Path:
         path = self.chart_path(visgen_id)

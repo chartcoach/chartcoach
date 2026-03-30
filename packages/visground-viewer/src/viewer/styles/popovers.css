@@ -7,7 +7,8 @@
   grid-template-columns: 1fr;
 }
 
-.vg-control-band-row-scope {
+.vg-control-band-row-filters,
+.vg-control-band-row-layout {
   grid-template-columns: 1fr;
 }
 
@@ -63,32 +64,9 @@
   grid-template-columns: 1fr;
 }
 
-.vg-popover-section.is-scope .vg-control-band-row-scope {
+.vg-popover-section.is-filters .vg-control-band-row-filters,
+.vg-popover-section.is-layout .vg-control-band-row-layout {
   grid-template-columns: 1fr;
-}
-
-.vg-segmented-toggle {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.4rem;
-}
-
-.vg-segmented-button {
-  border: 1px solid var(--vg-border);
-  border-radius: 6px;
-  background: #ffffff;
-  color: var(--vg-muted);
-  padding: 0.62rem 0.7rem;
-  font-family: "JetBrains Mono", "SFMono-Regular", "SF Mono", Menlo, monospace;
-  font-size: 0.76rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.vg-segmented-button.is-active {
-  border-color: var(--vg-border-strong);
-  color: var(--vg-text);
-  background: var(--vg-panel-strong);
 }
 
 .vg-controls-scrim[hidden] {
@@ -118,7 +96,8 @@
   }
 
   .vg-popover-section.is-case .vg-control-band-row-nav,
-  .vg-popover-section.is-scope .vg-control-band-row-scope {
+  .vg-popover-section.is-filters .vg-control-band-row-filters,
+  .vg-popover-section.is-layout .vg-control-band-row-layout {
     grid-template-columns: 1fr;
   }
 }

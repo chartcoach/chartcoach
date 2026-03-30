@@ -2,15 +2,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from visground.lm import make_observed_dspy_module
-
 from .backends import VisualizationBackend
 from .cache import VisGenCache
 from .models import VisGenOutput, VisualizationRequestRecord
 from .programs import (
     DEFAULT_REFINE_ROLLOUTS,
     DEFAULT_REFINE_THRESHOLD,
-    build_refine_generator,
+    build_observed_refine_generator,
     run_generation,
 )
 from .signatures import ReviewVisualizationImplementation, WriteVisualizationCode
@@ -50,20 +48,11 @@ class VisGenRunner:
 
         if indexed_misses:
             fresh_examples = [example for _, example in indexed_misses]
-            _generator = build_refine_generator(
+            generator = build_observed_refine_generator(
                 backend=self.backend,
                 coder_signature=self.coder_signature,
                 review_signature=self.review_signature,
                 reviewer_lm=self.reviewer_lm,
-            )
-            generator = make_observed_dspy_module(
-                _generator,
-                classname="VisualizationCodeGenerator",
-                observe_kwargs={
-                    "name": "vis-code-generator",
-                    "as_type": "agent",
-                },
-                attributes={"tags": ["generating"]},
             )
             fresh_outputs = run_generation(
                 generator,
