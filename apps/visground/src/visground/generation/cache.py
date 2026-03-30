@@ -9,7 +9,7 @@ import dspy
 from .models import VisGenOutput
 from .signatures import ReviewVisualizationImplementation, WriteVisualizationCode
 
-_CACHE_NAMESPACE = "visground.generation.v4"
+_CACHE_NAMESPACE = "visground.generation.v5"
 
 
 class VisGenCache:

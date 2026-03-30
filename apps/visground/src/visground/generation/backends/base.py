@@ -72,7 +72,10 @@ class VisualizationBackend(ABC, Generic[T]):
         df = normalize_df(rel.pl()).to_pandas()
         result = pyexecute(
             code,
-            context={"df": df},
+            context={
+                "df": df,
+                "plot_df": df,
+            },
             result_name="chart",
         )
 

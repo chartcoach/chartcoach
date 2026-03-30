@@ -60,6 +60,20 @@
   white-space: nowrap;
 }
 
+.vg-toolbar-pill-filters,
+.vg-toolbar-pill-layout {
+  min-height: 1.36rem;
+  padding: 0.08rem 0.46rem;
+  border-color: rgba(17, 17, 17, 0.08);
+  background: #fafafa;
+}
+
+.vg-toolbar-pill-filters .vg-toolbar-pill-value,
+.vg-toolbar-pill-layout .vg-toolbar-pill-value {
+  font-size: 0.66rem;
+  color: var(--vg-muted);
+}
+
 .vg-toolbar-pill.is-active,
 .vg-toolbar-pill-case[aria-expanded="true"] {
   border-color: var(--vg-border-strong);
@@ -162,27 +176,55 @@
 }
 
 .vg-query-band {
-  padding: 0.22rem 0 0.26rem;
+  padding: 0.5rem 0 0.72rem;
 }
 
 .vg-query-block {
   max-width: none;
   width: 100%;
-  padding: 0;
-  border: 0;
-  background: transparent;
+  padding: 0.72rem 0.88rem 0.78rem;
+  border: 1px solid rgba(17, 17, 17, 0.08);
+  border-radius: 8px;
+  background: #fbfbfb;
+}
+
+.vg-query-row {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr);
+  gap: 0.62rem;
+  align-items: center;
+}
+
+.vg-query-key {
+  display: inline-flex;
+  justify-content: flex-start;
+  align-items: center;
+  width: 1.4rem;
+  min-height: 0;
+  color: var(--vg-muted);
+  padding-top: 0;
+}
+
+.vg-query-key-icon {
+  width: 1.12rem;
+  height: 1.12rem;
+  display: block;
 }
 
 .vg-query-text {
   font-family: "Inter", "Helvetica Neue", "Segoe UI", sans-serif;
+  margin: 0;
   max-width: none;
-  font-size: 0.91rem;
+  font-size: 1.03rem;
   font-weight: 600;
-  line-height: 1.36;
+  line-height: 1.44;
+  letter-spacing: -0.01em;
   color: var(--vg-text);
   white-space: normal;
   overflow: visible;
   text-overflow: clip;
+  text-align: justify;
+  text-align-last: left;
 }
 
 .vg-spinner {
@@ -237,5 +279,27 @@
 @media (max-width: 860px) {
   .vg-shell {
     padding: 0.8rem 0.75rem 0.95rem;
+  }
+
+  .vg-query-block {
+    padding: 0.68rem 0.72rem 0.74rem;
+  }
+
+  .vg-query-row {
+    grid-template-columns: 1fr;
+    gap: 0.34rem;
+  }
+
+  .vg-query-key {
+    width: auto;
+    min-height: 0;
+    justify-content: flex-start;
+    align-items: flex-start;
+    padding-top: 0;
+  }
+
+  .vg-query-text {
+    font-size: 0.98rem;
+    line-height: 1.42;
   }
 }

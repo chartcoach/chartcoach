@@ -11,7 +11,7 @@ from .backends import VisualizationBackend
 from .models import ImplementationReviewResult, VisGenOutput
 from .signatures import ReviewVisualizationImplementation, WriteVisualizationCode
 
-DEFAULT_REFINE_ROLLOUTS = 5
+DEFAULT_REFINE_ROLLOUTS = 8
 DEFAULT_REFINE_THRESHOLD = 1.0
 
 
@@ -45,6 +45,8 @@ class VisualizationGenerationProgram(dspy.Module):
             review_signature=self.review_signature,
             request_id=kwargs["id"],
             code=draft.code,
+            query=kwargs["query"],
+            tablespec=kwargs["tablespec"],
             requirements=kwargs["requirements"],
             lm=self.reviewer_lm or self.coder.get_lm(),
         )
@@ -72,11 +74,14 @@ def build_refine_generator(
                 + pred.no_overlap
                 + pred.text_readable
                 + pred.data_readable
+                + pred.layout_balanced
+                + pred.data_operations_correct
+                + pred.self_explanatory
                 + pred.implementation_acceptable
                 + pred.requirements_followed
                 + pred.no_unprescribed_design
             )
-            / 7
+            / 10
         ),
         threshold=DEFAULT_REFINE_THRESHOLD,
     )
@@ -143,6 +148,8 @@ def _review_generated_visualization(
     review_signature: type[dspy.Signature],
     request_id: str,
     code: str,
+    query: str,
+    tablespec: str,
     requirements: list[str],
     lm: object | None,
 ) -> ImplementationReviewResult:
@@ -167,7 +174,13 @@ def _review_generated_visualization(
         if lm is not None:
             context_kwargs["lm"] = lm
         with dspy.context(**context_kwargs):
-            review = reviewer(vis=dspy.Image(image), requirements=requirements)
+            review = reviewer(
+                vis=dspy.Image(image),
+                code=code,
+                query=query,
+                tablespec=tablespec,
+                requirements=requirements,
+            )
     except Exception as exc:
         return _failed_implementation_review(
             f"Code executed and rasterization succeeded, but the implementation reviewer failed: {_summarize_exception(exc)}"
@@ -183,6 +196,9 @@ def _review_generated_visualization(
         and review.no_overlap
         and review.text_readable
         and review.data_readable
+        and review.layout_balanced
+        and review.data_operations_correct
+        and review.self_explanatory
         and requirements_followed
         and no_unprescribed_design
     )
@@ -192,19 +208,25 @@ def _review_generated_visualization(
         or not review.no_overlap
         or not review.text_readable
         or not review.data_readable
+        or not review.layout_balanced
+        or not review.data_operations_correct
+        or not review.self_explanatory
         or not requirements_followed
         or not no_unprescribed_design
     ):
         reasoning = review.reasoning.strip()
         explicit_reason = (
             "Code executed and rasterization succeeded, but the implementation "
-            f"reviewer flagged visible quality issues. {reasoning}"
+            f"reviewer flagged requirement, code, or visible-quality issues. {reasoning}"
         ).strip()
         return {
             "no_truncation": review.no_truncation,
             "no_overlap": review.no_overlap,
             "text_readable": review.text_readable,
             "data_readable": review.data_readable,
+            "layout_balanced": review.layout_balanced,
+            "data_operations_correct": review.data_operations_correct,
+            "self_explanatory": review.self_explanatory,
             "implementation_acceptable": implementation_acceptable,
             "requirements_followed": requirements_followed,
             "no_unprescribed_design": no_unprescribed_design,
@@ -218,6 +240,9 @@ def _review_generated_visualization(
         "no_overlap": review.no_overlap,
         "text_readable": review.text_readable,
         "data_readable": review.data_readable,
+        "layout_balanced": review.layout_balanced,
+        "data_operations_correct": review.data_operations_correct,
+        "self_explanatory": review.self_explanatory,
         "implementation_acceptable": implementation_acceptable,
         "requirements_followed": requirements_followed,
         "no_unprescribed_design": no_unprescribed_design,
@@ -233,6 +258,9 @@ def _failed_implementation_review(reason: str) -> ImplementationReviewResult:
         "no_overlap": False,
         "text_readable": False,
         "data_readable": False,
+        "layout_balanced": False,
+        "data_operations_correct": False,
+        "self_explanatory": False,
         "implementation_acceptable": False,
         "requirements_followed": False,
         "no_unprescribed_design": False,

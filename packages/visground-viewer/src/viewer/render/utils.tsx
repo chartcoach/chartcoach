@@ -1,4 +1,19 @@
-import type { CandidateImageMeta, MatrixCell, OverviewPayload } from "@/viewer/contract/types";
+import { useEffect, useState } from "react";
+import type {
+  CandidateImageMeta,
+  CellVariant,
+  MatrixCell,
+  OverviewPayload,
+} from "@/viewer/contract/types";
+
+const loadedImageUrls = new Set<string>();
+
+function cachedImageStatus(imageUrl: string | null): "loading" | "loaded" | "missing" {
+  if (!imageUrl) {
+    return "missing";
+  }
+  return loadedImageUrls.has(imageUrl) ? "loaded" : "loading";
+}
 
 export function toOptionValue(value: unknown): string {
   return value === null ? "__none__" : String(value);
@@ -32,14 +47,101 @@ export function renderImage(
   imageMeta: CandidateImageMeta | null = null,
   surface = "panel",
 ) {
-  if (!imageUrl) {
-    return null;
+  return <ImageSurface alt={alt} imageMeta={imageMeta} imageUrl={imageUrl} surface={surface} />;
+}
+
+function ImageSurface({
+  imageUrl,
+  alt,
+  imageMeta,
+  surface,
+}: {
+  imageUrl: string | null;
+  alt: string;
+  imageMeta: CandidateImageMeta | null;
+  surface: string;
+}) {
+  const [status, setStatus] = useState<"loading" | "loaded" | "missing">(() =>
+    cachedImageStatus(imageUrl),
+  );
+
+  useEffect(() => {
+    setStatus(cachedImageStatus(imageUrl));
+  }, [imageUrl]);
+
+  if (!imageUrl || status === "missing") {
+    return <ImagePlaceholder surface={surface} variant="missing" />;
   }
+
   const classes = ["vg-image", `surface-${surface}`];
   if (imageMeta?.is_extreme_aspect) {
     classes.push("is-extreme-aspect", `is-${imageMeta.aspect_kind}`);
   }
-  return <img alt={alt} className={classes.join(" ")} loading="lazy" src={imageUrl} />;
+  return (
+    <div className={`vg-image-stage surface-${surface}`.trim()}>
+      {status === "loading" ? <ImagePlaceholder surface={surface} variant="loading" /> : null}
+      <img
+        alt={alt}
+        className={classes.join(" ")}
+        loading="lazy"
+        onError={() => setStatus("missing")}
+        onLoad={() => {
+          if (imageUrl) {
+            loadedImageUrls.add(imageUrl);
+          }
+          setStatus("loaded");
+        }}
+        src={imageUrl}
+        style={{ opacity: status === "loaded" ? 1 : 0 }}
+      />
+    </div>
+  );
+}
+
+function ImagePlaceholder({
+  surface,
+  variant,
+}: {
+  surface: string;
+  variant: "loading" | "missing";
+}) {
+  return (
+    <div className={`vg-image-placeholder surface-${surface} is-${variant}`.trim()}>
+      <div className="vg-image-placeholder-card">
+        <div className="vg-image-placeholder-frame">
+          <svg aria-hidden className="vg-image-placeholder-glyph" viewBox="0 0 120 80">
+            <path
+              className="vg-image-placeholder-axis"
+              d="M16 12v52 M16 64h90"
+              fill="none"
+              pathLength="1"
+            />
+            <path
+              className="vg-image-placeholder-grid"
+              d="M16 26h90 M16 40h90 M16 54h90"
+              fill="none"
+              pathLength="1"
+            />
+            <path
+              className="vg-image-placeholder-series is-secondary"
+              d="M20 52 L36 48 L52 50 L70 42 L90 46 L104 38"
+              fill="none"
+              pathLength="1"
+            />
+            <path
+              className="vg-image-placeholder-series is-primary"
+              d="M20 58 L36 54 L52 42 L70 47 L90 28 L104 20"
+              fill="none"
+              pathLength="1"
+            />
+          </svg>
+        </div>
+        <span className="vg-image-placeholder-copy">
+          {variant === "loading" ? "loading chart" : "image unavailable"}
+        </span>
+      </div>
+    </div>
+  );
 }
 
 export function getCellByKey(
@@ -72,6 +174,23 @@ export function getCellByKey(
     }
   }
   return null;
+}
+
+export function clampVariantIndex(cell: MatrixCell, index: number): number {
+  if (cell.variants.length === 0) {
+    return 0;
+  }
+  return Math.min(Math.max(index, 0), cell.variants.length - 1);
+}
+
+export function getVariantByIndex(
+  cell: MatrixCell | null | undefined,
+  index: number,
+): CellVariant | null {
+  if (!cell || cell.variants.length === 0) {
+    return null;
+  }
+  return cell.variants[clampVariantIndex(cell, index)] ?? null;
 }
 
 export function orientationLabel(parts: Array<string | null | undefined>): string {

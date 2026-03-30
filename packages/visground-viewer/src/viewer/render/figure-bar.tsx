@@ -35,14 +35,26 @@ function toolbarPillText(state: ViewerState, pill: ViewerToolbarPill): string {
   const row = layoutControl(state, "row_dimension");
   const column = layoutControl(state, "column_dimension");
   const group = layoutControl(state, "group_dimension");
-  const parts = [
-    selectedLabel(row?.options, state.selection.layout.row_dimension),
-    selectedLabel(column?.options, state.selection.layout.column_dimension),
-  ];
+  const rowLabel = selectedLabel(row?.options, state.selection.layout.row_dimension);
+  const columnLabel = selectedLabel(column?.options, state.selection.layout.column_dimension);
   const groupLabel = selectedLabel(group?.options, state.selection.layout.group_dimension);
-  return groupLabel
-    ? `${parts.filter(Boolean).join(" × ")} · ${groupLabel}`
-    : parts.filter(Boolean).join(" × ");
+  const compactAxisLabel = (value: string | null, fallback: string) => {
+    if (!value) {
+      return fallback;
+    }
+    return value.split(/\s+/)[0]?.slice(0, 3).toLowerCase() ?? fallback;
+  };
+  const outerParts = [
+    `R ${compactAxisLabel(rowLabel, "row")}`,
+    `C ${compactAxisLabel(columnLabel, "col")}`,
+    groupLabel ? `G ${compactAxisLabel(groupLabel, "grp")}` : null,
+  ].filter((value): value is string => Boolean(value));
+  const outer = outerParts.join(" · ");
+  const hidden = schema.matrix_axes.hidden_labels;
+  if (!hidden.length) {
+    return outer;
+  }
+  return `${outer} · cell ${hidden.join("+")}`;
 }
 
 export function FigureBar({ state, actions }: { state: ViewerState; actions: ViewerActions }) {
@@ -70,7 +82,7 @@ export function FigureBar({ state, actions }: { state: ViewerState; actions: Vie
               return (
                 <button
                   aria-expanded={state.activePopoverId === pill.id}
-                  className={`vg-toolbar-pill ${state.activePopoverId === pill.id ? "is-active" : ""}`.trim()}
+                  className={`vg-toolbar-pill vg-toolbar-pill-${pill.id} ${state.activePopoverId === pill.id ? "is-active" : ""}`.trim()}
                   key={pill.id}
                   onClick={(event) => actions.togglePopover(pill.id, event.currentTarget)}
                   type="button"

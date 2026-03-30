@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from collections import Counter
 from collections.abc import Mapping, Sequence
-from urllib.parse import quote
 from typing import Any
+from urllib.parse import quote
 
 import polars as pl
 
@@ -17,6 +18,8 @@ from .spec import (
     resolved_case_label_field,
     resolved_search_fields,
 )
+
+_MISSING = object()
 
 
 def discover_registry(
@@ -133,7 +136,7 @@ def normalize_selection(
     for dimension_id in config.filter_dimensions:
         options = tuple(_values(case_df, dimension_id, config=config))
         chosen = _choose_requested_value(
-            requested_filters.get(dimension_id),
+            requested_filters.get(dimension_id, _MISSING),
             options,
             preferred=config.default_filters.get(
                 dimension_id,
@@ -183,6 +186,7 @@ def normalize_selection(
     return {
         "selection": selection,
         "scoped_df": scoped_df,
+        "axis_dimensions": axis_dimensions,
         "layout_controls": layout_controls,
         "filter_controls": filter_controls,
     }
@@ -191,6 +195,7 @@ def normalize_selection(
 def build_ui_schema(
     *,
     selection: Mapping[str, Any],
+    axis_dimensions: Sequence[str],
     filter_controls: Sequence[Mapping[str, Any]],
     layout_controls: Sequence[Mapping[str, Any]],
     config: ViewerConfig,
@@ -220,6 +225,16 @@ def build_ui_schema(
                 config,
                 selection["layout"]["column_dimension"],
             ),
+            "hidden_labels": [
+                label_for_dimension(config, dimension_id)
+                for dimension_id in axis_dimensions
+                if dimension_id
+                not in {
+                    selection["layout"]["row_dimension"],
+                    selection["layout"]["column_dimension"],
+                    selection["layout"]["group_dimension"],
+                }
+            ],
         },
     }
 
@@ -238,27 +253,20 @@ def build_overview_matrix(
         if group_dimension is not None
         else [row_dimension, column_dimension]
     )
-
-    duplicate_cells = (
-        scoped_df.group_by(*group_fields)
-        .agg(pl.len().alias("count"))
-        .filter(pl.col("count") > 1)
+    axis_dimensions = tuple(
+        dimension_id
+        for dimension_id in config.axis_dimensions
+        if dimension_id in scoped_df.columns
     )
-    if not duplicate_cells.is_empty():
-        raise ValueError(
-            "Expected at most one candidate per overview cell, got "
-            + str(duplicate_cells.to_dicts())
-        )
+    hidden_axes = tuple(
+        dimension_id
+        for dimension_id in axis_dimensions
+        if dimension_id not in {row_dimension, column_dimension, group_dimension}
+    )
+    records = scoped_df.to_dicts()
 
     if group_dimension is not None:
-        available = {
-            (
-                record[str(group_dimension)],
-                record[row_dimension],
-                record[column_dimension],
-            ): record
-            for record in scoped_df.to_dicts()
-        }
+        available = _bucket_records(records, group_fields)
         group_values = _values(scoped_df, str(group_dimension), config=config)
         row_values = _values(scoped_df, row_dimension, config=config)
         column_values = _values(scoped_df, column_dimension, config=config)
@@ -269,13 +277,14 @@ def build_overview_matrix(
             for row_value in row_values:
                 cells = []
                 for column_value in column_values:
-                    record = available.get((group_value, row_value, column_value))
+                    bucket = available.get((group_value, row_value, column_value), [])
                     cells.append(
                         _matrix_cell_payload(
-                            record=record,
+                            records=bucket,
                             config=config,
                             group_dimension=str(group_dimension),
                             group_value=group_value,
+                            hidden_axes=hidden_axes,
                             row_dimension=row_dimension,
                             row_value=row_value,
                             column_dimension=column_dimension,
@@ -286,6 +295,11 @@ def build_overview_matrix(
                     {
                         "value": row_value,
                         "label": display_label(config, row_dimension, row_value),
+                        **_axis_value_meta(
+                            scoped_df,
+                            dimension_id=row_dimension,
+                            value=row_value,
+                        ),
                         "cells": cells,
                     }
                 )
@@ -293,6 +307,11 @@ def build_overview_matrix(
                 {
                     "value": group_value,
                     "label": display_label(config, str(group_dimension), group_value),
+                    **_axis_value_meta(
+                        scoped_df,
+                        dimension_id=str(group_dimension),
+                        value=group_value,
+                    ),
                     "columns": [
                         {
                             "value": column_value,
@@ -300,6 +319,11 @@ def build_overview_matrix(
                                 config,
                                 column_dimension,
                                 column_value,
+                            ),
+                            **_axis_value_meta(
+                                scoped_df,
+                                dimension_id=column_dimension,
+                                value=column_value,
                             ),
                         }
                         for column_value in column_values
@@ -312,23 +336,21 @@ def build_overview_matrix(
             "groups": groups,
         }
 
-    available = {
-        (record[row_dimension], record[column_dimension]): record
-        for record in scoped_df.to_dicts()
-    }
+    available = _bucket_records(records, group_fields)
     row_values = _values(scoped_df, row_dimension, config=config)
     column_values = _values(scoped_df, column_dimension, config=config)
     rows = []
     for row_value in row_values:
         cells = []
         for column_value in column_values:
-            record = available.get((row_value, column_value))
+            bucket = available.get((row_value, column_value), [])
             cells.append(
                 _matrix_cell_payload(
-                    record=record,
+                    records=bucket,
                     config=config,
                     group_dimension=None,
                     group_value=None,
+                    hidden_axes=hidden_axes,
                     row_dimension=row_dimension,
                     row_value=row_value,
                     column_dimension=column_dimension,
@@ -339,6 +361,11 @@ def build_overview_matrix(
             {
                 "value": row_value,
                 "label": display_label(config, row_dimension, row_value),
+                **_axis_value_meta(
+                    scoped_df,
+                    dimension_id=row_dimension,
+                    value=row_value,
+                ),
                 "cells": cells,
             }
         )
@@ -348,6 +375,11 @@ def build_overview_matrix(
             {
                 "value": column_value,
                 "label": display_label(config, column_dimension, column_value),
+                **_axis_value_meta(
+                    scoped_df,
+                    dimension_id=column_dimension,
+                    value=column_value,
+                ),
             }
             for column_value in column_values
         ],
@@ -364,6 +396,11 @@ def serialize_candidate_record(
     visgen_id = str(record["visgen_id"])
     return {
         "visgen_id": visgen_id,
+        "dimension_values": {
+            dimension.id: record.get(dimension.id)
+            for dimension in config.dimensions
+            if dimension.id in record
+        },
         "overall_score": record.get("overall_score"),
         "guideline_count": len(list(dict.fromkeys(record.get("guideline_ids") or []))),
         "score_breakdown": [
@@ -476,15 +513,21 @@ def _layout_control(
 
 def _matrix_cell_payload(
     *,
-    record: Mapping[str, Any] | None,
+    records: Sequence[Mapping[str, Any]],
     config: ViewerConfig,
     group_dimension: str | None,
     group_value: Any,
+    hidden_axes: Sequence[str],
     row_dimension: str,
     row_value: Any,
     column_dimension: str,
     column_value: Any,
 ) -> dict[str, Any]:
+    variants = _serialize_cell_variants(
+        records,
+        hidden_axes=hidden_axes,
+        config=config,
+    )
     return {
         "cell_key": _cell_key(group_value, row_value, column_value),
         "group_value": group_value,
@@ -497,13 +540,14 @@ def _matrix_cell_payload(
         "row_label": display_label(config, row_dimension, row_value),
         "column_value": column_value,
         "column_label": display_label(config, column_dimension, column_value),
-        "missing": record is None,
-        "placeholder_reason": None if record is not None else "missing candidate",
-        "candidate": (
-            None
-            if record is None
-            else serialize_candidate_record(record, config=config)
-        ),
+        "hidden_axes": list(hidden_axes),
+        "hidden_axis_labels": [
+            label_for_dimension(config, dimension_id) for dimension_id in hidden_axes
+        ],
+        "variant_count": len(variants),
+        "missing": len(records) == 0,
+        "placeholder_reason": None if records else "missing candidate",
+        "variants": variants,
     }
 
 
@@ -517,7 +561,7 @@ def _normalize_layout(
         raise ValueError("Viewer requires at least two axis dimensions.")
 
     row_dimension = _choose_requested_value(
-        requested.get("row_dimension"),
+        requested.get("row_dimension", _MISSING),
         axis_dimensions,
         preferred=preferred.row_dimension,
     )
@@ -527,7 +571,7 @@ def _normalize_layout(
         if dimension_id != row_dimension
     )
     column_dimension = _choose_requested_value(
-        requested.get("column_dimension"),
+        requested.get("column_dimension", _MISSING),
         column_candidates,
         preferred=preferred.column_dimension,
     )
@@ -541,7 +585,7 @@ def _normalize_layout(
         ]
     )
     group_dimension = _choose_requested_value(
-        requested.get("group_dimension"),
+        requested.get("group_dimension", _MISSING),
         group_candidates,
         preferred=preferred.group_dimension,
     )
@@ -586,6 +630,154 @@ def _cell_key(group_value: Any, row_value: Any, column_value: Any) -> str:
 
 def _schema_value_key(value: Any) -> str:
     return "__none__" if value is None else str(value)
+
+
+def _axis_value_meta(
+    df: pl.DataFrame,
+    *,
+    dimension_id: str,
+    value: Any,
+) -> dict[str, Any]:
+    if dimension_id != "grounding_mode":
+        return {
+            "meta_label": None,
+            "meta_kind": None,
+        }
+
+    scoped = (
+        df.filter(pl.col(dimension_id).is_null())
+        if value is None
+        else df.filter(pl.col(dimension_id) == value)
+    )
+    guideline_ids = {
+        guideline_id
+        for guideline_list in scoped.get_column("guideline_ids").to_list()
+        for guideline_id in (guideline_list or [])
+    }
+    count = len(guideline_ids)
+    if count <= 0:
+        return {
+            "meta_label": None,
+            "meta_kind": None,
+        }
+    return {
+        "meta_label": f"{count} guideline{'s' if count != 1 else ''}",
+        "meta_kind": "guidelines",
+    }
+
+
+def _bucket_records(
+    records: Sequence[Mapping[str, Any]],
+    fields: Sequence[str],
+) -> dict[tuple[Any, ...], list[Mapping[str, Any]]]:
+    buckets: dict[tuple[Any, ...], list[Mapping[str, Any]]] = {}
+    for record in records:
+        key = tuple(record.get(field) for field in fields)
+        buckets.setdefault(key, []).append(record)
+    return buckets
+
+
+def _serialize_cell_variants(
+    records: Sequence[Mapping[str, Any]],
+    *,
+    hidden_axes: Sequence[str],
+    config: ViewerConfig,
+) -> list[dict[str, Any]]:
+    if not records:
+        return []
+
+    ordered = sorted(
+        records,
+        key=lambda record: _variant_sort_key(
+            record,
+            hidden_axes=hidden_axes,
+            config=config,
+        ),
+    )
+    base_labels = [
+        _variant_label(record, hidden_axes=hidden_axes, config=config)
+        for record in ordered
+    ]
+    counts = Counter(base_labels)
+    seen: Counter[str | None] = Counter()
+    variants: list[dict[str, Any]] = []
+
+    for record, base_label in zip(ordered, base_labels, strict=False):
+        seen[base_label] += 1
+        label = base_label
+        if counts[base_label] > 1:
+            suffix = f"#{seen[base_label]}"
+            label = f"{base_label} · {suffix}" if base_label else suffix
+        variants.append(
+            {
+                "variant_key": str(record["visgen_id"]),
+                "variant_label": label,
+                "candidate": serialize_candidate_record(record, config=config),
+            }
+        )
+    return variants
+
+
+def _variant_sort_key(
+    record: Mapping[str, Any],
+    *,
+    hidden_axes: Sequence[str],
+    config: ViewerConfig,
+) -> tuple[Any, ...]:
+    score_value = record.get("overall_score")
+    overall_sort = (
+        1,
+        0.0,
+    )
+    if score_value is not None:
+        overall_sort = (0, -float(score_value))
+
+    axis_sort = tuple(
+        _dimension_sort_key(
+            dimension_id,
+            record.get(dimension_id),
+            config=config,
+        )
+        for dimension_id in hidden_axes
+    )
+    return (
+        overall_sort,
+        axis_sort,
+        str(record.get("visgen_id") or ""),
+    )
+
+
+def _dimension_sort_key(
+    dimension_id: str,
+    value: Any,
+    *,
+    config: ViewerConfig,
+) -> tuple[int, int, str]:
+    spec = dimension_map(config).get(dimension_id)
+    if value is None:
+        return (0, -1, "")
+    if spec is None:
+        return (1, 999, str(value))
+    return (
+        1,
+        int(spec.order.get(value, 999)),
+        display_label(config, dimension_id, value),
+    )
+
+
+def _variant_label(
+    record: Mapping[str, Any],
+    *,
+    hidden_axes: Sequence[str],
+    config: ViewerConfig,
+) -> str | None:
+    parts = []
+    for dimension_id in hidden_axes:
+        parts.append(
+            f"{label_for_dimension(config, dimension_id)}: "
+            f"{display_label(config, dimension_id, record.get(dimension_id))}"
+        )
+    return " · ".join(parts) if parts else None
 
 
 def _values(
@@ -634,6 +826,10 @@ def _choose_requested_value(
 ) -> Any:
     if not options:
         raise ValueError("Viewer selection has no valid options.")
+    if requested is _MISSING:
+        if preferred in options:
+            return preferred
+        return options[0]
     if requested in options:
         return requested
     if preferred in options:

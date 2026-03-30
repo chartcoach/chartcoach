@@ -5,6 +5,10 @@
   background: transparent;
 }
 
+.vg-detail-variant-list {
+  margin-bottom: 0.04rem;
+}
+
 .vg-detail-section {
   position: absolute;
   inset: 0;

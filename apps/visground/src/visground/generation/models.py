@@ -16,6 +16,9 @@ class ImplementationReviewResult(TypedDict):
     no_overlap: bool
     text_readable: bool
     data_readable: bool
+    layout_balanced: bool
+    data_operations_correct: bool
+    self_explanatory: bool
     implementation_acceptable: bool
     requirements_followed: bool
     no_unprescribed_design: bool

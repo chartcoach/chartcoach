@@ -37,9 +37,9 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(Literal):
     # ModelName = Literal["gpt-5.4", "claude-sonnet-4.6", "gemini-3.1-pro-preview"]
-    ModelName = Literal["gpt-5.4"]
+    ModelName = Literal["gpt-5.4", "gpt-5.3-codex"]
     # GrammarName = Literal["matplotlib", "altair", "plotly"]
-    GrammarName = Literal["matplotlib"]
+    GrammarName = Literal["matplotlib", "plotly"]
     SITUATED_GRAMMARS = {"matplotlib"}
     return GrammarName, ModelName, SITUATED_GRAMMARS
 
@@ -50,6 +50,10 @@ def _(ModelName, dspy, lm_cliproxy, lm_openrouter):
         model_map = {
             "gpt-5.4": {
                 "lm": lm_cliproxy("gpt-5.4"),
+                "num_threads": 16,
+            },
+            "gpt-5.3-codex": {
+                "lm": lm_cliproxy("gpt-5.3-codex"),
                 "num_threads": 16,
             },
             "claude-sonnet-4.6": {
@@ -87,15 +91,8 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _(mo, store):
-    grounding_df_path = mo.watch.file(store.grounding_path())
-    return (grounding_df_path,)
-
-
-@app.cell(hide_code=True)
-def _(grounding_df_path, pl):
-    # grounding_df = store.read_grounding_df()
-    grounding_df = pl.read_parquet(grounding_df_path.read_bytes())
+def _(store):
+    grounding_df = store.read_grounding_df()
     grounding_df
     return (grounding_df,)
 

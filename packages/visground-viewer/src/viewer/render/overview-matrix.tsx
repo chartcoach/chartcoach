@@ -61,6 +61,8 @@ function GroupedSection({
           extraProps={{
             "data-group-value": toOptionValue(group.value),
           }}
+          metaKind={group.meta_kind}
+          metaLabel={group.meta_label}
           showDimension
           valueLabel={group.label}
         />
@@ -79,6 +81,8 @@ function GroupedSection({
               "data-group-value": toOptionValue(group.value),
             }}
             key={`column-${toOptionValue(group.value)}-${toOptionValue(column.value)}`}
+            metaKind={column.meta_kind}
+            metaLabel={column.meta_label}
             showDimension={groupIndex === 0 && columnIndex === 0}
             valueLabel={column.label}
           />
@@ -91,6 +95,8 @@ function GroupedSection({
               "data-row-value": toOptionValue(row.value),
             }}
             key={`row-${toOptionValue(group.value)}-${toOptionValue(row.value)}`}
+            metaKind={row.meta_kind}
+            metaLabel={row.meta_label}
             showDimension={groupIndex === 0 && rowIndex === 0}
             valueLabel={row.label}
           />,
@@ -169,6 +175,8 @@ export function OverviewMatrix({ state, actions }: { state: ViewerState; actions
               "data-column-value": toOptionValue(column.value),
             }}
             key={`flat-column-${toOptionValue(column.value)}`}
+            metaKind={column.meta_kind}
+            metaLabel={column.meta_label}
             showDimension={columnIndex === 0}
             valueLabel={column.label}
           />
@@ -181,6 +189,8 @@ export function OverviewMatrix({ state, actions }: { state: ViewerState; actions
               "data-row-value": toOptionValue(row.value),
             }}
             key={`flat-row-${toOptionValue(row.value)}`}
+            metaKind={row.meta_kind}
+            metaLabel={row.meta_label}
             showDimension={rowIndex === 0}
             valueLabel={row.label}
           />,
