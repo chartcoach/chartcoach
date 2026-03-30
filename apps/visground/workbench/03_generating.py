@@ -37,9 +37,9 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(Literal):
     # ModelName = Literal["gpt-5.4", "claude-sonnet-4.6", "gemini-3.1-pro-preview"]
-    ModelName = Literal["gpt-5.4", "gpt-5.3-codex"]
+    ModelName = Literal["gpt-5.4", "deepseek-v3.2", "claude-sonnet-4.6"]
     # GrammarName = Literal["matplotlib", "altair", "plotly"]
-    GrammarName = Literal["matplotlib", "plotly"]
+    GrammarName = Literal["matplotlib", "plotly", "altair"]
     SITUATED_GRAMMARS = {"matplotlib"}
     return GrammarName, ModelName, SITUATED_GRAMMARS
 
@@ -62,6 +62,10 @@ def _(ModelName, dspy, lm_cliproxy, lm_openrouter):
             },
             "gemini-3.1-pro-preview": {
                 "lm": lm_openrouter("google/gemini-3.1-pro-preview"),
+                "num_threads": 32,
+            },
+            "deepseek-v3.2": {
+                "lm": lm_openrouter("deepseek/deepseek-v3.2"),
                 "num_threads": 32,
             },
         }
