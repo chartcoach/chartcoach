@@ -38,9 +38,9 @@ def _(mo):
 def _(Literal):
     # ModelName = Literal["gpt-5.4", "claude-sonnet-4.6", "gemini-3.1-pro-preview"]
     # ModelName = Literal["gpt-5.3-codex"]
-    ModelName = Literal["gpt-5.4", "gpt-5.3-codex"]
-    # GrammarName = Literal["matplotlib", "altair", "plotly"]
-    GrammarName = Literal["matplotlib", "plotly"]
+    ModelName = Literal["gpt-5.4-mini", "gpt-5.4", "gpt-5.3-codex"]
+    GrammarName = Literal["matplotlib", "plotly", "altair"]
+    # GrammarName = Literal["matplotlib", "plotly"]
     SITUATED_GRAMMARS = {"matplotlib"}
     return GrammarName, ModelName, SITUATED_GRAMMARS
 
@@ -159,12 +159,14 @@ def _(
                         continue
 
                     grounding_id = row["grounding_id"]
+                    grounding_mode = row["grounding_mode"]
                     visgen_input = grounding_row_to_visgen_input(row)
                     visgen_inputs.append(
                         {
                             "visgen_id": "-".join([grounding_id, grammar, model]),
                             "model": model,
                             "grammar": grammar,
+                            "grounding_mode": grounding_mode,
                             "grounding_id": grounding_id,
                             "input": visgen_input,
                         }
@@ -193,9 +195,13 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(pl, visgen_input_df):
     scenario_df = (
-        visgen_input_df.group_by("model", "grammar")
+        visgen_input_df.group_by(
+            "model",
+            "grammar",
+            "grounding_mode",
+        )
         .agg(scenario=pl.struct("*"))
-        .sort("model", "grammar")
+        .sort("model", "grammar", "grounding_mode")
     )
     scenario_df
     return (scenario_df,)
@@ -280,7 +286,7 @@ def _(VisEvalDataset, VisGroundDataset):
 
 @app.cell(hide_code=True)
 def _():
-    from typing import Literal, get_args
+    from typing import Literal, cast, get_args
 
     import dspy
     import marimo as mo

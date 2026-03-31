@@ -13,6 +13,7 @@ from .data import (
     build_ui_schema,
     default_selection_from_registry,
     discover_registry,
+    enrich_candidates_with_judge_runs,
     enrich_candidates_with_scores,
     normalize_selection,
 )
@@ -33,6 +34,7 @@ class VisGroundViewerBackend(anywidget.AnyWidget):
         candidates_df: pl.DataFrame,
         viewer_config: ViewerConfig,
         judgements_df: pl.DataFrame | None = None,
+        judgement_runs_df: pl.DataFrame | None = None,
         initial_vis_id: str | None = None,
         initial_filters: Mapping[str, Any] | None = None,
         initial_layout: Mapping[str, Any] | None = None,
@@ -44,6 +46,10 @@ class VisGroundViewerBackend(anywidget.AnyWidget):
 
         if show_scores and judgements_df is not None:
             candidates_df = enrich_candidates_with_scores(candidates_df, judgements_df)
+        if judgement_runs_df is not None:
+            candidates_df = enrich_candidates_with_judge_runs(
+                candidates_df, judgement_runs_df
+            )
 
         self._candidates_df = candidates_df
         self._config = viewer_config
@@ -154,8 +160,9 @@ class VisGroundViewerBackend(anywidget.AnyWidget):
         if cache_key in self._view_cache:
             return self._view_cache[cache_key]
 
-        label = str(case_df.item(0, resolved_case_label_field(self._config)))
         scoped_df = normalized["scoped_df"]
+        label_source_df = scoped_df if not scoped_df.is_empty() else case_df
+        label = str(label_source_df.item(0, resolved_case_label_field(self._config)))
         overview = {
             "label": label,
             "ui_schema": build_ui_schema(

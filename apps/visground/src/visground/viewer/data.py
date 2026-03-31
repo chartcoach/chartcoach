@@ -120,6 +120,38 @@ def enrich_candidates_with_scores(
     return candidates_df.join(score_df, on="visgen_id", how="left")
 
 
+def enrich_candidates_with_judge_runs(
+    candidates_df: pl.DataFrame,
+    judgement_runs_df: pl.DataFrame | None,
+) -> pl.DataFrame:
+    if judgement_runs_df is None or judgement_runs_df.is_empty():
+        return candidates_df
+
+    if missing := (
+        {"visgen_id", "judge_run_id", "judge_run_index", "judgement", "overall_score"}
+        - set(judgement_runs_df.columns)
+    ):
+        raise ValueError(
+            "Judgement runs are missing required viewer columns: "
+            + ", ".join(sorted(missing))
+            + "."
+        )
+
+    runs_df = (
+        judgement_runs_df.sort("visgen_id", "judge_run_index")
+        .group_by("visgen_id", maintain_order=True)
+        .agg(
+            judge_runs=pl.struct(
+                "judge_run_id",
+                "judge_run_index",
+                "judgement",
+                "overall_score",
+            )
+        )
+    )
+    return candidates_df.join(runs_df, on="visgen_id", how="left")
+
+
 def normalize_selection(
     case_df: pl.DataFrame,
     *,
@@ -395,6 +427,7 @@ def serialize_candidate_record(
     judgement = record.get("judgement")
     visgen_id = str(record["visgen_id"])
     guideline_ids = list(dict.fromkeys(record.get("guideline_ids") or []))
+    judge_runs = list(record.get("judge_runs") or [])
     return {
         "visgen_id": visgen_id,
         "dimension_values": {
@@ -423,6 +456,7 @@ def serialize_candidate_record(
                     judgement=judgement,
                     score_id=spec["id"],
                 ),
+                "runs": _score_runs(score_id=spec["id"], judge_runs=judge_runs),
             }
             for spec in SCORE_BREAKDOWN_SPECS
         ],
@@ -654,18 +688,69 @@ def _score_reasoning(
     return None
 
 
+def _score_runs(
+    *,
+    score_id: str,
+    judge_runs: Sequence[Mapping[str, Any]],
+) -> list[dict[str, Any]]:
+    items: list[dict[str, Any]] = []
+    for run in judge_runs:
+        run_id = str(run.get("judge_run_id") or "")
+        run_index = run.get("judge_run_index")
+        label = (
+            f"Run {int(run_index) + 1}" if run_index is not None else f"Run {run_id}"
+        )
+
+        if score_id == "overall":
+            value = run.get("overall_score")
+            items.append(
+                {
+                    "run_id": run_id,
+                    "label": label,
+                    "score": float(value) if value is not None else None,
+                    "reasoning": None,
+                }
+            )
+            continue
+
+        judgement = run.get("judgement")
+        if not isinstance(judgement, Mapping):
+            continue
+        score_entry = judgement.get(score_id)
+        if not isinstance(score_entry, Mapping):
+            continue
+        value = score_entry.get("score")
+        reasoning = score_entry.get("reasoning")
+        items.append(
+            {
+                "run_id": run_id,
+                "label": label,
+                "score": float(value) if value is not None else None,
+                "reasoning": str(reasoning) if reasoning else None,
+            }
+        )
+
+    return items
+
+
 def _guideline_detail(
     guideline_id: str,
     *,
     config: ViewerConfig,
-) -> dict[str, str]:
+) -> dict[str, Any]:
     detail = config.guideline_details_by_id.get(guideline_id, {})
     title = detail.get("title") or guideline_id.replace("-", " ").strip().title()
     description = detail.get("description") or ""
+    sources = [
+        str(value).strip()
+        for value in (detail.get("sources") or [])
+        if str(value).strip()
+    ]
     return {
         "id": guideline_id,
         "title": str(title),
         "description": str(description),
+        "sources": sources,
     }
 
 

@@ -50,7 +50,7 @@ class VisGenCache:
         outputs: list[VisGenOutput | None] = []
         misses: list[tuple[int, dspy.Example]] = []
         for index, example in enumerate(examples):
-            key = self._cache_key(example)
+            key = self.cache_key(example)
             value = dspy.cache.get({"key": key})
             if _is_visgen_output(value):
                 outputs.append(value)
@@ -65,9 +65,9 @@ class VisGenCache:
         outputs: Sequence[VisGenOutput],
     ) -> None:
         for example, output in zip(examples, outputs):
-            dspy.cache.put({"key": self._cache_key(example)}, output)
+            dspy.cache.put({"key": self.cache_key(example)}, output)
 
-    def _cache_key(self, example: dspy.Example) -> str:
+    def cache_key(self, example: dspy.Example) -> str:
         return json.dumps(
             {
                 "ns": self._namespace,

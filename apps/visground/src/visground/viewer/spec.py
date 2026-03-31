@@ -30,7 +30,7 @@ class ViewerConfig:
     default_filters: Mapping[str, str | None]
     default_layout: ViewerLayout
     image_base_url: str
-    guideline_details_by_id: Mapping[str, Mapping[str, str]] = field(
+    guideline_details_by_id: Mapping[str, Mapping[str, Any]] = field(
         default_factory=dict
     )
     case_label_field: str | None = None

@@ -28,12 +28,17 @@ _GENERATED_CANDIDATE_COLUMNS: Final[tuple[str, ...]] = (
     "grounding_trace",
 )
 
+_GENERATED_ATTEMPT_COLUMNS: Final[tuple[str, ...]] = (
+    *_GENERATED_CANDIDATE_COLUMNS,
+    "generation_error",
+)
 
-def flatten_generated_candidates_df(
+
+def flatten_generated_attempts_df(
     generated_df: pl.DataFrame,
     grounding_df: pl.DataFrame,
 ) -> pl.DataFrame:
-    """Normalize scenario-batched generation output into one row per candidate."""
+    """Normalize scenario-batched generation output into one row per attempt."""
     if generated_df.is_empty():
         return pl.DataFrame(
             schema=[
@@ -51,10 +56,11 @@ def flatten_generated_candidates_df(
                 ("code", pl.String),
                 ("visualization_type", pl.String),
                 ("grounding_trace", pl.Struct({})),
+                ("generation_error", pl.String),
             ]
         )
 
-    return (
+    attempts_df = (
         generated_df.unnest("run")
         .explode("scenario", "outputs")
         .unnest("scenario")
@@ -81,22 +87,40 @@ def flatten_generated_candidates_df(
             on="grounding_id",
             how="left",
         )
-        .select(
-            "visgen_id",
-            "grounding_id",
-            "grounding_mode",
-            "objective",
-            pl.col("id").alias("vis_id"),
-            "query",
-            "request_chart",
-            "audience",
-            "guideline_ids",
-            "model",
-            "grammar",
-            "code",
-            "visualization_type",
-            "grounding_trace",
+    )
+
+    if "generation_error" not in attempts_df.columns:
+        attempts_df = attempts_df.with_columns(
+            pl.lit(None).cast(pl.String).alias("generation_error")
         )
+
+    return attempts_df.select(
+        "visgen_id",
+        "grounding_id",
+        "grounding_mode",
+        "objective",
+        pl.col("id").alias("vis_id"),
+        "query",
+        "request_chart",
+        "audience",
+        "guideline_ids",
+        "model",
+        "grammar",
+        "code",
+        "visualization_type",
+        "grounding_trace",
+        "generation_error",
+    ).select(*_GENERATED_ATTEMPT_COLUMNS)
+
+
+def flatten_generated_candidates_df(
+    generated_df: pl.DataFrame,
+    grounding_df: pl.DataFrame,
+) -> pl.DataFrame:
+    """Normalize scenario-batched generation output into one row per candidate."""
+    return (
+        flatten_generated_attempts_df(generated_df, grounding_df)
+        .filter(pl.col("generation_error").is_null())
         .select(*_GENERATED_CANDIDATE_COLUMNS)
     )
 
@@ -168,6 +192,12 @@ class VisGroundDataset:
 
     def read_generated_candidates_df(self) -> pl.DataFrame:
         return flatten_generated_candidates_df(
+            self.read_generated_df(),
+            self.read_grounding_df(),
+        )
+
+    def read_generated_attempts_df(self) -> pl.DataFrame:
+        return flatten_generated_attempts_df(
             self.read_generated_df(),
             self.read_grounding_df(),
         )

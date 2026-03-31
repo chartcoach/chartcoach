@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit, urlunsplit
 
-from anywidget._util import try_file_contents
 import polars as pl
 
 from .backend import VisGroundViewerBackend
@@ -49,18 +48,22 @@ class VisGroundViewer(VisGroundViewerBackend):
         candidates_df: pl.DataFrame,
         viewer_config: ViewerConfig,
         judgements_df: pl.DataFrame | None = None,
+        judgement_runs_df: pl.DataFrame | None = None,
         initial_vis_id: str | None = None,
         initial_filters: Mapping[str, Any] | None = None,
         initial_layout: Mapping[str, Any] | None = None,
         debug: bool = False,
         show_scores: bool = True,
     ) -> None:
+        from anywidget._util import try_file_contents
+
         resolved_esm = _resolve_viewer_esm()
         self._esm = try_file_contents(resolved_esm) or resolved_esm
         super().__init__(
             candidates_df=candidates_df,
             viewer_config=viewer_config,
             judgements_df=judgements_df,
+            judgement_runs_df=judgement_runs_df,
             initial_vis_id=initial_vis_id,
             initial_filters=initial_filters,
             initial_layout=initial_layout,

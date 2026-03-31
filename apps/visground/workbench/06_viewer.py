@@ -29,13 +29,24 @@ def _():
 
 
 @app.cell(hide_code=True)
+def _(mo, os):
+    debug_default = os.getenv("VISGROUND_VIEWER_DEBUG", "0") == "1"
+    debug_switch = mo.ui.switch(debug_default, label="Debug")
+    debug_switch
+    return (debug_switch,)
+
+
+@app.cell(hide_code=True)
 def _(VisGroundDataset):
     store = VisGroundDataset()
     candidates_df = store.read_generated_candidates_df()
     judgements_df = (
         store.read_judgements_df() if store.judgements_path().exists() else None
     )
-    return candidates_df, judgements_df
+    judgement_runs_df = (
+        store.read_judgement_runs_df() if store.judgement_runs_path().exists() else None
+    )
+    return candidates_df, judgement_runs_df, judgements_df
 
 
 @app.cell(hide_code=True)
@@ -43,10 +54,47 @@ def _(ViewerConfig, ViewerDimensionSpec, ViewerLayout, os):
     from pathlib import Path
 
     import polars as pl
+    from chartcoach.guideline import parse_bibtex_entry
 
     catalog_path = (
         Path(__file__).resolve().parents[3] / "guidelines" / "catalog.parquet"
     )
+
+    def author_label(author_field: str) -> str | None:
+        authors = [part.strip() for part in author_field.split(" and ") if part.strip()]
+        if not authors:
+            return None
+
+        def family_name(author: str) -> str:
+            if "," in author:
+                return author.split(",", 1)[0].strip()
+            return author.split()[-1].strip()
+
+        family_names = [
+            family_name(author) for author in authors if family_name(author)
+        ]
+        if not family_names:
+            return None
+        if len(family_names) == 1:
+            return family_names[0]
+        if len(family_names) == 2:
+            return f"{family_names[0]} & {family_names[1]}"
+        return f"{family_names[0]} et al."
+
+    def render_source_label(reference: str) -> str | None:
+        try:
+            parsed = parse_bibtex_entry(reference)
+        except Exception:
+            parsed = {}
+
+        author = author_label(str(parsed.get("author") or ""))
+        year = str(parsed.get("year") or "").strip()
+        if author and year:
+            return f"{author}, {year}"
+        if author:
+            return author
+        return None
+
     guideline_details_by_id = {}
     if catalog_path.exists():
         catalog_df = pl.read_parquet(catalog_path)
@@ -61,9 +109,19 @@ def _(ViewerConfig, ViewerDimensionSpec, ViewerLayout, os):
                 ),
                 "",
             )
+            sources = list(
+                dict.fromkeys(
+                    rendered
+                    for reference in (row.get("references") or [])
+                    if str(reference).strip()
+                    if (rendered := render_source_label(str(reference).strip()))
+                    is not None
+                )
+            )
             guideline_details_by_id[str(row["id"])] = {
                 "title": str(guideline.get("title") or row["id"]),
                 "description": str(guideline.get("description") or advice),
+                "sources": sources,
             }
 
     image_base_url = os.getenv(
@@ -120,6 +178,7 @@ def _(ViewerConfig, ViewerDimensionSpec, ViewerLayout, os):
                 id="model",
                 label="Model",
                 aliases={
+                    "gpt-5.3-codex": "GPT-5.3 Codex",
                     "claude-sonnet-4.6": "Claude 4.6",
                     "gemini-3.1-pro-preview": "Gemini 3.1",
                     "gpt-5.4": "GPT-5.4",
@@ -144,18 +203,11 @@ def _(ViewerConfig, ViewerDimensionSpec, ViewerLayout, os):
 
 
 @app.cell(hide_code=True)
-def _(mo, os):
-    debug_default = os.getenv("VISGROUND_VIEWER_DEBUG", "0") == "1"
-    debug_switch = mo.ui.switch(debug_default, label="Debug")
-    debug_switch
-    return (debug_switch,)
-
-
-@app.cell(hide_code=True)
 def _(
     VisGroundViewer,
     candidates_df,
     debug_switch,
+    judgement_runs_df,
     judgements_df,
     mo,
     viewer_config,
@@ -163,12 +215,18 @@ def _(
     widget = mo.ui.anywidget(
         VisGroundViewer(
             candidates_df=candidates_df,
+            judgement_runs_df=judgement_runs_df,
             judgements_df=judgements_df,
             viewer_config=viewer_config,
             debug=debug_switch.value,
         )
     )
     widget
+    return
+
+
+@app.cell
+def _():
     return
 
 

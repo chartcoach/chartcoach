@@ -5,18 +5,6 @@ app = marimo.App(width="columns")
 
 
 @app.cell(column=0, hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ## Step 1: Extracting Data from the Chart Image
-
-    Feedback requires access to the underlying data, not just the rendered pixels. We use DePlot to recover a tabular representation from the rasterized chart image.
-
-    > Liu et al., "DePlot: One-Shot Visual Language Reasoning by Plot-to-Table Translation," ACL 2023. https://doi.org/10.18653/v1/2023.findings-acl.660
-    """)
-    return
-
-
-@app.cell(hide_code=True)
 def _(load_image, mo):
     image_url = "https://raw.githubusercontent.com/vis-nlp/ChartQA/refs/heads/main/ChartQA%20Dataset/train/png/42351550020333.png"
     image = load_image(image_url)
@@ -69,16 +57,6 @@ def _(Image, pl):
 
 
 @app.cell(column=1, hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ## Step 2: Inferring Column Semantics
-
-    DePlot produces generic column headers such as `col1`. We prompt a language model to infer descriptive names from sample values, enabling downstream reasoning about what each column represents.
-    """)
-    return
-
-
-@app.cell(hide_code=True)
 def _(df, renames, type_inferred_df):
     renamed_df = type_inferred_df(df.rename(renames))
     renamed_df
@@ -138,18 +116,6 @@ def _(pl):
 
 
 @app.cell(column=2, hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ## Step 3: Constructing a Draco Specification
-
-    We map the recovered data and inferred schema to a Draco specification, a renderer-agnostic representation of the chart's visual encoding. This enables constraint-based validation and perceptual cost estimation.
-
-    > Yang et al., "Draco 2: An Extensible Platform to Model Visualization Design", IEEE VIS 2023. https://doi.org/10.1109/VIS54172.2023.00042
-    """)
-    return
-
-
-@app.cell(hide_code=True)
 def _(
     altair_renderer,
     chart_to_draco_spec_dict,
@@ -242,28 +208,6 @@ def _():
 
 
 @app.cell(column=3, hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ## Baseline A: Symbolic Linting
-
-    Symbolic tools such as VizLinter and Draco validate charts against structural rules and perceptual constraints. When a chart incurs low perceptual cost and triggers no violations, these tools report that no improvements are needed. This is correct within their scope, but perceptual efficiency is not the only criterion for design quality. A chart optimised for rapid data extraction may still fail to support a specific analytical task or suit a particular audience. Symbolic linters cannot assess such contextual factors.
-    """)
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ### VizLinter
-
-    VizLinter checks the Vega-Lite specification against structural rules, detecting encoding violations and deviations from common conventions.
-
-    > Chen et al., "VizLinter: A Linter and Fixer Framework for Data Visualization," TVCG 2022. https://doi.org/10.1109/TVCG.2021.3114804
-    """)
-    return
-
-
-@app.cell(hide_code=True)
 def _(altair_chart, altair_chart_to_vl_linter_input, mo, vl_linter):
     vl_lint = vl_linter.Lint(altair_chart_to_vl_linter_input(altair_chart))
     vl_linter_violations = vl_lint.lint()
@@ -310,18 +254,6 @@ def _(draco_spec, mo):
 @app.cell(hide_code=True)
 def _(draco_spec):
     draco_spec.features_df.to_polars()
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ### Draco Recommendations
-
-    To establish a baseline for perceptual efficiency, we ask Draco to generate chart specifications from scratch given the same data schema. The resulting candidates represent designs that minimise perceptual cost according to Draco's weighted constraints.
-
-    Comparing these candidates to the user's chart can reveal missed optimisations, but deviations from the minimum-cost design may reflect intentional choices that Draco cannot evaluate.
-    """)
     return
 
 
@@ -497,12 +429,7 @@ def _(Image, draco_chart_spec, dspy):
 
 @app.cell(hide_code=True)
 def _(mo):
-    user_situation = """I am designing a visual guide for a 'Climate-Friendly Diet' brochure distributed at senior centers. 
-    My specific goal is to encourage **substitution behavior** among the elderly--helping them identify high-impact proteins 
-    and immediately find lower-impact alternatives (e.g., swapping Beef for Chicken) while making the chart engaging and readable. I'll bring the charts as printed material, as that's what this audience is most comfortable with. 
-    I used a strict descending sort to emphasize the massive gap between the worst and best offenders. 
-    Based on empirically validated research, does this sorted layout effectively support that specific substitution task for an older audience, or does it introduce cognitive friction?
-    """
+    user_situation = """We're adapting this chart from a city drought report for a grocery flyer aimed at general-public shoppers. They will likely see it briefly while deciding what protein to buy for dinner. Our goal is to help someone considering beef quickly compare it with lower-water alternatives like chicken, eggs, or pulses. We kept the bars sorted from highest to lowest water use so beef stands out, but we're not sure that ranking is the best layout for this quick substitute-comparison task."""
 
     user_situation_md = mo.md("\n".join(["**User Situation**", f"> {user_situation}"]))
     feedback_model = "gpt-5.4"
@@ -510,16 +437,6 @@ def _(mo):
 
 
 @app.cell(column=5, hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ## Baseline C: LLM with Linting Context
-
-    We provide the LLM with the violations and activated features from VizLinter and Draco. This adds technical context to the prompt. However, linting results describe structural properties of the chart; they do not explain when those properties are appropriate for a given audience or task. The model still lacks access to situated design knowledge, so its reasoning about contextual factors remains ungrounded.
-    """)
-    return
-
-
-@app.cell(hide_code=True)
 def _(
     context_enriched_vis_feedback,
     feedback_model,
@@ -568,20 +485,17 @@ def _(
 
 
 @app.cell(column=6, hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ## Catalog-Grounded Feedback via Progressive Disclosure
-
-    We use the cataloging scheme described in the paper to ground the language model's reasoning. The agent queries the catalog through a hierarchical traversal that limits context consumption:
-
-    1. **Discover vocabulary.** The agent retrieves available labels from the catalog's metadata to map the user's stated goals (e.g., "brochure for seniors") to the catalog's taxonomy (e.g., `audience:older-adults`).
-    2. **Filter by abstract.** The agent scans guideline titles and descriptions to identify entries relevant to the user's situation without loading full content.
-    3. **Retrieve full guidelines.** For promising candidates, the agent fetches the complete body text and references to verify applicability and formulate feedback.
-
-    This traversal prevents irrelevant guidelines from consuming the model's context window. Each recommendation cites specific guideline IDs, which users can inspect to verify rationale and trace claims to primary sources.
-
-    No design knowledge is embedded in the system prompt. All guidance comes from the catalog, which can be inspected, modified, and extended independently of the feedback system.
-    """)
+def _(mo, mo_image, used_guidelines_df, user_situation_md, visfeedback):
+    mo.vstack(
+        [
+            user_situation_md,
+            mo_image,
+            mo.md("### Grounded Feedback"),
+            mo.md(visfeedback.feedback),
+            mo.md("**Used Guidelines**"),
+            used_guidelines_df,
+        ]
+    )
     return
 
 
@@ -644,24 +558,14 @@ def _(mo):
     return
 
 
-@app.cell
-def _(
-    draco_spec_dict,
-    dspy,
-    feedback_model,
-    image,
-    init_lm,
-    user_situation,
-    visfeedback_agent,
-):
-    with dspy.context(lm=init_lm(feedback_model)):
-        visfeedback = visfeedback_agent(
-            chart_image=image,
-            chart_spec=draco_spec_dict.model_dump_json(exclude_none=True),
-            situation=user_situation,
-        )
-    visfeedback
-    return
+@app.cell(hide_code=True)
+def _(coach, pl, visfeedback):
+    used_guidelines_df = coach.catalog.df.join(
+        pl.from_dict({"id": visfeedback.guideline_ids}),
+        on="id",
+        how="right",
+    ).select("guideline", "references")
+    return (used_guidelines_df,)
 
 
 @app.cell(hide_code=True)
@@ -669,17 +573,21 @@ def _(coach, dspy):
     class VisFeedbackAgent(dspy.Signature):
         """Generate grounded visualization feedback by progressively disclosing the catalog.
 
-        Always start with `sql` to discover the available DuckDB schema and vocabulary.
-        Begin with queries such as `show all tables`, `describe <table>`, and small
-        samples like `select * from <table> limit 5` or `select distinct ...` so you
-        understand what is actually available before narrowing to guidance.
+        Follow this protocol:
+        1. Start with `sql` to discover the available DuckDB schema and vocabulary.
+           Begin with queries such as `show all tables`, `describe <table>`, and
+           small samples like `select * from <table> limit 5` or
+           `select distinct ...`.
+        2. Map the user's situation onto labels and metadata values that actually
+           exist in the catalog; never invent taxonomy values.
+        3. Use SQL to shortlist likely guideline ids with lightweight fields first.
+        4. Read evidence for finalists with `get`, starting with overviews and
+           escalating to specific sections only when needed.
+        5. Use `search` only after SQL narrowing or when you need a semantic
+           comparison among a small candidate set.
 
-        Map the user's situation onto labels and metadata values that actually exist in
-        the catalog; never invent taxonomy values. Use SQL to shortlist likely
-        guideline ids with lightweight fields first. Then read only the most relevant
-        docs with `get`, starting with overviews and escalating to more specific
-        sections only when needed. Use `search` only after SQL narrowing or when you
-        need a semantic comparison among a small candidate set.
+        Do not finish until you have inspected the schema, built a shortlist, and
+        read enough retrieved evidence to justify every cited guideline id.
 
         Base every recommendation on retrieved evidence, keep the feedback specific to
         the chart and situation, and return only the 3-5 highest-leverage suggestions.
@@ -697,14 +605,15 @@ def _(coach, dspy):
             desc="JSON string of the chart's structured specification. Use it to reason about marks, encodings, axes, sorting, legends, and other structural choices; do not use it as a literal search query."
         )
         feedback: str = dspy.OutputField(
-            desc="Markdown feedback without fences. If the chart is already a good fit for the stated situation, say so. Otherwise provide the 3-5 highest-leverage actionable suggestions, each grounded in retrieved evidence and citing the relevant guideline ids inline when practical."
+            desc="Markdown feedback without fences. If the chart is already a good fit for the stated situation, say so. Otherwise provide the 3-5 highest-leverage actionable suggestions, each grounded in retrieved evidence and citing the relevant guideline ids inline when practical. Do not cite guidance you did not inspect."
         )
         guideline_ids: list[str] = dspy.OutputField(
-            desc="Unique guideline ids that directly support the feedback, ordered by importance."
+            desc="Unique guideline ids that directly support the feedback, ordered by importance. Only include ids whose retrieved evidence you actually inspected."
         )
 
     sql_tool = dspy.Tool(
         coach.tools.sql,
+        desc="Primary discovery tool. Use this first to inspect schema, sample tables, discover the available label vocabulary, and build SQL shortlist queries before any semantic search.",
         arg_desc={
             "sql": "Use this first. Discover the schema with queries like `show all tables`, `describe <table>`, `select * from <table> limit 5`, and `select distinct ...`. After discovery, use SQL to shortlist candidate guideline ids and lightweight metadata before reading full docs.",
             "row_limit": "Maximum number of rows to return. Raise it only when the default sample is too small to understand the table or shortlist.",
@@ -712,6 +621,7 @@ def _(coach, dspy):
     )
     get_tool = dspy.Tool(
         coach.tools.get,
+        desc="Deterministic retrieval tool. Use this after SQL narrowing to read exact candidate docs by id, or with carefully discovered metadata filters when exact ids are not yet known.",
         arg_desc={
             "ids": "Exact document ids to fetch once SQL or prior samples tell you which docs you want. Prefer this when you already know the precise records to read.",
             "where": "Optional Chroma metadata filter. Discover the available metadata fields by sampling first, and use boolean operators like `$and` when you need multiple predicates.",
@@ -723,6 +633,7 @@ def _(coach, dspy):
     )
     search_tool = dspy.Tool(
         coach.tools.search,
+        desc="Secondary semantic retrieval tool over indexed text docs. Use only after SQL discovery or on a small candidate set; do not use this as the first step.",
         arg_desc={
             "query_texts": "Short semantic probes over the indexed text docs. Use this only after SQL narrowing or when you need to compare meaning among a small candidate set; do not begin with the full raw situation if SQL can first reveal the schema and label vocabulary.",
             "limit": "Maximum number of nearest-neighbor docs to return.",
@@ -744,11 +655,22 @@ def _(coach, dspy):
 
 
 @app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    The table below shows the catalog instance from which guidelines are retrieved. Each row corresponds to a guideline with its metadata, section content, and references.
-    """)
-    return
+def _(
+    draco_spec_dict,
+    dspy,
+    feedback_model,
+    image,
+    init_lm,
+    user_situation,
+    visfeedback_agent,
+):
+    with dspy.context(lm=init_lm(feedback_model)):
+        visfeedback = visfeedback_agent(
+            chart_image=image,
+            chart_spec=draco_spec_dict.model_dump_json(exclude_none=True),
+            situation=user_situation,
+        )
+    return (visfeedback,)
 
 
 @app.cell(hide_code=True)
@@ -770,17 +692,7 @@ def _():
     return (coach,)
 
 
-@app.cell(column=7, hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ## Utility Functions
-
-    Helper functions for image loading, column name formatting, and configuration.
-    """)
-    return
-
-
-@app.function(hide_code=True)
+@app.function(column=7, hide_code=True)
 def snake_to_title(text: str) -> str:
     return text.replace("_", " ").title()
 
@@ -804,6 +716,21 @@ def _(mo, pathlib):
     CATALOG_PARQUET_PATH = REPO_ROOT / "guidelines" / "catalog.parquet"
     mo.watch.file(CATALOG_PARQUET_PATH)
     return
+
+
+@app.cell(hide_code=True)
+def _():
+    import json
+    import pathlib
+    import warnings
+
+    import httpx
+    import marimo as mo
+    import polars as pl
+    from PIL import Image
+
+    warnings.filterwarnings("ignore")
+    return Image, httpx, json, mo, pathlib, pl
 
 
 @app.cell(hide_code=True)
@@ -850,21 +777,6 @@ def _(pathlib):
         enable_memory_cache=True,
     )
     return dspy, init_lm
-
-
-@app.cell(hide_code=True)
-def _():
-    import json
-    import pathlib
-    import warnings
-
-    import httpx
-    import marimo as mo
-    import polars as pl
-    from PIL import Image
-
-    warnings.filterwarnings("ignore")
-    return Image, httpx, json, mo, pathlib, pl
 
 
 if __name__ == "__main__":

@@ -30,3 +30,13 @@ class VisGenOutput(TypedDict):
     code: str
     visualization_type: str
     grounding_trace: dict[str, str]
+
+
+class VisGenResult(TypedDict):
+    """One generation attempt result aligned to a single request."""
+
+    id: str
+    code: str | None
+    visualization_type: str | None
+    grounding_trace: dict[str, str] | None
+    generation_error: str | None
