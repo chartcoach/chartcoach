@@ -75,168 +75,90 @@ class RetrieveGuidelines(dspy.Signature):
     Retrieve the best design-guidance bundle for one visualization request.
 
     Goal:
-    - usually return about 6-8 guidelines
-    - fewer is often better if the bundle already feels complete
-    - every kept guideline must add a different visible design move
-    - think in terms of bundle slots: every slot must pay for itself
-    - favor guidelines that say what to do, not only what to avoid
-    - prefer concrete, situation-matched guidance that is clearly implementable
-      in Python charting libraries
-    - assume the target output is a static chart for printed publication, not
-      an interactive screen experience
-    - the final set must be not only orthogonal but also highly synergetic:
-      it should read like one coherent chart recipe where the selected
-      guidelines strengthen each other
-    - return fewer items instead of weak, generic, or redundant extras
+    - usually return about 7-9 guidelines
+    - maximize distinct design volume for one static printed chart
+    - keep only guidelines that add a unique visible job
+    - prefer guidelines that create noticeable visual or interpretive improvement
+      over guidelines that are merely correct but low-drama
+    - prefer concrete, actionable, implementable guidance over generic,
+      repetitive, or warning-only guidance
+    - prefer a smaller complete bundle over a larger repetitive one
 
     Read `context["objective"]` first. Use all of `context` to infer the real
     design problem the bundle must solve. Use `guidelines` second.
 
-    `guidelines` is organized into dynamic basis groups. Each basis group is one
+    `guidelines` is organized into dynamic basis groups. Each basis group is a
     retrieval lane with `select` and `refine` buckets plus short summaries.
 
-    Medium rule:
-    - select for static printed publication
-    - do not choose guidelines whose value depends on hover, click, tooltip,
-      zoom, pan, toggle, brushing, scrolling, animation, or any other
-      interactive behavior
-    - prefer guidance whose effect is fully visible in one static published
-      figure
+    Hard filters:
+    - target medium is a static printed publication, so reject guidance whose
+      value depends on hover, click, tooltip, zoom, pan, toggle, brushing,
+      scrolling, animation, or any other interactive behavior
+    - basis groups are search lanes, not coverage quotas; do not keep a weak
+      guideline merely to represent one more basis group
+    - if a kept guideline already determines the same visible lever, drop the
+      more generic or weaker guideline
+    - if two guidelines would mostly collapse into the same code edit or same
+      visible chart mutation, keep only the stronger one
+    - generic hygiene guidance such as axis labels, title/caption, contrast,
+      or minimum text size is fill-only; usually keep zero or one
+    - low-drama maintenance guidance is lower priority than guidance that would
+      noticeably change how the chart reads at a glance
 
     Selection procedure:
     1. Identify the primary design decision the request needs first.
-    2. Sketch the minimum bundle jobs needed before selecting, such as one
-       structural decision plus the few strongest compatible refinements.
-    3. Inspect every basis group. In each group, inspect the bucket matching
-       `context["objective"]` first.
-    4. Nominate only the strongest candidate from each useful basis group.
-    5. Remove same-effect candidates before final ranking.
-    6. Build the final bundle from candidates that change different visible
-       design levers.
-    7. Only after distinct design volume is strong may you add low-priority
-       generic hygiene guidance.
+    2. Sketch the minimum bundle jobs needed before selecting.
+    3. Inspect every basis group, starting with the bucket matching
+       `context["objective"]`.
+    4. Nominate the strongest candidate from each useful basis group.
+    5. Build the bundle from candidates that change different visible design
+       levers such as chart family, structure, comparison geometry,
+       baseline/scale, ordering, direct labeling, annotation, accessibility
+       encoding, and framing/context.
+    6. Keep at most one strong guideline per visible lever unless two
+       guidelines create clearly different compatible edits.
+    7. Stop once the main design decision plus the strongest orthogonal
+       refinements are already covered.
 
-    Design-lever rule:
-    - think in visible design levers such as chart family, view structure,
-      comparison geometry, baseline/scale strategy, ordering, direct-labeling,
-      annotation, accessibility encoding, and framing/context
-    - usually keep at most one guideline per visible design lever
-    - keep two guidelines on the same lever only when both produce clearly
-      different visible edits that can coexist without collapsing into the same
-      code change
-
-    Actionability rule:
-    - prefer guidelines that prescribe a concrete positive edit such as use,
-      choose, place, sort, label, annotate, align, group, or separate
-    - treat avoid-only or warning-only guidance as lower priority when a more
-      actionable positive guideline would lead to the same good result
-    - keep an avoid-style guideline only when it prevents a major failure that
-      is not already covered by a stronger positive guideline, or when it still
-      implies one clear concrete edit
-
-    Dominance test:
-    - before keeping any guideline, ask: what unique visible chart change would
-      disappear if this guideline were removed?
-    - if the answer is "almost nothing" or is already covered by another kept
-      guideline, drop it
-    - do not keep both a specific structural decision and a more generic
-      heuristic that merely endorses the same decision
-
-    Bundle budget:
-    - usually spend most slots on decisive structure plus orthogonal
-      refinements
-    - prefer a smaller stronger bundle over a larger repetitive one
-    - if the main design decision plus the strongest orthogonal refinements are
-      already covered, stop
-    - do not add weak extra guidelines just because the bundle feels short
-    - reserve at most one slot for generic hygiene guidance
-    - never spend multiple slots on broad reminders that mostly say "make the
-      chart clear"
-    - if two selected guidelines would mostly turn into the same code edit,
-      keep only the stronger one
-
-    No-quota rule:
-    - basis groups are search lanes, not coverage quotas
-    - do not keep a guideline merely to represent one more basis group
-    - if only a few basis groups offer strong non-overlapping guidance, return
-      a short bundle
-
-    Implementation-step rule:
-    - every selected guideline should imply at least one concrete, inspectable
-      chart change that an implementer could point to in code
-    - if two guidelines would naturally be implemented in one code change or
-      one localized visual mutation, keep only the stronger one
-    - prefer guidelines whose effect would be obvious both in the final chart
-      and in the implementation
-
-    Same-effect rule:
-    - if one kept guideline already determines the chart family, arrangement,
-      baseline strategy, ordering, direct-labeling strategy, annotation
-      strategy, or accessibility treatment, drop any more generic guideline
-      that would produce the same visible result
-    - prefer the more specific, higher-leverage, more situation-matched, more
-      actionable
-      guideline
-    - example: if a kept guideline already says to use grouped bars for
-      within-category comparison, do not also keep a generic guideline about
-      choosing a familiar basic chart type
-
-    Hygiene rule:
-    - axis labels, descriptive title/caption, contrast, minimum text size, and
-      similar universal chart hygiene guidance are fill-only
-    - usually include zero or one hygiene guideline; zero is often correct
-    - prefer the single hygiene guideline with the broadest useful effect if
-      one is needed at all
-    - never let hygiene dominate the bundle when stronger structural,
-      comparison, ordering, annotation, or accessibility moves are available
-
-    Basis rule:
-    - inspect every basis group
-    - prefer cross-basis coverage when it increases design volume
-    - skip a basis group when its best candidate is weak, redundant, or
-      incompatible
-    - large basis groups must not dominate only because they contain more items
-
-    Final bundle audit:
-    - each selected guideline must have one clear unique job in the bundle
-    - no pair of selected guidelines should mostly collapse into the same chart
-      mutation or same implementation step
-    - if removing one selected guideline would leave the chart essentially the
-      same, drop it
-    - if the last-ranked guideline does not materially expand design volume,
-      drop it
+    Keep a guideline only if:
+    - it says what to do, or blocks a major failure while still implying one
+      clear concrete edit
+    - removing it would materially change the final chart
+    - its effect would be obvious both in the final figure and in the
+      implementation
+    - it creates a noticeable visible or interpretive improvement, not merely a
+      maintenance cleanup that readers may barely notice
+    - it strengthens the other selected guidelines instead of merely repeating
+      them
 
     For `select`:
     - choose one coherent chart or structure direction first
-    - good `select` bundles often look like one decisive structure guideline
-      plus only the 2-4 strongest compatible refinements, with at most one
-      hygiene item
-    - once that direction is clear, deliberately add compatible `refine`
-      bucket items that polish, clarify, order, annotate, label, or improve
-      accessibility of the chosen design
-    - do not stop at a bare chart-family decision; the final `select` bundle
-      should already contain nice touches that make the chosen design more
-      complete and publication-ready
+    - then add compatible `refine` bucket items that polish, clarify, order,
+      annotate, label, or improve accessibility of that chosen design
+    - do not stop at a bare chart-family decision
     - do not return mutually exclusive chart, structure, or channel guidance
 
     For `refine`:
     - preserve the fixed chart type and core structure
-    - good `refine` bundles are often only 3-5 concrete upgrades that clearly
-      improve the existing design
-    - prefer strong improvements that make the current design better without
-      reopening the primary chart-choice decision
-    - only use `select` bucket items when they are directly applicable without
-      changing the fixed design direction
+    - prefer strong upgrades that materially improve the current design without
+      reopening the main chart-choice decision
+    - actively favor refinements that make the figure read differently at a
+      glance, such as stronger ordering, clearer grouping, better focal
+      comparison, more informative labeling, sharper annotation, or more
+      legible encoding
+    - deprioritize bland maintenance guidance unless the chart is already
+      otherwise complete
+    - only use `select` bucket items when they apply directly without changing
+      the fixed design direction
 
-    Ranking:
+    Final ranking:
     - decisive structure first
     - orthogonal refinements next
     - hygiene last
-    - within a tie, prefer the guideline that tells the implementer exactly
-      what to add or change over one that mostly warns what not to do
-    - the final ranked set should feel internally coherent and mutually
-      reinforcing, not like a pile of unrelated tips
-    - the final set should be as small as possible while still feeling complete
+    - within a tie, prefer the more specific, more actionable guideline
+    - within a tie, prefer the guideline with the bigger visible impact
+    - the final set should feel like one coherent publication-ready chart
+      recipe and be as small as possible while still feeling complete
     """
 
     context: dict = dspy.InputField(

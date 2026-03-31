@@ -14,7 +14,7 @@ class PlotlyBackend(VisualizationBackend[go.Figure]):
         req: VisualizationRequestRecord,
     ) -> list[str]:
         return [
-            "`library-choice`: Write valid plotly code to implement the visualization, using best practices from the library.",
+            "`library-choice`: Write valid plotly code to implement the visualization. Keep the implementation idiomatic, but do not add extra design or data behavior beyond the query and requirements.",
             "`return-rule`: Ensure that the assigned chart result is a plotly `Figure` object.",
         ]
 

@@ -31,7 +31,7 @@ def _(VisEvalCohortBuilder, VisEvalDataset, VisGroundDataset):
     store = VisGroundDataset()
     viseval_dataset = VisEvalDataset()
     viseval_cohort_builder = VisEvalCohortBuilder(viseval_dataset)
-    return store, viseval_cohort_builder, viseval_dataset
+    return store, viseval_cohort_builder
 
 
 @app.cell(hide_code=True)
@@ -42,16 +42,10 @@ def _(mo):
     return
 
 
-@app.cell
-def _(viseval_dataset):
-    viseval_dataset.nl_query_canonical_df
-    return
-
-
 @app.cell(hide_code=True)
 def _():
     cohort_config = {
-        "target_n": 7 * 10,
+        "target_n": 7 * 3,
         "max_tasks_per_db": 6,
         "seed": 42,
     }

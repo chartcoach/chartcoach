@@ -40,12 +40,7 @@ class VisualizationBackend(ABC, Generic[T]):
             *self.build_requirements(req),
         ]
         if req["requirements"]:
-            requirements.extend(
-                [
-                    "**Design Guidance**",
-                    *req["requirements"],
-                ]
-            )
+            requirements.extend(req["requirements"])
 
         return dspy.Example(
             id=req["id"],

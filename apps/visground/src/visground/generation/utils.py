@@ -57,15 +57,13 @@ def describe_dataframe(
     max_chars: int = 100,
     list_n: int = 3,
 ) -> dict:
-    # Ensures deterministic ordering
-    ordered_df = df.sort(df.columns)
     return {
         "shape": df.shape,
         "fields": {
             field: {
                 "dtype": str(dtype),
                 "samples": create_field_sample(
-                    ordered_df,
+                    df,
                     field,
                     n=n,
                     max_chars=max_chars,

@@ -40,7 +40,38 @@ def _(VisGroundDataset):
 
 @app.cell(hide_code=True)
 def _(ViewerConfig, ViewerDimensionSpec, ViewerLayout, os):
+    from pathlib import Path
+
+    import polars as pl
+
+    catalog_path = (
+        Path(__file__).resolve().parents[3] / "guidelines" / "catalog.parquet"
+    )
+    guideline_details_by_id = {}
+    if catalog_path.exists():
+        catalog_df = pl.read_parquet(catalog_path)
+        for row in catalog_df.iter_rows(named=True):
+            guideline = row["guideline"]
+            sections = guideline.get("sections") or []
+            advice = next(
+                (
+                    str(section.get("content") or "").strip()
+                    for section in sections
+                    if section.get("role") == "advice" and section.get("content")
+                ),
+                "",
+            )
+            guideline_details_by_id[str(row["id"])] = {
+                "title": str(guideline.get("title") or row["id"]),
+                "description": str(guideline.get("description") or advice),
+            }
+
+    image_base_url = os.getenv(
+        "VISGROUND_VIEWER_IMAGE_BASE_URL", "http://localhost:3434"
+    )
+
     viewer_config = ViewerConfig(
+        image_base_url=image_base_url,
         case_id_field="vis_id",
         case_label_field="query",
         dimensions=(
@@ -54,6 +85,7 @@ def _(ViewerConfig, ViewerDimensionSpec, ViewerLayout, os):
                 id="request_chart",
                 label="Chart type",
                 null_label="All chart types",
+                none_value_mode="all",
             ),
             ViewerDimensionSpec(
                 id="audience",
@@ -106,10 +138,7 @@ def _(ViewerConfig, ViewerDimensionSpec, ViewerLayout, os):
             column_dimension="grounding_mode",
             group_dimension="grammar",
         ),
-        image_base_url=os.getenv(
-            "VISGROUND_VIEWER_IMAGE_BASE_URL",
-            "http://127.0.0.1:8000",
-        ),
+        guideline_details_by_id=guideline_details_by_id,
     )
     return (viewer_config,)
 
@@ -117,32 +146,26 @@ def _(ViewerConfig, ViewerDimensionSpec, ViewerLayout, os):
 @app.cell(hide_code=True)
 def _(mo, os):
     debug_default = os.getenv("VISGROUND_VIEWER_DEBUG", "0") == "1"
-    show_debug_controls = os.getenv("VISGROUND_VIEWER_DEBUG_CONTROLS", "0") == "1"
-    debug_switch = (
-        mo.ui.switch(debug_default, label="Debug") if show_debug_controls else None
-    )
-    if debug_switch is not None:
-        debug_switch
-    return debug_default, debug_switch
+    debug_switch = mo.ui.switch(debug_default, label="Debug")
+    debug_switch
+    return (debug_switch,)
 
 
 @app.cell(hide_code=True)
 def _(
     VisGroundViewer,
     candidates_df,
-    debug_default,
     debug_switch,
     judgements_df,
     mo,
     viewer_config,
 ):
-    debug_enabled = debug_switch.value if debug_switch is not None else debug_default
     widget = mo.ui.anywidget(
         VisGroundViewer(
             candidates_df=candidates_df,
             judgements_df=judgements_df,
             viewer_config=viewer_config,
-            debug=debug_enabled,
+            debug=debug_switch.value,
         )
     )
     widget

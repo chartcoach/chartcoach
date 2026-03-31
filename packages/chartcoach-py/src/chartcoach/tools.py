@@ -19,7 +19,14 @@ QueryInput: TypeAlias = str | list[str]
 
 
 class Tools:
-    """Small API for semantic search, direct lookup, and SQL."""
+    """Small API for progressive-disclosure retrieval over the catalog.
+
+    Use `sql` first to discover the available DuckDB relations, inspect columns,
+    sample rows, and build lightweight shortlist queries. Use `get` to read exact
+    indexed documents once you know which records you want. Use `search` as a
+    secondary semantic tool after SQL narrowing, or when you need to compare the
+    meaning of a small candidate set.
+    """
 
     def __init__(
         self,
@@ -44,7 +51,24 @@ class Tools:
         *,
         row_limit: int | None = None,
     ) -> dict[str, Any]:
-        """Run SQL against the prepared DuckDB file."""
+        """Run DuckDB SQL against the prepared catalog tables.
+
+        This is the best first tool when you do not yet know the schema. Start by
+        discovering the available relations and columns with queries such as:
+
+        - `show all tables`
+        - `describe <table_name>`
+        - `select * from <table_name> limit 5`
+        - `select distinct <column> from <table_name> limit 20`
+
+        After you understand the schema, use SQL to build deterministic candidate
+        sets with lightweight fields such as ids, titles, descriptions, counts,
+        and matched labels before escalating to document retrieval.
+
+        Returns a JSON-safe dict with the executed SQL, column metadata, sampled
+        rows, row counts, the applied row limit, and whether the result was
+        truncated.
+        """
 
         return self._execute_sql(sql, row_limit=row_limit)
 
@@ -57,7 +81,20 @@ class Tools:
         where_document: DocumentFilter | None = None,
         include: IncludeFields | None = None,
     ) -> dict[str, Any]:
-        """Search by meaning, with optional metadata filters before scoring."""
+        """Semantically search the indexed catalog documents.
+
+        This searches embedded text documents such as overviews, full guideline
+        documents, and individual sections. Use it after SQL has already revealed
+        the schema and narrowed the candidate space, or when you need a semantic
+        comparison among a small set of plausible records.
+
+        Prefer short semantic probes over focused candidates. Do not rely on this
+        as the first move when SQL can first tell you which relations, columns,
+        labels, or metadata values actually exist.
+
+        Metadata filters use Chroma's filter syntax, so sample the available docs
+        and metadata first before composing complex predicates.
+        """
 
         resolved_queries = (
             [query_texts] if isinstance(query_texts, str) else query_texts
@@ -84,7 +121,17 @@ class Tools:
         limit: int | None = None,
         offset: int | None = None,
     ) -> dict[str, Any]:
-        """Fetch stored search documents directly by id or filter."""
+        """Fetch exact indexed documents by id or exact metadata filter.
+
+        Use this once SQL or prior samples have already identified the precise
+        documents you want to read. Prefer `ids` when you know the exact records,
+        because it is more deterministic than another semantic search.
+
+        If you use metadata filters, remember that Chroma requires boolean
+        operators such as `$and` for multi-predicate filters. Sample a few docs
+        first so you understand the available metadata fields and document-id
+        patterns before depending on them.
+        """
 
         result = self.index.collection.get(
             ids=ids,

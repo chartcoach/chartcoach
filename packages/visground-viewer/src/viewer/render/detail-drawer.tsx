@@ -5,7 +5,7 @@ import {
   orientationLabel,
   renderImage,
 } from "@/viewer/render/utils";
-import { ScoreLedger } from "@/viewer/render/score-ledger";
+import { ScoreBreakdownList } from "@/viewer/render/score-ledger";
 
 export function DetailDrawer({ state, actions }: { state: ViewerState; actions: ViewerActions }) {
   const cell = getCellByKey(state.overview, state.inspectCellKey);
@@ -79,15 +79,27 @@ export function DetailDrawer({ state, actions }: { state: ViewerState; actions: 
                 )}
               </div>
             </div>
-            <ScoreLedger candidate={candidate} mode="floating" />
+            <ScoreBreakdownList candidate={candidate} mode="detail" />
+            {candidate.guideline_details.length > 0 ? (
+              <section className="vg-detail-guidelines">
+                <div className="vg-detail-subhead">
+                  {`Guidelines used (${candidate.guideline_details.length})`}
+                </div>
+                <div className="vg-guideline-list">
+                  {candidate.guideline_details.map((guideline) => (
+                    <article className="vg-guideline-card" key={guideline.id}>
+                      <div className="vg-guideline-card-title">{guideline.title}</div>
+                      {guideline.description ? (
+                        <p className="vg-guideline-card-description">{guideline.description}</p>
+                      ) : null}
+                    </article>
+                  ))}
+                </div>
+              </section>
+            ) : null}
             <div className="vg-detail-facts">
               {variant.variant_label ? (
                 <span className="vg-detail-fact">{variant.variant_label}</span>
-              ) : null}
-              {candidate.guideline_count > 0 ? (
-                <span className="vg-detail-fact">
-                  {`${candidate.guideline_count} ${candidate.guideline_count === 1 ? "guideline" : "guidelines"}`}
-                </span>
               ) : null}
             </div>
           </section>

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Mapping, Sequence
+from typing import Any, Literal, Mapping, Sequence
 
 
 @dataclass(frozen=True, slots=True)
@@ -9,6 +9,7 @@ class ViewerDimensionSpec:
     id: str
     label: str
     null_label: str = "None"
+    none_value_mode: Literal["null", "all"] = "null"
     aliases: Mapping[str, str] = field(default_factory=dict)
     order: Mapping[str, int] = field(default_factory=dict)
 
@@ -29,6 +30,9 @@ class ViewerConfig:
     default_filters: Mapping[str, str | None]
     default_layout: ViewerLayout
     image_base_url: str
+    guideline_details_by_id: Mapping[str, Mapping[str, str]] = field(
+        default_factory=dict
+    )
     case_label_field: str | None = None
     search_fields: Sequence[str] = ()
 

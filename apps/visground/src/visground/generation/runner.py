@@ -6,9 +6,8 @@ from .backends import VisualizationBackend
 from .cache import VisGenCache
 from .models import VisGenOutput, VisualizationRequestRecord
 from .programs import (
-    DEFAULT_REFINE_ROLLOUTS,
-    DEFAULT_REFINE_THRESHOLD,
-    build_observed_refine_generator,
+    DEFAULT_RETRY_ITERATIONS,
+    build_observed_feedback_loop_generator,
     run_generation,
 )
 from .signatures import ReviewVisualizationImplementation, WriteVisualizationCode
@@ -41,18 +40,18 @@ class VisGenRunner:
             coder_signature=self.coder_signature,
             review_signature=self.review_signature,
             reviewer_lm=self.reviewer_lm,
-            refine_rollouts=DEFAULT_REFINE_ROLLOUTS,
-            refine_threshold=DEFAULT_REFINE_THRESHOLD,
+            retry_iterations=DEFAULT_RETRY_ITERATIONS,
         )
         cached_outputs, indexed_misses = cache.get_many(examples)
 
         if indexed_misses:
             fresh_examples = [example for _, example in indexed_misses]
-            generator = build_observed_refine_generator(
+            generator = build_observed_feedback_loop_generator(
                 backend=self.backend,
                 coder_signature=self.coder_signature,
                 review_signature=self.review_signature,
                 reviewer_lm=self.reviewer_lm,
+                max_iterations=DEFAULT_RETRY_ITERATIONS,
             )
             fresh_outputs = run_generation(
                 generator,

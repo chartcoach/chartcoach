@@ -38,23 +38,13 @@ function toolbarPillText(state: ViewerState, pill: ViewerToolbarPill): string {
   const rowLabel = selectedLabel(row?.options, state.selection.layout.row_dimension);
   const columnLabel = selectedLabel(column?.options, state.selection.layout.column_dimension);
   const groupLabel = selectedLabel(group?.options, state.selection.layout.group_dimension);
-  const compactAxisLabel = (value: string | null, fallback: string) => {
-    if (!value) {
-      return fallback;
-    }
-    return value.split(/\s+/)[0]?.slice(0, 3).toLowerCase() ?? fallback;
-  };
-  const outerParts = [
-    `R ${compactAxisLabel(rowLabel, "row")}`,
-    `C ${compactAxisLabel(columnLabel, "col")}`,
-    groupLabel ? `G ${compactAxisLabel(groupLabel, "grp")}` : null,
-  ].filter((value): value is string => Boolean(value));
-  const outer = outerParts.join(" · ");
-  const hidden = schema.matrix_axes.hidden_labels;
-  if (!hidden.length) {
-    return outer;
-  }
-  return `${outer} · cell ${hidden.join("+")}`;
+  return [
+    rowLabel ? `Rows: ${rowLabel}` : null,
+    columnLabel ? `Columns: ${columnLabel}` : null,
+    groupLabel ? `Groups: ${groupLabel}` : null,
+  ]
+    .filter((value): value is string => Boolean(value))
+    .join(" · ");
 }
 
 export function FigureBar({ state, actions }: { state: ViewerState; actions: ViewerActions }) {

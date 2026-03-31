@@ -54,8 +54,8 @@
 
 .vg-score-ledger.is-floating .vg-score-ledger-subscores {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr));
-  gap: 0.4rem 0.8rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.42rem 0.72rem;
   align-items: start;
   white-space: normal;
 }
@@ -173,4 +173,90 @@
   margin-inline: 0.02rem 0.04rem;
   background: var(--vg-divider);
   opacity: 0.62;
+}
+
+.vg-score-breakdown-list {
+  display: grid;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.vg-score-breakdown-list.is-detail {
+  gap: 0.62rem;
+}
+
+.vg-score-breakdown-note {
+  padding: 0.18rem 0.04rem 0;
+  color: var(--vg-text-soft);
+  font-family: "JetBrains Mono", "SFMono-Regular", "SF Mono", Menlo, monospace;
+  font-size: 0.68rem;
+  line-height: 1.4;
+}
+
+.vg-score-breakdown-item {
+  display: grid;
+  gap: 0.24rem;
+  padding: 0.5rem 0.58rem;
+  border: 1px solid rgba(17, 17, 17, 0.09);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.52);
+}
+
+.vg-score-breakdown-item.is-overall {
+  border-color: rgba(17, 17, 17, 0.16);
+}
+
+.vg-score-breakdown-item-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.65rem;
+  align-items: baseline;
+}
+
+.vg-score-breakdown-item-heading {
+  display: inline-grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.42rem;
+  align-items: baseline;
+  min-width: 0;
+}
+
+.vg-score-breakdown-item-label,
+.vg-score-breakdown-item-value {
+  font-family: "JetBrains Mono", "SFMono-Regular", "SF Mono", Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.vg-score-breakdown-item-label {
+  min-width: 0;
+  color: var(--vg-text);
+  font-size: 0.7rem;
+  line-height: 1.3;
+}
+
+.vg-score-breakdown-item-icon {
+  width: 0.84rem;
+  height: 0.84rem;
+  color: var(--vg-text-soft);
+  align-self: center;
+  flex: 0 0 auto;
+}
+
+.vg-score-breakdown-item-value {
+  color: var(--vg-text);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-align: right;
+}
+
+.vg-score-breakdown-item.is-overall .vg-score-breakdown-item-label,
+.vg-score-breakdown-item.is-overall .vg-score-breakdown-item-value {
+  font-size: 0.82rem;
+}
+
+.vg-score-breakdown-item-reasoning {
+  margin: 0;
+  color: var(--vg-text-soft);
+  font-size: 0.68rem;
+  line-height: 1.5;
 }

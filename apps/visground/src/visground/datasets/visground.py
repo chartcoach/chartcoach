@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+import tempfile
 from os import PathLike
 from pathlib import Path
 from typing import Final
@@ -220,8 +222,23 @@ class VisGroundDataset:
     def write_chart_image(self, visgen_id: str, image: Image.Image) -> Path:
         path = self.chart_path(visgen_id)
         self._ensure_parent(path)
-        image.save(path)
+        fd, temp_name = tempfile.mkstemp(
+            dir=path.parent,
+            prefix=f".{path.stem}-",
+            suffix=path.suffix,
+        )
+        os.close(fd)
+        temp_path = Path(temp_name)
+        try:
+            image.save(temp_path)
+            os.replace(temp_path, path)
+        except Exception:
+            temp_path.unlink(missing_ok=True)
+            raise
         return path
+
+    def delete_chart_image(self, visgen_id: str) -> None:
+        self.chart_path(visgen_id).unlink(missing_ok=True)
 
     @staticmethod
     def _ensure_parent(path: Path) -> None:

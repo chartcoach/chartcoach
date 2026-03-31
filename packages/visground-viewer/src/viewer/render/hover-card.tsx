@@ -1,6 +1,6 @@
 import type { ViewerActions, ViewerRefs, ViewerState } from "@/viewer/contract/types";
-import { ScoreLedger } from "@/viewer/render/score-ledger";
-import { getVariantByIndex, orientationLabel, renderImage } from "@/viewer/render/utils";
+import { ScoreBreakdownList } from "@/viewer/render/score-ledger";
+import { getVariantByIndex, orientationLabel } from "@/viewer/render/utils";
 
 export function HoverCard({
   state,
@@ -33,21 +33,12 @@ export function HoverCard({
       onMouseLeave={() => actions.scheduleHoverHide()}
       ref={refs.hoverCardRef}
     >
-      <div className="vg-hover-image">
-        <div className="vg-chart-canvas is-hover">
-          {candidate.error ? (
-            <p className="vg-error">{candidate.error}</p>
-          ) : (
-            renderImage(candidate.image_url || null, label, candidate.image_meta || null, "hover")
-          )}
-        </div>
-      </div>
       <div className="vg-hover-footer">
         <div className="vg-hover-orientation">{label}</div>
         {variant.variant_label ? (
           <div className="vg-hover-variant">{variant.variant_label}</div>
         ) : null}
-        <ScoreLedger candidate={candidate} mode="floating" />
+        <ScoreBreakdownList candidate={candidate} mode="compact" />
       </div>
     </aside>
   );

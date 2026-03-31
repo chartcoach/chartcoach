@@ -9,7 +9,7 @@ import dspy
 from .models import VisGenOutput
 from .signatures import ReviewVisualizationImplementation, WriteVisualizationCode
 
-_CACHE_NAMESPACE = "visground.generation.v5"
+_CACHE_NAMESPACE = "visground.generation.v7"
 
 
 class VisGenCache:
@@ -29,8 +29,7 @@ class VisGenCache:
         coder_signature: type[dspy.Signature] = WriteVisualizationCode,
         review_signature: type[dspy.Signature] = ReviewVisualizationImplementation,
         reviewer_lm: dspy.LM | None = None,
-        refine_rollouts: int,
-        refine_threshold: float | None,
+        retry_iterations: int,
         namespace: str = _CACHE_NAMESPACE,
     ) -> VisGenCache:
         runtime_config = {
@@ -39,8 +38,8 @@ class VisGenCache:
             "review_signature": _type_identity(review_signature),
             "generator_lm": _lm_cache_state(dspy.settings.lm),
             "reviewer_lm": _lm_cache_state(reviewer_lm),
-            "refine_rollouts": refine_rollouts,
-            "refine_threshold": refine_threshold,
+            "retry_iterations": retry_iterations,
+            "retry_feedback_mode": "review_json_v1",
         }
         return cls(runtime_config=runtime_config, namespace=namespace)
 

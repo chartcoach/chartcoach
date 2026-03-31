@@ -2,20 +2,13 @@
 
 ## Viewer dev loop
 
-If you want the local chart thumbnails that `06_viewer.py` expects by default,
-start the chart image host first:
-
-```sh
-pnpm --dir apps/visground serve:charts
-```
-
-Then run the anywidget Vite dev server in another terminal:
+Run the anywidget Vite dev server in one terminal:
 
 ```sh
 pnpm --dir apps/visground dev:anywidget
 ```
 
-Launch the viewer with marimo in a third terminal:
+Launch the viewer with marimo in another terminal:
 
 ```sh
 VISGROUND_VIEWER_DEV=1 uv run marimo run workbench/06_viewer.py
@@ -26,10 +19,11 @@ should update in place through Vite/anywidget HMR without rebuilding the static
 bundle or refreshing the browser.
 
 If you need a non-default Vite URL, set `VISGROUND_VIEWER_DEV_URL` before
-launching marimo. If your images live somewhere else, set
-`VISGROUND_VIEWER_IMAGE_BASE_URL` instead of running `serve:charts`. Production
-mode continues to use the built widget bundle under
-`src/visground/viewer/_static/anywidget/index.js`.
+launching marimo. `06_viewer.py` now serves local chart PNGs automatically when
+`VISGROUND_VIEWER_IMAGE_BASE_URL` is unset, so the notebook works without a
+separate image server. If your images live somewhere else, set
+`VISGROUND_VIEWER_IMAGE_BASE_URL` explicitly. Production mode continues to use
+the built widget bundle under `src/visground/viewer/_static/anywidget/index.js`.
 
 `VISGROUND_VIEWER_DEV_URL` can point either to the wrapped anywidget URL
 (`http://127.0.0.1:5173/js/anywidget.ts?anywidget`) or to the bare Vite entry
