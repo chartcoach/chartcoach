@@ -148,12 +148,11 @@ def _(judgements_df, store):
 
 
 @app.cell(hide_code=True)
-def _(VisEvalDataset, VisGroundDataset, VisJudgeLmClient, lm_cliproxy):
+def _(VisEvalDataset, VisGroundDataset, VisJudgeApiClient):
     store = VisGroundDataset()
     viseval_dataset = VisEvalDataset()
-    visjudge_client = VisJudgeLmClient(
-        lm=lm_cliproxy("gpt-5.4"),
-    )
+    # visjudge_client = VisJudgeLmClient(lm=lm_cliproxy("gpt-5.4"))
+    visjudge_client = VisJudgeApiClient()
     return store, viseval_dataset, visjudge_client
 
 
@@ -166,6 +165,7 @@ def _():
     from visground.datasets import VisEvalDataset, VisGroundDataset
     from visground.judge import (
         VisJudgeLmClient,
+        VisJudgeApiClient,
         VisJudgeRunConfig,
         VisJudgeRunner,
     )
@@ -176,10 +176,9 @@ def _():
     return (
         VisEvalDataset,
         VisGroundDataset,
-        VisJudgeLmClient,
+        VisJudgeApiClient,
         VisJudgeRunConfig,
         VisJudgeRunner,
-        lm_cliproxy,
         logger,
         mo,
         pl,

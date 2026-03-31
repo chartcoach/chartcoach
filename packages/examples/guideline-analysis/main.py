@@ -465,10 +465,10 @@ def _(mo):
 
     The query surfaces a high collision between:
 
+    - **`use-ordered-lightness-scales-for-ordered-values`**
     - **`avoid-hue-only-encoding-for-ordered-values`**
-    - **`use-categorical-hues-for-unordered-categories`**
 
-    At first glance this looks like a contradiction about color. It is not. Both guidelines talk about hue, so the embeddings place them close together. But they apply to different data semantics: ordered values in the first case, unordered categories in the second. This pair therefore illustrates the aboutness-versus-applicability problem directly.
+    These guidelines reflect different viewpoints on encoding ordered data with color. **`avoid-hue-only-encoding-for-ordered-values`** warns against the mistake of treating changes in hue as if they naturally imply a clear low-to-high sequence. In contrast, **`use-ordered-lightness-scales-for-ordered-values`** recommends using sequential or diverging scales with ordered lightness, since lightness progression more clearly communicates magnitude and direction for inherently ordered values.
     """)
     return
 
@@ -479,7 +479,7 @@ def _(catalog, pl):
         pl.col("id").is_in(
             [
                 "avoid-hue-only-encoding-for-ordered-values",
-                "use-categorical-hues-for-unordered-categories",
+                "use-ordered-lightness-scales-for-ordered-values",
             ]
         )
     )

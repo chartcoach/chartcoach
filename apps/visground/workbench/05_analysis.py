@@ -5,91 +5,1183 @@ app = marimo.App(width="medium")
 
 
 @app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    # 05 Analysis
+def plotting_helpers():
+    import importlib
+    import textwrap
 
-    Build comparative analysis artifacts from generated candidates and VisJudge
-    results. This stage treats VisJudge as a fixed comparative judge rather than an
-    absolute quality scale.
-    """)
-    return
+    import marimo as mo
+    import matplotlib as mpl
+    import matplotlib.pyplot as plt
+    import numpy as np
+    import polars as pl
+
+    import visground.analysis as analysis
+    import visground.analysis.core as analysis_core
+    import visground.analysis.cases as analysis_cases
+    import visground.analysis.guidelines as analysis_guidelines
+    import visground.analysis.schema as analysis_schema
+    import visground.analysis.stats as analysis_stats
+    import visground.analysis.variance as analysis_variance
+    from visground.datasets import VisGroundDataset
+
+    for analysis_module in [
+        analysis_schema,
+        analysis_stats,
+        analysis_cases,
+        analysis_guidelines,
+        analysis_variance,
+        analysis_core,
+        analysis,
+    ]:
+        importlib.reload(analysis_module)
+
+    PALETTE = {
+        "ink": "#1f2933",
+        "muted": "#52606d",
+        "grid": "#d9e2ec",
+        "positive": "#1f6f8b",
+        "negative": "#b8573b",
+        "neutral": "#9aa5b1",
+    }
+
+    DISPLAY_NAMES = {
+        "gpt-5.4": "GPT-5.4",
+        "gpt-5.4-mini": "GPT-5.4 Mini",
+        "gpt-5.3-codex": "GPT-5.3 Codex",
+        "plotly": "Plotly",
+        "matplotlib": "Matplotlib",
+        "altair": "Altair",
+        "select": "Select",
+        "refine": "Refine",
+    }
+
+    mpl.rcParams.update(
+        {
+            "figure.facecolor": "white",
+            "axes.facecolor": "white",
+            "savefig.facecolor": "white",
+            "axes.edgecolor": PALETTE["grid"],
+            "axes.labelcolor": PALETTE["ink"],
+            "axes.titlecolor": PALETTE["ink"],
+            "xtick.color": PALETTE["muted"],
+            "ytick.color": PALETTE["muted"],
+            "text.color": PALETTE["ink"],
+            "font.size": 10,
+            "axes.titlesize": 13,
+            "axes.titleweight": "semibold",
+            "axes.labelsize": 10,
+            "xtick.labelsize": 9,
+            "ytick.labelsize": 9,
+            "axes.spines.top": False,
+            "axes.spines.right": False,
+            "axes.grid": False,
+        }
+    )
+
+    def display_name(value):
+        if value is None:
+            return "None"
+        return DISPLAY_NAMES.get(
+            value, value.replace("_", " ").replace("-", " ").title()
+        )
+
+    def plain_label(value):
+        if value is None:
+            return "None"
+        return value.replace("_", " ").replace("-", " ")
+
+    def readable_label(value, width=28):
+        if value is None:
+            return "None"
+        readable_text = value.replace("_", " ").replace("-", " ")
+        wrapped_lines = textwrap.wrap(readable_text, width=width)
+        return "\n".join(wrapped_lines) if wrapped_lines else readable_text
+
+    def format_delta(value):
+        return "n/a" if value is None else f"{value:+.3f}"
+
+    def format_interval(low, high):
+        if low is None or high is None:
+            return "n/a"
+        return f"[{low:+.3f}, {high:+.3f}]"
+
+    def format_rate(value):
+        return "n/a" if value is None else f"{value:.1%}"
+
+    def delta_colors(values):
+        return [
+            PALETTE["positive"] if value >= 0 else PALETTE["negative"]
+            for value in values
+        ]
+
+    def delta_xlim(
+        values,
+        ci_low=None,
+        ci_high=None,
+    ):
+        values_array = np.asarray(values, dtype=float)
+        low_array = np.asarray(ci_low if ci_low is not None else values, dtype=float)
+        high_array = np.asarray(ci_high if ci_high is not None else values, dtype=float)
+        lower_bound = min(float(values_array.min()), float(low_array.min()), 0.0)
+        upper_bound = max(float(values_array.max()), float(high_array.max()), 0.0)
+        span = max(upper_bound - lower_bound, 0.08)
+        padding = max(span * 0.15, 0.03)
+        return lower_bound - padding, upper_bound + padding
+
+    def style_axis(axis):
+        axis.spines["left"].set_color(PALETTE["grid"])
+        axis.spines["bottom"].set_color(PALETTE["grid"])
+        axis.grid(axis="x", color=PALETTE["grid"], linewidth=0.8)
+        axis.set_axisbelow(True)
+        axis.axvline(0, color=PALETTE["neutral"], linewidth=1.1, zorder=0)
+
+    def make_delta_bar_panel(
+        axis,
+        labels,
+        values,
+        title: str,
+        xlabel: str,
+        ci_low=None,
+        ci_high=None,
+    ):
+        positions = np.arange(len(labels))
+        axis.barh(positions, values, color=delta_colors(values), height=0.6)
+        if ci_low is not None and ci_high is not None:
+            error_low = np.asarray(values) - np.asarray(ci_low)
+            error_high = np.asarray(ci_high) - np.asarray(values)
+            axis.errorbar(
+                values,
+                positions,
+                xerr=[error_low, error_high],
+                fmt="none",
+                ecolor=PALETTE["ink"],
+                elinewidth=1.0,
+                capsize=3,
+            )
+        axis.set_yticks(positions, labels)
+        axis.invert_yaxis()
+        axis.set_title(title)
+        axis.set_xlabel(xlabel)
+        axis.set_xlim(*delta_xlim(values, ci_low, ci_high))
+        style_axis(axis)
+
+    return (
+        VisGroundDataset,
+        analysis,
+        analysis_guidelines,
+        analysis_stats,
+        display_name,
+        format_delta,
+        format_interval,
+        format_rate,
+        make_delta_bar_panel,
+        mo,
+        pl,
+        plain_label,
+        plt,
+        readable_label,
+    )
 
 
 @app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ## Stage Contract
-
-    - Inputs: `03_generate.parquet`, `04_judgements.parquet`
-    - Outputs: `05_analysis/*.parquet`
-    - Responsibility: build paired grounded-vs-none score deltas, design-variance
-      comparisons, grounded guideline summaries, and a narrow regression robustness
-      table
-    """)
-    return
-
-
-@app.cell(hide_code=True)
-def _(VisGroundDataset, build_analysis_bundle):
+def load_analysis_bundle(VisGroundDataset, analysis):
     store = VisGroundDataset()
-    analysis_bundle = build_analysis_bundle(store)
+    analysis_bundle = analysis.build_analysis_bundle(store)
     return analysis_bundle, store
 
 
 @app.cell(hide_code=True)
-def _(analysis_bundle):
-    analysis_bundle.manifest_df()
-    return
+def analysis_tables(
+    analysis_bundle,
+    analysis_guidelines,
+    analysis_stats,
+    display_name,
+    format_interval,
+    format_rate,
+    pl,
+):
+    def build_group_score_df(group_column, objective):
+        objective_df = analysis_bundle.paired_case_deltas_df.filter(
+            pl.col("complete_pair") & (pl.col("objective") == objective)
+        )
+        rows = []
+        for value in (
+            objective_df.get_column(group_column)
+            .drop_nulls()
+            .unique(maintain_order=True)
+            .to_list()
+        ):
+            slice_df = objective_df.filter(pl.col(group_column) == value)
+            summary = analysis_stats.summarize_delta_values(
+                [
+                    float(score_value)
+                    for score_value in slice_df.get_column("delta_overall")
+                    .drop_nulls()
+                    .to_list()
+                ]
+            )
+            rows.append(
+                {
+                    "objective": objective,
+                    "key": value,
+                    **summary,
+                }
+            )
+        if not rows:
+            return pl.DataFrame(
+                schema=[
+                    ("objective", pl.String),
+                    ("key", pl.String),
+                    ("n_pairs", pl.Int64),
+                    ("mean_delta", pl.Float64),
+                    ("median_delta", pl.Float64),
+                    ("ci_low", pl.Float64),
+                    ("ci_high", pl.Float64),
+                    ("win_rate", pl.Float64),
+                    ("loss_rate", pl.Float64),
+                    ("tie_rate", pl.Float64),
+                    ("win_count", pl.Int64),
+                    ("loss_count", pl.Int64),
+                    ("tie_count", pl.Int64),
+                    ("label", pl.String),
+                ]
+            )
+        return (
+            pl.from_dicts(rows)
+            .with_columns(
+                label=pl.col("key").map_elements(display_name, return_dtype=pl.String)
+            )
+            .sort("mean_delta", descending=True)
+        )
+
+    def build_highlighted_guideline_df(objective):
+        objective_df = analysis_bundle.paired_case_deltas_df.filter(
+            pl.col("objective") == objective
+        )
+        associations_df = analysis_guidelines.build_guideline_associations_df(
+            objective_df
+        ).filter(pl.col("support") >= 8)
+        if associations_df.is_empty():
+            return associations_df
+        return (
+            pl.concat(
+                [
+                    associations_df.sort(
+                        ["coef", "support"], descending=[True, True]
+                    ).head(5),
+                    associations_df.sort(
+                        ["coef", "support"], descending=[False, True]
+                    ).head(5),
+                ],
+                how="vertical_relaxed",
+            )
+            .unique(subset=["guideline_id"])
+            .sort("coef", descending=True)
+        )
+
+    analysis_objective_score_table_df = pl.DataFrame(
+        [
+            {
+                "Objective": display_name(objective_row["slice_value"]),
+                "Average score change": round(objective_row["mean_delta"], 3),
+                "95% interval": format_interval(
+                    objective_row["ci_low"], objective_row["ci_high"]
+                ),
+                "Grounded win rate": format_rate(objective_row["win_rate"]),
+                "Pairs": objective_row["n_pairs"],
+            }
+            for objective_row in analysis_bundle.score_summary_df.filter(
+                (pl.col("metric") == "overall") & (pl.col("slice_name") == "objective")
+            ).iter_rows(named=True)
+        ]
+    )
+
+    analysis_model_grammar_table_df = pl.DataFrame(
+        [
+            {
+                "Group": display_name(score_slice_row["slice_name"]),
+                "Slice": display_name(score_slice_row["slice_value"]),
+                "Average score change": round(score_slice_row["mean_delta"], 3),
+                "95% interval": format_interval(
+                    score_slice_row["ci_low"], score_slice_row["ci_high"]
+                ),
+                "Grounded win rate": format_rate(score_slice_row["win_rate"]),
+                "Pairs": score_slice_row["n_pairs"],
+            }
+            for score_slice_row in analysis_bundle.score_summary_df.filter(
+                (pl.col("metric") == "overall")
+                & pl.col("slice_name").is_in(["model", "grammar"])
+            ).iter_rows(named=True)
+        ]
+    )
+
+    analysis_model_score_df = (
+        analysis_bundle.score_summary_df.filter(
+            (pl.col("metric") == "overall") & (pl.col("slice_name") == "model")
+        )
+        .select("slice_value", "mean_delta", "ci_low", "ci_high", "win_rate", "n_pairs")
+        .sort("mean_delta", descending=True)
+        .rename({"slice_value": "key"})
+        .with_columns(
+            label=pl.col("key").map_elements(display_name, return_dtype=pl.String)
+        )
+    )
+
+    analysis_grammar_score_df = (
+        analysis_bundle.score_summary_df.filter(
+            (pl.col("metric") == "overall") & (pl.col("slice_name") == "grammar")
+        )
+        .select("slice_value", "mean_delta", "ci_low", "ci_high", "win_rate", "n_pairs")
+        .sort("mean_delta", descending=True)
+        .rename({"slice_value": "key"})
+        .with_columns(
+            label=pl.col("key").map_elements(display_name, return_dtype=pl.String)
+        )
+    )
+
+    analysis_refine_model_score_df = build_group_score_df("model", "refine")
+    analysis_select_model_score_df = build_group_score_df("model", "select")
+    analysis_refine_grammar_score_df = build_group_score_df("grammar", "refine")
+    analysis_select_grammar_score_df = build_group_score_df("grammar", "select")
+
+    analysis_unique_variance_df = analysis_bundle.variance_summary_df.filter(
+        (pl.col("metric") == "n_unique_visualization_types")
+        & (pl.col("slice_name") == "objective")
+        & (pl.col("slice_value") == "select")
+    ).with_columns(slice_label=pl.lit("Select"))
+
+    variance_metric_label_map = {
+        "n_unique_visualization_types": "Distinct chart types",
+        "pairwise_type_disagreement": "Pairwise disagreement",
+        "dominant_type_share": "Dominant chart-type share",
+    }
+    analysis_select_variance_metrics_df = pl.DataFrame(
+        [
+            {
+                "Metric": variance_metric_label_map[variance_row["metric"]],
+                "Average change": round(variance_row["mean_delta"], 3),
+                "95% interval": format_interval(
+                    variance_row["ci_low"], variance_row["ci_high"]
+                ),
+            }
+            for variance_row in analysis_bundle.variance_summary_df.filter(
+                (pl.col("slice_name") == "objective")
+                & (pl.col("slice_value") == "select")
+                & pl.col("metric").is_in(
+                    [
+                        "n_unique_visualization_types",
+                        "pairwise_type_disagreement",
+                        "dominant_type_share",
+                    ]
+                )
+            )
+            .sort("metric")
+            .iter_rows(named=True)
+        ]
+    )
+
+    analysis_refine_guideline_association_df = build_highlighted_guideline_df("refine")
+    analysis_select_guideline_association_df = build_highlighted_guideline_df("select")
+    return (
+        analysis_grammar_score_df,
+        analysis_model_grammar_table_df,
+        analysis_model_score_df,
+        analysis_objective_score_table_df,
+        analysis_refine_grammar_score_df,
+        analysis_refine_guideline_association_df,
+        analysis_refine_model_score_df,
+        analysis_select_grammar_score_df,
+        analysis_select_guideline_association_df,
+        analysis_select_model_score_df,
+        analysis_select_variance_metrics_df,
+        analysis_unique_variance_df,
+    )
 
 
 @app.cell(hide_code=True)
-def _(analysis_bundle, pl):
-    analysis_bundle.score_summary_df.filter(
-        (pl.col("slice_name") == "all") & (pl.col("metric") == "overall")
+def overview_headline(
+    analysis_bundle,
+    analysis_objective_score_table_df,
+    analysis_unique_variance_df,
+    format_delta,
+    format_interval,
+    mo,
+    pl,
+):
+    headline_score_row = analysis_bundle.score_summary_df.filter(
+        (pl.col("slice_name") == "all")
+        & (pl.col("slice_value") == "all")
+        & (pl.col("metric") == "overall")
+    ).row(0, named=True)
+    headline_refine_row = analysis_objective_score_table_df.filter(
+        pl.col("Objective") == "Refine"
+    ).row(0, named=True)
+    headline_select_row = analysis_objective_score_table_df.filter(
+        pl.col("Objective") == "Select"
+    ).row(0, named=True)
+    headline_variance_row = analysis_unique_variance_df.row(0, named=True)
+
+    mo.md(
+        f"""
+    ## Overview
+
+    Grounding raises the paired overall VisJudge score by **{format_delta(headline_score_row["mean_delta"])}** with a 95% interval of **{format_interval(headline_score_row["ci_low"], headline_score_row["ci_high"])}**. In plain terms, the grounded version is judged better far more often than worse on the same case: **{headline_score_row["win_count"]}** wins, **{headline_score_row["loss_count"]}** losses, and **{headline_score_row["tie_count"]}** ties across **{headline_score_row["n_pairs"]}** matched comparisons.
+
+    In **Refine**, grounding improves score by **{headline_refine_row["Average score change"]:+.3f}** with a 95% interval of **{headline_refine_row["95% interval"]}**. That means grounding still helps when the chart family is already fixed; the benefit comes from better implementation choices such as emphasis, labeling, and overall finish rather than from picking a different chart type.
+
+    In **Select**, grounding improves score by **{headline_select_row["Average score change"]:+.3f}** with a 95% interval of **{headline_select_row["95% interval"]}**. It also changes the number of distinct chart types by **{format_delta(headline_variance_row["mean_delta"])}** with a 95% interval of **{format_interval(headline_variance_row["ci_low"], headline_variance_row["ci_high"])}**. Put simply, when the prompt leaves chart choice open, grounding helps models make better charts and makes their choices less scattered.
+        """
     )
     return
 
 
 @app.cell(hide_code=True)
-def _(analysis_bundle):
-    analysis_bundle.variance_summary_df
+def coverage_intro(mo):
+    mo.md("""
+    ## Coverage and executable yield
+
+    The counts below show how much of the full generation run survives into the scored and matched analyses.
+    """)
     return
 
 
 @app.cell(hide_code=True)
-def _(analysis_bundle, pl):
-    analysis_bundle.guideline_summary_df.sort(
-        "support",
-        descending=True,
-        nulls_last=True,
-    ).head(20)
+def coverage_summary(
+    analysis_bundle,
+    analysis_refine_guideline_association_df,
+    analysis_select_guideline_association_df,
+    analysis_unique_variance_df,
+    pl,
+):
+    coverage_overall_row = analysis_bundle.score_summary_df.filter(
+        (pl.col("slice_name") == "all")
+        & (pl.col("slice_value") == "all")
+        & (pl.col("metric") == "overall")
+    ).row(0, named=True)
+    coverage_refine_row = analysis_bundle.score_summary_df.filter(
+        (pl.col("slice_name") == "objective")
+        & (pl.col("slice_value") == "refine")
+        & (pl.col("metric") == "overall")
+    ).row(0, named=True)
+    coverage_select_row = analysis_bundle.score_summary_df.filter(
+        (pl.col("slice_name") == "objective")
+        & (pl.col("slice_value") == "select")
+        & (pl.col("metric") == "overall")
+    ).row(0, named=True)
+    coverage_select_variance_row = analysis_unique_variance_df.row(0, named=True)
+
+    coverage_summary_df = pl.DataFrame(
+        [
+            {
+                "Measure": "Generated charts analyzed",
+                "Value": analysis_bundle.analysis_cases_df.height,
+            },
+            {
+                "Measure": "Complete grounded vs ungrounded pairs",
+                "Value": coverage_overall_row["n_pairs"],
+            },
+            {
+                "Measure": "Refine pairs",
+                "Value": coverage_refine_row["n_pairs"],
+            },
+            {
+                "Measure": "Select pairs",
+                "Value": coverage_select_row["n_pairs"],
+            },
+            {
+                "Measure": "Select-only design-variance comparisons",
+                "Value": coverage_select_variance_row["n_pairs"],
+            },
+            {
+                "Measure": "Highlighted guidelines in refine scan",
+                "Value": analysis_refine_guideline_association_df.height,
+            },
+            {
+                "Measure": "Highlighted guidelines in select scan",
+                "Value": analysis_select_guideline_association_df.height,
+            },
+        ]
+    )
+
+    coverage_summary_df
+    return coverage_overall_row, coverage_refine_row, coverage_select_row
+
+
+@app.cell(hide_code=True)
+def coverage_interpretation(
+    analysis_bundle,
+    coverage_overall_row,
+    coverage_refine_row,
+    coverage_select_row,
+    mo,
+):
+    unpaired_scored_charts = analysis_bundle.analysis_cases_df.height - (
+        2 * coverage_overall_row["n_pairs"]
+    )
+
+    mo.md(
+        f"""
+    The scored analysis covers **{analysis_bundle.analysis_cases_df.height}** executable charts and **{coverage_overall_row["n_pairs"]}** complete matched pairs, split almost evenly between **Refine** (**{coverage_refine_row["n_pairs"]}**) and **Select** (**{coverage_select_row["n_pairs"]}**). Only **{unpaired_scored_charts}** scored charts fall out of the matched comparison because their grounded or ungrounded counterpart is missing. That means the paired results summarize almost the full study rather than a narrow surviving subset.
+        """
+    )
     return
 
 
 @app.cell(hide_code=True)
-def _(analysis_bundle, pl):
-    analysis_bundle.guideline_associations_df.sort(
-        "p_value_adj",
-        nulls_last=True,
-    ).head(20)
+def design_scores_overview(
+    analysis_grammar_score_df,
+    analysis_model_score_df,
+    analysis_objective_score_table_df,
+    mo,
+    pl,
+):
+    theme_score_refine_row = analysis_objective_score_table_df.filter(
+        pl.col("Objective") == "Refine"
+    ).row(0, named=True)
+    theme_score_select_row = analysis_objective_score_table_df.filter(
+        pl.col("Objective") == "Select"
+    ).row(0, named=True)
+    theme_score_best_model_row = analysis_model_score_df.row(0, named=True)
+    theme_score_best_grammar_row = analysis_grammar_score_df.row(0, named=True)
+    theme_score_lowest_grammar_row = analysis_grammar_score_df.sort("mean_delta").row(
+        0, named=True
+    )
+
+    mo.md(
+        f"""
+    Grounding improves judged quality in both task settings. The gain is **{theme_score_refine_row["Average score change"]:+.3f}** in **Refine** and **{theme_score_select_row["Average score change"]:+.3f}** in **Select**. For a reader who does not care about the exact scale, the simplest reading is that the added guidance helps both when the model is polishing a prescribed design and when it is choosing the design itself.
+
+    Across the full set of matched comparisons, **{theme_score_best_model_row["label"]}** shows the largest average improvement and **{theme_score_best_grammar_row["label"]}** is the strongest grammar. **{theme_score_lowest_grammar_row["label"]}** remains the least settled grammar because its interval still crosses zero, so that bar should be read as uncertain rather than as evidence of no effect.
+        """
+    )
     return
 
 
 @app.cell(hide_code=True)
-def _(analysis_bundle, store):
+def objective_score_table(analysis_objective_score_table_df):
+    analysis_objective_score_table_df
+    return
+
+
+@app.cell(hide_code=True)
+def objective_interpretation(analysis_objective_score_table_df, mo, pl):
+    objective_refine_row = analysis_objective_score_table_df.filter(
+        pl.col("Objective") == "Refine"
+    ).row(0, named=True)
+    objective_select_row = analysis_objective_score_table_df.filter(
+        pl.col("Objective") == "Select"
+    ).row(0, named=True)
+
+    mo.md(
+        f"""
+    Both objectives are positive. **Refine** is slightly higher at **{objective_refine_row["Average score change"]:+.3f}**, which means grounding improves the quality of a chart even when the requested chart family is already fixed. **Select** stays clearly positive at **{objective_select_row["Average score change"]:+.3f}**, which means the same guidance also helps when the model has to decide what kind of chart to build.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def model_grammar_summary_table(analysis_model_grammar_table_df):
+    analysis_model_grammar_table_df
+    return
+
+
+@app.cell(hide_code=True)
+def model_grammar_summary_interpretation(analysis_bundle, display_name, mo):
+    model_grammar_best_row = analysis_bundle.model_grammar_summary_df.sort(
+        ["mean_delta", "support"], descending=[True, True]
+    ).row(0, named=True)
+    model_grammar_worst_row = analysis_bundle.model_grammar_summary_df.sort(
+        ["mean_delta", "support"], descending=[False, True]
+    ).row(0, named=True)
+
+    mo.md(
+        f"""
+    This model-by-grammar table shows where the score gains concentrate before the score plots are split by objective. The strongest combination is **{display_name(model_grammar_best_row["model"])} + {display_name(model_grammar_best_row["grammar"])}** at **{model_grammar_best_row["mean_delta"]:+.3f}**. The weakest is **{display_name(model_grammar_worst_row["model"])} + {display_name(model_grammar_worst_row["grammar"])}** at **{model_grammar_worst_row["mean_delta"]:+.3f}**. In practical terms, the weak points are not spread evenly across the whole system; they cluster in specific model-and-grammar combinations.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def model_grammar_detail_table(analysis_bundle, display_name, format_rate, pl):
+    analysis_model_grammar_detail_df = pl.DataFrame(
+        [
+            {
+                "Model": display_name(model_grammar_row["model"]),
+                "Grammar": display_name(model_grammar_row["grammar"]),
+                "Average score change": round(model_grammar_row["mean_delta"], 3),
+                "Grounded win rate": format_rate(model_grammar_row["win_rate"]),
+                "Pairs": model_grammar_row["support"],
+            }
+            for model_grammar_row in analysis_bundle.model_grammar_summary_df.sort(
+                ["mean_delta", "support"],
+                descending=[True, True],
+            ).iter_rows(named=True)
+        ]
+    )
+
+    analysis_model_grammar_detail_df
+    return
+
+
+@app.cell(hide_code=True)
+def score_dimensions_table(analysis_bundle, format_interval, format_rate, pl):
+    score_metric_label_map = {
+        "overall": "Overall",
+        "data_fidelity": "Data fidelity",
+        "semantic_readability": "Semantic readability",
+        "insight_discovery": "Insight discovery",
+        "design_style": "Design style",
+        "visual_composition": "Visual composition",
+        "color_harmony": "Color harmony",
+    }
+    analysis_score_dimensions_df = pl.DataFrame(
+        [
+            {
+                "Metric": score_metric_label_map[score_row["metric"]],
+                "Average score change": round(score_row["mean_delta"], 3),
+                "95% interval": format_interval(
+                    score_row["ci_low"], score_row["ci_high"]
+                ),
+                "Grounded win rate": format_rate(score_row["win_rate"]),
+                "Tie rate": format_rate(score_row["tie_rate"]),
+            }
+            for score_row in analysis_bundle.score_summary_df.filter(
+                pl.col("slice_name") == "all"
+            )
+            .sort("mean_delta", descending=True)
+            .iter_rows(named=True)
+        ]
+    )
+
+    analysis_score_dimensions_df
+    return
+
+
+@app.cell(hide_code=True)
+def score_dimensions_interpretation(analysis_bundle, mo, pl):
+    score_dimension_best_row = (
+        analysis_bundle.score_summary_df.filter(pl.col("slice_name") == "all")
+        .sort("mean_delta", descending=True)
+        .row(0, named=True)
+    )
+    score_dimension_worst_row = (
+        analysis_bundle.score_summary_df.filter(pl.col("slice_name") == "all")
+        .sort("mean_delta")
+        .row(0, named=True)
+    )
+    score_dimension_insight_row = analysis_bundle.score_summary_df.filter(
+        (pl.col("slice_name") == "all") & (pl.col("metric") == "insight_discovery")
+    ).row(0, named=True)
+
+    mo.md(
+        f"""
+    The score lift is not spread evenly across all six judge dimensions. The clearest gains appear in **design style** (**{score_dimension_best_row["mean_delta"]:+.3f}**) and **insight discovery** (**{score_dimension_insight_row["mean_delta"]:+.3f}**), with **semantic readability** also on the positive side. The weakest dimension is **{score_dimension_worst_row["metric"].replace("_", " ")}**. In plain language, grounding seems to help most with message clarity, analytical emphasis, and overall design judgment rather than improving every low-level visual criterion at the same rate.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def refine_model_chart(
+    analysis_refine_model_score_df,
+    make_delta_bar_panel,
+    plt,
+):
+    score_model_refine_figure, score_model_refine_axis = plt.subplots(
+        figsize=(10.8, 3.8), constrained_layout=True
+    )
+    make_delta_bar_panel(
+        score_model_refine_axis,
+        labels=analysis_refine_model_score_df.get_column("label").to_list(),
+        values=analysis_refine_model_score_df.get_column("mean_delta").to_list(),
+        ci_low=analysis_refine_model_score_df.get_column("ci_low").to_list(),
+        ci_high=analysis_refine_model_score_df.get_column("ci_high").to_list(),
+        title="Refine: score change by model",
+        xlabel="Average change in overall score (grounded - ungrounded)",
+    )
+    score_model_refine_figure
+    return
+
+
+@app.cell(hide_code=True)
+def refine_model_interpretation(analysis_refine_model_score_df, mo):
+    score_model_low_values = analysis_refine_model_score_df.get_column(
+        "ci_low"
+    ).to_list()
+    score_model_high_values = analysis_refine_model_score_df.get_column(
+        "ci_high"
+    ).to_list()
+    score_model_widths = [
+        high_value - low_value
+        for low_value, high_value in zip(
+            score_model_low_values, score_model_high_values, strict=True
+        )
+    ]
+    score_model_widest_width = max(score_model_widths)
+    score_model_widest_index = score_model_widths.index(score_model_widest_width)
+    score_model_widest_label = analysis_refine_model_score_df.get_column(
+        "label"
+    ).to_list()[score_model_widest_index]
+    score_model_best_row = analysis_refine_model_score_df.row(0, named=True)
+    score_model_lowest_row = analysis_refine_model_score_df.sort("mean_delta").row(
+        0, named=True
+    )
+
+    mo.md(
+        f"""
+    In **Refine**, all three models stay on the positive side. The largest average gain belongs to **{score_model_best_row["label"]}** at **{score_model_best_row["mean_delta"]:+.3f}**, and the smallest belongs to **{score_model_lowest_row["label"]}** at **{score_model_lowest_row["mean_delta"]:+.3f}**. The practical reading is that grounding helps each model implement a prescribed design more effectively, not just choose a chart type.
+
+    The intervals for all three models remain above zero, so the direction is fairly stable. They are still wide enough that the exact ranking should be treated as approximate. The widest interval belongs to **{score_model_widest_label}**, which means its gain changes more from case to case than the bar height alone suggests.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def select_model_chart(
+    analysis_select_model_score_df,
+    make_delta_bar_panel,
+    plt,
+):
+    score_model_select_figure, score_model_select_axis = plt.subplots(
+        figsize=(10.8, 3.8), constrained_layout=True
+    )
+    make_delta_bar_panel(
+        score_model_select_axis,
+        labels=analysis_select_model_score_df.get_column("label").to_list(),
+        values=analysis_select_model_score_df.get_column("mean_delta").to_list(),
+        ci_low=analysis_select_model_score_df.get_column("ci_low").to_list(),
+        ci_high=analysis_select_model_score_df.get_column("ci_high").to_list(),
+        title="Select: score change by model",
+        xlabel="Average change in overall score (grounded - ungrounded)",
+    )
+    score_model_select_figure
+    return
+
+
+@app.cell(hide_code=True)
+def select_model_interpretation(analysis_select_model_score_df, mo):
+    select_model_low_values = analysis_select_model_score_df.get_column(
+        "ci_low"
+    ).to_list()
+    select_model_high_values = analysis_select_model_score_df.get_column(
+        "ci_high"
+    ).to_list()
+    select_model_widths = [
+        high_value - low_value
+        for low_value, high_value in zip(
+            select_model_low_values, select_model_high_values, strict=True
+        )
+    ]
+    select_model_widest_width = max(select_model_widths)
+    select_model_widest_index = select_model_widths.index(select_model_widest_width)
+    select_model_widest_label = analysis_select_model_score_df.get_column(
+        "label"
+    ).to_list()[select_model_widest_index]
+    select_model_best_row = analysis_select_model_score_df.row(0, named=True)
+    select_model_lowest_row = analysis_select_model_score_df.sort("mean_delta").row(
+        0, named=True
+    )
+
+    mo.md(
+        f"""
+    In **Select**, grounding still helps every model on average, but the spread is wider because the model is now choosing the design as well as implementing it. **{select_model_best_row["label"]}** shows the largest gain at **{select_model_best_row["mean_delta"]:+.3f}**, while **{select_model_lowest_row["label"]}** is smallest at **{select_model_lowest_row["mean_delta"]:+.3f}**. In plain terms, all models benefit from grounding when chart choice is open, but some use the extra design guidance more effectively than others.
+
+    The widest interval belongs to **{select_model_widest_label}**. Wide intervals here mean the benefit varies noticeably from prompt to prompt. Even when the bars line up in one order, the exact distance between them should be read as approximate rather than fixed.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def refine_grammar_chart(
+    analysis_refine_grammar_score_df,
+    make_delta_bar_panel,
+    plt,
+):
+    score_grammar_refine_figure, score_grammar_refine_axis = plt.subplots(
+        figsize=(10.8, 3.8), constrained_layout=True
+    )
+    make_delta_bar_panel(
+        score_grammar_refine_axis,
+        labels=analysis_refine_grammar_score_df.get_column("label").to_list(),
+        values=analysis_refine_grammar_score_df.get_column("mean_delta").to_list(),
+        ci_low=analysis_refine_grammar_score_df.get_column("ci_low").to_list(),
+        ci_high=analysis_refine_grammar_score_df.get_column("ci_high").to_list(),
+        title="Refine: score change by grammar",
+        xlabel="Average change in overall score (grounded - ungrounded)",
+    )
+    score_grammar_refine_figure
+    return
+
+
+@app.cell(hide_code=True)
+def refine_grammar_interpretation(analysis_refine_grammar_score_df, mo):
+    score_grammar_rows = list(analysis_refine_grammar_score_df.iter_rows(named=True))
+    score_grammar_cross_zero_labels = [
+        score_grammar_row["label"]
+        for score_grammar_row in score_grammar_rows
+        if score_grammar_row["ci_low"] <= 0 <= score_grammar_row["ci_high"]
+    ]
+    score_grammar_cross_zero_text = (
+        ", ".join(score_grammar_cross_zero_labels)
+        if score_grammar_cross_zero_labels
+        else "none"
+    )
+    score_grammar_best_row = analysis_refine_grammar_score_df.row(0, named=True)
+    score_grammar_lowest_row = analysis_refine_grammar_score_df.sort("mean_delta").row(
+        0, named=True
+    )
+
+    mo.md(
+        f"""
+    In **Refine**, the strongest grammar is **{score_grammar_best_row["label"]}** at **{score_grammar_best_row["mean_delta"]:+.3f}**, while **{score_grammar_lowest_row["label"]}** is weakest at **{score_grammar_lowest_row["mean_delta"]:+.3f}**. Because the chart family is already fixed here, this difference is best read as a difference in how well each grammar supports the final implementation and polish of the design.
+
+    The interval crosses zero for **{score_grammar_cross_zero_text}**. That does not prove there is no benefit for that grammar; it means the current data are too variable to pin down the direction with confidence at this slice.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def select_grammar_chart(
+    analysis_select_grammar_score_df,
+    make_delta_bar_panel,
+    plt,
+):
+    score_grammar_select_figure, score_grammar_select_axis = plt.subplots(
+        figsize=(10.8, 3.8), constrained_layout=True
+    )
+    make_delta_bar_panel(
+        score_grammar_select_axis,
+        labels=analysis_select_grammar_score_df.get_column("label").to_list(),
+        values=analysis_select_grammar_score_df.get_column("mean_delta").to_list(),
+        ci_low=analysis_select_grammar_score_df.get_column("ci_low").to_list(),
+        ci_high=analysis_select_grammar_score_df.get_column("ci_high").to_list(),
+        title="Select: score change by grammar",
+        xlabel="Average change in overall score (grounded - ungrounded)",
+    )
+    score_grammar_select_figure
+    return
+
+
+@app.cell(hide_code=True)
+def select_grammar_interpretation(analysis_select_grammar_score_df, mo):
+    select_grammar_rows = list(analysis_select_grammar_score_df.iter_rows(named=True))
+    select_grammar_cross_zero_labels = [
+        score_grammar_row["label"]
+        for score_grammar_row in select_grammar_rows
+        if score_grammar_row["ci_low"] <= 0 <= score_grammar_row["ci_high"]
+    ]
+    select_grammar_cross_zero_text = (
+        ", ".join(select_grammar_cross_zero_labels)
+        if select_grammar_cross_zero_labels
+        else "none"
+    )
+    select_grammar_best_row = analysis_select_grammar_score_df.row(0, named=True)
+    select_grammar_lowest_row = analysis_select_grammar_score_df.sort("mean_delta").row(
+        0, named=True
+    )
+
+    mo.md(
+        f"""
+    In **Select**, the grammar differences remain visible when the model has to choose the chart type. **{select_grammar_best_row["label"]}** shows the largest gain at **{select_grammar_best_row["mean_delta"]:+.3f}**, while **{select_grammar_lowest_row["label"]}** is weakest at **{select_grammar_lowest_row["mean_delta"]:+.3f}**. For a non-technical reader, the simple interpretation is that some grammar environments make it easier for models to turn retrieved guidance into a good design choice and a good final chart at the same time.
+
+    The interval crosses zero for **{select_grammar_cross_zero_text}**. That slice should therefore be treated as uncertain: the observed average is informative, but the data do not yet support a firm directional claim there.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def select_variability_overview(analysis_unique_variance_df, mo):
+    theme_select_variance_row = analysis_unique_variance_df.row(0, named=True)
+
+    mo.md(
+        f"""
+    The design-variability analysis is restricted to **Select** because only **Select** asks the model to choose the chart type. In that setting, grounding changes the number of distinct chart types by **{theme_select_variance_row["mean_delta"]:+.3f}** and the interval stays below zero. In plain terms, the grounded generations converge more often on similar chart choices instead of spreading across a wider set of alternatives.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def select_variability_chart(
+    analysis_unique_variance_df,
+    make_delta_bar_panel,
+    plt,
+):
+    variance_unique_figure, variance_unique_axis = plt.subplots(
+        figsize=(10.8, 3.8), constrained_layout=True
+    )
+    make_delta_bar_panel(
+        variance_unique_axis,
+        labels=analysis_unique_variance_df.get_column("slice_label").to_list(),
+        values=analysis_unique_variance_df.get_column("mean_delta").to_list(),
+        ci_low=analysis_unique_variance_df.get_column("ci_low").to_list(),
+        ci_high=analysis_unique_variance_df.get_column("ci_high").to_list(),
+        title="Select: change in distinct chart types",
+        xlabel="Average change after grounding (negative means fewer chart types)",
+    )
+    variance_unique_figure
+    return
+
+
+@app.cell(hide_code=True)
+def select_variability_interpretation(analysis_unique_variance_df, mo):
+    variance_select_row = analysis_unique_variance_df.row(0, named=True)
+
+    mo.md(
+        f"""
+    In **Select**, grounding changes the number of distinct chart types by **{variance_select_row["mean_delta"]:+.3f}**. A reader who does not work with variance metrics can read this as: grounded models explore a narrower and more consistent set of design choices for the same analytical intent.
+
+    The interval for this result stays below zero, which makes it materially more stable than the other variability diagnostics. The safe claim is therefore specific: grounding reduces chart-type variety in **Select**. It does not mean every possible notion of design consistency improves equally.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def select_variability_detail_table(
+    analysis_unique_variance_df,
+    format_interval,
+    format_rate,
+    pl,
+):
+    analysis_variance_detail_df = pl.DataFrame(
+        [
+            {
+                "Slice": variance_row["slice_label"],
+                "Average change in distinct chart types": round(
+                    variance_row["mean_delta"], 3
+                ),
+                "95% interval": format_interval(
+                    variance_row["ci_low"], variance_row["ci_high"]
+                ),
+                "Grounded-fewer rate": format_rate(variance_row["win_rate"]),
+                "Pairs": variance_row["n_pairs"],
+            }
+            for variance_row in analysis_unique_variance_df.iter_rows(named=True)
+        ]
+    )
+
+    analysis_variance_detail_df
+    return
+
+
+@app.cell(hide_code=True)
+def select_variability_metrics_table(analysis_select_variance_metrics_df):
+    analysis_select_variance_metrics_df
+    return
+
+
+@app.cell(hide_code=True)
+def guideline_overview(
+    analysis_refine_guideline_association_df,
+    analysis_select_guideline_association_df,
+    mo,
+    plain_label,
+):
+    theme_catalog_refine_row = analysis_refine_guideline_association_df.row(
+        0, named=True
+    )
+    theme_catalog_select_row = analysis_select_guideline_association_df.row(
+        0, named=True
+    )
+    theme_catalog_negative_row = analysis_select_guideline_association_df.sort(
+        "coef"
+    ).row(0, named=True)
+
+    mo.md(
+        f"""
+    The guideline diagnostics are clearer once they are split by objective. In **Refine**, the most positive highlighted association is **{plain_label(theme_catalog_refine_row["guideline_id"])}** at **{theme_catalog_refine_row["coef"]:+.3f}**. In **Select**, the strongest positive highlighted association is **{plain_label(theme_catalog_select_row["guideline_id"])}** at **{theme_catalog_select_row["coef"]:+.3f}**, while the strongest negative highlighted association is **{plain_label(theme_catalog_negative_row["guideline_id"])}** at **{theme_catalog_negative_row["coef"]:+.3f}**. The broad pattern is consistent with the task split: finish-and-clarity guidance looks stronger in **Refine**, while chart-choice and table-versus-chart guidance becomes more visible in **Select**.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def refine_guideline_chart(
+    analysis_refine_guideline_association_df,
+    make_delta_bar_panel,
+    plt,
+    readable_label,
+):
+    guideline_association_refine_figure, guideline_association_refine_axis = (
+        plt.subplots(figsize=(12.0, 6.8), constrained_layout=True)
+    )
+    make_delta_bar_panel(
+        guideline_association_refine_axis,
+        labels=[
+            readable_label(guideline_key, width=30)
+            for guideline_key in analysis_refine_guideline_association_df.get_column(
+                "guideline_id"
+            ).to_list()
+        ],
+        values=analysis_refine_guideline_association_df.get_column("coef").to_list(),
+        ci_low=analysis_refine_guideline_association_df.get_column("ci_low").to_list(),
+        ci_high=analysis_refine_guideline_association_df.get_column(
+            "ci_high"
+        ).to_list(),
+        title="Refine: guideline coefficients",
+        xlabel="Controlled association with overall score change (grounded - ungrounded)",
+    )
+    guideline_association_refine_figure
+    return
+
+
+@app.cell(hide_code=True)
+def refine_guideline_interpretation(
+    analysis_refine_guideline_association_df,
+    mo,
+    plain_label,
+):
+    guideline_assoc_rows = list(
+        analysis_refine_guideline_association_df.iter_rows(named=True)
+    )
+    guideline_assoc_cross_zero_labels = [
+        plain_label(guideline_assoc_row["guideline_id"])
+        for guideline_assoc_row in guideline_assoc_rows
+        if guideline_assoc_row["ci_low"] <= 0 <= guideline_assoc_row["ci_high"]
+    ]
+    positive_guideline_row = analysis_refine_guideline_association_df.row(0, named=True)
+    negative_guideline_row = analysis_refine_guideline_association_df.sort("coef").row(
+        0, named=True
+    )
+
+    mo.md(
+        f"""
+    In **Refine**, the strongest positive highlighted association is **{plain_label(positive_guideline_row["guideline_id"])}** at **{positive_guideline_row["coef"]:+.3f}**. The strongest negative highlighted association is **{plain_label(negative_guideline_row["guideline_id"])}** at **{negative_guideline_row["coef"]:+.3f}**. The practical reading is that, once the chart family is already fixed, the strongest positive guidelines mostly improve how the chosen chart is finished and read, whereas the strongest negative ones cluster around less successful composition choices inside that fixed design family.
+
+    Wide intervals here mean some guidelines behave very differently across matched cases. The most convincing entries are the ones whose intervals stay well away from zero. Entries whose intervals cross zero remain tentative; in this refine chart that includes **{", ".join(guideline_assoc_cross_zero_labels[:4]) if guideline_assoc_cross_zero_labels else "none of the highlighted guidelines"}**.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def select_guideline_chart(
+    analysis_select_guideline_association_df,
+    make_delta_bar_panel,
+    plt,
+    readable_label,
+):
+    guideline_association_select_figure, guideline_association_select_axis = (
+        plt.subplots(figsize=(12.0, 6.8), constrained_layout=True)
+    )
+    make_delta_bar_panel(
+        guideline_association_select_axis,
+        labels=[
+            readable_label(guideline_key, width=30)
+            for guideline_key in analysis_select_guideline_association_df.get_column(
+                "guideline_id"
+            ).to_list()
+        ],
+        values=analysis_select_guideline_association_df.get_column("coef").to_list(),
+        ci_low=analysis_select_guideline_association_df.get_column("ci_low").to_list(),
+        ci_high=analysis_select_guideline_association_df.get_column(
+            "ci_high"
+        ).to_list(),
+        title="Select: guideline coefficients",
+        xlabel="Controlled association with overall score change (grounded - ungrounded)",
+    )
+    guideline_association_select_figure
+    return
+
+
+@app.cell(hide_code=True)
+def select_guideline_interpretation(
+    analysis_select_guideline_association_df,
+    mo,
+    plain_label,
+):
+    select_guideline_rows = list(
+        analysis_select_guideline_association_df.iter_rows(named=True)
+    )
+    select_guideline_cross_zero_labels = [
+        plain_label(guideline_assoc_row["guideline_id"])
+        for guideline_assoc_row in select_guideline_rows
+        if guideline_assoc_row["ci_low"] <= 0 <= guideline_assoc_row["ci_high"]
+    ]
+    select_positive_guideline_row = analysis_select_guideline_association_df.row(
+        0, named=True
+    )
+    select_negative_guideline_row = analysis_select_guideline_association_df.sort(
+        "coef"
+    ).row(0, named=True)
+
+    mo.md(
+        f"""
+    In **Select**, the positive side is led by **{plain_label(select_positive_guideline_row["guideline_id"])}** at **{select_positive_guideline_row["coef"]:+.3f}**, while the most negative highlighted association is **{plain_label(select_negative_guideline_row["guideline_id"])}** at **{select_negative_guideline_row["coef"]:+.3f}**. This split is substantively useful: the strongest positive guidelines emphasize aggregation checks, axis review, and clearer chart reading, whereas the strongest negative guidelines are concentrated around table-like lookup patterns. That matches the core design-choice problem in **Select**.
+
+    These are still observational coefficients, not causal effects. Wide intervals mean the guideline’s association with score change differs a lot across matched cases. The results are most credible where the interval stays clearly away from zero; entries whose intervals cross zero remain exploratory, including **{", ".join(select_guideline_cross_zero_labels[:4]) if select_guideline_cross_zero_labels else "none of the highlighted guidelines"}**.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def refine_guideline_table(
+    analysis_refine_guideline_association_df,
+    format_interval,
+    pl,
+    plain_label,
+):
+    analysis_refine_guideline_table_df = pl.DataFrame(
+        [
+            {
+                "Guideline": plain_label(guideline_row["guideline_id"]),
+                "Coefficient": round(guideline_row["coef"], 3),
+                "95% interval": format_interval(
+                    guideline_row["ci_low"], guideline_row["ci_high"]
+                ),
+                "Adj. p": round(guideline_row["p_value_adj"], 4),
+                "Support": guideline_row["support"],
+            }
+            for guideline_row in analysis_refine_guideline_association_df.iter_rows(
+                named=True
+            )
+        ]
+    )
+
+    analysis_refine_guideline_table_df
+    return
+
+
+@app.cell(hide_code=True)
+def select_guideline_table(
+    analysis_select_guideline_association_df,
+    format_interval,
+    pl,
+    plain_label,
+):
+    analysis_select_guideline_table_df = pl.DataFrame(
+        [
+            {
+                "Guideline": plain_label(guideline_row["guideline_id"]),
+                "Coefficient": round(guideline_row["coef"], 3),
+                "95% interval": format_interval(
+                    guideline_row["ci_low"], guideline_row["ci_high"]
+                ),
+                "Adj. p": round(guideline_row["p_value_adj"], 4),
+                "Support": guideline_row["support"],
+            }
+            for guideline_row in analysis_select_guideline_association_df.iter_rows(
+                named=True
+            )
+        ]
+    )
+
+    analysis_select_guideline_table_df
+    return
+
+
+@app.cell(hide_code=True)
+def write_analysis_artifacts(analysis_bundle, store):
     analysis_bundle.write_all(store)
     return
-
-
-@app.cell(hide_code=True)
-def _():
-    import marimo as mo
-    import polars as pl
-    from visground.analysis import build_analysis_bundle
-    from visground.datasets import VisGroundDataset
-
-    return VisGroundDataset, build_analysis_bundle, mo, pl
 
 
 if __name__ == "__main__":

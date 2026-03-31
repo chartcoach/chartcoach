@@ -192,10 +192,59 @@ def build_score_models_df(paired_case_deltas_df: pl.DataFrame) -> pl.DataFrame:
     return pl.from_dicts(rows)
 
 
+def build_chart_type_summary_df(paired_case_deltas_df: pl.DataFrame) -> pl.DataFrame:
+    """Show which grounded chart types tend to help or hurt relative to baseline."""
+    return (
+        paired_case_deltas_df.filter(pl.col("complete_pair"))
+        .group_by("visualization_type")
+        .agg(
+            support=pl.len(),
+            mean_delta=pl.col("delta_overall").mean(),
+            win_rate=pl.col("grounded_win").cast(pl.Float64).mean(),
+            mean_grounded_score=pl.col("overall_score").mean(),
+            mean_baseline_score=pl.col("baseline_overall_score").mean(),
+        )
+        .sort("mean_delta", descending=True)
+    )
+
+
+def build_model_grammar_summary_df(paired_case_deltas_df: pl.DataFrame) -> pl.DataFrame:
+    """Show where grounding helps most once model and grammar are considered together."""
+    return (
+        paired_case_deltas_df.filter(pl.col("complete_pair"))
+        .group_by("model", "grammar")
+        .agg(
+            support=pl.len(),
+            mean_delta=pl.col("delta_overall").mean(),
+            win_rate=pl.col("grounded_win").cast(pl.Float64).mean(),
+        )
+        .sort(["model", "mean_delta"], descending=[False, True])
+    )
+
+
+def build_chart_transition_summary_df(
+    paired_case_deltas_df: pl.DataFrame,
+) -> pl.DataFrame:
+    """Show which baseline-to-grounded chart-type transitions help or hurt most."""
+    return (
+        paired_case_deltas_df.filter(pl.col("complete_pair"))
+        .group_by("baseline_visualization_type", "visualization_type")
+        .agg(
+            support=pl.len(),
+            mean_delta=pl.col("delta_overall").mean(),
+            win_rate=pl.col("grounded_win").cast(pl.Float64).mean(),
+        )
+        .sort("mean_delta", descending=True)
+    )
+
+
 __all__ = [
     "PAIR_AUDIENCE_SENTINEL",
     "PRIMARY_SCORE_FIELDS",
     "build_analysis_cases_df",
+    "build_chart_type_summary_df",
+    "build_chart_transition_summary_df",
+    "build_model_grammar_summary_df",
     "build_paired_case_deltas_df",
     "build_score_models_df",
     "build_score_summary_df",

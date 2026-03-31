@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import statistics
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from typing import Any
 
 import pandas as pd
@@ -106,7 +106,7 @@ def guideline_list(value: object) -> list[str]:
         return []
     if isinstance(value, str):
         return [value]
-    if isinstance(value, Sequence):
+    if isinstance(value, Iterable):
         return [str(item) for item in value]
     return []
 

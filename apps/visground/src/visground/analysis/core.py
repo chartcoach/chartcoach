@@ -11,12 +11,16 @@ from visground.datasets import VisGroundDataset
 
 from .cases import (
     build_analysis_cases_df,
+    build_chart_type_summary_df,
+    build_chart_transition_summary_df,
+    build_model_grammar_summary_df,
     build_paired_case_deltas_df,
     build_score_models_df,
     build_score_summary_df,
 )
 from .guidelines import (
     build_guideline_associations_df,
+    build_guideline_model_summary_df,
     build_guideline_summary_df,
 )
 from .variance import (
@@ -33,11 +37,15 @@ class VisGroundAnalysisBundle:
     analysis_cases_df: pl.DataFrame
     paired_case_deltas_df: pl.DataFrame
     score_summary_df: pl.DataFrame
+    chart_type_summary_df: pl.DataFrame
+    model_grammar_summary_df: pl.DataFrame
+    chart_transition_summary_df: pl.DataFrame
     condition_variance_df: pl.DataFrame
     design_variance_deltas_df: pl.DataFrame
     variance_summary_df: pl.DataFrame
     guideline_summary_df: pl.DataFrame
     guideline_associations_df: pl.DataFrame
+    guideline_model_summary_df: pl.DataFrame
     score_models_df: pl.DataFrame
 
     def artifacts(self) -> dict[str, pl.DataFrame]:
@@ -46,11 +54,15 @@ class VisGroundAnalysisBundle:
             "analysis_cases": self.analysis_cases_df,
             "paired_case_deltas": self.paired_case_deltas_df,
             "score_summary": self.score_summary_df,
+            "chart_type_summary": self.chart_type_summary_df,
+            "model_grammar_summary": self.model_grammar_summary_df,
+            "chart_transition_summary": self.chart_transition_summary_df,
             "condition_variance": self.condition_variance_df,
             "design_variance_deltas": self.design_variance_deltas_df,
             "variance_summary": self.variance_summary_df,
             "guideline_summary": self.guideline_summary_df,
             "guideline_associations": self.guideline_associations_df,
+            "guideline_model_summary": self.guideline_model_summary_df,
             "score_models": self.score_models_df,
         }
 
@@ -89,11 +101,19 @@ def build_analysis_bundle(store: VisGroundDataset) -> VisGroundAnalysisBundle:
         analysis_cases_df=analysis_cases_df,
         paired_case_deltas_df=paired_case_deltas_df,
         score_summary_df=build_score_summary_df(paired_case_deltas_df),
+        chart_type_summary_df=build_chart_type_summary_df(paired_case_deltas_df),
+        model_grammar_summary_df=build_model_grammar_summary_df(paired_case_deltas_df),
+        chart_transition_summary_df=build_chart_transition_summary_df(
+            paired_case_deltas_df
+        ),
         condition_variance_df=condition_variance_df,
         design_variance_deltas_df=design_variance_deltas_df,
         variance_summary_df=build_variance_summary_df(design_variance_deltas_df),
         guideline_summary_df=build_guideline_summary_df(paired_case_deltas_df),
         guideline_associations_df=build_guideline_associations_df(
+            paired_case_deltas_df
+        ),
+        guideline_model_summary_df=build_guideline_model_summary_df(
             paired_case_deltas_df
         ),
         score_models_df=build_score_models_df(paired_case_deltas_df),
