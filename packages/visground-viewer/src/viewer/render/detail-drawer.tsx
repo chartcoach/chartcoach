@@ -1,3 +1,4 @@
+import { MessageSquareText } from "lucide-react";
 import type { ViewerActions, ViewerState } from "@/viewer/contract/types";
 import {
   getCellByKey,
@@ -33,6 +34,16 @@ export function DetailDrawer({ state, actions }: { state: ViewerState; actions: 
                 </span>
               ))}
             </div>
+            {state.overview ? (
+              <div className="vg-detail-query-row">
+                <span aria-label="Query" className="vg-query-key" title="Query">
+                  <MessageSquareText aria-hidden className="vg-query-key-icon" strokeWidth={1.8} />
+                </span>
+                <p className="vg-detail-query-text" title={state.overview.label}>
+                  {state.overview.label}
+                </p>
+              </div>
+            ) : null}
           </div>
           <button
             aria-label="Close"
@@ -65,21 +76,31 @@ export function DetailDrawer({ state, actions }: { state: ViewerState; actions: 
                 ))}
               </div>
             ) : null}
-            <div className="vg-detail-image-frame">
-              <div className="vg-chart-canvas is-detail">
-                {candidate.error ? (
-                  <p className="vg-error">{candidate.error}</p>
-                ) : (
-                  renderImage(
-                    candidate.image_url || null,
-                    label,
-                    candidate.image_meta || null,
-                    "detail",
-                  )
-                )}
+            <div className="vg-detail-overview">
+              <div className="vg-detail-image-frame">
+                <div className="vg-chart-canvas is-detail">
+                  {candidate.error ? (
+                    <p className="vg-error">{candidate.error}</p>
+                  ) : (
+                    renderImage(
+                      candidate.image_url || null,
+                      label,
+                      candidate.image_meta || null,
+                      "detail",
+                    )
+                  )}
+                </div>
+              </div>
+              <div className="vg-detail-summary">
+                <div className="vg-detail-subhead">Scores</div>
+                <ScoreBreakdownList candidate={candidate} mode="detail" />
+                <div className="vg-detail-facts">
+                  {variant.variant_label ? (
+                    <span className="vg-detail-fact">{variant.variant_label}</span>
+                  ) : null}
+                </div>
               </div>
             </div>
-            <ScoreBreakdownList candidate={candidate} mode="detail" />
             {candidate.guideline_details.length > 0 ? (
               <section className="vg-detail-guidelines">
                 <div className="vg-detail-subhead">
@@ -92,16 +113,19 @@ export function DetailDrawer({ state, actions }: { state: ViewerState; actions: 
                       {guideline.description ? (
                         <p className="vg-guideline-card-description">{guideline.description}</p>
                       ) : null}
+                      {guideline.sources.length > 0 ? (
+                        <div className="vg-guideline-card-citations">
+                          <div className="vg-guideline-card-citations-label">Sources</div>
+                          <p className="vg-guideline-card-citations-copy">
+                            {guideline.sources.join("; ")}
+                          </p>
+                        </div>
+                      ) : null}
                     </article>
                   ))}
                 </div>
               </section>
             ) : null}
-            <div className="vg-detail-facts">
-              {variant.variant_label ? (
-                <span className="vg-detail-fact">{variant.variant_label}</span>
-              ) : null}
-            </div>
           </section>
         </div>
       </aside>

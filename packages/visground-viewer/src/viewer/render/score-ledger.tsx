@@ -1,5 +1,8 @@
 import {
   BookOpenCheck,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   LayoutGrid,
   Lightbulb,
   Palette,
@@ -8,6 +11,7 @@ import {
   Sigma,
   type LucideIcon,
 } from "lucide-react";
+import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import type { CandidateRecord, CandidateScore } from "@/viewer/contract/types";
 import { formatMetricScore, formatScore } from "@/viewer/render/utils";
 
@@ -50,25 +54,215 @@ function orderedScores(candidate: CandidateRecord) {
 }
 
 function sharedReasoning(scores: CandidateScore[]) {
-  const reasonings = scores
-    .map((score) => score.reasoning?.trim())
-    .filter((reasoning): reasoning is string => Boolean(reasoning));
-  if (!reasonings.length) {
+  const runCounts = scores
+    .filter((score) => score.id !== "overall")
+    .map((score) => score.runs.filter((run) => run.reasoning).length)
+    .filter((count) => count > 0);
+  if (!runCounts.length) {
     return null;
   }
-  const unique = Array.from(new Set(reasonings));
+  const unique = Array.from(new Set(runCounts));
   return unique.length === 1 ? unique[0] : null;
 }
 
-function summarizeSharedReasoning(reasoning: string | null) {
-  if (!reasoning) {
+function summarizeSharedReasoning(runCount: number | null) {
+  if (!runCount) {
     return null;
   }
-  const match = reasoning.match(/Average of\s+(\d+)\s+successful judge runs?/i);
-  if (match) {
-    return `Average of ${match[1]} runs.`;
+  return `Average of ${runCount} runs.`;
+}
+
+type ReasoningEntry = {
+  entry_id: string;
+  label: string;
+  score: number | null;
+  reasoning: string;
+};
+
+function collectReasoningEntries(score: CandidateScore): ReasoningEntry[] {
+  const runEntries = score.runs
+    .filter((run) => Boolean(run.reasoning))
+    .map((run) => ({
+      entry_id: run.run_id,
+      label: run.label,
+      score: run.score,
+      reasoning: run.reasoning ?? "",
+    }));
+
+  if (runEntries.length > 0) {
+    return runEntries;
   }
-  return reasoning;
+
+  if (!score.reasoning) {
+    return [];
+  }
+
+  return [
+    {
+      entry_id: `${score.id}-summary`,
+      label: "Summary",
+      score: score.score,
+      reasoning: score.reasoning,
+    },
+  ];
+}
+
+function ScoreReasoningPopover({
+  score,
+  entries,
+}: {
+  score: CandidateScore;
+  entries: ReasoningEntry[];
+}) {
+  const [open, setOpen] = useState(false);
+  const [pageIndex, setPageIndex] = useState(0);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const popoverRef = useRef<HTMLDivElement | null>(null);
+  const entry = entries[pageIndex] ?? entries[0] ?? null;
+
+  useEffect(() => {
+    if (!open) {
+      return undefined;
+    }
+    popoverRef.current?.focus();
+
+    function handlePointerDown(event: PointerEvent) {
+      if (!(event.target instanceof Node)) {
+        return;
+      }
+      if (rootRef.current?.contains(event.target)) {
+        return;
+      }
+      setOpen(false);
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+    };
+  }, [open]);
+
+  if (!entry) {
+    return null;
+  }
+
+  const entryValue =
+    entry.score === null ? "—" : formatScoreValue({ ...score, score: entry.score });
+  const hasMultipleEntries = entries.length > 1;
+
+  function openPopover() {
+    setPageIndex(0);
+    setOpen(true);
+  }
+
+  function closePopover() {
+    setOpen(false);
+  }
+
+  function togglePopover() {
+    if (open) {
+      closePopover();
+      return;
+    }
+    openPopover();
+  }
+
+  function showPreviousEntry() {
+    setPageIndex((current) => (current - 1 + entries.length) % entries.length);
+  }
+
+  function showNextEntry() {
+    setPageIndex((current) => (current + 1) % entries.length);
+  }
+
+  function handlePopoverKeyDown(event: ReactKeyboardEvent<HTMLDivElement>) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      closePopover();
+      return;
+    }
+    if (!entries.length) {
+      return;
+    }
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      event.stopPropagation();
+      showPreviousEntry();
+    }
+    if (event.key === "ArrowRight") {
+      event.preventDefault();
+      event.stopPropagation();
+      showNextEntry();
+    }
+  }
+
+  return (
+    <div className={`vg-score-breakdown-reasoning ${open ? "is-open" : ""}`.trim()} ref={rootRef}>
+      <button
+        aria-expanded={open}
+        aria-haspopup="dialog"
+        className="vg-score-breakdown-reasoning-button"
+        onClick={togglePopover}
+        type="button"
+      >
+        <span>{entries.length === 1 ? "1 reason" : `${entries.length} reasons`}</span>
+        <ChevronDown
+          aria-hidden
+          className="vg-score-breakdown-reasoning-button-icon"
+          strokeWidth={1.8}
+        />
+      </button>
+      {open ? (
+        <div
+          aria-label={`${score.label} judge reasoning`}
+          className="vg-score-breakdown-reasoning-popover"
+          onKeyDown={handlePopoverKeyDown}
+          onPointerDown={(event) => event.stopPropagation()}
+          ref={popoverRef}
+          role="dialog"
+          tabIndex={-1}
+        >
+          <div className="vg-score-breakdown-reasoning-popover-head">
+            <span className="vg-score-breakdown-reasoning-popover-kicker">Judge reasoning</span>
+            <div className="vg-score-breakdown-reasoning-popover-nav">
+              {hasMultipleEntries ? (
+                <>
+                  <button
+                    aria-label="Previous trace"
+                    className="vg-score-breakdown-reasoning-nav-button"
+                    onClick={showPreviousEntry}
+                    type="button"
+                  >
+                    <ChevronLeft aria-hidden strokeWidth={1.8} />
+                  </button>
+                  <span className="vg-score-breakdown-reasoning-popover-count">
+                    {`${pageIndex + 1} / ${entries.length}`}
+                  </span>
+                  <button
+                    aria-label="Next trace"
+                    className="vg-score-breakdown-reasoning-nav-button"
+                    onClick={showNextEntry}
+                    type="button"
+                  >
+                    <ChevronRight aria-hidden strokeWidth={1.8} />
+                  </button>
+                </>
+              ) : (
+                <span className="vg-score-breakdown-reasoning-popover-count">1 / 1</span>
+              )}
+            </div>
+          </div>
+          <div className="vg-score-breakdown-reasoning-popover-body">
+            <div className="vg-score-breakdown-reasoning-run-meta">
+              <span className="vg-score-breakdown-reasoning-run-value">{`Rating: ${entryValue}`}</span>
+            </div>
+            <p className="vg-score-breakdown-reasoning-run-copy">{entry.reasoning}</p>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 function ScoreItem({
@@ -154,10 +348,11 @@ export function ScoreBreakdownList({
       {scores.map((score) => {
         const Icon = ICONS_BY_SCORE_ID[score.id] ?? Sigma;
         const value = formatScoreValue(score);
+        const reasoningEntries = mode === "detail" ? collectReasoningEntries(score) : [];
         return (
           <div
             className={`vg-score-breakdown-item ${score.id === "overall" ? "is-overall" : ""}`.trim()}
-            key={score.id}
+            key={`${candidate.visgen_id}:${score.id}`}
           >
             <div className="vg-score-breakdown-item-head">
               <span className="vg-score-breakdown-item-heading">
@@ -166,8 +361,8 @@ export function ScoreBreakdownList({
               </span>
               <span className="vg-score-breakdown-item-value">{value ?? "—"}</span>
             </div>
-            {mode === "detail" && score.reasoning && score.reasoning !== sharedReasoningNote ? (
-              <p className="vg-score-breakdown-item-reasoning">{score.reasoning}</p>
+            {mode === "detail" && reasoningEntries.length > 0 ? (
+              <ScoreReasoningPopover entries={reasoningEntries} score={score} />
             ) : null}
           </div>
         );

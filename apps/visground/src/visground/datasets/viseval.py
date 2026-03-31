@@ -1,5 +1,6 @@
 import json
 import pathlib
+import threading
 from functools import cached_property
 from os import PathLike
 
@@ -20,7 +21,7 @@ class VisEvalDataset:
     ):
         self._root = pathlib.Path(dataset_root)
         self._enrichment_root = pathlib.Path(enrichment_root)
-        self._db_connections: dict[str, duckdb.DuckDBPyConnection] = {}
+        self._db_connections: dict[tuple[str, int], duckdb.DuckDBPyConnection] = {}
 
     @property
     def root(self) -> pathlib.Path:
@@ -107,8 +108,10 @@ class VisEvalDataset:
         return path
 
     def database(self, db_id: str) -> duckdb.DuckDBPyConnection:
-        if db_id in self._db_connections:
-            return self._db_connections[db_id]
+        thread_id = threading.get_ident()
+        cache_key = (db_id, thread_id)
+        if cache_key in self._db_connections:
+            return self._db_connections[cache_key]
 
         conn = duckdb.connect()
         tables = self.databases.get(db_id, [])
@@ -117,7 +120,7 @@ class VisEvalDataset:
             for table in tables
         ]
         conn.execute("\n".join(stmts))
-        self._db_connections[db_id] = conn
+        self._db_connections[cache_key] = conn
 
         return conn
 

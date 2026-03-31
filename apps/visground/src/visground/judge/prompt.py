@@ -17,12 +17,19 @@ The evaluation follows the "Faithfulness-Expressiveness-Aesthetics" principle:
 
 For each evaluation question, provide a score from 1 to 5 and a reasoning based on the scoring criteria.
 
+General judging rules:
+- Judge only what is visible in the provided visualization.
+- Do not assume any expected chart type, number of panels, color palette, background, domain, or layout.
+- Evaluate colors, layout, and style by internal consistency, readability, distinction, and fitness for the visualization's apparent purpose, not by resemblance to any named example.
+- Apply each metric only to elements that are present and relevant; do not penalize absent features that are unnecessary for this visualization.
+- Base reasoning on concrete visual evidence. Avoid extreme scores unless the evidence is clear.
+
 
 
 === FAITHFULNESS ===
 
 Data Fidelity:
-Question: Examine the various components of this dashboard, including the pie chart, bar chart, line chart, and donut chart. Do these components accurately represent the business data with appropriate axes, baselines, scales, and labels? Please provide a 1-5 score based on the scoring criteria.
+Question: Examine the visualization's relevant components, such as axes, scales, labels, legends, marks, and proportional encodings where present. Do they represent values and relationships accurately without misleading distortion? Please provide a 1-5 score based on the scoring criteria.
 Scoring criteria:
   1 points: Severe misrepresentation with unreadable or missing labels, distorted scales or axes, making accurate data interpretation impossible across multiple charts.
   2 points: Important issues like inconsistent scales or labels, or missing elements in one or more charts that could lead to misinterpretation.
@@ -35,7 +42,7 @@ Scoring criteria:
 === EXPRESSIVENESS ===
 
 Semantic Readability:
-Question: Evaluate whether the dashboard's visual elements, such as the color coding in the pie and donut charts, and the shapes and sizes in the line and bar charts, clearly convey their meanings and the business information. Please provide a 1-5 score based on the scoring criteria.
+Question: Evaluate whether the visual encodings used in the visualization, such as position, length, color, size, shape, or annotation where present, clearly convey their meanings and the intended information. Please provide a 1-5 score based on the scoring criteria.
 Scoring criteria:
   1 points: Meanings of visual elements are completely unclear, with no indication of what colors or shapes represent, leaving users unable to gather any meaningful business information.
   2 points: Meanings are vague, with unclear color coding or shapes, making it difficult for users to understand without significant guessing.
@@ -44,7 +51,7 @@ Scoring criteria:
   5 points: All visual elements are intuitively clear, with precise color coding and shape use, allowing users to fully understand all business information effortlessly.
 
 Insight Discovery:
-Question: Consider whether this dashboard allows users to quickly identify key business insights, such as trends, patterns, or anomalies, through its display of key indicators like those in the line and bar charts. Please provide a 1-5 score based on the scoring criteria.
+Question: Consider whether this visualization helps users quickly identify relevant comparisons, patterns, trends, or anomalies. Please provide a 1-5 score based on the scoring criteria.
 Scoring criteria:
   1 points: Completely fails to provide any valuable insights or highlight key indicators, with trivial or misleading information presented.
   2 points: Difficult to identify meaningful insights; key indicators are not sufficiently highlighted, and most information lacks decision-making value.
@@ -57,16 +64,16 @@ Scoring criteria:
 === AESTHETICS ===
 
 Design Style:
-Question: Does this dashboard incorporate innovative design elements, such as the use of a consistent color palette (green, blue, yellow) on a light green background, and does it present a unique and professional style? Please provide a 1-5 score based on the scoring criteria.
+Question: Does this visualization present a coherent, intentional, and refined visual style? Please provide a 1-5 score based on the scoring criteria.
 Scoring criteria:
-  1 points: The dashboard design lacks innovation, appearing outdated or chaotic, with no unique elements and insufficient professionalism.
-  2 points: The dashboard design is quite ordinary, mainly employing common design techniques without much uniqueness or professionalism.
-  3 points: The dashboard design includes some innovative elements, like the color palette, but overall is conventional with average professional appeal.
-  4 points: The dashboard design is innovative, with a unique and professional style, utilizing the color scheme effectively to create a business sense.
-  5 points: The dashboard design is highly innovative and professional, making excellent use of the color palette and layout to create a memorable and aesthetically pleasing impression.
+  1 points: The design lacks innovation, appearing outdated or chaotic, with no unique elements and insufficient professionalism.
+  2 points: The design is quite ordinary, mainly employing common design techniques without much uniqueness or professionalism.
+  3 points: The design includes some innovative elements, like the color palette, but overall is conventional with average professional appeal.
+  4 points: The design is innovative, with a unique and professional style, utilizing the color scheme effectively to create a business sense.
+  5 points: The design is highly innovative and professional, making excellent use of the color palette and layout to create a memorable and aesthetically pleasing impression.
 
 Visual Composition:
-Question: How well does the spatial layout of the dashboard, with its grid-like arrangement and distinct sections for different chart types, balance size proportions, alignment, and information density? Please provide a 1-5 score based on the scoring criteria.
+Question: How well do layout, alignment, spacing, grouping, and information density support clarity and balance? Please provide a 1-5 score based on the scoring criteria.
 Scoring criteria:
   1 points: The layout is chaotic with severely unbalanced size proportions, poor alignment, and high information density, making it difficult to interpret.
   2 points: The layout has noticeable issues with size proportions and alignment, leading to a crowded or uneven appearance.
@@ -75,13 +82,13 @@ Scoring criteria:
   5 points: The layout is perfectly organized, with excellent balance in size proportions, alignment, and spacing, creating a harmonious and efficient use of space.
 
 Color Harmony:
-Question: Are the color choices in this dashboard (green, blue, yellow) appropriate and harmonious, enhancing both the aesthetic appeal and the business professionalism of the visualization? Please provide a 1-5 score based on the scoring criteria.
+Question: Are the color choices appropriate, distinguishable, and harmonious, supporting readability and overall visual coherence? Please provide a 1-5 score based on the scoring criteria.
 Scoring criteria:
   1 points: The color choices are very inappropriate, with a chaotic overall color scheme, conflicting tones, and poor aesthetic effects.
   2 points: The color choices are not well-coordinated, affecting the overall aesthetic and professionalism due to lack of tone unity.
   3 points: The color choices are mostly appropriate, but there are minor issues with tone unity or saturation that slightly diminish the business sense.
   4 points: The color choices are appropriate and well-coordinated, with a unified tone and good business sense, enhancing the overall aesthetic.
-  5 points: The color choices are excellent, perfectly coordinated with unified tones, and enhance the business professionalism and aesthetic appeal of the dashboard.
+  5 points: The color choices are excellent, perfectly coordinated with unified tones, and enhance the business professionalism and aesthetic appeal of the visualization.
 
 
 Return ONLY a JSON object with the following format:

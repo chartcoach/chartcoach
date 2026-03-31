@@ -73,12 +73,21 @@ export type CandidateScore = {
   dimension: ScoreBreakdownDimension;
   score: number | null;
   reasoning: string | null;
+  runs: CandidateScoreRun[];
+};
+
+export type CandidateScoreRun = {
+  run_id: string;
+  label: string;
+  score: number | null;
+  reasoning: string | null;
 };
 
 export type CandidateGuidelineDetail = {
   id: string;
   title: string;
   description: string;
+  sources: string[];
 };
 
 export type CandidateRecord = {

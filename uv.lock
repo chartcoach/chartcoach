@@ -5862,6 +5862,7 @@ dependencies = [
     { name = "python-slugify" },
     { name = "seaborn" },
     { name = "statsmodels" },
+    { name = "tenacity" },
     { name = "vl-convert-python" },
 ]
 
@@ -5895,6 +5896,7 @@ requires-dist = [
     { name = "python-slugify", specifier = ">=8.0.4" },
     { name = "seaborn", specifier = ">=0.13.2" },
     { name = "statsmodels", specifier = ">=0.14.6" },
+    { name = "tenacity", specifier = ">=9.1.4" },
     { name = "vl-convert-python", specifier = ">=1.9.0.post1" },
 ]
 

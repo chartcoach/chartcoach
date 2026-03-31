@@ -2,17 +2,22 @@ from __future__ import annotations
 
 import json
 from collections.abc import Sequence
-from typing import Any, cast
+from typing import Any, Callable, TypeVar, cast
 
 import dspy
+from tenacity import retry, stop_after_attempt, wait_fixed
 
 from visground.lm import make_observed_dspy_module
 
 from .backends import VisualizationBackend
-from .models import ImplementationReviewResult, VisGenOutput
+from .models import ImplementationReviewResult, VisGenOutput, VisGenResult
 from .signatures import ReviewVisualizationImplementation, WriteVisualizationCode
 
 DEFAULT_RETRY_ITERATIONS = 3
+TRANSIENT_RETRY_ATTEMPTS = 3
+TRANSIENT_RETRY_WAIT_SECONDS = 1
+
+_RetryT = TypeVar("_RetryT")
 
 
 class VisualizationGenerationProgram(dspy.Module):
@@ -110,7 +115,7 @@ class VisualizationGenerationProgram(dspy.Module):
         coder_inputs = dict(inputs)
         coder_inputs["feedback"] = feedback
 
-        return coder(**coder_inputs)
+        return _call_with_transient_retry(lambda: coder(**coder_inputs))
 
 
 def build_feedback_loop_generator(
@@ -191,16 +196,46 @@ def run_generation(
     examples: Sequence[dspy.Example],
     *,
     num_threads: int = 20,
-) -> list[VisGenOutput]:
+) -> list[VisGenResult]:
     if not examples:
         return []
 
-    parallel = dspy.Parallel(num_threads=num_threads)
-    predictions = parallel([(generator, example) for example in examples])
-    return [
-        prediction_to_output(example, prediction)
-        for example, prediction in zip(examples, predictions)
-    ]
+    parallel = dspy.Parallel(
+        num_threads=num_threads,
+        max_errors=len(examples) + 1,
+        return_failed_examples=True,
+    )
+    predictions, failed_examples, exceptions = parallel(
+        [(generator, example) for example in examples]
+    )
+    failed_errors_by_example_id = {
+        id(example): exc
+        for example, exc in zip(failed_examples, exceptions, strict=True)
+    }
+
+    results: list[VisGenResult] = []
+    for example, prediction in zip(examples, predictions, strict=True):
+        if prediction is None:
+            exc = failed_errors_by_example_id.get(id(example))
+            reason = "Generation returned no prediction."
+            if exc is not None:
+                reason = f"Generation failed after retries: {_summarize_exception(exc)}"
+            results.append(failed_example_to_result(example, reason))
+            continue
+
+        try:
+            output = prediction_to_output(example, prediction)
+        except Exception as exc:
+            results.append(
+                failed_example_to_result(
+                    example,
+                    f"Prediction normalization failed: {_summarize_exception(exc)}",
+                )
+            )
+            continue
+
+        results.append(output_to_result(output))
+    return results
 
 
 def prediction_to_output(
@@ -217,6 +252,48 @@ def prediction_to_output(
             "grounding_trace": prediction.grounding_trace,
         },
     )
+
+
+def output_to_result(output: VisGenOutput) -> VisGenResult:
+    return {
+        "id": output["id"],
+        "code": output["code"],
+        "visualization_type": output["visualization_type"],
+        "grounding_trace": output["grounding_trace"],
+        "generation_error": None,
+    }
+
+
+def result_to_output(result: VisGenResult) -> VisGenOutput | None:
+    if result["generation_error"] is not None:
+        return None
+
+    code = result["code"]
+    visualization_type = result["visualization_type"]
+    grounding_trace = result["grounding_trace"]
+    if code is None or visualization_type is None or grounding_trace is None:
+        return None
+
+    return {
+        "id": result["id"],
+        "code": code,
+        "visualization_type": visualization_type,
+        "grounding_trace": grounding_trace,
+    }
+
+
+def failed_example_to_result(
+    example: dspy.Example,
+    reason: str,
+) -> VisGenResult:
+    example_inputs = example.inputs().toDict()
+    return {
+        "id": cast(str, example_inputs["id"]),
+        "code": None,
+        "visualization_type": None,
+        "grounding_trace": None,
+        "generation_error": reason,
+    }
 
 
 def _review_generated_visualization(
@@ -250,12 +327,14 @@ def _review_generated_visualization(
         if lm is not None:
             context_kwargs["lm"] = lm
         with dspy.context(**context_kwargs):
-            review = reviewer(
-                vis=dspy.Image(image),
-                code=code,
-                query=query,
-                tablespec=tablespec,
-                requirements=requirements,
+            review = _call_with_transient_retry(
+                lambda: reviewer(
+                    vis=dspy.Image(image),
+                    code=code,
+                    query=query,
+                    tablespec=tablespec,
+                    requirements=requirements,
+                )
             )
     except Exception as exc:
         return _failed_implementation_review(
@@ -401,3 +480,15 @@ def _summarize_exception(exc: Exception) -> str:
         return type(exc).__name__
     message = f"{type(exc).__name__}: {message}"
     return message[:240]
+
+
+def _call_with_transient_retry(func: Callable[[], _RetryT]) -> _RetryT:
+    @retry(
+        stop=stop_after_attempt(TRANSIENT_RETRY_ATTEMPTS),
+        wait=wait_fixed(TRANSIENT_RETRY_WAIT_SECONDS),
+        reraise=True,
+    )
+    def _invoke() -> _RetryT:
+        return func()
+
+    return _invoke()

@@ -7,7 +7,7 @@
   --vg-row-head-width: 2rem;
   --vg-cell-min-width: 10.25rem;
   --vg-cell-gap-x: 0.18rem;
-  --vg-cell-gap-y: 0.2rem;
+  --vg-cell-gap-y: 0.38rem;
   --vg-group-gap: 1.02rem;
   --vg-group-label-gap: 0.3rem;
   --vg-thumb-ratio: 1 / 0.88;
@@ -290,8 +290,8 @@
 
 .vg-chart-frame {
   position: relative;
-  aspect-ratio: var(--vg-thumb-ratio);
   width: 100%;
+  min-height: 5.8rem;
   min-width: 0;
   overflow: hidden;
   border-radius: 2px;
@@ -386,6 +386,7 @@
 
 .vg-matrix-cell.is-footer {
   align-self: start;
+  padding-bottom: 0.9rem;
 }
 
 .vg-matrix-cell.is-footer .vg-variant-chip-row {
@@ -440,6 +441,10 @@
   overflow: hidden;
 }
 
+.vg-detail-image-frame {
+  min-height: clamp(14rem, 46vh, 28rem);
+}
+
 .vg-chart-canvas {
   display: grid;
   place-items: center;
@@ -449,8 +454,9 @@
 }
 
 .vg-chart-canvas.is-panel {
-  padding: 0.08rem;
+  padding: 0.04rem 0.03rem;
   overflow: hidden;
+  place-items: start stretch;
 }
 
 .vg-chart-canvas.is-hover {
@@ -461,10 +467,10 @@
 }
 
 .vg-chart-canvas.is-detail {
-  min-height: 22rem;
-  padding: 1rem;
-  overflow: auto;
-  place-items: start center;
+  min-height: clamp(14rem, 46vh, 28rem);
+  padding: 0.44rem 0.28rem 0.14rem;
+  overflow: hidden;
+  place-items: start stretch;
 }
 
 .vg-image {
@@ -482,6 +488,11 @@
   height: 100%;
 }
 
+.vg-image-stage.surface-panel {
+  display: block;
+  height: auto;
+}
+
 .vg-image-stage > * {
   grid-area: 1 / 1;
 }
@@ -497,6 +508,13 @@
     linear-gradient(180deg, rgba(17, 17, 17, 0.02) 0%, rgba(17, 17, 17, 0.045) 100%), #fafafa;
   color: var(--vg-text-soft);
   text-align: center;
+}
+
+.vg-image.surface-panel {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  max-height: none;
 }
 
 .vg-image-placeholder-card {

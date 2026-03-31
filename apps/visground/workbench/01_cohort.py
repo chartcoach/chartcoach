@@ -45,7 +45,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _():
     cohort_config = {
-        "target_n": 7 * 3,
+        "target_n": 7 * 5,
         "max_tasks_per_db": 6,
         "seed": 42,
     }
