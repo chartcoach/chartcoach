@@ -312,7 +312,7 @@
 }
 
 .vg-variant-grid.is-single .vg-variant-tile .vg-chart-frame {
-  width: 82%;
+  width: 100%;
 }
 
 .vg-variant-grid.is-strip {
@@ -449,7 +449,7 @@
 }
 
 .vg-chart-canvas.is-panel {
-  padding: 0.18rem;
+  padding: 0.08rem;
   overflow: hidden;
 }
 

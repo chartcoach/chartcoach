@@ -72,6 +72,13 @@ export type CandidateScore = {
   label: string;
   dimension: ScoreBreakdownDimension;
   score: number | null;
+  reasoning: string | null;
+};
+
+export type CandidateGuidelineDetail = {
+  id: string;
+  title: string;
+  description: string;
 };
 
 export type CandidateRecord = {
@@ -81,6 +88,7 @@ export type CandidateRecord = {
   image_url?: string | null;
   image_meta?: CandidateImageMeta | null;
   guideline_count: number;
+  guideline_details: CandidateGuidelineDetail[];
   overall_score?: number | null;
   score_breakdown: CandidateScore[];
 };

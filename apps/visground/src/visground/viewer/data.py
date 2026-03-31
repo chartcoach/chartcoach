@@ -160,7 +160,7 @@ def normalize_selection(
                 }
             )
 
-    scoped_df = apply_dimension_filters(case_df, normalized_filters)
+    scoped_df = apply_dimension_filters(case_df, normalized_filters, config=config)
     axis_dimensions = tuple(
         dimension_id
         for dimension_id in config.axis_dimensions
@@ -394,6 +394,7 @@ def serialize_candidate_record(
 ) -> dict[str, Any]:
     judgement = record.get("judgement")
     visgen_id = str(record["visgen_id"])
+    guideline_ids = list(dict.fromkeys(record.get("guideline_ids") or []))
     return {
         "visgen_id": visgen_id,
         "dimension_values": {
@@ -402,13 +403,22 @@ def serialize_candidate_record(
             if dimension.id in record
         },
         "overall_score": record.get("overall_score"),
-        "guideline_count": len(list(dict.fromkeys(record.get("guideline_ids") or []))),
+        "guideline_count": len(guideline_ids),
+        "guideline_details": [
+            _guideline_detail(guideline_id, config=config)
+            for guideline_id in guideline_ids
+        ],
         "score_breakdown": [
             {
                 "id": spec["id"],
                 "label": spec["label"],
                 "dimension": spec["dimension"],
                 "score": _score_value(
+                    record=record,
+                    judgement=judgement,
+                    score_id=spec["id"],
+                ),
+                "reasoning": _score_reasoning(
                     record=record,
                     judgement=judgement,
                     score_id=spec["id"],
@@ -425,10 +435,15 @@ def serialize_candidate_record(
 def apply_dimension_filters(
     df: pl.DataFrame,
     filters: Mapping[str, Any],
+    *,
+    config: ViewerConfig,
 ) -> pl.DataFrame:
     filtered = df
     for dimension, value in filters.items():
         if value is None:
+            spec = dimension_map(config).get(dimension)
+            if spec is not None and spec.none_value_mode == "all":
+                continue
             filtered = filtered.filter(pl.col(dimension).is_null())
         else:
             filtered = filtered.filter(pl.col(dimension) == value)
@@ -618,6 +633,40 @@ def _score_value(
             return float(value) if value is not None else None
 
     return None
+
+
+def _score_reasoning(
+    *,
+    record: Mapping[str, Any],
+    judgement: Any,
+    score_id: str,
+) -> str | None:
+    if score_id == "overall":
+        return None
+
+    if isinstance(judgement, Mapping):
+        score_entry = judgement.get(score_id)
+        if isinstance(score_entry, Mapping):
+            reasoning = score_entry.get("reasoning")
+            if reasoning:
+                return str(reasoning)
+
+    return None
+
+
+def _guideline_detail(
+    guideline_id: str,
+    *,
+    config: ViewerConfig,
+) -> dict[str, str]:
+    detail = config.guideline_details_by_id.get(guideline_id, {})
+    title = detail.get("title") or guideline_id.replace("-", " ").strip().title()
+    description = detail.get("description") or ""
+    return {
+        "id": guideline_id,
+        "title": str(title),
+        "description": str(description),
+    }
 
 
 def _cell_key(group_value: Any, row_value: Any, column_value: Any) -> str:

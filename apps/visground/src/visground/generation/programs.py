@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import json
 from collections.abc import Sequence
-from typing import cast
+from typing import Any, cast
 
 import dspy
 
@@ -11,8 +12,7 @@ from .backends import VisualizationBackend
 from .models import ImplementationReviewResult, VisGenOutput
 from .signatures import ReviewVisualizationImplementation, WriteVisualizationCode
 
-DEFAULT_REFINE_ROLLOUTS = 8
-DEFAULT_REFINE_THRESHOLD = 1.0
+DEFAULT_RETRY_ITERATIONS = 3
 
 
 class VisualizationGenerationProgram(dspy.Module):
@@ -22,12 +22,16 @@ class VisualizationGenerationProgram(dspy.Module):
         coder_signature: type[dspy.Signature],
         review_signature: type[dspy.Signature],
         reviewer_lm: dspy.LM | None = None,
+        max_iterations: int = DEFAULT_RETRY_ITERATIONS,
     ) -> None:
         super().__init__()
+        if max_iterations < 1:
+            raise ValueError("max_iterations must be at least 1.")
         self.backend = backend
         self.coder = dspy.Predict(coder_signature)
         self.review_signature = review_signature
         self.reviewer_lm = reviewer_lm
+        self.max_iterations = max_iterations
 
     def deepcopy(self):
         new = self.__class__.__new__(self.__class__)
@@ -36,68 +40,108 @@ class VisualizationGenerationProgram(dspy.Module):
         new.coder = self.coder.deepcopy()
         new.review_signature = self.review_signature
         new.reviewer_lm = self.reviewer_lm
+        new.max_iterations = self.max_iterations
         return new
 
     def forward(self, **kwargs) -> dspy.Prediction:
-        draft = self.coder(**kwargs)
-        review = _review_generated_visualization(
-            backend=self.backend,
-            review_signature=self.review_signature,
-            request_id=kwargs["id"],
-            code=draft.code,
-            query=kwargs["query"],
-            tablespec=kwargs["tablespec"],
-            requirements=kwargs["requirements"],
-            lm=self.reviewer_lm or self.coder.get_lm(),
-        )
-        return dspy.Prediction(**dict(draft), **review)
+        base_lm = self.coder.get_lm() or dspy.settings.lm
+        rollout_start = _rollout_start(base_lm)
+        outer_trace = dspy.settings.trace
+
+        best_prediction: dspy.Prediction | None = None
+        best_reward = -float("inf")
+        best_trace: list[tuple[Any, Any, Any]] | None = None
+        feedback: str | None = None
+
+        for attempt_index in range(self.max_iterations):
+            attempt_lm = _attempt_lm(base_lm, rollout_start + attempt_index)
+            with dspy.context(trace=[]):
+                draft = self._run_coder_attempt(
+                    inputs=kwargs,
+                    feedback=feedback,
+                    attempt_lm=attempt_lm,
+                )
+                review = _review_generated_visualization(
+                    backend=self.backend,
+                    review_signature=self.review_signature,
+                    request_id=kwargs["id"],
+                    code=draft.code,
+                    query=kwargs["query"],
+                    tablespec=kwargs["tablespec"],
+                    requirements=kwargs["requirements"],
+                    lm=self.reviewer_lm or attempt_lm or dspy.settings.lm,
+                )
+                prediction = dspy.Prediction(**dict(draft), **review)
+                attempt_trace = dspy.settings.trace.copy()
+
+            reward = _reward_prediction(prediction)
+            if reward > best_reward:
+                best_reward = reward
+                best_prediction = prediction
+                best_trace = attempt_trace
+
+            if prediction.implementation_acceptable:
+                break
+
+            if attempt_index == self.max_iterations - 1:
+                break
+
+            feedback = _build_retry_feedback(prediction, attempt_index + 1)
+
+        if best_trace:
+            outer_trace.extend(best_trace)
+
+        if best_prediction is None:
+            raise ValueError("Generation loop produced no prediction.")
+
+        return best_prediction
+
+    def _run_coder_attempt(
+        self,
+        *,
+        inputs: dict[str, Any],
+        feedback: str | None,
+        attempt_lm: dspy.LM | None,
+    ) -> dspy.Prediction:
+        coder = self.coder.deepcopy()
+        if attempt_lm is not None:
+            coder.lm = attempt_lm
+
+        coder_inputs = dict(inputs)
+        coder_inputs["feedback"] = feedback
+
+        return coder(**coder_inputs)
 
 
-def build_refine_generator(
+def build_feedback_loop_generator(
     backend: VisualizationBackend,
     coder_signature: type[dspy.Signature] = WriteVisualizationCode,
     review_signature: type[dspy.Signature] = ReviewVisualizationImplementation,
     reviewer_lm: dspy.LM | None = None,
+    max_iterations: int = DEFAULT_RETRY_ITERATIONS,
 ) -> dspy.Module:
-    program = VisualizationGenerationProgram(
+    return VisualizationGenerationProgram(
         backend=backend,
         coder_signature=coder_signature,
         review_signature=review_signature,
         reviewer_lm=reviewer_lm,
-    )
-    return dspy.Refine(
-        module=program,
-        N=DEFAULT_REFINE_ROLLOUTS,
-        reward_fn=lambda args, pred: float(
-            (
-                pred.no_truncation
-                + pred.no_overlap
-                + pred.text_readable
-                + pred.data_readable
-                + pred.layout_balanced
-                + pred.data_operations_correct
-                + pred.self_explanatory
-                + pred.implementation_acceptable
-                + pred.requirements_followed
-                + pred.no_unprescribed_design
-            )
-            / 10
-        ),
-        threshold=DEFAULT_REFINE_THRESHOLD,
+        max_iterations=max_iterations,
     )
 
 
-def build_observed_refine_generator(
+def build_observed_feedback_loop_generator(
     backend: VisualizationBackend,
     coder_signature: type[dspy.Signature] = WriteVisualizationCode,
     review_signature: type[dspy.Signature] = ReviewVisualizationImplementation,
     reviewer_lm: dspy.LM | None = None,
+    max_iterations: int = DEFAULT_RETRY_ITERATIONS,
 ) -> dspy.Module:
-    generator = build_refine_generator(
+    generator = build_feedback_loop_generator(
         backend=backend,
         coder_signature=coder_signature,
         review_signature=review_signature,
         reviewer_lm=reviewer_lm,
+        max_iterations=max_iterations,
     )
     return make_observed_dspy_module(
         generator,
@@ -107,6 +151,38 @@ def build_observed_refine_generator(
             "as_type": "agent",
         },
         attributes={"tags": ["generating"]},
+    )
+
+
+def build_refine_generator(
+    backend: VisualizationBackend,
+    coder_signature: type[dspy.Signature] = WriteVisualizationCode,
+    review_signature: type[dspy.Signature] = ReviewVisualizationImplementation,
+    reviewer_lm: dspy.LM | None = None,
+    max_iterations: int = DEFAULT_RETRY_ITERATIONS,
+) -> dspy.Module:
+    return build_feedback_loop_generator(
+        backend=backend,
+        coder_signature=coder_signature,
+        review_signature=review_signature,
+        reviewer_lm=reviewer_lm,
+        max_iterations=max_iterations,
+    )
+
+
+def build_observed_refine_generator(
+    backend: VisualizationBackend,
+    coder_signature: type[dspy.Signature] = WriteVisualizationCode,
+    review_signature: type[dspy.Signature] = ReviewVisualizationImplementation,
+    reviewer_lm: dspy.LM | None = None,
+    max_iterations: int = DEFAULT_RETRY_ITERATIONS,
+) -> dspy.Module:
+    return build_observed_feedback_loop_generator(
+        backend=backend,
+        coder_signature=coder_signature,
+        review_signature=review_signature,
+        reviewer_lm=reviewer_lm,
+        max_iterations=max_iterations,
     )
 
 
@@ -188,19 +264,13 @@ def _review_generated_visualization(
 
     feedback = [item.strip() for item in review.feedback if item.strip()]
     requirements_followed = review.requirements_followed
-    no_unprescribed_design = review.no_unprescribed_design
     requirement_trace = review.requirement_trace
     implementation_acceptable = (
-        review.implementation_acceptable
+        requirements_followed
         and review.no_truncation
         and review.no_overlap
         and review.text_readable
         and review.data_readable
-        and review.layout_balanced
-        and review.data_operations_correct
-        and review.self_explanatory
-        and requirements_followed
-        and no_unprescribed_design
     )
     if (
         not implementation_acceptable
@@ -208,11 +278,7 @@ def _review_generated_visualization(
         or not review.no_overlap
         or not review.text_readable
         or not review.data_readable
-        or not review.layout_balanced
-        or not review.data_operations_correct
-        or not review.self_explanatory
         or not requirements_followed
-        or not no_unprescribed_design
     ):
         reasoning = review.reasoning.strip()
         explicit_reason = (
@@ -224,12 +290,8 @@ def _review_generated_visualization(
             "no_overlap": review.no_overlap,
             "text_readable": review.text_readable,
             "data_readable": review.data_readable,
-            "layout_balanced": review.layout_balanced,
-            "data_operations_correct": review.data_operations_correct,
-            "self_explanatory": review.self_explanatory,
             "implementation_acceptable": implementation_acceptable,
             "requirements_followed": requirements_followed,
-            "no_unprescribed_design": no_unprescribed_design,
             "requirement_trace": requirement_trace,
             "implementation_reasoning": explicit_reason,
             "implementation_feedback": feedback or [explicit_reason],
@@ -240,12 +302,8 @@ def _review_generated_visualization(
         "no_overlap": review.no_overlap,
         "text_readable": review.text_readable,
         "data_readable": review.data_readable,
-        "layout_balanced": review.layout_balanced,
-        "data_operations_correct": review.data_operations_correct,
-        "self_explanatory": review.self_explanatory,
         "implementation_acceptable": implementation_acceptable,
         "requirements_followed": requirements_followed,
-        "no_unprescribed_design": no_unprescribed_design,
         "requirement_trace": requirement_trace,
         "implementation_reasoning": review.reasoning.strip(),
         "implementation_feedback": feedback,
@@ -258,16 +316,83 @@ def _failed_implementation_review(reason: str) -> ImplementationReviewResult:
         "no_overlap": False,
         "text_readable": False,
         "data_readable": False,
-        "layout_balanced": False,
-        "data_operations_correct": False,
-        "self_explanatory": False,
         "implementation_acceptable": False,
         "requirements_followed": False,
-        "no_unprescribed_design": False,
         "requirement_trace": {},
         "implementation_reasoning": reason,
         "implementation_feedback": [reason],
     }
+
+
+def _reward_prediction(prediction: dspy.Prediction) -> float:
+    return float(
+        (
+            prediction.no_truncation
+            + prediction.no_overlap
+            + prediction.text_readable
+            + prediction.data_readable
+            + prediction.requirements_followed
+        )
+        / 5
+    )
+
+
+def _build_retry_feedback(
+    prediction: dspy.Prediction,
+    attempt_number: int,
+) -> str:
+    payload = {
+        "source_attempt": attempt_number,
+        "failed_checks": _failed_review_checks(prediction),
+        "retry_instruction": (
+            "Fix only the issues listed here. Preserve already-correct "
+            "behavior unless a listed issue requires changing it."
+        ),
+        "review": {
+            "implementation_acceptable": prediction.implementation_acceptable,
+            "requirements_followed": prediction.requirements_followed,
+            "no_truncation": prediction.no_truncation,
+            "no_overlap": prediction.no_overlap,
+            "text_readable": prediction.text_readable,
+            "data_readable": prediction.data_readable,
+            "implementation_reasoning": prediction.implementation_reasoning,
+            "implementation_feedback": prediction.implementation_feedback,
+            "requirement_trace": prediction.requirement_trace,
+        },
+    }
+    return json.dumps(payload, ensure_ascii=False, sort_keys=True, indent=2)
+
+
+def _failed_review_checks(prediction: dspy.Prediction) -> list[str]:
+    failed_checks: list[str] = []
+    if not prediction.requirements_followed:
+        failed_checks.append("requirements_followed")
+    if not prediction.no_truncation:
+        failed_checks.append("no_truncation")
+    if not prediction.no_overlap:
+        failed_checks.append("no_overlap")
+    if not prediction.text_readable:
+        failed_checks.append("text_readable")
+    if not prediction.data_readable:
+        failed_checks.append("data_readable")
+    if not prediction.implementation_acceptable:
+        failed_checks.append("implementation_acceptable")
+    return failed_checks
+
+
+def _rollout_start(lm: dspy.LM | None) -> int:
+    if lm is None:
+        return 0
+    return int(lm.kwargs.get("rollout_id", 0) or 0)
+
+
+def _attempt_lm(
+    base_lm: dspy.LM | None,
+    rollout_id: int,
+) -> dspy.LM | None:
+    if base_lm is None:
+        return None
+    return base_lm.copy(rollout_id=rollout_id, temperature=1.0)
 
 
 def _summarize_exception(exc: Exception) -> str:

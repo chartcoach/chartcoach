@@ -308,12 +308,27 @@ class VisJudgeRunner:
 
     def _read_or_create_chart_image(self, candidate: Mapping[str, Any]) -> Image.Image:
         visgen_id = str(candidate["visgen_id"])
-        if self._store.chart_exists(visgen_id):
+        try:
             return self._store.read_chart_image(visgen_id)
+        except FileNotFoundError:
+            pass
+        except OSError:
+            self._logger.warning(
+                "Unreadable cached chart for visgen_id %s; retrying under lock.",
+                visgen_id,
+            )
 
         with self._chart_lock(visgen_id):
-            if self._store.chart_exists(visgen_id):
+            try:
                 return self._store.read_chart_image(visgen_id)
+            except FileNotFoundError:
+                pass
+            except OSError:
+                self._logger.warning(
+                    "Corrupt cached chart for visgen_id %s; regenerating.",
+                    visgen_id,
+                )
+                self._store.delete_chart_image(visgen_id)
 
             grammar = str(candidate["grammar"])
             vis_backend = self._get_backend(grammar)
