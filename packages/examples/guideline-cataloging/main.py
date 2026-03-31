@@ -39,11 +39,6 @@ def _(catalog):
     return
 
 
-@app.cell
-def _():
-    return
-
-
 @app.cell(column=1, hide_code=True)
 def _(mo):
     mo.md(r"""

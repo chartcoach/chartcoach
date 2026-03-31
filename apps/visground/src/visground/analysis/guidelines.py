@@ -151,8 +151,29 @@ def build_guideline_associations_df(
     return associations_df.with_columns(pl.Series("p_value_adj", adjusted))
 
 
+def build_guideline_model_summary_df(
+    paired_case_deltas_df: pl.DataFrame,
+) -> pl.DataFrame:
+    """Show which model gets the best grounded-vs-none delta for each guideline."""
+    return (
+        paired_case_deltas_df.filter(
+            pl.col("complete_pair") & (pl.col("guideline_count") > 0)
+        )
+        .explode("guideline_ids")
+        .rename({"guideline_ids": "guideline_id"})
+        .group_by("guideline_id", "model")
+        .agg(
+            support=pl.len(),
+            mean_delta=pl.col("delta_overall").mean(),
+            win_rate=pl.col("grounded_win").cast(pl.Float64).mean(),
+        )
+        .sort(["guideline_id", "mean_delta"], descending=[False, True])
+    )
+
+
 __all__ = [
     "GUIDELINE_MIN_SUPPORT",
     "build_guideline_associations_df",
+    "build_guideline_model_summary_df",
     "build_guideline_summary_df",
 ]
