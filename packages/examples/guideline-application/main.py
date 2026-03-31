@@ -654,6 +654,12 @@ def _(coach, dspy):
     return (visfeedback_agent,)
 
 
+@app.cell
+def _(visfeedback):
+    visfeedback.trajectory
+    return
+
+
 @app.cell(hide_code=True)
 def _(
     draco_spec_dict,

@@ -8,8 +8,8 @@ from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any, Literal, cast
 
-from joblib import Parallel, delayed
 import polars as pl
+from joblib import Parallel, delayed
 from PIL import Image
 
 from visground.datasets import VisEvalDataset, VisGroundDataset
@@ -114,7 +114,7 @@ class VisJudgeRunner:
             )
         )
 
-        raw_runs_df = pl.from_dicts(raw_rows)
+        raw_runs_df = pl.from_dicts(raw_rows, infer_schema_length=None)
         judgements_df = self._aggregate_runs(
             candidates_df=candidates_df,
             raw_rows=raw_rows,
@@ -406,7 +406,7 @@ class VisJudgeRunner:
                 }
             )
 
-        return pl.from_dicts(aggregate_rows)
+        return pl.from_dicts(aggregate_rows, infer_schema_length=None)
 
 
 def _build_prompt_suffix(run_id: str) -> str:
