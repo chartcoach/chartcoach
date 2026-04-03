@@ -1,0 +1,257 @@
+@layer chartcoach.overrides {
+  html:has(#guidelines-grid) .content-panel:has(> .sl-container > h1#_top),
+  html:has(.guideline-detail) .content-panel:has(> .sl-container > h1#_top) {
+    display: none;
+  }
+
+  .guidelines-page,
+  .guideline-detail {
+    width: min(100%, 62rem);
+    margin: 0 auto;
+    padding-top: 0.85rem;
+  }
+
+  .guidelines-page__kicker {
+    margin-bottom: 0.35rem;
+  }
+
+  .guidelines-page__lede {
+    max-width: 36rem;
+    margin-top: 0.22rem;
+    margin-bottom: 0.72rem;
+    font-size: 0.88rem;
+  }
+
+  .hero {
+    gap: 1.4rem;
+    padding-bottom: 0;
+  }
+
+  .hero > img,
+  .hero > .hero-html {
+    display: block;
+    width: min(100%, 10rem);
+    height: auto;
+    margin-inline: auto;
+    opacity: 0.56;
+  }
+
+  .hero .actions {
+    gap: 0.8rem 1rem;
+  }
+
+  @media (min-width: 50rem) {
+    .hero > img,
+    .hero > .hero-html {
+      width: min(100%, 11rem);
+      justify-self: center;
+      align-self: center;
+    }
+  }
+
+  .guidelines-controls {
+    gap: 0.62rem;
+    margin: 0 auto 2.25rem !important;
+    padding-bottom: 0 !important;
+    border-bottom: none !important;
+  }
+
+  .guidelines-controls__hint {
+    max-width: 38rem;
+    margin-top: 0.22rem;
+    font-size: 0.82rem;
+  }
+
+  .guidelines-grid {
+    margin-top: 1.85rem !important;
+  }
+
+  .guideline-detail {
+    padding-top: 0.85rem;
+  }
+
+  .sidebar-pane {
+    border-inline-end: 1px solid var(--ccui-divider);
+  }
+
+  .sidebar-content {
+    background: var(--ccui-panel);
+  }
+
+  .sidebar-content .large,
+  .sidebar-content a {
+    color: var(--ccui-text);
+  }
+
+  .sidebar-content .large {
+    font-family: var(--ccui-font-mono);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: lowercase;
+  }
+
+  .sidebar-content a {
+    border-radius: var(--cc-radius-sm);
+    color: var(--ccui-muted);
+    font-size: 0.8rem;
+  }
+
+  .sidebar-content a:hover,
+  .sidebar-content a:focus {
+    background: var(--ccui-panel-strong);
+    color: var(--ccui-text);
+  }
+
+  .sidebar-content [aria-current="page"],
+  .sidebar-content [aria-current="page"]:hover,
+  .sidebar-content [aria-current="page"]:focus {
+    background: color-mix(in srgb, var(--cc-brand-low) 78%, var(--ccui-paper)) !important;
+    color: var(--cc-brand-high) !important;
+    box-shadow: inset 2px 0 0 var(--cc-brand);
+  }
+
+  .social-icons::after {
+    border-inline-end-color: var(--ccui-divider);
+  }
+
+  .site-title {
+    color: var(--ccui-text) !important;
+    font-family: var(--ccui-font-mono);
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: lowercase;
+  }
+
+  .site-title img {
+    height: 1.8rem;
+    width: auto;
+    max-width: min(13rem, 48vw);
+    object-fit: contain;
+  }
+
+  starlight-theme-select label {
+    border: 1px solid transparent;
+    border-radius: 0.34rem;
+    color: var(--ccui-text-soft);
+    background: transparent;
+    transition:
+      border-color 120ms ease,
+      background-color 120ms ease,
+      color 120ms ease,
+      box-shadow 120ms ease;
+  }
+
+  starlight-theme-select label:hover {
+    color: var(--ccui-text);
+    background: color-mix(in srgb, var(--ccui-panel) 78%, transparent);
+  }
+
+  starlight-theme-select .label-icon,
+  starlight-theme-select .caret {
+    color: inherit;
+  }
+
+  starlight-theme-select select {
+    border-radius: 0.34rem;
+    color: inherit;
+    outline: none;
+    box-shadow: none;
+  }
+
+  starlight-theme-select select:focus,
+  starlight-theme-select select:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  starlight-theme-select:focus-within label,
+  starlight-theme-select label:focus-within,
+  starlight-theme-select label:has(select:focus),
+  starlight-theme-select label:has(select:focus-visible) {
+    border-color: color-mix(in srgb, var(--cc-brand) 38%, var(--ccui-border));
+    background: color-mix(in srgb, var(--cc-brand-low) 70%, var(--ccui-paper));
+    color: var(--cc-brand-high);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--cc-brand) 22%, transparent);
+  }
+
+  button[data-open-modal] {
+    border: 1px solid var(--ccui-border) !important;
+    border-radius: 0.34rem !important;
+    background: var(--ccui-paper) !important;
+    color: var(--ccui-text-soft) !important;
+    box-shadow: none !important;
+    width: 100% !important;
+    max-width: 22rem !important;
+    min-width: 0 !important;
+    height: 2.2rem !important;
+    padding-inline: 0.78rem !important;
+    gap: 0.45rem !important;
+  }
+
+  button[data-open-modal]:hover {
+    border-color: var(--cc-brand) !important;
+    background: var(--cc-brand-low) !important;
+    color: var(--ccui-text) !important;
+  }
+
+  button[data-open-modal] > span {
+    display: inline !important;
+    font-family: var(--ccui-font-sans);
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  button[data-open-modal] > kbd {
+    border: 1px solid var(--ccui-border);
+    background: var(--ccui-panel);
+    color: var(--ccui-muted);
+    border-radius: 0.28rem;
+  }
+
+  site-search dialog {
+    border-radius: 0.6rem;
+    border-color: var(--ccui-divider);
+    background: color-mix(in srgb, var(--ccui-paper) 96%, var(--ccui-panel));
+  }
+
+  #starlight__search {
+    --pagefind-ui-primary: var(--cc-brand);
+    --pagefind-ui-background: var(--ccui-paper);
+    --pagefind-ui-border: var(--ccui-divider);
+    --pagefind-ui-text: var(--ccui-text);
+    --pagefind-ui-tag: var(--cc-brand-low);
+  }
+
+  #starlight__search .pagefind-ui__search-input,
+  #starlight__search .pagefind-ui__button,
+  #starlight__search .pagefind-ui__search-clear {
+    border-radius: 0.34rem;
+    box-shadow: none !important;
+  }
+
+  #starlight__search .pagefind-ui__search-input,
+  #starlight__search .pagefind-ui__search-input:focus,
+  #starlight__search .pagefind-ui__search-input:focus-visible,
+  #starlight__search input[type="search"],
+  #starlight__search input[type="search"]:focus,
+  #starlight__search input[type="search"]:focus-visible {
+    box-shadow: none !important;
+  }
+
+  #starlight__search .pagefind-ui__search-input:focus,
+  #starlight__search .pagefind-ui__search-input:focus-visible,
+  #starlight__search input[type="search"]:focus,
+  #starlight__search input[type="search"]:focus-visible {
+    border-color: var(--cc-brand) !important;
+    outline: 1px solid color-mix(in srgb, var(--cc-brand) 42%, transparent) !important;
+    outline-offset: 0 !important;
+  }
+
+  #starlight__search .pagefind-ui__button:hover,
+  #starlight__search .pagefind-ui__button:focus-visible {
+    border-color: var(--cc-brand) !important;
+    background: color-mix(in srgb, var(--cc-brand-low) 72%, var(--ccui-paper)) !important;
+  }
+}
