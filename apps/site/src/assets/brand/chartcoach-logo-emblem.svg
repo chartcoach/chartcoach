@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">Chart Coach emblem</title>
+  <desc id="desc">Citation-style brackets framing a chart window with an ascending line.</desc>
+  <g fill="none" stroke="#8c6e53" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M74 44Q48 44 48 70V98Q48 128 20 128Q48 128 48 158V186Q48 212 74 212" stroke-width="8"/>
+    <path d="M182 44Q208 44 208 70V98Q208 128 236 128Q208 128 208 158V186Q208 212 182 212" stroke-width="8"/>
+    <rect x="84" y="68" width="88" height="120" stroke-width="8"/>
+    <path d="M96 156L116 134L130 148L154 124L178 100" stroke-width="8"/>
+    <path d="M160 100H178V118" stroke-width="8"/>
+    <path d="M148 130L160 118" stroke-width="6"/>
+  </g>
+</svg>

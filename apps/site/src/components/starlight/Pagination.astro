@@ -1,0 +1,115 @@
+---
+import { ArrowLeft, ArrowRight } from "lucide-astro";
+
+const { dir, pagination } = Astro.locals.starlightRoute;
+const { prev, next } = pagination;
+const pathname = Astro.url.pathname;
+const isRtl = dir === "rtl";
+
+const shouldRender = pathname !== "/" && (prev || next);
+---
+
+{
+	shouldRender && (
+		<nav class="cc-pagination print:hidden" aria-label="Page">
+			{
+				prev ? (
+					<a class="cc-pagination__link" href={prev.href} rel="prev">
+						{isRtl ? (
+							<ArrowRight class="cc-pagination__icon" size="1rem" />
+						) : (
+							<ArrowLeft class="cc-pagination__icon" size="1rem" />
+						)}
+						<span class="cc-pagination__meta">
+							<span class="cc-pagination__eyebrow">{Astro.locals.t("page.previousLink")}</span>
+							<span class="cc-pagination__title">{prev.label}</span>
+						</span>
+					</a>
+				) : (
+					<span />
+				)
+			}
+			{
+				next ? (
+					<a class="cc-pagination__link cc-pagination__link--next" href={next.href} rel="next">
+						{isRtl ? (
+							<ArrowLeft class="cc-pagination__icon" size="1rem" />
+						) : (
+							<ArrowRight class="cc-pagination__icon" size="1rem" />
+						)}
+						<span class="cc-pagination__meta">
+							<span class="cc-pagination__eyebrow">{Astro.locals.t("page.nextLink")}</span>
+							<span class="cc-pagination__title">{next.label}</span>
+						</span>
+					</a>
+				) : (
+					<span />
+				)
+			}
+		</nav>
+	)
+}
+
+<style>
+	@layer starlight.core {
+		.cc-pagination {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(min(14rem, 100%), 1fr));
+			gap: 0.75rem;
+		}
+
+		.cc-pagination__link {
+			display: grid;
+			grid-template-columns: auto minmax(0, 1fr);
+			align-items: center;
+			column-gap: 0.55rem;
+			padding: 0.7rem 0.8rem;
+			border: 1px solid var(--sl-color-hairline-shade);
+			border-radius: 0.75rem;
+			background: color-mix(in srgb, var(--sl-color-bg-inline-code) 45%, transparent);
+			color: var(--sl-color-text);
+			text-decoration: none;
+			box-shadow: none;
+		}
+
+		.cc-pagination__link--next {
+			grid-template-columns: minmax(0, 1fr) auto;
+		}
+
+		.cc-pagination__link:hover,
+		.cc-pagination__link:focus-visible {
+			border-color: color-mix(in srgb, var(--cc-brand, var(--sl-color-accent)) 34%, var(--sl-color-hairline-shade));
+			background: color-mix(in srgb, var(--cc-brand-low, var(--sl-color-accent-low)) 78%, var(--sl-color-bg));
+			color: var(--cc-brand-high, var(--sl-color-accent-high));
+		}
+
+		.cc-pagination__meta {
+			display: grid;
+			gap: 0.08rem;
+			min-width: 0;
+		}
+
+		.cc-pagination__link--next .cc-pagination__meta {
+			justify-items: end;
+			text-align: end;
+		}
+
+		.cc-pagination__eyebrow {
+			font-size: var(--sl-text-2xs);
+			text-transform: uppercase;
+			letter-spacing: 0.05em;
+			color: var(--sl-color-gray-3);
+		}
+
+		.cc-pagination__title {
+			font-size: var(--sl-text-base);
+			font-weight: 600;
+			line-height: 1.3;
+			color: inherit;
+		}
+
+		.cc-pagination__icon {
+			flex-shrink: 0;
+		}
+	}
+</style>

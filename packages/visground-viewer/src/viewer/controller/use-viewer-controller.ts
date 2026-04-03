@@ -10,9 +10,9 @@ import type {
   ViewerStatePayload,
 } from "@/viewer/contract/types";
 import { getCatalogIndex, getCatalogSubset } from "@/viewer/controller/catalog";
-import { HOVER_HIDE_DELAY_MS, positionHoverCard } from "@/viewer/controller/hover";
 import { createRootKeydownHandler } from "@/viewer/controller/keyboard";
-import { positionPopover } from "@/viewer/controller/popover";
+
+const HOVER_HIDE_DELAY_MS = 220;
 
 const EMPTY_SELECTION: ViewerSelection = {
   vis_id: "",
@@ -59,7 +59,6 @@ function makeInitialState(model: AnywidgetModelLike): ViewerState {
     inspectCellKey: null,
     inspectVariantIndex: 0,
     activePopoverId: null,
-    popoverAnchor: null,
   };
 }
 
@@ -67,8 +66,6 @@ export function useViewerController(model: AnywidgetModelLike): ViewerController
   const stateRef = useRef<ViewerState>(makeInitialState(model));
   const hoverHideTimerRef = useRef<number | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
-  const hoverCardRef = useRef<HTMLDivElement | null>(null);
-  const popoverRef = useRef<HTMLDivElement | null>(null);
   const [state, setState] = useState<ViewerState>(stateRef.current);
 
   function sync(next: ViewerState) {
@@ -115,7 +112,6 @@ export function useViewerController(model: AnywidgetModelLike): ViewerController
       inspectCellKey: null,
       inspectVariantIndex: 0,
       activePopoverId: null,
-      popoverAnchor: null,
     });
   }
 
@@ -128,7 +124,6 @@ export function useViewerController(model: AnywidgetModelLike): ViewerController
       inspectCellKey: null,
       inspectVariantIndex: 0,
       activePopoverId: null,
-      popoverAnchor: null,
     });
 
     model.set("_selection", nextSelection);
@@ -191,11 +186,10 @@ export function useViewerController(model: AnywidgetModelLike): ViewerController
         "update",
       );
     },
-    togglePopover(popoverId, anchor) {
+    togglePopover(popoverId) {
       const isOpen = stateRef.current.activePopoverId === popoverId;
       patch({
         activePopoverId: isOpen ? null : popoverId,
-        popoverAnchor: isOpen ? null : anchor,
         inspectCellKey: isOpen ? stateRef.current.inspectCellKey : null,
         inspectVariantIndex: isOpen ? stateRef.current.inspectVariantIndex : 0,
         hover: isOpen ? stateRef.current.hover : null,
@@ -204,7 +198,6 @@ export function useViewerController(model: AnywidgetModelLike): ViewerController
     closePopover() {
       patch({
         activePopoverId: null,
-        popoverAnchor: null,
       });
     },
     openInspect(cellKey, variantIndex = 0) {
@@ -285,30 +278,12 @@ export function useViewerController(model: AnywidgetModelLike): ViewerController
       hydrateFromModel();
     }
 
-    function onViewportChange() {
-      const current = stateRef.current;
-      if (current.hover?.anchor && hoverCardRef.current && current.hover.anchor.isConnected) {
-        positionHoverCard(hoverCardRef.current, current.hover.anchor);
-      }
-      if (
-        current.activePopoverId &&
-        current.popoverAnchor &&
-        rootRef.current &&
-        popoverRef.current &&
-        current.popoverAnchor.isConnected
-      ) {
-        positionPopover(rootRef.current, popoverRef.current, current.popoverAnchor);
-      }
-    }
-
     const onKeydown = createRootKeydownHandler(() => stateRef.current, actions);
     const root = rootRef.current;
 
     model.on("change:_selection", onModelSelectionChange);
     model.on("change:_state", onModelStateChange);
     model.on("change:debug", onModelDebugChange);
-    window.addEventListener("resize", onViewportChange);
-    window.addEventListener("scroll", onViewportChange, true);
     root?.addEventListener("keydown", onKeydown);
 
     hydrateFromModel();
@@ -327,8 +302,6 @@ export function useViewerController(model: AnywidgetModelLike): ViewerController
       model.off("change:_selection", onModelSelectionChange);
       model.off("change:_state", onModelStateChange);
       model.off("change:debug", onModelDebugChange);
-      window.removeEventListener("resize", onViewportChange);
-      window.removeEventListener("scroll", onViewportChange, true);
       root?.removeEventListener("keydown", onKeydown);
       for (const timer of hydrationRetryTimers) {
         window.clearTimeout(timer);
@@ -336,30 +309,10 @@ export function useViewerController(model: AnywidgetModelLike): ViewerController
     };
   }, [model]);
 
-  useEffect(() => {
-    if (state.hover?.anchor && hoverCardRef.current && state.hover.anchor.isConnected) {
-      positionHoverCard(hoverCardRef.current, state.hover.anchor);
-    }
-  }, [state.hover]);
-
-  useEffect(() => {
-    if (
-      state.activePopoverId &&
-      state.popoverAnchor &&
-      rootRef.current &&
-      popoverRef.current &&
-      state.popoverAnchor.isConnected
-    ) {
-      positionPopover(rootRef.current, popoverRef.current, state.popoverAnchor);
-    }
-  }, [state.activePopoverId, state.popoverAnchor]);
-
   return {
     state,
     refs: {
       rootRef,
-      hoverCardRef,
-      popoverRef,
     },
     actions,
   };

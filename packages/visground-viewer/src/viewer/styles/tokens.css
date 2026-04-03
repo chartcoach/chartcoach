@@ -1,21 +1,22 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap");
+@import "@chartcoach/chartcoach-ui/fonts.css";
+@import "@chartcoach/chartcoach-ui/styles.css";
 
 .vg-root {
-  --vg-paper: #ffffff;
-  --vg-panel: #fafafa;
-  --vg-panel-strong: #f5f5f5;
-  --vg-border: #dddddd;
-  --vg-border-strong: #111111;
-  --vg-divider: #e0e0e0;
-  --vg-text: #111111;
-  --vg-text-soft: #333333;
-  --vg-muted: #555555;
-  --vg-focus: #f5f5f5;
-  --vg-code-bg: #f5f5f5;
-  --vg-shadow: 0 2px 8px rgba(17, 17, 17, 0.05);
+  --vg-paper: var(--ccui-paper);
+  --vg-panel: var(--ccui-panel);
+  --vg-panel-strong: var(--ccui-panel-strong);
+  --vg-border: var(--ccui-border);
+  --vg-border-strong: var(--ccui-border-strong);
+  --vg-divider: var(--ccui-divider);
+  --vg-text: var(--ccui-text);
+  --vg-text-soft: var(--ccui-text-soft);
+  --vg-muted: var(--ccui-muted);
+  --vg-focus: var(--ccui-focus);
+  --vg-code-bg: var(--ccui-panel-strong);
+  --vg-shadow: var(--ccui-shadow);
   color: var(--vg-text);
   background: var(--vg-paper);
-  font-family: "Inter", "Helvetica Neue", "Segoe UI", sans-serif;
+  font-family: var(--ccui-font-sans);
   position: relative;
 }
 
@@ -41,7 +42,7 @@
 .vg-column-head,
 .vg-row-head,
 .vg-missing-label {
-  font-family: "JetBrains Mono", "SFMono-Regular", "SF Mono", Menlo, monospace;
+  font-family: var(--ccui-font-mono);
   letter-spacing: 0.02em;
   font-size: 0.78rem;
 }
@@ -130,7 +131,7 @@
   border-radius: 4px;
   background: #f5f5f5;
   color: var(--vg-text-soft);
-  font-family: "JetBrains Mono", "SFMono-Regular", "SF Mono", Menlo, monospace;
+  font-family: var(--ccui-font-mono);
   font-size: 0.78rem;
   font-weight: 500;
   line-height: 1.2;

@@ -1,3 +1,4 @@
+import clsx from "clsx";
 import type { ViewerActions, ViewerState } from "@/viewer/contract/types";
 import { fromOptionValue, toOptionValue } from "@/viewer/render/utils";
 
@@ -10,7 +11,11 @@ export function LayoutPopover({ state, actions }: { state: ViewerState; actions:
 
   return (
     <section
-      className={`vg-popover-section is-layout ${state.activePopoverId === "layout" ? "" : "is-hidden"}`}
+      className={clsx(
+        "vg-popover-section",
+        "is-layout",
+        state.activePopoverId !== "layout" && "is-hidden",
+      )}
     >
       <div className="vg-popover-section-title">Layout</div>
       <div className="vg-control-band-row vg-control-band-row-layout">

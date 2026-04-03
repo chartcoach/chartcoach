@@ -2,52 +2,82 @@
 import { BookOpen, Tags, Quote, Shapes } from "lucide-astro";
 ---
 
-<div class="cc-features" aria-label="Explore Chart Coach">
-	<a class="cc-feature" href="/guidelines/">
-		<span class="cc-feature__icon" aria-hidden="true">
-			<BookOpen size="1.1rem" />
-		</span>
-		<span class="cc-feature__content">
-			<span class="cc-feature__title">Browse guidelines</span>
-			<span class="cc-feature__desc">
-				Explore the catalog with labels and formatted references in <span class="cc-feature__link">/guidelines</span>.
-			</span>
-		</span>
-	</a>
+<section class="cc-home-overview" aria-labelledby="cc-home-overview-title">
+	<div class="cc-home-overview__copy">
+		<h2 id="cc-home-overview-title" class="cc-home-section__title">
+			A catalog you can read, filter, and cite.
+		</h2>
+		<p class="cc-home-section__lede">
+			Chart Coach turns visualization advice into structured entries that stay pleasant for
+			people and precise enough for retrieval, feedback, and analysis workflows.
+		</p>
+	</div>
 
-	<a class="cc-feature" href="/labels/">
-		<span class="cc-feature__icon" aria-hidden="true">
-			<Tags size="1.1rem" />
-		</span>
-		<span class="cc-feature__content">
-			<span class="cc-feature__title">Use label filters</span>
-			<span class="cc-feature__desc">
-				Click labels to narrow down by chart type, task, audience, data constraints, and expected impact.
-			</span>
-		</span>
-	</a>
+	<div class="cc-home-overview__panel">
+		<p class="cc-home-overview__note">
+			Each guideline keeps the recommendation, the rationale, the context, and the supporting
+			references in one place.
+		</p>
+		<ul class="cc-home-overview__qualities">
+			<li>Readable enough to skim quickly</li>
+			<li>Structured enough to browse systematically</li>
+			<li>Grounded enough to trace back to evidence</li>
+		</ul>
+	</div>
+</section>
 
-	<a class="cc-feature" href="/catalog/">
-		<span class="cc-feature__icon" aria-hidden="true">
-			<Shapes size="1.1rem" />
-		</span>
-		<span class="cc-feature__content">
-			<span class="cc-feature__title">Understand the structure</span>
-			<span class="cc-feature__desc">
-				Guidelines use consistent sections (rule, logic, context, trade-offs, checks, fixes) to support retrieval.
-			</span>
-		</span>
-	</a>
+<section class="cc-home-explore" aria-labelledby="cc-home-explore-title">
+	<div class="cc-home-explore__header">
+		<h2 id="cc-home-explore-title" class="cc-home-section__title">Explore the catalog</h2>
+		<p class="cc-home-section__lede">
+			Choose the entry point that matches how you want to work with the material.
+		</p>
+	</div>
 
-	<a class="cc-feature" href="/catalog/#references">
-		<span class="cc-feature__icon" aria-hidden="true">
-			<Quote size="1.1rem" />
-		</span>
-		<span class="cc-feature__content">
-			<span class="cc-feature__title">Trace to evidence</span>
-			<span class="cc-feature__desc">
-				Inline citations resolve to a formatted bibliography derived from each guideline’s <code>references.bib</code>.
+	<div class="cc-features" aria-label="Explore Chart Coach">
+		<a class="cc-feature ccui-feature-card" href="/guidelines/">
+			<span class="cc-feature__icon" aria-hidden="true">
+				<BookOpen size="1.1rem" />
 			</span>
-		</span>
-	</a>
-</div>
+			<span class="cc-feature__content">
+				<span class="cc-feature__title">Browse guidelines</span>
+				<span class="cc-feature__desc">
+					Read concise recommendations with context, labels, and references already in place.
+				</span>
+			</span>
+		</a>
+		<a class="cc-feature ccui-feature-card" href="/labels/">
+			<span class="cc-feature__icon" aria-hidden="true">
+				<Tags size="1.1rem" />
+			</span>
+			<span class="cc-feature__content">
+				<span class="cc-feature__title">Filter by labels</span>
+				<span class="cc-feature__desc">
+					Narrow the collection by task, audience, chart type, communication goal, or constraint.
+				</span>
+			</span>
+		</a>
+		<a class="cc-feature ccui-feature-card" href="/catalog/">
+			<span class="cc-feature__icon" aria-hidden="true">
+				<Shapes size="1.1rem" />
+			</span>
+			<span class="cc-feature__content">
+				<span class="cc-feature__title">See the structure</span>
+				<span class="cc-feature__desc">
+					Understand how the catalog is organized when you want the full model behind each entry.
+				</span>
+			</span>
+		</a>
+		<a class="cc-feature ccui-feature-card" href="/catalog/#references">
+			<span class="cc-feature__icon" aria-hidden="true">
+				<Quote size="1.1rem" />
+			</span>
+			<span class="cc-feature__content">
+				<span class="cc-feature__title">Trace to sources</span>
+				<span class="cc-feature__desc">
+					Follow citations back to the bibliography and inspect the evidence behind each claim.
+				</span>
+			</span>
+		</a>
+	</div>
+</section>

@@ -1,0 +1,114 @@
+---
+import Search from "@astrojs/starlight/components/Search.astro";
+import SiteTitle from "@astrojs/starlight/components/SiteTitle.astro";
+import ThemeSelect from "@astrojs/starlight/components/ThemeSelect.astro";
+import { Menu, X } from "lucide-astro";
+
+const navItems = [
+	{ label: "Overview", href: "/" },
+	{ label: "Guidelines", href: "/guidelines/" },
+	{ label: "Catalog", href: "/catalog/" },
+	{ label: "Labels", href: "/labels/" },
+	{ label: "About", href: "/about/" },
+];
+
+const pathname = Astro.url.pathname;
+
+function normalizePath(value: string) {
+	if (value === "/") return "/";
+	return value.endsWith("/") ? value : `${value}/`;
+}
+
+const currentPath = normalizePath(pathname);
+
+function isActive(href: string) {
+	const target = normalizePath(href);
+	if (target === "/") return currentPath === "/";
+	return currentPath === target || currentPath.startsWith(target);
+}
+---
+
+<div class="cc-site-header">
+	<div class="cc-site-header__row--primary">
+		<div class="cc-site-header__brand">
+			<SiteTitle />
+		</div>
+
+		<nav class="cc-site-header__nav cc-site-header__nav--desktop" aria-label="Primary">
+			{
+				navItems.map((item) => (
+					<a
+						class="cc-site-header__nav-link"
+						href={item.href}
+						aria-current={isActive(item.href) ? "page" : undefined}
+					>
+						{item.label}
+					</a>
+				))
+			}
+		</nav>
+
+		<div class="cc-site-header__search">
+			<Search class="cc-site-search" />
+		</div>
+
+		<div class="cc-site-header__controls">
+			<ThemeSelect />
+		</div>
+
+		<details class="cc-mobile-menu">
+			<summary class="cc-mobile-menu__toggle" aria-label="Menu">
+				<Menu class="cc-mobile-menu__icon cc-mobile-menu__icon--open" size="1rem" />
+				<X class="cc-mobile-menu__icon cc-mobile-menu__icon--close" size="1rem" />
+			</summary>
+			<div class="cc-mobile-menu__panel">
+				<nav class="cc-mobile-menu__links" aria-label="Primary mobile">
+					{
+						navItems.map((item) => (
+							<a
+								class="cc-mobile-menu__link"
+								href={item.href}
+								aria-current={isActive(item.href) ? "page" : undefined}
+							>
+								{item.label}
+							</a>
+						))
+					}
+				</nav>
+				<div class="cc-mobile-menu__footer">
+					<div class="cc-mobile-menu__theme">
+						<ThemeSelect />
+					</div>
+					<a class="cc-mobile-menu__github" href="http://github.com/peter-gy/chartcoach">
+						GitHub
+					</a>
+				</div>
+			</div>
+		</details>
+	</div>
+</div>
+
+<script is:inline>
+	document.querySelectorAll(".cc-mobile-menu").forEach((details) => {
+		const summary = details.querySelector("summary");
+		const closeMenu = () => {
+			details.open = false;
+		};
+
+		details.querySelectorAll("a").forEach((link) => {
+			link.addEventListener("click", closeMenu);
+		});
+
+		window.addEventListener("click", (event) => {
+			if (details.open && !details.contains(event.target)) closeMenu();
+		});
+
+		window.addEventListener("keydown", (event) => {
+			if (event.key === "Escape" && details.open) {
+				const hadFocus = details.contains(document.activeElement);
+				closeMenu();
+				if (hadFocus && summary instanceof HTMLElement) summary.focus();
+			}
+		});
+	});
+</script>

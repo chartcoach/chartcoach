@@ -1,6 +1,10 @@
 ---
-import { getCollection, getEntry, render } from "astro:content";
+import { getCollection, getEntry } from "astro:content";
 import StarlightPage from "@astrojs/starlight/components/StarlightPage.astro";
+import {
+  GuidelineDetailView,
+  type GuidelineCardLabel,
+} from "@chartcoach/chartcoach-ui";
 import { encodeGuidelineLabelQueryValue, parseGuidelineLabel } from "@chartcoach/site/lib/guidelines/labels";
 
 export async function getStaticPaths() {
@@ -10,79 +14,68 @@ export async function getStaticPaths() {
 	}));
 }
 
+const guidelinesShareImage = "/social/chartcoach-share-guidelines.png";
 const guideline = await getEntry("guidelines", Astro.params.id as string);
 if (!guideline) throw new Error(`Guideline not found: ${Astro.params.id}`);
-
-const { Content, headings } = await render(guideline);
-const pageHeadings = guideline.data.bibliographyHtml
-	? [...headings, { depth: 2, slug: "references", text: "References" }]
-	: headings;
 ---
 
 <StarlightPage
-	headings={pageHeadings}
+		hasSidebar={false}
 	frontmatter={{
 		title: guideline.data.title ?? guideline.id,
 		description: guideline.data.description,
-		tableOfContents: { minHeadingLevel: 2, maxHeadingLevel: 2 },
+		tableOfContents: false,
+		head: [
+			{
+				tag: "meta",
+				attrs: { property: "og:image", content: guidelinesShareImage },
+			},
+			{
+				tag: "meta",
+				attrs: { name: "twitter:image", content: guidelinesShareImage },
+			},
+		],
 	}}
 >
 	<div class="guideline-detail">
-		{guideline.data.labels.length ? (
-			<div class="not-content guideline-meta" aria-label="Guideline labels">
-				{guideline.data.labels.map((label) => {
-					const parsed = parseGuidelineLabel(label);
-					const familyLower = parsed.familyLower;
-					return (
-						<span class="guideline-label">
-							{parsed.family ? (
-								<>
-									<a
-										class="guideline-label__key"
-										href={`/guidelines/?label=${encodeURIComponent(encodeGuidelineLabelQueryValue(familyLower!))}`}
-										title={`Filter: ${parsed.family}`}
-									>
-										{parsed.family}
-									</a>
-									<span class="guideline-label__sep">:</span>
-									<a
-										class="guideline-label__value"
-										href={`/guidelines/?label=${encodeURIComponent(encodeGuidelineLabelQueryValue(parsed.fullLower))}`}
-										title={`Filter: ${parsed.full}`}
-									>
-										{parsed.value}
-									</a>
-								</>
-							) : (
-								<a
-									class="guideline-label__value"
-									href={`/guidelines/?label=${encodeURIComponent(encodeGuidelineLabelQueryValue(parsed.fullLower))}`}
-									title={`Filter: ${parsed.value}`}
-								>
-									{parsed.value}
-								</a>
-							)}
-						</span>
-					);
-				})}
-			</div>
-		) : null}
+		<GuidelineDetailView
+			id={guideline.id}
+			title={guideline.data.title ?? guideline.id}
+			description={guideline.data.description}
+			labels={guideline.data.labels.map((label) => {
+				const parsed = parseGuidelineLabel(label);
 
-		<Content />
+				if (parsed.family) {
+					const familyLower = parsed.familyLower ?? parsed.family.toLowerCase();
 
-		{guideline.data.bibliographyHtml ? (
-			<>
-				<hr />
-				<h2 id="references">References</h2>
-				<div class="bibliography" set:html={guideline.data.bibliographyHtml} />
+					return {
+						family: {
+							text: parsed.family,
+							href: `/guidelines/?label=${encodeURIComponent(encodeGuidelineLabelQueryValue(familyLower))}`,
+							filterValue: familyLower,
+							title: `Filter: ${parsed.family}`,
+						},
+						value: {
+							text: parsed.value,
+							href: `/guidelines/?label=${encodeURIComponent(encodeGuidelineLabelQueryValue(parsed.fullLower))}`,
+							filterValue: parsed.fullLower,
+							title: `Filter: ${parsed.full}`,
+						},
+					};
+				}
 
-				{guideline.data.referencesBib ? (
-					<details class="bibtex-details">
-						<summary>BibTeX</summary>
-						<pre><code>{guideline.data.referencesBib}</code></pre>
-					</details>
-				) : null}
-			</>
-		) : null}
+				return {
+					value: {
+						text: parsed.value,
+						href: `/guidelines/?label=${encodeURIComponent(encodeGuidelineLabelQueryValue(parsed.fullLower))}`,
+						filterValue: parsed.fullLower,
+						title: `Filter: ${parsed.value}`,
+					},
+				};
+			}) as GuidelineCardLabel[]}
+			sections={guideline.data.sections}
+			bibliographyHtml={guideline.data.bibliographyHtml}
+			referencesBib={guideline.data.referencesBib}
+		/>
 	</div>
 </StarlightPage>

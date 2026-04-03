@@ -1,5 +1,6 @@
 // @ts-check
 import { defineConfig } from "astro/config";
+import react from "@astrojs/react";
 import starlight from "@astrojs/starlight";
 import sitemap from "@astrojs/sitemap";
 import { fileURLToPath } from "node:url";
@@ -59,6 +60,9 @@ function siteUrlLogger(siteUrl, source) {
 const envSiteUrl = resolveSiteUrl();
 const siteUrl = envSiteUrl ?? "http://localhost:4321/";
 const siteUrlSource = envSiteUrl ? "env" : "default";
+const enableAgentationReview =
+  process.env.PUBLIC_ENABLE_AGENTATION === "true" ||
+  process.argv.some((arg) => /(?:^|\/)dev$/.test(arg));
 
 export default defineConfig({
   site: siteUrl,
@@ -77,11 +81,23 @@ export default defineConfig({
   },
   integrations: [
     siteUrlLogger(siteUrl, siteUrlSource),
+    react(),
     starlight({
       title: "Chart Coach",
+      favicon: "/brand/chartcoach-favicon.svg",
+      logo: {
+        src: "./src/assets/brand/chartcoach-logo-header.svg",
+        alt: "Chart Coach",
+        replacesTitle: true,
+      },
       customCss: ["./src/styles/custom.css"],
       social: [{ icon: "github", label: "GitHub", href: "http://github.com/peter-gy/chartcoach" }],
       components: {
+        ...(enableAgentationReview
+          ? { PageFrame: "./src/components/starlight/PageFrameAgentation.astro" }
+          : {}),
+        Header: "./src/components/starlight/Header.astro",
+        Pagination: "./src/components/starlight/Pagination.astro",
         TableOfContents: "./src/components/starlight/TableOfContents.astro",
         MobileTableOfContents: "./src/components/starlight/MobileTableOfContents.astro",
       },

@@ -1,3 +1,4 @@
+import clsx from "clsx";
 import type {
   MatrixCell as MatrixCellPayload,
   MatrixGroup,
@@ -9,30 +10,24 @@ import { MatrixCell } from "@/viewer/render/matrix-cell";
 import { spotlightClass, toOptionValue } from "@/viewer/render/utils";
 
 function groupHeaderClass(hoverCell: MatrixCellPayload | null, groupValue: string | null): string {
-  return [
+  return clsx(
     "vg-group-head",
     spotlightClass(Boolean(hoverCell), hoverCell?.group_value === groupValue),
-  ]
-    .filter(Boolean)
-    .join(" ");
+  );
 }
 
 function columnHeaderClass(
   hoverCell: MatrixCellPayload | null,
   columnValue: string | null,
 ): string {
-  return [
+  return clsx(
     "vg-column-head",
     spotlightClass(Boolean(hoverCell), hoverCell?.column_value === columnValue),
-  ]
-    .filter(Boolean)
-    .join(" ");
+  );
 }
 
 function rowHeaderClass(hoverCell: MatrixCellPayload | null, rowValue: string | null): string {
-  return ["vg-row-head", spotlightClass(Boolean(hoverCell), hoverCell?.row_value === rowValue)]
-    .filter(Boolean)
-    .join(" ");
+  return clsx("vg-row-head", spotlightClass(Boolean(hoverCell), hoverCell?.row_value === rowValue));
 }
 
 function GroupedSection({
@@ -71,7 +66,7 @@ function GroupedSection({
         className="vg-overview-group-grid"
         style={{ ["--vg-overview-group-cols" as string]: String(group.columns.length) }}
       >
-        <div className={`vg-overview-corner ${hoverCell ? "is-recessed" : ""}`.trim()} />
+        <div className={clsx("vg-overview-corner", hoverCell && "is-recessed")} />
         {group.columns.map((column, columnIndex) => (
           <AxisHeader
             className={columnHeaderClass(hoverCell, column.value)}
@@ -110,7 +105,7 @@ function GroupedSection({
             />
           )),
           <div
-            className={`vg-row-footer-spacer ${hoverCell ? "is-recessed" : ""}`.trim()}
+            className={clsx("vg-row-footer-spacer", hoverCell && "is-recessed")}
             key={`row-footer-spacer-${toOptionValue(group.value)}-${toOptionValue(row.value)}`}
           />,
           ...row.cells.map((cell) => (
@@ -141,7 +136,11 @@ export function OverviewMatrix({ state, actions }: { state: ViewerState; actions
   if (matrix.kind === "grouped") {
     return (
       <div
-        className={`vg-matrix-wrap vg-matrix-wrap-overview ${hasHover ? "is-spotlight-active" : ""}`.trim()}
+        className={clsx(
+          "vg-matrix-wrap",
+          "vg-matrix-wrap-overview",
+          hasHover && "is-spotlight-active",
+        )}
       >
         <div className="vg-overview-stack">
           {matrix.groups.map((group, groupIndex) => (
@@ -160,13 +159,17 @@ export function OverviewMatrix({ state, actions }: { state: ViewerState; actions
 
   return (
     <div
-      className={`vg-matrix-wrap vg-matrix-wrap-overview ${hasHover ? "is-spotlight-active" : ""}`.trim()}
+      className={clsx(
+        "vg-matrix-wrap",
+        "vg-matrix-wrap-overview",
+        hasHover && "is-spotlight-active",
+      )}
     >
       <div
         className="vg-overview-flat-grid"
         style={{ ["--vg-overview-cols" as string]: String(matrix.columns.length) }}
       >
-        <div className={`vg-overview-corner ${hoverCell ? "is-recessed" : ""}`.trim()} />
+        <div className={clsx("vg-overview-corner", hoverCell && "is-recessed")} />
         {matrix.columns.map((column, columnIndex) => (
           <AxisHeader
             className={columnHeaderClass(hoverCell, column.value)}
@@ -204,7 +207,7 @@ export function OverviewMatrix({ state, actions }: { state: ViewerState; actions
             />
           )),
           <div
-            className={`vg-row-footer-spacer ${hoverCell ? "is-recessed" : ""}`.trim()}
+            className={clsx("vg-row-footer-spacer", hoverCell && "is-recessed")}
             key={`flat-row-footer-spacer-${toOptionValue(row.value)}`}
           />,
           ...row.cells.map((cell) => (

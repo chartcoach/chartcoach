@@ -28,7 +28,7 @@
 }
 
 .vg-hover-variant {
-  font-family: "JetBrains Mono", "SFMono-Regular", "SF Mono", Menlo, monospace;
+  font-family: var(--ccui-font-mono);
   font-size: 0.66rem;
   line-height: 1.18;
   color: var(--vg-text-soft);
@@ -52,7 +52,7 @@
 }
 
 .vg-hover-orientation {
-  font-family: "JetBrains Mono", "SFMono-Regular", "SF Mono", Menlo, monospace;
+  font-family: var(--ccui-font-mono);
   font-size: 0.76rem;
   font-weight: 600;
   color: var(--vg-text);

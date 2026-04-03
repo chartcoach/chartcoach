@@ -306,9 +306,6 @@
 }
 
 .vg-score-breakdown-reasoning-popover {
-  position: absolute;
-  top: calc(100% + 0.42rem);
-  left: 0;
   z-index: 12;
   display: grid;
   gap: 0.5rem;
