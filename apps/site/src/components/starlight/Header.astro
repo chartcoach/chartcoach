@@ -1,16 +1,10 @@
 ---
 import Search from "@astrojs/starlight/components/Search.astro";
 import SiteTitle from "@astrojs/starlight/components/SiteTitle.astro";
+import SocialIcons from "@astrojs/starlight/components/SocialIcons.astro";
 import ThemeSelect from "@astrojs/starlight/components/ThemeSelect.astro";
 import { Menu, X } from "lucide-astro";
-
-const navItems = [
-	{ label: "Overview", href: "/" },
-	{ label: "Guidelines", href: "/guidelines/" },
-	{ label: "Catalog", href: "/catalog/" },
-	{ label: "Labels", href: "/labels/" },
-	{ label: "About", href: "/about/" },
-];
+import { headerNavigation } from "../../../config/navigation";
 
 const pathname = Astro.url.pathname;
 
@@ -36,7 +30,7 @@ function isActive(href: string) {
 
 		<nav class="cc-site-header__nav cc-site-header__nav--desktop" aria-label="Primary">
 			{
-				navItems.map((item) => (
+				headerNavigation.map((item) => (
 					<a
 						class="cc-site-header__nav-link"
 						href={item.href}
@@ -53,6 +47,9 @@ function isActive(href: string) {
 		</div>
 
 		<div class="cc-site-header__controls">
+			<div class="cc-site-header__social social-icons">
+				<SocialIcons />
+			</div>
 			<ThemeSelect />
 		</div>
 
@@ -64,7 +61,7 @@ function isActive(href: string) {
 			<div class="cc-mobile-menu__panel">
 				<nav class="cc-mobile-menu__links" aria-label="Primary mobile">
 					{
-						navItems.map((item) => (
+						headerNavigation.map((item) => (
 							<a
 								class="cc-mobile-menu__link"
 								href={item.href}
@@ -76,12 +73,12 @@ function isActive(href: string) {
 					}
 				</nav>
 				<div class="cc-mobile-menu__footer">
+					<div class="cc-mobile-menu__social social-icons">
+						<SocialIcons />
+					</div>
 					<div class="cc-mobile-menu__theme">
 						<ThemeSelect />
 					</div>
-					<a class="cc-mobile-menu__github" href="http://github.com/peter-gy/chartcoach">
-						GitHub
-					</a>
 				</div>
 			</div>
 		</details>

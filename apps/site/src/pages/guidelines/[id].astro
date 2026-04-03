@@ -6,6 +6,7 @@ import {
   type GuidelineCardLabel,
 } from "@chartcoach/chartcoach-ui";
 import { encodeGuidelineLabelQueryValue, parseGuidelineLabel } from "@chartcoach/site/lib/guidelines/labels";
+import { createGuidelinePageFrontmatter } from "@chartcoach/site/lib/site-metadata";
 
 export async function getStaticPaths() {
 	const guidelines = await getCollection("guidelines");
@@ -14,28 +15,16 @@ export async function getStaticPaths() {
 	}));
 }
 
-const guidelinesShareImage = "/social/chartcoach-share-guidelines.png";
 const guideline = await getEntry("guidelines", Astro.params.id as string);
 if (!guideline) throw new Error(`Guideline not found: ${Astro.params.id}`);
 ---
 
 <StarlightPage
-		hasSidebar={false}
-	frontmatter={{
+	hasSidebar={false}
+	frontmatter={createGuidelinePageFrontmatter({
 		title: guideline.data.title ?? guideline.id,
 		description: guideline.data.description,
-		tableOfContents: false,
-		head: [
-			{
-				tag: "meta",
-				attrs: { property: "og:image", content: guidelinesShareImage },
-			},
-			{
-				tag: "meta",
-				attrs: { name: "twitter:image", content: guidelinesShareImage },
-			},
-		],
-	}}
+	})}
 >
 	<div class="guideline-detail">
 		<GuidelineDetailView

@@ -2,13 +2,13 @@
 import { getCollection } from "astro:content";
 import StarlightPage from "@astrojs/starlight/components/StarlightPage.astro";
 import { encodeGuidelineLabelQueryValue, parseGuidelineLabel } from "@chartcoach/site/lib/guidelines/labels";
+import { createGuidelinePageFrontmatter } from "@chartcoach/site/lib/site-metadata";
 import GuidelineCard from "@chartcoach/site/components/guidelines/GuidelineCard.astro";
 
 const guidelines = (await getCollection("guidelines")).sort((a, b) =>
 	(a.data.title ?? a.id).localeCompare(b.data.title ?? b.id),
 );
 
-const guidelinesShareImage = "/social/chartcoach-share-guidelines.png";
 const totalGuidelines = guidelines.length;
 const MAX_CARD_LABELS = 4;
 
@@ -27,28 +27,17 @@ const allFamilies = Array.from(familySet).sort((a, b) => a.localeCompare(b));
 ---
 
 <StarlightPage
-		hasSidebar={false}
-		frontmatter={{
-			title: "Guidelines",
-			description: "Browse the Chartcoach guideline catalog.",
-			tableOfContents: false,
-			head: [
-				{
-					tag: "meta",
-					attrs: { property: "og:image", content: guidelinesShareImage },
-				},
-				{
-					tag: "meta",
-					attrs: { name: "twitter:image", content: guidelinesShareImage },
-				},
-			],
-		}}
-	>
-		<div class="not-content guidelines-page">
-			<p class="guidelines-page__kicker">catalog</p>
-			<h1 class="guidelines-page__title">Guidelines</h1>
-			<p class="guidelines-page__lede">Browse the Chart Coach catalog as structured guideline records.</p>
-			<div class="guidelines-controls">
+	hasSidebar={false}
+	frontmatter={createGuidelinePageFrontmatter({
+		title: "Guidelines",
+		description: "Browse the Chartcoach guideline catalog.",
+	})}
+>
+	<div class="not-content guidelines-page">
+		<p class="guidelines-page__kicker">catalog</p>
+		<h1 class="guidelines-page__title">Guidelines</h1>
+		<p class="guidelines-page__lede">Browse the Chart Coach catalog as structured guideline records.</p>
+		<div class="guidelines-controls">
 			<div class="guidelines-controls__summary">
 				<div
 					class="guidelines-controls__count"

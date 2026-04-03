@@ -1,0 +1,153 @@
+@layer chartcoach.overrides {
+  :root {
+    /* Layout */
+    --sl-content-width: 86rem;
+    --sl-sidebar-width: 13rem;
+    --cc-right-sidebar-width: 22rem;
+    --sl-nav-height: 4.5rem;
+    --sl-nav-pad-y: 0.65rem;
+    --sl-nav-pad-x: 1rem;
+
+    /* Brand accents */
+    --cc-brand-low: hsl(28, 45%, 95%);
+    --cc-brand: hsl(22, 26%, 38%);
+    --cc-brand-high: hsl(20, 30%, 22%);
+    --sl-color-accent-low: var(--cc-brand-low);
+    --sl-color-accent: var(--cc-brand);
+    --sl-color-accent-high: var(--cc-brand-high);
+
+    /* ChartCoach primitives */
+    --cc-radius-sm: 0.16rem;
+    --cc-radius-md: 0.28rem;
+    --cc-radius-lg: 0.42rem;
+
+    --cc-border-color: color-mix(in srgb, var(--sl-color-hairline-light) 85%, transparent);
+    --cc-border: 1px solid var(--cc-border-color);
+
+    --cc-text: var(--sl-color-text);
+    --cc-text-muted: color-mix(in srgb, var(--sl-color-text) 75%, transparent);
+    --cc-card-title-color: var(--sl-color-white);
+    --cc-text-2xs: var(--sl-text-2xs);
+    --cc-text-xs: var(--sl-text-xs);
+    --cc-text-sm: var(--sl-text-sm);
+    --cc-text-base: var(--sl-text-base);
+
+    --cc-card-bg: var(--ccui-paper);
+    --cc-card-bg-hover: var(--ccui-panel);
+    --sl-color-bg-nav: color-mix(in srgb, var(--ccui-paper) 94%, transparent);
+    --sl-color-bg-sidebar: var(--ccui-panel);
+    --sl-color-text-accent: var(--cc-brand-high);
+    --sl-color-text-invert: var(--ccui-paper);
+
+    --cc-inline-code-bg: var(--sl-color-bg-inline-code);
+    --cc-control-bg: var(--cc-inline-code-bg);
+    --cc-filter-chip-bg: var(--cc-inline-code-bg);
+    --cc-label-chip-bg: color-mix(in srgb, var(--cc-card-bg) 78%, var(--sl-color-bg) 22%);
+  }
+
+  :root[data-theme="light"] {
+    --cc-brand-low: hsl(28, 45%, 95%);
+    --cc-brand: hsl(22, 26%, 38%);
+    --cc-brand-high: hsl(20, 30%, 22%);
+    --sl-color-accent-low: var(--cc-brand-low);
+    --sl-color-accent: var(--cc-brand);
+    --sl-color-accent-high: var(--cc-brand-high);
+    --sl-color-text-accent: var(--cc-brand-high);
+
+    --sl-color-bg-sidebar: var(--sl-color-gray-7);
+
+    --cc-card-title-color: var(--ccui-text);
+    --cc-card-bg: var(--ccui-paper);
+    --cc-card-bg-hover: var(--ccui-panel);
+  }
+
+  :root[data-theme="dark"] {
+    --cc-brand-low: hsl(24, 18%, 16%);
+    --cc-brand: hsl(28, 34%, 72%);
+    --cc-brand-high: hsl(34, 44%, 88%);
+    --sl-color-accent-low: var(--cc-brand-low);
+    --sl-color-accent: var(--cc-brand);
+    --sl-color-accent-high: var(--cc-brand-high);
+    --sl-color-text-accent: var(--cc-brand);
+  }
+
+  @media (min-width: 50rem) {
+    :root {
+      --sl-nav-height: 4.1rem;
+      --sl-nav-pad-y: 0.5rem;
+      --sl-nav-pad-x: 1rem;
+    }
+  }
+
+  /* Typography */
+  .sl-markdown-content :is(h1, h2, h3, h4) {
+    letter-spacing: -0.01em;
+  }
+
+  .sl-markdown-content :is(h1, h2) {
+    font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+    font-weight: 600;
+  }
+
+  /* Hide Starlight’s auto “Overview” ToC item (#_top). */
+  :where(starlight-toc, mobile-starlight-toc) li:has(> a[href="#_top"]) {
+    display: none;
+  }
+
+  /* Layout: narrower right ToC, wider main pane. */
+  @media (min-width: 72rem) {
+    html[data-has-sidebar][data-has-toc] {
+      .right-sidebar-container {
+        width: var(--cc-right-sidebar-width);
+      }
+
+      .main-pane {
+        width: calc(100% - var(--cc-right-sidebar-width));
+        --sl-content-margin-inline: auto;
+      }
+
+      .right-sidebar {
+        padding-inline: 0.75rem;
+        width: var(--cc-right-sidebar-width);
+        left: auto;
+        right: 0;
+        overflow-x: hidden;
+      }
+    }
+  }
+
+  .right-sidebar-panel {
+    .sl-container {
+      width: 100%;
+      max-width: none;
+    }
+  }
+
+  .header {
+    background: color-mix(in srgb, var(--ccui-paper) 94%, transparent);
+    backdrop-filter: blur(16px);
+    gap: 0.5rem;
+    justify-content: flex-start;
+    border-bottom-color: var(--ccui-divider);
+  }
+
+  .main-frame {
+    padding-top: calc(var(--sl-nav-height) + var(--sl-mobile-toc-height) + 1rem);
+  }
+
+  .cc-agentation-toolbar {
+    right: max(1rem, env(safe-area-inset-right)) !important;
+    bottom: max(1rem, env(safe-area-inset-bottom)) !important;
+  }
+
+  @media (min-width: 72rem) {
+    html[data-has-toc] .cc-agentation-toolbar {
+      right: calc(var(--cc-right-sidebar-width) + 1rem) !important;
+    }
+  }
+
+  body[data-search-modal-open] .cc-agentation-toolbar {
+    opacity: 0;
+    pointer-events: none;
+  }
+}

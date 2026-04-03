@@ -17,6 +17,32 @@ pnpm --filter site astro check
 pnpm --filter site build
 ```
 
+## Starlight modernization verification
+
+Run the full pass-1 verification sequence from the repo root:
+
+```bash
+pnpm format
+pnpm lint
+pnpm --filter site astro check
+pnpm --filter site build
+node apps/site/scripts/verify-starlight-modernization.mjs
+pnpm --filter site preview
+```
+
+The verification script checks the generated `dist/` output for the key routes used by the Starlight modernization PRD:
+
+- `/`
+- `/catalog/`
+- `/labels/`
+- `/about/`
+- `/guidelines/`
+- `/guidelines/adapt-framing-and-format-to-the-publication-outlet/`
+
+It asserts the docs shell vs. no-sidebar guideline shell split, validates the expected social metadata images, confirms the shared search/theme/GitHub affordances still render in built HTML, and fails if Agentation markers leak into built HTML or JS/text assets. Raw `rg agentation apps/site/dist` can still match CSS-only selectors, so prefer the script for the default-build leak check.
+
+After the automated checks pass, open `pnpm --filter site preview` in a browser and capture desktop (`1440x900`), tablet (`768x1024`), and mobile (`390x844`) evidence for the route matrix above.
+
 ## Sitemap
 
 This site uses `@astrojs/sitemap`.
