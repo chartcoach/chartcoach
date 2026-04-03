@@ -1,14 +1,37 @@
 @layer chartcoach.overrides {
   @media (min-width: 50rem) {
-    .main-frame {
-      padding-top: calc(var(--sl-nav-height) + var(--sl-mobile-toc-height) + 0.25rem);
-    }
-
     .guidelines-page,
     .guideline-detail {
       padding-top: 0.3rem;
     }
 
+    .hero {
+      grid-template-columns: 1fr;
+      max-width: 54rem;
+      margin-inline: auto;
+      padding-block: 2.5rem 3.25rem;
+    }
+
+    .hero .stack {
+      gap: 1.15rem;
+    }
+
+    html[data-has-hero] .hero {
+      width: min(100%, 67.5rem);
+      max-width: none;
+      padding-block: 0.1rem 1.35rem;
+    }
+
+    html[data-has-hero] .hero .copy {
+      align-items: flex-start;
+    }
+
+    html[data-has-hero] .hero .actions {
+      justify-content: flex-start;
+    }
+  }
+
+  @media (min-width: 64rem) {
     .cc-site-header {
       gap: 0;
     }
@@ -35,31 +58,6 @@
 
     .cc-mobile-menu {
       display: none;
-    }
-
-    .hero {
-      grid-template-columns: 1fr;
-      max-width: 54rem;
-      margin-inline: auto;
-      padding-block: 2.5rem 3.25rem;
-    }
-
-    .hero .stack {
-      gap: 1.15rem;
-    }
-
-    html[data-has-hero] .hero {
-      width: min(100%, 67.5rem);
-      max-width: none;
-      padding-block: 0.1rem 0.5rem;
-    }
-
-    html[data-has-hero] .hero .copy {
-      align-items: flex-start;
-    }
-
-    html[data-has-hero] .hero .actions {
-      justify-content: flex-start;
     }
   }
 }

@@ -32,15 +32,15 @@ const shouldRender = pathname !== "/" && (prev || next);
 			{
 				next ? (
 					<a class="cc-pagination__link cc-pagination__link--next" href={next.href} rel="next">
+						<span class="cc-pagination__meta">
+							<span class="cc-pagination__eyebrow">{Astro.locals.t("page.nextLink")}</span>
+							<span class="cc-pagination__title">{next.label}</span>
+						</span>
 						{isRtl ? (
 							<ArrowLeft class="cc-pagination__icon" size="1rem" />
 						) : (
 							<ArrowRight class="cc-pagination__icon" size="1rem" />
 						)}
-						<span class="cc-pagination__meta">
-							<span class="cc-pagination__eyebrow">{Astro.locals.t("page.nextLink")}</span>
-							<span class="cc-pagination__title">{next.label}</span>
-						</span>
 					</a>
 				) : (
 					<span />

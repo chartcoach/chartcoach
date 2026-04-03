@@ -142,6 +142,13 @@
   text-underline-offset: 0.16em;
 }
 
+.guideline-label:has(a:is(:hover, :focus-visible))
+  :is(.guideline-label__key, .guideline-label__value) {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.16em;
+}
+
 .guideline-label__key {
   color: var(--ccui-muted) !important;
   font-size: 0.63rem;
@@ -281,7 +288,7 @@
 .guideline-article {
   display: grid;
   --ccui-detail-section-gap: 0.54rem;
-  --ccui-detail-header-gap: 0;
+  --ccui-detail-header-gap: 0.14rem;
   --ccui-detail-body-gap: 0.09rem;
   gap: var(--ccui-detail-section-gap);
   padding-top: 0.02rem;
@@ -478,7 +485,7 @@
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 0.85rem;
+  gap: 1rem;
   width: min(100%, 60rem);
   margin: 0 auto 1.9rem;
   padding-bottom: 0.9rem;
@@ -499,7 +506,7 @@
 }
 
 .guidelines-controls__hint {
-  margin: 0.4rem 0 0;
+  margin: 0.52rem 0 0;
   color: var(--ccui-muted);
   font-size: 0.88rem;
   line-height: 1.55;
@@ -709,8 +716,8 @@ a.citation:hover {
   padding: 0.95rem 1rem;
   border: 1px solid var(--ccui-border);
   border-radius: var(--ccui-radius-md);
-  background: var(--ccui-paper);
-  box-shadow: var(--ccui-shadow);
+  background: transparent;
+  box-shadow: none;
 }
 
 .bibliography .csl-entry {
@@ -728,11 +735,31 @@ a.citation:hover {
 }
 
 .bibtex-details {
-  margin-top: 1.25rem;
-  padding-top: 0.35rem;
+  display: grid;
+  gap: 0;
+  margin-top: 1rem;
+  padding-top: 0;
+}
+
+.bibtex-details summary {
+  display: flex;
+  align-items: center;
+  min-height: 1.9rem;
+  padding: 0;
+  color: var(--ccui-text);
+  font-family: var(--ccui-font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+
+.bibtex-details summary::marker {
+  color: var(--ccui-muted);
 }
 
 .bibtex-details pre {
+  margin-top: 0.3rem;
   max-width: 100%;
   overflow-x: auto;
   border: 1px solid var(--ccui-border);
@@ -825,7 +852,7 @@ a.citation:hover {
 @media (max-width: 50rem) {
   .guideline-article {
     --ccui-detail-section-gap: 0.46rem;
-    --ccui-detail-header-gap: 0;
+    --ccui-detail-header-gap: 0.12rem;
     --ccui-detail-body-gap: 0.07rem;
     padding-top: 0;
   }

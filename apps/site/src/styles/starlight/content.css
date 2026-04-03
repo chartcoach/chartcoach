@@ -144,7 +144,7 @@
     width: min(100%, 67.5rem);
     max-width: none;
     margin-inline: auto;
-    padding-block: 0.1rem 0.5rem;
+    padding-block: 0.1rem 0.9rem;
   }
 
   html[data-has-hero] .hero .stack {
@@ -388,7 +388,7 @@
     }
 
     html[data-has-hero] .hero {
-      padding-block: 0.8rem 0.3rem;
+      padding-block: 0.8rem 0.7rem;
     }
 
     html[data-has-hero] .hero h1 {

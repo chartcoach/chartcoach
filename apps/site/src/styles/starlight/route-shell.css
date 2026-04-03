@@ -4,7 +4,12 @@
     display: none;
   }
 
-  .guidelines-page,
+  .guidelines-page {
+    width: min(100%, 60rem);
+    margin: 0 auto;
+    padding-top: 0.85rem;
+  }
+
   .guideline-detail {
     width: min(100%, 62rem);
     margin: 0 auto;
@@ -49,9 +54,15 @@
     }
   }
 
+  .guidelines-controls,
+  .guidelines-filters,
+  .guidelines-grid {
+    width: 100%;
+    max-width: none;
+  }
+
   .guidelines-controls {
-    gap: 0.62rem;
-    margin: 0 auto 2.25rem !important;
+    margin: 0 0 2.25rem !important;
     padding-bottom: 0 !important;
     border-bottom: none !important;
   }
@@ -60,6 +71,10 @@
     max-width: 38rem;
     margin-top: 0.22rem;
     font-size: 0.82rem;
+  }
+
+  .guidelines-filters {
+    margin: 0.95rem 0 2.1rem !important;
   }
 
   .guidelines-grid {
