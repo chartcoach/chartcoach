@@ -19,7 +19,8 @@
     html[data-has-hero] .hero {
       width: min(100%, 67.5rem);
       max-width: none;
-      padding-block: 0.1rem 1.35rem;
+      margin-bottom: 0.7rem;
+      padding-block: 0.1rem 1.55rem;
     }
 
     html[data-has-hero] .hero .copy {
