@@ -1,23 +1,16 @@
-import type { ViewerActions, ViewerRefs, ViewerState } from "@/viewer/contract/types";
+import { autoUpdate, flip, offset, shift, useFloating } from "@floating-ui/react";
+import type { ViewerActions, ViewerState } from "@/viewer/contract/types";
 import { ScoreBreakdownList } from "@/viewer/render/score-ledger";
 import { getVariantByIndex, orientationLabel } from "@/viewer/render/utils";
 
-export function HoverCard({
-  state,
-  actions,
-  refs,
-}: {
-  state: ViewerState;
-  actions: ViewerActions;
-  refs: ViewerRefs;
-}) {
+export function HoverCard({ state, actions }: { state: ViewerState; actions: ViewerActions }) {
   if (!state.hover) {
-    return <div className="vg-hovercard" hidden ref={refs.hoverCardRef} />;
+    return null;
   }
 
   const variant = getVariantByIndex(state.hover.cell, state.hover.variantIndex);
-  if (!variant) {
-    return <div className="vg-hovercard" hidden ref={refs.hoverCardRef} />;
+  if (!variant || !state.hover.anchor.isConnected) {
+    return null;
   }
   const candidate = variant.candidate;
   const label = orientationLabel([
@@ -25,13 +18,24 @@ export function HoverCard({
     state.hover.cell.row_label,
     state.hover.cell.column_label,
   ]);
+  const { refs, floatingStyles } = useFloating({
+    elements: {
+      reference: state.hover.anchor,
+    },
+    open: true,
+    placement: "right",
+    strategy: "fixed",
+    whileElementsMounted: autoUpdate,
+    middleware: [offset(24), flip({ padding: 24 }), shift({ padding: 24 })],
+  });
 
   return (
     <aside
       className="vg-hovercard"
       onMouseEnter={() => actions.cancelHoverHide()}
       onMouseLeave={() => actions.scheduleHoverHide()}
-      ref={refs.hoverCardRef}
+      ref={refs.setFloating}
+      style={floatingStyles}
     >
       <div className="vg-hover-footer">
         <div className="vg-hover-orientation">{label}</div>

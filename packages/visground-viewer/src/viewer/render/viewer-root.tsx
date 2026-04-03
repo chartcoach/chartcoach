@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import type { AnywidgetModelLike } from "@/viewer/contract/types";
 import { useViewerController } from "@/viewer/controller/use-viewer-controller";
 import { AgentationDebug } from "@/viewer/render/agentation-debug";
@@ -13,17 +14,36 @@ import { QueryBand } from "@/viewer/render/query-band";
 export function ViewerRoot({ model }: { model: AnywidgetModelLike }) {
   const controller = useViewerController(model);
   const { state, refs, actions } = controller;
+  const caseTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const filtersTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const layoutTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const popoverAnchor =
+    state.activePopoverId === "case"
+      ? caseTriggerRef.current
+      : state.activePopoverId === "filters"
+        ? filtersTriggerRef.current
+        : state.activePopoverId === "layout"
+          ? layoutTriggerRef.current
+          : null;
 
   return (
     <div className="vg-root" ref={refs.rootRef} tabIndex={0}>
       <div className="vg-shell">
         <AgentationDebug enabled={state.debug} />
         <header className="vg-header">
-          <FigureBar actions={actions} state={state} />
-          <PopoverLayer actions={actions} refs={refs} state={state} />
+          <FigureBar
+            actions={actions}
+            state={state}
+            triggerRefs={{
+              case: caseTriggerRef,
+              filters: filtersTriggerRef,
+              layout: layoutTriggerRef,
+            }}
+          />
+          <PopoverLayer actions={actions} anchor={popoverAnchor} state={state} />
         </header>
         <ErrorBanner state={state} />
-        <div className={`vg-content-frame ${state.busy ? "is-loading" : ""}`.trim()}>
+        <div className={state.busy ? "vg-content-frame is-loading" : "vg-content-frame"}>
           <LoadingOverlay state={state} />
           {state.overview ? (
             <>
@@ -37,7 +57,7 @@ export function ViewerRoot({ model }: { model: AnywidgetModelLike }) {
             </>
           ) : null}
         </div>
-        <HoverCard actions={actions} refs={refs} state={state} />
+        <HoverCard actions={actions} state={state} />
       </div>
     </div>
   );

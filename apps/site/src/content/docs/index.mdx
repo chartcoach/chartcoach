@@ -2,8 +2,17 @@
 title: Chart Coach
 description: Structured visualization design guidelines for grounded feedback, retrieval, and analysis.
 template: splash
+head:
+  - tag: meta
+    attrs:
+      property: og:image
+      content: /social/chartcoach-share-default.png
+  - tag: meta
+    attrs:
+      name: twitter:image
+      content: /social/chartcoach-share-default.png
 hero:
-  tagline: Structured, citable visualization design guidance for browsing, retrieval, and evaluation.
+  tagline: Grounded visualization guidance for teams who need to browse, compare, and cite design decisions.
   actions:
     - text: Browse guidelines
       link: /guidelines/
@@ -14,18 +23,5 @@ hero:
 ---
 
 import HomeFeatures from "@chartcoach/site/components/HomeFeatures.astro";
-
-## What this is
-
-Chart Coach is an experiment in representing visualization design knowledge in a format that is:
-
-- human-readable and easy to author,
-- machine-usable for retrieval and reasoning,
-- context-aware and linkable,
-- traceable to sources.
-
-This site is the public-facing view of the catalog: browse guidelines, scan their labels, and follow citations to the underlying evidence.
-
-## Explore
 
 <HomeFeatures />

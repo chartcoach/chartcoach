@@ -1,3 +1,4 @@
+import clsx from "clsx";
 import { useEffect, useState } from "react";
 import type {
   CandidateImageMeta,
@@ -78,11 +79,11 @@ function ImageSurface({
     classes.push("is-extreme-aspect", `is-${imageMeta.aspect_kind}`);
   }
   return (
-    <div className={`vg-image-stage surface-${surface}`.trim()}>
+    <div className={clsx("vg-image-stage", `surface-${surface}`)}>
       {status === "loading" ? <ImagePlaceholder surface={surface} variant="loading" /> : null}
       <img
         alt={alt}
-        className={classes.join(" ")}
+        className={clsx(classes)}
         loading="lazy"
         onError={() => setStatus("missing")}
         onLoad={() => {
@@ -106,7 +107,7 @@ function ImagePlaceholder({
   variant: "loading" | "missing";
 }) {
   return (
-    <div className={`vg-image-placeholder surface-${surface} is-${variant}`.trim()}>
+    <div className={clsx("vg-image-placeholder", `surface-${surface}`, `is-${variant}`)}>
       <div className="vg-image-placeholder-card">
         <div className="vg-image-placeholder-frame">
           <svg aria-hidden className="vg-image-placeholder-glyph" viewBox="0 0 120 80">

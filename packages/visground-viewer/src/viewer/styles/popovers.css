@@ -12,29 +12,23 @@
   grid-template-columns: 1fr;
 }
 
-.vg-pill-popover[hidden] {
-  display: none;
-}
-
 .vg-pill-popover {
   position: absolute;
-  z-index: 30;
+  z-index: 31;
   width: min(23rem, calc(100% - 1rem));
   max-width: calc(100vw - 1rem);
-}
-
-.vg-pill-popover-card {
-  border: 1px solid var(--vg-divider);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.98);
-  box-shadow: 0 14px 32px rgba(17, 17, 17, 0.08);
-  backdrop-filter: blur(12px);
+  pointer-events: auto;
 }
 
 .vg-pill-popover-card {
   display: grid;
   gap: 0.82rem;
   padding: 0.82rem 0.9rem;
+  border: 1px solid var(--vg-divider);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 14px 32px rgba(17, 17, 17, 0.08);
+  backdrop-filter: blur(12px);
 }
 
 .vg-popover-section {
@@ -43,61 +37,15 @@
   min-width: 0;
 }
 
-.vg-popover-section[hidden] {
-  display: none;
-}
-
 .vg-popover-section.is-hidden {
   display: none;
 }
 
 .vg-popover-section-title {
-  font-family: "JetBrains Mono", "SFMono-Regular", "SF Mono", Menlo, monospace;
+  font-family: var(--ccui-font-mono);
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.02em;
   text-transform: lowercase;
   color: var(--vg-muted);
-}
-
-.vg-popover-section.is-case .vg-control-band-row-nav {
-  grid-template-columns: 1fr;
-}
-
-.vg-popover-section.is-filters .vg-control-band-row-filters,
-.vg-popover-section.is-layout .vg-control-band-row-layout {
-  grid-template-columns: 1fr;
-}
-
-.vg-controls-scrim[hidden] {
-  display: none;
-}
-
-.vg-controls-scrim {
-  position: absolute;
-  inset: 0;
-  z-index: 24;
-  border: 0;
-  padding: 0;
-  background: rgba(255, 255, 255, 0.42);
-}
-
-.vg-pill-popover {
-  z-index: 31;
-  pointer-events: auto;
-}
-
-@media (max-width: 980px) {
-  .vg-pill-popover {
-    left: 0;
-    right: auto;
-    width: calc(100% - 1rem);
-    max-width: calc(100vw - 1rem);
-  }
-
-  .vg-popover-section.is-case .vg-control-band-row-nav,
-  .vg-popover-section.is-filters .vg-control-band-row-filters,
-  .vg-popover-section.is-layout .vg-control-band-row-layout {
-    grid-template-columns: 1fr;
-  }
 }

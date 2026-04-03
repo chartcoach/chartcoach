@@ -1,3 +1,4 @@
+import clsx from "clsx";
 import { BookOpen } from "lucide-react";
 
 const EMPTY_PROPS: Record<string, string> = {};
@@ -20,18 +21,18 @@ export function AxisHeader({
   extraProps?: Record<string, string>;
 }) {
   const normalizedDimensionLabel = dimensionLabel.toLowerCase();
-  const classes = [className, showDimension ? "" : "is-dimension-hidden"].filter(Boolean).join(" ");
+  const classes = clsx(className, !showDimension && "is-dimension-hidden");
 
   return (
     <div className={classes} {...extraProps}>
       <div className="vg-axis-stack">
         <div
           aria-hidden={showDimension ? undefined : true}
-          className={`vg-axis-dimension-label ${showDimension ? "" : "is-placeholder"}`.trim()}
+          className={clsx("vg-axis-dimension-label", !showDimension && "is-placeholder")}
         >
           {normalizedDimensionLabel}
         </div>
-        <div className={`vg-axis-value-line ${metaLabel ? "has-meta" : ""}`.trim()}>
+        <div className={clsx("vg-axis-value-line", metaLabel && "has-meta")}>
           <div className="vg-axis-value-label">{valueLabel}</div>
           {metaLabel ? (
             <div className="vg-axis-value-meta">

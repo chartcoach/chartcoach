@@ -50,6 +50,8 @@ export type ViewerToolbarPill = {
   label: string;
 };
 
+export type ViewerPopoverId = "case" | "filters" | "layout";
+
 export type MatrixAxes = {
   group_label: string | null;
   row_label: string;
@@ -193,14 +195,11 @@ export type ViewerState = {
   hover: ViewerHoverState | null;
   inspectCellKey: string | null;
   inspectVariantIndex: number;
-  activePopoverId: "case" | "filters" | "layout" | null;
-  popoverAnchor: HTMLElement | null;
+  activePopoverId: ViewerPopoverId | null;
 };
 
 export type ViewerRefs = {
   rootRef: RefObject<HTMLDivElement | null>;
-  hoverCardRef: RefObject<HTMLDivElement | null>;
-  popoverRef: RefObject<HTMLDivElement | null>;
 };
 
 export type ViewerActions = {
@@ -211,7 +210,7 @@ export type ViewerActions = {
     controlId: "row_dimension" | "column_dimension" | "group_dimension",
     value: string | null,
   ): void;
-  togglePopover(popoverId: "case" | "filters" | "layout", anchor: HTMLElement): void;
+  togglePopover(popoverId: ViewerPopoverId): void;
   closePopover(): void;
   openInspect(cellKey: string, variantIndex?: number): void;
   closeInspect(): void;

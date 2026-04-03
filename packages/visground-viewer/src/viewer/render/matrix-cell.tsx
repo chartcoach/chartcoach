@@ -1,3 +1,4 @@
+import clsx from "clsx";
 import type {
   CellVariant,
   MatrixCell as MatrixCellPayload,
@@ -54,13 +55,7 @@ function VariantTile({
   return (
     <button
       aria-label={label}
-      className={[
-        "vg-variant-tile",
-        hoverMatch ? "is-hovered" : "",
-        inspectMatch ? "is-active" : "",
-      ]
-        .filter(Boolean)
-        .join(" ")}
+      className={clsx("vg-variant-tile", hoverMatch && "is-hovered", inspectMatch && "is-active")}
       onBlur={() => actions.scheduleHoverHide()}
       onClick={() => {
         actions.hideHover(true);
@@ -116,13 +111,7 @@ function VariantFooterChip({
   return (
     <button
       aria-label={footerLabel(variant)}
-      className={[
-        "vg-variant-chip",
-        hoverMatch ? "is-hovered" : "",
-        inspectMatch ? "is-active" : "",
-      ]
-        .filter(Boolean)
-        .join(" ")}
+      className={clsx("vg-variant-chip", hoverMatch && "is-hovered", inspectMatch && "is-active")}
       onBlur={() => actions.scheduleHoverHide()}
       onClick={() => {
         actions.hideHover(true);
@@ -178,7 +167,7 @@ export function MatrixCell({
 
   return (
     <div
-      className={classes.join(" ")}
+      className={clsx(classes)}
       data-cell-key={key}
       data-column-value={toOptionValue(cell.column_value)}
       data-group-value={toOptionValue(cell.group_value ?? null)}
@@ -193,10 +182,10 @@ export function MatrixCell({
           <span aria-hidden className="vg-footer-placeholder" />
         )
       ) : (
-        <div className={`vg-cell-stack is-${kind}`}>
+        <div className={clsx("vg-cell-stack", `is-${kind}`)}>
           {variant === "chart" ? (
             <>
-              <div className={`vg-variant-grid is-${kind}`}>
+              <div className={clsx("vg-variant-grid", `is-${kind}`)}>
                 {visibleVariants.map((entry, variantIndex) => (
                   <VariantTile
                     actions={actions}

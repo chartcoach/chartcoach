@@ -1,4 +1,15 @@
 import {
+  FloatingFocusManager,
+  autoUpdate,
+  flip,
+  offset,
+  shift,
+  useDismiss,
+  useFloating,
+  useInteractions,
+} from "@floating-ui/react";
+import clsx from "clsx";
+import {
   BookOpenCheck,
   ChevronDown,
   ChevronLeft,
@@ -11,7 +22,7 @@ import {
   Sigma,
   type LucideIcon,
 } from "lucide-react";
-import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import type { CandidateRecord, CandidateScore } from "@/viewer/contract/types";
 import { formatMetricScore, formatScore } from "@/viewer/render/utils";
 
@@ -116,31 +127,18 @@ function ScoreReasoningPopover({
 }) {
   const [open, setOpen] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
-  const rootRef = useRef<HTMLDivElement | null>(null);
   const popoverRef = useRef<HTMLDivElement | null>(null);
   const entry = entries[pageIndex] ?? entries[0] ?? null;
-
-  useEffect(() => {
-    if (!open) {
-      return undefined;
-    }
-    popoverRef.current?.focus();
-
-    function handlePointerDown(event: PointerEvent) {
-      if (!(event.target instanceof Node)) {
-        return;
-      }
-      if (rootRef.current?.contains(event.target)) {
-        return;
-      }
-      setOpen(false);
-    }
-
-    document.addEventListener("pointerdown", handlePointerDown);
-    return () => {
-      document.removeEventListener("pointerdown", handlePointerDown);
-    };
-  }, [open]);
+  const { refs, floatingStyles, context } = useFloating({
+    open,
+    onOpenChange: setOpen,
+    placement: "bottom-start",
+    strategy: "fixed",
+    whileElementsMounted: autoUpdate,
+    middleware: [offset(8), flip({ padding: 12 }), shift({ padding: 12 })],
+  });
+  const dismiss = useDismiss(context);
+  const { getReferenceProps, getFloatingProps } = useInteractions([dismiss]);
 
   if (!entry) {
     return null;
@@ -198,13 +196,16 @@ function ScoreReasoningPopover({
   }
 
   return (
-    <div className={`vg-score-breakdown-reasoning ${open ? "is-open" : ""}`.trim()} ref={rootRef}>
+    <div className={clsx("vg-score-breakdown-reasoning", open && "is-open")}>
       <button
         aria-expanded={open}
         aria-haspopup="dialog"
         className="vg-score-breakdown-reasoning-button"
-        onClick={togglePopover}
+        ref={refs.setReference}
         type="button"
+        {...getReferenceProps({
+          onClick: togglePopover,
+        })}
       >
         <span>{entries.length === 1 ? "1 reason" : `${entries.length} reasons`}</span>
         <ChevronDown
@@ -214,52 +215,62 @@ function ScoreReasoningPopover({
         />
       </button>
       {open ? (
-        <div
-          aria-label={`${score.label} judge reasoning`}
-          className="vg-score-breakdown-reasoning-popover"
-          onKeyDown={handlePopoverKeyDown}
-          onPointerDown={(event) => event.stopPropagation()}
-          ref={popoverRef}
-          role="dialog"
-          tabIndex={-1}
-        >
-          <div className="vg-score-breakdown-reasoning-popover-head">
-            <span className="vg-score-breakdown-reasoning-popover-kicker">Judge reasoning</span>
-            <div className="vg-score-breakdown-reasoning-popover-nav">
-              {hasMultipleEntries ? (
-                <>
-                  <button
-                    aria-label="Previous trace"
-                    className="vg-score-breakdown-reasoning-nav-button"
-                    onClick={showPreviousEntry}
-                    type="button"
-                  >
-                    <ChevronLeft aria-hidden strokeWidth={1.8} />
-                  </button>
-                  <span className="vg-score-breakdown-reasoning-popover-count">
-                    {`${pageIndex + 1} / ${entries.length}`}
-                  </span>
-                  <button
-                    aria-label="Next trace"
-                    className="vg-score-breakdown-reasoning-nav-button"
-                    onClick={showNextEntry}
-                    type="button"
-                  >
-                    <ChevronRight aria-hidden strokeWidth={1.8} />
-                  </button>
-                </>
-              ) : (
-                <span className="vg-score-breakdown-reasoning-popover-count">1 / 1</span>
-              )}
+        <FloatingFocusManager context={context} initialFocus={popoverRef} modal={false} returnFocus>
+          <div
+            aria-label={`${score.label} judge reasoning`}
+            className="vg-score-breakdown-reasoning-popover"
+            role="dialog"
+            style={floatingStyles}
+            tabIndex={-1}
+            {...getFloatingProps({
+              onKeyDown: handlePopoverKeyDown,
+              onPointerDown(event) {
+                event.stopPropagation();
+              },
+            })}
+            ref={(node) => {
+              popoverRef.current = node;
+              refs.setFloating(node);
+            }}
+          >
+            <div className="vg-score-breakdown-reasoning-popover-head">
+              <span className="vg-score-breakdown-reasoning-popover-kicker">Judge reasoning</span>
+              <div className="vg-score-breakdown-reasoning-popover-nav">
+                {hasMultipleEntries ? (
+                  <>
+                    <button
+                      aria-label="Previous trace"
+                      className="vg-score-breakdown-reasoning-nav-button"
+                      onClick={showPreviousEntry}
+                      type="button"
+                    >
+                      <ChevronLeft aria-hidden strokeWidth={1.8} />
+                    </button>
+                    <span className="vg-score-breakdown-reasoning-popover-count">
+                      {`${pageIndex + 1} / ${entries.length}`}
+                    </span>
+                    <button
+                      aria-label="Next trace"
+                      className="vg-score-breakdown-reasoning-nav-button"
+                      onClick={showNextEntry}
+                      type="button"
+                    >
+                      <ChevronRight aria-hidden strokeWidth={1.8} />
+                    </button>
+                  </>
+                ) : (
+                  <span className="vg-score-breakdown-reasoning-popover-count">1 / 1</span>
+                )}
+              </div>
+            </div>
+            <div className="vg-score-breakdown-reasoning-popover-body">
+              <div className="vg-score-breakdown-reasoning-run-meta">
+                <span className="vg-score-breakdown-reasoning-run-value">{`Rating: ${entryValue}`}</span>
+              </div>
+              <p className="vg-score-breakdown-reasoning-run-copy">{entry.reasoning}</p>
             </div>
           </div>
-          <div className="vg-score-breakdown-reasoning-popover-body">
-            <div className="vg-score-breakdown-reasoning-run-meta">
-              <span className="vg-score-breakdown-reasoning-run-value">{`Rating: ${entryValue}`}</span>
-            </div>
-            <p className="vg-score-breakdown-reasoning-run-copy">{entry.reasoning}</p>
-          </div>
-        </div>
+        </FloatingFocusManager>
       ) : null}
     </div>
   );
@@ -276,7 +287,7 @@ function ScoreItem({
 }) {
   const Icon = ICONS_BY_SCORE_ID[score.id] ?? Sigma;
   const value = formatScoreValue(score);
-  const classes = ["vg-score-item", `is-${mode}`, `is-${variant}`].filter(Boolean).join(" ");
+  const classes = clsx("vg-score-item", `is-${mode}`, `is-${variant}`);
   const showLabel = mode === "floating";
 
   return (
@@ -307,7 +318,7 @@ export function ScoreLedger({
   const tooltip = buildScoreTooltip(scores);
 
   return (
-    <div aria-label={tooltip} className={`vg-score-ledger is-${mode}`.trim()} title={tooltip}>
+    <div aria-label={tooltip} className={clsx("vg-score-ledger", `is-${mode}`)} title={tooltip}>
       {overall ? (
         <div className="vg-score-ledger-overall">
           <ScoreItem mode={mode} score={overall} variant="overall" />
@@ -339,7 +350,7 @@ export function ScoreBreakdownList({
   const sharedReasoningNote = mode === "detail" ? sharedReasoning(scores) : null;
 
   return (
-    <div className={`vg-score-breakdown-list is-${mode}`.trim()}>
+    <div className={clsx("vg-score-breakdown-list", `is-${mode}`)}>
       {mode === "detail" && sharedReasoningNote ? (
         <div className="vg-score-breakdown-note">
           {summarizeSharedReasoning(sharedReasoningNote)}
@@ -351,7 +362,7 @@ export function ScoreBreakdownList({
         const reasoningEntries = mode === "detail" ? collectReasoningEntries(score) : [];
         return (
           <div
-            className={`vg-score-breakdown-item ${score.id === "overall" ? "is-overall" : ""}`.trim()}
+            className={clsx("vg-score-breakdown-item", score.id === "overall" && "is-overall")}
             key={`${candidate.visgen_id}:${score.id}`}
           >
             <div className="vg-score-breakdown-item-head">

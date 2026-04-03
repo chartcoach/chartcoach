@@ -1,8 +1,11 @@
+import clsx from "clsx";
+import type { RefObject } from "react";
 import { getCatalogIndex, getCatalogSubset } from "@/viewer/controller/catalog";
 import type {
   ViewerActions,
   ViewerLayoutControl,
   ViewerOption,
+  ViewerPopoverId,
   ViewerState,
   ViewerToolbarPill,
 } from "@/viewer/contract/types";
@@ -47,7 +50,15 @@ function toolbarPillText(state: ViewerState, pill: ViewerToolbarPill): string {
     .join(" · ");
 }
 
-export function FigureBar({ state, actions }: { state: ViewerState; actions: ViewerActions }) {
+export function FigureBar({
+  state,
+  actions,
+  triggerRefs,
+}: {
+  state: ViewerState;
+  actions: ViewerActions;
+  triggerRefs: Record<ViewerPopoverId, RefObject<HTMLButtonElement | null>>;
+}) {
   const filteredCatalog = getCatalogSubset(state, {
     searchTerm: state.searchTerm,
   });
@@ -60,7 +71,8 @@ export function FigureBar({ state, actions }: { state: ViewerState; actions: Vie
         <button
           aria-expanded={state.activePopoverId === "case"}
           className="vg-toolbar-pill vg-toolbar-pill-case vg-case-trigger"
-          onClick={(event) => actions.togglePopover("case", event.currentTarget)}
+          onClick={() => actions.togglePopover("case")}
+          ref={triggerRefs.case}
           type="button"
         >
           <span className="vg-toolbar-pill-value">{state.selection.vis_id}</span>
@@ -72,9 +84,14 @@ export function FigureBar({ state, actions }: { state: ViewerState; actions: Vie
               return (
                 <button
                   aria-expanded={state.activePopoverId === pill.id}
-                  className={`vg-toolbar-pill vg-toolbar-pill-${pill.id} ${state.activePopoverId === pill.id ? "is-active" : ""}`.trim()}
+                  className={clsx(
+                    "vg-toolbar-pill",
+                    `vg-toolbar-pill-${pill.id}`,
+                    state.activePopoverId === pill.id && "is-active",
+                  )}
                   key={pill.id}
-                  onClick={(event) => actions.togglePopover(pill.id, event.currentTarget)}
+                  onClick={() => actions.togglePopover(pill.id)}
+                  ref={triggerRefs[pill.id]}
                   type="button"
                 >
                   <span className="vg-toolbar-pill-value">{text}</span>

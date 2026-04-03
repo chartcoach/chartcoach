@@ -1,3 +1,4 @@
+import clsx from "clsx";
 import { getCatalogSubset } from "@/viewer/controller/catalog";
 import type { ViewerActions, ViewerState } from "@/viewer/contract/types";
 
@@ -8,7 +9,11 @@ export function CasePopover({ state, actions }: { state: ViewerState; actions: V
 
   return (
     <section
-      className={`vg-popover-section is-case ${state.activePopoverId === "case" ? "" : "is-hidden"}`}
+      className={clsx(
+        "vg-popover-section",
+        "is-case",
+        state.activePopoverId !== "case" && "is-hidden",
+      )}
     >
       <div className="vg-popover-section-title">Cases</div>
       <div className="vg-control-band-row vg-control-band-row-nav">

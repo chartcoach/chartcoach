@@ -1,3 +1,4 @@
+import clsx from "clsx";
 import type { ViewerActions, ViewerState } from "@/viewer/contract/types";
 import { fromOptionValue, toOptionValue } from "@/viewer/render/utils";
 
@@ -11,7 +12,11 @@ export function FiltersPopover({ state, actions }: { state: ViewerState; actions
 
   return (
     <section
-      className={`vg-popover-section is-filters ${state.activePopoverId === "filters" ? "" : "is-hidden"}`}
+      className={clsx(
+        "vg-popover-section",
+        "is-filters",
+        state.activePopoverId !== "filters" && "is-hidden",
+      )}
     >
       <div className="vg-popover-section-title">Filters</div>
       <div className="vg-control-band-row vg-control-band-row-filters">

@@ -5,7 +5,8 @@ import { fileURLToPath } from "node:url";
 import Cite from "citation-js";
 import sanitizeHtml from "sanitize-html";
 
-import { loadCatalogFromFolder } from "@chartcoach/catalog/node";
+import { DANGLING_ROLE, parseGuidelineSections } from "@chartcoach/catalog";
+import { loadCatalogFromParquetFile } from "@chartcoach/catalog/node";
 
 type RenderedCitations = {
   body: string;
@@ -196,11 +197,11 @@ export function guidelinesLoader({
     name: "chartcoach-guidelines-loader",
     async load(context) {
       const projectRoot = fileURLToPath(context.config.root);
-      const guidelinesRoot = path.resolve(projectRoot, base);
+      const guidelinesParquet = path.resolve(projectRoot, base, "catalog.parquet");
 
-      context.watcher?.add(guidelinesRoot);
+      context.watcher?.add(guidelinesParquet);
 
-      const catalog = await loadCatalogFromFolder(guidelinesRoot);
+      const catalog = await loadCatalogFromParquetFile(guidelinesParquet);
       context.store.clear();
 
       for (const entry of catalog.entries) {
@@ -211,6 +212,15 @@ export function guidelinesLoader({
         const { body, citedKeys, bibliographyHtml } = renderCitationsInMarkdown(
           entry.guideline.body,
           entry.references,
+        );
+        const sections = await Promise.all(
+          parseGuidelineSections(body)
+            .filter((section) => section.role !== DANGLING_ROLE)
+            .map(async (section) => ({
+              role: section.role,
+              title: section.title,
+              html: (await context.renderMarkdown(section.content)).html,
+            })),
         );
 
         const sourcePath = path.resolve(projectRoot, base, id, "guideline.md");
@@ -223,6 +233,7 @@ export function guidelinesLoader({
             title: entry.guideline.title,
             description: entry.guideline.description || undefined,
             labels: entry.guideline.labels,
+            sections,
             bibliography: entry.guideline.bibliography,
             referencesBib,
             citations: citedKeys,

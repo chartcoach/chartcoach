@@ -1,3 +1,4 @@
+import clsx from "clsx";
 import { MessageSquareText } from "lucide-react";
 import type { ViewerActions, ViewerState } from "@/viewer/contract/types";
 import {
@@ -61,7 +62,10 @@ export function DetailDrawer({ state, actions }: { state: ViewerState; actions: 
               <div className="vg-detail-variant-list">
                 {cell.variants.map((entry, index) => (
                   <button
-                    className={`vg-variant-chip ${index === state.inspectVariantIndex ? "is-active" : ""}`.trim()}
+                    className={clsx(
+                      "vg-variant-chip",
+                      index === state.inspectVariantIndex && "is-active",
+                    )}
                     key={entry.variant_key}
                     onClick={() => actions.openInspect(cell.cell_key, index)}
                     type="button"

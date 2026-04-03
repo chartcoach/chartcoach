@@ -30,12 +30,6 @@ def _(
     catalog_df.write_parquet(REPO_ROOT / "guidelines" / "catalog.parquet")
     # catalog.write_folders(REPO_ROOT / "guidelines")
     catalog_df
-    return (catalog,)
-
-
-@app.cell
-def _(catalog):
-    catalog.df
     return
 
 

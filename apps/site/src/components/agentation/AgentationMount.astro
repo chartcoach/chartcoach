@@ -1,0 +1,21 @@
+---
+import mountUrl from "./mount.ts?url";
+const needsReactPreamble = import.meta.env.DEV;
+---
+
+{
+	needsReactPreamble && (
+		<script is:inline type="module">
+			import RefreshRuntime from "/@react-refresh";
+
+			if (!window.__vite_plugin_react_preamble_installed__) {
+				RefreshRuntime.injectIntoGlobalHook(window);
+				window.$RefreshReg$ = () => {};
+				window.$RefreshSig$ = () => (type) => type;
+				window.__vite_plugin_react_preamble_installed__ = true;
+			}
+		</script>
+	)
+}
+<div id="cc-agentation-root"></div>
+<script is:inline type="module" src={mountUrl}></script>
