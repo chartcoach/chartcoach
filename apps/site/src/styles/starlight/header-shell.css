@@ -110,6 +110,12 @@
     box-shadow: none;
   }
 
+  .cc-mobile-menu__toggle:focus-visible {
+    border-color: color-mix(in srgb, var(--cc-brand) 42%, var(--ccui-border));
+    outline: 2px solid color-mix(in srgb, var(--cc-brand) 28%, transparent);
+    outline-offset: 2px;
+  }
+
   .cc-mobile-menu__toggle::-webkit-details-marker {
     display: none;
   }
@@ -164,6 +170,12 @@
     color: var(--cc-brand-high);
   }
 
+  .cc-mobile-menu__link:focus-visible {
+    border-color: color-mix(in srgb, var(--cc-brand) 38%, var(--ccui-border));
+    outline: 2px solid color-mix(in srgb, var(--cc-brand) 22%, transparent);
+    outline-offset: 2px;
+  }
+
   .cc-mobile-menu__footer {
     display: flex;
     align-items: center;
@@ -189,17 +201,18 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 2.2rem;
-    height: 2.2rem;
-    border: 1px solid var(--ccui-border);
-    border-radius: 0.36rem;
-    background: var(--ccui-paper);
+    width: auto;
+    height: auto;
+    border: none;
+    border-radius: 0;
+    background: transparent;
     color: var(--ccui-text);
+    padding: 0;
   }
 
   .cc-mobile-menu__social :where(svg) {
-    width: 1.12rem;
-    height: 1.12rem;
+    width: 1.02rem;
+    height: 1.02rem;
   }
 
   .cc-mobile-menu__theme {
@@ -208,8 +221,8 @@
   }
 
   .cc-mobile-menu__social :where(a:hover, a:focus-visible) {
-    border-color: color-mix(in srgb, var(--cc-brand) 28%, var(--ccui-border));
-    background: color-mix(in srgb, var(--cc-brand-low) 72%, var(--ccui-paper));
+    border-color: transparent;
+    background: transparent;
     color: var(--cc-brand-high);
   }
 
@@ -223,6 +236,34 @@
   }
 
   @media (max-width: 59.999rem) {
+    .cc-site-header__search :where(button[data-open-modal]) {
+      border: none !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      color: var(--ccui-text) !important;
+    }
+
+    .cc-site-header__search :where(button[data-open-modal]:hover) {
+      border: none !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      color: var(--cc-brand-high) !important;
+    }
+
+    .cc-site-header__search :where(button[data-open-modal]:focus-visible) {
+      border: none !important;
+      border-radius: 0.32rem !important;
+      background: color-mix(in srgb, var(--cc-brand-low) 72%, transparent) !important;
+      box-shadow: none !important;
+      color: var(--cc-brand-high) !important;
+      outline: 2px solid color-mix(in srgb, var(--cc-brand) 28%, transparent) !important;
+      outline-offset: 2px !important;
+    }
+
+    .cc-site-header__search :where(button[data-open-modal] > kbd) {
+      display: none !important;
+    }
+
     button[data-open-modal] {
       max-width: min(100%, 17rem) !important;
     }

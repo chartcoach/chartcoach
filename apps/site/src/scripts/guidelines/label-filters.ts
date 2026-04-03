@@ -15,6 +15,8 @@ type SuggestionsData = {
   labels?: unknown;
 };
 
+const suggestionOptionId = (index: number) => `guidelines-label-suggestion-${index}`;
+
 function readCards(grid: HTMLElement): GuidelineCard[] {
   return Array.from(grid.querySelectorAll<HTMLElement>(".guideline-card")).map((el) => ({
     el,
@@ -52,19 +54,22 @@ function renderActiveFilters(container: HTMLElement, active: Set<string>) {
   list.textContent = "";
 
   for (const filter of items) {
+    const label = formatGuidelineLabelFilter(filter);
     const li = document.createElement("li");
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "guidelines-filter-chip";
     btn.dataset.filterValue = filter;
+    btn.setAttribute("aria-label", `Remove filter ${label}`);
 
     const labelSpan = document.createElement("span");
     labelSpan.className = "guidelines-filter-chip__label";
-    labelSpan.textContent = formatGuidelineLabelFilter(filter);
+    labelSpan.textContent = label;
 
     const xSpan = document.createElement("span");
     xSpan.className = "guidelines-filter-chip__x";
     xSpan.textContent = "×";
+    xSpan.setAttribute("aria-hidden", "true");
 
     btn.append(labelSpan, xSpan);
     li.append(btn);
@@ -206,6 +211,16 @@ export function initGuidelineLabelFilters() {
     suggestionsListEl.textContent = "";
     suggestionsListEl.hidden = true;
     inputEl.setAttribute("aria-expanded", "false");
+    inputEl.removeAttribute("aria-activedescendant");
+  }
+
+  function syncActiveDescendant() {
+    if (suggestionState.activeIndex < 0) {
+      inputEl.removeAttribute("aria-activedescendant");
+      return;
+    }
+
+    inputEl.setAttribute("aria-activedescendant", suggestionOptionId(suggestionState.activeIndex));
   }
 
   function renderSuggestions() {
@@ -215,11 +230,13 @@ export function initGuidelineLabelFilters() {
 
     for (const [index, value] of suggestionState.items.entries()) {
       const btn = document.createElement("button");
+      btn.id = suggestionOptionId(index);
       btn.type = "button";
       btn.className = "guidelines-suggestion";
       btn.role = "option";
       btn.dataset.value = value;
       btn.textContent = formatGuidelineLabelFilter(value);
+      btn.tabIndex = -1;
 
       const selected = index === suggestionState.activeIndex;
       btn.setAttribute("aria-selected", selected ? "true" : "false");
@@ -227,6 +244,8 @@ export function initGuidelineLabelFilters() {
 
       suggestionsListEl.append(btn);
     }
+
+    syncActiveDescendant();
   }
 
   function applySuggestion(value: string) {
@@ -299,6 +318,14 @@ export function initGuidelineLabelFilters() {
     if (!suggestionState.open) {
       if (event.key === "ArrowDown" && suggestions.length) {
         updateSuggestions();
+        if (suggestionState.items.length > 0) {
+          suggestionState.activeIndex = 0;
+          renderSuggestions();
+          const active = suggestionsListEl.querySelector<HTMLElement>(
+            ".guidelines-suggestion.is-active",
+          );
+          if (active) scrollSuggestionIntoView(suggestionsListEl, active);
+        }
         event.preventDefault();
       }
       return;

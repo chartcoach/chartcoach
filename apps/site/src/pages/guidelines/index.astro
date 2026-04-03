@@ -43,11 +43,14 @@ const allFamilies = Array.from(familySet).sort((a, b) => a.localeCompare(b));
 					class="guidelines-controls__count"
 					id="guidelines-count"
 					data-total-guidelines={totalGuidelines}
+					role="status"
+					aria-live="polite"
+					aria-atomic="true"
 				>
 					{totalGuidelines.toLocaleString()} guidelines
 				</div>
-				<p class="guidelines-controls__hint">
-					Filter by labels (e.g., <code>chart</code> or <code>chart:bar</code>) or click a label in a card.
+				<p class="guidelines-controls__hint" id="guidelines-filter-hint">
+					Filter by labels (e.g., <code>chart</code> or <code>chart:bar</code>), use the arrow keys to review suggestions, and press Enter to add one.
 				</p>
 			</div>
 
@@ -63,13 +66,16 @@ const allFamilies = Array.from(familySet).sort((a, b) => a.localeCompare(b));
 					role="combobox"
 					aria-autocomplete="list"
 					aria-expanded="false"
+					aria-haspopup="listbox"
 					aria-controls="guidelines-label-suggestions"
+					aria-describedby="guidelines-filter-hint guidelines-count"
 				/>
-				<button type="submit">Add</button>
+				<button type="submit" aria-label="Add filter">Add</button>
 				<div
 					class="guidelines-suggestions"
 					id="guidelines-label-suggestions"
 					role="listbox"
+					aria-label="Label suggestions"
 					hidden
 				/>
 			</form>
@@ -78,7 +84,12 @@ const allFamilies = Array.from(familySet).sort((a, b) => a.localeCompare(b));
 		<div class="guidelines-filters" id="guidelines-filters" hidden>
 			<span class="guidelines-filters__label">Filters:</span>
 			<ul class="guidelines-filters__list" id="guidelines-filters-list"></ul>
-			<button class="guidelines-filters__clear" type="button" id="guidelines-filters-clear">
+			<button
+				class="guidelines-filters__clear"
+				type="button"
+				id="guidelines-filters-clear"
+				aria-label="Clear all filters"
+			>
 				Clear
 			</button>
 		</div>
