@@ -14,6 +14,8 @@ function normalizePath(value: string) {
 }
 
 const currentPath = normalizePath(pathname);
+const mobileMenuPanelId = "cc-mobile-menu-panel";
+const mobileMenuToggleLabelId = "cc-mobile-menu-toggle-label";
 
 function isActive(href: string) {
 	const target = normalizePath(href);
@@ -54,11 +56,27 @@ function isActive(href: string) {
 		</div>
 
 		<details class="cc-mobile-menu">
-			<summary class="cc-mobile-menu__toggle" aria-label="Menu">
-				<Menu class="cc-mobile-menu__icon cc-mobile-menu__icon--open" size="1rem" />
-				<X class="cc-mobile-menu__icon cc-mobile-menu__icon--close" size="1rem" />
+			<summary
+				class="cc-mobile-menu__toggle"
+				aria-controls={mobileMenuPanelId}
+				aria-expanded="false"
+				aria-labelledby={mobileMenuToggleLabelId}
+			>
+				<span class="sr-only" id={mobileMenuToggleLabelId}>Open primary menu</span>
+				<Menu
+					class="cc-mobile-menu__icon cc-mobile-menu__icon--open"
+					size="1rem"
+					aria-hidden="true"
+					focusable="false"
+				/>
+				<X
+					class="cc-mobile-menu__icon cc-mobile-menu__icon--close"
+					size="1rem"
+					aria-hidden="true"
+					focusable="false"
+				/>
 			</summary>
-			<div class="cc-mobile-menu__panel">
+			<div class="cc-mobile-menu__panel" id={mobileMenuPanelId}>
 				<nav class="cc-mobile-menu__links" aria-label="Primary mobile">
 					{
 						headerNavigation.map((item) => (
@@ -88,9 +106,20 @@ function isActive(href: string) {
 <script is:inline>
 	document.querySelectorAll(".cc-mobile-menu").forEach((details) => {
 		const summary = details.querySelector("summary");
+		const summaryLabel = details.querySelector("#cc-mobile-menu-toggle-label");
+		const syncMenuState = () => {
+			if (!(summary instanceof HTMLElement)) return;
+			summary.setAttribute("aria-expanded", details.open ? "true" : "false");
+			if (summaryLabel instanceof HTMLElement) {
+				summaryLabel.textContent = details.open ? "Close primary menu" : "Open primary menu";
+			}
+		};
 		const closeMenu = () => {
 			details.open = false;
 		};
+
+		syncMenuState();
+		details.addEventListener("toggle", syncMenuState);
 
 		details.querySelectorAll("a").forEach((link) => {
 			link.addEventListener("click", closeMenu);

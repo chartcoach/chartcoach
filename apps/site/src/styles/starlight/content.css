@@ -419,8 +419,28 @@
       max-width: none !important;
       width: 2.2rem !important;
       min-width: 2.2rem !important;
+      border-color: transparent !important;
+      background: transparent !important;
+      box-shadow: none !important;
       padding-inline: 0 !important;
+      color: var(--ccui-text) !important;
       justify-content: center;
+    }
+
+    button[data-open-modal]:hover {
+      border-color: transparent !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      color: var(--cc-brand-high) !important;
+    }
+
+    button[data-open-modal]:focus-visible {
+      border-color: color-mix(in srgb, var(--cc-brand) 38%, transparent) !important;
+      background: color-mix(in srgb, var(--cc-brand-low) 72%, transparent) !important;
+      box-shadow: none !important;
+      color: var(--cc-brand-high) !important;
+      outline: 2px solid color-mix(in srgb, var(--cc-brand) 28%, transparent) !important;
+      outline-offset: 2px !important;
     }
 
     button[data-open-modal] > span,
