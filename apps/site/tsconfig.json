@@ -3,7 +3,8 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@chartcoach/site/*": ["src/*"]
+      "@chartcoach/site/*": ["src/*"],
+      "@chartcoach/ui/*": ["../../packages/ui/src/*"]
     }
   },
   "include": [".astro/types.d.ts", "**/*"],
