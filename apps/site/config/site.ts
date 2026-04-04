@@ -3,9 +3,11 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import type { AstroIntegration, AstroUserConfig } from "astro";
+import tailwindcss from "@tailwindcss/vite";
 
 export const monorepoRoot = fileURLToPath(new URL("../../..", import.meta.url));
 const siteSourceRoot = fileURLToPath(new URL("../src", import.meta.url));
+const sharedUiSourceRoot = fileURLToPath(new URL("../../../packages/ui/src", import.meta.url));
 const repoEnvPath = join(monorepoRoot, ".env");
 
 export const DEFAULT_SITE_URL = "http://localhost:4321/";
@@ -84,6 +86,7 @@ export function createSiteUrlLogger(siteUrl: string, source: SiteUrlSource): Ast
 
 export const siteViteConfig = {
   envDir: monorepoRoot,
+  plugins: [tailwindcss()],
   server: {
     fs: {
       allow: [monorepoRoot],
@@ -92,6 +95,7 @@ export const siteViteConfig = {
   resolve: {
     alias: {
       "@chartcoach/site": siteSourceRoot,
+      "@chartcoach/ui": sharedUiSourceRoot,
     },
   },
 } satisfies NonNullable<AstroUserConfig["vite"]>;

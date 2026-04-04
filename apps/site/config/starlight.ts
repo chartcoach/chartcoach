@@ -40,7 +40,7 @@ export function createStarlightConfig({
       alt: "Chart Coach",
       replacesTitle: true,
     },
-    customCss: ["./src/styles/custom.css"],
+    customCss: ["./src/styles/shadcn.css", "./src/styles/custom.css"],
     social: siteSocialLinks,
     head: docsHeadDefaults,
     components: createStarlightComponents(enableAgentationReview),
