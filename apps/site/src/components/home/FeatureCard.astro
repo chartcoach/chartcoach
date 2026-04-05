@@ -1,0 +1,28 @@
+---
+import FeatureIcon from "../brand/FeatureIcon.astro";
+
+interface Props {
+  href: string;
+  title: string;
+  description: string;
+  icon: "catalog" | "labels" | "structure" | "citations";
+}
+
+const { href, title, description, icon } = Astro.props as Props;
+---
+
+<a
+  class="cc-feature flex gap-3 rounded-lg bg-card p-4 text-card-foreground no-underline ring-1 ring-border transition-colors hover:bg-accent/40 hover:text-accent-foreground hover:no-underline focus-visible:no-underline"
+  href={href}
+>
+  <span
+    aria-hidden="true"
+    class="cc-feature__icon grid size-9 place-items-center rounded-md bg-muted text-accent-foreground ring-1 ring-border"
+  >
+    <FeatureIcon name={icon} />
+  </span>
+  <span class="cc-feature__content flex min-w-0 flex-col gap-1">
+    <span class="cc-feature__title text-[0.98rem] font-semibold leading-5">{title}</span>
+    <span class="cc-feature__desc text-sm leading-6 text-muted-foreground">{description}</span>
+  </span>
+</a>

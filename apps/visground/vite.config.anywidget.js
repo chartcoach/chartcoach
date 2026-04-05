@@ -1,16 +1,16 @@
 import path from "node:path";
 import { defineConfig } from "vite";
 import anywidget from "@anywidget/vite";
+import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig(({ command }) => {
   const isBuild = command === "build";
 
   return {
-    plugins: [anywidget()],
+    plugins: [anywidget(), tailwindcss()],
+    publicDir: path.resolve(__dirname, "../visground-viewer/public"),
     resolve: {
-      alias: {
-        "@": path.resolve(__dirname, "../../packages/visground-viewer/src"),
-      },
+      conditions: ["chartcoach-source", "module", "browser", "development|production"],
     },
     server: {
       host: "127.0.0.1",
@@ -25,7 +25,6 @@ export default defineConfig(({ command }) => {
     build: {
       outDir: "./src/visground/viewer/_static/anywidget",
       target: "esnext",
-      copyPublicDir: false,
       lib: {
         entry: {
           index: "./js/anywidget.ts",

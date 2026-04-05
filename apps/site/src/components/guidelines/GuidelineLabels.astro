@@ -1,0 +1,189 @@
+---
+import type { GuidelineCardLabel } from "./types";
+
+interface Props {
+  labels: GuidelineCardLabel[];
+  labelsRemaining?: number;
+  ariaLabel?: string;
+  className?: string;
+  variant?: "chip" | "chip-compact" | "record";
+}
+
+const {
+  labels,
+  labelsRemaining,
+  ariaLabel = "Guideline labels",
+  className,
+  variant = "chip",
+} = Astro.props as Props;
+
+function keyForLabel(label: GuidelineCardLabel, index: number) {
+  return `${label.family?.text ?? "value"}-${label.value.text}-${index}`;
+}
+
+const chipListClasses = [
+  "m-0 flex list-none flex-wrap items-center gap-1.5 p-0",
+  variant === "chip-compact" ? "pt-0.5" : "",
+  className,
+];
+
+const chipClasses =
+  variant === "chip-compact"
+    ? "inline-flex min-h-5 items-center gap-1 rounded-[3px] border border-border/80 bg-transparent px-1.5 py-0.5 font-mono text-[0.6rem] font-medium leading-[1.15] text-muted-foreground"
+    : "inline-flex min-h-6 items-center gap-1 rounded-[3px] border border-border bg-card px-1.5 py-0.5 font-mono text-[0.66rem] font-medium leading-[1.15] text-muted-foreground";
+
+const chipKeyClasses =
+  variant === "chip-compact"
+    ? "text-[0.58rem] font-bold uppercase tracking-[0.04em] text-muted-foreground"
+    : "text-[0.63rem] font-bold uppercase tracking-[0.04em] text-muted-foreground";
+
+const recordListClasses = [
+  "m-0 grid list-none gap-x-3 gap-y-1.5 p-0 md:grid-cols-2",
+  className,
+];
+---
+
+{
+  variant === "record" ? (
+    <ul class:list={recordListClasses} aria-label={ariaLabel}>
+      {labels.map((label, index) => (
+        <li class="grid min-w-0 gap-0.5" data-key={keyForLabel(label, index)}>
+          <span class="font-mono text-[0.66rem] font-bold uppercase tracking-[0.04em] text-muted-foreground">
+            {
+              label.family ? (
+                label.family.href ? (
+                  <a
+                    class="text-inherit no-underline hover:underline hover:underline-offset-[0.16em] focus-visible:underline focus-visible:underline-offset-[0.16em]"
+                    data-filter-value={label.family.filterValue}
+                    href={label.family.href}
+                    title={label.family.title}
+                  >
+                    {label.family.text}
+                  </a>
+                ) : (
+                  <span
+                    class="text-inherit"
+                    data-filter-value={label.family.filterValue}
+                    title={label.family.title}
+                  >
+                    {label.family.text}
+                  </span>
+                )
+              ) : (
+                "label"
+              )
+            }
+          </span>
+          <span class="[overflow-wrap:anywhere] text-[0.81rem] font-semibold leading-[1.3] text-foreground">
+            {
+              label.value.href ? (
+                <a
+                  class="text-inherit no-underline hover:underline hover:underline-offset-[0.16em] focus-visible:underline focus-visible:underline-offset-[0.16em]"
+                  data-filter-value={label.value.filterValue}
+                  href={label.value.href}
+                  title={label.value.title}
+                >
+                  {label.value.text}
+                </a>
+              ) : (
+                <span
+                  class="text-inherit"
+                  data-filter-value={label.value.filterValue}
+                  title={label.value.title}
+                >
+                  {label.value.text}
+                </span>
+              )
+            }
+          </span>
+        </li>
+      ))}
+      {
+        labelsRemaining ? (
+          <li aria-label={`${labelsRemaining} more labels`} class="grid min-w-0 gap-0.5">
+            <span class="font-mono text-[0.66rem] font-bold uppercase tracking-[0.04em] text-muted-foreground">
+              more
+            </span>
+            <span class="font-mono text-[0.81rem] font-semibold leading-[1.3] text-foreground">
+              +{labelsRemaining.toLocaleString()}
+            </span>
+          </li>
+        ) : null
+      }
+    </ul>
+  ) : (
+    <ul class:list={chipListClasses} aria-label={ariaLabel}>
+      {labels.map((label, index) => (
+        <li class={chipClasses} data-key={keyForLabel(label, index)}>
+          {
+            label.family ? (
+              <>
+                {label.family.href ? (
+                  <a
+                    class={chipKeyClasses}
+                    data-filter-value={label.family.filterValue}
+                    href={label.family.href}
+                    title={label.family.title}
+                  >
+                    {label.family.text}
+                  </a>
+                ) : (
+                  <span
+                    class={chipKeyClasses}
+                    data-filter-value={label.family.filterValue}
+                    title={label.family.title}
+                  >
+                    {label.family.text}
+                  </span>
+                )}
+                <span class="text-muted-foreground">:</span>
+                {label.value.href ? (
+                  <a
+                    class="text-[color:var(--ccui-text)] no-underline hover:underline hover:underline-offset-[0.16em] focus-visible:underline focus-visible:underline-offset-[0.16em]"
+                    data-filter-value={label.value.filterValue}
+                    href={label.value.href}
+                    title={label.value.title}
+                  >
+                    {label.value.text}
+                  </a>
+                ) : (
+                  <span
+                    class="text-[color:var(--ccui-text)]"
+                    data-filter-value={label.value.filterValue}
+                    title={label.value.title}
+                  >
+                    {label.value.text}
+                  </span>
+                )}
+              </>
+            ) : label.value.href ? (
+              <a
+                class="text-[color:var(--ccui-text)] no-underline hover:underline hover:underline-offset-[0.16em] focus-visible:underline focus-visible:underline-offset-[0.16em]"
+                data-filter-value={label.value.filterValue}
+                href={label.value.href}
+                title={label.value.title}
+              >
+                {label.value.text}
+              </a>
+            ) : (
+              <span
+                class="text-[color:var(--ccui-text)]"
+                data-filter-value={label.value.filterValue}
+                title={label.value.title}
+              >
+                {label.value.text}
+              </span>
+            )
+          }
+        </li>
+      ))}
+      {
+        labelsRemaining ? (
+          <li aria-label={`${labelsRemaining} more labels`} class={`${chipClasses} text-muted-foreground`}>
+            +{labelsRemaining.toLocaleString()}
+          </li>
+        ) : null
+      }
+    </ul>
+  )
+}

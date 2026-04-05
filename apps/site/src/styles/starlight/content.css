@@ -8,39 +8,33 @@
     font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
   }
 
-  /* -------------------------------------------------------------------------- */
-  /* Starlight user components (CardGrid / Card)                                 */
-  /* -------------------------------------------------------------------------- */
   .sl-markdown-content .card {
     --sl-card-border: var(--cc-border-color);
-    --sl-card-bg: var(--cc-inline-code-bg);
+    --sl-card-bg: var(--ccui-paper);
     border: var(--cc-border);
-    border-radius: var(--cc-radius-lg);
-    background: var(--cc-card-bg);
-    padding: 1.25rem;
-    gap: 0.75rem;
-  }
-
-  :root[data-theme="light"] .sl-markdown-content .card {
-    background: var(--sl-color-gray-7);
+    border-radius: var(--ccui-radius-lg);
+    background: var(--ccui-paper);
+    padding: 1rem;
+    gap: 0.7rem;
+    box-shadow: none;
   }
 
   .sl-markdown-content .card .title {
     font-size: var(--sl-text-lg);
-    color: var(--sl-color-white);
-    gap: 0.75rem;
+    color: var(--ccui-text);
+    gap: 0.65rem;
   }
 
   .sl-markdown-content .card .icon {
     border: var(--cc-border);
-    background: var(--cc-inline-code-bg);
-    border-radius: 0.6rem;
+    background: var(--ccui-panel);
+    border-radius: var(--ccui-radius-sm);
     padding: 0.25em;
   }
 
   .sl-markdown-content .card .body {
     font-size: var(--sl-text-sm);
-    color: color-mix(in srgb, var(--sl-color-text) 85%, transparent);
+    color: color-mix(in srgb, var(--ccui-text-soft) 88%, transparent);
   }
 
   .pagination-links {
@@ -49,24 +43,24 @@
   }
 
   .pagination-links a {
-    border-radius: 0.35rem;
+    border-radius: var(--ccui-radius-md);
     padding: 0.72rem 0.85rem;
     box-shadow: none;
   }
 
   .pagination-links .link-title {
-    font-size: 1.1rem;
+    font-size: 1.05rem;
   }
 
   .sl-link-button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 2.5rem;
-    padding: 0.68rem 0.96rem;
-    border: 1px solid color-mix(in srgb, var(--ccui-border) 72%, transparent);
-    border-radius: 0.34rem !important;
-    background: color-mix(in srgb, var(--ccui-paper) 94%, var(--ccui-panel)) !important;
+    min-height: 2.45rem;
+    padding: 0.66rem 0.94rem;
+    border: 1px solid var(--ccui-border);
+    border-radius: var(--ccui-radius-md) !important;
+    background: var(--ccui-paper) !important;
     color: var(--ccui-text) !important;
     box-shadow: none;
     font-family: var(--ccui-font-sans);
@@ -79,60 +73,39 @@
       color 120ms ease;
   }
 
-  .sl-link-button.primary {
-    border-color: color-mix(in srgb, var(--cc-brand) 46%, var(--ccui-border)) !important;
-    background: linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--cc-brand-low) 84%, var(--cc-brand) 16%) 0%,
-      color-mix(in srgb, var(--cc-brand-low) 72%, var(--cc-brand) 11%) 100%
-    ) !important;
+  :root:not([data-theme="dark"]) .sl-link-button.primary {
+    border-color: var(--cc-brand-high) !important;
+    background: var(--cc-brand-high) !important;
+    color: var(--ccui-paper) !important;
+  }
+
+  :root[data-theme="dark"] .sl-link-button.primary {
+    border-color: color-mix(in srgb, var(--cc-brand) 58%, var(--ccui-border)) !important;
+    background: color-mix(in srgb, var(--cc-brand-low) 60%, var(--ccui-panel)) !important;
     color: var(--cc-brand-high) !important;
   }
 
   .sl-link-button.secondary {
-    background: color-mix(in srgb, var(--ccui-paper) 94%, transparent) !important;
+    background: var(--ccui-paper) !important;
     color: var(--ccui-text) !important;
   }
 
   .sl-link-button:hover,
   .sl-link-button:focus-visible {
-    border-color: color-mix(in srgb, var(--cc-brand) 26%, var(--ccui-border)) !important;
-    background: color-mix(in srgb, var(--cc-brand-low) 70%, var(--ccui-paper)) !important;
+    border-color: color-mix(in srgb, var(--cc-brand) 30%, var(--ccui-border)) !important;
+    background: var(--ccui-panel) !important;
     color: var(--cc-brand-high) !important;
   }
 
-  .sl-link-button.primary:hover,
-  .sl-link-button.primary:focus-visible {
-    border-color: color-mix(in srgb, var(--cc-brand) 58%, var(--ccui-border)) !important;
-    background: linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--cc-brand-low) 78%, var(--cc-brand) 22%) 0%,
-      color-mix(in srgb, var(--cc-brand-low) 68%, var(--cc-brand) 16%) 100%
-    ) !important;
+  :root:not([data-theme="dark"]) .sl-link-button.primary:hover,
+  :root:not([data-theme="dark"]) .sl-link-button.primary:focus-visible {
+    border-color: color-mix(in srgb, var(--cc-brand) 50%, var(--cc-brand-high)) !important;
+    background: color-mix(in srgb, var(--cc-brand-high) 92%, black) !important;
+    color: var(--ccui-paper) !important;
   }
 
   html[data-has-hero] .content-panel {
     position: relative;
-    overflow: clip;
-  }
-
-  html[data-has-hero] .content-panel::before {
-    content: "";
-    position: absolute;
-    inset: 0 0 auto;
-    height: clamp(8rem, 20vw, 12rem);
-    background:
-      radial-gradient(
-        90% 90% at 14% 0%,
-        color-mix(in srgb, var(--cc-brand-low) 78%, transparent) 0%,
-        transparent 72%
-      ),
-      linear-gradient(
-        180deg,
-        color-mix(in srgb, var(--ccui-panel) 42%, transparent) 0%,
-        transparent 100%
-      );
-    pointer-events: none;
   }
 
   html[data-has-hero] .content-panel > .sl-container {
@@ -140,57 +113,96 @@
   }
 
   html[data-has-hero] .hero {
-    gap: 0.75rem;
-    width: min(100%, 67.5rem);
+    position: relative;
+    isolation: isolate;
+    width: min(100%, 70rem);
     max-width: none;
     margin-inline: auto;
-    margin-bottom: 0.4rem;
-    padding-block: 0.1rem 1.1rem;
+    margin-bottom: 0.7rem;
+    padding-block: 0.9rem 1.9rem;
+    gap: 1.8rem;
   }
 
   html[data-has-hero] .hero .stack {
-    gap: 0.7rem;
+    gap: 0.95rem;
   }
 
   html[data-has-hero] .hero .copy {
-    max-width: 45rem;
-    gap: 0.55rem;
+    max-width: 42rem;
+    gap: 0.65rem;
   }
 
   html[data-has-hero] .hero h1 {
-    max-width: 10.5ch;
+    max-width: 10ch;
     margin: 0;
-    color: var(--ccui-text);
+    color: var(--cc-brand-high);
     font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
-    font-size: clamp(3.1rem, 5.2vw, 4.85rem);
+    font-size: clamp(2.9rem, 5vw, 4.5rem);
     font-weight: 600;
-    line-height: 0.92;
-    letter-spacing: -0.035em;
+    line-height: 0.94;
+    letter-spacing: -0.04em;
   }
 
   html[data-has-hero] .hero .tagline {
     max-width: 38rem;
-    color: var(--ccui-text-soft);
-    font-size: clamp(1rem, 0.4vw + 1rem, 1.2rem);
-    line-height: 1.55;
+    color: color-mix(in srgb, var(--ccui-text-soft) 92%, var(--cc-brand-ink));
+    font-size: clamp(1rem, 0.35vw + 1rem, 1.15rem);
+    line-height: 1.58;
   }
 
   html[data-has-hero] .hero .actions {
-    gap: 0.7rem;
-    margin-top: 0.05rem;
+    gap: 0.65rem;
+    margin-top: 0.08rem;
   }
 
   html[data-has-hero] .sl-markdown-content {
     display: grid;
-    gap: 1.2rem;
+    gap: 1.7rem;
     margin-top: 0;
+  }
+
+  .cc-hero-art {
+    display: grid;
+    place-items: center;
+    width: min(100%, 26rem);
+    aspect-ratio: 1.28 / 0.88;
+    margin-inline: auto;
+    border: 1px solid color-mix(in srgb, var(--cc-brand) 12%, var(--ccui-border));
+    border-radius: var(--ccui-radius-lg);
+    background: color-mix(in srgb, var(--ccui-paper) 95%, var(--cc-brand-low));
+    box-shadow: 0 10px 24px rgba(43, 36, 31, 0.04);
+    overflow: hidden;
+  }
+
+  .cc-hero-art__image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .cc-hero-art__image--dark {
+    display: none;
+  }
+
+  :root[data-theme="dark"] .cc-hero-art {
+    background: color-mix(in srgb, var(--ccui-panel) 86%, var(--ccui-paper));
+    border-color: color-mix(in srgb, var(--cc-brand) 26%, var(--ccui-border));
+  }
+
+  :root[data-theme="dark"] .cc-hero-art__image--light {
+    display: none;
+  }
+
+  :root[data-theme="dark"] .cc-hero-art__image--dark {
+    display: block;
   }
 
   .cc-home-section__title {
     margin: 0;
     color: var(--ccui-text);
     font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
-    font-size: clamp(1.8rem, 2vw, 2.4rem);
+    font-size: clamp(1.7rem, 2vw, 2.2rem);
     font-weight: 600;
     line-height: 1.08;
     letter-spacing: -0.025em;
@@ -200,75 +212,60 @@
     max-width: 40rem;
     margin: 0;
     color: var(--ccui-text-soft);
-    font-size: 0.98rem;
-    line-height: 1.65;
+    font-size: 0.96rem;
+    line-height: 1.62;
   }
 
   .cc-home-overview {
     display: grid;
-    grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.88fr);
-    gap: 1.2rem;
+    gap: 0.9rem;
     align-items: stretch;
   }
 
   .cc-home-overview__copy,
   .cc-home-explore__header {
     display: grid;
-    gap: 0.32rem;
+    gap: 0.28rem;
   }
 
   .cc-home-overview__copy {
-    align-content: stretch;
-    padding-top: 0.08rem;
-  }
-
-  .cc-home-overview__panel {
-    display: grid;
-    gap: 0.9rem;
-    height: 100%;
-    align-content: start;
-    padding: 1rem 1rem 0.95rem;
-    border: 1px solid color-mix(in srgb, var(--ccui-border) 72%, transparent);
-    border-radius: 0.38rem;
-    background: color-mix(in srgb, var(--ccui-panel) 90%, var(--ccui-paper));
-  }
-
-  .cc-home-overview__note {
-    margin: 0;
-    color: var(--ccui-text);
-    font-size: 0.95rem;
-    line-height: 1.6;
+    justify-items: start;
   }
 
   .cc-home-overview__qualities {
     display: grid;
-    gap: 0.5rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.65rem;
     margin: 0;
     padding: 0;
     list-style: none;
   }
 
   .cc-home-overview__qualities li {
-    position: relative;
-    padding-left: 0.85rem;
+    display: grid;
+    align-content: start;
+    min-height: 100%;
+    padding: 0.9rem 0.95rem;
+    border: 1px solid var(--ccui-border);
+    border-radius: var(--ccui-radius-lg);
+    background: color-mix(in srgb, var(--ccui-paper) 95%, var(--ccui-panel));
     color: var(--ccui-text-soft);
     font-size: 0.9rem;
-    line-height: 1.5;
+    line-height: 1.52;
   }
 
   .cc-home-overview__qualities li::before {
     content: "";
-    position: absolute;
-    left: 0;
-    top: 0.68rem;
-    width: 0.35rem;
-    height: 1px;
-    background: var(--cc-brand);
+    position: static;
+    width: 0.34rem;
+    height: 0.34rem;
+    margin-bottom: 0.55rem;
+    background: color-mix(in srgb, var(--cc-brand) 74%, var(--ccui-border));
   }
 
   .cc-home-explore {
     display: grid;
-    gap: 0.85rem;
+    gap: 0.8rem;
     padding-top: 0;
     border-top: none;
   }
@@ -277,29 +274,35 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.8rem;
     margin-top: 0;
+    align-items: stretch;
   }
 
   html[data-has-hero] .cc-feature {
     padding: 0.95rem 1rem;
-    border-color: color-mix(in srgb, var(--ccui-border) 72%, transparent);
-    border-radius: 0.36rem;
-    background: color-mix(in srgb, var(--ccui-paper) 95%, var(--ccui-panel));
+    border-color: var(--ccui-border);
+    border-radius: var(--ccui-radius-lg);
+    background: color-mix(in srgb, var(--ccui-paper) 96%, var(--ccui-panel));
     box-shadow: none;
   }
 
   html[data-has-hero] .cc-feature:hover,
   html[data-has-hero] .cc-feature:focus-visible {
-    border-color: color-mix(in srgb, var(--cc-brand) 24%, var(--ccui-border));
+    border-color: color-mix(in srgb, var(--cc-brand) 26%, var(--ccui-border));
     background: var(--ccui-paper);
   }
 
   html[data-has-hero] .cc-feature__icon {
-    width: 2rem;
-    height: 2rem;
-    border-color: transparent;
-    border-radius: 0.32rem;
-    background: color-mix(in srgb, var(--cc-brand-low) 68%, var(--ccui-panel));
+    width: 2.2rem;
+    height: 2.2rem;
+    border-color: var(--ccui-border);
+    border-radius: var(--ccui-radius-md);
+    background: var(--ccui-panel);
     color: var(--cc-brand-high);
+  }
+
+  html[data-has-hero] .cc-feature__icon svg {
+    width: 1.1rem;
+    height: 1.1rem;
   }
 
   html[data-has-hero] .cc-feature__title {
@@ -311,39 +314,6 @@
     line-height: 1.55;
   }
 
-  .guideline-card,
-  .ccui-guideline-card {
-    border-radius: 0.38rem;
-    background: color-mix(in srgb, var(--ccui-paper) 96%, var(--ccui-panel));
-    box-shadow: none;
-  }
-
-  .guideline-card:hover,
-  .ccui-guideline-card:hover {
-    border-color: color-mix(in srgb, var(--cc-brand) 20%, var(--ccui-border));
-    background: var(--ccui-paper);
-    box-shadow: none;
-  }
-
-  .guideline-label,
-  .ccui-guideline-label {
-    border-radius: 0.22rem;
-  }
-
-  .cc-pagination__link {
-    border-radius: 0.35rem;
-    background: color-mix(in srgb, var(--ccui-panel) 56%, transparent);
-  }
-
-  .cc-pagination__link:hover,
-  .cc-pagination__link:focus-visible {
-    background: color-mix(in srgb, var(--cc-brand-low) 72%, var(--ccui-paper));
-    border-color: color-mix(in srgb, var(--cc-brand) 34%, var(--ccui-border));
-    color: var(--cc-brand-high);
-    outline: 1px solid color-mix(in srgb, var(--cc-brand) 26%, transparent);
-    outline-offset: 0;
-  }
-
   .sl-markdown-content a.sl-anchor-link:not(:where(.not-content *)),
   .sl-markdown-content a.sl-anchor-link:not(:where(.not-content *)):visited {
     color: var(--cc-brand-high) !important;
@@ -353,17 +323,14 @@
     color: inherit;
   }
 
-  .sl-markdown-content
-    :where(a:not(.guideline-label__key, .guideline-label__value, .sl-anchor-link)),
+  .sl-markdown-content :where(a:not(.sl-anchor-link)),
   .right-sidebar-panel :where(a),
   .sidebar-content :where(a) {
     color: var(--cc-brand-high);
   }
 
-  .sl-markdown-content
-    :where(a:not(.guideline-label__key, .guideline-label__value, .sl-anchor-link)):hover,
-  .sl-markdown-content
-    :where(a:not(.guideline-label__key, .guideline-label__value, .sl-anchor-link)):focus-visible,
+  .sl-markdown-content :where(a:not(.sl-anchor-link)):hover,
+  .sl-markdown-content :where(a:not(.sl-anchor-link)):focus-visible,
   .right-sidebar-panel :where(a):hover,
   .right-sidebar-panel :where(a):focus-visible,
   .sidebar-content :where(a):hover,
@@ -390,7 +357,7 @@
 
     html[data-has-hero] .hero {
       margin-bottom: 0.55rem;
-      padding-block: 0.8rem 0.85rem;
+      padding-block: 0.8rem 0.9rem;
     }
 
     html[data-has-hero] .hero h1 {
@@ -407,8 +374,11 @@
     }
 
     .cc-home-overview {
-      grid-template-columns: 1fr;
       gap: 0.8rem;
+    }
+
+    .cc-home-overview__qualities {
+      grid-template-columns: 1fr;
     }
 
     html[data-has-hero] .cc-features {
@@ -430,16 +400,14 @@
     button[data-open-modal]:hover {
       border-color: transparent !important;
       background: transparent !important;
-      box-shadow: none !important;
       color: var(--cc-brand-high) !important;
     }
 
     button[data-open-modal]:focus-visible {
-      border-color: color-mix(in srgb, var(--cc-brand) 38%, transparent) !important;
-      background: color-mix(in srgb, var(--cc-brand-low) 72%, transparent) !important;
-      box-shadow: none !important;
+      border-color: transparent !important;
+      background: var(--ccui-panel) !important;
       color: var(--cc-brand-high) !important;
-      outline: 2px solid color-mix(in srgb, var(--cc-brand) 28%, transparent) !important;
+      outline: 2px solid color-mix(in srgb, var(--cc-brand) 24%, transparent) !important;
       outline-offset: 2px !important;
     }
 

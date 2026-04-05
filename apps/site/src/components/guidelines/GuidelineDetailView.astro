@@ -1,0 +1,89 @@
+---
+import GuidelineLabels from "./GuidelineLabels.astro";
+import type { GuidelineCardLabel, GuidelineDetailSection } from "./types";
+
+interface Props {
+  id: string;
+  title: string;
+  description?: string;
+  labels: GuidelineCardLabel[];
+  sections: GuidelineDetailSection[];
+  bibliographyHtml?: string;
+  referencesBib?: string;
+}
+
+const { title, description, labels, sections, bibliographyHtml, referencesBib } =
+  Astro.props as Props;
+---
+
+<div class="guideline-detail-view mx-auto grid w-full max-w-[62rem] gap-3">
+  <div class="grid gap-1">
+    <h1 class="m-0 text-[clamp(1.45rem,2.7vw,1.95rem)] font-semibold leading-[1.06] tracking-[-0.02em] text-foreground [font-family:var(--cc-site-font-display)]">
+      {title}
+    </h1>
+    {description ? <p class="m-0 max-w-3xl text-[0.92rem] leading-[1.58] text-muted-foreground">{description}</p> : null}
+  </div>
+
+  {
+    labels.length ? (
+      <section
+        aria-label="Guideline labels"
+        class="grid gap-2 border-t border-border pt-3"
+      >
+        <div class="flex items-baseline justify-between gap-3">
+          <span class="font-mono text-[0.66rem] font-bold uppercase tracking-[0.04em] text-muted-foreground">
+            labels
+          </span>
+        </div>
+        <GuidelineLabels className="gap-2" labels={labels} />
+      </section>
+    ) : null
+  }
+
+  {
+    sections.length ? (
+      <div class="guideline-article grid gap-2 pt-px">
+        {sections.map((section) => (
+          <section class="guideline-article-section grid gap-[var(--ccui-detail-body-gap,0.09rem)]">
+            <div class="grid gap-[var(--ccui-detail-header-gap,0.2rem)]">
+              <p class="m-0 font-mono text-[0.58rem] font-semibold leading-[0.98] tracking-[0.007em] text-muted-foreground/80 lowercase">
+                {section.role}
+              </p>
+              <h2 class="m-0 text-[clamp(1.4rem,2.2vw,1.82rem)] font-semibold leading-[0.99] tracking-[-0.018em] text-foreground [font-family:var(--cc-site-font-display)]">
+                {section.title}
+              </h2>
+            </div>
+            <div
+              class="guideline-article-section__body max-w-[47rem] text-[0.94rem] leading-[1.62] text-muted-foreground"
+              set:html={section.html}
+            />
+          </section>
+        ))}
+      </div>
+    ) : null
+  }
+
+  {
+    bibliographyHtml ? (
+      <section class="grid gap-2 border-t border-border pt-3">
+        <div class="flex items-baseline justify-between gap-3">
+          <span class="font-mono text-[0.66rem] font-bold uppercase tracking-[0.04em] text-muted-foreground">
+            references
+          </span>
+        </div>
+        <div class="bibliography" set:html={bibliographyHtml} />
+
+        {
+          referencesBib ? (
+            <details class="mt-4 grid gap-0">
+              <summary class="flex min-h-8 cursor-pointer items-center px-0 font-mono text-[0.75rem] font-bold tracking-[0.02em] text-foreground">
+                BibTeX
+              </summary>
+              <pre class="mt-1 overflow-x-auto rounded-[3px] border border-border bg-muted p-4"><code>{referencesBib}</code></pre>
+            </details>
+          ) : null
+        }
+      </section>
+    ) : null
+  }
+</div>

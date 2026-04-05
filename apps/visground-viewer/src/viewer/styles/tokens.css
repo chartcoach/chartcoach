@@ -1,0 +1,31 @@
+@import "@chartcoach/ui/styles/fonts.css";
+@import "@chartcoach/ui/styles/tokens.css";
+
+.vg-root {
+  --vg-paper: var(--ccui-paper);
+  --vg-panel: var(--ccui-panel);
+  --vg-panel-strong: var(--ccui-panel-strong);
+  --vg-border: var(--ccui-border);
+  --vg-border-strong: var(--ccui-border-strong);
+  --vg-divider: var(--ccui-divider);
+  --vg-text: var(--ccui-text);
+  --vg-text-soft: var(--ccui-text-soft);
+  --vg-muted: var(--ccui-muted);
+  --vg-focus: var(--ccui-focus);
+  --vg-code-bg: var(--ccui-panel-strong);
+  --vg-shadow: var(--ccui-shadow);
+  color: var(--vg-text);
+  background: var(--vg-paper);
+  font-family: var(--ccui-font-sans);
+  position: relative;
+}
+
+.vg-root,
+.vg-root * {
+  box-sizing: border-box;
+}
+
+.vg-matrix-cell:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
