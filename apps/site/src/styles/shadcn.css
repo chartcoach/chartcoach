@@ -1,5 +1,4 @@
 @import "tailwindcss/theme";
 @import "tailwindcss/utilities";
 @source "../**/*.{astro,ts,tsx}";
-@source "../../../../packages/ui/src/**/*.{ts,tsx}";
 @import "@chartcoach/ui/styles/globals.css";

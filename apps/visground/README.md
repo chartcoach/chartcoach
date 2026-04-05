@@ -14,9 +14,8 @@ Launch the viewer with marimo in another terminal:
 VISGROUND_VIEWER_DEV=1 uv run marimo run workbench/06_viewer.py
 ```
 
-Then edit files under `packages/visground-viewer/src/**`. The open marimo page
-should update in place through Vite/anywidget HMR without rebuilding the static
-bundle or refreshing the browser.
+Then edit the viewer sources in `apps/visground-viewer/`. The open marimo page
+should update through Vite/anywidget HMR without needing leaf `pre*` hooks.
 
 If you need a non-default Vite URL, set `VISGROUND_VIEWER_DEV_URL` before
 launching marimo. `06_viewer.py` now serves local chart PNGs automatically when

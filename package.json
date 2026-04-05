@@ -3,9 +3,9 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "dev": "pnpm --filter site dev",
-    "build": "pnpm --filter site... build",
-    "preview": "pnpm --filter site preview",
+    "dev": "pnpm --filter @chartcoach/catalog build && pnpm --filter site dev",
+    "build": "pnpm --filter @chartcoach/catalog build && pnpm --filter site build",
+    "typecheck": "pnpm exec tsc -b",
     "lint": "oxlint apps packages",
     "format": "oxfmt apps packages"
   },

@@ -1,10 +1,11 @@
-@import "@chartcoach/chartcoach-ui/fonts.css";
-@import "@chartcoach/chartcoach-ui/styles.css" layer(chartcoach.ui);
+@import "@chartcoach/ui/styles/fonts.css";
 @import "./starlight/foundations.css";
 @import "./starlight/header-shell.css";
 @import "./starlight/route-shell.css";
 @import "./starlight/content.css";
 @import "./starlight/responsive.css";
+@import "./site-components.css" layer(chartcoach.ui);
+@import "@chartcoach/ui/styles/tokens.css";
 
 @layer starlight.base, starlight.reset, starlight.core, starlight.content, starlight.components, starlight.utils,
 	chartcoach.ui,

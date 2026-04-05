@@ -1,0 +1,1 @@
+{"version":3,"file":"case-popover.d.ts","sourceRoot":"","sources":["../../../src/viewer/render/case-popover.tsx"],"names":[],"mappings":"AAEA,OAAO,KAAK,EAAE,aAAa,EAAE,WAAW,EAAE,MAAM,mBAAmB,CAAC;AAIpE,wBAAgB,WAAW,CAAC,EAAE,KAAK,EAAE,OAAO,EAAE,EAAE;IAAE,KAAK,EAAE,WAAW,CAAC;IAAC,OAAO,EAAE,aAAa,CAAA;CAAE,2CA6B7F"}

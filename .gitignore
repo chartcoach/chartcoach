@@ -1,19 +1,6 @@
 .env
-vertex-ai.json
-.github/secrets
-guidelines/embeddings.parquet
-
-.artifacts/
-.playwright-cli/
-output/playwright/
-
 *.egg-info
 __pycache__/
 *.pyc
 .DS_Store
 .coverage
-
-# Repo-wide planning docs are intentionally tracked for shared context.
-# Some environments have global ignore rules for these directories; we override them here.
-!docs/plans/
-!docs/plans/**

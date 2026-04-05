@@ -1,9 +1,9 @@
 ---
-import { BookOpen, Tags, Quote, Shapes } from "lucide-astro";
+import FeatureCard from "./home/FeatureCard.astro";
 ---
 
-<section class="cc-home-overview" aria-labelledby="cc-home-overview-title">
-	<div class="cc-home-overview__copy">
+<section class="cc-home-overview grid gap-4" aria-labelledby="cc-home-overview-title">
+	<div class="cc-home-overview__copy max-w-3xl">
 		<h2 id="cc-home-overview-title" class="cc-home-section__title">
 			A catalog you can read, filter, and cite.
 		</h2>
@@ -12,72 +12,48 @@ import { BookOpen, Tags, Quote, Shapes } from "lucide-astro";
 			people and precise enough for retrieval, feedback, and analysis workflows.
 		</p>
 	</div>
-
-	<div class="cc-home-overview__panel">
-		<p class="cc-home-overview__note">
-			Each guideline keeps the recommendation, the rationale, the context, and the supporting
-			references in one place.
-		</p>
-		<ul class="cc-home-overview__qualities">
-			<li>Readable enough to skim quickly</li>
-			<li>Structured enough to browse systematically</li>
-			<li>Grounded enough to trace back to evidence</li>
-		</ul>
-	</div>
+	<ul
+		class="cc-home-overview__qualities grid gap-3 md:grid-cols-3"
+		aria-label="Catalog qualities"
+	>
+		<li>Readable enough to skim quickly</li>
+		<li>Structured enough to browse systematically</li>
+		<li>Grounded enough to trace back to evidence</li>
+	</ul>
 </section>
 
-<section class="cc-home-explore" aria-labelledby="cc-home-explore-title">
-	<div class="cc-home-explore__header">
+<section class="cc-home-explore grid gap-4" aria-labelledby="cc-home-explore-title">
+	<div class="cc-home-explore__header max-w-3xl">
 		<h2 id="cc-home-explore-title" class="cc-home-section__title">Explore the catalog</h2>
 		<p class="cc-home-section__lede">
 			Choose the entry point that matches how you want to work with the material.
 		</p>
 	</div>
 
-	<div class="cc-features" aria-label="Explore Chart Coach">
-		<a class="cc-feature ccui-feature-card" href="/guidelines/">
-			<span class="cc-feature__icon" aria-hidden="true">
-				<BookOpen size="1.1rem" />
-			</span>
-			<span class="cc-feature__content">
-				<span class="cc-feature__title">Browse guidelines</span>
-				<span class="cc-feature__desc">
-					Read concise recommendations with context, labels, and references already in place.
-				</span>
-			</span>
-		</a>
-		<a class="cc-feature ccui-feature-card" href="/labels/">
-			<span class="cc-feature__icon" aria-hidden="true">
-				<Tags size="1.1rem" />
-			</span>
-			<span class="cc-feature__content">
-				<span class="cc-feature__title">Filter by labels</span>
-				<span class="cc-feature__desc">
-					Narrow the collection by task, audience, chart type, communication goal, or constraint.
-				</span>
-			</span>
-		</a>
-		<a class="cc-feature ccui-feature-card" href="/catalog/">
-			<span class="cc-feature__icon" aria-hidden="true">
-				<Shapes size="1.1rem" />
-			</span>
-			<span class="cc-feature__content">
-				<span class="cc-feature__title">See the structure</span>
-				<span class="cc-feature__desc">
-					Understand how the catalog is organized when you want the full model behind each entry.
-				</span>
-			</span>
-		</a>
-		<a class="cc-feature ccui-feature-card" href="/catalog/#references">
-			<span class="cc-feature__icon" aria-hidden="true">
-				<Quote size="1.1rem" />
-			</span>
-			<span class="cc-feature__content">
-				<span class="cc-feature__title">Trace to sources</span>
-				<span class="cc-feature__desc">
-					Follow citations back to the bibliography and inspect the evidence behind each claim.
-				</span>
-			</span>
-		</a>
+	<div class="cc-features cc-home-features grid gap-4 md:grid-cols-2" aria-label="Explore Chart Coach">
+		<FeatureCard
+			description="Read concise recommendations with context, labels, and references already in place."
+			href="/guidelines/"
+			icon="catalog"
+			title="Browse the catalog"
+		/>
+		<FeatureCard
+			description="Narrow the collection by task, audience, chart type, communication goal, or constraint."
+			href="/labels/"
+			icon="labels"
+			title="Filter by labels"
+		/>
+		<FeatureCard
+			description="Understand how the catalog is organized when you want the full model behind each entry."
+			href="/catalog/"
+			icon="structure"
+			title="Inspect the structure"
+		/>
+		<FeatureCard
+			description="Follow citations back to the bibliography and inspect the evidence behind each claim."
+			href="/catalog/#references"
+			icon="citations"
+			title="Trace citations"
+		/>
 	</div>
 </section>

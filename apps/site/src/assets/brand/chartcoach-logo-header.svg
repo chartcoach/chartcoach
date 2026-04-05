@@ -1,14 +1,36 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 72" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 88" role="img" aria-labelledby="title desc">
   <title id="title">Chart Coach header logo</title>
-  <desc id="desc">Chart Coach wordmark with a bracketed chart emblem.</desc>
-  <rect width="420" height="72" fill="none"/>
-  <g transform="translate(12 14) scale(0.22)" fill="none" stroke="#8c6e53" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M74 44Q48 44 48 70V98Q48 128 20 128Q48 128 48 158V186Q48 212 74 212" stroke-width="8"/>
-    <path d="M182 44Q208 44 208 70V98Q208 128 236 128Q208 128 208 158V186Q208 212 182 212" stroke-width="8"/>
-    <rect x="84" y="68" width="88" height="120" stroke-width="8"/>
-    <path d="M96 156L116 134L130 148L154 124L178 100" stroke-width="8"/>
-    <path d="M160 100H178V118" stroke-width="8"/>
-    <path d="M148 130L160 118" stroke-width="6"/>
+  <desc id="desc">Chart Coach wordmark with a tabbed catalog-card emblem.</desc>
+  <style>
+    :root {
+      --cc-line: #a06a42;
+      --cc-line-soft: #dbc4ac;
+      --cc-fill: #f8efe4;
+      --cc-fill-soft: #f2e5d7;
+      --cc-text: #1f1a16;
+      --cc-sub: #6e6256;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --cc-line: #e7c7a6;
+        --cc-line-soft: #6e5645;
+        --cc-fill: #2a211b;
+        --cc-fill-soft: #332821;
+        --cc-text: #f6efe8;
+        --cc-sub: #d9cbc0;
+      }
+    }
+  </style>
+  <rect width="440" height="88" fill="none"/>
+  <g transform="translate(14 12) scale(0.24)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M72 54h90c13.255 0 24 10.745 24 24v104c0 11.046-8.954 20-20 20H88c-9.941 0-18-8.059-18-18V72c0-9.941 8.059-18 18-18Z" fill="var(--cc-fill)" stroke="var(--cc-line)" stroke-width="8"/>
+    <path d="M92 54v-8c0-8.837 7.163-16 16-16h40c8.837 0 16 7.163 16 16v8" stroke="var(--cc-line)" stroke-width="8"/>
+    <path d="M84 82h88" stroke="var(--cc-line-soft)" stroke-width="6"/>
+    <rect x="95" y="100" width="66" height="44" rx="8" fill="var(--cc-fill-soft)" stroke="var(--cc-line)" stroke-width="7"/>
+    <path d="M104 136l14-14 12 10 22-22" stroke="var(--cc-line)" stroke-width="7"/>
+    <path d="M144 110h18v18" stroke="var(--cc-line)" stroke-width="7"/>
+    <path d="M102 162h52" stroke="var(--cc-line-soft)" stroke-width="6"/>
   </g>
-  <text x="76" y="44" fill="#1d1c1a" font-family="Menlo, Monaco, Consolas, 'Liberation Mono', monospace" font-size="28" letter-spacing="1.6">chart coach</text>
+  <text x="78" y="42" fill="var(--cc-text)" font-family="Menlo, Monaco, Consolas, 'Liberation Mono', monospace" font-size="28" letter-spacing="1.2">chart coach</text>
+  <text x="78" y="61" fill="var(--cc-sub)" font-family="Inter, 'Helvetica Neue', 'Segoe UI', sans-serif" font-size="11.5" letter-spacing="0.08em">structured editorial catalog</text>
 </svg>

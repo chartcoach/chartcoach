@@ -7,7 +7,6 @@ import tailwindcss from "@tailwindcss/vite";
 
 export const monorepoRoot = fileURLToPath(new URL("../../..", import.meta.url));
 const siteSourceRoot = fileURLToPath(new URL("../src", import.meta.url));
-const sharedUiSourceRoot = fileURLToPath(new URL("../../../packages/ui/src", import.meta.url));
 const repoEnvPath = join(monorepoRoot, ".env");
 
 export const DEFAULT_SITE_URL = "http://localhost:4321/";
@@ -92,10 +91,15 @@ export const siteViteConfig = {
       allow: [monorepoRoot],
     },
   },
+  ssr: {
+    resolve: {
+      conditions: ["chartcoach-source", "module", "node", "development|production"],
+    },
+  },
   resolve: {
+    conditions: ["chartcoach-source", "module", "browser", "development|production"],
     alias: {
       "@chartcoach/site": siteSourceRoot,
-      "@chartcoach/ui": sharedUiSourceRoot,
     },
   },
 } satisfies NonNullable<AstroUserConfig["vite"]>;

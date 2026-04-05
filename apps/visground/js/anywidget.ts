@@ -1,4 +1,4 @@
-import { mountVisgroundViewer } from "../../../packages/visground-viewer/src/index";
+import { mountAnywidgetVisgroundViewer } from "@chartcoach/visground-viewer";
 
 type ModelLike = {
   get(name: string): unknown;
@@ -15,7 +15,13 @@ type RenderContext = {
 };
 
 function render({ model, el }: RenderContext) {
-  const mount = mountVisgroundViewer(el, {
+  const devArtifactUrl = model.get("_artifact_url");
+  const artifactUrl =
+    typeof devArtifactUrl === "string" && devArtifactUrl.length > 0
+      ? devArtifactUrl
+      : new URL(/* @vite-ignore */ "../data/viewer.parquet", import.meta.url).href;
+  const mount = mountAnywidgetVisgroundViewer(el, {
+    artifactUrl,
     model,
   });
 

@@ -1,0 +1,109 @@
+---
+export type FeatureIconName = "catalog" | "labels" | "structure" | "citations";
+
+interface Props {
+	name: FeatureIconName;
+	class?: string;
+}
+
+const { name, class: className } = Astro.props as Props;
+---
+
+{
+	name === "catalog" && (
+		<svg
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			stroke-width="1.7"
+			stroke-linecap="round"
+			stroke-linejoin="round"
+			class={className}
+			aria-hidden="true"
+			focusable="false"
+		>
+			<path d="M7 4.75h8.2c.83 0 1.5.67 1.5 1.5v11.5c0 .83-.67 1.5-1.5 1.5H7.8c-.83 0-1.5-.67-1.5-1.5V6.45c0-.94.76-1.7 1.7-1.7Z" />
+			<path d="M9 4.75V3.9c0-.64.51-1.15 1.15-1.15h3.7c.64 0 1.15.51 1.15 1.15v.85" />
+			<rect x="8.35" y="8.4" width="6.8" height="4.95" rx="0.8" />
+			<path d="M9.5 12.35 11 10.85l1.2 1.05 2.2-2.2" />
+			<path d="M13.55 9.7h.85v.85" />
+		</svg>
+	)
+}
+
+{
+	name === "labels" && (
+		<svg
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			stroke-width="1.7"
+			stroke-linecap="round"
+			stroke-linejoin="round"
+			class={className}
+			aria-hidden="true"
+			focusable="false"
+		>
+			<path d="M7.35 4.75h8.25c.8 0 1.45.65 1.45 1.45v9.7c0 .8-.65 1.45-1.45 1.45H7.95c-.88 0-1.6-.72-1.6-1.6V6.35c0-.88.72-1.6 1.6-1.6Z" />
+			<path d="M9.1 4.75V3.9c0-.64.51-1.15 1.15-1.15h3.5c.64 0 1.15.51 1.15 1.15v.85" />
+			<path d="M9.25 9.15h5.5" />
+			<path d="M9.25 12h4.05" />
+			<path d="M14.9 13.15 17.9 10.15h2.35v2.35l-3 3-2.35.3z" />
+			<circle cx="18.55" cy="11.5" r=".25" fill="currentColor" stroke="none" />
+		</svg>
+	)
+}
+
+{
+	name === "structure" && (
+		<svg
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			stroke-width="1.7"
+			stroke-linecap="round"
+			stroke-linejoin="round"
+			class={className}
+			aria-hidden="true"
+			focusable="false"
+		>
+			<path d="M8.55 5.2h7.6c.75 0 1.35.6 1.35 1.35v7.15c0 .75-.6 1.35-1.35 1.35h-7c-.97 0-1.75-.78-1.75-1.75V6.95c0-.97.78-1.75 1.75-1.75Z" />
+			<path d="M10.15 5.2V4.45c0-.58.47-1.05 1.05-1.05h2.8c.58 0 1.05.47 1.05 1.05v.75" />
+			<path d="M9.55 8.85h5.6" />
+			<path d="M9.55 11.5h2.2" />
+			<path d="M13.2 11.5h1.95" />
+			<path d="M6.4 9.4H4.55c-.63 0-1.15.52-1.15 1.15v8.1c0 .63.52 1.15 1.15 1.15h8.1c.63 0 1.15-.52 1.15-1.15v-1.85" />
+			<path d="M6.95 12.6h3.5" />
+			<path d="M6.95 15.35h3.5" />
+			<path d="M6.95 18.1h3.5" />
+		</svg>
+	)
+}
+
+{
+	name === "citations" && (
+		<svg
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			stroke-width="1.7"
+			stroke-linecap="round"
+			stroke-linejoin="round"
+			class={className}
+			aria-hidden="true"
+			focusable="false"
+		>
+			<path d="M9.2 5.15h6.55c.8 0 1.45.65 1.45 1.45v9.15c0 .8-.65 1.45-1.45 1.45H8.65c-.8 0-1.45-.65-1.45-1.45V6.6c0-.8.65-1.45 1.45-1.45Z" />
+			<path d="M10.4 5.15V4.4c0-.58.47-1.05 1.05-1.05h2.05c.58 0 1.05.47 1.05 1.05v.75" />
+			<path d="M10.1 9.25h4.2" />
+			<path d="M10.1 11.95h4.75" />
+			<path d="M10.1 14.65h3.2" />
+			<path d="M4.15 8.75c-.7 0-1.25.55-1.25 1.25v4" />
+			<path d="M4.15 8.75h.9" />
+			<path d="M4.15 15.25h.9" />
+			<path d="M19.85 8.75c.7 0 1.25.55 1.25 1.25v4" />
+			<path d="M19.85 8.75h-.9" />
+			<path d="M19.85 15.25h-.9" />
+		</svg>
+	)
+}

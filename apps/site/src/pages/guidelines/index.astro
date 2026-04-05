@@ -33,14 +33,20 @@ const allFamilies = Array.from(familySet).sort((a, b) => a.localeCompare(b));
 		description: "Browse the Chartcoach guideline catalog.",
 	})}
 >
-	<div class="not-content guidelines-page">
-		<p class="guidelines-page__kicker">catalog</p>
-		<h1 class="guidelines-page__title">Guidelines</h1>
-		<p class="guidelines-page__lede">Browse the Chart Coach catalog as structured guideline records.</p>
-		<div class="guidelines-controls">
-			<div class="guidelines-controls__summary">
+	<div class="not-content guidelines-page mx-auto w-full max-w-[64rem] pt-4">
+		<p class="m-0 mb-2 font-mono text-[0.72rem] font-bold lowercase tracking-[0.04em] text-muted-foreground">
+			catalog
+		</p>
+		<h1 class="m-0 text-[clamp(1.55rem,3vw,2.1rem)] font-semibold leading-[1.1] tracking-[-0.02em] text-foreground [font-family:var(--cc-site-font-display)]">
+			Guidelines
+		</h1>
+		<p class="mt-2 max-w-[46rem] text-[0.96rem] leading-[1.55] text-muted-foreground">
+			Browse the Chart Coach catalog as structured guideline records.
+		</p>
+		<div class="guidelines-controls mt-4 flex flex-col items-stretch gap-4 border-b border-border pb-4">
+			<div class="min-w-[14rem]">
 				<div
-					class="guidelines-controls__count"
+					class="font-mono text-[0.78rem] font-bold lowercase tracking-[0.02em] text-foreground"
 					id="guidelines-count"
 					data-total-guidelines={totalGuidelines}
 					role="status"
@@ -49,14 +55,19 @@ const allFamilies = Array.from(familySet).sort((a, b) => a.localeCompare(b));
 				>
 					{totalGuidelines.toLocaleString()} guidelines
 				</div>
-				<p class="guidelines-controls__hint" id="guidelines-filter-hint">
+				<p class="mt-2 text-[0.88rem] leading-[1.55] text-muted-foreground" id="guidelines-filter-hint">
 					Filter by labels (e.g., <code>chart</code> or <code>chart:bar</code>), use the arrow keys to review suggestions, and press Enter to add one.
 				</p>
 			</div>
 
-			<form class="guidelines-filter-form" id="guidelines-filter-form" autocomplete="off">
+			<form
+				class="guidelines-filter-form relative grid w-full max-w-[18rem] grid-cols-[minmax(0,1fr)_auto] overflow-visible rounded-[3px] border border-input bg-background"
+				id="guidelines-filter-form"
+				autocomplete="off"
+			>
 				<label class="sr-only" for="guidelines-filter-input">Add label filter</label>
 				<input
+					class="w-full appearance-none border-0 bg-transparent px-3 py-2 text-[0.88rem] font-medium leading-[1.2] text-foreground placeholder:text-muted-foreground focus:outline-none"
 					type="text"
 					id="guidelines-filter-input"
 					name="label"
@@ -70,7 +81,13 @@ const allFamilies = Array.from(familySet).sort((a, b) => a.localeCompare(b));
 					aria-controls="guidelines-label-suggestions"
 					aria-describedby="guidelines-filter-hint guidelines-count"
 				/>
-				<button type="submit" aria-label="Add filter">Add</button>
+				<button
+					class="cursor-pointer border-0 border-l border-border bg-muted px-3 py-2 font-mono text-[0.74rem] font-bold lowercase tracking-[0.02em] text-foreground transition-colors hover:bg-secondary"
+					type="submit"
+					aria-label="Add filter"
+				>
+					Add
+				</button>
 				<div
 					class="guidelines-suggestions"
 					id="guidelines-label-suggestions"
@@ -81,11 +98,17 @@ const allFamilies = Array.from(familySet).sort((a, b) => a.localeCompare(b));
 			</form>
 		</div>
 
-		<div class="guidelines-filters" id="guidelines-filters" hidden>
-			<span class="guidelines-filters__label">Filters:</span>
-			<ul class="guidelines-filters__list" id="guidelines-filters-list"></ul>
+		<div
+			class="guidelines-filters mt-3 flex w-full flex-wrap items-center gap-2 [&[hidden]]:!hidden"
+			id="guidelines-filters"
+			hidden
+		>
+			<span class="font-mono text-[0.74rem] font-bold lowercase tracking-[0.02em] text-muted-foreground">
+				Filters:
+			</span>
+			<ul class="m-0 flex list-none flex-wrap gap-1.5 p-0" id="guidelines-filters-list"></ul>
 			<button
-				class="guidelines-filters__clear"
+				class="cursor-pointer border-0 bg-transparent px-1 py-0.5 font-mono text-[0.72rem] font-bold lowercase tracking-[0.02em] text-muted-foreground transition-colors hover:text-foreground hover:underline hover:underline-offset-[0.16em]"
 				type="button"
 				id="guidelines-filters-clear"
 				aria-label="Clear all filters"
@@ -94,7 +117,7 @@ const allFamilies = Array.from(familySet).sort((a, b) => a.localeCompare(b));
 			</button>
 		</div>
 
-		<ul class="guidelines-grid" id="guidelines-grid">
+		<ul class="guidelines-grid mt-8 grid w-full list-none gap-4 p-0" id="guidelines-grid">
 			{
 				guidelines.map((g) => {
 					const title = g.data.title ?? g.id;

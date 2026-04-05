@@ -4,9 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev:anywidget": "vite --config vite.config.anywidget.js",
+    "export:viewer-data": "uv run python -m visground.viewer.export",
+    "dev:anywidget": "pnpm export:viewer-data && vite --config vite.config.anywidget.js",
     "serve:charts": "uv run python -m http.server 8000 --bind 127.0.0.1 --directory data/artifacts/charts",
-    "build:anywidget": "vite build --config vite.config.anywidget.js",
+    "build:anywidget": "pnpm export:viewer-data && vite build --config vite.config.anywidget.js",
     "build": "pnpm --filter @chartcoach/visground-viewer build && vite build --config vite.config.anywidget.js",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
@@ -15,6 +16,8 @@
   },
   "devDependencies": {
     "@anywidget/vite": "^0.2.2",
+    "@tailwindcss/vite": "^4.2.2",
+    "tailwindcss": "^4.2.2",
     "typescript": "^5.9.3",
     "vite": "^7.3.1"
   }

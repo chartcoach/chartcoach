@@ -1,0 +1,1 @@
+{"version":3,"file":"popover-layer.d.ts","sourceRoot":"","sources":["../../../src/viewer/render/popover-layer.tsx"],"names":[],"mappings":"AAWA,OAAO,KAAK,EAAE,aAAa,EAAE,WAAW,EAAE,MAAM,mBAAmB,CAAC;AAKpE,wBAAgB,YAAY,CAAC,EAC3B,KAAK,EACL,OAAO,EACP,MAAM,GACP,EAAE;IACD,KAAK,EAAE,WAAW,CAAC;IACnB,OAAO,EAAE,aAAa,CAAC;IACvB,MAAM,EAAE,WAAW,GAAG,IAAI,CAAC;CAC5B,kDAyCA"}

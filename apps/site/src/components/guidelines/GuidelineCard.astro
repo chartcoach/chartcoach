@@ -1,8 +1,6 @@
 ---
-import {
-  GuidelineCard as SharedGuidelineCard,
-  type GuidelineCardLabel,
-} from "@chartcoach/chartcoach-ui";
+import GuidelineLabels from "./GuidelineLabels.astro";
+import type { GuidelineCardLabel } from "./types";
 
 interface Props {
   href: string;
@@ -16,11 +14,27 @@ interface Props {
 const { href, title, description, dataLabels, labels = [], labelsRemaining } = Astro.props as Props;
 ---
 
-<SharedGuidelineCard
-  href={href}
-  title={title}
-  description={description}
-  dataLabels={dataLabels}
-  labels={labels as GuidelineCardLabel[]}
-  labelsRemaining={labelsRemaining}
-/>
+<li
+  class="guideline-card list-none rounded-lg border border-border bg-card px-4 py-4 text-card-foreground shadow-[var(--ccui-shadow)] transition-colors hover:border-foreground/15 hover:bg-background focus-within:ring-2 focus-within:ring-ring/40 focus-within:ring-offset-2 focus-within:ring-offset-background"
+  data-labels={dataLabels}
+>
+  <div class="grid min-w-0 gap-2">
+    <a
+      class="block text-[clamp(1.05rem,1vw+0.85rem,1.2rem)] font-semibold leading-[1.18] tracking-[-0.015em] text-foreground no-underline [font-family:var(--cc-site-font-display)] hover:text-foreground/80 focus-visible:text-foreground/80"
+      href={href}
+    >
+      {title}
+    </a>
+    {description ? <p class="m-0 text-sm leading-6 text-muted-foreground">{description}</p> : null}
+    {
+      labels.length || labelsRemaining ? (
+        <GuidelineLabels
+          className="pt-0.5"
+          labels={labels as GuidelineCardLabel[]}
+          labelsRemaining={labelsRemaining}
+          variant="chip-compact"
+        />
+      ) : null
+    }
+  </div>
+</li>

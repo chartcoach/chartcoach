@@ -1,6 +1,6 @@
 {
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "lib": ["ES2022"],
@@ -13,8 +13,6 @@
       "@chartcoach/catalog/browser": ["./src/browser.ts"]
     },
 
-    "strict": true,
-    "skipLibCheck": true,
     "noEmit": true
   },
   "include": ["src/**/*.ts"]
