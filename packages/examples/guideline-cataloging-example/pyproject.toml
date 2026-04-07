@@ -1,0 +1,22 @@
+[project]
+name = "guideline-cataloging"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "altair>=6.0.0",
+  "bibtexparser>=1.4.3",
+  "chartcoach",
+  "joblib>=1.5.3",
+  "marimo[recommended]",
+  "pyzotero>=1.8.0",
+  "tenacity>=9.1.4",
+  "tqdm>=4.67.3",
+]
+
+[tool.uv.sources]
+chartcoach = { workspace = true }
+
+[tool.marimo.runtime]
+dotenv = ["../../.env"]

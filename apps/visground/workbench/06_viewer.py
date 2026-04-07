@@ -1,56 +1,38 @@
 import marimo
 
-__generated_with = "0.21.1"
+__generated_with = "0.22.4"
 app = marimo.App(width="columns")
 
 
 @app.cell(hide_code=True)
-def _():
-    import os
-
-    import marimo as mo
-    from visground.datasets import VisGroundDataset
-    from visground.viewer import (
-        ViewerConfig,
-        ViewerDimensionSpec,
-        ViewerLayout,
-        VisGroundViewer,
+def _(
+    VisGroundViewer,
+    candidates_df,
+    judgement_runs_df,
+    judgements_df,
+    mo,
+    viewer_config,
+):
+    widget = mo.ui.anywidget(
+        VisGroundViewer(
+            candidates_df=candidates_df,
+            judgement_runs_df=judgement_runs_df,
+            judgements_df=judgements_df,
+            viewer_config=viewer_config,
+        )
     )
-
-    return (
-        ViewerConfig,
-        ViewerDimensionSpec,
-        ViewerLayout,
-        VisGroundDataset,
-        VisGroundViewer,
-        mo,
-        os,
-    )
+    widget
+    return
 
 
 @app.cell(hide_code=True)
-def _(mo, os):
-    debug_default = os.getenv("VISGROUND_VIEWER_DEBUG", "0") == "1"
-    debug_switch = mo.ui.switch(debug_default, label="Debug")
-    debug_switch
-    return (debug_switch,)
-
-
-@app.cell(hide_code=True)
-def _(VisGroundDataset):
-    store = VisGroundDataset()
-    candidates_df = store.read_generated_candidates_df()
-    judgements_df = (
-        store.read_judgements_df() if store.judgements_path().exists() else None
-    )
-    judgement_runs_df = (
-        store.read_judgement_runs_df() if store.judgement_runs_path().exists() else None
-    )
-    return candidates_df, judgement_runs_df, judgements_df
-
-
-@app.cell(hide_code=True)
-def _(ViewerConfig, ViewerDimensionSpec, ViewerLayout, os):
+def _(
+    DEFAULT_VIEWER_IMAGE_BASE_URL,
+    ViewerConfig,
+    ViewerDimensionSpec,
+    ViewerLayout,
+    os,
+):
     from pathlib import Path
 
     import polars as pl
@@ -125,7 +107,7 @@ def _(ViewerConfig, ViewerDimensionSpec, ViewerLayout, os):
             }
 
     image_base_url = os.getenv(
-        "VISGROUND_VIEWER_IMAGE_BASE_URL", "http://localhost:3434"
+        "VISGROUND_VIEWER_IMAGE_BASE_URL", DEFAULT_VIEWER_IMAGE_BASE_URL
     )
 
     viewer_config = ViewerConfig(
@@ -203,26 +185,42 @@ def _(ViewerConfig, ViewerDimensionSpec, ViewerLayout, os):
 
 
 @app.cell(hide_code=True)
-def _(
-    VisGroundViewer,
-    candidates_df,
-    debug_switch,
-    judgement_runs_df,
-    judgements_df,
-    mo,
-    viewer_config,
-):
-    widget = mo.ui.anywidget(
-        VisGroundViewer(
-            candidates_df=candidates_df,
-            judgement_runs_df=judgement_runs_df,
-            judgements_df=judgements_df,
-            viewer_config=viewer_config,
-            debug=debug_switch.value,
-        )
+def _(VisGroundDataset):
+    store = VisGroundDataset()
+    candidates_df = store.read_generated_candidates_df()
+    judgements_df = (
+        store.read_judgements_df() if store.judgements_path().exists() else None
     )
-    widget
-    return
+    judgement_runs_df = (
+        store.read_judgement_runs_df() if store.judgement_runs_path().exists() else None
+    )
+    return candidates_df, judgement_runs_df, judgements_df
+
+
+@app.cell(hide_code=True)
+def _():
+    import os
+
+    import marimo as mo
+    from visground.datasets import VisGroundDataset
+    from visground.viewer import (
+        ViewerConfig,
+        ViewerDimensionSpec,
+        ViewerLayout,
+        VisGroundViewer,
+    )
+    from visground.viewer.defaults import DEFAULT_VIEWER_IMAGE_BASE_URL
+
+    return (
+        DEFAULT_VIEWER_IMAGE_BASE_URL,
+        ViewerConfig,
+        ViewerDimensionSpec,
+        ViewerLayout,
+        VisGroundDataset,
+        VisGroundViewer,
+        mo,
+        os,
+    )
 
 
 if __name__ == "__main__":

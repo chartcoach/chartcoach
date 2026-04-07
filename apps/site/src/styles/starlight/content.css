@@ -1,22 +1,25 @@
 @layer chartcoach.overrides {
+  html:not([data-has-hero]) .content-panel > .sl-container > h1#_top,
   main:has(#guidelines-grid) h1,
-  main:has(.guideline-detail) h1 {
+  main:has([data-guideline-detail-page]) h1 {
     font-size: clamp(1.7rem, 3vw, 2.3rem);
     line-height: 1.08;
     letter-spacing: -0.02em;
     margin-bottom: 0.35rem;
     font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+    font-weight: 600;
+    color: var(--cc-brand-high);
   }
 
   .sl-markdown-content .card {
     --sl-card-border: var(--cc-border-color);
-    --sl-card-bg: var(--ccui-paper);
+    --sl-card-bg: var(--cc-shell-surface);
     border: var(--cc-border);
-    border-radius: var(--ccui-radius-lg);
-    background: var(--ccui-paper);
+    border-radius: var(--cc-radius-panel-tight);
+    background: var(--cc-shell-surface);
     padding: 1rem;
     gap: 0.7rem;
-    box-shadow: none;
+    box-shadow: var(--cc-card-shadow);
   }
 
   .sl-markdown-content .card .title {
@@ -43,7 +46,7 @@
   }
 
   .pagination-links a {
-    border-radius: var(--ccui-radius-md);
+    border-radius: var(--cc-radius-panel-tight);
     padding: 0.72rem 0.85rem;
     box-shadow: none;
   }
@@ -58,9 +61,9 @@
     justify-content: center;
     min-height: 2.45rem;
     padding: 0.66rem 0.94rem;
-    border: 1px solid var(--ccui-border);
-    border-radius: var(--ccui-radius-md) !important;
-    background: var(--ccui-paper) !important;
+    border: 1px solid var(--cc-control-border);
+    border-radius: var(--cc-radius-pill) !important;
+    background: var(--cc-control-bg) !important;
     color: var(--ccui-text) !important;
     box-shadow: none;
     font-family: var(--ccui-font-sans);
@@ -74,26 +77,26 @@
   }
 
   :root:not([data-theme="dark"]) .sl-link-button.primary {
-    border-color: var(--cc-brand-high) !important;
-    background: var(--cc-brand-high) !important;
+    border-color: color-mix(in srgb, var(--cc-brand-high) 82%, black) !important;
+    background: color-mix(in srgb, var(--cc-brand-high) 96%, black) !important;
     color: var(--ccui-paper) !important;
   }
 
   :root[data-theme="dark"] .sl-link-button.primary {
-    border-color: color-mix(in srgb, var(--cc-brand) 58%, var(--ccui-border)) !important;
-    background: color-mix(in srgb, var(--cc-brand-low) 60%, var(--ccui-panel)) !important;
+    border-color: color-mix(in srgb, var(--cc-brand) 36%, var(--cc-control-border)) !important;
+    background: color-mix(in srgb, var(--cc-brand) 14%, var(--cc-shell-surface-strong)) !important;
     color: var(--cc-brand-high) !important;
   }
 
   .sl-link-button.secondary {
-    background: var(--ccui-paper) !important;
-    color: var(--ccui-text) !important;
+    background: var(--cc-control-bg) !important;
+    color: var(--ccui-text-soft) !important;
   }
 
   .sl-link-button:hover,
   .sl-link-button:focus-visible {
-    border-color: color-mix(in srgb, var(--cc-brand) 30%, var(--ccui-border)) !important;
-    background: var(--ccui-panel) !important;
+    border-color: color-mix(in srgb, var(--cc-brand) 24%, var(--cc-control-border)) !important;
+    background: var(--cc-shell-surface-strong) !important;
     color: var(--cc-brand-high) !important;
   }
 
@@ -115,12 +118,13 @@
   html[data-has-hero] .hero {
     position: relative;
     isolation: isolate;
-    width: min(100%, 70rem);
+    width: min(100%, 78rem);
     max-width: none;
     margin-inline: auto;
     margin-bottom: 0.7rem;
     padding-block: 0.9rem 1.9rem;
-    gap: 1.8rem;
+    gap: clamp(2rem, 4vw, 3.6rem);
+    align-items: center;
   }
 
   html[data-has-hero] .hero .stack {
@@ -128,18 +132,18 @@
   }
 
   html[data-has-hero] .hero .copy {
-    max-width: 42rem;
-    gap: 0.65rem;
+    max-width: 36rem;
+    gap: 0.72rem;
   }
 
   html[data-has-hero] .hero h1 {
-    max-width: 10ch;
+    max-width: 11ch;
     margin: 0;
     color: var(--cc-brand-high);
     font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
-    font-size: clamp(2.9rem, 5vw, 4.5rem);
+    font-size: clamp(3rem, 1.6rem + 3vw, 5rem);
     font-weight: 600;
-    line-height: 0.94;
+    line-height: 0.96;
     letter-spacing: -0.04em;
   }
 
@@ -159,159 +163,6 @@
     display: grid;
     gap: 1.7rem;
     margin-top: 0;
-  }
-
-  .cc-hero-art {
-    display: grid;
-    place-items: center;
-    width: min(100%, 26rem);
-    aspect-ratio: 1.28 / 0.88;
-    margin-inline: auto;
-    border: 1px solid color-mix(in srgb, var(--cc-brand) 12%, var(--ccui-border));
-    border-radius: var(--ccui-radius-lg);
-    background: color-mix(in srgb, var(--ccui-paper) 95%, var(--cc-brand-low));
-    box-shadow: 0 10px 24px rgba(43, 36, 31, 0.04);
-    overflow: hidden;
-  }
-
-  .cc-hero-art__image {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-  }
-
-  .cc-hero-art__image--dark {
-    display: none;
-  }
-
-  :root[data-theme="dark"] .cc-hero-art {
-    background: color-mix(in srgb, var(--ccui-panel) 86%, var(--ccui-paper));
-    border-color: color-mix(in srgb, var(--cc-brand) 26%, var(--ccui-border));
-  }
-
-  :root[data-theme="dark"] .cc-hero-art__image--light {
-    display: none;
-  }
-
-  :root[data-theme="dark"] .cc-hero-art__image--dark {
-    display: block;
-  }
-
-  .cc-home-section__title {
-    margin: 0;
-    color: var(--ccui-text);
-    font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
-    font-size: clamp(1.7rem, 2vw, 2.2rem);
-    font-weight: 600;
-    line-height: 1.08;
-    letter-spacing: -0.025em;
-  }
-
-  .cc-home-section__lede {
-    max-width: 40rem;
-    margin: 0;
-    color: var(--ccui-text-soft);
-    font-size: 0.96rem;
-    line-height: 1.62;
-  }
-
-  .cc-home-overview {
-    display: grid;
-    gap: 0.9rem;
-    align-items: stretch;
-  }
-
-  .cc-home-overview__copy,
-  .cc-home-explore__header {
-    display: grid;
-    gap: 0.28rem;
-  }
-
-  .cc-home-overview__copy {
-    justify-items: start;
-  }
-
-  .cc-home-overview__qualities {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.65rem;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  .cc-home-overview__qualities li {
-    display: grid;
-    align-content: start;
-    min-height: 100%;
-    padding: 0.9rem 0.95rem;
-    border: 1px solid var(--ccui-border);
-    border-radius: var(--ccui-radius-lg);
-    background: color-mix(in srgb, var(--ccui-paper) 95%, var(--ccui-panel));
-    color: var(--ccui-text-soft);
-    font-size: 0.9rem;
-    line-height: 1.52;
-  }
-
-  .cc-home-overview__qualities li::before {
-    content: "";
-    position: static;
-    width: 0.34rem;
-    height: 0.34rem;
-    margin-bottom: 0.55rem;
-    background: color-mix(in srgb, var(--cc-brand) 74%, var(--ccui-border));
-  }
-
-  .cc-home-explore {
-    display: grid;
-    gap: 0.8rem;
-    padding-top: 0;
-    border-top: none;
-  }
-
-  html[data-has-hero] .cc-features {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.8rem;
-    margin-top: 0;
-    align-items: stretch;
-  }
-
-  html[data-has-hero] .cc-feature {
-    padding: 0.95rem 1rem;
-    border-color: var(--ccui-border);
-    border-radius: var(--ccui-radius-lg);
-    background: color-mix(in srgb, var(--ccui-paper) 96%, var(--ccui-panel));
-    box-shadow: none;
-  }
-
-  html[data-has-hero] .cc-feature:hover,
-  html[data-has-hero] .cc-feature:focus-visible {
-    border-color: color-mix(in srgb, var(--cc-brand) 26%, var(--ccui-border));
-    background: var(--ccui-paper);
-  }
-
-  html[data-has-hero] .cc-feature__icon {
-    width: 2.2rem;
-    height: 2.2rem;
-    border-color: var(--ccui-border);
-    border-radius: var(--ccui-radius-md);
-    background: var(--ccui-panel);
-    color: var(--cc-brand-high);
-  }
-
-  html[data-has-hero] .cc-feature__icon svg {
-    width: 1.1rem;
-    height: 1.1rem;
-  }
-
-  html[data-has-hero] .cc-feature__title {
-    font-size: 0.95rem;
-  }
-
-  html[data-has-hero] .cc-feature__desc {
-    font-size: 0.88rem;
-    line-height: 1.55;
   }
 
   .sl-markdown-content a.sl-anchor-link:not(:where(.not-content *)),
@@ -373,18 +224,6 @@
       flex: 1 1 0;
     }
 
-    .cc-home-overview {
-      gap: 0.8rem;
-    }
-
-    .cc-home-overview__qualities {
-      grid-template-columns: 1fr;
-    }
-
-    html[data-has-hero] .cc-features {
-      grid-template-columns: 1fr;
-    }
-
     button[data-open-modal] {
       max-width: none !important;
       width: 2.2rem !important;
@@ -414,10 +253,6 @@
     button[data-open-modal] > span,
     button[data-open-modal] > kbd {
       display: none !important;
-    }
-
-    .cc-site-header__nav--desktop {
-      display: none;
     }
   }
 }

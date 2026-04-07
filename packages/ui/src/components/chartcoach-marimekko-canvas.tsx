@@ -1,0 +1,68 @@
+import * as React from "react";
+
+import { ChartCoachMarimekkoMark } from "./chartcoach-marimekko-mark";
+import type { ChartCoachMarkMode, ChartCoachTheme } from "../lib/chartcoach-marimekko";
+
+type ChartCoachMarimekkoCanvasProps = {
+  className?: string;
+  style?: React.CSSProperties;
+  theme?: ChartCoachTheme;
+  mode?: Extract<ChartCoachMarkMode, "static" | "hero-loop">;
+  title?: string;
+  idPrefix?: string;
+};
+
+function ChartCoachMarimekkoCanvas({
+  className,
+  style,
+  theme = "auto",
+  mode = "hero-loop",
+  title = "Structured visualization design knowledge",
+  idPrefix = "cc-marimekko-canvas",
+}: ChartCoachMarimekkoCanvasProps) {
+  return (
+    <div
+      aria-hidden={title ? undefined : true}
+      className={className}
+      style={{
+        position: "relative",
+        display: "grid",
+        placeItems: "center",
+        width: "100%",
+        aspectRatio: "1.24 / 1",
+        overflow: "hidden",
+        padding: "clamp(0.85rem, 2.4vw, 1.35rem)",
+        borderRadius: "var(--cc-radius-panel, 1rem)",
+        background:
+          "linear-gradient(180deg, color-mix(in srgb, var(--cc-shell-surface, #f7f4ee) 96%, white), color-mix(in srgb, var(--ccui-panel, #efebe4) 92%, transparent))",
+        boxShadow: "none",
+        ...style,
+      }}
+    >
+      <div
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          inset: 0,
+          zIndex: 0,
+          opacity: 0.22,
+          backgroundImage:
+            "linear-gradient(to right, transparent, color-mix(in srgb, var(--cc-brand, #8f6f50) 10%, transparent) 50%, transparent), repeating-linear-gradient(to right, transparent 0 4.8rem, color-mix(in srgb, var(--cc-chip-border, #d9d2c7) 56%, transparent) 4.8rem 4.86rem), repeating-linear-gradient(to bottom, transparent 0 4.8rem, color-mix(in srgb, var(--cc-chip-border, #d9d2c7) 56%, transparent) 4.8rem 4.86rem)",
+          pointerEvents: "none",
+        }}
+      />
+      <div style={{ position: "relative", zIndex: 1, width: "100%", display: "grid", placeItems: "center" }}>
+        <ChartCoachMarimekkoMark
+          idPrefix={idPrefix}
+          mode={mode}
+          theme={theme}
+          title={title}
+          style={{ width: "min(74%, 28rem)", maxWidth: "100%" }}
+        />
+      </div>
+    </div>
+  );
+}
+
+export { ChartCoachMarimekkoCanvas };
+export type { ChartCoachMarimekkoCanvasProps };

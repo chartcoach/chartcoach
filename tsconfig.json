@@ -1,8 +1,14 @@
 {
   "files": [],
   "references": [
-    { "path": "./packages/chartcoach-js/tsconfig.build.json" },
-    { "path": "./packages/ui/tsconfig.build.json" },
-    { "path": "./apps/visground-viewer/tsconfig.build.json" }
+    {
+      "path": "./packages/catalog-javascript/tsconfig.build.json"
+    },
+    {
+      "path": "./packages/ui/tsconfig.build.json"
+    },
+    {
+      "path": "./packages/visground-viewer/tsconfig.build.json"
+    }
   ]
 }

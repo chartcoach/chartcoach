@@ -15,73 +15,46 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "chartcoach-source": {
-        "types": "./src/index.ts",
-        "default": "./src/index.ts"
-      },
-      "import": "./dist/index.js",
+      "source": "./src/index.ts",
       "default": "./dist/index.js"
     },
     "./components": {
       "types": "./dist/components/index.d.ts",
-      "chartcoach-source": {
-        "types": "./src/components/index.ts",
-        "default": "./src/components/index.ts"
-      },
-      "import": "./dist/components/index.js",
+      "source": "./src/components/index.ts",
       "default": "./dist/components/index.js"
     },
     "./components/*": {
       "types": "./dist/components/*.d.ts",
-      "chartcoach-source": {
-        "types": "./src/components/*.tsx",
-        "default": "./src/components/*.tsx"
-      },
-      "import": "./dist/components/*.js",
+      "source": "./src/components/*.tsx",
       "default": "./dist/components/*.js"
     },
     "./hooks": {
       "types": "./dist/hooks/index.d.ts",
-      "chartcoach-source": {
-        "types": "./src/hooks/index.ts",
-        "default": "./src/hooks/index.ts"
-      },
-      "import": "./dist/hooks/index.js",
+      "source": "./src/hooks/index.ts",
       "default": "./dist/hooks/index.js"
     },
     "./hooks/*": {
       "types": "./dist/hooks/*.d.ts",
-      "chartcoach-source": {
-        "types": "./src/hooks/*.ts",
-        "default": "./src/hooks/*.ts"
-      },
-      "import": "./dist/hooks/*.js",
+      "source": "./src/hooks/*.ts",
       "default": "./dist/hooks/*.js"
     },
     "./lib": {
       "types": "./dist/lib/index.d.ts",
-      "chartcoach-source": {
-        "types": "./src/lib/index.ts",
-        "default": "./src/lib/index.ts"
-      },
-      "import": "./dist/lib/index.js",
+      "source": "./src/lib/index.ts",
       "default": "./dist/lib/index.js"
     },
     "./lib/*": {
       "types": "./dist/lib/*.d.ts",
-      "chartcoach-source": {
-        "types": "./src/lib/*.ts",
-        "default": "./src/lib/*.ts"
-      },
-      "import": "./dist/lib/*.js",
+      "source": "./src/lib/*.ts",
       "default": "./dist/lib/*.js"
     },
     "./styles/*": "./src/styles/*"
   },
   "scripts": {
     "build": "tsc -b tsconfig.build.json",
-    "build:watch": "pnpm build && tsc -b tsconfig.build.json --watch --preserveWatchOutput",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "format": "oxfmt .",
+    "lint": "oxlint ."
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.2.8",

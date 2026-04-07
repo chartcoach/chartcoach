@@ -1,9 +1,9 @@
 ---
 import { getCollection } from "astro:content";
 import StarlightPage from "@astrojs/starlight/components/StarlightPage.astro";
-import { encodeGuidelineLabelQueryValue, parseGuidelineLabel } from "@chartcoach/site/lib/guidelines/labels";
-import { createGuidelinePageFrontmatter } from "@chartcoach/site/lib/site-metadata";
-import GuidelineCard from "@chartcoach/site/components/guidelines/GuidelineCard.astro";
+import { encodeGuidelineLabelQueryValue, parseGuidelineLabel } from "@/lib/guidelines/labels";
+import { createGuidelinePageFrontmatter } from "@/lib/site-metadata";
+import GuidelineCard from "@/components/guidelines/GuidelineCard.astro";
 
 const guidelines = (await getCollection("guidelines")).sort((a, b) =>
 	(a.data.title ?? a.id).localeCompare(b.data.title ?? b.id),
@@ -11,6 +11,8 @@ const guidelines = (await getCollection("guidelines")).sort((a, b) =>
 
 const totalGuidelines = guidelines.length;
 const MAX_CARD_LABELS = 4;
+const hintCodeClasses =
+	"rounded-sm border border-border bg-muted px-[0.35rem] py-[0.08rem] text-foreground";
 
 const labelSet = new Set<string>();
 const familySet = new Set<string>();
@@ -30,20 +32,20 @@ const allFamilies = Array.from(familySet).sort((a, b) => a.localeCompare(b));
 	hasSidebar={false}
 	frontmatter={createGuidelinePageFrontmatter({
 		title: "Guidelines",
-		description: "Browse the Chartcoach guideline catalog.",
+		description: "Browse structured visualization guideline records.",
 	})}
 >
-	<div class="not-content guidelines-page mx-auto w-full max-w-[64rem] pt-4">
+	<div class="not-content mx-auto w-full max-w-[64rem] pt-4" data-guidelines-page>
 		<p class="m-0 mb-2 font-mono text-[0.72rem] font-bold lowercase tracking-[0.04em] text-muted-foreground">
 			catalog
 		</p>
-		<h1 class="m-0 text-[clamp(1.55rem,3vw,2.1rem)] font-semibold leading-[1.1] tracking-[-0.02em] text-foreground [font-family:var(--cc-site-font-display)]">
+		<h1 class="m-0 font-display text-[clamp(1.55rem,3vw,2.1rem)] font-semibold leading-[1.1] tracking-[-0.02em] text-foreground">
 			Guidelines
 		</h1>
 		<p class="mt-2 max-w-[46rem] text-[0.96rem] leading-[1.55] text-muted-foreground">
-			Browse the Chart Coach catalog as structured guideline records.
+			Browse structured visualization design knowledge as structured guideline records.
 		</p>
-		<div class="guidelines-controls mt-4 flex flex-col items-stretch gap-4 border-b border-border pb-4">
+		<div class="mt-4 flex flex-col items-stretch gap-4 border-b border-border pb-4">
 			<div class="min-w-[14rem]">
 				<div
 					class="font-mono text-[0.78rem] font-bold lowercase tracking-[0.02em] text-foreground"
@@ -56,12 +58,12 @@ const allFamilies = Array.from(familySet).sort((a, b) => a.localeCompare(b));
 					{totalGuidelines.toLocaleString()} guidelines
 				</div>
 				<p class="mt-2 text-[0.88rem] leading-[1.55] text-muted-foreground" id="guidelines-filter-hint">
-					Filter by labels (e.g., <code>chart</code> or <code>chart:bar</code>), use the arrow keys to review suggestions, and press Enter to add one.
+					Filter by labels (e.g., <code class={hintCodeClasses}>chart</code> or <code class={hintCodeClasses}>chart:bar</code>), use the arrow keys to review suggestions, and press Enter to add one.
 				</p>
 			</div>
 
 			<form
-				class="guidelines-filter-form relative grid w-full max-w-[18rem] grid-cols-[minmax(0,1fr)_auto] overflow-visible rounded-[3px] border border-input bg-background"
+				class="relative grid w-full max-w-[18rem] grid-cols-[minmax(0,1fr)_auto] overflow-visible rounded-sm border border-input bg-background"
 				id="guidelines-filter-form"
 				autocomplete="off"
 			>
@@ -89,7 +91,7 @@ const allFamilies = Array.from(familySet).sort((a, b) => a.localeCompare(b));
 					Add
 				</button>
 				<div
-					class="guidelines-suggestions"
+					class="absolute inset-x-0 top-[calc(100%+0.45rem)] z-20 max-h-64 overflow-auto rounded-none border border-control-border bg-surface p-1 shadow-card"
 					id="guidelines-label-suggestions"
 					role="listbox"
 					aria-label="Label suggestions"
@@ -99,7 +101,7 @@ const allFamilies = Array.from(familySet).sort((a, b) => a.localeCompare(b));
 		</div>
 
 		<div
-			class="guidelines-filters mt-3 flex w-full flex-wrap items-center gap-2 [&[hidden]]:!hidden"
+			class="mt-3 flex w-full flex-wrap items-center gap-2 [&[hidden]]:!hidden"
 			id="guidelines-filters"
 			hidden
 		>
@@ -117,7 +119,7 @@ const allFamilies = Array.from(familySet).sort((a, b) => a.localeCompare(b));
 			</button>
 		</div>
 
-		<ul class="guidelines-grid mt-8 grid w-full list-none gap-4 p-0" id="guidelines-grid">
+		<ul class="mt-8 grid w-full list-none gap-4 p-0" id="guidelines-grid">
 			{
 				guidelines.map((g) => {
 					const title = g.data.title ?? g.id;
@@ -177,6 +179,6 @@ const allFamilies = Array.from(familySet).sort((a, b) => a.localeCompare(b));
 			id="guidelines-label-suggestions-data"
 			set:html={JSON.stringify({ families: allFamilies, labels: allLabels })}
 		></script>
-		<script src="@chartcoach/site/scripts/guidelines/label-filters.entry.ts"></script>
+		<script src="@/scripts/guidelines/label-filters.entry.ts"></script>
 	</div>
 </StarlightPage>

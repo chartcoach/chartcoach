@@ -4,12 +4,17 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "export:viewer-data": "uv run python -m visground.viewer.export",
-    "dev:anywidget": "pnpm export:viewer-data && vite --config vite.config.anywidget.js",
-    "serve:charts": "uv run python -m http.server 8000 --bind 127.0.0.1 --directory data/artifacts/charts",
-    "build:anywidget": "pnpm export:viewer-data && vite build --config vite.config.anywidget.js",
-    "build": "pnpm --filter @chartcoach/visground-viewer build && vite build --config vite.config.anywidget.js",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "dev:anywidget": "vite --config vite.config.anywidget.js",
+    "build:anywidget": "vite build --config vite.config.anywidget.js",
+    "typecheck:js": "tsc -p tsconfig.json --noEmit",
+    "typecheck:py": "uv run ty check .",
+    "typecheck": "pnpm typecheck:js && pnpm typecheck:py",
+    "lint:js": "oxlint .",
+    "lint:py": "uv run ruff check .",
+    "lint": "pnpm lint:js && pnpm lint:py",
+    "format:js": "oxfmt .",
+    "format:py": "uv run ruff format .",
+    "format": "pnpm format:js && pnpm format:py"
   },
   "dependencies": {
     "@chartcoach/visground-viewer": "workspace:*"

@@ -1,0 +1,11 @@
+{
+  "name": "catalog-python",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "lint": "uv run ruff check .",
+    "typecheck": "uv run ty check .",
+    "format": "uv run ruff format .",
+    "build": "uv build"
+  }
+}

@@ -1,4 +1,23 @@
 @import "tailwindcss/theme";
 @import "tailwindcss/utilities";
-@source "../**/*.{astro,ts,tsx}";
+@source "../**/*.{astro,ts,tsx,mdx}";
 @import "@chartcoach/ui/styles/globals.css";
+
+@theme inline {
+  --font-display: var(--cc-site-font-display);
+
+  --color-surface: var(--cc-shell-surface);
+  --color-surface-strong: var(--cc-shell-surface-strong);
+  --color-control: var(--cc-control-bg);
+  --color-control-border: var(--cc-control-border);
+  --color-chip: var(--cc-chip-bg);
+  --color-chip-border: var(--cc-chip-border);
+  --color-brand-high: var(--cc-brand-high);
+
+  --radius-pill: var(--cc-radius-pill);
+  --radius-panel: var(--cc-radius-panel);
+  --radius-panel-tight: var(--cc-radius-panel-tight);
+
+  --shadow-card: var(--cc-card-shadow);
+  --shadow-popover: var(--cc-shadow-popover);
+}

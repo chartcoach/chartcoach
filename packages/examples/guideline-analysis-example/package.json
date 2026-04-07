@@ -1,0 +1,8 @@
+{
+  "name": "guideline-analysis-example",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "format": "uv run ruff format ."
+  }
+}

@@ -1,3 +1,3 @@
-import { initGuidelineLabelFilters } from "@chartcoach/site/scripts/guidelines/label-filters";
+import { initGuidelineLabelFilters } from "@/scripts/guidelines/label-filters";
 
 initGuidelineLabelFilters();

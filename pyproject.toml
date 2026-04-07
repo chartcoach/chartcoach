@@ -1,9 +1,9 @@
 [tool.uv.workspace]
 members = [
-    "packages/chartcoach-py",
-    "packages/examples/guideline-cataloging",
-    "packages/examples/guideline-analysis",
-    "packages/examples/guideline-application",
+    "packages/examples/guideline-cataloging-example",
+    "packages/examples/guideline-analysis-example",
+    "packages/examples/guideline-application-example",
+    "packages/catalog-python",
     "apps/visground",
 ]
 
@@ -14,20 +14,9 @@ dev = [
     "ty>=0.0.11",
 ]
 
-[tool.ruff]
-extend-include = ["*.ipynb"]
-extend-exclude = ["apps/visground/data"]
-force-exclude = true
-
-[tool.ruff.format]
-exclude = ["apps/visground/data"]
-
 [tool.ruff.lint]
 pydocstyle = { convention = "numpy" }
 ignore = []
-
-[tool.ty.src]
-exclude = ["scripts", "apps/visground/data"]
 
 [tool.marimo.runtime]
 output_max_bytes = 10_000_000_000

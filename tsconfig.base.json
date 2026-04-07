@@ -2,7 +2,6 @@
   "compilerOptions": {
     "target": "ES2022",
     "strict": true,
-    "customConditions": ["chartcoach-source"],
     "resolveJsonModule": true,
     "isolatedModules": true,
     "skipLibCheck": true,

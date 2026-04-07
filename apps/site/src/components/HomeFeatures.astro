@@ -2,35 +2,23 @@
 import FeatureCard from "./home/FeatureCard.astro";
 ---
 
-<section class="cc-home-overview grid gap-4" aria-labelledby="cc-home-overview-title">
-	<div class="cc-home-overview__copy max-w-3xl">
-		<h2 id="cc-home-overview-title" class="cc-home-section__title">
-			A catalog you can read, filter, and cite.
+<section class="grid gap-[0.8rem]" aria-labelledby="cc-home-explore-title">
+	<div class="grid max-w-3xl gap-[0.28rem]">
+		<h2
+			id="cc-home-explore-title"
+			class="m-0 font-display text-[clamp(1.7rem,2vw,2.2rem)] font-semibold leading-[1.08] tracking-[-0.025em] text-foreground"
+		>
+			Explore the catalog
 		</h2>
-		<p class="cc-home-section__lede">
-			Chart Coach turns visualization advice into structured entries that stay pleasant for
-			people and precise enough for retrieval, feedback, and analysis workflows.
-		</p>
-	</div>
-	<ul
-		class="cc-home-overview__qualities grid gap-3 md:grid-cols-3"
-		aria-label="Catalog qualities"
-	>
-		<li>Readable enough to skim quickly</li>
-		<li>Structured enough to browse systematically</li>
-		<li>Grounded enough to trace back to evidence</li>
-	</ul>
-</section>
-
-<section class="cc-home-explore grid gap-4" aria-labelledby="cc-home-explore-title">
-	<div class="cc-home-explore__header max-w-3xl">
-		<h2 id="cc-home-explore-title" class="cc-home-section__title">Explore the catalog</h2>
-		<p class="cc-home-section__lede">
+		<p class="m-0 max-w-[40rem] text-[0.96rem] leading-[1.62] text-muted-foreground">
 			Choose the entry point that matches how you want to work with the material.
 		</p>
 	</div>
 
-	<div class="cc-features cc-home-features grid gap-4 md:grid-cols-2" aria-label="Explore Chart Coach">
+	<div
+		class="grid items-stretch gap-[0.8rem] md:grid-cols-2"
+		aria-label="Explore structured visualization design knowledge"
+	>
 		<FeatureCard
 			description="Read concise recommendations with context, labels, and references already in place."
 			href="/guidelines/"

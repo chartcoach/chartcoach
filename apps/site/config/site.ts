@@ -91,15 +91,10 @@ export const siteViteConfig = {
       allow: [monorepoRoot],
     },
   },
-  ssr: {
-    resolve: {
-      conditions: ["chartcoach-source", "module", "node", "development|production"],
-    },
-  },
   resolve: {
-    conditions: ["chartcoach-source", "module", "browser", "development|production"],
+    conditions: ["source", "module", "browser", "development|production"],
     alias: {
-      "@chartcoach/site": siteSourceRoot,
+      "@": siteSourceRoot,
     },
   },
 } satisfies NonNullable<AstroUserConfig["vite"]>;

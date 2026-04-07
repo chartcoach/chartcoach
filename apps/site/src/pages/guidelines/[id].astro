@@ -1,10 +1,10 @@
 ---
 import { getCollection, getEntry } from "astro:content";
 import StarlightPage from "@astrojs/starlight/components/StarlightPage.astro";
-import { encodeGuidelineLabelQueryValue, parseGuidelineLabel } from "@chartcoach/site/lib/guidelines/labels";
-import { createGuidelinePageFrontmatter } from "@chartcoach/site/lib/site-metadata";
-import GuidelineDetailView from "@chartcoach/site/components/guidelines/GuidelineDetailView.astro";
-import type { GuidelineCardLabel } from "@chartcoach/site/components/guidelines/types";
+import { encodeGuidelineLabelQueryValue, parseGuidelineLabel } from "@/lib/guidelines/labels";
+import { createGuidelinePageFrontmatter } from "@/lib/site-metadata";
+import GuidelineDetailView from "@/components/guidelines/GuidelineDetailView.astro";
+import type { GuidelineCardLabel } from "@/components/guidelines/types";
 
 export async function getStaticPaths() {
 	const guidelines = await getCollection("guidelines");
@@ -24,7 +24,7 @@ if (!guideline) throw new Error(`Guideline not found: ${Astro.params.id}`);
 		description: guideline.data.description,
 	})}
 >
-	<div class="guideline-detail mx-auto w-full max-w-[66rem] pt-4">
+	<div class="mx-auto w-full max-w-[66rem] pt-4" data-guideline-detail-page>
 		<GuidelineDetailView
 			id={guideline.id}
 			title={guideline.data.title ?? guideline.id}

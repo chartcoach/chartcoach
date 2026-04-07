@@ -10,6 +10,11 @@ from chartcoach.guideline import parse_bibtex_entry
 
 from .spec import ViewerConfig, ViewerDimensionSpec, ViewerLayout
 
+DEFAULT_VIEWER_IMAGE_BASE_URL = (
+    "https://files.peter.gy/projects/cc/supplementary/05-empirical-study/"
+    "03-pipeline/03_generated_charts/"
+)
+
 
 def _author_label(author_field: str) -> str | None:
     authors = [part.strip() for part in author_field.split(" and ") if part.strip()]
@@ -81,7 +86,7 @@ def build_default_viewer_config() -> ViewerConfig:
             }
 
     image_base_url = os.getenv(
-        "VISGROUND_VIEWER_IMAGE_BASE_URL", "http://localhost:3434"
+        "VISGROUND_VIEWER_IMAGE_BASE_URL", DEFAULT_VIEWER_IMAGE_BASE_URL
     )
 
     return ViewerConfig(

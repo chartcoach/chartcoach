@@ -22,7 +22,7 @@ def default_viewer_artifact_path() -> Path:
     return (
         Path(__file__).resolve().parents[5]
         / "apps"
-        / "visground-viewer"
+        / "visground"
         / "public"
         / "data"
         / "viewer.parquet"
