@@ -7,7 +7,7 @@ export default defineConfig(({ command }) => {
 
   return {
     plugins: [anywidget(), tailwindcss()],
-    publicDir: "public",
+    publicDir: isBuild ? false : "public",
     resolve: {
       conditions: ["source", "module", "browser", "development|production"],
     },

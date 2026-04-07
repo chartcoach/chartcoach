@@ -1,23 +1,37 @@
 ---
 title: Catalog structure
-description: How guidelines are structured for humans and retrieval systems.
+description: How each guideline is organized on the site.
 tableOfContents: false
 ---
 
-Each guideline is written in Markdown, enriched with metadata (like labels) and linked references.
+Each guideline here is stored as a small record. The writing stays plain, but the structure makes the collection easier to browse, filter, and compare.
 
-## Guideline sections
+A record has a title, a short summary, a set of labels, a few section types, and the references behind it.
 
-Guidelines follow a repeatable section structure so that systems can retrieve _the right part_ for a scenario:
+## What a guideline includes
 
-- **The Rule** — the actionable advice.
-- **The Logic** — the rationale and supporting evidence.
-- **Where to Apply** — context and prerequisites.
-- **When to Break It** — exceptions and trade-offs.
-- **Common Mistakes** — failure modes to watch for.
-- **How to Check** — ways to evaluate whether the issue exists.
-- **How to Fix** — concrete remedies.
+Each entry combines:
+
+- a concise **title** and **description** that state the main idea,
+- **labels** that make the record easier to narrow down,
+- ordered **sections** that keep different kinds of information apart,
+- and **references** that show where the guidance comes from.
+
+## Section roles
+
+The sections are meant to be easy to scan. Instead of packing everything into one block of text, each part has a job:
+
+- **advice** — what to do
+- **reason** — why it helps
+- **context** — where it fits
+- **exceptions** — when to be careful or do something else
+- **costs** — what you give up by following it
+- **mistakes** — common failure modes
+- **check** — what to look at when reviewing a chart
+- **fix** — ways to respond if something is off
+
+That separation matters because advice often depends on the situation. Two guidelines may sound similar at first, but differ in where they apply or what trade-offs they bring with them.
 
 ## References
 
-Inline citation markers like `[@someKey]` are resolved to formatted citations, backed by a `references.bib` file associated with each guideline.
+Inline citations and the references section point back to the source material behind a guideline. That makes it easier to check a claim, compare sources, or keep reading.

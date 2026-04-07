@@ -5,48 +5,48 @@
 
 :root {
   --radius: 0.625rem;
-  --background: var(--ccui-paper, #ffffff);
-  --foreground: var(--ccui-text, #111111);
-  --card: color-mix(in srgb, var(--ccui-paper, #ffffff) 96%, var(--ccui-panel, #fafafa));
-  --card-foreground: var(--ccui-text, #111111);
-  --popover: var(--ccui-paper, #ffffff);
-  --popover-foreground: var(--ccui-text, #111111);
-  --primary: var(--ccui-primary, var(--ccui-text, #111111));
-  --primary-foreground: var(--ccui-primary-foreground, var(--ccui-paper, #ffffff));
-  --secondary: var(--ccui-panel, #fafafa);
-  --secondary-foreground: var(--ccui-text, #111111);
-  --muted: var(--ccui-panel, #fafafa);
-  --muted-foreground: var(--ccui-muted, #555555);
-  --accent: var(--ccui-accent, var(--ccui-panel, #fafafa));
-  --accent-foreground: var(--ccui-accent-foreground, var(--ccui-text, #111111));
-  --destructive: #b42318;
-  --destructive-foreground: #ffffff;
-  --border: var(--ccui-border, #dddddd);
-  --input: var(--ccui-border, #dddddd);
-  --ring: var(--ccui-ring, rgba(17, 17, 17, 0.16));
+  --background: var(--ccui-paper, #f6f9ff);
+  --foreground: var(--ccui-text, #101935);
+  --card: color-mix(in srgb, var(--ccui-paper, #f6f9ff) 94%, var(--ccui-panel, #eef3ff));
+  --card-foreground: var(--ccui-text, #101935);
+  --popover: var(--ccui-paper, #f6f9ff);
+  --popover-foreground: var(--ccui-text, #101935);
+  --primary: var(--ccui-primary, #384ebc);
+  --primary-foreground: var(--ccui-primary-foreground, #f7faff);
+  --secondary: var(--ccui-panel, #eef3ff);
+  --secondary-foreground: var(--ccui-text, #101935);
+  --muted: var(--ccui-panel, #eef3ff);
+  --muted-foreground: var(--ccui-muted, #627098);
+  --accent: var(--ccui-accent, #e4ebff);
+  --accent-foreground: var(--ccui-accent-foreground, #172347);
+  --destructive: var(--ccui-destructive, #b42318);
+  --destructive-foreground: var(--ccui-destructive-foreground, #ffffff);
+  --border: var(--ccui-border, #cfd9f3);
+  --input: var(--ccui-border, #cfd9f3);
+  --ring: var(--ccui-ring, rgba(56, 78, 188, 0.24));
 }
 
 :root[data-theme="dark"],
 .dark {
-  --background: var(--ccui-paper, #111111);
-  --foreground: var(--ccui-text, #f5f5f5);
-  --card: color-mix(in srgb, var(--ccui-paper, #111111) 88%, var(--ccui-panel, #171717));
-  --card-foreground: var(--ccui-text, #f5f5f5);
-  --popover: var(--ccui-paper, #111111);
-  --popover-foreground: var(--ccui-text, #f5f5f5);
-  --primary: var(--ccui-primary, var(--ccui-text, #f5f5f5));
-  --primary-foreground: var(--ccui-primary-foreground, var(--ccui-paper, #111111));
-  --secondary: var(--ccui-panel, #171717);
-  --secondary-foreground: var(--ccui-text, #f5f5f5);
-  --muted: var(--ccui-panel, #171717);
-  --muted-foreground: var(--ccui-muted, #ababab);
-  --accent: var(--ccui-accent, var(--ccui-panel, #171717));
-  --accent-foreground: var(--ccui-accent-foreground, var(--ccui-text, #f5f5f5));
-  --destructive: #f97066;
-  --destructive-foreground: #111111;
-  --border: var(--ccui-border, #343434);
-  --input: var(--ccui-border, #343434);
-  --ring: var(--ccui-ring, rgba(242, 242, 242, 0.22));
+  --background: var(--ccui-paper, #0f152a);
+  --foreground: var(--ccui-text, #e8efff);
+  --card: color-mix(in srgb, var(--ccui-paper, #0f152a) 84%, var(--ccui-panel, #151d36));
+  --card-foreground: var(--ccui-text, #e8efff);
+  --popover: var(--ccui-paper, #0f152a);
+  --popover-foreground: var(--ccui-text, #e8efff);
+  --primary: var(--ccui-primary, #90a5ff);
+  --primary-foreground: var(--ccui-primary-foreground, #0f152a);
+  --secondary: var(--ccui-panel, #151d36);
+  --secondary-foreground: var(--ccui-text, #e8efff);
+  --muted: var(--ccui-panel, #151d36);
+  --muted-foreground: var(--ccui-muted, #9aa8d4);
+  --accent: var(--ccui-accent, #1d2748);
+  --accent-foreground: var(--ccui-accent-foreground, #edf2ff);
+  --destructive: var(--ccui-destructive, #ff887d);
+  --destructive-foreground: var(--ccui-destructive-foreground, #0f152a);
+  --border: var(--ccui-border, #2d3a67);
+  --input: var(--ccui-border, #2d3a67);
+  --ring: var(--ccui-ring, rgba(144, 165, 255, 0.34));
 }
 
 @theme inline {

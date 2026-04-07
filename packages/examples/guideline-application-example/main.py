@@ -7,7 +7,7 @@ app = marimo.App(width="columns", app_title="Guideline Application")
 @app.cell(column=0, hide_code=True)
 def _(mo):
     mo.md(r"""
-    <a href="http://l.peter.gy/cc-catalog" target="_blank">
+    <a href="https://l.peter.gy/cc-catalog" target="_blank">
         <img src="https://img.shields.io/static/v1?label=%F0%9F%8D%83&message=Explore%20interactively&color=2E8B57&labelColor=555555" style="margin: 0" />
     </a>
 
@@ -25,18 +25,18 @@ def _(mo):
     return
 
 
-app._unparsable_cell(
-    r"""
+@app.cell(column=1, hide_code=True)
+def _(mo):
+    mo.md(r"""
     ## ::lucide:bar-chart-3:: The Scenario: A Chart for a Grocery Flyer
 
     We start with a bar chart about water use from [Our World in Data](https://ourworldindata.org/water-access-resources-sanitation). The specific scenario at hand is to use it in a grocery flyer to help shoppers quickly compare the water usage of beef with lower-water alternatives like chicken or eggs.
 
     The design question is whether the current descending sort order is effective for the rapid, comparison-focused task of a shopper.
 
-    The cells below load the chart image and use [google/deplot 🤗](https://huggingface.co/google/deplot) to reverse-engineer its data and specification to prepare it for analysis.
-    """,
-    column=1, disabled=False, hide_code=True, name="_"
-)
+    The cells below load the chart image and use [google/deplot](https://huggingface.co/google/deplot) to reverse-engineer its data and specification to prepare it for analysis.
+    """)
+    return
 
 
 @app.cell(hide_code=True)
@@ -132,6 +132,7 @@ def _(
 def _(Image, pl):
     def extract_plotted_data(plot_img: Image.Image) -> pl.DataFrame:
         from io import StringIO
+
         from transformers import (
             Pix2StructForConditionalGeneration,
             Pix2StructProcessor,
@@ -173,25 +174,23 @@ def _(pl):
             if "year" in c.lower() and not df[c].dtype.is_temporal()
         ]
         for col in maybe_year_column:
-            res_df = res_df.with_columns(
-                pl.col(col).cast(pl.String).str.to_date("%Y")
-            )
+            res_df = res_df.with_columns(pl.col(col).cast(pl.String).str.to_date("%Y"))
 
         return res_df
 
     return (type_inferred_df,)
 
 
-app._unparsable_cell(
-    r"""
+@app.cell(column=2, hide_code=True)
+def _(mo):
+    mo.md(r"""
     ## ::lucide:ruler:: Baseline A: Symbolic Linters
 
     We first evaluate the chart's specification using two rule-based tools: VizLinter and Draco. These tools check for structural and perceptual rule violations.
 
     As shown below, both linters find **zero violations**. They confirm that the chart is structurally sound and adheres to their predefined best practices. However, they cannot provide feedback on the core situational question: is this design effective for a grocery flyer comparison task? Their analysis confirms validity, but not fitness for purpose.
-    """,
-    column=2, disabled=False, hide_code=True, name="_"
-)
+    """)
+    return
 
 
 @app.cell(hide_code=True)
@@ -322,8 +321,8 @@ def _(alt):
 @app.cell(hide_code=True)
 def _():
     import draco.renderer.altair.types as draco_chart_spec
-    from draco.dracox import DracoExpress
     from draco import schema_from_dataframe
+    from draco.dracox import DracoExpress
     from draco.renderer.altair.altair_renderer import AltairRenderer
 
     return (
@@ -336,9 +335,9 @@ def _():
 
 @app.cell(hide_code=True)
 def _():
-    import vega_lite_linter as vl_linter
     import altair as alt
     import draco as drc
+    import vega_lite_linter as vl_linter
 
     return alt, drc, vl_linter
 
@@ -490,36 +489,9 @@ def _(Image, draco_chart_spec, dspy):
 def _(mo):
     user_situation = """We're adapting this chart from a city drought report for a grocery flyer aimed at general-public shoppers. They will likely see it briefly while deciding what protein to buy for dinner. Our goal is to help someone considering beef quickly compare it with lower-water alternatives like chicken, eggs, or pulses. We kept the bars sorted from highest to lowest water use so beef stands out, but we're not sure that ranking is the best layout for this quick substitute-comparison task."""
 
-    user_situation_md = mo.md(
-        "\n".join(["**User Situation**", f"> {user_situation}"])
-    )
+    user_situation_md = mo.md("\n".join(["**User Situation**", f"> {user_situation}"]))
     feedback_model = "openai/gpt-5.4"
     return feedback_model, user_situation, user_situation_md
-
-
-@app.cell(hide_code=True)
-def _(
-    context_enriched_vis_feedback,
-    feedback_model,
-    mo,
-    mo_image,
-    user_situation_md,
-):
-    mo.vstack(
-        [
-            user_situation_md,
-            mo_image,
-            mo.md(
-                "\n\n".join(
-                    [
-                        f"### Feedback by `{feedback_model}` + VizLinter + Draco",
-                        context_enriched_vis_feedback,
-                    ]
-                )
-            ),
-        ]
-    )
-    return
 
 
 @app.cell(column=4, hide_code=True)
@@ -576,7 +548,7 @@ def _(
             vl_linter_violations=vl_linter_violations,
             draco_features=draco_spec.features_df.to_polars().to_dicts(),
         )
-    return (context_enriched_vis_feedback,)
+    return
 
 
 @app.cell(hide_code=True)
@@ -604,7 +576,7 @@ def _(coach, dspy):
         3. Use SQL to shortlist likely guideline ids with lightweight fields first.
         4. Read evidence for finalists with `get`, starting with overviews and
            escalating to specific sections only when needed.
-        5. Use `search` only after SQL narrowing or when you need a semantic
+        5. Use `search` only after SQL narrowing for semantic
            comparison among a small candidate set.
 
         Do not finish until you have inspected the schema, built a shortlist, and
@@ -614,6 +586,11 @@ def _(coach, dspy):
         the chart and situation, and return only the 3-5 highest-leverage suggestions.
         If a current chart choice is appropriate for the stated situation, say so
         instead of forcing a rewrite.
+
+        Never retrieve guidelines which have no effect on the design because e.g. they
+        are already satisfied by the current chart or irrelevant to the situation.
+        Prioritize reading guidelines which would result in impactful changes and genuinely
+        help the user given their specific goal, audience and context.
         """
 
         chart_image: dspy.Image = dspy.InputField(
@@ -747,7 +724,7 @@ def _(mo):
 
         %% The Central Agent
         Inputs --> AGENT(["VisFeedback Agent<br/>(ReAct Loop)"])
-    
+
         %% Knowledge Base
         CATALOG[("Knowledge Catalog<br/>(DuckDB + Chroma)")]
 
@@ -839,14 +816,12 @@ def _():
 def _(os):
     import dspy
 
-
     def init_lm(model_name: str) -> dspy.LM:
         return dspy.LM(
             model=f"openai/{model_name}",
             api_base="https://openrouter.ai/api/v1",
             api_key=os.getenv("OPENROUTER_API_KEY"),
         )
-
 
     model_name = "openai/gpt-5.4"
     dspy.configure(lm=init_lm(model_name))

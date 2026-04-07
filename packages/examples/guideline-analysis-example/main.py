@@ -7,7 +7,7 @@ app = marimo.App(width="columns", app_title="Guideline Analysis")
 @app.cell(column=0, hide_code=True)
 def _(mo):
     mo.md(r"""
-    <a href="http://l.peter.gy/cc-catalog" target="_blank">
+    <a href="https://l.peter.gy/cc-catalog" target="_blank">
         <img src="https://img.shields.io/static/v1?label=%F0%9F%8D%83&message=Explore%20interactively&color=2E8B57&labelColor=555555" style="margin: 0" />
     </a>
 
@@ -56,15 +56,15 @@ def _(conn):
     context_diff_threshold = 0.5
 
     conn.query(f"""
-    WITH 
+    WITH
     advice AS (
         SELECT id, embedding FROM embeddings WHERE role = 'section.advice'
     ),
     contexts AS (
         SELECT id, embedding FROM embeddings WHERE role = 'section.context'
     )
-    SELECT 
-        a1.id AS domain_A, 
+    SELECT
+        a1.id AS domain_A,
         a2.id AS domain_B,
         list_cosine_similarity(a1.embedding, a2.embedding) AS advice_similarity,
         list_cosine_similarity(c1.embedding, c2.embedding) AS context_similarity
@@ -72,7 +72,7 @@ def _(conn):
     JOIN advice a2 ON a1.id < a2.id
     JOIN contexts c1 ON a1.id = c1.id
     JOIN contexts c2 ON a2.id = c2.id
-    WHERE 
+    WHERE
         advice_similarity > {advice_sim_threshold}      -- The solution is the same
         AND context_similarity < {context_diff_threshold} -- The domain is different
     ORDER BY advice_similarity DESC
@@ -132,15 +132,15 @@ def _(conn):
     mistake_diff_threshold = 0.45
 
     conn.query(f"""
-    WITH 
+    WITH
     fixes AS (
         SELECT id, embedding FROM embeddings WHERE role = 'section.fix'
     ),
     mistakes AS (
         SELECT id, embedding FROM embeddings WHERE role = 'section.mistakes'
     )
-    SELECT 
-        f1.id AS problem_A, 
+    SELECT
+        f1.id AS problem_A,
         f2.id AS problem_B,
         list_cosine_similarity(f1.embedding, f2.embedding) AS fix_similarity,
         list_cosine_similarity(m1.embedding, m2.embedding) AS mistake_similarity
@@ -148,7 +148,7 @@ def _(conn):
     JOIN fixes f2 ON f1.id < f2.id
     JOIN mistakes m1 ON f1.id = m1.id
     JOIN mistakes m2 ON f2.id = m2.id
-    WHERE 
+    WHERE
         fix_similarity > {fix_sim_threshold}     -- The solutions are the same
         AND mistake_similarity < {mistake_diff_threshold} -- The problems are different
     ORDER BY fix_similarity DESC;
@@ -206,20 +206,20 @@ def _(conn):
     boundary_match_threshold = 0.7
 
     conn.sql(f"""
-    WITH 
+    WITH
     situations AS (
         SELECT id, embedding FROM embeddings WHERE role = 'section.context'
     ),
     exceptions AS (
         SELECT id, embedding FROM embeddings WHERE role = 'section.exceptions'
     )
-    SELECT 
+    SELECT
         s.id AS standard_rule_id,
         e.id AS exception_case_id,
         list_cosine_similarity(s.embedding, e.embedding) AS match_score
     FROM situations s
     CROSS JOIN exceptions e
-    WHERE 
+    WHERE
         s.id != e.id
         AND match_score > {boundary_match_threshold}
     ORDER BY match_score DESC;
@@ -277,15 +277,15 @@ def _(conn):
     situation_sim_threshold = 0.8
 
     conn.query(f"""
-    WITH 
+    WITH
     situations AS (
         SELECT id, embedding FROM embeddings WHERE role = 'section.context'
     ),
     overviews AS (
         SELECT id, embedding FROM embeddings WHERE role = 'overview'
     )
-    SELECT 
-        s1.id AS id_A, 
+    SELECT
+        s1.id AS id_A,
         s2.id AS id_B,
         list_cosine_similarity(s1.embedding, s2.embedding) AS situation_sim,
         list_cosine_similarity(o1.embedding, o2.embedding) AS recommendation_sim,
@@ -293,7 +293,7 @@ def _(conn):
         -- Friction = High Context Overlap - Low Overview Overlap
         (situation_sim - recommendation_sim) AS friction_score
     FROM situations s1
-    JOIN situations s2 ON s1.id < s2.id 
+    JOIN situations s2 ON s1.id < s2.id
     JOIN overviews o1 ON s1.id = o1.id
     JOIN overviews o2 ON s2.id = o2.id
     -- Add a filter to make the results meaningful (otherwise you get 500k rows)
@@ -351,14 +351,14 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(conn):
     conn.query("""
-    WITH 
+    WITH
     fixes AS (
         SELECT id, embedding FROM embeddings WHERE role = 'section.fix'
     ),
     mistakes AS (
         SELECT id, embedding FROM embeddings WHERE role = 'section.mistakes'
     )
-    SELECT 
+    SELECT
         f.id,
         -- Cosine distance = 1 - Cosine Similarity
         (1 - list_cosine_similarity(f.embedding, m.embedding)) AS effort_score
@@ -418,20 +418,20 @@ def _(conn):
     collision_threshold = 0.675
 
     conn.query(f"""
-    WITH 
+    WITH
     advice_vectors AS (
         SELECT id, embedding FROM embeddings WHERE role = 'section.advice'
     ),
     mistake_vectors AS (
         SELECT id, embedding FROM embeddings WHERE role = 'section.mistakes'
     )
-    SELECT 
+    SELECT
         a.id AS recommender_id,
         m.id AS critic_id,
         list_cosine_similarity(a.embedding, m.embedding) AS collision_score
     FROM advice_vectors a
     CROSS JOIN mistake_vectors m
-    WHERE 
+    WHERE
         a.id != m.id -- Don't compare a guideline to itself
         AND collision_score > {collision_threshold} -- Threshold for a potential collision
     ORDER BY collision_score DESC;
@@ -475,7 +475,7 @@ def _(mo):
 
     This visualization using [Embedding Atlas](https://apple.github.io/embedding-atlas/) projects the high-dimensional embedding space into two dimensions using UMAP. This technique preserves the local neighborhood structure, causing semantically related guidelines to form local clusters. You can hover over points to inspect metadata and section roles.
 
-    > This widget needs a live Python connection. If all you see is a gray box in a static preview of this notebook, please [ visit the interactive notebook 🍃](http://l.peter.gy/cc-catalog) to explore the embedding space.
+    > This widget needs a live Python connection. If all you see is a gray box in a static preview of this notebook, please [visit the interactive notebook 🍃](https://l.peter.gy/cc-catalog) to explore the embedding space.
     """)
     return
 
@@ -497,7 +497,6 @@ def _(mo):
     1. **Parsing:** The `Catalog` extracts semantic sections (`context`, `advice`, `mistake`, etc.) from the raw files.
     2. **Embedding:** Each section is embedded independently via `text-embedding-3-large`. This ensures the representation of design advice is kept separate from its context or rationale.
     3. **Indexing:** Vectors are stored in DuckDB and indexed using HNSW graphs to enable real-time similarity operations across the catalog.
-    "\"\")
     """)
     return
 
@@ -598,8 +597,9 @@ def _(Catalog, catalog_parquet, pl):
 
 @app.cell(hide_code=True)
 def _(cache_dir, create_chroma_client):
-    import chromadb.utils.embedding_functions as embedding_functions
     import os
+
+    import chromadb.utils.embedding_functions as embedding_functions
 
     openrouter_ef = embedding_functions.OpenAIEmbeddingFunction(
         api_key=os.environ["OPENROUTER_API_KEY"],
@@ -646,9 +646,8 @@ def _():
     import pathlib
 
     import marimo as mo
-    import polars as pl
     import platformdirs
-
+    import polars as pl
     from chartcoach import Catalog, Index
     from chartcoach.catalog.clients import create_chroma_client, create_duckdb_conn
 

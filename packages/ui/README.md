@@ -1,3 +1,3 @@
-# `@chartcoach/ui`
+# @chartcoach/ui
 
-Shared generic UI package for the workspace.
+Shared React UI primitives, design tokens, and ChartCoach brand assets.

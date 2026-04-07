@@ -1,7 +1,6 @@
 import type starlight from "@astrojs/starlight";
 
 import { sidebar } from "../astro.sidebar";
-import { createSocialImageHead } from "../src/lib/site-metadata";
 import { siteSocialLinks } from "./navigation";
 
 type StarlightUserConfig = Parameters<typeof starlight>[0];
@@ -15,10 +14,6 @@ const baseComponents = {
   TableOfContents: "./src/components/starlight/TableOfContents.astro",
   MobileTableOfContents: "./src/components/starlight/MobileTableOfContents.astro",
 } satisfies StarlightComponents;
-
-const defaultDocsShareImage = "/social/chartcoach-share-default.png";
-
-export const docsHeadDefaults = createSocialImageHead(defaultDocsShareImage);
 
 function createStarlightComponents(enableAgentationReview: boolean): StarlightComponents {
   if (!enableAgentationReview) return baseComponents;
@@ -39,7 +34,6 @@ export function createStarlightConfig({
     favicon: "/brand/chartcoach-favicon.svg",
     customCss: ["./src/styles/shadcn.css", "./src/styles/custom.css"],
     social: siteSocialLinks,
-    head: docsHeadDefaults,
     components: createStarlightComponents(enableAgentationReview),
     sidebar,
   };

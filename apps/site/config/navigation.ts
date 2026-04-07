@@ -5,7 +5,7 @@ type StarlightSidebar = NonNullable<StarlightUserConfig["sidebar"]>;
 type StarlightSidebarGroup = Extract<StarlightSidebar[number], { items: any[] }>;
 
 type SiteNavigationEntry = {
-  id: "overview" | "guidelines" | "catalog" | "labels" | "about";
+  id: "overview" | "guidelines" | "catalog" | "labels";
   href: string;
   headerLabel: string;
   sidebar?: {
@@ -49,15 +49,6 @@ export const siteNavigation = [
     sidebar: {
       group: "Start",
       label: "Labels & filters",
-    },
-  },
-  {
-    id: "about",
-    href: "/about/",
-    headerLabel: "About",
-    sidebar: {
-      group: "Start",
-      label: "About",
     },
   },
 ] as const satisfies readonly SiteNavigationEntry[];

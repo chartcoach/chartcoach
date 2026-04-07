@@ -14,12 +14,19 @@ type RenderContext = {
   el: HTMLElement;
 };
 
+function resolveArtifactUrl(model: ModelLike) {
+  const artifactUrl = model.get("_artifact_url");
+  if (typeof artifactUrl === "string" && artifactUrl.length > 0) {
+    return artifactUrl;
+  }
+
+  throw new Error(
+    "VisGround viewer requires `_artifact_url` to point to a viewer artifact.",
+  );
+}
+
 function render({ model, el }: RenderContext) {
-  const devArtifactUrl = model.get("_artifact_url");
-  const artifactUrl =
-    typeof devArtifactUrl === "string" && devArtifactUrl.length > 0
-      ? devArtifactUrl
-      : new URL(/* @vite-ignore */ "../data/viewer.parquet", import.meta.url).href;
+  const artifactUrl = resolveArtifactUrl(model);
   const mount = mountAnywidgetVisgroundViewer(el, {
     artifactUrl,
     model,
