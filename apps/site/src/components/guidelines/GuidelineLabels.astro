@@ -29,13 +29,20 @@ const chipListClasses = [
 
 const chipClasses =
   variant === "chip-compact"
-    ? "inline-flex min-h-5 items-center gap-1 rounded-[3px] border border-border/80 bg-transparent px-1.5 py-0.5 font-mono text-[0.6rem] font-medium leading-[1.15] text-muted-foreground"
-    : "inline-flex min-h-6 items-center gap-1 rounded-[3px] border border-border bg-card px-1.5 py-0.5 font-mono text-[0.66rem] font-medium leading-[1.15] text-muted-foreground";
+    ? "inline-flex min-h-5 items-center gap-1 rounded-[3px] border border-chip-border bg-chip px-1.5 py-0.5 font-mono text-[0.6rem] font-medium leading-[1.15] text-muted-foreground"
+    : "inline-flex min-h-6 items-center gap-1 rounded-[4px] border border-chip-border bg-chip px-1.5 py-0.5 font-mono text-[0.66rem] font-medium leading-[1.15] text-muted-foreground";
 
 const chipKeyClasses =
   variant === "chip-compact"
     ? "text-[0.58rem] font-bold uppercase tracking-[0.04em] text-muted-foreground"
     : "text-[0.63rem] font-bold uppercase tracking-[0.04em] text-muted-foreground";
+const pairedLabelGroupClasses = "group/label";
+const pairedLabelLinkClasses =
+  "no-underline group-hover/label:underline group-hover/label:underline-offset-[0.16em] group-focus-within/label:underline group-focus-within/label:underline-offset-[0.16em]";
+const recordPairFamilyLinkClasses = ["text-inherit", pairedLabelLinkClasses];
+const recordPairValueLinkClasses = ["text-inherit", pairedLabelLinkClasses];
+const chipPairFamilyLinkClasses = [chipKeyClasses, pairedLabelLinkClasses];
+const chipPairValueLinkClasses = ["text-foreground", pairedLabelLinkClasses];
 
 const recordListClasses = [
   "m-0 grid list-none gap-x-3 gap-y-1.5 p-0 md:grid-cols-2",
@@ -47,13 +54,13 @@ const recordListClasses = [
   variant === "record" ? (
     <ul class:list={recordListClasses} aria-label={ariaLabel}>
       {labels.map((label, index) => (
-        <li class="grid min-w-0 gap-0.5" data-key={keyForLabel(label, index)}>
+        <li class:list={["grid min-w-0 gap-0.5", label.family && pairedLabelGroupClasses]} data-key={keyForLabel(label, index)}>
           <span class="font-mono text-[0.66rem] font-bold uppercase tracking-[0.04em] text-muted-foreground">
             {
               label.family ? (
                 label.family.href ? (
                   <a
-                    class="text-inherit no-underline hover:underline hover:underline-offset-[0.16em] focus-visible:underline focus-visible:underline-offset-[0.16em]"
+                    class:list={recordPairFamilyLinkClasses}
                     data-filter-value={label.family.filterValue}
                     href={label.family.href}
                     title={label.family.title}
@@ -78,7 +85,7 @@ const recordListClasses = [
             {
               label.value.href ? (
                 <a
-                  class="text-inherit no-underline hover:underline hover:underline-offset-[0.16em] focus-visible:underline focus-visible:underline-offset-[0.16em]"
+                  class:list={label.family ? recordPairValueLinkClasses : ["text-inherit", "no-underline", "hover:underline", "hover:underline-offset-[0.16em]", "focus-visible:underline", "focus-visible:underline-offset-[0.16em]"]}
                   data-filter-value={label.value.filterValue}
                   href={label.value.href}
                   title={label.value.title}
@@ -114,13 +121,13 @@ const recordListClasses = [
   ) : (
     <ul class:list={chipListClasses} aria-label={ariaLabel}>
       {labels.map((label, index) => (
-        <li class={chipClasses} data-key={keyForLabel(label, index)}>
+        <li class:list={[chipClasses, label.family && pairedLabelGroupClasses]} data-key={keyForLabel(label, index)}>
           {
             label.family ? (
               <>
                 {label.family.href ? (
                   <a
-                    class={chipKeyClasses}
+                    class:list={chipPairFamilyLinkClasses}
                     data-filter-value={label.family.filterValue}
                     href={label.family.href}
                     title={label.family.title}
@@ -139,7 +146,7 @@ const recordListClasses = [
                 <span class="text-muted-foreground">:</span>
                 {label.value.href ? (
                   <a
-                    class="text-[color:var(--ccui-text)] no-underline hover:underline hover:underline-offset-[0.16em] focus-visible:underline focus-visible:underline-offset-[0.16em]"
+                    class:list={chipPairValueLinkClasses}
                     data-filter-value={label.value.filterValue}
                     href={label.value.href}
                     title={label.value.title}
@@ -148,7 +155,7 @@ const recordListClasses = [
                   </a>
                 ) : (
                   <span
-                    class="text-[color:var(--ccui-text)]"
+                    class="text-foreground"
                     data-filter-value={label.value.filterValue}
                     title={label.value.title}
                   >
@@ -158,7 +165,7 @@ const recordListClasses = [
               </>
             ) : label.value.href ? (
               <a
-                class="text-[color:var(--ccui-text)] no-underline hover:underline hover:underline-offset-[0.16em] focus-visible:underline focus-visible:underline-offset-[0.16em]"
+                class="text-foreground no-underline hover:underline hover:underline-offset-[0.16em] focus-visible:underline focus-visible:underline-offset-[0.16em]"
                 data-filter-value={label.value.filterValue}
                 href={label.value.href}
                 title={label.value.title}
@@ -167,7 +174,7 @@ const recordListClasses = [
               </a>
             ) : (
               <span
-                class="text-[color:var(--ccui-text)]"
+                class="text-foreground"
                 data-filter-value={label.value.filterValue}
                 title={label.value.title}
               >
@@ -179,7 +186,7 @@ const recordListClasses = [
       ))}
       {
         labelsRemaining ? (
-          <li aria-label={`${labelsRemaining} more labels`} class={`${chipClasses} text-muted-foreground`}>
+          <li aria-label={`${labelsRemaining} more labels`} class:list={[chipClasses, "text-muted-foreground"]}>
             +{labelsRemaining.toLocaleString()}
           </li>
         ) : null

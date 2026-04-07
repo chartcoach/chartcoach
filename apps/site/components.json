@@ -11,9 +11,9 @@
   },
   "iconLibrary": "lucide",
   "aliases": {
-    "components": "@chartcoach/site/components",
-    "hooks": "@chartcoach/ui/hooks",
-    "lib": "@chartcoach/ui/lib",
+    "components": "@/components",
+    "hooks": "@/hooks",
+    "lib": "@/lib",
     "utils": "@chartcoach/ui/lib/utils",
     "ui": "@chartcoach/ui/components"
   }

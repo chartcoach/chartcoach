@@ -53,35 +53,42 @@ function SelectContent({
   children,
   position = "item-aligned",
   align = "center",
+  portal = true,
   ...props
-}: React.ComponentProps<typeof SelectPrimitive.Content>) {
-  return (
-    <SelectPrimitive.Portal>
-      <SelectPrimitive.Content
-        data-slot="select-content"
-        data-align-trigger={position === "item-aligned"}
+}: React.ComponentProps<typeof SelectPrimitive.Content> & {
+  portal?: boolean;
+}) {
+  const content = (
+    <SelectPrimitive.Content
+      data-slot="select-content"
+      data-align-trigger={position === "item-aligned"}
+      className={cn(
+        "relative z-50 max-h-(--radix-select-content-available-height) min-w-36 origin-(--radix-select-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-[4px] bg-popover text-popover-foreground ring-1 ring-foreground/10",
+        className,
+      )}
+      position={position}
+      align={align}
+      {...props}
+    >
+      <SelectScrollUpButton />
+      <SelectPrimitive.Viewport
+        data-position={position}
         className={cn(
-          "relative z-50 max-h-(--radix-select-content-available-height) min-w-36 origin-(--radix-select-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-[4px] bg-popover text-popover-foreground ring-1 ring-foreground/10",
-          className,
+          "data-[position=popper]:h-(--radix-select-trigger-height) data-[position=popper]:w-full data-[position=popper]:min-w-(--radix-select-trigger-width)",
+          position === "popper" && "",
         )}
-        position={position}
-        align={align}
-        {...props}
       >
-        <SelectScrollUpButton />
-        <SelectPrimitive.Viewport
-          data-position={position}
-          className={cn(
-            "data-[position=popper]:h-(--radix-select-trigger-height) data-[position=popper]:w-full data-[position=popper]:min-w-(--radix-select-trigger-width)",
-            position === "popper" && "",
-          )}
-        >
-          {children}
-        </SelectPrimitive.Viewport>
-        <SelectScrollDownButton />
-      </SelectPrimitive.Content>
-    </SelectPrimitive.Portal>
+        {children}
+      </SelectPrimitive.Viewport>
+      <SelectScrollDownButton />
+    </SelectPrimitive.Content>
   );
+
+  if (!portal) {
+    return content;
+  }
+
+  return <SelectPrimitive.Portal>{content}</SelectPrimitive.Portal>;
 }
 
 function SelectLabel({ className, ...props }: React.ComponentProps<typeof SelectPrimitive.Label>) {

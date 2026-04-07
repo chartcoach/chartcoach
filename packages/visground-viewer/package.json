@@ -1,0 +1,49 @@
+{
+  "name": "@chartcoach/visground-viewer",
+  "version": "0.1.0",
+  "private": true,
+  "files": [
+    "distlib"
+  ],
+  "type": "module",
+  "main": "./distlib/index.js",
+  "types": "./distlib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./distlib/index.d.ts",
+      "source": "./src/index.ts",
+      "default": "./distlib/index.js"
+    },
+    "./parquet-bridge": {
+      "types": "./distlib/parquet-bridge.d.ts",
+      "source": "./src/parquet-bridge.ts",
+      "default": "./distlib/parquet-bridge.js"
+    }
+  },
+  "scripts": {
+    "build": "vite build --config vite.config.lib.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "format": "oxfmt .",
+    "lint": "oxlint ."
+  },
+  "dependencies": {
+    "@chartcoach/ui": "workspace:*",
+    "@floating-ui/react": "^0.27.19",
+    "clsx": "^2.1.1",
+    "hyparquet": "^1.25.5",
+    "hyparquet-compressors": "^1.1.1",
+    "lucide-react": "^1.7.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.2.2",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.2.0",
+    "agentation": "^3.0.2",
+    "tailwindcss": "^4.2.2",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1"
+  }
+}

@@ -9,7 +9,9 @@ type StarlightComponents = NonNullable<StarlightUserConfig["components"]>;
 
 const baseComponents = {
   Header: "./src/components/starlight/Header.astro",
+  Hero: "./src/components/starlight/Hero.astro",
   Pagination: "./src/components/starlight/Pagination.astro",
+  SiteTitle: "./src/components/starlight/SiteTitle.astro",
   TableOfContents: "./src/components/starlight/TableOfContents.astro",
   MobileTableOfContents: "./src/components/starlight/MobileTableOfContents.astro",
 } satisfies StarlightComponents;
@@ -33,13 +35,8 @@ export function createStarlightConfig({
   enableAgentationReview: boolean;
 }): StarlightUserConfig {
   return {
-    title: "Chart Coach",
+    title: "Structured visualization design knowledge",
     favicon: "/brand/chartcoach-favicon.svg",
-    logo: {
-      src: "./src/assets/brand/chartcoach-logo-header.svg",
-      alt: "Chart Coach",
-      replacesTitle: true,
-    },
     customCss: ["./src/styles/shadcn.css", "./src/styles/custom.css"],
     social: siteSocialLinks,
     head: docsHeadDefaults,

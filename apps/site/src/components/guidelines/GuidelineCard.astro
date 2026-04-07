@@ -15,12 +15,13 @@ const { href, title, description, dataLabels, labels = [], labelsRemaining } = A
 ---
 
 <li
-  class="guideline-card list-none rounded-lg border border-border bg-card px-4 py-4 text-card-foreground shadow-[var(--ccui-shadow)] transition-colors hover:border-foreground/15 hover:bg-background focus-within:ring-2 focus-within:ring-ring/40 focus-within:ring-offset-2 focus-within:ring-offset-background"
+  class="list-none rounded-panel border border-chip-border bg-surface px-4 py-4 text-card-foreground shadow-card transition-colors hover:border-control-border hover:bg-surface-strong focus-within:border-control-border focus-within:bg-surface-strong focus-within:ring-2 focus-within:ring-ring/30 focus-within:ring-offset-2 focus-within:ring-offset-background"
+  data-guideline-card
   data-labels={dataLabels}
 >
   <div class="grid min-w-0 gap-2">
     <a
-      class="block text-[clamp(1.05rem,1vw+0.85rem,1.2rem)] font-semibold leading-[1.18] tracking-[-0.015em] text-foreground no-underline [font-family:var(--cc-site-font-display)] hover:text-foreground/80 focus-visible:text-foreground/80"
+      class="block font-display text-[clamp(1.05rem,1vw+0.85rem,1.2rem)] font-semibold leading-[1.18] tracking-[-0.015em] text-foreground no-underline hover:text-brand-high focus-visible:text-brand-high"
       href={href}
     >
       {title}

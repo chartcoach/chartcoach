@@ -6,12 +6,30 @@
     --sl-nav-height: 4.1rem;
     --sl-nav-pad-y: 0.5rem;
     --sl-nav-pad-x: 1rem;
-    --cc-site-font-display: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+    --cc-site-font-display:
+      "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
 
-    --cc-brand-low: hsl(35 30% 91%);
-    --cc-brand: hsl(26 35% 40%);
-    --cc-brand-high: hsl(24 24% 18%);
-    --cc-brand-ink: hsl(28 14% 34%);
+    --ccui-paper: #f7f4ee;
+    --ccui-panel: #efebe4;
+    --ccui-panel-strong: #e5dfd6;
+    --ccui-border: #d9d2c7;
+    --ccui-border-strong: #201a16;
+    --ccui-divider: #e4ddd2;
+    --ccui-text: #181613;
+    --ccui-text-soft: #5d564e;
+    --ccui-muted: #766d63;
+    --ccui-primary: #1e1a17;
+    --ccui-primary-foreground: #faf7f1;
+    --ccui-accent: #ebe3d7;
+    --ccui-accent-foreground: #181613;
+    --ccui-focus: rgba(30, 26, 23, 0.08);
+    --ccui-ring: rgba(30, 26, 23, 0.14);
+    --ccui-shadow: 0 16px 36px rgba(18, 15, 11, 0.045);
+
+    --cc-brand-low: hsl(34 28% 92%);
+    --cc-brand: hsl(31 30% 46%);
+    --cc-brand-high: hsl(29 21% 18%);
+    --cc-brand-ink: hsl(30 16% 36%);
     --sl-color-accent-low: var(--cc-brand-low);
     --sl-color-accent: var(--cc-brand);
     --sl-color-accent-high: var(--cc-brand-high);
@@ -19,36 +37,113 @@
     --cc-radius-sm: 3px;
     --cc-radius-md: 4px;
     --cc-radius-lg: 6px;
+    --cc-radius-pill: 999px;
+    --cc-radius-panel: 1rem;
+    --cc-radius-panel-tight: 0.9rem;
 
     --cc-border-color: color-mix(in srgb, var(--ccui-border) 86%, transparent);
     --cc-border: 1px solid var(--cc-border-color);
+
+    --cc-shell-bg: color-mix(in srgb, var(--ccui-paper) 94%, white);
+    --cc-shell-surface: color-mix(
+      in srgb,
+      var(--ccui-paper) 97%,
+      var(--ccui-panel)
+    );
+    --cc-shell-surface-strong: color-mix(in srgb, var(--ccui-panel) 84%, white);
+    --cc-shell-sidebar: color-mix(
+      in srgb,
+      var(--ccui-panel) 92%,
+      var(--ccui-paper)
+    );
+    --cc-control-bg: var(--cc-shell-surface);
+    --cc-control-border: color-mix(
+      in srgb,
+      var(--ccui-border) 78%,
+      transparent
+    );
+    --cc-chip-bg: color-mix(in srgb, var(--ccui-panel) 82%, white);
+    --cc-chip-border: color-mix(in srgb, var(--ccui-border) 74%, transparent);
+    --cc-card-shadow: 0 18px 34px rgba(18, 15, 11, 0.04);
+    --cc-shadow-popover: 0 24px 56px rgba(14, 11, 8, 0.14);
 
     --cc-text: var(--ccui-text);
     --cc-text-muted: color-mix(in srgb, var(--ccui-text-soft) 86%, transparent);
     --cc-card-title-color: var(--ccui-text);
     --cc-inline-code-bg: var(--ccui-panel);
-    --cc-control-bg: var(--ccui-panel);
-    --cc-filter-chip-bg: var(--ccui-panel);
-    --cc-label-chip-bg: color-mix(in srgb, var(--ccui-panel) 88%, var(--ccui-paper));
+    --cc-filter-chip-bg: var(--cc-chip-bg);
+    --cc-label-chip-bg: var(--cc-chip-bg);
 
-    --sl-color-bg-nav: var(--ccui-paper);
-    --sl-color-bg-sidebar: var(--ccui-panel);
+    --sl-color-bg-nav: var(--cc-shell-bg);
+    --sl-color-bg-sidebar: var(--cc-shell-sidebar);
     --sl-color-text-accent: var(--cc-brand-high);
     --sl-color-text-invert: var(--ccui-paper);
   }
 
   :root[data-theme="light"] {
-    --sl-color-bg-sidebar: color-mix(in srgb, var(--ccui-panel) 96%, var(--ccui-paper));
+    --sl-color-bg-sidebar: var(--cc-shell-sidebar);
   }
 
   :root[data-theme="dark"] {
-    --cc-brand-low: hsl(24 14% 15%);
-    --cc-brand: hsl(31 36% 66%);
-    --cc-brand-high: hsl(35 44% 90%);
-    --cc-brand-ink: hsl(33 22% 78%);
+    --ccui-paper: #17181b;
+    --ccui-panel: #1d1f23;
+    --ccui-panel-strong: #25282d;
+    --ccui-border: #343840;
+    --ccui-border-strong: #f3ece2;
+    --ccui-divider: #2d3138;
+    --ccui-text: #f3eee5;
+    --ccui-text-soft: #c8beb2;
+    --ccui-muted: #a1978b;
+    --ccui-primary: #f2e7db;
+    --ccui-primary-foreground: #17181b;
+    --ccui-accent: #24262a;
+    --ccui-accent-foreground: #f3eee5;
+    --ccui-focus: rgba(242, 231, 219, 0.1);
+    --ccui-ring: rgba(242, 231, 219, 0.16);
+    --ccui-shadow: none;
+
+    --cc-brand-low: hsl(30 16% 14%);
+    --cc-brand: hsl(34 34% 68%);
+    --cc-brand-high: hsl(36 34% 92%);
+    --cc-brand-ink: hsl(34 28% 78%);
     --sl-color-accent-low: var(--cc-brand-low);
     --sl-color-accent: var(--cc-brand);
     --sl-color-accent-high: var(--cc-brand-high);
+    --cc-shell-bg: color-mix(in srgb, var(--ccui-paper) 96%, black);
+    --cc-shell-surface: color-mix(
+      in srgb,
+      var(--ccui-panel) 90%,
+      var(--ccui-paper)
+    );
+    --cc-shell-surface-strong: color-mix(
+      in srgb,
+      var(--ccui-panel-strong) 86%,
+      var(--ccui-panel)
+    );
+    --cc-shell-sidebar: color-mix(
+      in srgb,
+      var(--ccui-panel) 94%,
+      var(--ccui-paper)
+    );
+    --cc-control-bg: color-mix(
+      in srgb,
+      var(--ccui-panel) 82%,
+      var(--ccui-paper)
+    );
+    --cc-control-border: color-mix(
+      in srgb,
+      var(--ccui-border) 88%,
+      transparent
+    );
+    --cc-chip-bg: color-mix(
+      in srgb,
+      var(--ccui-panel-strong) 72%,
+      var(--ccui-paper)
+    );
+    --cc-chip-border: color-mix(in srgb, var(--ccui-border) 84%, transparent);
+    --cc-card-shadow: none;
+    --cc-shadow-popover: 0 28px 72px rgba(0, 0, 0, 0.34);
+    --sl-color-bg-sidebar: var(--cc-shell-sidebar);
     --sl-color-text-accent: var(--cc-brand);
   }
 
@@ -57,7 +152,8 @@
   }
 
   .sl-markdown-content :is(h1, h2) {
-    font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+    font-family:
+      "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
     font-weight: 600;
   }
 
@@ -91,11 +187,17 @@
     max-width: none;
   }
 
+  body {
+    background: var(--cc-shell-bg);
+    color: var(--ccui-text);
+  }
+
   .header {
-    background: var(--ccui-paper);
+    background: var(--cc-shell-bg);
     gap: 0.5rem;
     justify-content: flex-start;
-    border-bottom: 1px solid var(--ccui-divider);
+    border: 0 !important;
+    border-bottom: 0 !important;
     box-shadow: none;
   }
 

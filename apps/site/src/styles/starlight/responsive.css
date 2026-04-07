@@ -1,7 +1,7 @@
 @layer chartcoach.overrides {
   @media (min-width: 50rem) {
-    .guidelines-page,
-    .guideline-detail {
+    [data-guidelines-page],
+    [data-guideline-detail-page] {
       padding-top: 0.4rem;
     }
 
@@ -33,32 +33,6 @@
 
     html[data-has-hero] .hero .actions {
       justify-content: flex-start;
-    }
-  }
-
-  @media (min-width: 64rem) {
-    .cc-site-header__row--primary {
-      grid-template-columns: auto minmax(0, 1fr) minmax(18rem, 20rem) auto;
-    }
-
-    .cc-site-header__nav--desktop {
-      display: flex;
-      justify-content: center;
-      padding-inline: 1rem;
-    }
-
-    .cc-site-header__nav-link {
-      font-size: 0.82rem;
-    }
-
-    .cc-site-header__controls {
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-    }
-
-    .cc-mobile-menu {
-      display: none;
     }
   }
 }

@@ -1,6 +1,7 @@
 @layer chartcoach.overrides {
   html:has(#guidelines-grid) .content-panel:has(> .sl-container > h1#_top),
-  html:has(.guideline-detail) .content-panel:has(> .sl-container > h1#_top) {
+  html:has([data-guideline-detail-page])
+    .content-panel:has(> .sl-container > h1#_top) {
     display: none;
   }
 
@@ -29,18 +30,13 @@
     gap: 0.7rem;
   }
 
-  .guidelines-filter-chip {
-    border-color: var(--ccui-border);
-    border-radius: var(--ccui-radius-sm);
-    background: var(--ccui-panel);
-  }
-
   .sidebar-pane {
     border-inline-end: 1px solid var(--ccui-divider);
+    background: var(--cc-shell-sidebar);
   }
 
   .sidebar-content {
-    background: var(--ccui-panel);
+    background: var(--cc-shell-sidebar);
   }
 
   .sidebar-content .large,
@@ -57,23 +53,46 @@
   }
 
   .sidebar-content a {
-    border-radius: var(--ccui-radius-sm);
-    color: var(--ccui-muted);
+    border-inline-start: 2px solid transparent;
+    border-radius: 0;
+    color: var(--ccui-text-soft);
     font-size: 0.8rem;
+    transition:
+      background-color 140ms ease,
+      color 140ms ease,
+      box-shadow 140ms ease,
+      outline-color 140ms ease;
   }
 
-  .sidebar-content a:hover,
-  .sidebar-content a:focus {
-    background: var(--ccui-panel-strong);
+  .sidebar-content a:hover {
+    background: color-mix(
+      in srgb,
+      var(--cc-shell-surface-strong) 92%,
+      transparent
+    );
     color: var(--ccui-text);
+  }
+
+  .sidebar-content a:focus-visible {
+    background: color-mix(
+      in srgb,
+      var(--cc-shell-surface-strong) 92%,
+      transparent
+    );
+    color: var(--ccui-text);
+    outline: 1px solid color-mix(in srgb, var(--cc-brand) 34%, transparent);
+    outline-offset: -1px;
   }
 
   .sidebar-content [aria-current="page"],
   .sidebar-content [aria-current="page"]:hover,
-  .sidebar-content [aria-current="page"]:focus {
-    background: var(--ccui-panel) !important;
+  .sidebar-content [aria-current="page"]:focus-visible {
+    border-inline-start-color: var(--cc-brand);
+    background: transparent !important;
     color: var(--cc-brand-high) !important;
-    box-shadow: inset 2px 0 0 var(--cc-brand);
+    font-weight: 600;
+    box-shadow: none;
+    outline-color: color-mix(in srgb, var(--cc-brand) 42%, transparent);
   }
 
   .social-icons::after {
@@ -82,35 +101,33 @@
 
   .site-title {
     color: var(--cc-brand-high) !important;
-    font-family: var(--ccui-font-sans);
-    font-size: 0.76rem;
-    font-weight: 700;
-    letter-spacing: 0.02em;
-    text-transform: lowercase;
-  }
-
-  .site-title img {
-    height: 1.95rem;
-    width: auto;
-    max-width: min(14.75rem, 52vw);
-    object-fit: contain;
+    min-width: 2.3rem;
   }
 
   starlight-theme-select label {
     border: 1px solid transparent;
-    border-radius: var(--ccui-radius-sm);
+    border-radius: 9px;
     color: var(--ccui-text-soft);
-    background: transparent;
+    background: color-mix(
+      in srgb,
+      var(--cc-shell-surface) 90%,
+      transparent
+    );
+    box-shadow: none;
+    min-height: 2.48rem;
+    padding-inline: 0.78rem 0.72rem;
     transition:
       border-color 120ms ease,
       background-color 120ms ease,
       color 120ms ease,
-      box-shadow 120ms ease;
+      outline-color 120ms ease;
   }
 
   starlight-theme-select label:hover {
-    color: var(--ccui-text);
-    background: var(--ccui-panel);
+    color: var(--cc-brand-high);
+    border-color: transparent;
+    background: var(--cc-shell-surface-strong);
+    box-shadow: none;
   }
 
   starlight-theme-select .label-icon,
@@ -119,7 +136,7 @@
   }
 
   starlight-theme-select select {
-    border-radius: var(--ccui-radius-sm);
+    border-radius: 0;
     color: inherit;
     outline: none;
     box-shadow: none;
@@ -135,29 +152,53 @@
   starlight-theme-select label:focus-within,
   starlight-theme-select label:has(select:focus),
   starlight-theme-select label:has(select:focus-visible) {
-    border-color: color-mix(in srgb, var(--cc-brand) 34%, var(--ccui-border));
-    background: var(--ccui-panel);
+    border-color: color-mix(
+      in srgb,
+      var(--cc-brand) 24%,
+      var(--cc-control-border)
+    );
+    background: var(--cc-shell-surface-strong);
     color: var(--cc-brand-high);
-    box-shadow: 0 0 0 1px color-mix(in srgb, var(--cc-brand) 18%, transparent);
+    outline: 2px solid color-mix(in srgb, var(--cc-brand) 24%, transparent);
+    outline-offset: 2px;
+    box-shadow: none;
   }
 
   button[data-open-modal] {
-    border: 1px solid var(--ccui-border) !important;
-    border-radius: var(--ccui-radius-md) !important;
-    background: var(--ccui-paper) !important;
+    border: 1px solid
+      color-mix(in srgb, var(--cc-brand) 30%, var(--cc-control-border)) !important;
+    border-radius: 9px !important;
+    background-color: color-mix(
+      in srgb,
+      var(--cc-shell-surface) 90%,
+      transparent
+    ) !important;
     color: var(--ccui-text-soft) !important;
     box-shadow: none !important;
-    width: 100% !important;
-    max-width: 18rem !important;
-    min-width: 0 !important;
-    height: 2.15rem !important;
-    padding-inline: 0.75rem !important;
-    gap: 0.4rem !important;
+    width: auto !important;
+    max-width: none !important;
+    min-width: max-content !important;
+    height: 2.48rem !important;
+    padding-inline: 0.9rem !important;
+    gap: 0.62rem !important;
+    justify-content: flex-start;
+    transition:
+      color 160ms ease,
+      border-color 160ms ease,
+      background-color 160ms ease !important;
   }
 
   button[data-open-modal]:hover {
-    border-color: var(--cc-brand) !important;
-    background: var(--ccui-panel) !important;
+    border-color: color-mix(
+      in srgb,
+      var(--cc-brand) 38%,
+      var(--cc-control-border)
+    ) !important;
+    background-color: color-mix(
+      in srgb,
+      var(--cc-shell-surface-strong) 82%,
+      transparent
+    ) !important;
     color: var(--ccui-text) !important;
   }
 
@@ -169,17 +210,36 @@
   }
 
   button[data-open-modal] > kbd {
-    border: 1px solid var(--ccui-border);
-    background: var(--ccui-panel);
-    color: var(--ccui-muted);
-    border-radius: var(--ccui-radius-sm);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.14rem;
+    margin-inline-start: 0.12rem !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    color: color-mix(in srgb, var(--ccui-text-soft) 82%, white 18%);
+    border-radius: 0;
+    font-size: 0.72rem;
+    letter-spacing: 0.01em;
+  }
+
+  button[data-open-modal] > kbd > kbd {
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+    color: inherit;
   }
 
   site-search dialog {
-    border-radius: var(--ccui-radius-lg);
+    border-radius: var(--cc-radius-panel);
     border-color: var(--ccui-divider);
-    background: color-mix(in srgb, var(--ccui-paper) 97%, var(--ccui-panel));
-    box-shadow: 0 18px 48px rgba(43, 36, 31, 0.08);
+    background: color-mix(
+      in srgb,
+      var(--cc-shell-bg) 96%,
+      var(--cc-shell-surface)
+    );
+    box-shadow: var(--cc-shadow-popover);
   }
 
   #starlight__search {

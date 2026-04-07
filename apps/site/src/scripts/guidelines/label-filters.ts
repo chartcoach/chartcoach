@@ -3,7 +3,7 @@ import {
   encodeGuidelineLabelQueryValue,
   formatGuidelineLabelFilter,
   normalizeGuidelineLabelFilter,
-} from "@chartcoach/site/lib/guidelines/labels";
+} from "@/lib/guidelines/labels";
 
 type GuidelineCard = {
   el: HTMLElement;
@@ -15,10 +15,18 @@ type SuggestionsData = {
   labels?: unknown;
 };
 
+const guidelineCardSelector = "[data-guideline-card]";
 const suggestionOptionId = (index: number) => `guidelines-label-suggestion-${index}`;
+const activeSuggestionSelector = '[aria-selected="true"]';
+const filterChipButtonClasses =
+  "inline-flex cursor-pointer items-center gap-[0.38rem] rounded-pill border border-chip-border bg-chip px-[0.45rem] py-[0.2rem] font-mono text-[0.68rem] font-medium leading-[1.15] text-muted-foreground transition-colors hover:bg-surface-strong focus-visible:bg-surface-strong";
+const filterChipLabelClasses = "font-bold tracking-[0.02em]";
+const filterChipDismissClasses = "text-muted-foreground";
+const suggestionButtonClasses =
+  "w-full rounded-none bg-transparent px-[0.62rem] py-2 text-left font-mono text-[0.82rem] font-medium leading-[1.3] text-foreground transition-colors hover:bg-surface-strong focus-visible:bg-surface-strong aria-selected:bg-surface-strong";
 
 function readCards(grid: HTMLElement): GuidelineCard[] {
-  return Array.from(grid.querySelectorAll<HTMLElement>(".guideline-card")).map((el) => ({
+  return Array.from(grid.querySelectorAll<HTMLElement>(guidelineCardSelector)).map((el) => ({
     el,
     labels: (el.dataset.labels ?? "")
       .split("|")
@@ -58,16 +66,16 @@ function renderActiveFilters(container: HTMLElement, active: Set<string>) {
     const li = document.createElement("li");
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "guidelines-filter-chip";
+    btn.className = filterChipButtonClasses;
     btn.dataset.filterValue = filter;
     btn.setAttribute("aria-label", `Remove filter ${label}`);
 
     const labelSpan = document.createElement("span");
-    labelSpan.className = "guidelines-filter-chip__label";
+    labelSpan.className = filterChipLabelClasses;
     labelSpan.textContent = label;
 
     const xSpan = document.createElement("span");
-    xSpan.className = "guidelines-filter-chip__x";
+    xSpan.className = filterChipDismissClasses;
     xSpan.textContent = "×";
     xSpan.setAttribute("aria-hidden", "true");
 
@@ -189,7 +197,7 @@ export function initGuidelineLabelFilters() {
 
     for (const card of cards) {
       const ok = matchesLabels(card.labels, state.labels);
-      card.el.classList.toggle("is-hidden", !ok);
+      card.el.toggleAttribute("hidden", !ok);
       if (ok) visible += 1;
     }
 
@@ -232,7 +240,7 @@ export function initGuidelineLabelFilters() {
       const btn = document.createElement("button");
       btn.id = suggestionOptionId(index);
       btn.type = "button";
-      btn.className = "guidelines-suggestion";
+      btn.className = suggestionButtonClasses;
       btn.role = "option";
       btn.dataset.value = value;
       btn.textContent = formatGuidelineLabelFilter(value);
@@ -240,7 +248,6 @@ export function initGuidelineLabelFilters() {
 
       const selected = index === suggestionState.activeIndex;
       btn.setAttribute("aria-selected", selected ? "true" : "false");
-      if (selected) btn.classList.add("is-active");
 
       suggestionsListEl.append(btn);
     }
@@ -271,7 +278,7 @@ export function initGuidelineLabelFilters() {
     suggestionState.activeIndex = -1;
     renderSuggestions();
 
-    const active = suggestionsListEl.querySelector<HTMLElement>(".guidelines-suggestion.is-active");
+    const active = suggestionsListEl.querySelector<HTMLElement>(activeSuggestionSelector);
     if (active) scrollSuggestionIntoView(suggestionsListEl, active);
   }
 
@@ -321,9 +328,7 @@ export function initGuidelineLabelFilters() {
         if (suggestionState.items.length > 0) {
           suggestionState.activeIndex = 0;
           renderSuggestions();
-          const active = suggestionsListEl.querySelector<HTMLElement>(
-            ".guidelines-suggestion.is-active",
-          );
+          const active = suggestionsListEl.querySelector<HTMLElement>(activeSuggestionSelector);
           if (active) scrollSuggestionIntoView(suggestionsListEl, active);
         }
         event.preventDefault();
@@ -359,7 +364,7 @@ export function initGuidelineLabelFilters() {
       return;
     }
 
-    const active = suggestionsListEl.querySelector<HTMLElement>(".guidelines-suggestion.is-active");
+    const active = suggestionsListEl.querySelector<HTMLElement>(activeSuggestionSelector);
     if (active) scrollSuggestionIntoView(suggestionsListEl, active);
   });
 

@@ -1,7 +1,7 @@
 ---
 import TableOfContentsList from "./TableOfContents/TableOfContentsList.astro";
 import { removeOverviewTocItem } from "./toc";
-import { ChevronRight } from "lucide-astro";
+import { ChevronRight } from "@lucide/astro";
 
 const { toc } = Astro.locals.starlightRoute;
 const items = toc ? removeOverviewTocItem(toc.items) : [];

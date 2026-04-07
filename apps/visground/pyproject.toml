@@ -37,8 +37,22 @@ dependencies = [
 chartcoach = { workspace = true }
 
 [build-system]
-requires = ["uv_build>=0.10.9,<0.11.0"]
+requires = ["uv_build>=0.10.9,<0.12.0"]
 build-backend = "uv_build"
 
 [dependency-groups]
 dev = ["marimo[recommended]>=0.20.4"]
+
+[tool.ruff]
+extend-exclude = ["data"]
+force-exclude = true
+
+[tool.ruff.format]
+exclude = ["data"]
+
+[tool.ruff.lint]
+pydocstyle = { convention = "numpy" }
+ignore = []
+
+[tool.ty.src]
+exclude = ["data", "scripts"]

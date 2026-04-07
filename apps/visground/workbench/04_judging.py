@@ -163,13 +163,7 @@ def _():
     import marimo as mo
     import polars as pl
     from visground.datasets import VisEvalDataset, VisGroundDataset
-    from visground.judge import (
-        VisJudgeLmClient,
-        VisJudgeApiClient,
-        VisJudgeRunConfig,
-        VisJudgeRunner,
-    )
-    from visground.lm import lm_cliproxy
+    from visground.judge import VisJudgeApiClient, VisJudgeRunConfig, VisJudgeRunner
 
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger(__name__)

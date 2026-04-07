@@ -1,16 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
-  <style>
-    :root { color: #8c6e53; }
-    @media (prefers-color-scheme: dark) {
-      :root { color: #dbc4aa; }
-    }
-  </style>
-  <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M74 44Q48 44 48 70V98Q48 128 20 128Q48 128 48 158V186Q48 212 74 212" stroke-width="8"/>
-    <path d="M182 44Q208 44 208 70V98Q208 128 236 128Q208 128 208 158V186Q208 212 182 212" stroke-width="8"/>
-    <rect x="84" y="68" width="88" height="120" stroke-width="8"/>
-    <path d="M96 156L116 134L130 148L154 124L178 100" stroke-width="8"/>
-    <path d="M160 100H178V118" stroke-width="8"/>
-    <path d="M148 130L160 118" stroke-width="6"/>
-  </g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" id="cc-favicon-light-svg" viewBox="0 0 128 128" fill="none" role="img" aria-labelledby="cc-favicon-light-title" preserveAspectRatio="xMidYMid meet" style="display:block;width:100%;height:auto"><title id="cc-favicon-light-title">Structured visualization design knowledge</title><rect x="8" y="8" width="112" height="112" rx="28" fill="#f7f4ee" stroke="#d9d2c7" /><g transform="translate(14 14) scale(1)"><rect x="10" y="20" width="80" height="16" rx="3" fill="#2b241f" /><rect x="10" y="20" width="80" height="16" rx="3" fill="#2b241f" /><rect x="10" y="20" width="80" height="16" rx="3" fill="#2b241f" /><rect x="10" y="42" width="38" height="16" rx="3" fill="#8f6f50" /><rect x="10" y="42" width="38" height="16" rx="3" fill="#8f6f50" /><rect x="52" y="42" width="38" height="16" rx="3" fill="#ab9277" /><rect x="10" y="64" width="80" height="10" rx="2" fill="#d9d2c7" /><rect x="10" y="64" width="80" height="10" rx="2" fill="#d9d2c7" /></g></svg>

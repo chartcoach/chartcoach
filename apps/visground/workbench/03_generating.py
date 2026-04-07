@@ -286,7 +286,7 @@ def _(VisEvalDataset, VisGroundDataset):
 
 @app.cell(hide_code=True)
 def _():
-    from typing import Literal, cast, get_args
+    from typing import Literal, get_args
 
     import dspy
     import marimo as mo

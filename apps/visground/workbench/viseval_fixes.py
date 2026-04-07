@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.21.1"
+__generated_with = "0.22.4"
 app = marimo.App(width="columns")
 
 
@@ -9,36 +9,6 @@ def _(mo):
     mo.md(r"""
     # SQL - NL Query Consistency
     """)
-    return
-
-
-@app.cell
-def _(viseval_dataset):
-    viseval_dataset.df
-    return
-
-
-@app.cell(hide_code=True)
-def _(
-    SQLNLQueryConsistencyChecker,
-    consistency_reward_fn,
-    dspy,
-    row_to_consistency_check_input,
-    viseval_dataset,
-):
-    base_consistency_checker = dspy.Predict(SQLNLQueryConsistencyChecker)
-    consistency_checker = dspy.Refine(
-        module=base_consistency_checker,
-        N=3,
-        reward_fn=consistency_reward_fn,
-        threshold=1.0,
-    )
-
-    exec_pairs = [
-        (consistency_checker, row_to_consistency_check_input(row))
-        for row in viseval_dataset.df.iter_rows(named=True)
-    ]
-    parallel = dspy.Parallel(num_threads=8)
     return
 
 
@@ -81,7 +51,7 @@ def _(dspy, viseval_dataset):
         except Exception:
             return 0.0
 
-    return consistency_reward_fn, row_to_consistency_check_input
+    return
 
 
 @app.cell(hide_code=True)
@@ -111,7 +81,7 @@ def _(dspy):
             desc="A minimally edited SQL query that makes the query consistent with the natural-language request while staying as close as possible to the original. Return null if the original SQL is already consistent."
         )
 
-    return (SQLNLQueryConsistencyChecker,)
+    return
 
 
 @app.cell(column=1, hide_code=True)

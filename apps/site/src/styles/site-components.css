@@ -28,87 +28,6 @@
   margin-top: 0.3rem;
 }
 
-.guidelines-page code {
-  border: 1px solid var(--ccui-border);
-  border-radius: var(--ccui-radius-sm);
-  padding: 0.08rem 0.35rem;
-  background: var(--ccui-panel);
-  color: var(--ccui-text);
-}
-
-.guidelines-suggestions {
-  position: absolute;
-  inset-inline: 0;
-  top: calc(100% + 0.45rem);
-  z-index: 20;
-  max-height: 16rem;
-  overflow: auto;
-  padding: 0.25rem;
-  border: 1px solid var(--ccui-border);
-  border-radius: var(--ccui-radius-sm);
-  background: var(--ccui-paper);
-  box-shadow: var(--ccui-shadow);
-}
-
-.guidelines-suggestion {
-  width: 100%;
-  border: none;
-  border-radius: var(--ccui-radius-sm);
-  background: transparent;
-  color: var(--ccui-text);
-  font: 500 0.82rem/1.3 var(--ccui-font-mono);
-  text-align: left;
-  padding: 0.5rem 0.62rem;
-  cursor: pointer;
-}
-
-.guidelines-suggestion:hover,
-.guidelines-suggestion.is-active {
-  background: var(--ccui-panel);
-}
-
-.guidelines-filter-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.38rem;
-  border: 1px solid var(--ccui-border);
-  border-radius: 3px;
-  padding: 0.2rem 0.45rem;
-  background: var(--ccui-panel);
-  color: var(--ccui-text);
-  font: 500 0.68rem/1.15 var(--ccui-font-mono);
-  cursor: pointer;
-}
-
-.guidelines-filter-chip__label {
-  font-weight: 700;
-  letter-spacing: 0.02em;
-}
-
-.guidelines-filter-chip__x {
-  color: var(--ccui-muted);
-}
-
-.guideline-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.48rem;
-  margin: 1rem 0 1.25rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid var(--ccui-divider);
-}
-
-.guideline-meta__label {
-  display: inline-flex;
-  align-items: center;
-  color: var(--ccui-muted);
-  font-family: var(--ccui-font-mono);
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: lowercase;
-}
-
 a.citation {
   color: inherit;
   text-decoration: underline;
@@ -123,9 +42,9 @@ a.citation:hover {
 .bibliography {
   margin-top: 0.75rem;
   padding: 0.95rem 1rem;
-  border: 1px solid var(--ccui-border);
-  border-radius: var(--ccui-radius-md);
-  background: transparent;
+  border: 1px solid var(--cc-chip-border);
+  border-radius: var(--cc-radius-panel);
+  background: var(--cc-shell-surface);
   box-shadow: none;
 }
 

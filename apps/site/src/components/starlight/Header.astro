@@ -1,9 +1,9 @@
 ---
 import Search from "@astrojs/starlight/components/Search.astro";
-import SiteTitle from "@astrojs/starlight/components/SiteTitle.astro";
+import SiteTitle from "./SiteTitle.astro";
 import SocialIcons from "@astrojs/starlight/components/SocialIcons.astro";
 import ThemeSelect from "@astrojs/starlight/components/ThemeSelect.astro";
-import { Menu, X } from "lucide-astro";
+import { Menu, X } from "@lucide/astro";
 import { headerNavigation } from "../../../config/navigation";
 
 const pathname = Astro.url.pathname;
@@ -16,6 +16,15 @@ function normalizePath(value: string) {
 const currentPath = normalizePath(pathname);
 const mobileMenuPanelId = "cc-mobile-menu-panel";
 const mobileMenuToggleLabelId = "cc-mobile-menu-toggle-label";
+const desktopNavLinkBase =
+	"relative inline-flex min-h-[1.95rem] items-center px-[0.68rem] py-[0.24rem] font-sans text-[0.78rem] font-semibold leading-none tracking-[-0.01em] no-underline transition-colors lg:text-[0.82rem]";
+const desktopNavLinkInactive = "text-muted-foreground";
+const desktopNavLinkActive = "text-brand-high";
+const mobileNavLinkBase =
+	"flex min-h-9 items-center rounded-none border border-transparent px-[0.6rem] py-[0.45rem] font-sans text-[0.9rem] font-semibold no-underline transition-colors";
+const mobileNavLinkInactive =
+	"text-muted-foreground hover:border-control-border hover:bg-surface-strong hover:text-foreground focus-visible:border-control-border focus-visible:bg-surface-strong focus-visible:text-foreground";
+const mobileNavLinkActive = "border-control-border bg-surface text-brand-high";
 
 function isActive(href: string) {
 	const target = normalizePath(href);
@@ -24,77 +33,102 @@ function isActive(href: string) {
 }
 ---
 
-<div class="cc-site-header">
-	<div class="cc-site-header__row--primary">
-		<div class="cc-site-header__brand">
+<div class="grid min-h-full content-center">
+	<div class="grid min-w-0 grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-[0.6rem] lg:grid-cols-[auto_minmax(0,1fr)_auto_auto] lg:gap-x-[0.95rem]">
+		<div class="min-w-0">
 			<SiteTitle />
 		</div>
 
-		<nav class="cc-site-header__nav cc-site-header__nav--desktop" aria-label="Primary">
+		<nav
+			class="hidden min-w-0 items-center gap-[0.28rem] lg:flex lg:justify-start"
+			aria-label="Primary"
+			data-site-header-nav
+		>
 			{
-				headerNavigation.map((item) => (
-					<a
-						class="cc-site-header__nav-link"
-						href={item.href}
-						aria-current={isActive(item.href) ? "page" : undefined}
-					>
-						{item.label}
-					</a>
-				))
+				headerNavigation.map((item) => {
+					const isCurrent = isActive(item.href);
+
+					return (
+						<a
+							class:list={[
+								desktopNavLinkBase,
+								isCurrent ? desktopNavLinkActive : desktopNavLinkInactive,
+							]}
+							href={item.href}
+							aria-current={isCurrent ? "page" : undefined}
+							data-header-link
+						>
+							{item.label}
+						</a>
+					);
+				})
 			}
 		</nav>
 
-		<div class="cc-site-header__search">
-			<Search class="cc-site-search" />
+		<div class="flex min-w-max justify-end justify-self-end" data-site-header-search>
+			<Search />
 		</div>
 
-		<div class="cc-site-header__controls">
-			<div class="cc-site-header__social social-icons">
+		<div class="hidden items-center lg:flex" data-site-header-controls>
+			<div class="social-icons flex items-center gap-3" data-site-header-social>
 				<SocialIcons />
 			</div>
 			<ThemeSelect />
 		</div>
 
-		<details class="cc-mobile-menu">
+		<details class="m-0 justify-self-end lg:hidden" data-mobile-menu>
 			<summary
-				class="cc-mobile-menu__toggle"
+				class="inline-flex size-[2.15rem] items-center justify-center rounded-none border border-control-border bg-control text-muted-foreground transition-colors focus-visible:border-control-border focus-visible:bg-surface-strong focus-visible:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring/30"
 				aria-controls={mobileMenuPanelId}
 				aria-expanded="false"
 				aria-labelledby={mobileMenuToggleLabelId}
+				data-mobile-menu-toggle
 			>
 				<span class="sr-only" id={mobileMenuToggleLabelId}>Open primary menu</span>
 				<Menu
-					class="cc-mobile-menu__icon cc-mobile-menu__icon--open"
+					class="size-4"
+					data-mobile-menu-icon="open"
 					size="1rem"
 					aria-hidden="true"
 					focusable="false"
 				/>
 				<X
-					class="cc-mobile-menu__icon cc-mobile-menu__icon--close"
+					class="size-4"
+					data-mobile-menu-icon="close"
 					size="1rem"
 					aria-hidden="true"
 					focusable="false"
 				/>
 			</summary>
-			<div class="cc-mobile-menu__panel" id={mobileMenuPanelId}>
-				<nav class="cc-mobile-menu__links" aria-label="Primary mobile">
-					{
-						headerNavigation.map((item) => (
-							<a
-								class="cc-mobile-menu__link"
-								href={item.href}
-								aria-current={isActive(item.href) ? "page" : undefined}
-							>
-								{item.label}
-							</a>
-						))
-					}
-				</nav>
-				<div class="cc-mobile-menu__footer">
-					<div class="cc-mobile-menu__social social-icons">
+			<div
+				class="fixed inset-x-0 top-[var(--sl-nav-height)] z-[var(--sl-z-index-menu)] grid gap-[0.85rem] border-t border-border bg-background px-4 py-4 shadow-popover"
+				id={mobileMenuPanelId}
+			>
+					<nav class="grid gap-[0.2rem]" aria-label="Primary mobile">
+						{
+							headerNavigation.map((item) => {
+								const isCurrent = isActive(item.href);
+
+								return (
+									<a
+										class:list={[
+											mobileNavLinkBase,
+											isCurrent ? mobileNavLinkActive : mobileNavLinkInactive,
+										]}
+										href={item.href}
+										aria-current={isCurrent ? "page" : undefined}
+									>
+										{item.label}
+									</a>
+								);
+							})
+						}
+					</nav>
+				<div class="flex items-center justify-end gap-[0.9rem] border-t border-border pt-[0.55rem]">
+					<div class="social-icons flex min-h-[2.2rem] items-center gap-3" data-mobile-menu-social>
 						<SocialIcons />
 					</div>
-					<div class="cc-mobile-menu__theme">
+					<div class="flex min-h-[2.2rem] items-center">
 						<ThemeSelect />
 					</div>
 				</div>
@@ -104,7 +138,7 @@ function isActive(href: string) {
 </div>
 
 <script is:inline>
-	document.querySelectorAll(".cc-mobile-menu").forEach((details) => {
+	document.querySelectorAll("[data-mobile-menu]").forEach((details) => {
 		const summary = details.querySelector("summary");
 		const summaryLabel = details.querySelector("#cc-mobile-menu-toggle-label");
 		const syncMenuState = () => {

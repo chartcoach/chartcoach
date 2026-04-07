@@ -2,9 +2,9 @@
   "extends": "astro/tsconfigs/strict",
   "compilerOptions": {
     "baseUrl": ".",
-    "customConditions": ["chartcoach-source"],
+    "customConditions": ["source"],
     "paths": {
-      "@chartcoach/site/*": ["src/*"]
+      "@/*": ["src/*"]
     }
   },
   "include": [".astro/types.d.ts", "**/*"],
