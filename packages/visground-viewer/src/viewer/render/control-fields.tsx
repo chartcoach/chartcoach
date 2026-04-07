@@ -1,13 +1,5 @@
-import { useId } from "react";
+import { useId, type MouseEvent, type PointerEvent } from "react";
 import { Input } from "@chartcoach/ui/components/input";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@chartcoach/ui/components/select";
 import type { ViewerOption } from "../contract/types";
 import { toOptionValue } from "./utils";
 
@@ -53,6 +45,13 @@ export function ViewerSelectField({
   value: string;
 }) {
   const labelId = useId();
+  const stopPropagation = (
+    event:
+      | MouseEvent<HTMLButtonElement | HTMLDivElement | HTMLSelectElement>
+      | PointerEvent<HTMLButtonElement | HTMLDivElement | HTMLSelectElement>,
+  ) => {
+    event.stopPropagation();
+  };
 
   return (
     <div className="grid min-w-0 gap-1.5">
@@ -62,26 +61,24 @@ export function ViewerSelectField({
       >
         {label}
       </span>
-      <Select onValueChange={onValueChange} value={value}>
-        <SelectTrigger
-          aria-labelledby={labelId}
-          className="w-full justify-between bg-background text-foreground"
-        >
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent align="start" className="min-w-48" portal={false} position="popper">
-          <SelectGroup>
-            {options.map((option) => {
-              const optionValue = toOptionValue(option.value);
-              return (
-                <SelectItem key={optionValue} value={optionValue}>
-                  {option.label}
-                </SelectItem>
-              );
-            })}
-          </SelectGroup>
-        </SelectContent>
-      </Select>
+      <select
+        aria-labelledby={labelId}
+        className="h-8 w-full rounded-[4px] border border-input bg-background px-2.5 text-sm text-foreground outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+        onChange={(event) => onValueChange(event.target.value)}
+        onClick={stopPropagation}
+        onMouseDown={stopPropagation}
+        onPointerDown={stopPropagation}
+        value={value}
+      >
+        {options.map((option) => {
+          const optionValue = toOptionValue(option.value);
+          return (
+            <option key={optionValue} value={optionValue}>
+              {option.label}
+            </option>
+          );
+        })}
+      </select>
     </div>
   );
 }

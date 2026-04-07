@@ -193,6 +193,7 @@
 }
 
 .vg-chart-canvas {
+  position: relative;
   display: grid;
   place-items: center;
   width: 100%;
@@ -216,9 +217,9 @@
 }
 
 .vg-image-stage.surface-panel {
+  position: absolute;
+  inset: 0;
   display: grid;
-  height: 100%;
-  min-height: 0;
   align-items: center;
   justify-items: center;
 }
@@ -228,14 +229,14 @@
 }
 
 .vg-image.surface-panel {
-  width: auto;
+  position: absolute;
+  inset: 0;
+  width: 100%;
   max-width: 100%;
-  height: auto;
+  height: 100%;
   max-height: 100%;
   object-fit: contain;
   object-position: center;
-  align-self: center;
-  justify-self: center;
 }
 
 .vg-image.is-extreme-aspect.surface-hover,

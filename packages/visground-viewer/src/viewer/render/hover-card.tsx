@@ -1,37 +1,56 @@
 import { autoUpdate, flip, offset, shift, useFloating } from "@floating-ui/react";
+import { useLayoutEffect } from "react";
 import type { ViewerActions, ViewerState } from "../contract/types";
 import { ScoreBreakdownList } from "./score-ledger";
 import { getVariantByIndex, orientationLabel } from "./utils";
 
-export function HoverCard({ state, actions }: { state: ViewerState; actions: ViewerActions }) {
-  if (!state.hover) {
-    return null;
-  }
+const HOVER_CARD_OFFSET_PX = 16;
+const HOVER_CARD_PADDING_PX = 16;
 
-  const variant = getVariantByIndex(state.hover.cell, state.hover.variantIndex);
-  if (!variant || !state.hover.anchor.isConnected) {
-    return null;
-  }
-  const candidate = variant.candidate;
-  const label = orientationLabel([
-    state.hover.cell.group_label,
-    state.hover.cell.row_label,
-    state.hover.cell.column_label,
-  ]);
-  const { refs, floatingStyles } = useFloating({
-    elements: {
-      reference: state.hover.anchor,
-    },
+export function HoverCard({ state, actions }: { state: ViewerState; actions: ViewerActions }) {
+  const hover = state.hover;
+  const variant = hover ? getVariantByIndex(hover.cell, hover.variantIndex) : null;
+  const hoverKey = hover ? `${hover.cell.cell_key}:${hover.variantIndex}` : null;
+  const candidate = variant?.candidate;
+  const label = hover
+    ? orientationLabel([hover.cell.group_label, hover.cell.row_label, hover.cell.column_label])
+    : null;
+  const { refs, floatingStyles, update } = useFloating({
     open: true,
-    placement: "right",
+    placement: "right-start",
     strategy: "fixed",
     whileElementsMounted: autoUpdate,
-    middleware: [offset(24), flip({ padding: 24 }), shift({ padding: 24 })],
+    middleware: [
+      offset(HOVER_CARD_OFFSET_PX),
+      flip({
+        padding: HOVER_CARD_PADDING_PX,
+      }),
+      shift({
+        crossAxis: true,
+        padding: HOVER_CARD_PADDING_PX,
+      }),
+    ],
   });
+
+  useLayoutEffect(() => {
+    refs.setReference(hover?.anchor ?? null);
+  }, [hover, refs]);
+
+  useLayoutEffect(() => {
+    if (!hoverKey || !hover || !variant || !hover.anchor.isConnected) {
+      return;
+    }
+    void update();
+  }, [hover, hoverKey, update, variant]);
+
+  if (!hover || !variant || !hover.anchor.isConnected || !hoverKey || !candidate || !label) {
+    return null;
+  }
 
   return (
     <aside
-      className="fixed z-[60] grid w-[clamp(17rem,22vw,19rem)] max-h-[min(72vh,34rem)] gap-2 overflow-hidden border border-border bg-background px-3 py-3 shadow-[var(--ccui-shadow)] max-[860px]:w-[min(19rem,calc(100vw-1.25rem))]"
+      className="fixed z-[60] box-border grid w-[clamp(17rem,22vw,19rem)] max-h-[min(72vh,34rem)] gap-2 overflow-x-hidden overflow-y-auto border border-border bg-background px-3 py-3 shadow-[var(--ccui-shadow)] max-[860px]:w-[min(19rem,calc(100vw-1.25rem))]"
+      data-hover-key={hoverKey}
       onMouseEnter={() => actions.cancelHoverHide()}
       onMouseLeave={() => actions.scheduleHoverHide()}
       ref={refs.setFloating}

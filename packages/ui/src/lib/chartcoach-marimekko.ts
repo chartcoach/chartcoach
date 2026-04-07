@@ -20,6 +20,14 @@ type BlockState = {
 };
 
 type Palette = Record<Tone, string>;
+type StaticTheme = Exclude<ChartCoachTheme, "auto">;
+type StaticThemeSurface = {
+  canvas: string;
+  panel: string;
+  border: string;
+  title: string;
+  tagline: string;
+};
 
 const HERO_KEY_TIMES = "0;0.2;0.6;0.8;1";
 const HERO_KEY_SPLINES = [
@@ -81,22 +89,39 @@ const blockStates: BlockState[] = [
 
 const palettes: Record<ChartCoachTheme, Palette> = {
   light: {
-    strong: "#2b241f",
-    mid: "#8f6f50",
-    soft: "#ab9277",
-    faint: "#d9d2c7",
+    strong: "#202c52",
+    mid: "#546cdf",
+    soft: "#8c9eff",
+    faint: "#d2dcf7",
   },
   dark: {
-    strong: "#f3ece2",
-    mid: "#dcc6a5",
-    soft: "#ab9985",
-    faint: "#4d433b",
+    strong: "#ecf1ff",
+    mid: "#9aaeff",
+    soft: "#6479d8",
+    faint: "#2d3c67",
   },
   auto: {
-    strong: "var(--cc-brand-high, #2b241f)",
-    mid: "var(--cc-brand, #8f6f50)",
-    soft: "var(--cc-brand-ink, #ab9277)",
-    faint: "var(--ccui-border, #d9d2c7)",
+    strong: "var(--cc-mark-strong, var(--cc-brand-high, #202c52))",
+    mid: "var(--cc-mark-mid, var(--cc-brand, #546cdf))",
+    soft: "var(--cc-mark-soft, var(--cc-brand-ink, #8c9eff))",
+    faint: "var(--cc-mark-faint, var(--ccui-border, #d2dcf7))",
+  },
+};
+
+const staticThemeSurfaces: Record<StaticTheme, StaticThemeSurface> = {
+  light: {
+    canvas: "#f5f8ff",
+    panel: "#edf2ff",
+    border: "#d2dcf7",
+    title: "#202c52",
+    tagline: "#4f5c82",
+  },
+  dark: {
+    canvas: "#0f162c",
+    panel: "#151e39",
+    border: "#2d3c67",
+    title: "#ecf1ff",
+    tagline: "#c6d0ee",
   },
 };
 
@@ -254,14 +279,13 @@ export function renderChartCoachMarimekkoSvg({
 }
 
 export function renderChartCoachFaviconSvg(theme: Exclude<ChartCoachTheme, "auto"> = "light") {
-  const background = theme === "dark" ? "#17181b" : "#f7f4ee";
-  const border = theme === "dark" ? "#343840" : "#d9d2c7";
+  const surface = staticThemeSurfaces[theme];
   const mark = staticBlockRects(theme, "end");
 
   return svgScaffold({
     idPrefix: `cc-favicon-${theme}`,
     viewBox: "0 0 128 128",
-    body: `<rect x="8" y="8" width="112" height="112" rx="28" fill="${background}" stroke="${border}" /><g transform="translate(14 14) scale(1)">${mark}</g>`,
+    body: `<rect x="8" y="8" width="112" height="112" rx="28" fill="${surface.canvas}" stroke="${surface.border}" /><g transform="translate(14 14) scale(1)">${mark}</g>`,
     title: "Structured visualization design knowledge",
   });
 }
@@ -271,11 +295,7 @@ export function renderChartCoachShareCardSvg({
   title = "Structured visualization\ndesign knowledge",
   tagline = "For grounding generative reasoning in explicit, inspectable guidance.",
 }: ChartCoachShareCardSvgOptions = {}) {
-  const background = theme === "dark" ? "#17181b" : "#f7f4ee";
-  const panel = theme === "dark" ? "#1d1f23" : "#efebe4";
-  const border = theme === "dark" ? "#343840" : "#d9d2c7";
-  const titleColor = theme === "dark" ? "#f3ece2" : "#2b241f";
-  const taglineColor = theme === "dark" ? "#c8beb2" : "#5d564e";
+  const surface = staticThemeSurfaces[theme];
   const mark = staticBlockRects(theme, "end");
   const titleLines = title.split("\n");
   const titleMarkup = titleLines
@@ -292,12 +312,12 @@ export function renderChartCoachShareCardSvg({
     viewBox: "0 0 1200 630",
     title,
     body: `
-      <rect x="0" y="0" width="1200" height="630" fill="${background}" />
-      <rect x="44" y="44" width="1112" height="542" rx="28" fill="${panel}" stroke="${border}" />
+      <rect x="0" y="0" width="1200" height="630" fill="${surface.canvas}" />
+      <rect x="44" y="44" width="1112" height="542" rx="28" fill="${surface.panel}" stroke="${surface.border}" />
       <g transform="translate(690 130) scale(3.65)">${mark}</g>
-      <text x="96" y="${titleStartY}" fill="${titleColor}" font-family="Inter, Helvetica Neue, Arial, sans-serif" font-size="68" font-weight="700">${titleMarkup}</text>
-      <text x="96" y="${taglineY}" fill="${taglineColor}" font-family="Inter, Helvetica Neue, Arial, sans-serif" font-size="30">${escapeAttribute(tagline)}</text>
-      <text x="96" y="520" fill="${taglineColor}" font-family="Inter, Helvetica Neue, Arial, sans-serif" font-size="24">Grounded · Structured · Citable</text>
+      <text x="96" y="${titleStartY}" fill="${surface.title}" font-family="Inter, Helvetica Neue, Arial, sans-serif" font-size="68" font-weight="700">${titleMarkup}</text>
+      <text x="96" y="${taglineY}" fill="${surface.tagline}" font-family="Inter, Helvetica Neue, Arial, sans-serif" font-size="30">${escapeAttribute(tagline)}</text>
+      <text x="96" y="520" fill="${surface.tagline}" font-family="Inter, Helvetica Neue, Arial, sans-serif" font-size="24">Grounded · Structured · Citable</text>
     `.replace(/\s+/g, " "),
   });
 }

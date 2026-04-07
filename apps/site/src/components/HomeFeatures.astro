@@ -1,47 +1,52 @@
 ---
 import FeatureCard from "./home/FeatureCard.astro";
+
+const bodyClasses = "m-0 text-[0.96rem] leading-[1.65] text-muted-foreground";
 ---
 
-<section class="grid gap-[0.8rem]" aria-labelledby="cc-home-explore-title">
-	<div class="grid max-w-3xl gap-[0.28rem]">
-		<h2
-			id="cc-home-explore-title"
-			class="m-0 font-display text-[clamp(1.7rem,2vw,2.2rem)] font-semibold leading-[1.08] tracking-[-0.025em] text-foreground"
-		>
-			Explore the catalog
-		</h2>
-		<p class="m-0 max-w-[40rem] text-[0.96rem] leading-[1.62] text-muted-foreground">
-			Choose the entry point that matches how you want to work with the material.
-		</p>
-	</div>
+<section class="grid gap-6 md:gap-7" aria-labelledby="cc-home-explore-title">
+  <div class="grid gap-2.5">
+    <div class="grid max-w-3xl gap-[0.45rem]">
+      <h2
+        id="cc-home-explore-title"
+        class="m-0 font-display text-[clamp(1.7rem,2vw,2.2rem)] font-semibold leading-[1.08] tracking-[-0.025em] text-foreground"
+      >
+        Explore the catalog
+      </h2>
+      <p class={bodyClasses}>
+        Browse the full list, narrow it with labels, or look at how each record is organized. Entries are
+        short to scan, clear about scope, and linked back to their sources.
+      </p>
+    </div>
 
-	<div
-		class="grid items-stretch gap-[0.8rem] md:grid-cols-2"
-		aria-label="Explore structured visualization design knowledge"
-	>
-		<FeatureCard
-			description="Read concise recommendations with context, labels, and references already in place."
-			href="/guidelines/"
-			icon="catalog"
-			title="Browse the catalog"
-		/>
-		<FeatureCard
-			description="Narrow the collection by task, audience, chart type, communication goal, or constraint."
-			href="/labels/"
-			icon="labels"
-			title="Filter by labels"
-		/>
-		<FeatureCard
-			description="Understand how the catalog is organized when you want the full model behind each entry."
-			href="/catalog/"
-			icon="structure"
-			title="Inspect the structure"
-		/>
-		<FeatureCard
-			description="Follow citations back to the bibliography and inspect the evidence behind each claim."
-			href="/catalog/#references"
-			icon="citations"
-			title="Trace citations"
-		/>
-	</div>
+    <div
+      class="grid items-stretch gap-4 md:grid-cols-2"
+      aria-label="Explore structured visualization design knowledge"
+    >
+      <FeatureCard
+        description="Read short guideline records with the recommendation, the reasoning, and the source details together."
+        href="/guidelines/"
+        icon="catalog"
+        title="Browse the catalog"
+      />
+      <FeatureCard
+        description="Narrow the collection by task, audience, chart family, communication goal, or other recurring facets."
+        href="/labels/"
+        icon="labels"
+        title="Filter by labels"
+      />
+      <FeatureCard
+        description="See how titles, labels, sections, and references give each guideline a clear shape."
+        href="/catalog/"
+        icon="structure"
+        title="Inspect the structure"
+      />
+      <FeatureCard
+        description="Follow claims back to the bibliography when you want to see where a recommendation came from."
+        href="/catalog/#references"
+        icon="citations"
+        title="Trace citations"
+      />
+    </div>
+  </div>
 </section>

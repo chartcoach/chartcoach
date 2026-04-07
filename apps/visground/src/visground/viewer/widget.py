@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 from collections.abc import Mapping
 import os
 from pathlib import Path
@@ -9,7 +10,6 @@ from urllib.parse import urlsplit, urlunsplit
 import polars as pl
 
 from .backend import VisGroundViewerBackend
-from .export import default_viewer_artifact_path
 from .spec import ViewerConfig
 
 DEFAULT_VIEWER_DEV_URL = "http://127.0.0.1:5173/js/anywidget.ts?anywidget"
@@ -40,7 +40,7 @@ def _resolve_viewer_esm() -> str | Path:
     return Path(__file__).parent / "_static" / "anywidget" / "index.js"
 
 
-def _resolve_viewer_artifact_url() -> str:
+def _resolve_viewer_artifact_url(path: Path) -> str:
     dev_url = os.getenv("VISGROUND_VIEWER_DEV_URL")
     if dev_url or _viewer_dev_enabled():
         candidate = _normalize_viewer_dev_url(dev_url or DEFAULT_VIEWER_DEV_URL)
@@ -48,7 +48,13 @@ def _resolve_viewer_artifact_url() -> str:
         if parts.scheme and parts.netloc:
             return urlunsplit(parts._replace(path="/data/viewer.parquet", query=""))
         return DEFAULT_VIEWER_ARTIFACT_DEV_URL
-    return _resolve_marimo_virtual_file_url(default_viewer_artifact_path())
+    return _resolve_runtime_artifact_url(path)
+
+
+def _resolve_runtime_artifact_url(path: Path) -> str:
+    if url := _resolve_marimo_virtual_file_url(path):
+        return url
+    return _resolve_data_url(path)
 
 
 def _resolve_marimo_virtual_file_url(path: Path) -> str:
@@ -70,6 +76,13 @@ def _resolve_marimo_virtual_file_url(path: Path) -> str:
         return ""
 
     return str(mo_data.any_data(path.read_bytes(), ext=path.suffix).url)
+
+
+def _resolve_data_url(path: Path) -> str:
+    if not path.is_file():
+        return ""
+    encoded = base64.b64encode(path.read_bytes()).decode("ascii")
+    return f"data:application/octet-stream;base64,{encoded}"
 
 
 class VisGroundViewer(VisGroundViewerBackend):
@@ -104,7 +117,15 @@ class VisGroundViewer(VisGroundViewerBackend):
             debug=debug,
             show_scores=show_scores,
         )
-        self._artifact_url = _resolve_viewer_artifact_url()
+        artifact_path = self._artifact_path
+        if artifact_path is None:
+            raise RuntimeError("VisGround viewer did not prepare a viewer artifact.")
+        artifact_url = _resolve_viewer_artifact_url(artifact_path)
+        if not artifact_url:
+            raise RuntimeError(
+                f"VisGround viewer could not resolve a viewer artifact location for {artifact_path}."
+            )
+        self._artifact_url = artifact_url
 
 
 __all__ = ["VisGroundViewer"]

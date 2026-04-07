@@ -34,7 +34,7 @@ function ChartCoachMarimekkoCanvas({
         padding: "clamp(0.85rem, 2.4vw, 1.35rem)",
         borderRadius: "var(--cc-radius-panel, 1rem)",
         background:
-          "linear-gradient(180deg, color-mix(in srgb, var(--cc-shell-surface, #f7f4ee) 96%, white), color-mix(in srgb, var(--ccui-panel, #efebe4) 92%, transparent))",
+          "linear-gradient(180deg, color-mix(in srgb, var(--cc-shell-surface) 94%, white), color-mix(in srgb, var(--ccui-panel) 92%, transparent))",
         boxShadow: "none",
         ...style,
       }}
@@ -45,9 +45,9 @@ function ChartCoachMarimekkoCanvas({
           position: "absolute",
           inset: 0,
           zIndex: 0,
-          opacity: 0.22,
+          opacity: 0.18,
           backgroundImage:
-            "linear-gradient(to right, transparent, color-mix(in srgb, var(--cc-brand, #8f6f50) 10%, transparent) 50%, transparent), repeating-linear-gradient(to right, transparent 0 4.8rem, color-mix(in srgb, var(--cc-chip-border, #d9d2c7) 56%, transparent) 4.8rem 4.86rem), repeating-linear-gradient(to bottom, transparent 0 4.8rem, color-mix(in srgb, var(--cc-chip-border, #d9d2c7) 56%, transparent) 4.8rem 4.86rem)",
+            "linear-gradient(to right, transparent, color-mix(in srgb, var(--cc-brand) 12%, transparent) 50%, transparent), repeating-linear-gradient(to right, transparent 0 4.8rem, color-mix(in srgb, var(--cc-mark-faint) 70%, transparent) 4.8rem 4.86rem), repeating-linear-gradient(to bottom, transparent 0 4.8rem, color-mix(in srgb, var(--cc-mark-faint) 70%, transparent) 4.8rem 4.86rem)",
           pointerEvents: "none",
         }}
       />

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from pathlib import Path
 from typing import Any
 
 import anywidget
@@ -14,6 +15,7 @@ from .spec import ViewerConfig
 class VisGroundViewerBackend(anywidget.AnyWidget):
     _esm = ""
     _css = ""
+    _artifact_path: Path | None = None
 
     debug = traitlets.Bool(False).tag(sync=True)
     _artifact_url = traitlets.Unicode("").tag(sync=True)
@@ -42,7 +44,7 @@ class VisGroundViewerBackend(anywidget.AnyWidget):
 
         from .export import export_viewer_artifact
 
-        export_viewer_artifact(
+        self._artifact_path = export_viewer_artifact(
             candidates_df=candidates_df,
             judgements_df=judgements_df,
             judgement_runs_df=judgement_runs_df,

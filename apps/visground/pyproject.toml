@@ -40,6 +40,16 @@ chartcoach = { workspace = true }
 requires = ["uv_build>=0.10.9,<0.12.0"]
 build-backend = "uv_build"
 
+[tool.uv.build-backend]
+source-exclude = [
+  "/src/visground/viewer/_static/anywidget/data",
+  "/src/visground/viewer/_static/anywidget/charts",
+]
+wheel-exclude = [
+  "/src/visground/viewer/_static/anywidget/data",
+  "/src/visground/viewer/_static/anywidget/charts",
+]
+
 [dependency-groups]
 dev = ["marimo[recommended]>=0.20.4"]
 

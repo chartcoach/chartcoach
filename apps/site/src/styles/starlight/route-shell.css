@@ -1,7 +1,6 @@
 @layer chartcoach.overrides {
   html:has(#guidelines-grid) .content-panel:has(> .sl-container > h1#_top),
-  html:has([data-guideline-detail-page])
-    .content-panel:has(> .sl-container > h1#_top) {
+  html:has([data-guideline-detail-page]) .content-panel:has(> .sl-container > h1#_top) {
     display: none;
   }
 
@@ -65,20 +64,12 @@
   }
 
   .sidebar-content a:hover {
-    background: color-mix(
-      in srgb,
-      var(--cc-shell-surface-strong) 92%,
-      transparent
-    );
+    background: color-mix(in srgb, var(--cc-shell-surface-strong) 92%, transparent);
     color: var(--ccui-text);
   }
 
   .sidebar-content a:focus-visible {
-    background: color-mix(
-      in srgb,
-      var(--cc-shell-surface-strong) 92%,
-      transparent
-    );
+    background: color-mix(in srgb, var(--cc-shell-surface-strong) 92%, transparent);
     color: var(--ccui-text);
     outline: 1px solid color-mix(in srgb, var(--cc-brand) 34%, transparent);
     outline-offset: -1px;
@@ -108,11 +99,7 @@
     border: 1px solid transparent;
     border-radius: 9px;
     color: var(--ccui-text-soft);
-    background: color-mix(
-      in srgb,
-      var(--cc-shell-surface) 90%,
-      transparent
-    );
+    background: color-mix(in srgb, var(--cc-shell-surface) 90%, transparent);
     box-shadow: none;
     min-height: 2.48rem;
     padding-inline: 0.78rem 0.72rem;
@@ -152,11 +139,7 @@
   starlight-theme-select label:focus-within,
   starlight-theme-select label:has(select:focus),
   starlight-theme-select label:has(select:focus-visible) {
-    border-color: color-mix(
-      in srgb,
-      var(--cc-brand) 24%,
-      var(--cc-control-border)
-    );
+    border-color: color-mix(in srgb, var(--cc-brand) 24%, var(--cc-control-border));
     background: var(--cc-shell-surface-strong);
     color: var(--cc-brand-high);
     outline: 2px solid color-mix(in srgb, var(--cc-brand) 24%, transparent);
@@ -164,15 +147,19 @@
     box-shadow: none;
   }
 
+  :root[data-theme="dark"] starlight-theme-select label,
+  :root[data-theme="dark"] starlight-theme-select label:hover,
+  :root[data-theme="dark"] starlight-theme-select:focus-within label,
+  :root[data-theme="dark"] starlight-theme-select label:focus-within,
+  :root[data-theme="dark"] starlight-theme-select label:has(select:focus),
+  :root[data-theme="dark"] starlight-theme-select label:has(select:focus-visible) {
+    background: var(--cc-shell-bg);
+  }
+
   button[data-open-modal] {
-    border: 1px solid
-      color-mix(in srgb, var(--cc-brand) 30%, var(--cc-control-border)) !important;
+    border: 1px solid color-mix(in srgb, var(--cc-brand) 30%, var(--cc-control-border)) !important;
     border-radius: 9px !important;
-    background-color: color-mix(
-      in srgb,
-      var(--cc-shell-surface) 90%,
-      transparent
-    ) !important;
+    background-color: color-mix(in srgb, var(--cc-shell-surface) 90%, transparent) !important;
     color: var(--ccui-text-soft) !important;
     box-shadow: none !important;
     width: auto !important;
@@ -189,11 +176,7 @@
   }
 
   button[data-open-modal]:hover {
-    border-color: color-mix(
-      in srgb,
-      var(--cc-brand) 38%,
-      var(--cc-control-border)
-    ) !important;
+    border-color: color-mix(in srgb, var(--cc-brand) 38%, var(--cc-control-border)) !important;
     background-color: color-mix(
       in srgb,
       var(--cc-shell-surface-strong) 82%,
@@ -234,11 +217,7 @@
   site-search dialog {
     border-radius: var(--cc-radius-panel);
     border-color: var(--ccui-divider);
-    background: color-mix(
-      in srgb,
-      var(--cc-shell-bg) 96%,
-      var(--cc-shell-surface)
-    );
+    background: color-mix(in srgb, var(--cc-shell-bg) 96%, var(--cc-shell-surface));
     box-shadow: var(--cc-shadow-popover);
   }
 

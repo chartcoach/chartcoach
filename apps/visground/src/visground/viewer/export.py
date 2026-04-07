@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from pathlib import Path
 from typing import Any
 
+import platformdirs
 import polars as pl
 
 from visground.datasets import VisGroundDataset
@@ -17,8 +19,18 @@ from .data import (
 from .defaults import build_default_viewer_config
 from .spec import ViewerConfig
 
+_TRUTHY_ENV_VALUES = {"1", "true", "yes", "on"}
 
-def default_viewer_artifact_path() -> Path:
+
+def _viewer_dev_enabled() -> bool:
+    return os.getenv("VISGROUND_VIEWER_DEV", "").strip().lower() in _TRUTHY_ENV_VALUES
+
+
+def default_viewer_dev_artifact_path() -> Path:
+    override = os.getenv("VISGROUND_VIEWER_DEV_ARTIFACT_PATH")
+    if override:
+        return Path(override).expanduser()
+
     return (
         Path(__file__).resolve().parents[5]
         / "apps"
@@ -27,6 +39,20 @@ def default_viewer_artifact_path() -> Path:
         / "data"
         / "viewer.parquet"
     )
+
+
+def default_viewer_runtime_artifact_path() -> Path:
+    override = os.getenv("VISGROUND_VIEWER_ARTIFACT_PATH")
+    if override:
+        return Path(override).expanduser()
+
+    return Path(platformdirs.user_cache_dir("visground")) / "viewer" / "viewer.parquet"
+
+
+def default_viewer_artifact_path() -> Path:
+    if _viewer_dev_enabled():
+        return default_viewer_dev_artifact_path()
+    return default_viewer_runtime_artifact_path()
 
 
 def build_viewer_artifact_df(
