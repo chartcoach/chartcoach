@@ -29,7 +29,19 @@ def _(mo):
 def _(mo):
     mo.md(r"""
     ## ::lucide:bar-chart-3:: The Scenario: A Chart for a Grocery Flyer
+    """)
+    return
 
+
+@app.cell(hide_code=True)
+def _(user_situation_md):
+    user_situation_md
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
     We start with a bar chart about water use from [Our World in Data](https://ourworldindata.org/water-access-resources-sanitation). The specific scenario at hand is to use it in a grocery flyer to help shoppers quickly compare the water usage of beef with lower-water alternatives like chicken or eggs.
 
     The design question is whether the current descending sort order is effective for the rapid, comparison-focused task of a shopper.

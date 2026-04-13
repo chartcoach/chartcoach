@@ -1,0 +1,91 @@
+{
+  "axis_dimensions": ["model", "grounding_mode", "grammar"],
+  "default_filters": {
+    "audience": null,
+    "objective": "select",
+    "request_chart": null
+  },
+  "default_layout": {
+    "column_dimension": "grounding_mode",
+    "group_dimension": "grammar",
+    "row_dimension": "model"
+  },
+  "dimensions": [
+    {
+      "aliases": {
+        "refine": "Refine",
+        "select": "Select"
+      },
+      "id": "objective",
+      "label": "Objective",
+      "noneValueMode": "null",
+      "nullLabel": "None",
+      "order": {
+        "refine": 1,
+        "select": 0
+      }
+    },
+    {
+      "aliases": {},
+      "id": "request_chart",
+      "label": "Chart type",
+      "noneValueMode": "all",
+      "nullLabel": "All chart types",
+      "order": {}
+    },
+    {
+      "aliases": {
+        "casual": "Casual",
+        "expert": "Expert",
+        "novice": "Novice"
+      },
+      "id": "audience",
+      "label": "Audience",
+      "noneValueMode": "null",
+      "nullLabel": "No audience",
+      "order": {}
+    },
+    {
+      "aliases": {
+        "altair": "Altair",
+        "matplotlib": "Matplotlib",
+        "plotly": "Plotly"
+      },
+      "id": "grammar",
+      "label": "Grammar",
+      "noneValueMode": "null",
+      "nullLabel": "None",
+      "order": {}
+    },
+    {
+      "aliases": {
+        "hybrid": "Grounded",
+        "none": "Ungrounded",
+        "structured": "Structured"
+      },
+      "id": "grounding_mode",
+      "label": "Grounding",
+      "noneValueMode": "null",
+      "nullLabel": "None",
+      "order": {
+        "hybrid": 1,
+        "none": 0,
+        "structured": 2
+      }
+    },
+    {
+      "aliases": {
+        "claude-sonnet-4.6": "Claude 4.6",
+        "gemini-3.1-pro-preview": "Gemini 3.1",
+        "gpt-5.3-codex": "GPT-5.3 Codex",
+        "gpt-5.4": "GPT-5.4"
+      },
+      "id": "model",
+      "label": "Model",
+      "noneValueMode": "null",
+      "nullLabel": "None",
+      "order": {}
+    }
+  ],
+  "filter_dimensions": ["objective", "request_chart", "audience"]
+}

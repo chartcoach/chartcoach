@@ -6,6 +6,7 @@
   "scripts": {
     "dev:anywidget": "vite --config vite.config.anywidget.js",
     "build:anywidget": "vite build --config vite.config.anywidget.js",
+    "test": "uv run python -m unittest discover -s tests",
     "typecheck:js": "tsc -p tsconfig.json --noEmit",
     "typecheck:py": "uv run ty check .",
     "typecheck": "pnpm typecheck:js && pnpm typecheck:py",

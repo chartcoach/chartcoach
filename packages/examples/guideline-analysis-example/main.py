@@ -36,6 +36,25 @@ def _(mo):
 @app.cell(column=1, hide_code=True)
 def _(mo):
     mo.md(r"""
+    ## ::lucide:map:: Projection of the Knowledge Space
+    <a id="sec:projection"></a>
+
+    This visualization using [Embedding Atlas](https://apple.github.io/embedding-atlas/) projects the high-dimensional embedding space into two dimensions using UMAP. This technique preserves the local neighborhood structure, causing semantically related guidelines to form local clusters. You can hover over points to inspect metadata and section roles.
+
+    > This widget needs a live Python connection. If all you see is a gray box in a static preview of this notebook, please [visit the interactive notebook 🍃](https://l.peter.gy/cc-catalog) to explore the embedding space.
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(conn, index):
+    index.atlas(conn=conn)
+    return
+
+
+@app.cell(column=2, hide_code=True)
+def _(mo):
+    mo.md(r"""
     ## ::lucide:arrow-right-left:: Analogical Transfer
     <a id="sec:analogical-transfer"></a>
 
@@ -109,7 +128,7 @@ def _(catalog, pl):
     return
 
 
-@app.cell(column=2, hide_code=True)
+@app.cell(column=3, hide_code=True)
 def _(mo):
     mo.md(r"""
     ## ::lucide:shrink:: Solution Convergence
@@ -184,7 +203,7 @@ def _(catalog, pl):
     return
 
 
-@app.cell(column=3, hide_code=True)
+@app.cell(column=4, hide_code=True)
 def _(mo):
     mo.md(r"""
     ## ::lucide:signpost:: Boundary Detection
@@ -255,7 +274,7 @@ def _(catalog, pl):
     return
 
 
-@app.cell(column=4, hide_code=True)
+@app.cell(column=5, hide_code=True)
 def _(mo):
     mo.md(r"""
     ## ::lucide:git-branch:: Conflict Detection
@@ -331,7 +350,7 @@ def _(catalog, pl):
     return
 
 
-@app.cell(column=5, hide_code=True)
+@app.cell(column=6, hide_code=True)
 def _(mo):
     mo.md(r"""
     ## ::lucide:ruler:: Remediation Distance
@@ -396,7 +415,7 @@ def _(catalog, pl):
     return
 
 
-@app.cell(column=6, hide_code=True)
+@app.cell(column=7, hide_code=True)
 def _(mo):
     mo.md(r"""
     ## ::lucide:messages-square:: Viewpoint Divergence
@@ -464,25 +483,6 @@ def _(catalog, pl):
             ]
         )
     )
-    return
-
-
-@app.cell(column=7, hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ## ::lucide:map:: Projection of the Knowledge Space
-    <a id="sec:projection"></a>
-
-    This visualization using [Embedding Atlas](https://apple.github.io/embedding-atlas/) projects the high-dimensional embedding space into two dimensions using UMAP. This technique preserves the local neighborhood structure, causing semantically related guidelines to form local clusters. You can hover over points to inspect metadata and section roles.
-
-    > This widget needs a live Python connection. If all you see is a gray box in a static preview of this notebook, please [visit the interactive notebook 🍃](https://l.peter.gy/cc-catalog) to explore the embedding space.
-    """)
-    return
-
-
-@app.cell(hide_code=True)
-def _(conn, index):
-    index.atlas(conn=conn)
     return
 
 

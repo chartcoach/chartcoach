@@ -1,7 +1,7 @@
-import type { ViewerSelection, ViewerStatePayload } from "../contract/types";
+import type { ViewerRuntimeConfig, ViewerSelection, ViewerStatePayload } from "../contract/types";
 import type { ViewerBridge, ViewerBridgeSnapshot } from "./types";
 import { createViewerRuntime, deriveViewerState } from "../data/derive";
-import { loadViewerArtifactFromParquetUrl } from "../data/parquet";
+import { loadViewerArtifactFromParquetUrl, type ViewerArtifactRow } from "../data/parquet";
 
 const EMPTY_SELECTION: ViewerSelection = {
   vis_id: "",
@@ -19,12 +19,19 @@ const EMPTY_STATE_PAYLOAD: ViewerStatePayload = {
   error: null,
 };
 
+const EMPTY_SELECTION_REQUEST: Partial<ViewerSelection> = {};
+
 function cloneJson<T>(value: T): T {
   return JSON.parse(JSON.stringify(value));
 }
 
+function isEqualJson(left: unknown, right: unknown): boolean {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+
 export function createParquetViewerBridge({
   artifactUrl,
+  runtimeConfig,
   initialDebug = false,
   initialSelection,
   getExternalSnapshot,
@@ -33,6 +40,7 @@ export function createParquetViewerBridge({
   resolveImageUrl,
 }: {
   artifactUrl: string;
+  runtimeConfig: ViewerRuntimeConfig;
   initialDebug?: boolean;
   initialSelection?: ViewerSelection | null;
   getExternalSnapshot?: () => Partial<ViewerBridgeSnapshot> | null;
@@ -41,10 +49,14 @@ export function createParquetViewerBridge({
   resolveImageUrl?: (url: string | null) => string | null;
 }): ViewerBridge {
   const listeners = new Set<() => void>();
+  let records: ViewerArtifactRow[] | null = null;
   let runtime = null as ReturnType<typeof createViewerRuntime> | null;
+  let currentRuntimeConfig = cloneJson(runtimeConfig);
   let disposeExternal: (() => void) | null = null;
+  let pendingSelection = cloneJson(initialSelection ?? EMPTY_SELECTION_REQUEST);
   let snapshot: ViewerBridgeSnapshot = {
     debug: initialDebug,
+    runtimeConfig: currentRuntimeConfig,
     selection: cloneJson(initialSelection ?? EMPTY_SELECTION),
     state: EMPTY_STATE_PAYLOAD,
   };
@@ -55,20 +67,14 @@ export function createParquetViewerBridge({
     }
   };
 
-  const applyExternalSnapshot = () => {
-    const external = getExternalSnapshot?.();
-    if (!external) return;
-    if (typeof external.debug === "boolean" && external.debug !== snapshot.debug) {
-      snapshot = { ...snapshot, debug: external.debug };
-    }
-    if (external.selection) {
-      applySelection(external.selection, false);
-      return;
-    }
-    notify();
-  };
-
   const applySelection = (requested: Partial<ViewerSelection>, syncHost: boolean) => {
+    pendingSelection = {
+      ...pendingSelection,
+      ...requested,
+      filters: requested.filters ?? pendingSelection.filters,
+      layout: requested.layout ?? pendingSelection.layout,
+    };
+
     if (!runtime) {
       snapshot = {
         ...snapshot,
@@ -84,11 +90,9 @@ export function createParquetViewerBridge({
     }
 
     const derived = deriveViewerState(runtime, {
-      ...snapshot.selection,
-      ...requested,
-      filters: requested.filters ?? snapshot.selection.filters,
-      layout: requested.layout ?? snapshot.selection.layout,
+      ...pendingSelection,
     });
+    pendingSelection = derived.selection;
     snapshot = {
       ...snapshot,
       selection: derived.selection,
@@ -100,13 +104,54 @@ export function createParquetViewerBridge({
     notify();
   };
 
+  const rebuildRuntime = () => {
+    if (!records) {
+      return false;
+    }
+    runtime = createViewerRuntime(records, currentRuntimeConfig);
+    applySelection(snapshot.selection, false);
+    return true;
+  };
+
+  const applyExternalSnapshot = () => {
+    const external = getExternalSnapshot?.();
+    if (!external) {
+      return;
+    }
+
+    let didChange = false;
+
+    if (typeof external.debug === "boolean" && external.debug !== snapshot.debug) {
+      snapshot = { ...snapshot, debug: external.debug };
+      didChange = true;
+    }
+
+    if (external.runtimeConfig && !isEqualJson(external.runtimeConfig, currentRuntimeConfig)) {
+      currentRuntimeConfig = cloneJson(external.runtimeConfig);
+      snapshot = { ...snapshot, runtimeConfig: currentRuntimeConfig };
+      if (rebuildRuntime()) {
+        return;
+      }
+      didChange = true;
+    }
+
+    if (external.selection) {
+      applySelection(external.selection, false);
+      return;
+    }
+
+    if (didChange) {
+      notify();
+    }
+  };
+
   void (async () => {
     try {
-      const records = await loadViewerArtifactFromParquetUrl(artifactUrl, undefined, {
+      records = await loadViewerArtifactFromParquetUrl(artifactUrl, undefined, {
         resolveImageUrl,
       });
-      runtime = createViewerRuntime(records);
-      applySelection(snapshot.selection, true);
+      runtime = createViewerRuntime(records, currentRuntimeConfig);
+      applySelection(pendingSelection, true);
       applyExternalSnapshot();
     } catch (error) {
       snapshot = {

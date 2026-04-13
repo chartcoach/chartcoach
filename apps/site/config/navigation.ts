@@ -63,7 +63,7 @@ export const siteSocialLinks = [
   {
     icon: "github",
     label: "GitHub",
-    href: "http://github.com/peter-gy/chartcoach",
+    href: "http://github.com/chartcoach",
   },
 ] satisfies NonNullable<StarlightUserConfig["social"]>;
 

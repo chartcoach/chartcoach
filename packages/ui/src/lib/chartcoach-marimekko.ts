@@ -30,12 +30,9 @@ type StaticThemeSurface = {
 };
 
 const HERO_KEY_TIMES = "0;0.2;0.6;0.8;1";
-const HERO_KEY_SPLINES = [
-  "0.65 0 0.35 1",
-  "0.65 0 0.35 1",
-  "0.65 0 0.35 1",
-  "0.65 0 0.35 1",
-].join(";");
+const HERO_KEY_SPLINES = ["0.65 0 0.35 1", "0.65 0 0.35 1", "0.65 0 0.35 1", "0.65 0 0.35 1"].join(
+  ";",
+);
 const blockStates: BlockState[] = [
   {
     id: "1",
@@ -206,14 +203,13 @@ function animateAttributeMarkup({
   return parts.join("");
 }
 
-function blockMarkup(block: BlockState, options: Required<Pick<ChartCoachMarimekkoSvgOptions, "mode" | "pose" | "theme" | "idPrefix">>) {
+function blockMarkup(
+  block: BlockState,
+  options: Required<Pick<ChartCoachMarimekkoSvgOptions, "mode" | "pose" | "theme" | "idPrefix">>,
+) {
   const palette = palettes[options.theme];
   const baseState =
-    options.mode === "hero-loop"
-      ? block.start
-      : options.pose === "start"
-        ? block.start
-        : block.end;
+    options.mode === "hero-loop" ? block.start : options.pose === "start" ? block.start : block.end;
 
   const animations: string[] = [];
 

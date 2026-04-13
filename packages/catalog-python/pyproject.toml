@@ -20,7 +20,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-atlas = ["embedding-atlas>=0.6.0"]
+atlas = ["embedding-atlas<0.20.0"]
 mcp = ["mcp[cli]"]
 
 [project.scripts]

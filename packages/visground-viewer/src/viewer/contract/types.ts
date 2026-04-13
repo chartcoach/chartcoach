@@ -14,6 +14,23 @@ export type ViewerLayoutSelection = {
   group_dimension: string | null;
 };
 
+export type ViewerDimensionSpec = {
+  id: string;
+  label: string;
+  nullLabel?: string;
+  noneValueMode?: "null" | "all";
+  aliases?: Record<string, string>;
+  order?: Record<string, number>;
+};
+
+export type ViewerRuntimeConfig = {
+  dimensions: ViewerDimensionSpec[];
+  filter_dimensions: string[];
+  axis_dimensions: string[];
+  default_filters: Record<string, string | null>;
+  default_layout: ViewerLayoutSelection;
+};
+
 export type ViewerSelection = {
   vis_id: string;
   filters: Record<string, string | null>;
@@ -88,6 +105,7 @@ export type CandidateScoreRun = {
 export type CandidateGuidelineDetail = {
   id: string;
   title: string;
+  url?: string | null;
   description: string;
   sources: string[];
 };

@@ -18,11 +18,17 @@
       "types": "./distlib/parquet-bridge.d.ts",
       "source": "./src/parquet-bridge.ts",
       "default": "./distlib/parquet-bridge.js"
+    },
+    "./testing": {
+      "types": "./distlib/testing.d.ts",
+      "source": "./src/testing.ts",
+      "default": "./distlib/testing.js"
     }
   },
   "scripts": {
     "build": "vite build --config vite.config.lib.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "pnpm build && node --test tests/*.test.mjs",
     "format": "oxfmt .",
     "lint": "oxlint ."
   },

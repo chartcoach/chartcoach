@@ -1,7 +1,8 @@
-import type { ViewerSelection, ViewerStatePayload } from "../contract/types";
+import type { ViewerRuntimeConfig, ViewerSelection, ViewerStatePayload } from "../contract/types";
 
 export type ViewerBridgeSnapshot = {
   debug: boolean;
+  runtimeConfig?: ViewerRuntimeConfig;
   selection: ViewerSelection;
   state: ViewerStatePayload;
 };
