@@ -1477,6 +1477,18 @@ def _(mo):
     return
 
 
+@app.cell
+def _(example_guideline_entry):
+    example_guideline_entry.guideline.sections[0]
+    return
+
+
+@app.cell
+def _(catalog):
+    example_guideline_entry = catalog.entries[0]
+    return (example_guideline_entry,)
+
+
 @app.cell(hide_code=True)
 def _(example_guideline_entry, mo):
     mo.md(rf"""
@@ -1512,12 +1524,6 @@ def _(example_guideline_entry, mo):
     }
     """)
     return
-
-
-@app.cell(hide_code=True)
-def _(catalog):
-    example_guideline_entry = catalog.entries[0]
-    return (example_guideline_entry,)
 
 
 @app.cell(column=8, hide_code=True)

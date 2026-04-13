@@ -1,10 +1,13 @@
 export { mountAnywidgetVisgroundViewer, mountVisgroundViewer } from "./viewer/mount";
+export { parseViewerRuntimeConfig } from "./viewer/data/runtime-config";
 export type {
   AnywidgetModelLike,
   CatalogEntry,
+  ViewerDimensionSpec,
   ViewerActions,
   ViewerController,
   ViewerRefs,
+  ViewerRuntimeConfig,
   ViewerSelection,
   ViewerState,
   ViewerStatePayload,

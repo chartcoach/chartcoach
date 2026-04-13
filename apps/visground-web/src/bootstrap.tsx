@@ -1,14 +1,28 @@
-import { mountVisgroundViewer } from "@chartcoach/visground-viewer";
+import {
+  mountVisgroundViewer,
+  parseViewerRuntimeConfig,
+  type ViewerRuntimeConfig,
+} from "@chartcoach/visground-viewer";
 import { createParquetViewerBridge } from "@chartcoach/visground-viewer/parquet-bridge";
 
 const DEFAULT_IMAGE_BASE_URL =
   "https://files.peter.gy/projects/cc/supplementary/05-empirical-study/03-pipeline/03_generated_charts/";
 const DEFAULT_ARTIFACT_URL = `${window.location.origin}/data/viewer.parquet`;
 const ARTIFACT_URL = import.meta.env.VITE_VISGROUND_VIEWER_PARQUET_URL ?? DEFAULT_ARTIFACT_URL;
+const RUNTIME_CONFIG_URL =
+  import.meta.env.VITE_VISGROUND_VIEWER_CONFIG_URL ?? deriveRuntimeConfigUrl(ARTIFACT_URL);
 const IMAGE_BASE_URL =
   import.meta.env.VITE_VISGROUND_VIEWER_IMAGE_BASE_URL ??
   import.meta.env.VITE_VISGROUND_VIEWER_CHARTS_BASE_URL ??
   DEFAULT_IMAGE_BASE_URL;
+
+function deriveRuntimeConfigUrl(artifactUrl: string) {
+  const parsed = new URL(artifactUrl, window.location.origin);
+  parsed.pathname = parsed.pathname.endsWith(".parquet")
+    ? parsed.pathname.replace(/\.parquet$/, ".config.json")
+    : `${parsed.pathname}.config.json`;
+  return parsed.toString();
+}
 
 function resolveViewerImageUrl(imageUrl: string | null) {
   if (!imageUrl) {
@@ -49,7 +63,15 @@ function applyStandaloneTheme() {
   mediaQuery.addEventListener("change", syncTheme);
 }
 
-export function bootStandaloneViewer() {
+async function loadRuntimeConfig(url: string): Promise<ViewerRuntimeConfig> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to load viewer runtime config from ${url} (${response.status}).`);
+  }
+  return parseViewerRuntimeConfig(await response.json());
+}
+
+export async function bootStandaloneViewer() {
   const target = document.getElementById("root");
   if (!target) {
     throw new Error("Standalone viewer root not found.");
@@ -57,9 +79,18 @@ export function bootStandaloneViewer() {
 
   applyStandaloneTheme();
 
+  const runtimeConfig = await loadRuntimeConfig(RUNTIME_CONFIG_URL);
   const bridge = createParquetViewerBridge({
     artifactUrl: ARTIFACT_URL,
+    runtimeConfig,
     resolveImageUrl: resolveViewerImageUrl,
   });
   mountVisgroundViewer(target, { bridge });
+}
+
+export function expectedStandaloneViewerAssets() {
+  return {
+    artifactUrl: ARTIFACT_URL,
+    runtimeConfigUrl: RUNTIME_CONFIG_URL,
+  };
 }

@@ -740,6 +740,9 @@ def _guideline_detail(
 ) -> dict[str, Any]:
     detail = config.guideline_details_by_id.get(guideline_id, {})
     title = detail.get("title") or guideline_id.replace("-", " ").strip().title()
+    url = str(detail.get("url") or "").strip() or (
+        f"https://chartcoach.github.io/guidelines/{guideline_id}"
+    )
     description = detail.get("description") or ""
     sources = [
         str(value).strip()
@@ -749,6 +752,7 @@ def _guideline_detail(
     return {
         "id": guideline_id,
         "title": str(title),
+        "url": url,
         "description": str(description),
         "sources": sources,
     }

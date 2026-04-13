@@ -25,7 +25,7 @@ def _(
     return
 
 
-@app.cell(hide_code=True)
+@app.cell
 def _(
     DEFAULT_VIEWER_IMAGE_BASE_URL,
     ViewerConfig,
@@ -184,7 +184,7 @@ def _(
     return (viewer_config,)
 
 
-@app.cell(hide_code=True)
+@app.cell
 def _(VisGroundDataset):
     store = VisGroundDataset()
     candidates_df = store.read_generated_candidates_df()

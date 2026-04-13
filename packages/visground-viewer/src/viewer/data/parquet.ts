@@ -21,22 +21,67 @@ export type ViewerArtifactRow = Omit<ViewerArtifactRowWire, "candidate_json"> & 
   candidate: CandidateRecord;
 };
 
-async function loadParquetFile(url: string, requestInit?: RequestInit) {
+type ParquetSource = Awaited<ReturnType<typeof asyncBufferFromUrl>> | ArrayBuffer;
+
+type ParquetLoaderDependencies = {
+  fetch: typeof fetch;
+  openUrlBuffer: typeof asyncBufferFromUrl;
+  readObjects: typeof parquetReadObjects;
+};
+
+const defaultParquetLoaderDependencies: ParquetLoaderDependencies = {
+  fetch: globalThis.fetch.bind(globalThis),
+  openUrlBuffer: asyncBufferFromUrl,
+  readObjects: parquetReadObjects,
+};
+
+async function fetchParquetArrayBuffer(
+  url: string,
+  requestInit: RequestInit | undefined,
+  dependencies: ParquetLoaderDependencies,
+): Promise<ArrayBuffer> {
+  const response = await dependencies.fetch(url, requestInit);
+  if (!response.ok) {
+    throw new Error(`fallback fetch failed ${response.status}`);
+  }
+  return await response.arrayBuffer();
+}
+
+async function readParquetObjects(
+  file: ParquetSource,
+  dependencies: ParquetLoaderDependencies,
+): Promise<ViewerArtifactRowWire[]> {
+  return (await dependencies.readObjects({
+    file,
+    compressors,
+  })) as ViewerArtifactRowWire[];
+}
+
+export async function loadViewerArtifactRowsFromParquetUrl(
+  url: string,
+  requestInit?: RequestInit,
+  dependencies: Partial<ParquetLoaderDependencies> = {},
+): Promise<ViewerArtifactRowWire[]> {
+  const resolvedDependencies = {
+    ...defaultParquetLoaderDependencies,
+    ...dependencies,
+  } satisfies ParquetLoaderDependencies;
+
   try {
-    return await asyncBufferFromUrl({
+    const primaryFile = await resolvedDependencies.openUrlBuffer({
       url,
       requestInit,
     });
-  } catch (error) {
-    const response = await fetch(url, requestInit);
-    if (!response.ok) {
+    return await readParquetObjects(primaryFile, resolvedDependencies);
+  } catch (primaryError) {
+    try {
+      const bufferedFile = await fetchParquetArrayBuffer(url, requestInit, resolvedDependencies);
+      return await readParquetObjects(bufferedFile, resolvedDependencies);
+    } catch (fallbackError) {
       throw new Error(
-        `failed to load parquet artifact from ${url}: ${
-          error instanceof Error ? error.message : String(error)
-        }; fallback fetch failed ${response.status}`,
+        `failed to load parquet artifact from ${url}: ${primaryError instanceof Error ? primaryError.message : String(primaryError)}; ${fallbackError instanceof Error ? fallbackError.message : String(fallbackError)}`,
       );
     }
-    return await response.arrayBuffer();
   }
 }
 
@@ -47,11 +92,7 @@ export async function loadViewerArtifactFromParquetUrl(
     resolveImageUrl?: (url: string | null) => string | null;
   },
 ): Promise<ViewerArtifactRow[]> {
-  const file = await loadParquetFile(url, requestInit);
-  const rows = (await parquetReadObjects({
-    file,
-    compressors,
-  })) as ViewerArtifactRowWire[];
+  const rows = await loadViewerArtifactRowsFromParquetUrl(url, requestInit);
 
   return rows.map((row) => ({
     ...row,

@@ -20,9 +20,7 @@ function resolveArtifactUrl(model: ModelLike) {
     return artifactUrl;
   }
 
-  throw new Error(
-    "VisGround viewer requires `_artifact_url` to point to a viewer artifact.",
-  );
+  throw new Error("VisGround viewer requires `_artifact_url` to point to a viewer artifact.");
 }
 
 function render({ model, el }: RenderContext) {

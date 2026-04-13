@@ -51,7 +51,15 @@ function ChartCoachMarimekkoCanvas({
           pointerEvents: "none",
         }}
       />
-      <div style={{ position: "relative", zIndex: 1, width: "100%", display: "grid", placeItems: "center" }}>
+      <div
+        style={{
+          position: "relative",
+          zIndex: 1,
+          width: "100%",
+          display: "grid",
+          placeItems: "center",
+        }}
+      >
         <ChartCoachMarimekkoMark
           idPrefix={idPrefix}
           mode={mode}

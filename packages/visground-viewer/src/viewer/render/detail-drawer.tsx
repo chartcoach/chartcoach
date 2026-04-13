@@ -3,7 +3,7 @@ import { Badge } from "@chartcoach/ui/components/badge";
 import { Button } from "@chartcoach/ui/components/button";
 import { Separator } from "@chartcoach/ui/components/separator";
 import { MessageSquareText } from "lucide-react";
-import type { ViewerActions, ViewerState } from "../contract/types";
+import type { CandidateGuidelineDetail, ViewerActions, ViewerState } from "../contract/types";
 import { getCellByKey, getVariantByIndex, orientationLabel, renderImage } from "./utils";
 import { ScoreBreakdownList } from "./score-ledger";
 
@@ -134,29 +134,7 @@ export function DetailDrawer({ state, actions }: { state: ViewerState; actions: 
                 </div>
                 <div className="grid items-stretch gap-x-2 gap-y-2 [grid-template-columns:repeat(3,minmax(0,1fr))] max-[1120px]:[grid-template-columns:repeat(2,minmax(0,1fr))] max-[980px]:grid-cols-1">
                   {candidate.guideline_details.map((guideline) => (
-                    <article
-                      className="grid h-full grid-rows-[auto_auto_1fr_auto] gap-px border border-border border-l-[3px] border-l-foreground/70 bg-muted px-2.5 py-2.5"
-                      key={guideline.id}
-                    >
-                      <div className="text-[0.78rem] font-bold leading-[1.35] text-foreground">
-                        {guideline.title}
-                      </div>
-                      {guideline.description ? (
-                        <p className="m-0 overflow-hidden text-[0.7rem] leading-[1.42] text-muted-foreground [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:3]">
-                          {guideline.description}
-                        </p>
-                      ) : null}
-                      {guideline.sources.length > 0 ? (
-                        <div className="grid gap-px border-t border-border pt-1">
-                          <div className="font-mono text-[0.58rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-                            Sources
-                          </div>
-                          <p className="m-0 overflow-wrap-anywhere font-mono text-[0.62rem] leading-[1.42] text-muted-foreground [overflow-wrap:anywhere]">
-                            {guideline.sources.join("; ")}
-                          </p>
-                        </div>
-                      ) : null}
-                    </article>
+                    <GuidelineCard guideline={guideline} key={guideline.id} />
                   ))}
                 </div>
               </section>
@@ -165,5 +143,43 @@ export function DetailDrawer({ state, actions }: { state: ViewerState; actions: 
         </div>
       </aside>
     </section>
+  );
+}
+
+function GuidelineCard({ guideline }: { guideline: CandidateGuidelineDetail }) {
+  const href = guideline.url?.trim() || `https://chartcoach.github.io/guidelines/${guideline.id}`;
+
+  return (
+    <article className="grid h-full grid-rows-[auto_auto_1fr_auto] gap-px border border-border border-l-[3px] border-l-foreground/70 bg-muted px-2.5 py-2.5">
+      {href ? (
+        <a
+          className="text-[0.78rem] font-bold leading-[1.35] text-foreground underline-offset-2 hover:underline focus-visible:underline"
+          href={href}
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          {guideline.title}
+        </a>
+      ) : (
+        <div className="text-[0.78rem] font-bold leading-[1.35] text-foreground">
+          {guideline.title}
+        </div>
+      )}
+      {guideline.description ? (
+        <p className="m-0 overflow-hidden text-[0.7rem] leading-[1.42] text-muted-foreground [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:3]">
+          {guideline.description}
+        </p>
+      ) : null}
+      {guideline.sources.length > 0 ? (
+        <div className="grid gap-px border-t border-border pt-1">
+          <div className="font-mono text-[0.58rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+            Sources
+          </div>
+          <p className="m-0 overflow-wrap-anywhere font-mono text-[0.62rem] leading-[1.42] text-muted-foreground [overflow-wrap:anywhere]">
+            {guideline.sources.join("; ")}
+          </p>
+        </div>
+      ) : null}
+    </article>
   );
 }

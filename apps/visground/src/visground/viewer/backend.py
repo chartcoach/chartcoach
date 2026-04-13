@@ -9,6 +9,11 @@ import polars as pl
 import traitlets
 
 from .data import default_selection_from_registry, discover_registry
+from .runtime_config import (
+    ViewerRuntimeConfig,
+    serialize_viewer_runtime_config,
+    viewer_runtime_config_sidecar_path,
+)
 from .spec import ViewerConfig
 
 
@@ -16,10 +21,12 @@ class VisGroundViewerBackend(anywidget.AnyWidget):
     _esm = ""
     _css = ""
     _artifact_path: Path | None = None
+    _viewer_config_path: Path | None = None
 
     debug = traitlets.Bool(False).tag(sync=True)
     _artifact_url = traitlets.Unicode("").tag(sync=True)
     _selection = traitlets.Dict({}).tag(sync=True)
+    _viewer_config = traitlets.Dict({}).tag(sync=True)
 
     def __init__(
         self,
@@ -41,6 +48,9 @@ class VisGroundViewerBackend(anywidget.AnyWidget):
         catalog_vis_ids = list(registry["vis_ids"])
         if not catalog_vis_ids:
             raise ValueError("Viewer requires at least one case id.")
+        runtime_config: ViewerRuntimeConfig = serialize_viewer_runtime_config(
+            viewer_config
+        )
 
         from .export import export_viewer_artifact
 
@@ -51,6 +61,9 @@ class VisGroundViewerBackend(anywidget.AnyWidget):
             viewer_config=viewer_config,
             show_scores=show_scores,
         )
+        self._viewer_config_path = viewer_runtime_config_sidecar_path(
+            self._artifact_path
+        )
 
         defaults = default_selection_from_registry(registry, config=viewer_config)
         chosen_vis_id = initial_vis_id or catalog_vis_ids[0]
@@ -59,6 +72,7 @@ class VisGroundViewerBackend(anywidget.AnyWidget):
 
         super().__init__()
         self.debug = debug
+        self.set_trait("_viewer_config", runtime_config)
         self._selection = {
             "vis_id": chosen_vis_id,
             "filters": dict(initial_filters or defaults["filters"]),

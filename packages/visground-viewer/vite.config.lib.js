@@ -15,6 +15,7 @@ export default defineConfig({
       entry: {
         index: "./src/index.ts",
         "parquet-bridge": "./src/parquet-bridge.ts",
+        testing: "./src/testing.ts",
       },
       fileName: (_format, entryName) => `${entryName}.js`,
       formats: ["es"],

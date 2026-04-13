@@ -17,6 +17,7 @@ from .data import (
     serialize_candidate_record,
 )
 from .defaults import build_default_viewer_config
+from .runtime_config import write_viewer_runtime_config_sidecar
 from .spec import ViewerConfig
 
 _TRUTHY_ENV_VALUES = {"1", "true", "yes", "on"}
@@ -117,6 +118,7 @@ def export_viewer_artifact(
         show_scores=show_scores,
     )
     artifact_df.write_parquet(path)
+    write_viewer_runtime_config_sidecar(path, viewer_config)
     return path
 
 
