@@ -89,15 +89,17 @@ function renderMountError(host: HTMLElement, error: unknown) {
   const banner = document.createElement("div");
   banner.className =
     "mx-auto w-full max-w-[84rem] px-3 pb-3 pt-1 text-foreground md:px-4 lg:max-w-[74rem]";
-  banner.innerHTML = `
-    <div class="mt-4 grid gap-1 border border-border bg-card px-4 py-3 text-card-foreground">
-      <strong>Viewer error</strong>
-      <p class="m-0 leading-[1.48] text-muted-foreground">${
-        error instanceof Error ? error.message : String(error || "Unknown viewer error.")
-      }</p>
-    </div>
-  `;
+  const body = document.createElement("div");
+  body.className = "mt-4 grid gap-1 border border-border bg-card px-4 py-3 text-card-foreground";
+  const title = document.createElement("strong");
+  title.textContent = "Viewer error";
+  const message = document.createElement("p");
+  message.className = "m-0 leading-[1.48] text-muted-foreground";
+  message.textContent =
+    error instanceof Error ? error.message : String(error || "Unknown viewer error.");
 
+  body.append(title, message);
+  banner.appendChild(body);
   panel.appendChild(banner);
   host.appendChild(panel);
 }

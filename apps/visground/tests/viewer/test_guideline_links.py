@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import unittest
 
-from visground.viewer.data import _guideline_detail
+from visground.viewer.guidelines import guideline_detail
 from visground.viewer.spec import ViewerConfig, ViewerDimensionSpec, ViewerLayout
 
 
@@ -29,15 +29,12 @@ def make_viewer_config(
 
 
 class GuidelineLinkTests(unittest.TestCase):
-    def test_guideline_detail_defaults_to_chartcoach_guideline_url(self) -> None:
+    def test_guideline_detail_has_no_implicit_catalog_url(self) -> None:
         config = make_viewer_config(guideline_details_by_id={})
 
-        detail = _guideline_detail("my-guideline", config=config)
+        detail = guideline_detail("my-guideline", config=config)
 
-        self.assertEqual(
-            detail["url"],
-            "https://chartcoach.github.io/guidelines/my-guideline",
-        )
+        self.assertIsNone(detail["url"])
 
     def test_guideline_detail_keeps_explicit_url_override(self) -> None:
         config = make_viewer_config(
@@ -49,7 +46,7 @@ class GuidelineLinkTests(unittest.TestCase):
             }
         )
 
-        detail = _guideline_detail("my-guideline", config=config)
+        detail = guideline_detail("my-guideline", config=config)
 
         self.assertEqual(detail["url"], "https://example.com/custom-guideline")
 

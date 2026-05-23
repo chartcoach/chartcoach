@@ -9,7 +9,7 @@ from typing import Final
 import polars as pl
 from PIL import Image
 
-from .paths import VISGROUND_DATA_ROOT
+from .paths import default_visground_artifacts_root
 
 _GENERATED_CANDIDATE_COLUMNS: Final[tuple[str, ...]] = (
     "visgen_id",
@@ -71,15 +71,7 @@ def flatten_generated_attempts_df(
             grounding_df.select(
                 "grounding_id",
                 "grounding_mode",
-                objective=pl.when(
-                    pl.col("request").struct.field("objective").is_not_null()
-                )
-                .then(pl.col("request").struct.field("objective"))
-                .when(pl.col("grounding_id").str.contains("-refine-"))
-                .then(pl.lit("refine"))
-                .when(pl.col("grounding_id").str.contains("-select-"))
-                .then(pl.lit("select"))
-                .otherwise(pl.lit(None).cast(pl.String)),
+                objective=pl.col("request").struct.field("objective"),
                 request_chart=pl.col("request").struct.field("chart"),
                 audience=pl.col("request").struct.field("audience"),
                 guideline_ids=pl.col("result").struct.field("guideline_ids"),
@@ -88,11 +80,6 @@ def flatten_generated_attempts_df(
             how="left",
         )
     )
-
-    if "generation_error" not in attempts_df.columns:
-        attempts_df = attempts_df.with_columns(
-            pl.lit(None).cast(pl.String).alias("generation_error")
-        )
 
     return attempts_df.select(
         "visgen_id",
@@ -130,7 +117,7 @@ class VisGroundDataset:
 
     def __init__(self, root: str | PathLike[str] | None = None) -> None:
         self._root = (
-            Path(root) if root is not None else VISGROUND_DATA_ROOT / "artifacts"
+            Path(root) if root is not None else default_visground_artifacts_root()
         )
 
     def cohort_path(self) -> Path:

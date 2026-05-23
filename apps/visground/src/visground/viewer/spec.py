@@ -133,32 +133,12 @@ def resolved_search_fields(config: ViewerConfig) -> tuple[str, ...]:
     )
 
 
-def display_label(config: ViewerConfig, dimension: str, value: Any) -> str:
-    spec = dimension_map(config).get(dimension)
-    if spec is None:
-        return str(value)
-    if value is None:
-        return spec.null_label
-    if value in spec.aliases:
-        return str(spec.aliases[value])
-    return str(value)
-
-
-def label_for_dimension(config: ViewerConfig, dimension: str | None) -> str:
-    if dimension is None:
-        return ""
-    spec = dimension_map(config).get(dimension)
-    return spec.label if spec is not None else dimension
-
-
 __all__ = [
     "SCORE_BREAKDOWN_SPECS",
     "ViewerConfig",
     "ViewerDimensionSpec",
     "ViewerLayout",
     "dimension_map",
-    "display_label",
-    "label_for_dimension",
     "resolved_case_label_field",
     "resolved_search_fields",
 ]

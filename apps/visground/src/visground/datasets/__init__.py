@@ -1,4 +1,4 @@
-from .paths import VISGROUND_DATA_ROOT
+from .paths import VISGROUND_DATA_ROOT, default_visground_artifacts_root
 from .visground import VisGroundDataset
 from .viseval import VisEvalDataset
 from .visjudgebench import VisJudgeBenchDataset
@@ -8,4 +8,5 @@ __all__ = [
     "VisEvalDataset",
     "VisGroundDataset",
     "VisJudgeBenchDataset",
+    "default_visground_artifacts_root",
 ]

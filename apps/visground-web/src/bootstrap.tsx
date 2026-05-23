@@ -1,9 +1,9 @@
 import {
+  createParquetViewerBridge,
   mountVisgroundViewer,
   parseViewerRuntimeConfig,
   type ViewerRuntimeConfig,
 } from "@chartcoach/visground-viewer";
-import { createParquetViewerBridge } from "@chartcoach/visground-viewer/parquet-bridge";
 
 const DEFAULT_IMAGE_BASE_URL =
   "https://files.peter.gy/projects/cc/supplementary/05-empirical-study/03-pipeline/03_generated_charts/";
@@ -12,9 +12,7 @@ const ARTIFACT_URL = import.meta.env.VITE_VISGROUND_VIEWER_PARQUET_URL ?? DEFAUL
 const RUNTIME_CONFIG_URL =
   import.meta.env.VITE_VISGROUND_VIEWER_CONFIG_URL ?? deriveRuntimeConfigUrl(ARTIFACT_URL);
 const IMAGE_BASE_URL =
-  import.meta.env.VITE_VISGROUND_VIEWER_IMAGE_BASE_URL ??
-  import.meta.env.VITE_VISGROUND_VIEWER_CHARTS_BASE_URL ??
-  DEFAULT_IMAGE_BASE_URL;
+  import.meta.env.VITE_VISGROUND_VIEWER_IMAGE_BASE_URL ?? DEFAULT_IMAGE_BASE_URL;
 
 function deriveRuntimeConfigUrl(artifactUrl: string) {
   const parsed = new URL(artifactUrl, window.location.origin);

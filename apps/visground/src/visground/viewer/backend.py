@@ -9,17 +9,13 @@ import polars as pl
 import traitlets
 
 from .data import default_selection_from_registry, discover_registry
-from .runtime_config import (
-    ViewerRuntimeConfig,
-    serialize_viewer_runtime_config,
-    viewer_runtime_config_sidecar_path,
-)
 from .spec import ViewerConfig
 
 
 class VisGroundViewerBackend(anywidget.AnyWidget):
-    _esm = ""
-    _css = ""
+    # anywidget accepts dynamic asset values here, including its FileContents wrappers.
+    _esm: Any = ""
+    _css: Any = ""
     _artifact_path: Path | None = None
     _viewer_config_path: Path | None = None
 
@@ -48,22 +44,17 @@ class VisGroundViewerBackend(anywidget.AnyWidget):
         catalog_vis_ids = list(registry["vis_ids"])
         if not catalog_vis_ids:
             raise ValueError("Viewer requires at least one case id.")
-        runtime_config: ViewerRuntimeConfig = serialize_viewer_runtime_config(
-            viewer_config
-        )
-
         from .export import export_viewer_artifact
 
-        self._artifact_path = export_viewer_artifact(
+        artifact = export_viewer_artifact(
             candidates_df=candidates_df,
             judgements_df=judgements_df,
             judgement_runs_df=judgement_runs_df,
             viewer_config=viewer_config,
             show_scores=show_scores,
         )
-        self._viewer_config_path = viewer_runtime_config_sidecar_path(
-            self._artifact_path
-        )
+        self._artifact_path = artifact.artifact_path
+        self._viewer_config_path = artifact.runtime_config_path
 
         defaults = default_selection_from_registry(registry, config=viewer_config)
         chosen_vis_id = initial_vis_id or catalog_vis_ids[0]
@@ -72,7 +63,7 @@ class VisGroundViewerBackend(anywidget.AnyWidget):
 
         super().__init__()
         self.debug = debug
-        self.set_trait("_viewer_config", runtime_config)
+        self.set_trait("_viewer_config", artifact.runtime_config)
         self._selection = {
             "vis_id": chosen_vis_id,
             "filters": dict(initial_filters or defaults["filters"]),

@@ -14,6 +14,7 @@ DEFAULT_VIEWER_IMAGE_BASE_URL = (
     "https://files.peter.gy/projects/cc/supplementary/05-empirical-study/"
     "03-pipeline/03_generated_charts/"
 )
+DEFAULT_GUIDELINE_BASE_URL = "https://chartcoach.github.io/guidelines"
 
 
 def _author_label(author_field: str) -> str | None:
@@ -56,6 +57,9 @@ def build_default_viewer_config() -> ViewerConfig:
         Path(__file__).resolve().parents[5] / "guidelines" / "catalog.parquet"
     )
     guideline_details_by_id: dict[str, dict[str, Any]] = {}
+    guideline_base_url = os.getenv(
+        "VISGROUND_VIEWER_GUIDELINE_BASE_URL", DEFAULT_GUIDELINE_BASE_URL
+    ).rstrip("/")
 
     if catalog_path.exists():
         catalog_df = pl.read_parquet(catalog_path)
@@ -82,6 +86,7 @@ def build_default_viewer_config() -> ViewerConfig:
             guideline_details_by_id[str(row["id"])] = {
                 "title": str(guideline.get("title") or row["id"]),
                 "description": str(guideline.get("description") or advice),
+                "url": f"{guideline_base_url}/{row['id']}",
                 "sources": sources,
             }
 

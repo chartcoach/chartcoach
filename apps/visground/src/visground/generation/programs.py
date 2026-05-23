@@ -159,38 +159,6 @@ def build_observed_feedback_loop_generator(
     )
 
 
-def build_refine_generator(
-    backend: VisualizationBackend,
-    coder_signature: type[dspy.Signature] = WriteVisualizationCode,
-    review_signature: type[dspy.Signature] = ReviewVisualizationImplementation,
-    reviewer_lm: dspy.LM | None = None,
-    max_iterations: int = DEFAULT_RETRY_ITERATIONS,
-) -> dspy.Module:
-    return build_feedback_loop_generator(
-        backend=backend,
-        coder_signature=coder_signature,
-        review_signature=review_signature,
-        reviewer_lm=reviewer_lm,
-        max_iterations=max_iterations,
-    )
-
-
-def build_observed_refine_generator(
-    backend: VisualizationBackend,
-    coder_signature: type[dspy.Signature] = WriteVisualizationCode,
-    review_signature: type[dspy.Signature] = ReviewVisualizationImplementation,
-    reviewer_lm: dspy.LM | None = None,
-    max_iterations: int = DEFAULT_RETRY_ITERATIONS,
-) -> dspy.Module:
-    return build_observed_feedback_loop_generator(
-        backend=backend,
-        coder_signature=coder_signature,
-        review_signature=review_signature,
-        reviewer_lm=reviewer_lm,
-        max_iterations=max_iterations,
-    )
-
-
 def run_generation(
     generator: dspy.Module,
     examples: Sequence[dspy.Example],
