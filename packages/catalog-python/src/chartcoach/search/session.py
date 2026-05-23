@@ -1,0 +1,121 @@
+from __future__ import annotations
+
+from os import PathLike
+from typing import Any
+
+from ..catalog.collection import Catalog
+from .chroma import CacheMode, ChromaIndex
+from .sql import connect_catalog
+from .tools import SearchTools
+
+
+class SearchSession:
+    """Catalog plus optional-search tools for retrieval workflows."""
+
+    def __init__(
+        self,
+        catalog: Catalog,
+        index: ChromaIndex,
+        conn: Any | None = None,
+        *,
+        close_conn: bool = False,
+    ) -> None:
+        if index.catalog.hexdigest() != catalog.hexdigest():
+            raise ValueError("index must be built from the same catalog content.")
+
+        self._catalog = catalog
+        self._index = index
+        self._conn = (
+            conn if conn is not None else connect_catalog(catalog, search=index)
+        )
+        self._close_conn = close_conn or conn is None
+        self._tools: SearchTools | None = None
+
+    @classmethod
+    def from_cache(
+        cls,
+        catalog: Catalog | str | PathLike[str],
+        *,
+        cache_dir: str | PathLike[str] | None = None,
+        cache_mode: CacheMode = "reuse_or_create",
+        cache_embeddings: bool = True,
+        embedding_fn: Any | None = None,
+    ) -> "SearchSession":
+        """Open a content-addressed Chroma index and SQL session for a catalog."""
+
+        resolved_catalog = _resolve_catalog(catalog)
+        index = ChromaIndex.from_cache(
+            resolved_catalog,
+            cache_dir=cache_dir,
+            cache_mode=cache_mode,
+            cache_embeddings=cache_embeddings,
+            embedding_fn=embedding_fn,
+        )
+        return cls(resolved_catalog, index)
+
+    @property
+    def catalog(self) -> Catalog:
+        """Return the source catalog."""
+
+        return self._catalog
+
+    @property
+    def index(self) -> ChromaIndex:
+        """Return the Chroma index."""
+
+        return self._index
+
+    @property
+    def conn(self) -> Any:
+        """Return the DuckDB connection with catalog and embedding tables."""
+
+        return self._conn
+
+    @property
+    def tools(self) -> SearchTools:
+        """Return SQL, exact-get, and semantic-search tools."""
+
+        if self._tools is None:
+            self._tools = SearchTools(self.index, self.conn)
+        return self._tools
+
+    def close(self) -> None:
+        """Close the owned SQL connection."""
+
+        if self._close_conn and self._conn is not None:
+            self._conn.close()
+            self._conn = None
+
+    def __enter__(self) -> "SearchSession":
+        return self
+
+    def __exit__(self, *exc_info: object) -> None:
+        self.close()
+
+
+def open_search_session(
+    catalog: Catalog | str | PathLike[str],
+    *,
+    cache_dir: str | PathLike[str] | None = None,
+    cache_mode: CacheMode = "reuse_or_create",
+    cache_embeddings: bool = True,
+    embedding_fn: Any | None = None,
+) -> SearchSession:
+    """Open a composable search session from a catalog or catalog parquet path."""
+
+    return SearchSession.from_cache(
+        catalog,
+        cache_dir=cache_dir,
+        cache_mode=cache_mode,
+        cache_embeddings=cache_embeddings,
+        embedding_fn=embedding_fn,
+    )
+
+
+def _resolve_catalog(catalog: Catalog | str | PathLike[str]) -> Catalog:
+    if isinstance(catalog, Catalog):
+        return catalog
+    return Catalog.from_parquet(catalog)
+
+
+__all__ = ["SearchSession", "open_search_session"]

@@ -3,9 +3,10 @@
 Reusable React viewer for VisGround parquet exports and anywidget bridges.
 
 Use `mountVisgroundViewer` for standalone web apps and `mountAnywidgetVisgroundViewer` for the Python widget bridge.
+This is a source-only workspace package for Vite/TypeScript consumers.
 
-Build it with `pnpm --dir packages/visground-viewer build`.
+Check it with `pnpm --dir packages/visground-viewer typecheck`.
 
 ## License
 
-MIT. See [LICENSE](https://github.com/peter-gy/chartcoach/blob/main/LICENSE).
+MIT. See [LICENSE](../../LICENSE).

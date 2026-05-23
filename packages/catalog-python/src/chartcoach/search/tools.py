@@ -5,8 +5,8 @@ from datetime import date, datetime, time
 from decimal import Decimal
 from typing import Any, TypeAlias, cast
 
-from .catalog.index import Index
-from .constants import DEFAULT_CHROMA_TOP_K, DEFAULT_DUCKDB_ROW_LIMIT
+from ..constants import DEFAULT_CHROMA_TOP_K, DEFAULT_DUCKDB_ROW_LIMIT
+from .chroma import ChromaIndex
 
 DEFAULT_SEARCH_INCLUDE = ["documents", "metadatas", "distances"]
 DEFAULT_GET_INCLUDE = ["documents", "metadatas"]
@@ -16,7 +16,7 @@ IncludeFields = list[str]
 QueryInput: TypeAlias = str | list[str]
 
 
-class Tools:
+class SearchTools:
     """Small API for progressive-disclosure retrieval over the catalog.
 
     Use `sql` first to discover the available DuckDB relations, inspect columns,
@@ -28,20 +28,28 @@ class Tools:
 
     def __init__(
         self,
-        index: Index,
+        index: ChromaIndex,
+        conn: Any,
         *,
         default_row_limit: int = DEFAULT_DUCKDB_ROW_LIMIT,
         default_top_k: int = DEFAULT_CHROMA_TOP_K,
     ) -> None:
         self._index = index
+        self._conn = conn
         self._default_row_limit = default_row_limit
         self._default_top_k = default_top_k
 
     @property
-    def index(self) -> Index:
+    def index(self) -> ChromaIndex:
         """Return the prepared search data behind these tools."""
 
         return self._index
+
+    @property
+    def conn(self) -> Any:
+        """Return the DuckDB connection behind the SQL tool."""
+
+        return self._conn
 
     def sql(
         self,
@@ -151,7 +159,7 @@ class Tools:
         if not normalized_sql:
             raise ValueError("SQL cannot be empty.")
         applied_row_limit = self._default_row_limit if row_limit is None else row_limit
-        cursor = self.index.conn.execute(normalized_sql)
+        cursor = self.conn.execute(normalized_sql)
         if cursor.description is None:
             return {
                 "sql": normalized_sql,
@@ -210,4 +218,4 @@ def _normalize_for_json(value: Any) -> Any:
     return str(value)
 
 
-__all__ = ["Tools"]
+__all__ = ["SearchTools"]

@@ -8,7 +8,7 @@ import polars as pl
 from ..guideline.bibliography import format_bibtex_entry, parse_bibtex_entry
 
 if TYPE_CHECKING:
-    from .collection import Entry
+    from .collection import CatalogEntry
 
 
 SECTION_SCHEMA = pl.Struct(
@@ -46,6 +46,11 @@ GUIDELINE_LABELS_SCHEMA = {
     "category": pl.String,
     "subcategory": pl.String,
 }
+LABELS_SCHEMA = {
+    "category": pl.String,
+    "subcategory": pl.String,
+    "polarity": pl.String,
+}
 GUIDELINE_REFERENCES_SCHEMA = {
     "guideline_id": pl.String,
     "reference_id": pl.String,
@@ -67,16 +72,13 @@ REFERENCES_SCHEMA = {
 }
 
 
-def build_catalog_df(entries: Sequence[Entry]) -> pl.DataFrame:
+def build_catalog_df(entries: Sequence[CatalogEntry]) -> pl.DataFrame:
     """Build the canonical catalog dataframe."""
     if not entries:
         return pl.DataFrame(schema=CATALOG_SCHEMA)
 
-    return (
-        pl.from_dicts([entry.model_dump() for entry in entries])
-        .select("id", "guideline", "references")
-        .unique("id")
-        .sort("id")
+    return pl.from_dicts([entry.model_dump() for entry in entries]).select(
+        "id", "guideline", "references"
     )
 
 
@@ -144,14 +146,16 @@ def build_references_df(catalog_df: pl.DataFrame) -> pl.DataFrame:
 
 def build_labels_df(guidelines_df: pl.DataFrame) -> pl.DataFrame:
     """Build a dataframe of unique label categories/subcategories."""
+    labels = guidelines_df.select("labels").explode("labels").drop_nulls()
+    if labels.is_empty():
+        return pl.DataFrame(schema=LABELS_SCHEMA)
+
     return (
-        guidelines_df.select("labels")
-        .explode("labels")
-        .unique("labels")
+        labels.unique("labels")
         .select(parts=pl.col("labels").str.split(":"))
         .select(
             category=pl.col("parts").list.get(0),
-            subcategory=pl.col("parts").list.get(1),
+            subcategory=pl.col("parts").list.get(1, null_on_oob=True),
             polarity=pl.col("parts").list.get(2, null_on_oob=True),
         )
         .sort("category", "subcategory", "polarity")
@@ -160,15 +164,16 @@ def build_labels_df(guidelines_df: pl.DataFrame) -> pl.DataFrame:
 
 def build_guideline_labels_df(guidelines_df: pl.DataFrame) -> pl.DataFrame:
     """Build a dataframe of per-guideline labels."""
+    labels = guidelines_df.select("id", "labels").explode("labels").drop_nulls()
+    if labels.is_empty():
+        return pl.DataFrame(schema=GUIDELINE_LABELS_SCHEMA)
+
     return (
-        guidelines_df.select("id", "labels")
-        .explode("labels")
-        .drop_nulls()
-        .select(
+        labels.select(
             guideline_id=pl.col("id"),
             label=pl.col("labels"),
             category=pl.col("labels").str.split(":").list.get(0),
-            subcategory=pl.col("labels").str.split(":").list.get(1),
+            subcategory=pl.col("labels").str.split(":").list.get(1, null_on_oob=True),
         )
         .unique()
         .sort("guideline_id", "label")

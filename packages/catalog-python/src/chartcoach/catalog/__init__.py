@@ -1,5 +1,4 @@
-from .collection import Catalog, Entry
-from .index import Index
+from .collection import Catalog, CatalogEntry, CatalogFrames
 
 
-__all__ = ["Catalog", "Entry", "Index"]
+__all__ = ["Catalog", "CatalogEntry", "CatalogFrames"]

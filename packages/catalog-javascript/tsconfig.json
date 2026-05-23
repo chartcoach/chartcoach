@@ -1,6 +1,10 @@
 {
-  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    "target": "ES2022",
+    "strict": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "lib": ["ES2022"],

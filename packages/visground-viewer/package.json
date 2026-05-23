@@ -3,24 +3,17 @@
   "version": "0.1.0",
   "private": true,
   "license": "MIT",
-  "files": [
-    "distlib",
-    "src"
-  ],
   "type": "module",
-  "main": "./distlib/index.js",
-  "types": "./distlib/index.d.ts",
   "exports": {
     ".": {
-      "types": "./distlib/index.d.ts",
       "source": "./src/index.ts",
-      "default": "./distlib/index.js"
+      "default": "./src/index.ts"
     }
   },
   "scripts": {
-    "build": "vite build --config vite.config.lib.js && tsc -b tsconfig.build.json --force",
+    "build": "pnpm typecheck",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "pnpm build && vitest run tests/*.test.mjs",
+    "test": "vitest run tests/*.test.mjs",
     "format": "oxfmt .",
     "lint": "oxlint ."
   },
@@ -33,12 +26,9 @@
     "lucide-react": "^1.16.0"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "^4.3.0",
     "@types/react": "^19.2.15",
     "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^5.2.0",
     "agentation": "^3.0.2",
-    "tailwindcss": "^4.3.0",
     "typescript": "^5.9.3",
     "vite": "^7.3.3",
     "vitest": "^3.2.4"

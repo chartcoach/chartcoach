@@ -11,22 +11,40 @@ TRANSPORT_CHOICES = ("stdio", "sse", "streamable-http")
 LOG_LEVEL_CHOICES = ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL")
 MCP_HELP = """Start the ChartCoach MCP server.
 
-ChartCoach creates a ready coach at startup, then exposes its tools over MCP.
+ChartCoach creates a search session at startup, then exposes its tools over MCP.
 CLI options override environment variables. When an option is omitted, the command falls
 back to the matching env var and then the built-in default.
 """
 
 
-def _is_missing_mcp_dependency(exc: ModuleNotFoundError) -> bool:
-    name = exc.name
-    return name == "mcp" or (name is not None and name.startswith("mcp."))
+def _is_missing_optional_dependency(exc: ModuleNotFoundError) -> bool:
+    current: BaseException | None = exc
+    while current is not None:
+        if isinstance(current, ModuleNotFoundError):
+            name = current.name
+            if name is not None and (
+                name
+                in {
+                    "chromadb",
+                    "duckdb",
+                    "mcp",
+                    "platformdirs",
+                    "polars_hash",
+                    "pyarrow",
+                    "tqdm",
+                }
+                or name.startswith(("chromadb.", "mcp."))
+            ):
+                return True
+        current = current.__cause__
+    return False
 
 
 def _load_server_module() -> Any:
     try:
         return import_module("chartcoach.mcp.server")
     except ModuleNotFoundError as exc:  # pragma: no cover - depends on install extras
-        if _is_missing_mcp_dependency(exc):
+        if _is_missing_optional_dependency(exc):
             raise click.ClickException(
                 "The `chartcoach mcp` command requires the optional MCP/search dependencies. Install `chartcoach[mcp]` to use it."
             ) from exc
@@ -43,14 +61,14 @@ def _load_server_module() -> Any:
     "--catalog-path",
     metavar="PATH_OR_URL",
     help=(
-        "Catalog source to load before building or reusing cached search data. "
+        "Catalog parquet file to load before building or reusing cached search data. "
         "Overrides CHARTCOACH_CATALOG_PATH."
     ),
 )
 @click.option(
     "--cache-dir",
     type=click.Path(file_okay=False, dir_okay=True, path_type=Path),
-    help="Directory root for cached catalog, Chroma, and DuckDB artifacts. Overrides CHARTCOACH_CACHE_DIR.",
+    help="Directory root for cached Chroma artifacts. Overrides CHARTCOACH_CACHE_DIR.",
 )
 @click.option(
     "--transport",
@@ -98,9 +116,9 @@ def mcp_command(
             runtime=resolved_runtime,
         )
     except ModuleNotFoundError as exc:  # pragma: no cover - depends on install extras
-        if _is_missing_mcp_dependency(exc):
+        if _is_missing_optional_dependency(exc):
             raise click.ClickException(
-                "The `chartcoach mcp` command requires the optional MCP dependencies. Install `chartcoach[mcp]` to use it."
+                "The `chartcoach mcp` command requires the optional MCP/search dependencies. Install `chartcoach[mcp]` to use it."
             ) from exc
         raise
 

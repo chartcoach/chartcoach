@@ -9,4 +9,4 @@ Build this package with `pnpm --dir packages/catalog-javascript build`.
 
 ## License
 
-MIT. See [LICENSE](https://github.com/peter-gy/chartcoach/blob/main/LICENSE).
+MIT. See [LICENSE](../../LICENSE).

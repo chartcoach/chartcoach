@@ -7,9 +7,9 @@ from functools import reduce
 from operator import and_, or_
 from typing import Any, NotRequired, TypedDict, cast
 
-import chartcoach as cc
 import polars as pl
 from chromadb import K
+from chartcoach.search.session import SearchSession
 
 from ..types import (
     AUDIENCE_MODIFIER_SPECS,
@@ -78,7 +78,7 @@ def _label_row_to_string(row: dict[str, str | None]) -> str:
 
 
 def _find_relevant_labels(
-    coach: cc.Coach,
+    search_session: SearchSession,
     *,
     category: str,
     keyword: str | None,
@@ -92,7 +92,7 @@ def _find_relevant_labels(
         return []
 
     candidate_rows = (
-        coach.catalog.labels_df.filter(category=category)
+        search_session.catalog.labels_df.filter(category=category)
         .filter(_polarity_filter_expr(polarities))
         .to_dicts()
     )
@@ -162,13 +162,13 @@ def _metadata_filter(
 
 
 def labels_for_family(
-    coach: cc.Coach,
+    search_session: SearchSession,
     family: str,
     *,
     polarities: list[str | None] | None = None,
 ) -> list[str]:
     rows = (
-        coach.catalog.labels_df.filter(category=family)
+        search_session.catalog.labels_df.filter(category=family)
         .filter(_polarity_filter_expr(polarities))
         .to_dicts()
     )
@@ -193,24 +193,24 @@ def _audience_modifier(
 
 
 def _label_groups_for_refinement(
-    coach: cc.Coach,
+    search_session: SearchSession,
     req: GroundingRequest,
 ) -> list[list[str]]:
     return [
         _find_relevant_labels(
-            coach,
+            search_session,
             category="chart",
             keyword=req["chart"],
             polarities=["use", None],
         ),
         _find_relevant_labels(
-            coach,
+            search_session,
             category="task",
             keyword=req["task"],
             polarities=None,
         ),
         _find_relevant_labels(
-            coach,
+            search_session,
             category="scope",
             keyword=req["scope"],
             polarities=None,
@@ -219,12 +219,12 @@ def _label_groups_for_refinement(
 
 
 def _label_groups_for_selection(
-    coach: cc.Coach,
+    search_session: SearchSession,
     req: GroundingRequest,
 ) -> list[list[str]]:
     return [
         _find_relevant_labels(
-            coach,
+            search_session,
             category="task",
             keyword=req["task"],
             polarities=None,
@@ -233,11 +233,11 @@ def _label_groups_for_selection(
 
 
 def _rhetoric_label_groups(
-    coach: cc.Coach,
+    search_session: SearchSession,
     req: GroundingRequest,
 ) -> list[list[str]]:
     groups = [
-        labels_for_family(coach, "communication", polarities=["use", None]),
+        labels_for_family(search_session, "communication", polarities=["use", None]),
     ]
     if (audience_modifier := _audience_modifier(req["audience"])) is not None:
         groups.append(cast(list[str], audience_modifier["labels"]))
@@ -245,13 +245,13 @@ def _rhetoric_label_groups(
 
 
 def _polish_label_groups(
-    coach: cc.Coach,
+    search_session: SearchSession,
 ) -> list[list[str]]:
-    groups = [labels_for_family(coach, "polish", polarities=["use", None])]
+    groups = [labels_for_family(search_session, "polish", polarities=["use", None])]
     if not any(groups):
         groups.extend(
             [
-                labels_for_family(coach, family, polarities=["use", None])
+                labels_for_family(search_session, family, polarities=["use", None])
                 for family in ["aesthetic", "component", "channel", "access", "quality"]
             ]
         )
@@ -499,10 +499,10 @@ def _query_parent_rankings(
 
 
 def _refine_search_jobs(
-    coach: cc.Coach,
+    search_session: SearchSession,
     req: GroundingRequest,
 ) -> list[tuple[str, str, list[str], list[list[str]]]]:
-    label_groups = _label_groups_for_refinement(coach, req)
+    label_groups = _label_groups_for_refinement(search_session, req)
     jobs = [
         (role, "core", _dedupe_query_texts(query_texts), label_groups)
         for role, query_texts in _refine_search_specs(req)
@@ -512,7 +512,7 @@ def _refine_search_jobs(
             role,
             "rhetoric",
             _dedupe_query_texts(query_texts),
-            _rhetoric_label_groups(coach, req),
+            _rhetoric_label_groups(search_session, req),
         )
         for role, query_texts in _rhetoric_search_specs(
             req,
@@ -524,7 +524,7 @@ def _refine_search_jobs(
             role,
             "polish",
             _dedupe_query_texts(query_texts),
-            _polish_label_groups(coach),
+            _polish_label_groups(search_session),
         )
         for role, query_texts in _polish_search_specs(req)
     )
@@ -532,7 +532,7 @@ def _refine_search_jobs(
 
 
 def _select_search_jobs(
-    coach: cc.Coach,
+    search_session: SearchSession,
     req: GroundingRequest,
 ) -> list[tuple[str, str, list[str], list[list[str]]]]:
     # Always run a task-only branch. If audience is present, also run the
@@ -542,7 +542,7 @@ def _select_search_jobs(
             role,
             "core",
             _dedupe_query_texts(query_texts),
-            _label_groups_for_selection(coach, req),
+            _label_groups_for_selection(search_session, req),
         )
         for role, query_texts in _select_search_specs(req, audience_modifier=None)
     ]
@@ -554,7 +554,7 @@ def _select_search_jobs(
                     role,
                     "audience",
                     _dedupe_query_texts(query_texts),
-                    _label_groups_for_selection(coach, req),
+                    _label_groups_for_selection(search_session, req),
                 )
                 for role, query_texts in _select_search_specs(
                     req,
@@ -568,7 +568,7 @@ def _select_search_jobs(
                 role,
                 "query",
                 _dedupe_query_texts(query_texts),
-                _label_groups_for_selection(coach, req),
+                _label_groups_for_selection(search_session, req),
             )
             for role, query_texts in _select_query_search_specs(
                 req,
@@ -581,7 +581,7 @@ def _select_search_jobs(
                 role,
                 "query",
                 _dedupe_query_texts(query_texts),
-                _label_groups_for_selection(coach, req),
+                _label_groups_for_selection(search_session, req),
             )
             for role, query_texts in _select_query_search_specs(
                 req,
@@ -594,7 +594,7 @@ def _select_search_jobs(
             role,
             "rhetoric",
             _dedupe_query_texts(query_texts),
-            _rhetoric_label_groups(coach, req),
+            _rhetoric_label_groups(search_session, req),
         )
         for role, query_texts in _rhetoric_search_specs(
             req,
@@ -606,7 +606,7 @@ def _select_search_jobs(
             role,
             "polish",
             _dedupe_query_texts(query_texts),
-            _polish_label_groups(coach),
+            _polish_label_groups(search_session),
         )
         for role, query_texts in _polish_search_specs(req)
     )
@@ -686,7 +686,7 @@ def _labels_by_family(labels: list[str]) -> dict[str, set[str]]:
 
 
 def _request_family_keys(
-    coach: cc.Coach,
+    search_session: SearchSession,
     req: GroundingRequest,
 ) -> dict[str, set[str]]:
     request_family_keys: dict[str, set[str]] = defaultdict(set)
@@ -700,7 +700,7 @@ def _request_family_keys(
     if req["objective"] == "refine":
         add_labels(
             _find_relevant_labels(
-                coach,
+                search_session,
                 category="chart",
                 keyword=req["chart"],
                 polarities=["use", None],
@@ -709,7 +709,7 @@ def _request_family_keys(
 
     add_labels(
         _find_relevant_labels(
-            coach,
+            search_session,
             category="task",
             keyword=req["task"],
             polarities=None,
@@ -717,7 +717,7 @@ def _request_family_keys(
     )
     add_labels(
         _find_relevant_labels(
-            coach,
+            search_session,
             category="scope",
             keyword=req["scope"],
             polarities=None,
@@ -725,7 +725,7 @@ def _request_family_keys(
     )
     add_labels(
         _find_relevant_labels(
-            coach,
+            search_session,
             category="time",
             keyword=req["time_mode"],
             polarities=None,
@@ -985,7 +985,7 @@ def _select_parent_ids(
 
 
 def _score_search_jobs(
-    coach: cc.Coach,
+    search_session: SearchSession,
     *,
     search_jobs: list[tuple[str, str, list[str], list[list[str]]]],
     purpose_labels: list[str],
@@ -1005,7 +1005,7 @@ def _score_search_jobs(
 
     for role, branch, query_texts, label_groups in search_jobs:
         parent_rankings = _query_parent_rankings(
-            coach.index.collection,
+            search_session.index.collection,
             query_texts=query_texts,
             role=role,
             purpose_labels=purpose_labels,
@@ -1091,7 +1091,7 @@ def _assemble_doc_ids(
 
 @dataclass(slots=True)
 class StructuredGroundingStrategy:
-    coach: cc.Coach
+    search_session: SearchSession
     config: StructuredGroundingConfig
     mode: GroundingStrategyMode = "structured"
 
@@ -1102,17 +1102,17 @@ class StructuredGroundingStrategy:
         """Retrieve one grounding record using section-aware catalog search."""
 
         if req["objective"] == "refine":
-            search_jobs = _refine_search_jobs(self.coach, req)
+            search_jobs = _refine_search_jobs(self.search_session, req)
         else:
-            search_jobs = _select_search_jobs(self.coach, req)
+            search_jobs = _select_search_jobs(self.search_session, req)
 
         output_roles = _output_roles(req)
         max_items = min(self.config.get("max_items", 4), 6)
-        docs_df = self.coach.catalog.docs_df.unnest("metadata")
+        docs_df = self.search_session.index.documents_df.unnest("metadata")
         parent_labels, parent_docs = _build_parent_label_maps(docs_df)
         parent_titles = {
             cast(str, row["id"]): cast(str, row["title"])
-            for row in self.coach.catalog.df.select("guideline")
+            for row in self.search_session.catalog.frame.select("guideline")
             .unnest("guideline")
             .select("id", "title")
             .to_dicts()
@@ -1121,10 +1121,10 @@ class StructuredGroundingStrategy:
             parent_id: _label_polarities(labels)
             for parent_id, labels in parent_labels.items()
         }
-        request_family_keys = _request_family_keys(self.coach, req)
+        request_family_keys = _request_family_keys(self.search_session, req)
 
         primary_purpose_labels = _find_relevant_labels(
-            self.coach,
+            self.search_session,
             category="purpose",
             keyword=req["objective"],
             polarities=None,
@@ -1136,7 +1136,7 @@ class StructuredGroundingStrategy:
             polish_scores,
             role_scores,
         ) = _score_search_jobs(
-            self.coach,
+            self.search_session,
             search_jobs=search_jobs,
             purpose_labels=primary_purpose_labels,
             config=self.config,
@@ -1171,7 +1171,7 @@ class StructuredGroundingStrategy:
                 polish_scores,
                 role_scores,
             ) = _score_search_jobs(
-                self.coach,
+                self.search_session,
                 search_jobs=search_jobs,
                 purpose_labels=["purpose:refine"],
                 config=self.config,
@@ -1220,14 +1220,14 @@ class StructuredGroundingStrategy:
                     polish_scores,
                     role_scores,
                 ) = _score_search_jobs(
-                    self.coach,
+                    self.search_session,
                     search_jobs=search_jobs,
                     purpose_labels=["purpose:refine"],
                     config=self.config,
                 )
 
         if not core_scores:
-            return build_grounding_record(self.coach, [])
+            return build_grounding_record(self.search_session, [])
 
         rerank_pool_size = self.config["top_k"] * 6
         core_pool = [
@@ -1251,7 +1251,7 @@ class StructuredGroundingStrategy:
             parent_id: core_scores.get(parent_id, 0.0) for parent_id in core_pool
         }
         request_time_labels = _find_relevant_labels(
-            self.coach,
+            self.search_session,
             category="time",
             keyword=req["time_mode"],
             polarities=None,
@@ -1379,7 +1379,7 @@ class StructuredGroundingStrategy:
                 ]
 
         if not parent_ids:
-            return build_grounding_record(self.coach, [])
+            return build_grounding_record(self.search_session, [])
 
         doc_ids = _assemble_doc_ids(
             parent_ids,
@@ -1390,6 +1390,6 @@ class StructuredGroundingStrategy:
             max_roles_per_parent=2,
         )
         return build_grounding_record(
-            self.coach,
+            self.search_session,
             doc_ids,
         )

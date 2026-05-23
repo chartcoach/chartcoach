@@ -5,6 +5,8 @@ from collections.abc import Mapping, Sequence
 import polars as pl
 import polars_hash as plh
 
+DOCUMENTS_VERSION = "1"
+
 
 def build_docs_df(
     guidelines_df: pl.DataFrame, references_df: pl.DataFrame
