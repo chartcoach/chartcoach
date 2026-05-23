@@ -28,7 +28,7 @@ def _load_server_module() -> Any:
     except ModuleNotFoundError as exc:  # pragma: no cover - depends on install extras
         if _is_missing_mcp_dependency(exc):
             raise click.ClickException(
-                "The `chartcoach mcp` command requires the optional MCP dependencies. Install `chartcoach[mcp]` to use it."
+                "The `chartcoach mcp` command requires the optional MCP/search dependencies. Install `chartcoach[mcp]` to use it."
             ) from exc
         raise
 

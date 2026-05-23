@@ -14,6 +14,7 @@ from visground.viewer.export import (
     default_viewer_dev_artifact_path,
     default_viewer_dev_public_artifact_path,
     export_viewer_artifact,
+    viewer_dev_public_artifact_path,
 )
 from visground.viewer.runtime_config import (
     serialize_viewer_runtime_config,
@@ -320,15 +321,29 @@ class ViewerRuntimeConfigTests(unittest.TestCase):
                 any(path.read_text() == '{"old": true}\n' for path in sidecar_backups)
             )
 
-    def test_viewer_dev_artifact_path_matches_shared_public_viewer_root(self) -> None:
-        with patch.dict(os.environ, {"VISGROUND_VIEWER_DEV": "1"}, clear=False):
+    def test_viewer_dev_artifact_path_uses_explicit_public_path(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            public_path = Path(tmp_dir) / "viewer.parquet"
+            env = {
+                "VISGROUND_VIEWER_DEV": "1",
+                "VISGROUND_VIEWER_DEV_PUBLIC_ARTIFACT_PATH": str(public_path),
+            }
+            with patch.dict(os.environ, env, clear=False):
+                path = default_viewer_dev_artifact_path()
+                self.assertEqual(path, public_path)
+                self.assertEqual(viewer_dev_public_artifact_path(), public_path)
+                self.assertEqual(default_viewer_dev_public_artifact_path(), public_path)
+
+    def test_viewer_dev_artifact_path_stays_cache_local_without_explicit_path(
+        self,
+    ) -> None:
+        with patch.dict(os.environ, {"VISGROUND_VIEWER_DEV": "1"}, clear=True):
             path = default_viewer_dev_artifact_path()
 
         self.assertEqual(path.name, "viewer.parquet")
-        self.assertEqual(path.parent.name, "data")
-        self.assertEqual(path.parent.parent.name, "public")
-        self.assertEqual(path.parent.parent.parent.name, "visground-web")
-        self.assertEqual(path, default_viewer_dev_public_artifact_path())
+        self.assertIn("visground", path.parts)
+        self.assertIsNone(viewer_dev_public_artifact_path())
+        self.assertIsNone(default_viewer_dev_public_artifact_path())
 
     def test_viewer_dev_artifact_url_uses_runtime_url_for_custom_path(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -345,7 +360,9 @@ class ViewerRuntimeConfigTests(unittest.TestCase):
             ):
                 artifact_url = _resolve_viewer_artifact_url(artifact_path)
 
-            self.assertTrue(artifact_url.startswith("data:application/octet-stream;base64,"))
+            self.assertTrue(
+                artifact_url.startswith("data:application/octet-stream;base64,")
+            )
 
     def test_backend_exposes_runtime_config_for_anywidget_bridge(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:

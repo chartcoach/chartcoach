@@ -6,29 +6,61 @@ import shutil
 import tempfile
 from os import PathLike
 from pathlib import Path
-from typing import Any, Literal, TypeAlias, TypedDict, Unpack, cast
+from typing import TYPE_CHECKING, Any, Literal, TypeAlias, TypedDict, Unpack, cast
 
 import platformdirs
-from chromadb.api.types import (
-    DefaultEmbeddingFunction,
-    Documents,
-    EmbeddingFunction,
-    validate_embedding_function,
-)
 
-from .catalog.cached_ef import CachedEmbeddingFunction, with_embedding_cache
 from .catalog.clients import create_chroma_client, create_duckdb_conn
 from .catalog.collection import Catalog
 from .catalog.index import Index, PERSISTED_DUCKDB_RELATIONS
 from .coach import Coach
-from .constants import CACHE_APP_NAME, DEFAULT_CHROMA_DIRNAME, DEFAULT_DUCKDB_FILENAME
+from .constants import (
+    CACHE_APP_NAME,
+    CACHE_DIR_ENV,
+    CATALOG_PATH_ENV,
+    DEFAULT_CHROMA_DIRNAME,
+    DEFAULT_DUCKDB_FILENAME,
+)
+
+if TYPE_CHECKING:
+    from chromadb.api.types import EmbeddingFunction
+else:
+    EmbeddingFunction = Any
 
 CATALOG_COLLECTION_NAME = "catalog"
-DEFAULT_CATALOG_URI = (
-    "https://files.peter.gy/projects/chartcoach/artifacts/catalog.parquet"
-)
 CacheMode: TypeAlias = Literal["reuse_or_create", "reuse_only", "force_rebuild"]
 _CACHE_MODES = frozenset({"reuse_or_create", "reuse_only", "force_rebuild"})
+
+
+def _missing_search_extra_error() -> ModuleNotFoundError:
+    return ModuleNotFoundError(
+        "Chroma-backed indexing requires the optional `chartcoach[search]` dependencies."
+    )
+
+
+def _load_chroma_embedding_api() -> tuple[Any, Any]:
+    try:
+        from chromadb.api.types import (
+            DefaultEmbeddingFunction,
+            validate_embedding_function,
+        )
+    except ModuleNotFoundError as exc:
+        raise _missing_search_extra_error() from exc
+
+    return DefaultEmbeddingFunction, validate_embedding_function
+
+
+def _load_embedding_cache_api() -> tuple[Any, Any]:
+    try:
+        from .catalog.cached_ef import CachedEmbeddingFunction, with_embedding_cache
+    except ModuleNotFoundError as exc:
+        if exc.name == "chromadb" or (
+            exc.name is not None and exc.name.startswith("chromadb.")
+        ):
+            raise _missing_search_extra_error() from exc
+        raise
+
+    return CachedEmbeddingFunction, with_embedding_cache
 
 
 class Settings(TypedDict, total=False):
@@ -109,7 +141,12 @@ def create(**settings: Unpack[Settings]) -> Coach:
 def _resolve_settings(settings: Settings) -> _ResolvedSettings:
     raw_catalog = settings.get("catalog")
     if raw_catalog is None:
-        raw_catalog = os.getenv("CHARTCOACH_CATALOG_PATH") or DEFAULT_CATALOG_URI
+        raw_catalog = os.getenv(CATALOG_PATH_ENV)
+    if raw_catalog is None:
+        raise ValueError(
+            "catalog must be provided with create(catalog=...) or "
+            f"the {CATALOG_PATH_ENV} environment variable."
+        )
 
     catalog = (
         raw_catalog
@@ -122,8 +159,7 @@ def _resolve_settings(settings: Settings) -> _ResolvedSettings:
         Path(raw_cache_dir)
         if raw_cache_dir is not None
         else Path(
-            os.getenv("CHARTCOACH_CACHE_DIR")
-            or platformdirs.user_cache_dir(CACHE_APP_NAME)
+            os.getenv(CACHE_DIR_ENV) or platformdirs.user_cache_dir(CACHE_APP_NAME)
         )
     )
 
@@ -155,21 +191,16 @@ def _resolve_effective_embedding_fn(
     *,
     cache_embeddings: bool,
 ) -> _ResolvedEmbedding:
-    resolved = (
-        cast(EmbeddingFunction[Any], DefaultEmbeddingFunction())
-        if embedding_fn is None
-        else cast(EmbeddingFunction[Any], embedding_fn)
-    )
+    DefaultEmbeddingFunction, validate_embedding_function = _load_chroma_embedding_api()
+    CachedEmbeddingFunction, with_embedding_cache = _load_embedding_cache_api()
+    resolved = DefaultEmbeddingFunction() if embedding_fn is None else embedding_fn
     if cache_embeddings and not isinstance(resolved, CachedEmbeddingFunction):
-        resolved = cast(
-            EmbeddingFunction[Any],
-            with_embedding_cache(
-                cast(EmbeddingFunction[Documents], resolved),
-                app_name=CACHE_APP_NAME,
-            ),
+        resolved = with_embedding_cache(
+            resolved,
+            app_name=CACHE_APP_NAME,
         )
 
-    validate_embedding_function(cast(Any, resolved))
+    validate_embedding_function(resolved)
     return _ResolvedEmbedding(
         embedding_fn=resolved,
         embedding_name=_embedding_name(resolved),

@@ -1,11 +1,11 @@
 [project]
 name = "guideline-cataloging"
-version = "0.1.0"
-description = "Add your description here"
+version = "0.0.0"
+description = "marimo notebook for turning source material into ChartCoach catalog entries."
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.11,<3.16"
 dependencies = [
-  "altair>=6.0.0",
+  "altair>=5.2,<6",
   "bibtexparser>=1.4.3",
   "chartcoach",
   "joblib>=1.5.3",
@@ -16,7 +16,10 @@ dependencies = [
 ]
 
 [tool.uv.sources]
-chartcoach = { workspace = true }
+chartcoach = { path = "../../catalog-python", editable = true }
+
+[tool.uv]
+package = false
 
 [tool.marimo.runtime]
-dotenv = ["../../.env"]
+dotenv = ["../../../.env"]

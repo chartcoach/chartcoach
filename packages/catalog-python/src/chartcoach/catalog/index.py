@@ -2,15 +2,19 @@ from __future__ import annotations
 
 import logging
 from functools import cached_property
-from typing import Mapping, Sequence, cast
+from typing import TYPE_CHECKING, Any, Mapping, Sequence, cast
 
-import chromadb
 import duckdb
 import polars as pl
-from chromadb.api.types import Metadata
 from tqdm import tqdm
 
 from .collection import Catalog
+
+if TYPE_CHECKING:
+    import chromadb
+    from chromadb.api.types import Metadata
+else:
+    Metadata = dict[str, Any]
 
 EMBEDDING_COL = "embedding"
 EMBEDDINGS_TABLE = "embeddings"
@@ -256,30 +260,6 @@ class Index:
 
         res = self._collection.get(include=["documents", "embeddings", "metadatas"])
         return _embeddings_response_to_frame(cast(Mapping[str, Sequence[object]], res))
-
-    def atlas(self, conn: duckdb.DuckDBPyConnection | None = None, **kwargs):
-        """Return an Embedding Atlas widget for exploring the stored vectors."""
-
-        from embedding_atlas.projection import compute_vector_projection
-        from embedding_atlas.widget import EmbeddingAtlasWidget
-
-        df = self.embeddings_df.to_pandas()
-        compute_vector_projection(df, vector="embedding")
-
-        # Persist computed projections to DuckDB if a connection is provided
-        if conn is not None:
-            conn.execute(
-                "CREATE OR REPLACE TABLE embedding_projections AS (SELECT id, projection_x, projection_y, neighbors FROM df)"
-            )
-
-        return EmbeddingAtlasWidget(
-            df,
-            x="projection_x",
-            y="projection_y",
-            neighbors="neighbors",
-            connection=conn,
-            **kwargs,
-        )
 
 
 __all__ = [

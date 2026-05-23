@@ -5,29 +5,55 @@ from os import PathLike
 from pathlib import Path
 from urllib.parse import urlparse
 
+import dataclasses as dc
+from collections.abc import Mapping
+from typing import cast
 import polars as pl
-from pydantic import BaseModel, Field, computed_field
 
 from ..guideline.core import Guideline
 
 
-class Entry(BaseModel):
+@dc.dataclass(frozen=True, slots=True)
+class Entry:
     """One guideline together with the references that support it."""
 
-    guideline: Guideline = Field(
-        description="The guideline itself.",
-    )
-    references: list[str] = Field(
-        default_factory=list,
-        description="BibTeX entries used by the guideline.",
-    )
+    guideline: Guideline
+    references: list[str] = dc.field(default_factory=list)
 
-    @computed_field
+    @classmethod
+    def model_validate(cls, data: object) -> "Entry":
+        """Build an entry from a raw mapping."""
+        if isinstance(data, cls):
+            return data
+        if not isinstance(data, Mapping):
+            raise TypeError("Entry data must be a mapping.")
+        values = cast(Mapping[str, object], data)
+        references = values.get("references") or []
+        if not isinstance(references, list):
+            raise TypeError("references must be a list of strings.")
+        parsed_references: list[str] = []
+        for item in references:
+            if not isinstance(item, str):
+                raise TypeError("references must be a list of strings.")
+            parsed_references.append(item)
+        return cls(
+            guideline=Guideline.model_validate(values.get("guideline")),
+            references=parsed_references,
+        )
+
     @property
     def id(self) -> str:
         """Return the stable id of this entry."""
 
         return self.guideline.id
+
+    def model_dump(self) -> dict[str, object]:
+        """Return the serialized entry shape used by catalog dataframes."""
+        return {
+            "id": self.id,
+            "guideline": self.guideline.model_dump(),
+            "references": self.references,
+        }
 
 
 class Catalog:

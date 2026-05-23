@@ -7,17 +7,13 @@ app = marimo.App(width="columns", app_title="Guideline Application")
 @app.cell(column=0, hide_code=True)
 def _(mo):
     mo.md(r"""
-    <a href="https://l.peter.gy/cc-catalog" target="_blank">
-        <img src="https://img.shields.io/static/v1?label=%F0%9F%8D%83&message=Explore%20interactively&color=2E8B57&labelColor=555555" style="margin: 0" />
-    </a>
-
     # ::lucide:bot:: Agentic Visualization Feedback
 
     This notebook accompanies Section 5.4 of the paper. It demonstrates how our structured catalog enables an AI agent to provide grounded, actionable feedback on data visualizations.
 
     Current automated feedback methods present a trade-off:
 
-    - **Rule-based linters** are reliable but rigid. They spot explicit violations but miss nuanced opportunities for perceptual or rhetorical improvement.
+    - **Rule-based checks** are reliable but rigid. They spot explicit violations but miss nuanced opportunities for perceptual or rhetorical improvement.
     - **General-purpose LLMs** can offer creative suggestions but often produce ungrounded, generic advice that is not tied to verifiable evidence.
 
     This notebook presents a third approach: an agent that generates reliable feedback by strategically querying our structured knowledge catalog. It follows a **progressive disclosure** protocol--first using SQL to learn the catalog's structure, then using targeted retrieval and semantic search to gather evidence before synthesizing its final recommendations.
@@ -196,11 +192,11 @@ def _(pl):
 @app.cell(column=2, hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## ::lucide:ruler:: Baseline A: Symbolic Linters
+    ## ::lucide:ruler:: Baseline A: Symbolic Checks
 
-    We first evaluate the chart's specification using two rule-based tools: VizLinter and Draco. These tools check for structural and perceptual rule violations.
+    We first evaluate the chart's specification with Draco. This checks structural and perceptual constraints in a form the notebook can inspect.
 
-    As shown below, both linters find **zero violations**. They confirm that the chart is structurally sound and adheres to their predefined best practices. However, they cannot provide feedback on the core situational question: is this design effective for a grocery flyer comparison task? Their analysis confirms validity, but not fitness for purpose.
+    The check confirms that the chart is structurally sound, but it does not answer the situational question: is this design effective for a grocery flyer comparison task?
     """)
     return
 
@@ -214,19 +210,6 @@ def _(altair_chart, mo):
         ]
     )
     return
-
-
-@app.cell(hide_code=True)
-def _(altair_chart, altair_chart_to_vl_linter_input, mo, vl_linter):
-    vl_lint = vl_linter.Lint(altair_chart_to_vl_linter_input(altair_chart))
-    vl_linter_violations = vl_lint.lint()
-    mo.vstack(
-        [
-            mo.md(f"**Vega-Lite Linter Found ${len(vl_linter_violations)}$ Issues**"),
-            vl_linter_violations,
-        ]
-    )
-    return (vl_linter_violations,)
 
 
 @app.cell(hide_code=True)
@@ -312,25 +295,6 @@ def _(AltairRenderer, DracoExpress):
 
 
 @app.cell(hide_code=True)
-def _(alt):
-    def altair_chart_to_vl_linter_input(chart: alt.Chart) -> dict:
-        vl = chart.to_dict()
-        return {
-            "data": {
-                "values": list(vl["datasets"].items())[0][1],
-            },
-            "mark": vl["mark"]["type"],
-            "encoding": {
-                channel: {"field": enc["field"], "type": enc["type"]}
-                for channel, enc in vl["encoding"].items()
-                if channel not in ["tooltip"]
-            },
-        }
-
-    return (altair_chart_to_vl_linter_input,)
-
-
-@app.cell(hide_code=True)
 def _():
     import draco.renderer.altair.types as draco_chart_spec
     from draco import schema_from_dataframe
@@ -349,9 +313,8 @@ def _():
 def _():
     import altair as alt
     import draco as drc
-    import vega_lite_linter as vl_linter
 
-    return alt, drc, vl_linter
+    return alt, drc
 
 
 @app.cell(hide_code=True)
@@ -428,7 +391,6 @@ def _(
             image=image,
             situation=user_situation,
             draco_spec_dict=draco_spec_dict,
-            vl_linter_violations=[],
             draco_features=[],
         )
     return (plain_vis_feedback,)
@@ -454,21 +416,17 @@ def _(Image, draco_chart_spec, dspy):
         )
 
     def format_existing_chart_feedback(
-        vl_linter_violations: list,
         draco_features: list,
     ) -> str:
-        if not vl_linter_violations and not draco_features:
+        if not draco_features:
             return ""
 
         return "\n\n".join(
             [
-                "**Vega-Lite Linter Violations (VizLinter) [1]**",
-                str(vl_linter_violations),
-                "**Draco Activated Features (Soft Constraints) [2]**",
+                "**Draco Activated Features (Soft Constraints) [1]**",
                 str(draco_features),
                 "---"
-                "[1] Chen, Qing, Fuling Sun, Xinyue Xu, Zui Chen, Jiazhe Wang, and Nan Cao. “VizLinter: A Linter and Fixer Framework for Data Visualization.” IEEE Transactions on Visualization and Computer Graphics 28, no. 1 (2022): 206–16. https://doi.org/10.1109/TVCG.2021.3114804.",
-                "[2] Yang, Junran, Péter Ferenc Gyarmati, Zehua Zeng, and Dominik Moritz. “Draco 2: An Extensible Platform to Model Visualization Design.” 2023 IEEE Visualization and Visual Analytics (VIS), October 2023, 166–70. https://doi.org/10.1109/VIS54172.2023.00042.",
+                "[1] Yang, Junran, Péter Ferenc Gyarmati, Zehua Zeng, and Dominik Moritz. “Draco 2: An Extensible Platform to Model Visualization Design.” 2023 IEEE Visualization and Visual Analytics (VIS), October 2023, 166–70. https://doi.org/10.1109/VIS54172.2023.00042.",
             ]
         )
 
@@ -476,14 +434,12 @@ def _(Image, draco_chart_spec, dspy):
         image: Image.Image,
         situation: str,
         draco_spec_dict: draco_chart_spec.SpecificationDict,
-        vl_linter_violations: list,
         draco_features: list,
     ) -> str:
         generate_feedback = dspy.Predict(VisFeedback)
         chart = dspy.Image.from_PIL(image)
         chart_spec = draco_spec_dict.model_dump_json(exclude_none=True)
         existing_chart_feedback = format_existing_chart_feedback(
-            vl_linter_violations,
             draco_features,
         )
 
@@ -550,14 +506,12 @@ def _(
     image,
     init_lm,
     user_situation,
-    vl_linter_violations,
 ):
     with dspy.context(lm=init_lm(feedback_model)):
         context_enriched_vis_feedback = generate_plain_vis_feedback(
             image=image,
             situation=user_situation,
             draco_spec_dict=draco_spec_dict,
-            vl_linter_violations=vl_linter_violations,
             draco_features=draco_spec.features_df.to_polars().to_dicts(),
         )
     return

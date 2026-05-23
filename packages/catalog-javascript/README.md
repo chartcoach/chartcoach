@@ -6,3 +6,7 @@ Use `@chartcoach/catalog/node` to load catalog folders or parquet files from Nod
 Use `@chartcoach/catalog/browser` to load parquet artifacts by URL.
 
 Build this package with `pnpm --dir packages/catalog-javascript build`.
+
+## License
+
+MIT. See [LICENSE](https://github.com/peter-gy/chartcoach/blob/main/LICENSE).

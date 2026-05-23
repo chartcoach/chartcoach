@@ -323,11 +323,15 @@ function normalizeScoreBreakdown(
       return score;
     }
     if (hasOverallScore) {
-      throw new Error(`Viewer artifact row ${rowId} has duplicate overall score_breakdown entries.`);
+      throw new Error(
+        `Viewer artifact row ${rowId} has duplicate overall score_breakdown entries.`,
+      );
     }
     hasOverallScore = true;
     if (score.score !== rowOverallScore) {
-      throw new Error(`Viewer artifact row ${rowId} has conflicting score_breakdown overall score.`);
+      throw new Error(
+        `Viewer artifact row ${rowId} has conflicting score_breakdown overall score.`,
+      );
     }
     return {
       ...score,
@@ -341,10 +345,7 @@ function normalizeArtifactRow(
   options: ViewerArtifactLoadOptions,
 ): ViewerArtifactRow {
   const rowId = String(row.visgen_id);
-  const candidate = parseCandidateJson(
-    row.candidate_json,
-    `candidate_json for row ${rowId}`,
-  );
+  const candidate = parseCandidateJson(row.candidate_json, `candidate_json for row ${rowId}`);
   if (candidate.visgen_id !== rowId) {
     throw new Error(
       `Viewer artifact row ${rowId} has conflicting candidate_json.visgen_id '${candidate.visgen_id}'.`,

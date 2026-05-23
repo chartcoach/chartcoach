@@ -1,8 +1,5 @@
 [tool.uv.workspace]
 members = [
-    "packages/examples/guideline-cataloging-example",
-    "packages/examples/guideline-analysis-example",
-    "packages/examples/guideline-application-example",
     "packages/catalog-python",
     "apps/visground",
 ]

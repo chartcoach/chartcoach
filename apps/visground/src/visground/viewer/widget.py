@@ -53,9 +53,13 @@ def _resolve_viewer_esm_asset() -> Any:
 def _resolve_viewer_artifact_url(path: Path) -> str:
     dev_url = os.getenv("VISGROUND_VIEWER_DEV_URL")
     if dev_url or _viewer_dev_enabled():
-        from .export import default_viewer_dev_public_artifact_path
+        from .export import viewer_dev_public_artifact_path
 
-        if path.resolve() != default_viewer_dev_public_artifact_path().resolve():
+        public_artifact_path = viewer_dev_public_artifact_path()
+        if (
+            public_artifact_path is None
+            or path.resolve() != public_artifact_path.resolve()
+        ):
             return _resolve_runtime_artifact_url(path)
         candidate = _normalize_viewer_dev_url(dev_url or DEFAULT_VIEWER_DEV_URL)
         parts = urlsplit(candidate)

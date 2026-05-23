@@ -1,9 +1,9 @@
 [project]
 name = "guideline-analysis"
-version = "0.1.0"
-description = "Add your description here"
+version = "0.0.0"
+description = "marimo notebook for structural analysis over the ChartCoach guideline catalog."
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.11,<3.16"
 dependencies = [
   "anywidget>=0.9.21",
   "chartcoach",
@@ -14,7 +14,10 @@ dependencies = [
   "sqlglot>=29.0.1",
 ]
 [tool.uv.sources]
-chartcoach = { workspace = true }
+chartcoach = { path = "../../catalog-python", editable = true }
+
+[tool.uv]
+package = false
 
 [tool.marimo.runtime]
-dotenv = ["../../.env"]
+dotenv = ["../../../.env"]

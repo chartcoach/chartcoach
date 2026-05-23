@@ -10,10 +10,7 @@ from chartcoach.guideline import parse_bibtex_entry
 
 from .spec import ViewerConfig, ViewerDimensionSpec, ViewerLayout
 
-DEFAULT_VIEWER_IMAGE_BASE_URL = (
-    "https://files.peter.gy/projects/cc/supplementary/05-empirical-study/"
-    "03-pipeline/03_generated_charts/"
-)
+DEFAULT_VIEWER_IMAGE_BASE_URL = ""
 DEFAULT_GUIDELINE_BASE_URL = "https://chartcoach.github.io/guidelines"
 
 
