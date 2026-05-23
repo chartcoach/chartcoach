@@ -174,12 +174,6 @@ importers:
 
   packages/catalog-python: {}
 
-  packages/examples/guideline-analysis-example: {}
-
-  packages/examples/guideline-application-example: {}
-
-  packages/examples/guideline-cataloging-example: {}
-
   packages/ui:
     dependencies:
       '@fontsource-variable/inter':

@@ -7,10 +7,6 @@ app = marimo.App(width="columns", app_title="Guideline Analysis")
 @app.cell(column=0, hide_code=True)
 def _(mo):
     mo.md(r"""
-    <a href="https://l.peter.gy/cc-catalog" target="_blank">
-        <img src="https://img.shields.io/static/v1?label=%F0%9F%8D%83&message=Explore%20interactively&color=2E8B57&labelColor=555555" style="margin: 0" />
-    </a>
-
     # ::lucide:compass:: Structural Analysis of the Knowledge Space
 
     This notebook accompanies Section 5.3 of the paper. It demonstrates how vector operations can surface latent relationships between guidelines, executing the operators depicted in Figure 2:
@@ -41,14 +37,30 @@ def _(mo):
 
     This visualization using [Embedding Atlas](https://apple.github.io/embedding-atlas/) projects the high-dimensional embedding space into two dimensions using UMAP. This technique preserves the local neighborhood structure, causing semantically related guidelines to form local clusters. You can hover over points to inspect metadata and section roles.
 
-    > This widget needs a live Python connection. If all you see is a gray box in a static preview of this notebook, please [visit the interactive notebook 🍃](https://l.peter.gy/cc-catalog) to explore the embedding space.
+    > This widget needs a live Python connection. Open the notebook with marimo to explore the embedding space.
     """)
     return
 
 
 @app.cell(hide_code=True)
 def _(conn, index):
-    index.atlas(conn=conn)
+    from embedding_atlas.projection import compute_vector_projection
+    from embedding_atlas.widget import EmbeddingAtlasWidget
+
+    embeddings_df = index.embeddings_df.to_pandas()
+    compute_vector_projection(embeddings_df, vector="embedding")
+    conn.execute(
+        "CREATE OR REPLACE TABLE embedding_projections AS ("
+        "SELECT id, projection_x, projection_y, neighbors FROM embeddings_df"
+        ")"
+    )
+    EmbeddingAtlasWidget(
+        embeddings_df,
+        x="projection_x",
+        y="projection_y",
+        neighbors="neighbors",
+        connection=conn,
+    )
     return
 
 
@@ -640,8 +652,9 @@ def _():
     import marimo as mo
     import platformdirs
     import polars as pl
-    from chartcoach import Catalog, Index
+    from chartcoach import Catalog
     from chartcoach.catalog.clients import create_chroma_client, create_duckdb_conn
+    from chartcoach.catalog.index import Index
 
     cache_dir = pathlib.Path(platformdirs.user_cache_dir("chartcoach"))
     return (

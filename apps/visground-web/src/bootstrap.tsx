@@ -5,8 +5,7 @@ import {
   type ViewerRuntimeConfig,
 } from "@chartcoach/visground-viewer";
 
-const DEFAULT_IMAGE_BASE_URL =
-  "https://files.peter.gy/projects/cc/supplementary/05-empirical-study/03-pipeline/03_generated_charts/";
+const DEFAULT_IMAGE_BASE_URL = "";
 const DEFAULT_ARTIFACT_URL = `${window.location.origin}/data/viewer.parquet`;
 const ARTIFACT_URL = import.meta.env.VITE_VISGROUND_VIEWER_PARQUET_URL ?? DEFAULT_ARTIFACT_URL;
 const RUNTIME_CONFIG_URL =

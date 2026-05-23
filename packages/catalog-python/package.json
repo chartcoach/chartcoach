@@ -2,10 +2,12 @@
   "name": "catalog-python",
   "version": "0.0.1",
   "private": true,
+  "license": "MIT",
   "scripts": {
     "lint": "uv run ruff check .",
-    "typecheck": "uv run ty check .",
+    "typecheck": "uv run --extra search ty check .",
     "format": "uv run ruff format .",
-    "build": "uv build"
+    "build": "uv build",
+    "test": "uv run pytest tests"
   }
 }

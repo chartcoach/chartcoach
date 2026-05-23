@@ -2,6 +2,7 @@
   "name": "chartcoach",
   "version": "0.0.1",
   "private": true,
+  "license": "MIT",
   "scripts": {
     "test": "pnpm -r --if-present test",
     "build": "pnpm -r --if-present build",

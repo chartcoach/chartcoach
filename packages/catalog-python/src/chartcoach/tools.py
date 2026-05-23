@@ -5,13 +5,11 @@ from datetime import date, datetime, time
 from decimal import Decimal
 from typing import Any, TypeAlias, cast
 
-from chromadb.api.types import Include, Where, WhereDocument
-
 from .catalog.index import Index
 from .constants import DEFAULT_CHROMA_TOP_K, DEFAULT_DUCKDB_ROW_LIMIT
 
-DEFAULT_SEARCH_INCLUDE: Include = ["documents", "metadatas", "distances"]
-DEFAULT_GET_INCLUDE: Include = ["documents", "metadatas"]
+DEFAULT_SEARCH_INCLUDE = ["documents", "metadatas", "distances"]
+DEFAULT_GET_INCLUDE = ["documents", "metadatas"]
 MetadataFilter = dict[str, Any]
 DocumentFilter = dict[str, Any]
 IncludeFields = list[str]
@@ -105,9 +103,9 @@ class Tools:
         result = self.index.collection.query(
             query_texts=resolved_queries,
             n_results=self._default_top_k if limit is None else limit,
-            where=cast(Where | None, where),
-            where_document=cast(WhereDocument | None, where_document),
-            include=cast(Include, include or list(DEFAULT_SEARCH_INCLUDE)),
+            where=cast(Any, where),
+            where_document=cast(Any, where_document),
+            include=cast(Any, include or list(DEFAULT_SEARCH_INCLUDE)),
         )
         return _normalize_for_json(result)
 
@@ -135,9 +133,9 @@ class Tools:
 
         result = self.index.collection.get(
             ids=ids,
-            where=cast(Where | None, where),
-            where_document=cast(WhereDocument | None, where_document),
-            include=cast(Include, include or list(DEFAULT_GET_INCLUDE)),
+            where=cast(Any, where),
+            where_document=cast(Any, where_document),
+            include=cast(Any, include or list(DEFAULT_GET_INCLUDE)),
             limit=limit,
             offset=offset,
         )

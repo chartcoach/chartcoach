@@ -1,7 +1,18 @@
 {
   "name": "@chartcoach/catalog",
   "version": "0.1.0",
-  "description": "Chartcoach JS: structured visualization guidelines, catalog tooling, and retrieval primitives.",
+  "description": "JavaScript loaders and wire types for the ChartCoach visualization guideline catalog.",
+  "private": true,
+  "license": "MIT",
+  "author": "Péter Ferenc Gyarmati <dev.petergy@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/peter-gy/chartcoach.git",
+    "directory": "packages/catalog-javascript"
+  },
+  "bugs": {
+    "url": "https://github.com/peter-gy/chartcoach/issues"
+  },
   "files": [
     "dist",
     "src"

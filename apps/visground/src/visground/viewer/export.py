@@ -27,6 +27,9 @@ from .runtime_config import (
 from .spec import ViewerConfig
 
 _TRUTHY_ENV_VALUES = {"1", "true", "yes", "on"}
+_VIEWER_DEV_ARTIFACT_ENV = "VISGROUND_VIEWER_DEV_ARTIFACT_PATH"
+_VIEWER_DEV_PUBLIC_ARTIFACT_ENV = "VISGROUND_VIEWER_DEV_PUBLIC_ARTIFACT_PATH"
+_VIEWER_RUNTIME_ARTIFACT_ENV = "VISGROUND_VIEWER_ARTIFACT_PATH"
 
 
 @dc.dataclass(frozen=True, slots=True)
@@ -40,31 +43,33 @@ def _viewer_dev_enabled() -> bool:
     return os.getenv("VISGROUND_VIEWER_DEV", "").strip().lower() in _TRUTHY_ENV_VALUES
 
 
+def _env_path(name: str) -> Path | None:
+    value = os.getenv(name)
+    if not value:
+        return None
+    return Path(value).expanduser()
+
+
 def default_viewer_dev_artifact_path() -> Path:
-    override = os.getenv("VISGROUND_VIEWER_DEV_ARTIFACT_PATH")
-    if override:
-        return Path(override).expanduser()
-
-    return default_viewer_dev_public_artifact_path()
-
-
-def default_viewer_dev_public_artifact_path() -> Path:
     return (
-        Path(__file__).resolve().parents[5]
-        / "apps"
-        / "visground-web"
-        / "public"
-        / "data"
-        / "viewer.parquet"
+        _env_path(_VIEWER_DEV_ARTIFACT_ENV)
+        or viewer_dev_public_artifact_path()
+        or default_viewer_runtime_artifact_path()
     )
 
 
-def default_viewer_runtime_artifact_path() -> Path:
-    override = os.getenv("VISGROUND_VIEWER_ARTIFACT_PATH")
-    if override:
-        return Path(override).expanduser()
+def viewer_dev_public_artifact_path() -> Path | None:
+    return _env_path(_VIEWER_DEV_PUBLIC_ARTIFACT_ENV)
 
-    return Path(platformdirs.user_cache_dir("visground")) / "viewer" / "viewer.parquet"
+
+def default_viewer_dev_public_artifact_path() -> Path | None:
+    return viewer_dev_public_artifact_path()
+
+
+def default_viewer_runtime_artifact_path() -> Path:
+    return _env_path(_VIEWER_RUNTIME_ARTIFACT_ENV) or (
+        Path(platformdirs.user_cache_dir("visground")) / "viewer" / "viewer.parquet"
+    )
 
 
 def default_viewer_artifact_path() -> Path:
@@ -97,7 +102,9 @@ def build_viewer_artifact_df(
             "visgen_id": str(record.get("visgen_id") or ""),
             "vis_id": vis_id,
             "query": query,
-            "search_text": " ".join(value for value in [vis_id, query] if value).strip(),
+            "search_text": " ".join(
+                value for value in [vis_id, query] if value
+            ).strip(),
             "overall_score": record.get("overall_score"),
             "candidate_json": json.dumps(candidate),
         }

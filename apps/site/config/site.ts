@@ -9,7 +9,7 @@ export const monorepoRoot = fileURLToPath(new URL("../../..", import.meta.url));
 const siteSourceRoot = fileURLToPath(new URL("../src", import.meta.url));
 const repoEnvPath = join(monorepoRoot, ".env");
 
-export const DEFAULT_SITE_URL = "http://localhost:4321/";
+export const DEFAULT_SITE_URL = "https://chartcoach.github.io/";
 
 export type SiteUrlSource = "env" | "default";
 

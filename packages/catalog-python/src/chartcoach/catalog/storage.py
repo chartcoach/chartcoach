@@ -16,7 +16,9 @@ def load_catalog_entry(path: Path) -> Entry:
     """Load a single catalog entry from a folder on disk."""
     guideline_md_path = path / "guideline.md"
     if not guideline_md_path.exists():
-        raise FileNotFoundError(f"No guideline.md file found in catalog entry directory: {path}")
+        raise FileNotFoundError(
+            f"No guideline.md file found in catalog entry directory: {path}"
+        )
 
     guideline = parse_guideline(guideline_md_path.read_text())
 

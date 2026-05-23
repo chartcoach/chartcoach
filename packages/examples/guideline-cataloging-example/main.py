@@ -7,10 +7,6 @@ app = marimo.App(width="columns", app_title="Guideline Cataloging")
 @app.cell(column=0, hide_code=True)
 def _(mo):
     mo.md(r"""
-    <a href="https://l.peter.gy/cc-catalog" target="_blank">
-        <img src="https://img.shields.io/static/v1?label=%F0%9F%8D%83&message=Explore%20interactively&color=2E8B57&labelColor=555555" style="margin: 0" />
-    </a>
-
     # ::lucide:network:: Cataloging Heterogeneous Visualization Design Knowledge
 
     This notebook demonstrates the expressiveness of our guideline cataloging scheme. Visualization design knowledge exists in many disparate forms. It ranges from controlled psychology experiments and structured performance metrics to editorial heuristics and qualitative rhetoric. Instead of treating these as incompatible domains, this process shows how our schema can accommodate different sources of knowledge. For each distinct source type, we use a generative model to map its unique evidence format into our standardized, operational guideline structure.
