@@ -32,9 +32,37 @@ function hasOwn<K extends PropertyKey>(value: object, key: K): value is Record<K
 }
 
 function getRecordValue(record: ViewerArtifactRow, dimension: string): string | null {
-  const candidate = record as Record<string, unknown>;
-  const value = candidate[dimension];
-  return typeof value === "string" || value === null ? value : null;
+  if (dimension === "vis_id") {
+    return record.vis_id;
+  }
+  if (!hasOwn(record.dimension_values, dimension)) {
+    throw new Error(
+      `Viewer artifact row ${record.visgen_id} is missing configured dimension '${dimension}'.`,
+    );
+  }
+  const value = record.dimension_values[dimension];
+  if (value !== null && typeof value !== "string") {
+    throw new Error(
+      `Viewer artifact row ${record.visgen_id} has invalid value for dimension '${dimension}'.`,
+    );
+  }
+  return value;
+}
+
+function assertConfiguredDimensionsExist(
+  records: ViewerArtifactRow[],
+  config: ViewerRuntimeConfig,
+) {
+  for (const record of records) {
+    const missing = config.dimensions
+      .map((dimension) => dimension.id)
+      .filter((dimensionId) => !hasOwn(record.dimension_values, dimensionId));
+    if (missing.length) {
+      throw new Error(
+        `Viewer artifact row ${record.visgen_id} is missing configured dimensions: ${missing.join(", ")}.`,
+      );
+    }
+  }
 }
 
 function values(
@@ -49,7 +77,7 @@ function values(
 
   for (const record of records) {
     const value = getRecordValue(record, dimension);
-    const key = value === null ? "__none__" : value;
+    const key = JSON.stringify(value);
     if (seen.has(key)) continue;
     seen.add(key);
     collected.push(value);
@@ -285,11 +313,15 @@ function axisValueMeta(records: ViewerArtifactRow[], dimensionId: string, value:
 }
 
 function schemaValueKey(value: string | null) {
-  return value === null ? "__none__" : value;
+  return value;
 }
 
 function cellKey(groupValue: string | null, rowValue: string | null, columnValue: string | null) {
-  return `${schemaValueKey(groupValue)}::${schemaValueKey(rowValue)}::${schemaValueKey(columnValue)}`;
+  return JSON.stringify([
+    schemaValueKey(groupValue),
+    schemaValueKey(rowValue),
+    schemaValueKey(columnValue),
+  ]);
 }
 
 function dimensionSortKey(config: ViewerRuntimeConfig, dimensionId: string, value: string | null) {
@@ -495,6 +527,7 @@ export function createViewerRuntime(
   records: ViewerArtifactRow[],
   config: ViewerRuntimeConfig,
 ): RuntimeContext {
+  assertConfiguredDimensionsExist(records, config);
   const registry = discoverRegistry(records, config);
   return {
     config,

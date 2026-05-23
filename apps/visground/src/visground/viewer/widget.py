@@ -40,9 +40,23 @@ def _resolve_viewer_esm() -> str | Path:
     return Path(__file__).parent / "_static" / "anywidget" / "index.js"
 
 
+def _resolve_viewer_esm_asset() -> Any:
+    from anywidget._util import try_file_contents
+
+    resolved_esm = _resolve_viewer_esm()
+    file_contents = try_file_contents(resolved_esm)
+    if file_contents is not None:
+        return file_contents
+    return str(resolved_esm)
+
+
 def _resolve_viewer_artifact_url(path: Path) -> str:
     dev_url = os.getenv("VISGROUND_VIEWER_DEV_URL")
     if dev_url or _viewer_dev_enabled():
+        from .export import default_viewer_dev_public_artifact_path
+
+        if path.resolve() != default_viewer_dev_public_artifact_path().resolve():
+            return _resolve_runtime_artifact_url(path)
         candidate = _normalize_viewer_dev_url(dev_url or DEFAULT_VIEWER_DEV_URL)
         parts = urlsplit(candidate)
         if parts.scheme and parts.netloc:
@@ -102,10 +116,7 @@ class VisGroundViewer(VisGroundViewerBackend):
         debug: bool = False,
         show_scores: bool = True,
     ) -> None:
-        from anywidget._util import try_file_contents
-
-        resolved_esm = _resolve_viewer_esm()
-        self._esm = try_file_contents(resolved_esm) or resolved_esm
+        self._esm = _resolve_viewer_esm_asset()
         super().__init__(
             candidates_df=candidates_df,
             viewer_config=viewer_config,

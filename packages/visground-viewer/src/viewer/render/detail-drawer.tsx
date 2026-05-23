@@ -147,7 +147,7 @@ export function DetailDrawer({ state, actions }: { state: ViewerState; actions: 
 }
 
 function GuidelineCard({ guideline }: { guideline: CandidateGuidelineDetail }) {
-  const href = guideline.url?.trim() || `https://chartcoach.github.io/guidelines/${guideline.id}`;
+  const href = safeGuidelineHref(guideline.url);
 
   return (
     <article className="grid h-full grid-rows-[auto_auto_1fr_auto] gap-px border border-border border-l-[3px] border-l-foreground/70 bg-muted px-2.5 py-2.5">
@@ -182,4 +182,22 @@ function GuidelineCard({ guideline }: { guideline: CandidateGuidelineDetail }) {
       ) : null}
     </article>
   );
+}
+
+export function safeGuidelineHref(url: string | null | undefined): string | null {
+  const raw = url?.trim();
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    const base = typeof window === "undefined" ? "http://localhost" : window.location.origin;
+    const parsed = new URL(raw, base);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return null;
+    }
+    return raw;
+  } catch {
+    return null;
+  }
 }

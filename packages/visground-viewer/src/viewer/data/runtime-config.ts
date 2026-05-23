@@ -64,13 +64,13 @@ function normalizeDimensions(value: unknown): ViewerDimensionSpec[] {
     }
     seen.add(id);
 
-    const rawNullLabel = entry.nullLabel ?? entry.null_label;
+    const rawNullLabel = entry.nullLabel;
     const nullLabel =
       rawNullLabel === undefined
         ? undefined
         : ensureString(rawNullLabel, `dimensions[${index}].nullLabel`);
     let noneValueMode: ViewerDimensionSpec["noneValueMode"];
-    const rawNoneValueMode = entry.noneValueMode ?? entry.none_value_mode;
+    const rawNoneValueMode = entry.noneValueMode;
     if (rawNoneValueMode !== undefined) {
       if (rawNoneValueMode !== "null" && rawNoneValueMode !== "all") {
         throw new Error(`dimensions[${index}].noneValueMode must be 'null' or 'all'.`);
