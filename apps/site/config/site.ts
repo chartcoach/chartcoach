@@ -35,24 +35,10 @@ export function loadRepoEnvFile(envPath = repoEnvPath) {
 }
 
 export function resolveSiteUrl(env: EnvMap = process.env) {
-  const candidates = [
-    env.SITE_URL,
-    env.PUBLIC_SITE_URL,
-    env.URL,
-    env.DEPLOY_PRIME_URL,
-    env.CF_PAGES_URL,
-    env.VERCEL_URL ? `https://${env.VERCEL_URL}` : undefined,
-  ].filter((value): value is string => typeof value === "string" && value.length > 0);
-
-  for (const candidate of candidates) {
-    try {
-      return new URL(candidate).toString();
-    } catch {
-      // Ignore invalid candidate values and keep searching.
-    }
+  if (!env.SITE_URL) {
+    return undefined;
   }
-
-  return undefined;
+  return new URL(env.SITE_URL).toString();
 }
 
 export function isAgentationReviewEnabled({

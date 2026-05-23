@@ -1,37 +1,37 @@
 ---
-title: Catalog structure
-description: How each guideline is organized on the site.
+title: Catalog Structure
+description: What a ChartCoach guideline includes.
 tableOfContents: false
 ---
 
-Each guideline here is stored as a small record. The writing stays plain, but the structure makes the collection easier to browse, filter, and compare.
+ChartCoach treats each guideline like a small, citable note. It says what to try, when it fits, what can go wrong, and where the claim came from.
 
-A record has a title, a short summary, a set of labels, a few section types, and the references behind it.
+Those files are the catalog. The site, Python package, JavaScript package, and VisGround tooling all read from them.
 
-## What a guideline includes
+## Guideline Records
 
 Each entry combines:
 
-- a concise **title** and **description** that state the main idea,
-- **labels** that make the record easier to narrow down,
-- ordered **sections** that keep different kinds of information apart,
-- and **references** that show where the guidance comes from.
+- a **title** and **description** for the design move,
+- **labels** for chart types, tasks, audiences, and design levers,
+- **sections** for advice, rationale, context, caveats, checks, and fixes,
+- **references** for the source material.
 
-## Section roles
+## Section Roles
 
-The sections are meant to be easy to scan. Instead of packing everything into one block of text, each part has a job:
+Most records use the same section roles:
 
-- **advice** — what to do
-- **reason** — why it helps
-- **context** — where it fits
-- **exceptions** — when to be careful or do something else
-- **costs** — what you give up by following it
-- **mistakes** — common failure modes
-- **check** — what to look at when reviewing a chart
-- **fix** — ways to respond if something is off
+- **advice**: what to do
+- **reason**: why it helps
+- **context**: where it applies
+- **exceptions**: when the rule should not be used
+- **costs**: what the design gives up
+- **mistakes**: common failure modes
+- **check**: what to inspect during review
+- **fix**: how to repair the chart
 
-That separation matters because advice often depends on the situation. Two guidelines may sound similar at first, but differ in where they apply or what trade-offs they bring with them.
+Separating these roles makes close recommendations easier to compare. Two records can share a chart type while differing in task, audience, caveat, or tradeoff.
 
 ## References
 
-Inline citations and the references section point back to the source material behind a guideline. That makes it easier to check a claim, compare sources, or keep reading.
+Inline citations point to the bibliography on each guideline page. Use them to check a recommendation, compare sources, or keep reading.
