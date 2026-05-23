@@ -30,7 +30,7 @@ export function createStarlightConfig({
   enableAgentationReview: boolean;
 }): StarlightUserConfig {
   return {
-    title: "Structured visualization design knowledge",
+    title: "ChartCoach",
     favicon: "/brand/chartcoach-favicon.svg",
     customCss: ["./src/styles/shadcn.css", "./src/styles/custom.css"],
     social: siteSocialLinks,
