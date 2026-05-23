@@ -9,11 +9,14 @@ import click
 CONTEXT_SETTINGS = {"help_option_names": ["-h", "--help"]}
 TRANSPORT_CHOICES = ("stdio", "sse", "streamable-http")
 LOG_LEVEL_CHOICES = ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL")
+CACHE_MODE_CHOICES = ("reuse_only",)
 MCP_HELP = """Start the ChartCoach MCP server.
 
-ChartCoach creates a search session at startup, then exposes its tools over MCP.
-CLI options override environment variables. When an option is omitted, the command falls
-back to the matching env var and then the built-in default.
+ChartCoach loads the catalog at startup and opens SQL/search resources lazily as
+tools need them. The server only supports reuse_only cache mode so read-only MCP
+tool calls never create or rebuild Chroma state. CLI options override
+environment variables; omitted options fall back to the matching env var and
+then the built-in default.
 """
 
 
@@ -71,6 +74,11 @@ def _load_server_module() -> Any:
     help="Directory root for cached Chroma artifacts. Overrides CHARTCOACH_CACHE_DIR.",
 )
 @click.option(
+    "--cache-mode",
+    type=click.Choice(CACHE_MODE_CHOICES, case_sensitive=False),
+    help="Chroma cache behavior. MCP only supports reuse_only. Overrides CHARTCOACH_CACHE_MODE.",
+)
+@click.option(
     "--transport",
     type=click.Choice(TRANSPORT_CHOICES, case_sensitive=False),
     help="MCP transport to run. Overrides MCP_TRANSPORT. Allowed values: stdio, sse, streamable-http.",
@@ -92,6 +100,7 @@ def _load_server_module() -> Any:
 def mcp_command(
     catalog_path: str | None,
     cache_dir: Path | None,
+    cache_mode: str | None,
     transport: str | None,
     host: str | None,
     port: int | None,
@@ -100,20 +109,19 @@ def mcp_command(
     """Start the ChartCoach MCP server."""
 
     server = _load_server_module()
-    resolved_settings = server._resolve_settings(
-        cache_dir=cache_dir,
-        catalog=catalog_path,
-    )
-    resolved_runtime = server._resolve_runtime(
-        transport=transport.lower() if transport is not None else None,
-        host=host,
-        port=port,
-        log_level=log_level.upper() if log_level is not None else None,
-    )
     try:
+        config = server.resolve_config(
+            cache_dir=cache_dir,
+            catalog=catalog_path,
+            cache_mode=cache_mode,
+            transport=transport.lower() if transport is not None else None,
+            host=host,
+            port=port,
+            log_level=log_level.upper() if log_level is not None else None,
+        )
         server.main(
-            settings=resolved_settings,
-            runtime=resolved_runtime,
+            settings=config.settings,
+            runtime=config.runtime,
         )
     except ModuleNotFoundError as exc:  # pragma: no cover - depends on install extras
         if _is_missing_optional_dependency(exc):
@@ -121,6 +129,8 @@ def mcp_command(
                 "The `chartcoach mcp` command requires the optional MCP/search dependencies. Install `chartcoach[mcp]` to use it."
             ) from exc
         raise
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
 
 
 __all__ = ["mcp_command"]

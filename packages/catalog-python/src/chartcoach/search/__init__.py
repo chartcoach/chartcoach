@@ -6,6 +6,7 @@ __all__ = [
     "ChromaIndex",
     "SearchSession",
     "SearchTools",
+    "SqlTools",
     "connect_catalog",
     "create_chroma_client",
     "open_search_session",
@@ -17,6 +18,7 @@ _LAZY_EXPORTS = {
     "ChromaIndex": (".chroma", "ChromaIndex"),
     "SearchSession": (".session", "SearchSession"),
     "SearchTools": (".tools", "SearchTools"),
+    "SqlTools": (".sql_tools", "SqlTools"),
     "open_search_session": (".session", "open_search_session"),
 }
 

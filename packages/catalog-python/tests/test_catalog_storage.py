@@ -10,6 +10,7 @@ import polars as pl
 from chartcoach.catalog import Catalog, CatalogEntry
 from chartcoach.catalog.storage import load_catalog_entry
 from chartcoach.guideline import Guideline
+from chartcoach.guideline import format_bibtex_entry
 from chartcoach.guideline import parse_bibtex
 
 
@@ -86,6 +87,18 @@ def test_load_catalog_entry_requires_guideline_file(tmp_path: Path) -> None:
 
 def test_parse_bibtex_ignores_percent_comments() -> None:
     assert parse_bibtex(BIBTEX) == [BIBTEX.split("\n", 1)[1].strip()]
+
+
+def test_bibtex_format_handles_spacing_macros() -> None:
+    bibtex = r"""@article{macro2024,
+  title = {Readable\! charts},
+  author = {Smith, Ada},
+  year = {2024},
+  journal = {Journal of Charts}
+}
+"""
+
+    assert "Readable charts" in format_bibtex_entry(bibtex)
 
 
 def test_catalog_loads_parquet_without_search_dependencies() -> None:
@@ -204,8 +217,10 @@ def test_mcp_cli_renders_missing_optional_dependency_without_traceback(
         raise root
 
     fake_server = SimpleNamespace(
-        _resolve_settings=lambda **kwargs: kwargs,
-        _resolve_runtime=lambda **kwargs: kwargs,
+        resolve_config=lambda **kwargs: SimpleNamespace(
+            settings=kwargs,
+            runtime=object(),
+        ),
         main=raise_nested_missing_dependency,
     )
     monkeypatch.setattr(mcp_cli, "_load_server_module", lambda: fake_server)
@@ -217,6 +232,41 @@ def test_mcp_cli_renders_missing_optional_dependency_without_traceback(
 
     assert result.exit_code == 1
     assert "Install `chartcoach[mcp]` to use it." in result.output
+    assert "Traceback" not in result.output
+
+
+def test_mcp_cli_passes_cache_mode_and_renders_value_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from chartcoach.cli import mcp as mcp_cli
+    from chartcoach.mcp import server as mcp_server
+
+    monkeypatch.delenv("CHARTCOACH_CACHE_DIR", raising=False)
+    monkeypatch.delenv("CHARTCOACH_CACHE_MODE", raising=False)
+    monkeypatch.delenv("CHARTCOACH_CATALOG_PATH", raising=False)
+    monkeypatch.delenv("MCP_HOST", raising=False)
+    monkeypatch.delenv("MCP_LOG_LEVEL", raising=False)
+    monkeypatch.delenv("MCP_PORT", raising=False)
+    monkeypatch.delenv("MCP_TRANSPORT", raising=False)
+
+    captured: dict[str, object] = {}
+
+    def fake_main(**kwargs: object) -> None:
+        captured.update(kwargs)
+        raise ValueError("catalog must be provided")
+
+    monkeypatch.setattr(mcp_server, "main", fake_main)
+    monkeypatch.setattr(mcp_cli, "_load_server_module", lambda: mcp_server)
+
+    result = CliRunner().invoke(
+        mcp_cli.mcp_command,
+        ["--cache-mode", "reuse_only"],
+    )
+
+    assert result.exit_code == 1
+    assert captured["settings"] == {"cache_mode": "reuse_only"}
+    assert captured["runtime"] == mcp_server.RuntimeConfig()
+    assert "catalog must be provided" in result.output
     assert "Traceback" not in result.output
 
 
