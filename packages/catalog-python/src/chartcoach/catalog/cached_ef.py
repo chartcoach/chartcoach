@@ -276,24 +276,7 @@ class CachedEmbeddingFunction(EmbeddingFunction[Documents]):
         return self._embedding_function.default_space()
 
     def supported_spaces(self) -> list[Space]:
-        return cast(list[Space], self._embedding_function.supported_spaces())
-
-    def is_legacy(self) -> bool:
-        wrapped_name = _extract_name(self._embedding_function)
-        if wrapped_name is None:
-            return True
-        if wrapped_name not in known_embedding_functions:
-            return True
-        try:
-            if self._embedding_function.is_legacy():
-                return True
-            self._wrapped_config()
-        except Exception:
-            return True
-        return False
-
-    def __getattr__(self, name: str) -> Any:
-        return getattr(self._embedding_function, name)
+        return self._embedding_function.supported_spaces()
 
     def _embed(
         self,

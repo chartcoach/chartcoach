@@ -2,7 +2,6 @@ from .bibliography import (
     format_bibtex_entry,
     parse_bibtex,
     parse_bibtex_entry,
-    try_format_bibtex_entry,
 )
 from .core import Guideline, Section
 from .markdown import (
@@ -25,5 +24,4 @@ __all__ = [
     "parse_guideline_section_records",
     "parse_guideline_sections",
     "parse_markdown_with_frontmatter",
-    "try_format_bibtex_entry",
 ]

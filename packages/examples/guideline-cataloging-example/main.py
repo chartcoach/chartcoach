@@ -128,11 +128,11 @@ def _(
     GUIDELINE_TEMPLATE,
     MISC_PROMPT_SPEC,
     build_guideline_extraction_prompt,
-    ccp,
     client,
     create_pdf_content_part,
     fence,
     finalize_guideline_batch,
+    parse_guideline,
     unfence,
     zot_item_bibtex,
     zot_item_bibtex_key,
@@ -189,7 +189,7 @@ def _(
         response_text = response.output_text
 
         guideline_objects = [
-            ccp.parse_guideline(md_content) for md_content in unfence(response_text)
+            parse_guideline(md_content) for md_content in unfence(response_text)
         ]
         guideline_objects = finalize_guideline_batch(
             guideline_objects,
@@ -320,12 +320,12 @@ def _(
     GUIDELINE_TEMPLATE,
     bibtexparser,
     build_guideline_extraction_prompt,
-    ccp,
     client,
     create_pdf_content_part,
     fence,
     finalize_guideline_batch,
     find_datawrapper_bibtex_entry_by_path,
+    parse_guideline,
     pathlib,
     unfence,
 ):
@@ -391,7 +391,7 @@ def _(
 
         response_text = response.output_text
         guideline_objects = [
-            ccp.parse_guideline(md_content) for md_content in unfence(response_text)
+            parse_guideline(md_content) for md_content in unfence(response_text)
         ]
         guideline_objects = finalize_guideline_batch(
             guideline_objects,
@@ -444,7 +444,7 @@ def _(prompt_contract_digest):
 
 
 @app.cell(hide_code=True)
-def _(DATAWRAPPER_REFS: list[str], ccp, pathlib):
+def _(DATAWRAPPER_REFS: list[str], parse_bibtex, pathlib):
     def _datawrapper_path_to_post_url(path: pathlib.Path) -> str:
         """
         Pathname: www_datawrapper_de_blog_10-ways-to-use-fewer-colors-in-your-data-visualizations.pdf
@@ -457,7 +457,7 @@ def _(DATAWRAPPER_REFS: list[str], ccp, pathlib):
 
     def find_datawrapper_bibtex_entry_by_path(path: pathlib.Path) -> str:
         url = _datawrapper_path_to_post_url(path)
-        entries = ccp.parse_bibtex(DATAWRAPPER_REFS)
+        entries = parse_bibtex(DATAWRAPPER_REFS)
         entry = [entry for entry in entries if url in str(entry)]
 
         if not entry:
@@ -545,12 +545,12 @@ def _(
     Entry,
     GUIDELINE_TEMPLATE,
     build_guideline_extraction_prompt,
-    ccp,
     client,
     create_pdf_content_part,
     fence,
     finalize_guideline_batch,
     json,
+    parse_guideline,
     unfence,
 ):
     def chartability_item_to_catalog_entry(
@@ -621,7 +621,7 @@ def _(
 
         guideline_md = fenced_guidelines[0]
         guideline_batch = finalize_guideline_batch(
-            [ccp.parse_guideline(guideline_md)],
+            [parse_guideline(guideline_md)],
             required_basis=CHARTABILITY_PROMPT_SPEC["required_basis"],
         )
         if not guideline_batch:
@@ -758,12 +758,12 @@ def _(
     Entry,
     GUIDELINE_TEMPLATE,
     build_guideline_extraction_prompt,
-    ccp,
     client,
     create_pdf_content_part,
     fence,
     finalize_guideline_batch,
     json,
+    parse_guideline,
     unfence,
     zot_item_bibtex,
     zot_item_bibtex_key,
@@ -844,7 +844,7 @@ def _(
         response_text = response.output_text
 
         guideline_objects = [
-            ccp.parse_guideline(md_content) for md_content in unfence(response_text)
+            parse_guideline(md_content) for md_content in unfence(response_text)
         ]
         guideline_objects = finalize_guideline_batch(
             guideline_objects,
@@ -1118,13 +1118,14 @@ def _(
     Guideline,
     TALKING_CHARTS_PROMPT_SPEC,
     build_tc_prompt,
-    ccp,
     client,
     explain_guideline_rejection,
     fence,
     finalize_guideline_batch,
     list_ref_ids,
     list_tc_guideline_references,
+    parse_bibtex,
+    parse_guideline,
     pick_refs,
     unfence,
 ):
@@ -1156,7 +1157,7 @@ def _(
                 )
 
             try:
-                parsed_guideline = ccp.parse_guideline(fenced_guidelines[0])
+                parsed_guideline = parse_guideline(fenced_guidelines[0])
             except Exception as exc:  # noqa: BLE001
                 return None, f"guideline markdown could not be parsed: {exc}"
 
@@ -1251,7 +1252,7 @@ def _(
                 )
             return None, failure
 
-        references: list[str] = ccp.parse_bibtex(
+        references: list[str] = parse_bibtex(
             pick_refs(
                 required_ref_ids,
                 references,
@@ -2010,17 +2011,11 @@ def _():
 def _():
     import json
     import pathlib
-    from types import SimpleNamespace
-
     import marimo as mo
     from chartcoach import Catalog, Entry, Guideline
     from chartcoach.guideline import parse_bibtex, parse_guideline
 
-    ccp = SimpleNamespace(
-        parse_bibtex=parse_bibtex,
-        parse_guideline=parse_guideline,
-    )
-    return Catalog, Entry, Guideline, ccp, json, mo, pathlib
+    return Catalog, Entry, Guideline, json, mo, parse_bibtex, parse_guideline, pathlib
 
 
 if __name__ == "__main__":

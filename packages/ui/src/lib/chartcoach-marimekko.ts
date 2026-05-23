@@ -145,6 +145,17 @@ function escapeAttribute(value: string) {
     .replaceAll(">", "&gt;");
 }
 
+function safeSvgIdPrefix(value: string) {
+  const sanitized = value
+    .trim()
+    .replace(/[^A-Za-z0-9_-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  if (!sanitized) {
+    return "cc-svg";
+  }
+  return /^[A-Za-z_]/.test(sanitized) ? sanitized : `cc-${sanitized}`;
+}
+
 function rectAttributes(state: RectState) {
   return `x="${state.x}" y="${state.y}" width="${state.width}" height="${state.height}" rx="${state.rx}"`;
 }
@@ -247,15 +258,16 @@ function svgScaffold({
   className?: string;
   viewBox?: string;
 }) {
+  const safeIdPrefix = safeSvgIdPrefix(idPrefix);
   const classAttr = className ? ` class="${escapeAttribute(className)}"` : "";
   const ariaAttrs = title
-    ? `role="img" aria-labelledby="${idPrefix}-title"`
+    ? `role="img" aria-labelledby="${safeIdPrefix}-title"`
     : 'aria-hidden="true" role="presentation"';
   const labelledTitle = title
-    ? `<title id="${idPrefix}-title">${escapeAttribute(title)}</title>`
+    ? `<title id="${safeIdPrefix}-title">${escapeAttribute(title)}</title>`
     : "";
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" id="${idPrefix}-svg" viewBox="${viewBox}" fill="none" ${ariaAttrs}${classAttr} preserveAspectRatio="xMidYMid meet" style="display:block;width:100%;height:auto">${labelledTitle}${body}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" id="${safeIdPrefix}-svg" viewBox="${viewBox}" fill="none" ${ariaAttrs}${classAttr} preserveAspectRatio="xMidYMid meet" style="display:block;width:100%;height:auto">${labelledTitle}${body}</svg>`;
 }
 
 export function renderChartCoachMarimekkoSvg({
