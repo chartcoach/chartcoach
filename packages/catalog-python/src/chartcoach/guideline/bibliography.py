@@ -50,7 +50,7 @@ def _normalize_bibtex_entry(bibtex_str: str) -> str:
     return normalized
 
 
-def try_format_bibtex_entry(bibtex_entry: str, style: str = "harvard1") -> str:
+def format_bibtex_entry(bibtex_entry: str, style: str = "harvard1") -> str:
     """Format a BibTeX entry with citeproc, raising on failures."""
     normalized_entry = _normalize_bibtex_entry(bibtex_entry)
 
@@ -69,11 +69,3 @@ def try_format_bibtex_entry(bibtex_entry: str, style: str = "harvard1") -> str:
         citation = Citation([CitationItem(parsed_entry["ID"])])
         bibliography.register(citation)
         return "".join(bibliography.bibliography()[0])
-
-
-def format_bibtex_entry(bibtex_entry: str, style: str = "harvard1") -> str:
-    """Format a BibTeX entry, falling back to the raw string on errors."""
-    try:
-        return try_format_bibtex_entry(bibtex_entry, style)
-    except Exception:
-        return bibtex_entry

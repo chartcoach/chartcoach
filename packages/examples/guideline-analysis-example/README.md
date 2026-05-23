@@ -1,3 +1,5 @@
 # guideline-analysis-example
 
-Marimo notebook that analyzes structure and latent relationships in the guideline catalog.
+marimo notebook for structural analysis over the ChartCoach guideline catalog.
+
+Open it with `uv run --package guideline-analysis marimo edit packages/examples/guideline-analysis-example/main.py`.

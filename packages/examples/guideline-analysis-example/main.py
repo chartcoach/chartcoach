@@ -635,14 +635,6 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _():
-    import nest_asyncio
-
-    nest_asyncio.apply()
-    return
-
-
-@app.cell(hide_code=True)
-def _():
     import pathlib
 
     import marimo as mo
