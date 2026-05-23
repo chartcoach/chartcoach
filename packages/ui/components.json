@@ -12,7 +12,6 @@
   "iconLibrary": "lucide",
   "aliases": {
     "components": "@chartcoach/ui/components",
-    "hooks": "@chartcoach/ui/hooks",
     "lib": "@chartcoach/ui/lib",
     "utils": "@chartcoach/ui/lib/utils",
     "ui": "@chartcoach/ui/components"

@@ -8,7 +8,7 @@
     "noEmit": false,
     "rootDir": "src",
     "outDir": "distlib",
-    "tsBuildInfoFile": "distlib/tsconfig.build.tsbuildinfo"
+    "tsBuildInfoFile": "tsconfig.build.tsbuildinfo"
   },
   "references": [
     {
