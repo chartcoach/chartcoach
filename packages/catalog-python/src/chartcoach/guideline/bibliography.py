@@ -19,6 +19,7 @@ MACRO_REPLACE_MAP = {
     "textraquo": "»",
     "textgreater": ">",
     "textless": "<",
+    "!": "",
     "?": "?",
     "\\": "",
     "[": "",

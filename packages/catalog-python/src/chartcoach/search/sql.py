@@ -7,25 +7,21 @@ from typing import TYPE_CHECKING, Any
 import polars as pl
 
 from ..catalog.collection import Catalog
+from ..catalog.relations import (
+    GUIDELINES_RELATION,
+    GUIDELINE_LABELS_RELATION,
+    GUIDELINE_REFERENCES_RELATION,
+    LABELS_RELATION,
+    REFERENCES_RELATION,
+    SECTIONS_RELATION,
+    catalog_relations,
+)
 
 if TYPE_CHECKING:
     from .chroma import ChromaIndex
 
 EMBEDDING_COL = "embedding"
-
-CATALOG_RELATION = "catalog"
-SECTIONS_RELATION = "sections"
-GUIDELINE_LABELS_RELATION = "guideline_labels"
-REFERENCES_RELATION = "reference_entries"
-GUIDELINE_REFERENCES_RELATION = "guideline_references"
 EMBEDDINGS_RELATION = "embeddings"
-STRUCTURED_RELATIONS = (
-    (CATALOG_RELATION, "guidelines_df"),
-    (SECTIONS_RELATION, "sections_df"),
-    (GUIDELINE_LABELS_RELATION, "guideline_labels_df"),
-    (REFERENCES_RELATION, "references_df"),
-    (GUIDELINE_REFERENCES_RELATION, "guideline_references_df"),
-)
 
 
 def connect_catalog(
@@ -49,8 +45,8 @@ def register_catalog(
 ) -> None:
     """Create or replace DuckDB tables for catalog data and optional embeddings."""
 
-    for relation_name, frame_attr in STRUCTURED_RELATIONS:
-        _replace_table(conn, relation_name, getattr(catalog, frame_attr))
+    for relation_name, frame in catalog_relations(catalog).items():
+        _replace_table(conn, relation_name, frame)
 
     if search is not None:
         _replace_embeddings_table(conn, search.embeddings_df)
@@ -68,7 +64,7 @@ def _connect_duckdb(
         ) from exc
 
     duckdb_path: str | Path = ":memory:" if path == ":memory:" else Path(path)
-    return duckdb.connect(duckdb_path)
+    return duckdb.connect(duckdb_path, config={"enable_external_access": False})
 
 
 def _replace_table(conn: Any, relation_name: str, frame: pl.DataFrame) -> None:
@@ -119,12 +115,14 @@ def _embedding_dimensions(embeddings_df: pl.DataFrame) -> int:
 
 
 __all__ = [
-    "CATALOG_RELATION",
     "EMBEDDINGS_RELATION",
     "GUIDELINE_LABELS_RELATION",
     "GUIDELINE_REFERENCES_RELATION",
+    "GUIDELINES_RELATION",
+    "LABELS_RELATION",
     "REFERENCES_RELATION",
     "SECTIONS_RELATION",
+    "catalog_relations",
     "connect_catalog",
     "register_catalog",
 ]
