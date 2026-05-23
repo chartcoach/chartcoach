@@ -7,7 +7,7 @@ export default defineConfig(({ command }) => {
 
   return {
     plugins: [anywidget(), tailwindcss()],
-    publicDir: isBuild ? false : "public",
+    publicDir: isBuild ? false : "../visground-web/public",
     resolve: {
       conditions: ["source", "module", "browser", "development|production"],
     },

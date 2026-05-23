@@ -14,13 +14,12 @@ export default defineConfig({
     lib: {
       entry: {
         index: "./src/index.ts",
-        "parquet-bridge": "./src/parquet-bridge.ts",
-        testing: "./src/testing.ts",
       },
       fileName: (_format, entryName) => `${entryName}.js`,
       formats: ["es"],
     },
     rollupOptions: {
+      external: ["react", "react-dom", "react-dom/client", "react/jsx-runtime"],
       output: {
         chunkFileNames: "chunk-[hash].js",
       },

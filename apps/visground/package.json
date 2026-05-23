@@ -6,6 +6,7 @@
   "scripts": {
     "dev:anywidget": "vite --config vite.config.anywidget.js",
     "build:anywidget": "vite build --config vite.config.anywidget.js",
+    "build": "pnpm build:anywidget && uv build",
     "test": "uv run python -m unittest discover -s tests",
     "typecheck:js": "tsc -p tsconfig.json --noEmit",
     "typecheck:py": "uv run ty check .",
@@ -22,9 +23,9 @@
   },
   "devDependencies": {
     "@anywidget/vite": "^0.2.2",
-    "@tailwindcss/vite": "^4.2.2",
-    "tailwindcss": "^4.2.2",
+    "@tailwindcss/vite": "^4.3.0",
+    "tailwindcss": "^4.3.0",
     "typescript": "^5.9.3",
-    "vite": "^7.3.1"
+    "vite": "^7.3.3"
   }
 }

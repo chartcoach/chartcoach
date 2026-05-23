@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "description": "Chartcoach JS: structured visualization guidelines, catalog tooling, and retrieval primitives.",
   "files": [
-    "dist"
+    "dist",
+    "src"
   ],
   "type": "module",
   "main": "./dist/index.js",
@@ -11,29 +12,34 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
+      "source": "./src/index.ts",
       "default": "./dist/index.js"
     },
     "./node": {
       "types": "./dist/node.d.ts",
+      "source": "./src/node.ts",
       "default": "./dist/node.js"
     },
     "./browser": {
       "types": "./dist/browser.d.ts",
+      "source": "./src/browser.ts",
       "default": "./dist/browser.js"
     }
   },
   "scripts": {
     "build": "tsc -b tsconfig.build.json",
+    "lint": "oxlint .",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "hyparquet": "^1.25.5",
+    "hyparquet": "^1.25.8",
     "hyparquet-compressors": "^1.1.1",
-    "yaml": "^2.8.3"
+    "yaml": "^2.9.0"
   },
   "devDependencies": {
-    "@types/node": "^22.19.17",
+    "@types/node": "^22.19.19",
+    "oxlint": "^1.66.0",
     "typescript": "^5.9.3",
     "vitest": "^3.2.4"
   }
