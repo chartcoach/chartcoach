@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import dataclasses as dc
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from typing import ClassVar, cast
 
 
@@ -14,7 +14,10 @@ class Guideline:
     description: str
     body: str
     bibliography: str | None = None
-    labels: list[str] = dc.field(default_factory=list)
+    labels: tuple[str, ...] = dc.field(default_factory=tuple)
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "labels", _str_sequence(self.labels, "labels"))
 
     @classmethod
     def model_validate(cls, data: object) -> "Guideline":
@@ -31,7 +34,7 @@ class Guideline:
             description=_required_str(values, "description"),
             body=_required_str(values, "body"),
             bibliography=_optional_str(values.get("bibliography")),
-            labels=_str_list(values.get("labels") or []),
+            labels=_str_sequence(values.get("labels") or [], "labels"),
         )
 
     def model_dump(self) -> dict[str, object]:
@@ -41,21 +44,21 @@ class Guideline:
             "title": self.title,
             "bibliography": self.bibliography,
             "description": self.description,
-            "labels": self.labels,
+            "labels": list(self.labels),
             "body": self.body,
             "sections": [section.model_dump() for section in self.sections],
         }
 
     @property
-    def sections(self) -> list["Section"]:
+    def sections(self) -> tuple["Section", ...]:
         """Return the titled parts parsed from the guideline body."""
 
         from .markdown import parse_guideline_section_records
 
-        return [
+        return tuple(
             Section.model_validate(section)
             for section in parse_guideline_section_records(self.body)
-        ]
+        )
 
     def to_markdown(self) -> str:
         """Return the guideline in the markdown format used on disk."""
@@ -113,15 +116,15 @@ def _optional_str(value: object) -> str | None:
     return value
 
 
-def _str_list(value: object) -> list[str]:
-    if not isinstance(value, list):
-        raise TypeError("labels must be a list of strings.")
+def _str_sequence(value: object, field: str) -> tuple[str, ...]:
+    if not isinstance(value, Sequence) or isinstance(value, str | bytes):
+        raise TypeError(f"{field} must be a list of strings.")
     parsed: list[str] = []
     for item in value:
         if not isinstance(item, str):
-            raise TypeError("labels must be a list of strings.")
+            raise TypeError(f"{field} must be a list of strings.")
         parsed.append(item)
-    return parsed
+    return tuple(parsed)
 
 
 __all__ = ["Guideline", "Section"]

@@ -518,8 +518,8 @@ def _(
 
 
 @app.cell(hide_code=True)
-def _(coach, pl, visfeedback):
-    used_guidelines_df = coach.catalog.df.join(
+def _(search_session, pl, visfeedback):
+    used_guidelines_df = search_session.catalog.frame.join(
         pl.from_dict({"id": visfeedback.guideline_ids}),
         on="id",
         how="right",
@@ -528,7 +528,7 @@ def _(coach, pl, visfeedback):
 
 
 @app.cell(hide_code=True)
-def _(coach, dspy):
+def _(search_session, dspy):
     class VisFeedbackAgent(dspy.Signature):
         """Generate grounded visualization feedback by progressively disclosing the catalog.
 
@@ -576,7 +576,7 @@ def _(coach, dspy):
         )
 
     sql_tool = dspy.Tool(
-        coach.tools.sql,
+        search_session.tools.sql,
         desc="Primary discovery tool. Use this first to inspect schema, sample tables, discover the available label vocabulary, and build SQL shortlist queries before any semantic search.",
         arg_desc={
             "sql": "Use this first. Discover the schema with queries like `show all tables`, `describe <table>`, `select * from <table> limit 5`, and `select distinct ...`. After discovery, use SQL to shortlist candidate guideline ids and lightweight metadata before reading full docs.",
@@ -584,7 +584,7 @@ def _(coach, dspy):
         },
     )
     get_tool = dspy.Tool(
-        coach.tools.get,
+        search_session.tools.get,
         desc="Deterministic retrieval tool. Use this after SQL narrowing to read exact candidate docs by id, or with carefully discovered metadata filters when exact ids are not yet known.",
         arg_desc={
             "ids": "Exact document ids to fetch once SQL or prior samples tell you which docs you want. Prefer this when you already know the precise records to read.",
@@ -596,7 +596,7 @@ def _(coach, dspy):
         },
     )
     search_tool = dspy.Tool(
-        coach.tools.search,
+        search_session.tools.search,
         desc="Secondary semantic retrieval tool over indexed text docs. Use only after SQL discovery or on a small candidate set; do not use this as the first step.",
         arg_desc={
             "query_texts": "Short semantic probes over the indexed text docs. Use this only after SQL narrowing or when you need to compare meaning among a small candidate set; do not begin with the full raw situation if SQL can first reveal the schema and label vocabulary.",
@@ -641,19 +641,20 @@ def _(
 def _():
     import os
 
-    import chartcoach as cc
     import chromadb.utils.embedding_functions as embedding_functions
+    from chartcoach import Catalog
+    from chartcoach.search import open_search_session
 
     openai_large_ef = embedding_functions.OpenAIEmbeddingFunction(
         api_key=os.environ["OPENROUTER_API_KEY"],
         api_base="https://openrouter.ai/api/v1",
         model_name="openai/text-embedding-3-large",
     )
-    coach = cc.create(
-        catalog="guidelines/catalog.parquet",
+    search_session = open_search_session(
+        Catalog.from_parquet("guidelines/catalog.parquet"),
         embedding_fn=openai_large_ef,
     )
-    return coach, os
+    return search_session, os
 
 
 @app.function(hide_code=True)

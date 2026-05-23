@@ -32,20 +32,38 @@ dependencies = [
   "bibtexparser>=1.4",
   "click>=8.1",
   "citeproc-py>=0.9",
-  "duckdb>=1.5",
   "mdformat>=1.0.0",
-  "platformdirs>=4.9.4",
   "polars>=1.38",
-  "polars-hash>=0.5.6",
   "pyyaml>=6.0.0",
-  "tqdm>=4.67",
 ]
 
 [project.optional-dependencies]
-search = ["chromadb>=1.5; python_version < '3.15'"]
+chroma = [
+  "chromadb>=1.5",
+  "platformdirs>=4.9.4",
+  "polars-hash>=0.5.6",
+  "tqdm>=4.67",
+]
+sql = [
+  "duckdb>=1.5",
+  "pyarrow>=23",
+]
+search = [
+  "chromadb>=1.5",
+  "duckdb>=1.5",
+  "platformdirs>=4.9.4",
+  "polars-hash>=0.5.6",
+  "pyarrow>=23",
+  "tqdm>=4.67",
+]
 mcp = [
-  "chromadb>=1.5; python_version < '3.15'",
-  "mcp[cli]; python_version < '3.15'",
+  "chromadb>=1.5",
+  "duckdb>=1.5",
+  "mcp[cli]",
+  "platformdirs>=4.9.4",
+  "polars-hash>=0.5.6",
+  "pyarrow>=23",
+  "tqdm>=4.67",
 ]
 
 [project.scripts]

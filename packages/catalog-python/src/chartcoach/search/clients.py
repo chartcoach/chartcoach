@@ -4,8 +4,6 @@ import logging
 import pathlib
 from typing import TYPE_CHECKING
 
-import duckdb
-
 if TYPE_CHECKING:
     from chromadb.api import ClientAPI
 else:
@@ -34,19 +32,4 @@ def create_chroma_client(
     return chromadb.PersistentClient(chroma_path)
 
 
-def create_duckdb_conn(
-    path: str | pathlib.Path,
-    *,
-    read_only: bool = False,
-) -> duckdb.DuckDBPyConnection:
-    """Create a DuckDB connection at the given path."""
-    duckdb_path = pathlib.Path(path)
-    logger.debug(
-        "Opening DuckDB connection at %s (read_only=%s)",
-        duckdb_path,
-        read_only,
-    )
-    return duckdb.connect(duckdb_path, read_only=read_only)
-
-
-__all__ = ["create_chroma_client", "create_duckdb_conn"]
+__all__ = ["create_chroma_client"]

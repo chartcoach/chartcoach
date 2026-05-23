@@ -4,6 +4,9 @@ marimo notebook for structural analysis over the ChartCoach guideline catalog.
 
 Open it with `uv run --project packages/examples/guideline-analysis-example marimo edit packages/examples/guideline-analysis-example/main.py`.
 
+The checked-in `uv.lock` keeps this notebook's retrieval and analysis
+environment reproducible.
+
 ## License
 
-MIT. See [LICENSE](https://github.com/peter-gy/chartcoach/blob/main/LICENSE).
+MIT. See [LICENSE](../../../LICENSE).

@@ -29,7 +29,7 @@ Dense charts may still need a legend.
     )
 
     assert guideline.id == "direct-labels"
-    assert guideline.labels == ["chart:line", "goal:comparison"]
+    assert guideline.labels == ("chart:line", "goal:comparison")
     assert [(section.role, section.title) for section in guideline.sections] == [
         ("__dangling__", ""),
         ("advice", "Advice"),

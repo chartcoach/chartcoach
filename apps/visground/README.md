@@ -13,4 +13,4 @@ PYTHONPATH=apps/visground/src uv run --project apps/visground marimo edit apps/v
 
 ## License
 
-MIT. See [LICENSE](https://github.com/peter-gy/chartcoach/blob/main/LICENSE).
+MIT. See [LICENSE](../../LICENSE).

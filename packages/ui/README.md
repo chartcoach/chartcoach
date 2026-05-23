@@ -8,4 +8,4 @@ Build it with `pnpm --dir packages/ui build`.
 
 ## License
 
-MIT. See [LICENSE](https://github.com/peter-gy/chartcoach/blob/main/LICENSE).
+MIT. See [LICENSE](../../LICENSE).

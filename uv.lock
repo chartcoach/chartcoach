@@ -541,22 +541,38 @@ dependencies = [
     { name = "bibtexparser" },
     { name = "citeproc-py" },
     { name = "click" },
-    { name = "duckdb" },
     { name = "mdformat" },
-    { name = "platformdirs" },
     { name = "polars" },
-    { name = "polars-hash" },
     { name = "pyyaml" },
-    { name = "tqdm" },
 ]
 
 [package.optional-dependencies]
+chroma = [
+    { name = "chromadb" },
+    { name = "platformdirs" },
+    { name = "polars-hash" },
+    { name = "tqdm" },
+]
 mcp = [
-    { name = "chromadb", marker = "python_full_version < '3.15'" },
-    { name = "mcp", extra = ["cli"], marker = "python_full_version < '3.15'" },
+    { name = "chromadb" },
+    { name = "duckdb" },
+    { name = "mcp", extra = ["cli"] },
+    { name = "platformdirs" },
+    { name = "polars-hash" },
+    { name = "pyarrow" },
+    { name = "tqdm" },
 ]
 search = [
-    { name = "chromadb", marker = "python_full_version < '3.15'" },
+    { name = "chromadb" },
+    { name = "duckdb" },
+    { name = "platformdirs" },
+    { name = "polars-hash" },
+    { name = "pyarrow" },
+    { name = "tqdm" },
+]
+sql = [
+    { name = "duckdb" },
+    { name = "pyarrow" },
 ]
 
 [package.dev-dependencies]
@@ -567,20 +583,32 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "bibtexparser", specifier = ">=1.4" },
-    { name = "chromadb", marker = "python_full_version < '3.15' and extra == 'mcp'", specifier = ">=1.5" },
-    { name = "chromadb", marker = "python_full_version < '3.15' and extra == 'search'", specifier = ">=1.5" },
+    { name = "chromadb", marker = "extra == 'chroma'", specifier = ">=1.5" },
+    { name = "chromadb", marker = "extra == 'mcp'", specifier = ">=1.5" },
+    { name = "chromadb", marker = "extra == 'search'", specifier = ">=1.5" },
     { name = "citeproc-py", specifier = ">=0.9" },
     { name = "click", specifier = ">=8.1" },
-    { name = "duckdb", specifier = ">=1.5" },
-    { name = "mcp", extras = ["cli"], marker = "python_full_version < '3.15' and extra == 'mcp'" },
+    { name = "duckdb", marker = "extra == 'mcp'", specifier = ">=1.5" },
+    { name = "duckdb", marker = "extra == 'search'", specifier = ">=1.5" },
+    { name = "duckdb", marker = "extra == 'sql'", specifier = ">=1.5" },
+    { name = "mcp", extras = ["cli"], marker = "extra == 'mcp'" },
     { name = "mdformat", specifier = ">=1.0.0" },
-    { name = "platformdirs", specifier = ">=4.9.4" },
+    { name = "platformdirs", marker = "extra == 'chroma'", specifier = ">=4.9.4" },
+    { name = "platformdirs", marker = "extra == 'mcp'", specifier = ">=4.9.4" },
+    { name = "platformdirs", marker = "extra == 'search'", specifier = ">=4.9.4" },
     { name = "polars", specifier = ">=1.38" },
-    { name = "polars-hash", specifier = ">=0.5.6" },
+    { name = "polars-hash", marker = "extra == 'chroma'", specifier = ">=0.5.6" },
+    { name = "polars-hash", marker = "extra == 'mcp'", specifier = ">=0.5.6" },
+    { name = "polars-hash", marker = "extra == 'search'", specifier = ">=0.5.6" },
+    { name = "pyarrow", marker = "extra == 'mcp'", specifier = ">=23" },
+    { name = "pyarrow", marker = "extra == 'search'", specifier = ">=23" },
+    { name = "pyarrow", marker = "extra == 'sql'", specifier = ">=23" },
     { name = "pyyaml", specifier = ">=6.0.0" },
-    { name = "tqdm", specifier = ">=4.67" },
+    { name = "tqdm", marker = "extra == 'chroma'", specifier = ">=4.67" },
+    { name = "tqdm", marker = "extra == 'mcp'", specifier = ">=4.67" },
+    { name = "tqdm", marker = "extra == 'search'", specifier = ">=4.67" },
 ]
-provides-extras = ["search", "mcp"]
+provides-extras = ["chroma", "sql", "search", "mcp"]
 
 [package.metadata.requires-dev]
 dev = [{ name = "pytest", specifier = ">=8.4.0" }]
@@ -5447,7 +5475,7 @@ source = { virtual = "apps/visground" }
 dependencies = [
     { name = "altair" },
     { name = "anywidget" },
-    { name = "chartcoach" },
+    { name = "chartcoach", extra = ["search"] },
     { name = "diskcache" },
     { name = "dspy" },
     { name = "duckdb" },
@@ -5482,7 +5510,7 @@ dev = [
 requires-dist = [
     { name = "altair", specifier = ">=5.2,<6" },
     { name = "anywidget", specifier = ">=0.9.21" },
-    { name = "chartcoach", editable = "packages/catalog-python" },
+    { name = "chartcoach", extras = ["search"], editable = "packages/catalog-python" },
     { name = "diskcache", specifier = ">=5.6.3" },
     { name = "dspy", specifier = ">=3.1" },
     { name = "duckdb", specifier = ">=1.5.0" },

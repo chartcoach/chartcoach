@@ -97,7 +97,7 @@ def guideline_to_markdown(guideline: Guideline) -> str:
         "title": guideline.title,
         "bibliography": guideline.bibliography,
         "description": guideline.description,
-        "labels": guideline.labels,
+        "labels": list(guideline.labels),
     }
     frontmatter = {
         key: value for key, value in frontmatter.items() if value is not None

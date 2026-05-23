@@ -108,7 +108,7 @@ def _(
     )
     misc_entries = list(itertools.chain.from_iterable(misc_entry_lists))
     misc_catalog = Catalog(misc_entries)
-    misc_catalog.df
+    misc_catalog.frame
     return (misc_catalog,)
 
 
@@ -120,7 +120,7 @@ def _(display_references, misc_catalog):
 
 @app.cell(hide_code=True)
 def _(
-    Entry,
+    CatalogEntry,
     GUIDELINE_TEMPLATE,
     MISC_PROMPT_SPEC,
     build_guideline_extraction_prompt,
@@ -137,7 +137,7 @@ def _(
         misc_item: dict,
         model: str,
         reasoning: dict | None = None,
-    ) -> list[Entry]:
+    ) -> list[CatalogEntry]:
         misc_item_title = misc_item["data"]["title"]
         item_bibtex = zot_item_bibtex(misc_item["data"]["key"])
         item_citekey = zot_item_bibtex_key(misc_item["data"]["key"])
@@ -194,7 +194,7 @@ def _(
         references = [item_bibtex]
 
         return [
-            Entry(guideline=guideline_obj, references=references)
+            CatalogEntry(guideline=guideline_obj, references=references)
             for guideline_obj in guideline_objects
         ]
 
@@ -299,7 +299,7 @@ def _(
     )
     dw_entries = list(itertools.chain.from_iterable(dw_entry_lists))
     dw_catalog = Catalog(dw_entries)
-    dw_catalog.df
+    dw_catalog.frame
     return (dw_catalog,)
 
 
@@ -312,7 +312,7 @@ def _(display_references, dw_catalog):
 @app.cell(hide_code=True)
 def _(
     DATAWRAPPER_PROMPT_SPEC,
-    Entry,
+    CatalogEntry,
     GUIDELINE_TEMPLATE,
     bibtexparser,
     build_guideline_extraction_prompt,
@@ -329,7 +329,7 @@ def _(
         post_pdf_path: pathlib.Path,
         model: str,
         reasoning: dict | None = None,
-    ) -> list[Entry]:
+    ) -> list[CatalogEntry]:
         bibtex_entry = find_datawrapper_bibtex_entry_by_path(post_pdf_path)
         bibtex_entry_parsed = bibtexparser.loads(bibtex_entry).entries[0]
         post_title = bibtex_entry_parsed["title"]
@@ -396,7 +396,7 @@ def _(
         references = [bibtex_entry]
 
         return [
-            Entry(guideline=guideline_obj, references=references)
+            CatalogEntry(guideline=guideline_obj, references=references)
             for guideline_obj in guideline_objects
         ]
 
@@ -522,7 +522,7 @@ def _(
     )
     ch_entries = [entry for entry in ch_entries if entry is not None]
     ch_catalog = Catalog(ch_entries)
-    ch_catalog.df
+    ch_catalog.frame
     return (ch_catalog,)
 
 
@@ -538,7 +538,7 @@ def _(
     CHARTABILITY_PAPER_CITEKEY,
     CHARTABILITY_PAPER_ITEM,
     CHARTABILITY_PROMPT_SPEC,
-    Entry,
+    CatalogEntry,
     GUIDELINE_TEMPLATE,
     build_guideline_extraction_prompt,
     client,
@@ -553,7 +553,7 @@ def _(
         ch_item: dict,
         model: str,
         reasoning: dict | None = None,
-    ) -> Entry | None:
+    ) -> CatalogEntry | None:
         response = client.responses.create(
             model=model,
             reasoning=reasoning,
@@ -625,7 +625,7 @@ def _(
         guideline_obj = guideline_batch[0]
         references = [CHARTABILITY_PAPER_BIBTEX, *ch_item["references"]]
 
-        return Entry(guideline=guideline_obj, references=references)
+        return CatalogEntry(guideline=guideline_obj, references=references)
 
     return (chartability_item_to_catalog_entry,)
 
@@ -735,7 +735,7 @@ def _(
     )
     prc_entries = list(itertools.chain.from_iterable(prc_entry_lists))
     prc_catalog = Catalog(prc_entries)
-    prc_catalog.df
+    prc_catalog.frame
     return (prc_catalog,)
 
 
@@ -751,7 +751,7 @@ def _(
     COLLATION_REVIEW_PAPER_BIBTEX,
     COLLATION_REVIEW_PAPER_CITEKEY,
     COLLATION_REVIEW_PAPER_ITEM,
-    Entry,
+    CatalogEntry,
     GUIDELINE_TEMPLATE,
     build_guideline_extraction_prompt,
     client,
@@ -768,7 +768,7 @@ def _(
         collated_item: dict,
         model: str,
         reasoning: dict | None = None,
-    ) -> list[Entry]:
+    ) -> list[CatalogEntry]:
         collated_item_citekey = zot_item_bibtex_key(collated_item["data"]["key"])
 
         response = client.responses.create(
@@ -852,7 +852,7 @@ def _(
             zot_item_bibtex(collated_item["data"]["key"]),
         ]
         return [
-            Entry(guideline=guideline_obj, references=references)
+            CatalogEntry(guideline=guideline_obj, references=references)
             for guideline_obj in guideline_objects
         ]
 
@@ -1098,7 +1098,7 @@ def _(
             f"{len(tc_tasks)} findings."
         )
     tc_catalog = Catalog(tc_entries)
-    tc_catalog.df
+    tc_catalog.frame
     return (tc_catalog,)
 
 
@@ -1110,7 +1110,7 @@ def _(display_references, tc_catalog):
 
 @app.cell(hide_code=True)
 def _(
-    Entry,
+    CatalogEntry,
     Guideline,
     TALKING_CHARTS_PROMPT_SPEC,
     build_tc_prompt,
@@ -1131,7 +1131,7 @@ def _(
         references: list[str],
         model: str,
         reasoning: dict | None = None,
-    ) -> tuple[Entry | None, str | None]:
+    ) -> tuple[CatalogEntry | None, str | None]:
         def preview_response(text: str, limit: int = 280) -> str:
             compact = " ".join(text.split())
             if len(compact) <= limit:
@@ -1255,7 +1255,7 @@ def _(
             )
         )
 
-        return Entry(guideline=guideline_obj, references=references), None
+        return CatalogEntry(guideline=guideline_obj, references=references), None
 
     return (tc_guideline_to_catalog_entry,)
 
@@ -1428,9 +1428,9 @@ def _(
     tc_catalog,
 ):
     catalog = tc_catalog + prc_catalog + ch_catalog + dw_catalog + misc_catalog
-    catalog_df = catalog.df
+    catalog_df = catalog.frame
     catalog_df.write_parquet(REPO_ROOT / "guidelines" / "catalog.parquet")
-    # catalog.write_folders(REPO_ROOT / "guidelines")
+    # catalog.write_folder(REPO_ROOT / "guidelines")
     catalog_df
     return (catalog,)
 
@@ -1871,7 +1871,7 @@ def _(Guideline):
 def _(Catalog, fence, mo):
     def display_references(catalog: Catalog):
         refs: list[str] = (
-            catalog.df.select("references")
+            catalog.frame.select("references")
             .explode("references")
             .unique()
             .sort("references")
@@ -2008,10 +2008,19 @@ def _():
     import json
     import pathlib
     import marimo as mo
-    from chartcoach import Catalog, Entry, Guideline
+    from chartcoach import Catalog, CatalogEntry, Guideline
     from chartcoach.guideline import parse_bibtex, parse_guideline
 
-    return Catalog, Entry, Guideline, json, mo, parse_bibtex, parse_guideline, pathlib
+    return (
+        Catalog,
+        CatalogEntry,
+        Guideline,
+        json,
+        mo,
+        parse_bibtex,
+        parse_guideline,
+        pathlib,
+    )
 
 
 if __name__ == "__main__":

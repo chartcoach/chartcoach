@@ -2,21 +2,15 @@
 
 from importlib.metadata import version
 
-from .catalog.collection import Catalog, Entry
-from .coach import Coach
-from .create import CacheMode, Settings, create
+from .catalog.collection import Catalog, CatalogEntry
 from .guideline.core import Guideline, Section
 
 __version__ = version("chartcoach")
 
 __all__ = [
     "__version__",
-    "CacheMode",
     "Catalog",
-    "Coach",
-    "Entry",
+    "CatalogEntry",
     "Guideline",
     "Section",
-    "Settings",
-    "create",
 ]

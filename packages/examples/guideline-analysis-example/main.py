@@ -24,7 +24,7 @@ def _(mo):
 
     Each section includes a worked example from the current catalog. Several queries also highlight a practical limitation of dense embeddings: they often capture shared vocabulary or topical overlap before they capture precise logical intent (such as rule polarity or strict conditionality). As such, these operators function best as discovery tools rather than perfect semantic classifiers.
 
-    All queries execute over the embedded catalog described in Section 5.2 using OpenAI [`text-embedding-3-large`](https://developers.openai.com/api/docs/models/text-embedding-3-large) ($d = 3072$) and HNSW indexing via DuckDB.
+    All queries execute over the embedded catalog described in Section 5.2 using OpenAI [`text-embedding-3-large`](https://developers.openai.com/api/docs/models/text-embedding-3-large) ($d = 3072$), Chroma retrieval, and DuckDB-backed analysis tables.
     """)
     return
 
@@ -49,11 +49,13 @@ def _(conn, index):
 
     embeddings_df = index.embeddings_df.to_pandas()
     compute_vector_projection(embeddings_df, vector="embedding")
+    conn.register("embedding_projection_source", embeddings_df)
     conn.execute(
         "CREATE OR REPLACE TABLE embedding_projections AS ("
-        "SELECT id, projection_x, projection_y, neighbors FROM embeddings_df"
+        "SELECT id, projection_x, projection_y, neighbors FROM embedding_projection_source"
         ")"
     )
+    conn.unregister("embedding_projection_source")
     EmbeddingAtlasWidget(
         embeddings_df,
         x="projection_x",
@@ -129,7 +131,7 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(catalog, pl):
-    catalog.df.filter(
+    catalog.frame.filter(
         pl.col("id").is_in(
             [
                 "use-bar-charts-instead-of-line-charts-for-cluster-detection",
@@ -204,7 +206,7 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(catalog, pl):
-    catalog.df.filter(
+    catalog.frame.filter(
         pl.col("id").is_in(
             [
                 "match-chart-encodings-to-audience-visual-literacy",
@@ -275,7 +277,7 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(catalog, pl):
-    catalog.df.filter(
+    catalog.frame.filter(
         pl.col("id").is_in(
             [
                 "use-area-chart-for-irregular-time-intervals",
@@ -351,7 +353,7 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(catalog, pl):
-    catalog.df.filter(
+    catalog.frame.filter(
         pl.col("id").is_in(
             [
                 "encode-primary-quantity-with-position-for-value-tasks",
@@ -417,7 +419,7 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(catalog, pl):
-    catalog.df.filter(
+    catalog.frame.filter(
         pl.col("id").is_in(
             [
                 "use-pictographic-data-marks-to-attract-initial-attention",
@@ -487,7 +489,7 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(catalog, pl):
-    catalog.df.filter(
+    catalog.frame.filter(
         pl.col("id").is_in(
             [
                 "avoid-hue-only-encoding-for-ordered-values",
@@ -504,11 +506,11 @@ def _(mo):
     ## ::lucide:cog:: Implementation Details
     <a id="sec:implementation"></a>
 
-    The ingestion process transforms raw Markdown into a queryable vector space through three stages:
+    The notebook turns the catalog into searchable text in three steps:
 
-    1. **Parsing:** The `Catalog` extracts semantic sections (`context`, `advice`, `mistake`, etc.) from the raw files.
-    2. **Embedding:** Each section is embedded independently via `text-embedding-3-large`. This ensures the representation of design advice is kept separate from its context or rationale.
-    3. **Indexing:** Vectors are stored in DuckDB and indexed using HNSW graphs to enable real-time similarity operations across the catalog.
+    1. **Parsing:** `Catalog` reads the curated guideline records and exposes their sections as tables.
+    2. **Embedding:** The notebook embeds the full guideline text, short overviews, and individual sections with `text-embedding-3-large`.
+    3. **Querying:** Chroma handles semantic lookup. DuckDB keeps the same records available for SQL joins, filters, and vector calculations.
     """)
     return
 
@@ -535,11 +537,13 @@ def _(mo):
             M_Txt --> |Phi| V_Mis[Vector: Mistake]
         end
 
-        subgraph stage4 ["Storage & Index"]
+        subgraph stage4 ["Storage & Query"]
             V_Ctx --> DB[(DuckDB)]
             V_Adv --> DB
             V_Mis --> DB
-            DB --> Index{{HNSW Index}}
+            V_Ctx --> Search[(Chroma)]
+            V_Adv --> Search
+            V_Mis --> Search
         end
 
         %% Professional Color Palette
@@ -553,7 +557,7 @@ def _(mo):
         class MD source
         class G,C_Txt,A_Txt,M_Txt process
         class V_Ctx,V_Adv,V_Mis vector
-        class DB,Index storage
+        class DB,Search storage
         class stage1,stage2,stage3,stage4 subgraphStyle
     """)
     return
@@ -564,11 +568,11 @@ def _(mo):
     mo.md(r"""
     ### The Pipeline Workflow
 
-    The ingestion process moves from raw text to a queryable vector space through three distinct stages:
+    The pipeline keeps two views of the same catalog side by side:
 
-    1.  **Parsing:** The `Catalog` extracts semantic sections (`context`, `advice`, `mistake`, etc.) from the raw Markdown files.
-    2.  **Embedding:** Each section is embedded independently via `text-embedding-3-large` ($d = 3072$). This keeps the representation of an "Advice" section separate from the context or rationale.
-    3.  **Indexing:** The resulting vectors are stored in DuckDB and indexed using HNSW (Hierarchical Navigable Small World graphs) to enable real-time similarity operations.
+    1. **Catalog tables:** `Catalog` exposes guidelines, sections, labels, and references as Polars dataframes.
+    2. **Semantic documents:** Chroma stores embedded full-document, overview, and section records.
+    3. **Analysis tables:** DuckDB registers the catalog and embedding rows so the operators can use SQL and vector math in one place.
     """)
     return
 
@@ -602,13 +606,13 @@ def _(mo):
 
 
 @app.cell(column=9, hide_code=True)
-def _(Catalog, catalog_parquet, pl):
-    catalog = Catalog.from_df(pl.read_parquet(catalog_parquet.absolute()))
+def _(Catalog, catalog_parquet):
+    catalog = Catalog.from_parquet(catalog_parquet.absolute())
     return (catalog,)
 
 
 @app.cell(hide_code=True)
-def _(cache_dir, create_chroma_client):
+def _():
     import os
 
     import chromadb.utils.embedding_functions as embedding_functions
@@ -619,20 +623,21 @@ def _(cache_dir, create_chroma_client):
         model_name="openai/text-embedding-3-large",
     )
 
-    client = create_chroma_client(cache_dir / "analysis_chroma_db")
-
-    collection = client.get_or_create_collection(
-        name="catalog",
-        embedding_function=openrouter_ef,
-    )
-    return (collection,)
+    return (openrouter_ef,)
 
 
 @app.cell(hide_code=True)
-def _(Index, cache_dir, catalog, collection, create_duckdb_conn):
-    conn = create_duckdb_conn(cache_dir / "catalog_index.db")
-    index = Index(catalog, collection=collection, conn=conn)
-    index.build()
+def _(ChromaIndex, cache_dir, catalog, connect_catalog, openrouter_ef):
+    index = ChromaIndex.from_cache(
+        catalog,
+        cache_dir=cache_dir / "analysis_search",
+        embedding_fn=openrouter_ef,
+    )
+    conn = connect_catalog(
+        catalog,
+        search=index,
+        path=cache_dir / "catalog_analysis.duckdb",
+    )
     return conn, index
 
 
@@ -653,16 +658,14 @@ def _():
     import platformdirs
     import polars as pl
     from chartcoach import Catalog
-    from chartcoach.catalog.clients import create_chroma_client, create_duckdb_conn
-    from chartcoach.catalog.index import Index
+    from chartcoach.search import ChromaIndex, connect_catalog
 
     cache_dir = pathlib.Path(platformdirs.user_cache_dir("chartcoach"))
     return (
         Catalog,
-        Index,
+        ChromaIndex,
         cache_dir,
-        create_chroma_client,
-        create_duckdb_conn,
+        connect_catalog,
         mo,
         pl,
     )

@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import Sequence
 
-import chartcoach as cc
 import polars as pl
+from chartcoach.search.session import SearchSession
 
 from .types import GroundingRecord
 
@@ -29,7 +29,7 @@ def rrf_fuse(
 
 
 def build_grounding_record(
-    coach: cc.Coach,
+    search: SearchSession,
     doc_ids: Sequence[str],
 ) -> GroundingRecord:
     materialized_doc_ids = list(doc_ids)
@@ -42,7 +42,7 @@ def build_grounding_record(
 
     guidance = (
         pl.from_dict({"id": materialized_doc_ids})
-        .join(coach.catalog.docs_df, how="left", on="id")
+        .join(search.index.documents_df, how="left", on="id")
         .get_column("doc")
         .to_list()
     )

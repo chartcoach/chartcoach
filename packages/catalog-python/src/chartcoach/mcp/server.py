@@ -5,10 +5,10 @@ import logging
 import os
 from importlib import import_module
 from pathlib import Path
-from typing import Any, Callable, Literal, Protocol, cast
+from typing import Any, Callable, Literal, Protocol, TypedDict, cast
 
-from ..coach import Coach
-from ..create import Settings, create
+from ..constants import CACHE_DIR_ENV, CATALOG_PATH_ENV
+from ..search.session import SearchSession, open_search_session
 
 TransportName = Literal["stdio", "sse", "streamable-http"]
 LogLevelName = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
@@ -39,6 +39,11 @@ class RuntimeConfig:
 
 
 logger = logging.getLogger(__name__)
+
+
+class SearchSettings(TypedDict, total=False):
+    catalog: str | Path
+    cache_dir: str | Path
 
 
 class _MCPSettings(Protocol):
@@ -76,12 +81,16 @@ def _resolve_settings(
     *,
     cache_dir: str | Path | None = None,
     catalog: str | None = None,
-) -> Settings:
-    settings: Settings = {}
+) -> SearchSettings:
+    settings: SearchSettings = {}
     if cache_dir is not None:
         settings["cache_dir"] = Path(cache_dir)
+    elif raw_cache_dir := os.getenv(CACHE_DIR_ENV):
+        settings["cache_dir"] = raw_cache_dir
     if catalog is not None:
         settings["catalog"] = catalog
+    elif raw_catalog := os.getenv(CATALOG_PATH_ENV):
+        settings["catalog"] = raw_catalog
     return settings
 
 
@@ -131,14 +140,14 @@ def _configure_logging(log_level: LogLevelName) -> None:
     logging.getLogger().setLevel(getattr(logging, log_level))
 
 
-def _build_server(coach: Coach, runtime: RuntimeConfig) -> _MCPServer:
+def _build_server(session: SearchSession, runtime: RuntimeConfig) -> _MCPServer:
     server = _load_fast_mcp()("chartcoach", json_response=True)
     server.settings.host = runtime.host
     server.settings.port = runtime.port
     server.settings.log_level = runtime.log_level
     server.settings.transport_security = None
 
-    tools = coach.tools
+    tools = session.tools
     server.add_tool(tools.sql)
     server.add_tool(tools.search)
     server.add_tool(tools.get)
@@ -147,28 +156,32 @@ def _build_server(coach: Coach, runtime: RuntimeConfig) -> _MCPServer:
 
 def main(
     *,
-    settings: Settings | None = None,
+    settings: SearchSettings | None = None,
     runtime: RuntimeConfig | None = None,
 ) -> None:
-    """Create a coach and serve its tools over MCP."""
+    """Create a search session and serve its tools over MCP."""
 
     resolved_settings = settings or {}
     resolved_runtime = runtime if runtime is not None else _resolve_runtime()
     _configure_logging(resolved_runtime.log_level)
 
-    try:
-        logger.info(
-            "Starting ChartCoach MCP server with transport=%s host=%s port=%s",
-            resolved_runtime.transport,
-            resolved_runtime.host,
-            resolved_runtime.port,
+    logger.info(
+        "Starting ChartCoach MCP server with transport=%s host=%s port=%s",
+        resolved_runtime.transport,
+        resolved_runtime.host,
+        resolved_runtime.port,
+    )
+    catalog = resolved_settings.get("catalog")
+    if catalog is None:
+        raise ValueError(
+            f"catalog must be provided with --catalog-path or {CATALOG_PATH_ENV}."
         )
-        coach = create(**resolved_settings)
-        server = _build_server(coach, resolved_runtime)
+    with open_search_session(
+        catalog=catalog,
+        cache_dir=resolved_settings.get("cache_dir"),
+    ) as session:
+        server = _build_server(session, resolved_runtime)
         server.run(transport=resolved_runtime.transport)
-    except Exception:
-        logger.exception("ChartCoach MCP startup failed")
-        raise
 
 
-__all__ = ["RuntimeConfig", "main"]
+__all__ = ["RuntimeConfig", "SearchSettings", "main"]

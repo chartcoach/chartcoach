@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import NotRequired, TypedDict
 
-import chartcoach as cc
+from chartcoach.search.session import SearchSession
 
 from ..types import GroundingRecord, GroundingRequest, GroundingStrategyMode
 from ..utils import build_grounding_record, rrf_fuse
@@ -60,20 +60,20 @@ def _query_texts(req: GroundingRequest) -> list[str]:
 
 @dataclass(slots=True)
 class FlatGroundingStrategy:
-    coach: cc.Coach
+    search_session: SearchSession
     config: FlatGroundingConfig
     mode: GroundingStrategyMode = "flat"
 
     def retrieve(self, req: GroundingRequest) -> GroundingRecord:
         """Retrieve one grounding record using flat whole-document search."""
 
-        matches = self.coach.index.collection.query(
+        matches = self.search_session.index.collection.query(
             query_texts=_query_texts(req),
             where={"role": "document"},
             n_results=self.config["n_results"],
         )
         return build_grounding_record(
-            self.coach,
+            self.search_session,
             rrf_fuse(matches["ids"], k=self.config["rrf_k"])[
                 : self.config.get("max_items", 4)
             ],

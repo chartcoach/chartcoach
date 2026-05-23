@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.11,<3.16"
 dependencies = [
   "anywidget>=0.9.21",
-  "chartcoach",
+  "chartcoach[search]",
   "embedding-atlas<0.20.0",
   "marimo[recommended]",
   "nest-asyncio>=1.6.0",

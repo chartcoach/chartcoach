@@ -71,18 +71,18 @@ def _(
     HybridGroundingStrategy,
     NoneGroundingStrategy,
     StructuredGroundingStrategy,
-    coach,
+    search_session,
     hybrid_strategy_config,
     structured_strategy_config,
     viseval_dataset,
 ):
     hybrid_grounder = HybridGroundingStrategy(
-        catalog=coach.catalog,
+        catalog=search_session.catalog,
         viseval_dataset=viseval_dataset,
         config=hybrid_strategy_config,
     )
     _structured_grounder = StructuredGroundingStrategy(
-        coach,
+        search_session,
         config=structured_strategy_config,
     )
     none_grounder = NoneGroundingStrategy()
@@ -159,10 +159,11 @@ def _(VisEvalDataset, VisGroundDataset):
 def _():
     import os
 
-    import chartcoach as cc
     import chromadb.utils.embedding_functions as embedding_functions
     import marimo as mo
     import polars as pl
+    from chartcoach import Catalog
+    from chartcoach.search import open_search_session
     from visground.datasets import VisGroundDataset, VisEvalDataset
     from visground.grounding import (
         GroundingStrategy,
@@ -177,8 +178,8 @@ def _():
         api_base="https://openrouter.ai/api/v1",
         model_name="openai/text-embedding-3-large",
     )
-    coach = cc.create(
-        catalog="guidelines/catalog.parquet",
+    search_session = open_search_session(
+        Catalog.from_parquet("guidelines/catalog.parquet"),
         embedding_fn=openai_large_ef,
     )
     return (
@@ -188,7 +189,7 @@ def _():
         StructuredGroundingStrategy,
         VisEvalDataset,
         VisGroundDataset,
-        coach,
+        search_session,
         lm_cliproxy,
         mo,
         pl,
