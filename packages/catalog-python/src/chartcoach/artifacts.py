@@ -80,12 +80,16 @@ def _chroma_artifact_rows(
     source: Path,
     index_dir: str | PathLike[str] | None,
 ) -> list[dict[str, object]]:
-    resolved_index_dir = Path(index_dir) if index_dir is not None else default_index_dir()
+    resolved_index_dir = (
+        Path(index_dir) if index_dir is not None else default_index_dir()
+    )
     try:
         from .search.chroma import ChromaIndex
 
         paths = ChromaIndex.cache_paths(catalog, cache_dir=resolved_index_dir)
     except ModuleNotFoundError as exc:
+        if not _is_missing_search_extra(exc):
+            raise
         return [
             _artifact_row(
                 name="index_root",
@@ -126,6 +130,13 @@ def _chroma_artifact_rows(
             note="Native Chroma persistent database for indexed catalog documents.",
         ),
     ]
+
+
+def _is_missing_search_extra(exc: ModuleNotFoundError) -> bool:
+    name = exc.name
+    return name in {"chromadb", "polars_hash", "tqdm"} or (
+        name is not None and name.startswith("chromadb.")
+    )
 
 
 def _artifact_row(

@@ -36,7 +36,7 @@ def load_catalog(folder_path: PathLike[str]) -> Catalog:
 
     entries: list[CatalogEntry] = []
 
-    for entry_path in Path(folder_path).iterdir():
+    for entry_path in sorted(Path(folder_path).iterdir()):
         if not entry_path.is_dir():
             continue
         if entry_path.name == "__templates__":

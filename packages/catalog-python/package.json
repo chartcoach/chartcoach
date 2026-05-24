@@ -8,6 +8,6 @@
     "typecheck": "uv run --extra search --extra mcp ty check .",
     "format": "uv run ruff format .",
     "build": "uv build",
-    "test": "uv run --extra search --extra mcp pytest tests"
+    "test": "uv run --extra duckdb --extra search --extra mcp pytest tests"
   }
 }
