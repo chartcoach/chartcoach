@@ -1,11 +1,17 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
+from typing import cast
 
 import polars as pl
 
-from ..catalog.collection import Catalog, CatalogEntry
-from ..catalog.relations import catalog_relations
+from ..catalog.collection import Catalog
+from ..catalog.relations import (
+    TABLE_SPECS,
+    catalog_table_names,
+    catalog_table_rows,
+    catalog_table_schema,
+)
 
 
 class CatalogToolError(ValueError):
@@ -36,60 +42,44 @@ class CatalogTools:
 
         return self._catalog
 
-    def relations(self) -> list[dict[str, object]]:
-        """List queryable structured relations and row counts."""
+    def list_tables(self, *, include_row_counts: bool = False) -> list[dict[str, object]]:
+        """List queryable structured tables."""
 
+        if include_row_counts:
+            return catalog_table_rows(self.catalog)
         return [
-            {"name": relation_name, "rows": frame.height}
-            for relation_name, frame in catalog_relations(self.catalog).items()
+            {"name": spec.name, "columns": len(spec.schema), "rows": None}
+            for spec in TABLE_SPECS.values()
         ]
 
-    def schema(
+    def describe_tables(self, tables: Sequence[str] = ()) -> list[dict[str, object]]:
+        """List columns for structured catalog tables."""
+
+        try:
+            return catalog_table_schema(tables)
+        except KeyError as exc:
+            raise self._unknown_table_error([str(exc).strip("'")]) from exc
+
+    def count_values(
         self,
-        relations: Sequence[str] = (),
-    ) -> list[dict[str, object]]:
-        """List columns for structured catalog relations."""
-
-        relation_frames = catalog_relations(self.catalog)
-        selected_relations = set(relations)
-        unknown_relations = sorted(selected_relations - set(relation_frames))
-        if unknown_relations:
-            raise self._unknown_relation_error(unknown_relations)
-
-        rows: list[dict[str, object]] = []
-        for relation, frame in relation_frames.items():
-            if selected_relations and relation not in selected_relations:
-                continue
-            for column, dtype in frame.schema.items():
-                rows.append(
-                    {
-                        "relation": relation,
-                        "column": column,
-                        "type": str(dtype),
-                    }
-                )
-        return rows
-
-    def values(
-        self,
-        relation: str,
+        table: str,
         column: str,
         *,
         explode: bool = False,
         contains: str | None = None,
         limit: int = 50,
     ) -> list[dict[str, object]]:
-        """Count distinct values in any structured relation column."""
+        """Count distinct values in a structured catalog table column."""
 
-        frame = self._require_relation(relation)
-        self._require_column(relation, frame, column)
+        frame = self._require_table(table)
+        self._require_column(table, frame, column)
         dtype = frame.schema[column]
         if _is_list_dtype(dtype) and not explode:
             raise CatalogToolError(
-                f"Column {relation}.{column} is list-valued.",
+                f"Column {table}.{column} is list-valued.",
                 hints=[
                     "Pass explode=True to count each list item separately.",
-                    f"CLI: chartcoach catalog --catalog PATH values {relation} {column} --explode --format jsonl",
+                    f"CLI: chartcoach tables values {table} {column} --source PATH --explode --format jsonl",
                 ],
             )
 
@@ -110,10 +100,10 @@ class CatalogTools:
             .sort(["rows", "value"], descending=[True, False])
             .head(limit)
             .with_columns(
-                pl.lit(relation).alias("relation"),
+                pl.lit(table).alias("table"),
                 pl.lit(column).alias("column"),
             )
-            .select("relation", "column", "value", "rows")
+            .select("table", "column", "value", "rows")
             .to_dicts()
         )
 
@@ -121,13 +111,15 @@ class CatalogTools:
         self,
         *,
         labels: Sequence[str] = (),
+        label_prefixes: Sequence[str] = (),
         contains: str | None = None,
         limit: int = 50,
     ) -> list[dict[str, object]]:
         """List guideline ids and summaries with deterministic filters."""
 
         self._validate_labels(labels)
-        df = self.catalog.guidelines_df.select(
+        self._validate_label_prefixes(label_prefixes)
+        df = self.catalog.guidelines().select(
             "id",
             "title",
             "description",
@@ -135,6 +127,12 @@ class CatalogTools:
         )
         for label_value in labels:
             df = df.filter(pl.col("labels").list.contains(label_value))
+        for prefix in label_prefixes:
+            df = df.filter(
+                pl.col("labels")
+                .list.eval(pl.element().str.starts_with(prefix))
+                .list.any()
+            )
         if contains:
             needle = contains.lower()
             df = df.filter(
@@ -153,7 +151,10 @@ class CatalogTools:
     def get_guideline(self, guideline_id: str) -> dict[str, object]:
         """Return one complete guideline entry by id."""
 
-        return self._get_entry(guideline_id).model_dump()
+        try:
+            return self.catalog.entry(guideline_id).to_record()
+        except KeyError as exc:
+            raise self._unknown_id_error(guideline_id) from exc
 
     def retrieve_guidelines(
         self,
@@ -172,7 +173,7 @@ class CatalogTools:
             label_prefixes=label_prefixes,
             roles=roles,
         )
-        entries = self._query_entries(
+        frame = self._query_guidelines(
             ids=ids,
             labels=labels,
             label_prefixes=label_prefixes,
@@ -181,11 +182,11 @@ class CatalogTools:
         )
 
         return [
-            guideline_record(
-                entry,
+            _guideline_record_from_row(
+                row,
                 roles=set(resolved_roles) if resolved_roles else None,
             )
-            for entry in entries
+            for row in frame.to_dicts()
         ]
 
     def validate_guideline_filters(
@@ -195,21 +196,15 @@ class CatalogTools:
         label_prefixes: Sequence[str] = (),
         roles: Sequence[str] = (),
     ) -> tuple[str, ...]:
-        """Validate reusable guideline filters and return normalized roles."""
+        """Validate reusable guideline filters and return section roles."""
 
         self._validate_labels(labels)
         self._validate_label_prefixes(label_prefixes)
-        resolved_roles = normalize_section_roles(roles)
-        self._validate_section_roles(resolved_roles)
-        return resolved_roles
+        parsed_roles = tuple(roles)
+        self._validate_section_roles(parsed_roles)
+        return parsed_roles
 
-    def _get_entry(self, guideline_id: str) -> CatalogEntry:
-        try:
-            return self.catalog.get(guideline_id)
-        except KeyError as exc:
-            raise self._unknown_id_error(guideline_id) from exc
-
-    def _query_entries(
+    def _query_guidelines(
         self,
         *,
         ids: Sequence[str],
@@ -217,50 +212,73 @@ class CatalogTools:
         label_prefixes: Sequence[str],
         contains: str | None,
         limit: int,
-    ) -> tuple[CatalogEntry, ...]:
-        entries = [self._get_entry(guideline_id) for guideline_id in ids]
-        if not ids:
-            entries = list(self.catalog.entries)
+    ) -> pl.DataFrame:
+        df = self.catalog.guidelines()
+        if ids:
+            available = set(df.get_column("id").to_list())
+            missing = [guideline_id for guideline_id in ids if guideline_id not in available]
+            if missing:
+                raise self._unknown_id_error(missing[0])
+            order = pl.DataFrame(
+                {"id": list(ids), "_catalog_order": list(range(len(ids)))}
+            )
+            df = order.join(df, on="id", how="inner").sort("_catalog_order")
 
         for label in labels:
-            entries = [entry for entry in entries if label in entry.guideline.labels]
+            df = df.filter(pl.col("labels").list.contains(label))
         for prefix in label_prefixes:
-            entries = [
-                entry
-                for entry in entries
-                if any(label.startswith(prefix) for label in entry.guideline.labels)
-            ]
+            df = df.filter(
+                pl.col("labels")
+                .list.eval(pl.element().str.starts_with(prefix))
+                .list.any()
+            )
         if contains:
             needle = contains.lower()
-            entries = [
-                entry for entry in entries if needle in _query_text(entry).lower()
-            ]
-        return tuple(entries[:limit])
+            df = df.filter(
+                pl.any_horizontal(
+                    pl.col("id").str.to_lowercase().str.contains(needle, literal=True),
+                    pl.col("title")
+                    .str.to_lowercase()
+                    .str.contains(needle, literal=True),
+                    pl.col("description")
+                    .str.to_lowercase()
+                    .str.contains(needle, literal=True),
+                    pl.col("body")
+                    .str.to_lowercase()
+                    .str.contains(needle, literal=True),
+                )
+            )
 
-    def _require_relation(self, relation: str) -> pl.DataFrame:
-        relation_frames = catalog_relations(self.catalog)
-        if relation not in relation_frames:
-            raise self._unknown_relation_error([relation])
-        return relation_frames[relation]
+        references = self.catalog.to_frame().select("id", "references")
+        return (
+            df.head(limit)
+            .join(references, on="id", how="left")
+            .drop("_catalog_order", strict=False)
+        )
+
+    def _require_table(self, table: str) -> pl.DataFrame:
+        if table not in catalog_table_names():
+            raise self._unknown_table_error([table])
+        return self.catalog.table(table)
 
     def _require_column(
         self,
-        relation: str,
+        table: str,
         frame: pl.DataFrame,
         column: str,
     ) -> None:
         if column not in frame.columns:
-            raise self._unknown_column_error(relation, frame, column)
+            raise self._unknown_column_error(table, frame, column)
 
     def _distinct_strings(
         self,
         *,
-        relation: str,
+        table: str,
         column: str,
         explode: bool = False,
     ) -> set[str]:
-        frame = self._require_relation(relation)
-        self._require_column(relation, frame, column)
+        frame = self._require_table(table)
+        self._require_column(table, frame, column)
         value_expr = pl.col(column).explode() if explode else pl.col(column)
         values = (
             frame.select(value_expr.alias("value"))
@@ -275,7 +293,7 @@ class CatalogTools:
         if not labels:
             return
         available = self._distinct_strings(
-            relation="guideline_labels",
+            table="guideline_labels",
             column="label",
         )
         missing = sorted(set(labels) - available)
@@ -283,8 +301,8 @@ class CatalogTools:
             raise CatalogToolError(
                 f"Unknown label(s): {', '.join(missing)}",
                 hints=[
-                    "Discover labels with the values tool: relation='guideline_labels', column='label'.",
-                    "CLI: chartcoach catalog --catalog PATH values guideline_labels label --format jsonl | head",
+                    "Inspect the guideline_labels table through DuckDB or Polars.",
+                    "CLI: chartcoach tables values guideline_labels label --source PATH --format jsonl",
                 ],
             )
 
@@ -292,7 +310,7 @@ class CatalogTools:
         if not prefixes:
             return
         available = self._distinct_strings(
-            relation="guideline_labels",
+            table="guideline_labels",
             column="label",
         )
         missing = [
@@ -304,50 +322,49 @@ class CatalogTools:
             raise CatalogToolError(
                 f"No labels match prefix(es): {', '.join(missing)}",
                 hints=[
-                    "Discover labels with the values tool: relation='guideline_labels', column='label'.",
-                    "Use exact labels once you have found a value to keep.",
+                    "Inspect the guideline_labels table through DuckDB or Polars.",
+                    "CLI: chartcoach tables values guideline_labels label --source PATH --format jsonl",
                 ],
             )
 
     def _validate_section_roles(self, roles: Sequence[str]) -> None:
         if not roles:
             return
-        available = self._distinct_strings(relation="sections", column="role")
+        available = self._distinct_strings(table="sections", column="role")
         missing = sorted(set(roles) - available)
         if missing:
             raise CatalogToolError(
                 f"Unknown section role(s): {', '.join(missing)}",
                 hints=[
-                    "Discover roles with the values tool: relation='sections', column='role'.",
-                    "CLI: chartcoach catalog --catalog PATH values sections role --format jsonl",
-                    "Use roles exactly as returned, or omit roles to include every section.",
+                    "Inspect the sections table through DuckDB or Polars.",
+                    "CLI: chartcoach tables values sections role --source PATH --format jsonl",
                 ],
             )
 
-    def _unknown_relation_error(self, relations: Sequence[str]) -> CatalogToolError:
-        available = ", ".join(catalog_relations(self.catalog).keys())
+    def _unknown_table_error(self, tables: Sequence[str]) -> CatalogToolError:
+        available = ", ".join(catalog_table_names())
         return CatalogToolError(
-            f"Unknown relation(s): {', '.join(relations)}",
+            f"Unknown table(s): {', '.join(tables)}",
             hints=[
-                f"Available relations: {available}",
-                "Run the relations tool before schema, values, or SQL.",
-                "CLI: chartcoach catalog --catalog PATH relations --format jsonl",
+                f"Available tables: {available}",
+                "Run chartcoach tables list before schema.",
+                "CLI: chartcoach tables list --source PATH --format jsonl",
             ],
         )
 
     def _unknown_column_error(
         self,
-        relation: str,
+        table: str,
         frame: pl.DataFrame,
         column: str,
     ) -> CatalogToolError:
         columns = ", ".join(frame.columns)
         return CatalogToolError(
-            f"Unknown column for relation {relation}: {column}",
+            f"Unknown column for table {table}: {column}",
             hints=[
-                f"Available columns on {relation}: {columns}",
-                f"Run schema with relation={relation!r} before calling values or SQL.",
-                f"CLI: chartcoach catalog --catalog PATH schema --relation {relation} --format jsonl",
+                f"Available columns on {table}: {columns}",
+                f"Run schema with table={table!r} before querying the catalog.",
+                f"CLI: chartcoach tables schema --source PATH --table {table} --format jsonl",
             ],
         )
 
@@ -356,37 +373,37 @@ class CatalogTools:
             f"Unknown guideline id: {guideline_id}",
             hints=[
                 "Discover ids with list_guidelines.",
-                "CLI: chartcoach catalog --catalog PATH list --format jsonl | head",
+                "CLI: chartcoach guidelines list --source PATH --format jsonl | head",
                 "Search by text with search_guidelines or semantic search.",
             ],
         )
 
 
-def guideline_record(
-    entry: CatalogEntry,
+def _guideline_record_from_row(
+    row: Mapping[str, object],
     *,
     roles: set[str] | None,
 ) -> dict[str, object]:
     """Return the transport-neutral record shape for one guideline."""
 
+    raw_sections = cast(Sequence[Mapping[str, object]], row.get("sections") or ())
     sections = [
-        section.model_dump()
-        for section in entry.guideline.sections
-        if roles is None or section.role in roles
+        {
+            "role": str(section["role"]),
+            "title": str(section["title"]),
+            "content": str(section["content"]),
+        }
+        for section in raw_sections
+        if roles is None or section.get("role") in roles
     ]
     return {
-        "id": entry.id,
-        "title": entry.guideline.title,
-        "description": entry.guideline.description,
-        "labels": list(entry.guideline.labels),
+        "id": row["id"],
+        "title": row["title"],
+        "description": row["description"],
+        "labels": list(cast(Sequence[str], row.get("labels") or ())),
+        "references": list(cast(Sequence[str], row.get("references") or ())),
         "sections": sections,
     }
-
-
-def normalize_section_roles(roles: Sequence[str]) -> tuple[str, ...]:
-    """Accept raw section roles or indexed-document roles such as section.advice."""
-
-    return tuple(role.removeprefix("section.") for role in roles)
 
 
 def format_tool_error(message: str, hints: Sequence[str]) -> str:
@@ -398,28 +415,14 @@ def format_tool_error(message: str, hints: Sequence[str]) -> str:
     return f"{message}\n\nTry:\n{joined_hints}"
 
 
-def sql_error_message(message: str) -> str:
-    """Return a recovery-oriented SQL error message."""
-
-    return format_tool_error(
-        message,
-        [
-            "Inspect relations with the relations tool.",
-            "Inspect columns with the schema tool.",
-            "CLI: chartcoach catalog --catalog PATH schema --format jsonl",
-        ],
-    )
-
-
 def search_error_message(message: str) -> str:
     """Return a recovery-oriented semantic-search error message."""
 
     return format_tool_error(
         message,
         [
-            "If the Chroma cache is missing, omit reuse_only or use reuse_or_create.",
-            "Discover labels with the values tool before applying label filters.",
-            "Use document-level search for raw Chroma metadata filters.",
+            "If the search index is missing, run: chartcoach index build --source PATH --index-dir INDEX_DIR.",
+            "Use chartcoach artifacts --source PATH --index-dir INDEX_DIR to locate the native Chroma path.",
         ],
     )
 
@@ -428,23 +431,9 @@ def _is_list_dtype(dtype: object) -> bool:
     return str(dtype).startswith("List")
 
 
-def _query_text(entry: CatalogEntry) -> str:
-    return "\n".join(
-        [
-            entry.id,
-            entry.guideline.title,
-            entry.guideline.description,
-            entry.guideline.body,
-        ]
-    )
-
-
 __all__ = [
     "CatalogToolError",
     "CatalogTools",
     "format_tool_error",
-    "guideline_record",
-    "normalize_section_roles",
     "search_error_message",
-    "sql_error_message",
 ]

@@ -15,12 +15,18 @@ class Guideline:
     body: str
     bibliography: str | None = None
     labels: tuple[str, ...] = dc.field(default_factory=tuple)
+    sections: tuple["Section", ...] = dc.field(default_factory=tuple)
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "labels", _str_sequence(self.labels, "labels"))
+        object.__setattr__(
+            self,
+            "sections",
+            _section_sequence(self.sections),
+        )
 
     @classmethod
-    def model_validate(cls, data: object) -> "Guideline":
+    def from_mapping(cls, data: object) -> "Guideline":
         """Build a guideline from a raw mapping."""
         if isinstance(data, cls):
             return data
@@ -35,9 +41,10 @@ class Guideline:
             body=_required_str(values, "body"),
             bibliography=_optional_str(values.get("bibliography")),
             labels=_str_sequence(values.get("labels") or [], "labels"),
+            sections=_section_sequence(_required_field(values, "sections")),
         )
 
-    def model_dump(self) -> dict[str, object]:
+    def to_record(self) -> dict[str, object]:
         """Return the serialized shape used by catalog dataframes."""
         return {
             "id": self.id,
@@ -46,19 +53,8 @@ class Guideline:
             "description": self.description,
             "labels": list(self.labels),
             "body": self.body,
-            "sections": [section.model_dump() for section in self.sections],
+            "sections": [section.to_record() for section in self.sections],
         }
-
-    @property
-    def sections(self) -> tuple["Section", ...]:
-        """Return the titled parts parsed from the guideline body."""
-
-        from .markdown import parse_guideline_section_records
-
-        return tuple(
-            Section.model_validate(section)
-            for section in parse_guideline_section_records(self.body)
-        )
 
     def to_markdown(self) -> str:
         """Return the guideline in the markdown format used on disk."""
@@ -79,7 +75,7 @@ class Section:
     content: str
 
     @classmethod
-    def model_validate(cls, data: object) -> "Section":
+    def from_mapping(cls, data: object) -> "Section":
         """Build a section from a raw mapping."""
         if isinstance(data, cls):
             return data
@@ -92,7 +88,7 @@ class Section:
             content=_required_str(values, "content"),
         )
 
-    def model_dump(self) -> dict[str, str]:
+    def to_record(self) -> dict[str, str]:
         """Return the serialized section shape."""
         return {
             "role": self.role,
@@ -106,6 +102,12 @@ def _required_str(data: Mapping[str, object], key: str) -> str:
     if not isinstance(value, str):
         raise TypeError(f"{key} must be a string.")
     return value
+
+
+def _required_field(data: Mapping[str, object], key: str) -> object:
+    if key not in data:
+        raise TypeError(f"{key} is required.")
+    return data[key]
 
 
 def _optional_str(value: object) -> str | None:
@@ -125,6 +127,12 @@ def _str_sequence(value: object, field: str) -> tuple[str, ...]:
             raise TypeError(f"{field} must be a list of strings.")
         parsed.append(item)
     return tuple(parsed)
+
+
+def _section_sequence(value: object) -> tuple[Section, ...]:
+    if not isinstance(value, Sequence) or isinstance(value, str | bytes):
+        raise TypeError("sections must be a list of section records.")
+    return tuple(Section.from_mapping(section) for section in value)
 
 
 __all__ = ["Guideline", "Section"]

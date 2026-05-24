@@ -5,7 +5,7 @@ from collections.abc import Mapping, Sequence
 import polars as pl
 import polars_hash as plh
 
-DOCUMENTS_VERSION = "1"
+DOCUMENTS_VERSION = "6"
 
 
 def build_docs_df(
@@ -22,10 +22,10 @@ def build_docs_df(
 
     return docs_df.with_columns(
         metadata=pl.struct(
-            parent_id=pl.col("metadata").struct.field("parent_id"),
-            role=pl.col("metadata").struct.field("role"),
-            labels=pl.col("metadata").struct.field("labels"),
-            content_hash=plh.col("doc").chash.sha2_256(),
+            pl.col("metadata").struct.field("parent_id").alias("parent_id"),
+            pl.col("metadata").struct.field("role").alias("role"),
+            pl.col("metadata").struct.field("labels").alias("labels"),
+            plh.col("doc").chash.sha2_256().alias("content_hash"),
         )
     )
 
@@ -118,3 +118,6 @@ def _format_reference_context(
         if citekey in reference_map
     ]
     return "\n".join(lines)
+
+
+__all__ = ["DOCUMENTS_VERSION", "build_docs_df"]

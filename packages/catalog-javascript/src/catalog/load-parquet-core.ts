@@ -1,7 +1,7 @@
 import { parquetReadObjects } from "hyparquet";
 import { compressors } from "hyparquet-compressors";
 import { Catalog, type CatalogEntry } from "./model.js";
-import { catalogEntryFromWire } from "./wire.js";
+import { requireCatalogEntryFromWire } from "./wire.js";
 
 export type AsyncBuffer = {
   byteLength: number;
@@ -30,11 +30,9 @@ export async function loadCatalogFromParquet(file: AsyncBuffer | ParquetBytes): 
     compressors,
   })) as Array<Record<string, unknown>>;
 
-  const entries: CatalogEntry[] = [];
-  for (const row of rows) {
-    const entry = catalogEntryFromWire(row);
-    if (entry) entries.push(entry);
-  }
+  const entries: CatalogEntry[] = rows.map((row, index) =>
+    requireCatalogEntryFromWire(row, `parquet row ${index}`),
+  );
 
   return new Catalog(entries);
 }

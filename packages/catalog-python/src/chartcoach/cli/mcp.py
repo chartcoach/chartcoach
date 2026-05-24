@@ -6,18 +6,12 @@ from typing import Any
 
 import click
 
+from chartcoach.constants import INDEX_DIR_ENV, SOURCE_ENV
+from chartcoach.paths import default_index_dir
+
 CONTEXT_SETTINGS = {"help_option_names": ["-h", "--help"]}
 TRANSPORT_CHOICES = ("stdio", "sse", "streamable-http")
 LOG_LEVEL_CHOICES = ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL")
-CACHE_MODE_CHOICES = ("reuse_only",)
-MCP_HELP = """Start the ChartCoach MCP server.
-
-ChartCoach loads the catalog at startup and opens SQL/search resources lazily as
-tools need them. The server only supports reuse_only cache mode so read-only MCP
-tool calls never create or rebuild Chroma state. CLI options override
-environment variables; omitted options fall back to the matching env var and
-then the built-in default.
-"""
 
 
 def _is_missing_optional_dependency(exc: ModuleNotFoundError) -> bool:
@@ -25,19 +19,7 @@ def _is_missing_optional_dependency(exc: ModuleNotFoundError) -> bool:
     while current is not None:
         if isinstance(current, ModuleNotFoundError):
             name = current.name
-            if name is not None and (
-                name
-                in {
-                    "chromadb",
-                    "duckdb",
-                    "mcp",
-                    "platformdirs",
-                    "polars_hash",
-                    "pyarrow",
-                    "tqdm",
-                }
-                or name.startswith(("chromadb.", "mcp."))
-            ):
+            if name is not None and (name == "mcp" or name.startswith("mcp.")):
                 return True
         current = current.__cause__
     return False
@@ -49,58 +31,65 @@ def _load_server_module() -> Any:
     except ModuleNotFoundError as exc:  # pragma: no cover - depends on install extras
         if _is_missing_optional_dependency(exc):
             raise click.ClickException(
-                "The `chartcoach mcp` command requires the optional MCP/search dependencies. Install `chartcoach[mcp]` to use it."
+                "The `chartcoach mcp serve` command requires the optional MCP dependencies. Install `chartcoach[mcp]` to use it."
             ) from exc
         raise
 
 
-@click.command(
+@click.group(
     "mcp",
     context_settings=CONTEXT_SETTINGS,
+    help="Run ChartCoach MCP servers.",
+)
+def mcp_command() -> None:
+    """Run ChartCoach MCP servers."""
+
+
+@mcp_command.command(
+    "serve",
+    context_settings=CONTEXT_SETTINGS,
     short_help="Start the ChartCoach MCP server.",
-    help=MCP_HELP,
 )
 @click.option(
-    "--catalog-path",
-    metavar="PATH_OR_URL",
-    help=(
-        "Catalog parquet file to load before building or reusing cached search data. "
-        "Overrides CHARTCOACH_CATALOG_PATH."
-    ),
+    "--source",
+    "source_path",
+    envvar=SOURCE_ENV,
+    type=click.Path(path_type=Path),
+    help=f"Catalog parquet file or guideline folder to serve. Defaults to ${SOURCE_ENV}.",
 )
 @click.option(
-    "--cache-dir",
+    "--index-dir",
     type=click.Path(file_okay=False, dir_okay=True, path_type=Path),
-    help="Directory root for cached Chroma artifacts. Overrides CHARTCOACH_CACHE_DIR.",
-)
-@click.option(
-    "--cache-mode",
-    type=click.Choice(CACHE_MODE_CHOICES, case_sensitive=False),
-    help="Chroma cache behavior. MCP only supports reuse_only. Overrides CHARTCOACH_CACHE_MODE.",
+    envvar=INDEX_DIR_ENV,
+    default=default_index_dir(),
+    show_default=True,
+    help=(
+        "Search index directory for Chroma-backed tools. "
+        f"Defaults to ${INDEX_DIR_ENV}, then a platform cache path."
+    ),
 )
 @click.option(
     "--transport",
     type=click.Choice(TRANSPORT_CHOICES, case_sensitive=False),
-    help="MCP transport to run. Overrides MCP_TRANSPORT. Allowed values: stdio, sse, streamable-http.",
+    help="MCP transport. Defaults to CHARTCOACH_MCP_TRANSPORT or stdio.",
 )
 @click.option(
     "--host",
-    help="Host to bind for sse and streamable-http transports. Overrides MCP_HOST.",
+    help="Host for sse and streamable-http transports. Defaults to CHARTCOACH_MCP_HOST or 127.0.0.1.",
 )
 @click.option(
     "--port",
     type=click.IntRange(1, 65535),
-    help="Port to bind for sse and streamable-http transports. Overrides MCP_PORT.",
+    help="Port for sse and streamable-http transports. Defaults to CHARTCOACH_MCP_PORT or 8000.",
 )
 @click.option(
     "--log-level",
     type=click.Choice(LOG_LEVEL_CHOICES, case_sensitive=False),
-    help="Logging level. Overrides MCP_LOG_LEVEL. Allowed values: DEBUG, INFO, WARNING, ERROR, CRITICAL.",
+    help="Logging level. Defaults to CHARTCOACH_MCP_LOG_LEVEL or INFO.",
 )
-def mcp_command(
-    catalog_path: str | None,
-    cache_dir: Path | None,
-    cache_mode: str | None,
+def serve_command(
+    source_path: Path | None,
+    index_dir: Path | None,
     transport: str | None,
     host: str | None,
     port: int | None,
@@ -111,9 +100,8 @@ def mcp_command(
     server = _load_server_module()
     try:
         config = server.resolve_config(
-            cache_dir=cache_dir,
-            catalog=catalog_path,
-            cache_mode=cache_mode,
+            index_dir=index_dir,
+            source=source_path,
             transport=transport.lower() if transport is not None else None,
             host=host,
             port=port,
@@ -126,11 +114,11 @@ def mcp_command(
     except ModuleNotFoundError as exc:  # pragma: no cover - depends on install extras
         if _is_missing_optional_dependency(exc):
             raise click.ClickException(
-                "The `chartcoach mcp` command requires the optional MCP/search dependencies. Install `chartcoach[mcp]` to use it."
+                "The `chartcoach mcp serve` command requires the optional MCP dependencies. Install `chartcoach[mcp]` to use it."
             ) from exc
         raise
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
 
 
-__all__ = ["mcp_command"]
+__all__ = ["mcp_command", "serve_command"]

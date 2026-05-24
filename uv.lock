@@ -1,6 +1,6 @@
 version = 1
 revision = 3
-requires-python = ">=3.11, <3.16"
+requires-python = ">=3.11, <3.15"
 resolution-markers = [
     "python_full_version >= '3.14'",
     "python_full_version == '3.13.*'",
@@ -542,37 +542,22 @@ dependencies = [
     { name = "citeproc-py" },
     { name = "click" },
     { name = "mdformat" },
+    { name = "platformdirs" },
     { name = "polars" },
     { name = "pyyaml" },
 ]
 
 [package.optional-dependencies]
-chroma = [
-    { name = "chromadb" },
-    { name = "platformdirs" },
-    { name = "polars-hash" },
-    { name = "tqdm" },
+duckdb = [
+    { name = "duckdb" },
 ]
 mcp = [
-    { name = "chromadb" },
-    { name = "duckdb" },
     { name = "mcp", extra = ["cli"] },
-    { name = "platformdirs" },
-    { name = "polars-hash" },
-    { name = "pyarrow" },
-    { name = "tqdm" },
 ]
 search = [
     { name = "chromadb" },
-    { name = "duckdb" },
-    { name = "platformdirs" },
     { name = "polars-hash" },
-    { name = "pyarrow" },
     { name = "tqdm" },
-]
-sql = [
-    { name = "duckdb" },
-    { name = "pyarrow" },
 ]
 
 [package.dev-dependencies]
@@ -582,33 +567,20 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "bibtexparser", specifier = ">=1.4" },
-    { name = "chromadb", marker = "extra == 'chroma'", specifier = ">=1.5" },
-    { name = "chromadb", marker = "extra == 'mcp'", specifier = ">=1.5" },
-    { name = "chromadb", marker = "extra == 'search'", specifier = ">=1.5" },
+    { name = "bibtexparser", specifier = ">=1.1.0" },
+    { name = "chromadb", marker = "extra == 'search'", specifier = ">=1.5.0" },
     { name = "citeproc-py", specifier = ">=0.9" },
-    { name = "click", specifier = ">=8.1" },
-    { name = "duckdb", marker = "extra == 'mcp'", specifier = ">=1.5" },
-    { name = "duckdb", marker = "extra == 'search'", specifier = ">=1.5" },
-    { name = "duckdb", marker = "extra == 'sql'", specifier = ">=1.5" },
-    { name = "mcp", extras = ["cli"], marker = "extra == 'mcp'" },
-    { name = "mdformat", specifier = ">=1.0.0" },
-    { name = "platformdirs", marker = "extra == 'chroma'", specifier = ">=4.9.4" },
-    { name = "platformdirs", marker = "extra == 'mcp'", specifier = ">=4.9.4" },
-    { name = "platformdirs", marker = "extra == 'search'", specifier = ">=4.9.4" },
-    { name = "polars", specifier = ">=1.38" },
-    { name = "polars-hash", marker = "extra == 'chroma'", specifier = ">=0.5.6" },
-    { name = "polars-hash", marker = "extra == 'mcp'", specifier = ">=0.5.6" },
-    { name = "polars-hash", marker = "extra == 'search'", specifier = ">=0.5.6" },
-    { name = "pyarrow", marker = "extra == 'mcp'", specifier = ">=23" },
-    { name = "pyarrow", marker = "extra == 'search'", specifier = ">=23" },
-    { name = "pyarrow", marker = "extra == 'sql'", specifier = ">=23" },
-    { name = "pyyaml", specifier = ">=6.0.0" },
-    { name = "tqdm", marker = "extra == 'chroma'", specifier = ">=4.67" },
-    { name = "tqdm", marker = "extra == 'mcp'", specifier = ">=4.67" },
-    { name = "tqdm", marker = "extra == 'search'", specifier = ">=4.67" },
+    { name = "click", specifier = ">=8.0.0" },
+    { name = "duckdb", marker = "extra == 'duckdb'", specifier = ">=1.4.0" },
+    { name = "mcp", extras = ["cli"], marker = "extra == 'mcp'", specifier = ">=1.9.0" },
+    { name = "mdformat", specifier = ">=0.7.19" },
+    { name = "platformdirs", specifier = ">=4.0.0" },
+    { name = "polars", specifier = ">=1.0.0" },
+    { name = "polars-hash", marker = "extra == 'search'", specifier = ">=0.5.0" },
+    { name = "pyyaml", specifier = ">=5.3.1" },
+    { name = "tqdm", marker = "extra == 'search'", specifier = ">=1.0" },
 ]
-provides-extras = ["chroma", "sql", "search", "mcp"]
+provides-extras = ["duckdb", "search", "mcp"]
 
 [package.metadata.requires-dev]
 dev = [{ name = "pytest", specifier = ">=8.4.0" }]
@@ -2453,7 +2425,7 @@ dependencies = [
     { name = "pygments" },
     { name = "pymdown-extensions" },
     { name = "pyyaml" },
-    { name = "pyzmq", marker = "python_full_version < '3.15'" },
+    { name = "pyzmq" },
     { name = "starlette" },
     { name = "tomlkit" },
     { name = "uvicorn" },

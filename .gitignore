@@ -4,7 +4,6 @@
 .ruff_cache/
 .venv/
 node_modules/
-nogit/
 *.egg-info
 __pycache__/
 *.pyc

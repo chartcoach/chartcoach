@@ -1,7 +1,10 @@
 from .bibliography import (
+    ParsedBibtexEntry,
     format_bibtex_entry,
+    format_bibtex_reference,
     parse_bibtex,
     parse_bibtex_entry,
+    parse_bibtex_reference,
 )
 from .core import Guideline, Section
 from .markdown import (
@@ -15,11 +18,14 @@ from .markdown import (
 
 __all__ = [
     "Guideline",
+    "ParsedBibtexEntry",
     "Section",
     "format_bibtex_entry",
+    "format_bibtex_reference",
     "guideline_to_markdown",
     "parse_bibtex",
     "parse_bibtex_entry",
+    "parse_bibtex_reference",
     "parse_guideline",
     "parse_guideline_section_records",
     "parse_guideline_sections",
