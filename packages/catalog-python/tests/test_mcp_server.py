@@ -1,37 +1,18 @@
 from __future__ import annotations
 
+import asyncio
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, cast
 
 import pytest
 
-from chartcoach import Catalog, CatalogEntry, Guideline, Section
+from chartcoach import Catalog
 from chartcoach.mcp import server as mcp_server
+from chartcoach.paths import default_index_dir
 from chartcoach.tools.catalog import CatalogTools
 
-
-def _catalog() -> Catalog:
-    return Catalog.from_entries(
-        [
-            CatalogEntry(
-                guideline=Guideline(
-                    id="direct-labels",
-                    title="Use direct labels",
-                    description="Label marks directly when space permits.",
-                    body="## Advice <!-- role: advice -->\n\nPlace labels near marks.",
-                    labels=("chart:line",),
-                    sections=(
-                        Section(
-                            role="advice",
-                            title="Advice",
-                            content="Place labels near marks.",
-                        ),
-                    ),
-                )
-            )
-        ]
-    )
+pytestmark = pytest.mark.mcp
 
 
 def test_mcp_settings_support_index_dir() -> None:
@@ -46,95 +27,124 @@ def test_mcp_settings_support_index_dir() -> None:
     }
 
 
-def test_mcp_settings_use_default_index_dir() -> None:
+def test_mcp_settings_use_default_index_dir(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("CHARTCOACH_INDEX_DIR", raising=False)
+
     config = mcp_server.resolve_config(source="catalog.parquet")
 
     assert config.settings["source"] == "catalog.parquet"
-    assert Path(config.settings["index_dir"]).name == "index"
+    assert config.settings["index_dir"] == default_index_dir()
 
 
-def test_mcp_server_exposes_catalog_and_guideline_search(
+def test_mcp_settings_support_env_index_dir(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("CHARTCOACH_INDEX_DIR", "env-index")
+
+    config = mcp_server.resolve_config(source="catalog.parquet")
+
+    assert config.settings["index_dir"] == "env-index"
+
+
+def test_mcp_server_exposes_native_tool_contracts(
+    sample_catalog: Catalog,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    added_tools: dict[str, Any] = {}
+    mcp_module = pytest.importorskip("mcp.server")
 
-    class FakeServer:
+    class FakeCollection:
         def __init__(self) -> None:
-            self.settings = SimpleNamespace(
-                host=None,
-                port=None,
-                log_level=None,
-            )
+            self.query_params: dict[str, Any] | None = None
+            self.get_params: dict[str, Any] | None = None
 
-        def add_tool(self, tool: object, **kwargs: object) -> None:
-            annotations = cast(Any, kwargs["annotations"])
-            assert annotations.readOnlyHint is True
-            assert annotations.destructiveHint is False
-            assert annotations.idempotentHint is True
-            assert annotations.openWorldHint is False
-            added_tools[cast(str, kwargs["name"])] = annotations
-            assert kwargs["description"]
-
-    fake_server = FakeServer()
-
-    def fake_fast_mcp(*_: object, **__: object) -> FakeServer:
-        return fake_server
-
-    monkeypatch.setattr(mcp_server, "_load_fast_mcp", lambda: fake_fast_mcp)
-
-    class FakeGuidelineSearch:
-        def search_guidelines(
-            self, *args: object, **kwargs: object
-        ) -> dict[str, object]:
-            return {"rows": []}
-
-        def chroma_query(self, *args: object, **kwargs: object) -> dict[str, object]:
+        def query(self, **params: object) -> dict[str, object]:
+            self.query_params = dict(params)
             return {"ids": [[]]}
 
-        def chroma_get(self, *args: object, **kwargs: object) -> dict[str, object]:
+        def get(self, **params: object) -> dict[str, object]:
+            self.get_params = dict(params)
             return {"ids": []}
 
-    catalog = _catalog()
-    server = mcp_server._build_server(
-        mcp_server.RuntimeConfig(
-            transport="stdio",
-            host="127.0.0.1",
-            port=8000,
-            log_level="INFO",
-        ),
+    collection = FakeCollection()
+    search = mcp_server._ChromaTools(
+        sample_catalog,
+        cache_dir="index",
+        cache_mode="reuse_only",
     )
-    mcp_server._register_tools(
-        server,
-        catalog_tools=CatalogTools(catalog),
-        artifact_tools=mcp_server._ArtifactTools(
-            catalog,
-            source="catalog.parquet",
-            index_dir="index",
-        ),
-        search=FakeGuidelineSearch(),
+    monkeypatch.setattr(
+        search,
+        "open_index",
+        lambda: SimpleNamespace(collection=collection),
     )
 
-    assert server is fake_server
-    assert set(added_tools) == {
-        "catalog_artifacts",
-        "tables_list",
-        "tables_schema",
-        "tables_values",
-        "guidelines_list",
-        "guidelines_get",
-        "guidelines_retrieve",
-        "guidelines_search",
-        "chroma_query",
-        "chroma_get",
-    }
+    async def exercise_server() -> None:
+        server = mcp_module.FastMCP("chartcoach", json_response=True)
+        mcp_server._register_tools(
+            server,
+            catalog_tools=CatalogTools(sample_catalog),
+            artifact_tools=mcp_server._ArtifactTools(
+                sample_catalog,
+                source="catalog.parquet",
+                index_dir="index",
+            ),
+            search=search,
+        )
+        tools = {tool.name: tool for tool in await server.list_tools()}
+
+        assert set(tools) == {
+            "catalog_artifacts",
+            "tables_list",
+            "tables_schema",
+            "tables_values",
+            "guidelines_list",
+            "guidelines_get",
+            "guidelines_retrieve",
+            "guidelines_search",
+            "chroma_query",
+            "chroma_get",
+        }
+        for tool in tools.values():
+            assert tool.annotations is not None
+            assert tool.annotations.readOnlyHint is True
+            assert tool.annotations.destructiveHint is False
+            assert tool.annotations.idempotentHint is True
+            assert tool.annotations.openWorldHint is False
+            assert tool.description
+
+        assert {"query_texts", "n_results", "where", "include"} <= set(
+            tools["chroma_query"].inputSchema["properties"]
+        )
+        assert {"ids", "where", "limit", "include"} <= set(
+            tools["chroma_get"].inputSchema["properties"]
+        )
+
+        query_result = await server.call_tool(
+            "chroma_query",
+            {
+                "query_texts": ["axis", "labels"],
+                "n_results": 2,
+                "include": ["documents"],
+            },
+        )
+        get_result = await server.call_tool(
+            "chroma_get",
+            {"ids": ["doc"], "include": ["metadatas"]},
+        )
+
+        assert cast(tuple[object, dict[str, object]], query_result)[1] == {"ids": [[]]}
+        assert cast(tuple[object, dict[str, object]], get_result)[1] == {"ids": []}
+        assert collection.query_params == {
+            "query_texts": ["axis", "labels"],
+            "n_results": 2,
+            "include": ["documents"],
+        }
+        assert collection.get_params == {"ids": ["doc"], "include": ["metadatas"]}
+
+    asyncio.run(exercise_server())
 
 
 def test_mcp_main_registers_catalog_tools_without_opening_search(
-    tmp_path: Path,
+    sample_catalog_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    source_path = tmp_path / "catalog.parquet"
-    _catalog().write_parquet(source_path)
     added_tools: list[str] = []
 
     class FakeServer:
@@ -163,50 +173,20 @@ def test_mcp_main_registers_catalog_tools_without_opening_search(
         ),
     )
 
-    mcp_server.main(settings={"source": source_path}, runtime=mcp_server.RuntimeConfig())
-
-    assert "list_tables" in added_tools
-    assert "describe_tables" in added_tools
-    assert "count_values" in added_tools
-    assert "list_guidelines" in added_tools
-    assert "retrieve_guidelines" in added_tools
-    assert "catalog_artifacts" in added_tools
-    assert "search_guidelines" in added_tools
-    assert "chroma_query" in added_tools
-    assert "chroma_get" in added_tools
-
-
-def test_chroma_mcp_tools_pass_native_params() -> None:
-    class FakeCollection:
-        def __init__(self) -> None:
-            self.query_params: dict[str, Any] | None = None
-            self.get_params: dict[str, Any] | None = None
-
-        def query(self, **params: object) -> dict[str, object]:
-            self.query_params = dict(params)
-            return {"ids": [["doc"]]}
-
-        def get(self, **params: object) -> dict[str, object]:
-            self.get_params = dict(params)
-            return {"ids": ["doc"]}
-
-    collection = FakeCollection()
-    search = mcp_server._ChromaTools(
-        _catalog(),
-        cache_dir="index",
-        cache_mode="reuse_only",
+    mcp_server.main(
+        settings={"source": sample_catalog_path},
+        runtime=mcp_server.RuntimeConfig(),
     )
-    cast(Any, search)._index = SimpleNamespace(collection=collection)
 
-    assert search.chroma_query(
-        query_texts=["axis", "labels"],
-        n_results=2,
-        include=["documents"],
-    ) == {"ids": [["doc"]]}
-    assert search.chroma_get(ids=["doc"], include=["metadatas"]) == {"ids": ["doc"]}
-    assert collection.query_params == {
-        "query_texts": ["axis", "labels"],
-        "n_results": 2,
-        "include": ["documents"],
+    assert set(added_tools) == {
+        "catalog_artifacts",
+        "list_tables",
+        "describe_tables",
+        "count_values",
+        "list_guidelines",
+        "get_guideline",
+        "retrieve_guidelines",
+        "search_guidelines",
+        "chroma_query",
+        "chroma_get",
     }
-    assert collection.get_params == {"ids": ["doc"], "include": ["metadatas"]}

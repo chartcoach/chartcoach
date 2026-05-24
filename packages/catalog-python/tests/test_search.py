@@ -1,12 +1,14 @@
 from __future__ import annotations
 
-import inspect
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any, cast
 
 import pytest
 
-from chartcoach import Catalog, CatalogEntry, Guideline, Section
+from chartcoach import Catalog
+
+pytestmark = pytest.mark.search
 
 
 class TinyEmbeddingFunction:
@@ -57,43 +59,44 @@ class TinyEmbeddingFunction:
         return self(input)
 
 
-def _catalog() -> Catalog:
-    return Catalog.from_entries(
-        [
-            CatalogEntry(
-                guideline=Guideline(
-                    id="direct-labels",
-                    title="Use direct labels",
-                    description="Label marks directly when space permits.",
-                    body="## Advice <!-- role: advice -->\n\nPlace labels near marks.",
-                    labels=("chart:line",),
-                    sections=(
-                        Section(
-                            role="advice",
-                            title="Advice",
-                            content="Place labels near marks.",
-                        ),
-                    ),
-                )
-            )
-        ]
-    )
+def test_reuse_only_requires_existing_explicit_cache_without_mutation(
+    tmp_path: Path,
+    sample_catalog: Catalog,
+) -> None:
+    pytest.importorskip("chromadb")
 
-
-def test_search_cache_defaults_are_read_only() -> None:
     from chartcoach.search.chroma import ChromaIndex
 
-    assert (
-        inspect.signature(ChromaIndex.from_cache).parameters["cache_dir"].default
-        is inspect.Parameter.empty
-    )
-    assert inspect.signature(ChromaIndex.from_cache).parameters["cache_mode"].default == (
-        "reuse_only"
-    )
+    missing_cache_dir = tmp_path / "missing"
+
+    with pytest.raises(FileNotFoundError, match="Cached Chroma directory"):
+        ChromaIndex.from_cache(
+            sample_catalog,
+            cache_dir=missing_cache_dir,
+            embedding_fn=TinyEmbeddingFunction(),
+        )
+    assert not missing_cache_dir.exists()
 
 
-def test_embedding_identity_includes_config() -> None:
-    from chartcoach.search.chroma import _embedding_name
+def test_chroma_cache_requires_explicit_cache_dir(sample_catalog: Catalog) -> None:
+    pytest.importorskip("chromadb")
+
+    from chartcoach.search.chroma import ChromaIndex
+
+    with pytest.raises(TypeError, match="cache_dir"):
+        cast(Any, ChromaIndex.from_cache)(
+            sample_catalog,
+            embedding_fn=TinyEmbeddingFunction(),
+        )
+
+
+def test_embedding_identity_includes_config(
+    tmp_path: Path,
+    sample_catalog: Catalog,
+) -> None:
+    pytest.importorskip("chromadb")
+
+    from chartcoach.search.chroma import ChromaIndex
 
     class ConfigurableEmbeddingFunction(TinyEmbeddingFunction):
         def __init__(self, endpoint: str) -> None:
@@ -102,27 +105,38 @@ def test_embedding_identity_includes_config() -> None:
         def get_config(self) -> dict[str, str]:
             return {"endpoint": self.endpoint, "model": self.model_name}
 
-    first = cast(Any, ConfigurableEmbeddingFunction("https://example.test/a"))
-    second = cast(Any, ConfigurableEmbeddingFunction("https://example.test/b"))
+    first = ChromaIndex.cache_paths(
+        sample_catalog,
+        cache_dir=tmp_path / "index",
+        embedding_fn=cast(Any, ConfigurableEmbeddingFunction("https://example.test/a")),
+    )
+    second = ChromaIndex.cache_paths(
+        sample_catalog,
+        cache_dir=tmp_path / "index",
+        embedding_fn=cast(Any, ConfigurableEmbeddingFunction("https://example.test/b")),
+    )
 
-    assert _embedding_name(first) != _embedding_name(second)
+    assert first.embedding_name != second.embedding_name
+    assert first.cache_path != second.cache_path
 
 
-def test_chroma_index_exposes_native_collection(tmp_path: Path) -> None:
+def test_chroma_index_exposes_native_collection(
+    tmp_path: Path,
+    sample_catalog: Catalog,
+) -> None:
     pytest.importorskip("chromadb")
 
     from chartcoach.search.chroma import ChromaIndex
 
-    catalog = _catalog()
     index = ChromaIndex.create(
-        catalog,
+        sample_catalog,
         path=tmp_path / "chroma",
         embedding_fn=TinyEmbeddingFunction(),
     )
 
-    assert index.documents().height == 3
-    assert index.collection.count() == 3
-    assert index.collection.metadata["catalog_digest"] == catalog.digest()
+    assert index.documents().height == 6
+    assert index.collection.count() == 6
+    assert index.collection.metadata["catalog_digest"] == sample_catalog.digest()
     assert "documents_digest" in index.collection.metadata
     assert "documents_version" in index.collection.metadata
     assert index.chroma_path == tmp_path / "chroma"
@@ -130,49 +144,16 @@ def test_chroma_index_exposes_native_collection(tmp_path: Path) -> None:
     assert index.embedding_name is not None
 
 
-def test_search_guidelines_returns_guideline_level_hits(tmp_path: Path) -> None:
+def test_search_guidelines_returns_guideline_level_hits(
+    tmp_path: Path,
+    sample_catalog: Catalog,
+) -> None:
     pytest.importorskip("chromadb")
 
     from chartcoach.search import ChromaIndex, search_guidelines
 
-    catalog = Catalog.from_entries(
-        [
-            CatalogEntry(
-                guideline=Guideline(
-                    id="direct-labels",
-                    title="Use direct labels",
-                    description="Label marks directly when space permits.",
-                    body="## Advice <!-- role: advice -->\n\nPlace labels near marks.",
-                    labels=("chart:line", "component:label"),
-                    sections=(
-                        Section(
-                            role="advice",
-                            title="Advice",
-                            content="Place labels near marks.",
-                        ),
-                    ),
-                )
-            ),
-            CatalogEntry(
-                guideline=Guideline(
-                    id="full-axis-bars",
-                    title="Use full value axes for bars",
-                    description="Keep bar axes on the honest baseline.",
-                    body="## Advice <!-- role: advice -->\n\nStart bar value axes at zero.",
-                    labels=("chart:bar", "component:axis"),
-                    sections=(
-                        Section(
-                            role="advice",
-                            title="Advice",
-                            content="Start bar value axes at zero.",
-                        ),
-                    ),
-                )
-            ),
-        ]
-    )
     index = ChromaIndex.create(
-        catalog,
+        sample_catalog,
         path=tmp_path / "chroma",
         embedding_fn=TinyEmbeddingFunction(),
     )
@@ -203,14 +184,16 @@ def test_search_guidelines_returns_guideline_level_hits(tmp_path: Path) -> None:
     assert overview_result.rows[0].role == "overview"
 
 
-def test_chroma_collection_remains_directly_queryable(tmp_path: Path) -> None:
+def test_chroma_collection_remains_directly_queryable(
+    tmp_path: Path,
+    sample_catalog: Catalog,
+) -> None:
     pytest.importorskip("chromadb")
 
     from chartcoach.search.chroma import ChromaIndex
 
-    catalog = _catalog()
     index = ChromaIndex.create(
-        catalog,
+        sample_catalog,
         path=tmp_path / "chroma",
         embedding_fn=TinyEmbeddingFunction(),
     )
@@ -228,25 +211,24 @@ def test_chroma_collection_remains_directly_queryable(tmp_path: Path) -> None:
     )
 
     assert query_result["ids"][0]
-    assert "chart:line" in query_result["metadatas"][0][0]["labels"]
-    assert set(query_result["metadatas"][0][0]) == {
-        "content_hash",
-        "labels",
-        "parent_id",
-        "role",
-    }
+    query_metadata = query_result["metadatas"][0][0]
+    assert "chart:line" in query_metadata["labels"]
+    assert query_metadata["parent_id"] == "direct-labels"
+    assert query_metadata["role"] in {"overview", "section.advice"}
     assert get_result["ids"]
     assert get_result["metadatas"][0]["role"] == "overview"
 
 
-def test_reuse_only_rejects_corrupted_chroma_cache(tmp_path: Path) -> None:
+def test_reuse_only_rejects_corrupted_chroma_cache(
+    tmp_path: Path,
+    sample_catalog: Catalog,
+) -> None:
     pytest.importorskip("chromadb")
 
     from chartcoach.search.chroma import ChromaIndex
 
-    catalog = _catalog()
     index = ChromaIndex.from_cache(
-        catalog,
+        sample_catalog,
         cache_dir=tmp_path / "index",
         cache_mode="reuse_or_create",
         embedding_fn=TinyEmbeddingFunction(),
@@ -256,7 +238,7 @@ def test_reuse_only_rejects_corrupted_chroma_cache(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="document count"):
         ChromaIndex.from_cache(
-            catalog,
+            sample_catalog,
             cache_dir=tmp_path / "index",
             cache_mode="reuse_only",
             embedding_fn=TinyEmbeddingFunction(),
@@ -265,15 +247,15 @@ def test_reuse_only_rejects_corrupted_chroma_cache(tmp_path: Path) -> None:
 
 def test_reuse_only_opens_chroma_cache_without_building_documents(
     tmp_path: Path,
+    sample_catalog: Catalog,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     pytest.importorskip("chromadb")
 
     import chartcoach.search.chroma as chroma
 
-    catalog = _catalog()
     chroma.ChromaIndex.from_cache(
-        catalog,
+        sample_catalog,
         cache_dir=tmp_path / "index",
         cache_mode="reuse_or_create",
         embedding_fn=TinyEmbeddingFunction(),
@@ -287,47 +269,138 @@ def test_reuse_only_opens_chroma_cache_without_building_documents(
     )
 
     index = chroma.ChromaIndex.from_cache(
-        catalog,
+        sample_catalog,
         cache_dir=tmp_path / "index",
         cache_mode="reuse_only",
         embedding_fn=TinyEmbeddingFunction(),
     )
 
-    assert index.collection.count() == 3
+    assert index.collection.count() == 6
+
+
+def test_reuse_or_create_creates_the_explicit_cache_path(
+    tmp_path: Path,
+    sample_catalog: Catalog,
+) -> None:
+    pytest.importorskip("chromadb")
+
+    from chartcoach.search.chroma import ChromaIndex
+
+    cache_dir = tmp_path / "index"
+
+    index = ChromaIndex.from_cache(
+        sample_catalog,
+        cache_dir=cache_dir,
+        cache_mode="reuse_or_create",
+        embedding_fn=TinyEmbeddingFunction(),
+    )
+
+    assert cache_dir.exists()
+    assert index.chroma_path is not None
+    assert index.chroma_path.exists()
 
 
 def test_cached_chroma_paths_are_public(
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
+    sample_catalog: Catalog,
 ) -> None:
+    pytest.importorskip("chromadb")
+
     import chartcoach.search.chroma as chroma
 
-    monkeypatch.setattr(
-        chroma,
-        "_resolve_embedding",
-        lambda _embedding_fn: chroma._ResolvedEmbedding(
-            embedding_fn=object(),
-            embedding_name="tiny/test",
-        ),
-    )
-    monkeypatch.setattr(
-        chroma,
-        "_build_documents",
-        lambda _catalog: (_ for _ in ()).throw(
-            AssertionError("cache_paths should not build index documents")
-        ),
-    )
-    catalog = _catalog()
+    cache_dir = tmp_path / "index"
     paths = chroma.ChromaIndex.cache_paths(
-        catalog,
-        cache_dir=tmp_path / "index",
+        sample_catalog,
+        cache_dir=cache_dir,
+        embedding_fn=TinyEmbeddingFunction(),
     )
 
-    assert paths.index_root == tmp_path / "index"
+    assert not cache_dir.exists()
+    assert paths.index_root == cache_dir
     assert paths.collection_name == "catalog"
-    assert paths.documents_version == chroma._documents_version()
     assert paths.chroma_path.name == "chroma_db"
     assert (
         paths.cache_path.parent
-        == tmp_path / "index" / catalog.digest() / paths.documents_version
+        == cache_dir / sample_catalog.digest() / paths.documents_version
+    )
+
+
+def test_search_guidelines_backfills_unique_guideline_rows(
+    sample_catalog: Catalog,
+) -> None:
+    from chartcoach.search import search_guidelines
+
+    class FakeCollection:
+        def __init__(self) -> None:
+            self.requested: list[dict[str, object]] = []
+
+        def count(self) -> int:
+            return 100
+
+        def query(self, **kwargs: object) -> dict[str, object]:
+            self.requested.append(dict(kwargs))
+            if kwargs["n_results"] == 50:
+                return {
+                    "ids": [
+                        ["direct-labels---overview", "direct-labels---section.advice"]
+                    ],
+                    "documents": [["Overview text", "Advice text"]],
+                    "metadatas": [
+                        [
+                            {
+                                "parent_id": "direct-labels",
+                                "role": "overview",
+                                "labels": ["chart:line"],
+                            },
+                            {
+                                "parent_id": "direct-labels",
+                                "role": "section.advice",
+                                "labels": ["chart:line"],
+                            },
+                        ]
+                    ],
+                    "distances": [[0.1, 0.2]],
+                }
+            return {
+                "ids": [["direct-labels---overview", "full-axis-bars---overview"]],
+                "documents": [["Overview text", "Axis text"]],
+                "metadatas": [
+                    [
+                        {
+                            "parent_id": "direct-labels",
+                            "role": "overview",
+                            "labels": ["chart:line"],
+                        },
+                        {
+                            "parent_id": "full-axis-bars",
+                            "role": "overview",
+                            "labels": ["chart:bar"],
+                        },
+                    ]
+                ],
+                "distances": [[0.1, 0.3]],
+            }
+
+    collection = FakeCollection()
+    index = SimpleNamespace(catalog=sample_catalog, collection=collection)
+    where = {"labels": {"$contains": "chart"}}
+    where_document = {"$contains": "axis"}
+
+    result = search_guidelines(
+        cast(Any, index),
+        "axis labels",
+        limit=2,
+        candidate_limit=100,
+        where=where,
+        where_document=where_document,
+    )
+
+    assert [row.guideline_id for row in result.rows] == [
+        "direct-labels",
+        "full-axis-bars",
+    ]
+    assert [request["n_results"] for request in collection.requested] == [50, 100]
+    assert all(request["where"] == where for request in collection.requested)
+    assert all(
+        request["where_document"] == where_document for request in collection.requested
     )

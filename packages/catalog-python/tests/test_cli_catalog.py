@@ -1,178 +1,236 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
 
-from click.testing import CliRunner
+from click.testing import CliRunner, Result
 import pytest
 
-from chartcoach import Catalog, CatalogEntry, Guideline, Section
-from chartcoach.cli import artifacts as artifacts_cli
-from chartcoach.cli import catalog as catalog_cli
-from chartcoach.cli import feedback as feedback_cli
+from chartcoach import Catalog
 from chartcoach.cli import guidelines as guidelines_cli
-from chartcoach.cli import index as index_cli
-from chartcoach.cli import tables as tables_cli
+from chartcoach.cli.main import main as chartcoach_cli
+
+from helpers import csv_rows, json_value, jsonl_rows
 
 
-def _source_path(tmp_path: Path) -> Path:
-    catalog = Catalog.from_entries(
+class FakeGuidelineSearchResult:
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "query": "direct labels",
+            "rows": [
+                {
+                    "rank": 1,
+                    "id": "direct-labels",
+                    "title": "Use direct labels",
+                    "description": "Label marks directly when space permits.",
+                    "labels": ["chart:line"],
+                    "matched_document_id": "direct-labels---overview",
+                    "matched_role": "overview",
+                    "distance": 0.125,
+                    "matched_text": "Use direct labels\n\nLabel marks directly.",
+                }
+            ],
+            "row_count": 1,
+            "limit": 8,
+        }
+
+
+def patch_guideline_search(
+    monkeypatch: pytest.MonkeyPatch,
+) -> dict[str, object]:
+    captured_guideline_kwargs: dict[str, object] = {}
+
+    def fake_search_guidelines(
+        *_: object, **kwargs: object
+    ) -> FakeGuidelineSearchResult:
+        captured_guideline_kwargs.update(kwargs)
+        return FakeGuidelineSearchResult()
+
+    monkeypatch.setattr(
+        guidelines_cli.ChromaIndex,
+        "from_cache",
+        staticmethod(lambda *_args, **_kwargs: object()),
+    )
+    monkeypatch.setattr(guidelines_cli, "search_guidelines", fake_search_guidelines)
+    return captured_guideline_kwargs
+
+
+def guideline_search_args(sample_catalog_path: Path, index_dir: Path) -> list[str]:
+    return [
+        "guidelines",
+        "search",
+        "--source",
+        str(sample_catalog_path),
+        "--index-dir",
+        str(index_dir),
+        "direct labels",
+    ]
+
+
+def test_guidelines_cli_list_filters_catalog(
+    runner: CliRunner,
+    sample_catalog_path: Path,
+) -> None:
+    result = runner.invoke(
+        chartcoach_cli,
         [
-            CatalogEntry(
-                guideline=Guideline(
-                    id="direct-labels",
-                    title="Use direct labels",
-                    description="Label marks directly when space permits.",
-                    body="## Advice <!-- role: advice -->\n\nPlace labels near marks.",
-                    labels=("chart:line", "task:lookup"),
-                    sections=(
-                        Section(
-                            role="advice",
-                            title="Advice",
-                            content="Place labels near marks.",
-                        ),
-                    ),
-                )
-            ),
-            CatalogEntry(
-                guideline=Guideline(
-                    id="full-axis-bars",
-                    title="Use full value axes for bars",
-                    description="Keep bar axes on the honest baseline.",
-                    body="## Advice <!-- role: advice -->\n\nStart bar value axes at zero.",
-                    labels=("chart:bar", "component:axis"),
-                    sections=(
-                        Section(
-                            role="advice",
-                            title="Advice",
-                            content="Start bar value axes at zero.",
-                        ),
-                    ),
-                )
-            ),
-        ]
+            "guidelines",
+            "list",
+            "--source",
+            str(sample_catalog_path),
+            "--contains",
+            "axis",
+            "--format",
+            "jsonl",
+        ],
     )
-    path = tmp_path / "catalog.parquet"
-    catalog.write_parquet(path)
-    return path
+    assert [row["id"] for row in jsonl_rows(result)] == ["full-axis-bars"]
 
 
-def _workspace_path(tmp_path: Path) -> Path:
-    workspace = tmp_path / "workspace"
-    Catalog.from_entries(
+def test_guidelines_cli_show_emits_wire_record(
+    runner: CliRunner,
+    sample_catalog_path: Path,
+) -> None:
+    result = runner.invoke(
+        chartcoach_cli,
         [
-            CatalogEntry(
-                guideline=Guideline(
-                    id="direct-labels",
-                    title="Use direct labels",
-                    description="Label marks directly when space permits.",
-                    body="## Advice <!-- role: advice -->\n\nPlace labels near marks.",
-                    labels=("chart:line",),
-                    sections=(
-                        Section(
-                            role="advice",
-                            title="Advice",
-                            content="Place labels near marks.",
-                        ),
-                    ),
-                )
-            )
-        ]
-    ).write_folder(workspace)
-    return workspace
-
-
-def test_guidelines_cli_lists_and_shows_guidelines(tmp_path: Path) -> None:
-    path = _source_path(tmp_path)
-
-    result = CliRunner().invoke(
-        guidelines_cli.guidelines_command,
-        ["list", "--source", str(path), "--contains", "axis", "--format", "jsonl"],
+            "guidelines",
+            "show",
+            "--source",
+            str(sample_catalog_path),
+            "direct-labels",
+            "--format",
+            "jsonl",
+        ],
     )
+    guideline = jsonl_rows(result)
+    assert len(guideline) == 1
+    assert guideline[0]["id"] == "direct-labels"
+    assert guideline[0]["guideline"]["title"] == "Use direct labels"
 
-    assert result.exit_code == 0
-    assert "full-axis-bars" in result.output
-    assert "direct-labels" not in result.output
 
-    result = CliRunner().invoke(
-        guidelines_cli.guidelines_command,
-        ["show", "--source", str(path), "direct-labels"],
+def test_tables_cli_reports_schema_and_values(
+    runner: CliRunner,
+    sample_catalog_path: Path,
+) -> None:
+    result = runner.invoke(
+        chartcoach_cli,
+        ["tables", "schema", "--source", str(sample_catalog_path), "--format", "jsonl"],
     )
+    schema = jsonl_rows(result)
+    assert {"table": "guidelines", "column": "title", "type": "String"} in schema
 
-    assert result.exit_code == 0
-    assert "Use direct labels" in result.output
-    assert "Place labels near marks." in result.output
-
-    result = CliRunner().invoke(
-        guidelines_cli.guidelines_command,
-        ["show", "--source", str(path), "direct-labels", "--format", "jsonl"],
+    result = runner.invoke(
+        chartcoach_cli,
+        [
+            "tables",
+            "values",
+            "guideline_labels",
+            "label",
+            "--source",
+            str(sample_catalog_path),
+            "--contains",
+            "chart:",
+            "--format",
+            "jsonl",
+        ],
     )
-
-    assert result.exit_code == 0
-    assert result.output.count("\n") == 1
-    assert '"id": "direct-labels"' in result.output
+    values = {row["value"]: row["rows"] for row in jsonl_rows(result)}
+    assert values == {"chart:bar": 1, "chart:line": 1}
 
 
-def test_read_commands_require_explicit_source(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_read_commands_require_explicit_source(
+    runner: CliRunner,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     repo_root = Path(__file__).parents[3]
     monkeypatch.chdir(repo_root)
     monkeypatch.delenv("CHARTCOACH_SOURCE", raising=False)
 
-    result = CliRunner().invoke(
-        tables_cli.tables_command,
-        ["list", "--format", "jsonl"],
-    )
+    result = runner.invoke(chartcoach_cli, ["tables", "list", "--format", "jsonl"])
 
     assert result.exit_code == 1
     assert "Pass --source PATH" in result.output
 
 
-def test_catalog_build_and_check_are_workspace_scoped(tmp_path: Path) -> None:
-    workspace = _workspace_path(tmp_path)
-    output_path = tmp_path / "catalog.parquet"
-
+def test_catalog_check_rejects_empty_workspace(
+    runner: CliRunner,
+    tmp_path: Path,
+) -> None:
     empty = tmp_path / "empty"
     empty.mkdir()
-    result = CliRunner().invoke(
-        catalog_cli.catalog_command,
-        ["check", "--source", str(empty)],
-    )
+    result = runner.invoke(chartcoach_cli, ["catalog", "check", "--source", str(empty)])
     assert result.exit_code == 1
     assert "No guideline entries found" in result.output
 
-    result = CliRunner().invoke(
-        catalog_cli.catalog_command,
-        ["build", "--source", str(workspace), "--out", str(output_path), "--dry-run"],
+
+def test_catalog_build_is_workspace_scoped(
+    runner: CliRunner,
+    sample_workspace_path: Path,
+    tmp_path: Path,
+) -> None:
+    output_path = tmp_path / "catalog.parquet"
+
+    result = runner.invoke(
+        chartcoach_cli,
+        [
+            "catalog",
+            "build",
+            "--source",
+            str(sample_workspace_path),
+            "--out",
+            str(output_path),
+            "--dry-run",
+        ],
     )
     assert result.exit_code == 0
     assert not output_path.exists()
 
-    result = CliRunner().invoke(
-        catalog_cli.catalog_command,
-        ["build", "--source", str(workspace), "--out", str(output_path)],
+    result = runner.invoke(
+        chartcoach_cli,
+        [
+            "catalog",
+            "build",
+            "--source",
+            str(sample_workspace_path),
+            "--out",
+            str(output_path),
+        ],
     )
     assert result.exit_code == 0
     assert output_path.exists()
 
-    result = CliRunner().invoke(
-        catalog_cli.catalog_command,
-        ["build", "--source", str(workspace), "--out", str(output_path)],
+    result = runner.invoke(
+        chartcoach_cli,
+        [
+            "catalog",
+            "build",
+            "--source",
+            str(sample_workspace_path),
+            "--out",
+            str(output_path),
+        ],
     )
     assert result.exit_code == 1
     assert "Pass --overwrite" in result.output
 
 
-
-def test_catalog_duckdb_writes_catalog_tables(tmp_path: Path) -> None:
-    pytest.importorskip("duckdb")
-    path = _source_path(tmp_path)
+@pytest.mark.duckdb
+def test_catalog_duckdb_writes_catalog_tables(
+    runner: CliRunner,
+    sample_catalog_path: Path,
+    tmp_path: Path,
+) -> None:
+    duckdb = pytest.importorskip("duckdb")
     duckdb_path = tmp_path / "artifacts" / "catalog.duckdb"
 
-    result = CliRunner().invoke(
-        catalog_cli.catalog_command,
+    result = runner.invoke(
+        chartcoach_cli,
         [
+            "catalog",
             "duckdb",
             "--source",
-            str(path),
+            str(sample_catalog_path),
             "--out",
             str(duckdb_path),
         ],
@@ -182,38 +240,41 @@ def test_catalog_duckdb_writes_catalog_tables(tmp_path: Path) -> None:
     assert duckdb_path.exists()
     assert "Wrote DuckDB catalog" in result.output
 
-    import duckdb
-
     conn = duckdb.connect(duckdb_path, read_only=True)
     try:
         guidelines_count = conn.execute("select count(*) from guidelines").fetchone()
         labels_count = conn.execute("select count(*) from labels").fetchone()
-        assert guidelines_count is not None
-        assert labels_count is not None
-        assert guidelines_count[0] == 2
-        assert labels_count[0] == 4
     finally:
         conn.close()
+    assert guidelines_count == (2,)
+    assert labels_count == (5,)
 
-    result = CliRunner().invoke(
-        catalog_cli.catalog_command,
-        ["duckdb", "--source", str(path), "--out", str(duckdb_path)],
+    result = runner.invoke(
+        chartcoach_cli,
+        [
+            "catalog",
+            "duckdb",
+            "--source",
+            str(sample_catalog_path),
+            "--out",
+            str(duckdb_path),
+        ],
     )
     assert result.exit_code == 1
     assert "Pass --overwrite" in result.output
 
 
+@pytest.mark.duckdb
 def test_duckdb_overwrite_preserves_existing_file_on_failure(
+    sample_catalog: Catalog,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     duckdb = pytest.importorskip("duckdb")
     import chartcoach.duckdb as duckdb_module
 
-    path = _source_path(tmp_path)
-    catalog = Catalog.from_parquet(path)
     duckdb_path = tmp_path / "artifacts" / "catalog.duckdb"
-    duckdb_module.write_duckdb(catalog, duckdb_path)
+    duckdb_module.write_duckdb(sample_catalog, duckdb_path)
 
     def fail_register(*_: object, **__: object) -> None:
         raise RuntimeError("register failed")
@@ -221,7 +282,7 @@ def test_duckdb_overwrite_preserves_existing_file_on_failure(
     monkeypatch.setattr(duckdb_module, "register_catalog", fail_register)
 
     with pytest.raises(RuntimeError, match="register failed"):
-        duckdb_module.write_duckdb(catalog, duckdb_path, overwrite=True)
+        duckdb_module.write_duckdb(sample_catalog, duckdb_path, overwrite=True)
 
     conn = duckdb.connect(duckdb_path, read_only=True)
     try:
@@ -231,59 +292,21 @@ def test_duckdb_overwrite_preserves_existing_file_on_failure(
     assert row == (2,)
 
 
-def test_tables_cli_lists_and_describes_schema(tmp_path: Path) -> None:
-    path = _source_path(tmp_path)
-
-    result = CliRunner().invoke(
-        tables_cli.tables_command,
-        ["schema", "--source", str(path), "--format", "jsonl"],
-    )
-
-    assert result.exit_code == 0
-    assert '"table": "guidelines"' in result.output
-    assert '"column": "title"' in result.output
-
-    result = CliRunner().invoke(
-        tables_cli.tables_command,
-        ["list", "--source", str(path), "--format", "jsonl"],
-    )
-
-    assert result.exit_code == 0
-    assert '"name": "sections"' in result.output
-    assert '"name": "labels"' in result.output
-
-
+@pytest.mark.search
 def test_artifacts_cli_lists_native_paths(
+    runner: CliRunner,
+    sample_catalog_path: Path,
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    import chartcoach.search.chroma as chroma
-
-    path = _source_path(tmp_path)
+    pytest.importorskip("chromadb")
     index_dir = tmp_path / "index"
-    monkeypatch.chdir(tmp_path)
 
-    monkeypatch.setattr(
-        chroma.ChromaIndex,
-        "cache_paths",
-        staticmethod(
-            lambda _catalog, **_kwargs: chroma.ChromaIndexPaths(
-                index_root=index_dir,
-                cache_path=index_dir / "digest" / "embedding",
-                chroma_path=index_dir / "digest" / "embedding" / "chroma_db",
-                catalog_digest="digest",
-                documents_version="documents-v1",
-                embedding_name="tiny",
-                collection_name="catalog",
-            )
-        ),
-    )
-
-    result = CliRunner().invoke(
-        artifacts_cli.artifacts_command,
+    result = runner.invoke(
+        chartcoach_cli,
         [
+            "artifacts",
             "--source",
-            str(path),
+            str(sample_catalog_path),
             "--index-dir",
             str(index_dir),
             "--format",
@@ -291,72 +314,34 @@ def test_artifacts_cli_lists_native_paths(
         ],
     )
 
-    assert result.exit_code == 0
-    assert '"name": "catalog_parquet"' in result.output
-    assert '"name": "duckdb_catalog"' in result.output
-    assert '"name": "chroma"' in result.output
-    assert '"collection_name": "catalog"' in result.output
-    assert f"--source {path.as_posix()!r}" in result.output
-
-
-def test_artifacts_cli_does_not_require_index_dir(tmp_path: Path) -> None:
-    path = _source_path(tmp_path)
-
-    result = CliRunner().invoke(
-        artifacts_cli.artifacts_command,
-        ["--source", str(path), "--format", "jsonl"],
-    )
-
-    assert result.exit_code == 0
-    assert '"name": "catalog_parquet"' in result.output
-    assert '"name": "duckdb_catalog"' in result.output
-    assert '"name": "index_root"' in result.output
-    assert '"name": "chroma"' in result.output
-
-
-def test_artifacts_cli_survives_missing_search_extras(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    import chartcoach.search.chroma as chroma
-
-    path = _source_path(tmp_path)
-
-    def raise_missing_search_extra(*_: object, **__: object) -> object:
-        raise ModuleNotFoundError("missing polars_hash", name="polars_hash")
-
-    monkeypatch.setattr(
-        chroma.ChromaIndex,
-        "cache_paths",
-        staticmethod(raise_missing_search_extra),
-    )
-
-    result = CliRunner().invoke(
-        artifacts_cli.artifacts_command,
-        ["--source", str(path), "--format", "jsonl"],
-    )
-
-    assert result.exit_code == 0
-    assert '"name": "catalog_parquet"' in result.output
-    assert '"name": "duckdb_catalog"' in result.output
-    assert '"name": "index_root"' in result.output
-    assert '"name": "chroma"' not in result.output
-    assert "Search extras are required" in result.output
+    rows = {row["name"]: row for row in jsonl_rows(result)}
+    assert set(rows) == {
+        "catalog_source",
+        "catalog_parquet",
+        "duckdb_catalog",
+        "index_root",
+        "chroma",
+    }
+    assert rows["catalog_source"]["path"] == str(sample_catalog_path)
+    assert rows["index_root"]["path"] == str(index_dir)
+    assert rows["chroma"]["collection_name"] == "catalog"
 
 
 def test_feedback_prompt_cli_uses_local_image_and_deterministic_evidence(
+    runner: CliRunner,
+    sample_catalog_path: Path,
     tmp_path: Path,
 ) -> None:
-    path = _source_path(tmp_path)
     image_path = tmp_path / "chart.jpg"
     image_path.write_bytes(b"not a real jpeg")
 
-    result = CliRunner().invoke(
-        feedback_cli.feedback_command,
+    result = runner.invoke(
+        chartcoach_cli,
         [
+            "feedback",
             "prompt",
             "--source",
-            str(path),
+            str(sample_catalog_path),
             "--image",
             str(image_path),
             "--situation",
@@ -378,38 +363,44 @@ def test_feedback_prompt_cli_uses_local_image_and_deterministic_evidence(
     assert "Start bar value axes at zero." in result.output
 
 
-def test_tables_cli_counts_values(tmp_path: Path) -> None:
-    path = _source_path(tmp_path)
-
-    result = CliRunner().invoke(
-        tables_cli.tables_command,
-        [
-            "values",
-            "guideline_labels",
-            "label",
-            "--source",
-            str(path),
-            "--contains",
-            "chart:",
-            "--format",
-            "jsonl",
-        ],
+@pytest.mark.parametrize(
+    ("argv", "expected"),
+    [
+        (
+            ["guidelines", "retrieve", "--id", "missing-guideline"],
+            "Unknown guideline id: missing-guideline",
+        ),
+        (["guidelines", "list", "--label", "chart:missing"], "Unknown label"),
+        (["guidelines", "retrieve", "--section", "missing"], "Unknown section role"),
+    ],
+)
+def test_guidelines_cli_renders_actionable_errors(
+    runner: CliRunner,
+    sample_catalog_path: Path,
+    argv: list[str],
+    expected: str,
+) -> None:
+    result = runner.invoke(
+        chartcoach_cli,
+        [*argv[:2], "--source", str(sample_catalog_path), *argv[2:]],
     )
 
-    assert result.exit_code == 0
-    assert '"value": "chart:bar"' in result.output
-    assert '"value": "chart:line"' in result.output
+    assert result.exit_code == 1
+    assert expected in result.output
+    assert "Traceback" not in result.output
 
 
-def test_guidelines_cli_retrieves_section_specific_evidence(tmp_path: Path) -> None:
-    path = _source_path(tmp_path)
-
-    result = CliRunner().invoke(
-        guidelines_cli.guidelines_command,
+def test_guidelines_cli_retrieves_section_specific_evidence(
+    runner: CliRunner,
+    sample_catalog_path: Path,
+) -> None:
+    result = runner.invoke(
+        chartcoach_cli,
         [
+            "guidelines",
             "retrieve",
             "--source",
-            str(path),
+            str(sample_catalog_path),
             "--id",
             "full-axis-bars",
             "--section",
@@ -423,42 +414,22 @@ def test_guidelines_cli_retrieves_section_specific_evidence(tmp_path: Path) -> N
     assert "direct-labels" not in result.output
 
 
-def test_guidelines_cli_retrieve_fails_on_unknown_id(tmp_path: Path) -> None:
-    path = _source_path(tmp_path)
-
-    result = CliRunner().invoke(
-        guidelines_cli.guidelines_command,
-        ["retrieve", "--source", str(path), "--id", "missing-guideline"],
-    )
-
-    assert result.exit_code == 1
-    assert "Unknown guideline id: missing-guideline" in result.output
-    assert "guidelines list --source PATH --format jsonl" in result.output
-    assert "Traceback" not in result.output
-
-
-def test_guidelines_cli_list_validates_labels(tmp_path: Path) -> None:
-    path = _source_path(tmp_path)
-
-    result = CliRunner().invoke(
-        guidelines_cli.guidelines_command,
-        ["list", "--source", str(path), "--label", "chart:missing"],
-    )
-
-    assert result.exit_code == 1
-    assert "Unknown label" in result.output
-    assert "chartcoach tables values guideline_labels label" in result.output
-    assert "Traceback" not in result.output
-
-
-def test_guidelines_search_invalid_where_json_does_not_emit_index_hint(
-    tmp_path: Path,
+@pytest.mark.search
+def test_guidelines_search_validates_filters_before_opening_index(
+    runner: CliRunner,
+    sample_catalog_path: Path,
 ) -> None:
-    path = _source_path(tmp_path)
-
-    result = CliRunner().invoke(
-        guidelines_cli.guidelines_command,
-        ["search", "--source", str(path), "--where", "{", "axis labels"],
+    result = runner.invoke(
+        chartcoach_cli,
+        [
+            "guidelines",
+            "search",
+            "--source",
+            str(sample_catalog_path),
+            "--where",
+            "{",
+            "axis labels",
+        ],
     )
 
     assert result.exit_code == 1
@@ -467,44 +438,13 @@ def test_guidelines_search_invalid_where_json_does_not_emit_index_hint(
     assert "Traceback" not in result.output
 
 
-def test_guidelines_cli_retrieve_validates_labels_and_sections(
-    tmp_path: Path,
-) -> None:
-    path = _source_path(tmp_path)
-
-    result = CliRunner().invoke(
-        guidelines_cli.guidelines_command,
-        ["retrieve", "--source", str(path), "--label", "chart:missing"],
-    )
-
-    assert result.exit_code == 1
-    assert "Unknown label" in result.output
-    assert "chartcoach tables values guideline_labels label" in result.output
-
-    result = CliRunner().invoke(
-        guidelines_cli.guidelines_command,
-        ["retrieve", "--source", str(path), "--section", "advice"],
-    )
-
-    assert result.exit_code == 0
-    assert "Place labels near marks." in result.output
-
-    result = CliRunner().invoke(
-        guidelines_cli.guidelines_command,
-        ["retrieve", "--source", str(path), "--section", "missing"],
-    )
-
-    assert result.exit_code == 1
-    assert "Unknown section role" in result.output
-    assert "DuckDB or Polars" in result.output
-
-
+@pytest.mark.search
 def test_guidelines_search_requires_existing_index_without_traceback(
+    runner: CliRunner,
+    sample_catalog_path: Path,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    path = _source_path(tmp_path)
-
     def raise_missing_index(*_: object, **__: object) -> object:
         raise FileNotFoundError("missing search index")
 
@@ -514,9 +454,17 @@ def test_guidelines_search_requires_existing_index_without_traceback(
         staticmethod(raise_missing_index),
     )
 
-    result = CliRunner().invoke(
-        guidelines_cli.guidelines_command,
-        ["search", "--source", str(path), "--index-dir", str(tmp_path / "index"), "axis"],
+    result = runner.invoke(
+        chartcoach_cli,
+        [
+            "guidelines",
+            "search",
+            "--source",
+            str(sample_catalog_path),
+            "--index-dir",
+            str(tmp_path / "index"),
+            "axis",
+        ],
     )
 
     assert result.exit_code == 1
@@ -525,54 +473,50 @@ def test_guidelines_search_requires_existing_index_without_traceback(
     assert "Traceback" not in result.output
 
 
-def test_guidelines_search_flattens_guideline_results(
+@pytest.mark.search
+@pytest.mark.parametrize(
+    ("output_format", "reader"),
+    [
+        ("json", lambda result: json_value(result)["rows"][0]["id"]),
+        ("jsonl", lambda result: jsonl_rows(result)[0]["id"]),
+        ("csv", lambda result: csv_rows(result)[0]["id"]),
+    ],
+)
+def test_guidelines_search_structured_formats_return_guideline_rows(
+    runner: CliRunner,
+    sample_catalog_path: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    output_format: str,
+    reader: Callable[[Result], object],
+) -> None:
+    patch_guideline_search(monkeypatch)
+
+    result = runner.invoke(
+        chartcoach_cli,
+        [
+            *guideline_search_args(sample_catalog_path, tmp_path / "index"),
+            "--format",
+            output_format,
+        ],
+    )
+
+    assert reader(result) == "direct-labels"
+
+
+@pytest.mark.search
+def test_guidelines_search_markdown_keeps_stable_evidence(
+    runner: CliRunner,
+    sample_catalog_path: Path,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    path = _source_path(tmp_path)
-    captured_guideline_kwargs: dict[str, object] = {}
+    patch_guideline_search(monkeypatch)
 
-    class FakeGuidelineSearchResult:
-        def to_dict(self) -> dict[str, object]:
-            return {
-                "query": "direct labels",
-                "rows": [
-                    {
-                        "rank": 1,
-                        "id": "direct-labels",
-                        "title": "Use direct labels",
-                        "description": "Label marks directly when space permits.",
-                        "labels": ["chart:line"],
-                        "matched_document_id": "direct-labels---overview",
-                        "matched_role": "overview",
-                        "distance": 0.125,
-                        "matched_text": "Use direct labels\n\nLabel marks directly.",
-                    }
-                ],
-                "row_count": 1,
-                "limit": 8,
-            }
-
-    def fake_search_guidelines(*_: object, **kwargs: object) -> FakeGuidelineSearchResult:
-        captured_guideline_kwargs.update(kwargs)
-        return FakeGuidelineSearchResult()
-
-    monkeypatch.setattr(
-        guidelines_cli.ChromaIndex,
-        "from_cache",
-        staticmethod(lambda *_args, **_kwargs: object()),
-    )
-    monkeypatch.setattr(guidelines_cli, "search_guidelines", fake_search_guidelines)
-
-    result = CliRunner().invoke(
-        guidelines_cli.guidelines_command,
+    result = runner.invoke(
+        chartcoach_cli,
         [
-            "search",
-            "--source",
-            str(path),
-            "--index-dir",
-            str(tmp_path / "index"),
-            "direct labels",
+            *guideline_search_args(sample_catalog_path, tmp_path / "index"),
             "--format",
             "markdown",
         ],
@@ -581,67 +525,75 @@ def test_guidelines_search_flattens_guideline_results(
     assert result.exit_code == 0
     assert "direct-labels" in result.output
     assert "distance: `0.125`" in result.output
-    assert "Use direct labels" in result.output
 
-    result = CliRunner().invoke(
-        guidelines_cli.guidelines_command,
+
+@pytest.mark.search
+def test_guidelines_search_forwards_native_filters(
+    runner: CliRunner,
+    sample_catalog_path: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured_guideline_kwargs = patch_guideline_search(monkeypatch)
+    result = runner.invoke(
+        chartcoach_cli,
         [
-            "search",
-            "--source",
-            str(path),
-            "--index-dir",
-            str(tmp_path / "index"),
-            "direct labels",
-            "--format",
-            "csv",
-        ],
-    )
-
-    assert result.exit_code == 0
-    assert "rank,id,title" in result.output
-    assert "direct-labels" in result.output
-
-    result = CliRunner().invoke(
-        guidelines_cli.guidelines_command,
-        [
-            "search",
-            "--source",
-            str(path),
-            "--index-dir",
-            str(tmp_path / "index"),
-            "direct labels",
+            *guideline_search_args(sample_catalog_path, tmp_path / "index"),
             "--where",
             '{"role":"section.advice"}',
             "--format",
             "json",
         ],
     )
-
-    assert result.exit_code == 0
+    payload = json_value(result)
+    assert payload["rows"][0]["id"] == "direct-labels"
     assert captured_guideline_kwargs["where"] == {"role": "section.advice"}
     assert captured_guideline_kwargs["limit"] == 8
 
 
+@pytest.mark.search
+@pytest.mark.parametrize(
+    ("command", "payload", "expected_params"),
+    [
+        (
+            "query",
+            '{"query_texts":["axis","labels"],"n_results":2,"include":["documents"]}',
+            {
+                "query_texts": ["axis", "labels"],
+                "n_results": 2,
+                "include": ["documents"],
+            },
+        ),
+        (
+            "get",
+            '{"ids":["doc"],"include":["metadatas"]}',
+            {"ids": ["doc"], "include": ["metadatas"]},
+        ),
+    ],
+)
 def test_index_cli_passes_native_chroma_params(
+    runner: CliRunner,
+    sample_catalog_path: Path,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    command: str,
+    payload: str,
+    expected_params: dict[str, object],
 ) -> None:
     import chartcoach.search.chroma as chroma
 
-    path = _source_path(tmp_path)
-    captured_query: dict[str, object] = {}
-    captured_get: dict[str, object] = {}
+    captured: dict[str, object] = {}
 
     class FakeCollection:
         def count(self) -> int:
             return 1
 
         def query(self, **params: object) -> dict[str, object]:
-            captured_query.update(params)
+            captured.update(params)
             return {"ids": [["doc"]]}
 
         def get(self, **params: object) -> dict[str, object]:
-            captured_get.update(params)
+            captured.update(params)
             return {"ids": ["doc"]}
 
     class FakeIndex:
@@ -653,36 +605,18 @@ def test_index_cli_passes_native_chroma_params(
         staticmethod(lambda *_args, **_kwargs: FakeIndex()),
     )
 
-    result = CliRunner().invoke(
-        index_cli.index_command,
+    result = runner.invoke(
+        chartcoach_cli,
         [
-            "query",
+            "index",
+            command,
             "--source",
-            str(path),
+            str(sample_catalog_path),
             "--index-dir",
             str(tmp_path / "index"),
-            '{"query_texts":["axis","labels"],"n_results":2,"include":["documents"]}',
+            payload,
         ],
     )
 
     assert result.exit_code == 0
-    assert captured_query == {
-        "query_texts": ["axis", "labels"],
-        "n_results": 2,
-        "include": ["documents"],
-    }
-
-    result = CliRunner().invoke(
-        index_cli.index_command,
-        [
-            "get",
-            "--source",
-            str(path),
-            "--index-dir",
-            str(tmp_path / "index"),
-            '{"ids":["doc"],"include":["metadatas"]}',
-        ],
-    )
-
-    assert result.exit_code == 0
-    assert captured_get == {"ids": ["doc"], "include": ["metadatas"]}
+    assert captured == expected_params

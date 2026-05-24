@@ -1,50 +1,13 @@
 from __future__ import annotations
 
+import pytest
+
 from chartcoach import Catalog, CatalogEntry, Guideline, Section
 from chartcoach.tools.catalog import CatalogToolError, CatalogTools
 
 
-def _catalog() -> Catalog:
-    return Catalog.from_entries(
-        [
-            CatalogEntry(
-                guideline=Guideline(
-                    id="direct-labels",
-                    title="Use direct labels",
-                    description="Label marks directly when space permits.",
-                    body="## Advice <!-- role: advice -->\n\nPlace labels near marks.",
-                    labels=("chart:line", "component:label"),
-                    sections=(
-                        Section(
-                            role="advice",
-                            title="Advice",
-                            content="Place labels near marks.",
-                        ),
-                    ),
-                )
-            ),
-            CatalogEntry(
-                guideline=Guideline(
-                    id="full-axis-bars",
-                    title="Use full axes",
-                    description="Keep bar axes honest.",
-                    body="## Advice <!-- role: advice -->\n\nStart bar value axes at zero.",
-                    labels=("chart:bar", "component:axis"),
-                    sections=(
-                        Section(
-                            role="advice",
-                            title="Advice",
-                            content="Start bar value axes at zero.",
-                        ),
-                    ),
-                )
-            ),
-        ]
-    )
-
-
-def test_catalog_tools_support_progressive_discovery() -> None:
-    tools = CatalogTools(_catalog())
+def test_catalog_tools_support_progressive_discovery(sample_catalog: Catalog) -> None:
+    tools = CatalogTools(sample_catalog)
 
     assert {"name": "guidelines", "columns": 7, "rows": None} in tools.list_tables()
     assert {"name": "guidelines", "rows": 2} in tools.list_tables(
@@ -57,8 +20,8 @@ def test_catalog_tools_support_progressive_discovery() -> None:
     } in tools.describe_tables(tables=["sections"])
 
 
-def test_catalog_tools_retrieve_and_validate_filters() -> None:
-    tools = CatalogTools(_catalog())
+def test_catalog_tools_retrieve_and_validate_filters(sample_catalog: Catalog) -> None:
+    tools = CatalogTools(sample_catalog)
 
     rows = tools.retrieve_guidelines(
         labels=["chart:line"],
@@ -70,30 +33,43 @@ def test_catalog_tools_retrieve_and_validate_filters() -> None:
         {"role": "advice", "title": "Advice", "content": "Place labels near marks."}
     ]
 
-    try:
+    with pytest.raises(CatalogToolError, match="Unknown label") as exc_info:
         tools.retrieve_guidelines(labels=["chart:missing"])
-    except CatalogToolError as exc:
-        assert "Unknown label" in str(exc)
-        assert "guideline_labels" in str(exc)
-    else:  # pragma: no cover
-        raise AssertionError("expected CatalogToolError")
+    assert "guideline_labels" in str(exc_info.value)
 
 
-def test_catalog_tools_retrieve_filters_without_mutating_catalog_model() -> None:
-    tools = CatalogTools(_catalog())
+@pytest.mark.parametrize(
+    ("method", "kwargs", "expected_ids"),
+    [
+        ("retrieve_guidelines", {"labels": ["chart:bar"]}, ["full-axis-bars"]),
+        (
+            "retrieve_guidelines",
+            {"label_prefixes": ["component:lab"]},
+            ["direct-labels"],
+        ),
+        (
+            "list_guidelines",
+            {"label_prefixes": ["component:lab"]},
+            ["direct-labels"],
+        ),
+        ("retrieve_guidelines", {"contains": "zero"}, ["full-axis-bars"]),
+    ],
+)
+def test_catalog_tools_filter_guidelines(
+    sample_catalog: Catalog,
+    method: str,
+    kwargs: dict[str, object],
+    expected_ids: list[str],
+) -> None:
+    tools = CatalogTools(sample_catalog)
 
-    assert [row["id"] for row in tools.retrieve_guidelines(labels=["chart:bar"])] == [
-        "full-axis-bars"
-    ]
-    assert [
-        row["id"] for row in tools.retrieve_guidelines(label_prefixes=["component:lab"])
-    ] == ["direct-labels"]
-    assert [row["id"] for row in tools.list_guidelines(label_prefixes=["component:lab"])] == [
-        "direct-labels"
-    ]
-    assert [row["id"] for row in tools.retrieve_guidelines(contains="zero")] == [
-        "full-axis-bars"
-    ]
+    rows = getattr(tools, method)(**kwargs)
+
+    assert [row["id"] for row in rows] == expected_ids
+
+
+def test_catalog_tools_preserve_explicit_id_order(sample_catalog: Catalog) -> None:
+    tools = CatalogTools(sample_catalog)
 
     ordered = tools.retrieve_guidelines(ids=["full-axis-bars", "direct-labels"])
     assert [row["id"] for row in ordered] == ["full-axis-bars", "direct-labels"]
