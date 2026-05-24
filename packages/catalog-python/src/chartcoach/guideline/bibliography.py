@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import dataclasses as dc
 import io
-import re
 import warnings
+from collections.abc import Mapping
+from functools import cache
+from types import MappingProxyType
 from typing import Any
 
 import bibtexparser
@@ -29,19 +32,51 @@ MACRO_REPLACE_MAP = {
 }
 
 
+@dc.dataclass(frozen=True, slots=True)
+class ParsedBibtexEntry:
+    """One parsed BibTeX entry plus the serialized BibTeX used by citeproc."""
+
+    entry: Mapping[str, Any]
+    bibtex: str
+    normalized_bibtex: str
+
+    @property
+    def id(self) -> str:
+        value = self.entry.get("ID")
+        if not isinstance(value, str) or not value:
+            raise ValueError("BibTeX entry must contain an 'ID' field.")
+        return value
+
+
 def parse_bibtex(bibtex_content: str) -> list[str]:
-    """Split BibTeX content into individual entries."""
-    comment_free = "\n".join(
-        line for line in bibtex_content.splitlines() if not line.strip().startswith("%")
-    )
-    return [
-        entry.strip() for entry in re.split(r"(?=@)", comment_free) if entry.strip()
-    ]
+    """Return individual BibTeX entries parsed from a `.bib` file."""
+
+    database = bibtexparser.loads(bibtex_content)
+    return [_dump_bibtex_entry(entry) for entry in database.entries]
 
 
 def parse_bibtex_entry(bibtex_str: str) -> dict[str, Any]:
     """Parse a single BibTeX entry into a dictionary of fields."""
-    return bibtexparser.loads(bibtex_str).entries[0]
+    return dict(parse_bibtex_reference(bibtex_str).entry)
+
+
+@cache
+def parse_bibtex_reference(bibtex_str: str) -> ParsedBibtexEntry:
+    """Parse one BibTeX reference and retain its normalized serialized form."""
+
+    database = bibtexparser.loads(bibtex_str)
+    if not database.entries:
+        preview = bibtex_str.strip().replace("\n", " ")[:80]
+        raise ValueError(f"No BibTeX entry parsed from input: {preview!r}.")
+    if len(database.entries) != 1:
+        raise ValueError(f"Expected one BibTeX entry, found {len(database.entries)}.")
+    entry = dict(database.entries[0])
+    bibtex = _dump_bibtex_entry(entry)
+    return ParsedBibtexEntry(
+        entry=MappingProxyType(entry),
+        bibtex=bibtex,
+        normalized_bibtex=_normalize_bibtex_entry(bibtex),
+    )
 
 
 def _normalize_bibtex_entry(bibtex_str: str) -> str:
@@ -51,22 +86,32 @@ def _normalize_bibtex_entry(bibtex_str: str) -> str:
     return normalized
 
 
+@cache
 def format_bibtex_entry(bibtex_entry: str, style: str = "harvard1") -> str:
     """Format a BibTeX entry with citeproc, raising on failures."""
-    normalized_entry = _normalize_bibtex_entry(bibtex_entry)
+    return format_bibtex_reference(parse_bibtex_reference(bibtex_entry), style=style)
 
+
+def format_bibtex_reference(
+    parsed: ParsedBibtexEntry,
+    *,
+    style: str = "harvard1",
+) -> str:
+    """Format an already parsed BibTeX entry with citeproc."""
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", message="Unsupported BibTeX field")
-        source = BibTeX(io.StringIO(normalized_entry))
+        source = BibTeX(io.StringIO(parsed.normalized_bibtex))
         citation_style = CitationStylesStyle(style, validate=False)
         bibliography = CitationStylesBibliography(
             citation_style, source, formatter.plain
         )
 
-        parsed_entry = parse_bibtex_entry(normalized_entry)
-        if "ID" not in parsed_entry:
-            raise ValueError("BibTeX entry must contain an 'ID' field.")
-
-        citation = Citation([CitationItem(parsed_entry["ID"])])
+        citation = Citation([CitationItem(parsed.id)])
         bibliography.register(citation)
         return "".join(bibliography.bibliography()[0])
+
+
+def _dump_bibtex_entry(entry: dict[str, Any]) -> str:
+    database = bibtexparser.bibdatabase.BibDatabase()
+    database.entries = [entry]
+    return bibtexparser.dumps(database).strip()

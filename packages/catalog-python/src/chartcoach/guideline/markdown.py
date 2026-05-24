@@ -14,7 +14,13 @@ SECTION_HEADING_RE = re.compile(r"^##\s+(.+?)\s*<!--\s*role:\s*(\S+)\s*-->\s*$")
 def parse_guideline(markdown: str) -> Guideline:
     """Parse markdown with YAML frontmatter into a Guideline model."""
     frontmatter, body = parse_markdown_with_frontmatter(markdown)
-    return Guideline.model_validate({**frontmatter, "body": body})
+    return Guideline.from_mapping(
+        {
+            **frontmatter,
+            "body": body,
+            "sections": parse_guideline_section_records(body),
+        }
+    )
 
 
 def parse_guideline_section_records(body: str) -> list[dict[str, str]]:
@@ -70,7 +76,7 @@ def parse_guideline_section_records(body: str) -> list[dict[str, str]]:
 def parse_guideline_sections(body: str) -> list[Section]:
     """Parse the guideline body into Section models."""
     return [
-        Section.model_validate(section)
+        Section.from_mapping(section)
         for section in parse_guideline_section_records(body)
     ]
 

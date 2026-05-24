@@ -1,25 +1,27 @@
 from .clients import create_chroma_client
-from .sql import connect_catalog, register_catalog
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .chroma import CacheMode, ChromaIndex, ChromaIndexPaths
+    from .guidelines import GuidelineSearchHit, GuidelineSearchResult, search_guidelines
 
 __all__ = [
     "CacheMode",
+    "GuidelineSearchHit",
+    "GuidelineSearchResult",
     "ChromaIndex",
-    "SearchSession",
-    "SearchTools",
-    "SqlTools",
-    "connect_catalog",
+    "ChromaIndexPaths",
     "create_chroma_client",
-    "open_search_session",
-    "register_catalog",
+    "search_guidelines",
 ]
 
 _LAZY_EXPORTS = {
     "CacheMode": (".chroma", "CacheMode"),
     "ChromaIndex": (".chroma", "ChromaIndex"),
-    "SearchSession": (".session", "SearchSession"),
-    "SearchTools": (".tools", "SearchTools"),
-    "SqlTools": (".sql_tools", "SqlTools"),
-    "open_search_session": (".session", "open_search_session"),
+    "ChromaIndexPaths": (".chroma", "ChromaIndexPaths"),
+    "GuidelineSearchHit": (".guidelines", "GuidelineSearchHit"),
+    "GuidelineSearchResult": (".guidelines", "GuidelineSearchResult"),
+    "search_guidelines": (".guidelines", "search_guidelines"),
 }
 
 

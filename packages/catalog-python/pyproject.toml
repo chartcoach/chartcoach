@@ -6,7 +6,7 @@ readme = "README.md"
 authors = [{ name = "Péter Ferenc Gyarmati", email = "dev.petergy@gmail.com" }]
 license = "MIT"
 license-files = ["LICENSE"]
-requires-python = ">=3.11,<3.16"
+requires-python = ">=3.11,<3.15"
 keywords = [
   "chartcoach",
   "data-visualization",
@@ -24,46 +24,30 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
-  "Programming Language :: Python :: 3.15",
   "Topic :: Scientific/Engineering :: Visualization",
   "Typing :: Typed",
 ]
 dependencies = [
-  "bibtexparser>=1.4",
-  "click>=8.1",
+  "bibtexparser>=1.1.0",
+  "click>=8.0.0",
   "citeproc-py>=0.9",
-  "mdformat>=1.0.0",
-  "polars>=1.38",
-  "pyyaml>=6.0.0",
+  "mdformat>=0.7.19",
+  "platformdirs>=4.0.0",
+  "polars>=1.0.0",
+  "pyyaml>=5.3.1",
 ]
 
 [project.optional-dependencies]
-chroma = [
-  "chromadb>=1.5",
-  "platformdirs>=4.9.4",
-  "polars-hash>=0.5.6",
-  "tqdm>=4.67",
-]
-sql = [
-  "duckdb>=1.5",
-  "pyarrow>=23",
+duckdb = [
+  "duckdb>=1.4.0",
 ]
 search = [
-  "chromadb>=1.5",
-  "duckdb>=1.5",
-  "platformdirs>=4.9.4",
-  "polars-hash>=0.5.6",
-  "pyarrow>=23",
-  "tqdm>=4.67",
+  "chromadb>=1.5.0",
+  "polars-hash>=0.5.0",
+  "tqdm>=1.0",
 ]
 mcp = [
-  "chromadb>=1.5",
-  "duckdb>=1.5",
-  "mcp[cli]",
-  "platformdirs>=4.9.4",
-  "polars-hash>=0.5.6",
-  "pyarrow>=23",
-  "tqdm>=4.67",
+  "mcp[cli]>=1.9.0",
 ]
 
 [project.scripts]

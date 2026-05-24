@@ -1,11 +1,16 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
+import dataclasses as dc
+from collections.abc import Mapping, Sequence
 from typing import TYPE_CHECKING
 
 import polars as pl
 
-from ..guideline.bibliography import format_bibtex_entry, parse_bibtex_entry
+from ..guideline.bibliography import (
+    ParsedBibtexEntry,
+    format_bibtex_reference,
+    parse_bibtex_reference,
+)
 
 if TYPE_CHECKING:
     from .collection import CatalogEntry
@@ -29,10 +34,21 @@ GUIDELINE_SCHEMA = pl.Struct(
         pl.Field("sections", pl.List(SECTION_SCHEMA)),
     ]
 )
-CATALOG_SCHEMA = {
+CATALOG_SCHEMA = pl.Schema(
+    {
+        "id": pl.String,
+        "guideline": GUIDELINE_SCHEMA,
+        "references": pl.List(pl.String),
+    }
+)
+GUIDELINES_SCHEMA = {
     "id": pl.String,
-    "guideline": GUIDELINE_SCHEMA,
-    "references": pl.List(pl.String),
+    "title": pl.String,
+    "bibliography": pl.String,
+    "description": pl.String,
+    "labels": pl.List(pl.String),
+    "body": pl.String,
+    "sections": pl.List(SECTION_SCHEMA),
 }
 SECTIONS_SCHEMA = {
     "guideline_id": pl.String,
@@ -67,31 +83,53 @@ REFERENCES_SCHEMA = {
     "publisher": pl.String,
     "url": pl.String,
     "doi": pl.String,
-    "formatted": pl.String,
     "bibtex": pl.String,
+}
+FORMATTED_REFERENCES_SCHEMA = {
+    **REFERENCES_SCHEMA,
+    "formatted": pl.String,
 }
 
 
+@dc.dataclass(frozen=True, slots=True)
+class ReferenceTables:
+    references: pl.DataFrame
+    guideline_references: pl.DataFrame
+    references_by_id: Mapping[str, ParsedBibtexEntry]
+
+
 def build_catalog_df(entries: Sequence[CatalogEntry]) -> pl.DataFrame:
-    """Build the canonical catalog dataframe."""
+    """Build the serialized catalog dataframe."""
     if not entries:
         return pl.DataFrame(schema=CATALOG_SCHEMA)
 
-    return pl.from_dicts([entry.model_dump() for entry in entries]).select(
-        "id", "guideline", "references"
+    return pl.from_dicts([entry.to_record() for entry in entries]).select(
+        pl.col("id").cast(pl.String),
+        pl.col("guideline").cast(GUIDELINE_SCHEMA),
+        pl.col("references").cast(pl.List(pl.String)),
     )
 
 
 def build_guidelines_df(catalog_df: pl.DataFrame) -> pl.DataFrame:
     """Build a dataframe of unnested guidelines."""
+    if catalog_df.is_empty():
+        return pl.DataFrame(schema=GUIDELINES_SCHEMA)
     return catalog_df.select("guideline").unnest("guideline")
 
 
 def build_sections_df(guidelines_df: pl.DataFrame) -> pl.DataFrame:
     """Build a dataframe of guideline sections."""
-    return (
+    if guidelines_df.is_empty():
+        return pl.DataFrame(schema=SECTIONS_SCHEMA)
+    sections = (
         guidelines_df.select("id", "sections")
         .explode("sections")
+        .drop_nulls("sections")
+    )
+    if sections.is_empty():
+        return pl.DataFrame(schema=SECTIONS_SCHEMA)
+    return (
+        sections
         .unnest("sections")
         .select(
             guideline_id=pl.col("id"),
@@ -102,25 +140,43 @@ def build_sections_df(guidelines_df: pl.DataFrame) -> pl.DataFrame:
     )
 
 
-def build_references_df(catalog_df: pl.DataFrame) -> pl.DataFrame:
-    """Build a dataframe of parsed and formatted BibTeX references."""
-    rows: list[dict[str, object]] = []
-    seen: set[str] = set()
+def build_reference_tables(catalog_df: pl.DataFrame) -> ReferenceTables:
+    """Build parsed reference tables in one BibTeX parse pass."""
 
-    for bibtex in (
-        catalog_df.select("references")
-        .explode("references")
-        .drop_nulls()
-        .get_column("references")
-    ).to_list():
-        parsed = parse_bibtex_entry(bibtex)
-        reference_id = str(parsed["ID"])
-        if reference_id in seen:
+    exploded = (
+        catalog_df.select(
+            pl.col("id").alias("guideline_id"),
+            pl.col("references").alias("bibtex"),
+        )
+        .explode("bibtex")
+        .drop_nulls("bibtex")
+        .unique()
+    )
+    if exploded.is_empty():
+        return ReferenceTables(
+            references=pl.DataFrame(schema=REFERENCES_SCHEMA),
+            guideline_references=pl.DataFrame(schema=GUIDELINE_REFERENCES_SCHEMA),
+            references_by_id={},
+        )
+
+    bibtex_to_id: dict[str, str] = {}
+    reference_rows: list[dict[str, object]] = []
+    references_by_id: dict[str, ParsedBibtexEntry] = {}
+    seen_reference_ids: set[str] = set()
+    for bibtex in exploded.select("bibtex").unique().get_column("bibtex").to_list():
+        if not isinstance(bibtex, str):
             continue
-        seen.add(reference_id)
+        reference = parse_bibtex_reference(bibtex)
+        parsed = reference.entry
+        reference_id = reference.id
+        bibtex_to_id[bibtex] = reference_id
+        if reference_id in seen_reference_ids:
+            continue
+        seen_reference_ids.add(reference_id)
+        references_by_id[reference_id] = reference
 
         authors_text = _string_or_none(parsed.get("author"))
-        rows.append(
+        reference_rows.append(
             {
                 "id": reference_id,
                 "source_type": _entry_type_or_none(parsed.get("ENTRYTYPE")),
@@ -133,15 +189,57 @@ def build_references_df(catalog_df: pl.DataFrame) -> pl.DataFrame:
                 "publisher": _string_or_none(parsed.get("publisher")),
                 "url": _string_or_none(parsed.get("url")),
                 "doi": _string_or_none(parsed.get("doi")),
-                "formatted": format_bibtex_entry(bibtex),
                 "bibtex": bibtex,
             }
         )
+    edge_rows = [
+        {"guideline_id": str(guideline_id), "reference_id": bibtex_to_id[bibtex]}
+        for guideline_id, bibtex in exploded.iter_rows()
+        if isinstance(bibtex, str) and bibtex in bibtex_to_id
+    ]
 
-    if not rows:
-        return pl.DataFrame(schema=REFERENCES_SCHEMA)
+    return ReferenceTables(
+        references=(
+            pl.DataFrame(reference_rows, schema=REFERENCES_SCHEMA)
+            .unique("id")
+            .sort("id")
+        ),
+        guideline_references=(
+            pl.DataFrame(edge_rows, schema=GUIDELINE_REFERENCES_SCHEMA)
+            .unique()
+            .sort("guideline_id", "reference_id")
+        ),
+        references_by_id=references_by_id,
+    )
 
-    return pl.DataFrame(rows, schema=REFERENCES_SCHEMA).sort("id")
+
+def build_references_df(catalog_df: pl.DataFrame) -> pl.DataFrame:
+    """Build a dataframe of parsed BibTeX references without citation formatting."""
+
+    return build_reference_tables(catalog_df).references
+
+
+def build_formatted_references_df(
+    references_df: pl.DataFrame,
+    references_by_id: Mapping[str, ParsedBibtexEntry] | None = None,
+) -> pl.DataFrame:
+    """Add formatted citation text to parsed reference entries."""
+
+    if references_df.is_empty():
+        return pl.DataFrame(schema=FORMATTED_REFERENCES_SCHEMA)
+
+    rows: list[dict[str, object]] = []
+    for row in references_df.iter_rows(named=True):
+        bibtex = row["bibtex"]
+        if not isinstance(bibtex, str):
+            continue
+        parsed = None
+        if references_by_id is not None:
+            parsed = references_by_id.get(str(row["id"]))
+        if parsed is None:
+            parsed = parse_bibtex_reference(bibtex)
+        rows.append({**row, "formatted": format_bibtex_reference(parsed)})
+    return pl.DataFrame(rows, schema=FORMATTED_REFERENCES_SCHEMA).sort("id")
 
 
 def build_labels_df(guidelines_df: pl.DataFrame) -> pl.DataFrame:
@@ -182,28 +280,8 @@ def build_guideline_labels_df(guidelines_df: pl.DataFrame) -> pl.DataFrame:
 
 def build_guideline_references_df(catalog_df: pl.DataFrame) -> pl.DataFrame:
     """Build a dataframe of guideline-to-reference edges."""
-    rows: list[dict[str, str]] = []
 
-    for guideline_id, references in catalog_df.select("id", "references").iter_rows():
-        if not references:
-            continue
-        for bibtex in references:
-            parsed = parse_bibtex_entry(bibtex)
-            rows.append(
-                {
-                    "guideline_id": str(guideline_id),
-                    "reference_id": str(parsed["ID"]),
-                }
-            )
-
-    if not rows:
-        return pl.DataFrame(schema=GUIDELINE_REFERENCES_SCHEMA)
-
-    return (
-        pl.DataFrame(rows, schema=GUIDELINE_REFERENCES_SCHEMA)
-        .unique()
-        .sort("guideline_id", "reference_id")
-    )
+    return build_reference_tables(catalog_df).guideline_references
 
 
 def _string_or_none(value: object) -> str | None:

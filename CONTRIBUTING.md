@@ -34,7 +34,7 @@ Prerequisites:
 - Python 3.12 for local development, pinned by `.python-version`;
 - uv for Python packages and notebooks.
 
-The published `chartcoach` Python package supports Python 3.11 through 3.15.
+The published `chartcoach` Python package supports Python 3.11 through 3.14.
 Local tooling is pinned to one interpreter so lockfile and notebook runs stay
 predictable.
 

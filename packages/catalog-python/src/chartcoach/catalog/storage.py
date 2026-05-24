@@ -43,7 +43,7 @@ def load_catalog(folder_path: PathLike[str]) -> Catalog:
             continue
         entries.append(load_catalog_entry(entry_path))
 
-    return Catalog(entries)
+    return Catalog.from_entries(entries)
 
 
 def write_catalog_entries(entries: Iterable[CatalogEntry], root: PathLike[str]) -> None:
