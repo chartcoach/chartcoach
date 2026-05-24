@@ -1,0 +1,96 @@
+---
+title: Catalog Records
+description: Source record shape shared by ChartCoach package APIs.
+---
+
+The catalog record is the boundary between authored guidance and package APIs. Python, JavaScript, the CLI, MCP tools, DuckDB exports, and Chroma indexes all read from this shape.
+
+```ts
+type CatalogEntryWire = {
+  id: string;
+  guideline: {
+    id: string;
+    title: string;
+    bibliography?: string | null;
+    description: string;
+    labels: string[];
+    body: string;
+    sections: GuidelineSection[];
+  };
+  references: string[];
+};
+```
+
+## CatalogEntryWire
+
+`id`
+
+Stable guideline id. Must match `guideline.id`.
+
+`guideline`
+
+Structured guideline record.
+
+`references`
+
+BibTeX entries associated with the guideline.
+
+## Guideline
+
+`guideline.id`
+
+Stable guideline id.
+
+`guideline.title`
+
+Short action-oriented title.
+
+`guideline.bibliography`
+
+Optional bibliography filename from folder-authored catalogs.
+
+`guideline.description`
+
+One-sentence summary used by listing and retrieval surfaces.
+
+`guideline.labels`
+
+Controlled-vocabulary labels. The packages preserve these as strings; label semantics live in the catalog data, not in loader-specific enums.
+
+`guideline.body`
+
+Full markdown body.
+
+`guideline.sections`
+
+Role-tagged section records parsed from the body.
+
+## GuidelineSection
+
+```ts
+type GuidelineSection = {
+  role: string;
+  title: string;
+  content: string;
+};
+```
+
+`role`
+
+Section role such as `advice`, `reason`, `context`, `exceptions`, `check`, or `fix`.
+
+`title`
+
+Section heading.
+
+`content`
+
+Section markdown content.
+
+## Validation
+
+JavaScript parquet loading calls `requireCatalogEntryFromWire(row, context)`. Invalid rows fail at the storage boundary.
+
+Python loading validates the same source shape through `Catalog.from_parquet`, `Catalog.from_folder`, `CatalogEntry.from_mapping`, and `Guideline.from_mapping`.
+
+Do not rely on loaders to fill missing titles, descriptions, labels, sections, or references. The catalog row should already be complete.

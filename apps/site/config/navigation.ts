@@ -5,11 +5,11 @@ type StarlightSidebar = NonNullable<StarlightUserConfig["sidebar"]>;
 type StarlightSidebarGroup = Extract<StarlightSidebar[number], { items: any[] }>;
 
 type SiteNavigationEntry = {
-  id: "overview" | "guidelines" | "catalog" | "labels";
+  id: "overview" | "guidelines" | "catalog" | "labels" | "api";
   href: string;
   headerLabel: string;
   sidebar?: {
-    group: "Start" | "Catalog";
+    group: "Start" | "Catalog" | "API Reference";
     label: string;
   };
 };
@@ -51,6 +51,15 @@ export const siteNavigation = [
       label: "Labels & filters",
     },
   },
+  {
+    id: "api",
+    href: "/api/",
+    headerLabel: "API",
+    sidebar: {
+      group: "API Reference",
+      label: "Overview",
+    },
+  },
 ] as const satisfies readonly SiteNavigationEntry[];
 
 export const headerNavigation = siteNavigation.map(({ id, href, headerLabel }) => ({
@@ -67,15 +76,29 @@ export const siteSocialLinks = [
   },
 ] satisfies NonNullable<StarlightUserConfig["social"]>;
 
-const sidebarGroupOrder = ["Start", "Catalog"] as const;
+const sidebarGroupOrder = ["Start", "Catalog", "API Reference"] as const;
+
+const apiReferenceSidebarItems = [
+  { label: "Catalog records", link: "/api/catalog-records/" },
+  { label: "Python", link: "/api/python/" },
+  { label: "JavaScript & TypeScript", link: "/api/javascript/" },
+  { label: "Browser loading", link: "/api/browser/" },
+  { label: "CLI", link: "/api/cli/" },
+  { label: "MCP", link: "/api/mcp/" },
+  { label: "Artifacts", link: "/api/artifacts/" },
+] satisfies StarlightSidebarGroup["items"];
 
 export const sidebarNavigation = sidebarGroupOrder.reduce<StarlightSidebar>((groups, group) => {
-  const items = siteNavigation
+  let items: StarlightSidebarGroup["items"] = siteNavigation
     .filter((entry) => entry.sidebar?.group === group)
     .map((entry) => ({
       label: entry.sidebar!.label,
       link: entry.href,
     }));
+
+  if (group === "API Reference") {
+    items = [...items, ...apiReferenceSidebarItems];
+  }
 
   if (items.length === 0) return groups;
 

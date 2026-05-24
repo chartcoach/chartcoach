@@ -1,0 +1,174 @@
+---
+title: JavaScript and TypeScript API
+description: Load ChartCoach catalog records from Node, shared JS, and typed wire data.
+---
+
+`@chartcoach/catalog` provides the shared JavaScript and TypeScript model for [catalog records](/api/catalog-records/). The package exports the same source shape used by the Python package.
+
+```ts
+import { loadCatalogFromParquetFile } from "@chartcoach/catalog/node";
+
+const catalog = await loadCatalogFromParquetFile("guidelines/catalog.parquet");
+for (const entry of catalog) {
+  console.log(entry.guideline.id, entry.guideline.title);
+}
+```
+
+## Entry Points
+
+`@chartcoach/catalog`
+
+Shared model, parquet loader core, markdown parsers, and wire validators.
+
+`@chartcoach/catalog/node`
+
+Node-only filesystem loaders.
+
+`@chartcoach/catalog/browser`
+
+Browser-safe URL loader for parquet artifacts.
+
+## Catalog
+
+`new Catalog(entries = [])`
+
+Create a catalog from parsed entries.
+
+`catalog.entries`
+
+Array of `CatalogEntry` records.
+
+`catalog.length`
+
+Number of entries.
+
+`for (const entry of catalog)`
+
+Iterate through entries in order.
+
+## CatalogEntry
+
+```ts
+type CatalogEntry = {
+  guideline: ParsedGuideline;
+  references: string[];
+};
+```
+
+`references` contains BibTeX entries split into individual `@...` records.
+
+## Guideline
+
+```ts
+type ParsedGuideline = {
+  id: string;
+  title: string;
+  bibliography?: string;
+  description: string;
+  labels: string[];
+  body: string;
+  sections: GuidelineSection[];
+  sectionsIndex: GuidelineSectionIndex;
+};
+```
+
+`sectionsIndex.byRole` groups section records by role while preserving the original `sections` array.
+
+## GuidelineSection
+
+```ts
+type GuidelineSection = {
+  role: string;
+  title: string;
+  content: string;
+};
+```
+
+`DANGLING_ROLE` is the role assigned to text that appears before the first section heading while parsing markdown.
+
+## Node Loaders
+
+`loadCatalogFromParquetFile(parquetPath)`
+
+Read a parquet catalog file from disk.
+
+```ts
+import { loadCatalogFromParquetFile } from "@chartcoach/catalog/node";
+
+const catalog = await loadCatalogFromParquetFile("guidelines/catalog.parquet");
+```
+
+`loadCatalogFromFolder(folderPath)`
+
+Read a folder catalog. Entry directories that cannot be loaded are skipped by the Node folder loader.
+
+`loadCatalogEntryFromFolder(entryDir)`
+
+Read one folder entry. Throws if no markdown file is found or if more than one markdown file is present.
+
+## Shared Parquet Loader
+
+`loadCatalogFromParquet(file)`
+
+Read a parquet catalog from an `ArrayBuffer`, `ArrayBufferView`, or async buffer object.
+
+```ts
+import { loadCatalogFromParquet } from "@chartcoach/catalog";
+
+const bytes = await Deno.readFile("guidelines/catalog.parquet");
+const catalog = await loadCatalogFromParquet(bytes);
+```
+
+Typed array inputs are copied to the exact view range before decoding. This avoids reading unrelated bytes from a larger backing buffer.
+
+## Markdown Parsers
+
+`parseGuideline(markdown)`
+
+Parse one guideline markdown string into a `ParsedGuideline`.
+
+`parseGuidelineSections(body)`
+
+Parse role-titled sections from a markdown body.
+
+`indexGuidelineSections(sections)`
+
+Build `sectionsIndex.byRole`.
+
+`parseBibtex(bibtex)`
+
+Split a BibTeX string into individual entries.
+
+## Wire Validation
+
+The parquet loader validates rows through the strict catalog wire shape.
+
+```ts
+type CatalogEntryWire = {
+  id: string;
+  guideline: {
+    id: string;
+    title: string;
+    bibliography?: string | null;
+    description: string;
+    labels: string[];
+    body: string;
+    sections: GuidelineSection[];
+  };
+  references: string[];
+};
+```
+
+`isCatalogEntryWire(value)`
+
+Return `true` when `value` matches the catalog wire shape.
+
+`catalogEntryFromWire(value)`
+
+Return a parsed `CatalogEntry`, or `null` for invalid input.
+
+`requireCatalogEntryFromWire(value, context?)`
+
+Return a parsed `CatalogEntry`, or throw an error with optional context.
+
+Use wire validation when reading records from storage or transport boundaries. Do not normalize missing fields at the API edge; invalid catalog rows should fail where they enter.

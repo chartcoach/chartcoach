@@ -1,0 +1,210 @@
+---
+title: Python Catalog API
+description: Load ChartCoach catalogs, inspect table views, and open native DuckDB or Chroma artifacts from Python.
+---
+
+The `chartcoach` package is the Python API for [catalog records](/api/catalog-records/). The base install is Polars-first and does not require Chroma, DuckDB, or MCP dependencies.
+
+```python
+from chartcoach import Catalog
+
+catalog = Catalog.from_parquet("guidelines/catalog.parquet")
+catalog.guidelines().select("id", "title", "description")
+```
+
+## Catalog
+
+`Catalog` keeps the serialized catalog table as the source of truth. Python entry objects are built only when requested.
+
+### Constructors
+
+`Catalog.from_parquet(path)`
+
+Load a serialized catalog parquet file.
+
+`Catalog.from_folder(folder_path)`
+
+Load a folder catalog where each entry directory contains a guideline markdown file and optional bibliography.
+
+`Catalog.from_entries(entries)`
+
+Build a catalog from `CatalogEntry` objects.
+
+`Catalog.from_frame(df)`
+
+Build a catalog from the serialized Polars dataframe shape.
+
+### Tables
+
+`catalog.to_frame()`
+
+Return the serialized catalog table.
+
+`catalog.guidelines()`
+
+Return one row per guideline, including `id`, `title`, `description`, `labels`, `body`, and `sections`.
+
+`catalog.sections()`
+
+Return one row per guideline section.
+
+`catalog.labels()`
+
+Return the unique label categories and values used across the catalog.
+
+`catalog.guideline_labels()`
+
+Return one row per guideline-label edge.
+
+`catalog.references()`
+
+Return parsed BibTeX reference records.
+
+`catalog.formatted_references()`
+
+Return parsed reference records with formatted citation text.
+
+`catalog.guideline_references()`
+
+Return guideline-to-reference edges.
+
+`catalog.table(name)`
+
+Return a named table. Use this when caller code accepts table names rather than direct method calls.
+
+```python
+for name in ["guidelines", "sections", "labels"]:
+    print(name, catalog.table(name).height)
+```
+
+### Entries
+
+`catalog.entry(guideline_id)`
+
+Return one `CatalogEntry`. Raises `KeyError` when the id is not present.
+
+`catalog.select(guideline_ids)`
+
+Return a new catalog with the requested ids in the provided order. Raises `KeyError` for missing ids.
+
+`catalog.merge(other)` and `catalog + other`
+
+Return a new catalog containing rows from both catalogs.
+
+`catalog.digest()`
+
+Return a stable digest of the serialized catalog table. Chroma cache paths use this value.
+
+`catalog.write_parquet(path)` and `catalog.write_folder(root)`
+
+Write the catalog back to parquet or folder form.
+
+## CatalogEntry
+
+`CatalogEntry` contains:
+
+- `guideline`: a `Guideline` object with `id`, `title`, `description`, `labels`, `body`, and typed sections
+- `references`: BibTeX entries associated with the guideline
+
+`entry.to_record()` returns the serialized row shape used in catalog dataframes.
+
+## DuckDB
+
+Install `chartcoach[duckdb]` for DuckDB artifact support.
+
+```python
+import duckdb
+from chartcoach.duckdb import write_duckdb
+from chartcoach.paths import default_duckdb_path
+
+path = default_duckdb_path()
+write_duckdb(catalog, path, overwrite=True)
+
+conn = duckdb.connect(path)
+conn.execute("select id, title from guidelines limit 5").fetchall()
+```
+
+`write_duckdb(catalog, output_path, *, overwrite=False)`
+
+Write a DuckDB database file containing the derived catalog tables. Existing files are rejected unless `overwrite=True`.
+
+`register_catalog(conn, catalog)`
+
+Create or replace catalog tables in a caller-owned DuckDB connection.
+
+## Chroma
+
+Install `chartcoach[search]` for Chroma-backed search.
+
+```python
+from chartcoach.paths import default_index_dir
+from chartcoach.search import ChromaIndex
+
+index = ChromaIndex.from_cache(
+    catalog,
+    cache_dir=default_index_dir(),
+    cache_mode="reuse_only",
+)
+```
+
+`ChromaIndex.from_cache(catalog, *, cache_dir, cache_mode="reuse_only", embedding_fn=None, collection_name="catalog")`
+
+Open or build a content-addressed index under `cache_dir`.
+
+`cache_mode` values:
+
+- `reuse_only`: require an existing matching index
+- `reuse_or_create`: create the index if it is missing
+- `force_rebuild`: rebuild the content-addressed path
+
+`ChromaIndex.cache_paths(catalog, *, cache_dir, embedding_fn=None, collection_name="catalog")`
+
+Resolve native filesystem paths without opening the index.
+
+`ChromaIndex.create(catalog, *, path, embedding_fn=None, collection_name="catalog", reset=False)`
+
+Build an index in a caller-owned Chroma directory.
+
+`index.collection`
+
+Return the native Chroma collection. Use Chroma's own `query` and `get` parameters directly.
+
+```python
+index.collection.query(
+    query_texts=["overplotted scatter plot"],
+    n_results=8,
+    where={"labels": {"$contains": "chart:scatter:avoid"}},
+    include=["documents", "metadatas", "distances"],
+)
+```
+
+`search_guidelines(index, query_text, *, limit=DEFAULT_CHROMA_TOP_K, candidate_limit=None, where=None, where_document=None)`
+
+Return deduplicated guideline-level hits. Use this function when you want typed catalog rows instead of raw Chroma records.
+
+```python
+from chartcoach.search import search_guidelines
+
+result = search_guidelines(
+    index,
+    "overplotted scatter plot",
+    where={"labels": {"$contains": "chart:scatter:avoid"}},
+)
+result.rows
+```
+
+## Default Paths
+
+Default generated artifacts use platform-native cache directories via `platformdirs`.
+
+`default_cache_dir(*parts)`
+
+Return the ChartCoach cache root with optional subpaths.
+
+`default_duckdb_path()`
+
+Return the default generated DuckDB catalog path.
+
+`default_index_dir()`
+
+Return the default directory for content-addressed Chroma indexes.

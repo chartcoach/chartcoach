@@ -1,0 +1,124 @@
+---
+title: CLI Reference
+description: Command groups and output contracts for the chartcoach command-line interface.
+---
+
+The `chartcoach` CLI is part of the Python package. It reads catalog artifacts, emits deterministic rows, and forwards Chroma calls without inventing another query language.
+
+```bash
+uv run --package chartcoach chartcoach --help
+```
+
+## Global Source
+
+Most commands accept:
+
+`--source PATH`
+
+Catalog source path. Use a catalog parquet file or a folder catalog.
+
+## artifacts
+
+`chartcoach artifacts --source PATH --format table|json|jsonl|csv`
+
+List native files that other tools can open directly: source catalog, generated DuckDB path, and Chroma index paths when search extras are available.
+
+## catalog
+
+`chartcoach catalog build --source FOLDER --out PATH`
+
+Build a serialized catalog parquet file from a folder catalog.
+
+`chartcoach catalog check --source FOLDER --format table|json|jsonl|csv`
+
+Validate a guideline folder and report table counts.
+
+`chartcoach catalog duckdb --source PATH --out PATH [--overwrite]`
+
+Write derived catalog tables into a DuckDB database file.
+
+## tables
+
+`chartcoach tables list --source PATH --format table|json|jsonl|csv`
+
+List queryable structured tables.
+
+`chartcoach tables schema --source PATH [--table TABLE]... --format table|json|jsonl|csv`
+
+List table columns and data types.
+
+`chartcoach tables values TABLE COLUMN --source PATH [--explode] [--contains TEXT] [--limit N] [--format table|json|jsonl|csv]`
+
+Count distinct values. Pass `--explode` for list-valued columns such as labels.
+
+## guidelines
+
+`chartcoach guidelines list --source PATH [--label VALUE] [--label-prefix PREFIX] [--contains TEXT] [--limit N] [--format table|json|jsonl|csv]`
+
+List guideline ids and summaries.
+
+`chartcoach guidelines show --source PATH GUIDELINE_ID --format markdown|json|jsonl`
+
+Print one guideline.
+
+`chartcoach guidelines retrieve --source PATH [--id ID] [--label VALUE] [--label-prefix PREFIX] [--contains TEXT] [--section ROLE] [--limit N] [--format markdown|json|jsonl|csv|table]`
+
+Return deterministic evidence packets with optional section filtering.
+
+`chartcoach guidelines search --source PATH --index-dir DIR [--where JSON] [--where-document JSON] QUERY [--format table|json|jsonl|csv|markdown]`
+
+Run catalog-level semantic search over an existing Chroma index and return deduplicated guideline rows.
+
+## index
+
+`chartcoach index status --source PATH --index-dir DIR --format table|json|jsonl|csv`
+
+Report the content-addressed Chroma path, collection name, embedding name, readiness, and document count.
+
+`chartcoach index build --source PATH --index-dir DIR`
+
+Create the content-addressed Chroma index if it is missing.
+
+`chartcoach index rebuild --source PATH --index-dir DIR --yes`
+
+Rebuild the Chroma index for the current catalog digest.
+
+`chartcoach index query --source PATH --index-dir DIR PARAMS_JSON --format json|jsonl`
+
+Run `collection.query(**PARAMS_JSON)` against the native Chroma collection.
+
+`chartcoach index get --source PATH --index-dir DIR [PARAMS_JSON] --format json|jsonl`
+
+Run `collection.get(**PARAMS_JSON)` against the native Chroma collection.
+
+## feedback
+
+`chartcoach feedback prompt --source PATH --image PATH --situation TEXT [--label VALUE] [--label-prefix PREFIX] [--section ROLE] [--format markdown|json|jsonl]`
+
+Build a catalog-grounded feedback prompt for an existing chart image. This command is deterministic and does not require Chroma.
+
+## Output Formats
+
+`table`
+
+Human-readable terminal table.
+
+`json`
+
+Single JSON object or array.
+
+`jsonl`
+
+One JSON record per line. Use this for shell pipelines and token-controlled agent calls.
+
+`csv`
+
+Comma-separated rows with a header. List-valued cells are JSON-encoded.
+
+`markdown`
+
+Human-readable prompt or evidence text for commands that produce guideline content.
+
+## Search State
+
+Read commands do not create Chroma state. Build the index explicitly with `chartcoach index build`, then use `index query`, `index get`, or `guidelines search` against that existing artifact.
