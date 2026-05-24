@@ -1,0 +1,41 @@
+---
+title: API Reference
+description: Package APIs for loading, inspecting, and querying ChartCoach catalog artifacts.
+tableOfContents: false
+---
+
+The API reference covers the package surfaces that read ChartCoach catalog artifacts. It is separate from the catalog browser and focuses on stable import paths, data shapes, and runtime behavior.
+
+## Packages
+
+- [Catalog records](/api/catalog-records/) defines the source row shape used by every package.
+- [Python catalog API](/api/python/) loads parquet or folder catalogs, exposes Polars table views, writes DuckDB artifacts, and opens Chroma indexes when `chartcoach[search]` is installed.
+- [JavaScript and TypeScript API](/api/javascript/) loads the same catalog wire shape in Node and shared runtime code.
+- [Browser loading API](/api/browser/) reads catalog parquet files from URLs without Node filesystem access.
+- [CLI reference](/api/cli/) covers command groups and output contracts.
+- [MCP reference](/api/mcp/) covers tool names, transport options, and Chroma-backed tools.
+- [Artifacts](/api/artifacts/) describes native parquet, DuckDB, and Chroma files.
+
+## Artifact Boundary
+
+All package APIs use the catalog as source data. A catalog entry has one guideline record plus its BibTeX reference entries. Derived tables, DuckDB files, and Chroma indexes are views over that source shape, not alternate record formats.
+
+## Install Paths
+
+```bash
+uv add chartcoach
+pnpm add @chartcoach/catalog
+```
+
+Install optional Python extras only for the surfaces that need them:
+
+```bash
+uv add "chartcoach[duckdb]"
+uv add "chartcoach[search]"
+uv add "chartcoach[mcp,search]"
+```
+
+## Source Packages
+
+- `packages/catalog-python`: Python package and `chartcoach` CLI.
+- `packages/catalog-javascript`: shared JS/TS loaders, wire validators, and browser entrypoints.

@@ -1,0 +1,83 @@
+---
+title: Artifacts
+description: Native catalog files produced and consumed by ChartCoach packages.
+---
+
+ChartCoach keeps generated artifacts in native formats. Use the package APIs when you want typed records; use the files directly when another tool already understands parquet, DuckDB, or Chroma.
+
+## Catalog Parquet
+
+`guidelines/catalog.parquet`
+
+Serialized catalog table. Python reads it with `Catalog.from_parquet(path)`. JavaScript reads it with `loadCatalogFromParquet`, `loadCatalogFromParquetFile`, or `loadCatalogFromParquetUrl`.
+
+```python
+from chartcoach import Catalog
+
+catalog = Catalog.from_parquet("guidelines/catalog.parquet")
+```
+
+```ts
+import { loadCatalogFromParquetFile } from "@chartcoach/catalog/node";
+
+const catalog = await loadCatalogFromParquetFile("guidelines/catalog.parquet");
+```
+
+## Folder Catalog
+
+`guidelines/<entry>/guideline.md`
+
+Markdown source record.
+
+`guidelines/<entry>/references.bib`
+
+BibTeX references for that record.
+
+The folder layout is useful for authoring and review. The parquet file is the compact read path for packages and tools.
+
+## DuckDB
+
+Generated DuckDB artifacts contain derived tables such as `guidelines`, `sections`, `labels`, `guideline_labels`, `references`, `formatted_references`, and `guideline_references`.
+
+```python
+from chartcoach.duckdb import write_duckdb
+from chartcoach.paths import default_duckdb_path
+
+write_duckdb(catalog, default_duckdb_path(), overwrite=True)
+```
+
+The default path comes from `platformdirs` through `default_duckdb_path()`.
+
+## Chroma
+
+Chroma indexes are content-addressed by catalog digest, document-version string, embedding identity, and collection name.
+
+```python
+from chartcoach.paths import default_index_dir
+from chartcoach.search import ChromaIndex
+
+paths = ChromaIndex.cache_paths(catalog, cache_dir=default_index_dir())
+paths.chroma_path
+```
+
+The native collection name defaults to `catalog`. Use `index.collection` when caller code needs Chroma's own `query` or `get` API.
+
+## Default Directories
+
+`default_cache_dir(*parts)`
+
+Platform-native ChartCoach cache directory.
+
+`default_artifact_dir()`
+
+Default directory for generated catalog artifacts.
+
+`default_duckdb_path()`
+
+Default DuckDB artifact path.
+
+`default_index_dir()`
+
+Default root for generated Chroma search indexes.
+
+No default path uses a repository-local scratch directory.

@@ -1,0 +1,61 @@
+---
+title: Browser Loading API
+description: Load ChartCoach catalog parquet artifacts in browser runtimes.
+---
+
+The browser entrypoint avoids Node filesystem APIs and loads parquet artifacts over HTTP.
+
+```ts
+import { loadCatalogFromParquetUrl } from "@chartcoach/catalog/browser";
+
+const catalog = await loadCatalogFromParquetUrl("/catalog.parquet");
+```
+
+## loadCatalogFromParquetUrl
+
+`loadCatalogFromParquetUrl(url, requestInit?)`
+
+Fetch a parquet catalog from `url`, decode it with `hyparquet`, validate each row against `CatalogEntryWire`, and return a `Catalog`.
+
+```ts
+const catalog = await loadCatalogFromParquetUrl(
+  "https://example.com/guidelines/catalog.parquet",
+  {
+    headers: {
+      accept: "application/octet-stream",
+    },
+  },
+);
+```
+
+`requestInit` is passed to the underlying fetch path. Use it for headers, credentials, or cache policy.
+
+## Returned Shape
+
+The returned object is the same `Catalog` class exported from `@chartcoach/catalog`:
+
+```ts
+for (const entry of catalog) {
+  const { id, title, labels, sections } = entry.guideline;
+  console.log(id, title, labels.length, sections.length);
+}
+```
+
+Each loaded row must contain the strict catalog wire fields:
+
+- top-level `id`
+- `guideline.id`, matching the top-level `id`
+- `guideline.title`
+- `guideline.description`
+- `guideline.labels`
+- `guideline.body`
+- `guideline.sections`
+- `references`
+
+The browser loader does not repair partial records. A malformed row rejects the load with an invalid wire-format error.
+
+## When to Use the Browser Entry
+
+Use `@chartcoach/catalog/browser` for static sites, notebooks with browser-side code, and viewer hosts that already have a published parquet artifact.
+
+Use `@chartcoach/catalog/node` when reading from local filesystem paths in scripts or build steps.
