@@ -18,7 +18,7 @@ T = TypeVar("T")
 
 
 class VisualizationBackend(ABC, Generic[T]):
-    """Backend contract for DSPy example building and visualization materialization."""
+    """Backend contract for DSPy example building and chart rendering."""
 
     dataset: VisEvalDataset
 
@@ -59,7 +59,7 @@ class VisualizationBackend(ABC, Generic[T]):
             "requirements",
         )
 
-    def materialize_visualization(self, id: str, code: str) -> T:
+    def build_visualization(self, id: str, code: str) -> T:
         code = unfence(code)[0]
         rel = self.dataset.vis_relation(id)
 

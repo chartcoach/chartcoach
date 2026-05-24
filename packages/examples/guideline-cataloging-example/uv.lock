@@ -1,6 +1,6 @@
 version = 1
 revision = 3
-requires-python = ">=3.11, <3.16"
+requires-python = ">=3.11, <3.15"
 
 [[package]]
 name = "altair"
@@ -235,39 +235,27 @@ dependencies = [
     { name = "citeproc-py" },
     { name = "click" },
     { name = "mdformat" },
+    { name = "platformdirs" },
     { name = "polars" },
     { name = "pyyaml" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "bibtexparser", specifier = ">=1.4" },
-    { name = "chromadb", marker = "extra == 'chroma'", specifier = ">=1.5" },
-    { name = "chromadb", marker = "extra == 'mcp'", specifier = ">=1.5" },
-    { name = "chromadb", marker = "extra == 'search'", specifier = ">=1.5" },
+    { name = "bibtexparser", specifier = ">=1.1.0" },
+    { name = "chromadb", marker = "extra == 'search'", specifier = ">=1.5.0" },
     { name = "citeproc-py", specifier = ">=0.9" },
-    { name = "click", specifier = ">=8.1" },
-    { name = "duckdb", marker = "extra == 'mcp'", specifier = ">=1.5" },
-    { name = "duckdb", marker = "extra == 'search'", specifier = ">=1.5" },
-    { name = "duckdb", marker = "extra == 'sql'", specifier = ">=1.5" },
-    { name = "mcp", extras = ["cli"], marker = "extra == 'mcp'" },
-    { name = "mdformat", specifier = ">=1.0.0" },
-    { name = "platformdirs", marker = "extra == 'chroma'", specifier = ">=4.9.4" },
-    { name = "platformdirs", marker = "extra == 'mcp'", specifier = ">=4.9.4" },
-    { name = "platformdirs", marker = "extra == 'search'", specifier = ">=4.9.4" },
-    { name = "polars", specifier = ">=1.38" },
-    { name = "polars-hash", marker = "extra == 'chroma'", specifier = ">=0.5.6" },
-    { name = "polars-hash", marker = "extra == 'mcp'", specifier = ">=0.5.6" },
-    { name = "polars-hash", marker = "extra == 'search'", specifier = ">=0.5.6" },
-    { name = "pyarrow", marker = "extra == 'mcp'", specifier = ">=23" },
-    { name = "pyarrow", marker = "extra == 'search'", specifier = ">=23" },
-    { name = "pyarrow", marker = "extra == 'sql'", specifier = ">=23" },
-    { name = "pyyaml", specifier = ">=6.0.0" },
-    { name = "tqdm", marker = "extra == 'chroma'", specifier = ">=4.67" },
-    { name = "tqdm", marker = "extra == 'mcp'", specifier = ">=4.67" },
-    { name = "tqdm", marker = "extra == 'search'", specifier = ">=4.67" },
+    { name = "click", specifier = ">=8.0.0" },
+    { name = "duckdb", marker = "extra == 'duckdb'", specifier = ">=1.4.0" },
+    { name = "mcp", extras = ["cli"], marker = "extra == 'mcp'", specifier = ">=1.9.0" },
+    { name = "mdformat", specifier = ">=0.7.19" },
+    { name = "platformdirs", specifier = ">=4.0.0" },
+    { name = "polars", specifier = ">=1.0.0" },
+    { name = "polars-hash", marker = "extra == 'search'", specifier = ">=0.5.0" },
+    { name = "pyyaml", specifier = ">=5.3.1" },
+    { name = "tqdm", marker = "extra == 'search'", specifier = ">=1.0" },
 ]
-provides-extras = ["chroma", "sql", "search", "mcp"]
+provides-extras = ["duckdb", "search", "mcp"]
 
 [package.metadata.requires-dev]
 dev = [{ name = "pytest", specifier = ">=8.4.0" }]
@@ -303,6 +291,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/d8/53/6f443c9a4a8358a93a6792e2acffb9d9d5cb0a5cfd8802644b7b1c9a02e4/colorama-0.4.6.tar.gz", hash = "sha256:08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44", size = 27697, upload-time = "2022-10-25T02:36:22.414Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/d1/d6/3965ed04c63042e047cb6a3e6ed1a63a35087b6a609aa3a15ed8ac56c221/colorama-0.4.6-py2.py3-none-any.whl", hash = "sha256:4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6", size = 25335, upload-time = "2022-10-25T02:36:20.889Z" },
+]
+
+[[package]]
+name = "diskcache"
+version = "5.6.3"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/3f/21/1c1ffc1a039ddcc459db43cc108658f32c57d271d7289a2794e401d0fdb6/diskcache-5.6.3.tar.gz", hash = "sha256:2c3a3fa2743d8535d832ec61c2054a1641f41775aa7c556758a109941e33e4fc", size = 67916, upload-time = "2023-08-31T06:12:00.316Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/3f/27/4570e78fc0bf5ea0ca45eb1de3818a23787af9b390c0b0a0033a1b8236f9/diskcache-5.6.3-py3-none-any.whl", hash = "sha256:5e31b2d5fbad117cc363ebaf6b689474db18a1f6438bc82358b024abd4c2ca19", size = 45550, upload-time = "2023-08-31T06:11:58.822Z" },
 ]
 
 [[package]]
@@ -410,6 +407,7 @@ dependencies = [
     { name = "altair" },
     { name = "bibtexparser" },
     { name = "chartcoach" },
+    { name = "diskcache" },
     { name = "joblib" },
     { name = "marimo", extra = ["recommended"] },
     { name = "pyzotero" },
@@ -422,6 +420,7 @@ requires-dist = [
     { name = "altair", specifier = ">=5.2,<6" },
     { name = "bibtexparser", specifier = ">=1.4.3" },
     { name = "chartcoach", editable = "../../catalog-python" },
+    { name = "diskcache", specifier = ">=5.6.3" },
     { name = "joblib", specifier = ">=1.5.3" },
     { name = "marimo", extras = ["recommended"] },
     { name = "pyzotero", specifier = ">=1.8.0" },
@@ -867,7 +866,7 @@ dependencies = [
     { name = "pymdown-extensions" },
     { name = "python-multipart" },
     { name = "pyyaml" },
-    { name = "pyzmq", marker = "python_full_version < '3.15'" },
+    { name = "pyzmq" },
     { name = "starlette" },
     { name = "tomlkit" },
     { name = "uvicorn" },

@@ -9,7 +9,7 @@ def _(mo):
     mo.md(r"""
     # ::lucide:compass:: Structural Analysis of the Knowledge Space
 
-    This notebook accompanies Section 5.3 of the paper. It demonstrates how vector operations can surface latent relationships between guidelines, executing the operators depicted in Figure 2:
+    Section 5.3 uses vector operations to surface latent relationships between guidelines, executing the operators from Figure 2:
 
     1. [Analogical Transfer](#sec:analogical-transfer)
     2. [Solution Convergence](#sec:solution-convergence)
@@ -46,8 +46,19 @@ def _(mo):
 def _(conn, index):
     from embedding_atlas.projection import compute_vector_projection
     from embedding_atlas.widget import EmbeddingAtlasWidget
+    import polars as pl
 
-    embeddings_df = index.embeddings_df.to_pandas()
+    embeddings = index.collection.get(
+        include=["documents", "embeddings", "metadatas"],
+    )
+    embeddings_df = pl.DataFrame(
+        {
+            "id": embeddings["ids"],
+            "doc": embeddings["documents"],
+            "embedding": embeddings["embeddings"],
+            "metadata": embeddings["metadatas"],
+        }
+    ).unnest("metadata").to_pandas()
     compute_vector_projection(embeddings_df, vector="embedding")
     conn.register("embedding_projection_source", embeddings_df)
     conn.execute(
@@ -131,7 +142,7 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(catalog, pl):
-    catalog.frame.filter(
+    catalog.to_frame().filter(
         pl.col("id").is_in(
             [
                 "use-bar-charts-instead-of-line-charts-for-cluster-detection",
@@ -206,7 +217,7 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(catalog, pl):
-    catalog.frame.filter(
+    catalog.to_frame().filter(
         pl.col("id").is_in(
             [
                 "match-chart-encodings-to-audience-visual-literacy",
@@ -277,7 +288,7 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(catalog, pl):
-    catalog.frame.filter(
+    catalog.to_frame().filter(
         pl.col("id").is_in(
             [
                 "use-area-chart-for-irregular-time-intervals",
@@ -353,7 +364,7 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(catalog, pl):
-    catalog.frame.filter(
+    catalog.to_frame().filter(
         pl.col("id").is_in(
             [
                 "encode-primary-quantity-with-position-for-value-tasks",
@@ -419,7 +430,7 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(catalog, pl):
-    catalog.frame.filter(
+    catalog.to_frame().filter(
         pl.col("id").is_in(
             [
                 "use-pictographic-data-marks-to-attract-initial-attention",
@@ -489,7 +500,7 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(catalog, pl):
-    catalog.frame.filter(
+    catalog.to_frame().filter(
         pl.col("id").is_in(
             [
                 "avoid-hue-only-encoding-for-ordered-values",
@@ -503,7 +514,7 @@ def _(catalog, pl):
 @app.cell(column=8, hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## ::lucide:cog:: Implementation Details
+    ## ::lucide:cog:: Catalog Indexing
     <a id="sec:implementation"></a>
 
     The notebook turns the catalog into searchable text in three steps:
@@ -546,14 +557,12 @@ def _(mo):
             V_Mis --> Search
         end
 
-        %% Professional Color Palette
         classDef source fill:#f8f9fa,stroke:#343a40,stroke-width:2px,color:#343a40
         classDef process fill:#ffffff,stroke:#adb5bd,stroke-width:1px,stroke-dasharray: 5 5
         classDef vector fill:#e7f5ff,stroke:#228be6,stroke-width:2px,color:#1864ab
         classDef storage fill:#ebfbee,stroke:#40c057,stroke-width:2px,color:#2b8a3e
         classDef subgraphStyle fill:#f1f3f5,stroke:#dee2e6,stroke-width:1px,color:#495057,font-weight:bold
 
-        %% Apply Classes
         class MD source
         class G,C_Txt,A_Txt,M_Txt process
         class V_Ctx,V_Adv,V_Mis vector
@@ -566,7 +575,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ### The Pipeline Workflow
+    ### Catalog and Index Tables
 
     The pipeline keeps two views of the same catalog side by side:
 
@@ -580,7 +589,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ### Formal Notation
+    ### Similarity Operators
 
     Let $\mathcal{C}$ denote the catalog, a finite set of guidelines $\{g_1, \ldots, g_N\}$. Each guideline $g_i$ comprises role-specific text sections:
 
@@ -627,17 +636,24 @@ def _():
 
 
 @app.cell(hide_code=True)
-def _(ChromaIndex, cache_dir, catalog, connect_catalog, openrouter_ef):
+def _(
+    ChromaIndex,
+    cache_dir,
+    catalog,
+    default_index_dir,
+    duckdb,
+    openrouter_ef,
+    write_duckdb,
+):
     index = ChromaIndex.from_cache(
         catalog,
-        cache_dir=cache_dir / "analysis_search",
+        cache_dir=default_index_dir(),
         embedding_fn=openrouter_ef,
+        cache_mode="reuse_only",
     )
-    conn = connect_catalog(
-        catalog,
-        search=index,
-        path=cache_dir / "catalog_analysis.duckdb",
-    )
+    duckdb_path = cache_dir / "catalog_analysis.duckdb"
+    write_duckdb(catalog, duckdb_path, overwrite=True)
+    conn = duckdb.connect(duckdb_path)
     return conn, index
 
 
@@ -652,22 +668,25 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _():
-    import pathlib
-
     import marimo as mo
-    import platformdirs
     import polars as pl
     from chartcoach import Catalog
-    from chartcoach.search import ChromaIndex, connect_catalog
+    from chartcoach.duckdb import write_duckdb
+    from chartcoach.paths import default_cache_dir, default_index_dir
+    from chartcoach.search import ChromaIndex
+    import duckdb
 
-    cache_dir = pathlib.Path(platformdirs.user_cache_dir("chartcoach"))
+    cache_dir = default_cache_dir("guideline-analysis-example")
+
     return (
         Catalog,
         ChromaIndex,
         cache_dir,
-        connect_catalog,
+        default_index_dir,
+        duckdb,
         mo,
         pl,
+        write_duckdb,
     )
 
 

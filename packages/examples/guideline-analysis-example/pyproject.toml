@@ -3,10 +3,10 @@ name = "guideline-analysis"
 version = "0.0.0"
 description = "marimo notebook for structural analysis over the ChartCoach guideline catalog."
 readme = "README.md"
-requires-python = ">=3.11,<3.16"
+requires-python = ">=3.11,<3.15"
 dependencies = [
   "anywidget>=0.9.21",
-  "chartcoach[search]",
+  "chartcoach[duckdb,search]",
   "embedding-atlas<0.20.0",
   "marimo[recommended]",
   "nest-asyncio>=1.6.0",

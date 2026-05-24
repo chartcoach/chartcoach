@@ -26,7 +26,7 @@ class WriteVisualizationCode(dspy.Signature):
       constraints.
     - Apply the query and `requirements` in a highly situated, contextualized
       way. Use the actual dataset domain, field meanings, samples, and query
-      intent to decide how each requirement should materialize in this specific
+      intent to decide how each requirement should appear in this specific
       chart.
     - Treat each column according to its datatype and semantics in `tablespec`.
       For example, temporal fields should be handled as temporal in the chosen

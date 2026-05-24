@@ -275,7 +275,7 @@ def _review_generated_visualization(
     lm: object | None,
 ) -> ImplementationReviewResult:
     try:
-        vis = backend.materialize_visualization(request_id, code)
+        vis = backend.build_visualization(request_id, code)
     except Exception as exc:
         return _failed_implementation_review(
             f"Code did not execute successfully, so no chart object was produced: {_summarize_exception(exc)}"

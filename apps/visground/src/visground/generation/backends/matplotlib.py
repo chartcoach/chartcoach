@@ -22,9 +22,8 @@ class MatplotlibBackend(VisualizationBackend[matplotlib.figure.Figure]):
             "`return-rule`: Ensure that the assigned chart result is a `matplotlib.figure.Figure` object.",
         ]
 
-    def materialize_visualization(self, id: str, code: str) -> matplotlib.figure.Figure:
-        """Materialization with matplotlib-specific cleanup"""
-        # using non-interactive backend
+    def build_visualization(self, id: str, code: str) -> matplotlib.figure.Figure:
+        """Build after forcing matplotlib's non-interactive backend."""
         patched_code = "\n".join(
             [
                 "import matplotlib",
@@ -34,7 +33,7 @@ class MatplotlibBackend(VisualizationBackend[matplotlib.figure.Figure]):
             ]
         )
         try:
-            return super().materialize_visualization(id, patched_code)
+            return super().build_visualization(id, patched_code)
         finally:
             plt.close("all")
 

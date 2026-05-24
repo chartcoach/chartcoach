@@ -17,11 +17,8 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## Stage Contract
-
-    - Input: `02_grounding.parquet`
-    - Output: `03_generate.parquet`
-    - Responsibility: build generation requests, batch them into scenarios, and run the generation models
+    Input: `02_grounding.parquet`.
+    Output: `03_generate.parquet`.
     """)
     return
 
@@ -36,11 +33,8 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(Literal):
-    # ModelName = Literal["gpt-5.4", "claude-sonnet-4.6", "gemini-3.1-pro-preview"]
-    # ModelName = Literal["gpt-5.3-codex"]
     ModelName = Literal["gpt-5.4-mini", "gpt-5.4", "gpt-5.3-codex"]
     GrammarName = Literal["matplotlib", "plotly", "altair"]
-    # GrammarName = Literal["matplotlib", "plotly"]
     SITUATED_GRAMMARS = {"matplotlib"}
     return GrammarName, ModelName, SITUATED_GRAMMARS
 

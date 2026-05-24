@@ -9,7 +9,7 @@ def _(mo):
     mo.md(r"""
     # ::lucide:network:: Cataloging Heterogeneous Visualization Design Knowledge
 
-    This notebook demonstrates the expressiveness of our guideline cataloging scheme. Visualization design knowledge exists in many disparate forms. It ranges from controlled psychology experiments and structured performance metrics to editorial heuristics and qualitative rhetoric. Instead of treating these as incompatible domains, this process shows how our schema can accommodate different sources of knowledge. For each distinct source type, we use a generative model to map its unique evidence format into our standardized, operational guideline structure.
+    This notebook maps five source formats into the same operational guideline schema: controlled studies, practitioner heuristics, accessibility checks, collated perception evidence, and rhetorical findings.
     """)
     return
 
@@ -45,13 +45,11 @@ def _(mo):
         LLM --> PARSE
         PARSE --> stage3
 
-        %% Professional Color Palette
         classDef stageBox fill:#f1f3f5,stroke:#dee2e6,stroke-width:1px,color:#495057,font-weight:bold
         classDef source fill:#e7f5ff,stroke:#228be6,stroke-width:1.5px,color:#1864ab
         classDef process fill:#ffffff,stroke:#868e96,stroke-width:1.5px,color:#212529
         classDef output fill:#ebfbee,stroke:#40c057,stroke-width:1.5px,color:#2b8a3e
 
-        %% Apply Classes
         class stage1,stage2,stage3 stageBox
         class S1,S2,S3,S4,S5 source
         class PROMPT,LLM,PARSE process
@@ -107,8 +105,8 @@ def _(
         ),
     )
     misc_entries = list(itertools.chain.from_iterable(misc_entry_lists))
-    misc_catalog = Catalog(misc_entries)
-    misc_catalog.frame
+    misc_catalog = Catalog.from_entries(misc_entries)
+    misc_catalog.to_frame()
     return (misc_catalog,)
 
 
@@ -298,8 +296,8 @@ def _(
         ),
     )
     dw_entries = list(itertools.chain.from_iterable(dw_entry_lists))
-    dw_catalog = Catalog(dw_entries)
-    dw_catalog.frame
+    dw_catalog = Catalog.from_entries(dw_entries)
+    dw_catalog.to_frame()
     return (dw_catalog,)
 
 
@@ -521,8 +519,8 @@ def _(
         ),
     )
     ch_entries = [entry for entry in ch_entries if entry is not None]
-    ch_catalog = Catalog(ch_entries)
-    ch_catalog.frame
+    ch_catalog = Catalog.from_entries(ch_entries)
+    ch_catalog.to_frame()
     return (ch_catalog,)
 
 
@@ -734,8 +732,8 @@ def _(
         ),
     )
     prc_entries = list(itertools.chain.from_iterable(prc_entry_lists))
-    prc_catalog = Catalog(prc_entries)
-    prc_catalog.frame
+    prc_catalog = Catalog.from_entries(prc_entries)
+    prc_catalog.to_frame()
     return (prc_catalog,)
 
 
@@ -1097,8 +1095,8 @@ def _(
             f"Talking Charts extraction produced {len(tc_entries)} entries for "
             f"{len(tc_tasks)} findings."
         )
-    tc_catalog = Catalog(tc_entries)
-    tc_catalog.frame
+    tc_catalog = Catalog.from_entries(tc_entries)
+    tc_catalog.to_frame()
     return (tc_catalog,)
 
 
@@ -1197,13 +1195,11 @@ def _(
                 ]
             )
 
-        # Enumerate all the reference IDs available for Talking Charts
         allowed_ref_ids = list_ref_ids(references)
         required_ref_ids = sorted(
             list_tc_guideline_references(guideline, allowed_ref_ids)
         )
 
-        # Map knowledge to our representation
         base_prompt = build_tc_prompt(guideline, required_ref_ids, allowed_ref_ids)
         prompt = base_prompt
         last_failure = "unknown failure"
@@ -1355,7 +1351,6 @@ def _(json):
         guideline: dict,
         allowed_ref_ids: set[str],
     ) -> set[str]:
-        """Extracts the reference IDs used in a particular Talking Charts guideline."""
         return {
             item["study_id"]
             for item in guideline["evidence"]
@@ -1363,7 +1358,7 @@ def _(json):
         }
 
     def prepare_guideline(guideline: dict, allowed_ref_ids: set[str]) -> str:
-        # Make sure we only use refs from our Talking Charts-specific references.bib file
+        # Talking Charts guidelines may cite only their local BibTeX entries.
         evidence: list[dict] = [
             item
             for item in guideline["evidence"]
@@ -1380,12 +1375,10 @@ def _():
     import bibtexparser
 
     def list_ref_ids(refs: str) -> set[str]:
-        """Given a bibtex string with multiple items, return the set of their IDs."""
         db = bibtexparser.loads(refs)
         return set(db.entries_dict.keys())
 
     def pick_refs(ids: list[str], from_all_refs: str) -> str:
-        """Given a list of ids and a bibtex string with multiple items, return a bibtex string with only the picked items."""
         db = bibtexparser.loads(from_all_refs)
         picked_entries = [
             entry for id, entry in db.entries_dict.items() if id in set(ids)
@@ -1428,7 +1421,7 @@ def _(
     tc_catalog,
 ):
     catalog = tc_catalog + prc_catalog + ch_catalog + dw_catalog + misc_catalog
-    catalog_df = catalog.frame
+    catalog_df = catalog.to_frame()
     catalog_df.write_parquet(REPO_ROOT / "guidelines" / "catalog.parquet")
     # catalog.write_folder(REPO_ROOT / "guidelines")
     catalog_df
@@ -1440,11 +1433,7 @@ def _(mo):
     mo.md(r"""
     ## ::lucide:book-open:: Guideline Example
 
-    Every extracted guideline is a structured document, combining YAML metadata with discrete Markdown sections (such as context, exceptions, and fix).
-
-    This structure enables programmatic access. The example rendered below is generated dynamically by interacting with a strongly typed Python object. Rather than parsing raw text, we use a typed API to query specific elements—pulling the title, metadata, and individual sections directly from the object to format them in this notebook.
-
-    In fact, the body of the guideline below is rendered in markdown using Python expression below, iterating over all the role-typed guideline sections and accessing the `role`, `title` and `content` properties:
+    Extracted guidelines combine YAML metadata with role-tagged Markdown sections. The example below reads the typed catalog entry directly: title, labels, references, and section fields.
 
     ```python
     {
@@ -1482,7 +1471,8 @@ def _(example_guideline_entry):
 
 @app.cell
 def _(catalog):
-    example_guideline_entry = catalog.entries[0]
+    first_id = catalog.guidelines().get_column("id")[0]
+    example_guideline_entry = catalog.entry(first_id)
     return (example_guideline_entry,)
 
 
@@ -1610,14 +1600,12 @@ def _(GUIDELINE_TEMPLATE_DIGEST, string_hash):
     ) -> str:
         lines = [
             "Your primary task is to extract and structure directly actionable visualization guidelines.",
-            # CONTRACT 1: PURPOSE
             "First, classify each guideline by its primary `purpose`:",
             "- `purpose:select`: Guidance for CHOOSING BETWEEN chart families or structural arrangements (the WHAT of design). Example: 'Replace a pie chart with a bar chart for comparison.'",
             "- `purpose:refine`: Guidance for IMPROVING the implementation, polish, readability, annotation, accessibility, rhetoric, or encoding of an ALREADY-CHOSEN chart or structure (the HOW of design). Example: 'Sort the bars of a bar chart in descending order.'",
             "- If the intervention changes channel, component, palette, annotation, caption, accessibility treatment, or framing inside an already-chosen chart or layout, it is `purpose:refine`, not `purpose:select`.",
             f"Every emitted guideline MUST include exactly one purpose label from: {', '.join(PURPOSE_LABELS)}.",
             f"Every emitted guideline MUST include exactly one basis label and it MUST be `{required_basis}`. Allowed basis labels are: {', '.join(BASIS_LABELS)}.",
-            # CONTRACT 2: DIRECTIONAL LABELS (POLARITY)
             "\nSecond, assign directional polarity to labels using a tripartite 'category:value:polarity' format:",
             "- Use ':use' if the guideline explicitly RECOMMENDS or PROMOTES a choice. Example: 'chart:bar:use'.",
             "- Use ':avoid' if the guideline explicitly WARNS AGAINST or DISCOURAGES a choice. Example: 'chart:pie-donut:avoid'.",
@@ -1667,7 +1655,6 @@ def _(GUIDELINE_TEMPLATE_DIGEST, string_hash):
                 "Do not invent task, scope, time, chart, structure, data, audience, access, or literacy conditions that the source does not actually support.",
                 "Prefer omission to broad but plausible guidance. If the candidate lacks a clear trigger condition, clear break condition, or clear reviewer check, omit it.",
                 "If two candidates overlap, keep only the narrower and more condition-bounded one.",
-                # CONTRACT 4: DESCRIPTION
                 "",
                 "The `description` MUST follow this semantic contract: "
                 "'For [task/scope/time context], [use|prefer|avoid] [design lever] on [chart/structure/data context] "
@@ -1871,7 +1858,7 @@ def _(Guideline):
 def _(Catalog, fence, mo):
     def display_references(catalog: Catalog):
         refs: list[str] = (
-            catalog.frame.select("references")
+            catalog.to_frame().select("references")
             .explode("references")
             .unique()
             .sort("references")
@@ -1914,9 +1901,11 @@ def _():
 @app.cell(hide_code=True)
 def _(json):
     from collections.abc import Callable, Iterable, Mapping
+    from os import PathLike
     from typing import Any, TypeVar
 
     import diskcache
+    from chartcoach.paths import default_cache_dir
     from joblib import Parallel, delayed
     from tenacity import retry, stop_after_attempt, wait_fixed
     from tqdm.auto import tqdm
@@ -1931,7 +1920,10 @@ def _(json):
         n_jobs: int = -1,
         backend: str = "threading",
         desc: str | None = None,
-        cache_dir: str | None = ".cache",
+        cache_dir: str | PathLike[str] | None = default_cache_dir(
+            "guideline-cataloging-example",
+            "parallel-map",
+        ),
         cache_key_provider: Callable[[T], str] | None = None,
     ) -> list[R]:
         inputs_list = list(inputs)

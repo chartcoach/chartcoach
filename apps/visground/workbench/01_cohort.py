@@ -17,11 +17,8 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## Stage Contract
-
-    - Input: enriched VisEval dataset
-    - Output: `01_cohort.parquet`
-    - Responsibility: choose a compact, chart-balanced evaluation subset
+    Input: enriched VisEval dataset.
+    Output: `01_cohort.parquet`.
     """)
     return
 

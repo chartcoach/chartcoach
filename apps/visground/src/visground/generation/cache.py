@@ -9,17 +9,17 @@ import dspy
 from .models import VisGenOutput
 from .signatures import ReviewVisualizationImplementation, WriteVisualizationCode
 
-_CACHE_NAMESPACE = "visground.generation.v7"
+_CACHE_NAME = "visground.generation.v7"
 
 
 class VisGenCache:
     def __init__(
         self,
         runtime_config: dict[str, object],
-        namespace: str = _CACHE_NAMESPACE,
+        cache_name: str = _CACHE_NAME,
     ) -> None:
         self._runtime_config = runtime_config
-        self._namespace = namespace
+        self._cache_name = cache_name
 
     @classmethod
     def for_runtime(
@@ -30,7 +30,7 @@ class VisGenCache:
         review_signature: type[dspy.Signature] = ReviewVisualizationImplementation,
         reviewer_lm: dspy.LM | None = None,
         retry_iterations: int,
-        namespace: str = _CACHE_NAMESPACE,
+        cache_name: str = _CACHE_NAME,
     ) -> VisGenCache:
         runtime_config = {
             "backend": _type_identity(type(backend)),
@@ -41,7 +41,7 @@ class VisGenCache:
             "retry_iterations": retry_iterations,
             "retry_feedback_mode": "review_json_v1",
         }
-        return cls(runtime_config=runtime_config, namespace=namespace)
+        return cls(runtime_config=runtime_config, cache_name=cache_name)
 
     def get_many(
         self,
@@ -70,7 +70,7 @@ class VisGenCache:
     def cache_key(self, example: dspy.Example) -> str:
         return json.dumps(
             {
-                "ns": self._namespace,
+                "cache": self._cache_name,
                 "runtime": self._runtime_config,
                 "example": example.inputs().toDict(),
             },

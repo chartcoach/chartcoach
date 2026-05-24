@@ -3,6 +3,7 @@ from .strategies.hybrid import HybridGroundingStrategy
 from .strategies.none import NoneGroundingStrategy
 from .strategies.structured import StructuredGroundingStrategy
 from .types import AUDIENCE_MODIFIER_IDS, GroundingStrategy, get_audience_description
+from .utils import SearchContext
 
 __all__ = [
     "AUDIENCE_MODIFIER_IDS",
@@ -11,5 +12,6 @@ __all__ = [
     "HybridGroundingStrategy",
     "StructuredGroundingStrategy",
     "NoneGroundingStrategy",
+    "SearchContext",
     "GroundingStrategy",
 ]
