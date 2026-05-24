@@ -9,21 +9,12 @@ def _(mo):
     mo.md(r"""
     # Visualization Task Classification
 
-    To characterize analytical intent beyond the data-structural facts (such as SQL schemas and result table statistics) already present in the original dataset, we enrich the corpus with high-level, task-oriented metadata.
+    Enrich VisEval queries with task-oriented metadata beyond SQL schemas and result-table statistics.
 
-    We classify each canonical query along three orthogonal axes:
-
-    - `task`
-    - `scope`
-    - `time_mode`
-
-    This operationalizes established abstractions from visualization research for a richer dataset.
-
-    We define the primary analytical **task** (e.g., *retrieve, compare, relate*) based on the low-level components of analytic activity identified by **Amar et al. (2005)**.
-
-    To capture the structural cardinality of the intended output, we classify the **scope** (e.g., *single-result, record-list, grouped-result*) following the "What" dimension of the multi-level task typology proposed by **Brehmer and Munzner (2013)**, a distinction **Munzner (2009)** highlights as a critical upstream characterization for ensuring visualization validity.
-
-    Finally, we specify the **time_mode** (e.g., *ordered, cyclic, interval*) to reflect the fundamental structural temporal distinctions established by **Aigner et al. (2007)** and integrated as an orthogonal axis in the general design space of visualization tasks by **Schulz et al. (2013)**. This enrichment transforms the dataset from a collection of data-to-code implementation tasks into a repository of situated analytical intents suitable for grounding generative reasoning.
+    Each canonical query gets three labels:
+    - `task`: analytical action such as retrieve, compare, or relate, following Amar et al. (2005)
+    - `scope`: output cardinality such as single-result, record-list, or grouped-result, following Brehmer and Munzner (2013)
+    - `time_mode`: temporal structure such as ordered, cyclic, or interval, following Aigner et al. (2007) and Schulz et al. (2013)
     """)
     return
 
@@ -36,14 +27,11 @@ def _(
     pl,
     viseval_dataset,
 ):
-    # Generate
     canonical_queries = canonical_queries_df["nl_query_canonical"].to_list()
     task_classifications = generate_task_classifications(canonical_queries)
 
-    # Organize
     task_classifications_df = pl.from_dicts(task_classifications)
 
-    # Persist
     task_classifications_output_path = (
         viseval_dataset.root.parent.parent / "enrichment" / "vis_tasks.json"
     )
@@ -75,7 +63,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    We analyze each canonical NL query and classify them based on the type of vis task they express.
+    Classify each canonical query by task, scope, and time mode.
     """)
     return
 
@@ -102,7 +90,6 @@ def _(ClassifyVisTask, dspy, vis_task_classification_reward_fn):
     def generate_task_classifications(
         canonical_queries: list[str],
     ) -> list[dict[str, str]]:
-        # Run LLM calls in parallel
         parallel = dspy.Parallel(num_threads=8)
         result = parallel(
             [
@@ -261,7 +248,7 @@ def _(mapping_df, mo):
     mo.md(rf"""
     # Natural Language Query Canonicalization
 
-    To ensure we can test design reasoning capabilities of models, it is desirable to have a canonincal representation of these natural language queries which **perfectly preserve the analytical intent**, but **omit the design decision**.
+    Canonical queries preserve analytical intent while removing chart-type, axis, and layout prescriptions.
 
     > {" ---> ".join(mapping_df.head(1).to_dicts()[0].values())}
     """)
@@ -270,11 +257,9 @@ def _(mapping_df, mo):
 
 @app.cell(hide_code=True)
 def _(generate_mapping, json, pl, query_batches_df, viseval_dataset):
-    # Generate
     batches = query_batches_df["nl_query"].to_list()
     mapping = generate_mapping(batches)
 
-    # Organize
     mapping_df = pl.from_dict(
         {
             "nl_query": list(mapping.keys()),
@@ -282,7 +267,6 @@ def _(generate_mapping, json, pl, query_batches_df, viseval_dataset):
         }
     )
 
-    # Persist
     mapping_output_path = (
         viseval_dataset.root.parent.parent / "enrichment" / "nl_query_canonical.json"
     )
@@ -296,7 +280,7 @@ def _(generate_mapping, json, pl, query_batches_df, viseval_dataset):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    We batch the NL queries that we want to canonicalize by the output visualization ID they produced in the nvbench / VisEval dataset.
+    Batch source queries by the VisEval visualization ID they produced.
     """)
     return
 
@@ -314,7 +298,7 @@ def _(viseval_dataset):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    We use a DSPY signature to clearly express the logic based on which we generate the canonical queries.
+    A DSPy signature keeps the canonicalization rules explicit and testable.
     """)
     return
 
@@ -330,7 +314,6 @@ def _(CanonicalizeVizQueries, canonical_reward_fn, dspy):
     )
 
     def generate_mapping(batches: list[list[str]]) -> dict[str, str]:
-        # Run LLM calls in parallel
         parallel = dspy.Parallel(num_threads=8)
         result = parallel(
             [
@@ -342,7 +325,6 @@ def _(CanonicalizeVizQueries, canonical_reward_fn, dspy):
             ]
         )
 
-        # Collect results
         mapping: dict[str, str] = {}
         for i, r in enumerate(result):
             queries = batches[i]
@@ -362,7 +344,6 @@ def _(JudgeCanonicalQuery, dspy):
     def canonical_reward_fn(args: dict, pred: dspy.Prediction) -> float:
         proposed_query = pred.canonical_query.lower()
 
-        # Fast Heuristic Check
         forbidden_terms = [
             "chart",
             "graph",
@@ -379,13 +360,11 @@ def _(JudgeCanonicalQuery, dspy):
         if any(term in proposed_query for term in forbidden_terms):
             return 0.0
 
-        # LLM Judge Check for nuance: intent and grammar
         assessment = judge(
             original_queries=args["queries"],
             proposed_canonical_query=pred.canonical_query,
         )
 
-        # Only acceptable outcome is perfection
         if (
             assessment.contains_visual_artifacts is False
             and assessment.preserves_data_operations is True
@@ -475,13 +454,11 @@ def _(base_example, mo):
     mo.md(rf"""
     # Base Dataset
 
-    The [VisEval](https://github.com/microsoft/VisEval) dataset provides us with natural language queries such as:
+    [VisEval](https://github.com/microsoft/VisEval) starts from natural-language visualization requests:
 
     > {base_example["nl_query"]}
 
-    Each query explicitly prescribes the type of visualization the user expects to see, such as *{base_example["chart"].lower()}* in this case. This means that when an LLM is tasked to produce a visualization based on the query, it is only responsible for figuring out a valid implementation in a given chart grammar / programming language + charting library.
-
-    Therefore, using these items, we are not able to evaluate a model's capability in reasoning about *WHAT* design is ideal to satisfy the analytical intent. All we get to see is *HOW* good a model is at implementing the predefined design in a given grammar.
+    This example already prescribes *{base_example["chart"].lower()}*. Canonicalization removes that design choice so generation can test chart selection as well as implementation.
     """)
     return
 

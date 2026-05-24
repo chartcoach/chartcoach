@@ -52,7 +52,6 @@ def _(pl, vis_request_df):
         "time_mode",
         pl.lit(None).alias("chart"),
         pl.lit("select").alias("objective"),
-        # pl.lit([*AUDIENCE_MODIFIER_IDS, None]).alias("audience"),
         pl.lit(None).cast(pl.String).alias("audience"),
     )
     selection_requests_df
@@ -116,7 +115,6 @@ def _(GroundingStrategy, hybrid_grounder, mo, none_grounder, pl):
             grounding_requests_df.to_dicts(),
             total=grounding_requests_df.height,
         ):
-            # grounding_results.append(build_grounding_item(structured_grounder, req))
             grounding_results.append(build_grounding_item(hybrid_grounder, req))
             grounding_results.append(build_grounding_item(none_grounder, req))
 
@@ -163,12 +161,14 @@ def _():
     import marimo as mo
     import polars as pl
     from chartcoach import Catalog
-    from chartcoach.search import open_search_session
+    from chartcoach.paths import default_index_dir
+    from chartcoach.search import ChromaIndex
     from visground.datasets import VisGroundDataset, VisEvalDataset
     from visground.grounding import (
         GroundingStrategy,
         HybridGroundingStrategy,
         NoneGroundingStrategy,
+        SearchContext,
         StructuredGroundingStrategy,
     )
     from visground.lm import lm_cliproxy
@@ -178,9 +178,15 @@ def _():
         api_base="https://openrouter.ai/api/v1",
         model_name="openai/text-embedding-3-large",
     )
-    search_session = open_search_session(
-        Catalog.from_parquet("guidelines/catalog.parquet"),
-        embedding_fn=openai_large_ef,
+    catalog = Catalog.from_parquet("guidelines/catalog.parquet")
+    search_session = SearchContext(
+        catalog=catalog,
+        index=ChromaIndex.from_cache(
+            catalog,
+            cache_dir=default_index_dir(),
+            embedding_fn=openai_large_ef,
+            cache_mode="reuse_only",
+        ),
     )
     return (
         GroundingStrategy,

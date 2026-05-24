@@ -3,22 +3,16 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import NotRequired, TypedDict
 
-from chartcoach.search.session import SearchSession
-
 from ..types import GroundingRecord, GroundingRequest, GroundingStrategyMode
-from ..utils import build_grounding_record, rrf_fuse
+from ..utils import SearchContext, build_grounding_record, rrf_fuse
 
 
 class FlatGroundingConfig(TypedDict):
-    # Chroma fetch depth for each query rewrite before reciprocal-rank fusion.
-    # This is not the final injected doc count, which can exceed `n_results`
-    # after multiple rewrites are fused and deduplicated.
+    # Fetch depth per query rewrite before reciprocal-rank fusion.
     n_results: int
-    # Final cap on the returned `doc_ids` / `guidance` items after fusion and
-    # materialization. Defaults to 4 when omitted.
+    # Final cap on returned `doc_ids` and `guidance`; defaults to 4.
     max_items: NotRequired[int]
-    # Reciprocal-rank fusion damping constant. Larger values flatten the rank
-    # contribution from each rewrite; smaller values reward top-ranked hits more.
+    # RRF damping constant; larger values flatten rank contributions.
     rrf_k: int
 
 
@@ -60,7 +54,7 @@ def _query_texts(req: GroundingRequest) -> list[str]:
 
 @dataclass(slots=True)
 class FlatGroundingStrategy:
-    search_session: SearchSession
+    search_session: SearchContext
     config: FlatGroundingConfig
     mode: GroundingStrategyMode = "flat"
 

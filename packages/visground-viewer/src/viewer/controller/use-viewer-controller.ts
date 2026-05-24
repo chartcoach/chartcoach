@@ -79,7 +79,7 @@ export function useViewerController(bridge: ViewerBridge): ViewerController {
     });
   }
 
-  function hydrateFromBridge() {
+  function loadFromBridge() {
     const snapshot = bridge.getSnapshot();
     const nextSelection = cloneJson(snapshot.selection ?? EMPTY_SELECTION);
     const nextPayload = cloneJson(snapshot.state ?? EMPTY_STATE_PAYLOAD);
@@ -262,18 +262,18 @@ export function useViewerController(bridge: ViewerBridge): ViewerController {
     const onKeydown = createRootKeydownHandler(() => stateRef.current, actions);
     const root = rootRef.current;
     const unsubscribe = bridge.subscribe(() => {
-      hydrateFromBridge();
+      loadFromBridge();
     });
     root?.addEventListener("keydown", onKeydown);
 
-    hydrateFromBridge();
+    loadFromBridge();
     for (const delay of [50, 150, 350, 800, 1500, 3000]) {
       hydrationRetryTimers.push(
         window.setTimeout(() => {
           if (stateRef.current.overview || stateRef.current.error) {
             return;
           }
-          hydrateFromBridge();
+          loadFromBridge();
         }, delay),
       );
     }

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from collections import defaultdict
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from functools import reduce
 from operator import and_, or_
@@ -9,7 +10,6 @@ from typing import Any, NotRequired, TypedDict, cast
 
 import polars as pl
 from chromadb import K
-from chartcoach.search.session import SearchSession
 
 from ..types import (
     AUDIENCE_MODIFIER_SPECS,
@@ -18,23 +18,17 @@ from ..types import (
     GroundingRequest,
     GroundingStrategyMode,
 )
-from ..utils import build_grounding_record
+from ..utils import SearchContext, build_grounding_record, chroma_document_metadata
 
 
 class StructuredGroundingConfig(TypedDict):
-    # Chroma fetch depth for each individual structured search job before
-    # parent-level reciprocal-rank fusion.
+    # Fetch depth per structured search job before parent-level RRF.
     n_results: int
-    # Maximum number of parent guidelines kept after fusion, before those
-    # parents expand back out into section docs for prompt injection.
+    # Parent guidelines kept after fusion, before expansion to sections.
     top_k: int
-    # Final cap on the returned `doc_ids` / `guidance` items after parent
-    # expansion and materialization. Defaults to 4 when omitted.
+    # Final cap on returned `doc_ids` and `guidance`; defaults to 4.
     max_items: NotRequired[int]
-    # Reciprocal-rank fusion damping constant. Larger values flatten the rank
-    # contribution from each search job; smaller values reward top hits more.
-    # Final injected section count can exceed `top_k` because each kept parent
-    # can contribute multiple output roles.
+    # RRF damping constant; returned section count can exceed `top_k`.
     rrf_k: int
 
 
@@ -78,7 +72,7 @@ def _label_row_to_string(row: dict[str, str | None]) -> str:
 
 
 def _find_relevant_labels(
-    search_session: SearchSession,
+    search_session: SearchContext,
     *,
     category: str,
     keyword: str | None,
@@ -92,7 +86,7 @@ def _find_relevant_labels(
         return []
 
     candidate_rows = (
-        search_session.catalog.labels_df.filter(category=category)
+        search_session.catalog.labels().filter(category=category)
         .filter(_polarity_filter_expr(polarities))
         .to_dicts()
     )
@@ -162,13 +156,13 @@ def _metadata_filter(
 
 
 def labels_for_family(
-    search_session: SearchSession,
+    search_session: SearchContext,
     family: str,
     *,
     polarities: list[str | None] | None = None,
 ) -> list[str]:
     rows = (
-        search_session.catalog.labels_df.filter(category=family)
+        search_session.catalog.labels().filter(category=family)
         .filter(_polarity_filter_expr(polarities))
         .to_dicts()
     )
@@ -193,7 +187,7 @@ def _audience_modifier(
 
 
 def _label_groups_for_refinement(
-    search_session: SearchSession,
+    search_session: SearchContext,
     req: GroundingRequest,
 ) -> list[list[str]]:
     return [
@@ -219,7 +213,7 @@ def _label_groups_for_refinement(
 
 
 def _label_groups_for_selection(
-    search_session: SearchSession,
+    search_session: SearchContext,
     req: GroundingRequest,
 ) -> list[list[str]]:
     return [
@@ -233,7 +227,7 @@ def _label_groups_for_selection(
 
 
 def _rhetoric_label_groups(
-    search_session: SearchSession,
+    search_session: SearchContext,
     req: GroundingRequest,
 ) -> list[list[str]]:
     groups = [
@@ -245,7 +239,7 @@ def _rhetoric_label_groups(
 
 
 def _polish_label_groups(
-    search_session: SearchSession,
+    search_session: SearchContext,
 ) -> list[list[str]]:
     groups = [labels_for_family(search_session, "polish", polarities=["use", None])]
     if not any(groups):
@@ -499,7 +493,7 @@ def _query_parent_rankings(
 
 
 def _refine_search_jobs(
-    search_session: SearchSession,
+    search_session: SearchContext,
     req: GroundingRequest,
 ) -> list[tuple[str, str, list[str], list[list[str]]]]:
     label_groups = _label_groups_for_refinement(search_session, req)
@@ -532,11 +526,9 @@ def _refine_search_jobs(
 
 
 def _select_search_jobs(
-    search_session: SearchSession,
+    search_session: SearchContext,
     req: GroundingRequest,
 ) -> list[tuple[str, str, list[str], list[list[str]]]]:
-    # Always run a task-only branch. If audience is present, also run the
-    # audience-conditioned branch, but keep audience as a bounded reranker.
     search_jobs = [
         (
             role,
@@ -652,20 +644,28 @@ def _accumulate_rank_scores(
 
 
 def _build_parent_label_maps(
-    docs_df: pl.DataFrame,
+    rows: Sequence[Mapping[str, object]],
 ) -> tuple[dict[str, list[str]], dict[str, dict[str, str]]]:
-    parent_labels = {
-        cast(str, row["parent_id"]): cast(list[str], row["labels"])
-        for row in docs_df.filter(pl.col("role") == "document")
-        .select("parent_id", "labels")
-        .unique("parent_id")
-        .to_dicts()
-    }
+    parent_labels: dict[str, list[str]] = {}
     parent_docs: dict[str, dict[str, str]] = defaultdict(dict)
-    for row in docs_df.select("id", "parent_id", "role").to_dicts():
-        parent_docs[cast(str, row["parent_id"])][cast(str, row["role"])] = cast(
-            str, row["id"]
-        )
+    for row in rows:
+        doc_id = row.get("id")
+        parent_id = row.get("parent_id")
+        role = row.get("role")
+        if not (
+            isinstance(doc_id, str)
+            and isinstance(parent_id, str)
+            and isinstance(role, str)
+        ):
+            continue
+        if role == "document" and parent_id not in parent_labels:
+            labels = row.get("labels")
+            parent_labels[parent_id] = (
+                [label for label in labels if isinstance(label, str)]
+                if isinstance(labels, list)
+                else []
+            )
+        parent_docs[parent_id][role] = doc_id
     return parent_labels, dict(parent_docs)
 
 
@@ -686,7 +686,7 @@ def _labels_by_family(labels: list[str]) -> dict[str, set[str]]:
 
 
 def _request_family_keys(
-    search_session: SearchSession,
+    search_session: SearchContext,
     req: GroundingRequest,
 ) -> dict[str, set[str]]:
     request_family_keys: dict[str, set[str]] = defaultdict(set)
@@ -985,7 +985,7 @@ def _select_parent_ids(
 
 
 def _score_search_jobs(
-    search_session: SearchSession,
+    search_session: SearchContext,
     *,
     search_jobs: list[tuple[str, str, list[str], list[list[str]]]],
     purpose_labels: list[str],
@@ -1091,7 +1091,7 @@ def _assemble_doc_ids(
 
 @dataclass(slots=True)
 class StructuredGroundingStrategy:
-    search_session: SearchSession
+    search_session: SearchContext
     config: StructuredGroundingConfig
     mode: GroundingStrategyMode = "structured"
 
@@ -1108,11 +1108,12 @@ class StructuredGroundingStrategy:
 
         output_roles = _output_roles(req)
         max_items = min(self.config.get("max_items", 4), 6)
-        docs_df = self.search_session.index.documents_df.unnest("metadata")
-        parent_labels, parent_docs = _build_parent_label_maps(docs_df)
+        parent_labels, parent_docs = _build_parent_label_maps(
+            chroma_document_metadata(self.search_session.index)
+        )
         parent_titles = {
             cast(str, row["id"]): cast(str, row["title"])
-            for row in self.search_session.catalog.frame.select("guideline")
+            for row in self.search_session.catalog.to_frame().select("guideline")
             .unnest("guideline")
             .select("id", "title")
             .to_dicts()

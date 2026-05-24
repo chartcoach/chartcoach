@@ -9,14 +9,14 @@ def _(mo):
     mo.md(r"""
     # ::lucide:bot:: Agentic Visualization Feedback
 
-    This notebook accompanies Section 5.4 of the paper. It demonstrates how our structured catalog enables an AI agent to provide grounded, actionable feedback on data visualizations.
+    Section 5.4 uses the structured catalog to generate grounded, actionable feedback on data visualizations.
 
     Current automated feedback methods present a trade-off:
 
     - **Rule-based checks** are reliable but rigid. They spot explicit violations but miss nuanced opportunities for perceptual or rhetorical improvement.
     - **General-purpose LLMs** can offer creative suggestions but often produce ungrounded, generic advice that is not tied to verifiable evidence.
 
-    This notebook presents a third approach: an agent that generates reliable feedback by strategically querying our structured knowledge catalog. It follows a **progressive disclosure** protocol--first using SQL to learn the catalog's structure, then using targeted retrieval and semantic search to gather evidence before synthesizing its final recommendations.
+    This notebook presents a third approach: an agent that generates reliable feedback by strategically querying our structured knowledge catalog. It follows a **progressive disclosure** protocol--first discovering catalog vocabulary with deterministic tools, then using targeted retrieval and semantic search to gather evidence before synthesizing its final recommendations.
     """)
     return
 
@@ -42,20 +42,20 @@ def _(mo):
 
     The design question is whether the current descending sort order is effective for the rapid, comparison-focused task of a shopper.
 
-    The cells below load the chart image and use [google/deplot](https://huggingface.co/google/deplot) to reverse-engineer its data and specification to prepare it for analysis.
+    The next cells load the chart image and use [google/deplot](https://huggingface.co/google/deplot) to reverse-engineer its data and specification.
     """)
     return
 
 
 @app.cell(hide_code=True)
 def _(load_image, mo):
-    image_url = "https://raw.githubusercontent.com/vis-nlp/ChartQA/refs/heads/main/ChartQA%20Dataset/train/png/42351550020333.png"
-    image = load_image(image_url)
+    image_source = "https://raw.githubusercontent.com/vis-nlp/ChartQA/refs/heads/main/ChartQA%20Dataset/train/png/42351550020333.png"
+    image = load_image(image_source)
     mo_image = mo.image(
-        image_url, style={"max-height": "400px", "object-fit": "contain"}
+        image_source, style={"max-height": "400px", "object-fit": "contain"}
     )
     mo_image
-    return image, mo_image
+    return image, image_source, mo_image
 
 
 @app.cell(hide_code=True)
@@ -146,11 +146,9 @@ def _(Image, pl):
             Pix2StructProcessor,
         )
 
-        # Initialize model and processor
         processor = Pix2StructProcessor.from_pretrained("google/deplot")
         model = Pix2StructForConditionalGeneration.from_pretrained("google/deplot")
 
-        # Run inference
         inputs = processor(
             images=plot_img,
             text="Generate underlying data table of the figure below:",
@@ -158,14 +156,12 @@ def _(Image, pl):
         )
         predictions = model.generate(**inputs, max_new_tokens=512)
 
-        # Decode predictions and convert into CSV-like format
         decoded = processor.decode(predictions[0], skip_special_tokens=True)
         SEP = " <0x0A> "
         stringio = StringIO(
             "\n".join([item.replace(" | ", "|") for item in decoded.split(SEP)])
         )
 
-        # Leverage Polars to parse the CSV-like data
         return pl.read_csv(stringio, separator="|")
 
     return (extract_plotted_data,)
@@ -246,7 +242,7 @@ def _(Image, draco_chart_spec, dspy, json, pathlib, pl, schema_from_dataframe):
         field_schema_json: str = dspy.InputField(
             desc="JSON representation of the Dataframe's schema whose data is plotted in the chart."
         )
-        # We generate JSON instead of structured output to avoid perf drop of reasoning models
+        # JSON avoids the reasoning-model performance hit from structured output.
         draco_spec_json: str = dspy.OutputField(
             desc="\n\n".join(
                 [
@@ -469,12 +465,7 @@ def _(mo):
 
     Finally, we use our catalog-grounded agent. This agent combines the reasoning of an LLM with the structured reliability of a database, and is constrained to act upon the verifiable knowledge within our catalog.
 
-    The **Agent Trajectory** below reveals this evidence-gathering strategy in detail:
-    1.  **Discovery:** It begins not with a guess, but with discovery. The agent first runs `sql` queries (`SHOW ALL TABLES`, `SELECT ... FROM guideline_labels`) to inspect the catalog's schema and learn the available vocabulary.
-    2.  **Narrowing:** Armed with this knowledge, it maps the user's situation ("comparison task," "general audience") to the catalog's specific labels. It then constructs a more targeted `sql` query to create a shortlist of relevant guideline IDs.
-    3.  **Verification:** Finally, it retrieves the full text for the most promising candidates to read their detailed rationale and advice. The trace shows the agent even adapting to a failed tool call by using `sql` again to ensure it can access the necessary evidence.
-
-    This multi-step protocol of discovery, narrowing, and verification ensures every piece of advice is based on evidence the agent has explicitly read from the catalog, preventing the kind of ungrounded suggestions seen from a generic LLM.
+    The agent first inspects catalog vocabulary and guideline summaries, then narrows to labels and semantic probes that match the shopper-comparison scenario, and finally reads exact guideline evidence before writing feedback.
     """)
     return
 
@@ -508,7 +499,7 @@ def _(
     user_situation,
 ):
     with dspy.context(lm=init_lm(feedback_model)):
-        context_enriched_vis_feedback = generate_plain_vis_feedback(
+        generate_plain_vis_feedback(
             image=image,
             situation=user_situation,
             draco_spec_dict=draco_spec_dict,
@@ -519,7 +510,7 @@ def _(
 
 @app.cell(hide_code=True)
 def _(search_session, pl, visfeedback):
-    used_guidelines_df = search_session.catalog.frame.join(
+    used_guidelines_df = search_session.catalog.to_frame().join(
         pl.from_dict({"id": visfeedback.guideline_ids}),
         on="id",
         how="right",
@@ -533,19 +524,18 @@ def _(search_session, dspy):
         """Generate grounded visualization feedback by progressively disclosing the catalog.
 
         Follow this protocol:
-        1. Start with `sql` to discover the available DuckDB schema and vocabulary.
-           Begin with queries such as `show all tables`, `describe <table>`, and
-           small samples like `select * from <table> limit 5` or
-           `select distinct ...`.
+        1. Start with `values` and `list_guidelines` to discover available catalog
+           vocabulary, label prefixes, section roles, and candidate guideline ids.
         2. Map the user's situation onto labels and metadata values that actually
            exist in the catalog; never invent taxonomy values.
-        3. Use SQL to shortlist likely guideline ids with lightweight fields first.
-        4. Read evidence for finalists with `get`, starting with overviews and
-           escalating to specific sections only when needed.
-        5. Use `search` only after SQL narrowing for semantic
+        3. Use deterministic listing and retrieval to shortlist likely guideline ids
+           with lightweight fields first.
+        4. Read evidence for finalists with `retrieve_guidelines`, starting with
+           overviews and escalating to specific sections only when needed.
+        5. Use semantic search only after deterministic narrowing for semantic
            comparison among a small candidate set.
 
-        Do not finish until you have inspected the schema, built a shortlist, and
+        Do not finish until you have inspected the vocabulary, built a shortlist, and
         read enough retrieved evidence to justify every cited guideline id.
 
         Base every recommendation on retrieved evidence, keep the feedback specific to
@@ -563,7 +553,7 @@ def _(search_session, dspy):
             desc="Image of the chart to evaluate. Use it to inspect the current design choices and verify whether retrieved guidance actually applies to this chart."
         )
         situation: str = dspy.InputField(
-            desc="Description of the chart creator's goals, audience, outlet, reading conditions, and decision task. Use this to derive likely labels and shortlist criteria after discovering the catalog schema."
+            desc="Description of the chart creator's goals, audience, outlet, reading conditions, and decision task. Use this to derive likely labels and shortlist criteria after discovering the catalog vocabulary."
         )
         chart_spec: str = dspy.InputField(
             desc="JSON string of the chart's structured specification. Use it to reason about marks, encodings, axes, sorting, legends, and other structural choices; do not use it as a literal search query."
@@ -575,43 +565,75 @@ def _(search_session, dspy):
             desc="Unique guideline ids that directly support the feedback, ordered by importance. Only include ids whose retrieved evidence you actually inspected."
         )
 
-    sql_tool = dspy.Tool(
-        search_session.tools.sql,
-        desc="Primary discovery tool. Use this first to inspect schema, sample tables, discover the available label vocabulary, and build SQL shortlist queries before any semantic search.",
+    from chartcoach.tools import CatalogTools
+
+    catalog_tools = CatalogTools(search_session.catalog)
+    values_tool = dspy.Tool(
+        catalog_tools.count_values,
+        desc="Catalog vocabulary tool. Count values in catalog tables; use table='guideline_labels', column='label' to discover available labels.",
         arg_desc={
-            "sql": "Use this first. Discover the schema with queries like `show all tables`, `describe <table>`, `select * from <table> limit 5`, and `select distinct ...`. After discovery, use SQL to shortlist candidate guideline ids and lightweight metadata before reading full docs.",
-            "row_limit": "Maximum number of rows to return. Raise it only when the default sample is too small to understand the table or shortlist.",
+            "table": "Catalog table name, such as `guideline_labels` or `sections`.",
+            "column": "Column to count, such as `label` or `role`.",
+            "explode": "Whether to count list items separately.",
+            "contains": "Optional substring filter for values.",
+            "limit": "Maximum values to return.",
         },
     )
-    get_tool = dspy.Tool(
-        search_session.tools.get,
-        desc="Deterministic retrieval tool. Use this after SQL narrowing to read exact candidate docs by id, or with carefully discovered metadata filters when exact ids are not yet known.",
+    list_tool = dspy.Tool(
+        catalog_tools.list_guidelines,
+        desc="Guideline listing tool. Use this to shortlist guideline ids and summaries before retrieving full evidence.",
         arg_desc={
-            "ids": "Exact document ids to fetch once SQL or prior samples tell you which docs you want. Prefer this when you already know the precise records to read.",
-            "where": "Optional Chroma metadata filter. Discover the available metadata fields by sampling first, and use boolean operators like `$and` when you need multiple predicates.",
-            "where_document": "Optional literal text filter for already narrowed docs. Use sparingly after you understand the document shapes.",
-            "include": "Optional response fields to include. Leave null unless you specifically need a custom payload.",
-            "limit": "Maximum number of matching docs to return when filtering.",
-            "offset": "Skip this many matching docs when paginating through a filtered set.",
+            "labels": "Exact labels that every listed guideline must contain.",
+            "label_prefixes": "Label prefixes such as `chart:` or `task:` for broader narrowing.",
+            "contains": "Case-insensitive text to match in guideline ids, titles, or descriptions.",
+            "limit": "Maximum guideline summaries to return.",
         },
     )
-    search_tool = dspy.Tool(
-        search_session.tools.search,
-        desc="Secondary semantic retrieval tool over indexed text docs. Use only after SQL discovery or on a small candidate set; do not use this as the first step.",
+    retrieve_tool = dspy.Tool(
+        catalog_tools.retrieve_guidelines,
+        desc="Deterministic guideline retrieval tool. Use this after catalog narrowing to read exact candidate guidelines by id, labels, label prefixes, title text, or section roles.",
         arg_desc={
-            "query_texts": "Short semantic probes over the indexed text docs. Use this only after SQL narrowing or when you need to compare meaning among a small candidate set; do not begin with the full raw situation if SQL can first reveal the schema and label vocabulary.",
-            "limit": "Maximum number of nearest-neighbor docs to return.",
-            "where": "Optional Chroma metadata filter. Sample docs first to learn valid metadata fields and use boolean operators like `$and` for multiple predicates.",
-            "where_document": "Optional literal text filter on document bodies after you have already narrowed the search space.",
-            "include": "Optional response fields to include. Leave null unless you specifically need a custom subset.",
+            "ids": "Exact guideline ids to fetch once deterministic listing or semantic search tells you which records you want.",
+            "labels": "Exact labels that every returned guideline must contain.",
+            "label_prefixes": "Label prefixes such as `chart:` or `task:` for broader deterministic narrowing.",
+            "contains": "Case-insensitive text to match in guideline ids, titles, or descriptions.",
+            "roles": "Section roles to include in each returned guideline, such as `context`, `advice`, `mistake`, `fix`, or `exceptions`.",
+            "limit": "Maximum number of guidelines to return.",
+        },
+    )
+    from chartcoach.search import search_guidelines
+
+    def guideline_search(
+        query_text: str,
+        limit: int = 8,
+        where: dict[str, object] | None = None,
+        where_document: dict[str, object] | None = None,
+    ) -> dict[str, object]:
+        return search_guidelines(
+            search_session.get_index(),
+            query_text,
+            limit=limit,
+            where=where,
+            where_document=where_document,
+        ).to_dict()
+
+    guideline_search_tool = dspy.Tool(
+        guideline_search,
+        desc="Semantic guideline search tool. Use this after deterministic filtering when wording matters more than exact labels.",
+        arg_desc={
+            "query_text": "Short semantic probe for matching guideline advice.",
+            "limit": "Maximum unique guideline rows to return.",
+            "where": "Native Chroma metadata filter, for example {'labels': {'$contains': 'chart:bar'}}.",
+            "where_document": "Native Chroma document filter, for example {'$contains': 'axis'}.",
         },
     )
     visfeedback_agent = dspy.ReAct(
         VisFeedbackAgent,
         tools=[
-            sql_tool,
-            get_tool,
-            search_tool,
+            values_tool,
+            list_tool,
+            retrieve_tool,
+            guideline_search_tool,
         ],
         max_iters=32,
     )
@@ -639,22 +661,39 @@ def _(
 
 @app.cell(hide_code=True)
 def _():
-    import os
-
-    import chromadb.utils.embedding_functions as embedding_functions
     from chartcoach import Catalog
-    from chartcoach.search import open_search_session
+    from chartcoach.paths import default_index_dir
+    from types import SimpleNamespace
 
-    openai_large_ef = embedding_functions.OpenAIEmbeddingFunction(
-        api_key=os.environ["OPENROUTER_API_KEY"],
-        api_base="https://openrouter.ai/api/v1",
-        model_name="openai/text-embedding-3-large",
+    catalog = Catalog.from_parquet("guidelines/catalog.parquet")
+    index = None
+
+    def get_index():
+        nonlocal index
+        if index is None:
+            import os
+
+            import chromadb.utils.embedding_functions as embedding_functions
+            from chartcoach.search import ChromaIndex
+
+            openai_large_ef = embedding_functions.OpenAIEmbeddingFunction(
+                api_key=os.environ["OPENROUTER_API_KEY"],
+                api_base="https://openrouter.ai/api/v1",
+                model_name="openai/text-embedding-3-large",
+            )
+            index = ChromaIndex.from_cache(
+                catalog,
+                cache_dir=default_index_dir(),
+                embedding_fn=openai_large_ef,
+                cache_mode="reuse_only",
+            )
+        return index
+
+    search_session = SimpleNamespace(
+        catalog=catalog,
+        get_index=get_index,
     )
-    search_session = open_search_session(
-        Catalog.from_parquet("guidelines/catalog.parquet"),
-        embedding_fn=openai_large_ef,
-    )
-    return search_session, os
+    return (search_session,)
 
 
 @app.function(hide_code=True)
@@ -665,14 +704,15 @@ def snake_to_title(text: str) -> str:
 @app.cell(column=5, hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## ::lucide:cog:: Agent & Tool Implementation
+    ## ::lucide:cog:: Agent and Tools
 
-    The agent is implemented using DSPy's `ReAct` module. Its core logic is defined in the `VisFeedbackAgent` signature, which instructs the model to follow the progressive disclosure protocol.
+    The `VisFeedbackAgent` signature defines the evidence-gathering protocol used by DSPy's `ReAct` module.
 
-    The agent has access to three distinct tools for interacting with the catalog, each with a specific role:
-    - **`sql_tool`**: For initial discovery of schema and vocabulary.
-    - **`get_tool`**: For deterministic retrieval of guidelines by ID or metadata.
-    - **`search_tool`**: For secondary semantic refinement over small candidate sets.
+    The agent reads the catalog through four tools:
+    - `values_tool`: catalog vocabulary and label discovery
+    - `list_tool`: deterministic guideline shortlisting
+    - `retrieve_tool`: exact guideline evidence by ID, label, text, or section role
+    - `guideline_search_tool`: semantic guideline-level matches
     """)
     return
 
@@ -681,7 +721,6 @@ def _(mo):
 def _(mo):
     mo.mermaid("""
     flowchart LR
-        %% Inputs
         subgraph Inputs ["Grounded Context (Inputs)"]
             direction TB
             IMG["chart_image<br/>(Visual Verification)"]
@@ -689,56 +728,51 @@ def _(mo):
             SPEC["chart_spec<br/>(Structural Reasoning)"]
         end
 
-        %% The Central Agent
         Inputs --> AGENT(["VisFeedback Agent<br/>(ReAct Loop)"])
 
-        %% Knowledge Base
-        CATALOG[("Knowledge Catalog<br/>(DuckDB + Chroma)")]
+        CATALOG[("Knowledge Catalog<br/>(Parquet + Chroma)")]
 
-        %% The Progressive Disclosure Loop
         subgraph Loop ["Progressive Disclosure Loop"]
             direction TB
 
-            %% Step 1: SQL Discovery
-            subgraph Step1 ["1. Guideline Discovery"]
-                T1["sql_tool<br/>───────────<br/>• Inspect Schema<br/>• Map Vocabulary<br/>• Build SQL Shortlist"]
+            subgraph Step1 ["1. Vocabulary Discovery"]
+                T1["values_tool<br/>───────────<br/>• Count label values<br/>• Inspect role vocabulary<br/>• Find prefixes"]
             end
 
-            %% Step 2: Deterministic Get
-            subgraph Step2 ["2. Target Retrieval"]
-                T2["get_tool<br/>───────────<br/>• Fetch exact IDs<br/>• Metadata filtering<br/>• Inspect sections"]
+            subgraph Step2 ["2. Deterministic Shortlist"]
+                T2["list_tool<br/>───────────<br/>• Filter by labels<br/>• Match summary text<br/>• Shortlist guideline IDs"]
             end
 
-            %% Step 3: Semantic Search
-            subgraph Step3 ["3. Semantic Refinement"]
-                T3["search_tool<br/>───────────<br/>• Semantic Probes<br/>• Compare candidates<br/>• Use as secondary pass"]
+            subgraph Step3 ["3. Evidence Retrieval"]
+                T3["retrieve_tool<br/>───────────<br/>• Fetch exact IDs<br/>• Filter by sections<br/>• Inspect advice"]
+            end
+
+            subgraph Step4 ["4. Guideline Search"]
+                T4["guideline_search_tool<br/>───────────<br/>• Match advice semantically<br/>• Use native Chroma filters<br/>• Deduplicate by guideline"]
             end
 
             AGENT <==> Step1
             Step1 --> Step2
-            Step2 <==> AGENT
             Step2 --> Step3
+            Step3 --> Step4
             Step3 <==> AGENT
+            Step4 <==> AGENT
         end
 
-        %% Knowledge Base Connections
-        Step1 & Step2 & Step3 <--> CATALOG
+        Step1 & Step2 & Step3 & Step4 <--> CATALOG
 
-        %% Final Output
         AGENT --> FINAL["Situated & Grounded<br/>Feedback<br/>(3-5 Suggestions)"]
 
-        %% Professional Style Definitions
         classDef stageBox fill:#f1f3f5,stroke:#dee2e6,stroke-width:1px,color:#495057,font-weight:bold
         classDef input fill:#e7f5ff,stroke:#228be6,stroke-width:1.5px,color:#1864ab
         classDef agent fill:#ffffff,stroke:#343a40,stroke-width:2px,color:#212529,font-weight:bold
         classDef tool fill:#ffffff,stroke:#868e96,stroke-width:1px,stroke-dasharray: 5 5,color:#495057
         classDef store fill:#ebfbee,stroke:#40c057,stroke-width:1.5px,color:#2b8a3e
 
-        %% Apply Classes
-        class Inputs,Loop,Step1,Step2,Step3 stageBox
+        class Inputs,Loop,Step1,Step2,Step3,Step4 stageBox
         class IMG,SIT,SPEC input
         class AGENT,FINAL agent
-        class T1,T2,T3 tool
+        class T1,T2,T3,T4 tool
         class CATALOG store
     """)
     return
@@ -747,9 +781,13 @@ def _(mo):
 @app.cell(column=6, hide_code=True)
 def _(Image, httpx):
     from io import BytesIO
+    from pathlib import Path
 
-    def load_image(url: str) -> Image.Image:
-        res = httpx.get(url)
+    def load_image(source: str) -> Image.Image:
+        path = Path(source)
+        if path.exists():
+            return Image.open(path)
+        res = httpx.get(source)
         res.raise_for_status()
         return Image.open(BytesIO(res.content))
 
@@ -757,16 +795,14 @@ def _(Image, httpx):
 
 
 @app.cell(hide_code=True)
-def _(mo):
-    NB_ROOT = mo.notebook_dir()
-    REPO_ROOT = NB_ROOT.parent.parent.parent
-    CATALOG_PARQUET_PATH = REPO_ROOT / "guidelines" / "catalog.parquet"
+def _():
     return
 
 
 @app.cell(hide_code=True)
 def _():
     import json
+    import os
     import pathlib
     import warnings
 
@@ -776,7 +812,7 @@ def _():
     from PIL import Image
 
     warnings.filterwarnings("ignore")
-    return Image, httpx, json, mo, pathlib, pl
+    return Image, httpx, json, mo, os, pathlib, pl
 
 
 @app.cell(hide_code=True)

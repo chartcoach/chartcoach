@@ -332,7 +332,7 @@ class VisJudgeRunner:
 
             grammar = str(candidate["grammar"])
             vis_backend = self._get_backend(grammar)
-            chart = vis_backend.materialize_visualization(
+            chart = vis_backend.build_visualization(
                 str(candidate["vis_id"]),
                 str(candidate["code"]),
             )

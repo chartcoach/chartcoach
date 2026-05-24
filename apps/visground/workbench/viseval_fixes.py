@@ -35,15 +35,12 @@ def _(dspy, viseval_dataset):
         )
 
     def consistency_reward_fn(args: dict, pred: dspy.Prediction) -> float:
-        # No need to check SQL executability when the prediction is already consistent
         if pred.consistent and pred.repaired_sql is None:
             return 1.0
 
-        # If the prediction is inconsistent but no repaired SQL is provided, it's a failure
         if not pred.consistent and pred.repaired_sql is None:
             return 0.0
 
-        # Ensure that the generated repaired SQL can be executed
         conn = viseval_dataset.vis_relation(args["id"])
         try:
             conn.query(args["sql"])
@@ -192,12 +189,10 @@ def _(
         }
 
     def apply_sql_fixes(sql_fixmap: dict[str, str]):
-        # Patch dataset
         fixed = viseval_dataset.raw
         for id, sql_fix in sql_fixmap.items():
             fixed[id]["vis_query"]["data_part"]["sql_part"] = sql_fix
 
-        # Write patches
         pathlib.Path(viseval_dataset.root / "visEval.json").write_text(
             json.dumps(fixed, indent=4)
         )
@@ -210,7 +205,7 @@ def _(dspy):
     class SQLFixer(dspy.Signature):
         """
         You must fix the incorrect SQL query, considering the error it threw and the tables available in the database.
-        Ensure that you make absolutely minimal diff to the original incorrect_query. No need to reformat.
+        Keep the fixed query as close as possible to the original incorrect_query.
         """
 
         id: str = dspy.InputField()
@@ -235,7 +230,6 @@ def _(attempt, dspy, find_db_id_by_vis_id, viseval_dataset):
         conn = viseval_dataset.database(db_id)
         result = attempt(conn.query, pred.fixed_query)
 
-        # Only perfection is acceptable outcome
         if result.is_ok():
             return 1.0
 
@@ -335,7 +329,6 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(VisEvalDataset):
-    # viseval_dataset = VisEvalDataset("./apps/visground/nogit/visEval_dataset")
     viseval_dataset = VisEvalDataset()
     return (viseval_dataset,)
 

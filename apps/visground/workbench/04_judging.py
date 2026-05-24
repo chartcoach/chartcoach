@@ -17,11 +17,8 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## Stage Contract
-
-    - Input: 03_generate.parquet
-    - Outputs: 04_judgements.parquet and 04_judgement_runs.parquet
-    - Responsibility: judge generated chart candidates, preserve raw repeated runs, and write the canonical aggregate result used downstream
+    Input: `03_generate.parquet`.
+    Outputs: `04_judgements.parquet` and `04_judgement_runs.parquet`.
     """)
     return
 

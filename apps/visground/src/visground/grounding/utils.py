@@ -1,11 +1,19 @@
 from __future__ import annotations
 
-from typing import Sequence
+from dataclasses import dataclass
+from collections.abc import Mapping, Sequence
+from typing import Any, cast
 
-import polars as pl
-from chartcoach.search.session import SearchSession
+from chartcoach import Catalog
+from chartcoach.search import ChromaIndex
 
 from .types import GroundingRecord
+
+
+@dataclass(frozen=True, slots=True)
+class SearchContext:
+    catalog: Catalog
+    index: ChromaIndex
 
 
 def rrf_fuse(
@@ -29,26 +37,64 @@ def rrf_fuse(
 
 
 def build_grounding_record(
-    search: SearchSession,
+    search: SearchContext,
     doc_ids: Sequence[str],
 ) -> GroundingRecord:
-    materialized_doc_ids = list(doc_ids)
-    if not materialized_doc_ids:
+    selected_doc_ids = list(doc_ids)
+    if not selected_doc_ids:
         return {
             "doc_ids": [],
             "guideline_ids": [],
             "guidance": [],
         }
 
-    guidance = (
-        pl.from_dict({"id": materialized_doc_ids})
-        .join(search.index.documents_df, how="left", on="id")
-        .get_column("doc")
-        .to_list()
-    )
+    document_texts = chroma_document_texts(search.index, selected_doc_ids)
+    missing = [doc_id for doc_id in selected_doc_ids if doc_id not in document_texts]
+    if missing:
+        raise ValueError(f"Chroma index is missing document id(s): {', '.join(missing)}")
+    guidance = [document_texts[doc_id] for doc_id in selected_doc_ids]
 
     return {
-        "doc_ids": materialized_doc_ids,
-        "guideline_ids": [doc_id.split("---")[0] for doc_id in materialized_doc_ids],
+        "doc_ids": selected_doc_ids,
+        "guideline_ids": [doc_id.split("---")[0] for doc_id in selected_doc_ids],
         "guidance": guidance,
     }
+
+
+def chroma_document_texts(
+    index: ChromaIndex,
+    doc_ids: Sequence[str],
+) -> dict[str, str]:
+    result = cast(
+        Mapping[str, object],
+        index.collection.get(ids=list(doc_ids), include=["documents"]),
+    )
+    ids = result.get("ids")
+    documents = result.get("documents")
+    if not isinstance(ids, list) or not isinstance(documents, list):
+        return {}
+    return {
+        doc_id: document
+        for doc_id, document in zip(ids, documents)
+        if isinstance(doc_id, str) and isinstance(document, str)
+    }
+
+
+def chroma_document_metadata(index: ChromaIndex) -> list[dict[str, Any]]:
+    result = cast(
+        Mapping[str, object],
+        index.collection.get(include=["metadatas"]),
+    )
+    ids = result.get("ids")
+    metadatas = result.get("metadatas")
+    if not isinstance(ids, list) or not isinstance(metadatas, list):
+        return []
+
+    rows: list[dict[str, Any]] = []
+    for doc_id, metadata in zip(ids, metadatas):
+        if not isinstance(doc_id, str) or not isinstance(metadata, Mapping):
+            continue
+        row = {str(key): value for key, value in metadata.items()}
+        row["id"] = doc_id
+        rows.append(row)
+    return rows

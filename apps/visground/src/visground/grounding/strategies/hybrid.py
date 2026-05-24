@@ -286,7 +286,7 @@ def _single_label_info_by_guideline(
 ) -> dict[str, LabelInfo]:
     labels_by_guideline: dict[str, list[LabelInfo]] = defaultdict(list)
 
-    for row in catalog.guideline_labels_df.to_dicts():
+    for row in catalog.guideline_labels().to_dicts():
         if cast(str, row["category"]) != category:
             continue
         labels_by_guideline[cast(str, row["guideline_id"])].append(
@@ -299,8 +299,7 @@ def _single_label_info_by_guideline(
     invalid: list[str] = []
     label_info_by_guideline: dict[str, LabelInfo] = {}
 
-    for entry in catalog.entries:
-        guideline_id = entry.guideline.id
+    for guideline_id in catalog.guidelines().get_column("id").to_list():
         label_infos = labels_by_guideline.get(guideline_id, [])
 
         if len(label_infos) != 1:
@@ -345,8 +344,8 @@ def _build_guidelines_payload(catalog: cc.Catalog) -> GuidelinesPayload:
     groups_by_basis: dict[str, BasisGroup] = {}
     labels_by_basis: dict[str, list[str]] = defaultdict(list)
 
-    for entry in catalog.entries:
-        guideline = entry.guideline
+    for row in catalog.guidelines().iter_rows(named=True):
+        guideline = cc.Guideline.from_mapping(row)
         basis_info = basis_by_guideline[guideline.id]
         purpose_info = purpose_by_guideline[guideline.id]
         purpose = cast(PurposeBucket, purpose_info["subcategory"])
@@ -534,7 +533,11 @@ class HybridGroundingStrategy:
 
     def __post_init__(self):
         self._guidelines_by_id = {
-            entry.guideline.id: entry.guideline for entry in self.catalog.entries
+            guideline.id: guideline
+            for guideline in (
+                cc.Guideline.from_mapping(row)
+                for row in self.catalog.guidelines().iter_rows(named=True)
+            )
         }
         self.retriever = GuidelineRetriever(
             viseval_dataset=self.viseval_dataset,
