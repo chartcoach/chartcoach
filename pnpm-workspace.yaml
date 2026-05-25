@@ -1,6 +1,8 @@
 packages:
-  - "packages/*"
-  - "apps/*"
+  - "apps/site"
+  - "packages/catalog-javascript"
+  - "packages/catalog-python"
+  - "packages/ui"
 minimumReleaseAge: 2880
 minimumReleaseAgeStrict: true
 allowBuilds:
