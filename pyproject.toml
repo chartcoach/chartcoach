@@ -1,7 +1,6 @@
 [tool.uv.workspace]
 members = [
     "packages/catalog-python",
-    "apps/visground",
 ]
 
 [tool.uv]
@@ -17,6 +16,3 @@ dev = [
 [tool.ruff.lint]
 pydocstyle = { convention = "numpy" }
 ignore = []
-
-[tool.marimo.runtime]
-output_max_bytes = 10_000_000_000

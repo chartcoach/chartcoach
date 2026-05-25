@@ -1,4 +1,0 @@
-dist/
-public/data/*.parquet
-!public/data/viewer.parquet
-public/charts/
