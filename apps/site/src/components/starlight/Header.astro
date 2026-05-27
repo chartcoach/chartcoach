@@ -21,7 +21,7 @@ const desktopNavLinkBase =
 const desktopNavLinkInactive = "text-muted-foreground";
 const desktopNavLinkActive = "text-brand-high";
 const mobileNavLinkBase =
-	"flex min-h-9 items-center rounded-none border border-transparent px-[0.6rem] py-[0.45rem] font-sans text-[0.9rem] font-semibold no-underline transition-colors";
+	"flex min-h-11 items-center rounded-none border border-transparent px-[0.7rem] py-[0.55rem] font-sans text-[0.9rem] font-semibold no-underline transition-colors";
 const mobileNavLinkInactive =
 	"text-muted-foreground hover:border-control-border hover:bg-surface-strong hover:text-foreground focus-visible:border-control-border focus-visible:bg-surface-strong focus-visible:text-foreground";
 const mobileNavLinkActive = "border-control-border bg-surface text-brand-high";
@@ -78,7 +78,7 @@ function isActive(href: string) {
 
 		<details class="m-0 justify-self-end lg:hidden" data-mobile-menu>
 			<summary
-				class="inline-flex size-[2.15rem] items-center justify-center rounded-none border border-control-border bg-control text-muted-foreground transition-colors focus-visible:border-control-border focus-visible:bg-surface-strong focus-visible:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring/30"
+				class="inline-flex size-11 items-center justify-center rounded-none border border-control-border bg-control text-muted-foreground transition-colors focus-visible:border-control-border focus-visible:bg-surface-strong focus-visible:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring/30"
 				aria-controls={mobileMenuPanelId}
 				aria-expanded="false"
 				aria-labelledby={mobileMenuToggleLabelId}

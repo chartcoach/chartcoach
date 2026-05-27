@@ -34,7 +34,7 @@ function ChartCoachMarimekkoCanvas({
         padding: "clamp(0.85rem, 2.4vw, 1.35rem)",
         borderRadius: "var(--cc-radius-panel, 1rem)",
         background:
-          "linear-gradient(180deg, color-mix(in srgb, var(--cc-shell-surface) 94%, white), color-mix(in srgb, var(--ccui-panel) 92%, transparent))",
+          "var(--cc-marimekko-canvas-bg, linear-gradient(180deg, var(--cc-shell-surface), var(--ccui-panel)))",
         boxShadow: "none",
         ...style,
       }}

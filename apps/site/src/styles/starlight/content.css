@@ -59,7 +59,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 2.45rem;
+    min-height: 2.75rem;
     padding: 0.66rem 0.94rem;
     border: 1px solid var(--cc-control-border);
     border-radius: var(--cc-radius-pill) !important;
@@ -74,6 +74,11 @@
       border-color 120ms ease,
       background-color 120ms ease,
       color 120ms ease;
+  }
+
+  button[title="Copy to clipboard"][data-code] {
+    min-width: 2.75rem !important;
+    min-height: 2.75rem !important;
   }
 
   :root:not([data-theme="dark"]) .sl-link-button.primary {
@@ -226,8 +231,9 @@
 
     button[data-open-modal] {
       max-width: none !important;
-      width: 2.2rem !important;
-      min-width: 2.2rem !important;
+      width: 2.75rem !important;
+      min-width: 2.75rem !important;
+      min-height: 2.75rem !important;
       border-color: transparent !important;
       background: transparent !important;
       box-shadow: none !important;
