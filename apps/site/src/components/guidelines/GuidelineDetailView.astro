@@ -1,5 +1,6 @@
 ---
 import GuidelineLabels from "./GuidelineLabels.astro";
+import GuidelineCopyMarkdown from "./GuidelineCopyMarkdown.astro";
 import type { GuidelineCardLabel, GuidelineDetailSection } from "./types";
 
 interface Props {
@@ -7,21 +8,27 @@ interface Props {
   title: string;
   description?: string;
   labels: GuidelineCardLabel[];
+  markdown: string;
   sections: GuidelineDetailSection[];
   bibliographyHtml?: string;
   referencesBib?: string;
 }
 
-const { title, description, labels, sections, bibliographyHtml, referencesBib } =
+const { id, title, description, labels, markdown, sections, bibliographyHtml, referencesBib } =
   Astro.props as Props;
 ---
 
 <div class="mx-auto grid w-full max-w-[62rem] gap-[0.85rem]">
-  <div class="grid gap-1">
-    <h1 class="m-0 text-balance font-display text-[clamp(1.45rem,2.7vw,1.95rem)] font-semibold leading-[1.06] tracking-[-0.02em] text-foreground">
-      {title}
-    </h1>
-    {description ? <p class="m-0 max-w-3xl text-[0.92rem] leading-[1.58] text-muted-foreground">{description}</p> : null}
+  <div class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
+    <div class="grid gap-1">
+      <h1 class="m-0 text-balance font-display text-[clamp(1.45rem,2.7vw,1.95rem)] font-semibold leading-[1.06] tracking-[-0.02em] text-foreground">
+        {title}
+      </h1>
+      {description ? <p class="m-0 max-w-3xl text-[0.92rem] leading-[1.58] text-muted-foreground">{description}</p> : null}
+    </div>
+    <div class="justify-self-start sm:justify-self-end">
+      <GuidelineCopyMarkdown id={id} markdown={markdown} />
+    </div>
   </div>
 
   {
@@ -42,18 +49,18 @@ const { title, description, labels, sections, bibliographyHtml, referencesBib } 
 
   {
     sections.length ? (
-      <div class="grid gap-2 pt-px">
+      <div class="grid gap-7 pt-2 sm:gap-8">
         {sections.map((section) => (
-          <section class="grid gap-[var(--ccui-detail-body-gap,0.09rem)]">
-            <div class="grid gap-[var(--ccui-detail-header-gap,0.2rem)]">
+          <section>
+            <div class="grid gap-2">
               <p class="m-0 font-mono text-[0.58rem] font-semibold leading-[0.98] tracking-[0.007em] text-muted-foreground/80 lowercase">
                 {section.role}
               </p>
               <h2 class="m-0 text-balance font-display text-[clamp(1.4rem,2.2vw,1.82rem)] font-semibold leading-[0.99] tracking-[-0.018em] text-foreground">
                 {section.title}
               </h2>
+              <div class="guideline-article-section__body" set:html={section.html} />
             </div>
-            <div class="guideline-article-section__body" set:html={section.html} />
           </section>
         ))}
       </div>

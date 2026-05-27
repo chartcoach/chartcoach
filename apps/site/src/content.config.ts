@@ -14,6 +14,7 @@ export const collections = {
       title: z.string(),
       description: z.string().optional(),
       labels: z.array(z.string()).default([]),
+      markdown: z.string(),
       sections: z
         .array(
           z.object({

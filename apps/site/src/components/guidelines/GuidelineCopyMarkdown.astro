@@ -1,0 +1,89 @@
+---
+import { Check, Copy } from "@lucide/astro";
+
+interface Props {
+  id: string;
+  markdown: string;
+}
+
+const { id, markdown } = Astro.props as Props;
+const sourceId = `guideline-markdown-${id}`;
+
+function jsonForScript(value: string): string {
+  return JSON.stringify(value)
+    .replace(/</g, "\\u003c")
+    .replace(/\u2028/g, "\\u2028")
+    .replace(/\u2029/g, "\\u2029");
+}
+---
+
+<div class="flex items-start">
+  <button
+    class="group inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-[4px] border border-border bg-muted/50 px-3 py-2 font-mono text-[0.72rem] font-bold tracking-[0.02em] text-muted-foreground transition-colors hover:border-control-border hover:bg-surface-strong hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 data-[copied=true]:border-control-border data-[copied=true]:bg-surface-strong data-[copied=true]:text-foreground"
+    type="button"
+    data-guideline-copy-md
+    data-markdown-source={sourceId}
+    data-copied="false"
+  >
+    <Copy class="size-3.5 group-data-[copied=true]:hidden" aria-hidden="true" focusable="false" />
+    <Check class="hidden size-3.5 group-data-[copied=true]:block" aria-hidden="true" focusable="false" />
+    <span>Copy Markdown</span>
+  </button>
+  <span class="sr-only" aria-live="polite" data-guideline-copy-md-status></span>
+  <script is:inline type="application/json" id={sourceId} set:html={jsonForScript(markdown)}></script>
+</div>
+
+<script>
+  const COPY_FEEDBACK_MS = 1600;
+
+  function readMarkdown(sourceId: string): string {
+    const source = document.getElementById(sourceId);
+    if (!source?.textContent) return "";
+    return JSON.parse(source.textContent);
+  }
+
+  async function copyText(text: string): Promise<void> {
+    if (!navigator.clipboard?.writeText) throw new Error("Clipboard API unavailable.");
+    await navigator.clipboard.writeText(text);
+  }
+
+  function initGuidelineCopyMarkdown() {
+    for (const button of document.querySelectorAll<HTMLButtonElement>("[data-guideline-copy-md]")) {
+      if (button.dataset.initialized === "true") continue;
+      button.dataset.initialized = "true";
+
+      button.addEventListener("click", async () => {
+        const status = button.parentElement?.querySelector<HTMLElement>(
+          "[data-guideline-copy-md-status]",
+        );
+
+        try {
+          const markdown = readMarkdown(button.dataset.markdownSource ?? "");
+          if (!markdown) throw new Error("Missing guideline markdown.");
+
+          await copyText(markdown);
+          button.dataset.copied = "true";
+          if (status) status.textContent = "Guideline Markdown copied.";
+
+          window.setTimeout(() => {
+            button.dataset.copied = "false";
+            if (status) status.textContent = "";
+          }, COPY_FEEDBACK_MS);
+        } catch {
+          button.dataset.copied = "false";
+          if (status) status.textContent = "Guideline Markdown could not be copied.";
+
+          window.setTimeout(() => {
+            if (status) status.textContent = "";
+          }, COPY_FEEDBACK_MS);
+        }
+      });
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initGuidelineCopyMarkdown, { once: true });
+  } else {
+    initGuidelineCopyMarkdown();
+  }
+</script>

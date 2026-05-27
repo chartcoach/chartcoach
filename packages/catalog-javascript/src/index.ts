@@ -19,6 +19,7 @@ export {
   indexGuidelineSections,
   parseMarkdownWithFrontmatter,
 } from "./catalog/parse.js";
+export { guidelineToMarkdown } from "./catalog/markdown.js";
 export {
   catalogEntryFromWire,
   isCatalogEntryWire,
