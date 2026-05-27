@@ -362,7 +362,7 @@ requires-dist = [
     { name = "chromadb", marker = "extra == 'search'", specifier = ">=1.5.0" },
     { name = "citeproc-py", specifier = ">=0.9" },
     { name = "click", specifier = ">=8.0.0" },
-    { name = "duckdb", specifier = ">=1.4.0" },
+    { name = "duckdb", specifier = ">=1.1" },
     { name = "mcp", extras = ["cli"], marker = "extra == 'mcp'", specifier = ">=1.9.0" },
     { name = "mdformat", specifier = ">=0.7.19" },
     { name = "platformdirs", specifier = ">=4.0.0" },
