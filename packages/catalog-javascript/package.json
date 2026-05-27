@@ -44,7 +44,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "hyparquet": "^1.25.8",
+    "hyparquet": "^1.26.0",
     "hyparquet-compressors": "^1.1.1",
     "yaml": "^2.9.0"
   },

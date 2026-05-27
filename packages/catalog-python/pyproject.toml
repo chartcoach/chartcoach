@@ -8,7 +8,6 @@ license = "MIT"
 license-files = ["LICENSE"]
 requires-python = ">=3.11,<3.15"
 keywords = [
-  "chartcoach",
   "data-visualization",
   "guidelines",
   "retrieval",
@@ -28,22 +27,22 @@ classifiers = [
   "Typing :: Typed",
 ]
 dependencies = [
-  "bibtexparser>=1.1.0",
-  "click>=8.0.0",
+  "bibtexparser>=1.1",
+  "click>=8",
   "citeproc-py>=0.9",
   "duckdb>=1.1",
   "mdformat>=1",
-  "platformdirs>=4.0.0",
-  "polars>=1.0.0",
+  "platformdirs>=4",
+  "polars>=1",
   "pyarrow>=18",
   "pyyaml>=6",
 ]
 
 [project.optional-dependencies]
 search = [
-  "chromadb>=1.5.0",
-  "polars-hash>=0.5.0",
-  "tqdm>=1.0",
+  "chromadb>=1.5",
+  "polars-hash>=0.5",
+  "tqdm>=1",
 ]
 mcp = [
   "mcp[cli]>=1.9.0",
