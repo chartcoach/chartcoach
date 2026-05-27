@@ -37,11 +37,15 @@ Use the folder layout for authoring and review. The parquet file is the compact 
 
 ## DuckDB
 
-Generated DuckDB artifacts contain derived tables such as `guidelines`, `sections`, `labels`, `guideline_labels`, `references`, `formatted_references`, and `guideline_references`.
+Generated DuckDB artifacts contain derived tables such as `guidelines`, `sections`, `labels`, `guideline_labels`, `references`, `formatted_references`, `guideline_references`, and `guideline_sources`.
 
 ```python
-from chartcoach.duckdb import write_duckdb
+from chartcoach.duckdb import connect_catalog, write_duckdb
 from chartcoach.paths import default_duckdb_path
+
+conn = connect_catalog(catalog)
+conn.sql("select id, title from guidelines limit 5").pl()
+conn.close()
 
 write_duckdb(catalog, default_duckdb_path(), overwrite=True)
 ```

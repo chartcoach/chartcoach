@@ -7,7 +7,7 @@ import sys
 import polars as pl
 
 
-def test_package_root_import_does_not_load_optional_dependencies() -> None:
+def test_package_root_import_keeps_heavy_surfaces_lazy() -> None:
     script = (
         "import sys, chartcoach; "
         "assert 'duckdb' not in sys.modules; "
@@ -47,7 +47,7 @@ assert ChromaIndex.__name__ == "ChromaIndex"
     subprocess.run([sys.executable, "-c", script], check=True)
 
 
-def test_catalog_loads_parquet_without_optional_dependencies(
+def test_catalog_loads_parquet_without_search_or_mcp_dependencies(
     tmp_path: Path,
 ) -> None:
     parquet_path = tmp_path / "catalog.parquet"
@@ -79,13 +79,13 @@ def test_catalog_loads_parquet_without_optional_dependencies(
 import builtins
 import sys
 
-blocked_roots = {"chromadb", "duckdb", "mcp", "polars_hash"}
+blocked_roots = {"chromadb", "mcp", "polars_hash"}
 real_import = builtins.__import__
 
 def blocked_import(name, *args, **kwargs):
     root = name.partition(".")[0]
     if root in blocked_roots:
-        raise ModuleNotFoundError(f"blocked optional dependency: {root}", name=root)
+        raise ModuleNotFoundError(f"blocked dependency surface: {root}", name=root)
     return real_import(name, *args, **kwargs)
 
 builtins.__import__ = blocked_import

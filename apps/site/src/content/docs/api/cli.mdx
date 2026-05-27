@@ -37,6 +37,12 @@ Validate a guideline folder and report table counts.
 
 Write derived catalog tables into a DuckDB database file.
 
+## sql
+
+`chartcoach sql --source PATH QUERY [--limit N] [--format table|json|jsonl|csv]`
+
+Run one SELECT query over the catalog DuckDB tables with external file access disabled. `--limit` bounds the returned rows.
+
 ## tables
 
 `chartcoach tables list --source PATH --format table|json|jsonl|csv`

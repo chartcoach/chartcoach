@@ -94,6 +94,7 @@ def test_mcp_server_exposes_native_tool_contracts(
             "tables_list",
             "tables_schema",
             "tables_values",
+            "sql_query",
             "guidelines_list",
             "guidelines_get",
             "guidelines_retrieve",
@@ -115,6 +116,7 @@ def test_mcp_server_exposes_native_tool_contracts(
         assert {"ids", "where", "limit", "include"} <= set(
             tools["chroma_get"].inputSchema["properties"]
         )
+        assert {"query", "limit"} <= set(tools["sql_query"].inputSchema["properties"])
 
         query_result = await server.call_tool(
             "chroma_query",
@@ -128,9 +130,19 @@ def test_mcp_server_exposes_native_tool_contracts(
             "chroma_get",
             {"ids": ["doc"], "include": ["metadatas"]},
         )
+        sql_result = await server.call_tool(
+            "sql_query",
+            {
+                "query": "select id from guidelines order by id",
+                "limit": 1,
+            },
+        )
 
         assert cast(tuple[object, dict[str, object]], query_result)[1] == {"ids": [[]]}
         assert cast(tuple[object, dict[str, object]], get_result)[1] == {"ids": []}
+        sql_payload = cast(tuple[object, dict[str, object]], sql_result)[1]
+        assert sql_payload["rows"] == [{"id": "direct-labels"}]
+        assert sql_payload["truncated"] is True
         assert collection.query_params == {
             "query_texts": ["axis", "labels"],
             "n_results": 2,
@@ -183,6 +195,7 @@ def test_mcp_main_registers_catalog_tools_without_opening_search(
         "list_tables",
         "describe_tables",
         "count_values",
+        "sql_query",
         "list_guidelines",
         "get_guideline",
         "retrieve_guidelines",

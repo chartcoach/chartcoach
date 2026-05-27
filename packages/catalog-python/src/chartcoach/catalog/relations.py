@@ -11,6 +11,7 @@ from .tables import (
     GUIDELINES_SCHEMA,
     GUIDELINE_LABELS_SCHEMA,
     GUIDELINE_REFERENCES_SCHEMA,
+    GUIDELINE_SOURCES_SCHEMA,
     LABELS_SCHEMA,
     REFERENCES_SCHEMA,
     SECTIONS_SCHEMA,
@@ -26,6 +27,7 @@ GUIDELINE_LABELS_RELATION = "guideline_labels"
 REFERENCES_RELATION = "references"
 FORMATTED_REFERENCES_RELATION = "formatted_references"
 GUIDELINE_REFERENCES_RELATION = "guideline_references"
+GUIDELINE_SOURCES_RELATION = "guideline_sources"
 
 TableLoader = Callable[["Catalog"], pl.DataFrame]
 RowCounter = Callable[["Catalog"], int | None]
@@ -81,6 +83,12 @@ TABLE_SPECS: dict[str, CatalogTableSpec] = {
         schema=GUIDELINE_REFERENCES_SCHEMA,
         load=lambda catalog: catalog.guideline_references(),
         row_count=lambda catalog: catalog.guideline_references().height,
+    ),
+    GUIDELINE_SOURCES_RELATION: CatalogTableSpec(
+        name=GUIDELINE_SOURCES_RELATION,
+        schema=GUIDELINE_SOURCES_SCHEMA,
+        load=lambda catalog: catalog.guideline_sources(),
+        row_count=lambda catalog: catalog.guideline_sources().height,
     ),
 }
 
@@ -143,6 +151,7 @@ __all__ = [
     "GUIDELINES_RELATION",
     "GUIDELINE_LABELS_RELATION",
     "GUIDELINE_REFERENCES_RELATION",
+    "GUIDELINE_SOURCES_RELATION",
     "LABELS_RELATION",
     "REFERENCES_RELATION",
     "SECTIONS_RELATION",

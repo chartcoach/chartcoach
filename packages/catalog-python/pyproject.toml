@@ -31,17 +31,15 @@ dependencies = [
   "bibtexparser>=1.1.0",
   "click>=8.0.0",
   "citeproc-py>=0.9",
+  "duckdb>=1.4.0",
   "mdformat>=0.7.19",
   "platformdirs>=4.0.0",
   "polars>=1.0.0",
+  "pyarrow>=18",
   "pyyaml>=5.3.1",
 ]
 
 [project.optional-dependencies]
-duckdb = [
-  "duckdb>=1.4.0",
-  "pyarrow>=23",
-]
 search = [
   "chromadb>=1.5.0",
   "polars-hash>=0.5.0",
@@ -63,7 +61,6 @@ dev = ["pytest>=8.4.0"]
 
 [tool.pytest.ini_options]
 markers = [
-  "duckdb: tests that require the chartcoach[duckdb] optional extra",
   "mcp: tests that require the chartcoach[mcp] optional extra",
   "search: tests that require the chartcoach[search] optional extra",
 ]

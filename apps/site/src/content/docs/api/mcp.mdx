@@ -53,6 +53,10 @@ Return column schemas for catalog tables.
 
 Count distinct values in a table column.
 
+`sql_query`
+
+Run one read-only SELECT query over the DuckDB catalog tables with external file access disabled. The response contains `columns`, `rows`, `row_count`, `truncated`, `limit`, and `catalog_digest`.
+
 `guidelines_list`
 
 List guideline ids and summaries with deterministic label and text filters.
@@ -81,6 +85,6 @@ Run `collection.get(**params)` with direct Chroma parameters.
 
 ## Agent Contract
 
-Use deterministic catalog tools first when exact ids, labels, sections, or table values are known. Use `guidelines_search`, `chroma_query`, or `chroma_get` only when semantic matching or native Chroma inspection is needed.
+Use deterministic catalog tools first when exact ids, labels, sections, or table values are known. Use `sql_query` when the workflow needs joins across guidelines, sections, labels, and references. Use `guidelines_search`, `chroma_query`, or `chroma_get` only when semantic matching or native Chroma inspection is needed.
 
-Agents that need SQL should call `catalog_artifacts`, open the DuckDB artifact directly, and query it with their own SQL client.
+Agents that need their own SQL client can call `catalog_artifacts` and open the DuckDB artifact directly.

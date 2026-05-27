@@ -4,8 +4,10 @@ import os
 from os import PathLike
 from pathlib import Path
 import tempfile
-from typing import Any
+from collections.abc import Mapping
+from typing import TypeAlias
 
+import duckdb
 import polars as pl
 
 from .catalog.collection import Catalog
@@ -14,18 +16,45 @@ from .catalog.relations import (
     GUIDELINES_RELATION,
     GUIDELINE_LABELS_RELATION,
     GUIDELINE_REFERENCES_RELATION,
+    GUIDELINE_SOURCES_RELATION,
     LABELS_RELATION,
     REFERENCES_RELATION,
     SECTIONS_RELATION,
     iter_catalog_tables,
 )
 
+DuckDBConfigValue: TypeAlias = str | bool | int | float | list[str]
 
-def register_catalog(conn: Any, catalog: Catalog) -> None:
+
+def connect_catalog(
+    catalog: Catalog,
+    *,
+    config: Mapping[str, DuckDBConfigValue] | None = None,
+) -> duckdb.DuckDBPyConnection:
+    """Return an in-memory DuckDB connection with catalog tables registered."""
+
+    conn = (
+        duckdb.connect(":memory:")
+        if config is None
+        else duckdb.connect(":memory:", config=dict(config))
+    )
+    try:
+        register_catalog(conn, catalog)
+    except Exception:
+        conn.close()
+        raise
+    return conn
+
+
+def register_catalog(
+    conn: duckdb.DuckDBPyConnection,
+    catalog: Catalog,
+) -> duckdb.DuckDBPyConnection:
     """Create or replace catalog tables in a caller-owned DuckDB connection."""
 
     for relation_name, frame in iter_catalog_tables(catalog):
         _replace_table(conn, relation_name, frame)
+    return conn
 
 
 def write_duckdb(
@@ -42,7 +71,6 @@ def write_duckdb(
             raise FileExistsError(f"{path} already exists. Pass overwrite=True.")
     path.parent.mkdir(parents=True, exist_ok=True)
 
-    duckdb = _load_duckdb()
     fd, raw_temp_path = tempfile.mkstemp(
         prefix=f".{path.name}-",
         suffix=".duckdb",
@@ -65,17 +93,11 @@ def write_duckdb(
     return path
 
 
-def _load_duckdb() -> Any:
-    try:
-        import duckdb
-    except ModuleNotFoundError as exc:
-        raise ModuleNotFoundError(
-            "DuckDB catalog artifacts require the optional `chartcoach[duckdb]` dependencies."
-        ) from exc
-    return duckdb
-
-
-def _replace_table(conn: Any, relation_name: str, frame: pl.DataFrame) -> None:
+def _replace_table(
+    conn: duckdb.DuckDBPyConnection,
+    relation_name: str,
+    frame: pl.DataFrame,
+) -> None:
     source_relation = f"{relation_name}_source"
     conn.register(source_relation, frame)
     try:
@@ -92,9 +114,11 @@ __all__ = [
     "GUIDELINES_RELATION",
     "GUIDELINE_LABELS_RELATION",
     "GUIDELINE_REFERENCES_RELATION",
+    "GUIDELINE_SOURCES_RELATION",
     "LABELS_RELATION",
     "REFERENCES_RELATION",
     "SECTIONS_RELATION",
+    "connect_catalog",
     "iter_catalog_tables",
     "register_catalog",
     "write_duckdb",
