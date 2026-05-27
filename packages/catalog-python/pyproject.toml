@@ -29,7 +29,6 @@ classifiers = [
 dependencies = [
   "bibtexparser>=1.1",
   "click>=8",
-  "citeproc-py>=0.9",
   "duckdb>=1.1",
   "mdformat>=1",
   "platformdirs>=4",

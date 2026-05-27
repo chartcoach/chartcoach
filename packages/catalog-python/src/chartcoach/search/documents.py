@@ -5,7 +5,7 @@ from collections.abc import Mapping, Sequence
 import polars as pl
 import polars_hash as plh
 
-DOCUMENTS_VERSION = "6"
+DOCUMENTS_VERSION = "7"
 
 
 def build_docs_df(
@@ -87,7 +87,7 @@ def _build_section_docs_df(
             doc=pl.when(pl.col("doc").str.contains("[@", literal=True))
             .then(
                 pl.concat_str(
-                    ["doc", pl.lit("\n**References**\n"), "reference_context"],
+                    ["doc", pl.lit("\nSources\n"), "reference_context"],
                     separator="\n",
                 )
             )
@@ -98,9 +98,22 @@ def _build_section_docs_df(
 
 
 def _build_reference_map(references_df: pl.DataFrame) -> dict[str, str]:
+    if references_df.is_empty():
+        return {}
     return {
-        ref_id: formatted
-        for ref_id, formatted in references_df.select("id", "formatted").iter_rows()
+        str(row["id"]): _reference_context_from_row(row)
+        for row in references_df.select(
+            "id",
+            "authors_text",
+            "year",
+            "title",
+            "journal",
+            "booktitle",
+            "publisher",
+            "doi",
+            "url",
+        ).iter_rows(named=True)
+        if row.get("id") is not None
     }
 
 
@@ -118,6 +131,39 @@ def _format_reference_context(
         if citekey in reference_map
     ]
     return "\n".join(lines)
+
+
+def _reference_context_from_row(row: Mapping[str, object]) -> str:
+    parts = [
+        _text_or_none(row.get("authors_text")),
+        _text_or_none(row.get("year")),
+        _text_or_none(row.get("title")),
+        _first_text(row, ("journal", "booktitle", "publisher")),
+        _reference_locator(row),
+    ]
+    return ". ".join(part for part in parts if part)
+
+
+def _first_text(row: Mapping[str, object], keys: Sequence[str]) -> str | None:
+    for key in keys:
+        value = _text_or_none(row.get(key))
+        if value:
+            return value
+    return None
+
+
+def _reference_locator(row: Mapping[str, object]) -> str | None:
+    doi = _text_or_none(row.get("doi"))
+    if doi:
+        return f"DOI {doi}"
+    return _text_or_none(row.get("url"))
+
+
+def _text_or_none(value: object) -> str | None:
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text or None
 
 
 __all__ = ["DOCUMENTS_VERSION", "build_docs_df"]

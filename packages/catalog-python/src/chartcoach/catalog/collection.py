@@ -82,7 +82,6 @@ class Catalog:
         self._frame = _normalize_catalog_frame(frame)
         self._tables: dict[str, pl.DataFrame] = {}
         self._reference_tables_cache: ReferenceTables | None = None
-        self._formatted_references_cache: pl.DataFrame | None = None
         self._digest_cache: str | None = None
         _validate_unique_ids(self._frame)
 
@@ -178,7 +177,7 @@ class Catalog:
 
         frame = build_guideline_sources_df(
             self.guideline_references(),
-            self.formatted_references(),
+            self.references(),
         )
         self._tables["guideline_sources"] = frame
         return frame
@@ -187,19 +186,6 @@ class Catalog:
         """Return parsed structural BibTeX reference entries."""
 
         return self._reference_tables().references
-
-    def formatted_references(self) -> pl.DataFrame:
-        """Return parsed reference entries with formatted citations."""
-
-        if self._formatted_references_cache is None:
-            from .tables import build_formatted_references_df
-
-            reference_tables = self._reference_tables()
-            self._formatted_references_cache = build_formatted_references_df(
-                reference_tables.references,
-                reference_tables.references_by_id,
-            )
-        return self._formatted_references_cache
 
     def table(self, name: str) -> pl.DataFrame:
         """Return one named catalog table."""

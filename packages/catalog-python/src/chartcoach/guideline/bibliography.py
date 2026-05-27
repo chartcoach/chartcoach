@@ -1,44 +1,20 @@
 from __future__ import annotations
 
 import dataclasses as dc
-import io
-import warnings
 from collections.abc import Mapping
 from functools import cache
 from types import MappingProxyType
 from typing import Any
 
 import bibtexparser
-from citeproc import (
-    Citation,
-    CitationItem,
-    CitationStylesBibliography,
-    CitationStylesStyle,
-    formatter,
-)
-from citeproc.source.bibtex import BibTeX
-
-MACRO_REPLACE_MAP = {
-    "textraquo": "»",
-    "textgreater": ">",
-    "textless": "<",
-    "!": "",
-    "?": "?",
-    "\\": "",
-    "[": "",
-    "]": "",
-    "{": "",
-    "}": "",
-}
 
 
 @dc.dataclass(frozen=True, slots=True)
 class ParsedBibtexEntry:
-    """One parsed BibTeX entry plus the serialized BibTeX used by citeproc."""
+    """One parsed BibTeX entry plus its serialized BibTeX."""
 
     entry: Mapping[str, Any]
     bibtex: str
-    normalized_bibtex: str
 
     @property
     def id(self) -> str:
@@ -75,40 +51,7 @@ def parse_bibtex_reference(bibtex_str: str) -> ParsedBibtexEntry:
     return ParsedBibtexEntry(
         entry=MappingProxyType(entry),
         bibtex=bibtex,
-        normalized_bibtex=_normalize_bibtex_entry(bibtex),
     )
-
-
-def _normalize_bibtex_entry(bibtex_str: str) -> str:
-    normalized = bibtex_str
-    for macro, replacement in MACRO_REPLACE_MAP.items():
-        normalized = normalized.replace(f"\\{macro}", replacement)
-    return normalized
-
-
-@cache
-def format_bibtex_entry(bibtex_entry: str, style: str = "harvard1") -> str:
-    """Format a BibTeX entry with citeproc, raising on failures."""
-    return format_bibtex_reference(parse_bibtex_reference(bibtex_entry), style=style)
-
-
-def format_bibtex_reference(
-    parsed: ParsedBibtexEntry,
-    *,
-    style: str = "harvard1",
-) -> str:
-    """Format an already parsed BibTeX entry with citeproc."""
-    with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", message="Unsupported BibTeX field")
-        source = BibTeX(io.StringIO(parsed.normalized_bibtex))
-        citation_style = CitationStylesStyle(style, validate=False)
-        bibliography = CitationStylesBibliography(
-            citation_style, source, formatter.plain
-        )
-
-        citation = Citation([CitationItem(parsed.id)])
-        bibliography.register(citation)
-        return "".join(bibliography.bibliography()[0])
 
 
 def _dump_bibtex_entry(entry: dict[str, Any]) -> str:

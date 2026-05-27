@@ -12,7 +12,6 @@ import polars as pl
 
 from .catalog.collection import Catalog
 from .catalog.relations import (
-    FORMATTED_REFERENCES_RELATION,
     GUIDELINES_RELATION,
     GUIDELINE_LABELS_RELATION,
     GUIDELINE_REFERENCES_RELATION,
@@ -110,7 +109,6 @@ def _replace_table(
 
 
 __all__ = [
-    "FORMATTED_REFERENCES_RELATION",
     "GUIDELINES_RELATION",
     "GUIDELINE_LABELS_RELATION",
     "GUIDELINE_REFERENCES_RELATION",

@@ -659,7 +659,7 @@ def _build_documents(catalog: Catalog) -> _Documents:
     version, build_docs_df = _load_documents_api()
     frame = build_docs_df(
         catalog.guidelines(),
-        catalog.formatted_references(),
+        catalog.references(),
     )
     return _Documents(
         frame=frame,
