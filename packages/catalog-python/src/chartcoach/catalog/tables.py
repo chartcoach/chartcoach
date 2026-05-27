@@ -89,6 +89,22 @@ FORMATTED_REFERENCES_SCHEMA = {
     **REFERENCES_SCHEMA,
     "formatted": pl.String,
 }
+GUIDELINE_SOURCES_SCHEMA = {
+    "guideline_id": pl.String,
+    "reference_id": pl.String,
+    "source_type": pl.String,
+    "authors": pl.List(pl.String),
+    "authors_text": pl.String,
+    "year": pl.String,
+    "source_title": pl.String,
+    "journal": pl.String,
+    "booktitle": pl.String,
+    "publisher": pl.String,
+    "url": pl.String,
+    "doi": pl.String,
+    "formatted": pl.String,
+    "bibtex": pl.String,
+}
 
 
 @dc.dataclass(frozen=True, slots=True)
@@ -128,15 +144,11 @@ def build_sections_df(guidelines_df: pl.DataFrame) -> pl.DataFrame:
     )
     if sections.is_empty():
         return pl.DataFrame(schema=SECTIONS_SCHEMA)
-    return (
-        sections
-        .unnest("sections")
-        .select(
-            guideline_id=pl.col("id"),
-            role=pl.col("role"),
-            title=pl.col("title"),
-            content=pl.col("content"),
-        )
+    return sections.unnest("sections").select(
+        guideline_id=pl.col("id"),
+        role=pl.col("role"),
+        title=pl.col("title"),
+        content=pl.col("content"),
     )
 
 
@@ -282,6 +294,28 @@ def build_guideline_references_df(catalog_df: pl.DataFrame) -> pl.DataFrame:
     """Build a dataframe of guideline-to-reference edges."""
 
     return build_reference_tables(catalog_df).guideline_references
+
+
+def build_guideline_sources_df(
+    guideline_references_df: pl.DataFrame,
+    formatted_references_df: pl.DataFrame,
+) -> pl.DataFrame:
+    """Build a dataframe of guideline-to-source rows for SQL joins."""
+
+    if guideline_references_df.is_empty() or formatted_references_df.is_empty():
+        return pl.DataFrame(schema=GUIDELINE_SOURCES_SCHEMA)
+    sources = formatted_references_df.rename(
+        {
+            "id": "reference_id",
+            "title": "source_title",
+        }
+    )
+    return (
+        guideline_references_df.join(sources, on="reference_id", how="left")
+        .select(list(GUIDELINE_SOURCES_SCHEMA))
+        .cast(pl.Schema(GUIDELINE_SOURCES_SCHEMA))
+        .sort("guideline_id", "reference_id")
+    )
 
 
 def _string_or_none(value: object) -> str | None:

@@ -373,6 +373,12 @@ def _register_tools(
     )
     _add_tool(
         server,
+        catalog_tools.sql_query,
+        name="sql_query",
+        description="Run one SELECT query over catalog DuckDB tables.",
+    )
+    _add_tool(
+        server,
         catalog_tools.list_guidelines,
         name="guidelines_list",
         description="List guideline ids and summaries with deterministic filters.",

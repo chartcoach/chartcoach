@@ -333,17 +333,15 @@ dependencies = [
     { name = "bibtexparser" },
     { name = "citeproc-py" },
     { name = "click" },
+    { name = "duckdb" },
     { name = "mdformat" },
     { name = "platformdirs" },
     { name = "polars" },
+    { name = "pyarrow" },
     { name = "pyyaml" },
 ]
 
 [package.optional-dependencies]
-duckdb = [
-    { name = "duckdb" },
-    { name = "pyarrow" },
-]
 mcp = [
     { name = "mcp", extra = ["cli"] },
 ]
@@ -364,17 +362,17 @@ requires-dist = [
     { name = "chromadb", marker = "extra == 'search'", specifier = ">=1.5.0" },
     { name = "citeproc-py", specifier = ">=0.9" },
     { name = "click", specifier = ">=8.0.0" },
-    { name = "duckdb", marker = "extra == 'duckdb'", specifier = ">=1.4.0" },
+    { name = "duckdb", specifier = ">=1.4.0" },
     { name = "mcp", extras = ["cli"], marker = "extra == 'mcp'", specifier = ">=1.9.0" },
     { name = "mdformat", specifier = ">=0.7.19" },
     { name = "platformdirs", specifier = ">=4.0.0" },
     { name = "polars", specifier = ">=1.0.0" },
     { name = "polars-hash", marker = "extra == 'search'", specifier = ">=0.5.0" },
-    { name = "pyarrow", marker = "extra == 'duckdb'", specifier = ">=23" },
+    { name = "pyarrow", specifier = ">=18" },
     { name = "pyyaml", specifier = ">=5.3.1" },
     { name = "tqdm", marker = "extra == 'search'", specifier = ">=1.0" },
 ]
-provides-extras = ["duckdb", "search", "mcp"]
+provides-extras = ["search", "mcp"]
 
 [package.metadata.requires-dev]
 dev = [{ name = "pytest", specifier = ">=8.4.0" }]

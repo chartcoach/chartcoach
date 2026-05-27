@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from chartcoach import Catalog, CatalogEntry, Guideline, Section
@@ -10,6 +12,11 @@ def test_catalog_tools_support_progressive_discovery(sample_catalog: Catalog) ->
     tools = CatalogTools(sample_catalog)
 
     assert {"name": "guidelines", "columns": 7, "rows": None} in tools.list_tables()
+    assert {
+        "name": "guideline_sources",
+        "columns": 14,
+        "rows": None,
+    } in tools.list_tables()
     assert {"name": "guidelines", "rows": 2} in tools.list_tables(
         include_row_counts=True
     )
@@ -108,3 +115,54 @@ def test_catalog_discovery_does_not_parse_unrelated_references() -> None:
             "rows": 1,
         }
     ]
+
+
+def test_catalog_tools_sql_query_returns_bounded_rows(
+    sample_catalog: Catalog,
+) -> None:
+    result = CatalogTools(sample_catalog).sql_query(
+        """
+        select id, title
+        from guidelines
+        order by id
+        """,
+        limit=1,
+    )
+
+    assert result["columns"] == [
+        {"name": "id", "type": "String"},
+        {"name": "title", "type": "String"},
+    ]
+    assert result["rows"] == [{"id": "direct-labels", "title": "Use direct labels"}]
+    assert result["row_count"] == 1
+    assert result["truncated"] is True
+    assert result["limit"] == 1
+    assert result["catalog_digest"] == sample_catalog.digest()
+
+
+@pytest.mark.parametrize(
+    "query",
+    [
+        "create table x as select 1",
+        "select 1; select 2",
+    ],
+)
+def test_catalog_tools_sql_query_rejects_non_read_only_queries(
+    sample_catalog: Catalog,
+    query: str,
+) -> None:
+    with pytest.raises(CatalogToolError):
+        CatalogTools(sample_catalog).sql_query(query)
+
+
+def test_catalog_tools_sql_query_disables_external_file_access(
+    sample_catalog: Catalog,
+    tmp_path: Path,
+) -> None:
+    external_csv = tmp_path / "external.csv"
+    external_csv.write_text("x\n1\n")
+
+    with pytest.raises(CatalogToolError, match="Cannot access file"):
+        CatalogTools(sample_catalog).sql_query(
+            f"select * from read_csv_auto({external_csv.as_posix()!r})"
+        )

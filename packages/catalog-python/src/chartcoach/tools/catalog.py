@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from typing import cast
 
+import duckdb
 import polars as pl
 
 from ..catalog.collection import Catalog
@@ -42,7 +43,9 @@ class CatalogTools:
 
         return self._catalog
 
-    def list_tables(self, *, include_row_counts: bool = False) -> list[dict[str, object]]:
+    def list_tables(
+        self, *, include_row_counts: bool = False
+    ) -> list[dict[str, object]]:
         """List queryable structured tables."""
 
         if include_row_counts:
@@ -106,6 +109,40 @@ class CatalogTools:
             .select("table", "column", "value", "rows")
             .to_dicts()
         )
+
+    def sql_query(self, query: str, *, limit: int = 100) -> dict[str, object]:
+        """Run one read-only SQL query over the catalog tables."""
+
+        if limit < 1:
+            raise CatalogToolError("SQL query limit must be at least 1.")
+        _validate_select_query(query)
+        conn = self.catalog.duckdb(config={"enable_external_access": False})
+        try:
+            try:
+                frame = conn.sql(query).limit(limit + 1).pl()
+            except duckdb.Error as exc:
+                raise CatalogToolError(
+                    str(exc),
+                    hints=[
+                        "Run chartcoach tables list --source PATH to inspect table names.",
+                        "Run chartcoach tables schema --source PATH --format jsonl to inspect columns.",
+                    ],
+                ) from exc
+        finally:
+            conn.close()
+
+        visible = frame.head(limit)
+        return {
+            "columns": [
+                {"name": name, "type": str(dtype)}
+                for name, dtype in visible.schema.items()
+            ],
+            "rows": visible.to_dicts(),
+            "row_count": visible.height,
+            "truncated": frame.height > limit,
+            "limit": limit,
+            "catalog_digest": self.catalog.digest(),
+        }
 
     def list_guidelines(
         self,
@@ -216,7 +253,9 @@ class CatalogTools:
         df = self.catalog.guidelines()
         if ids:
             available = set(df.get_column("id").to_list())
-            missing = [guideline_id for guideline_id in ids if guideline_id not in available]
+            missing = [
+                guideline_id for guideline_id in ids if guideline_id not in available
+            ]
             if missing:
                 raise self._unknown_id_error(missing[0])
             order = pl.DataFrame(
@@ -429,6 +468,30 @@ def search_error_message(message: str) -> str:
 
 def _is_list_dtype(dtype: object) -> bool:
     return str(dtype).startswith("List")
+
+
+def _validate_select_query(query: str) -> None:
+    try:
+        statements = duckdb.extract_statements(query)
+    except duckdb.ParserException as exc:
+        raise CatalogToolError(
+            str(exc),
+            hints=["Pass one SELECT query against the catalog tables."],
+        ) from exc
+    if len(statements) != 1:
+        raise CatalogToolError(
+            "SQL queries must contain exactly one statement.",
+            hints=["Pass one SELECT query. Multiple statements are rejected."],
+        )
+    statement = statements[0]
+    if str(statement.type) != "StatementType.SELECT":
+        raise CatalogToolError(
+            "Only SELECT queries are allowed.",
+            hints=[
+                "Use chartcoach catalog duckdb --source PATH --out PATH for durable DuckDB files.",
+                "Use chartcoach tables schema --source PATH --format jsonl to inspect columns.",
+            ],
+        )
 
 
 __all__ = [

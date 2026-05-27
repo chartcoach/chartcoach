@@ -14,6 +14,10 @@ import polars as pl
 from ..guideline.core import Guideline
 
 if TYPE_CHECKING:
+    import duckdb as duckdb_module
+
+    from ..duckdb import DuckDBConfigValue
+
     from .tables import ReferenceTables
 
 
@@ -165,6 +169,20 @@ class Catalog:
 
         return self._reference_tables().guideline_references
 
+    def guideline_sources(self) -> pl.DataFrame:
+        """Return source metadata joined to each guideline-reference edge."""
+
+        if "guideline_sources" in self._tables:
+            return self._tables["guideline_sources"]
+        from .tables import build_guideline_sources_df
+
+        frame = build_guideline_sources_df(
+            self.guideline_references(),
+            self.formatted_references(),
+        )
+        self._tables["guideline_sources"] = frame
+        return frame
+
     def references(self) -> pl.DataFrame:
         """Return parsed structural BibTeX reference entries."""
 
@@ -190,10 +208,23 @@ class Catalog:
 
         return catalog_table(self, name)
 
+    def duckdb(
+        self,
+        *,
+        config: Mapping[str, "DuckDBConfigValue"] | None = None,
+    ) -> "duckdb_module.DuckDBPyConnection":
+        """Return an in-memory DuckDB connection over the catalog tables."""
+
+        from ..duckdb import connect_catalog
+
+        return connect_catalog(self, config=config)
+
     def _entries(self) -> tuple[CatalogEntry, ...]:
         """Build catalog entry objects from the serialized dataframe."""
 
-        return tuple(CatalogEntry.from_mapping(row) for row in self.to_frame().to_dicts())
+        return tuple(
+            CatalogEntry.from_mapping(row) for row in self.to_frame().to_dicts()
+        )
 
     def entry(self, guideline_id: str) -> CatalogEntry:
         """Return one catalog entry by guideline id."""
@@ -221,6 +252,18 @@ class Catalog:
         """Write the catalog to a serialized parquet file."""
 
         self.to_frame().write_parquet(Path(path))
+
+    def write_duckdb(
+        self,
+        path: str | PathLike[str],
+        *,
+        overwrite: bool = False,
+    ) -> Path:
+        """Write the catalog tables to a DuckDB database file."""
+
+        from ..duckdb import write_duckdb
+
+        return write_duckdb(self, path, overwrite=overwrite)
 
     def merge(self, other: "Catalog") -> "Catalog":
         """Return a new catalog that combines the entries from both catalogs."""
@@ -283,10 +326,14 @@ def _normalize_catalog_frame(df: pl.DataFrame) -> pl.DataFrame:
     from .tables import CATALOG_SCHEMA
 
     missing = [
-        column for column in ("id", "guideline", "references") if column not in df.columns
+        column
+        for column in ("id", "guideline", "references")
+        if column not in df.columns
     ]
     if missing:
-        raise ValueError(f"Catalog dataframe is missing column(s): {', '.join(missing)}.")
+        raise ValueError(
+            f"Catalog dataframe is missing column(s): {', '.join(missing)}."
+        )
     normalized = df.select("id", "guideline", "references").cast(CATALOG_SCHEMA)
     nested_id = pl.col("guideline").struct.field("id")
     mismatches = (

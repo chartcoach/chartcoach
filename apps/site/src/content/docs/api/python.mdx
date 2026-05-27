@@ -3,7 +3,7 @@ title: Python Catalog API
 description: Load ChartCoach catalogs, inspect table views, and open native DuckDB or Chroma artifacts from Python.
 ---
 
-The `chartcoach` package is the Python API for [catalog records](/api/catalog-records/). The base install is Polars-first and does not require Chroma, DuckDB, or MCP dependencies.
+The `chartcoach` package is the Python API for [catalog records](/api/catalog-records/). The base install includes Polars dataframe views and native DuckDB SQL access. Chroma and MCP are optional extras.
 
 ```python
 from chartcoach import Catalog
@@ -68,6 +68,10 @@ Return parsed reference records with formatted citation text.
 
 Return guideline-to-reference edges.
 
+`catalog.guideline_sources()`
+
+Return guideline-to-source rows with citation metadata for SQL joins.
+
 `catalog.table(name)`
 
 Return a named table for callers that route through table names.
@@ -75,6 +79,23 @@ Return a named table for callers that route through table names.
 ```python
 for name in ["guidelines", "sections", "labels"]:
     print(name, catalog.table(name).height)
+```
+
+`catalog.duckdb(*, config=None)`
+
+Return an in-memory `duckdb.DuckDBPyConnection` with the catalog tables registered.
+
+```python
+conn = catalog.duckdb()
+conn.sql("""
+select g.id, g.title, s.content, gs.source_title
+from guidelines g
+join sections s on s.guideline_id = g.id
+left join guideline_sources gs on gs.guideline_id = g.id
+where list_contains(g.labels, 'chart:bar')
+  and s.role = 'advice'
+""").pl()
+conn.close()
 ```
 
 ### Entries
@@ -95,9 +116,9 @@ Return a new catalog containing rows from both catalogs.
 
 Return a stable digest of the serialized catalog table. Chroma cache paths use this value.
 
-`catalog.write_parquet(path)` and `catalog.write_folder(root)`
+`catalog.write_parquet(path)`, `catalog.write_duckdb(path, *, overwrite=False)`, and `catalog.write_folder(root)`
 
-Write the catalog back to parquet or folder form.
+Write the catalog back to parquet, DuckDB, or folder form.
 
 ## CatalogEntry
 
@@ -110,19 +131,28 @@ Write the catalog back to parquet or folder form.
 
 ## DuckDB
 
-Install `chartcoach[duckdb]` for DuckDB artifact support.
+DuckDB is part of the base package. Use `catalog.duckdb()` or `connect_catalog(catalog)` for live SQL. Use `write_duckdb` for durable database files.
 
 ```python
-import duckdb
-from chartcoach.duckdb import write_duckdb
+from chartcoach.duckdb import connect_catalog, write_duckdb
 from chartcoach.paths import default_duckdb_path
+
+conn = connect_catalog(catalog)
+conn.sql("""
+select g.id, g.title, gs.source_title
+from guidelines g
+left join guideline_sources gs on gs.guideline_id = g.id
+limit 5
+""").pl()
+conn.close()
 
 path = default_duckdb_path()
 write_duckdb(catalog, path, overwrite=True)
-
-conn = duckdb.connect(path)
-conn.execute("select id, title from guidelines limit 5").fetchall()
 ```
+
+`connect_catalog(catalog, *, config=None)`
+
+Return an in-memory `duckdb.DuckDBPyConnection` over the derived catalog tables.
 
 `write_duckdb(catalog, output_path, *, overwrite=False)`
 
@@ -130,7 +160,7 @@ Write a DuckDB database file containing the derived catalog tables. Existing fil
 
 `register_catalog(conn, catalog)`
 
-Create or replace catalog tables in a caller-owned DuckDB connection.
+Create or replace catalog tables in a caller-owned DuckDB connection and return the same connection.
 
 ## Chroma
 

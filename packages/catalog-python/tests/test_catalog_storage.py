@@ -62,6 +62,19 @@ def test_catalog_loads_folder_entries_and_tables(tmp_path: Path) -> None:
         "chart:line",
         "goal:comparison",
     ]
+    assert catalog.guideline_sources().select(
+        "guideline_id",
+        "reference_id",
+        "source_title",
+        "year",
+    ).to_dicts() == [
+        {
+            "guideline_id": "direct-labels",
+            "reference_id": "smith2024",
+            "source_title": "Readable charts",
+            "year": "2024",
+        }
+    ]
 
 
 def test_catalog_folder_queries_are_deterministically_ordered(tmp_path: Path) -> None:
@@ -171,6 +184,48 @@ def test_catalog_write_parquet_roundtrips(tmp_path: Path) -> None:
 
     reloaded = Catalog.from_parquet(parquet_path)
     assert reloaded.to_frame().to_dicts() == catalog.to_frame().to_dicts()
+
+
+def test_catalog_duckdb_returns_native_queryable_connection(
+    sample_catalog: Catalog,
+) -> None:
+    conn = sample_catalog.duckdb()
+    try:
+        rows = conn.sql(
+            """
+            select g.id, g.title, s.content
+            from guidelines g
+            join sections s on s.guideline_id = g.id
+            where list_contains(g.labels, 'chart:bar')
+              and s.role = 'advice'
+            """
+        ).pl()
+    finally:
+        conn.close()
+
+    assert rows.to_dicts() == [
+        {
+            "id": "full-axis-bars",
+            "title": "Use full value axes for bars",
+            "content": "Start bar value axes at zero.",
+        }
+    ]
+
+
+def test_catalog_write_duckdb_method_writes_database_file(
+    sample_catalog: Catalog,
+    tmp_path: Path,
+) -> None:
+    import duckdb
+
+    path = sample_catalog.write_duckdb(tmp_path / "catalog.duckdb")
+
+    conn = duckdb.connect(path, read_only=True)
+    try:
+        row = conn.sql("select count(*) from guidelines").fetchone()
+    finally:
+        conn.close()
+    assert row == (2,)
 
 
 def test_catalog_rejects_duplicate_ids() -> None:

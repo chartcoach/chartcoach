@@ -119,6 +119,11 @@ def test_tables_cli_reports_schema_and_values(
     )
     schema = jsonl_rows(result)
     assert {"table": "guidelines", "column": "title", "type": "String"} in schema
+    assert {
+        "table": "guideline_sources",
+        "column": "source_title",
+        "type": "String",
+    } in schema
 
     result = runner.invoke(
         chartcoach_cli,
@@ -151,6 +156,46 @@ def test_read_commands_require_explicit_source(
 
     assert result.exit_code == 1
     assert "Pass --source PATH" in result.output
+
+
+def test_sql_cli_queries_catalog_tables(
+    runner: CliRunner,
+    sample_catalog_path: Path,
+) -> None:
+    result = runner.invoke(
+        chartcoach_cli,
+        [
+            "sql",
+            "--source",
+            str(sample_catalog_path),
+            "select id, title from guidelines where list_contains(labels, 'chart:bar')",
+            "--format",
+            "jsonl",
+        ],
+    )
+
+    assert jsonl_rows(result) == [
+        {"id": "full-axis-bars", "title": "Use full value axes for bars"}
+    ]
+
+
+def test_sql_cli_rejects_non_select_statements(
+    runner: CliRunner,
+    sample_catalog_path: Path,
+) -> None:
+    result = runner.invoke(
+        chartcoach_cli,
+        [
+            "sql",
+            "--source",
+            str(sample_catalog_path),
+            "create table x as select 1",
+        ],
+    )
+
+    assert result.exit_code == 1
+    assert "Only SELECT queries are allowed" in result.output
+    assert "Traceback" not in result.output
 
 
 def test_catalog_check_rejects_empty_workspace(
@@ -215,13 +260,13 @@ def test_catalog_build_is_workspace_scoped(
     assert "Pass --overwrite" in result.output
 
 
-@pytest.mark.duckdb
 def test_catalog_duckdb_writes_catalog_tables(
     runner: CliRunner,
     sample_catalog_path: Path,
     tmp_path: Path,
 ) -> None:
-    duckdb = pytest.importorskip("duckdb")
+    import duckdb
+
     duckdb_path = tmp_path / "artifacts" / "catalog.duckdb"
 
     result = runner.invoke(
@@ -264,13 +309,13 @@ def test_catalog_duckdb_writes_catalog_tables(
     assert "Pass --overwrite" in result.output
 
 
-@pytest.mark.duckdb
 def test_duckdb_overwrite_preserves_existing_file_on_failure(
     sample_catalog: Catalog,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    duckdb = pytest.importorskip("duckdb")
+    import duckdb
+
     import chartcoach.duckdb as duckdb_module
 
     duckdb_path = tmp_path / "artifacts" / "catalog.duckdb"
