@@ -24,7 +24,7 @@ Before changing a module, read its nearest README, package manifest, and tests.
 - Wire-shape changes must update the Python reader, JavaScript reader, docs, and
   site surfaces that consume the shape.
 - Public copy should be terse and concrete. Say what the reader can inspect,
-  run, or compare; avoid stock rationale and generic filler.
+  run, or compare. Avoid stock rationale and generic filler.
 - Dependency changes must include the matching lockfile changes.
 - `packages/catalog-python` is the only Python package intended for PyPI.
 

@@ -2,6 +2,13 @@
 
 JavaScript package for parsing, loading, and transporting the ChartCoach guideline catalog in Node.js and the browser.
 
+```ts
+import { loadCatalogFromParquetFile } from "@chartcoach/catalog/node";
+
+const catalog = await loadCatalogFromParquetFile("guidelines/catalog.parquet");
+catalog.entries.map((entry) => entry.guideline.title);
+```
+
 Use `@chartcoach/catalog/node` to load catalog folders or parquet files from Node.js.
 Use `@chartcoach/catalog/browser` to load parquet artifacts by URL.
 

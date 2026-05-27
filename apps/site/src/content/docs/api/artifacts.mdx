@@ -3,7 +3,7 @@ title: Artifacts
 description: Native catalog files produced and consumed by ChartCoach packages.
 ---
 
-ChartCoach keeps generated artifacts in native formats. Use the package APIs when you want typed records; use the files directly when another tool already understands parquet, DuckDB, or Chroma.
+ChartCoach keeps generated artifacts in native formats. Package APIs return typed records. Direct file access works for tools that already read parquet, DuckDB, or Chroma.
 
 ## Catalog Parquet
 
@@ -33,7 +33,7 @@ Markdown source record.
 
 BibTeX references for that record.
 
-The folder layout is useful for authoring and review. The parquet file is the compact read path for packages and tools.
+Use the folder layout for authoring and review. The parquet file is the compact read path for packages and tools.
 
 ## DuckDB
 
@@ -80,4 +80,4 @@ Default DuckDB artifact path.
 
 Default root for generated Chroma search indexes.
 
-No default path uses a repository-local scratch directory.
+Default paths resolve through platform-native cache directories.

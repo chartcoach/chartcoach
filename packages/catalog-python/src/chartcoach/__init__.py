@@ -1,4 +1,4 @@
-"""ChartCoach helps you search and inspect a catalog of chart guidance."""
+"""ChartCoach exposes catalog, guideline, and section models."""
 
 from importlib.metadata import version
 

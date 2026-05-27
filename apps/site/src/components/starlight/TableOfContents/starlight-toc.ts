@@ -21,15 +21,11 @@ export class StarlightTOC extends HTMLElement {
   }
 
   private init = (): void => {
-    /** All the links in the table of contents. */
     const links = [...this.querySelectorAll("a")];
 
-    /** Test if an element is a table-of-contents heading. */
     const isHeading = (el: Element): el is HTMLHeadingElement => {
       if (el instanceof HTMLHeadingElement) {
-        // Special case for page title h1
         if (el.id === PAGE_TITLE_ID) return true;
-        // Check the heading level is within the user-configured limits for the ToC
         const level = el.tagName[1];
         if (level) {
           const int = Number.parseInt(level, 10);
@@ -39,26 +35,21 @@ export class StarlightTOC extends HTMLElement {
       return false;
     };
 
-    /** Walk up the DOM to find the nearest heading. */
     const getElementHeading = (el: Element | null): HTMLHeadingElement | null => {
       if (!el) return null;
       const origin = el;
       while (el) {
         if (isHeading(el)) return el;
-        // Assign the previous sibling’s last, most deeply nested child to el.
         el = el.previousElementSibling;
         while (el?.lastElementChild) {
           el = el.lastElementChild;
         }
-        // Look for headings amongst siblings.
         const h = getElementHeading(el);
         if (h) return h;
       }
-      // Walk back up the parent.
       return getElementHeading(origin.parentElement);
     };
 
-    /** Handle intersections and set the current link to the heading for the current intersection. */
     const setCurrent: IntersectionObserverCallback = (entries) => {
       for (const { isIntersecting, target } of entries) {
         if (!isIntersecting) continue;
@@ -87,7 +78,6 @@ export class StarlightTOC extends HTMLElement {
 
     let timeout: ReturnType<typeof setTimeout>;
     window.addEventListener("resize", () => {
-      // Disable intersection observer while window is resizing.
       if (observer) {
         observer.disconnect();
         observer = undefined;
@@ -99,11 +89,8 @@ export class StarlightTOC extends HTMLElement {
 
   private getRootMargin(): `-${number}px 0% ${number}px` {
     const navBarHeight = document.querySelector("header")?.getBoundingClientRect().height || 0;
-    // `<summary>` only exists in mobile ToC, so will fall back to 0 in large viewport component.
     const mobileTocHeight = this.querySelector("summary")?.getBoundingClientRect().height || 0;
-    /** Start intersections at nav height + 2rem padding. */
     const top = navBarHeight + mobileTocHeight + 32;
-    /** End intersections `53px` later. This is slightly more than the maximum `margin-top` in Markdown content. */
     const bottom = top + 53;
     const height = document.documentElement.clientHeight;
     return `-${top}px 0% ${bottom - height}px`;

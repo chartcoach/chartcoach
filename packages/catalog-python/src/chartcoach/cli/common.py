@@ -41,7 +41,7 @@ def index_dir_option(command: Any) -> Any:
         default=default_index_dir(),
         show_default=True,
         help=(
-            "Search index directory. Optional for catalog-only commands; "
+            "Search index directory. Optional for catalog-only commands. "
             f"defaults to ${INDEX_DIR_ENV}, then a platform cache path."
         ),
     )(command)
@@ -118,7 +118,7 @@ def source_path(ctx: click.Context) -> Path:
             format_tool_error(
                 f"Pass --source PATH or set {SOURCE_ENV}.",
                 [
-                    "Example: chartcoach guidelines list --source PATH",
+                    "chartcoach guidelines list --source PATH",
                     f"Or export {SOURCE_ENV}=PATH.",
                 ],
             )

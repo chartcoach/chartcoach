@@ -70,7 +70,7 @@ Return guideline-to-reference edges.
 
 `catalog.table(name)`
 
-Return a named table. Use this when caller code accepts table names rather than direct method calls.
+Return a named table for callers that route through table names.
 
 ```python
 for name in ["guidelines", "sections", "labels"]:
@@ -180,7 +180,7 @@ index.collection.query(
 
 `search_guidelines(index, query_text, *, limit=DEFAULT_CHROMA_TOP_K, candidate_limit=None, where=None, where_document=None)`
 
-Return deduplicated guideline-level hits. Use this function when you want typed catalog rows instead of raw Chroma records.
+Return deduplicated guideline-level hits with typed catalog rows.
 
 ```python
 from chartcoach.search import search_guidelines

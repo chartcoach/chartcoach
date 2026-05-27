@@ -171,4 +171,4 @@ Return a parsed `CatalogEntry`, or `null` for invalid input.
 
 Return a parsed `CatalogEntry`, or throw an error with optional context.
 
-Use wire validation when reading records from storage or transport boundaries. Do not normalize missing fields at the API edge; invalid catalog rows should fail where they enter.
+Use wire validation when reading records from storage or transport boundaries. Do not normalize missing fields at the API edge. Invalid catalog rows should fail where they enter.

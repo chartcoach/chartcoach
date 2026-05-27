@@ -70,7 +70,7 @@ class Catalog:
     """Source collection of guidelines and references.
 
     The catalog is Polars-first. Loading a parquet file keeps the serialized
-    table as the source of truth; Python `CatalogEntry` objects are built only
+    table as the source of truth. Python `CatalogEntry` objects are built only
     when a caller asks for one entry.
     """
 

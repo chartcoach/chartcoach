@@ -374,7 +374,7 @@ def test_feedback_prompt_cli_uses_local_image_and_deterministic_evidence(
         (["guidelines", "retrieve", "--section", "missing"], "Unknown section role"),
     ],
 )
-def test_guidelines_cli_renders_actionable_errors(
+def test_guidelines_cli_renders_error_hints(
     runner: CliRunner,
     sample_catalog_path: Path,
     argv: list[str],
