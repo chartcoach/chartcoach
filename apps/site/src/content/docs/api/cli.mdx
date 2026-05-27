@@ -3,7 +3,7 @@ title: CLI Reference
 description: Command groups and output contracts for the chartcoach command-line interface.
 ---
 
-The `chartcoach` CLI is part of the Python package. It reads catalog artifacts, emits deterministic rows, and forwards Chroma calls without inventing another query language.
+The `chartcoach` CLI is part of the Python package. It reads catalog artifacts, emits deterministic rows, and forwards Chroma calls to the native collection API.
 
 ```bash
 uv run --package chartcoach chartcoach --help
@@ -101,7 +101,7 @@ Build a catalog-grounded feedback prompt for an existing chart image. This comma
 
 `table`
 
-Human-readable terminal table.
+Terminal table.
 
 `json`
 
@@ -117,7 +117,7 @@ Comma-separated rows with a header. List-valued cells are JSON-encoded.
 
 `markdown`
 
-Human-readable prompt or evidence text for commands that produce guideline content.
+Prompt or evidence text for guideline-content commands.
 
 ## Search State
 

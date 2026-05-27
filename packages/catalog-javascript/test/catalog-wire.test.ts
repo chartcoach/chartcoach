@@ -64,7 +64,7 @@ describe("catalog wire validation", () => {
     ).toBeNull();
   });
 
-  it("throws with helpful context for invalid wire entries", () => {
+  it("throws with context for invalid wire entries", () => {
     expect(() => requireCatalogEntryFromWire({ id: "g1", guideline: {} }, "bundle")).toThrow(
       /bundle/,
     );

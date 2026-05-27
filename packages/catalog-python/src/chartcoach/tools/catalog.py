@@ -15,7 +15,7 @@ from ..catalog.relations import (
 
 
 class CatalogToolError(ValueError):
-    """Actionable error raised by reusable catalog tools."""
+    """Error that carries a message plus recovery hints."""
 
     def __init__(self, message: str, *, hints: Sequence[str] = ()) -> None:
         super().__init__(message)
@@ -27,7 +27,7 @@ class CatalogToolError(ValueError):
 
 
 class CatalogTools:
-    """Deterministic tools for discovering and reading visualization knowledge.
+    """Catalog-backed read tools shared by the CLI and MCP server.
 
     This layer is transport-agnostic. The CLI formats its returned rows for
     shells, and the MCP server exposes the same methods as tools for agents.
@@ -407,7 +407,7 @@ def _guideline_record_from_row(
 
 
 def format_tool_error(message: str, hints: Sequence[str]) -> str:
-    """Render an actionable tool error for CLI and MCP transports."""
+    """Render an error message and recovery hints for CLI and MCP transports."""
 
     if not hints:
         return message
@@ -416,7 +416,7 @@ def format_tool_error(message: str, hints: Sequence[str]) -> str:
 
 
 def search_error_message(message: str) -> str:
-    """Return a recovery-oriented semantic-search error message."""
+    """Return a semantic-search error message with index recovery commands."""
 
     return format_tool_error(
         message,

@@ -7,30 +7,30 @@ public site, shared UI, and catalog loaders.
 
 Before sending a substantial change, make sure you have:
 
-- discussed broad API, data-shape, dependency, artifact, or UX changes first;
-- installed both JavaScript and Python workspaces;
-- run the checks closest to the files you touched;
+- discussed broad API, data-shape, dependency, artifact, or UX changes first
+- installed both JavaScript and Python workspaces
+- run the checks closest to the files you touched
 - updated matching readers, docs, and lockfiles when a contract changes.
 
 ## Substantial Changes
 
 Open an issue or talk with a maintainer before work that changes:
 
-1. catalog record shapes or parsing semantics;
-2. published Python or JavaScript APIs;
-3. required or optional dependencies;
-4. generated artifact policy or stored data layout;
-5. public site information architecture or visual direction;
-6. default configuration;
+1. catalog record shapes or parsing semantics
+2. published Python or JavaScript APIs
+3. required or optional dependencies
+4. generated artifact policy or stored data layout
+5. public site information architecture or visual direction
+6. default configuration
 7. broad internal boundaries or package ownership.
 
 ## Setup
 
 Prerequisites:
 
-- Node 24, managed through `package.json` `devEngines`;
-- pnpm through Corepack;
-- Python 3.12 for local development, pinned by `.python-version`;
+- Node 24, managed through `package.json` `devEngines`
+- pnpm through Corepack
+- Python 3.12 for local development, pinned by `.python-version`
 - uv for Python packages.
 
 The published `chartcoach` Python package supports Python 3.11 through 3.14.
@@ -52,7 +52,7 @@ pnpm --dir apps/site dev
 
 ## Checks
 
-Run the narrowest useful command first, then broaden before packaging a
+Run the closest command first, then broaden before packaging a
 cross-workspace change.
 
 ```sh

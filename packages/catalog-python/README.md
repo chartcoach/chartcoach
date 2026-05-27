@@ -2,8 +2,8 @@
 
 Python tools for the ChartCoach guideline catalog.
 
-The base package is deliberately small. It loads catalog parquet files, parses
-guidelines, and exposes typed records plus Polars dataframe views.
+The base package loads catalog parquet files, parses guidelines, and exposes
+typed records plus Polars dataframe views.
 
 ```python
 from chartcoach import Catalog
@@ -25,7 +25,7 @@ index = ChromaIndex.from_cache(
     cache_mode="reuse_only",
 )
 
-# Native Chroma stays exposed.
+# Access the underlying Chroma collection.
 index.collection.query(
     query_texts=["overplotted scatter plots"],
     n_results=3,
@@ -40,7 +40,7 @@ search_guidelines(
 ).rows
 ```
 
-Install `chartcoach[duckdb]` when you want a DuckDB database with the derived
+Install `chartcoach[duckdb]` to write a DuckDB database with the derived
 catalog tables:
 
 ```python
@@ -56,7 +56,7 @@ conn.execute("select id, title from guidelines limit 5").fetchall()
 
 Run the CLI with `uv run --package chartcoach chartcoach --help`.
 
-Useful catalog commands:
+These commands read `guidelines/catalog.parquet`, inspect table schemas, write DuckDB tables, retrieve guideline evidence, and query Chroma rows.
 
 ```bash
 chartcoach artifacts --source guidelines/catalog.parquet \
@@ -106,7 +106,7 @@ chartcoach tables schema --source guidelines/catalog.parquet --format jsonl |
   jq 'select(.table == "sections")'
 ```
 
-Use `artifacts` when you want the underlying files instead of the SDK:
+The `artifacts` command prints native artifact paths for tools outside the SDK:
 `guidelines/catalog.parquet` can be opened by Polars or DuckDB directly,
 `catalog duckdb` creates a normal DuckDB database file with the derived catalog
 tables, and passing `--index-dir` adds the content-addressed Chroma path plus
@@ -119,7 +119,7 @@ native Chroma parameter JSON objects to `collection.query(**params)` and
 search command that deduplicates matches to guideline-level typed rows. Exact
 catalog labels stay in Chroma's `labels` metadata array, so native filters can use
 `{"labels": {"$contains": "chart:scatter:avoid"}}`. Build the index explicitly
-with `chartcoach index build`; read commands do not create or rebuild search
+with `chartcoach index build`. Read commands do not create or rebuild search
 state.
 
 Install `chartcoach[mcp]` for catalog-only MCP tools. Install both

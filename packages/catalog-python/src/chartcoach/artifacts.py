@@ -23,7 +23,7 @@ def catalog_artifact_rows(
     index_dir: str | PathLike[str] | None = None,
     duckdb_path: str | PathLike[str] | None = None,
 ) -> list[dict[str, object]]:
-    """Describe the native artifacts that other tools can open directly."""
+    """Return rows for catalog, DuckDB, and Chroma artifact paths."""
 
     source = Path(source_path)
     catalog_digest = catalog.digest()
