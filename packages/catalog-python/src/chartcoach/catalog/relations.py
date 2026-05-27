@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING
 import polars as pl
 
 from .tables import (
-    FORMATTED_REFERENCES_SCHEMA,
     GUIDELINES_SCHEMA,
     GUIDELINE_LABELS_SCHEMA,
     GUIDELINE_REFERENCES_SCHEMA,
@@ -25,7 +24,6 @@ SECTIONS_RELATION = "sections"
 LABELS_RELATION = "labels"
 GUIDELINE_LABELS_RELATION = "guideline_labels"
 REFERENCES_RELATION = "references"
-FORMATTED_REFERENCES_RELATION = "formatted_references"
 GUIDELINE_REFERENCES_RELATION = "guideline_references"
 GUIDELINE_SOURCES_RELATION = "guideline_sources"
 
@@ -70,12 +68,6 @@ TABLE_SPECS: dict[str, CatalogTableSpec] = {
         name=REFERENCES_RELATION,
         schema=REFERENCES_SCHEMA,
         load=lambda catalog: catalog.references(),
-        row_count=lambda catalog: catalog.references().height,
-    ),
-    FORMATTED_REFERENCES_RELATION: CatalogTableSpec(
-        name=FORMATTED_REFERENCES_RELATION,
-        schema=FORMATTED_REFERENCES_SCHEMA,
-        load=lambda catalog: catalog.formatted_references(),
         row_count=lambda catalog: catalog.references().height,
     ),
     GUIDELINE_REFERENCES_RELATION: CatalogTableSpec(
@@ -147,7 +139,6 @@ def _require_table(name: str) -> CatalogTableSpec:
 
 __all__ = [
     "CatalogTableSpec",
-    "FORMATTED_REFERENCES_RELATION",
     "GUIDELINES_RELATION",
     "GUIDELINE_LABELS_RELATION",
     "GUIDELINE_REFERENCES_RELATION",

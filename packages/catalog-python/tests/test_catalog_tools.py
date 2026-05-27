@@ -14,7 +14,7 @@ def test_catalog_tools_support_progressive_discovery(sample_catalog: Catalog) ->
     assert {"name": "guidelines", "columns": 7, "rows": None} in tools.list_tables()
     assert {
         "name": "guideline_sources",
-        "columns": 14,
+        "columns": 13,
         "rows": None,
     } in tools.list_tables()
     assert {"name": "guidelines", "rows": 2} in tools.list_tables(

@@ -1,16 +1,12 @@
 from __future__ import annotations
 
 import dataclasses as dc
-from collections.abc import Mapping, Sequence
+from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
 import polars as pl
 
-from ..guideline.bibliography import (
-    ParsedBibtexEntry,
-    format_bibtex_reference,
-    parse_bibtex_reference,
-)
+from ..guideline.bibliography import parse_bibtex_reference
 
 if TYPE_CHECKING:
     from .collection import CatalogEntry
@@ -85,10 +81,6 @@ REFERENCES_SCHEMA = {
     "doi": pl.String,
     "bibtex": pl.String,
 }
-FORMATTED_REFERENCES_SCHEMA = {
-    **REFERENCES_SCHEMA,
-    "formatted": pl.String,
-}
 GUIDELINE_SOURCES_SCHEMA = {
     "guideline_id": pl.String,
     "reference_id": pl.String,
@@ -102,7 +94,6 @@ GUIDELINE_SOURCES_SCHEMA = {
     "publisher": pl.String,
     "url": pl.String,
     "doi": pl.String,
-    "formatted": pl.String,
     "bibtex": pl.String,
 }
 
@@ -111,7 +102,6 @@ GUIDELINE_SOURCES_SCHEMA = {
 class ReferenceTables:
     references: pl.DataFrame
     guideline_references: pl.DataFrame
-    references_by_id: Mapping[str, ParsedBibtexEntry]
 
 
 def build_catalog_df(entries: Sequence[CatalogEntry]) -> pl.DataFrame:
@@ -168,12 +158,10 @@ def build_reference_tables(catalog_df: pl.DataFrame) -> ReferenceTables:
         return ReferenceTables(
             references=pl.DataFrame(schema=REFERENCES_SCHEMA),
             guideline_references=pl.DataFrame(schema=GUIDELINE_REFERENCES_SCHEMA),
-            references_by_id={},
         )
 
     bibtex_to_id: dict[str, str] = {}
     reference_rows: list[dict[str, object]] = []
-    references_by_id: dict[str, ParsedBibtexEntry] = {}
     seen_reference_ids: set[str] = set()
     for bibtex in exploded.select("bibtex").unique().get_column("bibtex").to_list():
         if not isinstance(bibtex, str):
@@ -185,7 +173,6 @@ def build_reference_tables(catalog_df: pl.DataFrame) -> ReferenceTables:
         if reference_id in seen_reference_ids:
             continue
         seen_reference_ids.add(reference_id)
-        references_by_id[reference_id] = reference
 
         authors_text = _string_or_none(parsed.get("author"))
         reference_rows.append(
@@ -221,37 +208,13 @@ def build_reference_tables(catalog_df: pl.DataFrame) -> ReferenceTables:
             .unique()
             .sort("guideline_id", "reference_id")
         ),
-        references_by_id=references_by_id,
     )
 
 
 def build_references_df(catalog_df: pl.DataFrame) -> pl.DataFrame:
-    """Build a dataframe of parsed BibTeX references without citation formatting."""
+    """Build a dataframe of parsed BibTeX references."""
 
     return build_reference_tables(catalog_df).references
-
-
-def build_formatted_references_df(
-    references_df: pl.DataFrame,
-    references_by_id: Mapping[str, ParsedBibtexEntry] | None = None,
-) -> pl.DataFrame:
-    """Add formatted citation text to parsed reference entries."""
-
-    if references_df.is_empty():
-        return pl.DataFrame(schema=FORMATTED_REFERENCES_SCHEMA)
-
-    rows: list[dict[str, object]] = []
-    for row in references_df.iter_rows(named=True):
-        bibtex = row["bibtex"]
-        if not isinstance(bibtex, str):
-            continue
-        parsed = None
-        if references_by_id is not None:
-            parsed = references_by_id.get(str(row["id"]))
-        if parsed is None:
-            parsed = parse_bibtex_reference(bibtex)
-        rows.append({**row, "formatted": format_bibtex_reference(parsed)})
-    return pl.DataFrame(rows, schema=FORMATTED_REFERENCES_SCHEMA).sort("id")
 
 
 def build_labels_df(guidelines_df: pl.DataFrame) -> pl.DataFrame:
@@ -298,13 +261,13 @@ def build_guideline_references_df(catalog_df: pl.DataFrame) -> pl.DataFrame:
 
 def build_guideline_sources_df(
     guideline_references_df: pl.DataFrame,
-    formatted_references_df: pl.DataFrame,
+    references_df: pl.DataFrame,
 ) -> pl.DataFrame:
     """Build a dataframe of guideline-to-source rows for SQL joins."""
 
-    if guideline_references_df.is_empty() or formatted_references_df.is_empty():
+    if guideline_references_df.is_empty() or references_df.is_empty():
         return pl.DataFrame(schema=GUIDELINE_SOURCES_SCHEMA)
-    sources = formatted_references_df.rename(
+    sources = references_df.rename(
         {
             "id": "reference_id",
             "title": "source_title",

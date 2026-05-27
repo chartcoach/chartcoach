@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from chartcoach.guideline import format_bibtex_entry, parse_bibtex, parse_bibtex_entry
+from chartcoach.guideline import parse_bibtex, parse_bibtex_entry, parse_bibtex_reference
 
 
 BIBTEX = """% generated note
@@ -55,12 +55,12 @@ def test_parse_bibtex_handles_comments_and_at_signs(
         assert fragment not in parsed[0]
 
 
-def test_format_bibtex_rejects_empty_entries() -> None:
+def test_parse_bibtex_reference_rejects_empty_entries() -> None:
     with pytest.raises(ValueError, match="No BibTeX entry parsed"):
-        format_bibtex_entry("% empty bibliography")
+        parse_bibtex_reference("% empty bibliography")
 
 
-def test_bibtex_format_handles_spacing_macros() -> None:
+def test_parse_bibtex_reference_keeps_serialized_bibtex() -> None:
     bibtex = r"""@article{macro2024,
   title = {Readable\! charts},
   author = {Smith, Ada},
@@ -69,4 +69,6 @@ def test_bibtex_format_handles_spacing_macros() -> None:
 }
 """
 
-    assert "Readable charts" in format_bibtex_entry(bibtex)
+    parsed = parse_bibtex_reference(bibtex)
+    assert parsed.id == "macro2024"
+    assert "Readable\\! charts" in parsed.bibtex

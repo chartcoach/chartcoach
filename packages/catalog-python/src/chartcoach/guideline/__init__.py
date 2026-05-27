@@ -1,7 +1,5 @@
 from .bibliography import (
     ParsedBibtexEntry,
-    format_bibtex_entry,
-    format_bibtex_reference,
     parse_bibtex,
     parse_bibtex_entry,
     parse_bibtex_reference,
@@ -20,8 +18,6 @@ __all__ = [
     "Guideline",
     "ParsedBibtexEntry",
     "Section",
-    "format_bibtex_entry",
-    "format_bibtex_reference",
     "guideline_to_markdown",
     "parse_bibtex",
     "parse_bibtex_entry",
