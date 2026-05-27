@@ -97,12 +97,6 @@ Run `collection.query(**PARAMS_JSON)` against the native Chroma collection.
 
 Run `collection.get(**PARAMS_JSON)` against the native Chroma collection.
 
-## feedback
-
-`chartcoach feedback prompt --source PATH --image PATH --situation TEXT [--label VALUE] [--label-prefix PREFIX] [--section ROLE] [--format markdown|json|jsonl]`
-
-Build a catalog-grounded feedback prompt for an existing chart image. This command is deterministic and does not require Chroma.
-
 ## Output Formats
 
 `table`
@@ -123,7 +117,7 @@ Comma-separated rows with a header. List-valued cells are JSON-encoded.
 
 `markdown`
 
-Prompt or evidence text for guideline-content commands.
+Evidence text for guideline-content commands.
 
 ## Search State
 
