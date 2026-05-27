@@ -372,42 +372,6 @@ def test_artifacts_cli_lists_native_paths(
     assert rows["chroma"]["collection_name"] == "catalog"
 
 
-def test_feedback_prompt_cli_uses_local_image_and_deterministic_evidence(
-    runner: CliRunner,
-    sample_catalog_path: Path,
-    tmp_path: Path,
-) -> None:
-    image_path = tmp_path / "chart.jpg"
-    image_path.write_bytes(b"not a real jpeg")
-
-    result = runner.invoke(
-        chartcoach_cli,
-        [
-            "feedback",
-            "prompt",
-            "--source",
-            str(sample_catalog_path),
-            "--image",
-            str(image_path),
-            "--situation",
-            "Quick public comparison.",
-            "--label",
-            "chart:bar",
-            "--section",
-            "advice",
-            "--format",
-            "markdown",
-        ],
-    )
-
-    assert result.exit_code == 0
-    assert "# Chart Feedback Prompt" in result.output
-    assert str(image_path) in result.output
-    assert "Quick public comparison." in result.output
-    assert "full-axis-bars" in result.output
-    assert "Start bar value axes at zero." in result.output
-
-
 @pytest.mark.parametrize(
     ("argv", "expected"),
     [

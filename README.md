@@ -1,6 +1,6 @@
 # ChartCoach
 
-ChartCoach loads source-traced visualization guidelines as typed records for scripts, notebooks, review tools, and agents. The same guideline records are published for people at <https://chartcoach.github.io/>.
+ChartCoach loads source-traced visualization guidelines as typed records for scripts, notebooks, search, retrieval, and SQL workflows. The same guideline records are published for people at <https://chartcoach.github.io/>.
 
 ```python
 import polars as pl
@@ -46,7 +46,7 @@ uv run --package chartcoach chartcoach guidelines retrieve \
 
 The command prints deterministic evidence packets. Each packet includes the guideline id, title, description, labels, and the requested sections.
 
-Run one SQL query from the shell when a review or agent workflow needs joins:
+Run one SQL query from the shell when a workflow needs joins:
 
 ```bash
 uv run --package chartcoach chartcoach sql \
@@ -81,19 +81,7 @@ Each guideline records a concrete chart-design move with the evidence needed to 
 | `sections` | Advice, reason, context, exceptions, costs, mistakes, check, and fix text |
 | `references` | BibTeX records for the cited sources |
 
-## Build Review Tools
-
-`chartcoach feedback prompt` builds a catalog-grounded prompt for an existing chart image.
-
-```bash
-uv run --package chartcoach chartcoach feedback prompt \
-  --source guidelines/catalog.parquet \
-  --image path/to/chart.jpg \
-  --situation "Review this chart for a quick public-facing comparison." \
-  --label-prefix chart:bar \
-  --section advice \
-  --format markdown
-```
+## Search The Catalog
 
 For semantic retrieval, build a Chroma index once and query it through either the catalog API or native Chroma parameters.
 

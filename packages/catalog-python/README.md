@@ -95,10 +95,6 @@ duckdb "$DUCKDB_PATH" \
   -c "select id, title from guidelines where list_contains(labels, 'chart:bar')"
 chartcoach guidelines retrieve --source guidelines/catalog.parquet \
   --label chart:bar --section advice --format jsonl
-chartcoach feedback prompt --source guidelines/catalog.parquet \
-  --image path/to/chart.jpg \
-  --situation "Review this chart for a quick public-facing comparison." \
-  --label-prefix chart:bar --section advice --format markdown
 INDEX_DIR=$(
   python -c "from chartcoach.paths import default_index_dir; print(default_index_dir())"
 )
@@ -133,8 +129,8 @@ The `artifacts` command prints native artifact paths for tools outside the SDK:
 tables, `sql` runs bounded read-only DuckDB queries, and passing `--index-dir` adds the content-addressed Chroma path plus
 collection name. Use `tables list`, `tables schema`, and `tables values` first
 when you do not know the catalog shape, then query the parquet or DuckDB
-artifact with native tools. `guidelines retrieve` and `feedback prompt` are
-deterministic and do not require Chroma. `index query` and `index get` forward
+artifact with native tools. `guidelines retrieve` is deterministic and does not
+require Chroma. `index query` and `index get` forward
 native Chroma parameter JSON objects to `collection.query(**params)` and
 `collection.get(**params)`. `guidelines search` is the catalog-specific semantic
 search command that deduplicates matches to guideline-level typed rows. Exact
