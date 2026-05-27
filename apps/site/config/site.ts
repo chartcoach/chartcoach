@@ -77,6 +77,9 @@ export const siteViteConfig = {
       allow: [monorepoRoot],
     },
   },
+  ssr: {
+    noExternal: ["@chartcoach/catalog"],
+  },
   resolve: {
     conditions: ["source", "module", "browser", "development|production"],
     alias: {

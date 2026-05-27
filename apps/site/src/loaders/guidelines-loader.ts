@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import Cite from "citation-js";
 import sanitizeHtml from "sanitize-html";
 
-import { DANGLING_ROLE, parseGuidelineSections } from "@chartcoach/catalog";
+import { DANGLING_ROLE, guidelineToMarkdown, parseGuidelineSections } from "@chartcoach/catalog";
 import { loadCatalogFromParquetFile } from "@chartcoach/catalog/node";
 
 type RenderedCitations = {
@@ -38,7 +38,7 @@ function bibtexKeyFromEntry(entry: string): string | null {
 }
 
 function linkifyHtml(html: string): string {
-  // Conservative linkification for DOI/URL strings produced by citation-js.
+  // Link DOI/URL tokens without absorbing trailing citation punctuation.
   return html.replace(
     /(https?:\/\/[^\s<>"']+[^\s<>"'.)\],;:])/g,
     (url) => `<a href="${url}" rel="noreferrer" target="_blank">${url}</a>`,
@@ -233,6 +233,7 @@ export function guidelinesLoader({
             title: entry.guideline.title,
             description: entry.guideline.description || undefined,
             labels: entry.guideline.labels,
+            markdown: guidelineToMarkdown(entry.guideline),
             sections,
             bibliography: entry.guideline.bibliography,
             referencesBib,
