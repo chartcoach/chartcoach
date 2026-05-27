@@ -121,10 +121,23 @@ if (image) {
 
     .cc-home-hero-canvas {
       width: 100%;
+      --cc-marimekko-canvas-bg: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--cc-shell-surface) 96%, var(--ccui-paper)),
+        color-mix(in srgb, var(--ccui-panel) 88%, transparent)
+      );
     }
 
     .cc-home-hero-canvas--static {
       display: none;
+    }
+
+    :root[data-theme="dark"] .cc-home-hero-canvas {
+      --cc-marimekko-canvas-bg: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--ccui-panel) 78%, var(--ccui-paper)),
+        color-mix(in srgb, var(--ccui-paper) 92%, black)
+      );
     }
 
     .stack {
