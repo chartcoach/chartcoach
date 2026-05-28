@@ -118,12 +118,13 @@ function renderCitationsInMarkdown(body: string, references: string[]): Rendered
       citedKeys.add(key);
 
       const ref = referencesByKey.get(key);
+      const escapedKey = escapeHtmlAttribute(key);
       if (!ref) {
-        return `<span class="citation citation--missing" title="Missing reference: ${key}">@${key}</span>`;
+        return `<span class="citation citation--missing" title="Missing reference: ${escapedKey}">@${escapedKey}</span>`;
       }
 
       if (!ref.csl?.length) {
-        return `<span class="citation citation--missing" title="Invalid reference entry: ${key}">@${key}</span>`;
+        return `<span class="citation citation--missing" title="Invalid reference entry: ${escapedKey}">@${escapedKey}</span>`;
       }
 
       ref.inlineHtml ??= stripOuterParens(
@@ -150,7 +151,7 @@ function renderCitationsInMarkdown(body: string, references: string[]): Rendered
 
       const titleAttr = ref.hoverText ? ` title="${escapeHtmlAttribute(ref.hoverText)}"` : "";
 
-      return `<a class="citation" href="#${citeId(key)}" data-citekey="${key}"${titleAttr}>${ref.inlineHtml}</a>`;
+      return `<a class="citation" href="#${citeId(key)}" data-citekey="${escapedKey}"${titleAttr}>${ref.inlineHtml}</a>`;
     });
 
     return `(${parts.join("; ")})`;
