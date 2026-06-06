@@ -1,6 +1,5 @@
 import { defineConfig } from "astro/config";
-import react from "@astrojs/react";
-import starlight from "@astrojs/starlight";
+import mdx from "@astrojs/mdx";
 import sitemap from "@astrojs/sitemap";
 
 import {
@@ -8,20 +7,14 @@ import {
   getSiteRuntimeConfig,
   loadRepoEnvFile,
   siteViteConfig,
-} from "./config/site";
-import { createStarlightConfig } from "./config/starlight";
+} from "./src/config/site";
 
 loadRepoEnvFile();
 
-const { siteUrl, siteUrlSource, enableAgentationReview } = getSiteRuntimeConfig();
+const { siteUrl, siteUrlSource } = getSiteRuntimeConfig();
 
 export default defineConfig({
   site: siteUrl,
   vite: siteViteConfig,
-  integrations: [
-    createSiteUrlLogger(siteUrl, siteUrlSource),
-    react(),
-    starlight(createStarlightConfig({ enableAgentationReview })),
-    sitemap(),
-  ],
+  integrations: [createSiteUrlLogger(siteUrl, siteUrlSource), mdx(), sitemap()],
 });

@@ -4,6 +4,7 @@ import { CatalogError } from "./errors";
 import type { CatalogManifest } from "./manifest";
 import { parseManifest } from "./manifest";
 import { loadCatalog, type AsyncBuffer } from "./load-parquet-core";
+import type { Catalog } from "./model";
 
 export type FetchCatalogOptions = {
   manifest?: CatalogManifest | string | URL;
@@ -13,7 +14,7 @@ export type FetchCatalogOptions = {
 export async function fetchCatalog(
   catalogUrl: string | URL,
   options: FetchCatalogOptions = {},
-) {
+): Promise<Catalog> {
   const manifest = await resolveManifest(options.manifest, options.request);
   const file = (await asyncBufferFromUrl({
     url: catalogUrl.toString(),

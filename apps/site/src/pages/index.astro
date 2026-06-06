@@ -1,0 +1,193 @@
+---
+import { ArrowRight, BookOpen, Database, Funnel, Quote, Search } from "@lucide/astro";
+import { getCollection } from "astro:content";
+
+import { getSiteLinks } from "@/config/site";
+import SiteLayout from "@/layouts/SiteLayout.astro";
+
+const { docsUrl } = getSiteLinks();
+const guidelines = (await getCollection("guidelines")).sort((a, b) =>
+  (a.data.title ?? a.id).localeCompare(b.data.title ?? b.id),
+);
+
+const previewGuidelines = guidelines.slice(0, 3);
+const distinctLabels = new Set<string>();
+const distinctRoles = new Set<string>();
+for (const guideline of guidelines) {
+  for (const label of guideline.data.labels ?? []) distinctLabels.add(label);
+  for (const section of guideline.data.sections ?? []) distinctRoles.add(section.role);
+}
+
+const proofCards = [
+  {
+    icon: Funnel,
+    title: "Filter by catalog labels",
+    text: "Start with a chart type, task, audience, or design concern, then narrow the catalog in the browser.",
+  },
+  {
+    icon: BookOpen,
+    title: "Read sectioned guidance",
+    text: "Open a Guideline Instance and inspect advice, context, exceptions, checks, and fixes in one record.",
+  },
+  {
+    icon: Quote,
+    title: "Trace sources",
+    text: "Inline citations and BibTeX keep each recommendation attached to the source material that supports it.",
+  },
+];
+---
+
+<SiteLayout
+  title="ChartCoach"
+  description="ChartCoach publishes a source-backed Guideline Catalog for visualization design guidance."
+>
+  <section class="site-inner grid min-h-[calc(82svh-var(--site-header-height))] content-center gap-10 pb-8 pt-10 md:grid-cols-[minmax(0,1.12fr)_minmax(16rem,0.82fr)] md:py-14">
+    <div class="max-w-[44rem]">
+      <p class="site-eyebrow">guideline catalog</p>
+      <h1 class="m-0 text-balance font-display text-[2.75rem] font-bold leading-[0.95] tracking-[0] text-foreground md:text-[4.25rem]">
+        Source-backed visualization guidance for people and agents.
+      </h1>
+      <p class="mt-5 max-w-[38rem] text-[1.05rem] leading-[1.65] text-muted-foreground md:text-[1.16rem]">
+        ChartCoach publishes guideline records with labels, section roles, and source references. Browse the catalog first, then use the same records as grounded context for technical and agent workflows.
+      </p>
+      <div class="mt-7 flex flex-wrap gap-3">
+        <a
+          class="inline-flex min-h-11 items-center gap-2 rounded-sm bg-primary px-4 py-2 text-[0.92rem] font-semibold text-primary-foreground no-underline transition-[background-color,color,border-color,transform] hover:bg-brand-high active:scale-[0.98]"
+          href="/guidelines/"
+        >
+          Browse guidelines
+          <ArrowRight class="size-4" aria-hidden="true" focusable="false" />
+        </a>
+        <a
+          class="inline-flex min-h-11 items-center gap-2 rounded-sm border border-[var(--line)] bg-[var(--surface-raised)] px-4 py-2 text-[0.92rem] font-semibold text-foreground no-underline transition-[background-color,color,border-color,transform] hover:bg-[var(--surface-panel-strong)] active:scale-[0.98]"
+          href="/getting-started/"
+        >
+          Get started
+        </a>
+      </div>
+    </div>
+
+    <aside class="grid gap-4 border-t border-border pt-4 md:border-l md:border-t-0 md:pl-5 md:pt-0" aria-label="Catalog snapshot">
+      <div class="grid grid-cols-3 gap-4">
+        <div class="border-t border-border pt-3">
+          <p class="m-0 font-mono text-[0.66rem] font-bold lowercase text-muted-foreground">guidelines</p>
+          <p class="m-0 mt-2 font-display text-[1.75rem] font-semibold leading-none text-foreground">
+            {guidelines.length.toLocaleString()}
+          </p>
+        </div>
+        <div class="border-t border-border pt-3">
+          <p class="m-0 font-mono text-[0.66rem] font-bold lowercase text-muted-foreground">labels</p>
+          <p class="m-0 mt-2 font-display text-[1.75rem] font-semibold leading-none text-foreground">
+            {distinctLabels.size.toLocaleString()}
+          </p>
+        </div>
+        <div class="border-t border-border pt-3">
+          <p class="m-0 font-mono text-[0.66rem] font-bold lowercase text-muted-foreground">roles</p>
+          <p class="m-0 mt-2 font-display text-[1.75rem] font-semibold leading-none text-foreground">
+            {distinctRoles.size.toLocaleString()}
+          </p>
+        </div>
+      </div>
+      <div class="hidden gap-2 md:grid">
+        {
+          previewGuidelines.map((guideline) => (
+            <a
+              class="grid gap-1 border-t border-border py-3 text-left no-underline transition-[background-color,color,border-color,transform] hover:border-[var(--line-strong)] hover:bg-[var(--surface-panel)] active:scale-[0.995]"
+              href={`/guidelines/${guideline.id}/`}
+            >
+              <span class="font-mono text-[0.62rem] font-bold lowercase text-muted-foreground">
+                {guideline.id}
+              </span>
+              <span class="text-[0.92rem] font-semibold leading-[1.28] text-foreground">
+                {guideline.data.title}
+              </span>
+            </a>
+          ))
+        }
+      </div>
+    </aside>
+  </section>
+
+  <section class="bg-[var(--surface-raised)]">
+    <div class="site-inner site-section">
+      <p class="site-eyebrow">inspectable records</p>
+      <div class="grid gap-4 md:grid-cols-[minmax(0,0.72fr)_minmax(0,1fr)] md:items-start">
+        <h2 class="m-0 max-w-[34rem] text-balance font-display text-[2.25rem] font-semibold leading-[1.02] tracking-[0] text-foreground md:text-[3.2rem]">
+          The catalog keeps the recommendation, context, and evidence together.
+        </h2>
+        <div class="grid gap-3 sm:grid-cols-3">
+          {
+            proofCards.map((card) => {
+              const Icon = card.icon;
+              return (
+                <article class="grid gap-3 border-t border-border pt-4">
+                  <Icon class="size-5 text-ember" aria-hidden="true" focusable="false" />
+                  <h3 class="m-0 font-display text-[1.15rem] font-semibold leading-[1.1] tracking-[0] text-foreground">
+                    {card.title}
+                  </h3>
+                  <p class="m-0 text-[0.92rem] leading-[1.55] text-muted-foreground">
+                    {card.text}
+                  </p>
+                </article>
+              );
+            })
+          }
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="site-inner site-section grid gap-6 md:grid-cols-[minmax(0,0.9fr)_minmax(18rem,0.7fr)] md:items-start">
+    <div>
+      <p class="site-eyebrow">workflow</p>
+      <h2 class="m-0 max-w-[38rem] text-balance font-display text-[2.1rem] font-semibold leading-[1.02] tracking-[0] text-foreground md:text-[3rem]">
+        Browse first. Use the docs when you need package contracts.
+      </h2>
+      <p class="mt-4 max-w-[42rem] text-[1rem] leading-[1.65] text-muted-foreground">
+        The marketing site stays focused on the human consumption surface: catalog browsing, label filtering, and readable Guideline Instances. Technical pages live on the dedicated docs site.
+      </p>
+      <div class="mt-6 flex flex-wrap gap-3">
+        <a
+          class="inline-flex min-h-11 items-center gap-2 rounded-sm border border-[var(--line)] bg-[var(--surface-raised)] px-4 py-2 text-[0.92rem] font-semibold text-foreground no-underline transition-[background-color,color,border-color,transform] hover:bg-[var(--surface-panel-strong)] active:scale-[0.98]"
+          href={docsUrl}
+        >
+          Open technical docs
+          <ArrowRight class="size-4" aria-hidden="true" focusable="false" />
+        </a>
+      </div>
+    </div>
+    <div class="grid gap-3 border-l border-border pl-4">
+      <div class="flex items-center gap-2 text-ember">
+        <Search class="size-4" aria-hidden="true" focusable="false" />
+        <span class="font-mono text-[0.72rem] font-bold lowercase">catalog path</span>
+      </div>
+      <ol class="m-0 grid list-decimal gap-3 pl-5 text-[0.93rem] leading-[1.55] text-muted-foreground">
+        <li>Open the Guideline Catalog.</li>
+        <li>Filter by a label family such as <code class="rounded-sm border border-border bg-muted px-1 py-0.5">chart</code>.</li>
+        <li>Open a record and inspect section roles plus references.</li>
+        <li>Move to docs for package APIs, CLI commands, and MCP tools.</li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="bg-foreground text-background">
+    <div class="site-inner grid gap-5 py-12 md:grid-cols-[minmax(0,1fr)_auto] md:items-center md:py-16">
+      <div>
+        <p class="m-0 font-mono text-[0.72rem] font-bold lowercase text-background/70">next</p>
+        <h2 class="m-0 mt-2 font-display text-[2rem] font-semibold leading-[1.02] tracking-[0] md:text-[3rem]">
+          Start with the catalog.
+        </h2>
+        <p class="m-0 mt-3 max-w-[40rem] text-[1rem] leading-[1.6] text-background/72">
+          Each record is readable in the browser and structured enough for retrieval, package loading, and agent grounding.
+        </p>
+      </div>
+      <a
+        class="inline-flex min-h-11 items-center justify-center gap-2 rounded-sm bg-background px-4 py-2 text-[0.92rem] font-semibold text-foreground no-underline transition-[background-color,color,border-color,transform] hover:bg-background/88 active:scale-[0.98]"
+        href="/guidelines/"
+      >
+        Browse the Guideline Catalog
+        <Database class="size-4" aria-hidden="true" focusable="false" />
+      </a>
+    </div>
+  </section>
+</SiteLayout>

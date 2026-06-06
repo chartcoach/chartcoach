@@ -15,7 +15,8 @@ PROMPT_TARGETS = {
 }
 GUIDANCE_MODES = ("create", "feedback", "explore", "debug")
 DEFAULT_SKILL = "chartcoach/catalog"
-DEFAULT_PUBLIC_SITE_URL = "https://chartcoach.github.io"
+PUBLIC_SITE_URL_ENV = "CHARTCOACH_SITE_URL"
+DEFAULT_PUBLIC_SITE_URL = "http://localhost:4321"
 
 
 @click.command("prompt", context_settings=CONTEXT_SETTINGS)
@@ -54,9 +55,10 @@ DEFAULT_PUBLIC_SITE_URL = "https://chartcoach.github.io"
 )
 @click.option(
     "--public-site-url",
+    envvar=PUBLIC_SITE_URL_ENV,
     default=DEFAULT_PUBLIC_SITE_URL,
     show_default=True,
-    help="Base URL used when asking the agent to cite guideline public links.",
+    help=f"Base URL used when asking the agent to cite guideline public links. Defaults to ${PUBLIC_SITE_URL_ENV} when set.",
 )
 def prompt_command(
     codex: bool,

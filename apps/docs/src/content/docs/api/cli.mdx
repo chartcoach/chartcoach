@@ -1,0 +1,53 @@
+---
+title: CLI Reference
+description: Command groups and output contracts for the chartcoach command-line interface.
+---
+
+The `chartcoach` CLI is part of the Python package. It reads catalog artifacts, emits deterministic rows, and forwards Chroma calls to the native collection API.
+
+```bash
+uv run --package chartcoach chartcoach --help
+```
+
+## prompt
+
+`chartcoach prompt --codex|--claude|--opencode [--source PATH] [--index-dir DIR] [--guidance-mode create|feedback|explore|debug] [--task TEXT]`
+
+Print an agent startup prompt that references the installed ChartCoach skill, catalog source, optional semantic index, and task.
+
+```bash
+npx skills add chartcoach/catalog
+codex "$(uvx chartcoach@latest prompt --codex --source guidelines)"
+```
+
+The prompt has no filesystem side effects. It tells the agent to use `MANIFEST.md` for catalog-specific role and label semantics, retrieve targeted guideline evidence, and include guideline ids plus public links when guidelines constrain an answer.
+
+## catalog
+
+`chartcoach catalog build --source FOLDER --out DIR`
+
+Build a catalog artifact bundle from an authored guideline folder.
+
+`chartcoach catalog check --source FOLDER --format table|json|jsonl|csv`
+
+Validate a guideline folder against `MANIFEST.md`.
+
+`chartcoach catalog manifest --source PATH --format markdown|json|jsonl`
+
+Print the catalog manifest or list section roles and label families.
+
+`chartcoach catalog duckdb --source PATH --out PATH [--overwrite]`
+
+Write derived catalog tables into a DuckDB database file.
+
+## sql
+
+`chartcoach sql --source PATH QUERY [--limit N] [--format table|json|jsonl|csv]`
+
+Run one read-only `SELECT` query over catalog DuckDB tables with external file access disabled.
+
+## guidelines
+
+`chartcoach guidelines list --source PATH [--label VALUE] [--label-prefix PREFIX] [--contains TEXT] [--limit N] [--format table|json|jsonl|csv]`
+
+List guideline ids and summaries with deterministic filters.

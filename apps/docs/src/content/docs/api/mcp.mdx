@@ -1,0 +1,76 @@
+---
+title: MCP Reference
+description: ChartCoach MCP server tools and runtime options.
+---
+
+The MCP server exposes deterministic catalog tools and optional Chroma-backed tools from the Python package.
+
+```bash
+chartcoach mcp serve --source guidelines
+```
+
+Pass `--index-dir` when tools need an existing Chroma index.
+
+```bash
+chartcoach mcp serve \
+  --source guidelines \
+  --index-dir "$CHARTCOACH_INDEX_DIR"
+```
+
+## Runtime Options
+
+`--transport stdio|sse|streamable-http`
+
+MCP transport. Defaults to `stdio`.
+
+`--host HOST`
+
+Host for HTTP transports. Defaults to `127.0.0.1`.
+
+`--port PORT`
+
+Port for HTTP transports. Defaults to `8000`.
+
+`--log-level DEBUG|INFO|WARNING|ERROR|CRITICAL`
+
+Server log level. Defaults to `INFO`.
+
+## Catalog Tools
+
+`catalog_artifacts`
+
+Return native catalog artifact paths, existence flags, digests, and native artifact metadata.
+
+`tables_list`
+
+List queryable structured catalog tables.
+
+`tables_schema`
+
+Return column schemas for catalog tables.
+
+`sql_query`
+
+Run one read-only `SELECT` query over DuckDB catalog tables.
+
+`guidelines_list`
+
+List guideline ids and summaries with deterministic filters.
+
+`guidelines_get`
+
+Return one complete guideline record by id.
+
+`guidelines_retrieve`
+
+Return guideline records with optional label, text, and section-role filters.
+
+## Search Tools
+
+`guidelines_search`
+
+Run semantic search and return deduplicated guideline rows. Requires `--index-dir` and `chartcoach[search]`.
+
+`chroma_query`
+
+Run `collection.query(**params)` with direct Chroma parameters.

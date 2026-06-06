@@ -1,0 +1,144 @@
+@import "tailwindcss";
+@import "@chartcoach/ui/styles/globals.css";
+
+@source "../**/*.{astro,md,mdx,ts,tsx}";
+@source "../../../../packages/ui/src/**/*.{ts,tsx,css}";
+
+@theme inline {
+  --color-surface: var(--surface-raised);
+  --color-surface-strong: var(--surface-panel-strong);
+  --color-chip: color-mix(in srgb, var(--layer) 58%, var(--canvas));
+  --color-chip-border: var(--line);
+  --color-control: color-mix(in srgb, var(--canvas) 78%, var(--layer));
+  --color-control-border: var(--line);
+  --radius-panel: var(--corner-md);
+  --shadow-card: 0 1px 0 color-mix(in srgb, var(--ink) 8%, transparent);
+}
+
+:root,
+:root[data-theme="light"] {
+  --sl-font: var(--font-ui);
+  --sl-font-mono: var(--font-code);
+  --sl-shadow-sm: none;
+  --sl-shadow-md: 0 12px 28px color-mix(in srgb, var(--ink) 10%, transparent);
+}
+
+:root[data-theme="light"] {
+  --sl-color-accent: var(--ember);
+  --sl-color-accent-high: var(--ink);
+  --sl-color-accent-low: color-mix(in srgb, var(--ember) 13%, var(--canvas));
+  --sl-color-text: var(--veil);
+  --sl-color-text-accent: var(--ink);
+  --sl-color-text-invert: var(--canvas);
+  --sl-color-bg: var(--canvas);
+  --sl-color-bg-nav: color-mix(in srgb, var(--canvas) 94%, transparent);
+  --sl-color-bg-sidebar: var(--canvas);
+  --sl-color-bg-inline-code: var(--surface-panel);
+  --sl-color-hairline-light: var(--line);
+  --sl-color-hairline: var(--line);
+  --sl-color-hairline-shade: var(--line);
+  --pagefind-ui-primary: var(--ink);
+  --pagefind-ui-text: var(--ink);
+  --pagefind-ui-background: var(--surface-raised);
+  --pagefind-ui-border: var(--line);
+  --pagefind-ui-tag: var(--surface-panel);
+}
+
+:root[data-theme="dark"] {
+  --sl-color-accent-high: var(--ember);
+  --sl-color-accent: var(--ember);
+  --sl-color-accent-low: color-mix(in srgb, var(--ember) 18%, var(--canvas));
+  --sl-color-text: var(--veil);
+  --sl-color-text-accent: var(--ember);
+  --sl-color-text-invert: var(--canvas);
+  --sl-color-bg: var(--canvas);
+  --sl-color-bg-nav: color-mix(in srgb, var(--canvas) 92%, transparent);
+  --sl-color-bg-sidebar: var(--canvas);
+  --sl-color-bg-inline-code: var(--surface-panel);
+  --sl-color-hairline-light: var(--line);
+  --sl-color-hairline: var(--line);
+  --sl-color-hairline-shade: var(--line);
+  --pagefind-ui-primary: var(--ink);
+  --pagefind-ui-text: var(--ink);
+  --pagefind-ui-background: var(--surface-raised);
+  --pagefind-ui-border: var(--line);
+  --pagefind-ui-tag: var(--surface-panel);
+}
+
+html {
+  background: var(--canvas);
+  color: var(--ink);
+}
+
+body {
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-ui);
+}
+
+.site-title {
+  font-family: var(--font-heading);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0;
+}
+
+.sl-markdown-content :is(h1, h2, h3, h4) {
+  font-family: var(--font-heading);
+  letter-spacing: 0;
+}
+
+.sl-markdown-content code {
+  border-radius: var(--corner-xs);
+}
+
+.sl-markdown-content pre {
+  border: 1px solid var(--line);
+  border-radius: var(--corner-md);
+  background: var(--surface-code);
+  color: var(--surface-code-foreground);
+}
+
+.sl-markdown-content table {
+  border-radius: var(--corner-sm);
+}
+
+.pagination-links a,
+.card {
+  border-radius: var(--corner-md);
+}
+
+a.site-title,
+.social-icons a,
+.right-sidebar a,
+.sidebar-content a {
+  transition:
+    color 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease;
+}
+
+.pagefind-ui__search-input {
+  background: var(--canvas) !important;
+  color: var(--ink) !important;
+  caret-color: var(--ember) !important;
+}
+
+.pagefind-ui__search-input::placeholder {
+  color: var(--muted-ink) !important;
+}
+
+.pagefind-ui__result,
+.pagefind-ui__result-nested {
+  background: var(--canvas) !important;
+  color: var(--ink) !important;
+}
+
+.pagefind-ui__result-title,
+.pagefind-ui__result-link,
+.pagefind-ui__result-excerpt {
+  color: var(--ink) !important;
+}
+
+.pagefind-ui__result-excerpt {
+  line-height: 1.55;
+}

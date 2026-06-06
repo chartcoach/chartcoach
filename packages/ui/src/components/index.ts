@@ -1,7 +1,5 @@
-export { Badge, badgeVariants } from "./badge";
-export { Button, buttonVariants } from "./button";
-export { ChartCoachMarimekkoCanvas } from "./chartcoach-marimekko-canvas";
-export { ChartCoachMarimekkoMark } from "./chartcoach-marimekko-mark";
+export { Badge, badgeVariants } from "#components/badge";
+export { Button, buttonVariants } from "#components/button";
 export {
   Card,
   CardAction,
@@ -10,8 +8,8 @@ export {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "./card";
-export { Input } from "./input";
+} from "#components/card";
+export { Input } from "#components/input";
 export {
   Select,
   SelectContent,
@@ -23,5 +21,5 @@ export {
   SelectSeparator,
   SelectTrigger,
   SelectValue,
-} from "./select";
-export { Separator } from "./separator";
+} from "#components/select";
+export { Separator } from "#components/separator";

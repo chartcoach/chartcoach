@@ -1,0 +1,65 @@
+---
+title: Python Catalog API
+description: Load ChartCoach catalogs, inspect tables, and open native DuckDB or Chroma artifacts from Python.
+---
+
+The `chartcoach` package loads catalog bundles and exposes table views for Python workflows.
+
+```python
+from chartcoach import Catalog
+
+catalog = Catalog.from_bundle("guidelines")
+catalog.guidelines().select("id", "title", "description")
+```
+
+## Constructors
+
+`Catalog.from_bundle(path)`
+
+Load a directory containing `MANIFEST.md` and `catalog.parquet`. The loader validates section roles and label families against the manifest.
+
+`Catalog.from_parquet(path)`
+
+Load a serialized catalog parquet file without manifest validation.
+
+`Catalog.from_folder(folder_path)`
+
+Load an authored folder where `MANIFEST.md` sits beside guideline entry directories.
+
+`Catalog.from_entries(entries)`
+
+Build a catalog from Python entry objects.
+
+## Tables
+
+`catalog.guidelines()`
+
+Return one row per guideline.
+
+`catalog.sections()`
+
+Return one row per guideline section.
+
+`catalog.labels()`
+
+Return distinct label segments used across the catalog.
+
+`catalog.references()`
+
+Return parsed BibTeX reference records.
+
+`catalog.table(name)`
+
+Return a named derived table.
+
+## DuckDB
+
+```python
+from chartcoach.duckdb import connect_catalog
+
+conn = connect_catalog(catalog)
+conn.sql("select id, title from guidelines limit 5").pl()
+conn.close()
+```
+
+Use DuckDB when callers need joins over guidelines, sections, labels, and references.
