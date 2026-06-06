@@ -10,29 +10,27 @@ from chartcoach import Catalog
 from chartcoach.cli import guidelines as guidelines_cli
 from chartcoach.cli.main import main as chartcoach_cli
 
-from helpers import csv_rows, json_value, jsonl_rows
+from helpers import assert_cli_error, csv_rows, json_value, jsonl_rows
 
 
-class FakeGuidelineSearchResult:
-    def to_dict(self) -> dict[str, object]:
-        return {
-            "query": "direct labels",
-            "rows": [
-                {
-                    "rank": 1,
-                    "id": "direct-labels",
-                    "title": "Use direct labels",
-                    "description": "Label marks directly when space permits.",
-                    "labels": ["chart:line"],
-                    "matched_document_id": "direct-labels---overview",
-                    "matched_role": "overview",
-                    "distance": 0.125,
-                    "matched_text": "Use direct labels\n\nLabel marks directly.",
-                }
-            ],
-            "row_count": 1,
-            "limit": 8,
+GUIDELINE_SEARCH_RESULT: dict[str, object] = {
+    "query": "direct labels",
+    "rows": [
+        {
+            "rank": 1,
+            "id": "direct-labels",
+            "title": "Use direct labels",
+            "description": "Label marks directly when space permits.",
+            "labels": ["chart:line"],
+            "matched_document_id": "direct-labels---overview",
+            "matched_role": "overview",
+            "score": 0.125,
+            "matched_text": "Use direct labels\n\nLabel marks directly.",
         }
+    ],
+    "row_count": 1,
+    "limit": 8,
+}
 
 
 def patch_guideline_search(
@@ -41,17 +39,17 @@ def patch_guideline_search(
     captured_guideline_kwargs: dict[str, object] = {}
 
     def fake_search_guidelines(
-        *_: object, **kwargs: object
-    ) -> FakeGuidelineSearchResult:
+        self: object, query_text: str, **kwargs: object
+    ) -> dict[str, object]:
+        captured_guideline_kwargs["query_text"] = query_text
         captured_guideline_kwargs.update(kwargs)
-        return FakeGuidelineSearchResult()
+        return GUIDELINE_SEARCH_RESULT
 
     monkeypatch.setattr(
-        guidelines_cli.ChromaIndex,
-        "from_cache",
-        staticmethod(lambda *_args, **_kwargs: object()),
+        guidelines_cli.CatalogTools,
+        "search_guidelines",
+        fake_search_guidelines,
     )
-    monkeypatch.setattr(guidelines_cli, "search_guidelines", fake_search_guidelines)
     return captured_guideline_kwargs
 
 
@@ -155,8 +153,7 @@ def test_read_commands_require_explicit_source(
 
     result = runner.invoke(chartcoach_cli, ["tables", "list", "--format", "jsonl"])
 
-    assert result.exit_code == 1
-    assert "Pass --source PATH" in result.output
+    assert_cli_error(result, "Pass --source PATH")
 
 
 def test_sql_cli_queries_catalog_tables(
@@ -194,9 +191,7 @@ def test_sql_cli_rejects_non_select_statements(
         ],
     )
 
-    assert result.exit_code == 1
-    assert "Only SELECT queries are allowed" in result.output
-    assert "Traceback" not in result.output
+    assert_cli_error(result, "Only SELECT queries are allowed")
 
 
 def test_catalog_check_rejects_empty_workspace(
@@ -222,8 +217,7 @@ Chart-family labels such as `chart:bar`.
 """
     )
     result = runner.invoke(chartcoach_cli, ["catalog", "check", "--source", str(empty)])
-    assert result.exit_code == 1
-    assert "No guideline entries found" in result.output
+    assert_cli_error(result, "No guideline entries found")
 
 
 def test_catalog_build_is_workspace_scoped(
@@ -274,8 +268,7 @@ def test_catalog_build_is_workspace_scoped(
             str(output_path),
         ],
     )
-    assert result.exit_code == 1
-    assert "Pass --overwrite" in result.output
+    assert_cli_error(result, "Pass --overwrite")
 
 
 def test_catalog_check_accepts_artifact_bundle(
@@ -347,8 +340,7 @@ def test_catalog_duckdb_writes_catalog_tables(
             str(duckdb_path),
         ],
     )
-    assert result.exit_code == 1
-    assert "Pass --overwrite" in result.output
+    assert_cli_error(result, "Pass --overwrite")
 
 
 def test_duckdb_overwrite_preserves_existing_file_on_failure(
@@ -385,7 +377,6 @@ def test_artifacts_cli_lists_native_paths(
     sample_catalog_path: Path,
     tmp_path: Path,
 ) -> None:
-    pytest.importorskip("chromadb")
     index_dir = tmp_path / "index"
 
     result = runner.invoke(
@@ -408,14 +399,18 @@ def test_artifacts_cli_lists_native_paths(
         "catalog_parquet",
         "duckdb_catalog",
         "index_root",
-        "chroma",
+        "index_table",
     }
     assert rows["catalog_manifest"]["path"] == str(
         sample_catalog_path.parent / "MANIFEST.md"
     )
     assert rows["catalog_source"]["path"] == str(sample_catalog_path)
-    assert rows["index_root"]["path"] == str(index_dir)
-    assert rows["chroma"]["collection_name"] == "catalog"
+    index_root = Path(str(rows["index_root"]["path"]))
+    assert index_root.is_relative_to(index_dir)
+    assert Path(str(rows["index_table"]["path"])) == (
+        index_root / "catalog_documents.lance"
+    )
+    assert rows["index_table"]["table_name"] == "catalog_documents"
 
 
 def test_catalog_manifest_cli_prints_manifest(
@@ -461,9 +456,7 @@ def test_guidelines_cli_renders_error_hints(
         [*argv[:2], "--source", str(sample_catalog_path), *argv[2:]],
     )
 
-    assert result.exit_code == 1
-    assert expected in result.output
-    assert "Traceback" not in result.output
+    assert_cli_error(result, expected)
 
 
 def test_guidelines_cli_retrieves_section_specific_evidence(
@@ -507,29 +500,6 @@ def test_guidelines_cli_retrieves_section_specific_evidence(
 
 
 @pytest.mark.search
-def test_guidelines_search_validates_filters_before_opening_index(
-    runner: CliRunner,
-    sample_catalog_path: Path,
-) -> None:
-    result = runner.invoke(
-        chartcoach_cli,
-        [
-            "guidelines",
-            "search",
-            "--source",
-            str(sample_catalog_path),
-            "--where",
-            "{",
-            "axis labels",
-        ],
-    )
-
-    assert result.exit_code == 1
-    assert "--where must be valid JSON" in result.output
-    assert "Traceback" not in result.output
-
-
-@pytest.mark.search
 def test_guidelines_search_requires_existing_index_with_actionable_error(
     runner: CliRunner,
     sample_catalog_path: Path,
@@ -540,9 +510,9 @@ def test_guidelines_search_requires_existing_index_with_actionable_error(
         raise FileNotFoundError("missing search index")
 
     monkeypatch.setattr(
-        guidelines_cli.ChromaIndex,
-        "from_cache",
-        staticmethod(raise_missing_index),
+        guidelines_cli.CatalogTools,
+        "search_guidelines",
+        raise_missing_index,
     )
 
     result = runner.invoke(
@@ -558,11 +528,9 @@ def test_guidelines_search_requires_existing_index_with_actionable_error(
         ],
     )
 
-    assert result.exit_code == 1
-    assert "missing search index" in result.output
+    assert_cli_error(result, "missing search index")
     assert "Build or provide a search index" in result.output
     assert "Inspect catalog artifacts" in result.output
-    assert "Traceback" not in result.output
 
 
 @pytest.mark.search
@@ -616,7 +584,7 @@ def test_guidelines_search_markdown_keeps_stable_evidence(
 
     assert result.exit_code == 0
     assert "direct-labels" in result.output
-    assert "distance: `0.125`" in result.output
+    assert "score: `0.125`" in result.output
 
 
 @pytest.mark.search
@@ -632,83 +600,138 @@ def test_guidelines_search_forwards_native_filters(
         [
             *guideline_search_args(sample_catalog_path, tmp_path / "index"),
             "--where",
-            '{"role":"section.advice"}',
+            "role = 'section.advice'",
             "--format",
             "json",
         ],
     )
     payload = json_value(result)
     assert payload["rows"][0]["id"] == "direct-labels"
-    assert captured_guideline_kwargs["where"] == {"role": "section.advice"}
+    assert captured_guideline_kwargs["where"] == "role = 'section.advice'"
     assert captured_guideline_kwargs["limit"] == 8
 
 
 @pytest.mark.search
-@pytest.mark.parametrize(
-    ("command", "payload", "expected_params"),
-    [
-        (
-            "query",
-            '{"query_texts":["axis","labels"],"n_results":2,"include":["documents"]}',
-            {
-                "query_texts": ["axis", "labels"],
-                "n_results": 2,
-                "include": ["documents"],
-            },
-        ),
-        (
-            "get",
-            '{"ids":["doc"],"include":["metadatas"]}',
-            {"ids": ["doc"], "include": ["metadatas"]},
-        ),
-    ],
-)
-def test_index_cli_passes_native_chroma_params(
+def test_index_cli_queries_documents_with_native_options(
     runner: CliRunner,
     sample_catalog_path: Path,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    command: str,
-    payload: str,
-    expected_params: dict[str, object],
 ) -> None:
-    import chartcoach.search.chroma as chroma
-
     captured: dict[str, object] = {}
-
-    class FakeCollection:
-        def count(self) -> int:
-            return 1
-
-        def query(self, **params: object) -> dict[str, object]:
-            captured.update(params)
-            return {"ids": [["doc"]]}
-
-        def get(self, **params: object) -> dict[str, object]:
-            captured.update(params)
-            return {"ids": ["doc"]}
-
-    class FakeIndex:
-        collection = FakeCollection()
+    fake_index_root = tmp_path / "index" / "digest"
 
     monkeypatch.setattr(
-        chroma.ChromaIndex,
-        "from_cache",
-        staticmethod(lambda *_args, **_kwargs: FakeIndex()),
+        "chartcoach.tools.catalog.CatalogTools.query_documents",
+        lambda _self, query, *, limit, where: (
+            captured.update({"query": query, "limit": limit, "where": where})
+            or {
+                "query": query,
+                "rows": [{"id": "doc", "parent_id": "direct-labels", "_score": 1.2}],
+                "row_count": 1,
+                "limit": limit,
+                "where": where,
+                "index_root": str(fake_index_root),
+                "table_name": "catalog_documents",
+            }
+        ),
     )
 
     result = runner.invoke(
         chartcoach_cli,
         [
             "index",
-            command,
+            "query",
             "--source",
             str(sample_catalog_path),
             "--index-dir",
             str(tmp_path / "index"),
-            payload,
+            "axis labels",
+            "--limit",
+            "2",
+            "--where",
+            "role = 'overview'",
         ],
     )
 
     assert result.exit_code == 0
-    assert captured == expected_params
+    payload = json_value(result)
+    assert payload["rows"] == [
+        {"id": "doc", "parent_id": "direct-labels", "_score": 1.2}
+    ]
+    assert payload["table_name"] == "catalog_documents"
+    assert captured == {
+        "query": "axis labels",
+        "limit": 2,
+        "where": "role = 'overview'",
+    }
+
+
+@pytest.mark.search
+def test_index_cli_queries_built_lance_index(
+    runner: CliRunner,
+    sample_catalog_path: Path,
+    tmp_path: Path,
+) -> None:
+    pytest.importorskip("lancedb")
+    index_dir = tmp_path / "index"
+
+    build_result = runner.invoke(
+        chartcoach_cli,
+        [
+            "index",
+            "build",
+            "--source",
+            str(sample_catalog_path),
+            "--index-dir",
+            str(index_dir),
+        ],
+    )
+    assert build_result.exit_code == 0
+
+    query_result = runner.invoke(
+        chartcoach_cli,
+        [
+            "index",
+            "query",
+            "--source",
+            str(sample_catalog_path),
+            "--index-dir",
+            str(index_dir),
+            "direct labels",
+            "--limit",
+            "5",
+            "--where",
+            "parent_id = 'direct-labels'",
+        ],
+    )
+
+    assert query_result.exit_code == 0
+    payload = json_value(query_result)
+    assert payload["table_name"] == "catalog_documents"
+    assert payload["row_count"] >= 1
+    assert {row["parent_id"] for row in payload["rows"]} == {"direct-labels"}
+
+
+@pytest.mark.search
+def test_index_cli_rejects_invalid_limit_before_opening_index(
+    runner: CliRunner,
+    sample_catalog_path: Path,
+    tmp_path: Path,
+) -> None:
+    result = runner.invoke(
+        chartcoach_cli,
+        [
+            "index",
+            "query",
+            "--source",
+            str(sample_catalog_path),
+            "--index-dir",
+            str(tmp_path / "index"),
+            "axis labels",
+            "--limit",
+            "0",
+        ],
+    )
+
+    assert_cli_error(result, "Invalid value for '--limit'", exit_code=2)

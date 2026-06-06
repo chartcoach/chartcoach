@@ -113,7 +113,7 @@ Each guideline records a concrete chart-design move with the evidence needed to 
 
 ## Search The Catalog
 
-For semantic retrieval, build a Chroma index once and query it through either the catalog API or native Chroma parameters.
+For retrieval, build a LanceDB index once. The index stores catalog document rows and exposes full-text search through the CLI, Python API, MCP, and DuckDB's Lance extension.
 
 ```bash
 INDEX_DIR=$(uv run --package chartcoach python -c "from chartcoach.paths import default_index_dir; print(default_index_dir())")
@@ -125,7 +125,7 @@ uv run --package chartcoach chartcoach index build \
 uv run --package chartcoach chartcoach guidelines search \
   --source guidelines \
   --index-dir "$INDEX_DIR" \
-  --where '{"labels":{"$contains":"chart:scatter:avoid"}}' \
+  --where "role = 'overview'" \
   "overplotted scatter plot with too many points" \
   --format jsonl
 ```
@@ -139,7 +139,7 @@ ChartCoach keeps the catalog in formats that other tools can open directly.
 | `guidelines/MANIFEST.md` | Section-role and label-family definitions for this catalog instance |
 | `guidelines/catalog.parquet` | Source catalog table |
 | DuckDB database | Derived tables for SQL inspection |
-| Chroma index | Content-addressed semantic search |
+| LanceDB index | Content-addressed full-text search |
 | `apps/site` | Human-facing guideline browser |
 
 Create a DuckDB artifact from the catalog:
@@ -153,6 +153,26 @@ uv run --package chartcoach chartcoach catalog duckdb \
 
 duckdb "$DUCKDB_PATH" \
   -c "select id, title from guidelines where list_contains(labels, 'chart:bar')"
+```
+
+Attach a built search index through DuckDB's Lance extension:
+
+```bash
+INDEX_ROOT=$(
+  uv run --package chartcoach chartcoach index status \
+    --source guidelines \
+    --index-dir "$INDEX_DIR" \
+    --format jsonl | jq -r '.index_root'
+)
+
+duckdb -c "
+INSTALL lance;
+LOAD lance;
+ATTACH '$INDEX_ROOT' AS cc_index (TYPE LANCE);
+select id, parent_id, role
+from cc_index.main.catalog_documents
+limit 5;
+"
 ```
 
 ## Develop

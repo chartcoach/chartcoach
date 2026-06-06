@@ -3,7 +3,7 @@ from __future__ import annotations
 import dataclasses as dc
 import logging
 import os
-from collections.abc import Callable, Mapping
+from collections.abc import Callable
 from importlib import import_module
 from pathlib import Path
 from typing import Any, Literal, Protocol, TypedDict, cast
@@ -12,8 +12,7 @@ from ..artifacts import catalog_artifact_rows
 from ..catalog.collection import Catalog
 from ..constants import INDEX_DIR_ENV, SOURCE_ENV
 from ..paths import default_index_dir
-from ..search.chroma import CacheMode, ChromaIndex
-from ..search.guidelines import search_guidelines
+from ..search import CacheMode
 from ..tools.catalog import CatalogTools, format_tool_error
 
 TransportName = Literal["stdio", "sse", "streamable-http"]
@@ -69,14 +68,6 @@ class _MCPServer(Protocol):
     def run(self, *, transport: str) -> None: ...
 
 
-class _SearchTools(Protocol):
-    def search_guidelines(self, *args: Any, **kwargs: Any) -> dict[str, Any]: ...
-
-    def chroma_query(self, *args: Any, **kwargs: Any) -> dict[str, Any]: ...
-
-    def chroma_get(self, *args: Any, **kwargs: Any) -> dict[str, Any]: ...
-
-
 class _ArtifactTools:
     def __init__(
         self,
@@ -98,120 +89,9 @@ class _ArtifactTools:
         return {"rows": rows, "row_count": len(rows)}
 
 
-class _ChromaTools:
-    def __init__(
-        self,
-        catalog: Catalog,
-        *,
-        cache_dir: str | Path,
-        cache_mode: CacheMode,
-    ) -> None:
-        self._catalog = catalog
-        self._cache_dir = cache_dir
-        self._cache_mode = cache_mode
-        self._index: ChromaIndex | None = None
-
-    def open_index(self) -> ChromaIndex:
-        if self._index is None:
-            self._index = ChromaIndex.from_cache(
-                self._catalog,
-                cache_dir=self._cache_dir,
-                cache_mode=self._cache_mode,
-            )
-        return self._index
-
-    def search_guidelines(
-        self,
-        query_text: str,
-        *,
-        limit: int | None = None,
-        candidate_limit: int | None = None,
-        where: dict[str, Any] | None = None,
-        where_document: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
-        kwargs: dict[str, Any] = {}
-        if limit is not None:
-            kwargs["limit"] = limit
-        if candidate_limit is not None:
-            kwargs["candidate_limit"] = candidate_limit
-        result = search_guidelines(
-            self.open_index(),
-            query_text,
-            where=where,
-            where_document=where_document,
-            **kwargs,
-        )
-        return result.to_dict()
-
-    def chroma_query(
-        self,
-        query_embeddings: Any | None = None,
-        query_texts: Any | None = None,
-        query_images: Any | None = None,
-        query_uris: Any | None = None,
-        ids: Any | None = None,
-        n_results: int = 10,
-        where: dict[str, Any] | None = None,
-        where_document: dict[str, Any] | None = None,
-        include: list[str] | None = None,
-    ) -> dict[str, Any]:
-        """Run collection.query with Chroma parameters."""
-
-        params = _non_null_params(
-            {
-                "query_embeddings": query_embeddings,
-                "query_texts": query_texts,
-                "query_images": query_images,
-                "query_uris": query_uris,
-                "ids": ids,
-                "n_results": n_results,
-                "where": where,
-                "where_document": where_document,
-                "include": include,
-            }
-        )
-        return cast(
-            dict[str, Any],
-            self.open_index().collection.query(**params),
-        )
-
-    def chroma_get(
-        self,
-        ids: Any | None = None,
-        where: dict[str, Any] | None = None,
-        limit: int | None = None,
-        offset: int | None = None,
-        where_document: dict[str, Any] | None = None,
-        include: list[str] | None = None,
-    ) -> dict[str, Any]:
-        """Run collection.get with Chroma parameters."""
-
-        params = _non_null_params(
-            {
-                "ids": ids,
-                "where": where,
-                "limit": limit,
-                "offset": offset,
-                "where_document": where_document,
-                "include": include,
-            }
-        )
-        return cast(
-            dict[str, Any],
-            self.open_index().collection.get(**params),
-        )
-
-    def close(self) -> None:
-        self._index = None
-
-
 def _is_missing_mcp_dependency(exc: ModuleNotFoundError) -> bool:
     name = exc.name
     return name == "mcp" or (name is not None and name.startswith("mcp."))
-
-
-def _non_null_params(params: Mapping[str, Any]) -> dict[str, Any]:
-    return {key: value for key, value in params.items() if value is not None}
 
 
 def _load_fast_mcp() -> Callable[..., _MCPServer]:
@@ -305,12 +185,7 @@ def _configure_logging(log_level: LogLevelName) -> None:
 
 
 def _load_source(source: str | Path) -> Catalog:
-    path = Path(source)
-    if path.is_dir():
-        if (path / "catalog.parquet").exists():
-            return Catalog.from_bundle(path)
-        return Catalog.from_folder(path)
-    return Catalog.from_parquet(path)
+    return Catalog.from_source(source)
 
 
 def _build_server(runtime: RuntimeConfig) -> _MCPServer:
@@ -347,13 +222,12 @@ def _register_tools(
     *,
     catalog_tools: CatalogTools,
     artifact_tools: _ArtifactTools,
-    search: _SearchTools,
 ) -> None:
     _add_tool(
         server,
         artifact_tools.catalog_artifacts,
         name="catalog_artifacts",
-        description="List native catalog, DuckDB, and Chroma artifact paths.",
+        description="List native catalog, DuckDB, and LanceDB artifact paths.",
     )
     _add_tool(
         server,
@@ -399,21 +273,15 @@ def _register_tools(
     )
     _add_tool(
         server,
-        search.search_guidelines,
+        catalog_tools.search_guidelines,
         name="guidelines_search",
-        description="Guideline-level semantic search over the Chroma artifact.",
+        description="Guideline-level full-text search over the LanceDB index.",
     )
     _add_tool(
         server,
-        search.chroma_query,
-        name="chroma_query",
-        description="Run native Chroma query against the catalog collection.",
-    )
-    _add_tool(
-        server,
-        search.chroma_get,
-        name="chroma_get",
-        description="Run native Chroma get against the catalog collection.",
+        catalog_tools.query_documents,
+        name="index_query",
+        description="Run full-text search over indexed catalog documents.",
     )
 
 
@@ -450,26 +318,22 @@ def main(
         resolved_runtime.port,
     )
     catalog_obj = _load_source(source)
-    search = _ChromaTools(
+    catalog_tools = CatalogTools(
         catalog_obj,
-        cache_dir=index_dir,
+        index_dir=index_dir,
         cache_mode=DEFAULT_CACHE_MODE,
     )
     server = _build_server(resolved_runtime)
     _register_tools(
         server,
-        catalog_tools=CatalogTools(catalog_obj),
+        catalog_tools=catalog_tools,
         artifact_tools=_ArtifactTools(
             catalog_obj,
             source=source,
             index_dir=index_dir,
         ),
-        search=search,
     )
-    try:
-        server.run(transport=resolved_runtime.transport)
-    finally:
-        search.close()
+    server.run(transport=resolved_runtime.transport)
 
 
 __all__ = ["MCPConfig", "RuntimeConfig", "SearchSettings", "main", "resolve_config"]

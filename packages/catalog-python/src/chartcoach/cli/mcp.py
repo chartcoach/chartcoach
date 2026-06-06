@@ -64,7 +64,7 @@ def mcp_command() -> None:
     default=default_index_dir(),
     show_default=True,
     help=(
-        "Search index directory for Chroma-backed tools. "
+        "Search index directory for LanceDB-backed tools. "
         f"Defaults to ${INDEX_DIR_ENV}, then a platform cache path."
     ),
 )

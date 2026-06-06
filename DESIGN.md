@@ -113,7 +113,7 @@ Do not create a separate theme system, duplicate mode props, or mode-specific co
 
 ## Colors
 
-The light palette uses a warm canvas, near-black ink, neutral layers, disciplined borders, and one ember accent. The dark palette keeps the same relationships with low-chroma near-black surfaces and warm text.
+The light palette uses a warm canvas, near-black ink, neutral layers, disciplined borders, and one ember accent. The dark palette keeps the same relationships with low-saturation near-black surfaces and warm text.
 
 Implementation variables:
 

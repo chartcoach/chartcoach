@@ -1,17 +1,15 @@
 from __future__ import annotations
 
 import dataclasses as dc
-from collections.abc import Mapping, Sequence
+from collections.abc import Sequence
 from typing import Any, cast
 
 import polars as pl
 
-from ..constants import DEFAULT_CHROMA_TOP_K
-from .chroma import ChromaIndex
+from ..constants import DEFAULT_INDEX_TOP_K
+from .lance import LanceIndex
 
-DEFAULT_SEARCH_INCLUDE = ["documents", "metadatas", "distances"]
-MetadataFilter = dict[str, Any]
-DocumentFilter = dict[str, Any]
+FilterExpression = str
 
 
 @dc.dataclass(frozen=True)
@@ -20,7 +18,7 @@ class GuidelineSearchHit:
     document_id: str
     guideline_id: str
     role: str
-    distance: object
+    score: float | None
     labels: list[str]
     document: str
     title: str
@@ -35,7 +33,7 @@ class GuidelineSearchHit:
             "labels": self.labels,
             "matched_document_id": self.document_id,
             "matched_role": self.role,
-            "distance": self.distance,
+            "score": self.score,
             "matched_text": self.document,
         }
 
@@ -46,8 +44,7 @@ class GuidelineSearchResult:
     rows: tuple[GuidelineSearchHit, ...]
     limit: int
     candidate_limit: int
-    where: MetadataFilter | None = None
-    where_document: DocumentFilter | None = None
+    where: FilterExpression | None = None
 
     @property
     def row_count(self) -> int:
@@ -61,7 +58,6 @@ class GuidelineSearchResult:
             "limit": self.limit,
             "candidate_limit": self.candidate_limit,
             "where": self.where,
-            "where_document": self.where_document,
         }
 
 
@@ -70,27 +66,32 @@ class _SearchHit:
     document_id: str
     guideline_id: str
     role: str
-    distance: object
+    score: float | None
     labels: list[str]
     document: str
 
 
 def search_guidelines(
-    index: ChromaIndex,
+    index: LanceIndex,
     query_text: str,
     *,
-    limit: int = DEFAULT_CHROMA_TOP_K,
+    limit: int = DEFAULT_INDEX_TOP_K,
     candidate_limit: int | None = None,
-    where: MetadataFilter | None = None,
-    where_document: DocumentFilter | None = None,
+    where: FilterExpression | None = None,
 ) -> GuidelineSearchResult:
-    """Search Chroma documents and return deduplicated guideline rows."""
+    """Search LanceDB documents and return deduplicated guideline rows."""
+
+    if not query_text.strip():
+        raise ValueError("query_text must be a non-empty string.")
+    if limit < 1:
+        raise ValueError("limit must be at least 1.")
+    if candidate_limit is not None and candidate_limit < 1:
+        raise ValueError("candidate_limit must be at least 1.")
 
     rows, resolved_candidate_limit = _search_unique_guideline_rows(
         index,
         query_text,
         where=where,
-        where_document=where_document,
         limit=limit,
         candidate_limit=candidate_limit,
     )
@@ -113,7 +114,6 @@ def search_guidelines(
             limit,
             resolved_candidate_limit,
             where=where,
-            where_document=where_document,
         )
 
     catalog_rows = _guideline_rows(index, guideline_ids)
@@ -126,7 +126,7 @@ def search_guidelines(
                 document_id=row.document_id,
                 guideline_id=row.guideline_id,
                 role=row.role,
-                distance=row.distance,
+                score=row.score,
                 labels=cast(list[str], guideline.get("labels") or row.labels),
                 document=row.document,
                 title=cast(str, guideline["title"]),
@@ -140,24 +140,25 @@ def search_guidelines(
         limit=limit,
         candidate_limit=resolved_candidate_limit,
         where=where,
-        where_document=where_document,
     )
 
 
 def _search_unique_guideline_rows(
-    index: ChromaIndex,
+    index: LanceIndex,
     query_text: str,
     *,
-    where: MetadataFilter | None,
-    where_document: DocumentFilter | None,
+    where: FilterExpression | None,
     limit: int,
     candidate_limit: int | None,
 ) -> tuple[list[_SearchHit], int]:
-    collection_count = int(index.collection.count())
-    if collection_count == 0:
+    document_count = index.document_count()
+    if document_count == 0:
         return [], 0
-    max_candidates = collection_count if candidate_limit is None else candidate_limit
-    max_candidates = max(limit, min(max_candidates, collection_count))
+    max_candidates = (
+        document_count
+        if candidate_limit is None
+        else min(candidate_limit, document_count)
+    )
     requested = min(max(limit, 50), max_candidates)
     rows: list[_SearchHit] = []
 
@@ -166,8 +167,7 @@ def _search_unique_guideline_rows(
             index,
             query_text,
             where=where,
-            where_document=where_document,
-            chroma_n_results=requested,
+            limit=requested,
         )
         if _unique_guideline_count(rows) >= limit or requested >= max_candidates:
             return rows, requested
@@ -175,41 +175,35 @@ def _search_unique_guideline_rows(
 
 
 def _search_index_rows(
-    index: ChromaIndex,
+    index: LanceIndex,
     query_text: str,
     *,
-    where: MetadataFilter | None,
-    where_document: DocumentFilter | None,
-    chroma_n_results: int,
+    where: FilterExpression | None,
+    limit: int,
 ) -> list[_SearchHit]:
-    kwargs: dict[str, Any] = {
-        "query_texts": [query_text],
-        "n_results": chroma_n_results,
-        "include": list(DEFAULT_SEARCH_INCLUDE),
-    }
-    if where is not None:
-        kwargs["where"] = cast(Any, where)
-    if where_document is not None:
-        kwargs["where_document"] = cast(Any, where_document)
-    return _query_hits(cast(Mapping[str, Any], index.collection.query(**kwargs)))
+    return [
+        _row_to_hit(row)
+        for row in index.query_documents(query_text, limit=limit, where=where)
+    ]
 
 
 def _guideline_rows(
-    index: ChromaIndex,
+    index: LanceIndex,
     guideline_ids: Sequence[str],
 ) -> dict[str, dict[str, object]]:
     if not guideline_ids:
         return {}
     rows = {
         row["id"]: row
-        for row in index.catalog.guidelines().filter(pl.col("id").is_in(guideline_ids))
+        for row in index.catalog.guidelines()
+        .filter(pl.col("id").is_in(guideline_ids))
         .select("id", "title", "description", "labels")
         .to_dicts()
     }
     missing = sorted(set(guideline_ids) - set(rows))
     if missing:
         raise ValueError(
-            "Chroma index returned guideline id(s) not present in catalog: "
+            "LanceDB index returned guideline id(s) not present in catalog: "
             + ", ".join(missing)
         )
     return rows
@@ -220,8 +214,7 @@ def _empty_search_result(
     limit: int,
     candidate_limit: int,
     *,
-    where: MetadataFilter | None,
-    where_document: DocumentFilter | None,
+    where: FilterExpression | None,
 ) -> GuidelineSearchResult:
     return GuidelineSearchResult(
         query=query_text,
@@ -229,7 +222,6 @@ def _empty_search_result(
         limit=limit,
         candidate_limit=candidate_limit,
         where=where,
-        where_document=where_document,
     )
 
 
@@ -237,60 +229,35 @@ def _unique_guideline_count(rows: Sequence[_SearchHit]) -> int:
     return len({row.guideline_id for row in rows})
 
 
-def _query_hits(result: Mapping[str, Any]) -> list[_SearchHit]:
-    ids_by_query = _list_of_lists(result.get("ids"))
-    documents_by_query = _list_of_lists(result.get("documents"))
-    metadatas_by_query = _list_of_lists(result.get("metadatas"))
-    distances_by_query = _list_of_lists(result.get("distances"))
-    if not ids_by_query:
-        return []
-
-    rows: list[_SearchHit] = []
-    documents = _sequence_at(documents_by_query, 0)
-    metadatas = _sequence_at(metadatas_by_query, 0)
-    distances = _sequence_at(distances_by_query, 0)
-    for index, document_id in enumerate(ids_by_query[0]):
-        metadata = _mapping_at(metadatas, index)
-        guideline_id = metadata.get("parent_id")
-        role = metadata.get("role")
-        if not isinstance(document_id, str) or not isinstance(guideline_id, str):
-            continue
-        rows.append(
-            _SearchHit(
-                document_id=document_id,
-                guideline_id=guideline_id,
-                role=role if isinstance(role, str) else "",
-                distance=_value_at(distances, index),
-                labels=_labels_from_metadata(metadata),
-                document=str(_value_at(documents, index) or ""),
-            )
-        )
-    return rows
+def _row_to_hit(row: dict[str, Any]) -> _SearchHit:
+    document_id = _required_string(row, "id")
+    guideline_id = _required_string(row, "parent_id")
+    role = _required_string(row, "role")
+    document = _required_string(row, "doc")
+    return _SearchHit(
+        document_id=document_id,
+        guideline_id=guideline_id,
+        role=role,
+        score=_score(row.get("_score")),
+        labels=_labels(row.get("labels")),
+        document=document,
+    )
 
 
-def _list_of_lists(value: object) -> list[list[object]]:
-    if not isinstance(value, list):
-        return []
-    return [cast(list[object], item) for item in value if isinstance(item, list)]
+def _required_string(row: dict[str, Any], key: str) -> str:
+    value = row.get(key)
+    if not isinstance(value, str) or not value:
+        raise ValueError(f"LanceDB index row is missing string field {key!r}.")
+    return value
 
 
-def _sequence_at(values: Sequence[list[object]], index: int) -> list[object]:
-    return values[index] if index < len(values) else []
+def _score(value: object) -> float | None:
+    if isinstance(value, int | float):
+        return float(value)
+    return None
 
 
-def _value_at(values: Sequence[object], index: int) -> object:
-    return values[index] if index < len(values) else None
-
-
-def _mapping_at(values: Sequence[object], index: int) -> Mapping[str, object]:
-    value = _value_at(values, index)
-    if isinstance(value, Mapping):
-        return cast(Mapping[str, object], value)
-    return {}
-
-
-def _labels_from_metadata(metadata: Mapping[str, object]) -> list[str]:
-    labels = metadata.get("labels")
+def _labels(labels: object) -> list[str]:
     if not isinstance(labels, list):
         return []
     return [label for label in labels if isinstance(label, str)]

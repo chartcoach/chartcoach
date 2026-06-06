@@ -357,6 +357,20 @@ def test_catalog_bundle_loads_manifest_and_parquet(tmp_path: Path) -> None:
     assert reloaded.to_frame().to_dicts() == catalog.to_frame().to_dicts()
 
 
+def test_catalog_from_source_loads_folder_bundle_and_parquet(tmp_path: Path) -> None:
+    write_manifest(tmp_path / "source")
+    write_catalog_entry(tmp_path / "source")
+
+    folder_catalog = Catalog.from_source(tmp_path / "source")
+    folder_catalog.write_bundle(tmp_path / "bundle")
+    parquet_path = tmp_path / "catalog.parquet"
+    folder_catalog.write_parquet(parquet_path)
+
+    assert Catalog.from_source(tmp_path / "source").guidelines().height == 1
+    assert Catalog.from_source(tmp_path / "bundle").require_manifest()
+    assert Catalog.from_source(parquet_path).guidelines().height == 1
+
+
 def test_catalog_from_frame_rejects_mismatched_guideline_id() -> None:
     frame = pl.from_dicts(
         [

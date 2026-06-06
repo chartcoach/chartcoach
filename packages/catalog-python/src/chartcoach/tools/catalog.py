@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from typing import cast
+from os import PathLike
+from pathlib import Path
+from typing import TYPE_CHECKING, cast
 
 import duckdb
 import polars as pl
@@ -12,6 +14,14 @@ from ..catalog.relations import (
     catalog_table_names,
     catalog_table_rows,
     catalog_table_schema,
+)
+
+if TYPE_CHECKING:
+    from ..search import CacheMode, LanceIndex
+
+_SEARCH_HINTS = (
+    "Build or provide a search index for the current catalog digest.",
+    "Inspect catalog artifacts to locate the LanceDB index path.",
 )
 
 
@@ -34,8 +44,17 @@ class CatalogTools:
     shells, and the MCP server exposes the same methods as tools.
     """
 
-    def __init__(self, catalog: Catalog) -> None:
+    def __init__(
+        self,
+        catalog: Catalog,
+        *,
+        index_dir: str | PathLike[str] | None = None,
+        cache_mode: "CacheMode" = "reuse_only",
+    ) -> None:
         self._catalog = catalog
+        self._index_dir = Path(index_dir) if index_dir is not None else None
+        self._cache_mode = cache_mode
+        self._index: LanceIndex | None = None
 
     @property
     def catalog(self) -> Catalog:
@@ -225,6 +244,88 @@ class CatalogTools:
             for row in frame.to_dicts()
         ]
 
+    def index_status(self) -> dict[str, object]:
+        """Report the LanceDB index path and readiness for this catalog."""
+
+        index_dir = self._require_index_dir()
+        from ..search import LanceIndex
+
+        paths = LanceIndex.cache_paths(self.catalog, cache_dir=index_dir)
+        row: dict[str, object] = {
+            "catalog_digest": self.catalog.digest(),
+            "documents_version": paths.documents_version,
+            "index_root": str(paths.index_root),
+            "table_path": str(paths.table_path),
+            "table_name": paths.table_name,
+            "ready": False,
+            "documents": None,
+            "error": None,
+        }
+        try:
+            index = self.open_index()
+        except Exception as exc:
+            row["error"] = str(exc)
+            return row
+        row["ready"] = True
+        row["documents"] = index.document_count()
+        return row
+
+    def build_index(
+        self,
+        *,
+        cache_mode: "CacheMode" = "reuse_or_create",
+    ) -> dict[str, object]:
+        """Open or build the LanceDB index and return its runtime summary."""
+
+        index = self.open_index(cache_mode=cache_mode)
+        return _index_summary(self.catalog, index)
+
+    def query_documents(
+        self,
+        query: str,
+        *,
+        limit: int = 10,
+        where: str | None = None,
+    ) -> dict[str, object]:
+        """Run full-text search over indexed catalog documents."""
+
+        index = self.open_index()
+        rows = index.query_documents(query, limit=limit, where=where)
+        return {
+            "query": query,
+            "rows": rows,
+            "row_count": len(rows),
+            "limit": limit,
+            "where": where,
+            "index_root": str(index.index_root),
+            "table_name": index.table_name,
+        }
+
+    def search_guidelines(
+        self,
+        query_text: str,
+        *,
+        limit: int | None = None,
+        candidate_limit: int | None = None,
+        where: str | None = None,
+    ) -> dict[str, object]:
+        """Search indexed documents and return deduplicated guideline rows."""
+
+        from ..search import search_guidelines
+
+        kwargs: dict[str, int] = {}
+        if limit is not None:
+            kwargs["limit"] = limit
+        if candidate_limit is not None:
+            kwargs["candidate_limit"] = candidate_limit
+        result = search_guidelines(
+            self.open_index(),
+            query_text,
+            where=where,
+            **kwargs,
+        )
+        return result.to_dict()
+
     def validate_guideline_filters(
         self,
         *,
@@ -239,6 +340,31 @@ class CatalogTools:
         parsed_roles = tuple(roles)
         self._validate_section_roles(parsed_roles)
         return parsed_roles
+
+    def open_index(
+        self,
+        *,
+        cache_mode: "CacheMode | None" = None,
+    ) -> "LanceIndex":
+        """Open the configured LanceDB index lazily."""
+
+        mode = cache_mode or self._cache_mode
+        if self._index is not None and mode == self._cache_mode:
+            return self._index
+        index_dir = self._require_index_dir()
+        from ..search import LanceIndex
+
+        try:
+            index = LanceIndex.from_cache(
+                self.catalog,
+                cache_dir=index_dir,
+                cache_mode=mode,
+            )
+        except Exception as exc:
+            raise CatalogToolError(str(exc), hints=_SEARCH_HINTS) from exc
+        self._index = index
+        self._cache_mode = mode
+        return index
 
     def _query_guidelines(
         self,
@@ -410,6 +536,14 @@ class CatalogTools:
             ],
         )
 
+    def _require_index_dir(self) -> Path:
+        if self._index_dir is None:
+            raise CatalogToolError(
+                "Search index directory is required.",
+                hints=_SEARCH_HINTS,
+            )
+        return self._index_dir
+
 
 def _guideline_record_from_row(
     row: Mapping[str, object],
@@ -438,6 +572,15 @@ def _guideline_record_from_row(
     }
 
 
+def _index_summary(catalog: Catalog, index: "LanceIndex") -> dict[str, object]:
+    return {
+        "guidelines": len(catalog),
+        "documents": index.document_count(),
+        "index_root": str(index.index_root),
+        "table_name": index.table_name,
+    }
+
+
 def format_tool_error(message: str, hints: Sequence[str]) -> str:
     """Render an error message and recovery hints for CLI and MCP transports."""
 
@@ -452,15 +595,12 @@ def search_error_message(message: str) -> str:
 
     return format_tool_error(
         message,
-        [
-            "Build or provide a search index for the current catalog digest.",
-            "Inspect catalog artifacts to locate the native Chroma path.",
-        ],
+        _SEARCH_HINTS,
     )
 
 
 def _is_list_dtype(dtype: object) -> bool:
-    return str(dtype).startswith("List")
+    return isinstance(dtype, pl.DataType) and dtype.base_type() == pl.List
 
 
 def _validate_select_query(query: str) -> None:

@@ -148,6 +148,17 @@ class Catalog:
             manifest=manifest,
         )
 
+    @classmethod
+    def from_source(cls, path: str | PathLike[str]) -> "Catalog":
+        """Load a catalog from an authored folder, artifact bundle, or parquet file."""
+
+        source = Path(path)
+        if source.is_dir():
+            if (source / "catalog.parquet").exists():
+                return cls.from_bundle(source)
+            return cls.from_folder(source)
+        return cls.from_parquet(source)
+
     @property
     def manifest(self) -> "CatalogManifest | None":
         """Return the catalog manifest when this catalog was loaded with one."""

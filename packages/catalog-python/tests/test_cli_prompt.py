@@ -6,6 +6,8 @@ from click.testing import CliRunner
 
 from chartcoach.cli.main import main as chartcoach_cli
 
+from helpers import assert_cli_error
+
 
 def test_prompt_cli_prints_parameterized_codex_prompt(
     runner: CliRunner,
@@ -34,7 +36,7 @@ def test_prompt_cli_prints_parameterized_codex_prompt(
     assert "Target agent: Codex." in result.output
     assert "Installed skill: `chartcoach/catalog`." in result.output
     assert f"Catalog source: `{source}`." in result.output
-    assert f"Semantic index directory: `{index_dir}`." in result.output
+    assert f"LanceDB full-text index directory: `{index_dir}`." in result.output
     assert "Guidance mode: `feedback`." in result.output
     assert "Review a dashboard for misleading bar axes." in result.output
     assert "Read `MANIFEST.md`" in result.output
@@ -56,13 +58,11 @@ def test_prompt_cli_uses_public_site_url_env(runner: CliRunner) -> None:
 def test_prompt_cli_requires_one_target_agent(runner: CliRunner) -> None:
     result = runner.invoke(chartcoach_cli, ["prompt"])
 
-    assert result.exit_code == 1
-    assert "Pass exactly one agent flag" in result.output
+    assert_cli_error(result, "Pass exactly one agent flag")
 
     result = runner.invoke(chartcoach_cli, ["prompt", "--codex", "--claude"])
 
-    assert result.exit_code == 1
-    assert "Pass exactly one agent flag" in result.output
+    assert_cli_error(result, "Pass exactly one agent flag")
 
 
 def test_prompt_cli_prints_unresolved_catalog_source(

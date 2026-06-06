@@ -166,3 +166,61 @@ def test_catalog_tools_sql_query_disables_external_file_access(
         CatalogTools(sample_catalog).sql_query(
             f"select * from read_csv_auto({external_csv.as_posix()!r})"
         )
+
+
+@pytest.mark.search
+def test_catalog_tools_query_documents_uses_configured_index(
+    sample_catalog: Catalog,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import chartcoach.search as search_module
+
+    captured: dict[str, object] = {}
+
+    class FakeIndex:
+        index_root = tmp_path / "index" / "digest"
+        table_name = "catalog_documents"
+
+        def query_documents(
+            self,
+            query: str,
+            *,
+            limit: int,
+            where: str | None,
+        ) -> list[dict[str, object]]:
+            captured.update({"query": query, "limit": limit, "where": where})
+            return [{"id": "doc", "parent_id": "direct-labels"}]
+
+    monkeypatch.setattr(
+        search_module.LanceIndex,
+        "from_cache",
+        staticmethod(lambda *_args, **_kwargs: FakeIndex()),
+    )
+
+    result = CatalogTools(sample_catalog, index_dir=tmp_path / "index").query_documents(
+        "direct labels",
+        limit=2,
+        where="role = 'overview'",
+    )
+
+    assert result["rows"] == [{"id": "doc", "parent_id": "direct-labels"}]
+    assert result["table_name"] == "catalog_documents"
+    assert captured == {
+        "query": "direct labels",
+        "limit": 2,
+        "where": "role = 'overview'",
+    }
+
+
+@pytest.mark.search
+def test_catalog_tools_index_status_reports_missing_cache(
+    sample_catalog: Catalog,
+    tmp_path: Path,
+) -> None:
+    result = CatalogTools(sample_catalog, index_dir=tmp_path / "index").index_status()
+
+    assert result["ready"] is False
+    assert result["catalog_digest"] == sample_catalog.digest()
+    assert str(result["table_path"]).endswith("catalog_documents.lance")
+    assert "Cached LanceDB table not found" in str(result["error"])

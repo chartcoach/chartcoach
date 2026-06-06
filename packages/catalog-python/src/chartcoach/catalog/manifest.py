@@ -126,7 +126,9 @@ def parse_catalog_manifest(markdown: str) -> CatalogManifest:
     flush_definition()
 
     missing_headings = [
-        heading for heading in REQUIRED_MANIFEST_HEADINGS if heading not in required_seen
+        heading
+        for heading in REQUIRED_MANIFEST_HEADINGS
+        if heading not in required_seen
     ]
     if missing_headings:
         raise CatalogManifestError(
@@ -135,7 +137,9 @@ def parse_catalog_manifest(markdown: str) -> CatalogManifest:
 
     for heading in REQUIRED_MANIFEST_HEADINGS:
         if not definitions[heading]:
-            raise CatalogManifestError(f"Manifest heading {heading} must define entries.")
+            raise CatalogManifestError(
+                f"Manifest heading {heading} must define entries."
+            )
 
     _validate_label_family_examples(definitions["Label Families"].values())
 
@@ -155,19 +159,17 @@ def validate_catalog_manifest(catalog: "Catalog", manifest: CatalogManifest) -> 
     used_roles = set(_catalog_section_roles(catalog))
     missing_roles = sorted(used_roles - set(manifest.section_roles))
     if missing_roles:
-        errors.append(
-            "undefined section role(s): " + ", ".join(missing_roles)
-        )
+        errors.append("undefined section role(s): " + ", ".join(missing_roles))
 
     used_families = set(_catalog_label_families(catalog))
     missing_families = sorted(used_families - set(manifest.label_families))
     if missing_families:
-        errors.append(
-            "undefined label family/families: " + ", ".join(missing_families)
-        )
+        errors.append("undefined label family/families: " + ", ".join(missing_families))
 
     if errors:
-        raise CatalogManifestError("Catalog manifest validation failed: " + "; ".join(errors) + ".")
+        raise CatalogManifestError(
+            "Catalog manifest validation failed: " + "; ".join(errors) + "."
+        )
 
 
 def _catalog_section_roles(catalog: "Catalog") -> Iterable[str]:
@@ -191,7 +193,9 @@ def _validate_label_family_examples(definitions: Iterable[ManifestDefinition]) -
         invalid_examples: list[str] = []
         for example in definition.examples:
             try:
-                parsed = parse_label(example, context=f"manifest label example {example!r}")
+                parsed = parse_label(
+                    example, context=f"manifest label example {example!r}"
+                )
             except (TypeError, ValueError):
                 continue
             if parsed.family == definition.name:

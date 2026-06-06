@@ -23,7 +23,7 @@ def catalog_artifact_rows(
     index_dir: str | PathLike[str] | None = None,
     duckdb_path: str | PathLike[str] | None = None,
 ) -> list[dict[str, object]]:
-    """Return rows for catalog, DuckDB, and Chroma artifact paths."""
+    """Return rows for catalog, DuckDB, and LanceDB artifact paths."""
 
     source = Path(source_path)
     catalog_digest = catalog.digest()
@@ -66,7 +66,7 @@ def catalog_artifact_rows(
         )
     )
 
-    rows.extend(_chroma_artifact_rows(catalog, source=source, index_dir=index_dir))
+    rows.extend(_lance_artifact_rows(catalog, index_dir=index_dir))
     return rows
 
 
@@ -76,60 +76,37 @@ def _manifest_path_for_source(source: Path) -> Path:
     return source.parent / "MANIFEST.md"
 
 
-def _chroma_artifact_rows(
+def _lance_artifact_rows(
     catalog: Catalog,
     *,
-    source: Path,
     index_dir: str | PathLike[str] | None,
 ) -> list[dict[str, object]]:
     resolved_index_dir = (
         Path(index_dir) if index_dir is not None else default_index_dir()
     )
-    try:
-        from .search.chroma import ChromaIndex
+    from .search import LanceIndex
 
-        paths = ChromaIndex.cache_paths(catalog, cache_dir=resolved_index_dir)
-    except ModuleNotFoundError as exc:
-        if not _is_missing_search_extra(exc):
-            raise
-        return [
-            _artifact_row(
-                name="index_root",
-                path=resolved_index_dir,
-                kind="directory",
-                catalog_digest=catalog.digest(),
-                error=str(exc),
-                note="Search extras are required to resolve the content-addressed Chroma path.",
-            )
-        ]
-
+    paths = LanceIndex.cache_paths(catalog, cache_dir=resolved_index_dir)
     return [
         _artifact_row(
             name="index_root",
             path=paths.index_root,
             kind="directory",
             catalog_digest=paths.catalog_digest,
-            embedding_name=paths.embedding_name,
-            collection_name=paths.collection_name,
-            note="Root directory for content-addressed search artifacts.",
+            table_name=paths.table_name,
+            documents_version=paths.documents_version,
+            note="LanceDB namespace root for content-addressed search artifacts.",
         ),
         _artifact_row(
-            name="chroma",
-            path=paths.chroma_path,
-            kind="chroma",
+            name="index_table",
+            path=paths.table_path,
+            kind="lance_table",
             catalog_digest=paths.catalog_digest,
-            embedding_name=paths.embedding_name,
-            collection_name=paths.collection_name,
-            note="Native Chroma persistent database for indexed catalog documents.",
+            table_name=paths.table_name,
+            documents_version=paths.documents_version,
+            note="Lance table with indexed catalog documents.",
         ),
     ]
-
-
-def _is_missing_search_extra(exc: ModuleNotFoundError) -> bool:
-    name = exc.name
-    return name in {"chromadb", "tqdm"} or (
-        name is not None and name.startswith("chromadb.")
-    )
 
 
 def _artifact_row(
@@ -138,8 +115,8 @@ def _artifact_row(
     path: str | PathLike[str] | None,
     kind: str,
     catalog_digest: str,
-    embedding_name: str | None = None,
-    collection_name: str | None = None,
+    table_name: str | None = None,
+    documents_version: str | None = None,
     note: str | None = None,
     error: str | None = None,
 ) -> dict[str, object]:
@@ -150,8 +127,8 @@ def _artifact_row(
         "exists": resolved.exists() if resolved is not None else False,
         "kind": kind,
         "catalog_digest": catalog_digest,
-        "embedding_name": embedding_name,
-        "collection_name": collection_name,
+        "table_name": table_name,
+        "documents_version": documents_version,
         "note": note,
         "error": error,
     }

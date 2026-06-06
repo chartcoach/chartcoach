@@ -67,18 +67,6 @@ def duckdb_option(command: Any) -> Any:
     )(command)
 
 
-def parse_json_object(raw: str | None, *, option_name: str) -> dict[str, object] | None:
-    if raw is None:
-        return None
-    try:
-        value = json.loads(raw)
-    except json.JSONDecodeError as exc:
-        raise click.ClickException(f"{option_name} must be valid JSON: {exc}") from exc
-    if not isinstance(value, dict):
-        raise click.ClickException(f"{option_name} must be a JSON object.")
-    return cast(dict[str, object], value)
-
-
 def _remember_source_path(
     ctx: click.Context,
     _param: click.Parameter,
@@ -92,11 +80,7 @@ def _remember_source_path(
 def load_catalog(ctx: click.Context) -> Catalog:
     path = source_path(ctx)
     try:
-        if path.is_dir():
-            if (path / "catalog.parquet").exists():
-                return Catalog.from_bundle(path)
-            return Catalog.from_folder(path)
-        return Catalog.from_parquet(path)
+        return Catalog.from_source(path)
     except FileNotFoundError as exc:
         raise click.ClickException(
             format_tool_error(
@@ -207,7 +191,7 @@ def guideline_search_rows_to_markdown(rows: Sequence[Mapping[str, object]]) -> s
             lines.append("")
         lines.append(f"- matched section: `{row.get('matched_role')}`")
         lines.append(f"- matched document: `{row.get('matched_document_id')}`")
-        lines.append(f"- distance: `{row.get('distance')}`")
+        lines.append(f"- score: `{row.get('score')}`")
         lines.append("")
         lines.append(str(row.get("matched_text") or ""))
         lines.append("")

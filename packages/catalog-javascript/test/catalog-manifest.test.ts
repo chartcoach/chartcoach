@@ -44,8 +44,19 @@ describe("catalog manifest", () => {
       },
     ];
 
-    expect(() => new Catalog(guidelines, { manifest })).toThrow(CatalogError);
-    expect(() => new Catalog(guidelines, { manifest })).toThrow(/undefined section role/);
-    expect(() => new Catalog(guidelines, { manifest })).toThrow(/undefined label family/);
+    let error: unknown;
+    try {
+      new Catalog(guidelines, { manifest });
+    } catch (caught) {
+      error = caught;
+    }
+
+    expect(error).toBeInstanceOf(CatalogError);
+    expect(error instanceof Error ? error.message : String(error)).toContain(
+      "undefined section role",
+    );
+    expect(error instanceof Error ? error.message : String(error)).toContain(
+      "undefined label family",
+    );
   });
 });

@@ -37,7 +37,7 @@ def artifacts_command(
     duckdb_path: Path | None,
     output_format: str,
 ) -> None:
-    """List catalog, DuckDB, and Chroma artifact paths."""
+    """List catalog, DuckDB, and LanceDB artifact paths."""
 
     catalog = load_catalog(ctx)
     rows = catalog_artifact_rows(

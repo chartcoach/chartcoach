@@ -3,7 +3,7 @@ title: CLI Reference
 description: Command groups and output contracts for the chartcoach command-line interface.
 ---
 
-The `chartcoach` CLI is part of the Python package. It reads catalog artifacts, emits deterministic rows, and forwards Chroma calls to the native collection API.
+The `chartcoach` CLI is part of the Python package. It reads catalog artifacts, emits deterministic rows, writes DuckDB tables, and queries the LanceDB search index.
 
 ```bash
 uv run --package chartcoach chartcoach --help
@@ -13,7 +13,7 @@ uv run --package chartcoach chartcoach --help
 
 `chartcoach prompt --codex|--claude|--opencode [--source PATH] [--index-dir DIR] [--guidance-mode create|feedback|explore|debug] [--task TEXT]`
 
-Print an agent startup prompt that references the installed ChartCoach skill, catalog source, optional semantic index, and task.
+Print an agent startup prompt that references the installed ChartCoach skill, catalog source, optional LanceDB full-text index, and task.
 
 ```bash
 npx skills add chartcoach/catalog
@@ -51,3 +51,36 @@ Run one read-only `SELECT` query over catalog DuckDB tables with external file a
 `chartcoach guidelines list --source PATH [--label VALUE] [--label-prefix PREFIX] [--contains TEXT] [--limit N] [--format table|json|jsonl|csv]`
 
 List guideline ids and summaries with deterministic filters.
+
+`chartcoach guidelines retrieve --source PATH [--id ID] [--label VALUE] [--section ROLE] [--limit N] [--format markdown|json|jsonl|csv|table]`
+
+Return guideline records with optional section filtering.
+
+`chartcoach guidelines search --source PATH --index-dir DIR [--where FILTER] QUERY [--limit N] [--format table|json|jsonl|csv|markdown]`
+
+Open an existing LanceDB index, run full-text search, and return deduplicated guideline rows. `--where` is a LanceDB SQL filter over indexed document columns such as `role` and `parent_id`.
+
+## index
+
+`chartcoach index build --source PATH --index-dir DIR`
+
+Build the content-addressed LanceDB index for the current catalog digest when it is missing.
+
+`chartcoach index status --source PATH --index-dir DIR --format table|json|jsonl|csv`
+
+Report the resolved index root, table path, table name, document version, readiness, and document count.
+
+`chartcoach index rebuild --source PATH --index-dir DIR --yes`
+
+Rebuild the index path for the current catalog digest.
+
+`chartcoach index query --source PATH --index-dir DIR QUERY --limit N --where FILTER --format json|jsonl`
+
+Run full-text search over indexed document rows.
+
+```bash
+chartcoach index query --source guidelines \
+  --index-dir "$INDEX_DIR" \
+  "bar axis baseline" \
+  --limit 5
+```

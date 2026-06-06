@@ -12,6 +12,8 @@ from chartcoach.cli.main import main as chartcoach_cli
 from chartcoach.mcp import server as mcp_server
 from chartcoach.paths import default_index_dir
 
+from helpers import assert_cli_error
+
 pytestmark = pytest.mark.mcp
 
 
@@ -41,9 +43,7 @@ def test_mcp_cli_renders_install_hint_for_missing_optional_dependency(
         ["mcp", "serve", "--source", "catalog.parquet", "--index-dir", "index"],
     )
 
-    assert result.exit_code == 1
-    assert "Install `chartcoach[mcp]` to use it." in result.output
-    assert "Traceback" not in result.output
+    assert_cli_error(result, "Install `chartcoach[mcp]` to use it.")
 
 
 def test_mcp_cli_passes_index_dir_and_renders_value_errors(
@@ -73,9 +73,7 @@ def test_mcp_cli_passes_index_dir_and_renders_value_errors(
 
     result = runner.invoke(chartcoach_cli, ["mcp", "serve"])
 
-    assert result.exit_code == 1
     settings = cast(dict[str, str | Path], captured["settings"])
     assert settings["index_dir"] == default_index_dir()
     assert captured["runtime"] == mcp_server.RuntimeConfig()
-    assert "source must be provided" in result.output
-    assert "Traceback" not in result.output
+    assert_cli_error(result, "source must be provided")

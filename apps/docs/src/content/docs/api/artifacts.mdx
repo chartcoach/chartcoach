@@ -3,7 +3,7 @@ title: Artifacts
 description: Native catalog files produced and consumed by ChartCoach packages.
 ---
 
-ChartCoach keeps generated artifacts in native formats. Package APIs return typed records. Direct file access works for tools that already read Markdown, parquet, DuckDB, or Chroma.
+ChartCoach keeps generated artifacts in native formats. Package APIs return typed records. Direct file access works for tools that already read Markdown, parquet, DuckDB, or LanceDB.
 
 ## Catalog Bundle
 
@@ -43,6 +43,16 @@ Use the folder layout for authoring and review. `Catalog.from_folder` and `readC
 
 Generated DuckDB artifacts contain derived tables such as `guidelines`, `sections`, `labels`, `guideline_labels`, `references`, `guideline_references`, and `guideline_sources`.
 
-## Chroma
+## LanceDB
 
-Chroma indexes are content-addressed by catalog digest, document-version string, embedding identity, and collection name.
+LanceDB indexes are content-addressed by catalog digest and document-version string. The table is named `catalog_documents`.
+
+```sql
+INSTALL lance;
+LOAD lance;
+ATTACH '/path/to/index-root' AS cc_index (TYPE LANCE);
+
+select id, parent_id, role
+from cc_index.main.catalog_documents
+limit 5;
+```
