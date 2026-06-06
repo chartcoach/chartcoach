@@ -6,14 +6,14 @@ description: ChartCoach MCP server tools and runtime options.
 The MCP server exposes deterministic catalog tools and optional Chroma-backed tools from the Python package.
 
 ```bash
-chartcoach mcp serve --source guidelines/catalog.parquet
+chartcoach mcp serve --source guidelines
 ```
 
 Pass `--index-dir` when tools need an existing Chroma index.
 
 ```bash
 chartcoach mcp serve \
-  --source guidelines/catalog.parquet \
+  --source guidelines \
   --index-dir "$CHARTCOACH_INDEX_DIR"
 ```
 
@@ -39,7 +39,7 @@ Server log level. Defaults to `INFO`.
 
 `catalog_artifacts`
 
-Return native catalog artifact paths and suggested open commands.
+Return native catalog artifact paths, existence flags, digests, and native artifact metadata.
 
 `tables_list`
 

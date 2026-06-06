@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 import polars as pl
 
 from ..guideline.bibliography import parse_bibtex_reference
+from ..guideline.labels import parse_label
 
 if TYPE_CHECKING:
     from .collection import CatalogEntry
@@ -55,13 +56,14 @@ SECTIONS_SCHEMA = {
 GUIDELINE_LABELS_SCHEMA = {
     "guideline_id": pl.String,
     "label": pl.String,
+    "family": pl.String,
     "category": pl.String,
-    "subcategory": pl.String,
+    "modifier": pl.String,
 }
 LABELS_SCHEMA = {
+    "family": pl.String,
     "category": pl.String,
-    "subcategory": pl.String,
-    "polarity": pl.String,
+    "modifier": pl.String,
 }
 GUIDELINE_REFERENCES_SCHEMA = {
     "guideline_id": pl.String,
@@ -218,20 +220,23 @@ def build_references_df(catalog_df: pl.DataFrame) -> pl.DataFrame:
 
 
 def build_labels_df(guidelines_df: pl.DataFrame) -> pl.DataFrame:
-    """Build a dataframe of unique label categories/subcategories."""
+    """Build a dataframe of unique label family/category/modifier rows."""
     labels = guidelines_df.select("labels").explode("labels").drop_nulls()
     if labels.is_empty():
         return pl.DataFrame(schema=LABELS_SCHEMA)
 
-    return (
-        labels.unique("labels")
-        .select(parts=pl.col("labels").str.split(":"))
-        .select(
-            category=pl.col("parts").list.get(0),
-            subcategory=pl.col("parts").list.get(1, null_on_oob=True),
-            polarity=pl.col("parts").list.get(2, null_on_oob=True),
+    rows = []
+    for label in labels.unique("labels").get_column("labels").to_list():
+        parsed = parse_label(label)
+        rows.append(
+            {
+                "family": parsed.family,
+                "category": parsed.category,
+                "modifier": parsed.modifier,
+            }
         )
-        .sort("category", "subcategory", "polarity")
+    return pl.DataFrame(rows, schema=LABELS_SCHEMA).unique().sort(
+        "family", "category", "modifier"
     )
 
 
@@ -241,15 +246,20 @@ def build_guideline_labels_df(guidelines_df: pl.DataFrame) -> pl.DataFrame:
     if labels.is_empty():
         return pl.DataFrame(schema=GUIDELINE_LABELS_SCHEMA)
 
-    return (
-        labels.select(
-            guideline_id=pl.col("id"),
-            label=pl.col("labels"),
-            category=pl.col("labels").str.split(":").list.get(0),
-            subcategory=pl.col("labels").str.split(":").list.get(1, null_on_oob=True),
+    rows = []
+    for guideline_id, label in labels.iter_rows():
+        parsed = parse_label(label)
+        rows.append(
+            {
+                "guideline_id": str(guideline_id),
+                "label": parsed.label,
+                "family": parsed.family,
+                "category": parsed.category,
+                "modifier": parsed.modifier,
+            }
         )
-        .unique()
-        .sort("guideline_id", "label")
+    return pl.DataFrame(rows, schema=GUIDELINE_LABELS_SCHEMA).unique().sort(
+        "guideline_id", "label"
     )
 
 

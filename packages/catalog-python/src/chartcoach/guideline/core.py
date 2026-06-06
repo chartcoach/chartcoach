@@ -4,6 +4,8 @@ import dataclasses as dc
 from collections.abc import Mapping, Sequence
 from typing import ClassVar, cast
 
+from .labels import normalize_label
+
 
 @dc.dataclass(frozen=True, slots=True)
 class Guideline:
@@ -18,7 +20,14 @@ class Guideline:
     sections: tuple["Section", ...] = dc.field(default_factory=tuple)
 
     def __post_init__(self) -> None:
-        object.__setattr__(self, "labels", _str_sequence(self.labels, "labels"))
+        object.__setattr__(
+            self,
+            "labels",
+            tuple(
+                normalize_label(label, context="guideline label")
+                for label in _str_sequence(self.labels, "labels")
+            ),
+        )
         object.__setattr__(
             self,
             "sections",
@@ -73,6 +82,14 @@ class Section:
     role: str
     title: str
     content: str
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.role, str):
+            raise TypeError("role must be a string.")
+        role = self.role.strip()
+        if not role:
+            raise ValueError("role must not be empty.")
+        object.__setattr__(self, "role", role)
 
     @classmethod
     def from_mapping(cls, data: object) -> "Section":

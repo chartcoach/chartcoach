@@ -4,33 +4,27 @@ description: What a ChartCoach guideline includes.
 tableOfContents: false
 ---
 
-A ChartCoach guideline records advice, fit conditions, failure modes, references, and source evidence.
+A ChartCoach catalog bundle contains `MANIFEST.md` and `catalog.parquet`. The manifest defines this catalog instance's section roles and label families. The parquet table stores guideline records.
 
-Those files are the catalog. The site, Python package, and JavaScript package all read from them.
+The site, Python package, and JavaScript package load the same bundle.
 
 ## Guideline Records
 
 Each entry combines:
 
 - a **title** and **description** for the design move,
-- **labels** for chart types, tasks, audiences, and design levers,
+- **labels** for catalog-owned label families such as chart type, task, audience, and design lever,
 - **sections** for advice, rationale, context, caveats, checks, and fixes,
 - **references** for the source material.
 
-## Section Roles
+## Manifest
 
-Most records use the same section roles:
+`MANIFEST.md` must define these headings:
 
-- **advice**: what to do
-- **reason**: why it helps
-- **context**: where it applies
-- **exceptions**: when the rule should not be used
-- **costs**: what the design gives up
-- **mistakes**: common failure modes
-- **check**: what to inspect during review
-- **fix**: how to repair the chart
+- `Section Roles`
+- `Label Families`
 
-Separating these roles lets readers compare two records by task, audience, caveat, or tradeoff.
+Each section role and label family is a level-3 subheading under the matching required heading. Loaders validate that every section role and label family used by `catalog.parquet` is defined in the manifest.
 
 ## References
 

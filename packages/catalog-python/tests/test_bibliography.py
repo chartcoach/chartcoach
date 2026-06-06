@@ -15,7 +15,7 @@ BIBTEX = """% generated note
 """
 
 
-def test_parse_bibtex_entry_does_not_expose_cached_mutable_state() -> None:
+def test_parse_bibtex_entry_returns_independent_entries() -> None:
     first = parse_bibtex_entry(BIBTEX)
     first["ID"] = "mutated"
 

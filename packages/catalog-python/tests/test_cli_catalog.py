@@ -87,7 +87,7 @@ def test_guidelines_cli_list_filters_catalog(
     assert [row["id"] for row in jsonl_rows(result)] == ["full-axis-bars"]
 
 
-def test_guidelines_cli_show_emits_wire_record(
+def test_guidelines_cli_show_emits_complete_guideline_record(
     runner: CliRunner,
     sample_catalog_path: Path,
 ) -> None:
@@ -119,6 +119,7 @@ def test_tables_cli_reports_schema_and_values(
     )
     schema = jsonl_rows(result)
     assert {"table": "guidelines", "column": "title", "type": "String"} in schema
+    assert {"table": "labels", "column": "family", "type": "String"} in schema
     assert {
         "table": "guideline_sources",
         "column": "source_title",
@@ -204,6 +205,22 @@ def test_catalog_check_rejects_empty_workspace(
 ) -> None:
     empty = tmp_path / "empty"
     empty.mkdir()
+    (empty / "MANIFEST.md").write_text(
+        """# Empty
+
+## Section Roles
+
+### advice
+
+Actionable guidance.
+
+## Label Families
+
+### chart
+
+Chart-family labels such as `chart:bar`.
+"""
+    )
     result = runner.invoke(chartcoach_cli, ["catalog", "check", "--source", str(empty)])
     assert result.exit_code == 1
     assert "No guideline entries found" in result.output
@@ -214,7 +231,7 @@ def test_catalog_build_is_workspace_scoped(
     sample_workspace_path: Path,
     tmp_path: Path,
 ) -> None:
-    output_path = tmp_path / "catalog.parquet"
+    output_path = tmp_path / "bundle"
 
     result = runner.invoke(
         chartcoach_cli,
@@ -229,7 +246,7 @@ def test_catalog_build_is_workspace_scoped(
         ],
     )
     assert result.exit_code == 0
-    assert not output_path.exists()
+    assert not (output_path / "catalog.parquet").exists()
 
     result = runner.invoke(
         chartcoach_cli,
@@ -243,7 +260,8 @@ def test_catalog_build_is_workspace_scoped(
         ],
     )
     assert result.exit_code == 0
-    assert output_path.exists()
+    assert (output_path / "catalog.parquet").exists()
+    assert (output_path / "MANIFEST.md").exists()
 
     result = runner.invoke(
         chartcoach_cli,
@@ -258,6 +276,30 @@ def test_catalog_build_is_workspace_scoped(
     )
     assert result.exit_code == 1
     assert "Pass --overwrite" in result.output
+
+
+def test_catalog_check_accepts_artifact_bundle(
+    runner: CliRunner,
+    sample_catalog: Catalog,
+    tmp_path: Path,
+) -> None:
+    bundle_path = sample_catalog.write_bundle(tmp_path / "bundle")
+
+    result = runner.invoke(
+        chartcoach_cli,
+        [
+            "catalog",
+            "check",
+            "--source",
+            str(bundle_path),
+            "--format",
+            "jsonl",
+        ],
+    )
+
+    rows = {row["name"]: row["rows"] for row in jsonl_rows(result)}
+    assert rows["guidelines"] == 2
+    assert rows["manifest_section_roles"] == 1
 
 
 def test_catalog_duckdb_writes_catalog_tables(
@@ -361,15 +403,40 @@ def test_artifacts_cli_lists_native_paths(
 
     rows = {row["name"]: row for row in jsonl_rows(result)}
     assert set(rows) == {
+        "catalog_manifest",
         "catalog_source",
         "catalog_parquet",
         "duckdb_catalog",
         "index_root",
         "chroma",
     }
+    assert rows["catalog_manifest"]["path"] == str(
+        sample_catalog_path.parent / "MANIFEST.md"
+    )
     assert rows["catalog_source"]["path"] == str(sample_catalog_path)
     assert rows["index_root"]["path"] == str(index_dir)
     assert rows["chroma"]["collection_name"] == "catalog"
+
+
+def test_catalog_manifest_cli_prints_manifest(
+    runner: CliRunner,
+    sample_workspace_path: Path,
+) -> None:
+    result = runner.invoke(
+        chartcoach_cli,
+        [
+            "catalog",
+            "manifest",
+            "--source",
+            str(sample_workspace_path),
+            "--format",
+            "jsonl",
+        ],
+    )
+
+    payload = jsonl_rows(result)[0]
+    assert payload["section_roles"] == ["advice"]
+    assert payload["label_families"] == ["chart", "component", "task"]
 
 
 @pytest.mark.parametrize(
@@ -414,13 +481,29 @@ def test_guidelines_cli_retrieves_section_specific_evidence(
             "full-axis-bars",
             "--section",
             "advice",
+            "--format",
+            "jsonl",
         ],
     )
 
+    rows = jsonl_rows(result)
     assert result.exit_code == 0
-    assert "Use full value axes for bars" in result.output
-    assert "Start bar value axes at zero." in result.output
-    assert "direct-labels" not in result.output
+    assert rows == [
+        {
+            "id": "full-axis-bars",
+            "title": "Use full value axes for bars",
+            "description": "Keep bar axes on the honest baseline.",
+            "labels": ["chart:bar", "component:axis"],
+            "references": [],
+            "sections": [
+                {
+                    "role": "advice",
+                    "title": "Advice",
+                    "content": "Start bar value axes at zero.",
+                }
+            ],
+        }
+    ]
 
 
 @pytest.mark.search
@@ -443,12 +526,11 @@ def test_guidelines_search_validates_filters_before_opening_index(
 
     assert result.exit_code == 1
     assert "--where must be valid JSON" in result.output
-    assert "chartcoach index build" not in result.output
     assert "Traceback" not in result.output
 
 
 @pytest.mark.search
-def test_guidelines_search_requires_existing_index_without_traceback(
+def test_guidelines_search_requires_existing_index_with_actionable_error(
     runner: CliRunner,
     sample_catalog_path: Path,
     tmp_path: Path,
@@ -478,7 +560,8 @@ def test_guidelines_search_requires_existing_index_without_traceback(
 
     assert result.exit_code == 1
     assert "missing search index" in result.output
-    assert "chartcoach index build --source PATH" in result.output
+    assert "Build or provide a search index" in result.output
+    assert "Inspect catalog artifacts" in result.output
     assert "Traceback" not in result.output
 
 

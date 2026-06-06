@@ -1,12 +1,40 @@
 # ChartCoach
 
-ChartCoach loads source-traced visualization guidelines as typed records for scripts, notebooks, search, retrieval, and SQL workflows. The same guideline records are published for people at <https://chartcoach.github.io/>.
+ChartCoach loads manifest-described visualization guideline catalogs as typed records for agents, scripts, notebooks, search, retrieval, and SQL workflows. The same guideline records are published for people at <https://chartcoach.github.io/>.
+
+## Agent Quickstart
+
+Install the ChartCoach skill once, then launch an agent with a ChartCoach startup prompt.
+
+```bash
+npx skills add chartcoach/catalog
+
+codex "$(uvx chartcoach@latest prompt --codex --source guidelines)"
+```
+
+Use the matching agent flag for other CLIs:
+
+```bash
+claude "$(uvx chartcoach@latest prompt --claude --source guidelines)"
+opencode "$(uvx chartcoach@latest prompt --opencode --source guidelines)"
+```
+
+The prompt references the installed skill, the catalog source, optional semantic index location, and the current task. It tells the agent to read `MANIFEST.md` for section-role and label-family semantics, retrieve targeted evidence, and include guideline ids plus public links when guidelines constrain or justify the answer.
+
+```bash
+uvx chartcoach@latest prompt \
+  --codex \
+  --source guidelines \
+  --index-dir "$INDEX_DIR" \
+  --guidance-mode feedback \
+  --task "Review this dashboard for misleading bar axes."
+```
 
 ```python
 import polars as pl
 from chartcoach import Catalog
 
-catalog = Catalog.from_parquet("guidelines/catalog.parquet")
+catalog = Catalog.from_bundle("guidelines")
 
 scatter_rules = (
     catalog.guidelines()
@@ -38,7 +66,7 @@ Use labels to retrieve advice for a chart family, task, audience, or design leve
 
 ```bash
 uv run --package chartcoach chartcoach guidelines retrieve \
-  --source guidelines/catalog.parquet \
+  --source guidelines \
   --label chart:scatter:avoid \
   --section advice \
   --format markdown
@@ -50,7 +78,7 @@ Run one SQL query from the shell when a workflow needs joins:
 
 ```bash
 uv run --package chartcoach chartcoach sql \
-  --source guidelines/catalog.parquet \
+  --source guidelines \
   "select id, title from guidelines where list_contains(labels, 'chart:bar')" \
   --format jsonl
 ```
@@ -58,11 +86,11 @@ uv run --package chartcoach chartcoach sql \
 ## Use The Catalog From JavaScript
 
 ```ts
-import { loadCatalogFromParquetFile } from "@chartcoach/catalog/node";
+import { readCatalog } from "@chartcoach/catalog/server";
 
-const catalog = await loadCatalogFromParquetFile("guidelines/catalog.parquet");
-const barGuidelines = catalog.entries.filter((entry) =>
-  entry.guideline.labels.includes("chart:bar"),
+const catalog = await readCatalog("guidelines");
+const barGuidelines = catalog.guidelines.filter((guideline) =>
+  guideline.labels.includes("chart:bar"),
 );
 ```
 
@@ -77,9 +105,11 @@ Each guideline records a concrete chart-design move with the evidence needed to 
 | `id` | Stable guideline identifier |
 | `title` | Portable design move |
 | `description` | One-sentence scope and action |
-| `labels` | Controlled tags for chart type, task, audience, evidence basis, and design lever |
+| `labels` | Catalog-owned labels using `family:category` or `family:category:modifier` |
 | `sections` | Advice, reason, context, exceptions, costs, mistakes, check, and fix text |
 | `references` | BibTeX records for the cited sources |
+
+`guidelines/MANIFEST.md` defines the section roles and label families for this catalog instance. Package loaders use it when loading the `guidelines` artifact bundle.
 
 ## Search The Catalog
 
@@ -89,11 +119,11 @@ For semantic retrieval, build a Chroma index once and query it through either th
 INDEX_DIR=$(uv run --package chartcoach python -c "from chartcoach.paths import default_index_dir; print(default_index_dir())")
 
 uv run --package chartcoach chartcoach index build \
-  --source guidelines/catalog.parquet \
+  --source guidelines \
   --index-dir "$INDEX_DIR"
 
 uv run --package chartcoach chartcoach guidelines search \
-  --source guidelines/catalog.parquet \
+  --source guidelines \
   --index-dir "$INDEX_DIR" \
   --where '{"labels":{"$contains":"chart:scatter:avoid"}}' \
   "overplotted scatter plot with too many points" \
@@ -106,6 +136,7 @@ ChartCoach keeps the catalog in formats that other tools can open directly.
 
 | Artifact | Use |
 | --- | --- |
+| `guidelines/MANIFEST.md` | Section-role and label-family definitions for this catalog instance |
 | `guidelines/catalog.parquet` | Source catalog table |
 | DuckDB database | Derived tables for SQL inspection |
 | Chroma index | Content-addressed semantic search |
@@ -117,7 +148,7 @@ Create a DuckDB artifact from the catalog:
 DUCKDB_PATH=$(uv run --package chartcoach python -c "from chartcoach.paths import default_duckdb_path; print(default_duckdb_path())")
 
 uv run --package chartcoach chartcoach catalog duckdb \
-  --source guidelines/catalog.parquet \
+  --source guidelines \
   --out "$DUCKDB_PATH"
 
 duckdb "$DUCKDB_PATH" \

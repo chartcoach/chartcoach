@@ -3,7 +3,9 @@
 from importlib.metadata import version
 
 from .catalog.collection import Catalog, CatalogEntry
+from .catalog.manifest import CatalogManifest
 from .guideline.core import Guideline, Section
+from .guideline.labels import ParsedLabel, parse_label
 
 __version__ = version("chartcoach")
 
@@ -11,6 +13,9 @@ __all__ = [
     "__version__",
     "Catalog",
     "CatalogEntry",
+    "CatalogManifest",
     "Guideline",
+    "ParsedLabel",
     "Section",
+    "parse_label",
 ]

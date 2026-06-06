@@ -5,15 +5,15 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "skipLibCheck": true,
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
     "lib": ["ES2022"],
     "types": ["node"],
 
     "baseUrl": ".",
     "paths": {
       "@chartcoach/catalog": ["./src/index.ts"],
-      "@chartcoach/catalog/node": ["./src/node.ts"],
+      "@chartcoach/catalog/server": ["./src/server.ts"],
       "@chartcoach/catalog/browser": ["./src/browser.ts"]
     },
 

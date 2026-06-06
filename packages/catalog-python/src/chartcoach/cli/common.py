@@ -93,6 +93,8 @@ def load_catalog(ctx: click.Context) -> Catalog:
     path = source_path(ctx)
     try:
         if path.is_dir():
+            if (path / "catalog.parquet").exists():
+                return Catalog.from_bundle(path)
             return Catalog.from_folder(path)
         return Catalog.from_parquet(path)
     except FileNotFoundError as exc:
@@ -118,7 +120,7 @@ def source_path(ctx: click.Context) -> Path:
             format_tool_error(
                 f"Pass --source PATH or set {SOURCE_ENV}.",
                 [
-                    "chartcoach guidelines list --source PATH",
+                    "Provide a catalog bundle, catalog parquet file, or authored guideline folder.",
                     f"Or export {SOURCE_ENV}=PATH.",
                 ],
             )

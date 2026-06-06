@@ -3,13 +3,35 @@ title: Artifacts
 description: Native catalog files produced and consumed by ChartCoach packages.
 ---
 
-ChartCoach keeps generated artifacts in native formats. Package APIs return typed records. Direct file access works for tools that already read parquet, DuckDB, or Chroma.
+ChartCoach keeps generated artifacts in native formats. Package APIs return typed records. Direct file access works for tools that already read Markdown, parquet, DuckDB, or Chroma.
+
+## Catalog Bundle
+
+`guidelines/MANIFEST.md`
+
+Catalog manifest that defines section roles and label families.
+
+`guidelines/catalog.parquet`
+
+Serialized catalog table.
+
+```python
+from chartcoach import Catalog
+
+catalog = Catalog.from_bundle("guidelines")
+```
+
+```ts
+import { readCatalog } from "@chartcoach/catalog/server";
+
+const catalog = await readCatalog("guidelines");
+```
 
 ## Catalog Parquet
 
 `guidelines/catalog.parquet`
 
-Serialized catalog table. Python reads it with `Catalog.from_parquet(path)`. JavaScript reads it with `loadCatalogFromParquet`, `loadCatalogFromParquetFile`, or `loadCatalogFromParquetUrl`.
+Serialized catalog table. Python reads it with `Catalog.from_parquet(path)`. JavaScript reads local files with `readCatalog(path)`, browser URLs with `fetchCatalog(url)`, and raw bytes with `loadCatalog(bytes)`.
 
 ```python
 from chartcoach import Catalog
@@ -18,12 +40,12 @@ catalog = Catalog.from_parquet("guidelines/catalog.parquet")
 ```
 
 ```ts
-import { loadCatalogFromParquetFile } from "@chartcoach/catalog/node";
+import { readCatalog } from "@chartcoach/catalog/server";
 
-const catalog = await loadCatalogFromParquetFile("guidelines/catalog.parquet");
+const catalog = await readCatalog("guidelines/catalog.parquet");
 ```
 
-## Folder Catalog
+## Authored Folder
 
 `guidelines/<entry>/guideline.md`
 
@@ -33,7 +55,7 @@ Markdown source record.
 
 BibTeX references for that record.
 
-Use the folder layout for authoring and review. The parquet file is the compact read path for packages and tools.
+Use the folder layout for authoring and review. `Catalog.from_folder` and `readCatalog("guidelines")` require `MANIFEST.md` beside the entry directories.
 
 ## DuckDB
 

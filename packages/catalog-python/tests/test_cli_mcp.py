@@ -15,7 +15,7 @@ from chartcoach.paths import default_index_dir
 pytestmark = pytest.mark.mcp
 
 
-def test_mcp_cli_renders_missing_optional_dependency_without_traceback(
+def test_mcp_cli_renders_install_hint_for_missing_optional_dependency(
     runner: CliRunner,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

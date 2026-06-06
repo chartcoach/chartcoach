@@ -26,10 +26,10 @@
       "source": "./src/index.ts",
       "default": "./dist/index.js"
     },
-    "./node": {
-      "types": "./dist/node.d.ts",
-      "source": "./src/node.ts",
-      "default": "./dist/node.js"
+    "./server": {
+      "types": "./dist/server.d.ts",
+      "source": "./src/server.ts",
+      "default": "./dist/server.js"
     },
     "./browser": {
       "types": "./dist/browser.d.ts",
@@ -38,8 +38,9 @@
     }
   },
   "scripts": {
-    "build": "tsc -b tsconfig.build.json",
-    "lint": "oxlint .",
+    "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && tsc -b tsconfig.build.json --force && tsc-alias -p tsconfig.build.json --resolve-full-paths --resolve-full-extension .js",
+    "lint": "oxlint . && pnpm run lint:imports",
+    "lint:imports": "node scripts/check-extensionless-imports.mjs",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
@@ -51,6 +52,7 @@
   "devDependencies": {
     "@types/node": "^22.19.19",
     "oxlint": "^1.66.0",
+    "tsc-alias": "^1.8.17",
     "typescript": "^5.9.3",
     "vitest": "^3.2.4"
   }

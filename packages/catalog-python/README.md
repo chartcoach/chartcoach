@@ -2,13 +2,22 @@
 
 Python tools for the ChartCoach guideline catalog.
 
-The base package loads catalog parquet files, parses guidelines, and exposes
+Install the ChartCoach skill once, then launch an agent with a startup prompt from the CLI:
+
+```bash
+npx skills add chartcoach/catalog
+codex "$(uvx chartcoach@latest prompt --codex --source guidelines)"
+```
+
+Use `--claude` or `--opencode` for those agent CLIs. Pass `--task`, `--index-dir`, and `--guidance-mode` when the agent needs task-specific catalog context.
+
+The base package loads manifest-described catalog bundles, parses guidelines, and exposes
 typed records, Polars dataframe views, and native DuckDB SQL connections.
 
 ```python
 from chartcoach import Catalog
 
-catalog = Catalog.from_parquet("guidelines/catalog.parquet")
+catalog = Catalog.from_bundle("guidelines")
 catalog.guidelines().select("id", "title")
 
 conn = catalog.duckdb()
@@ -74,34 +83,37 @@ catalog.write_duckdb(duckdb_path, overwrite=True)
 
 Run the CLI with `uv run --package chartcoach chartcoach --help`.
 
-These commands read `guidelines/catalog.parquet`, inspect table schemas, write DuckDB tables, retrieve guideline evidence, and query Chroma rows.
+These commands read the `guidelines` artifact bundle, inspect table schemas, write DuckDB tables, retrieve guideline evidence, and query Chroma rows.
 
 ```bash
-chartcoach artifacts --source guidelines/catalog.parquet \
+chartcoach prompt --codex --source guidelines \
+  --task "Review this dashboard for misleading bar axes."
+chartcoach artifacts --source guidelines \
   --format jsonl
-chartcoach tables list --source guidelines/catalog.parquet --format jsonl
-chartcoach tables schema --source guidelines/catalog.parquet --format jsonl
+chartcoach catalog manifest --source guidelines --format markdown
+chartcoach tables list --source guidelines --format jsonl
+chartcoach tables schema --source guidelines --format jsonl
 chartcoach tables values guideline_labels label \
-  --source guidelines/catalog.parquet --contains chart: --format jsonl
-chartcoach sql --source guidelines/catalog.parquet \
+  --source guidelines --contains chart: --format jsonl
+chartcoach sql --source guidelines \
   "select id, title from guidelines where list_contains(labels, 'chart:bar')" \
   --format jsonl
 DUCKDB_PATH=$(
   python -c "from chartcoach.paths import default_duckdb_path; print(default_duckdb_path())"
 )
-chartcoach catalog duckdb --source guidelines/catalog.parquet \
+chartcoach catalog duckdb --source guidelines \
   --out "$DUCKDB_PATH"
 duckdb "$DUCKDB_PATH" \
   -c "select id, title from guidelines where list_contains(labels, 'chart:bar')"
-chartcoach guidelines retrieve --source guidelines/catalog.parquet \
+chartcoach guidelines retrieve --source guidelines \
   --label chart:bar --section advice --format jsonl
 INDEX_DIR=$(
   python -c "from chartcoach.paths import default_index_dir; print(default_index_dir())"
 )
-chartcoach index build --source guidelines/catalog.parquet --index-dir "$INDEX_DIR"
-chartcoach index status --source guidelines/catalog.parquet \
+chartcoach index build --source guidelines --index-dir "$INDEX_DIR"
+chartcoach index status --source guidelines \
   --index-dir "$INDEX_DIR" --format jsonl
-chartcoach index query --source guidelines/catalog.parquet \
+chartcoach index query --source guidelines \
   --index-dir "$INDEX_DIR" \
   '{
     "query_texts": ["overplotted scatter plot with too many points"],
@@ -109,7 +121,7 @@ chartcoach index query --source guidelines/catalog.parquet \
     "where": {"labels": {"$contains": "chart:scatter:avoid"}},
     "include": ["documents", "metadatas", "distances"]
   }'
-chartcoach guidelines search --source guidelines/catalog.parquet \
+chartcoach guidelines search --source guidelines \
   --index-dir "$INDEX_DIR" \
   --where '{"labels":{"$contains":"chart:scatter:avoid"}}' \
   "overplotted scatter plot with too many points" --format jsonl
@@ -119,11 +131,12 @@ Every row-oriented command supports `--format jsonl`, so shell tools can handle
 projection and token control:
 
 ```bash
-chartcoach tables schema --source guidelines/catalog.parquet --format jsonl |
+chartcoach tables schema --source guidelines --format jsonl |
   jq 'select(.table == "sections")'
 ```
 
 The `artifacts` command prints native artifact paths for tools outside the SDK:
+`guidelines/MANIFEST.md` explains section roles and label families,
 `guidelines/catalog.parquet` can be opened by Polars or DuckDB directly,
 `catalog duckdb` creates a normal DuckDB database file with the derived catalog
 tables, `sql` runs bounded read-only DuckDB queries, and passing `--index-dir` adds the content-addressed Chroma path plus
@@ -145,7 +158,7 @@ Install `chartcoach[mcp]` for catalog-only MCP tools. Install both
 The MCP server exposes catalog tools without requiring a Chroma index:
 
 ```bash
-chartcoach mcp serve --source guidelines/catalog.parquet
+chartcoach mcp serve --source guidelines
 ```
 
 The MCP surface exposes deterministic catalog tools plus direct Chroma access:

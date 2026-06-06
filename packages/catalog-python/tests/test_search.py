@@ -144,6 +144,28 @@ def test_chroma_index_exposes_native_collection(
     assert index.embedding_name is not None
 
 
+def test_search_documents_include_content_fingerprints(
+    sample_catalog: Catalog,
+) -> None:
+    from chartcoach.search.documents import build_docs_df
+
+    docs = build_docs_df(sample_catalog.guidelines(), sample_catalog.references())
+    metadata_by_id = {
+        str(row["id"]): row["metadata"]
+        for row in docs.select("id", "metadata").to_dicts()
+    }
+
+    overview_hash = metadata_by_id["direct-labels---overview"]["content_hash"]
+    document_hash = metadata_by_id["direct-labels---document"]["content_hash"]
+    advice_hash = metadata_by_id["direct-labels---role---advice"]["content_hash"]
+
+    assert isinstance(overview_hash, str)
+    assert isinstance(document_hash, str)
+    assert isinstance(advice_hash, str)
+    assert overview_hash
+    assert len({overview_hash, document_hash, advice_hash}) == 3
+
+
 def test_search_guidelines_returns_guideline_level_hits(
     tmp_path: Path,
     sample_catalog: Catalog,

@@ -3,12 +3,12 @@ title: Python Catalog API
 description: Load ChartCoach catalogs, inspect table views, and open native DuckDB or Chroma artifacts from Python.
 ---
 
-The `chartcoach` package is the Python API for [catalog records](/api/catalog-records/). The base install includes Polars dataframe views and native DuckDB SQL access. Chroma and MCP are optional extras.
+The `chartcoach` package is the Python API for [catalog records](/api/catalog-records/). The base install includes manifest validation, Polars dataframe views, and native DuckDB SQL access. Chroma and MCP are optional extras.
 
 ```python
 from chartcoach import Catalog
 
-catalog = Catalog.from_parquet("guidelines/catalog.parquet")
+catalog = Catalog.from_bundle("guidelines")
 catalog.guidelines().select("id", "title", "description")
 ```
 
@@ -18,13 +18,17 @@ catalog.guidelines().select("id", "title", "description")
 
 ### Constructors
 
+`Catalog.from_bundle(path)`
+
+Load an artifact bundle directory containing `MANIFEST.md` and `catalog.parquet`. The loader validates section roles and label families against the manifest.
+
 `Catalog.from_parquet(path)`
 
-Load a serialized catalog parquet file.
+Load a serialized catalog parquet file without a manifest. Use this for table-only workflows that already know the catalog vocabulary.
 
 `Catalog.from_folder(folder_path)`
 
-Load a folder catalog where each entry directory contains a guideline markdown file and optional bibliography.
+Load an authored folder where `MANIFEST.md` sits beside entry directories. Each entry directory contains a guideline markdown file and optional bibliography.
 
 `Catalog.from_entries(entries)`
 
@@ -50,7 +54,7 @@ Return one row per guideline section.
 
 `catalog.labels()`
 
-Return the unique label categories and values used across the catalog.
+Return the unique `family`, `category`, and `modifier` values used across the catalog.
 
 `catalog.guideline_labels()`
 
@@ -112,9 +116,21 @@ Return a new catalog containing rows from both catalogs.
 
 Return a stable digest of the serialized catalog table. Chroma cache paths use this value.
 
+`catalog.manifest`
+
+Return the loaded `CatalogManifest`, or `None` when the catalog came from a direct parquet file.
+
+`catalog.require_manifest()`
+
+Return the loaded manifest. Raises `ValueError` when the catalog came from a direct parquet file.
+
+`catalog.write_bundle(root, *, overwrite=False)`
+
+Write `MANIFEST.md` and `catalog.parquet` to an artifact bundle directory.
+
 `catalog.write_parquet(path)`, `catalog.write_duckdb(path, *, overwrite=False)`, and `catalog.write_folder(root)`
 
-Write the catalog back to parquet, DuckDB, or folder form.
+Write the catalog back to parquet, DuckDB, or authored folder form. `write_folder` requires a manifest.
 
 ## CatalogEntry
 

@@ -40,7 +40,6 @@ dependencies = [
 [project.optional-dependencies]
 search = [
   "chromadb>=1.5",
-  "polars-hash>=0.5",
   "tqdm>=1",
 ]
 mcp = [

@@ -1,16 +1,17 @@
 ---
 title: JavaScript and TypeScript API
-description: Load ChartCoach catalog records from Node, shared JS, and typed wire data.
+description: Load ChartCoach catalog records from server runtimes, browsers, and raw parquet bytes.
 ---
 
-`@chartcoach/catalog` provides the shared JavaScript and TypeScript model for [catalog records](/api/catalog-records/). The package exports the same source shape used by the Python package.
+`@chartcoach/catalog` exposes a small typed model plus one loader per runtime.
 
 ```ts
-import { loadCatalogFromParquetFile } from "@chartcoach/catalog/node";
+import { readCatalog } from "@chartcoach/catalog/server";
 
-const catalog = await loadCatalogFromParquetFile("guidelines/catalog.parquet");
-for (const entry of catalog) {
-  console.log(entry.guideline.id, entry.guideline.title);
+const catalog = await readCatalog("guidelines");
+
+for (const guideline of catalog) {
+  console.log(guideline.id, guideline.title);
 }
 ```
 
@@ -18,61 +19,81 @@ for (const entry of catalog) {
 
 `@chartcoach/catalog`
 
-Shared model, parquet loader core, markdown parsers, and wire validators.
+Shared types, the `Catalog` model, `loadCatalog` for parquet bytes, `parseLabel`, `parseManifest`, and `toMarkdown`.
 
-`@chartcoach/catalog/node`
+`@chartcoach/catalog/server`
 
-Node-only filesystem loaders.
+`readCatalog(sourcePath, options?)` for server-side filesystem paths.
 
 `@chartcoach/catalog/browser`
 
-Browser-safe URL loader for parquet artifacts.
+`fetchCatalog(catalogUrl, options?)` for browser and fetch-capable runtimes.
 
 ## Catalog
 
-`new Catalog(entries = [])`
+`new Catalog(guidelines = [], options?)`
 
-Create a catalog from parsed entries.
+Create a catalog from loaded guideline records. When `options.manifest` is provided, the constructor validates section-role and label-family coverage.
 
-`catalog.entries`
+```ts
+import { Catalog, parseManifest } from "@chartcoach/catalog";
 
-Array of `CatalogEntry` records.
+const manifest = parseManifest(manifestMarkdown);
+const catalog = new Catalog(guidelines, { manifest });
+```
+
+`catalog.guidelines`
+
+Readonly array of `Guideline` records.
 
 `catalog.length`
 
-Number of entries.
+Number of guidelines.
 
-`for (const entry of catalog)`
+`catalog.size`
 
-Iterate through entries in order.
+Number of guidelines.
 
-## CatalogEntry
+`catalog.manifest`
 
-```ts
-type CatalogEntry = {
-  guideline: ParsedGuideline;
-  references: string[];
-};
-```
+Parsed manifest when the catalog was loaded with manifest coverage.
 
-`references` contains BibTeX entries split into individual `@...` records.
+`catalog.get(id)`
+
+Return a guideline by id, or `undefined`.
+
+`catalog.require(id)`
+
+Return a guideline by id. Throws `CatalogError` when the id is absent.
+
+`catalog.labels()`
+
+Return sorted distinct label strings.
+
+`catalog.sectionRoles()`
+
+Return sorted distinct section role strings.
+
+`for (const guideline of catalog)`
+
+Iterate through guidelines in catalog order.
 
 ## Guideline
 
 ```ts
-type ParsedGuideline = {
+type Guideline = {
   id: string;
   title: string;
   bibliography?: string;
   description: string;
-  labels: string[];
+  labels: readonly string[];
   body: string;
-  sections: GuidelineSection[];
-  sectionsIndex: GuidelineSectionIndex;
+  sections: readonly GuidelineSection[];
+  references: readonly string[];
 };
 ```
 
-`sectionsIndex.byRole` groups section records by role while preserving the original `sections` array.
+`references` contains BibTeX entries split into individual `@...` records.
 
 ## GuidelineSection
 
@@ -84,91 +105,101 @@ type GuidelineSection = {
 };
 ```
 
-`DANGLING_ROLE` is the role assigned to text that appears before the first section heading while parsing markdown.
+Section roles are catalog-owned strings. `MANIFEST.md` defines the role values for each catalog instance.
 
-## Node Loaders
+## Server Loading
 
-`loadCatalogFromParquetFile(parquetPath)`
+`readCatalog(sourcePath, options?)`
 
-Read a parquet catalog file from disk.
+Read a catalog from a server-side filesystem path. Directories with `catalog.parquet` are treated as catalog bundles. Directories without `catalog.parquet` are treated as authored folders. Files are treated as parquet catalogs.
 
 ```ts
-import { loadCatalogFromParquetFile } from "@chartcoach/catalog/node";
+import { readCatalog } from "@chartcoach/catalog/server";
 
-const catalog = await loadCatalogFromParquetFile("guidelines/catalog.parquet");
+const bundle = await readCatalog("guidelines");
+const authored = await readCatalog("guidelines-source");
+const parquet = await readCatalog("guidelines/catalog.parquet", {
+  manifest: "guidelines/MANIFEST.md",
+});
 ```
 
-`loadCatalogFromFolder(folderPath)`
+`options.manifest`
 
-Read a folder catalog. Entry directories that cannot be loaded are skipped by the Node folder loader.
+Parsed `CatalogManifest`, or a manifest path. Bundle and authored-folder reads use `MANIFEST.md` beside the source when omitted.
 
-`loadCatalogEntryFromFolder(entryDir)`
+## Browser Loading
 
-Read one folder entry. Throws if no markdown file is found or if more than one markdown file is present.
+`fetchCatalog(catalogUrl, options?)`
 
-## Shared Parquet Loader
-
-`loadCatalogFromParquet(file)`
-
-Read a parquet catalog from an `ArrayBuffer`, `ArrayBufferView`, or async buffer object.
+Fetch and decode a parquet catalog.
 
 ```ts
-import { loadCatalogFromParquet } from "@chartcoach/catalog";
+import { fetchCatalog } from "@chartcoach/catalog/browser";
 
-const bytes = await Deno.readFile("guidelines/catalog.parquet");
-const catalog = await loadCatalogFromParquet(bytes);
+const catalog = await fetchCatalog("/catalog.parquet", {
+  manifest: "/MANIFEST.md",
+});
+```
+
+`options.manifest`
+
+Parsed `CatalogManifest`, manifest URL, or manifest path string. When provided as a string or URL, the loader fetches it and validates the catalog.
+
+`options.request`
+
+`RequestInit` passed to both manifest and parquet fetches.
+
+## Raw Parquet Bytes
+
+`loadCatalog(file, options?)`
+
+Decode a parquet catalog from an `ArrayBuffer`, `ArrayBufferView`, or async buffer object.
+
+```ts
+import { loadCatalog, parseManifest } from "@chartcoach/catalog";
+
+const manifest = parseManifest(manifestMarkdown);
+const catalog = await loadCatalog(bytes, { manifest });
 ```
 
 Typed array inputs are copied to the exact view range before decoding. This avoids reading unrelated bytes from a larger backing buffer.
 
-## Markdown Parsers
+## Labels
 
-`parseGuideline(markdown)`
+`parseLabel(value, context?)`
 
-Parse one guideline markdown string into a `ParsedGuideline`.
-
-`parseGuidelineSections(body)`
-
-Parse role-titled sections from a markdown body.
-
-`indexGuidelineSections(sections)`
-
-Build `sectionsIndex.byRole`.
-
-`parseBibtex(bibtex)`
-
-Split a BibTeX string into individual entries.
-
-## Wire Validation
-
-The parquet loader validates rows through the strict catalog wire shape.
+Parse `family:category` or `family:category:modifier`.
 
 ```ts
-type CatalogEntryWire = {
-  id: string;
-  guideline: {
-    id: string;
-    title: string;
-    bibliography?: string | null;
-    description: string;
-    labels: string[];
-    body: string;
-    sections: GuidelineSection[];
-  };
-  references: string[];
-};
+import { parseLabel } from "@chartcoach/catalog";
+
+parseLabel("task:compare:average");
+// { value: "task:compare:average", family: "task", category: "compare", modifier: "average" }
 ```
 
-`isCatalogEntryWire(value)`
+The parser trims surrounding whitespace from the label and each segment, preserves internal whitespace and case, and rejects empty segments.
 
-Return `true` when `value` matches the catalog wire shape.
+## Manifests
 
-`catalogEntryFromWire(value)`
+`parseManifest(markdown)`
 
-Return a parsed `CatalogEntry`, or `null` for invalid input.
+Parse required `Section Roles` and `Label Families` headings from `MANIFEST.md`.
 
-`requireCatalogEntryFromWire(value, context?)`
+```ts
+import { parseManifest } from "@chartcoach/catalog";
 
-Return a parsed `CatalogEntry`, or throw an error with optional context.
+const manifest = parseManifest(markdown);
+manifest.sectionRoles.advice.description;
+```
 
-Use wire validation when reading records from storage or transport boundaries. Do not normalize missing fields at the API edge. Invalid catalog rows should fail where they enter.
+## Markdown
+
+`toMarkdown(guideline)`
+
+Serialize one loaded guideline record back to authored Markdown.
+
+## Errors
+
+`CatalogError`
+
+Thrown for invalid labels, manifests, duplicate ids, missing ids, invalid markdown records, and invalid parquet rows.

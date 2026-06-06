@@ -6,9 +6,7 @@ import pytest
 
 from chartcoach import Catalog
 from chartcoach.artifacts import catalog_artifact_rows
-from chartcoach.constants import DEFAULT_DUCKDB_FILENAME
 from chartcoach.paths import (
-    APP_NAME,
     default_artifact_dir,
     default_cache_dir,
     default_duckdb_path,
@@ -37,13 +35,13 @@ def test_default_artifact_paths_use_platform_cache_root(
 
     assert default_cache_dir() == cache_root
     assert default_artifact_dir() == cache_root / "artifacts"
-    assert default_duckdb_path() == cache_root / "artifacts" / DEFAULT_DUCKDB_FILENAME
+    assert default_duckdb_path() == cache_root / "artifacts" / "duckdb_catalog.db"
     assert default_index_dir() == cache_root / "index"
     assert calls == [
-        (APP_NAME, False),
-        (APP_NAME, False),
-        (APP_NAME, False),
-        (APP_NAME, False),
+        ("chartcoach", False),
+        ("chartcoach", False),
+        ("chartcoach", False),
+        ("chartcoach", False),
     ]
     assert not cache_root.exists()
 
@@ -98,7 +96,7 @@ def test_catalog_artifact_rows_use_default_platform_paths_without_creating_them(
     paths_by_name = {str(row["name"]): Path(str(row["path"])) for row in rows}
 
     assert paths_by_name["duckdb_catalog"] == (
-        cache_root / "artifacts" / DEFAULT_DUCKDB_FILENAME
+        cache_root / "artifacts" / "duckdb_catalog.db"
     )
     assert paths_by_name["index_root"] == cache_root / "index"
     assert paths_by_name["chroma"].is_relative_to(cache_root / "index")
@@ -178,6 +176,7 @@ def test_catalog_artifact_rows_expose_exact_parquet_contract(
     by_name = _rows_by_name(rows)
 
     assert list(by_name) == [
+        "catalog_manifest",
         "catalog_source",
         "catalog_parquet",
         "duckdb_catalog",
@@ -185,6 +184,17 @@ def test_catalog_artifact_rows_expose_exact_parquet_contract(
         "chroma",
     ]
     assert {row["catalog_digest"] for row in rows} == {sample_catalog.digest()}
+    assert by_name["catalog_manifest"] == {
+        "name": "catalog_manifest",
+        "path": str(sample_catalog_path.parent / "MANIFEST.md"),
+        "exists": False,
+        "kind": "manifest",
+        "catalog_digest": sample_catalog.digest(),
+        "embedding_name": None,
+        "collection_name": None,
+        "note": "Catalog manifest that defines section roles and label families.",
+        "error": None,
+    }
     assert by_name["catalog_source"] == {
         "name": "catalog_source",
         "path": str(sample_catalog_path),
@@ -193,7 +203,6 @@ def test_catalog_artifact_rows_expose_exact_parquet_contract(
         "catalog_digest": sample_catalog.digest(),
         "embedding_name": None,
         "collection_name": None,
-        "command": f"Catalog.from_parquet({sample_catalog_path.as_posix()!r})",
         "note": "Source path passed to ChartCoach.",
         "error": None,
     }
@@ -202,10 +211,6 @@ def test_catalog_artifact_rows_expose_exact_parquet_contract(
     assert by_name["duckdb_catalog"]["path"] == str(duckdb_path)
     assert by_name["duckdb_catalog"]["kind"] == "duckdb"
     assert by_name["duckdb_catalog"]["exists"] is False
-    assert by_name["duckdb_catalog"]["command"] == (
-        f"chartcoach catalog duckdb --source {sample_catalog_path.as_posix()!r} "
-        f"--out {duckdb_path.as_posix()!r}"
-    )
     assert by_name["index_root"]["path"] == str(paths.index_root)
     assert by_name["index_root"]["kind"] == "directory"
     assert by_name["index_root"]["exists"] is False
@@ -213,11 +218,6 @@ def test_catalog_artifact_rows_expose_exact_parquet_contract(
     assert by_name["chroma"]["path"] == str(paths.chroma_path)
     assert by_name["chroma"]["kind"] == "chroma"
     assert by_name["chroma"]["collection_name"] == "catalog"
-    assert by_name["chroma"]["command"] == (
-        "chromadb.PersistentClient("
-        f"path={paths.chroma_path.as_posix()!r}"
-        ").get_collection('catalog')"
-    )
 
 
 @pytest.mark.search
@@ -236,15 +236,17 @@ def test_catalog_artifact_rows_expose_exact_folder_contract(
     by_name = _rows_by_name(rows)
 
     assert list(by_name) == [
+        "catalog_manifest",
         "catalog_source",
         "duckdb_catalog",
         "index_root",
         "chroma",
     ]
     assert by_name["catalog_source"]["kind"] == "catalog"
-    assert by_name["catalog_source"]["command"] == (
-        f"Catalog.from_folder({sample_workspace_path.as_posix()!r})"
+    assert by_name["catalog_manifest"]["path"] == str(
+        sample_workspace_path / "MANIFEST.md"
     )
+    assert by_name["catalog_manifest"]["exists"] is True
 
 
 def test_catalog_artifact_rows_report_missing_search_extra(
@@ -255,7 +257,7 @@ def test_catalog_artifact_rows_report_missing_search_extra(
     import chartcoach.search.chroma as chroma
 
     def raise_missing_search_extra(*_: object, **__: object) -> object:
-        raise ModuleNotFoundError("missing polars_hash", name="polars_hash")
+        raise ModuleNotFoundError("missing tqdm", name="tqdm")
 
     monkeypatch.setattr(
         chroma.ChromaIndex,
@@ -272,13 +274,14 @@ def test_catalog_artifact_rows_report_missing_search_extra(
     )
 
     assert list(rows) == [
+        "catalog_manifest",
         "catalog_source",
         "catalog_parquet",
         "duckdb_catalog",
         "index_root",
     ]
     assert rows["index_root"]["kind"] == "directory"
-    assert rows["index_root"]["error"] == "missing polars_hash"
+    assert rows["index_root"]["error"] == "missing tqdm"
     assert "Search extras are required" in str(rows["index_root"]["note"])
 
 

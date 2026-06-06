@@ -1,36 +1,30 @@
+import { parseLabel } from "@chartcoach/catalog";
+
 export type ParsedGuidelineLabel = {
-  family: string | null;
+  family: string;
+  category: string;
+  modifier?: string;
   value: string;
   full: string;
-  familyLower: string | null;
+  familyLower: string;
   fullLower: string;
 };
 
 export function parseGuidelineLabel(label: string): ParsedGuidelineLabel {
-  const normalized = String(label ?? "").trim();
-  const idx = normalized.indexOf(":");
-
-  if (idx === -1) {
-    const value = normalized;
-    return {
-      family: null,
-      value,
-      full: value,
-      familyLower: null,
-      fullLower: value.toLowerCase(),
-    };
-  }
-
-  const family = normalized.slice(0, idx).trim();
-  const value = normalized.slice(idx + 1).trim();
-  const full = `${family}:${value}`;
+  const parsed = parseLabel(label, "guideline label");
+  const value =
+    parsed.modifier === undefined
+      ? parsed.category
+      : `${parsed.category}:${parsed.modifier}`;
 
   return {
-    family,
+    family: parsed.family,
+    category: parsed.category,
+    modifier: parsed.modifier,
     value,
-    full,
-    familyLower: family.toLowerCase(),
-    fullLower: full.toLowerCase(),
+    full: parsed.value,
+    familyLower: parsed.family.toLowerCase(),
+    fullLower: parsed.value.toLowerCase(),
   };
 }
 

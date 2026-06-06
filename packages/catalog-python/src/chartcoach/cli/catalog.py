@@ -9,6 +9,7 @@ from chartcoach.catalog import Catalog
 from .common import (
     CONTEXT_SETTINGS,
     ROW_FORMATS,
+    emit_object,
     emit_rows,
     load_catalog,
     source_option,
@@ -34,9 +35,9 @@ def catalog_command() -> None:
 @click.option(
     "--out",
     "output_path",
-    type=click.Path(dir_okay=False, path_type=Path),
+    type=click.Path(file_okay=False, path_type=Path),
     required=True,
-    help="Catalog parquet file to write.",
+    help="Catalog artifact bundle directory to write.",
 )
 @click.option(
     "--dry-run",
@@ -54,20 +55,27 @@ def build_command(
     dry_run: bool,
     overwrite: bool,
 ) -> None:
-    """Build a parquet catalog from a guideline folder."""
+    """Build a catalog artifact bundle from a guideline folder."""
 
     catalog = Catalog.from_folder(source)
     if len(catalog) == 0:
         raise click.ClickException(
             f"No guideline entries found in {source}. Expected subdirectories with guideline.md files."
         )
-    if output_path.exists() and not overwrite and not dry_run:
-        raise click.ClickException(f"{output_path} already exists. Pass --overwrite.")
+    manifest_path = output_path / "MANIFEST.md"
+    parquet_path = output_path / "catalog.parquet"
+    if (
+        not overwrite
+        and not dry_run
+        and (manifest_path.exists() or parquet_path.exists())
+    ):
+        raise click.ClickException(f"{output_path} already contains catalog artifacts. Pass --overwrite.")
     if dry_run:
-        click.echo(f"Would write {len(catalog)} guidelines to {output_path}")
+        click.echo(
+            f"Would write {len(catalog)} guidelines to {output_path / 'catalog.parquet'}"
+        )
         return
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    catalog.write_parquet(output_path)
+    catalog.write_bundle(output_path, overwrite=overwrite)
     click.echo(f"Wrote {len(catalog)} guidelines to {output_path}")
 
 
@@ -87,20 +95,51 @@ def build_command(
     help="Output format.",
 )
 def check_command(source: Path, output_format: str) -> None:
-    """Validate a guideline folder and report table counts."""
+    """Validate a catalog source and report table counts."""
 
-    catalog = Catalog.from_folder(source)
+    catalog = (
+        Catalog.from_bundle(source)
+        if (source / "catalog.parquet").exists()
+        else Catalog.from_folder(source)
+    )
     if len(catalog) == 0:
         raise click.ClickException(
             f"No guideline entries found in {source}. Expected subdirectories with guideline.md files."
         )
     rows = [
+        {"name": "manifest_section_roles", "rows": len(catalog.require_manifest().section_roles)},
+        {"name": "manifest_label_families", "rows": len(catalog.require_manifest().label_families)},
         {"name": "guidelines", "rows": len(catalog)},
         {"name": "sections", "rows": catalog.sections().height},
         {"name": "labels", "rows": catalog.labels().height},
         {"name": "references", "rows": catalog.references().height},
     ]
     emit_rows(rows, output_format=output_format)
+
+
+@catalog_command.command("manifest", context_settings=CONTEXT_SETTINGS)
+@source_option
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(("markdown", "json", "jsonl")),
+    default="markdown",
+    show_default=True,
+    help="Output format.",
+)
+@click.pass_context
+def manifest_command(ctx: click.Context, output_format: str) -> None:
+    """Print the catalog manifest."""
+
+    manifest = load_catalog(ctx).require_manifest()
+    if output_format == "markdown":
+        click.echo(manifest.markdown.rstrip())
+        return
+    rows = {
+        "section_roles": list(manifest.section_roles),
+        "label_families": list(manifest.label_families),
+    }
+    emit_object(rows, output_format=output_format)
 
 
 @catalog_command.command("duckdb", context_settings=CONTEXT_SETTINGS)

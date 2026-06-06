@@ -4,19 +4,20 @@ description: How to move through the ChartCoach catalog.
 tableOfContents: false
 ---
 
-Labels are the catalog's controlled vocabulary. Use them when you have a chart type, task, audience, or design move in mind.
+Labels are the catalog's controlled vocabulary. Use them when you have a chart type, task, audience, or design action in mind.
 
-Search finds words. Labels follow the catalog's own categories.
+Search finds words. Labels follow the label families defined in `MANIFEST.md`.
 
 ## Format
 
-Most labels follow a `family:value` structure:
+Labels use either `family:category` or `family:category:modifier`:
 
 - `chart:bar`
 - `task:compare`
 - `audience:novice`
+- `component:legend:avoid`
 
-Some labels are a single token with no `:`. These are treated as standalone values.
+The parser trims surrounding whitespace from the label and each segment. Segment text remains case-sensitive.
 
 ## Matching
 

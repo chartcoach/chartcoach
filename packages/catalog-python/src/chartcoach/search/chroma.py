@@ -754,7 +754,6 @@ def _is_missing_chroma_dependency(exc: ModuleNotFoundError) -> bool:
         return False
     return name in {
         "chromadb",
-        "polars_hash",
         "tqdm",
     } or name.startswith("chromadb.")
 

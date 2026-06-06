@@ -82,7 +82,7 @@ def test_catalog_tools_preserve_explicit_id_order(sample_catalog: Catalog) -> No
     assert [row["id"] for row in ordered] == ["full-axis-bars", "direct-labels"]
 
 
-def test_catalog_discovery_does_not_parse_unrelated_references() -> None:
+def test_label_discovery_uses_label_table_without_reference_parsing() -> None:
     catalog = Catalog.from_entries(
         [
             CatalogEntry(

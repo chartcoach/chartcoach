@@ -31,7 +31,7 @@ class CatalogTools:
     """Catalog-backed read tools shared by the CLI and MCP server.
 
     This layer is transport-agnostic. The CLI formats its returned rows for
-    shells, and the MCP server exposes the same methods as tools for agents.
+    shells, and the MCP server exposes the same methods as tools.
     """
 
     def __init__(self, catalog: Catalog) -> None:
@@ -82,7 +82,6 @@ class CatalogTools:
                 f"Column {table}.{column} is list-valued.",
                 hints=[
                     "Pass explode=True to count each list item separately.",
-                    f"CLI: chartcoach tables values {table} {column} --source PATH --explode --format jsonl",
                 ],
             )
 
@@ -124,8 +123,8 @@ class CatalogTools:
                 raise CatalogToolError(
                     str(exc),
                     hints=[
-                        "Run chartcoach tables list --source PATH to inspect table names.",
-                        "Run chartcoach tables schema --source PATH --format jsonl to inspect columns.",
+                        "Inspect table names before running the query.",
+                        "Inspect column schemas before selecting fields.",
                     ],
                 ) from exc
         finally:
@@ -340,8 +339,7 @@ class CatalogTools:
             raise CatalogToolError(
                 f"Unknown label(s): {', '.join(missing)}",
                 hints=[
-                    "Inspect the guideline_labels table through DuckDB or Polars.",
-                    "CLI: chartcoach tables values guideline_labels label --source PATH --format jsonl",
+                    "Inspect the guideline_labels table before filtering by label.",
                 ],
             )
 
@@ -361,8 +359,7 @@ class CatalogTools:
             raise CatalogToolError(
                 f"No labels match prefix(es): {', '.join(missing)}",
                 hints=[
-                    "Inspect the guideline_labels table through DuckDB or Polars.",
-                    "CLI: chartcoach tables values guideline_labels label --source PATH --format jsonl",
+                    "Inspect the guideline_labels table before filtering by label prefix.",
                 ],
             )
 
@@ -375,8 +372,7 @@ class CatalogTools:
             raise CatalogToolError(
                 f"Unknown section role(s): {', '.join(missing)}",
                 hints=[
-                    "Inspect the sections table through DuckDB or Polars.",
-                    "CLI: chartcoach tables values sections role --source PATH --format jsonl",
+                    "Inspect the sections table before filtering by role.",
                 ],
             )
 
@@ -386,8 +382,7 @@ class CatalogTools:
             f"Unknown table(s): {', '.join(tables)}",
             hints=[
                 f"Available tables: {available}",
-                "Run chartcoach tables list before schema.",
-                "CLI: chartcoach tables list --source PATH --format jsonl",
+                "Use one of the available table names.",
             ],
         )
 
@@ -402,8 +397,7 @@ class CatalogTools:
             f"Unknown column for table {table}: {column}",
             hints=[
                 f"Available columns on {table}: {columns}",
-                f"Run schema with table={table!r} before querying the catalog.",
-                f"CLI: chartcoach tables schema --source PATH --table {table} --format jsonl",
+                f"Use one of the available columns on {table}.",
             ],
         )
 
@@ -411,9 +405,8 @@ class CatalogTools:
         return CatalogToolError(
             f"Unknown guideline id: {guideline_id}",
             hints=[
-                "Discover ids with list_guidelines.",
-                "CLI: chartcoach guidelines list --source PATH --format jsonl | head",
-                "Search by text with search_guidelines or semantic search.",
+                "List guideline summaries before reading a specific id.",
+                "Search by text or semantic similarity when the id is unknown.",
             ],
         )
 
@@ -451,17 +444,17 @@ def format_tool_error(message: str, hints: Sequence[str]) -> str:
     if not hints:
         return message
     joined_hints = "\n".join(f"  - {hint}" for hint in hints)
-    return f"{message}\n\nTry:\n{joined_hints}"
+    return f"{message}\n\nGuidance:\n{joined_hints}"
 
 
 def search_error_message(message: str) -> str:
-    """Return a semantic-search error message with index recovery commands."""
+    """Return a semantic-search error message with recovery guidance."""
 
     return format_tool_error(
         message,
         [
-            "If the search index is missing, run: chartcoach index build --source PATH --index-dir INDEX_DIR.",
-            "Use chartcoach artifacts --source PATH --index-dir INDEX_DIR to locate the native Chroma path.",
+            "Build or provide a search index for the current catalog digest.",
+            "Inspect catalog artifacts to locate the native Chroma path.",
         ],
     )
 
@@ -488,8 +481,8 @@ def _validate_select_query(query: str) -> None:
         raise CatalogToolError(
             "Only SELECT queries are allowed.",
             hints=[
-                "Use chartcoach catalog duckdb --source PATH --out PATH for durable DuckDB files.",
-                "Use chartcoach tables schema --source PATH --format jsonl to inspect columns.",
+                "Create a durable DuckDB file through the catalog export tooling when mutation is needed.",
+                "Inspect table schemas before writing the query.",
             ],
         )
 

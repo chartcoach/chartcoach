@@ -18,6 +18,7 @@ if TYPE_CHECKING:
 
     from ..duckdb import DuckDBConfigValue
 
+    from .manifest import CatalogManifest
     from .tables import ReferenceTables
 
 
@@ -78,27 +79,47 @@ class Catalog:
     when a caller asks for one entry.
     """
 
-    def __init__(self, frame: pl.DataFrame) -> None:
+    def __init__(
+        self,
+        frame: pl.DataFrame,
+        *,
+        manifest: "CatalogManifest | None" = None,
+    ) -> None:
         self._frame = _normalize_catalog_frame(frame)
+        self._manifest = manifest
         self._tables: dict[str, pl.DataFrame] = {}
         self._reference_tables_cache: ReferenceTables | None = None
         self._digest_cache: str | None = None
         _validate_unique_ids(self._frame)
+        if self._manifest is not None:
+            from .manifest import validate_catalog_manifest
+
+            validate_catalog_manifest(self, self._manifest)
 
     @classmethod
-    def from_frame(cls, df: pl.DataFrame) -> "Catalog":
+    def from_frame(
+        cls,
+        df: pl.DataFrame,
+        *,
+        manifest: "CatalogManifest | None" = None,
+    ) -> "Catalog":
         """Build a catalog from a serialized dataframe."""
 
-        return cls(df)
+        return cls(df, manifest=manifest)
 
     @classmethod
-    def from_entries(cls, entries: Iterable[CatalogEntry]) -> "Catalog":
+    def from_entries(
+        cls,
+        entries: Iterable[CatalogEntry],
+        *,
+        manifest: "CatalogManifest | None" = None,
+    ) -> "Catalog":
         """Build a catalog from entry objects."""
 
         from .tables import build_catalog_df
 
         catalog_entries = tuple(CatalogEntry.from_mapping(entry) for entry in entries)
-        return cls(build_catalog_df(catalog_entries))
+        return cls(build_catalog_df(catalog_entries), manifest=manifest)
 
     @classmethod
     def from_folder(cls, folder_path: PathLike[str]) -> "Catalog":
@@ -113,6 +134,32 @@ class Catalog:
         """Load a serialized catalog parquet file without building entry objects."""
 
         return cls.from_frame(pl.read_parquet(Path(path)))
+
+    @classmethod
+    def from_bundle(cls, path: str | PathLike[str]) -> "Catalog":
+        """Load a catalog artifact bundle with `MANIFEST.md` and `catalog.parquet`."""
+
+        from .manifest import CatalogManifest
+
+        bundle_path = Path(path)
+        manifest = CatalogManifest.from_path(bundle_path / "MANIFEST.md")
+        return cls.from_frame(
+            pl.read_parquet(bundle_path / "catalog.parquet"),
+            manifest=manifest,
+        )
+
+    @property
+    def manifest(self) -> "CatalogManifest | None":
+        """Return the catalog manifest when this catalog was loaded with one."""
+
+        return self._manifest
+
+    def require_manifest(self) -> "CatalogManifest":
+        """Return the catalog manifest or raise when only a table was loaded."""
+
+        if self._manifest is None:
+            raise ValueError("Catalog does not have a manifest.")
+        return self._manifest
 
     def to_frame(self) -> pl.DataFrame:
         """Return the serialized catalog table."""
@@ -232,12 +279,30 @@ class Catalog:
 
         from .storage import write_catalog_entries
 
-        write_catalog_entries(self._entries(), root)
+        write_catalog_entries(self._entries(), root, manifest=self.require_manifest())
 
     def write_parquet(self, path: str | PathLike[str]) -> None:
         """Write the catalog to a serialized parquet file."""
 
         self.to_frame().write_parquet(Path(path))
+
+    def write_bundle(
+        self,
+        root: PathLike[str],
+        *,
+        overwrite: bool = False,
+    ) -> Path:
+        """Write `MANIFEST.md` and `catalog.parquet` to an artifact bundle."""
+
+        bundle_path = Path(root)
+        parquet_path = bundle_path / "catalog.parquet"
+        manifest_path = bundle_path / "MANIFEST.md"
+        if not overwrite and (parquet_path.exists() or manifest_path.exists()):
+            raise FileExistsError(bundle_path)
+        bundle_path.mkdir(parents=True, exist_ok=True)
+        self.require_manifest().write(manifest_path)
+        self.write_parquet(parquet_path)
+        return bundle_path
 
     def write_duckdb(
         self,
@@ -254,7 +319,10 @@ class Catalog:
     def merge(self, other: "Catalog") -> "Catalog":
         """Return a new catalog that combines the entries from both catalogs."""
 
-        return Catalog.from_frame(pl.concat([self.to_frame(), other.to_frame()]))
+        return Catalog.from_frame(
+            pl.concat([self.to_frame(), other.to_frame()]),
+            manifest=_merge_manifests(self.manifest, other.manifest),
+        )
 
     def select(self, guideline_ids: Sequence[str]) -> "Catalog":
         """Return a new catalog with the requested guideline ids in order."""
@@ -278,7 +346,7 @@ class Catalog:
                 if guideline_id not in available
             ]
             raise KeyError(", ".join(missing))
-        return Catalog.from_frame(selected.cast(CATALOG_SCHEMA))
+        return Catalog.from_frame(selected.cast(CATALOG_SCHEMA), manifest=self.manifest)
 
     def __add__(self, other: "Catalog") -> "Catalog":
         return self.merge(other)
@@ -352,6 +420,17 @@ def _validate_unique_ids(df: pl.DataFrame) -> None:
     if duplicates:
         joined = ", ".join(str(item) for item in sorted(duplicates))
         raise ValueError(f"Catalog contains duplicate guideline ids: {joined}.")
+
+
+def _merge_manifests(
+    first: "CatalogManifest | None",
+    second: "CatalogManifest | None",
+) -> "CatalogManifest | None":
+    if first is None:
+        return second
+    if second is None or first == second:
+        return first
+    raise ValueError("Cannot merge catalogs with different manifests.")
 
 
 def _dataframe_digest(df: pl.DataFrame) -> str:
