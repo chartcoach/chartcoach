@@ -85,7 +85,7 @@ function sanitizeCitationHtml(html: string): string {
   return sanitizeHtml(html, SANITIZE_CITATION_HTML_OPTIONS);
 }
 
-function renderCitationsInMarkdown(body: string, references: string[]): RenderedCitations {
+function buildReferencesByKey(references: string[]): Map<string, ReferenceInfo> {
   const referencesByKey = new Map<string, ReferenceInfo>();
   for (const entry of references) {
     const key = bibtexKeyFromEntry(entry);
@@ -102,6 +102,40 @@ function renderCitationsInMarkdown(body: string, references: string[]): Rendered
     referencesByKey.set(key, info);
   }
 
+  return referencesByKey;
+}
+
+function renderBibliographyHtml(
+  citedKeys: Iterable<string>,
+  referencesByKey: Map<string, ReferenceInfo>,
+): string | undefined {
+  const citedCsl = Array.from(citedKeys)
+    .map((key) => referencesByKey.get(key)?.csl ?? [])
+    .flat()
+    .filter(Boolean);
+
+  if (citedCsl.length === 0) return undefined;
+
+  try {
+    let bibliographyHtml = new Cite(citedCsl).format("bibliography", {
+      format: "html",
+      template: "apa",
+      lang: "en-US",
+    });
+    bibliographyHtml = bibliographyHtml.replace(
+      /<div data-csl-entry-id="([^"]+)"/g,
+      (_m, id: string) => `<div id="${citeId(id)}" data-csl-entry-id="${id}"`,
+    );
+    return sanitizeCitationHtml(linkifyHtml(bibliographyHtml));
+  } catch {
+    return undefined;
+  }
+}
+
+function renderCitationsInMarkdown(
+  body: string,
+  referencesByKey: Map<string, ReferenceInfo>,
+): RenderedCitations {
   const citedKeys = new Set<string>();
 
   const processed = body.replace(/\[([^\]]*?@[^\]]+?)\]/g, (match, inside) => {
@@ -157,35 +191,10 @@ function renderCitationsInMarkdown(body: string, references: string[]): Rendered
     return `(${parts.join("; ")})`;
   });
 
-  let bibliographyHtml: string | undefined;
-  if (citedKeys.size > 0) {
-    const citedCsl = Array.from(citedKeys)
-      .map((key) => referencesByKey.get(key)?.csl ?? [])
-      .flat()
-      .filter(Boolean);
-
-    if (citedCsl.length > 0) {
-      try {
-        bibliographyHtml = new Cite(citedCsl).format("bibliography", {
-          format: "html",
-          template: "apa",
-          lang: "en-US",
-        });
-        bibliographyHtml = bibliographyHtml.replace(
-          /<div data-csl-entry-id="([^"]+)"/g,
-          (_m, id: string) => `<div id="${citeId(id)}" data-csl-entry-id="${id}"`,
-        );
-        bibliographyHtml = sanitizeCitationHtml(linkifyHtml(bibliographyHtml));
-      } catch {
-        // If bibliography formatting fails, fall back to no bibliography.
-      }
-    }
-  }
-
   return {
     body: processed,
     citedKeys: Array.from(citedKeys),
-    bibliographyHtml,
+    bibliographyHtml: renderBibliographyHtml(citedKeys, referencesByKey),
   };
 }
 
@@ -213,22 +222,29 @@ export function guidelinesLoader({
         const references = [...guideline.references];
         const referencesBib =
           references.length > 0 ? references.join("\n\n") : undefined;
+        const referencesByKey = buildReferencesByKey(references);
 
-        const { body, citedKeys, bibliographyHtml } = renderCitationsInMarkdown(
+        const renderedBody = renderCitationsInMarkdown(
           guideline.body,
-          references,
+          referencesByKey,
         );
+        const citedKeys = new Set(renderedBody.citedKeys);
         const sections = await Promise.all(
-          guideline.sections.map(async (section) => ({
-            role: section.role,
-            title: section.title,
-            html: (
-              await context.renderMarkdown(
-                renderCitationsInMarkdown(section.content, references).body,
-              )
-            ).html,
-          })),
+          guideline.sections.map(async (section) => {
+            const renderedSection = renderCitationsInMarkdown(
+              section.content,
+              referencesByKey,
+            );
+            for (const key of renderedSection.citedKeys) citedKeys.add(key);
+
+            return {
+              role: section.role,
+              title: section.title,
+              html: (await context.renderMarkdown(renderedSection.body)).html,
+            };
+          }),
         );
+        const bibliographyHtml = renderBibliographyHtml(citedKeys, referencesByKey);
 
         const sourcePath = path.resolve(projectRoot, base, id, "guideline.md");
         const filePath = path.relative(projectRoot, sourcePath);
@@ -244,19 +260,19 @@ export function guidelinesLoader({
             sections,
             bibliography: guideline.bibliography,
             referencesBib,
-            citations: citedKeys,
+            citations: Array.from(citedKeys),
             bibliographyHtml,
           },
           filePath: sourcePath,
         });
 
-        const rendered = await context.renderMarkdown(body);
-        const digest = context.generateDigest(`${body}\n\n${referencesBib ?? ""}`);
+        const rendered = await context.renderMarkdown(renderedBody.body);
+        const digest = context.generateDigest(`${renderedBody.body}\n\n${referencesBib ?? ""}`);
 
         context.store.set({
           id,
           data,
-          body,
+          body: renderedBody.body,
           rendered,
           digest,
           filePath,

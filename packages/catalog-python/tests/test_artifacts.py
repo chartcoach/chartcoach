@@ -24,11 +24,11 @@ def test_default_artifact_paths_use_platform_cache_root(
 ) -> None:
     import chartcoach.paths as paths
 
-    calls: list[tuple[str, bool]] = []
     cache_root = tmp_path / "platform-cache"
 
     def fake_user_cache_path(appname: str, *, appauthor: bool) -> Path:
-        calls.append((appname, appauthor))
+        assert appname == "chartcoach"
+        assert appauthor is False
         return cache_root
 
     monkeypatch.setattr(paths, "user_cache_path", fake_user_cache_path)
@@ -37,12 +37,6 @@ def test_default_artifact_paths_use_platform_cache_root(
     assert default_artifact_dir() == cache_root / "artifacts"
     assert default_duckdb_path() == cache_root / "artifacts" / "duckdb_catalog.db"
     assert default_index_dir() == cache_root / "index"
-    assert calls == [
-        ("chartcoach", False),
-        ("chartcoach", False),
-        ("chartcoach", False),
-        ("chartcoach", False),
-    ]
     assert not cache_root.exists()
 
 

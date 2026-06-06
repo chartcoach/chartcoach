@@ -1,0 +1,167 @@
+---
+import { Menu, Moon, Sun } from "@lucide/astro";
+
+import { getSiteLinks } from "@/config/site";
+import { getSiteNavigation, getSiteSocialLinks } from "@/config/navigation";
+import "@/styles/site.css";
+
+interface Props {
+  title?: string;
+  description?: string;
+  contentClass?: string;
+  frontmatter?: {
+    title?: string;
+    description?: string;
+    contentClass?: string;
+  };
+}
+
+const {
+  title: explicitTitle,
+  description: explicitDescription,
+  contentClass: explicitContentClass,
+  frontmatter,
+} = Astro.props as Props;
+
+const title = explicitTitle ?? frontmatter?.title ?? "ChartCoach";
+const description =
+  explicitDescription ??
+  frontmatter?.description ??
+  "Browse ChartCoach guideline records with labels, sections, and source references.";
+const contentClass = explicitContentClass ?? frontmatter?.contentClass ?? "";
+
+const canonical = Astro.site
+  ? new URL(Astro.url.pathname, Astro.site).toString()
+  : undefined;
+const pageTitle = title === "ChartCoach" ? "ChartCoach" : `${title} | ChartCoach`;
+const { docsUrl } = getSiteLinks();
+const siteNavigation = getSiteNavigation();
+const siteSocialLinks = getSiteSocialLinks();
+
+function isActive(href: string) {
+  if (href === "/") return Astro.url.pathname === "/";
+  return href.startsWith("/") && Astro.url.pathname.startsWith(href);
+}
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+    {canonical && <link rel="canonical" href={canonical} />}
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    {canonical && <meta property="og:url" content={canonical} />}
+    <meta property="og:type" content="website" />
+    <script is:inline>
+      (() => {
+        const key = "chartcoach-theme";
+        const saved = window.localStorage.getItem(key);
+        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        const theme = saved === "light" || saved === "dark" ? saved : prefersDark ? "dark" : "light";
+        document.documentElement.dataset.theme = theme;
+      })();
+    </script>
+  </head>
+  <body>
+    <div class="site-shell">
+      <header class="site-header">
+        <div class="site-inner site-header__inner">
+          <a class="site-wordmark" href="/" aria-label="ChartCoach home">ChartCoach</a>
+          <nav class="site-nav" aria-label="Primary">
+            {
+              siteNavigation.map((item) => (
+                <a
+                  href={item.href}
+                  aria-current={isActive(item.href) ? "page" : undefined}
+                  target={item.external ? "_blank" : undefined}
+                  rel={item.external ? "noreferrer" : undefined}
+                >
+                  {item.label}
+                </a>
+              ))
+            }
+          </nav>
+          <div class="site-header__actions">
+            <button
+              class="site-header__button"
+              type="button"
+              data-theme-toggle
+              aria-label="Toggle color theme"
+            >
+              <Sun class="theme-icon-light" aria-hidden="true" focusable="false" />
+              <Moon class="theme-icon-dark" aria-hidden="true" focusable="false" />
+            </button>
+            {
+              siteSocialLinks.map((link) => (
+                <a
+                  class="site-header__button"
+                  href={link.href}
+                  aria-label={link.label}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  <span>{link.label}</span>
+                </a>
+              ))
+            }
+            <details class="site-mobile">
+              <summary aria-label="Open navigation">
+                <Menu aria-hidden="true" focusable="false" />
+              </summary>
+              <nav class="site-mobile__panel" aria-label="Mobile">
+                {
+                  siteNavigation.map((item) => (
+                    <a
+                      href={item.href}
+                      aria-current={isActive(item.href) ? "page" : undefined}
+                      target={item.external ? "_blank" : undefined}
+                      rel={item.external ? "noreferrer" : undefined}
+                    >
+                      {item.label}
+                    </a>
+                  ))
+                }
+              </nav>
+            </details>
+          </div>
+        </div>
+      </header>
+      <main class:list={["site-main", contentClass]}>
+        <slot />
+      </main>
+      <footer class="site-footer">
+        <div class="site-inner site-footer__inner">
+          <span>ChartCoach keeps guideline records inspectable.</span>
+          <a href={docsUrl}>Technical docs</a>
+        </div>
+      </footer>
+    </div>
+    <script>
+      const themeKey = "chartcoach-theme";
+
+      function currentTheme() {
+        return document.documentElement.dataset.theme === "dark" ? "dark" : "light";
+      }
+
+      function setTheme(theme: "light" | "dark") {
+        document.documentElement.dataset.theme = theme;
+        window.localStorage.setItem(themeKey, theme);
+        for (const button of document.querySelectorAll<HTMLButtonElement>("[data-theme-toggle]")) {
+          button.setAttribute("aria-label", `Switch to ${theme === "dark" ? "light" : "dark"} mode`);
+        }
+      }
+
+      for (const button of document.querySelectorAll<HTMLButtonElement>("[data-theme-toggle]")) {
+        button.addEventListener("click", () => {
+          setTheme(currentTheme() === "dark" ? "light" : "dark");
+        });
+      }
+
+      setTheme(currentTheme());
+    </script>
+  </body>
+</html>

@@ -270,34 +270,42 @@ def test_reuse_only_rejects_corrupted_chroma_cache(
 def test_reuse_only_opens_chroma_cache_without_building_documents(
     tmp_path: Path,
     sample_catalog: Catalog,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     pytest.importorskip("chromadb")
 
-    import chartcoach.search.chroma as chroma
+    from chartcoach.search.chroma import ChromaIndex
 
-    chroma.ChromaIndex.from_cache(
+    class GuardedEmbeddingFunction(TinyEmbeddingFunction):
+        def __init__(self) -> None:
+            self.calls = 0
+            self.reject_calls = False
+
+        def __call__(self, input: list[str]) -> list[list[float]]:
+            self.calls += 1
+            if self.reject_calls:
+                raise AssertionError("reuse_only should not embed catalog documents")
+            return super().__call__(input)
+
+    embedding_fn = GuardedEmbeddingFunction()
+    ChromaIndex.from_cache(
         sample_catalog,
         cache_dir=tmp_path / "index",
         cache_mode="reuse_or_create",
-        embedding_fn=TinyEmbeddingFunction(),
+        embedding_fn=embedding_fn,
     )
-    monkeypatch.setattr(
-        chroma,
-        "_build_documents",
-        lambda _catalog: (_ for _ in ()).throw(
-            AssertionError("reuse_only should not build Chroma documents")
-        ),
-    )
+    assert embedding_fn.calls > 0
+    embedding_fn.calls = 0
+    embedding_fn.reject_calls = True
 
-    index = chroma.ChromaIndex.from_cache(
+    index = ChromaIndex.from_cache(
         sample_catalog,
         cache_dir=tmp_path / "index",
         cache_mode="reuse_only",
-        embedding_fn=TinyEmbeddingFunction(),
+        embedding_fn=embedding_fn,
     )
 
     assert index.collection.count() == 6
+    assert embedding_fn.calls == 0
 
 
 def test_reuse_or_create_creates_the_explicit_cache_path(

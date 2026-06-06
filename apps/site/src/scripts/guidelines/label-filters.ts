@@ -17,13 +17,16 @@ type SuggestionsData = {
 
 const guidelineCardSelector = "[data-guideline-card]";
 const suggestionOptionId = (index: number) => `guidelines-label-suggestion-${index}`;
+const mobileResultsQuery = "(max-width: 50rem)";
+const desktopPageSize = 80;
+const mobilePageSize = 36;
 const activeSuggestionSelector = '[aria-selected="true"]';
 const filterChipButtonClasses =
-  "inline-flex cursor-pointer items-center gap-[0.38rem] rounded-pill border border-chip-border bg-chip px-[0.45rem] py-[0.2rem] font-mono text-[0.68rem] font-medium leading-[1.15] text-muted-foreground transition-colors hover:bg-surface-strong focus-visible:bg-surface-strong";
-const filterChipLabelClasses = "font-bold tracking-[0.02em]";
+  "inline-flex cursor-pointer items-center gap-[0.38rem] rounded-pill border border-transparent bg-[var(--surface-panel)] px-[0.45rem] py-[0.2rem] font-mono text-[0.68rem] font-medium leading-[1.15] text-muted-foreground transition-[background-color,color,border-color,transform] hover:border-[var(--line)] hover:bg-[var(--surface-panel-strong)] active:scale-[0.98] focus-visible:border-[var(--line)] focus-visible:bg-[var(--surface-panel-strong)]";
+const filterChipLabelClasses = "font-bold tracking-[0]";
 const filterChipDismissClasses = "text-muted-foreground";
 const suggestionButtonClasses =
-  "w-full rounded-none bg-transparent px-[0.62rem] py-2 text-left font-mono text-[0.82rem] font-medium leading-[1.3] text-foreground transition-colors hover:bg-surface-strong focus-visible:bg-surface-strong aria-selected:bg-surface-strong";
+  "w-full rounded-none bg-transparent px-[0.62rem] py-2 text-left font-mono text-[0.82rem] font-medium leading-[1.3] text-foreground transition-colors hover:bg-[var(--surface-panel-strong)] focus-visible:bg-[var(--surface-panel-strong)] aria-selected:bg-[var(--surface-panel-strong)]";
 
 function readCards(grid: HTMLElement): GuidelineCard[] {
   return Array.from(grid.querySelectorAll<HTMLElement>(guidelineCardSelector)).map((el) => ({
@@ -153,6 +156,26 @@ function updateCountLabel(
     : `${total.toLocaleString()} guidelines`;
 }
 
+function getPageSize() {
+  return window.matchMedia(mobileResultsQuery).matches ? mobilePageSize : desktopPageSize;
+}
+
+function updateDisplayControls(
+  controlsEl: HTMLElement,
+  statusEl: HTMLElement,
+  loadMoreButton: HTMLButtonElement,
+  shown: number,
+  matching: number,
+) {
+  const hasMore = shown < matching;
+  controlsEl.toggleAttribute("hidden", matching === 0);
+  statusEl.textContent =
+    matching === 0
+      ? "No matching guidelines"
+      : `Showing ${shown.toLocaleString()} of ${matching.toLocaleString()} guidelines`;
+  loadMoreButton.hidden = !hasMore;
+}
+
 export function initGuidelineLabelFilters() {
   const grid = document.getElementById("guidelines-grid");
   const countEl = document.getElementById("guidelines-count");
@@ -161,6 +184,9 @@ export function initGuidelineLabelFilters() {
   const form = document.getElementById("guidelines-filter-form");
   const input = document.getElementById("guidelines-filter-input");
   const suggestionsEl = document.getElementById("guidelines-label-suggestions");
+  const displayControls = document.getElementById("guidelines-display-controls");
+  const displayStatus = document.getElementById("guidelines-display-status");
+  const loadMore = document.getElementById("guidelines-load-more");
 
   if (!(grid instanceof HTMLElement)) return;
   if (!(countEl instanceof HTMLElement)) return;
@@ -169,6 +195,9 @@ export function initGuidelineLabelFilters() {
   if (!(form instanceof HTMLFormElement)) return;
   if (!(input instanceof HTMLInputElement)) return;
   if (!(suggestionsEl instanceof HTMLElement)) return;
+  if (!(displayControls instanceof HTMLElement)) return;
+  if (!(displayStatus instanceof HTMLElement)) return;
+  if (!(loadMore instanceof HTMLButtonElement)) return;
 
   const gridEl = grid;
   const countLabelEl = countEl;
@@ -177,6 +206,9 @@ export function initGuidelineLabelFilters() {
   const formEl = form;
   const inputEl = input;
   const suggestionsListEl = suggestionsEl;
+  const displayControlsEl = displayControls;
+  const displayStatusEl = displayStatus;
+  const loadMoreButton = loadMore;
 
   const total = Number.parseInt(countLabelEl.dataset.totalGuidelines ?? "", 10) || 0;
   const cards = readCards(gridEl);
@@ -184,6 +216,7 @@ export function initGuidelineLabelFilters() {
 
   const state = {
     labels: new Set<string>(),
+    visibleLimit: getPageSize(),
   };
 
   const params = new URLSearchParams(window.location.search);
@@ -192,18 +225,26 @@ export function initGuidelineLabelFilters() {
     if (normalized) state.labels.add(normalized);
   }
 
+  function resetVisibleLimit() {
+    state.visibleLimit = getPageSize();
+  }
+
   function update() {
-    let visible = 0;
+    let matching = 0;
+    let shown = 0;
 
     for (const card of cards) {
       const ok = matchesLabels(card.labels, state.labels);
-      card.el.toggleAttribute("hidden", !ok);
-      if (ok) visible += 1;
+      if (ok) matching += 1;
+      const shouldShow = ok && matching <= state.visibleLimit;
+      card.el.toggleAttribute("hidden", !shouldShow);
+      if (shouldShow) shown += 1;
     }
 
     renderActiveFilters(filtersEl, state.labels);
     updateUrl(state.labels);
-    updateCountLabel(countLabelEl, visible, total || cards.length, state.labels.size > 0);
+    updateCountLabel(countLabelEl, matching, total || cards.length, state.labels.size > 0);
+    updateDisplayControls(displayControlsEl, displayStatusEl, loadMoreButton, shown, matching);
   }
 
   const suggestionState = {
@@ -262,6 +303,7 @@ export function initGuidelineLabelFilters() {
     state.labels.add(normalized);
     inputEl.value = "";
     closeSuggestions();
+    resetVisibleLimit();
     update();
   }
 
@@ -301,6 +343,7 @@ export function initGuidelineLabelFilters() {
     if (!changed) return;
     inputEl.value = "";
     closeSuggestions();
+    resetVisibleLimit();
     update();
   });
 
@@ -396,6 +439,7 @@ export function initGuidelineLabelFilters() {
     if (state.labels.has(value)) state.labels.delete(value);
     else state.labels.add(value);
     closeSuggestions();
+    resetVisibleLimit();
     update();
   });
 
@@ -408,12 +452,24 @@ export function initGuidelineLabelFilters() {
 
     state.labels.delete(value);
     closeSuggestions();
+    resetVisibleLimit();
     update();
   });
 
   filtersClearButton.addEventListener("click", () => {
     state.labels.clear();
     closeSuggestions();
+    resetVisibleLimit();
+    update();
+  });
+
+  loadMoreButton.addEventListener("click", () => {
+    state.visibleLimit += getPageSize();
+    update();
+  });
+
+  window.matchMedia(mobileResultsQuery).addEventListener("change", () => {
+    resetVisibleLimit();
     update();
   });
 

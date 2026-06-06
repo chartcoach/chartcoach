@@ -39,7 +39,18 @@ def test_prompt_cli_prints_parameterized_codex_prompt(
     assert "Review a dashboard for misleading bar axes." in result.output
     assert "Read `MANIFEST.md`" in result.output
     assert "Guideline Use Report" in result.output
-    assert "https://chartcoach.github.io/guidelines/<guideline-id>/" in result.output
+    assert "http://localhost:4321/guidelines/<guideline-id>/" in result.output
+
+
+def test_prompt_cli_uses_public_site_url_env(runner: CliRunner) -> None:
+    result = runner.invoke(
+        chartcoach_cli,
+        ["prompt", "--codex"],
+        env={"CHARTCOACH_SITE_URL": "https://example.org/chartcoach/"},
+    )
+
+    assert result.exit_code == 0
+    assert "https://example.org/chartcoach/guidelines/<guideline-id>/" in result.output
 
 
 def test_prompt_cli_requires_one_target_agent(runner: CliRunner) -> None:

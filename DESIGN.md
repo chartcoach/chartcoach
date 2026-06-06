@@ -1,388 +1,203 @@
-# (dot)connect — Style Reference
+---
+version: alpha
+name: ChartCoach Visual System
+description: Visual system for the ChartCoach Guideline Catalog experience.
+colors:
+  light:
+    canvas: "#FCFBF8"
+    ink: "#001011"
+    veil: "#172323"
+    mutedInk: "#5C6764"
+    layer: "#EDEDEA"
+    layerStrong: "#E2E1DB"
+    line: "#C4C5BD"
+    ember: "#FD5321"
+  dark:
+    canvas: "#101312"
+    ink: "#F6F1E7"
+    veil: "#D6D0C3"
+    mutedInk: "#A6AAA2"
+    layer: "#191D1B"
+    layerStrong: "#242A27"
+    line: "#3F4741"
+    ember: "#FF7A45"
+typography:
+  display:
+    fontFamily: Bricolage Grotesque
+    fontSize: 54px
+    fontWeight: 760
+    lineHeight: 0.98
+    letterSpacing: "0"
+  heading:
+    fontFamily: Bricolage Grotesque
+    fontSize: 35px
+    fontWeight: 650
+    lineHeight: 1.08
+    letterSpacing: "0"
+  body:
+    fontFamily: Manrope
+    fontSize: 16px
+    fontWeight: 400
+    lineHeight: 1.6
+    letterSpacing: "0"
+rounded:
+  xs: 4px
+  sm: 8px
+  md: 12px
+  lg: 16px
+  xl: 20px
+  pill: 999px
+spacing:
+  1: 4px
+  2: 8px
+  3: 12px
+  4: 16px
+  5: 24px
+  6: 32px
+  7: 48px
+  8: 64px
+components:
+  header:
+    background: "{colors.*.canvas}"
+    border: "{colors.*.line}"
+    activeNav: "{colors.*.ink}"
+  guidelineCard:
+    background: "{colors.*.layer}"
+    border: "{colors.*.line}"
+    radius: "{rounded.md}"
+  labelChip:
+    background: "{colors.*.canvas}"
+    border: "{colors.*.line}"
+    radius: "{rounded.xs}"
+  primaryAction:
+    background: "{colors.*.ink}"
+    foreground: "{colors.*.canvas}"
+    accent: "{colors.*.ember}"
+---
+
+# ChartCoach Design System
+
+## Experience Boundary
+
+ChartCoach uses one visual language for a focused public experience: orient a visitor, let them browse guideline records, filter by labels, open a guideline, inspect sections, and follow references.
+
+Keep this document about the visual system, interaction rhythm, and content hierarchy. Do not record repository layout, release ownership, or deployment topology here.
+
+## Source Adaptation
+
+The original design reference is `https://dotconnect.vc/`. A browser audit captured the warm canvas, near-black ink, orange action accent, compact navigation, numbered section rails, direct headlines, repeated cards, and dark closing band.
+
+Adapt those moves to ChartCoach:
+
+- Use numbered section labels for cataloging and source sections.
+- Keep cards compact and action-oriented.
+- Pair direct headlines with short explanatory copy.
+- Use ember for one action or evidence accent at a time.
+- Use a dark closing band as a final catalog entry point.
+
+Do not copy dotconnect content, business sections, imagery, font files, icons, or interaction patterns that do not fit a Guideline Catalog.
+
+## Modes
+
+Light and dark modes are supported contracts. The document root may use `data-theme="light"` or `data-theme="dark"`. ChartCoach tokens respond to those attributes wherever the experience renders.
 
-> Swiss engineering blueprint with a single ember
+Every visible surface must be checked in both modes:
 
-**Theme:** light
+- Header, navigation, theme toggle, and mobile menu.
+- Home hero, feature cards, and catalog sections.
+- Guideline index count, filter input, suggestions, active filters, and cards.
+- Guideline detail title, labels, sections, bibliography, BibTeX block, and copy control.
+- Inline code, code blocks, tables, focus rings, and selection color.
 
-(dot)connect operates as a Swiss-engineering canvas: a warm off-white stage (#fcfbf8) where a single near-black ink (#001011) does almost all the work, and a vivid orange (#fd5321) appears only as deliberate punctuation — never decoration. The typographic signature is extreme: headlines balloon to 72-101px with aggressive negative tracking (-0.025em), creating a display voice that feels architectural rather than marketing-soft. Components are softly rounded (20-24px radii on cards and buttons), never sharp, never heavy — elevation is implied through hairline borders and tonal surface shifts, not shadows. The system reads as 'engineering blueprint with a pulse of fire': monochromatic discipline broken by one warm chromatic gesture per viewport.
+Do not create a separate theme system, duplicate mode props, or mode-specific component surfaces. Use CSS variables as the shared contract.
 
-## Tokens — Colors
+## Colors
 
-| Name         | Value     | Token                  | Role                                                                                                                                                |
-| ------------ | --------- | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Bone Canvas  | `#fcfbf8` | `--color-bone-canvas`  | Primary page background, card surfaces, light text on dark — warm off-white reads as paper, not screen                                              |
-| Charcoal Ink | `#001011` | `--color-charcoal-ink` | Primary text, headings, primary action fill, dominant borders — near-black with a barely-perceptible cool tint that distinguishes it from pure #000 |
-| Smoke Veil   | `#0f1e1f` | `--color-smoke-veil`   | Secondary text and borders for body-level elements — a half-step lighter than Charcoal for visual hierarchy without contrast loss                   |
-| Ash Layer    | `#ededea` | `--color-ash-layer`    | Elevated card backgrounds, subtle surface differentiation, hover states — a warm gray that complements the bone canvas without going cold           |
-| Mist Border  | `#c1c4c2` | `--color-mist-border`  | Hairline borders, dividers, section separators — barely visible structural lines                                                                    |
-| Ember        | `#fd5321` | `--color-ember`        | Orange wash for highlight backgrounds, decorative bands, and soft emphasis behind content. Do not promote it to the primary CTA color               |
-| Signal Blue  | `#007aff` | `--color-signal-blue`  | Outlined action border for secondary interactive elements — ghost-button strokes only, never filled                                                 |
+The light palette uses a warm canvas, near-black ink, neutral layers, disciplined borders, and one ember accent. The dark palette keeps the same relationships with low-chroma near-black surfaces and warm text.
 
-## Tokens — Typography
+Implementation variables:
 
-### AeonikPro — Primary typeface across all UI: body (16-18px/400), navigation (16px/500), card titles (24-32px/500), section headings (36px/500), hero display (72-101px/400-500). The custom font's geometric proportions and the 'dlig', 'ss02', 'ss08' stylistic alternates give the system its engineering-precise voice — ss08 likely enables a more open 'a' and 'e', ss02 a distinctive 'g' · `--font-aeonikpro`
+```css
+:root,
+:root[data-theme="light"] {
+  --canvas: #fcfbf8;
+  --ink: #001011;
+  --veil: #172323;
+  --muted-ink: #5c6764;
+  --layer: #ededea;
+  --layer-strong: #e2e1db;
+  --line: #c4c5bd;
+  --ember: #fd5321;
+}
 
-- **Substitute:** Inter, Satoshi, General Sans
-- **Weights:** 400, 500
-- **Sizes:** 16, 18, 21, 24, 32, 36, 72, 101
-- **Line height:** 1.0–1.5
-- **Letter spacing:** -0.025em at 72-101px, -0.012em at 32-36px, +0.010em at 16-18px body
-- **OpenType features:** `"dlig" on, "ss02" on, "ss08" on`
-- **Role:** Primary typeface across all UI: body (16-18px/400), navigation (16px/500), card titles (24-32px/500), section headings (36px/500), hero display (72-101px/400-500). The custom font's geometric proportions and the 'dlig', 'ss02', 'ss08' stylistic alternates give the system its engineering-precise voice — ss08 likely enables a more open 'a' and 'e', ss02 a distinctive 'g'
+:root[data-theme="dark"] {
+  --canvas: #101312;
+  --ink: #f6f1e7;
+  --veil: #d6d0c3;
+  --muted-ink: #a6aaa2;
+  --layer: #191d1b;
+  --layer-strong: #242a27;
+  --line: #3f4741;
+  --ember: #ff7a45;
+}
+```
 
-### DotConnect — Branded display variant for hero and section headings — used selectively where the brand name or signature statements appear, giving those moments a distinct voice from the general AeonikPro headlines · `--font-dotconnect`
+Tailwind 4 exposes these through CSS-first `@theme` tokens. Application styles, syntax highlighting variables, Pagefind variables, and shared React components must all reference the same variables.
 
-- **Substitute:** AeonikPro with same tracking values
-- **Weights:** 500
-- **Sizes:** 19, 24, 36, 73
-- **Line height:** 1.0–1.67
-- **Letter spacing:** -0.012em at 36-73px, +0.010em at 19px
-- **OpenType features:** `"dlig" on, "ss02" on, "ss08" on`
-- **Role:** Branded display variant for hero and section headings — used selectively where the brand name or signature statements appear, giving those moments a distinct voice from the general AeonikPro headlines
+## Typography
 
-### Type Scale
+Use Fontsource packages imported by `@chartcoach/ui`.
 
-| Role       | Size  | Line Height | Letter Spacing | Token               |
-| ---------- | ----- | ----------- | -------------- | ------------------- |
-| caption    | 16px  | 1.5         | 0.16px         | `--text-caption`    |
-| body       | 18px  | 1.4         | 0.18px         | `--text-body`       |
-| subheading | 24px  | 1.4         | -0.29px        | `--text-subheading` |
-| heading-sm | 32px  | 1.1         | -0.38px        | `--text-heading-sm` |
-| heading    | 36px  | 1.1         | -0.72px        | `--text-heading`    |
-| heading-lg | 72px  | 0.9         | -1.8px         | `--text-heading-lg` |
-| display    | 101px | 0.8         | -2.53px        | `--text-display`    |
+- **Manrope:** Body text, navigation, controls, labels, cards, and dense catalog copy.
+- **Bricolage Grotesque:** Hero headline, section headings, guideline titles, and major record titles.
+- **System mono:** Label families, copied markdown controls, BibTeX, and compact metadata.
 
-## Tokens — Spacing & Shapes
-
-**Base unit:** 8px
-
-**Density:** comfortable
-
-### Spacing Scale
-
-| Name | Value | Token           |
-| ---- | ----- | --------------- |
-| 8    | 8px   | `--spacing-8`   |
-| 16   | 16px  | `--spacing-16`  |
-| 24   | 24px  | `--spacing-24`  |
-| 32   | 32px  | `--spacing-32`  |
-| 48   | 48px  | `--spacing-48`  |
-| 64   | 64px  | `--spacing-64`  |
-| 72   | 72px  | `--spacing-72`  |
-| 80   | 80px  | `--spacing-80`  |
-| 96   | 96px  | `--spacing-96`  |
-| 160  | 160px | `--spacing-160` |
-
-### Border Radius
-
-| Element | Value |
-| ------- | ----- |
-| cards   | 20px  |
-| links   | 44px  |
-| pills   | 48px  |
-| badges  | 8px   |
-| images  | 20px  |
-| buttons | 24px  |
-
-### Layout
-
-- **Page max-width:** 1200px
-- **Section gap:** 96px
-- **Card padding:** 24px
-- **Element gap:** 24px
-
-## Components
-
-### Filled CTA Button (Ember)
-
-**Role:** Primary action — 'let's connect' in header, key conversion points
-
-Pill-shaped (24px radius) filled button. Background: #fd5321. Text: #fcfbf8 at 16px, AeonikPro 500, letter-spacing +0.010em. Padding: 8px 24px. Optional leading icon slot. No border, no shadow — the orange does all the work against the bone canvas.
-
-### Arrow Pill Button
-
-**Role:** Secondary action — 'more' CTAs, inline navigation triggers
-
-Pill-shaped (44px radius) button with circular arrow icon on left and label on right. Background: #001011. Icon circle: #fcfbf8 with #001011 arrow glyph. Text: #fcfbf8 at 16px AeonikPro 500. Padding: 6px 20px 6px 6px. Icon circle is 32px diameter.
-
-### Ghost/Outlined Action
-
-**Role:** Tertiary interactive — secondary CTAs that should not compete with Ember
-
-Transparent fill with #007aff border (1px). Text: #007aff at 16px AeonikPro 500. Radius: 24px. Padding: 12px 24px. Used when an action exists but is subordinate to the primary Ember CTA.
-
-### Offer Card
-
-**Role:** Two-column service offering cards ('corporates', 'investors')
-
-Background: #fcfbf8. Border: 1px #c1c4c2. Border-radius: 20px. Padding: 32px. Title: AeonikPro 500 at 24px, #001011. Body: AeonikPro 400 at 18px, #0f1e1f. Arrow icon prefix on title in a 24px circle. No shadow — borders carry the structure.
-
-### Case Study Card
-
-**Role:** Stories carousel cards (e.g. 'skillchain')
-
-Vertical card with image container on top, text below. Image container: aspect ratio ~4:3, 20px top radius, overflow hidden. Text block: padding 16px on bone canvas. Project name: AeonikPro 500 at 18px, #001011. Description: AeonikPro 400 at 16px, #0f1e1f. Subtle border or no border — image is the visual anchor.
-
-### Section Header
-
-**Role:** Section openers — 'offer', 'stories', etc.
-
-Two-part header: left side has a numbered arrow icon + section name in AeonikPro 500 at 18px, #001011. Right side has parenthetical section number (e.g. '(02)', '(04)') in same style. Below, optional centered headline at 32-36px. Horizontal hairline (#c1c4c2) separates header from content.
-
-### Top Navigation
-
-**Role:** Primary site navigation
-
-Fixed/sticky top bar. Logo '(dot)connect' on far left at 19px AeonikPro 500. Center: nav links (about, offer, brainpower, stories, team, philosophy) at 16px AeonikPro 400, #0f1e1f, 24px gap. Far right: Ember CTA button. No background blur or border — sits on bone canvas.
-
-### Carousel Navigation
-
-**Role:** Horizontal scroll indicators for stories section
-
-Circular buttons (32px) positioned at vertical center of carousel track. Background: #fcfbf8 with #001011 arrow glyph. No border, no shadow. Left/right pair flanking the card row.
-
-### Badge / Tag
-
-**Role:** Inline metadata, small status labels
-
-Small pill with 8px radius. Background: #fcfbf8. Border: 1px #c1c4c2. Padding: 4px 8px. Text: AeonikPro 400 at 14px, #0f1e1f.
-
-### Hero Section
-
-**Role:** First-viewport statement
-
-Full-width on bone canvas. Centered text block, max-width ~900px. Headline: AeonikPro 400-500 at 72-101px, #001011, line-height 0.8-0.9, letter-spacing -0.025em. Subtext: AeonikPro 400 at 18px, #0f1e1f, max 60ch. Arrow pill CTA centered below. No hero image — text IS the hero.
-
-### 3D Render Feature Block
-
-**Role:** Full-width visual interludes between text sections
-
-Full-bleed image area on bone canvas. Contains metallic/glass 3D render (brain, abstract objects) often with Ember-colored particle accents. No caption overlay — the visual speaks alone with breathing room above and below.
-
-## Do's and Don'ts
-
-### Do
-
-- Use Ember (#fd5321) for exactly one CTA per viewport — it loses all power if it appears twice on screen
-- Set headline letter-spacing to -0.025em at 72px+ and relax it to +0.010em at body sizes — this asymmetry is the typographic signature
-- Apply 20px radius to all cards, 24px to all buttons, 44-48px to pill-shaped elements — never mix 8px and 20px in the same component family
-- Separate sections with 96px vertical breathing room on bone canvas — the whitespace IS the layout system
-- Use the Arrow Pill Button (dark fill, circular icon) for inline 'more' actions, not the Ember CTA — reserve Ember for top-right header and key conversion moments
-- Enable 'dlig', 'ss02', 'ss08' font features on all AeonikPro text — these stylistic alternates are part of the brand voice
-- Use #c1c4c2 hairline borders (1px) for structure instead of shadows — the system is border-driven, not elevation-driven
-
-### Don't
-
-- Don't use shadows or drop-shadow effects — the system has no elevation language; depth comes from tonal surface shifts
-- Don't place Ember on Ember or Ember on #001011 surfaces without testing contrast — the orange can vibrate uncomfortably against the dark charcoal
-- Don't set body text below 16px or above 21px — the type scale skips small sizes deliberately to maintain confidence
-- Don't use #007aff as a filled background — it is a ghost/outlined accent only; filled blue breaks the monochrome-ember logic
-- Don't add decorative gradients, glows, or blur effects — the system is flat, bordered, and high-contrast
-- Don't right-align body paragraphs — body text is always left-aligned; only display headlines may be centered
-- Don't use icons with stroke weights under 1.5px or over 2px — the icon system matches the 1px border language
-
-## Surfaces
-
-| Level | Name        | Value     | Purpose                                                        |
-| ----- | ----------- | --------- | -------------------------------------------------------------- |
-| 0     | Bone Canvas | `#fcfbf8` | Page background, base layer                                    |
-| 1     | Ash Layer   | `#ededea` | Card and elevated surface backgrounds                          |
-| 2     | Smoke Veil  | `#0f1e1f` | Dark mode moments, high-contrast containers                    |
-| 3     | Ember       | `#fd5321` | Brand-emphasis surface — used on CTA buttons and accent blocks |
-
-## Imagery
-
-Imagery is sparse and high-impact: large full-bleed 3D renders sit as interludes between text-heavy sections, never as backgrounds under text. The renders are metallic/chrome with glass-like translucency, often featuring a single Ember-orange accent (particles falling from a chrome brain, orange geometric objects). Case study cards use 3D illustration thumbnails with the same metallic+orange treatment. No photography, no people, no lifestyle imagery — the visual language is object-as-hero, abstract and sculptural. Iconography is minimal and monoline: simple arrow glyphs in circular containers, no icon sets or decorative symbols. The overall density is text-dominant with imagery appearing once per 2-3 viewport heights.
+Letter spacing is `0`. Use fixed type sizes with breakpoints instead of viewport-scaled type. Long headings should wrap naturally without clipping or overlapping nearby controls.
 
 ## Layout
 
-Full-width sections on bone canvas with content centered to a ~1200px max-width. The page rhythm is: text-hero → full-bleed 3D visual → numbered text section with 2-column card grid → full-bleed 3D visual → numbered text section with 3-column carousel. Sections are separated by 96px vertical gaps with no dividers — whitespace defines boundaries. The top navigation is a single thin bar (logo left, links center, Ember CTA right) that sits on bone canvas without a background fill or border. Section headers use a split layout: numbered label left, parenthetical count right, with centered headlines below for major sections. The grid system is implicit — content aligns to a 24px column gap with cards arranged in 2 or 3 columns depending on context. No sidebar, no sticky elements other than nav, no mega-menus.
+The opening page should feel close to the restraint of a technical open-source project page: short hero, direct actions, compact cards, and clear navigation. The brand signal comes from the ChartCoach name, catalog nouns, and source-backed guidance rather than decorative backgrounds or a standalone logo.
 
-## Agent Prompt Guide
+- Keep prose near `52rem`.
+- Keep catalog lists near `72rem`.
+- Use repeated cards only for feature cards and guideline records.
+- Avoid nested cards, gradient ornaments, glass effects, and decorative blobs.
+- Keep the next section visible below the hero on common desktop and mobile viewports.
 
-## Quick Color Reference
+## Components
 
-- background: #fcfbf8
-- text: #001011
-- secondary text: #0f1e1f
-- card surface: #ededea
-- border: #c1c4c2
-- accent: #fd5321 (Ember)
-- primary action: #001011 (filled action)
+### Header
 
-## Example Component Prompts
+The header contains a text-only ChartCoach wordmark, primary navigation, social link, and local theme toggle. Active navigation should be visible without dominating the page. The mobile menu must include the same navigation.
 
-1. **Hero Section**: bone canvas (#fcfbf8) background, full-width. Centered headline at 72px AeonikPro weight 400, #001011, letter-spacing -1.8px, line-height 0.9. Subtext at 18px AeonikPro 400, #0f1e1f, max-width 60ch, centered. Arrow pill button (24px radius, #001011 background, #fcfbf8 text, 32px circular icon with arrow glyph) labeled 'more', centered below subtext. 120px vertical padding top and bottom.
+### Home Hero
 
-2. **Offer Card**: #fcfbf8 background, 1px #c1c4c2 border, 20px radius, 32px padding. Title at 24px AeonikPro 500, #001011, with 24px circular arrow icon prefix (#001011 bg, #fcfbf8 arrow). Body text at 18px AeonikPro 400, #0f1e1f, line-height 1.4. No shadow.
+The hero states the value proposition in one headline and one paragraph. Keep it text-only until a real visual identity earns its place. The next section makes the catalog concrete through compact cards that name the review workflow, label browsing, and source-backed records.
 
-3. **Arrow Pill Button**: 44px radius, #001011 background, padding 6px 20px 6px 6px. Leading 32px circular icon slot (#fcfbf8 bg, #001011 arrow at 16px). Label text at 16px AeonikPro 500, #fcfbf8, letter-spacing +0.16px.
+### Catalog Cards
 
-4. **Case Study Card**: vertical layout, no border. Image container 4:3 aspect ratio, 20px top radius (matching card), overflow hidden, #ededea placeholder. Text block below with 16px padding. Project name at 18px AeonikPro 500, #001011. Description at 16px AeonikPro 400, #0f1e1f, 3-line clamp.
+Cards explain what visitors can inspect: guideline records, label filters, section roles, source references, search, and agent context. Each card should name one concrete action and link into the catalog workflow.
 
-5. **Section Header**: full-width row. Left: 24px circular arrow icon (#001011 bg, #fcfbf8 arrow) + section name at 18px AeonikPro 500, #001011, gap 12px. Right: parenthetical number '(02)' at 18px AeonikPro 500, #001011. 1px #c1c4c2 hairline below spanning full width.
+### Guideline Index
 
-## Quick Start
+The index is the main browser. The count, hint, filter input, suggestions, active filters, and cards should read as one workflow. Filtering must remain client-side and visibly update the count and card list.
 
-### CSS Custom Properties
+### Guideline Detail
 
-```css
-:root {
-  /* Colors */
-  --color-bone-canvas: #fcfbf8;
-  --color-charcoal-ink: #001011;
-  --color-smoke-veil: #0f1e1f;
-  --color-ash-layer: #ededea;
-  --color-mist-border: #c1c4c2;
-  --color-ember: #fd5321;
-  --color-signal-blue: #007aff;
+The detail page is a reading surface. It prioritizes title, summary, copy markdown, labels, role-annotated sections, bibliography, and BibTeX. Code and references must pass contrast in both modes.
 
-  /* Typography — Font Families */
-  --font-aeonikpro:
-    "AeonikPro", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", Roboto, sans-serif;
-  --font-dotconnect:
-    "DotConnect", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", Roboto, sans-serif;
+### Shared UI
 
-  /* Typography — Scale */
-  --text-caption: 16px;
-  --leading-caption: 1.5;
-  --tracking-caption: 0.16px;
-  --text-body: 18px;
-  --leading-body: 1.4;
-  --tracking-body: 0.18px;
-  --text-subheading: 24px;
-  --leading-subheading: 1.4;
-  --tracking-subheading: -0.29px;
-  --text-heading-sm: 32px;
-  --leading-heading-sm: 1.1;
-  --tracking-heading-sm: -0.38px;
-  --text-heading: 36px;
-  --leading-heading: 1.1;
-  --tracking-heading: -0.72px;
-  --text-heading-lg: 72px;
-  --leading-heading-lg: 0.9;
-  --tracking-heading-lg: -1.8px;
-  --text-display: 101px;
-  --leading-display: 0.8;
-  --tracking-display: -2.53px;
+Shared React components expose their public surface from `@chartcoach/ui`. Application code must not import UI internals through `@chartcoach/ui/lib/*` or `@chartcoach/ui/components/*`. CSS remains available through `@chartcoach/ui/styles/*`.
 
-  /* Typography — Weights */
-  --font-weight-regular: 400;
-  --font-weight-medium: 500;
+## Copy Rules
 
-  /* Spacing */
-  --spacing-unit: 8px;
-  --spacing-8: 8px;
-  --spacing-16: 16px;
-  --spacing-24: 24px;
-  --spacing-32: 32px;
-  --spacing-48: 48px;
-  --spacing-64: 64px;
-  --spacing-72: 72px;
-  --spacing-80: 80px;
-  --spacing-96: 96px;
-  --spacing-160: 160px;
+- Start with what the visitor can inspect or do.
+- Use ChartCoach nouns from `CONTEXT.md`.
+- Keep claims tied to the Guideline Catalog, labels, sections, and sources.
+- Avoid package reference prose in the primary experience.
+- Avoid broad adjectives that do not name a mechanism.
 
-  /* Layout */
-  --page-max-width: 1200px;
-  --section-gap: 96px;
-  --card-padding: 24px;
-  --element-gap: 24px;
+## Verification
 
-  /* Border Radius */
-  --radius-lg: 8px;
-  --radius-xl: 12px;
-  --radius-2xl: 16px;
-  --radius-2xl-2: 20px;
-  --radius-3xl: 24px;
-  --radius-3xl-2: 28px;
-  --radius-3xl-3: 36px;
-  --radius-3xl-4: 44px;
-  --radius-full: 48px;
-
-  /* Named Radii */
-  --radius-cards: 20px;
-  --radius-links: 44px;
-  --radius-pills: 48px;
-  --radius-badges: 8px;
-  --radius-images: 20px;
-  --radius-buttons: 24px;
-
-  /* Surfaces */
-  --surface-bone-canvas: #fcfbf8;
-  --surface-ash-layer: #ededea;
-  --surface-smoke-veil: #0f1e1f;
-  --surface-ember: #fd5321;
-}
-```
-
-### Tailwind v4
-
-```css
-@theme {
-  /* Colors */
-  --color-bone-canvas: #fcfbf8;
-  --color-charcoal-ink: #001011;
-  --color-smoke-veil: #0f1e1f;
-  --color-ash-layer: #ededea;
-  --color-mist-border: #c1c4c2;
-  --color-ember: #fd5321;
-  --color-signal-blue: #007aff;
-
-  /* Typography */
-  --font-aeonikpro:
-    "AeonikPro", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", Roboto, sans-serif;
-  --font-dotconnect:
-    "DotConnect", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", Roboto, sans-serif;
-
-  /* Typography — Scale */
-  --text-caption: 16px;
-  --leading-caption: 1.5;
-  --tracking-caption: 0.16px;
-  --text-body: 18px;
-  --leading-body: 1.4;
-  --tracking-body: 0.18px;
-  --text-subheading: 24px;
-  --leading-subheading: 1.4;
-  --tracking-subheading: -0.29px;
-  --text-heading-sm: 32px;
-  --leading-heading-sm: 1.1;
-  --tracking-heading-sm: -0.38px;
-  --text-heading: 36px;
-  --leading-heading: 1.1;
-  --tracking-heading: -0.72px;
-  --text-heading-lg: 72px;
-  --leading-heading-lg: 0.9;
-  --tracking-heading-lg: -1.8px;
-  --text-display: 101px;
-  --leading-display: 0.8;
-  --tracking-display: -2.53px;
-
-  /* Spacing */
-  --spacing-8: 8px;
-  --spacing-16: 16px;
-  --spacing-24: 24px;
-  --spacing-32: 32px;
-  --spacing-48: 48px;
-  --spacing-64: 64px;
-  --spacing-72: 72px;
-  --spacing-80: 80px;
-  --spacing-96: 96px;
-  --spacing-160: 160px;
-
-  /* Border Radius */
-  --radius-lg: 8px;
-  --radius-xl: 12px;
-  --radius-2xl: 16px;
-  --radius-2xl-2: 20px;
-  --radius-3xl: 24px;
-  --radius-3xl-2: 28px;
-  --radius-3xl-3: 36px;
-  --radius-3xl-4: 44px;
-  --radius-full: 48px;
-}
-```
+Before handoff, run local build checks and use browser screenshots at desktop and mobile widths. Capture both light and dark modes for the opening page, guideline index, guideline details, quick start, mobile menus, and routes with code. Use an independent aesthetic judge and Agentation annotations before declaring the redesign complete when those tools are practical.

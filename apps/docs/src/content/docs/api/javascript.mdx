@@ -1,0 +1,51 @@
+---
+title: JavaScript and TypeScript API
+description: Load ChartCoach catalog records from server runtimes, browser runtimes, and raw parquet bytes.
+---
+
+`@chartcoach/catalog` exposes typed models and one loader per runtime.
+
+```ts
+import { readCatalog } from "@chartcoach/catalog/server";
+
+const catalog = await readCatalog("guidelines");
+
+for (const guideline of catalog) {
+  console.log(guideline.id, guideline.title);
+}
+```
+
+## Entry Points
+
+`@chartcoach/catalog`
+
+Shared types, the `Catalog` model, `loadCatalog` for parquet bytes, `parseLabel`, `parseManifest`, and `toMarkdown`.
+
+`@chartcoach/catalog/server`
+
+`readCatalog(sourcePath, options?)` for server-side filesystem paths.
+
+`@chartcoach/catalog/browser`
+
+`fetchCatalog(catalogUrl, options?)` for browser and fetch-capable runtimes.
+
+## Catalog
+
+`new Catalog(guidelines = [], options?)`
+
+Create a catalog from loaded records. When `options.manifest` is provided, the constructor validates section-role and label-family coverage.
+
+```ts
+import { Catalog, parseManifest } from "@chartcoach/catalog";
+
+const manifest = parseManifest(manifestMarkdown);
+const catalog = new Catalog(guidelines, { manifest });
+```
+
+`catalog.get(id)` returns a guideline or `undefined`.
+
+`catalog.require(id)` returns a guideline or throws `CatalogError`.
+
+`catalog.labels()` returns sorted distinct labels.
+
+`catalog.sectionRoles()` returns sorted distinct section roles.

@@ -1,0 +1,29 @@
+---
+title: API Reference
+description: Package APIs for loading, inspecting, and querying ChartCoach catalog artifacts.
+tableOfContents: false
+---
+
+ChartCoach APIs read the catalog as source data. A loaded catalog returns Guideline Instance records with the same fields across Python, JavaScript, browser, CLI, and MCP surfaces.
+
+```bash
+uv add chartcoach
+pnpm add @chartcoach/catalog
+```
+
+Install extras only for search or MCP use:
+
+```bash
+uv add "chartcoach[search]"
+uv add "chartcoach[mcp,search]"
+```
+
+## Sections
+
+- [Catalog records](/api/catalog-records/) defines the shared source row shape.
+- [Python API](/api/python/) loads bundles, exposes tables, writes DuckDB, and opens Chroma indexes.
+- [JavaScript API](/api/javascript/) loads records in server and shared runtime code.
+- [Browser loading](/api/browser/) loads published parquet artifacts over HTTP.
+- [CLI](/api/cli/) covers command groups and output contracts.
+- [MCP](/api/mcp/) covers tool names and runtime options.
+- [Artifacts](/api/artifacts/) describes native catalog files.

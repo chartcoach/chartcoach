@@ -1,5 +1,6 @@
 packages:
   - "apps/site"
+  - "apps/docs"
   - "packages/catalog-javascript"
   - "packages/catalog-python"
   - "packages/ui"

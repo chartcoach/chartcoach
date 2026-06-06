@@ -9,6 +9,12 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+      "@chartcoach/ui": ["./src/index.ts"],
+      "#components/*": ["./src/components/*.tsx"],
+      "#lib/*": ["./src/lib/*.ts"]
+    },
     "noEmit": true
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"]

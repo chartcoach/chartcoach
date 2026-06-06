@@ -12,7 +12,8 @@ Before changing a module, read its nearest README, package manifest, and tests.
 
 ## Repository Map
 
-- `apps/site`: Astro/Starlight docs site and guideline browser.
+- `apps/site`: Astro and MDX marketing site with the Guideline Catalog browser.
+- `apps/docs`: Astro/Starlight technical docs site.
 - `packages/catalog-javascript`: JS loaders, parsers, and catalog wire types.
 - `packages/catalog-python`: Python catalog package and `chartcoach` CLI.
 - `packages/ui`: shared React primitives, design tokens, brand assets.

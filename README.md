@@ -1,6 +1,6 @@
 # ChartCoach
 
-ChartCoach loads manifest-described visualization guideline catalogs as typed records for agents, scripts, notebooks, search, retrieval, and SQL workflows. The same guideline records are published for people at <https://chartcoach.github.io/>.
+ChartCoach loads manifest-described visualization guideline catalogs as typed records for agents, scripts, notebooks, search, retrieval, and SQL workflows. The same guideline records are published through the `apps/site` browser surface.
 
 ## Agent Quickstart
 
@@ -140,7 +140,7 @@ ChartCoach keeps the catalog in formats that other tools can open directly.
 | `guidelines/catalog.parquet` | Source catalog table |
 | DuckDB database | Derived tables for SQL inspection |
 | Chroma index | Content-addressed semantic search |
-| <https://chartcoach.github.io/> | Human-facing guideline browser and API docs |
+| `apps/site` | Human-facing guideline browser |
 
 Create a DuckDB artifact from the catalog:
 
@@ -165,11 +165,14 @@ pnpm install
 uv sync --package chartcoach --all-groups
 ```
 
-Run the site locally:
+Run the browser surfaces locally:
 
 ```bash
 pnpm --dir apps/site dev
+pnpm --dir apps/docs dev
 ```
+
+Local URLs default to `http://localhost:4321/` for `apps/site` and `http://localhost:4322/` for `apps/docs`. Set `CHARTCOACH_SITE_URL`, `CHARTCOACH_DOCS_URL`, `CHARTCOACH_DOCS_EDIT_BASE_URL`, and `CHARTCOACH_REPOSITORY_URL` for deployed builds.
 
 Run the workspace checks:
 

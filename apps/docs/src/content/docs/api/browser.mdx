@@ -1,0 +1,40 @@
+---
+title: Browser Loading API
+description: Load ChartCoach catalog parquet artifacts in browser runtimes.
+---
+
+The browser entrypoint loads a published parquet catalog over HTTP. Pass a manifest when the caller needs role and label-family validation.
+
+```ts
+import { fetchCatalog } from "@chartcoach/catalog/browser";
+
+const catalog = await fetchCatalog("/catalog.parquet", {
+  manifest: "/MANIFEST.md",
+});
+```
+
+## fetchCatalog
+
+`fetchCatalog(catalogUrl, options?)`
+
+Fetch `catalogUrl`, decode parquet rows, validate each row, and return a `Catalog`.
+
+```ts
+const catalog = await fetchCatalog(
+  "https://example.com/guidelines/catalog.parquet",
+  {
+    manifest: "https://example.com/guidelines/MANIFEST.md",
+    request: {
+      headers: {
+        accept: "application/octet-stream",
+      },
+    },
+  },
+);
+```
+
+`options.manifest` accepts a parsed manifest, URL string, or `URL` object. `options.request` is passed to both fetch paths.
+
+## Runtime Boundary
+
+Use `@chartcoach/catalog/browser` for static sites and browser applications. Use `@chartcoach/catalog/server` for local filesystem paths in scripts, build steps, and server applications.

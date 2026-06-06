@@ -15,18 +15,18 @@ const { href, title, description, dataLabels, labels = [], labelsRemaining } = A
 ---
 
 <li
-  class="list-none rounded-panel border border-chip-border bg-surface px-4 py-4 text-card-foreground shadow-card transition-colors hover:border-control-border hover:bg-surface-strong focus-within:border-control-border focus-within:bg-surface-strong focus-within:ring-2 focus-within:ring-ring/30 focus-within:ring-offset-2 focus-within:ring-offset-background"
+  class="guideline-card list-none rounded-panel px-3.5 py-3.5 transition-colors focus-within:ring-2 focus-within:ring-ring/30 focus-within:ring-offset-2 focus-within:ring-offset-background md:px-4 md:py-4"
   data-guideline-card
   data-labels={dataLabels}
 >
-  <div class="grid min-w-0 gap-2">
+  <div class="grid min-w-0 gap-1.5 md:gap-2">
     <a
-      class="block font-display text-[clamp(1.05rem,1vw+0.85rem,1.2rem)] font-semibold leading-[1.18] tracking-[-0.015em] text-foreground no-underline hover:text-brand-high focus-visible:text-brand-high"
+      class="block font-display text-[1.08rem] font-semibold leading-[1.18] tracking-[0] text-foreground no-underline hover:text-brand-high focus-visible:text-brand-high md:text-[1.2rem]"
       href={href}
     >
       {title}
     </a>
-    {description ? <p class="m-0 text-sm leading-6 text-muted-foreground">{description}</p> : null}
+    {description ? <p class="m-0 text-[0.88rem] leading-[1.5] text-muted-foreground md:text-sm md:leading-6">{description}</p> : null}
     {
       labels.length || labelsRemaining ? (
         <GuidelineLabels

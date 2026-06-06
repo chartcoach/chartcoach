@@ -1,0 +1,27 @@
+---
+title: ChartCoach Docs
+description: Technical reference for ChartCoach catalog artifacts, packages, commands, and agent surfaces.
+---
+
+import { getDocsLinks } from "@/config/site";
+
+export const siteUrl = getDocsLinks().siteUrl;
+
+ChartCoach represents a Guideline Catalog as source records with labels, role-annotated sections, and source references. The package APIs, CLI, and MCP server read the same artifact bundle.
+
+```bash
+uv add chartcoach
+pnpm add @chartcoach/catalog
+```
+
+Use the marketing site for browsing: <a href={siteUrl}>{siteUrl}</a>.
+
+## Technical Surfaces
+
+- [Catalog structure](/catalog/) defines the bundle and record model.
+- [API reference](/api/) covers Python, JavaScript, browser loading, CLI, MCP, and artifacts.
+- [Labels and filters](/labels/) describes label syntax and matching behavior.
+
+## Package Boundary
+
+The catalog is source data. Derived DuckDB tables, Chroma indexes, and browser pages are views over the same Guideline Instance records.

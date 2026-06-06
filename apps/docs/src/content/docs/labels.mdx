@@ -1,0 +1,33 @@
+---
+title: Labels and Filters
+description: Label syntax and browser matching behavior for ChartCoach catalogs.
+---
+
+Labels are catalog-owned metadata strings. Their meaning comes from `MANIFEST.md`.
+
+```text
+family:category
+family:category:modifier
+```
+
+Examples:
+
+```text
+chart:bar
+task:compare
+audience:novice
+component:legend:avoid
+```
+
+## Parsing
+
+The parser trims surrounding whitespace from the full label and from each segment. Segment text remains case-sensitive in catalog records. Browser filtering normalizes query text to lowercase.
+
+## Matching
+
+The guideline browser supports two filters:
+
+- A family filter such as `chart` matches every label that starts with `chart:`.
+- An exact label such as `chart:bar` matches only that label.
+
+Multiple filters narrow the result set.

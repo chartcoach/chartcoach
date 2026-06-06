@@ -353,8 +353,7 @@ def test_catalog_bundle_loads_manifest_and_parquet(tmp_path: Path) -> None:
     catalog.write_bundle(tmp_path / "bundle")
     reloaded = Catalog.from_bundle(tmp_path / "bundle")
 
-    assert reloaded.manifest is not None
-    assert list(reloaded.manifest.section_roles) == ["advice"]
+    assert list(reloaded.require_manifest().section_roles) == ["advice"]
     assert reloaded.to_frame().to_dicts() == catalog.to_frame().to_dicts()
 
 

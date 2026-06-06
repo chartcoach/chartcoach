@@ -1,0 +1,39 @@
+---
+layout: "../layouts/SiteLayout.astro"
+title: "Get Started"
+description: "Start with the ChartCoach Guideline Catalog, then move to technical docs for package APIs."
+contentClass: "site-prose"
+---
+
+import { getSiteLinks } from "@/config/site";
+
+export const docsUrl = getSiteLinks().docsUrl;
+
+# Get started with ChartCoach
+
+ChartCoach starts with the Guideline Catalog. Browse records, filter by labels, and open a Guideline Instance to inspect section roles and source references.
+
+## Browse the catalog
+
+Open the catalog and filter by a label family:
+
+```text
+chart
+task
+audience
+```
+
+Use an exact label when you know the design context:
+
+```text
+chart:bar
+task:compare
+```
+
+Each matching record keeps the recommendation, context, caveats, checks, and sources together.
+
+## Use the technical docs
+
+Use the dedicated docs site when you need package contracts, CLI commands, artifact files, or MCP tools.
+
+<a href={docsUrl}>Open technical docs</a>
