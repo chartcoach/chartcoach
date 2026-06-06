@@ -1,24 +1,20 @@
-from .clients import create_chroma_client
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .chroma import CacheMode, ChromaIndex, ChromaIndexPaths
     from .guidelines import GuidelineSearchHit, GuidelineSearchResult, search_guidelines
+    from .lance import CacheMode, LanceIndex
 
 __all__ = [
     "CacheMode",
     "GuidelineSearchHit",
     "GuidelineSearchResult",
-    "ChromaIndex",
-    "ChromaIndexPaths",
-    "create_chroma_client",
+    "LanceIndex",
     "search_guidelines",
 ]
 
 _LAZY_EXPORTS = {
-    "CacheMode": (".chroma", "CacheMode"),
-    "ChromaIndex": (".chroma", "ChromaIndex"),
-    "ChromaIndexPaths": (".chroma", "ChromaIndexPaths"),
+    "CacheMode": (".lance", "CacheMode"),
+    "LanceIndex": (".lance", "LanceIndex"),
     "GuidelineSearchHit": (".guidelines", "GuidelineSearchHit"),
     "GuidelineSearchResult": (".guidelines", "GuidelineSearchResult"),
     "search_guidelines": (".guidelines", "search_guidelines"),

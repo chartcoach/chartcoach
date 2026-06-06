@@ -38,7 +38,7 @@ DEFAULT_PUBLIC_SITE_URL = "http://localhost:4321"
     "--index-dir",
     envvar=INDEX_DIR_ENV,
     type=click.Path(file_okay=False, path_type=Path),
-    help=f"Semantic index directory. Defaults to ${INDEX_DIR_ENV} when set.",
+    help=f"LanceDB full-text index directory. Defaults to ${INDEX_DIR_ENV} when set.",
 )
 @click.option(
     "--guidance-mode",
@@ -115,10 +115,10 @@ def build_agent_prompt(
             f"Catalog source: use the user's provided path or `${SOURCE_ENV}` when available."
         )
     if index_dir is not None:
-        lines.append(f"Semantic index directory: `{index_dir}`.")
+        lines.append(f"LanceDB full-text index directory: `{index_dir}`.")
     else:
         lines.append(
-            f"Semantic index directory: use `${INDEX_DIR_ENV}` when available."
+            f"LanceDB full-text index directory: use `${INDEX_DIR_ENV}` when available."
         )
     if task:
         lines.extend(["", "User task:", task.strip()])
@@ -131,7 +131,7 @@ def build_agent_prompt(
             "- Read `MANIFEST.md` for this catalog instance's section-role and label-family semantics.",
             "- Start with manifest prose, table schema, label discovery, and guideline summaries.",
             "- Use role-specific section reads before full guideline bodies when the needed roles are clear.",
-            "- Treat the semantic index as optional. If it is missing or fails catalog-digest validation, continue with progressive disclosure over catalog rows.",
+            "- Treat the LanceDB full-text index as optional. If it is missing or fails catalog-digest validation, continue with progressive disclosure over catalog rows.",
             "- When retrieved guidelines constrain or justify the answer, include a Guideline Use Report with guideline ids and public links.",
             f"- Use public links shaped as `{normalized_site_url}/guidelines/<guideline-id>/`.",
         ]

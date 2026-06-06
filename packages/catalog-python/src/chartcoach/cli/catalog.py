@@ -69,7 +69,9 @@ def build_command(
         and not dry_run
         and (manifest_path.exists() or parquet_path.exists())
     ):
-        raise click.ClickException(f"{output_path} already contains catalog artifacts. Pass --overwrite.")
+        raise click.ClickException(
+            f"{output_path} already contains catalog artifacts. Pass --overwrite."
+        )
     if dry_run:
         click.echo(
             f"Would write {len(catalog)} guidelines to {output_path / 'catalog.parquet'}"
@@ -97,18 +99,20 @@ def build_command(
 def check_command(source: Path, output_format: str) -> None:
     """Validate a catalog source and report table counts."""
 
-    catalog = (
-        Catalog.from_bundle(source)
-        if (source / "catalog.parquet").exists()
-        else Catalog.from_folder(source)
-    )
+    catalog = Catalog.from_source(source)
     if len(catalog) == 0:
         raise click.ClickException(
             f"No guideline entries found in {source}. Expected subdirectories with guideline.md files."
         )
     rows = [
-        {"name": "manifest_section_roles", "rows": len(catalog.require_manifest().section_roles)},
-        {"name": "manifest_label_families", "rows": len(catalog.require_manifest().label_families)},
+        {
+            "name": "manifest_section_roles",
+            "rows": len(catalog.require_manifest().section_roles),
+        },
+        {
+            "name": "manifest_label_families",
+            "rows": len(catalog.require_manifest().label_families),
+        },
         {"name": "guidelines", "rows": len(catalog)},
         {"name": "sections", "rows": catalog.sections().height},
         {"name": "labels", "rows": catalog.labels().height},
@@ -166,7 +170,9 @@ def duckdb_command(
     try:
         write_duckdb(catalog, output_path, overwrite=overwrite)
     except FileExistsError as exc:
-        raise click.ClickException(f"{output_path} already exists. Pass --overwrite.") from exc
+        raise click.ClickException(
+            f"{output_path} already exists. Pass --overwrite."
+        ) from exc
     click.echo(f"Wrote DuckDB catalog to {output_path}")
 
 

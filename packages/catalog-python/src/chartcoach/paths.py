@@ -29,7 +29,7 @@ def default_duckdb_path() -> Path:
 
 
 def default_index_dir() -> Path:
-    """Return the default directory for generated Chroma search indexes."""
+    """Return the default directory for generated search indexes."""
 
     return default_cache_dir("index")
 

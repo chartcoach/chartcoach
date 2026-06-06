@@ -235,8 +235,10 @@ def build_labels_df(guidelines_df: pl.DataFrame) -> pl.DataFrame:
                 "modifier": parsed.modifier,
             }
         )
-    return pl.DataFrame(rows, schema=LABELS_SCHEMA).unique().sort(
-        "family", "category", "modifier"
+    return (
+        pl.DataFrame(rows, schema=LABELS_SCHEMA)
+        .unique()
+        .sort("family", "category", "modifier")
     )
 
 
@@ -258,8 +260,10 @@ def build_guideline_labels_df(guidelines_df: pl.DataFrame) -> pl.DataFrame:
                 "modifier": parsed.modifier,
             }
         )
-    return pl.DataFrame(rows, schema=GUIDELINE_LABELS_SCHEMA).unique().sort(
-        "guideline_id", "label"
+    return (
+        pl.DataFrame(rows, schema=GUIDELINE_LABELS_SCHEMA)
+        .unique()
+        .sort("guideline_id", "label")
     )
 
 

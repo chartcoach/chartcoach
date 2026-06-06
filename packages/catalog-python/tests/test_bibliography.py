@@ -2,7 +2,11 @@ from __future__ import annotations
 
 import pytest
 
-from chartcoach.guideline import parse_bibtex, parse_bibtex_entry, parse_bibtex_reference
+from chartcoach.guideline import (
+    parse_bibtex,
+    parse_bibtex_entry,
+    parse_bibtex_reference,
+)
 
 
 BIBTEX = """% generated note

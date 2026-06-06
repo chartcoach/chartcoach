@@ -8,6 +8,17 @@ from typing import Any
 from click.testing import Result
 
 
+def assert_cli_error(
+    result: Result,
+    expected: str,
+    *,
+    exit_code: int = 1,
+) -> None:
+    assert result.exit_code == exit_code, result.output
+    assert isinstance(result.exception, SystemExit)
+    assert expected in result.output
+
+
 def jsonl_rows(result: Result) -> list[dict[str, Any]]:
     assert result.exit_code == 0, result.output
     return [json.loads(line) for line in result.output.splitlines() if line.strip()]

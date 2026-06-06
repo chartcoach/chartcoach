@@ -11,13 +11,12 @@ codex "$(uvx chartcoach@latest prompt --codex --source guidelines)"
 
 Use `--claude` or `--opencode` for those agent CLIs. Pass `--task`, `--index-dir`, and `--guidance-mode` when the agent needs task-specific catalog context.
 
-The base package loads manifest-described catalog bundles, parses guidelines, and exposes
-typed records, Polars dataframe views, and native DuckDB SQL connections.
+The base package loads manifest-described catalog bundles, parses guidelines, and exposes typed records, Polars dataframe views, and native DuckDB SQL connections.
 
 ```python
 from chartcoach import Catalog
 
-catalog = Catalog.from_bundle("guidelines")
+catalog = Catalog.from_source("guidelines")
 catalog.guidelines().select("id", "title")
 
 conn = catalog.duckdb()
@@ -25,36 +24,32 @@ conn.sql("select id, title from guidelines limit 5").pl()
 conn.close()
 ```
 
-Install `chartcoach[search]` when you need the optional Chroma retrieval stack:
+Install `chartcoach[search]` when code needs the optional LanceDB index:
 
 ```python
-from chartcoach.search import ChromaIndex, search_guidelines
+from chartcoach import CatalogTools
 from chartcoach.paths import default_index_dir
 
-# Build once with `chartcoach index build`, then open the artifact read-only.
-index = ChromaIndex.from_cache(
+tools = CatalogTools(
     catalog,
-    cache_dir=default_index_dir(),
-    cache_mode="reuse_only",
+    index_dir=default_index_dir(),
 )
 
-# Access the underlying Chroma collection.
-index.collection.query(
-    query_texts=["overplotted scatter plots"],
-    n_results=3,
-    where={"labels": {"$contains": "chart:scatter:avoid"}},
-)
-
-# `search_guidelines` returns typed guideline-level hits.
-search_guidelines(
-    index,
+tools.query_documents(
     "overplotted scatter plots",
-    where={"labels": {"$contains": "chart:scatter:avoid"}},
-).rows
+    limit=3,
+    where="role = 'overview'",
+)
+
+tools.search_guidelines(
+    "overplotted scatter plots",
+    where="role = 'overview'",
+)["rows"]
 ```
 
-Use DuckDB directly when notebooks, scripts, or agents need SQL joins over the
-derived catalog tables:
+Build the index first with `chartcoach index build`. Read commands open the content-addressed path for the current catalog digest and document version. ChartCoach creates a LanceDB full-text table over catalog documents. Use LanceDB's schema and embedding registry directly for vector tables.
+
+Use DuckDB directly when notebooks, scripts, or agents need SQL joins over the derived catalog tables:
 
 ```python
 from chartcoach.duckdb import connect_catalog
@@ -81,9 +76,21 @@ duckdb_path = default_duckdb_path()
 catalog.write_duckdb(duckdb_path, overwrite=True)
 ```
 
+The LanceDB index root can also be attached through DuckDB's Lance extension:
+
+```sql
+INSTALL lance;
+LOAD lance;
+ATTACH '/path/to/index-root' AS cc_index (TYPE LANCE);
+
+select id, parent_id, role
+from cc_index.main.catalog_documents
+limit 5;
+```
+
 Run the CLI with `uv run --package chartcoach chartcoach --help`.
 
-These commands read the `guidelines` artifact bundle, inspect table schemas, write DuckDB tables, retrieve guideline evidence, and query Chroma rows.
+These commands read the `guidelines` artifact bundle, inspect table schemas, write DuckDB tables, retrieve guideline evidence, and query indexed document rows.
 
 ```bash
 chartcoach prompt --codex --source guidelines \
@@ -115,60 +122,30 @@ chartcoach index status --source guidelines \
   --index-dir "$INDEX_DIR" --format jsonl
 chartcoach index query --source guidelines \
   --index-dir "$INDEX_DIR" \
-  '{
-    "query_texts": ["overplotted scatter plot with too many points"],
-    "n_results": 8,
-    "where": {"labels": {"$contains": "chart:scatter:avoid"}},
-    "include": ["documents", "metadatas", "distances"]
-  }'
+  "overplotted scatter plot with too many points" \
+  --limit 8
 chartcoach guidelines search --source guidelines \
   --index-dir "$INDEX_DIR" \
-  --where '{"labels":{"$contains":"chart:scatter:avoid"}}' \
+  --where "role = 'overview'" \
   "overplotted scatter plot with too many points" --format jsonl
 ```
 
-Every row-oriented command supports `--format jsonl`, so shell tools can handle
-projection and token control:
+Every row-oriented command supports `--format jsonl`, so shell tools can handle projection and token control:
 
 ```bash
 chartcoach tables schema --source guidelines --format jsonl |
   jq 'select(.table == "sections")'
 ```
 
-The `artifacts` command prints native artifact paths for tools outside the SDK:
-`guidelines/MANIFEST.md` explains section roles and label families,
-`guidelines/catalog.parquet` can be opened by Polars or DuckDB directly,
-`catalog duckdb` creates a normal DuckDB database file with the derived catalog
-tables, `sql` runs bounded read-only DuckDB queries, and passing `--index-dir` adds the content-addressed Chroma path plus
-collection name. Use `tables list`, `tables schema`, and `tables values` first
-when you do not know the catalog shape, then query the parquet or DuckDB
-artifact with native tools. `guidelines retrieve` is deterministic and does not
-require Chroma. `index query` and `index get` forward
-native Chroma parameter JSON objects to `collection.query(**params)` and
-`collection.get(**params)`. `guidelines search` is the catalog-specific semantic
-search command that deduplicates matches to guideline-level typed rows. Exact
-catalog labels stay in Chroma's `labels` metadata array, so native filters can use
-`{"labels": {"$contains": "chart:scatter:avoid"}}`. Build the index explicitly
-with `chartcoach index build`. Read commands do not create or rebuild search
-state.
+The `artifacts` command prints native artifact paths for tools outside the SDK. `guidelines/MANIFEST.md` explains section roles and label families. `guidelines/catalog.parquet` can be opened by Polars or DuckDB directly. `catalog duckdb` creates a normal DuckDB database file with the derived catalog tables. Passing `--index-dir` adds the content-addressed LanceDB root and `catalog_documents` table path. Use `tables list`, `tables schema`, and `tables values` before writing SQL against an unfamiliar catalog. `guidelines retrieve` is deterministic and does not require a search index. `index query` runs full-text search over indexed document rows. `guidelines search` deduplicates matches to guideline-level typed rows. Build the index explicitly with `chartcoach index build`. Read commands do not create or rebuild search state.
 
-Install `chartcoach[mcp]` for catalog-only MCP tools. Install both
-`chartcoach[mcp,search]` when agents will call Chroma-backed tools.
-
-The MCP server exposes catalog tools without requiring a Chroma index:
+Install `chartcoach[mcp]` for catalog-only MCP tools. Install both `chartcoach[mcp,search]` when agents will call search tools.
 
 ```bash
 chartcoach mcp serve --source guidelines
 ```
 
-The MCP surface exposes deterministic catalog tools plus direct Chroma access:
-`catalog_artifacts`, `tables_list`, `tables_schema`, `tables_values`,
-`guidelines_list`, `guidelines_get`, `guidelines_retrieve`,
-`guidelines_search`, `chroma_query`, and `chroma_get`. `chroma_query` calls
-`collection.query(**params)` and `chroma_get` calls `collection.get(**params)`.
-Pass `--index-dir` to make `guidelines_search`, `chroma_query`, and
-`chroma_get` usable. Agents that need SQL can call `sql_query` through MCP or
-open the DuckDB artifact directly.
+The MCP surface exposes `catalog_artifacts`, `tables_list`, `tables_schema`, `tables_values`, `sql_query`, `guidelines_list`, `guidelines_get`, `guidelines_retrieve`, `guidelines_search`, and `index_query`. Pass `--index-dir` to make `guidelines_search` and `index_query` usable.
 
 Run tests with `pnpm --dir packages/catalog-python test`.
 

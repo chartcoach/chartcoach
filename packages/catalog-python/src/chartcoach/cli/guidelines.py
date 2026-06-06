@@ -6,7 +6,6 @@ from typing import cast
 
 import click
 
-from chartcoach.search import ChromaIndex, search_guidelines
 from chartcoach.tools.catalog import (
     CatalogToolError,
     CatalogTools,
@@ -25,7 +24,6 @@ from .common import (
     evidence_packets_to_markdown,
     guideline_search_rows_to_markdown,
     load_catalog,
-    parse_json_object,
     required_index_dir_option,
 )
 
@@ -229,15 +227,11 @@ def retrieve_command(
 @click.option(
     "--candidate-limit",
     type=click.IntRange(min=1),
-    help="Maximum Chroma document candidates to inspect before deduplication.",
+    help="Maximum indexed documents to inspect before deduplication.",
 )
 @click.option(
     "--where",
-    help="Native Chroma metadata filter JSON.",
-)
-@click.option(
-    "--where-document",
-    help="Native Chroma document filter JSON.",
+    help="LanceDB SQL filter over indexed document columns.",
 )
 @click.option(
     "--format",
@@ -255,31 +249,18 @@ def search_command(
     limit: int,
     candidate_limit: int | None,
     where: str | None,
-    where_document: str | None,
     output_format: str,
 ) -> None:
-    """Search guidelines using an existing Chroma index."""
+    """Search guidelines using an existing LanceDB index."""
 
     catalog = load_catalog(ctx)
     assert index_dir is not None
-    where_filter = parse_json_object(where, option_name="--where")
-    where_document_filter = parse_json_object(
-        where_document,
-        option_name="--where-document",
-    )
     try:
-        index = ChromaIndex.from_cache(
-            catalog,
-            cache_dir=index_dir,
-            cache_mode="reuse_only",
-        )
-        result = search_guidelines(
-            index,
+        result = CatalogTools(catalog, index_dir=index_dir).search_guidelines(
             query,
             limit=limit,
             candidate_limit=candidate_limit,
-            where=where_filter,
-            where_document=where_document_filter,
+            where=where,
         )
     except CatalogToolError as exc:
         raise click.ClickException(str(exc)) from exc
@@ -287,10 +268,10 @@ def search_command(
         raise click.ClickException(search_error_message(str(exc))) from exc
 
     if output_format == "json":
-        click.echo(json.dumps(result.to_dict(), indent=2, ensure_ascii=False))
+        click.echo(json.dumps(result, indent=2, ensure_ascii=False))
         return
 
-    rows = cast(list[dict[str, object]], result.to_dict()["rows"])
+    rows = cast(list[dict[str, object]], result["rows"])
     if output_format == "markdown":
         click.echo(guideline_search_rows_to_markdown(rows).rstrip())
     else:
