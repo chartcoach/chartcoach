@@ -5,8 +5,8 @@ import { fileURLToPath } from "node:url";
 import Cite from "citation-js";
 import sanitizeHtml from "sanitize-html";
 
-import { DANGLING_ROLE, guidelineToMarkdown, parseGuidelineSections } from "@chartcoach/catalog";
-import { loadCatalogFromParquetFile } from "@chartcoach/catalog/node";
+import { toMarkdown } from "@chartcoach/catalog";
+import { readCatalog } from "@chartcoach/catalog/server";
 
 type RenderedCitations = {
   body: string;
@@ -198,30 +198,36 @@ export function guidelinesLoader({
     name: "chartcoach-guidelines-loader",
     async load(context) {
       const projectRoot = fileURLToPath(context.config.root);
-      const guidelinesParquet = path.resolve(projectRoot, base, "catalog.parquet");
+      const guidelinesRoot = path.resolve(projectRoot, base);
+      const guidelinesParquet = path.join(guidelinesRoot, "catalog.parquet");
+      const guidelinesManifest = path.join(guidelinesRoot, "MANIFEST.md");
 
       context.watcher?.add(guidelinesParquet);
+      context.watcher?.add(guidelinesManifest);
 
-      const catalog = await loadCatalogFromParquetFile(guidelinesParquet);
+      const catalog = await readCatalog(guidelinesRoot);
       context.store.clear();
 
-      for (const entry of catalog.entries) {
-        const id = entry.guideline.id;
+      for (const guideline of catalog) {
+        const id = guideline.id;
+        const references = [...guideline.references];
         const referencesBib =
-          entry.references.length > 0 ? entry.references.join("\n\n") : undefined;
+          references.length > 0 ? references.join("\n\n") : undefined;
 
         const { body, citedKeys, bibliographyHtml } = renderCitationsInMarkdown(
-          entry.guideline.body,
-          entry.references,
+          guideline.body,
+          references,
         );
         const sections = await Promise.all(
-          parseGuidelineSections(body)
-            .filter((section) => section.role !== DANGLING_ROLE)
-            .map(async (section) => ({
-              role: section.role,
-              title: section.title,
-              html: (await context.renderMarkdown(section.content)).html,
-            })),
+          guideline.sections.map(async (section) => ({
+            role: section.role,
+            title: section.title,
+            html: (
+              await context.renderMarkdown(
+                renderCitationsInMarkdown(section.content, references).body,
+              )
+            ).html,
+          })),
         );
 
         const sourcePath = path.resolve(projectRoot, base, id, "guideline.md");
@@ -230,13 +236,13 @@ export function guidelinesLoader({
         const data = await context.parseData({
           id,
           data: {
-            id: entry.guideline.id,
-            title: entry.guideline.title,
-            description: entry.guideline.description || undefined,
-            labels: entry.guideline.labels,
-            markdown: guidelineToMarkdown(entry.guideline),
+            id: guideline.id,
+            title: guideline.title,
+            description: guideline.description || undefined,
+            labels: [...guideline.labels],
+            markdown: toMarkdown(guideline),
             sections,
-            bibliography: entry.guideline.bibliography,
+            bibliography: guideline.bibliography,
             referencesBib,
             citations: citedKeys,
             bibliographyHtml,

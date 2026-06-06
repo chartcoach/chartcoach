@@ -9,9 +9,9 @@ Package APIs read ChartCoach catalog artifacts through stable import paths, data
 ## Packages
 
 - [Catalog records](/api/catalog-records/) defines the source row shape used by every package.
-- [Python catalog API](/api/python/) loads parquet or folder catalogs, exposes Polars table views and native DuckDB connections, writes DuckDB artifacts, and opens Chroma indexes when `chartcoach[search]` is installed.
-- [JavaScript and TypeScript API](/api/javascript/) loads the same catalog wire shape in Node and shared runtime code.
-- [Browser loading API](/api/browser/) reads catalog parquet files from URLs without Node filesystem access.
+- [Python catalog API](/api/python/) loads manifest-backed catalog bundles, exposes Polars table views and native DuckDB connections, writes DuckDB artifacts, and opens Chroma indexes when `chartcoach[search]` is installed.
+- [JavaScript and TypeScript API](/api/javascript/) loads the same catalog records in server, browser, and shared runtime code.
+- [Browser loading API](/api/browser/) reads catalog parquet files from URLs without server filesystem access.
 - [CLI reference](/api/cli/) covers command groups and output contracts.
 - [MCP reference](/api/mcp/) covers tool names, transport options, and Chroma-backed tools.
 - [Artifacts](/api/artifacts/) describes native parquet, DuckDB, and Chroma files.

@@ -1,13 +1,13 @@
 import { parse as parseYaml } from "yaml";
-import {
-  DANGLING_ROLE,
-  type GuidelineSection,
-  type GuidelineSectionIndex,
-  type ParsedGuideline,
-} from "./model.js";
+import { CatalogError } from "./errors";
+import { normalizeLabel } from "./labels";
+import type { Guideline, GuidelineSection } from "./model";
 
-export function parseGuidelineSections(body: string): GuidelineSection[] {
-  const headingPattern = /^##\s+(.+?)\s*<!--\s*role:\s*(\S+)\s*-->\s*$/;
+const UNASSIGNED_SECTION_ROLE = "__unassigned__";
+export type GuidelineSource = Omit<Guideline, "references">;
+
+export function parseSectionBlocks(body: string): GuidelineSection[] {
+  const headingPattern = /^##\s+(.+?)\s*<!--\s*role:\s*(.*?)\s*-->\s*$/;
 
   const sections: GuidelineSection[] = [];
   const lines = body.split("\n");
@@ -18,7 +18,7 @@ export function parseGuidelineSections(body: string): GuidelineSection[] {
   function flushDangling() {
     const content = currentContentLines.join("\n").trim();
     if (!content) return;
-    sections.push({ role: DANGLING_ROLE, title: "", content });
+    sections.push({ role: UNASSIGNED_SECTION_ROLE, title: "", content });
     currentContentLines = [];
   }
 
@@ -38,7 +38,11 @@ export function parseGuidelineSections(body: string): GuidelineSection[] {
       } else {
         flushDangling();
       }
-      currentSection = { title: match[1]!.trim(), role: match[2]!.trim() };
+      const role = match[2]!.trim();
+      if (!role) {
+        throw new CatalogError("Invalid guideline section: role must not be empty.");
+      }
+      currentSection = { title: match[1]!.trim(), role };
       continue;
     }
     currentContentLines.push(line);
@@ -50,15 +54,7 @@ export function parseGuidelineSections(body: string): GuidelineSection[] {
   return sections;
 }
 
-export function indexGuidelineSections(sections: GuidelineSection[]): GuidelineSectionIndex {
-  const byRole: Record<string, GuidelineSection[]> = {};
-  for (const section of sections) {
-    (byRole[section.role] ??= []).push(section);
-  }
-  return { byRole };
-}
-
-export function parseMarkdownWithFrontmatter(markdown: string): {
+export function parseMarkdownDocument(markdown: string): {
   frontmatter: Record<string, unknown>;
   body: string;
 } {
@@ -74,8 +70,8 @@ export function parseMarkdownWithFrontmatter(markdown: string): {
   return { frontmatter, body };
 }
 
-export function parseGuideline(markdown: string): ParsedGuideline {
-  const { frontmatter, body } = parseMarkdownWithFrontmatter(markdown);
+export function parseGuidelineMarkdown(markdown: string): GuidelineSource {
+  const { frontmatter, body } = parseMarkdownDocument(markdown);
 
   const id = frontmatter.id;
   const title = frontmatter.title;
@@ -84,27 +80,28 @@ export function parseGuideline(markdown: string): ParsedGuideline {
   const labels = frontmatter.labels;
 
   if (typeof id !== "string" || id.length === 0) {
-    throw new Error("Invalid guideline frontmatter: `id` must be a non-empty string.");
+    throw new CatalogError("Invalid guideline frontmatter: `id` must be a non-empty string.");
   }
   if (typeof title !== "string" || title.length === 0) {
-    throw new Error("Invalid guideline frontmatter: `title` must be a non-empty string.");
+    throw new CatalogError("Invalid guideline frontmatter: `title` must be a non-empty string.");
   }
 
-  const sections = parseGuidelineSections(body);
+  const sections = parseSectionBlocks(body);
 
   return {
     id,
     title,
     bibliography: typeof bibliography === "string" ? bibliography : undefined,
     description: typeof description === "string" ? description : "",
-    labels: Array.isArray(labels) ? labels.filter((l): l is string => typeof l === "string") : [],
+    labels: Array.isArray(labels)
+      ? labels.map((label) => normalizeLabel(label, "guideline label"))
+      : [],
     body,
     sections,
-    sectionsIndex: indexGuidelineSections(sections),
   };
 }
 
-export function parseBibtex(bibtexContent: string): string[] {
+export function parseBibliographyEntries(bibtexContent: string): string[] {
   const commentFree = bibtexContent
     .split("\n")
     .filter((line) => !line.trimStart().startsWith("%"))

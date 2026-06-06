@@ -307,6 +307,8 @@ def _configure_logging(log_level: LogLevelName) -> None:
 def _load_source(source: str | Path) -> Catalog:
     path = Path(source)
     if path.is_dir():
+        if (path / "catalog.parquet").exists():
+            return Catalog.from_bundle(path)
         return Catalog.from_folder(path)
     return Catalog.from_parquet(path)
 

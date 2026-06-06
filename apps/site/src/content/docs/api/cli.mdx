@@ -9,29 +9,46 @@ The `chartcoach` CLI is part of the Python package. It reads catalog artifacts, 
 uv run --package chartcoach chartcoach --help
 ```
 
+## prompt
+
+`chartcoach prompt --codex|--claude|--opencode [--source PATH] [--index-dir DIR] [--guidance-mode create|feedback|explore|debug] [--task TEXT]`
+
+Print an agent startup prompt that references the installed ChartCoach skill, catalog source, optional semantic index, and task.
+
+```bash
+npx skills add chartcoach/catalog
+codex "$(uvx chartcoach@latest prompt --codex --source guidelines)"
+```
+
+The prompt has no filesystem side effects. It does not validate the catalog or build a search index. It tells the agent to use `MANIFEST.md` for catalog-specific role and label semantics, retrieve targeted guideline evidence, and include guideline ids plus public links when guidelines constrain or justify the answer.
+
 ## Global Source
 
 Most commands accept:
 
 `--source PATH`
 
-Catalog source path. Use a catalog parquet file or a folder catalog.
+Catalog source path. Use a catalog artifact bundle directory for manifest validation. Direct parquet files remain available for table-only workflows.
 
 ## artifacts
 
 `chartcoach artifacts --source PATH --format table|json|jsonl|csv`
 
-List native files that other tools can open directly: source catalog, generated DuckDB path, and Chroma index paths when search extras are available.
+List native files that other tools can open directly: manifest, source catalog, generated DuckDB path, and Chroma index paths when search extras are available.
 
 ## catalog
 
-`chartcoach catalog build --source FOLDER --out PATH`
+`chartcoach catalog build --source FOLDER --out DIR`
 
-Build a serialized catalog parquet file from a folder catalog.
+Build a catalog artifact bundle from an authored guideline folder. The output directory contains `MANIFEST.md` and `catalog.parquet`.
 
 `chartcoach catalog check --source FOLDER --format table|json|jsonl|csv`
 
-Validate a guideline folder and report table counts.
+Validate a guideline folder against `MANIFEST.md` and report table counts.
+
+`chartcoach catalog manifest --source PATH --format markdown|json|jsonl`
+
+Print the catalog manifest or list its section roles and label families.
 
 `chartcoach catalog duckdb --source PATH --out PATH [--overwrite]`
 

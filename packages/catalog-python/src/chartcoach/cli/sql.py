@@ -55,8 +55,8 @@ def sql_command(
             format_tool_error(
                 str(exc),
                 [
-                    "Run chartcoach tables list --source PATH to inspect table names.",
-                    "Run chartcoach tables schema --source PATH --format jsonl to inspect columns.",
+                    "Inspect table names before running the query.",
+                    "Inspect column schemas before selecting fields.",
                 ],
             )
         ) from exc

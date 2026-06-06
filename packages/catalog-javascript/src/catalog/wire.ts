@@ -1,7 +1,8 @@
-import type { CatalogEntry, GuidelineSection } from "./model.js";
-import { indexGuidelineSections } from "./parse.js";
+import { CatalogError } from "./errors";
+import { normalizeLabel } from "./labels";
+import type { Guideline, GuidelineSection } from "./model";
 
-export type CatalogEntryWire = {
+export type CatalogRowWire = {
   id: string;
   guideline: {
     id: string;
@@ -27,6 +28,7 @@ function isGuidelineSection(value: unknown): value is GuidelineSection {
   return (
     isRecord(value) &&
     typeof value.role === "string" &&
+    value.role.trim().length > 0 &&
     typeof value.title === "string" &&
     typeof value.content === "string"
   );
@@ -38,13 +40,13 @@ function isSectionArray(value: unknown): value is GuidelineSection[] {
 
 function sectionsFromWire(value: GuidelineSection[]): GuidelineSection[] {
   return value.map((section) => ({
-    role: section.role,
+    role: section.role.trim(),
     title: section.title,
     content: section.content,
   }));
 }
 
-export function isCatalogEntryWire(value: unknown): value is CatalogEntryWire {
+export function isCatalogRowWire(value: unknown): value is CatalogRowWire {
   if (!isRecord(value)) return false;
   if (typeof value.id !== "string" || value.id.length === 0) return false;
   if (!isRecord(value.guideline)) return false;
@@ -58,33 +60,34 @@ export function isCatalogEntryWire(value: unknown): value is CatalogEntryWire {
   return true;
 }
 
-export function catalogEntryFromWire(value: unknown): CatalogEntry | null {
-  if (!isCatalogEntryWire(value)) return null;
+export function guidelineFromWire(value: unknown): Guideline | null {
+  if (!isCatalogRowWire(value)) return null;
 
   const { guideline, references } = value;
   const sections = sectionsFromWire(guideline.sections);
+  let labels: string[];
+  try {
+    labels = guideline.labels.map((label) => normalizeLabel(label, "guideline label"));
+  } catch {
+    return null;
+  }
 
-  const entry: CatalogEntry = {
-    guideline: {
-      id: guideline.id,
-      title: guideline.title,
-      bibliography: typeof guideline.bibliography === "string" ? guideline.bibliography : undefined,
-      description: guideline.description,
-      labels: [...guideline.labels],
-      body: guideline.body,
-      sections,
-      sectionsIndex: indexGuidelineSections(sections),
-    },
+  return {
+    id: guideline.id,
+    title: guideline.title,
+    bibliography: typeof guideline.bibliography === "string" ? guideline.bibliography : undefined,
+    description: guideline.description,
+    labels,
+    body: guideline.body,
+    sections,
     references: [...references],
   };
-
-  return entry;
 }
 
-export function requireCatalogEntryFromWire(value: unknown, context?: string): CatalogEntry {
-  const entry = catalogEntryFromWire(value);
-  if (entry) return entry;
+export function requireGuidelineFromWire(value: unknown, context?: string): Guideline {
+  const guideline = guidelineFromWire(value);
+  if (guideline) return guideline;
 
   const suffix = context ? ` (${context})` : "";
-  throw new Error(`Invalid CatalogEntry wire format${suffix}.`);
+  throw new CatalogError(`Invalid catalog row format${suffix}.`);
 }

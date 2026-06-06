@@ -1,8 +1,13 @@
 import { stringify as stringifyYaml } from "yaml";
 
-import type { Guideline } from "./model.js";
+import type { Guideline } from "./model";
 
-export function guidelineToMarkdown(guideline: Guideline): string {
+export function toMarkdown(
+  guideline: Pick<
+    Guideline,
+    "id" | "title" | "bibliography" | "description" | "labels" | "body"
+  >,
+): string {
   const frontmatter = {
     id: guideline.id,
     title: guideline.title,

@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 import polars as pl
 
-from chartcoach.catalog import Catalog, CatalogEntry
+from chartcoach.catalog import Catalog, CatalogEntry, CatalogManifestError
 from chartcoach.catalog.storage import load_catalog_entry
 from chartcoach.guideline import Guideline
 
@@ -32,6 +32,30 @@ BIBTEX = """% generated note
 }
 """
 
+MANIFEST_MD = """# Sample Catalog
+
+## Section Roles
+
+### advice
+
+Actionable guidance for applying the guideline.
+
+## Label Families
+
+### chart
+
+Chart-family labels such as `chart:line`.
+
+### goal
+
+Task-goal labels such as `goal:comparison`.
+"""
+
+
+def write_manifest(root: Path, manifest: str = MANIFEST_MD) -> None:
+    root.mkdir(parents=True, exist_ok=True)
+    (root / "MANIFEST.md").write_text(manifest)
+
 
 def write_catalog_entry(root: Path, entry_id: str = "direct-labels") -> Path:
     entry_dir = root / entry_id
@@ -49,8 +73,8 @@ def write_catalog_entry(root: Path, entry_id: str = "direct-labels") -> Path:
 
 
 def test_catalog_loads_folder_entries_and_tables(tmp_path: Path) -> None:
+    write_manifest(tmp_path)
     write_catalog_entry(tmp_path)
-    (tmp_path / "__templates__").mkdir()
 
     catalog = Catalog.from_folder(tmp_path)
 
@@ -78,6 +102,7 @@ def test_catalog_loads_folder_entries_and_tables(tmp_path: Path) -> None:
 
 
 def test_catalog_folder_queries_are_deterministically_ordered(tmp_path: Path) -> None:
+    write_manifest(tmp_path)
     write_catalog_entry(tmp_path, "z-guideline")
     write_catalog_entry(tmp_path, "a-guideline")
 
@@ -90,6 +115,7 @@ def test_catalog_folder_queries_are_deterministically_ordered(tmp_path: Path) ->
 
 
 def test_catalog_write_folder_roundtrips_entries(tmp_path: Path) -> None:
+    write_manifest(tmp_path / "source")
     write_catalog_entry(tmp_path / "source")
     catalog = Catalog.from_folder(tmp_path / "source")
 
@@ -176,6 +202,7 @@ def test_load_catalog_entry_requires_guideline_file(tmp_path: Path) -> None:
 
 
 def test_catalog_write_parquet_roundtrips(tmp_path: Path) -> None:
+    write_manifest(tmp_path / "source")
     write_catalog_entry(tmp_path / "source")
     catalog = Catalog.from_folder(tmp_path / "source")
 
@@ -259,6 +286,78 @@ def test_catalog_entry_rejects_mismatched_row_id() -> None:
         )
 
 
+def test_catalog_folder_requires_manifest(tmp_path: Path) -> None:
+    write_catalog_entry(tmp_path)
+
+    with pytest.raises(FileNotFoundError, match="MANIFEST.md"):
+        Catalog.from_folder(tmp_path)
+
+
+def test_catalog_manifest_rejects_undefined_section_roles(tmp_path: Path) -> None:
+    write_manifest(
+        tmp_path,
+        """# Sample Catalog
+
+## Section Roles
+
+### reason
+
+Evidence behind a guideline.
+
+## Label Families
+
+### chart
+
+Chart-family labels such as `chart:line`.
+
+### goal
+
+Task-goal labels such as `goal:comparison`.
+""",
+    )
+    write_catalog_entry(tmp_path)
+
+    with pytest.raises(CatalogManifestError, match="undefined section role"):
+        Catalog.from_folder(tmp_path)
+
+
+def test_catalog_manifest_rejects_undefined_label_families(tmp_path: Path) -> None:
+    write_manifest(
+        tmp_path,
+        """# Sample Catalog
+
+## Section Roles
+
+### advice
+
+Actionable guidance for applying the guideline.
+
+## Label Families
+
+### chart
+
+Chart-family labels such as `chart:line`.
+""",
+    )
+    write_catalog_entry(tmp_path)
+
+    with pytest.raises(CatalogManifestError, match="undefined label family"):
+        Catalog.from_folder(tmp_path)
+
+
+def test_catalog_bundle_loads_manifest_and_parquet(tmp_path: Path) -> None:
+    write_manifest(tmp_path / "source")
+    write_catalog_entry(tmp_path / "source")
+    catalog = Catalog.from_folder(tmp_path / "source")
+
+    catalog.write_bundle(tmp_path / "bundle")
+    reloaded = Catalog.from_bundle(tmp_path / "bundle")
+
+    assert reloaded.manifest is not None
+    assert list(reloaded.manifest.section_roles) == ["advice"]
+    assert reloaded.to_frame().to_dicts() == catalog.to_frame().to_dicts()
+
+
 def test_catalog_from_frame_rejects_mismatched_guideline_id() -> None:
     frame = pl.from_dicts(
         [
@@ -309,7 +408,9 @@ def test_empty_label_catalog_frames_are_typed() -> None:
         ]
     )
 
+    assert catalog.labels().schema["family"].is_(pl.String)
     assert catalog.labels().schema["category"].is_(pl.String)
+    assert catalog.labels().schema["modifier"].is_(pl.String)
     assert catalog.guideline_labels().schema["label"].is_(pl.String)
     assert catalog.labels().is_empty()
     assert catalog.guideline_labels().is_empty()

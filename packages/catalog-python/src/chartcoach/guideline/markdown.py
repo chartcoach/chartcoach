@@ -8,7 +8,7 @@ import yaml
 
 from .core import Guideline, Section
 
-SECTION_HEADING_RE = re.compile(r"^##\s+(.+?)\s*<!--\s*role:\s*(\S+)\s*-->\s*$")
+SECTION_HEADING_RE = re.compile(r"^##\s+(.+?)\s*<!--\s*role:\s*(.*?)\s*-->\s*$")
 
 
 def parse_guideline(markdown: str) -> Guideline:

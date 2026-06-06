@@ -1,28 +1,15 @@
+export { Catalog, type CatalogOptions, type Guideline, type GuidelineSection } from "./catalog/model";
+export { CatalogError } from "./catalog/errors";
 export {
-  Catalog,
-  DANGLING_ROLE,
-  type CatalogEntry,
-  type Guideline,
-  type GuidelineSectionIndex,
-  type ParsedGuideline,
-  type GuidelineSection,
-} from "./catalog/model.js";
-export {
-  loadCatalogFromParquet,
+  loadCatalog,
   type AsyncBuffer,
+  type CatalogLoadOptions,
   type ParquetBytes,
-} from "./catalog/load-parquet-core.js";
+} from "./catalog/load-parquet-core";
 export {
-  parseBibtex,
-  parseGuideline,
-  parseGuidelineSections,
-  indexGuidelineSections,
-  parseMarkdownWithFrontmatter,
-} from "./catalog/parse.js";
-export { guidelineToMarkdown } from "./catalog/markdown.js";
-export {
-  catalogEntryFromWire,
-  isCatalogEntryWire,
-  requireCatalogEntryFromWire,
-  type CatalogEntryWire,
-} from "./catalog/wire.js";
+  type CatalogManifest,
+  type ManifestDefinition,
+  parseManifest,
+} from "./catalog/manifest";
+export { parseLabel, type CatalogLabel } from "./catalog/labels";
+export { toMarkdown } from "./catalog/markdown";

@@ -3,59 +3,69 @@ title: Browser Loading API
 description: Load ChartCoach catalog parquet artifacts in browser runtimes.
 ---
 
-The browser entrypoint avoids Node filesystem APIs and loads parquet artifacts over HTTP.
+The browser entrypoint loads a published parquet catalog over HTTP. Pass a manifest when the caller needs section-role and label-family validation.
 
 ```ts
-import { loadCatalogFromParquetUrl } from "@chartcoach/catalog/browser";
+import { fetchCatalog } from "@chartcoach/catalog/browser";
 
-const catalog = await loadCatalogFromParquetUrl("/catalog.parquet");
+const catalog = await fetchCatalog("/catalog.parquet", {
+  manifest: "/MANIFEST.md",
+});
 ```
 
-## loadCatalogFromParquetUrl
+## fetchCatalog
 
-`loadCatalogFromParquetUrl(url, requestInit?)`
+`fetchCatalog(catalogUrl, options?)`
 
-Fetch a parquet catalog from `url`, decode it with `hyparquet`, validate each row against `CatalogEntryWire`, and return a `Catalog`.
+Fetch `catalogUrl`, decode the parquet rows, validate each row, and return a `Catalog`.
 
 ```ts
-const catalog = await loadCatalogFromParquetUrl(
+const catalog = await fetchCatalog(
   "https://example.com/guidelines/catalog.parquet",
   {
-    headers: {
-      accept: "application/octet-stream",
+    manifest: "https://example.com/guidelines/MANIFEST.md",
+    request: {
+      headers: {
+        accept: "application/octet-stream",
+      },
     },
   },
 );
 ```
 
-`requestInit` is passed to the underlying fetch path. Use it for headers, credentials, or cache policy.
+`options.manifest` accepts a parsed manifest, a URL string, or a `URL` object. When it is a URL, `fetchCatalog` retrieves the manifest with the same request options and validates catalog coverage.
 
-## Returned Shape
+`options.request` is passed to both fetch paths. Use it for headers, credentials, cache policy, or abort signals.
 
-The returned object is the same `Catalog` class exported from `@chartcoach/catalog`:
+## Returned Catalog
+
+`fetchCatalog` returns the same `Catalog` class exported from `@chartcoach/catalog`.
 
 ```ts
-for (const entry of catalog) {
-  const { id, title, labels, sections } = entry.guideline;
-  console.log(id, title, labels.length, sections.length);
+for (const guideline of catalog) {
+  console.log(guideline.id, guideline.title, guideline.labels.length);
 }
 ```
 
-Each loaded row must contain the strict catalog wire fields:
+Each guideline is flat:
 
-- top-level `id`
-- `guideline.id`, matching the top-level `id`
-- `guideline.title`
-- `guideline.description`
-- `guideline.labels`
-- `guideline.body`
-- `guideline.sections`
-- `references`
+```ts
+type Guideline = {
+  id: string;
+  title: string;
+  bibliography?: string;
+  description: string;
+  labels: readonly string[];
+  body: string;
+  sections: readonly GuidelineSection[];
+  references: readonly string[];
+};
+```
 
-The browser loader does not repair partial records. A malformed row rejects the load with an invalid wire-format error.
+Malformed rows reject the load with `CatalogError`. Manifest validation also rejects undefined section roles and label families.
 
-## When to Use the Browser Entry
+## Runtime Boundary
 
-Use `@chartcoach/catalog/browser` for static sites and browser applications that load a published catalog artifact.
+Use `@chartcoach/catalog/browser` for static sites and browser applications that load published catalog artifacts.
 
-Use `@chartcoach/catalog/node` when reading from local filesystem paths in scripts or build steps.
+Use `@chartcoach/catalog/server` for local filesystem paths in scripts, build steps, and server applications.

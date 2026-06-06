@@ -3,67 +3,56 @@ title: Catalog Records
 description: Source record shape shared by ChartCoach package APIs.
 ---
 
-The catalog record is the boundary between authored guidance and package APIs. Python, JavaScript, the CLI, MCP tools, DuckDB exports, and Chroma indexes all read from this shape.
+The public catalog record is `Guideline`. JavaScript and Python loaders return the same flat record fields for catalog entries, whether the source is an authored folder or a generated parquet artifact.
 
 ```ts
-type CatalogEntryWire = {
+type Guideline = {
   id: string;
-  guideline: {
-    id: string;
-    title: string;
-    bibliography?: string | null;
-    description: string;
-    labels: string[];
-    body: string;
-    sections: GuidelineSection[];
-  };
-  references: string[];
+  title: string;
+  bibliography?: string;
+  description: string;
+  labels: readonly string[];
+  body: string;
+  sections: readonly GuidelineSection[];
+  references: readonly string[];
 };
 ```
 
-## CatalogEntryWire
+## Guideline
 
 `id`
 
-Stable guideline id. Must match `guideline.id`.
+Stable guideline id.
 
-`guideline`
+`title`
 
-Structured guideline record.
+Short action-oriented title.
+
+`bibliography`
+
+Optional bibliography filename from folder-authored catalogs.
+
+`description`
+
+One-sentence summary used by listing and retrieval surfaces.
+
+`labels`
+
+Controlled-vocabulary labels. The packages preserve these as strings. Label semantics live in the catalog data, not in loader-specific enums.
+
+Labels must use `family:category` or `family:category:modifier`. The manifest must define every label family used by `catalog.parquet`.
+
+`body`
+
+Full markdown body.
+
+`sections`
+
+Role-tagged section records parsed from the body.
 
 `references`
 
 BibTeX entries associated with the guideline.
-
-## Guideline
-
-`guideline.id`
-
-Stable guideline id.
-
-`guideline.title`
-
-Short action-oriented title.
-
-`guideline.bibliography`
-
-Optional bibliography filename from folder-authored catalogs.
-
-`guideline.description`
-
-One-sentence summary used by listing and retrieval surfaces.
-
-`guideline.labels`
-
-Controlled-vocabulary labels. The packages preserve these as strings. Label semantics live in the catalog data, not in loader-specific enums.
-
-`guideline.body`
-
-Full markdown body.
-
-`guideline.sections`
-
-Role-tagged section records parsed from the body.
 
 ## GuidelineSection
 
@@ -79,6 +68,8 @@ type GuidelineSection = {
 
 Section role such as `advice`, `reason`, `context`, `exceptions`, `check`, or `fix`.
 
+Section roles are catalog-owned strings. The manifest must define every section role used by `catalog.parquet`.
+
 `title`
 
 Section heading.
@@ -89,8 +80,10 @@ Section markdown content.
 
 ## Validation
 
-JavaScript parquet loading calls `requireCatalogEntryFromWire(row, context)`. Invalid rows fail at the storage boundary.
+JavaScript loading validates rows at the storage boundary and returns flat `Guideline` records. Invalid rows fail before a `Catalog` is constructed.
 
 Python loading validates the same source shape through `Catalog.from_parquet`, `Catalog.from_folder`, `CatalogEntry.from_mapping`, and `Guideline.from_mapping`.
+
+Bundle loaders also validate `MANIFEST.md`. `Section Roles` and `Label Families` are required headings, and each role or family is a level-3 subheading under the matching required heading.
 
 Do not rely on loaders to fill missing titles, descriptions, labels, sections, or references. The catalog row should already be complete.

@@ -1,7 +1,8 @@
 import { parquetReadObjects } from "hyparquet";
 import { compressors } from "hyparquet-compressors";
-import { Catalog, type CatalogEntry } from "./model.js";
-import { requireCatalogEntryFromWire } from "./wire.js";
+import { Catalog, type CatalogOptions, type Guideline } from "./model";
+import type { CatalogManifest } from "./manifest";
+import { requireGuidelineFromWire } from "./wire";
 
 export type AsyncBuffer = {
   byteLength: number;
@@ -9,6 +10,9 @@ export type AsyncBuffer = {
 };
 
 export type ParquetBytes = ArrayBuffer | ArrayBufferView;
+export type CatalogLoadOptions = CatalogOptions & {
+  manifest?: CatalogManifest;
+};
 
 function normalizeParquetBytes(bytes: ParquetBytes): ArrayBuffer {
   if (bytes instanceof ArrayBuffer) return bytes;
@@ -19,7 +23,10 @@ function normalizeParquetBytes(bytes: ParquetBytes): ArrayBuffer {
   return u8.slice().buffer;
 }
 
-export async function loadCatalogFromParquet(file: AsyncBuffer | ParquetBytes): Promise<Catalog> {
+export async function loadCatalog(
+  file: AsyncBuffer | ParquetBytes,
+  options: CatalogLoadOptions = {},
+): Promise<Catalog> {
   const normalizedFile =
     file instanceof ArrayBuffer || ArrayBuffer.isView(file)
       ? normalizeParquetBytes(file as ParquetBytes)
@@ -30,9 +37,9 @@ export async function loadCatalogFromParquet(file: AsyncBuffer | ParquetBytes): 
     compressors,
   })) as Array<Record<string, unknown>>;
 
-  const entries: CatalogEntry[] = rows.map((row, index) =>
-    requireCatalogEntryFromWire(row, `parquet row ${index}`),
+  const guidelines: Guideline[] = rows.map((row, index) =>
+    requireGuidelineFromWire(row, `parquet row ${index}`),
   );
 
-  return new Catalog(entries);
+  return new Catalog(guidelines, options);
 }

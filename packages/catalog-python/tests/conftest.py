@@ -6,7 +6,31 @@ from pathlib import Path
 from click.testing import CliRunner
 import pytest
 
-from chartcoach import Catalog, CatalogEntry, Guideline, Section
+from chartcoach import Catalog, CatalogEntry, CatalogManifest, Guideline, Section
+
+
+SAMPLE_MANIFEST_MARKDOWN = """# Sample Catalog
+
+## Section Roles
+
+### advice
+
+Actionable guidance for applying the guideline.
+
+## Label Families
+
+### chart
+
+Chart-family labels such as `chart:line` and `chart:bar`.
+
+### component
+
+Chart-component labels such as `component:label` and `component:axis`.
+
+### task
+
+Task labels such as `task:lookup`.
+"""
 
 
 @pytest.fixture
@@ -15,7 +39,12 @@ def runner() -> CliRunner:
 
 
 @pytest.fixture
-def sample_catalog() -> Catalog:
+def sample_manifest() -> CatalogManifest:
+    return CatalogManifest.from_text(SAMPLE_MANIFEST_MARKDOWN)
+
+
+@pytest.fixture
+def sample_catalog(sample_manifest: CatalogManifest) -> Catalog:
     return Catalog.from_entries(
         [
             CatalogEntry(
@@ -50,12 +79,13 @@ def sample_catalog() -> Catalog:
                     ),
                 )
             ),
-        ]
+        ],
+        manifest=sample_manifest,
     )
 
 
 @pytest.fixture
-def single_guideline_catalog() -> Catalog:
+def single_guideline_catalog(sample_manifest: CatalogManifest) -> Catalog:
     return Catalog.from_entries(
         [
             CatalogEntry(
@@ -74,7 +104,8 @@ def single_guideline_catalog() -> Catalog:
                     ),
                 )
             )
-        ]
+        ],
+        manifest=sample_manifest,
     )
 
 

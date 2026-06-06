@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Iterable
 from ..guideline.bibliography import parse_bibtex
 from ..guideline.markdown import parse_guideline
 from .collection import CatalogEntry
+from .manifest import CatalogManifest
 
 if TYPE_CHECKING:
     from .collection import Catalog
@@ -34,22 +35,28 @@ def load_catalog(folder_path: PathLike[str]) -> Catalog:
     """Load all catalog entries from a folder."""
     from .collection import Catalog
 
+    root = Path(folder_path)
+    manifest = CatalogManifest.from_path(root / "MANIFEST.md")
     entries: list[CatalogEntry] = []
 
-    for entry_path in sorted(Path(folder_path).iterdir()):
+    for entry_path in sorted(root.iterdir()):
         if not entry_path.is_dir():
-            continue
-        if entry_path.name == "__templates__":
             continue
         entries.append(load_catalog_entry(entry_path))
 
-    return Catalog.from_entries(entries)
+    return Catalog.from_entries(entries, manifest=manifest)
 
 
-def write_catalog_entries(entries: Iterable[CatalogEntry], root: PathLike[str]) -> None:
+def write_catalog_entries(
+    entries: Iterable[CatalogEntry],
+    root: PathLike[str],
+    *,
+    manifest: CatalogManifest,
+) -> None:
     """Write catalog entries back to the folder layout."""
     folder_path = Path(root)
     folder_path.mkdir(parents=True, exist_ok=True)
+    manifest.write(folder_path / "MANIFEST.md")
 
     for entry in entries:
         entry_folder = folder_path / entry.guideline.id

@@ -29,15 +29,19 @@ def catalog_artifact_rows(
     catalog_digest = catalog.digest()
     rows = [
         _artifact_row(
+            name="catalog_manifest",
+            path=_manifest_path_for_source(source),
+            kind="manifest",
+            catalog_digest=catalog_digest,
+            note="Catalog manifest that defines section roles and label families.",
+        ),
+        _artifact_row(
             name="catalog_source",
             path=source,
             kind="catalog",
             catalog_digest=catalog_digest,
-            command=f"Catalog.from_parquet({source.as_posix()!r})"
-            if source.suffix == ".parquet"
-            else f"Catalog.from_folder({source.as_posix()!r})",
             note="Source path passed to ChartCoach.",
-        )
+        ),
     ]
 
     if source.suffix == ".parquet":
@@ -47,10 +51,6 @@ def catalog_artifact_rows(
                 path=source,
                 kind="parquet",
                 catalog_digest=catalog_digest,
-                command=(
-                    "duckdb -c "
-                    f"\"select * from read_parquet('{source.as_posix()}') limit 5\""
-                ),
                 note="Native catalog parquet file.",
             )
         )
@@ -62,16 +62,18 @@ def catalog_artifact_rows(
             path=resolved_duckdb_path,
             kind="duckdb",
             catalog_digest=catalog_digest,
-            command=(
-                f"chartcoach catalog duckdb --source {source.as_posix()!r} "
-                f"--out {resolved_duckdb_path.as_posix()!r}"
-            ),
             note="Native DuckDB file with derived catalog tables.",
         )
     )
 
     rows.extend(_chroma_artifact_rows(catalog, source=source, index_dir=index_dir))
     return rows
+
+
+def _manifest_path_for_source(source: Path) -> Path:
+    if source.is_dir():
+        return source / "MANIFEST.md"
+    return source.parent / "MANIFEST.md"
 
 
 def _chroma_artifact_rows(
@@ -109,10 +111,6 @@ def _chroma_artifact_rows(
             catalog_digest=paths.catalog_digest,
             embedding_name=paths.embedding_name,
             collection_name=paths.collection_name,
-            command=(
-                f"chartcoach index build --source {source.as_posix()!r} "
-                f"--index-dir {paths.index_root.as_posix()!r}"
-            ),
             note="Root directory for content-addressed search artifacts.",
         ),
         _artifact_row(
@@ -122,11 +120,6 @@ def _chroma_artifact_rows(
             catalog_digest=paths.catalog_digest,
             embedding_name=paths.embedding_name,
             collection_name=paths.collection_name,
-            command=(
-                "chromadb.PersistentClient("
-                f"path={paths.chroma_path.as_posix()!r}"
-                f").get_collection({paths.collection_name!r})"
-            ),
             note="Native Chroma persistent database for indexed catalog documents.",
         ),
     ]
@@ -134,7 +127,7 @@ def _chroma_artifact_rows(
 
 def _is_missing_search_extra(exc: ModuleNotFoundError) -> bool:
     name = exc.name
-    return name in {"chromadb", "polars_hash", "tqdm"} or (
+    return name in {"chromadb", "tqdm"} or (
         name is not None and name.startswith("chromadb.")
     )
 
@@ -147,7 +140,6 @@ def _artifact_row(
     catalog_digest: str,
     embedding_name: str | None = None,
     collection_name: str | None = None,
-    command: str | None = None,
     note: str | None = None,
     error: str | None = None,
 ) -> dict[str, object]:
@@ -160,7 +152,6 @@ def _artifact_row(
         "catalog_digest": catalog_digest,
         "embedding_name": embedding_name,
         "collection_name": collection_name,
-        "command": command,
         "note": note,
         "error": error,
     }

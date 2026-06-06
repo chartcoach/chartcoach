@@ -1,16 +1,19 @@
 import { describe, expect, it } from "vitest";
+import { parse as parseYaml } from "yaml";
 
-import { guidelineToMarkdown, parseGuideline } from "@chartcoach/catalog";
+import { toMarkdown } from "@chartcoach/catalog";
 
 describe("guideline markdown serialization", () => {
   it("serializes catalog guideline records back to markdown", () => {
-    const markdown = guidelineToMarkdown({
+    const markdown = toMarkdown({
       id: "adapt-framing",
       title: "Adapt framing",
       bibliography: "references.bib",
       description: "Use the outlet to choose framing.",
       labels: ["purpose:refine", "task:distribute"],
       body: "## Advice <!-- role: advice -->\nAdapt the chart.\n",
+      sections: [{ role: "advice", title: "Advice", content: "Adapt the chart." }],
+      references: [],
     });
 
     expect(markdown).toContain("id: adapt-framing");
@@ -18,11 +21,14 @@ describe("guideline markdown serialization", () => {
     expect(markdown).toContain("bibliography: references.bib");
     expect(markdown).toContain("## Advice <!-- role: advice -->");
 
-    const parsed = parseGuideline(markdown);
-    expect(parsed.id).toBe("adapt-framing");
-    expect(parsed.title).toBe("Adapt framing");
-    expect(parsed.description).toBe("Use the outlet to choose framing.");
-    expect(parsed.labels).toEqual(["purpose:refine", "task:distribute"]);
-    expect(parsed.sectionsIndex.byRole.advice?.[0]?.content).toBe("Adapt the chart.");
+    const [, frontmatter, body] = markdown.split("---");
+    expect(parseYaml(frontmatter ?? "")).toEqual({
+      id: "adapt-framing",
+      title: "Adapt framing",
+      bibliography: "references.bib",
+      description: "Use the outlet to choose framing.",
+      labels: ["purpose:refine", "task:distribute"],
+    });
+    expect(body?.trim()).toBe("## Advice <!-- role: advice -->\nAdapt the chart.");
   });
 });

@@ -3,9 +3,8 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 
 import polars as pl
-import polars_hash as plh
 
-DOCUMENTS_VERSION = "7"
+DOCUMENTS_VERSION = "8"
 
 
 def build_docs_df(
@@ -25,7 +24,10 @@ def build_docs_df(
             pl.col("metadata").struct.field("parent_id").alias("parent_id"),
             pl.col("metadata").struct.field("role").alias("role"),
             pl.col("metadata").struct.field("labels").alias("labels"),
-            plh.col("doc").chash.sha2_256().alias("content_hash"),
+            pl.when(pl.col("doc").is_null())
+            .then(None)
+            .otherwise(pl.col("doc").hash().cast(pl.String))
+            .alias("content_hash"),
         )
     )
 
