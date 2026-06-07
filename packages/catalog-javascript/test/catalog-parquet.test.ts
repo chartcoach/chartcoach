@@ -37,7 +37,7 @@ describe("guidelines/catalog.parquet", () => {
     assertCatalogLooksParsed(catalog);
   });
 
-  it("loads from artifact bundle with manifest validation", async () => {
+  it("loads from catalog bundle with manifest validation", async () => {
     const catalog = await readCatalog(guidelinesRoot);
     expect(catalog.length).toBeGreaterThan(0);
     expect(catalog.manifest?.sectionRoles.advice?.name).toBe("advice");

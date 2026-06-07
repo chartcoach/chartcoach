@@ -10,7 +10,7 @@ catalog.guidelines.map((guideline) => guideline.title);
 ```
 
 Use `@chartcoach/catalog/server` to read catalog bundles, source folders, or parquet files from server runtimes with filesystem support.
-Use `@chartcoach/catalog/browser` to fetch parquet artifacts by URL.
+Use `@chartcoach/catalog/browser` to fetch parquet files by URL.
 
 Build this package with `pnpm --dir packages/catalog-javascript build`.
 

@@ -3,7 +3,7 @@ title: CLI Reference
 description: Command groups and output contracts for the chartcoach command-line interface.
 ---
 
-The `chartcoach` CLI is part of the Python package. It reads catalog artifacts, emits deterministic rows, writes DuckDB tables, and queries the LanceDB search index.
+The `chartcoach` CLI is part of the Python package. It reads catalog bundles, emits deterministic rows, writes DuckDB tables, and queries an explicit LanceDB index.
 
 ```bash
 uv run --package chartcoach chartcoach --help
@@ -11,9 +11,9 @@ uv run --package chartcoach chartcoach --help
 
 ## prompt
 
-`chartcoach prompt --codex|--claude|--opencode [--source PATH] [--index-dir DIR] [--guidance-mode create|feedback|explore|debug] [--task TEXT]`
+`chartcoach prompt --codex|--claude|--opencode [--source PATH] [--index PATH] [--guidance-mode create|feedback|explore|debug] [--task TEXT]`
 
-Print an agent startup prompt that references the installed ChartCoach skill, catalog source, optional LanceDB full-text index, and task.
+Print an agent startup prompt that references the installed ChartCoach skill, catalog source, optional LanceDB index, and task.
 
 ```bash
 npx skills add chartcoach/catalog
@@ -26,7 +26,7 @@ The prompt has no filesystem side effects. It tells the agent to use `MANIFEST.m
 
 `chartcoach catalog build --source FOLDER --out DIR`
 
-Build a catalog artifact bundle from an authored guideline folder.
+Build a catalog bundle from an authored guideline folder.
 
 `chartcoach catalog check --source FOLDER --format table|json|jsonl|csv`
 
@@ -56,31 +56,23 @@ List guideline ids and summaries with deterministic filters.
 
 Return guideline records with optional section filtering.
 
-`chartcoach guidelines search --source PATH --index-dir DIR [--where FILTER] QUERY [--limit N] [--format table|json|jsonl|csv|markdown]`
+`chartcoach guidelines search --source PATH --index PATH [--table NAME] [--where FILTER] [--mode auto|fts|vector|hybrid] QUERY [--limit N] [--format table|json|jsonl|csv|markdown]`
 
-Open an existing LanceDB index, run full-text search, and return deduplicated guideline rows. `--where` is a LanceDB SQL filter over indexed document columns such as `role` and `parent_id`.
+Open an existing LanceDB table, run LanceDB search, and return deduplicated guideline rows. `--where` is a LanceDB SQL filter over indexed document columns such as `role` and `parent_id`. `--mode` is passed to LanceDB and defaults to `auto`.
 
 ## index
 
-`chartcoach index build --source PATH --index-dir DIR`
+`chartcoach index --source PATH --index PATH [--table NAME]`
 
-Build the content-addressed LanceDB index for the current catalog digest when it is missing.
+Create or replace a LanceDB table for catalog document search.
 
-`chartcoach index status --source PATH --index-dir DIR --format table|json|jsonl|csv`
+`chartcoach index --index PATH [--table NAME] documents [--mode auto|fts|vector|hybrid] QUERY --limit N --where FILTER --format json|jsonl`
 
-Report the resolved index root, table path, table name, document version, readiness, and document count.
-
-`chartcoach index rebuild --source PATH --index-dir DIR --yes`
-
-Rebuild the index path for the current catalog digest.
-
-`chartcoach index query --source PATH --index-dir DIR QUERY --limit N --where FILTER --format json|jsonl`
-
-Run full-text search over indexed document rows.
+Run LanceDB search over indexed document rows. This command opens the table directly and does not require a catalog source.
 
 ```bash
-chartcoach index query --source guidelines \
-  --index-dir "$INDEX_DIR" \
+chartcoach index --index "$CHARTCOACH_INDEX" \
+  documents \
   "bar axis baseline" \
   --limit 5
 ```

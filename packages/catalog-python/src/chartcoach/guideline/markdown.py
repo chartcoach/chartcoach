@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import Any
+from collections.abc import Mapping
 
 import mdformat
 import yaml
@@ -18,7 +18,6 @@ def parse_guideline(markdown: str) -> Guideline:
         {
             **frontmatter,
             "body": body,
-            "sections": parse_guideline_section_records(body),
         }
     )
 
@@ -81,7 +80,7 @@ def parse_guideline_sections(body: str) -> list[Section]:
     ]
 
 
-def parse_markdown_with_frontmatter(markdown: str) -> tuple[dict[str, Any], str]:
+def parse_markdown_with_frontmatter(markdown: str) -> tuple[dict[str, object], str]:
     """Parse markdown with optional YAML frontmatter."""
     if not markdown.startswith("---"):
         return {}, markdown
@@ -93,7 +92,9 @@ def parse_markdown_with_frontmatter(markdown: str) -> tuple[dict[str, Any], str]
     frontmatter_str = parts[1].strip()
     body = parts[2].strip()
     frontmatter = yaml.safe_load(frontmatter_str) or {}
-    return frontmatter, body
+    if not isinstance(frontmatter, Mapping):
+        raise ValueError("Guideline frontmatter must be a mapping.")
+    return dict(frontmatter), body
 
 
 def guideline_to_markdown(guideline: Guideline) -> str:

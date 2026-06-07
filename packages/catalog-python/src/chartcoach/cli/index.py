@@ -1,20 +1,19 @@
 from __future__ import annotations
 
+from pathlib import Path
+from typing import cast
+
 import click
 
-from chartcoach.tools.catalog import (
-    CatalogToolError,
-    CatalogTools,
-    search_error_message,
-)
+from chartcoach.constants import LANCE_DOCUMENT_TABLE
+from chartcoach.search import Mode, index, open as open_index, query as query_table
+from chartcoach.tools import search_error
 
 from .common import (
     CONTEXT_SETTINGS,
-    ROW_FORMATS,
     emit_object,
-    emit_rows,
     load_catalog,
-    required_index_dir_option,
+    required_index_option,
     source_option,
 )
 
@@ -23,98 +22,46 @@ INDEX_FORMATS = ("json", "jsonl")
 
 @click.group(
     "index",
+    invoke_without_command=True,
     context_settings=CONTEXT_SETTINGS,
-    help="Build and inspect the LanceDB search index.",
+    help="Create a LanceDB table for catalog document search.",
 )
-def index_command() -> None:
-    """Build and inspect the LanceDB search index."""
-
-
-@index_command.command("status", context_settings=CONTEXT_SETTINGS)
 @source_option
-@required_index_dir_option
+@required_index_option
 @click.option(
-    "--format",
-    "output_format",
-    type=click.Choice(ROW_FORMATS),
-    default="table",
+    "--table",
+    "table_name",
+    default=LANCE_DOCUMENT_TABLE,
     show_default=True,
-    help="Output format.",
+    help="LanceDB table name to create or query.",
 )
 @click.pass_context
-def status_command(
+def index_command(
     ctx: click.Context,
-    index_dir: str | None,
-    output_format: str,
+    index_path: Path,
+    table_name: str,
 ) -> None:
-    """Report the LanceDB index path for this catalog."""
+    """Create or replace a LanceDB table for catalog document search."""
+
+    if ctx.invoked_subcommand is not None:
+        ctx.ensure_object(dict)["index_path"] = index_path
+        ctx.ensure_object(dict)["table_name"] = table_name
+        return
 
     catalog = load_catalog(ctx)
-    assert index_dir is not None
-    row = CatalogTools(catalog, index_dir=index_dir).index_status()
-    emit_rows([row], output_format=output_format)
-
-
-@index_command.command("build", context_settings=CONTEXT_SETTINGS)
-@source_option
-@required_index_dir_option
-@click.pass_context
-def build_command(ctx: click.Context, index_dir: str | None) -> None:
-    """Create the LanceDB index if it is missing."""
-
-    catalog = load_catalog(ctx)
-    assert index_dir is not None
     try:
-        summary = CatalogTools(catalog, index_dir=index_dir).build_index(
-            cache_mode="reuse_or_create"
-        )
+        table = index(catalog, index_path, table_name=table_name)
         click.echo(
-            f"Index ready for {summary['guidelines']} guidelines "
-            f"({summary['documents']} documents) "
-            f"at {summary['index_root']} "
-            f"table {summary['table_name']!r}"
+            f"Wrote LanceDB table for {len(catalog)} guidelines "
+            f"({table.count_rows()} documents) "
+            f"to {index_path} "
+            f"table {table.name!r}"
         )
-    except CatalogToolError as exc:
-        raise click.ClickException(str(exc)) from exc
     except Exception as exc:
-        raise click.ClickException(search_error_message(str(exc))) from exc
+        raise click.ClickException(search_error(str(exc))) from exc
 
 
-@index_command.command("rebuild", context_settings=CONTEXT_SETTINGS)
-@source_option
-@required_index_dir_option
-@click.option(
-    "--yes",
-    is_flag=True,
-    help="Confirm rebuilding the content-addressed index cache path.",
-)
-@click.pass_context
-def rebuild_command(ctx: click.Context, index_dir: str | None, yes: bool) -> None:
-    """Rebuild the LanceDB index for the catalog."""
-
-    if not yes:
-        raise click.ClickException("Pass --yes to rebuild the search index.")
-    catalog = load_catalog(ctx)
-    assert index_dir is not None
-    try:
-        summary = CatalogTools(catalog, index_dir=index_dir).build_index(
-            cache_mode="force_rebuild"
-        )
-        click.echo(
-            f"Rebuilt index for {summary['guidelines']} guidelines "
-            f"({summary['documents']} documents) "
-            f"at {summary['index_root']} "
-            f"table {summary['table_name']!r}"
-        )
-    except CatalogToolError as exc:
-        raise click.ClickException(str(exc)) from exc
-    except Exception as exc:
-        raise click.ClickException(search_error_message(str(exc))) from exc
-
-
-@index_command.command("query", context_settings=CONTEXT_SETTINGS)
-@source_option
-@required_index_dir_option
+@index_command.command("documents", context_settings=CONTEXT_SETTINGS)
 @click.argument("query")
 @click.option(
     "--limit",
@@ -128,6 +75,13 @@ def rebuild_command(ctx: click.Context, index_dir: str | None, yes: bool) -> Non
     help="LanceDB SQL filter over indexed document columns.",
 )
 @click.option(
+    "--mode",
+    type=click.Choice(("auto", "fts", "vector", "hybrid")),
+    default="auto",
+    show_default=True,
+    help="LanceDB query mode.",
+)
+@click.option(
     "--format",
     "output_format",
     type=click.Choice(INDEX_FORMATS),
@@ -136,28 +90,39 @@ def rebuild_command(ctx: click.Context, index_dir: str | None, yes: bool) -> Non
     help="Output format.",
 )
 @click.pass_context
-def query_command(
+def documents_command(
     ctx: click.Context,
-    index_dir: str | None,
     query: str,
     limit: int,
     where: str | None,
+    mode: str,
     output_format: str,
 ) -> None:
-    """Run a LanceDB full-text query."""
+    """Run LanceDB search over indexed document rows."""
 
-    catalog = load_catalog(ctx)
-    assert index_dir is not None
+    index_path = cast(Path, ctx.ensure_object(dict)["index_path"])
+    table_name = cast(str, ctx.ensure_object(dict)["table_name"])
     try:
-        result = CatalogTools(catalog, index_dir=index_dir).query_documents(
+        table = open_index(index_path, table_name=table_name)
+        rows = query_table(
+            table,
             query,
             limit=limit,
             where=where,
+            mode=cast(Mode, mode),
         )
-    except CatalogToolError as exc:
-        raise click.ClickException(str(exc)) from exc
+        result = {
+            "query": query,
+            "mode": mode,
+            "rows": rows,
+            "row_count": len(rows),
+            "limit": limit,
+            "where": where,
+            "index_path": str(index_path),
+            "table_name": table.name,
+        }
     except Exception as exc:
-        raise click.ClickException(search_error_message(str(exc))) from exc
+        raise click.ClickException(search_error(str(exc))) from exc
     emit_object(result, output_format=output_format)
 
 

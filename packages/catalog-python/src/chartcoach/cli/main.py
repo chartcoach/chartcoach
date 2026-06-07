@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import click
 
-from .artifacts import artifacts_command
 from .catalog import catalog_command
 from .guidelines import guidelines_command
 from .index import index_command
@@ -21,8 +20,8 @@ CONTEXT_SETTINGS = {"help_option_names": ["-h", "--help"]}
         "Use `chartcoach guidelines --help` to read and search guidelines. "
         "Use `chartcoach sql --help` to query catalog tables with DuckDB. "
         "Use `chartcoach tables --help` to inspect catalog tables. "
-        "Use `chartcoach artifacts --help` to locate native files. "
         "Use `chartcoach prompt --help` to launch an agent with ChartCoach context. "
+        "Use `chartcoach index --help` to create and inspect LanceDB tables. "
         "Use `chartcoach mcp serve --help` to start the MCP server."
     ),
 )
@@ -31,7 +30,6 @@ def main() -> None:
 
 
 main.add_command(catalog_command)
-main.add_command(artifacts_command)
 main.add_command(guidelines_command)
 main.add_command(index_command)
 main.add_command(mcp_command)

@@ -1,6 +1,6 @@
 # ChartCoach Docs
 
-Technical documentation for ChartCoach packages, command-line tools, catalog artifacts, and agent surfaces.
+Technical documentation for ChartCoach packages, command-line tools, and agent surfaces.
 
 ```bash
 pnpm --dir apps/docs dev

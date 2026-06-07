@@ -19,13 +19,13 @@ claude "$(uvx chartcoach@latest prompt --claude --source guidelines)"
 opencode "$(uvx chartcoach@latest prompt --opencode --source guidelines)"
 ```
 
-The prompt references the installed skill, the catalog source, optional semantic index location, and the current task. It tells the agent to read `MANIFEST.md` for section-role and label-family semantics, retrieve targeted evidence, and include guideline ids plus public links when guidelines constrain or justify the answer.
+The prompt references the installed skill, the catalog source, optional LanceDB index, and the current task. It tells the agent to read `MANIFEST.md` for section-role and label-family semantics, retrieve targeted evidence, and include guideline ids plus public links when guidelines constrain or justify the answer.
 
 ```bash
 uvx chartcoach@latest prompt \
   --codex \
   --source guidelines \
-  --index-dir "$INDEX_DIR" \
+  --index scratch/chartcoach-index \
   --guidance-mode feedback \
   --task "Review this dashboard for misleading bar axes."
 ```
@@ -34,7 +34,7 @@ uvx chartcoach@latest prompt \
 import polars as pl
 from chartcoach import Catalog
 
-catalog = Catalog.from_bundle("guidelines")
+catalog = Catalog.open("guidelines")
 
 scatter_rules = (
     catalog.guidelines()
@@ -94,7 +94,7 @@ const barGuidelines = catalog.guidelines.filter((guideline) =>
 );
 ```
 
-Browser code can load the same parquet artifact by URL through `@chartcoach/catalog/browser`.
+Browser code can load the same parquet file by URL through `@chartcoach/catalog/browser`.
 
 ## What A Guideline Contains
 
@@ -109,43 +109,43 @@ Each guideline records a concrete chart-design move with the evidence needed to 
 | `sections` | Advice, reason, context, exceptions, costs, mistakes, check, and fix text |
 | `references` | BibTeX records for the cited sources |
 
-`guidelines/MANIFEST.md` defines the section roles and label families for this catalog instance. Package loaders use it when loading the `guidelines` artifact bundle.
+`guidelines/MANIFEST.md` defines the section roles and label families for this catalog instance. Package loaders use it when loading the `guidelines` catalog bundle.
 
 ## Search The Catalog
 
-For retrieval, build a LanceDB index once. The index stores catalog document rows and exposes full-text search through the CLI, Python API, MCP, and DuckDB's Lance extension.
+For retrieval, build a LanceDB index at a path you own. The index stores catalog document rows and exposes LanceDB search through the CLI, Python API, MCP, and DuckDB's Lance extension.
 
 ```bash
-INDEX_DIR=$(uv run --package chartcoach python -c "from chartcoach.paths import default_index_dir; print(default_index_dir())")
+INDEX_PATH=scratch/chartcoach-index
 
-uv run --package chartcoach chartcoach index build \
+uv run --package chartcoach chartcoach index \
   --source guidelines \
-  --index-dir "$INDEX_DIR"
+  --index "$INDEX_PATH"
 
 uv run --package chartcoach chartcoach guidelines search \
   --source guidelines \
-  --index-dir "$INDEX_DIR" \
+  --index "$INDEX_PATH" \
   --where "role = 'overview'" \
   "overplotted scatter plot with too many points" \
   --format jsonl
 ```
 
-## Inspect Native Artifacts
+## Open Native Files
 
 ChartCoach keeps the catalog in formats that other tools can open directly.
 
-| Artifact | Use |
+| File | Use |
 | --- | --- |
 | `guidelines/MANIFEST.md` | Section-role and label-family definitions for this catalog instance |
 | `guidelines/catalog.parquet` | Source catalog table |
 | DuckDB database | Derived tables for SQL inspection |
-| LanceDB index | Content-addressed full-text search |
+| LanceDB index | LanceDB search over catalog document rows |
 | `apps/site` | Human-facing guideline browser |
 
-Create a DuckDB artifact from the catalog:
+Create a DuckDB database from the catalog:
 
 ```bash
-DUCKDB_PATH=$(uv run --package chartcoach python -c "from chartcoach.paths import default_duckdb_path; print(default_duckdb_path())")
+DUCKDB_PATH=scratch/catalog.duckdb
 
 uv run --package chartcoach chartcoach catalog duckdb \
   --source guidelines \
@@ -155,20 +155,13 @@ duckdb "$DUCKDB_PATH" \
   -c "select id, title from guidelines where list_contains(labels, 'chart:bar')"
 ```
 
-Attach a built search index through DuckDB's Lance extension:
+Attach the search index through DuckDB's Lance extension:
 
 ```bash
-INDEX_ROOT=$(
-  uv run --package chartcoach chartcoach index status \
-    --source guidelines \
-    --index-dir "$INDEX_DIR" \
-    --format jsonl | jq -r '.index_root'
-)
-
 duckdb -c "
 INSTALL lance;
 LOAD lance;
-ATTACH '$INDEX_ROOT' AS cc_index (TYPE LANCE);
+ATTACH '$INDEX_PATH' AS cc_index (TYPE LANCE);
 select id, parent_id, role
 from cc_index.main.catalog_documents
 limit 5;

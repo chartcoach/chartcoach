@@ -2,9 +2,7 @@ from __future__ import annotations
 
 import dataclasses as dc
 from collections.abc import Mapping
-from functools import cache
 from types import MappingProxyType
-from typing import Any
 
 import bibtexparser
 
@@ -13,7 +11,7 @@ import bibtexparser
 class ParsedBibtexEntry:
     """One parsed BibTeX entry plus its serialized BibTeX."""
 
-    entry: Mapping[str, Any]
+    entry: Mapping[str, object]
     bibtex: str
 
     @property
@@ -31,12 +29,11 @@ def parse_bibtex(bibtex_content: str) -> list[str]:
     return [_dump_bibtex_entry(entry) for entry in database.entries]
 
 
-def parse_bibtex_entry(bibtex_str: str) -> dict[str, Any]:
+def parse_bibtex_entry(bibtex_str: str) -> dict[str, object]:
     """Parse a single BibTeX entry into a dictionary of fields."""
     return dict(parse_bibtex_reference(bibtex_str).entry)
 
 
-@cache
 def parse_bibtex_reference(bibtex_str: str) -> ParsedBibtexEntry:
     """Parse one BibTeX reference and retain its normalized serialized form."""
 
@@ -54,7 +51,7 @@ def parse_bibtex_reference(bibtex_str: str) -> ParsedBibtexEntry:
     )
 
 
-def _dump_bibtex_entry(entry: dict[str, Any]) -> str:
+def _dump_bibtex_entry(entry: Mapping[str, object]) -> str:
     database = bibtexparser.bibdatabase.BibDatabase()
-    database.entries = [entry]
+    database.entries = [dict(entry)]
     return bibtexparser.dumps(database).strip()

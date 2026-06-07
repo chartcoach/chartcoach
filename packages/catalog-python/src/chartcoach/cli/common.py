@@ -3,16 +3,15 @@ from __future__ import annotations
 import csv
 import io
 import json
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
-from typing import Any, cast
+from typing import TypeVar, cast
 
 import click
 
 from chartcoach.catalog import Catalog
-from chartcoach.constants import INDEX_DIR_ENV, SOURCE_ENV
-from chartcoach.paths import default_index_dir
-from chartcoach.tools.catalog import CatalogTools, format_tool_error
+from chartcoach.constants import INDEX_ENV, SOURCE_ENV
+from chartcoach.tools import Tools, format_error
 
 CONTEXT_SETTINGS = {"help_option_names": ["-h", "--help"]}
 ROW_FORMATS = ("table", "json", "jsonl", "csv")
@@ -20,8 +19,10 @@ SEARCH_FORMATS = ("table", "json", "jsonl", "csv", "markdown")
 SHOW_FORMATS = ("markdown", "json", "jsonl")
 RETRIEVE_FORMATS = ("markdown", "json", "jsonl", "csv", "table")
 
+_Command = TypeVar("_Command", bound=Callable[..., object])
 
-def source_option(command: Any) -> Any:
+
+def source_option(command: _Command) -> _Command:
     return click.option(
         "--source",
         "source_path",
@@ -33,37 +34,14 @@ def source_option(command: Any) -> Any:
     )(command)
 
 
-def index_dir_option(command: Any) -> Any:
+def required_index_option(command: _Command) -> _Command:
     return click.option(
-        "--index-dir",
-        envvar=INDEX_DIR_ENV,
+        "--index",
+        "index_path",
+        envvar=INDEX_ENV,
         type=click.Path(file_okay=False, path_type=Path),
-        default=default_index_dir(),
-        show_default=True,
-        help=(
-            "Search index directory. Optional for catalog-only commands. "
-            f"defaults to ${INDEX_DIR_ENV}, then a platform cache path."
-        ),
-    )(command)
-
-
-def required_index_dir_option(command: Any) -> Any:
-    return click.option(
-        "--index-dir",
-        envvar=INDEX_DIR_ENV,
-        type=click.Path(file_okay=False, path_type=Path),
-        default=default_index_dir(),
-        show_default=True,
-        help=f"Search index directory. Defaults to ${INDEX_DIR_ENV}, then a platform cache path.",
-    )(command)
-
-
-def duckdb_option(command: Any) -> Any:
-    return click.option(
-        "--duckdb",
-        "duckdb_path",
-        type=click.Path(dir_okay=False, path_type=Path),
-        help="DuckDB database file to advertise when listing artifacts.",
+        required=True,
+        help=f"LanceDB database directory. Required unless ${INDEX_ENV} is set.",
     )(command)
 
 
@@ -80,10 +58,10 @@ def _remember_source_path(
 def load_catalog(ctx: click.Context) -> Catalog:
     path = source_path(ctx)
     try:
-        return Catalog.from_source(path)
+        return Catalog.open(path)
     except FileNotFoundError as exc:
         raise click.ClickException(
-            format_tool_error(
+            format_error(
                 f"Catalog source not found: {path}",
                 [
                     "Pass --source PATH to the command.",
@@ -93,15 +71,15 @@ def load_catalog(ctx: click.Context) -> Catalog:
         ) from exc
 
 
-def catalog_tools(ctx: click.Context) -> CatalogTools:
-    return CatalogTools(load_catalog(ctx))
+def tools(ctx: click.Context) -> Tools:
+    return Tools(load_catalog(ctx))
 
 
 def source_path(ctx: click.Context) -> Path:
     path = cast(Mapping[str, object], ctx.obj or {}).get("source_path")
     if path is None:
         raise click.ClickException(
-            format_tool_error(
+            format_error(
                 f"Pass --source PATH or set {SOURCE_ENV}.",
                 [
                     "Provide a catalog bundle, catalog parquet file, or authored guideline folder.",

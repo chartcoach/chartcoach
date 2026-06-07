@@ -16,11 +16,6 @@ describe("guideline markdown serialization", () => {
       references: [],
     });
 
-    expect(markdown).toContain("id: adapt-framing");
-    expect(markdown).toContain("title: Adapt framing");
-    expect(markdown).toContain("bibliography: references.bib");
-    expect(markdown).toContain("## Advice <!-- role: advice -->");
-
     const [, frontmatter, body] = markdown.split("---");
     expect(parseYaml(frontmatter ?? "")).toEqual({
       id: "adapt-framing",
