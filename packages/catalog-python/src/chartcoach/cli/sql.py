@@ -5,15 +5,15 @@ from typing import cast
 
 import click
 
-from chartcoach.tools.catalog import CatalogToolError, format_tool_error
+from chartcoach.tools import ToolError, format_error
 
 from .common import (
     CONTEXT_SETTINGS,
     ROW_FORMATS,
-    catalog_tools,
     emit_object,
     emit_rows,
     source_option,
+    tools,
 )
 
 
@@ -45,14 +45,14 @@ def sql_command(
     """Run one SELECT query over catalog DuckDB tables."""
 
     try:
-        result = catalog_tools(ctx).sql_query(query, limit=limit)
-    except CatalogToolError as exc:
+        result = tools(ctx).sql(query, limit=limit)
+    except ToolError as exc:
         raise click.ClickException(str(exc)) from exc
     except click.ClickException:
         raise
     except Exception as exc:
         raise click.ClickException(
-            format_tool_error(
+            format_error(
                 str(exc),
                 [
                     "Inspect table names before running the query.",

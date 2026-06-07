@@ -4,8 +4,6 @@ from collections.abc import Mapping, Sequence
 
 import polars as pl
 
-DOCUMENTS_VERSION = "8"
-
 
 def build_docs_df(
     guidelines_df: pl.DataFrame, references_df: pl.DataFrame
@@ -24,9 +22,9 @@ def build_docs_df(
             pl.col("metadata").struct.field("parent_id").alias("parent_id"),
             pl.col("metadata").struct.field("role").alias("role"),
             pl.col("metadata").struct.field("labels").alias("labels"),
-            pl.when(pl.col("doc").is_null())
+            pl.when(pl.col("text").is_null())
             .then(None)
-            .otherwise(pl.col("doc").hash().cast(pl.String))
+            .otherwise(pl.col("text").hash().cast(pl.String))
             .alias("content_hash"),
         )
     )
@@ -43,11 +41,11 @@ def _build_toplevel_docs_df(guidelines_df: pl.DataFrame) -> pl.DataFrame:
         .unpivot(
             index=["id", "labels"],
             variable_name="role",
-            value_name="doc",
+            value_name="text",
         )
         .select(
             id=pl.concat_str(["id", "role"], separator="---"),
-            doc="doc",
+            text="text",
             metadata=pl.struct(
                 parent_id="id",
                 role="role",
@@ -69,7 +67,7 @@ def _build_section_docs_df(
         .unnest("sections")
         .select(
             id=pl.concat_str(["id", pl.lit("role"), "role"], separator="---"),
-            doc="content",
+            text="content",
             metadata=pl.struct(
                 parent_id="id",
                 role=pl.concat_str([pl.lit("section"), "role"], separator="."),
@@ -77,7 +75,7 @@ def _build_section_docs_df(
             ),
         )
         .with_columns(
-            reference_context=pl.col("doc")
+            reference_context=pl.col("text")
             .str.extract_all(r"@[\w\.-]+")
             .list.eval(pl.element().str.replace_all(r"^@", ""))
             .map_elements(
@@ -86,14 +84,14 @@ def _build_section_docs_df(
             )
         )
         .with_columns(
-            doc=pl.when(pl.col("doc").str.contains("[@", literal=True))
+            text=pl.when(pl.col("text").str.contains("[@", literal=True))
             .then(
                 pl.concat_str(
-                    ["doc", pl.lit("\nSources\n"), "reference_context"],
+                    ["text", pl.lit("\nSources\n"), "reference_context"],
                     separator="\n",
                 )
             )
-            .otherwise("doc")
+            .otherwise("text")
         )
         .drop("reference_context")
     )
@@ -168,4 +166,4 @@ def _text_or_none(value: object) -> str | None:
     return text or None
 
 
-__all__ = ["DOCUMENTS_VERSION", "build_docs_df"]
+__all__ = ["build_docs_df"]

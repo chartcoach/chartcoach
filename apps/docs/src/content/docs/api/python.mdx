@@ -1,26 +1,26 @@
 ---
 title: Python Catalog API
-description: Load ChartCoach catalogs, inspect tables, and open native DuckDB or LanceDB artifacts from Python.
+description: Load ChartCoach catalogs, inspect Polars tables, and query native DuckDB or LanceDB resources from Python.
 ---
 
-The `chartcoach` package loads catalog bundles and exposes table views for Python workflows.
+The `chartcoach` package loads a catalog and returns native Python data tools at each boundary.
 
 ```python
 from chartcoach import Catalog
 
-catalog = Catalog.from_source("guidelines")
+catalog = Catalog.open("guidelines")
 catalog.guidelines().select("id", "title", "description")
 ```
 
-## Constructors
+## Load
+
+`Catalog.open(path)`
+
+Load an authored guideline folder, catalog bundle, or parquet file from one path. A bundle contains `MANIFEST.md` and `catalog.parquet`.
 
 `Catalog.from_bundle(path)`
 
-Load a directory containing `MANIFEST.md` and `catalog.parquet`. The loader validates section roles and label families against the manifest.
-
-`Catalog.from_source(path)`
-
-Load an authored guideline folder, catalog bundle, or parquet file from one path.
+Load a bundle and validate section roles and label families against `MANIFEST.md`.
 
 `Catalog.from_parquet(path)`
 
@@ -32,7 +32,11 @@ Load an authored folder where `MANIFEST.md` sits beside guideline entry director
 
 `Catalog.from_entries(entries)`
 
-Build a catalog from Python entry objects.
+Build a catalog from `Guideline` objects or flat guideline mappings.
+
+`Guideline(...)`
+
+Construct a guideline with either `body` or `sections`. When only `body` is provided, the body must parse into section records. When only `sections` is provided, the markdown body is built from those sections. Serialized guideline records always contain both fields.
 
 ## Tables
 
@@ -59,45 +63,46 @@ Return a named derived table.
 ## DuckDB
 
 ```python
-from chartcoach.duckdb import connect_catalog
-
-conn = connect_catalog(catalog)
-conn.sql("select id, title from guidelines limit 5").pl()
-conn.close()
+conn = catalog.duckdb()
+try:
+    rows = conn.sql("select id, title from guidelines limit 5").pl()
+finally:
+    conn.close()
 ```
 
-Use DuckDB when callers need joins over guidelines, sections, labels, and references.
+Use DuckDB when callers need joins over guidelines, sections, labels, and references. `chartcoach.duckdb.register_catalog(conn, catalog)` registers the same tables in a caller-owned DuckDB connection.
 
-## Catalog Tools
-
-```python
-from chartcoach import CatalogTools
-
-tools = CatalogTools(catalog)
-tools.retrieve_guidelines(labels=["chart:bar"], roles=["advice"])
-tools.sql_query("select id, title from guidelines limit 5")
-```
-
-`CatalogTools` exposes the same catalog operations used by the CLI and MCP server. Pass `index_dir` when calling search methods.
-
-## Search Index
+## LanceDB
 
 ```python
-from chartcoach import CatalogTools
-from chartcoach.paths import default_index_dir
+from chartcoach.search import index, search
 
-tools = CatalogTools(
-    catalog,
-    index_dir=default_index_dir(),
+table = index(catalog, "scratch/chartcoach-index")
+
+docs = (
+    table.search("overplotted scatter plots", query_type="fts", fts_columns="text")
+    .where("role = 'overview'")
+    .limit(3)
+    .to_list()
 )
 
-rows = tools.query_documents(
-    "overplotted scatter plots",
-    limit=3,
-    where="role = 'overview'",
-)["rows"]
-
-hits = tools.search_guidelines("overplotted scatter plots")["rows"]
+hits = search(catalog, table, "overplotted scatter plots").to_dict()["rows"]
 ```
 
-Build the index first with `chartcoach index build`. `query_documents` returns indexed document rows. `search_guidelines` deduplicates document matches to guideline rows. ChartCoach creates a LanceDB full-text table over catalog documents. Use LanceDB's schema and embedding registry directly for vector tables.
+`index(catalog, uri)` creates or replaces a LanceDB table named `catalog_documents` and returns the native LanceDB `Table`. The table contains `id`, `parent_id`, `role`, `labels`, `content_hash`, and `text`.
+
+Pass `embedding=...` to let LanceDB populate a `vector` column from `text` through a caller-provided LanceDB embedding function:
+
+```python
+from chartcoach.search import index
+
+table = index(
+    catalog,
+    "scratch/chartcoach-index",
+    embedding=embedding_function,
+)
+```
+
+`open(uri, table_name="catalog_documents")` opens an existing LanceDB table. `documents(catalog)` returns the Polars dataframe used to create the table. `model(embedding)` returns the LanceDB model used when the table should store embedding metadata.
+
+`query(table, query, limit=10, where=None, mode="auto")` returns bounded raw document rows for CLI and MCP transports. Python callers can use `table.search(...)` directly when they need the full LanceDB query builder.

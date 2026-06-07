@@ -21,7 +21,6 @@ export const sidebar = [
       { label: "Browser loading", slug: "api/browser" },
       { label: "CLI", slug: "api/cli" },
       { label: "MCP", slug: "api/mcp" },
-      { label: "Artifacts", slug: "api/artifacts" },
     ],
   },
 ] satisfies StarlightConfig["sidebar"];

@@ -19,10 +19,10 @@ from .common import (
 @click.group(
     "catalog",
     context_settings=CONTEXT_SETTINGS,
-    help="Build and validate catalog artifacts.",
+    help="Build and validate catalog bundles.",
 )
 def catalog_command() -> None:
-    """Build and validate catalog artifacts."""
+    """Build and validate catalog bundles."""
 
 
 @catalog_command.command("build", context_settings=CONTEXT_SETTINGS)
@@ -37,7 +37,7 @@ def catalog_command() -> None:
     "output_path",
     type=click.Path(file_okay=False, path_type=Path),
     required=True,
-    help="Catalog artifact bundle directory to write.",
+    help="Catalog bundle directory to write.",
 )
 @click.option(
     "--dry-run",
@@ -55,7 +55,7 @@ def build_command(
     dry_run: bool,
     overwrite: bool,
 ) -> None:
-    """Build a catalog artifact bundle from a guideline folder."""
+    """Build a catalog bundle from a guideline folder."""
 
     catalog = Catalog.from_folder(source)
     if len(catalog) == 0:
@@ -70,7 +70,7 @@ def build_command(
         and (manifest_path.exists() or parquet_path.exists())
     ):
         raise click.ClickException(
-            f"{output_path} already contains catalog artifacts. Pass --overwrite."
+            f"{output_path} already contains a catalog bundle. Pass --overwrite."
         )
     if dry_run:
         click.echo(
@@ -99,7 +99,7 @@ def build_command(
 def check_command(source: Path, output_format: str) -> None:
     """Validate a catalog source and report table counts."""
 
-    catalog = Catalog.from_source(source)
+    catalog = Catalog.open(source)
     if len(catalog) == 0:
         raise click.ClickException(
             f"No guideline entries found in {source}. Expected subdirectories with guideline.md files."

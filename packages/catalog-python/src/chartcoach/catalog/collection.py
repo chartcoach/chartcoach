@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 
 
 @dc.dataclass(frozen=True, slots=True)
-class CatalogEntry:
+class _CatalogRecord:
     """One guideline together with the references that support it."""
 
     guideline: Guideline
@@ -37,12 +37,12 @@ class CatalogEntry:
         )
 
     @classmethod
-    def from_mapping(cls, data: object) -> "CatalogEntry":
+    def from_mapping(cls, data: object) -> "_CatalogRecord":
         """Build an entry from a raw mapping."""
         if isinstance(data, cls):
             return data
         if not isinstance(data, Mapping):
-            raise TypeError("CatalogEntry data must be a mapping.")
+            raise TypeError("Catalog record data must be a mapping.")
         values = cast(Mapping[str, object], data)
         parsed_references = _str_sequence(values.get("references") or [], "references")
         guideline = Guideline.from_mapping(values.get("guideline"))
@@ -75,7 +75,7 @@ class Catalog:
     """Source collection of guidelines and references.
 
     The catalog is Polars-first. Loading a parquet file keeps the serialized
-    table as the source of truth. Python `CatalogEntry` objects are built only
+    table as the source of truth. Python entry objects are built only
     when a caller asks for one entry.
     """
 
@@ -87,9 +87,6 @@ class Catalog:
     ) -> None:
         self._frame = _normalize_catalog_frame(frame)
         self._manifest = manifest
-        self._tables: dict[str, pl.DataFrame] = {}
-        self._reference_tables_cache: ReferenceTables | None = None
-        self._digest_cache: str | None = None
         _validate_unique_ids(self._frame)
         if self._manifest is not None:
             from .manifest import validate_catalog_manifest
@@ -110,16 +107,16 @@ class Catalog:
     @classmethod
     def from_entries(
         cls,
-        entries: Iterable[CatalogEntry],
+        entries: Iterable[Guideline | Mapping[str, object]],
         *,
         manifest: "CatalogManifest | None" = None,
     ) -> "Catalog":
-        """Build a catalog from entry objects."""
+        """Build a catalog from guideline objects or flat guideline mappings."""
 
         from .tables import build_catalog_df
 
-        catalog_entries = tuple(CatalogEntry.from_mapping(entry) for entry in entries)
-        return cls(build_catalog_df(catalog_entries), manifest=manifest)
+        catalog_records = tuple(_catalog_record(entry) for entry in entries)
+        return cls(build_catalog_df(catalog_records), manifest=manifest)
 
     @classmethod
     def from_folder(cls, folder_path: PathLike[str]) -> "Catalog":
@@ -137,7 +134,7 @@ class Catalog:
 
     @classmethod
     def from_bundle(cls, path: str | PathLike[str]) -> "Catalog":
-        """Load a catalog artifact bundle with `MANIFEST.md` and `catalog.parquet`."""
+        """Load a catalog bundle with `MANIFEST.md` and `catalog.parquet`."""
 
         from .manifest import CatalogManifest
 
@@ -149,8 +146,8 @@ class Catalog:
         )
 
     @classmethod
-    def from_source(cls, path: str | PathLike[str]) -> "Catalog":
-        """Load a catalog from an authored folder, artifact bundle, or parquet file."""
+    def open(cls, path: str | PathLike[str]) -> "Catalog":
+        """Load a catalog from an authored folder, catalog bundle, or parquet file."""
 
         source = Path(path)
         if source.is_dir():
@@ -180,46 +177,30 @@ class Catalog:
     def guidelines(self) -> pl.DataFrame:
         """Return one row per guideline."""
 
-        if "guidelines" in self._tables:
-            return self._tables["guidelines"]
         from .tables import build_guidelines_df
 
-        frame = build_guidelines_df(self.to_frame())
-        self._tables["guidelines"] = frame
-        return frame
+        return build_guidelines_df(self.to_frame())
 
     def sections(self) -> pl.DataFrame:
         """Return one row per guideline section."""
 
-        if "sections" in self._tables:
-            return self._tables["sections"]
         from .tables import build_sections_df
 
-        frame = build_sections_df(self.guidelines())
-        self._tables["sections"] = frame
-        return frame
+        return build_sections_df(self.guidelines())
 
     def labels(self) -> pl.DataFrame:
         """Return the unique labels used across guidelines."""
 
-        if "labels" in self._tables:
-            return self._tables["labels"]
         from .tables import build_labels_df
 
-        frame = build_labels_df(self.guidelines())
-        self._tables["labels"] = frame
-        return frame
+        return build_labels_df(self.guidelines())
 
     def guideline_labels(self) -> pl.DataFrame:
         """Return labels attached to each guideline."""
 
-        if "guideline_labels" in self._tables:
-            return self._tables["guideline_labels"]
         from .tables import build_guideline_labels_df
 
-        frame = build_guideline_labels_df(self.guidelines())
-        self._tables["guideline_labels"] = frame
-        return frame
+        return build_guideline_labels_df(self.guidelines())
 
     def guideline_references(self) -> pl.DataFrame:
         """Return the links between guidelines and their references."""
@@ -229,16 +210,12 @@ class Catalog:
     def guideline_sources(self) -> pl.DataFrame:
         """Return source metadata joined to each guideline-reference edge."""
 
-        if "guideline_sources" in self._tables:
-            return self._tables["guideline_sources"]
         from .tables import build_guideline_sources_df
 
-        frame = build_guideline_sources_df(
+        return build_guideline_sources_df(
             self.guideline_references(),
             self.references(),
         )
-        self._tables["guideline_sources"] = frame
-        return frame
 
     def references(self) -> pl.DataFrame:
         """Return parsed structural BibTeX reference entries."""
@@ -263,27 +240,34 @@ class Catalog:
 
         return connect_catalog(self, config=config)
 
-    def _entries(self) -> tuple[CatalogEntry, ...]:
+    def _entries(self) -> tuple[_CatalogRecord, ...]:
         """Build catalog entry objects from the serialized dataframe."""
 
         return tuple(
-            CatalogEntry.from_mapping(row) for row in self.to_frame().to_dicts()
+            _CatalogRecord.from_mapping(row) for row in self.to_frame().to_dicts()
         )
 
-    def entry(self, guideline_id: str) -> CatalogEntry:
-        """Return one catalog entry by guideline id."""
+    def _catalog_record(self, guideline_id: str) -> _CatalogRecord:
+        """Return one internal storage entry by guideline id."""
 
         rows = self.to_frame().filter(pl.col("id") == guideline_id)
         if rows.is_empty():
             raise KeyError(guideline_id)
-        return CatalogEntry.from_mapping(rows.row(0, named=True))
+        return _CatalogRecord.from_mapping(rows.row(0, named=True))
+
+    def entry(self, guideline_id: str) -> dict[str, object]:
+        """Return one flat guideline record by id."""
+
+        storage_entry = self._catalog_record(guideline_id)
+        return {
+            **storage_entry.guideline.to_record(),
+            "references": list(storage_entry.references),
+        }
 
     def digest(self) -> str:
         """Return a stable digest of the serialized catalog table."""
 
-        if self._digest_cache is None:
-            self._digest_cache = _dataframe_digest(self.to_frame())
-        return self._digest_cache
+        return _dataframe_digest(self.to_frame())
 
     def write_folder(self, root: PathLike[str]) -> None:
         """Write the catalog back to the folder layout used on disk."""
@@ -303,7 +287,7 @@ class Catalog:
         *,
         overwrite: bool = False,
     ) -> Path:
-        """Write `MANIFEST.md` and `catalog.parquet` to an artifact bundle."""
+        """Write `MANIFEST.md` and `catalog.parquet` to a catalog bundle."""
 
         bundle_path = Path(root)
         parquet_path = bundle_path / "catalog.parquet"
@@ -366,14 +350,12 @@ class Catalog:
         return self.to_frame().height
 
     def _reference_tables(self) -> "ReferenceTables":
-        if self._reference_tables_cache is None:
-            from .tables import build_reference_tables
+        from .tables import build_reference_tables
 
-            self._reference_tables_cache = build_reference_tables(self.to_frame())
-        return self._reference_tables_cache
+        return build_reference_tables(self.to_frame())
 
 
-__all__ = ["Catalog", "CatalogEntry"]
+__all__ = ["Catalog"]
 
 
 def _str_sequence(value: object, field: str) -> tuple[str, ...]:
@@ -385,6 +367,20 @@ def _str_sequence(value: object, field: str) -> tuple[str, ...]:
             raise TypeError(f"{field} must be a list of strings.")
         parsed.append(item)
     return tuple(parsed)
+
+
+def _catalog_record(data: object) -> _CatalogRecord:
+    if isinstance(data, Guideline):
+        return _CatalogRecord(guideline=data)
+    if not isinstance(data, Mapping):
+        raise TypeError("Catalog entries must be Guideline objects or mappings.")
+    values = cast(Mapping[str, object], data)
+    if "guideline" in values:
+        return _CatalogRecord.from_mapping(values)
+    return _CatalogRecord(
+        guideline=Guideline.from_mapping(values),
+        references=_str_sequence(values.get("references") or (), "references"),
+    )
 
 
 def _normalize_catalog_frame(df: pl.DataFrame) -> pl.DataFrame:

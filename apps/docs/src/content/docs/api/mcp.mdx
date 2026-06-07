@@ -3,18 +3,18 @@ title: MCP Reference
 description: ChartCoach MCP server tools and runtime options.
 ---
 
-The MCP server exposes deterministic catalog tools and optional LanceDB-backed search tools from the Python package.
+The MCP server exposes one raw catalog query tool and, when an index is configured, one raw LanceDB query tool.
 
 ```bash
 chartcoach mcp serve --source guidelines
 ```
 
-Pass `--index-dir` when tools need an existing LanceDB index.
+Pass `--index` to register the search tool backed by an existing LanceDB index.
 
 ```bash
 chartcoach mcp serve \
   --source guidelines \
-  --index-dir "$CHARTCOACH_INDEX_DIR"
+  --index "$CHARTCOACH_INDEX"
 ```
 
 ## Runtime Options
@@ -35,42 +35,24 @@ Port for HTTP transports. Defaults to `8000`.
 
 Server log level. Defaults to `INFO`.
 
+`--index PATH`
+
+LanceDB database directory. When omitted, the server registers only `sql`.
+
+`--table NAME`
+
+LanceDB table name for `search`. Defaults to `catalog_documents`.
+
 ## Catalog Tools
 
-`catalog_artifacts`
+`sql`
 
-Return native catalog artifact paths, existence flags, digests, and native artifact metadata.
-
-`tables_list`
-
-List queryable structured catalog tables.
-
-`tables_schema`
-
-Return column schemas for catalog tables.
-
-`sql_query`
-
-Run one read-only `SELECT` query over DuckDB catalog tables.
-
-`guidelines_list`
-
-List guideline ids and summaries with deterministic filters.
-
-`guidelines_get`
-
-Return one complete guideline record by id.
-
-`guidelines_retrieve`
-
-Return guideline records with optional label, text, and section-role filters.
+Run one read-only `SELECT` query over DuckDB catalog tables. The tool accepts `statement` and optional `limit`, then returns column metadata, rows, row count, truncation state, limit, and catalog digest.
 
 ## Search Tools
 
-`guidelines_search`
+Search is registered only when the server starts with `--index` or `CHARTCOACH_INDEX`.
 
-Run full-text search and return deduplicated guideline rows. Requires `--index-dir` and `chartcoach[search]`.
+`search`
 
-`index_query`
-
-Run full-text search over indexed catalog document rows. Accepts `query`, optional `limit`, and optional LanceDB SQL `where` filter.
+Run LanceDB search over indexed catalog document rows. The tool accepts `search_query`, optional `limit`, optional LanceDB SQL `where` filter, and optional `mode` (`auto`, `fts`, `vector`, or `hybrid`), then returns raw indexed document rows with index path and table name metadata.

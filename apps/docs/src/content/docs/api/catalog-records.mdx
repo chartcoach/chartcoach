@@ -3,7 +3,7 @@ title: Catalog Records
 description: Source record shape shared by ChartCoach package APIs.
 ---
 
-The public catalog record is `Guideline`. Loaders return the same flat fields whether the source is an authored folder or a generated parquet artifact.
+The public catalog record is `Guideline`. Loaders return the same flat fields whether the source is an authored folder or a serialized parquet file.
 
 ```ts
 type Guideline = {
@@ -19,6 +19,8 @@ type Guideline = {
 ```
 
 ## Guideline
+
+Python construction may provide only `body` or only `sections`. Serialized records contain both fields.
 
 `id`
 

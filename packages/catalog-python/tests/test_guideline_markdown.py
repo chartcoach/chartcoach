@@ -1,4 +1,8 @@
+import pytest
+
 from chartcoach.guideline import (
+    Guideline,
+    Section,
     guideline_to_markdown,
     parse_guideline,
     parse_guideline_sections,
@@ -37,6 +41,20 @@ Dense charts may still need a legend.
     ]
 
 
+def test_parse_guideline_rejects_non_mapping_frontmatter() -> None:
+    with pytest.raises(ValueError, match="frontmatter must be a mapping"):
+        parse_guideline(
+            """---
+- direct-labels
+---
+
+## Advice <!-- role: advice -->
+
+Place the label close to the mark it names.
+"""
+        )
+
+
 def test_guideline_markdown_roundtrip_preserves_core_fields() -> None:
     original = parse_guideline(
         """---
@@ -59,3 +77,50 @@ Use the same scale across panels when direct comparison is required.
     assert reparsed.title == original.title
     assert reparsed.description == original.description
     assert parse_guideline_sections(reparsed.body)[0].role == "advice"
+
+
+def test_guideline_accepts_body_and_derives_sections() -> None:
+    guideline = Guideline(
+        id="direct-labels",
+        title="Use direct labels",
+        description="Label marks directly when space permits.",
+        body="## Advice <!-- role: advice -->\n\nPlace labels near marks.",
+    )
+
+    assert [(section.role, section.title) for section in guideline.sections] == [
+        ("advice", "Advice")
+    ]
+    assert guideline.to_record()["sections"] == [
+        {
+            "role": "advice",
+            "title": "Advice",
+            "content": "Place labels near marks.",
+        }
+    ]
+
+
+def test_guideline_accepts_sections_and_derives_body() -> None:
+    guideline = Guideline(
+        id="direct-labels",
+        title="Use direct labels",
+        description="Label marks directly when space permits.",
+        sections=(
+            Section(
+                role="advice",
+                title="Advice",
+                content="Place labels near marks.",
+            ),
+        ),
+    )
+
+    assert guideline.body == "## Advice <!-- role: advice -->\n\nPlace labels near marks."
+    assert guideline.to_record()["body"] == guideline.body
+
+
+def test_guideline_requires_body_or_sections() -> None:
+    with pytest.raises(ValueError, match="body or sections"):
+        Guideline(
+            id="direct-labels",
+            title="Use direct labels",
+            description="Label marks directly when space permits.",
+        )

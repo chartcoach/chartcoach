@@ -9,14 +9,14 @@ npx skills add chartcoach/catalog
 codex "$(uvx chartcoach@latest prompt --codex --source guidelines)"
 ```
 
-Use `--claude` or `--opencode` for those agent CLIs. Pass `--task`, `--index-dir`, and `--guidance-mode` when the agent needs task-specific catalog context.
+Use `--claude` or `--opencode` for those agent CLIs. Pass `--task`, `--index`, and `--guidance-mode` when the agent needs task-specific catalog context.
 
 The base package loads manifest-described catalog bundles, parses guidelines, and exposes typed records, Polars dataframe views, and native DuckDB SQL connections.
 
 ```python
 from chartcoach import Catalog
 
-catalog = Catalog.from_source("guidelines")
+catalog = Catalog.open("guidelines")
 catalog.guidelines().select("id", "title")
 
 conn = catalog.duckdb()
@@ -24,30 +24,38 @@ conn.sql("select id, title from guidelines limit 5").pl()
 conn.close()
 ```
 
-Install `chartcoach[search]` when code needs the optional LanceDB index:
+Install `chartcoach[index]` when code needs a LanceDB table over catalog documents:
 
 ```python
-from chartcoach import CatalogTools
-from chartcoach.paths import default_index_dir
+from chartcoach.search import index, search
 
-tools = CatalogTools(
-    catalog,
-    index_dir=default_index_dir(),
+table = index(catalog, "scratch/chartcoach-index")
+
+docs = (
+    table.search("overplotted scatter plots", query_type="fts", fts_columns="text")
+    .where("role = 'overview'")
+    .limit(3)
+    .to_list()
 )
 
-tools.query_documents(
-    "overplotted scatter plots",
-    limit=3,
-    where="role = 'overview'",
-)
-
-tools.search_guidelines(
-    "overplotted scatter plots",
-    where="role = 'overview'",
-)["rows"]
+hits = search(catalog, table, "overplotted scatter plots").to_dict()["rows"]
 ```
 
-Build the index first with `chartcoach index build`. Read commands open the content-addressed path for the current catalog digest and document version. ChartCoach creates a LanceDB full-text table over catalog documents. Use LanceDB's schema and embedding registry directly for vector tables.
+`index(catalog, uri)` writes a LanceDB table over catalog documents at the path you provide and returns the native LanceDB `Table`. Without an embedding function it creates a full-text table over the `text` column. Pass any LanceDB embedding function instance when you want LanceDB to fill the `vector` column from `text`:
+
+```python
+from chartcoach.search import index
+
+table = index(
+    catalog,
+    "scratch/chartcoach-index",
+    embedding=embedding_function,
+)
+```
+
+Use `open("scratch/chartcoach-index")` for an existing table. Use `documents(catalog)` when your code already owns a LanceDB connection and wants to call `db.create_table(...)` directly. Caller-owned tables should expose the catalog document columns `id`, `parent_id`, `role`, `labels`, `content_hash`, and `text`.
+
+`model(embedding_function)` returns the LanceDB model used by `index(..., embedding=...)`. It defines `id`, `parent_id`, `role`, `labels`, `content_hash`, `text`, and `vector`, with `text` bound to `embedding_function.SourceField()` and `vector` bound to `embedding_function.VectorField()`.
 
 Use DuckDB directly when notebooks, scripts, or agents need SQL joins over the derived catalog tables:
 
@@ -67,12 +75,10 @@ limit 5
 conn.close()
 ```
 
-Write a DuckDB database file when another tool needs a durable artifact:
+Write a DuckDB database file when another tool needs durable SQL tables:
 
 ```python
-from chartcoach.paths import default_duckdb_path
-
-duckdb_path = default_duckdb_path()
+duckdb_path = "scratch/catalog.duckdb"
 catalog.write_duckdb(duckdb_path, overwrite=True)
 ```
 
@@ -81,7 +87,7 @@ The LanceDB index root can also be attached through DuckDB's Lance extension:
 ```sql
 INSTALL lance;
 LOAD lance;
-ATTACH '/path/to/index-root' AS cc_index (TYPE LANCE);
+ATTACH 'scratch/chartcoach-index' AS cc_index (TYPE LANCE);
 
 select id, parent_id, role
 from cc_index.main.catalog_documents
@@ -90,13 +96,12 @@ limit 5;
 
 Run the CLI with `uv run --package chartcoach chartcoach --help`.
 
-These commands read the `guidelines` artifact bundle, inspect table schemas, write DuckDB tables, retrieve guideline evidence, and query indexed document rows.
+These commands read the `guidelines` catalog bundle, inspect table schemas, write DuckDB tables, retrieve guideline evidence, and query indexed document rows.
 
 ```bash
 chartcoach prompt --codex --source guidelines \
+  --index scratch/chartcoach-index \
   --task "Review this dashboard for misleading bar axes."
-chartcoach artifacts --source guidelines \
-  --format jsonl
 chartcoach catalog manifest --source guidelines --format markdown
 chartcoach tables list --source guidelines --format jsonl
 chartcoach tables schema --source guidelines --format jsonl
@@ -105,27 +110,21 @@ chartcoach tables values guideline_labels label \
 chartcoach sql --source guidelines \
   "select id, title from guidelines where list_contains(labels, 'chart:bar')" \
   --format jsonl
-DUCKDB_PATH=$(
-  python -c "from chartcoach.paths import default_duckdb_path; print(default_duckdb_path())"
-)
+DUCKDB_PATH=scratch/catalog.duckdb
 chartcoach catalog duckdb --source guidelines \
   --out "$DUCKDB_PATH"
 duckdb "$DUCKDB_PATH" \
   -c "select id, title from guidelines where list_contains(labels, 'chart:bar')"
 chartcoach guidelines retrieve --source guidelines \
   --label chart:bar --section advice --format jsonl
-INDEX_DIR=$(
-  python -c "from chartcoach.paths import default_index_dir; print(default_index_dir())"
-)
-chartcoach index build --source guidelines --index-dir "$INDEX_DIR"
-chartcoach index status --source guidelines \
-  --index-dir "$INDEX_DIR" --format jsonl
-chartcoach index query --source guidelines \
-  --index-dir "$INDEX_DIR" \
+INDEX_PATH=scratch/chartcoach-index
+chartcoach index --source guidelines --index "$INDEX_PATH"
+chartcoach index --index "$INDEX_PATH" \
+  documents \
   "overplotted scatter plot with too many points" \
   --limit 8
 chartcoach guidelines search --source guidelines \
-  --index-dir "$INDEX_DIR" \
+  --index "$INDEX_PATH" \
   --where "role = 'overview'" \
   "overplotted scatter plot with too many points" --format jsonl
 ```
@@ -137,15 +136,15 @@ chartcoach tables schema --source guidelines --format jsonl |
   jq 'select(.table == "sections")'
 ```
 
-The `artifacts` command prints native artifact paths for tools outside the SDK. `guidelines/MANIFEST.md` explains section roles and label families. `guidelines/catalog.parquet` can be opened by Polars or DuckDB directly. `catalog duckdb` creates a normal DuckDB database file with the derived catalog tables. Passing `--index-dir` adds the content-addressed LanceDB root and `catalog_documents` table path. Use `tables list`, `tables schema`, and `tables values` before writing SQL against an unfamiliar catalog. `guidelines retrieve` is deterministic and does not require a search index. `index query` runs full-text search over indexed document rows. `guidelines search` deduplicates matches to guideline-level typed rows. Build the index explicitly with `chartcoach index build`. Read commands do not create or rebuild search state.
+`guidelines/MANIFEST.md` explains section roles and label families. `guidelines/catalog.parquet` can be opened by Polars or DuckDB directly. `catalog duckdb` creates a DuckDB database file with the derived catalog tables. Use `tables list`, `tables schema`, and `tables values` before writing SQL against an unfamiliar catalog. `guidelines retrieve` returns deterministic catalog rows. `index documents` runs LanceDB search over indexed document rows. `guidelines search` deduplicates document matches to guideline-level typed rows.
 
-Install `chartcoach[mcp]` for catalog-only MCP tools. Install both `chartcoach[mcp,search]` when agents will call search tools.
+Install `chartcoach[mcp]` for catalog-only MCP tools. Install both `chartcoach[mcp,index]` when agents will call search tools.
 
 ```bash
 chartcoach mcp serve --source guidelines
 ```
 
-The MCP surface exposes `catalog_artifacts`, `tables_list`, `tables_schema`, `tables_values`, `sql_query`, `guidelines_list`, `guidelines_get`, `guidelines_retrieve`, `guidelines_search`, and `index_query`. Pass `--index-dir` to make `guidelines_search` and `index_query` usable.
+Without an index, the MCP surface exposes only `sql`. Pass `--index` to also register `search` against an existing LanceDB table.
 
 Run tests with `pnpm --dir packages/catalog-python test`.
 

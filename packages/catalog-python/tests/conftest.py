@@ -6,7 +6,7 @@ from pathlib import Path
 from click.testing import CliRunner
 import pytest
 
-from chartcoach import Catalog, CatalogEntry, CatalogManifest, Guideline, Section
+from chartcoach import Catalog, CatalogManifest, Guideline, Section
 
 
 SAMPLE_MANIFEST_MARKDOWN = """# Sample Catalog
@@ -47,37 +47,33 @@ def sample_manifest() -> CatalogManifest:
 def sample_catalog(sample_manifest: CatalogManifest) -> Catalog:
     return Catalog.from_entries(
         [
-            CatalogEntry(
-                guideline=Guideline(
-                    id="direct-labels",
-                    title="Use direct labels",
-                    description="Label marks directly when space permits.",
-                    body="## Advice <!-- role: advice -->\n\nPlace labels near marks.",
-                    labels=("chart:line", "component:label", "task:lookup"),
-                    sections=(
-                        Section(
-                            role="advice",
-                            title="Advice",
-                            content="Place labels near marks.",
-                        ),
+            Guideline(
+                id="direct-labels",
+                title="Use direct labels",
+                description="Label marks directly when space permits.",
+                body="## Advice <!-- role: advice -->\n\nPlace labels near marks.",
+                labels=("chart:line", "component:label", "task:lookup"),
+                sections=(
+                    Section(
+                        role="advice",
+                        title="Advice",
+                        content="Place labels near marks.",
                     ),
-                )
+                ),
             ),
-            CatalogEntry(
-                guideline=Guideline(
-                    id="full-axis-bars",
-                    title="Use full value axes for bars",
-                    description="Keep bar axes on the honest baseline.",
-                    body="## Advice <!-- role: advice -->\n\nStart bar value axes at zero.",
-                    labels=("chart:bar", "component:axis"),
-                    sections=(
-                        Section(
-                            role="advice",
-                            title="Advice",
-                            content="Start bar value axes at zero.",
-                        ),
+            Guideline(
+                id="full-axis-bars",
+                title="Use full value axes for bars",
+                description="Keep bar axes on the honest baseline.",
+                body="## Advice <!-- role: advice -->\n\nStart bar value axes at zero.",
+                labels=("chart:bar", "component:axis"),
+                sections=(
+                    Section(
+                        role="advice",
+                        title="Advice",
+                        content="Start bar value axes at zero.",
                     ),
-                )
+                ),
             ),
         ],
         manifest=sample_manifest,
@@ -88,21 +84,19 @@ def sample_catalog(sample_manifest: CatalogManifest) -> Catalog:
 def single_guideline_catalog(sample_manifest: CatalogManifest) -> Catalog:
     return Catalog.from_entries(
         [
-            CatalogEntry(
-                guideline=Guideline(
-                    id="direct-labels",
-                    title="Use direct labels",
-                    description="Label marks directly when space permits.",
-                    body="## Advice <!-- role: advice -->\n\nPlace labels near marks.",
-                    labels=("chart:line",),
-                    sections=(
-                        Section(
-                            role="advice",
-                            title="Advice",
-                            content="Place labels near marks.",
-                        ),
+            Guideline(
+                id="direct-labels",
+                title="Use direct labels",
+                description="Label marks directly when space permits.",
+                body="## Advice <!-- role: advice -->\n\nPlace labels near marks.",
+                labels=("chart:line",),
+                sections=(
+                    Section(
+                        role="advice",
+                        title="Advice",
+                        content="Place labels near marks.",
                     ),
-                )
+                ),
             )
         ],
         manifest=sample_manifest,

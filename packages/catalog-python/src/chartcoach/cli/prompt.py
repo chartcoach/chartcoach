@@ -4,7 +4,7 @@ from pathlib import Path
 
 import click
 
-from chartcoach.constants import INDEX_DIR_ENV, SOURCE_ENV
+from chartcoach.constants import INDEX_ENV, SOURCE_ENV
 
 from .common import CONTEXT_SETTINGS
 
@@ -35,10 +35,11 @@ DEFAULT_PUBLIC_SITE_URL = "http://localhost:4321"
     help=f"Catalog bundle, parquet file, or authored folder. Defaults to ${SOURCE_ENV} when set.",
 )
 @click.option(
-    "--index-dir",
-    envvar=INDEX_DIR_ENV,
+    "--index",
+    "index_path",
+    envvar=INDEX_ENV,
     type=click.Path(file_okay=False, path_type=Path),
-    help=f"LanceDB full-text index directory. Defaults to ${INDEX_DIR_ENV} when set.",
+    help=f"LanceDB database directory. Uses ${INDEX_ENV} when set.",
 )
 @click.option(
     "--guidance-mode",
@@ -66,7 +67,7 @@ def prompt_command(
     opencode: bool,
     task: str | None,
     source_path: Path | None,
-    index_dir: Path | None,
+    index_path: Path | None,
     guidance_mode: str,
     skill: str,
     public_site_url: str,
@@ -79,7 +80,7 @@ def prompt_command(
             target=target,
             task=task,
             source_path=source_path,
-            index_dir=index_dir,
+            index_path=index_path,
             guidance_mode=guidance_mode,
             skill=skill,
             public_site_url=public_site_url,
@@ -92,7 +93,7 @@ def build_agent_prompt(
     target: str,
     task: str | None = None,
     source_path: Path | None = None,
-    index_dir: Path | None = None,
+    index_path: Path | None = None,
     guidance_mode: str = "explore",
     skill: str = DEFAULT_SKILL,
     public_site_url: str = DEFAULT_PUBLIC_SITE_URL,
@@ -114,12 +115,10 @@ def build_agent_prompt(
         lines.append(
             f"Catalog source: use the user's provided path or `${SOURCE_ENV}` when available."
         )
-    if index_dir is not None:
-        lines.append(f"LanceDB full-text index directory: `{index_dir}`.")
+    if index_path is not None:
+        lines.append(f"LanceDB index: `{index_path}`.")
     else:
-        lines.append(
-            f"LanceDB full-text index directory: use `${INDEX_DIR_ENV}` when available."
-        )
+        lines.append(f"LanceDB index: use `${INDEX_ENV}` when available.")
     if task:
         lines.extend(["", "User task:", task.strip()])
 
@@ -131,7 +130,7 @@ def build_agent_prompt(
             "- Read `MANIFEST.md` for this catalog instance's section-role and label-family semantics.",
             "- Start with manifest prose, table schema, label discovery, and guideline summaries.",
             "- Use role-specific section reads before full guideline bodies when the needed roles are clear.",
-            "- Treat the LanceDB full-text index as optional. If it is missing or fails catalog-digest validation, continue with progressive disclosure over catalog rows.",
+            "- Treat the LanceDB index as optional. If it is unavailable, continue with progressive disclosure over catalog rows.",
             "- When retrieved guidelines constrain or justify the answer, include a Guideline Use Report with guideline ids and public links.",
             f"- Use public links shaped as `{normalized_site_url}/guidelines/<guideline-id>/`.",
         ]

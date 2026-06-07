@@ -1,6 +1,6 @@
 [project]
 name = "chartcoach"
-version = "0.1.0"
+version = "0.0.0"
 description = "Python package and CLI for the ChartCoach visualization guideline catalog."
 readme = "README.md"
 authors = [{ name = "Péter Ferenc Gyarmati", email = "dev.petergy@gmail.com" }]
@@ -31,18 +31,17 @@ dependencies = [
   "click>=8",
   "duckdb>=1.1",
   "mdformat>=1",
-  "platformdirs>=4",
   "polars>=1",
   "pyarrow>=18",
   "pyyaml>=6",
 ]
 
 [project.optional-dependencies]
-search = [
-  "lancedb>=0.33.0",
+index = [
+  "lancedb>=0.33",
 ]
 mcp = [
-  "mcp[cli]>=1.9.0",
+  "mcp[cli]>=1.9",
 ]
 
 [project.scripts]
@@ -58,7 +57,7 @@ dev = ["pytest>=8.4.0"]
 [tool.pytest.ini_options]
 markers = [
   "mcp: tests that require the chartcoach[mcp] optional extra",
-  "search: tests that require the chartcoach[search] optional extra",
+  "search: tests that require the chartcoach[index] optional extra",
 ]
 
 [build-system]

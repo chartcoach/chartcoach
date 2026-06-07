@@ -3,9 +3,9 @@ from pathlib import Path
 import pytest
 import polars as pl
 
-from chartcoach.catalog import Catalog, CatalogEntry, CatalogManifestError
+from chartcoach.catalog import Catalog, CatalogManifestError
 from chartcoach.catalog.storage import load_catalog_entry
-from chartcoach.guideline import Guideline
+from chartcoach.guideline import Guideline, Section as GuidelineSection
 
 
 GUIDELINE_MD = """---
@@ -79,7 +79,7 @@ def test_catalog_loads_folder_entries_and_tables(tmp_path: Path) -> None:
     catalog = Catalog.from_folder(tmp_path)
 
     assert len(catalog) == 1
-    assert catalog.entry("direct-labels").id == "direct-labels"
+    assert catalog.entry("direct-labels")["id"] == "direct-labels"
     assert catalog.guidelines().select("id").to_series().to_list() == ["direct-labels"]
     assert catalog.sections().select("role").to_series().to_list() == ["advice"]
     assert catalog.guideline_labels().select("label").to_series().to_list() == [
@@ -126,23 +126,19 @@ def test_catalog_write_folder_roundtrips_entries(tmp_path: Path) -> None:
 
 
 def test_catalog_digest_is_entry_order_stable() -> None:
-    first = CatalogEntry(
-        guideline=Guideline(
-            id="direct-labels",
-            title="Use direct labels",
-            description="Label marks directly when space permits.",
-            body="Label marks directly when space permits.",
-            labels=("chart:line",),
-        )
+    first = Guideline(
+        id="direct-labels",
+        title="Use direct labels",
+        description="Label marks directly when space permits.",
+        body="Label marks directly when space permits.",
+        labels=("chart:line",),
     )
-    second = CatalogEntry(
-        guideline=Guideline(
-            id="full-axis-bars",
-            title="Use full axes",
-            description="Keep bar axes honest.",
-            body="Keep bar axes honest.",
-            labels=("chart:bar",),
-        )
+    second = Guideline(
+        id="full-axis-bars",
+        title="Use full axes",
+        description="Keep bar axes honest.",
+        body="Keep bar axes honest.",
+        labels=("chart:bar",),
     )
 
     assert (
@@ -151,15 +147,55 @@ def test_catalog_digest_is_entry_order_stable() -> None:
     )
 
 
+def test_catalog_from_entries_accepts_public_guideline_records() -> None:
+    catalog = Catalog.from_entries(
+        [
+            Guideline(
+                id="direct-labels",
+                title="Use direct labels",
+                description="Label marks directly when space permits.",
+                body="## Advice <!-- role: advice -->\n\nPlace labels near marks.",
+                labels=("chart:line",),
+                sections=(
+                    GuidelineSection(
+                        role="advice",
+                        title="Advice",
+                        content="Place labels near marks.",
+                    ),
+                ),
+            ),
+            {
+                "id": "full-axis-bars",
+                "title": "Use full value axes for bars",
+                "description": "Keep bar axes on the honest baseline.",
+                "body": "## Advice <!-- role: advice -->\n\nStart axes at zero.",
+                "labels": ["chart:bar"],
+                "sections": [
+                    {
+                        "role": "advice",
+                        "title": "Advice",
+                        "content": "Start axes at zero.",
+                    }
+                ],
+                "references": ["smith2024"],
+            },
+        ]
+    )
+
+    assert catalog.guidelines().select("id").to_series().to_list() == [
+        "direct-labels",
+        "full-axis-bars",
+    ]
+    assert catalog.entry("full-axis-bars")["references"] == ["smith2024"]
+
+
 def test_catalog_select_empty_returns_empty_catalog() -> None:
-    entry = CatalogEntry(
-        guideline=Guideline(
-            id="direct-labels",
-            title="Use direct labels",
-            description="Label marks directly when space permits.",
-            body="Label marks directly when space permits.",
-            labels=("chart:line",),
-        )
+    entry = Guideline(
+        id="direct-labels",
+        title="Use direct labels",
+        description="Label marks directly when space permits.",
+        body="Label marks directly when space permits.",
+        labels=("chart:line",),
     )
     catalog = Catalog.from_entries([entry])
 
@@ -262,27 +298,27 @@ def test_catalog_rejects_duplicate_ids() -> None:
         description="Description",
         body="Body",
     )
-    entry = CatalogEntry(guideline=guideline)
-
     with pytest.raises(ValueError, match="duplicate guideline ids"):
-        Catalog.from_entries([entry, entry])
+        Catalog.from_entries([guideline, guideline])
 
 
-def test_catalog_entry_rejects_mismatched_row_id() -> None:
+def test_catalog_rejects_mismatched_row_id() -> None:
     with pytest.raises(ValueError, match="does not match guideline id"):
-        CatalogEntry.from_mapping(
-            {
-                "id": "row-id",
-                "guideline": {
-                    "id": "guideline-id",
-                    "title": "Title",
-                    "description": "Description",
-                    "body": "Body",
-                    "labels": [],
-                    "sections": [],
-                },
-                "references": [],
-            }
+        Catalog.from_entries(
+            [
+                {
+                    "id": "row-id",
+                    "guideline": {
+                        "id": "guideline-id",
+                        "title": "Title",
+                        "description": "Description",
+                        "body": "Body",
+                        "labels": [],
+                        "sections": [],
+                    },
+                    "references": [],
+                }
+            ]
         )
 
 
@@ -357,18 +393,18 @@ def test_catalog_bundle_loads_manifest_and_parquet(tmp_path: Path) -> None:
     assert reloaded.to_frame().to_dicts() == catalog.to_frame().to_dicts()
 
 
-def test_catalog_from_source_loads_folder_bundle_and_parquet(tmp_path: Path) -> None:
+def test_catalog_open_loads_folder_bundle_and_parquet(tmp_path: Path) -> None:
     write_manifest(tmp_path / "source")
     write_catalog_entry(tmp_path / "source")
 
-    folder_catalog = Catalog.from_source(tmp_path / "source")
+    folder_catalog = Catalog.open(tmp_path / "source")
     folder_catalog.write_bundle(tmp_path / "bundle")
     parquet_path = tmp_path / "catalog.parquet"
     folder_catalog.write_parquet(parquet_path)
 
-    assert Catalog.from_source(tmp_path / "source").guidelines().height == 1
-    assert Catalog.from_source(tmp_path / "bundle").require_manifest()
-    assert Catalog.from_source(parquet_path).guidelines().height == 1
+    assert Catalog.open(tmp_path / "source").guidelines().height == 1
+    assert Catalog.open(tmp_path / "bundle").require_manifest()
+    assert Catalog.open(parquet_path).guidelines().height == 1
 
 
 def test_catalog_from_frame_rejects_mismatched_guideline_id() -> None:
@@ -394,29 +430,30 @@ def test_catalog_from_frame_rejects_mismatched_guideline_id() -> None:
         Catalog.from_frame(frame)
 
 
-def test_guideline_from_mapping_requires_serialized_sections() -> None:
-    with pytest.raises(TypeError, match="sections is required"):
-        Guideline.from_mapping(
-            {
-                "id": "guideline-id",
-                "title": "Title",
-                "description": "Description",
-                "body": "Body",
-                "labels": [],
-            }
-        )
+def test_guideline_from_mapping_derives_sections_from_body() -> None:
+    guideline = Guideline.from_mapping(
+        {
+            "id": "guideline-id",
+            "title": "Title",
+            "description": "Description",
+            "body": "## Advice <!-- role: advice -->\n\nBody",
+            "labels": [],
+        }
+    )
+
+    assert [(section.role, section.content) for section in guideline.sections] == [
+        ("advice", "Body")
+    ]
 
 
 def test_empty_label_catalog_frames_are_typed() -> None:
     catalog = Catalog.from_entries(
         [
-            CatalogEntry(
-                guideline=Guideline(
-                    id="unlabeled",
-                    title="Title",
-                    description="Description",
-                    body="Body",
-                )
+            Guideline(
+                id="unlabeled",
+                title="Title",
+                description="Description",
+                body="Body",
             )
         ]
     )

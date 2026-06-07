@@ -14,7 +14,7 @@ def test_prompt_cli_prints_parameterized_codex_prompt(
     tmp_path: Path,
 ) -> None:
     source = tmp_path / "guidelines"
-    index_dir = tmp_path / "index"
+    index_path = tmp_path / "index"
 
     result = runner.invoke(
         chartcoach_cli,
@@ -23,8 +23,8 @@ def test_prompt_cli_prints_parameterized_codex_prompt(
             "--codex",
             "--source",
             str(source),
-            "--index-dir",
-            str(index_dir),
+            "--index",
+            str(index_path),
             "--guidance-mode",
             "feedback",
             "--task",
@@ -36,7 +36,7 @@ def test_prompt_cli_prints_parameterized_codex_prompt(
     assert "Target agent: Codex." in result.output
     assert "Installed skill: `chartcoach/catalog`." in result.output
     assert f"Catalog source: `{source}`." in result.output
-    assert f"LanceDB full-text index directory: `{index_dir}`." in result.output
+    assert f"LanceDB index: `{index_path}`." in result.output
     assert "Guidance mode: `feedback`." in result.output
     assert "Review a dashboard for misleading bar axes." in result.output
     assert "Read `MANIFEST.md`" in result.output

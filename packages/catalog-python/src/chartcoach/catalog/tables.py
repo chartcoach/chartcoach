@@ -10,7 +10,7 @@ from ..guideline.bibliography import parse_bibtex_reference
 from ..guideline.labels import parse_label
 
 if TYPE_CHECKING:
-    from .collection import CatalogEntry
+    from .collection import _CatalogRecord
 
 
 SECTION_SCHEMA = pl.Struct(
@@ -106,7 +106,7 @@ class ReferenceTables:
     guideline_references: pl.DataFrame
 
 
-def build_catalog_df(entries: Sequence[CatalogEntry]) -> pl.DataFrame:
+def build_catalog_df(entries: Sequence[_CatalogRecord]) -> pl.DataFrame:
     """Build the serialized catalog dataframe."""
     if not entries:
         return pl.DataFrame(schema=CATALOG_SCHEMA)
