@@ -236,6 +236,18 @@ def test_query_rejects_empty_text_and_invalid_limits(
         query(table, "axis", limit=0)
 
 
+def test_query_explains_hybrid_mode_on_full_text_index(
+    sample_catalog: Catalog,
+    tmp_path: Path,
+) -> None:
+    from chartcoach.search import index, query
+
+    table = index(sample_catalog, tmp_path / "index")
+
+    with pytest.raises(ValueError, match="--mode fts"):
+        query(table, "axis", mode="hybrid")
+
+
 def test_search_returns_guideline_level_hits(
     sample_catalog: Catalog,
     tmp_path: Path,

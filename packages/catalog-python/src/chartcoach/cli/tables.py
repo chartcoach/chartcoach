@@ -142,7 +142,7 @@ def values_command(
             column,
             explode=explode,
             contains=contains,
-            limit=limit,
+            limit=limit + 1,
         )
     except ToolError as exc:
         raise click.ClickException(str(exc)) from exc
@@ -155,7 +155,13 @@ def values_command(
                 ["Run tables schema first to inspect available columns."],
             )
         ) from exc
-    emit_rows(rows, output_format=output_format)
+    visible_rows = rows[:limit]
+    emit_rows(visible_rows, output_format=output_format)
+    if len(rows) > limit:
+        click.echo(
+            f"Returned {limit} values. Increase --limit to inspect more.",
+            err=True,
+        )
 
 
 def list_tables(

@@ -3,19 +3,27 @@ from __future__ import annotations
 import csv
 import io
 import json
+import os
+import sys
 from collections.abc import Callable, Mapping, Sequence
+from contextlib import contextmanager
 from pathlib import Path
-from typing import TypeVar, cast
+from typing import Iterator, TypeVar, cast
 
 import click
 
 from chartcoach.catalog import Catalog
-from chartcoach.constants import INDEX_ENV, SOURCE_ENV
+from chartcoach.constants import (
+    DEFAULT_CATALOG_ARTIFACT_BASE_URL,
+    INDEX_ENV,
+    LANCE_DOCUMENT_TABLE,
+    SOURCE_ENV,
+)
 from chartcoach.tools import Tools, format_error
 
 CONTEXT_SETTINGS = {"help_option_names": ["-h", "--help"]}
 ROW_FORMATS = ("table", "json", "jsonl", "csv")
-SEARCH_FORMATS = ("table", "json", "jsonl", "csv", "markdown")
+SEARCH_FORMATS = ("table", "json", "jsonl", "csv", "markdown", "compact")
 SHOW_FORMATS = ("markdown", "json", "jsonl")
 RETRIEVE_FORMATS = ("markdown", "json", "jsonl", "csv", "table")
 
@@ -27,10 +35,13 @@ def source_option(command: _Command) -> _Command:
         "--source",
         "source_path",
         envvar=SOURCE_ENV,
-        type=click.Path(path_type=Path),
+        metavar="PATH_OR_URL",
         callback=_remember_source_path,
         expose_value=False,
-        help=f"Catalog parquet file or guideline folder. Defaults to ${SOURCE_ENV} when set.",
+        help=(
+            "Catalog bundle, entries parquet file, authored folder, or metadata URL. "
+            f"Defaults to ${SOURCE_ENV}, then {DEFAULT_CATALOG_ARTIFACT_BASE_URL}."
+        ),
     )(command)
 
 
@@ -40,15 +51,34 @@ def required_index_option(command: _Command) -> _Command:
         "index_path",
         envvar=INDEX_ENV,
         type=click.Path(file_okay=False, path_type=Path),
-        required=True,
-        help=f"LanceDB database directory. Required unless ${INDEX_ENV} is set.",
+        help=f"LanceDB database directory. Defaults to ${INDEX_ENV} when set.",
     )(command)
+
+
+def require_index_path(
+    index_path: Path | None,
+    *,
+    source_path: object | None = None,
+) -> Path:
+    if index_path is not None:
+        return index_path
+    source_part = f" --source {source_path}" if source_path is not None else ""
+    raise click.ClickException(
+        format_error(
+            f"Pass --index PATH or set {INDEX_ENV}.",
+            [
+                f"Build a full-text index with `chartcoach index{source_part} --index PATH`.",
+                "Then pass the same index path to search commands.",
+                "Use `--mode fts` for a full-text-only index.",
+            ],
+        )
+    )
 
 
 def _remember_source_path(
     ctx: click.Context,
     _param: click.Parameter,
-    value: Path | None,
+    value: str | None,
 ) -> None:
     if value is not None:
         ctx.ensure_object(dict)["source_path"] = value
@@ -75,22 +105,19 @@ def tools(ctx: click.Context) -> Tools:
     return Tools(load_catalog(ctx))
 
 
-def source_path(ctx: click.Context) -> Path:
+def source_path(ctx: click.Context) -> str | None:
     path = cast(Mapping[str, object], ctx.obj or {}).get("source_path")
     if path is None:
-        raise click.ClickException(
-            format_error(
-                f"Pass --source PATH or set {SOURCE_ENV}.",
-                [
-                    "Provide a catalog bundle, catalog parquet file, or authored guideline folder.",
-                    f"Or export {SOURCE_ENV}=PATH.",
-                ],
-            )
-        )
-    return cast(Path, path)
+        return None
+    return cast(str, path)
 
 
-def emit_rows(rows: Sequence[Mapping[str, object]], *, output_format: str) -> None:
+def emit_rows(
+    rows: Sequence[Mapping[str, object]],
+    *,
+    output_format: str,
+    empty_message: str = "0 rows",
+) -> None:
     if output_format == "json":
         click.echo(json.dumps(list(rows), indent=2, ensure_ascii=False, default=str))
     elif output_format == "jsonl":
@@ -98,8 +125,10 @@ def emit_rows(rows: Sequence[Mapping[str, object]], *, output_format: str) -> No
             click.echo(json.dumps(row, ensure_ascii=False, default=str))
     elif output_format == "csv":
         click.echo(rows_to_csv(rows, delimiter=",").rstrip())
+    elif not rows:
+        click.echo(empty_message)
     else:
-        click.echo(rows_to_csv(rows, delimiter="\t").rstrip())
+        click.echo(rows_to_csv(rows, delimiter="\t", human=True).rstrip())
 
 
 def emit_object(value: object, *, output_format: str) -> None:
@@ -109,7 +138,12 @@ def emit_object(value: object, *, output_format: str) -> None:
         click.echo(json.dumps(value, indent=2, ensure_ascii=False, default=str))
 
 
-def rows_to_csv(rows: Sequence[Mapping[str, object]], *, delimiter: str) -> str:
+def rows_to_csv(
+    rows: Sequence[Mapping[str, object]],
+    *,
+    delimiter: str,
+    human: bool = False,
+) -> str:
     if not rows:
         return ""
     output = io.StringIO()
@@ -117,14 +151,69 @@ def rows_to_csv(rows: Sequence[Mapping[str, object]], *, delimiter: str) -> str:
     writer = csv.DictWriter(output, fieldnames=fieldnames, delimiter=delimiter)
     writer.writeheader()
     for row in rows:
-        writer.writerow({key: format_cell(value) for key, value in row.items()})
+        writer.writerow(
+            {key: format_cell(value, human=human) for key, value in row.items()}
+        )
     return output.getvalue()
 
 
-def format_cell(value: object) -> object:
+def format_cell(value: object, *, human: bool = False) -> object:
+    if human and isinstance(value, list):
+        return ", ".join(str(item) for item in value)
     if isinstance(value, list | dict):
         return json.dumps(value, ensure_ascii=False, default=str)
     return value
+
+
+def search_cli_error(
+    message: str,
+    *,
+    index_path: Path | None = None,
+    table_name: str = LANCE_DOCUMENT_TABLE,
+) -> str:
+    """Return a CLI search error with local index-path recovery hints."""
+
+    return format_error(
+        message,
+        [
+            *_index_path_hints(index_path, table_name=table_name),
+            (
+                "Build a full-text LanceDB table with "
+                "`chartcoach index --source PATH --index PATH`."
+            ),
+            "Pass the same index path to search commands with `--mode fts`.",
+            "Use `chartcoach index --embedding ...` when vector or hybrid search is required.",
+        ],
+    )
+
+
+def _index_path_hints(index_path: Path | None, *, table_name: str) -> list[str]:
+    if index_path is None or not index_path.is_dir():
+        return []
+
+    table_dir = f"{table_name}.lance"
+    child_indexes = [
+        child
+        for child in sorted(index_path.iterdir(), key=str)
+        if child.is_dir() and (child / table_dir).is_dir()
+    ]
+    if not child_indexes:
+        return []
+
+    if len(child_indexes) == 1:
+        return [
+            (
+                f"Found table {table_name!r} under {child_indexes[0]}. "
+                f"Pass `--index {child_indexes[0]}`."
+            )
+        ]
+    formatted = ", ".join(str(path) for path in child_indexes)
+    return [
+        (
+            f"Found table {table_name!r} under child index directories: {formatted}. "
+            "Pass one of those paths with `--index`."
+        )
+    ]
 
 
 def evidence_packets_to_markdown(packets: Sequence[Mapping[str, object]]) -> str:
@@ -167,7 +256,8 @@ def guideline_search_rows_to_markdown(rows: Sequence[Mapping[str, object]]) -> s
                 + ", ".join(f"`{label}`" for label in cast(list[str], labels))
             )
             lines.append("")
-        lines.append(f"- matched section: `{row.get('matched_role')}`")
+        lines.append(f"- matched document role: `{row.get('matched_role')}`")
+        lines.append(f"- retrieval hint: {retrieval_hint(row.get('matched_role'))}")
         lines.append(f"- matched document: `{row.get('matched_document_id')}`")
         lines.append(f"- score: `{row.get('score')}`")
         lines.append("")
@@ -176,8 +266,64 @@ def guideline_search_rows_to_markdown(rows: Sequence[Mapping[str, object]]) -> s
     return "\n".join(lines)
 
 
+def guideline_search_rows_to_compact_markdown(
+    rows: Sequence[Mapping[str, object]],
+    *,
+    text_limit: int = 360,
+) -> str:
+    lines: list[str] = []
+    for row in rows:
+        lines.append(f"{row['rank']}. `{row['id']}` - {row.get('title')}")
+        description = str(row.get("description") or "")
+        if description:
+            lines.append(f"   {description}")
+        labels = row.get("labels")
+        if labels:
+            lines.append(
+                "   labels: "
+                + ", ".join(f"`{label}`" for label in cast(list[str], labels))
+            )
+        lines.append(
+            "   match: "
+            f"document role `{row.get('matched_role')}` "
+            f"({retrieval_hint(row.get('matched_role'))}), "
+            f"from `{row.get('matched_document_id')}`, "
+            f"score `{row.get('score')}`"
+        )
+        matched = " ".join(truncate(row.get("matched_text") or "", text_limit).split())
+        if matched:
+            lines.append(f"   text: {matched}")
+        lines.append("")
+    return "\n".join(lines)
+
+
+@contextmanager
+def quiet_runtime_stderr() -> Iterator[None]:
+    """Suppress noisy native stderr output during successful CLI operations."""
+
+    sys.stderr.flush()
+    old_fd = os.dup(2)
+    try:
+        with open(os.devnull, "w", encoding="utf-8") as devnull:
+            os.dup2(devnull.fileno(), 2)
+            yield
+    finally:
+        sys.stderr.flush()
+        os.dup2(old_fd, 2)
+        os.close(old_fd)
+
+
 def truncate(value: object, limit: int) -> str:
     text = "" if value is None else str(value)
     if len(text) <= limit:
         return text
     return text[: limit - 3].rstrip() + "..."
+
+
+def retrieval_hint(role: object) -> str:
+    if not isinstance(role, str) or not role:
+        return "retrieve by guideline id or a manifest section role"
+    prefix = "section."
+    if role.startswith(prefix):
+        return f"retrieve section `{role.removeprefix(prefix)}`"
+    return "retrieve by guideline id or a manifest section role"

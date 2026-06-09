@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-import json
 from collections.abc import Mapping, Sequence
+from difflib import SequenceMatcher
+import json
 from pathlib import Path
 from typing import cast
 
@@ -14,7 +15,6 @@ from chartcoach.guideline import Guideline
 from chartcoach.search import Mode, open as open_index, search
 from chartcoach.tools import (
     ToolError,
-    search_error,
 )
 
 from .common import (
@@ -23,12 +23,17 @@ from .common import (
     ROW_FORMATS,
     SEARCH_FORMATS,
     SHOW_FORMATS,
-    source_option,
     emit_rows,
     evidence_packets_to_markdown,
+    guideline_search_rows_to_compact_markdown,
     guideline_search_rows_to_markdown,
     load_catalog,
+    quiet_runtime_stderr,
+    require_index_path,
     required_index_option,
+    search_cli_error,
+    source_option,
+    source_path,
 )
 
 
@@ -89,7 +94,11 @@ def list_command(
         )
     except ToolError as exc:
         raise click.ClickException(str(exc)) from exc
-    emit_rows(rows, output_format=output_format)
+    emit_rows(
+        rows,
+        output_format=output_format,
+        empty_message="No guidelines matched.",
+    )
 
 
 @guidelines_command.command("show", context_settings=CONTEXT_SETTINGS)
@@ -193,6 +202,9 @@ def retrieve_command(
         )
     except ToolError as exc:
         raise click.ClickException(str(exc)) from exc
+    if not packets and output_format == "markdown":
+        click.echo("No guidelines matched.")
+        return
     if output_format == "markdown":
         click.echo(evidence_packets_to_markdown(packets).rstrip())
     elif output_format == "json":
@@ -215,7 +227,11 @@ def retrieve_command(
                     "sections": [section.get("role") for section in section_rows],
                 }
             )
-        emit_rows(rows, output_format=output_format)
+        emit_rows(
+            rows,
+            output_format=output_format,
+            empty_message="No guidelines matched.",
+        )
 
 
 @guidelines_command.command("search", context_settings=CONTEXT_SETTINGS)
@@ -264,7 +280,7 @@ def retrieve_command(
 @click.pass_context
 def search_command(
     ctx: click.Context,
-    index_path: Path,
+    index_path: Path | None,
     query: str,
     limit: int,
     candidate_limit: int | None,
@@ -277,20 +293,33 @@ def search_command(
 
     catalog = load_catalog(ctx)
     try:
-        table = open_index(index_path, table_name=table_name)
-        result = search(
-            catalog,
-            table,
-            query,
-            limit=limit,
-            candidate_limit=candidate_limit,
-            where=where,
-            mode=cast(Mode, mode),
-        ).to_dict()
+        resolved_index_path = require_index_path(
+            index_path,
+            source_path=source_path(ctx),
+        )
+        table = open_index(resolved_index_path, table_name=table_name)
+        with quiet_runtime_stderr():
+            result = search(
+                catalog,
+                table,
+                query,
+                limit=limit,
+                candidate_limit=candidate_limit,
+                where=where,
+                mode=cast(Mode, mode),
+            ).to_dict()
     except ToolError as exc:
         raise click.ClickException(str(exc)) from exc
+    except click.ClickException:
+        raise
     except Exception as exc:
-        raise click.ClickException(search_error(str(exc))) from exc
+        raise click.ClickException(
+            search_cli_error(
+                str(exc),
+                index_path=resolved_index_path,
+                table_name=table_name,
+            )
+        ) from exc
 
     if output_format == "json":
         click.echo(json.dumps(result, indent=2, ensure_ascii=False))
@@ -298,9 +327,17 @@ def search_command(
 
     rows = cast(list[dict[str, object]], result["rows"])
     if output_format == "markdown":
-        click.echo(guideline_search_rows_to_markdown(rows).rstrip())
+        output = guideline_search_rows_to_markdown(rows).rstrip()
+        click.echo(output or "No guidelines matched.")
+    elif output_format == "compact":
+        output = guideline_search_rows_to_compact_markdown(rows).rstrip()
+        click.echo(output or "No guidelines matched.")
     else:
-        emit_rows(rows, output_format=output_format)
+        emit_rows(
+            rows,
+            output_format=output_format,
+            empty_message="No guidelines matched.",
+        )
 
 
 def list_guidelines(
@@ -344,7 +381,7 @@ def get_guideline(catalog: Catalog, guideline_id: str) -> dict[str, object]:
     try:
         return catalog.entry(guideline_id)
     except KeyError as exc:
-        raise unknown_id_error(guideline_id) from exc
+        raise unknown_id_error(catalog, guideline_id) from exc
 
 
 def retrieve_guidelines(
@@ -403,7 +440,7 @@ def query_guidelines(
         available = set(df.get_column("id").to_list())
         missing = [guideline_id for guideline_id in ids if guideline_id not in available]
         if missing:
-            raise unknown_id_error(missing[0])
+            raise unknown_id_error(catalog, missing[0])
         order = pl.DataFrame({"id": list(ids), "_catalog_order": range(len(ids))})
         df = order.join(df, on="id", how="inner").sort("_catalog_order")
 
@@ -501,7 +538,10 @@ def validate_section_roles(catalog: Catalog, roles: Sequence[str]) -> None:
     if missing:
         raise ToolError(
             f"Unknown section role(s): {', '.join(missing)}",
-            hints=["Inspect the sections table before filtering by role."],
+            hints=[
+                "Valid roles: " + ", ".join(sorted(available)),
+                "Run `chartcoach catalog manifest --source PATH` for the catalog contract.",
+            ],
         )
 
 
@@ -525,11 +565,43 @@ def distinct_strings(
     return {value for value in values if isinstance(value, str)}
 
 
-def unknown_id_error(guideline_id: str) -> ToolError:
+def unknown_id_error(catalog: Catalog, guideline_id: str) -> ToolError:
+    suggestions = nearest_guideline_ids(catalog, guideline_id)
+    hints = []
+    if suggestions:
+        hints.append("Nearest guideline ids: " + ", ".join(suggestions))
+    hints.extend(
+        [
+            "Copy ids exactly from `chartcoach guidelines search --format compact QUERY`.",
+            "Run `chartcoach guidelines show ID` or `chartcoach guidelines retrieve --id ID` with one exact id.",
+            "Run `chartcoach guidelines list --contains TEXT` to inspect candidate ids.",
+        ]
+    )
     return ToolError(
         f"Unknown guideline id: {guideline_id}",
-        hints=["List guideline summaries before reading a specific id."],
+        hints=hints,
     )
+
+
+def nearest_guideline_ids(
+    catalog: Catalog,
+    guideline_id: str,
+    *,
+    limit: int = 3,
+) -> list[str]:
+    ids = [str(value) for value in catalog.guidelines().get_column("id").to_list()]
+    scored = [
+        (
+            SequenceMatcher(a=guideline_id, b=candidate).ratio(),
+            candidate,
+        )
+        for candidate in ids
+    ]
+    return [
+        candidate
+        for score, candidate in sorted(scored, key=lambda item: (-item[0], item[1]))
+        if score > 0
+    ][:limit]
 
 
 __all__ = ["guidelines_command"]

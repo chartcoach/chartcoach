@@ -17,7 +17,15 @@ if TYPE_CHECKING:
 
 Mode: TypeAlias = Literal["auto", "fts", "vector", "hybrid"]
 Query: TypeAlias = str | list[float] | tuple[float, ...]
-_QUERY_COLUMNS = ["id", "parent_id", "role", "labels", "content_hash", "text"]
+_BASE_QUERY_COLUMNS = [
+    "id",
+    "parent_id",
+    "role",
+    "labels",
+    "content_hash",
+    "text",
+]
+_RANKING_COLUMNS = ("_score", "_distance", "_relevance_score")
 
 
 class Document(TypedDict, total=False):
@@ -30,6 +38,7 @@ class Document(TypedDict, total=False):
     vector: list[float]
     _score: float
     _distance: float
+    _relevance_score: float
 
 
 def index(
@@ -95,10 +104,10 @@ def query(
         query_type=resolved_mode,
         fts_columns=fts_columns,
         vector_column_name=vector_column_name,
-    ).select(_QUERY_COLUMNS)
+    )
     if where:
         search = search.where(where)
-    return [cast(Document, row) for row in search.limit(limit).to_list()]
+    return [_document(row) for row in search.limit(limit).to_list()]
 
 
 def model(embedding: "EmbeddingFunction") -> type["LanceModel"]:
@@ -168,9 +177,25 @@ def _document_rows(frame: pl.DataFrame) -> list[Document]:
 
 
 def _resolve_mode(table: "Table", search_query: Query, mode: Mode) -> Mode:
-    if mode == "auto" and isinstance(search_query, str) and not table.embedding_functions:
-        return "fts"
-    return mode
+    has_embeddings = bool(getattr(table, "embedding_functions", None))
+    if mode in {"vector", "hybrid"} and isinstance(search_query, str) and not has_embeddings:
+        raise ValueError(
+            f"{mode} search requires a LanceDB table with embeddings. "
+            "Rebuild the index with `chartcoach index --embedding ...` "
+            "or rerun this query with `--mode fts`."
+        )
+    if mode != "auto":
+        return mode
+    if not isinstance(search_query, str):
+        return "vector"
+    if has_embeddings:
+        return "vector"
+    return "fts"
+
+
+def _document(row: dict[str, object]) -> Document:
+    keys = [*_BASE_QUERY_COLUMNS, *_RANKING_COLUMNS]
+    return cast(Document, {key: row[key] for key in keys if key in row})
 
 __all__ = [
     "Document",

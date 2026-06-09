@@ -108,7 +108,7 @@ def catalog_path_factory(
     tmp_path: Path,
 ) -> Callable[[Catalog], Path]:
     def write_catalog(catalog: Catalog) -> Path:
-        path = tmp_path / "catalog.parquet"
+        path = tmp_path / "entries.parquet"
         catalog.write_parquet(path)
         return path
 

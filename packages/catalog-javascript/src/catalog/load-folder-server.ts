@@ -1,7 +1,14 @@
 import { readdir, readFile, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  DEFAULT_CATALOG_METADATA_URL,
+  artifact,
+  artifactUrl,
+  fetchCatalogRelease,
+} from "./artifacts";
 import { CatalogError } from "./errors";
+import { fetchCatalog } from "./load-parquet-browser";
 import { Catalog, type Guideline } from "./model";
 import {
   parseManifest,
@@ -15,15 +22,17 @@ export type ReadCatalogOptions = {
 };
 
 export async function readCatalog(
-  sourcePath: string | URL,
+  sourcePath: string | URL = DEFAULT_CATALOG_METADATA_URL,
   options: ReadCatalogOptions = {},
 ): Promise<Catalog> {
+  if (isHttpUrl(sourcePath)) return readCatalogUrl(sourcePath, options);
+
   const source = resolvePath(sourcePath);
   const sourceStat = await stat(source);
   const manifest = await resolveManifest(source, sourceStat.isDirectory(), options.manifest);
 
   if (sourceStat.isDirectory()) {
-    const parquetPath = join(source, "catalog.parquet");
+    const parquetPath = join(source, "entries.parquet");
     try {
       await stat(parquetPath);
       return readCatalogFile(parquetPath, { manifest });
@@ -37,6 +46,26 @@ export async function readCatalog(
   }
 
   return readCatalogFile(source, { manifest });
+}
+
+async function readCatalogUrl(
+  sourceUrl: string | URL,
+  options: ReadCatalogOptions,
+): Promise<Catalog> {
+  const url = sourceUrl.toString();
+  if (url.endsWith(".parquet")) return fetchCatalog(url, options);
+
+  const metadataUrl = url.endsWith("metadata.json")
+    ? url
+    : new URL("metadata.json", url.endsWith("/") ? url : `${url}/`).toString();
+  const release = await fetchCatalogRelease(metadataUrl);
+  const metadata = release.metadata;
+  const entries = artifact(metadata, "entries");
+  const manifest = options.manifest ?? artifactUrl(release.metadataUrl, artifact(metadata, "manifest"));
+  return fetchCatalog(artifactUrl(release.metadataUrl, entries), {
+    ...options,
+    manifest,
+  });
 }
 
 async function readGuidelineFromFolder(entryDir: string): Promise<Guideline> {
@@ -72,9 +101,18 @@ async function readGuidelineFromFolder(entryDir: string): Promise<Guideline> {
 
 async function readCatalogFolder(folderPath: string, manifest: CatalogManifest): Promise<Catalog> {
   const guidelines: Guideline[] = [];
-  const children = await readdir(folderPath);
+  const entriesPath = join(folderPath, "entries");
+  let children: string[];
+  try {
+    children = await readdir(entriesPath);
+  } catch (error) {
+    if (isMissingFile(error)) {
+      throw new CatalogError(`Catalog folders require an entries directory: ${entriesPath}`);
+    }
+    throw error;
+  }
   for (const name of children) {
-    const full = join(folderPath, name);
+    const full = join(entriesPath, name);
     let s;
     try {
       s = await stat(full);
@@ -111,6 +149,11 @@ async function resolveManifest(
 
 function resolvePath(path: string | URL): string {
   return path instanceof URL ? fileURLToPath(path) : path;
+}
+
+function isHttpUrl(path: string | URL): boolean {
+  if (path instanceof URL) return path.protocol === "http:" || path.protocol === "https:";
+  return path.startsWith("http://") || path.startsWith("https://");
 }
 
 function isMissingFile(error: unknown): boolean {

@@ -6,14 +6,13 @@ description: ChartCoach MCP server tools and runtime options.
 The MCP server exposes one raw catalog query tool and, when an index is configured, one raw LanceDB query tool.
 
 ```bash
-chartcoach mcp serve --source guidelines
+chartcoach mcp serve
 ```
 
 Pass `--index` to register the search tool backed by an existing LanceDB index.
 
 ```bash
 chartcoach mcp serve \
-  --source guidelines \
   --index "$CHARTCOACH_INDEX"
 ```
 
@@ -38,6 +37,10 @@ Server log level. Defaults to `INFO`.
 `--index PATH`
 
 LanceDB database directory. When omitted, the server registers only `sql`.
+
+`--source PATH_OR_URL`
+
+Catalog bundle, entries parquet file, authored folder, or metadata URL. When omitted, the server uses the package-pinned default catalog artifact.
 
 `--table NAME`
 

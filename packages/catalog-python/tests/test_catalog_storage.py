@@ -1,9 +1,18 @@
+import json
+import shutil
 from pathlib import Path
+from typing import cast
 
 import pytest
 import polars as pl
 
 from chartcoach.catalog import Catalog, CatalogManifestError
+from chartcoach.catalog import remote as catalog_remote
+from chartcoach.catalog.remote import (
+    ArtifactDescriptor,
+    CatalogReleaseMetadata,
+    read_release_metadata,
+)
 from chartcoach.catalog.storage import load_catalog_entry
 from chartcoach.guideline import Guideline, Section as GuidelineSection
 
@@ -58,7 +67,7 @@ def write_manifest(root: Path, manifest: str = MANIFEST_MD) -> None:
 
 
 def write_catalog_entry(root: Path, entry_id: str = "direct-labels") -> Path:
-    entry_dir = root / entry_id
+    entry_dir = root / "entries" / entry_id
     entry_dir.mkdir(parents=True)
     (entry_dir / "guideline.md").write_text(
         GUIDELINE_MD.replace("id: direct-labels", f"id: {entry_id}")
@@ -123,6 +132,22 @@ def test_catalog_write_folder_roundtrips_entries(tmp_path: Path) -> None:
     reloaded = Catalog.from_folder(tmp_path / "written")
 
     assert reloaded.to_frame().to_dicts() == catalog.to_frame().to_dicts()
+
+
+def test_catalog_write_folder_replaces_existing_entries(tmp_path: Path) -> None:
+    write_manifest(tmp_path / "source")
+    write_catalog_entry(tmp_path / "source")
+    catalog = Catalog.from_folder(tmp_path / "source")
+    output = tmp_path / "written"
+    stale_entry = write_catalog_entry(output, "stale-guideline")
+    (stale_entry / "notes.md").write_text("local draft")
+
+    catalog.write_folder(output)
+
+    assert not stale_entry.exists()
+    assert Catalog.from_folder(output).guidelines().get_column("id").to_list() == [
+        "direct-labels"
+    ]
 
 
 def test_catalog_digest_is_entry_order_stable() -> None:
@@ -242,11 +267,158 @@ def test_catalog_write_parquet_roundtrips(tmp_path: Path) -> None:
     write_catalog_entry(tmp_path / "source")
     catalog = Catalog.from_folder(tmp_path / "source")
 
-    parquet_path = tmp_path / "catalog.parquet"
+    parquet_path = tmp_path / "entries.parquet"
     catalog.write_parquet(parquet_path)
 
     reloaded = Catalog.from_parquet(parquet_path)
     assert reloaded.to_frame().to_dicts() == catalog.to_frame().to_dicts()
+
+
+def test_catalog_write_bundle_includes_release_metadata(tmp_path: Path) -> None:
+    write_manifest(tmp_path / "source")
+    write_catalog_entry(tmp_path / "source")
+    catalog = Catalog.from_folder(tmp_path / "source")
+
+    catalog.write_bundle(tmp_path / "bundle")
+
+    metadata = read_release_metadata(tmp_path / "bundle")
+    assert metadata.version == "0.0.0"
+    assert metadata.digest == catalog.digest()
+    assert metadata.artifact("manifest").path == "MANIFEST.md"
+    assert metadata.artifact("entries").path == "entries.parquet"
+    assert metadata.artifact("entries").rows == 1
+
+
+def test_release_metadata_preserves_index_artifact_body() -> None:
+    metadata = CatalogReleaseMetadata.from_mapping(
+        {
+            "version": "0.0.0",
+            "digest": "catalog-digest",
+            "artifacts": [
+                {
+                    "kind": "manifest",
+                    "path": "MANIFEST.md",
+                    "digest": "manifest-digest",
+                    "bytes": 1,
+                },
+                {
+                    "kind": "entries",
+                    "path": "entries.parquet",
+                    "digest": "entries-digest",
+                    "bytes": 2,
+                },
+                {
+                    "kind": "lancedb-index",
+                    "path": "indexes/lancedb/openrouter/openai-text-embedding-3-large/catalog_documents.tar.gz",
+                    "digest": "index-digest",
+                    "bytes": 3,
+                    "format": "tar+gzip",
+                    "table": "catalog_documents",
+                    "embedding": {
+                        "registry": "openai",
+                        "model": "openai/text-embedding-3-large",
+                    },
+                },
+            ],
+        }
+    )
+
+    index_artifact = metadata.artifact("lancedb-index")
+    assert index_artifact.path.endswith("catalog_documents.tar.gz")
+    assert index_artifact.extra["table"] == "catalog_documents"
+    artifacts = cast(list[dict[str, object]], metadata.to_record()["artifacts"])
+    assert artifacts[2]["embedding"] == {
+        "registry": "openai",
+        "model": "openai/text-embedding-3-large",
+    }
+
+
+def test_download_catalog_bundle_resolves_pointer_without_index_download(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    write_manifest(tmp_path / "source")
+    write_catalog_entry(tmp_path / "source")
+    source_catalog = Catalog.from_folder(tmp_path / "source")
+    bundle_path = source_catalog.write_bundle(tmp_path / "bundle")
+    metadata = read_release_metadata(bundle_path)
+    metadata = CatalogReleaseMetadata(
+        version=metadata.version,
+        digest=metadata.digest,
+        artifacts=(
+            *metadata.artifacts,
+            ArtifactDescriptor(
+                kind="lancedb-index",
+                path="indexes/lancedb/openrouter/openai-text-embedding-3-large/index.tar.gz",
+                digest="index-digest",
+                bytes=3,
+                format="tar+gzip",
+            ),
+        ),
+    )
+    pointer_url = "https://example.test/metadata.json"
+    release_url = f"https://example.test/catalog/releases/{metadata.version}/{metadata.digest}/metadata.json"
+    downloads: list[str] = []
+
+    def read_url_text(url: str) -> str:
+        if url == pointer_url:
+            return json.dumps(
+                {
+                    "kind": "chartcoach-release-pointer",
+                    "target": f"catalog/releases/{metadata.version}/{metadata.digest}/metadata.json",
+                    "version": metadata.version,
+                    "digest": metadata.digest,
+                }
+            )
+        if url == release_url:
+            return json.dumps(metadata.to_record())
+        raise AssertionError(f"Unexpected metadata URL: {url}")
+
+    def download_file(url: str, path: Path) -> None:
+        downloads.append(url)
+        if url.endswith("/MANIFEST.md"):
+            shutil.copyfile(bundle_path / "MANIFEST.md", path)
+            return
+        if url.endswith("/entries.parquet"):
+            shutil.copyfile(bundle_path / "entries.parquet", path)
+            return
+        raise AssertionError(f"Unexpected artifact URL: {url}")
+
+    monkeypatch.setenv("CHARTCOACH_CACHE_DIR", str(tmp_path / "cache"))
+    monkeypatch.setattr(catalog_remote, "_read_url_text", read_url_text)
+    monkeypatch.setattr(catalog_remote, "_download_file", download_file)
+
+    cached = catalog_remote.download_catalog_bundle(pointer_url)
+
+    assert (cached / "MANIFEST.md").exists()
+    assert (cached / "entries.parquet").exists()
+    assert not (cached / "indexes").exists()
+    assert downloads == [
+        f"https://example.test/catalog/releases/{metadata.version}/{metadata.digest}/MANIFEST.md",
+        f"https://example.test/catalog/releases/{metadata.version}/{metadata.digest}/entries.parquet",
+    ]
+
+
+def test_catalog_open_uses_cached_default_bundle(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    write_manifest(tmp_path / "source")
+    write_catalog_entry(tmp_path / "source")
+    source_catalog = Catalog.from_folder(tmp_path / "source")
+    bundle_path = source_catalog.write_bundle(tmp_path / "bundle")
+    metadata = read_release_metadata(bundle_path)
+    cache_root = tmp_path / "cache"
+    cached_bundle = cache_root / "catalog" / metadata.version / metadata.digest
+    cached_bundle.parent.mkdir(parents=True)
+    shutil.copytree(bundle_path, cached_bundle)
+    monkeypatch.setenv("CHARTCOACH_CACHE_DIR", str(cache_root))
+    monkeypatch.setattr(catalog_remote, "DEFAULT_CATALOG_VERSION", metadata.version)
+    monkeypatch.setattr(catalog_remote, "DEFAULT_CATALOG_DIGEST", metadata.digest)
+
+    catalog = Catalog.open()
+
+    assert catalog.to_frame().to_dicts() == source_catalog.to_frame().to_dicts()
 
 
 def test_catalog_duckdb_returns_native_queryable_connection(
@@ -399,7 +571,7 @@ def test_catalog_open_loads_folder_bundle_and_parquet(tmp_path: Path) -> None:
 
     folder_catalog = Catalog.open(tmp_path / "source")
     folder_catalog.write_bundle(tmp_path / "bundle")
-    parquet_path = tmp_path / "catalog.parquet"
+    parquet_path = tmp_path / "entries.parquet"
     folder_catalog.write_parquet(parquet_path)
 
     assert Catalog.open(tmp_path / "source").guidelines().height == 1

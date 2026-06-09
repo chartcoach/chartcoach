@@ -4,7 +4,11 @@ from pathlib import Path
 
 import click
 
-from chartcoach.constants import INDEX_ENV, SOURCE_ENV
+from chartcoach.constants import (
+    DEFAULT_CATALOG_ARTIFACT_BASE_URL,
+    INDEX_ENV,
+    SOURCE_ENV,
+)
 
 from .common import CONTEXT_SETTINGS
 
@@ -31,8 +35,11 @@ DEFAULT_PUBLIC_SITE_URL = "http://localhost:4321"
     "--source",
     "source_path",
     envvar=SOURCE_ENV,
-    type=click.Path(path_type=Path),
-    help=f"Catalog bundle, parquet file, or authored folder. Defaults to ${SOURCE_ENV} when set.",
+    metavar="PATH_OR_URL",
+    help=(
+        "Catalog bundle, entries parquet file, authored folder, or metadata URL. "
+        f"Defaults to ${SOURCE_ENV}, then {DEFAULT_CATALOG_ARTIFACT_BASE_URL}."
+    ),
 )
 @click.option(
     "--index",
@@ -66,7 +73,7 @@ def prompt_command(
     claude: bool,
     opencode: bool,
     task: str | None,
-    source_path: Path | None,
+    source_path: str | None,
     index_path: Path | None,
     guidance_mode: str,
     skill: str,
@@ -92,7 +99,7 @@ def build_agent_prompt(
     *,
     target: str,
     task: str | None = None,
-    source_path: Path | None = None,
+    source_path: str | None = None,
     index_path: Path | None = None,
     guidance_mode: str = "explore",
     skill: str = DEFAULT_SKILL,
@@ -113,7 +120,7 @@ def build_agent_prompt(
         lines.append(f"Catalog source: `{source_path}`.")
     else:
         lines.append(
-            f"Catalog source: use the user's provided path or `${SOURCE_ENV}` when available."
+            f"Catalog source: omit --source for the package-pinned default catalog, or use `${SOURCE_ENV}` when the user provides a locator."
         )
     if index_path is not None:
         lines.append(f"LanceDB index: `{index_path}`.")

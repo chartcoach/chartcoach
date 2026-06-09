@@ -6,7 +6,7 @@ Install the ChartCoach skill once, then launch an agent with a startup prompt fr
 
 ```bash
 npx skills add chartcoach/catalog
-codex "$(uvx chartcoach@latest prompt --codex --source guidelines)"
+codex "$(uvx chartcoach@latest prompt --codex)"
 ```
 
 Use `--claude` or `--opencode` for those agent CLIs. Pass `--task`, `--index`, and `--guidance-mode` when the agent needs task-specific catalog context.
@@ -16,7 +16,7 @@ The base package loads manifest-described catalog bundles, parses guidelines, an
 ```python
 from chartcoach import Catalog
 
-catalog = Catalog.open("guidelines")
+catalog = Catalog.open()
 catalog.guidelines().select("id", "title")
 
 conn = catalog.duckdb()
@@ -96,34 +96,34 @@ limit 5;
 
 Run the CLI with `uv run --package chartcoach chartcoach --help`.
 
-These commands read the `guidelines` catalog bundle, inspect table schemas, write DuckDB tables, retrieve guideline evidence, and query indexed document rows.
+These commands read the package-pinned default catalog artifact, inspect table schemas, write DuckDB tables, retrieve guideline evidence, and query indexed document rows.
 
 ```bash
-chartcoach prompt --codex --source guidelines \
+chartcoach prompt --codex \
   --index scratch/chartcoach-index \
   --task "Review this dashboard for misleading bar axes."
-chartcoach catalog manifest --source guidelines --format markdown
-chartcoach tables list --source guidelines --format jsonl
-chartcoach tables schema --source guidelines --format jsonl
+chartcoach catalog manifest --format markdown
+chartcoach tables list --format jsonl
+chartcoach tables schema --format jsonl
 chartcoach tables values guideline_labels label \
-  --source guidelines --contains chart: --format jsonl
-chartcoach sql --source guidelines \
+  --contains chart: --format jsonl
+chartcoach sql \
   "select id, title from guidelines where list_contains(labels, 'chart:bar')" \
   --format jsonl
 DUCKDB_PATH=scratch/catalog.duckdb
-chartcoach catalog duckdb --source guidelines \
+chartcoach catalog duckdb \
   --out "$DUCKDB_PATH"
 duckdb "$DUCKDB_PATH" \
   -c "select id, title from guidelines where list_contains(labels, 'chart:bar')"
-chartcoach guidelines retrieve --source guidelines \
+chartcoach guidelines retrieve \
   --label chart:bar --section advice --format jsonl
 INDEX_PATH=scratch/chartcoach-index
-chartcoach index --source guidelines --index "$INDEX_PATH"
+chartcoach index --index "$INDEX_PATH"
 chartcoach index --index "$INDEX_PATH" \
   documents \
   "overplotted scatter plot with too many points" \
   --limit 8
-chartcoach guidelines search --source guidelines \
+chartcoach guidelines search \
   --index "$INDEX_PATH" \
   --where "role = 'overview'" \
   "overplotted scatter plot with too many points" --format jsonl
@@ -132,16 +132,16 @@ chartcoach guidelines search --source guidelines \
 Every row-oriented command supports `--format jsonl`, so shell tools can handle projection and token control:
 
 ```bash
-chartcoach tables schema --source guidelines --format jsonl |
+chartcoach tables schema --format jsonl |
   jq 'select(.table == "sections")'
 ```
 
-`guidelines/MANIFEST.md` explains section roles and label families. `guidelines/catalog.parquet` can be opened by Polars or DuckDB directly. `catalog duckdb` creates a DuckDB database file with the derived catalog tables. Use `tables list`, `tables schema`, and `tables values` before writing SQL against an unfamiliar catalog. `guidelines retrieve` returns deterministic catalog rows. `index documents` runs LanceDB search over indexed document rows. `guidelines search` deduplicates document matches to guideline-level typed rows.
+The default catalog comes from `https://artifacts.chartcoach.dev/metadata.json` and is cached under the user's platform cache directory. That object points to package-validated release metadata. Normal catalog reads download `MANIFEST.md` and `entries.parquet`; heavier derived artifacts such as LanceDB indexes stay described in metadata until a caller asks for them. `catalog duckdb` creates a DuckDB database file with the derived catalog tables. Use `tables list`, `tables schema`, and `tables values` before writing SQL against an unfamiliar catalog. `guidelines retrieve` returns deterministic catalog rows. `index documents` runs LanceDB search over indexed document rows. `guidelines search` deduplicates document matches to guideline-level typed rows.
 
 Install `chartcoach[mcp]` for catalog-only MCP tools. Install both `chartcoach[mcp,index]` when agents will call search tools.
 
 ```bash
-chartcoach mcp serve --source guidelines
+chartcoach mcp serve
 ```
 
 Without an index, the MCP surface exposes only `sql`. Pass `--index` to also register `search` against an existing LanceDB table.

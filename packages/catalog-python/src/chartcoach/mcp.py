@@ -19,7 +19,7 @@ except ModuleNotFoundError as exc:  # pragma: no cover - depends on install extr
 from .catalog.collection import Catalog
 from .constants import INDEX_ENV, LANCE_DOCUMENT_TABLE, SOURCE_ENV
 from .search import open as open_index
-from .tools import Tools, format_error, search_error
+from .tools import Tools, search_error
 
 Transport = Literal["stdio", "sse", "streamable-http"]
 Level = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
@@ -231,16 +231,6 @@ def main(
     _configure_logging(resolved_runtime.log_level)
 
     source = resolved_settings.get("source")
-    if source is None:
-        raise ValueError(
-            format_error(
-                f"source must be provided with --source or {SOURCE_ENV}.",
-                [
-                    "Pass --source PATH.",
-                    f"Or export {SOURCE_ENV}=PATH.",
-                ],
-            )
-        )
 
     logger.info(
         "Starting ChartCoach MCP server with transport=%s host=%s port=%s",

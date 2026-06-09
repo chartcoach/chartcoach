@@ -3,7 +3,6 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import type { AstroIntegration, AstroUserConfig } from "astro";
-import tailwindcss from "@tailwindcss/vite";
 
 export const monorepoRoot = fileURLToPath(new URL("../../../..", import.meta.url));
 const docsSourceRoot = fileURLToPath(new URL("..", import.meta.url));
@@ -119,7 +118,6 @@ export function createDocsUrlLogger(docsUrl: string, source: DocsUrlSource): Ast
 
 export const docsViteConfig = {
   envDir: monorepoRoot,
-  plugins: [tailwindcss()],
   server: {
     fs: {
       allow: [monorepoRoot],

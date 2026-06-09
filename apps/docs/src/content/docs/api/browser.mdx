@@ -1,16 +1,19 @@
 ---
 title: Browser Loading API
-description: Load ChartCoach catalog parquet files in browser runtimes.
+description: Load ChartCoach entries parquet files in browser runtimes.
 ---
 
-The browser entrypoint loads a published parquet catalog over HTTP. Pass a manifest when the caller needs role and label-family validation.
+The browser entrypoint loads a published parquet catalog over HTTP. Resolve release metadata first, then pass the entries artifact URL with the manifest artifact URL.
 
 ```ts
+import { artifact, artifactUrl, fetchCatalogRelease } from "@chartcoach/catalog";
 import { fetchCatalog } from "@chartcoach/catalog/browser";
 
-const catalog = await fetchCatalog("/catalog.parquet", {
-  manifest: "/MANIFEST.md",
-});
+const release = await fetchCatalogRelease();
+const entries = artifactUrl(release.metadataUrl, artifact(release.metadata, "entries"));
+const manifest = artifactUrl(release.metadataUrl, artifact(release.metadata, "manifest"));
+
+const catalog = await fetchCatalog(entries, { manifest });
 ```
 
 ## fetchCatalog
@@ -20,10 +23,14 @@ const catalog = await fetchCatalog("/catalog.parquet", {
 Fetch `catalogUrl`, decode parquet rows, validate each row, and return a `Catalog`.
 
 ```ts
+const release = await fetchCatalogRelease();
+const entries = artifactUrl(release.metadataUrl, artifact(release.metadata, "entries"));
+const manifest = artifactUrl(release.metadataUrl, artifact(release.metadata, "manifest"));
+
 const catalog = await fetchCatalog(
-  "https://example.com/guidelines/catalog.parquet",
+  entries,
   {
-    manifest: "https://example.com/guidelines/MANIFEST.md",
+    manifest,
     request: {
       headers: {
         accept: "application/octet-stream",

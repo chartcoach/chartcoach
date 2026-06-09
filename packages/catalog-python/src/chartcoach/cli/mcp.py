@@ -4,7 +4,12 @@ from pathlib import Path
 
 import click
 
-from chartcoach.constants import INDEX_ENV, LANCE_DOCUMENT_TABLE, SOURCE_ENV
+from chartcoach.constants import (
+    DEFAULT_CATALOG_ARTIFACT_BASE_URL,
+    INDEX_ENV,
+    LANCE_DOCUMENT_TABLE,
+    SOURCE_ENV,
+)
 
 CONTEXT_SETTINGS = {"help_option_names": ["-h", "--help"]}
 TRANSPORT_CHOICES = ("stdio", "sse", "streamable-http")
@@ -51,8 +56,11 @@ def mcp_command() -> None:
     "--source",
     "source_path",
     envvar=SOURCE_ENV,
-    type=click.Path(path_type=Path),
-    help=f"Catalog parquet file or guideline folder to serve. Defaults to ${SOURCE_ENV}.",
+    metavar="PATH_OR_URL",
+    help=(
+        "Catalog bundle, entries parquet file, authored folder, or metadata URL. "
+        f"Defaults to ${SOURCE_ENV}, then {DEFAULT_CATALOG_ARTIFACT_BASE_URL}."
+    ),
 )
 @click.option(
     "--index",
@@ -88,7 +96,7 @@ def mcp_command() -> None:
     help="Logging level. Defaults to CHARTCOACH_MCP_LOG_LEVEL or INFO.",
 )
 def serve_command(
-    source_path: Path | None,
+    source_path: str | None,
     index_path: Path | None,
     table_name: str,
     transport: str | None,
@@ -126,7 +134,7 @@ def _run_server(
     *,
     index_path: Path | None,
     table_name: str,
-    source_path: Path | None,
+    source_path: str | None,
     transport: str | None,
     host: str | None,
     port: int | None,

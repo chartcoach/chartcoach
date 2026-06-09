@@ -14,8 +14,9 @@ if TYPE_CHECKING:
     from lancedb import Table
 
 _SEARCH_HINTS = (
-    "Build a LanceDB table with `chartcoach index --source PATH --index PATH`.",
-    "Pass the same index path to search commands.",
+    "Build a full-text LanceDB table with `chartcoach index --source PATH --index PATH`.",
+    "Pass the same index path to search commands with `--mode fts`.",
+    "Use `chartcoach index --embedding ...` when vector or hybrid search is required.",
 )
 
 
