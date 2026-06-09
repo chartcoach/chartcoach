@@ -88,6 +88,7 @@ class Catalog:
     ) -> None:
         self._frame = _normalize_catalog_frame(frame)
         self._manifest = manifest
+        self._reference_tables_cache: "ReferenceTables | None" = None
         _validate_unique_ids(self._frame)
         if self._manifest is not None:
             from .manifest import validate_catalog_manifest
@@ -155,9 +156,9 @@ class Catalog:
 
             return cls.from_bundle(default_catalog_bundle())
         if isinstance(path, str) and _is_http_url(path):
-            from .remote import download_catalog_bundle, metadata_url
+            from .remote import download_catalog_bundle, release_metadata_url
 
-            return cls.from_bundle(download_catalog_bundle(metadata_url(path)))
+            return cls.from_bundle(download_catalog_bundle(release_metadata_url(path)))
 
         source = Path(path)
         if source.is_dir():
@@ -368,7 +369,9 @@ class Catalog:
     def _reference_tables(self) -> "ReferenceTables":
         from .tables import build_reference_tables
 
-        return build_reference_tables(self.to_frame())
+        if self._reference_tables_cache is None:
+            self._reference_tables_cache = build_reference_tables(self.to_frame())
+        return self._reference_tables_cache
 
 
 __all__ = ["Catalog"]

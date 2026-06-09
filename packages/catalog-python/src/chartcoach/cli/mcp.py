@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from pathlib import Path
-
 import click
 
 from chartcoach.constants import (
@@ -41,10 +39,10 @@ def _has_missing_module(exc: ModuleNotFoundError, module_names: tuple[str, ...])
 @click.group(
     "mcp",
     context_settings=CONTEXT_SETTINGS,
-    help="Run ChartCoach MCP servers.",
+    help="Start and configure ChartCoach MCP servers.",
 )
 def mcp_command() -> None:
-    """Run ChartCoach MCP servers."""
+    """Start and configure ChartCoach MCP servers."""
 
 
 @mcp_command.command(
@@ -65,9 +63,12 @@ def mcp_command() -> None:
 @click.option(
     "--index",
     "index_path",
-    type=click.Path(file_okay=False, dir_okay=True, path_type=Path),
     envvar=INDEX_ENV,
-    help=f"LanceDB database directory for search tools. Uses ${INDEX_ENV} when set.",
+    metavar="PATH_OR_URI",
+    help=(
+        "LanceDB database path or URI for search tools. "
+        f"Defaults to ${INDEX_ENV} when set."
+    ),
 )
 @click.option(
     "--table",
@@ -97,7 +98,7 @@ def mcp_command() -> None:
 )
 def serve_command(
     source_path: str | None,
-    index_path: Path | None,
+    index_path: str | None,
     table_name: str,
     transport: str | None,
     host: str | None,
@@ -132,7 +133,7 @@ def serve_command(
 
 def _run_server(
     *,
-    index_path: Path | None,
+    index_path: str | None,
     table_name: str,
     source_path: str | None,
     transport: str | None,

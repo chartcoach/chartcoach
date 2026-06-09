@@ -16,7 +16,7 @@ catalog.guidelines().select("id", "title", "description")
 
 `Catalog.open(path=None)`
 
-Load the package-pinned default catalog when `path` is omitted. The default resolves `https://artifacts.chartcoach.dev/metadata.json` as a release pointer, downloads the manifest and entries artifacts once into the user's platform cache directory, and validates the package-pinned digest.
+Load the package-pinned default catalog when `path` is omitted. The default reads release metadata under `https://artifacts.chartcoach.dev/catalog/releases/<version>/<digest>/metadata.json`, downloads the manifest and entries artifacts once into the user's platform cache directory, and validates the package-pinned digest.
 
 When `path` is provided, load an authored guideline folder, catalog bundle, metadata URL, or parquet file. A bundle contains `MANIFEST.md`, `entries.parquet`, and `metadata.json`. Release metadata may also describe heavier derived artifacts such as LanceDB index archives.
 

@@ -13,8 +13,8 @@ Read the catalog contract before filtering or citing:
 
 ```sh
 chartcoach catalog manifest --format json
-chartcoach tables values sections role
-chartcoach tables values guideline_labels label
+chartcoach catalog roles --format jsonl
+chartcoach catalog labels --format jsonl
 ```
 
 Use the manifest and table output to learn valid section roles, label families, and table names for the current catalog. Do not guess old role names.
@@ -63,30 +63,40 @@ When a library term is too internal, translate it. For example, a pointer demo m
 
 ## Query And Retrieve
 
-Use search for candidate guidelines:
+Start with base catalog queries:
 
 ```sh
-chartcoach index --index ./chartcoach-index
-chartcoach guidelines search --index ./chartcoach-index --mode fts --candidate-limit 80 --limit 10 --format compact "<query>"
+chartcoach catalog query --contains "<observed text>" --format jsonl
+chartcoach catalog query --label <exact-label> --label-prefix <prefix> --format jsonl
+chartcoach catalog sql "select id, title from guidelines limit 10" --format jsonl
 ```
 
-Then inspect selected records:
+If a query returns no JSONL rows, relax one observed signal at a time. Inspect labels with `catalog labels --contains TEXT`, try a broader visual term in `--body-contains` or `--section-contains`, or use `catalog sql` when you need explicit boolean grouping. Do not jump to indexed discovery until the base path has had a reasonable pass.
+
+Then inspect selected records with exact ids and manifest roles:
 
 ```sh
-chartcoach guidelines show <guideline-id>
-chartcoach guidelines retrieve --id <guideline-id> --section <role-from-manifest>
+chartcoach catalog read <guideline-id>
+chartcoach catalog read <guideline-id> --section <role-from-manifest> --source-detail minimal --format markdown
+```
+
+Use indexed discovery only after base navigation is too broad:
+
+```sh
+chartcoach catalog index create --index ./chartcoach-index
+chartcoach catalog find --index ./chartcoach-index --mode fts --candidate-limit 80 --limit 10 --format compact "<query>"
 ```
 
 Use `--mode hybrid` only after building the index with a LanceDB-native embedding function:
 
 ```sh
-chartcoach index --index ./chartcoach-index --embedding sentence-transformers --embedding-option name=all-MiniLM-L6-v2
-chartcoach guidelines search --index ./chartcoach-index --mode hybrid --format compact "<query>"
+chartcoach catalog index create --index ./chartcoach-index --embedding sentence-transformers --embedding-option name=all-MiniLM-L6-v2
+chartcoach catalog find --index ./chartcoach-index --mode hybrid --format compact "<query>"
 ```
 
-Use section roles from the live manifest. If retrieval rejects a role, inspect valid roles and retry with current names.
+Use section roles from the live manifest. If `catalog read` rejects a role, inspect valid roles and retry with current names.
 
-Compact search output names indexed document roles. A match such as `section.check` points to indexed evidence. Retrieve the manifest role `check` when that section exists.
+Compact search output names indexed document roles. A match such as `section.<role>` points to an indexed section. Retrieve the manifest role after checking that it exists.
 
 Copy guideline ids exactly from compact search output. Do not construct ids from titles, snippets, or nearby wording.
 

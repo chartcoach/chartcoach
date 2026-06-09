@@ -3,78 +3,104 @@ title: CLI Reference
 description: Command groups and output contracts for the chartcoach command-line interface.
 ---
 
-The `chartcoach` CLI is part of the Python package. It reads catalog bundles, emits deterministic rows, writes DuckDB tables, and queries an explicit LanceDB index.
+The `chartcoach` CLI reads catalog bundles, emits deterministic rows, writes DuckDB tables, and queries optional LanceDB indexes.
 
 ```bash
 uv run --package chartcoach chartcoach --help
 ```
 
-Read-only commands use the package-pinned catalog from `https://artifacts.chartcoach.dev/metadata.json` when `--source` and `CHARTCOACH_SOURCE` are omitted. The Python package resolves that pointer to versioned release metadata, downloads the manifest and entries artifacts once into the user's platform cache directory, and validates the package-pinned digest.
+Read-only commands use package-pinned release metadata under `https://artifacts.chartcoach.dev/catalog/releases/<version>/<digest>/metadata.json` when `--source` and `CHARTCOACH_SOURCE` are omitted. The Python package downloads the manifest and entries artifacts once into the user's platform cache directory and validates the package-pinned digest. The local cache mirrors `catalog/releases/<version>/<digest>/`. Indexed commands download default LanceDB artifacts only when an index is needed.
 
-## prompt
+Human `table` output uses aligned columns. JSON, JSONL, and CSV output keep machine-readable stdout. First-download notices are written to stderr.
 
-`chartcoach prompt --codex|--claude|--opencode [--source PATH] [--index PATH] [--guidance-mode create|feedback|explore|debug] [--task TEXT]`
-
-Print an agent startup prompt that references the installed ChartCoach skill, catalog source, optional LanceDB index, and task.
-
-```bash
-npx skills add chartcoach/catalog
-codex "$(uvx chartcoach@latest prompt --codex)"
-```
-
-The prompt has no filesystem side effects. It tells the agent to use `MANIFEST.md` for catalog-specific role and label semantics, retrieve targeted guideline evidence, and include guideline ids plus public links when guidelines constrain an answer.
+For agent workflows, install the top-level `$chartcoach` skill and ask the agent to use it. The CLI exposes catalog primitives and CLI-served workflow skills.
 
 ## catalog
 
-`chartcoach catalog build --source FOLDER --out DIR`
+`chartcoach catalog overview [--source PATH_OR_URL] [--format table|json|jsonl|csv]`
 
-Build a catalog bundle from an authored guideline folder.
+Summarize the current catalog source, table counts, section roles, and label families.
 
-`chartcoach catalog check --source FOLDER --format table|json|jsonl|csv`
+`chartcoach catalog manifest [--source PATH_OR_URL] [--format markdown|json|jsonl]`
 
-Validate a guideline folder against `MANIFEST.md`.
+Print the catalog manifest.
 
-`chartcoach catalog manifest [--source PATH_OR_URL] --format markdown|json|jsonl`
+`chartcoach catalog labels [--source PATH_OR_URL] [--family NAME] [--prefix PREFIX] [--contains TEXT] [--limit N] [--format table|json|jsonl|csv]`
 
-Print the catalog manifest or list section roles and label families.
+List label values and counts.
 
-`chartcoach catalog duckdb [--source PATH_OR_URL] --out PATH [--overwrite]`
+`chartcoach catalog roles [--source PATH_OR_URL] [--format table|json|jsonl|csv]`
 
-Write derived catalog tables into a DuckDB database file.
+List section roles and counts.
 
-## sql
+`chartcoach catalog list [--source PATH_OR_URL] [--label VALUE] [--label-prefix PREFIX] [--contains TEXT] [--limit N] [--format table|json|jsonl|csv]`
 
-`chartcoach sql [--source PATH_OR_URL] QUERY [--limit N] [--format table|json|jsonl|csv]`
+List entry ids and summaries.
+
+`chartcoach catalog query [--source PATH_OR_URL] [--id ID] [--label VALUE] [--any-label VALUE] [--label-prefix PREFIX] [--contains TEXT] [--body-contains TEXT] [--section-contains TEXT] [--limit N] [--format table|json|jsonl|csv]`
+
+Filter entries with deterministic base predicates. This command does not use LanceDB, embeddings, or ranked retrieval.
+
+`chartcoach catalog read [--source PATH_OR_URL] ID... [--section ROLE] [--source-detail none|minimal|full] [--format markdown|json|jsonl]`
+
+Read exact entries and selected sections. Section roles come from the current manifest.
+
+`chartcoach catalog schema [--source PATH_OR_URL] [--table NAME] [--tables] [--row-counts] [--format table|json|jsonl|csv]`
+
+Show queryable catalog fields and tables.
+
+`chartcoach catalog values [--source PATH_OR_URL] FIELD [--contains TEXT] [--limit N] [--format table|json|jsonl|csv]`
+
+Count values for a catalog field. `FIELD` accepts aliases such as `labels`, `roles`, and `label.family`, or raw `TABLE.COLUMN` names after inspecting `catalog schema`.
+
+`chartcoach catalog sql [--source PATH_OR_URL] QUERY [--limit N] [--format table|json|jsonl|csv]`
 
 Run one read-only `SELECT` query over catalog DuckDB tables with external file access disabled.
 
-## guidelines
+## indexed discovery
 
-`chartcoach guidelines list [--source PATH_OR_URL] [--label VALUE] [--label-prefix PREFIX] [--contains TEXT] [--limit N] [--format table|json|jsonl|csv]`
-
-List guideline ids and summaries with deterministic filters.
-
-`chartcoach guidelines retrieve [--source PATH_OR_URL] [--id ID] [--label VALUE] [--section ROLE] [--limit N] [--format markdown|json|jsonl|csv|table]`
-
-Return guideline records with optional section filtering.
-
-`chartcoach guidelines search [--source PATH_OR_URL] --index PATH [--table NAME] [--where FILTER] [--mode auto|fts|vector|hybrid] QUERY [--limit N] [--format table|json|jsonl|csv|markdown]`
+`chartcoach catalog find [--source PATH_OR_URL] [--index PATH_OR_URI] [--table NAME] [--where FILTER] [--mode auto|fts|vector|hybrid] QUERY [--limit N] [--candidate-limit N] [--format table|json|jsonl|csv|markdown|compact]`
 
 Open an existing LanceDB table, run LanceDB search, and return deduplicated guideline rows. `--where` is a LanceDB SQL filter over indexed document columns such as `role` and `parent_id`. `--mode` is passed to LanceDB and defaults to `auto`.
 
-## index
-
-`chartcoach index [--source PATH_OR_URL] --index PATH [--table NAME]`
+`chartcoach catalog index create [--source PATH_OR_URL] --index PATH_OR_URI [--table NAME] [--embedding NAME] [--embedding-option KEY=VALUE] [--embedding-var KEY=VALUE] [--format table|json|jsonl]`
 
 Create or replace a LanceDB table for catalog document search.
 
-`chartcoach index --index PATH [--table NAME] documents [--mode auto|fts|vector|hybrid] QUERY --limit N --where FILTER --format json|jsonl`
+`chartcoach catalog index info [--index PATH_OR_URI] [--table NAME] [--format table|json|jsonl]`
 
-Run LanceDB search over indexed document rows. This command opens the table directly and does not require a catalog source.
+Inspect an existing LanceDB table.
 
-```bash
-chartcoach index --index "$CHARTCOACH_INDEX" \
-  documents \
-  "bar axis baseline" \
-  --limit 5
-```
+## lifecycle
+
+`chartcoach catalog build --source FOLDER --out DIR [--dry-run] [--overwrite]`
+
+Build a catalog bundle from an authored guideline folder.
+
+`chartcoach catalog validate [--source PATH_OR_URL] [--format table|json|jsonl|csv]`
+
+Validate a catalog source and report table counts.
+
+`chartcoach catalog export duckdb [--source PATH_OR_URL] --out PATH [--overwrite]`
+
+Write derived catalog tables into a DuckDB database file.
+
+## skills
+
+`chartcoach skills list`
+
+List CLI-served skills bundled with the installed package.
+
+`chartcoach skills get NAME`
+
+Print one CLI-served skill.
+
+`chartcoach skills path [NAME]`
+
+Print the skill data directory or one skill directory.
+
+## mcp
+
+`chartcoach mcp serve [--source PATH_OR_URL] [--index PATH_OR_URI] [--transport stdio|sse|streamable-http]`
+
+Start the ChartCoach MCP server. Install `chartcoach[mcp]` for catalog-only tools or `chartcoach[mcp,index]` when the server should expose indexed search.

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Sized
-import dataclasses as dc
+import json
 from pathlib import Path
 import sys
 from types import ModuleType
@@ -10,195 +10,19 @@ from typing import cast
 from click.testing import CliRunner
 import pytest
 
+import chartcoach.cli.catalog as catalog_cli
+import chartcoach.cli.common as common_cli
 from chartcoach.cli.main import main as chartcoach_cli
 
-from helpers import assert_cli_error, json_value
+from helpers import assert_cli_error
 
 
-@pytest.mark.search
-def test_index_cli_queries_documents_with_native_options(
-    runner: CliRunner,
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    captured: dict[str, object] = {}
-    fake_index_path = tmp_path / "index"
-
-    @dc.dataclass(frozen=True)
-    class FakeTable:
-        name: str = "catalog_documents"
-
-    fake_table = FakeTable()
-    monkeypatch.setattr(
-        "chartcoach.cli.index.open_index",
-        lambda *_args, **_kwargs: fake_table,
-    )
-
-    monkeypatch.setattr(
-        "chartcoach.cli.index.query_table",
-        lambda table, query, *, limit, where, mode: (
-            captured.update(
-                {
-                    "table": table,
-                    "query": query,
-                    "limit": limit,
-                    "where": where,
-                    "mode": mode,
-                }
-            )
-            or [
-                {
-                    "id": "direct-labels---overview",
-                    "parent_id": "direct-labels",
-                    "text": "Use direct labels",
-                    "_score": 1.2,
-                }
-            ]
-        ),
-    )
-
-    result = runner.invoke(
-        chartcoach_cli,
-        [
-            "index",
-            "--index",
-            str(fake_index_path),
-            "documents",
-            "axis labels",
-            "--limit",
-            "2",
-            "--where",
-            "role = 'overview'",
-            "--mode",
-            "fts",
-        ],
-    )
-
-    assert result.exit_code == 0
-    payload = json_value(result)
-    rows = cast(list[dict[str, object]], payload["rows"])
-    assert rows == [
-        {
-            "id": "direct-labels---overview",
-            "parent_id": "direct-labels",
-            "text": "Use direct labels",
-            "_score": 1.2,
-        }
-    ]
-    assert payload["mode"] == "fts"
-    assert payload["table_name"] == "catalog_documents"
-    assert captured == {
-        "table": fake_table,
-        "query": "axis labels",
-        "limit": 2,
-        "where": "role = 'overview'",
-        "mode": "fts",
-    }
-
-
-@pytest.mark.search
-def test_index_documents_suggests_child_index_directory(
-    runner: CliRunner,
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    parent = tmp_path / "index"
-    child = parent / "fts"
-    (child / "catalog_documents.lance").mkdir(parents=True)
-
-    def raise_missing_table(*_: object, **__: object) -> object:
-        raise FileNotFoundError("Table catalog_documents was not found")
-
-    monkeypatch.setattr("chartcoach.cli.index.open_index", raise_missing_table)
-
-    result = runner.invoke(
-        chartcoach_cli,
-        [
-            "index",
-            "--index",
-            str(parent),
-            "documents",
-            "axis labels",
-        ],
-    )
-
-    assert_cli_error(result, "Table catalog_documents was not found")
-    assert f"Found table 'catalog_documents' under {child}" in result.output
-    assert f"Pass `--index {child}`" in result.output
-
-
-def test_index_documents_help_does_not_require_index(
-    runner: CliRunner,
-) -> None:
-    result = runner.invoke(chartcoach_cli, ["index", "documents", "--help"])
-
-    assert result.exit_code == 0
-    assert "Run LanceDB search over indexed document rows." in result.output
-
-
-def test_index_help_describes_default_action(
-    runner: CliRunner,
-) -> None:
-    result = runner.invoke(chartcoach_cli, ["index", "--help"])
-
-    assert result.exit_code == 0
-    assert "Running without a subcommand creates or replaces the table." in result.output
-
-
-@pytest.mark.search
-def test_index_cli_queries_built_lance_index(
-    runner: CliRunner,
-    sample_catalog_path: Path,
-    tmp_path: Path,
-) -> None:
-    pytest.importorskip("lancedb")
-    index_path = tmp_path / "index"
-
-    build_result = runner.invoke(
-        chartcoach_cli,
-        [
-            "index",
-            "--source",
-            str(sample_catalog_path),
-            "--index",
-            str(index_path),
-        ],
-    )
-    assert build_result.exit_code == 0
-
-    query_result = runner.invoke(
-        chartcoach_cli,
-        [
-            "index",
-            "--index",
-            str(index_path),
-            "documents",
-            "direct labels",
-            "--limit",
-            "5",
-            "--where",
-            "parent_id = 'direct-labels'",
-        ],
-    )
-
-    assert query_result.exit_code == 0
-    payload = json_value(query_result)
-    assert payload["table_name"] == "catalog_documents"
-    row_count = payload["row_count"]
-    assert isinstance(row_count, int)
-    assert row_count >= 1
-    rows = cast(list[dict[str, object]], payload["rows"])
-    assert {row["parent_id"] for row in rows} == {"direct-labels"}
-
-
-def test_index_cli_passes_lancedb_embedding_options(
+def test_catalog_index_create_passes_lancedb_embedding_options(
     runner: CliRunner,
     sample_catalog_path: Path,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from chartcoach.cli import index as index_cli
-
     captured: dict[str, object] = {}
 
     class FakeEmbedding:
@@ -229,7 +53,7 @@ def test_index_cli_passes_lancedb_embedding_options(
 
     def fake_index(
         catalog: object,
-        index_path: Path,
+        index_path: str,
         *,
         table_name: str,
         embedding: object,
@@ -246,12 +70,14 @@ def test_index_cli_passes_lancedb_embedding_options(
     setattr(fake_lancedb, "embeddings", fake_embeddings)
     monkeypatch.setitem(sys.modules, "lancedb", fake_lancedb)
     monkeypatch.setitem(sys.modules, "lancedb.embeddings", fake_embeddings)
-    monkeypatch.setattr(index_cli, "index", fake_index)
+    monkeypatch.setattr(catalog_cli, "index", fake_index)
 
     result = runner.invoke(
         chartcoach_cli,
         [
+            "catalog",
             "index",
+            "create",
             "--source",
             str(sample_catalog_path),
             "--index",
@@ -275,10 +101,11 @@ def test_index_cli_passes_lancedb_embedding_options(
     }
     assert captured["vars"] == {"token": "secret"}
     assert isinstance(captured["embedding"], FakeEmbedding)
+    assert captured["index_path"] == str(tmp_path / "index")
     assert captured["table_name"] == "catalog_documents"
 
 
-def test_index_cli_rejects_embedding_options_without_embedding(
+def test_catalog_index_create_rejects_embedding_options_without_embedding(
     runner: CliRunner,
     sample_catalog_path: Path,
     tmp_path: Path,
@@ -286,7 +113,9 @@ def test_index_cli_rejects_embedding_options_without_embedding(
     result = runner.invoke(
         chartcoach_cli,
         [
+            "catalog",
             "index",
+            "create",
             "--source",
             str(sample_catalog_path),
             "--index",
@@ -300,7 +129,146 @@ def test_index_cli_rejects_embedding_options_without_embedding(
 
 
 @pytest.mark.search
-def test_index_cli_rejects_invalid_limit_before_opening_index(
+def test_catalog_find_without_index_extra_does_not_resolve_default_archive(
+    runner: CliRunner,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail_default_index_path(*_: object, **__: object) -> Path:
+        raise AssertionError("default index archive should not be resolved")
+
+    monkeypatch.setattr(catalog_cli, "load_catalog", lambda _ctx: object())
+    monkeypatch.setattr(common_cli.importlib.util, "find_spec", lambda name: None)
+    monkeypatch.setattr(common_cli, "default_index_path", fail_default_index_path)
+
+    result = runner.invoke(chartcoach_cli, ["catalog", "find", "axis"])
+
+    assert_cli_error(result, "LanceDB indexing requires the optional `chartcoach[index]`")
+    assert "Install `chartcoach[index]` to use indexed discovery." in result.output
+
+
+@pytest.mark.search
+def test_catalog_index_info_preserves_object_store_uri(
+    runner: CliRunner,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, object] = {}
+
+    class FakeTable:
+        name = "catalog_documents"
+
+        def count_rows(self) -> int:
+            return 0
+
+    def fake_open_index(index_path: str, *, table_name: str) -> FakeTable:
+        captured["index_path"] = index_path
+        captured["table_name"] = table_name
+        return FakeTable()
+
+    monkeypatch.setattr(catalog_cli, "open_index", fake_open_index)
+
+    uri = "s3://chartcoach/catalog/releases/0.0.0/digest/indexes/lancedb/openrouter/model/db"
+    result = runner.invoke(
+        chartcoach_cli,
+        [
+            "catalog",
+            "index",
+            "info",
+            "--index",
+            uri,
+            "--format",
+            "json",
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = cast(list[dict[str, object]], json.loads(result.output))
+    assert payload[0]["index_path"] == uri
+    assert captured == {
+        "index_path": uri,
+        "table_name": "catalog_documents",
+    }
+
+
+@pytest.mark.search
+def test_catalog_index_info_tolerates_unreadable_embedding_metadata(
+    runner: CliRunner,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeTable:
+        name = "catalog_documents"
+
+        @property
+        def embedding_functions(self) -> object:
+            raise ValueError("missing registry variable")
+
+        def count_rows(self) -> int:
+            return 3
+
+    monkeypatch.setattr(catalog_cli, "open_index", lambda *_args, **_kwargs: FakeTable())
+
+    result = runner.invoke(
+        chartcoach_cli,
+        [
+            "catalog",
+            "index",
+            "info",
+            "--index",
+            str(tmp_path / "index"),
+            "--format",
+            "json",
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = cast(list[dict[str, object]], json.loads(result.output))
+    assert payload[0]["embedding_functions"] == "unknown"
+    assert payload[0]["documents"] == 3
+
+
+@pytest.mark.search
+def test_catalog_index_info_uses_default_index_when_omitted(
+    runner: CliRunner,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, object] = {}
+    default_index = tmp_path / "cached-index"
+
+    class FakeTable:
+        name = "catalog_documents"
+
+        def count_rows(self) -> int:
+            return 3
+
+    def fake_open_index(index_path: str, *, table_name: str) -> FakeTable:
+        captured["index_path"] = index_path
+        captured["table_name"] = table_name
+        return FakeTable()
+
+    monkeypatch.setattr(
+        "chartcoach.cli.common.default_index_path",
+        lambda *, table_name, reporter=None: default_index,
+    )
+    monkeypatch.setattr(catalog_cli, "open_index", fake_open_index)
+
+    result = runner.invoke(
+        chartcoach_cli,
+        ["catalog", "index", "info", "--format", "json"],
+    )
+
+    assert result.exit_code == 0
+    payload = cast(list[dict[str, object]], json.loads(result.output))
+    assert payload[0]["index_path"] == str(default_index)
+    assert payload[0]["documents"] == 3
+    assert captured == {
+        "index_path": str(default_index),
+        "table_name": "catalog_documents",
+    }
+
+
+@pytest.mark.search
+def test_catalog_find_rejects_invalid_limit_before_opening_index(
     runner: CliRunner,
     sample_catalog_path: Path,
     tmp_path: Path,
@@ -308,12 +276,12 @@ def test_index_cli_rejects_invalid_limit_before_opening_index(
     result = runner.invoke(
         chartcoach_cli,
         [
-            "index",
+            "catalog",
+            "find",
             "--source",
             str(sample_catalog_path),
             "--index",
             str(tmp_path / "index"),
-            "documents",
             "axis labels",
             "--limit",
             "0",

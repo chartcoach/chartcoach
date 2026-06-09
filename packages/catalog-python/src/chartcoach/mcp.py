@@ -114,7 +114,7 @@ def _settings(
 ) -> Settings:
     settings: Settings = {}
     if index is not None:
-        settings["index"] = Path(index)
+        settings["index"] = index
     elif raw_index := os.getenv(INDEX_ENV):
         settings["index"] = raw_index
     settings["table"] = table or LANCE_DOCUMENT_TABLE

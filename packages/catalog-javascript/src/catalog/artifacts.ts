@@ -4,9 +4,13 @@ export const DEFAULT_CATALOG_ARTIFACT_BASE_URL = "https://artifacts.chartcoach.d
 export const DEFAULT_CATALOG_DIGEST =
   "7cfd43ee820be252b8ae9058c4c36109a9c8415c6b3a5ff8a9127117b4a10c19";
 export const DEFAULT_CATALOG_VERSION = "0.0.0";
+export const DEFAULT_CATALOG_RELEASE_ROOT_URL = new URL(
+  `catalog/releases/${DEFAULT_CATALOG_VERSION}/${DEFAULT_CATALOG_DIGEST}/`,
+  `${DEFAULT_CATALOG_ARTIFACT_BASE_URL}/`,
+).toString();
 export const DEFAULT_CATALOG_METADATA_URL = new URL(
   "metadata.json",
-  `${DEFAULT_CATALOG_ARTIFACT_BASE_URL}/`,
+  DEFAULT_CATALOG_RELEASE_ROOT_URL,
 ).toString();
 
 export type ArtifactKind = "manifest" | "entries" | "lancedb-index";
@@ -25,13 +29,6 @@ export type CatalogReleaseMetadata = {
   version: string;
   digest: string;
   artifacts: ArtifactDescriptor[];
-};
-
-export type CatalogReleasePointer = {
-  kind: "chartcoach-release-pointer";
-  target: string;
-  version?: string;
-  digest?: string;
 };
 
 export type ResolvedCatalogReleaseMetadata = {
@@ -68,28 +65,15 @@ export async function fetchCatalogRelease(
   metadataUrl: string | URL = DEFAULT_CATALOG_METADATA_URL,
   request?: RequestInit,
 ): Promise<ResolvedCatalogReleaseMetadata> {
-  return fetchCatalogReleaseFrom(metadataUrl.toString(), request, 0);
-}
-
-async function fetchCatalogReleaseFrom(
-  metadataUrl: string,
-  request: RequestInit | undefined,
-  depth: number,
-): Promise<ResolvedCatalogReleaseMetadata> {
-  if (depth > 5) {
-    throw new CatalogError("Catalog metadata pointer chain is too deep.");
-  }
-  const response = await fetch(metadataUrl.toString(), request);
+  const url = metadataUrl.toString();
+  const response = await fetch(url, request);
   if (!response.ok) {
     throw new CatalogError(`Failed to load catalog metadata: ${response.status}`);
   }
   const value = await response.json();
-  if (isCatalogReleasePointer(value)) {
-    return fetchCatalogReleaseFrom(resolvePointerUrl(metadataUrl, value.target), request, depth + 1);
-  }
   return {
     metadata: parseCatalogReleaseMetadata(value),
-    metadataUrl,
+    metadataUrl: url,
   };
 }
 
@@ -143,28 +127,6 @@ function validateRelativePath(path: string): void {
   if (path.startsWith("/") || path.split("/").includes("..")) {
     throw new CatalogError(`Catalog artifact path must be relative: ${path}`);
   }
-}
-
-function resolvePointerUrl(metadataUrl: string, target: string): string {
-  try {
-    const parsed = new URL(target);
-    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-      throw new CatalogError(`Unsupported catalog release pointer URL: ${target}`);
-    }
-    return parsed.toString();
-  } catch (error) {
-    if (error instanceof CatalogError) throw error;
-  }
-  if (target.startsWith("/")) {
-    validateRelativePath(target.slice(1));
-    return new URL(target, metadataUrl).toString();
-  }
-  validateRelativePath(target);
-  return new URL(target, metadataUrl).toString();
-}
-
-function isCatalogReleasePointer(value: unknown): value is CatalogReleasePointer {
-  return isRecord(value) && value.kind === "chartcoach-release-pointer" && typeof value.target === "string";
 }
 
 function requiredString(value: Record<string, unknown>, key: string): string {

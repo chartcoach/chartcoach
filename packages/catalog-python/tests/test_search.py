@@ -222,6 +222,76 @@ def test_query_returns_bounded_raw_document_rows(
     ]
 
 
+def test_query_fts_mode_does_not_parse_embedding_metadata() -> None:
+    from chartcoach.search import query
+
+    class FakeSearch:
+        def limit(self, _limit: int) -> "FakeSearch":
+            return self
+
+        def to_list(self) -> list[dict[str, object]]:
+            return [
+                {
+                    "id": "direct-labels---overview",
+                    "parent_id": "direct-labels",
+                    "role": "overview",
+                    "labels": ["chart:line"],
+                    "content_hash": "hash",
+                    "text": "direct labels",
+                }
+            ]
+
+    class FakeTable:
+        name = "catalog_documents"
+
+        @property
+        def embedding_functions(self) -> object:
+            raise ValueError("embedding metadata should not be parsed for FTS")
+
+        def search(self, *_args: object, **kwargs: object) -> FakeSearch:
+            assert kwargs["query_type"] == "fts"
+            return FakeSearch()
+
+    rows = query(cast("Table", FakeTable()), "direct labels", mode="fts")
+
+    assert rows[0]["id"] == "direct-labels---overview"
+
+
+def test_query_auto_mode_falls_back_to_fts_when_embedding_metadata_is_unavailable() -> None:
+    from chartcoach.search import query
+
+    class FakeSearch:
+        def limit(self, _limit: int) -> "FakeSearch":
+            return self
+
+        def to_list(self) -> list[dict[str, object]]:
+            return [
+                {
+                    "id": "direct-labels---overview",
+                    "parent_id": "direct-labels",
+                    "role": "overview",
+                    "labels": ["chart:line"],
+                    "content_hash": "hash",
+                    "text": "direct labels",
+                }
+            ]
+
+    class FakeTable:
+        name = "catalog_documents"
+
+        @property
+        def embedding_functions(self) -> object:
+            raise ValueError("Variable 'openrouter_api_key' not found in registry")
+
+        def search(self, *_args: object, **kwargs: object) -> FakeSearch:
+            assert kwargs["query_type"] == "fts"
+            return FakeSearch()
+
+    rows = query(cast("Table", FakeTable()), "direct labels", mode="auto")
+
+    assert rows[0]["id"] == "direct-labels---overview"
+
+
 def test_query_rejects_empty_text_and_invalid_limits(
     sample_catalog: Catalog,
     tmp_path: Path,
