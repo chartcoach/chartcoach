@@ -1,25 +1,26 @@
 ---
 name: visfeedback
-description: Use this for visualization feedback with ChartCoach. Teaches agents how to inspect a chart, translate visible evidence into search signals, query the catalog, and cite guideline ids without hard-coding catalog vocabulary.
+description: Use this for visualization feedback with ChartCoach. Teaches agents how to inspect a chart, translate visible evidence into catalog queries, retrieve source-traced guidance, and cite exact guideline ids without hard-coding catalog vocabulary.
 ---
 
 # ChartCoach Visfeedback
 
-Use ChartCoach primitives to ground visualization feedback in the current Guideline Catalog. This skill defines the workflow. It does not encode a fixed manifest or assume any one visualization source.
+Use ChartCoach primitives to ground visualization feedback in the current Guideline Catalog. This skill defines the workflow. It does not assume fixed labels, fixed section roles, or any one visualization source.
 
 ## Start With The Live Catalog
 
-Read the catalog contract before filtering or citing:
+Read the catalog shape before filtering or citing:
 
 ```sh
-chartcoach catalog manifest --format json
+chartcoach catalog overview --format json
 chartcoach catalog roles --format jsonl
 chartcoach catalog labels --format jsonl
+chartcoach catalog manifest --format markdown
 ```
 
-Use the manifest and table output to learn valid section roles, label families, and table names for the current catalog. Do not guess old role names.
+Use these commands to learn valid section roles, label families, and table names for the current catalog. Do not guess role names or labels from memory.
 
-Omit `--source` to use the package-pinned default catalog. Use `--source` only when the user provides a custom catalog locator.
+Omit `--source` to use the package-pinned default catalog. The first base command downloads and caches the manifest plus entries artifacts. Index artifacts are not downloaded unless indexed discovery needs them. Use `--source` only when the user provides a custom catalog locator.
 
 ## Inspect The Visualization First
 
@@ -63,13 +64,19 @@ When a library term is too internal, translate it. For example, a pointer demo m
 
 ## Query And Retrieve
 
-Start with base catalog queries:
+Start with base catalog navigation. These commands do not require LanceDB:
 
 ```sh
-chartcoach catalog query --contains "<observed text>" --format jsonl
-chartcoach catalog query --label <exact-label> --label-prefix <prefix> --format jsonl
+chartcoach catalog list --contains "<observed text>" --format jsonl
+chartcoach catalog labels --contains "<observed term>" --format jsonl
+chartcoach catalog query --contains "<observed text>" --section-contains "<observed term>" --format jsonl
+chartcoach catalog query --label <exact-label> --format jsonl
+chartcoach catalog query --any-label <exact-label> --any-label <another-label> --format jsonl
+chartcoach catalog query --label-prefix <prefix> --format jsonl
 chartcoach catalog sql "select id, title from guidelines limit 10" --format jsonl
 ```
+
+Use `catalog schema --tables --row-counts`, `catalog schema`, and `catalog values <field>` when you need exact fields, table names, or value counts.
 
 If a query returns no JSONL rows, relax one observed signal at a time. Inspect labels with `catalog labels --contains TEXT`, try a broader visual term in `--body-contains` or `--section-contains`, or use `catalog sql` when you need explicit boolean grouping. Do not jump to indexed discovery until the base path has had a reasonable pass.
 
@@ -83,18 +90,24 @@ chartcoach catalog read <guideline-id> --section <role-from-manifest> --source-d
 Use indexed discovery only after base navigation is too broad:
 
 ```sh
+chartcoach catalog find --mode fts --candidate-limit 80 --limit 10 --format compact "<query>"
 chartcoach catalog index create --index ./chartcoach-index
 chartcoach catalog find --index ./chartcoach-index --mode fts --candidate-limit 80 --limit 10 --format compact "<query>"
 ```
+
+The first `catalog find` form uses the default catalog index when `chartcoach[index]` is installed and no custom `--source` is set. For a custom catalog source, build or provide an index with `--index` or `CHARTCOACH_INDEX`.
 
 Use `--mode hybrid` only after building the index with a LanceDB-native embedding function:
 
 ```sh
 chartcoach catalog index create --index ./chartcoach-index --embedding sentence-transformers --embedding-option name=all-MiniLM-L6-v2
+chartcoach catalog index create --index ./chartcoach-index --embedding openai --embedding-var OPENAI_API_KEY=$OPENAI_API_KEY --embedding-option model=text-embedding-3-small
 chartcoach catalog find --index ./chartcoach-index --mode hybrid --format compact "<query>"
 ```
 
-Use section roles from the live manifest. If `catalog read` rejects a role, inspect valid roles and retry with current names.
+Embedding aliases, options, and variables are passed through to LanceDB. Do not invent ChartCoach-specific embedding model names.
+
+Use section roles from the live catalog. If `catalog read` rejects a role, inspect valid roles and retry with current names.
 
 Compact search output names indexed document roles. A match such as `section.<role>` points to an indexed section. Retrieve the manifest role after checking that it exists.
 
