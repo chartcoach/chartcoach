@@ -1,11 +1,11 @@
 ---
 name: core
-description: Load this before using ChartCoach. Explains catalog artifacts, manifests, tables, guideline records, optional indexing/search, and the CLI primitives agents should combine.
+description: Load this before using ChartCoach. Explains default catalog access, progressive catalog navigation, output formats, CLI-served skills, optional LanceDB discovery, and the CLI primitives agents should combine.
 ---
 
 # ChartCoach Core
 
-ChartCoach exposes a versioned Guideline Catalog and CLI primitives for inspecting and retrieving visualization guidance. Start with the base CLI and progressive disclosure. Use LanceDB only when manifest, label, role, query, read, and SQL primitives are not enough.
+ChartCoach exposes a versioned Guideline Catalog and CLI primitives for inspecting and retrieving visualization guidance. Start with the base CLI and progressive disclosure. Use LanceDB only when overview, labels, roles, list, query, read, schema, values, and SQL commands are not enough.
 
 ## Command Surface
 
@@ -34,13 +34,19 @@ chartcoach catalog index create
 chartcoach catalog index info
 ```
 
-Use `mcp serve` only when a human wants to start a server interface.
+Use `chartcoach mcp serve` only when a human wants to start a server interface.
+
+Use `chartcoach skills list`, `chartcoach skills get <name>`, and `chartcoach skills path [name]` for CLI-served skills bundled with the installed package. The top-level `chartcoach` skill is installed separately by the agent skill system and is not served by `chartcoach skills get`.
 
 ## Catalog Artifacts
 
-Omit `--source` to use the package-pinned default catalog release under `https://artifacts.chartcoach.dev/catalog/releases/<version>/<digest>/metadata.json`. The CLI caches the manifest plus entries artifacts locally under the user's platform cache directory. The local cache mirrors `catalog/releases/<version>/<digest>/`. Set `CHARTCOACH_SOURCE` or pass `--source` only when the user provides a custom catalog locator.
+Omit `--source` to use the package-pinned default catalog release from `https://artifacts.chartcoach.dev`. The CLI resolves the release metadata, downloads `MANIFEST.md` and `entries.parquet` on first use, and caches them in the user's platform cache directory. The local cache mirrors the release layout: `catalog/releases/<version>/<digest>/`.
 
-Release metadata is the artifact inventory for one catalog release. It has `version`, `digest`, and `artifacts`. The default release includes `MANIFEST.md`, `entries.parquet`, and derived LanceDB artifacts. Base commands download only the manifest and entries artifacts. LanceDB artifacts are downloaded only when indexed discovery needs them. LanceDB artifacts identify their table, catalog version, catalog digest, embedding registry, embedding model, and embedding options so query-time code can use LanceDB's native embedding function metadata.
+Set `CHARTCOACH_SOURCE` or pass `--source` only when the user provides a custom catalog locator. Accepted sources include a catalog bundle directory, an `entries.parquet` file, an authored folder, or a release metadata URL.
+
+Release metadata is the artifact inventory for one catalog release. It has `version`, `digest`, and `artifacts`. The default release includes `MANIFEST.md`, `entries.parquet`, and derived LanceDB artifacts. Base commands download only the manifest and entries artifacts. Indexed commands download LanceDB artifacts only when the default index is needed.
+
+LanceDB artifacts identify their table, catalog version, catalog digest, embedding registry, embedding model, and embedding options so query-time code can use LanceDB's native embedding function metadata.
 
 The manifest defines section roles, label families, table contracts, and supported vocabulary for the current catalog. Treat labels and section roles as catalog-defined data, not global constants.
 
@@ -58,8 +64,10 @@ chartcoach catalog roles --format jsonl
 Use `catalog query` for deterministic candidate sets without an index:
 
 ```sh
+chartcoach catalog list --contains "axis" --format jsonl
 chartcoach catalog query --contains "axis" --format jsonl
 chartcoach catalog query --label <exact-label> --format jsonl
+chartcoach catalog query --any-label <exact-label> --any-label <another-label> --format jsonl
 chartcoach catalog query --label-prefix <family-or-prefix> --section-contains "<text>" --format jsonl
 ```
 
@@ -80,7 +88,7 @@ There is no special evidence command. To assemble citation-ready evidence, combi
 
 1. `catalog roles` or `catalog manifest` to learn valid section roles.
 2. `catalog query`, `catalog list`, `catalog sql`, or `catalog find` to identify exact ids.
-3. `catalog read <id> --section <role-from-manifest> --source-detail minimal` to retrieve the catalog sections you need.
+3. `catalog read <id> --section <role-from-manifest> --source-detail minimal` to retrieve the catalog sections and source metadata you need.
 
 Do not assume any section role exists. Read the manifest and use the current catalog's role names.
 
@@ -89,7 +97,7 @@ Do not assume any section role exists. Read the manifest and use the current cat
 Use table primitives when you need exact schema, valid values, counts, or joins:
 
 ```sh
-chartcoach catalog schema --tables
+chartcoach catalog schema --tables --row-counts
 chartcoach catalog schema
 chartcoach catalog values roles
 chartcoach catalog values labels --contains axis
@@ -99,6 +107,8 @@ chartcoach catalog sql "select id, title from guidelines limit 5" --format jsonl
 Use SQL when exact filtering or joins are clearer than keyword matching. Keep queries read-only.
 
 ## Indexed Discovery
+
+`chartcoach catalog find` ranks entries with an existing LanceDB index. With the default catalog source and `chartcoach[index]` installed, it can resolve and cache the package-pinned default index when `--index` is omitted. With a custom source, pass `--index` or set `CHARTCOACH_INDEX`.
 
 `chartcoach catalog index create` creates a LanceDB table from catalog document rows. `--index` accepts a local LanceDB database path or any URI that LanceDB can open, such as an object-store URI configured in the runtime environment.
 
@@ -121,10 +131,11 @@ Vector and hybrid search require a LanceDB embedding function. Use LanceDB-nativ
 
 ```sh
 chartcoach catalog index create --index ./chartcoach-index --embedding sentence-transformers --embedding-option name=all-MiniLM-L6-v2
+chartcoach catalog index create --index ./chartcoach-index --embedding openai --embedding-var OPENAI_API_KEY=$OPENAI_API_KEY --embedding-option model=text-embedding-3-small
 chartcoach catalog find --index ./chartcoach-index --mode hybrid --format compact "direct labels line chart exact lookup"
 ```
 
-Embedding options are passed to LanceDB's embedding function `create()` call. Do not invent a ChartCoach embedding model layer.
+Embedding options are passed to LanceDB's embedding function `create()` call. Embedding variables are registered with LanceDB before the embedding function is created. Do not invent a ChartCoach embedding model layer.
 
 Published catalog releases can include two LanceDB index artifacts:
 
@@ -139,7 +150,7 @@ Search output reports indexed document roles. Values such as `overview`, `docume
 
 - Use `jsonl` for agent parsing and shell pipelines.
 - Use `json` when one command returns structured metadata.
-- Use `table` for quick human scanning with aligned columns.
+- Use `table` for quick human scanning with aligned plain-text columns.
 - Use `markdown` for full guideline reading.
 - Use `compact` for indexed citation triage from `catalog find`.
 - Use `csv` only when the shape is flat enough for tabular tools.
