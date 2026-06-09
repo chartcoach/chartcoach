@@ -11,6 +11,10 @@ const guidelines = (await getCollection("guidelines")).sort((a, b) =>
 
 const totalGuidelines = guidelines.length;
 const MAX_CARD_LABELS = 4;
+const siteInnerClasses =
+  "mx-auto w-[min(100%_-_2rem,var(--page-width))] max-[24rem]:w-[min(100%_-_1.5rem,var(--page-width))]";
+const eyebrowClasses =
+  "m-0 mb-[0.7rem] font-mono text-[0.72rem] font-bold leading-[1.1] text-ember lowercase";
 const hintCodeClasses =
   "rounded-sm border border-border bg-muted px-[0.35rem] py-[0.08rem] text-foreground";
 
@@ -32,9 +36,9 @@ const allFamilies = Array.from(familySet).sort((a, b) => a.localeCompare(b));
   title="Guideline Catalog"
   description="Browse ChartCoach guideline records by label and inspect source-backed guidance."
 >
-  <div class="site-inner py-10 md:py-14" data-guidelines-page>
-    <p class="site-eyebrow">catalog</p>
-    <div class="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(18rem,0.36fr)] md:items-end">
+  <div class:list={[siteInnerClasses, "py-[clamp(3rem,7vw,5.5rem)]"]} data-guidelines-page>
+    <p class={eyebrowClasses}>catalog</p>
+    <div class="grid gap-4 border-b border-line pb-[1.35rem] md:grid-cols-[minmax(0,1fr)_minmax(18rem,0.36fr)] md:items-end">
       <div>
         <h1 class="m-0 font-display text-[2.35rem] font-semibold leading-[0.98] tracking-[0] text-foreground md:text-[4rem]">
           Guideline Catalog
@@ -55,14 +59,14 @@ const allFamilies = Array.from(familySet).sort((a, b) => a.localeCompare(b));
       </div>
     </div>
 
-    <div class="mt-6 grid gap-4 border-t border-border pt-4 md:grid-cols-[minmax(0,1fr)_minmax(18rem,0.38fr)] md:items-start">
+    <div class="mt-6 grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(18rem,0.38fr)] md:items-start">
       <p class="m-0 max-w-[45rem] text-[0.92rem] leading-[1.55] text-muted-foreground" id="guidelines-filter-hint">
         Use a family such as <code class={hintCodeClasses}>chart</code> to match every chart label, or use an exact label such as <code class={hintCodeClasses}>chart:bar</code>.
         <span class="sr-only">Use the arrow keys to review suggestions, and press Enter to add one.</span>
       </p>
 
       <form
-        class="relative grid w-full grid-cols-[minmax(0,1fr)_auto] overflow-visible rounded-sm border border-input bg-background focus-within:border-[var(--line-strong)]"
+        class="relative grid w-full grid-cols-[minmax(0,1fr)_auto] overflow-visible rounded-sm border border-input bg-background shadow-card focus-within:border-[var(--line-strong)]"
         id="guidelines-filter-form"
         autocomplete="off"
       >

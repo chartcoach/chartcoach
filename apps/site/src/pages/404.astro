@@ -3,14 +3,18 @@ import { getSiteLinks } from "@/config/site";
 import SiteLayout from "@/layouts/SiteLayout.astro";
 
 const { docsUrl } = getSiteLinks();
+const siteInnerClasses =
+  "mx-auto w-[min(100%_-_2rem,var(--page-width))] max-[24rem]:w-[min(100%_-_1.5rem,var(--page-width))]";
+const eyebrowClasses =
+  "m-0 mb-[0.7rem] font-mono text-[0.72rem] font-bold leading-[1.1] text-ember lowercase";
 ---
 
 <SiteLayout
   title="Page not found"
   description="The requested ChartCoach page does not exist."
 >
-  <section class="site-inner grid min-h-[60svh] content-center py-16" data-not-found-page>
-    <p class="site-eyebrow">404</p>
+  <section class:list={[siteInnerClasses, "grid min-h-[60svh] content-center py-16"]} data-not-found-page>
+    <p class={eyebrowClasses}>404</p>
     <h1 class="m-0 max-w-[42rem] text-balance font-display text-[2.5rem] font-semibold leading-[1] tracking-[0] text-foreground md:text-[4rem]">
       This ChartCoach page does not exist.
     </h1>
