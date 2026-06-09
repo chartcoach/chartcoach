@@ -1,26 +1,17 @@
 from __future__ import annotations
 
 import os
-from os import PathLike
-from pathlib import Path
 import tempfile
 from collections.abc import Mapping
+from os import PathLike
+from pathlib import Path
 from typing import TypeAlias
 
 import duckdb
 import polars as pl
 
 from .catalog.collection import Catalog
-from .catalog.relations import (
-    GUIDELINES_RELATION,
-    GUIDELINE_LABELS_RELATION,
-    GUIDELINE_REFERENCES_RELATION,
-    GUIDELINE_SOURCES_RELATION,
-    LABELS_RELATION,
-    REFERENCES_RELATION,
-    SECTIONS_RELATION,
-    iter_catalog_tables,
-)
+from .catalog.relations import iter_catalog_tables as _iter_catalog_tables
 
 DuckDBConfigValue: TypeAlias = str | bool | int | float | list[str]
 
@@ -51,7 +42,7 @@ def register_catalog(
 ) -> duckdb.DuckDBPyConnection:
     """Create or replace catalog tables in a caller-owned DuckDB connection."""
 
-    for relation_name, frame in iter_catalog_tables(catalog):
+    for relation_name, frame in _iter_catalog_tables(catalog):
         _replace_table(conn, relation_name, frame)
     return conn
 
@@ -109,15 +100,8 @@ def _replace_table(
 
 
 __all__ = [
-    "GUIDELINES_RELATION",
-    "GUIDELINE_LABELS_RELATION",
-    "GUIDELINE_REFERENCES_RELATION",
-    "GUIDELINE_SOURCES_RELATION",
-    "LABELS_RELATION",
-    "REFERENCES_RELATION",
-    "SECTIONS_RELATION",
+    "DuckDBConfigValue",
     "connect_catalog",
-    "iter_catalog_tables",
     "register_catalog",
     "write_duckdb",
 ]
