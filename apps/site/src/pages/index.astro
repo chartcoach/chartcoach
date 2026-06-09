@@ -1,8 +1,18 @@
 ---
-import { ArrowRight, BookOpen, Database, Funnel, Quote, Search } from "@lucide/astro";
+import {
+  ArrowRight,
+  BookOpen,
+  Bot,
+  ClipboardCheck,
+  Database,
+  Funnel,
+  Quote,
+  Search,
+} from "@lucide/astro";
 import { getCollection } from "astro:content";
 
 import { getSiteLinks } from "@/config/site";
+import { parseGuidelineLabel } from "@/lib/guidelines/labels";
 import SiteLayout from "@/layouts/SiteLayout.astro";
 
 const { docsUrl } = getSiteLinks();
@@ -10,182 +20,348 @@ const guidelines = (await getCollection("guidelines")).sort((a, b) =>
   (a.data.title ?? a.id).localeCompare(b.data.title ?? b.id),
 );
 
-const previewGuidelines = guidelines.slice(0, 3);
 const distinctLabels = new Set<string>();
 const distinctRoles = new Set<string>();
-for (const guideline of guidelines) {
-  for (const label of guideline.data.labels ?? []) distinctLabels.add(label);
-  for (const section of guideline.data.sections ?? []) distinctRoles.add(section.role);
+const labelFamilies = new Set<string>();
+let totalSections = 0;
+let totalReferences = 0;
+
+function countBibEntries(bib?: string) {
+  return bib?.match(/@\w+\s*{/g)?.length ?? 0;
 }
+
+for (const guideline of guidelines) {
+  for (const label of guideline.data.labels ?? []) {
+    distinctLabels.add(label);
+    const parsed = parseGuidelineLabel(label);
+    if (parsed.familyLower) labelFamilies.add(parsed.familyLower);
+  }
+  for (const section of guideline.data.sections ?? []) {
+    distinctRoles.add(section.role);
+    totalSections += 1;
+  }
+  totalReferences += countBibEntries(guideline.data.referencesBib);
+}
+
+const roleOrder = ["advice", "reason", "context", "exceptions", "costs", "mistakes", "check", "fix"];
+const sortedRoles = Array.from(distinctRoles).sort((a, b) => {
+  const aIndex = roleOrder.indexOf(a);
+  const bIndex = roleOrder.indexOf(b);
+  if (aIndex === -1 && bIndex === -1) return a.localeCompare(b);
+  if (aIndex === -1) return 1;
+  if (bIndex === -1) return -1;
+  return aIndex - bIndex;
+});
+const featuredFamilies = ["chart", "task", "audience", "problem"]
+  .filter((family) => labelFamilies.has(family))
+  .slice(0, 4);
+const sampleGuideline =
+  guidelines.find((guideline) => guideline.data.labels.length >= 3 && guideline.data.sections.length >= 4) ??
+  guidelines[0];
+const sampleLabels = sampleGuideline?.data.labels.slice(0, 4) ?? [];
+const sampleSections = sampleGuideline?.data.sections.slice(0, 4) ?? [];
 
 const proofCards = [
   {
+    icon: Quote,
+    label: "source",
+    title: "Guidance keeps its evidence",
+    text: "Each Guideline Instance keeps recommendations close to citations, bibliography entries, and BibTeX.",
+  },
+  {
     icon: Funnel,
-    title: "Filter by catalog labels",
-    text: "Start with a chart type, task, audience, or design concern, then narrow the catalog in the browser.",
+    label: "labels",
+    title: "Browsing starts from intent",
+    text: "Filter by chart, task, audience, or concern, then open the records that match the design situation.",
   },
   {
     icon: BookOpen,
-    title: "Read sectioned guidance",
-    text: "Open a Guideline Instance and inspect advice, context, exceptions, checks, and fixes in one record.",
+    label: "roles",
+    title: "Records separate advice from checks",
+    text: "Section roles expose advice, context, exceptions, mistakes, checks, and fixes without flattening them.",
   },
   {
-    icon: Quote,
-    title: "Trace sources",
-    text: "Inline citations and BibTeX keep each recommendation attached to the source material that supports it.",
+    icon: Bot,
+    label: "agents",
+    title: "The same records ground workflows",
+    text: "People can read the catalog in the browser. Agents can use the same structured records as context.",
   },
 ];
+
+const gettingStartedSteps = [
+  {
+    label: "01",
+    title: "Open the catalog",
+    text: "Start with every Guideline Instance in one browser surface.",
+  },
+  {
+    label: "02",
+    title: "Filter by label family",
+    text: "Try chart, task, audience, or problem to narrow the set.",
+  },
+  {
+    label: "03",
+    title: "Inspect the record",
+    text: "Read the sections, follow citations, and copy source-backed context.",
+  },
+];
+
+const siteInnerClasses =
+  "mx-auto w-[min(100%_-_2rem,var(--page-width))] max-[24rem]:w-[min(100%_-_1.5rem,var(--page-width))]";
+const eyebrowClasses =
+  "m-0 mb-[0.7rem] font-mono text-[0.72rem] font-bold leading-[1.1] text-ember lowercase";
+const buttonBaseClasses =
+  "inline-flex min-h-[2.7rem] items-center justify-center gap-[0.48rem] rounded-sm px-[0.9rem] py-[0.6rem] text-[0.9rem] font-semibold leading-[1.1] no-underline transition-[background-color,border-color,color,transform] active:scale-[0.985] max-[24rem]:w-full";
+const buttonPrimaryClasses = `${buttonBaseClasses} border border-ink bg-ink text-canvas hover:border-ember hover:bg-ember hover:text-canvas`;
+const buttonSecondaryClasses = `${buttonBaseClasses} border border-line bg-[color-mix(in_srgb,var(--canvas)_76%,var(--layer))] text-ink hover:border-[var(--line-strong)] hover:bg-[var(--surface-panel-strong)]`;
+const buttonInverseClasses = `${buttonBaseClasses} border border-code-foreground bg-code-foreground text-code hover:border-ember hover:text-ember`;
+const heroInnerClasses = `${siteInnerClasses} flex flex-col items-center pt-[clamp(3rem,6.2vw,4.4rem)] pb-[clamp(2.25rem,4.8vw,3.45rem)] text-center max-[46rem]:items-stretch max-[46rem]:pt-8 max-[46rem]:pb-[2.1rem] max-[46rem]:text-left max-[24rem]:pt-[1.6rem] max-[24rem]:pb-[1.75rem]`;
+const heroTitleClasses =
+  "m-0 max-w-[20ch] text-balance font-display text-[clamp(2.7rem,6.4vw,4.65rem)] font-bold leading-[0.94] tracking-[0] text-ink max-[46rem]:max-w-[12ch] max-[46rem]:text-[clamp(2.45rem,13vw,3.1rem)] max-[24rem]:text-[2.08rem]";
+const heroLedeClasses =
+  "m-0 mt-[1.15rem] max-w-[45rem] text-pretty text-[clamp(1rem,1.8vw,1.16rem)] leading-[1.62] text-muted-ink max-[46rem]:mt-[0.9rem] max-[46rem]:text-[0.98rem] max-[46rem]:leading-[1.54] max-[24rem]:text-[0.92rem]";
+const actionRowClasses =
+  "mt-[1.45rem] flex flex-wrap justify-center gap-3 max-[46rem]:justify-start";
+const panelBarClasses =
+  "flex min-w-0 items-center justify-between gap-4 border-b border-line px-[0.9rem] py-[0.72rem] font-mono text-[0.72rem] font-bold text-muted-ink lowercase";
+const panelBarCodeClasses =
+  "max-w-[62%] overflow-hidden border-0 bg-transparent p-0 text-ink text-ellipsis whitespace-nowrap";
+const snapshotClasses =
+  "mt-[clamp(1.35rem,3.2vw,2.2rem)] w-[min(100%,56rem)] overflow-hidden rounded-sm border border-line bg-[color-mix(in_srgb,var(--canvas)_84%,var(--layer))] text-left shadow-card max-[1025px]:w-[min(100%,42rem)] max-[46rem]:mt-[1.35rem] max-[24rem]:hidden";
+const snapshotMetricsClasses =
+  "grid grid-cols-4 border-b border-line max-[46rem]:grid-cols-2 [&>div]:grid [&>div]:min-w-0 [&>div]:gap-[0.48rem] [&>div]:border-r [&>div]:border-line [&>div]:p-[0.92rem] [&>div:last-child]:border-r-0 max-[46rem]:[&>div:nth-child(2)]:border-r-0 max-[46rem]:[&>div:nth-child(-n+2)]:border-b";
+const metricLabelClasses =
+  "overflow-hidden font-mono text-[0.68rem] font-bold text-muted-ink text-ellipsis lowercase whitespace-nowrap";
+const metricValueClasses =
+  "font-display text-[clamp(1.35rem,3vw,1.85rem)] font-semibold leading-none text-ink";
+const labelPillContainerClasses =
+  "flex flex-wrap gap-[0.45rem] [&>span]:rounded-xs [&>span]:border [&>span]:border-line [&>span]:bg-canvas [&>span]:px-[0.42rem] [&>span]:py-[0.24rem] [&>span]:font-mono [&>span]:text-[0.68rem] [&>span]:font-bold [&>span]:leading-none [&>span]:text-veil";
+const homeSectionClasses = "border-b border-line py-[clamp(3.75rem,8vw,6.8rem)]";
+const mutedSectionClasses = `${homeSectionClasses} bg-[color-mix(in_srgb,var(--layer)_34%,var(--canvas))]`;
+const sectionHeaderClasses = "max-w-[42rem]";
+const sectionTitleClasses =
+  "m-0 text-balance font-display text-[clamp(2rem,5vw,3.6rem)] font-semibold leading-none tracking-[0] text-ink";
+const sectionCopyClasses =
+  "m-0 mt-4 text-pretty text-base leading-[1.65] text-muted-ink";
+const proofGridClasses =
+  "mt-[2.2rem] grid grid-cols-4 gap-px overflow-hidden rounded-sm border border-line bg-line max-[1025px]:grid-cols-2 max-[46rem]:grid-cols-1";
+const proofMetaClasses =
+  "flex items-center gap-[0.52rem] font-mono text-[0.66rem] font-bold text-muted-ink lowercase";
+const splitLayoutClasses = `${siteInnerClasses} grid grid-cols-[minmax(0,0.82fr)_minmax(20rem,1fr)] items-start gap-[clamp(2rem,6vw,4.25rem)] max-[1025px]:grid-cols-1`;
+const previewPanelClasses = "overflow-hidden rounded-sm border border-line bg-surface shadow-card";
+const recordSectionsClasses =
+  "grid border-t border-line [&>div]:grid [&>div]:grid-cols-[minmax(5.5rem,0.34fr)_minmax(0,1fr)] [&>div]:gap-4 [&>div]:border-b [&>div]:border-line [&>div]:py-[0.78rem] [&>div:last-child]:border-b-0 [&>div:last-child]:pb-0 max-[46rem]:[&>div]:grid-cols-1 max-[46rem]:[&>div]:gap-[0.45rem]";
+const workflowRowClasses =
+  "grid grid-cols-[auto_minmax(0,0.7fr)_minmax(0,1fr)] items-center gap-[0.8rem] border-b border-line p-4 text-ink last:border-b-0 max-[46rem]:grid-cols-1 max-[46rem]:gap-[0.45rem] [&_svg]:text-ember [&_span]:font-semibold [&_code]:overflow-hidden [&_code]:border-line [&_code]:bg-canvas [&_code]:text-veil [&_code]:text-ellipsis [&_code]:whitespace-nowrap";
 ---
 
 <SiteLayout
   title="ChartCoach"
   description="ChartCoach publishes a source-backed Guideline Catalog for visualization design guidance."
 >
-  <section class="site-inner grid min-h-[calc(82svh-var(--site-header-height))] content-center gap-10 pb-8 pt-10 md:grid-cols-[minmax(0,1.12fr)_minmax(16rem,0.82fr)] md:py-14">
-    <div class="max-w-[44rem]">
-      <p class="site-eyebrow">guideline catalog</p>
-      <h1 class="m-0 text-balance font-display text-[2.75rem] font-bold leading-[0.95] tracking-[0] text-foreground md:text-[4.25rem]">
-        Source-backed visualization guidance for people and agents.
+  <section class="border-b border-line">
+    <div class={heroInnerClasses}>
+      <p class:list={[eyebrowClasses, "mb-[0.8rem]"]}>guideline catalog</p>
+      <h1 class={heroTitleClasses}>
+        ChartCoach keeps visualization guidance source-backed.
       </h1>
-      <p class="mt-5 max-w-[38rem] text-[1.05rem] leading-[1.65] text-muted-foreground md:text-[1.16rem]">
-        ChartCoach publishes guideline records with labels, section roles, and source references. Browse the catalog first, then use the same records as grounded context for technical and agent workflows.
+      <p class={heroLedeClasses}>
+        ChartCoach turns visualization advice into inspectable Guideline Instances. Browse by label, read sectioned guidance, and follow the citations that support each recommendation.
       </p>
-      <div class="mt-7 flex flex-wrap gap-3">
+      <div class={actionRowClasses}>
         <a
-          class="inline-flex min-h-11 items-center gap-2 rounded-sm bg-primary px-4 py-2 text-[0.92rem] font-semibold text-primary-foreground no-underline transition-[background-color,color,border-color,transform] hover:bg-brand-high active:scale-[0.98]"
+          class={buttonPrimaryClasses}
           href="/guidelines/"
         >
-          Browse guidelines
+          Browse the catalog
           <ArrowRight class="size-4" aria-hidden="true" focusable="false" />
         </a>
         <a
-          class="inline-flex min-h-11 items-center gap-2 rounded-sm border border-[var(--line)] bg-[var(--surface-raised)] px-4 py-2 text-[0.92rem] font-semibold text-foreground no-underline transition-[background-color,color,border-color,transform] hover:bg-[var(--surface-panel-strong)] active:scale-[0.98]"
+          class={buttonSecondaryClasses}
           href="/getting-started/"
         >
           Get started
         </a>
       </div>
-    </div>
 
-    <aside class="grid gap-4 border-t border-border pt-4 md:border-l md:border-t-0 md:pl-5 md:pt-0" aria-label="Catalog snapshot">
-      <div class="grid grid-cols-3 gap-4">
-        <div class="border-t border-border pt-3">
-          <p class="m-0 font-mono text-[0.66rem] font-bold lowercase text-muted-foreground">guidelines</p>
-          <p class="m-0 mt-2 font-display text-[1.75rem] font-semibold leading-none text-foreground">
-            {guidelines.length.toLocaleString()}
-          </p>
+      <div class={snapshotClasses} aria-label="Catalog snapshot">
+        <div class={panelBarClasses}>
+          <span>catalog query</span>
+          <code class={panelBarCodeClasses}>label:chart</code>
         </div>
-        <div class="border-t border-border pt-3">
-          <p class="m-0 font-mono text-[0.66rem] font-bold lowercase text-muted-foreground">labels</p>
-          <p class="m-0 mt-2 font-display text-[1.75rem] font-semibold leading-none text-foreground">
-            {distinctLabels.size.toLocaleString()}
-          </p>
+        <div class={snapshotMetricsClasses}>
+          <div>
+            <span class={metricLabelClasses}>guidelines</span>
+            <strong class={metricValueClasses}>{guidelines.length.toLocaleString()}</strong>
+          </div>
+          <div>
+            <span class={metricLabelClasses}>labels</span>
+            <strong class={metricValueClasses}>{distinctLabels.size.toLocaleString()}</strong>
+          </div>
+          <div>
+            <span class={metricLabelClasses}>sections</span>
+            <strong class={metricValueClasses}>{totalSections.toLocaleString()}</strong>
+          </div>
+          <div>
+            <span class={metricLabelClasses}>sources</span>
+            <strong class={metricValueClasses}>{totalReferences.toLocaleString()}</strong>
+          </div>
         </div>
-        <div class="border-t border-border pt-3">
-          <p class="m-0 font-mono text-[0.66rem] font-bold lowercase text-muted-foreground">roles</p>
-          <p class="m-0 mt-2 font-display text-[1.75rem] font-semibold leading-none text-foreground">
-            {distinctRoles.size.toLocaleString()}
-          </p>
+        <div class="grid gap-[0.42rem] px-[0.92rem] pt-4 pb-[0.92rem] max-[1025px]:hidden">
+          <span class={metricLabelClasses}>{sampleGuideline?.id}</span>
+          <strong class="text-base leading-[1.28] text-ink">{sampleGuideline?.data.title}</strong>
+          <p class="m-0 text-[0.9rem] leading-[1.5] text-muted-ink">{sampleGuideline?.data.description}</p>
+        </div>
+        <div class:list={[labelPillContainerClasses, "px-[0.92rem] pb-4 max-[1025px]:hidden"]} aria-label="Common label families">
+          {featuredFamilies.map((family) => <span>{family}</span>)}
         </div>
       </div>
-      <div class="hidden gap-2 md:grid">
+    </div>
+  </section>
+
+  <section class={mutedSectionClasses}>
+    <div class={siteInnerClasses}>
+      <div class:list={[sectionHeaderClasses, "mx-auto text-center max-[46rem]:text-left"]}>
+        <p class={eyebrowClasses}>why chartcoach</p>
+        <h2 class={sectionTitleClasses}>Advice becomes a record you can inspect, filter, and cite.</h2>
+        <p class={sectionCopyClasses}>
+          The catalog gives visualization guidance a stable shape: labels for discovery, roles for reading, and source references for trust.
+        </p>
+      </div>
+
+      <div class={proofGridClasses}>
         {
-          previewGuidelines.map((guideline) => (
-            <a
-              class="grid gap-1 border-t border-border py-3 text-left no-underline transition-[background-color,color,border-color,transform] hover:border-[var(--line-strong)] hover:bg-[var(--surface-panel)] active:scale-[0.995]"
-              href={`/guidelines/${guideline.id}/`}
-            >
-              <span class="font-mono text-[0.62rem] font-bold lowercase text-muted-foreground">
-                {guideline.id}
-              </span>
-              <span class="text-[0.92rem] font-semibold leading-[1.28] text-foreground">
-                {guideline.data.title}
-              </span>
-            </a>
-          ))
+          proofCards.map((card, index) => {
+            const Icon = card.icon;
+            return (
+              <article class="grid min-w-0 content-start gap-[0.88rem] bg-canvas p-4">
+                <div class={proofMetaClasses}>
+                  <span>{String(index + 1).padStart(2, "0")}</span>
+                  <span>{card.label}</span>
+                </div>
+                <Icon class="size-5 text-ember" aria-hidden="true" focusable="false" />
+                <h3 class="m-0 font-display text-[1.12rem] font-semibold leading-[1.1] tracking-[0] text-ink">{card.title}</h3>
+                <p class="m-0 text-[0.9rem] leading-[1.55] text-muted-ink">{card.text}</p>
+              </article>
+            );
+          })
         }
       </div>
-    </aside>
+    </div>
   </section>
 
-  <section class="bg-[var(--surface-raised)]">
-    <div class="site-inner site-section">
-      <p class="site-eyebrow">inspectable records</p>
-      <div class="grid gap-4 md:grid-cols-[minmax(0,0.72fr)_minmax(0,1fr)] md:items-start">
-        <h2 class="m-0 max-w-[34rem] text-balance font-display text-[2.25rem] font-semibold leading-[1.02] tracking-[0] text-foreground md:text-[3.2rem]">
-          The catalog keeps the recommendation, context, and evidence together.
-        </h2>
-        <div class="grid gap-3 sm:grid-cols-3">
-          {
-            proofCards.map((card) => {
-              const Icon = card.icon;
-              return (
-                <article class="grid gap-3 border-t border-border pt-4">
-                  <Icon class="size-5 text-ember" aria-hidden="true" focusable="false" />
-                  <h3 class="m-0 font-display text-[1.15rem] font-semibold leading-[1.1] tracking-[0] text-foreground">
-                    {card.title}
-                  </h3>
-                  <p class="m-0 text-[0.92rem] leading-[1.55] text-muted-foreground">
-                    {card.text}
-                  </p>
-                </article>
-              );
-            })
-          }
+  <section class={homeSectionClasses}>
+    <div class={splitLayoutClasses}>
+      <div class={sectionHeaderClasses}>
+        <p class={eyebrowClasses}>inside a record</p>
+        <h2 class={sectionTitleClasses}>Each Guideline Instance keeps the design claim close to its context.</h2>
+        <p class={sectionCopyClasses}>
+          A record carries labels, role-separated sections, inline citations, and a bibliography payload that can move into review, teaching, or agent workflows.
+        </p>
+      </div>
+
+      <div class={previewPanelClasses} aria-label="Guideline Instance preview">
+        <div class={panelBarClasses}>
+          <span>Guideline Instance</span>
+          <code class={panelBarCodeClasses}>{sampleGuideline?.id}</code>
+        </div>
+        <div class="grid gap-[0.78rem] p-4">
+          <h3 class="m-0 font-display text-[clamp(1.45rem,3vw,2rem)] font-semibold leading-[1.05] tracking-[0] text-ink">{sampleGuideline?.data.title}</h3>
+          <p class="m-0 text-[0.94rem] leading-[1.58] text-muted-ink">{sampleGuideline?.data.description}</p>
+          <div class={labelPillContainerClasses}>
+            {sampleLabels.map((label) => <span>{label}</span>)}
+          </div>
+          <div class={recordSectionsClasses}>
+            {
+              sampleSections.map((section) => (
+                <div>
+                  <span class="font-mono text-[0.68rem] font-bold text-ember lowercase">{section.role}</span>
+                  <strong class="text-[0.92rem] leading-[1.35] text-ink">{section.title}</strong>
+                </div>
+              ))
+            }
+          </div>
         </div>
       </div>
     </div>
   </section>
 
-  <section class="site-inner site-section grid gap-6 md:grid-cols-[minmax(0,0.9fr)_minmax(18rem,0.7fr)] md:items-start">
-    <div>
-      <p class="site-eyebrow">workflow</p>
-      <h2 class="m-0 max-w-[38rem] text-balance font-display text-[2.1rem] font-semibold leading-[1.02] tracking-[0] text-foreground md:text-[3rem]">
-        Browse first. Use the docs when you need package contracts.
-      </h2>
-      <p class="mt-4 max-w-[42rem] text-[1rem] leading-[1.65] text-muted-foreground">
-        The marketing site stays focused on the human consumption surface: catalog browsing, label filtering, and readable Guideline Instances. Technical pages live on the dedicated docs site.
-      </p>
-      <div class="mt-6 flex flex-wrap gap-3">
-        <a
-          class="inline-flex min-h-11 items-center gap-2 rounded-sm border border-[var(--line)] bg-[var(--surface-raised)] px-4 py-2 text-[0.92rem] font-semibold text-foreground no-underline transition-[background-color,color,border-color,transform] hover:bg-[var(--surface-panel-strong)] active:scale-[0.98]"
-          href={docsUrl}
-        >
-          Open technical docs
-          <ArrowRight class="size-4" aria-hidden="true" focusable="false" />
-        </a>
+  <section class={mutedSectionClasses}>
+    <div class={splitLayoutClasses}>
+      <div class={sectionHeaderClasses}>
+        <p class={eyebrowClasses}>workflow</p>
+        <h2 class={sectionTitleClasses}>Start with the question, then use the catalog shape.</h2>
+        <p class={sectionCopyClasses}>
+          ChartCoach works as a public browsing surface for people and as structured context for agents. The same record can support a design review, a teaching note, or a retrieval step.
+        </p>
+      </div>
+
+      <div class="grid overflow-hidden rounded-sm border border-line bg-surface shadow-card">
+        <div class={workflowRowClasses}>
+          <Search class="size-4" aria-hidden="true" focusable="false" />
+          <span>search or filter</span>
+          <code>chart:bar</code>
+        </div>
+        <div class={workflowRowClasses}>
+          <BookOpen class="size-4" aria-hidden="true" focusable="false" />
+          <span>read roles</span>
+          <code>{sortedRoles.slice(0, 4).join(" / ")}</code>
+        </div>
+        <div class={workflowRowClasses}>
+          <ClipboardCheck class="size-4" aria-hidden="true" focusable="false" />
+          <span>reuse context</span>
+          <code>markdown + bibtex</code>
+        </div>
       </div>
     </div>
-    <div class="grid gap-3 border-l border-border pl-4">
-      <div class="flex items-center gap-2 text-ember">
-        <Search class="size-4" aria-hidden="true" focusable="false" />
-        <span class="font-mono text-[0.72rem] font-bold lowercase">catalog path</span>
+  </section>
+
+  <section class={homeSectionClasses}>
+    <div class={splitLayoutClasses}>
+      <div class={sectionHeaderClasses}>
+        <p class={eyebrowClasses}>get started</p>
+        <h2 class={sectionTitleClasses}>The smallest path is a catalog query.</h2>
+        <p class={sectionCopyClasses}>
+          Open the catalog, filter by a label family, and inspect one record. Move to the technical docs when you need package APIs, CLI commands, or MCP access.
+        </p>
+        <div class={actionRowClasses}>
+          <a class={buttonPrimaryClasses} href="/getting-started/">
+            Read the guide
+            <ArrowRight class="size-4" aria-hidden="true" focusable="false" />
+          </a>
+          <a class={buttonSecondaryClasses} href={docsUrl}>
+            Technical docs
+          </a>
+        </div>
       </div>
-      <ol class="m-0 grid list-decimal gap-3 pl-5 text-[0.93rem] leading-[1.55] text-muted-foreground">
-        <li>Open the Guideline Catalog.</li>
-        <li>Filter by a label family such as <code class="rounded-sm border border-border bg-muted px-1 py-0.5">chart</code>.</li>
-        <li>Open a record and inspect section roles plus references.</li>
-        <li>Move to docs for package APIs, CLI commands, and MCP tools.</li>
+
+      <ol class="m-0 grid list-none gap-0 border-t border-line p-0">
+        {
+          gettingStartedSteps.map((step) => (
+            <li class="grid grid-cols-[3.25rem_minmax(0,1fr)] gap-4 border-b border-line py-4">
+              <span class="font-mono text-[0.72rem] font-bold text-ember">{step.label}</span>
+              <div>
+                <strong class="block font-display text-[1.18rem] font-semibold leading-[1.1] text-ink">{step.title}</strong>
+                <p class="m-0 mt-[0.3rem] text-[0.94rem] leading-[1.55] text-muted-ink">{step.text}</p>
+              </div>
+            </li>
+          ))
+        }
       </ol>
     </div>
   </section>
 
-  <section class="bg-foreground text-background">
-    <div class="site-inner grid gap-5 py-12 md:grid-cols-[minmax(0,1fr)_auto] md:items-center md:py-16">
+  <section class="bg-code text-code-foreground">
+    <div class:list={[siteInnerClasses, "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-8 py-[clamp(3rem,7vw,5rem)] max-[46rem]:grid-cols-1"]}>
       <div>
-        <p class="m-0 font-mono text-[0.72rem] font-bold lowercase text-background/70">next</p>
-        <h2 class="m-0 mt-2 font-display text-[2rem] font-semibold leading-[1.02] tracking-[0] md:text-[3rem]">
-          Start with the catalog.
-        </h2>
-        <p class="m-0 mt-3 max-w-[40rem] text-[1rem] leading-[1.6] text-background/72">
-          Each record is readable in the browser and structured enough for retrieval, package loading, and agent grounding.
+        <p class={eyebrowClasses}>next</p>
+        <h2 class:list={[sectionTitleClasses, "text-code-foreground"]}>Browse the Guideline Catalog.</h2>
+        <p class="m-0 mt-4 max-w-[44rem] text-pretty text-base leading-[1.65] text-[color-mix(in_srgb,var(--surface-code-foreground)_72%,transparent)]">
+          Inspect {guidelines.length.toLocaleString()} records with {distinctLabels.size.toLocaleString()} labels, {sortedRoles.length.toLocaleString()} section roles, and citations that stay attached to the recommendation.
         </p>
       </div>
-      <a
-        class="inline-flex min-h-11 items-center justify-center gap-2 rounded-sm bg-background px-4 py-2 text-[0.92rem] font-semibold text-foreground no-underline transition-[background-color,color,border-color,transform] hover:bg-background/88 active:scale-[0.98]"
-        href="/guidelines/"
-      >
-        Browse the Guideline Catalog
+      <a class={buttonInverseClasses} href="/guidelines/">
+        Open the catalog
         <Database class="size-4" aria-hidden="true" focusable="false" />
       </a>
     </div>

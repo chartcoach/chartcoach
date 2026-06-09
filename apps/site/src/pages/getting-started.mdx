@@ -1,7 +1,7 @@
 ---
 layout: "../layouts/SiteLayout.astro"
 title: "Get Started"
-description: "Start with the ChartCoach Guideline Catalog, then move to technical docs for package APIs."
+description: "Start with the ChartCoach Guideline Catalog by filtering labels and opening a source-backed record."
 contentClass: "site-prose"
 ---
 
@@ -9,31 +9,38 @@ import { getSiteLinks } from "@/config/site";
 
 export const docsUrl = getSiteLinks().docsUrl;
 
-# Get started with ChartCoach
+# Start with the Guideline Catalog
 
-ChartCoach starts with the Guideline Catalog. Browse records, filter by labels, and open a Guideline Instance to inspect section roles and source references.
+Open the Guideline Catalog, filter by one label family, and inspect a Guideline Instance. The record keeps the recommendation, context, checks, citations, and BibTeX together.
 
-## Browse the catalog
+<a href="/guidelines/">Open the Guideline Catalog</a>
 
-Open the catalog and filter by a label family:
+## 1. Choose a label family
+
+Use a broad family when you are still framing the design problem:
 
 ```text
 chart
 task
 audience
+problem
 ```
 
-Use an exact label when you know the design context:
+Use an exact label when you already know the chart or task:
 
 ```text
 chart:bar
 task:compare
 ```
 
-Each matching record keeps the recommendation, context, caveats, checks, and sources together.
+The catalog count updates as filters are added, and matching records stay visible in the browser.
 
-## Use the technical docs
+## 2. Open a Guideline Instance
 
-Use the dedicated docs site when you need package contracts, CLI commands, catalog files, DuckDB or LanceDB workflows, or MCP tools.
+A Guideline Instance separates advice from context, exceptions, mistakes, checks, and fixes. Follow the inline citations when the recommendation depends on source material.
+
+## 3. Move to technical docs when needed
+
+Use the dedicated docs site for package APIs, CLI commands, catalog files, DuckDB or LanceDB workflows, and MCP tools.
 
 <a href={docsUrl}>Open technical docs</a>

@@ -15,15 +15,18 @@ export async function getStaticPaths() {
 
 const guideline = await getEntry("guidelines", Astro.params.id as string);
 if (!guideline) throw new Error(`Guideline not found: ${Astro.params.id}`);
+
+const siteInnerClasses =
+  "mx-auto w-[min(100%_-_2rem,var(--page-width))] max-[24rem]:w-[min(100%_-_1.5rem,var(--page-width))]";
 ---
 
 <SiteLayout
   title={guideline.data.title ?? guideline.id}
   description={guideline.data.description}
 >
-  <div class="site-inner py-10 md:py-14" data-guideline-detail-page>
+  <div class:list={[siteInnerClasses, "py-[clamp(3rem,7vw,5.5rem)]"]} data-guideline-detail-page>
     <a
-      class="mb-6 inline-flex text-[0.84rem] font-semibold text-muted-foreground no-underline hover:text-foreground"
+      class="mb-6 inline-flex w-fit items-center rounded-sm border border-line bg-[color-mix(in_srgb,var(--canvas)_78%,var(--layer))] px-[0.68rem] py-[0.48rem] text-[0.84rem] font-semibold text-muted-foreground no-underline transition-[background-color,border-color,color] hover:border-[var(--line-strong)] hover:bg-surface hover:text-foreground"
       href="/guidelines/"
     >
       Back to guidelines

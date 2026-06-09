@@ -59,7 +59,10 @@ const { id, title, description, labels, markdown, sections, bibliographyHtml, re
               <h2 class="m-0 text-balance font-display text-[1.45rem] font-semibold leading-[0.99] tracking-[0] text-foreground md:text-[1.82rem]">
                 {section.title}
               </h2>
-              <div class="guideline-article-section__body" set:html={section.html} />
+              <div
+                class="guideline-article-section__body max-w-[47rem] text-[0.94rem] leading-[1.62] text-veil max-[50rem]:text-[0.92rem] max-[50rem]:leading-[1.54]"
+                set:html={section.html}
+              />
             </div>
           </section>
         ))}
@@ -75,7 +78,10 @@ const { id, title, description, labels, markdown, sections, bibliographyHtml, re
             references
           </span>
         </div>
-        <div class="bibliography" set:html={bibliographyHtml} />
+        <div
+          class="bibliography mt-3 rounded-sm border border-line bg-surface p-[0.95rem] shadow-none"
+          set:html={bibliographyHtml}
+        />
 
         {
           referencesBib ? (
