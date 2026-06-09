@@ -8,6 +8,7 @@ from typing import cast
 from click.testing import CliRunner
 import pytest
 
+import chartcoach.cli.common as common_cli
 from chartcoach import Catalog
 from chartcoach.catalog import remote as catalog_remote
 from chartcoach.catalog.remote import read_release_metadata
@@ -24,20 +25,21 @@ def cache_default_catalog(
     bundle_path = catalog.write_bundle(tmp_path / "default-bundle")
     metadata = read_release_metadata(bundle_path)
     cache_root = tmp_path / "cache"
-    target = cache_root / "catalog" / metadata.version / metadata.digest
+    target = cache_root / "catalog" / "releases" / metadata.version / metadata.digest
     target.parent.mkdir(parents=True)
     shutil.copytree(bundle_path, target)
     monkeypatch.setenv("CHARTCOACH_CACHE_DIR", str(cache_root))
     monkeypatch.setattr(catalog_remote, "DEFAULT_CATALOG_VERSION", metadata.version)
     monkeypatch.setattr(catalog_remote, "DEFAULT_CATALOG_DIGEST", metadata.digest)
 
-def test_tables_cli_reports_schema_and_values(
+
+def test_catalog_schema_and_values_report_tables(
     runner: CliRunner,
     sample_catalog_path: Path,
 ) -> None:
     result = runner.invoke(
         chartcoach_cli,
-        ["tables", "schema", "--source", str(sample_catalog_path), "--format", "jsonl"],
+        ["catalog", "schema", "--source", str(sample_catalog_path), "--format", "jsonl"],
     )
     schema = jsonl_rows(result)
     assert {"table": "guidelines", "column": "title", "type": "String"} in schema
@@ -51,10 +53,9 @@ def test_tables_cli_reports_schema_and_values(
     result = runner.invoke(
         chartcoach_cli,
         [
-            "tables",
+            "catalog",
             "values",
-            "guideline_labels",
-            "label",
+            "guideline_labels.label",
             "--source",
             str(sample_catalog_path),
             "--contains",
@@ -67,6 +68,132 @@ def test_tables_cli_reports_schema_and_values(
     assert values == {"chart:bar": 1, "chart:line": 1}
 
 
+def test_catalog_table_format_uses_readable_columns(
+    runner: CliRunner,
+    sample_catalog_path: Path,
+) -> None:
+    result = runner.invoke(
+        chartcoach_cli,
+        [
+            "catalog",
+            "list",
+            "--source",
+            str(sample_catalog_path),
+            "--label",
+            "chart:bar",
+            "--format",
+            "table",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert result.output.splitlines()[0].split() == [
+        "id",
+        "title",
+        "description",
+        "labels",
+    ]
+    assert "chart:bar, component:axis" in result.output
+
+
+def test_cache_download_notice_redacts_credential_url(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    common_cli.report_cache_download(
+        "catalog",
+        "https://user:secret@example.test/private/token/metadata.json?sig=hidden#frag",
+        tmp_path / "cache",
+    )
+
+    captured = capsys.readouterr()
+    assert "https://example.test/.../metadata.json" in captured.err
+    assert "secret" not in captured.err
+    assert "sig=hidden" not in captured.err
+
+
+def test_catalog_overview_labels_and_roles_are_composable(
+    runner: CliRunner,
+    sample_catalog_path: Path,
+) -> None:
+    overview_result = runner.invoke(
+        chartcoach_cli,
+        [
+            "catalog",
+            "overview",
+            "--source",
+            str(sample_catalog_path),
+            "--format",
+            "json",
+        ],
+    )
+    overview = cast(dict[str, object], json.loads(overview_result.output))
+    assert overview["section_roles"] == ["advice"]
+    assert overview["label_families"] == ["chart", "component", "task"]
+
+    labels_result = runner.invoke(
+        chartcoach_cli,
+        [
+            "catalog",
+            "labels",
+            "--source",
+            str(sample_catalog_path),
+            "--family",
+            "chart",
+            "--format",
+            "jsonl",
+        ],
+    )
+    labels = {row["label"] for row in jsonl_rows(labels_result)}
+    assert labels == {"chart:bar", "chart:line"}
+
+    roles_result = runner.invoke(
+        chartcoach_cli,
+        [
+            "catalog",
+            "roles",
+            "--source",
+            str(sample_catalog_path),
+            "--format",
+            "jsonl",
+        ],
+    )
+    assert jsonl_rows(roles_result)[0]["role"] == "advice"
+
+
+def test_catalog_overview_does_not_build_reference_tables(
+    runner: CliRunner,
+    sample_catalog_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail_reference_table(_catalog: Catalog) -> object:
+        raise AssertionError("overview should not parse BibTeX reference tables")
+
+    monkeypatch.setattr(Catalog, "references", fail_reference_table)
+    monkeypatch.setattr(Catalog, "guideline_references", fail_reference_table)
+    monkeypatch.setattr(Catalog, "guideline_sources", fail_reference_table)
+
+    result = runner.invoke(
+        chartcoach_cli,
+        [
+            "catalog",
+            "overview",
+            "--source",
+            str(sample_catalog_path),
+            "--format",
+            "json",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    overview = cast(dict[str, object], json.loads(result.output))
+    tables = {
+        str(row["name"])
+        for row in cast(list[dict[str, object]], overview["tables"])
+    }
+    assert tables == {"guidelines", "sections", "labels", "guideline_labels"}
+
+
 def test_read_commands_use_cached_default_source(
     runner: CliRunner,
     sample_catalog: Catalog,
@@ -76,14 +203,73 @@ def test_read_commands_use_cached_default_source(
     monkeypatch.delenv("CHARTCOACH_SOURCE", raising=False)
     cache_default_catalog(monkeypatch, tmp_path, sample_catalog)
 
-    result = runner.invoke(chartcoach_cli, ["tables", "list", "--format", "jsonl"])
+    result = runner.invoke(
+        chartcoach_cli,
+        ["catalog", "schema", "--tables", "--format", "jsonl"],
+    )
 
     assert result.exit_code == 0
     rows = jsonl_rows(result)
     assert {row["name"] for row in rows} >= {"guidelines", "sections", "labels"}
 
 
-def test_catalog_check_uses_cached_default_source(
+def test_default_catalog_downloads_once_without_fetching_indexes(
+    runner: CliRunner,
+    sample_catalog: Catalog,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    bundle_path = sample_catalog.write_bundle(tmp_path / "bundle")
+    metadata = read_release_metadata(bundle_path)
+    cache_root = tmp_path / "cache"
+    release_url = (
+        f"https://example.test/catalog/releases/{metadata.version}/{metadata.digest}/metadata.json"
+    )
+    downloads: list[str] = []
+
+    def read_url_text(url: str) -> str:
+        if url == release_url:
+            return json.dumps(metadata.to_record())
+        raise AssertionError(f"Unexpected metadata URL: {url}")
+
+    def download_file(url: str, path: Path) -> None:
+        downloads.append(url)
+        if url.endswith("/MANIFEST.md"):
+            shutil.copyfile(bundle_path / "MANIFEST.md", path)
+            return
+        if url.endswith("/entries.parquet"):
+            shutil.copyfile(bundle_path / "entries.parquet", path)
+            return
+        raise AssertionError(f"Unexpected artifact URL: {url}")
+
+    monkeypatch.delenv("CHARTCOACH_SOURCE", raising=False)
+    monkeypatch.setenv("CHARTCOACH_CACHE_DIR", str(cache_root))
+    monkeypatch.setenv("CHARTCOACH_ARTIFACT_BASE_URL", "https://example.test")
+    monkeypatch.setattr(catalog_remote, "DEFAULT_CATALOG_VERSION", metadata.version)
+    monkeypatch.setattr(catalog_remote, "DEFAULT_CATALOG_DIGEST", metadata.digest)
+    monkeypatch.setattr(catalog_remote, "_read_url_text", read_url_text)
+    monkeypatch.setattr(catalog_remote, "_download_file", download_file)
+
+    first = runner.invoke(chartcoach_cli, ["catalog", "overview", "--format", "json"])
+    second = runner.invoke(chartcoach_cli, ["catalog", "labels", "--format", "jsonl"])
+
+    assert first.exit_code == 0, first.output
+    assert second.exit_code == 0, second.output
+    assert "Downloading ChartCoach catalog" in first.stderr
+    assert "Cache" in first.stderr
+    assert second.stderr == ""
+    assert downloads == [
+        f"https://example.test/catalog/releases/{metadata.version}/{metadata.digest}/MANIFEST.md",
+        f"https://example.test/catalog/releases/{metadata.version}/{metadata.digest}/entries.parquet",
+    ]
+    cached_release = cache_root / "catalog" / "releases" / metadata.version / metadata.digest
+    assert (cached_release / "metadata.json").exists()
+    assert (cached_release / "MANIFEST.md").exists()
+    assert (cached_release / "entries.parquet").exists()
+    assert not (cached_release / "indexes").exists()
+
+
+def test_catalog_validate_uses_cached_default_source(
     runner: CliRunner,
     sample_catalog: Catalog,
     tmp_path: Path,
@@ -92,7 +278,7 @@ def test_catalog_check_uses_cached_default_source(
     monkeypatch.delenv("CHARTCOACH_SOURCE", raising=False)
     cache_default_catalog(monkeypatch, tmp_path, sample_catalog)
 
-    result = runner.invoke(chartcoach_cli, ["catalog", "check", "--format", "json"])
+    result = runner.invoke(chartcoach_cli, ["catalog", "validate", "--format", "json"])
 
     payload = cast(list[dict[str, object]], json.loads(result.output))
     rows = {row["name"]: row["rows"] for row in payload}
@@ -100,26 +286,27 @@ def test_catalog_check_uses_cached_default_source(
     assert rows["manifest_section_roles"] == 1
 
 
-def test_catalog_check_uses_source_env(
+def test_catalog_validate_uses_source_env(
     runner: CliRunner,
     sample_workspace_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("CHARTCOACH_SOURCE", str(sample_workspace_path))
 
-    result = runner.invoke(chartcoach_cli, ["catalog", "check", "--format", "jsonl"])
+    result = runner.invoke(chartcoach_cli, ["catalog", "validate", "--format", "jsonl"])
 
     rows = {row["name"]: row["rows"] for row in jsonl_rows(result)}
     assert rows["guidelines"] == 2
     assert rows["manifest_section_roles"] == 1
 
-def test_sql_cli_queries_catalog_tables(
+def test_catalog_sql_queries_catalog_tables(
     runner: CliRunner,
     sample_catalog_path: Path,
 ) -> None:
     result = runner.invoke(
         chartcoach_cli,
         [
+            "catalog",
             "sql",
             "--source",
             str(sample_catalog_path),
@@ -134,13 +321,14 @@ def test_sql_cli_queries_catalog_tables(
     ]
 
 
-def test_sql_cli_rejects_non_select_statements(
+def test_catalog_sql_rejects_non_select_statements(
     runner: CliRunner,
     sample_catalog_path: Path,
 ) -> None:
     result = runner.invoke(
         chartcoach_cli,
         [
+            "catalog",
             "sql",
             "--source",
             str(sample_catalog_path),
@@ -151,7 +339,7 @@ def test_sql_cli_rejects_non_select_statements(
     assert_cli_error(result, "Only SELECT queries are allowed")
 
 
-def test_catalog_check_rejects_empty_workspace(
+def test_catalog_validate_rejects_empty_workspace(
     runner: CliRunner,
     tmp_path: Path,
 ) -> None:
@@ -174,7 +362,7 @@ Actionable guidance.
 Chart-family labels such as `chart:bar`.
 """
     )
-    result = runner.invoke(chartcoach_cli, ["catalog", "check", "--source", str(empty)])
+    result = runner.invoke(chartcoach_cli, ["catalog", "validate", "--source", str(empty)])
     assert_cli_error(result, "No guideline entries found")
 
 
@@ -260,7 +448,7 @@ def test_catalog_build_requires_overwrite_for_existing_bundle(
     assert_cli_error(result, "Pass --overwrite")
 
 
-def test_catalog_check_accepts_bundle(
+def test_catalog_validate_accepts_bundle(
     runner: CliRunner,
     sample_catalog: Catalog,
     tmp_path: Path,
@@ -271,7 +459,7 @@ def test_catalog_check_accepts_bundle(
         chartcoach_cli,
         [
             "catalog",
-            "check",
+            "validate",
             "--source",
             str(bundle_path),
             "--format",
@@ -284,7 +472,7 @@ def test_catalog_check_accepts_bundle(
     assert rows["manifest_section_roles"] == 1
 
 
-def test_catalog_duckdb_writes_catalog_tables(
+def test_catalog_export_duckdb_writes_catalog_tables(
     runner: CliRunner,
     sample_catalog_path: Path,
     tmp_path: Path,
@@ -297,6 +485,7 @@ def test_catalog_duckdb_writes_catalog_tables(
         chartcoach_cli,
         [
             "catalog",
+            "export",
             "duckdb",
             "--source",
             str(sample_catalog_path),
@@ -322,6 +511,7 @@ def test_catalog_duckdb_writes_catalog_tables(
         chartcoach_cli,
         [
             "catalog",
+            "export",
             "duckdb",
             "--source",
             str(sample_catalog_path),
@@ -399,19 +589,19 @@ def test_catalog_manifest_cli_explains_manifestless_sources(
 
     assert_cli_error(result, "Catalog source has no manifest")
     assert "Omit --source to use the package-pinned default catalog artifact." in result.output
-    assert "Use the standalone parquet file for tables" in result.output
+    assert "Use standalone parquet files for records, tables, SQL, and indexing." in result.output
 
-def test_table_and_sql_commands_report_empty_results(
+
+def test_catalog_values_and_sql_report_empty_results(
     runner: CliRunner,
     sample_catalog_path: Path,
 ) -> None:
     values_result = runner.invoke(
         chartcoach_cli,
         [
-            "tables",
+            "catalog",
             "values",
-            "guideline_labels",
-            "label",
+            "guideline_labels.label",
             "--source",
             str(sample_catalog_path),
             "--contains",
@@ -424,6 +614,7 @@ def test_table_and_sql_commands_report_empty_results(
     sql_result = runner.invoke(
         chartcoach_cli,
         [
+            "catalog",
             "sql",
             "--source",
             str(sample_catalog_path),
@@ -434,17 +625,16 @@ def test_table_and_sql_commands_report_empty_results(
     assert sql_result.output.strip() == "0 rows"
 
 
-def test_tables_values_reports_truncated_value_lists(
+def test_catalog_values_reports_truncated_value_lists(
     runner: CliRunner,
     sample_catalog_path: Path,
 ) -> None:
     result = runner.invoke(
         chartcoach_cli,
         [
-            "tables",
+            "catalog",
             "values",
-            "guideline_labels",
-            "label",
+            "guideline_labels.label",
             "--source",
             str(sample_catalog_path),
             "--contains",
@@ -455,5 +645,5 @@ def test_tables_values_reports_truncated_value_lists(
     )
 
     assert result.exit_code == 0
-    assert result.output.startswith("table\tcolumn\tvalue\trows")
+    assert result.output.splitlines()[0].split() == ["table", "column", "value", "rows"]
     assert "Returned 1 values. Increase --limit to inspect more." in result.stderr

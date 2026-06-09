@@ -4,8 +4,9 @@ from .remote import (
     ArtifactDescriptor,
     CatalogReleaseMetadata,
     default_catalog_bundle,
-    default_metadata_url,
-    metadata_url,
+    default_index_path,
+    default_release_metadata_url,
+    release_metadata_url,
 )
 
 
@@ -17,6 +18,7 @@ __all__ = [
     "ArtifactDescriptor",
     "ManifestDefinition",
     "default_catalog_bundle",
-    "default_metadata_url",
-    "metadata_url",
+    "default_index_path",
+    "default_release_metadata_url",
+    "release_metadata_url",
 ]

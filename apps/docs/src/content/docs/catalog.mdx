@@ -14,7 +14,7 @@ chartcoach/catalog
       references.bib
 ```
 
-The default published source is `https://artifacts.chartcoach.dev/metadata.json`. That object is a release pointer. Readers resolve it to versioned release metadata, then fetch the manifest and entries artifacts from the release directory.
+The artifact root exposes `https://artifacts.chartcoach.dev/index.json` as the release index. Package defaults read a pinned release metadata file under `catalog/releases/<version>/<digest>/`, then fetch the manifest and entries artifacts from that release directory.
 
 ## Guideline Records
 

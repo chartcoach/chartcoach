@@ -6,8 +6,9 @@ import json
 import os
 from pathlib import Path, PurePosixPath
 import shutil
-from typing import TYPE_CHECKING, Iterable, Literal, Mapping, Self, cast
-from urllib.parse import urljoin, urlparse
+import tarfile
+from typing import TYPE_CHECKING, Callable, Iterable, Literal, Mapping, Self, cast
+from urllib.parse import urljoin
 from urllib.request import Request, urlopen
 
 from platformdirs import user_cache_path
@@ -25,6 +26,8 @@ if TYPE_CHECKING:
 
 ArtifactKind = Literal["manifest", "entries", "lancedb-index"]
 CATALOG_ARTIFACT_KINDS: tuple[ArtifactKind, ...] = ("manifest", "entries")
+DownloadKind = Literal["catalog", "index"]
+DownloadReporter = Callable[[DownloadKind, str, Path], None]
 
 
 @dataclass(frozen=True, slots=True)
@@ -138,15 +141,20 @@ class CatalogReleaseMetadata:
         raise KeyError(kind)
 
 
-def default_metadata_url() -> str:
+def default_release_metadata_url() -> str:
     """Return the package-pinned catalog metadata URL."""
 
     base_url = os.getenv(ARTIFACT_BASE_URL_ENV, DEFAULT_CATALOG_ARTIFACT_BASE_URL)
-    return metadata_url(base_url)
+    return release_metadata_url(
+        urljoin(
+            base_url.rstrip("/") + "/",
+            f"catalog/releases/{DEFAULT_CATALOG_VERSION}/{DEFAULT_CATALOG_DIGEST}/",
+        )
+    )
 
 
-def metadata_url(locator: str) -> str:
-    """Return the metadata URL for an artifact base URL or metadata URL."""
+def release_metadata_url(locator: str) -> str:
+    """Return the metadata URL for a release root URL or metadata URL."""
 
     if locator.endswith("metadata.json"):
         return locator
@@ -161,16 +169,36 @@ def cache_root() -> Path:
     return user_cache_path("chartcoach")
 
 
-def default_catalog_bundle() -> Path:
+def default_catalog_bundle(
+    *,
+    reporter: DownloadReporter | None = None,
+) -> Path:
     """Return the cached package-pinned catalog bundle, downloading it when needed."""
 
     target = _cache_path(DEFAULT_CATALOG_VERSION, DEFAULT_CATALOG_DIGEST)
     if _cached_bundle_is_valid(target, expected_digest=DEFAULT_CATALOG_DIGEST):
         return target
     return download_catalog_bundle(
-        default_metadata_url(),
+        default_release_metadata_url(),
         expected_version=DEFAULT_CATALOG_VERSION,
         expected_digest=DEFAULT_CATALOG_DIGEST,
+        reporter=reporter,
+    )
+
+
+def default_index_path(
+    *,
+    table_name: str,
+    reporter: DownloadReporter | None = None,
+) -> Path:
+    """Return the cached package-pinned LanceDB index for `table_name`."""
+
+    return download_index_artifact(
+        default_release_metadata_url(),
+        table_name=table_name,
+        expected_version=DEFAULT_CATALOG_VERSION,
+        expected_digest=DEFAULT_CATALOG_DIGEST,
+        reporter=reporter,
     )
 
 
@@ -179,10 +207,11 @@ def download_catalog_bundle(
     *,
     expected_version: str | None = None,
     expected_digest: str | None = None,
+    reporter: DownloadReporter | None = None,
 ) -> Path:
     """Download one catalog bundle into the local cache and return its path."""
 
-    metadata, resolved_metadata_url = _read_remote_metadata(metadata_url)
+    metadata, resolved_metadata_url = _read_release_metadata(metadata_url)
     if expected_version is not None and metadata.version != expected_version:
         raise ValueError(
             f"Catalog metadata version {metadata.version!r} does not match {expected_version!r}."
@@ -195,6 +224,8 @@ def download_catalog_bundle(
     target = _cache_path(metadata.version, metadata.digest)
     if _cached_bundle_is_valid(target, expected_digest=metadata.digest):
         return target
+    if reporter is not None:
+        reporter("catalog", resolved_metadata_url, target)
 
     tmp = target.with_name(target.name + ".tmp")
     if tmp.exists():
@@ -209,9 +240,56 @@ def download_catalog_bundle(
         _download_file(artifact_url, output)
         _validate_file(output, artifact)
 
+    _replace_catalog_artifacts(tmp, target, metadata)
+    return target
+
+
+def download_index_artifact(
+    metadata_url: str,
+    *,
+    table_name: str,
+    expected_version: str | None = None,
+    expected_digest: str | None = None,
+    reporter: DownloadReporter | None = None,
+) -> Path:
+    """Download one LanceDB archive artifact into the local cache and return it."""
+
+    metadata, resolved_metadata_url = _read_release_metadata(metadata_url)
+    if expected_version is not None and metadata.version != expected_version:
+        raise ValueError(
+            f"Catalog metadata version {metadata.version!r} does not match {expected_version!r}."
+        )
+    if expected_digest is not None and metadata.digest != expected_digest:
+        raise ValueError(
+            f"Catalog metadata digest {metadata.digest!r} does not match {expected_digest!r}."
+        )
+
+    artifact = _index_archive_artifact(metadata, table_name=table_name)
+    target = _index_cache_path(metadata.version, metadata.digest, artifact)
+    if _cached_index_is_valid(target, artifact):
+        return target
+    if reporter is not None:
+        reporter("index", urljoin(resolved_metadata_url, artifact.path), target)
+
+    release_path = _cache_path(metadata.version, metadata.digest)
+    release_path.mkdir(parents=True, exist_ok=True)
+    (release_path / "metadata.json").write_text(_metadata_json(metadata))
+
+    tmp = target.with_name(target.name + ".tmp")
+    archive_path = release_path / artifact.path
+    if tmp.exists():
+        shutil.rmtree(tmp)
+    tmp.mkdir(parents=True, exist_ok=True)
+    archive_path.parent.mkdir(parents=True, exist_ok=True)
+    _download_file(urljoin(resolved_metadata_url, artifact.path), archive_path)
+    _validate_file(archive_path, artifact)
+    _extract_tar_archive(archive_path, tmp)
+    (tmp / "artifact.json").write_text(_json_record(artifact.to_record()))
+
     if target.exists():
         shutil.rmtree(target)
     tmp.rename(target)
+    archive_path.unlink(missing_ok=True)
     return target
 
 
@@ -257,7 +335,18 @@ def read_release_metadata(path: Path) -> CatalogReleaseMetadata:
 
 
 def _cache_path(version: str, digest: str) -> Path:
-    return cache_root() / "catalog" / version / digest
+    return cache_root() / "catalog" / "releases" / version / digest
+
+
+def _index_cache_path(
+    version: str,
+    digest: str,
+    artifact: ArtifactDescriptor,
+) -> Path:
+    artifact_path = PurePosixPath(artifact.path)
+    if artifact_path.name.endswith(".tar.gz"):
+        return _cache_path(version, digest) / Path(*artifact_path.parent.parts) / "db"
+    return _cache_path(version, digest) / Path(*artifact_path.parts)
 
 
 def _cached_bundle_is_valid(path: Path, *, expected_digest: str) -> bool:
@@ -278,24 +367,51 @@ def _cached_bundle_is_valid(path: Path, *, expected_digest: str) -> bool:
     return True
 
 
+def _replace_catalog_artifacts(
+    tmp: Path,
+    target: Path,
+    metadata: CatalogReleaseMetadata,
+) -> None:
+    if target.exists() and not target.is_dir():
+        target.unlink()
+    target.mkdir(parents=True, exist_ok=True)
+    for relative_path in ("metadata.json", *(artifact.path for artifact in _catalog_artifacts(metadata))):
+        source = tmp / relative_path
+        destination = target / relative_path
+        if destination.exists() and destination.is_dir():
+            shutil.rmtree(destination)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        source.replace(destination)
+    shutil.rmtree(tmp)
+
+
+def _cached_index_is_valid(path: Path, artifact: ArtifactDescriptor) -> bool:
+    marker = path / "artifact.json"
+    table_name = artifact.extra.get("table")
+    if not path.is_dir() or not marker.is_file() or not isinstance(table_name, str):
+        return False
+    try:
+        record = ArtifactDescriptor.from_mapping(json.loads(marker.read_text()))
+    except (OSError, ValueError, json.JSONDecodeError):
+        return False
+    return (
+        record.kind == artifact.kind
+        and record.digest == artifact.digest
+        and record.path == artifact.path
+        and (path / f"{table_name}.lance").is_dir()
+    )
+
+
 def _read_url_text(url: str) -> str:
     request = Request(url, headers={"User-Agent": "chartcoach"})
     with urlopen(request) as response:
         return response.read().decode("utf-8")
 
 
-def _read_remote_metadata(url: str, *, depth: int = 0) -> tuple[CatalogReleaseMetadata, str]:
-    if depth > 5:
-        raise ValueError("Catalog metadata pointer chain is too deep.")
+def _read_release_metadata(url: str) -> tuple[CatalogReleaseMetadata, str]:
     raw = json.loads(_read_url_text(url))
     if not isinstance(raw, Mapping):
         raise ValueError("Catalog release metadata must be an object.")
-    target = raw.get("target") if raw.get("kind") == "chartcoach-release-pointer" else None
-    if target is not None:
-        if not isinstance(target, str) or not target:
-            raise ValueError("Catalog release pointer target must be a string.")
-        target_url = _resolve_pointer_url(url, target)
-        return _read_remote_metadata(target_url, depth=depth + 1)
     return CatalogReleaseMetadata.from_mapping(raw), url
 
 
@@ -324,6 +440,10 @@ def _metadata_json(metadata: CatalogReleaseMetadata) -> str:
     return json.dumps(metadata.to_record(), indent=2, ensure_ascii=False) + "\n"
 
 
+def _json_record(record: Mapping[str, object]) -> str:
+    return json.dumps(record, indent=2, ensure_ascii=False) + "\n"
+
+
 def _require_artifact_kind(
     artifacts: Iterable[ArtifactDescriptor],
     kind: ArtifactKind,
@@ -338,17 +458,52 @@ def _catalog_artifacts(metadata: CatalogReleaseMetadata) -> tuple[ArtifactDescri
     )
 
 
-def _resolve_pointer_url(url: str, target: str) -> str:
-    parsed = urlparse(target)
-    if parsed.scheme:
-        if parsed.scheme not in {"http", "https"}:
-            raise ValueError(f"Unsupported catalog release pointer URL: {target!r}")
-        return target
-    if target.startswith("/"):
-        _validate_relative_artifact_path(target.lstrip("/"))
-        return urljoin(url, target)
-    _validate_relative_artifact_path(target)
-    return urljoin(url, target)
+def _index_archive_artifact(
+    metadata: CatalogReleaseMetadata,
+    *,
+    table_name: str,
+) -> ArtifactDescriptor:
+    for artifact in metadata.artifacts:
+        if (
+            artifact.kind == "lancedb-index"
+            and artifact.format == "tar+gzip"
+            and artifact.extra.get("table") == table_name
+        ):
+            return artifact
+    raise ValueError(f"Catalog release metadata is missing a {table_name!r} LanceDB archive.")
+
+
+def _extract_tar_archive(archive_path: Path, target: Path) -> None:
+    target_root = target.resolve(strict=False)
+    with tarfile.open(archive_path, "r:gz") as archive:
+        for member in archive.getmembers():
+            output_path = _archive_output_path(member.name, target_root)
+            if member.isdir():
+                output_path.mkdir(parents=True, exist_ok=True)
+            elif member.isfile():
+                output_path.parent.mkdir(parents=True, exist_ok=True)
+                source = archive.extractfile(member)
+                if source is None:
+                    raise ValueError(f"Unreadable LanceDB archive member: {member.name!r}")
+                with source, output_path.open("wb") as output:
+                    shutil.copyfileobj(source, output)
+            else:
+                raise ValueError(f"Unsafe LanceDB archive member: {member.name!r}")
+
+
+def _archive_output_path(member_name: str, target: Path) -> Path:
+    path = PurePosixPath(member_name)
+    if (
+        "\\" in member_name
+        or path.is_absolute()
+        or ".." in path.parts
+        or any(":" in part for part in path.parts)
+    ):
+        raise ValueError(f"Unsafe LanceDB archive member: {member_name!r}")
+    output_path = target.joinpath(*path.parts).resolve(strict=False)
+    if not output_path.is_relative_to(target):
+        raise ValueError(f"Unsafe LanceDB archive member: {member_name!r}")
+    return output_path
 
 
 def _validate_relative_artifact_path(path: str) -> None:

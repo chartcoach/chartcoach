@@ -78,7 +78,7 @@ def test_mcp_cli_renders_search_hint_for_missing_index(
     )
 
     assert_cli_error(result, "missing search index")
-    assert "chartcoach index --source PATH --index PATH" in result.output
+    assert "chartcoach catalog index create --source PATH --index PATH" in result.output
     assert "Pass the same index path" in result.output
 
 
@@ -109,7 +109,7 @@ def test_mcp_cli_passes_explicit_index_and_renders_value_errors(
     result = runner.invoke(chartcoach_cli, ["mcp", "serve", "--index", "index"])
 
     settings = cast(dict[str, str | Path], captured["settings"])
-    assert settings["index"] == Path("index")
+    assert settings["index"] == "index"
     assert settings["table"] == "catalog_documents"
     assert captured["runtime"] == mcp_server.Runtime()
     assert_cli_error(result, "source must be provided")

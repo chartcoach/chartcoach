@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from os import PathLike
-from pathlib import Path
+from os import PathLike, fspath
 from typing import TYPE_CHECKING
 
 import duckdb
@@ -14,9 +13,9 @@ if TYPE_CHECKING:
     from lancedb import Table
 
 _SEARCH_HINTS = (
-    "Build a full-text LanceDB table with `chartcoach index --source PATH --index PATH`.",
-    "Pass the same index path to search commands with `--mode fts`.",
-    "Use `chartcoach index --embedding ...` when vector or hybrid search is required.",
+    "Build a full-text LanceDB table with `chartcoach catalog index create --source PATH --index PATH`.",
+    "Pass the same index path to `chartcoach catalog find --mode fts`.",
+    "Use `chartcoach catalog index create --embedding ...` when vector or hybrid search is required.",
 )
 
 
@@ -44,7 +43,7 @@ class Tools:
     ) -> None:
         self._catalog = catalog
         self._table = table
-        self._index_path = Path(index_path) if index_path is not None else None
+        self._index_path = fspath(index_path) if index_path is not None else None
 
     @property
     def catalog(self) -> Catalog:
@@ -108,7 +107,7 @@ class Tools:
             "row_count": len(rows),
             "limit": limit,
             "where": where,
-            "index_path": str(self._index_path) if self._index_path is not None else None,
+            "index_path": self._index_path,
             "table_name": table.name,
         }
 
@@ -157,7 +156,7 @@ def _validate_select_query(statement: str) -> None:
         raise ToolError(
             "Only SELECT queries are allowed.",
             hints=[
-                "Run `chartcoach catalog duckdb` when another tool needs mutable SQL tables.",
+                "Run `chartcoach catalog export duckdb` when another tool needs mutable SQL tables.",
             ],
         )
 

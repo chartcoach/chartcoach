@@ -76,16 +76,6 @@ describe("entries parquet loading", () => {
     });
   });
 
-  it("loads through a catalog metadata pointer URL", async () => {
-    await withFixtureServer(async (baseUrl) => {
-      const catalog = await readCatalog(`${baseUrl}/pointer/metadata.json`);
-
-      expect(catalog.length).toBe(1);
-      expect(catalog.manifest?.labelFamilies.chart?.name).toBe("chart");
-      assertCatalogLooksParsed(catalog);
-    });
-  });
-
   it("preserves index artifact bodies in release metadata", () => {
     const metadata = parseCatalogReleaseMetadata({
       version: "0.0.0",
@@ -105,14 +95,45 @@ describe("entries parquet loading", () => {
         },
         {
           kind: "lancedb-index",
-          path: "indexes/lancedb/openrouter/openai-text-embedding-3-large/catalog_documents.tar.gz",
+          path: "indexes/lancedb/openrouter/openai-text-embedding-3-large/index.tar.gz",
           digest: "index-digest",
           bytes: 3,
           format: "tar+gzip",
           table: "catalog_documents",
+          catalog: {
+            version: "0.0.0",
+            digest: "catalog-digest",
+          },
           embedding: {
             registry: "openai",
+            provider: "openrouter",
             model: "openai/text-embedding-3-large",
+            options: {
+              name: "text-embedding-3-large",
+              dim: 3072,
+            },
+          },
+        },
+        {
+          kind: "lancedb-index",
+          path: "indexes/lancedb/openrouter/openai-text-embedding-3-large/db",
+          digest: "tree-digest",
+          bytes: 4,
+          format: "lancedb",
+          table: "catalog_documents",
+          uri: "s3://chartcoach/catalog/releases/0.0.0/catalog-digest/indexes/lancedb/openrouter/openai-text-embedding-3-large/db",
+          catalog: {
+            version: "0.0.0",
+            digest: "catalog-digest",
+          },
+          embedding: {
+            registry: "openai",
+            provider: "openrouter",
+            model: "openai/text-embedding-3-large",
+            options: {
+              name: "text-embedding-3-large",
+              dim: 3072,
+            },
           },
         },
       ],
@@ -122,8 +143,19 @@ describe("entries parquet loading", () => {
     expect(indexArtifact?.table).toBe("catalog_documents");
     expect(indexArtifact?.embedding).toEqual({
       registry: "openai",
+      provider: "openrouter",
       model: "openai/text-embedding-3-large",
+      options: {
+        name: "text-embedding-3-large",
+        dim: 3072,
+      },
     });
+    const directArtifact = metadata.artifacts.find(
+      (item) => item.kind === "lancedb-index" && item.format === "lancedb",
+    );
+    expect(directArtifact?.uri).toBe(
+      "s3://chartcoach/catalog/releases/0.0.0/catalog-digest/indexes/lancedb/openrouter/openai-text-embedding-3-large/db",
+    );
   });
 });
 
@@ -132,22 +164,6 @@ async function withFixtureServer(
 ): Promise<void> {
   const server = createServer(async (request, response) => {
     const pathname = new URL(request.url ?? "/", "http://127.0.0.1").pathname;
-    if (pathname === "/pointer/metadata.json") {
-      const body = Buffer.from(
-        JSON.stringify({
-          kind: "chartcoach-release-pointer",
-          target: "/metadata.json",
-          version: "0.0.0",
-          digest: "fixture-digest",
-        }),
-      );
-      response.writeHead(200, {
-        "content-length": body.length,
-        "content-type": "application/json",
-      });
-      response.end(body);
-      return;
-    }
     const fileName = pathname === "/" ? "metadata.json" : pathname.slice(1);
     const filePath = path.join(bundleFixtureRoot, fileName);
     try {

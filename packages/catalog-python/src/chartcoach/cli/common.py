@@ -1,18 +1,22 @@
 from __future__ import annotations
 
 import csv
+import importlib.util
 import io
 import json
 import os
 import sys
 from collections.abc import Callable, Mapping, Sequence
 from contextlib import contextmanager
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Iterator, TypeVar, cast
+from urllib.parse import urlparse, urlunparse
 
 import click
+from tabulate import tabulate
 
-from chartcoach.catalog import Catalog
+from chartcoach.catalog import Catalog, default_catalog_bundle, default_index_path
+from chartcoach.catalog.remote import download_catalog_bundle, release_metadata_url
 from chartcoach.constants import (
     DEFAULT_CATALOG_ARTIFACT_BASE_URL,
     INDEX_ENV,
@@ -24,8 +28,6 @@ from chartcoach.tools import Tools, format_error
 CONTEXT_SETTINGS = {"help_option_names": ["-h", "--help"]}
 ROW_FORMATS = ("table", "json", "jsonl", "csv")
 SEARCH_FORMATS = ("table", "json", "jsonl", "csv", "markdown", "compact")
-SHOW_FORMATS = ("markdown", "json", "jsonl")
-RETRIEVE_FORMATS = ("markdown", "json", "jsonl", "csv", "table")
 
 _Command = TypeVar("_Command", bound=Callable[..., object])
 
@@ -50,26 +52,64 @@ def required_index_option(command: _Command) -> _Command:
         "--index",
         "index_path",
         envvar=INDEX_ENV,
-        type=click.Path(file_okay=False, path_type=Path),
-        help=f"LanceDB database directory. Defaults to ${INDEX_ENV} when set.",
+        metavar="PATH_OR_URI",
+        help=f"LanceDB database path or URI. Defaults to ${INDEX_ENV} when set.",
     )(command)
 
 
 def require_index_path(
-    index_path: Path | None,
+    index_path: str | None,
     *,
     source_path: object | None = None,
-) -> Path:
+    table_name: str = LANCE_DOCUMENT_TABLE,
+    use_default: bool = False,
+) -> str:
     if index_path is not None:
         return index_path
+    if use_default and source_path is None:
+        _require_lancedb_available()
+        try:
+            return str(
+                default_index_path(
+                    table_name=table_name,
+                    reporter=report_cache_download,
+                )
+            )
+        except Exception as exc:
+            raise click.ClickException(
+                format_error(
+                    "Could not resolve the default LanceDB index.",
+                    [
+                        str(exc),
+                        f"Pass --index PATH_OR_URI or set {INDEX_ENV}.",
+                    ],
+                )
+            ) from exc
     source_part = f" --source {source_path}" if source_path is not None else ""
     raise click.ClickException(
         format_error(
-            f"Pass --index PATH or set {INDEX_ENV}.",
+            f"Pass --index PATH_OR_URI or set {INDEX_ENV}.",
             [
-                f"Build a full-text index with `chartcoach index{source_part} --index PATH`.",
-                "Then pass the same index path to search commands.",
+                (
+                    "Build a full-text index with "
+                    f"`chartcoach catalog index create{source_part} --index PATH_OR_URI`."
+                ),
+                "Then pass the same index path to `chartcoach catalog find`.",
                 "Use `--mode fts` for a full-text-only index.",
+            ],
+        )
+    )
+
+
+def _require_lancedb_available() -> None:
+    if importlib.util.find_spec("lancedb") is not None:
+        return
+    raise click.ClickException(
+        format_error(
+            "LanceDB indexing requires the optional `chartcoach[index]` dependencies.",
+            [
+                "Install `chartcoach[index]` to use indexed discovery.",
+                f"Or pass --index PATH_OR_URI after installing the extra or set {INDEX_ENV}.",
             ],
         )
     )
@@ -88,6 +128,15 @@ def _remember_source_path(
 def load_catalog(ctx: click.Context) -> Catalog:
     path = source_path(ctx)
     try:
+        if path is None:
+            return Catalog.from_bundle(default_catalog_bundle(reporter=report_cache_download))
+        if _is_http_url(path):
+            return Catalog.from_bundle(
+                download_catalog_bundle(
+                    release_metadata_url(path),
+                    reporter=report_cache_download,
+                )
+            )
         return Catalog.open(path)
     except FileNotFoundError as exc:
         raise click.ClickException(
@@ -112,6 +161,41 @@ def source_path(ctx: click.Context) -> str | None:
     return cast(str, path)
 
 
+def report_cache_download(kind: str, source: str, target: Path) -> None:
+    name = "catalog" if kind == "catalog" else "LanceDB index"
+    echo_info(
+        f"Downloading ChartCoach {name}",
+        detail=f"from {_display_source(source)}",
+        err=True,
+    )
+    echo_info("Cache", detail=str(target), err=True)
+
+
+def echo_info(message: str, *, detail: str | None = None, err: bool = True) -> None:
+    _echo_status(message, detail=detail, fg="cyan", err=err)
+
+
+def echo_success(message: str, *, detail: str | None = None, err: bool = False) -> None:
+    _echo_status(message, detail=detail, fg="green", err=err)
+
+
+def echo_warn(message: str, *, detail: str | None = None, err: bool = True) -> None:
+    _echo_status(message, detail=detail, fg="yellow", err=err)
+
+
+def _echo_status(
+    message: str,
+    *,
+    detail: str | None,
+    fg: str,
+    err: bool,
+) -> None:
+    text = click.style(message, fg=fg)
+    if detail is not None:
+        text += f" {detail}"
+    click.echo(text, err=err)
+
+
 def emit_rows(
     rows: Sequence[Mapping[str, object]],
     *,
@@ -128,7 +212,22 @@ def emit_rows(
     elif not rows:
         click.echo(empty_message)
     else:
-        click.echo(rows_to_csv(rows, delimiter="\t", human=True).rstrip())
+        click.echo(rows_to_table(rows).rstrip())
+
+
+def rows_to_table(rows: Sequence[Mapping[str, object]]) -> str:
+    if not rows:
+        return ""
+    normalized = [
+        {key: format_cell(value, human=True) for key, value in row.items()}
+        for row in rows
+    ]
+    return tabulate(
+        normalized,
+        headers="keys",
+        tablefmt="plain",
+        disable_numparse=True,
+    )
 
 
 def emit_object(value: object, *, output_format: str) -> None:
@@ -160,15 +259,33 @@ def rows_to_csv(
 def format_cell(value: object, *, human: bool = False) -> object:
     if human and isinstance(value, list):
         return ", ".join(str(item) for item in value)
+    if human and isinstance(value, dict):
+        return ", ".join(f"{key}={item}" for key, item in value.items())
     if isinstance(value, list | dict):
         return json.dumps(value, ensure_ascii=False, default=str)
     return value
 
 
+def _is_http_url(value: str) -> bool:
+    return urlparse(value).scheme in {"http", "https"}
+
+
+def _display_source(source: str) -> str:
+    parsed = urlparse(source)
+    if parsed.scheme not in {"http", "https"} or parsed.hostname is None:
+        return source
+    netloc = parsed.hostname
+    if parsed.port is not None:
+        netloc = f"{netloc}:{parsed.port}"
+    name = PurePosixPath(parsed.path).name
+    path = f"/.../{name}" if name else ""
+    return urlunparse((parsed.scheme, netloc, path, "", "", ""))
+
+
 def search_cli_error(
     message: str,
     *,
-    index_path: Path | None = None,
+    index_path: str | None = None,
     table_name: str = LANCE_DOCUMENT_TABLE,
 ) -> str:
     """Return a CLI search error with local index-path recovery hints."""
@@ -179,22 +296,26 @@ def search_cli_error(
             *_index_path_hints(index_path, table_name=table_name),
             (
                 "Build a full-text LanceDB table with "
-                "`chartcoach index --source PATH --index PATH`."
+                "`chartcoach catalog index create --source PATH --index PATH`."
             ),
-            "Pass the same index path to search commands with `--mode fts`.",
-            "Use `chartcoach index --embedding ...` when vector or hybrid search is required.",
+            "Pass the same index path to `chartcoach catalog find --mode fts`.",
+            (
+                "Use `chartcoach catalog index create --embedding ...` when vector "
+                "or hybrid search is required."
+            ),
         ],
     )
 
 
-def _index_path_hints(index_path: Path | None, *, table_name: str) -> list[str]:
-    if index_path is None or not index_path.is_dir():
+def _index_path_hints(index_path: str | None, *, table_name: str) -> list[str]:
+    local_path = _local_index_path(index_path)
+    if local_path is None or not local_path.is_dir():
         return []
 
     table_dir = f"{table_name}.lance"
     child_indexes = [
         child
-        for child in sorted(index_path.iterdir(), key=str)
+        for child in sorted(local_path.iterdir(), key=str)
         if child.is_dir() and (child / table_dir).is_dir()
     ]
     if not child_indexes:
@@ -216,28 +337,13 @@ def _index_path_hints(index_path: Path | None, *, table_name: str) -> list[str]:
     ]
 
 
-def evidence_packets_to_markdown(packets: Sequence[Mapping[str, object]]) -> str:
-    lines: list[str] = []
-    for packet in packets:
-        lines.append(f"## {packet['id']}")
-        lines.append("")
-        lines.append(f"**{packet['title']}**")
-        lines.append("")
-        lines.append(str(packet["description"]))
-        lines.append("")
-        labels = packet.get("labels")
-        if labels:
-            lines.append(
-                "Labels: "
-                + ", ".join(f"`{label}`" for label in cast(list[str], labels))
-            )
-            lines.append("")
-        for section in cast(list[Mapping[str, str]], packet.get("sections") or []):
-            lines.append(f"### {section['role']}: {section['title']}")
-            lines.append("")
-            lines.append(section["content"].strip())
-            lines.append("")
-    return "\n".join(lines)
+def _local_index_path(index_path: str | None) -> Path | None:
+    if index_path is None:
+        return None
+    parsed = urlparse(index_path)
+    if parsed.scheme:
+        return None
+    return Path(index_path)
 
 
 def guideline_search_rows_to_markdown(rows: Sequence[Mapping[str, object]]) -> str:

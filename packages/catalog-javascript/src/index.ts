@@ -4,6 +4,7 @@ export {
   DEFAULT_CATALOG_ARTIFACT_BASE_URL,
   DEFAULT_CATALOG_DIGEST,
   DEFAULT_CATALOG_METADATA_URL,
+  DEFAULT_CATALOG_RELEASE_ROOT_URL,
   DEFAULT_CATALOG_VERSION,
   artifact,
   artifactUrl,
@@ -12,7 +13,6 @@ export {
   parseCatalogReleaseMetadata,
   type ArtifactDescriptor,
   type ArtifactKind,
-  type CatalogReleasePointer,
   type CatalogReleaseMetadata,
   type ResolvedCatalogReleaseMetadata,
 } from "./catalog/artifacts";

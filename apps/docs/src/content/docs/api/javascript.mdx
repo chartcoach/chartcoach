@@ -23,7 +23,7 @@ Shared types, the `Catalog` model, `loadCatalog` for parquet bytes, `parseLabel`
 
 `@chartcoach/catalog/server`
 
-`readCatalog(sourcePath?, options?)` for server-side filesystem paths and HTTP metadata URLs. When `sourcePath` is omitted, it reads `https://artifacts.chartcoach.dev/metadata.json`, resolves the release pointer, and fetches the manifest plus entries artifacts from the versioned release directory.
+`readCatalog(sourcePath?, options?)` for server-side filesystem paths, release root URLs, and release metadata URLs. When `sourcePath` is omitted, it reads package-pinned release metadata under `https://artifacts.chartcoach.dev/catalog/releases/<version>/<digest>/metadata.json` and fetches the manifest plus entries artifacts from that release directory.
 
 `@chartcoach/catalog/browser`
 

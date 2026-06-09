@@ -177,20 +177,29 @@ def _document_rows(frame: pl.DataFrame) -> list[Document]:
 
 
 def _resolve_mode(table: "Table", search_query: Query, mode: Mode) -> Mode:
-    has_embeddings = bool(getattr(table, "embedding_functions", None))
+    if mode == "fts":
+        return "fts"
+    if mode == "auto":
+        if not isinstance(search_query, str):
+            return "vector"
+        try:
+            return "vector" if _has_embedding_functions(table) else "fts"
+        except ValueError:
+            return "fts"
+    if not isinstance(search_query, str):
+        return mode
+    has_embeddings = _has_embedding_functions(table)
     if mode in {"vector", "hybrid"} and isinstance(search_query, str) and not has_embeddings:
         raise ValueError(
             f"{mode} search requires a LanceDB table with embeddings. "
-            "Rebuild the index with `chartcoach index --embedding ...` "
+            "Rebuild the index with `chartcoach catalog index create --embedding ...` "
             "or rerun this query with `--mode fts`."
         )
-    if mode != "auto":
-        return mode
-    if not isinstance(search_query, str):
-        return "vector"
-    if has_embeddings:
-        return "vector"
-    return "fts"
+    return mode
+
+
+def _has_embedding_functions(table: "Table") -> bool:
+    return bool(getattr(table, "embedding_functions", None))
 
 
 def _document(row: dict[str, object]) -> Document:

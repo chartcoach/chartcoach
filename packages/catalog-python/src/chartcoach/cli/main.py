@@ -3,13 +3,8 @@ from __future__ import annotations
 import click
 
 from .catalog import catalog_command
-from .guidelines import guidelines_command
-from .index import index_command
 from .mcp import mcp_command
-from .prompt import prompt_command
 from .skills import skills_command
-from .sql import sql_command
-from .tables import tables_command
 
 CONTEXT_SETTINGS = {"help_option_names": ["-h", "--help"]}
 
@@ -17,17 +12,33 @@ CONTEXT_SETTINGS = {"help_option_names": ["-h", "--help"]}
 @click.group(
     context_settings=CONTEXT_SETTINGS,
     help=(
-        "ChartCoach catalog CLI for AI agents.\n\n"
+        "ChartCoach catalog CLI.\n\n"
         "\b\n"
         "Start here (for AI agents):\n"
         "  chartcoach skills get core\n\n"
-        "  CLI-served skills ship with the CLI and include workflow patterns, "
-        "catalog setup, search guidance, and citation examples. Prefer them over guessing "
-        "workflows from option docs alone.\n\n"
         "\b\n"
-        "  skills [list]                List available CLI-served skills\n"
-        "  skills get core              Catalog primitives and artifacts\n"
-        "  skills get visfeedback       Visualization feedback workflow\n"
+        "Progressive Catalog Navigation:\n"
+        "  catalog overview             Summarize source, counts, roles, labels\n"
+        "  catalog labels               List label values and counts\n"
+        "  catalog query                Filter entries without an index\n"
+        "  catalog read                 Read exact entries and sections\n\n"
+        "\b\n"
+        "Indexed Discovery:\n"
+        "  catalog find                 Rank entries with chartcoach[index]\n"
+        "  catalog index create         Build a LanceDB index\n"
+        "  catalog index info           Inspect a LanceDB index\n\n"
+        "\b\n"
+        "Catalog Lifecycle:\n"
+        "  catalog build                Build a catalog bundle\n"
+        "  catalog validate             Validate a catalog source\n"
+        "  catalog export duckdb         Materialize DuckDB tables\n\n"
+        "\b\n"
+        "MCP Server:\n"
+        "  mcp serve                    Start the MCP server\n\n"
+        "\b\n"
+        "Agent Skills:\n"
+        "  skills [list]                List CLI-served skills\n"
+        "  skills get <name>            Print a CLI-served skill\n"
         "  skills path [name]           Print skill directory path"
     ),
 )
@@ -36,12 +47,7 @@ def main() -> None:
 
 
 main.add_command(catalog_command)
-main.add_command(guidelines_command)
-main.add_command(index_command)
 main.add_command(mcp_command)
-main.add_command(prompt_command)
 main.add_command(skills_command)
-main.add_command(sql_command)
-main.add_command(tables_command)
 
 __all__ = ["main"]

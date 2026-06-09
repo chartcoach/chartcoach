@@ -16,9 +16,10 @@ def test_main_help_advertises_skills_command(runner: CliRunner) -> None:
     assert result.exit_code == 0
     assert "Start here (for AI agents):" in result.output
     assert "chartcoach skills get core" in result.output
-    assert "CLI-served skills ship with the CLI" in result.output
-    assert "skills" in result.output
-    assert "ChartCoach agent skills" in result.output
+    assert "Progressive Catalog Navigation:" in result.output
+    assert "Indexed Discovery:" in result.output
+    assert "MCP Server:" in result.output
+    assert "Agent Skills:" in result.output
 
 
 @pytest.fixture
