@@ -10,7 +10,7 @@ from typing import cast
 from click.testing import CliRunner
 import pytest
 
-import chartcoach.cli.catalog as catalog_cli
+import chartcoach.cli.catalog_index as catalog_index_cli
 import chartcoach.cli.common as common_cli
 from chartcoach.cli.main import main as chartcoach_cli
 
@@ -70,7 +70,7 @@ def test_catalog_index_create_passes_lancedb_embedding_options(
     setattr(fake_lancedb, "embeddings", fake_embeddings)
     monkeypatch.setitem(sys.modules, "lancedb", fake_lancedb)
     monkeypatch.setitem(sys.modules, "lancedb.embeddings", fake_embeddings)
-    monkeypatch.setattr(catalog_cli, "index", fake_index)
+    monkeypatch.setattr(catalog_index_cli, "index", fake_index)
 
     result = runner.invoke(
         chartcoach_cli,
@@ -136,13 +136,15 @@ def test_catalog_find_without_index_extra_does_not_resolve_default_archive(
     def fail_default_index_path(*_: object, **__: object) -> Path:
         raise AssertionError("default index archive should not be resolved")
 
-    monkeypatch.setattr(catalog_cli, "load_catalog", lambda _ctx: object())
+    monkeypatch.setattr(catalog_index_cli, "load_catalog", lambda _ctx: object())
     monkeypatch.setattr(common_cli.importlib.util, "find_spec", lambda name: None)
     monkeypatch.setattr(common_cli, "default_index_path", fail_default_index_path)
 
     result = runner.invoke(chartcoach_cli, ["catalog", "find", "axis"])
 
-    assert_cli_error(result, "LanceDB indexing requires the optional `chartcoach[index]`")
+    assert_cli_error(
+        result, "LanceDB indexing requires the optional `chartcoach[index]`"
+    )
     assert "Install `chartcoach[index]` to use indexed discovery." in result.output
 
 
@@ -164,7 +166,7 @@ def test_catalog_index_info_preserves_object_store_uri(
         captured["table_name"] = table_name
         return FakeTable()
 
-    monkeypatch.setattr(catalog_cli, "open_index", fake_open_index)
+    monkeypatch.setattr(catalog_index_cli, "open_index", fake_open_index)
 
     uri = "s3://chartcoach/catalog/releases/0.0.0/digest/indexes/lancedb/openrouter/model/db"
     result = runner.invoke(
@@ -205,7 +207,9 @@ def test_catalog_index_info_tolerates_unreadable_embedding_metadata(
         def count_rows(self) -> int:
             return 3
 
-    monkeypatch.setattr(catalog_cli, "open_index", lambda *_args, **_kwargs: FakeTable())
+    monkeypatch.setattr(
+        catalog_index_cli, "open_index", lambda *_args, **_kwargs: FakeTable()
+    )
 
     result = runner.invoke(
         chartcoach_cli,
@@ -250,7 +254,7 @@ def test_catalog_index_info_uses_default_index_when_omitted(
         "chartcoach.cli.common.default_index_path",
         lambda *, table_name, reporter=None: default_index,
     )
-    monkeypatch.setattr(catalog_cli, "open_index", fake_open_index)
+    monkeypatch.setattr(catalog_index_cli, "open_index", fake_open_index)
 
     result = runner.invoke(
         chartcoach_cli,
