@@ -3,16 +3,18 @@ title: Catalog Structure
 description: What a ChartCoach catalog bundle contains.
 ---
 
-A ChartCoach catalog bundle contains `MANIFEST.md` and `catalog.parquet`. The manifest defines one catalog instance's section roles and label families. The parquet table stores Guideline Instance records.
+A ChartCoach catalog source contains `MANIFEST.md` beside authored guideline folders under `entries/`. A published release stores physical artifacts under `catalog/releases/<version>/<digest>/`: `metadata.json`, `MANIFEST.md`, `entries.parquet`, and derived artifacts such as LanceDB indexes.
 
 ```text
-guidelines/
+chartcoach/catalog
   MANIFEST.md
-  catalog.parquet
-  <guideline-id>/
-    guideline.md
-    references.bib
+  entries/
+    <guideline-id>/
+      guideline.md
+      references.bib
 ```
+
+The default published source is `https://artifacts.chartcoach.dev/metadata.json`. That object is a release pointer. Readers resolve it to versioned release metadata, then fetch the manifest and entries artifacts from the release directory.
 
 ## Guideline Records
 
@@ -25,8 +27,8 @@ Each record contains:
 
 ## Manifest
 
-`MANIFEST.md` must define `Section Roles` and `Label Families`. Each section role and label family is a level-3 subheading under the matching heading. Loaders validate that the manifest covers roles and label families used by `catalog.parquet`.
+`MANIFEST.md` must define `Section Roles` and `Label Families`. Each section role and label family is a level-3 subheading under the matching heading. Loaders validate that the manifest covers roles and label families used by `entries.parquet`.
 
 ## Bundle Directory
 
-Use a bundle directory when callers need manifest validation. Use a direct parquet file only for table workflows that already know the catalog vocabulary.
+Use a bundle directory or metadata URL when callers need manifest validation. Use a direct parquet file only for table workflows that already know the catalog vocabulary.

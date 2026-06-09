@@ -300,7 +300,11 @@ def _row_to_hit(row: Document) -> _DocumentHit:
         guideline_id=guideline_id,
         role=role,
         content_hash=_required_string(row, "content_hash"),
-        score=_score(row.get("_score"), row.get("_distance")),
+        score=_score(
+            row.get("_relevance_score"),
+            row.get("_score"),
+            row.get("_distance"),
+        ),
         labels=_labels(row.get("labels")),
         document=document,
     )
@@ -313,7 +317,9 @@ def _required_string(row: Document, key: str) -> str:
     return value
 
 
-def _score(score: object, distance: object) -> float | None:
+def _score(relevance_score: object, score: object, distance: object) -> float | None:
+    if isinstance(relevance_score, int | float):
+        return float(relevance_score)
     if isinstance(score, int | float):
         return float(score)
     if isinstance(distance, int | float):

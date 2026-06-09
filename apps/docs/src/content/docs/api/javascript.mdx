@@ -8,7 +8,7 @@ description: Load ChartCoach catalog records from server runtimes, browser runti
 ```ts
 import { readCatalog } from "@chartcoach/catalog/server";
 
-const catalog = await readCatalog("guidelines");
+const catalog = await readCatalog();
 
 for (const guideline of catalog) {
   console.log(guideline.id, guideline.title);
@@ -23,7 +23,7 @@ Shared types, the `Catalog` model, `loadCatalog` for parquet bytes, `parseLabel`
 
 `@chartcoach/catalog/server`
 
-`readCatalog(sourcePath, options?)` for server-side filesystem paths.
+`readCatalog(sourcePath?, options?)` for server-side filesystem paths and HTTP metadata URLs. When `sourcePath` is omitted, it reads `https://artifacts.chartcoach.dev/metadata.json`, resolves the release pointer, and fetches the manifest plus entries artifacts from the versioned release directory.
 
 `@chartcoach/catalog/browser`
 

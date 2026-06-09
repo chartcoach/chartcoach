@@ -12,6 +12,7 @@ from .common import (
     emit_object,
     emit_rows,
     load_catalog,
+    source_path,
     source_option,
 )
 
@@ -57,24 +58,28 @@ def build_command(
 ) -> None:
     """Build a catalog bundle from a guideline folder."""
 
-    catalog = Catalog.from_folder(source)
+    try:
+        catalog = Catalog.from_folder(source)
+    except FileNotFoundError as exc:
+        raise click.ClickException(str(exc)) from exc
     if len(catalog) == 0:
         raise click.ClickException(
-            f"No guideline entries found in {source}. Expected subdirectories with guideline.md files."
+            f"No guideline entries found in {source}. Expected entries/*/guideline.md files."
         )
     manifest_path = output_path / "MANIFEST.md"
-    parquet_path = output_path / "catalog.parquet"
+    parquet_path = output_path / "entries.parquet"
+    metadata_path = output_path / "metadata.json"
     if (
         not overwrite
         and not dry_run
-        and (manifest_path.exists() or parquet_path.exists())
+        and (manifest_path.exists() or parquet_path.exists() or metadata_path.exists())
     ):
         raise click.ClickException(
             f"{output_path} already contains a catalog bundle. Pass --overwrite."
         )
     if dry_run:
         click.echo(
-            f"Would write {len(catalog)} guidelines to {output_path / 'catalog.parquet'}"
+            f"Would write {len(catalog)} guidelines to catalog bundle {output_path}"
         )
         return
     catalog.write_bundle(output_path, overwrite=overwrite)
@@ -82,12 +87,7 @@ def build_command(
 
 
 @catalog_command.command("check", context_settings=CONTEXT_SETTINGS)
-@click.option(
-    "--source",
-    type=click.Path(file_okay=False, exists=True, path_type=Path),
-    required=True,
-    help="Guideline folder to validate.",
-)
+@source_option
 @click.option(
     "--format",
     "output_format",
@@ -96,13 +96,15 @@ def build_command(
     show_default=True,
     help="Output format.",
 )
-def check_command(source: Path, output_format: str) -> None:
+@click.pass_context
+def check_command(ctx: click.Context, output_format: str) -> None:
     """Validate a catalog source and report table counts."""
 
-    catalog = Catalog.open(source)
+    catalog = load_catalog(ctx)
     if len(catalog) == 0:
+        source = source_path(ctx)
         raise click.ClickException(
-            f"No guideline entries found in {source}. Expected subdirectories with guideline.md files."
+            f"No guideline entries found in {source}. Expected entries/*/guideline.md files."
         )
     rows = [
         {
@@ -135,7 +137,19 @@ def check_command(source: Path, output_format: str) -> None:
 def manifest_command(ctx: click.Context, output_format: str) -> None:
     """Print the catalog manifest."""
 
-    manifest = load_catalog(ctx).require_manifest()
+    catalog = load_catalog(ctx)
+    try:
+        manifest = catalog.require_manifest()
+    except ValueError as exc:
+        path = source_path(ctx)
+        raise click.ClickException(
+            "Catalog source has no manifest: "
+            f"{path}\n\n"
+            "Guidance:\n"
+            "  - Use an authored guideline folder with entries/ or a catalog bundle directory.\n"
+            "  - Omit --source to use the package-pinned default catalog artifact.\n"
+            "  - Use the standalone parquet file for tables, SQL, indexing, and guideline records."
+        ) from exc
     if output_format == "markdown":
         click.echo(manifest.markdown.rstrip())
         return

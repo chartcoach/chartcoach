@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import shutil
 from os import PathLike
 from pathlib import Path
 from typing import TYPE_CHECKING, Iterable
@@ -37,9 +38,14 @@ def load_catalog(folder_path: PathLike[str]) -> Catalog:
 
     root = Path(folder_path)
     manifest = CatalogManifest.from_path(root / "MANIFEST.md")
+    entries_root = root / "entries"
+    if not entries_root.exists():
+        raise FileNotFoundError(
+            f"No entries directory found in catalog folder: {root}"
+        )
     entries: list[_CatalogRecord] = []
 
-    for entry_path in sorted(root.iterdir()):
+    for entry_path in sorted(entries_root.iterdir()):
         if not entry_path.is_dir():
             continue
         entries.append(load_catalog_entry(entry_path))
@@ -60,9 +66,13 @@ def write_catalog_entries(
     folder_path = Path(root)
     folder_path.mkdir(parents=True, exist_ok=True)
     manifest.write(folder_path / "MANIFEST.md")
+    entries_root = folder_path / "entries"
+    if entries_root.exists():
+        shutil.rmtree(entries_root)
+    entries_root.mkdir(parents=True, exist_ok=True)
 
     for entry in entries:
-        entry_folder = folder_path / entry.guideline.id
+        entry_folder = entries_root / entry.guideline.id
         entry_folder.mkdir(parents=True, exist_ok=True)
 
         guideline_md_path = entry_folder / "guideline.md"

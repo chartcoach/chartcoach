@@ -31,7 +31,7 @@ def test_mcp_cli_renders_install_hint_for_missing_optional_dependency(
 
     result = runner.invoke(
         chartcoach_cli,
-        ["mcp", "serve", "--source", "catalog.parquet", "--index", "index"],
+        ["mcp", "serve", "--source", "entries.parquet", "--index", "index"],
     )
 
     assert_cli_error(result, "Install `chartcoach[mcp]` to use it.")
@@ -48,7 +48,7 @@ def test_mcp_cli_renders_search_hint_for_missing_lancedb(
 
     result = runner.invoke(
         chartcoach_cli,
-        ["mcp", "serve", "--source", "catalog.parquet", "--index", "index"],
+        ["mcp", "serve", "--source", "entries.parquet", "--index", "index"],
     )
 
     assert_cli_error(result, "Install `chartcoach[mcp,index]` to use it.")

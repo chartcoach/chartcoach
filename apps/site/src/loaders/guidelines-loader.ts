@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import Cite from "citation-js";
 import sanitizeHtml from "sanitize-html";
 
-import { toMarkdown } from "@chartcoach/catalog";
+import { DEFAULT_CATALOG_METADATA_URL, toMarkdown } from "@chartcoach/catalog";
 import { readCatalog } from "@chartcoach/catalog/server";
 
 type RenderedCitations = {
@@ -199,22 +199,21 @@ function renderCitationsInMarkdown(
 }
 
 export function guidelinesLoader({
-  base = "../../guidelines",
+  source = process.env.CHARTCOACH_SITE_CATALOG_SOURCE ?? DEFAULT_CATALOG_METADATA_URL,
 }: {
-  base?: string;
+  source?: string;
 } = {}): Loader {
   return {
     name: "chartcoach-guidelines-loader",
     async load(context) {
       const projectRoot = fileURLToPath(context.config.root);
-      const guidelinesRoot = path.resolve(projectRoot, base);
-      const guidelinesParquet = path.join(guidelinesRoot, "catalog.parquet");
-      const guidelinesManifest = path.join(guidelinesRoot, "MANIFEST.md");
+      const catalogSource = isHttpUrl(source) ? source : path.resolve(projectRoot, source);
+      if (!isHttpUrl(catalogSource)) {
+        context.watcher?.add(path.join(catalogSource, "entries.parquet"));
+        context.watcher?.add(path.join(catalogSource, "MANIFEST.md"));
+      }
 
-      context.watcher?.add(guidelinesParquet);
-      context.watcher?.add(guidelinesManifest);
-
-      const catalog = await readCatalog(guidelinesRoot);
+      const catalog = await readCatalog(catalogSource);
       context.store.clear();
 
       for (const guideline of catalog) {
@@ -246,9 +245,6 @@ export function guidelinesLoader({
         );
         const bibliographyHtml = renderBibliographyHtml(citedKeys, referencesByKey);
 
-        const sourcePath = path.resolve(projectRoot, base, id, "guideline.md");
-        const filePath = path.relative(projectRoot, sourcePath);
-
         const data = await context.parseData({
           id,
           data: {
@@ -263,11 +259,13 @@ export function guidelinesLoader({
             citations: Array.from(citedKeys),
             bibliographyHtml,
           },
-          filePath: sourcePath,
         });
 
         const rendered = await context.renderMarkdown(renderedBody.body);
         const digest = context.generateDigest(`${renderedBody.body}\n\n${referencesBib ?? ""}`);
+        const filePath = isHttpUrl(catalogSource)
+          ? `${catalogSource}#${id}`
+          : path.relative(projectRoot, path.join(catalogSource, "entries", id, "guideline.md"));
 
         context.store.set({
           id,
@@ -281,4 +279,8 @@ export function guidelinesLoader({
       }
     },
   };
+}
+
+function isHttpUrl(value: string): boolean {
+  return value.startsWith("http://") || value.startsWith("https://");
 }

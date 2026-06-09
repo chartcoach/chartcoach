@@ -16,13 +16,13 @@ pytestmark = pytest.mark.mcp
 
 def test_mcp_config_supports_explicit_index() -> None:
     config = mcp_server.configure(
-        source="catalog.parquet",
+        source="entries.parquet",
         index="index",
         table="docs",
     )
 
     assert config.settings == {
-        "source": "catalog.parquet",
+        "source": "entries.parquet",
         "index": Path("index"),
         "table": "docs",
     }
@@ -33,9 +33,9 @@ def test_mcp_config_omits_index_when_unconfigured(
 ) -> None:
     monkeypatch.delenv("CHARTCOACH_INDEX", raising=False)
 
-    config = mcp_server.configure(source="catalog.parquet")
+    config = mcp_server.configure(source="entries.parquet")
 
-    assert config.settings["source"] == "catalog.parquet"
+    assert config.settings["source"] == "entries.parquet"
     assert "index" not in config.settings
     assert config.settings["table"] == "catalog_documents"
 
@@ -43,7 +43,7 @@ def test_mcp_config_omits_index_when_unconfigured(
 def test_mcp_config_supports_env_index(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("CHARTCOACH_INDEX", "env-index")
 
-    config = mcp_server.configure(source="catalog.parquet")
+    config = mcp_server.configure(source="entries.parquet")
 
     assert config.settings["index"] == "env-index"
 

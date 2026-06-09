@@ -9,14 +9,14 @@ Install the ChartCoach skill once, then launch an agent with a ChartCoach startu
 ```bash
 npx skills add chartcoach/catalog
 
-codex "$(uvx chartcoach@latest prompt --codex --source guidelines)"
+codex "$(uvx chartcoach@latest prompt --codex)"
 ```
 
 Use the matching agent flag for other CLIs:
 
 ```bash
-claude "$(uvx chartcoach@latest prompt --claude --source guidelines)"
-opencode "$(uvx chartcoach@latest prompt --opencode --source guidelines)"
+claude "$(uvx chartcoach@latest prompt --claude)"
+opencode "$(uvx chartcoach@latest prompt --opencode)"
 ```
 
 The prompt references the installed skill, the catalog source, optional LanceDB index, and the current task. It tells the agent to read `MANIFEST.md` for section-role and label-family semantics, retrieve targeted evidence, and include guideline ids plus public links when guidelines constrain or justify the answer.
@@ -24,7 +24,6 @@ The prompt references the installed skill, the catalog source, optional LanceDB 
 ```bash
 uvx chartcoach@latest prompt \
   --codex \
-  --source guidelines \
   --index scratch/chartcoach-index \
   --guidance-mode feedback \
   --task "Review this dashboard for misleading bar axes."
@@ -34,7 +33,7 @@ uvx chartcoach@latest prompt \
 import polars as pl
 from chartcoach import Catalog
 
-catalog = Catalog.open("guidelines")
+catalog = Catalog.open()
 
 scatter_rules = (
     catalog.guidelines()
@@ -66,7 +65,6 @@ Use labels to retrieve advice for a chart family, task, audience, or design leve
 
 ```bash
 uv run --package chartcoach chartcoach guidelines retrieve \
-  --source guidelines \
   --label chart:scatter:avoid \
   --section advice \
   --format markdown
@@ -78,7 +76,6 @@ Run one SQL query from the shell when a workflow needs joins:
 
 ```bash
 uv run --package chartcoach chartcoach sql \
-  --source guidelines \
   "select id, title from guidelines where list_contains(labels, 'chart:bar')" \
   --format jsonl
 ```
@@ -88,7 +85,7 @@ uv run --package chartcoach chartcoach sql \
 ```ts
 import { readCatalog } from "@chartcoach/catalog/server";
 
-const catalog = await readCatalog("guidelines");
+const catalog = await readCatalog();
 const barGuidelines = catalog.guidelines.filter((guideline) =>
   guideline.labels.includes("chart:bar"),
 );
@@ -109,7 +106,7 @@ Each guideline records a concrete chart-design move with the evidence needed to 
 | `sections` | Advice, reason, context, exceptions, costs, mistakes, check, and fix text |
 | `references` | BibTeX records for the cited sources |
 
-`guidelines/MANIFEST.md` defines the section roles and label families for this catalog instance. Package loaders use it when loading the `guidelines` catalog bundle.
+The default catalog resolves from `https://artifacts.chartcoach.dev/metadata.json` and is cached locally by the Python package. That object is a release pointer. The resolved release metadata points to `MANIFEST.md` for section-role and label-family definitions, `entries.parquet` for serialized guideline records, and derived artifacts such as LanceDB indexes.
 
 ## Search The Catalog
 
@@ -119,11 +116,9 @@ For retrieval, build a LanceDB index at a path you own. The index stores catalog
 INDEX_PATH=scratch/chartcoach-index
 
 uv run --package chartcoach chartcoach index \
-  --source guidelines \
   --index "$INDEX_PATH"
 
 uv run --package chartcoach chartcoach guidelines search \
-  --source guidelines \
   --index "$INDEX_PATH" \
   --where "role = 'overview'" \
   "overplotted scatter plot with too many points" \
@@ -136,8 +131,11 @@ ChartCoach keeps the catalog in formats that other tools can open directly.
 
 | File | Use |
 | --- | --- |
-| `guidelines/MANIFEST.md` | Section-role and label-family definitions for this catalog instance |
-| `guidelines/catalog.parquet` | Source catalog table |
+| `https://artifacts.chartcoach.dev/metadata.json` | Default release pointer |
+| `https://artifacts.chartcoach.dev/catalog/releases/<version>/<digest>/metadata.json` | Version, digest, and artifact descriptors |
+| `https://artifacts.chartcoach.dev/catalog/releases/<version>/<digest>/MANIFEST.md` | Section-role and label-family definitions |
+| `https://artifacts.chartcoach.dev/catalog/releases/<version>/<digest>/entries.parquet` | Catalog table |
+| `https://artifacts.chartcoach.dev/catalog/releases/<version>/<digest>/indexes/.../index.tar.gz` | Derived LanceDB index archive |
 | DuckDB database | Derived tables for SQL inspection |
 | LanceDB index | LanceDB search over catalog document rows |
 | `apps/site` | Human-facing guideline browser |
@@ -148,7 +146,6 @@ Create a DuckDB database from the catalog:
 DUCKDB_PATH=scratch/catalog.duckdb
 
 uv run --package chartcoach chartcoach catalog duckdb \
-  --source guidelines \
   --out "$DUCKDB_PATH"
 
 duckdb "$DUCKDB_PATH" \
