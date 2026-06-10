@@ -12,11 +12,8 @@
     "typecheck": "astro check"
   },
   "dependencies": {
-    "@astrojs/mdx": "6.0.2",
     "@astrojs/sitemap": "^3.7.3",
     "@chartcoach/catalog": "workspace:*",
-    "@chartcoach/ui": "workspace:*",
-    "@lucide/astro": "1.7.0",
     "astro": "6.4.4",
     "citation-js": "^0.7.22",
     "sanitize-html": "^2.17.4"

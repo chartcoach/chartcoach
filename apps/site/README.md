@@ -1,10 +1,18 @@
 # @chartcoach/site
 
-Astro and MDX site for the ChartCoach home page and Guideline Catalog browser. It renders the home page, quick start, catalog filtering, and source-linked guideline detail pages.
+Astro site for loading the ChartCoach guideline catalog and rendering plain guideline routes.
 
-Run the site with `pnpm --dir apps/site dev`. The dev script builds `@chartcoach/catalog` first so Astro content loading reads the current catalog package entrypoint.
+Run it locally:
 
-Build it with `pnpm --dir apps/site build`.
+```bash
+pnpm --dir apps/site dev
+```
+
+Build static pages:
+
+```bash
+pnpm --dir apps/site build
+```
 
 ## License
 

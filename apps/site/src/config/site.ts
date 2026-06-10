@@ -10,21 +10,13 @@ const siteSourceRoot = fileURLToPath(new URL("..", import.meta.url));
 const repoEnvPath = join(monorepoRoot, ".env");
 
 export const LOCAL_SITE_URL = "http://localhost:4321/";
-export const LOCAL_DOCS_URL = "http://localhost:4322/";
 export const SITE_URL_ENV = "CHARTCOACH_SITE_URL";
-export const DOCS_URL_ENV = "CHARTCOACH_DOCS_URL";
-export const REPOSITORY_URL_ENV = "CHARTCOACH_REPOSITORY_URL";
 
 export type SiteUrlSource = "env" | "local";
 
 export type SiteRuntimeConfig = {
   siteUrl: string;
   siteUrlSource: SiteUrlSource;
-};
-
-export type SiteLinks = {
-  docsUrl: string;
-  repositoryUrl?: string;
 };
 
 type EnvMap = Record<string, string | undefined>;
@@ -75,28 +67,12 @@ function resolveConfiguredUrl(
   };
 }
 
-function resolveOptionalUrl(env: EnvMap, envName: string) {
-  const value = env[envName];
-  if (!value) {
-    return undefined;
-  }
-  return normalizeUrl(value);
-}
-
 export function getSiteRuntimeConfig(options: SiteRuntimeOptions = {}): SiteRuntimeConfig {
   const siteUrl = resolveConfiguredUrl(getEnv(options), SITE_URL_ENV, LOCAL_SITE_URL);
 
   return {
     siteUrl: siteUrl.url,
     siteUrlSource: siteUrl.source,
-  };
-}
-
-export function getSiteLinks(options: SiteRuntimeOptions = {}): SiteLinks {
-  const env = getEnv(options);
-  return {
-    docsUrl: resolveConfiguredUrl(env, DOCS_URL_ENV, LOCAL_DOCS_URL).url,
-    repositoryUrl: resolveOptionalUrl(env, REPOSITORY_URL_ENV),
   };
 }
 

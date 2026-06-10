@@ -1,204 +1,24 @@
 ---
 import { getCollection } from "astro:content";
 
-import GuidelineCard from "@/components/guidelines/GuidelineCard.astro";
-import { encodeGuidelineLabelQueryValue, parseGuidelineLabel } from "@/lib/guidelines/labels";
 import SiteLayout from "@/layouts/SiteLayout.astro";
 
 const guidelines = (await getCollection("guidelines")).sort((a, b) =>
-  (a.data.title ?? a.id).localeCompare(b.data.title ?? b.id),
+  a.data.title.localeCompare(b.data.title),
 );
-
-const totalGuidelines = guidelines.length;
-const MAX_CARD_LABELS = 4;
-const siteInnerClasses =
-  "mx-auto w-[min(100%_-_2rem,var(--page-width))] max-[24rem]:w-[min(100%_-_1.5rem,var(--page-width))]";
-const eyebrowClasses =
-  "m-0 mb-[0.7rem] font-mono text-[0.72rem] font-bold leading-[1.1] text-ember lowercase";
-const hintCodeClasses =
-  "rounded-sm border border-border bg-muted px-[0.35rem] py-[0.08rem] text-foreground";
-
-const labelSet = new Set<string>();
-const familySet = new Set<string>();
-for (const guideline of guidelines) {
-  for (const label of guideline.data.labels ?? []) {
-    const parsed = parseGuidelineLabel(label);
-    labelSet.add(parsed.fullLower);
-    if (parsed.familyLower) familySet.add(parsed.familyLower);
-  }
-}
-
-const allLabels = Array.from(labelSet).sort((a, b) => a.localeCompare(b));
-const allFamilies = Array.from(familySet).sort((a, b) => a.localeCompare(b));
 ---
 
-<SiteLayout
-  title="Guideline Catalog"
-  description="Browse ChartCoach guideline records by label and inspect source-backed guidance."
->
-  <div class:list={[siteInnerClasses, "py-[clamp(3rem,7vw,5.5rem)]"]} data-guidelines-page>
-    <p class={eyebrowClasses}>catalog</p>
-    <div class="grid gap-4 border-b border-line pb-[1.35rem] md:grid-cols-[minmax(0,1fr)_minmax(18rem,0.36fr)] md:items-end">
-      <div>
-        <h1 class="m-0 font-display text-[2.35rem] font-semibold leading-[0.98] tracking-[0] text-foreground md:text-[4rem]">
-          Guideline Catalog
-        </h1>
-        <p class="mt-3 max-w-[48rem] text-[1rem] leading-[1.6] text-muted-foreground">
-          Filter by a label family or exact label, open a Guideline Instance, and inspect advice, caveats, checks, and source references.
-        </p>
-      </div>
-      <div
-        class="font-mono text-[0.82rem] font-bold lowercase tracking-[0] text-foreground md:text-right"
-        id="guidelines-count"
-        data-total-guidelines={totalGuidelines}
-        role="status"
-        aria-live="polite"
-        aria-atomic="true"
-      >
-        {totalGuidelines.toLocaleString()} guidelines
-      </div>
-    </div>
-
-    <div class="mt-6 grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(18rem,0.38fr)] md:items-start">
-      <p class="m-0 max-w-[45rem] text-[0.92rem] leading-[1.55] text-muted-foreground" id="guidelines-filter-hint">
-        Use a family such as <code class={hintCodeClasses}>chart</code> to match every chart label, or use an exact label such as <code class={hintCodeClasses}>chart:bar</code>.
-        <span class="sr-only">Use the arrow keys to review suggestions, and press Enter to add one.</span>
-      </p>
-
-      <form
-        class="relative grid w-full grid-cols-[minmax(0,1fr)_auto] overflow-visible rounded-sm border border-input bg-background shadow-card focus-within:border-[var(--line-strong)]"
-        id="guidelines-filter-form"
-        autocomplete="off"
-      >
-        <label class="sr-only" for="guidelines-filter-input">Add label filter</label>
-        <input
-          class="w-full appearance-none border-0 bg-transparent px-3 py-2 text-[0.9rem] font-medium leading-[1.2] text-foreground placeholder:text-muted-foreground focus:outline-none"
-          type="text"
-          id="guidelines-filter-input"
-          name="label"
-          placeholder="Add label filter"
-          autocomplete="off"
-          spellcheck="false"
-          role="combobox"
-          aria-autocomplete="list"
-          aria-expanded="false"
-          aria-haspopup="listbox"
-          aria-controls="guidelines-label-suggestions"
-          aria-describedby="guidelines-filter-hint guidelines-count"
-        />
-        <button
-          class="min-h-11 cursor-pointer border-0 border-l border-border bg-muted px-3 py-2 font-mono text-[0.74rem] font-bold lowercase tracking-[0] text-foreground transition-[background-color,color,border-color,transform] hover:bg-secondary active:scale-[0.98]"
-          type="submit"
-          aria-label="Add filter"
-        >
-          Add
-        </button>
-        <div
-          class="absolute inset-x-0 top-[calc(100%+0.45rem)] z-20 max-h-64 overflow-auto border border-[var(--line)] bg-[var(--surface-raised)] p-1"
-          id="guidelines-label-suggestions"
-          role="listbox"
-          aria-label="Label suggestions"
-          hidden
-        />
-      </form>
-    </div>
-
-    <div
-      class="mt-3 flex w-full flex-wrap items-center gap-2 [&[hidden]]:!hidden"
-      id="guidelines-filters"
-      hidden
-    >
-      <span class="font-mono text-[0.74rem] font-bold lowercase tracking-[0] text-muted-foreground">
-        Filters:
-      </span>
-      <ul class="m-0 flex list-none flex-wrap gap-1.5 p-0" id="guidelines-filters-list"></ul>
-      <button
-        class="cursor-pointer border-0 bg-transparent px-1 py-0.5 font-mono text-[0.72rem] font-bold lowercase tracking-[0] text-muted-foreground transition-colors hover:text-foreground hover:underline hover:underline-offset-[0.16em]"
-        type="button"
-        id="guidelines-filters-clear"
-        aria-label="Clear all filters"
-      >
-        Clear
-      </button>
-    </div>
-
-    <ul class="mt-8 grid w-full list-none gap-4 p-0" id="guidelines-grid">
-      {
-        guidelines.map((g) => {
-          const title = g.data.title ?? g.id;
-          const description = g.data.description ?? "";
-          const labels = g.data.labels ?? [];
-          const cardLabels = labels.map((l) => l.toLowerCase()).join("|");
-          const labelsShown = labels.slice(0, MAX_CARD_LABELS);
-          const labelsRemaining = Math.max(0, labels.length - labelsShown.length);
-
-          return (
-            <GuidelineCard
-              dataLabels={cardLabels}
-              href={`/guidelines/${g.id}/`}
-              title={title}
-              description={description || undefined}
-              labels={labelsShown.map((label) => {
-                const parsed = parseGuidelineLabel(label);
-
-                if (parsed.family) {
-                  const familyLower = parsed.familyLower ?? parsed.family.toLowerCase();
-
-                  return {
-                    family: {
-                      text: parsed.family,
-                      href: `/guidelines/?label=${encodeURIComponent(encodeGuidelineLabelQueryValue(familyLower))}`,
-                      filterValue: familyLower,
-                      title: `Filter: ${parsed.family}`,
-                    },
-                    value: {
-                      text: parsed.value,
-                      href: `/guidelines/?label=${encodeURIComponent(encodeGuidelineLabelQueryValue(parsed.fullLower))}`,
-                      filterValue: parsed.fullLower,
-                      title: `Filter: ${parsed.full}`,
-                    },
-                  };
-                }
-
-                return {
-                  value: {
-                    text: parsed.value,
-                    href: `/guidelines/?label=${encodeURIComponent(encodeGuidelineLabelQueryValue(parsed.fullLower))}`,
-                    filterValue: parsed.fullLower,
-                    title: `Filter: ${parsed.value}`,
-                  },
-                };
-              })}
-              labelsRemaining={labelsRemaining || undefined}
-            />
-          );
-        })
-      }
-    </ul>
-
-    <div
-      class="mt-5 grid gap-2 border-t border-border pt-4 text-center [&[hidden]]:!hidden"
-      id="guidelines-display-controls"
-      hidden
-    >
-      <p class="m-0 font-mono text-[0.74rem] font-bold lowercase tracking-[0] text-muted-foreground" id="guidelines-display-status">
-        Showing guidelines
-      </p>
-      <button
-        class="mx-auto inline-flex min-h-11 cursor-pointer items-center justify-center rounded-pill border border-[var(--line)] bg-[var(--surface-raised)] px-4 py-2 text-[0.84rem] font-semibold text-foreground transition-[background-color,color,border-color,transform] hover:border-accent hover:bg-[var(--surface-panel-strong)] active:scale-[0.98] focus-visible:border-accent focus-visible:bg-[var(--surface-panel-strong)]"
-        type="button"
-        id="guidelines-load-more"
-      >
-        Show more
-      </button>
-    </div>
-
-    <script
-      is:inline
-      type="application/json"
-      id="guidelines-label-suggestions-data"
-      set:html={JSON.stringify({ families: allFamilies, labels: allLabels })}
-    ></script>
-    <script src="@/scripts/guidelines/label-filters.entry.ts"></script>
-  </div>
+<SiteLayout title="Guidelines" description="List of ChartCoach guidelines.">
+  <p><a href="/">ChartCoach</a></p>
+  <h1>Guidelines</h1>
+  <p>{guidelines.length.toLocaleString()} guidelines.</p>
+  <ol>
+    {
+      guidelines.map((guideline) => (
+        <li>
+          <a href={`/guidelines/${guideline.id}/`}>{guideline.data.title}</a>
+        </li>
+      ))
+    }
+  </ol>
 </SiteLayout>

@@ -50,8 +50,8 @@
     "yaml": "^2.9.0"
   },
   "devDependencies": {
-    "@types/node": "^22.19.19",
-    "oxlint": "^1.68.0",
+    "@types/node": "^22.19.20",
+    "oxlint": "^1.69.0",
     "tsc-alias": "^1.8.17",
     "typescript": "^5.9.3",
     "vitest": "^3.2.6"
