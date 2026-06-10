@@ -180,12 +180,10 @@ def test_catalog_table_format_uses_readable_columns(
     )
 
     assert result.exit_code == 0
-    assert result.output.splitlines()[0].split() == [
-        "id",
-        "title",
-        "description",
-        "labels",
-    ]
+    assert "ID" in result.output
+    assert "Title" in result.output
+    assert "Description" in result.output
+    assert "Labels" in result.output
     assert "chart:bar, component:axis" in result.output
 
 
@@ -424,5 +422,10 @@ def test_catalog_values_reports_truncated_value_lists(
     )
 
     assert result.exit_code == 0
-    assert result.output.splitlines()[0].split() == ["table", "column", "value", "rows"]
+    assert "Table" in result.output
+    assert "Column" in result.output
+    assert "Value" in result.output
+    assert "Rows" in result.output
+    assert "guideline_labels" in result.output
+    assert "chart:" in result.output
     assert "Returned 1 values. Increase --limit to inspect more." in result.stderr

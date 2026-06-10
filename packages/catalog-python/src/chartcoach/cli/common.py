@@ -5,11 +5,12 @@ import importlib.util
 import io
 import json
 import os
+import shutil
 import sys
 from collections.abc import Callable, Mapping, Sequence
 from contextlib import contextmanager
 from pathlib import Path, PurePosixPath
-from typing import Iterator, TypeVar, cast
+from typing import Any, Iterator, TypeVar, cast
 from urllib.parse import urlparse, urlunparse
 
 import click
@@ -28,6 +29,35 @@ from chartcoach.tools import Tools, format_error
 CONTEXT_SETTINGS = {"help_option_names": ["-h", "--help"]}
 ROW_FORMATS = ("table", "json", "jsonl", "csv")
 SEARCH_FORMATS = ("table", "json", "jsonl", "csv", "markdown", "compact")
+HUMAN_TABLE_FORMAT = "rounded_outline"
+HUMAN_TABLE_MIN_WIDTH = 8
+HUMAN_TABLE_TARGET_WIDTH = 120
+HUMAN_TABLE_MAX_WIDTH = 160
+HUMAN_TABLE_COLUMN_WIDTHS = {
+    "id": 32,
+    "name": 28,
+    "value": 72,
+    "title": 36,
+    "description": 48,
+    "labels": 38,
+    "matches": 52,
+    "matched_text": 52,
+    "content": 52,
+    "text": 52,
+    "source": 40,
+    "url": 44,
+}
+HEADER_INITIALISMS = {
+    "api",
+    "csv",
+    "doi",
+    "id",
+    "json",
+    "jsonl",
+    "mcp",
+    "sql",
+    "url",
+}
 INDEX_EXTRA_MESSAGE = (
     "LanceDB indexing requires the optional `chartcoach[index]` dependencies."
 )
@@ -236,16 +266,64 @@ def emit_guidance(message: str, hints: Sequence[str]) -> None:
 def rows_to_table(rows: Sequence[Mapping[str, object]]) -> str:
     if not rows:
         return ""
+    keys = _table_keys(rows)
     normalized = [
-        {key: format_cell(value, human=True) for key, value in row.items()}
-        for row in rows
+        [format_cell(row.get(key), human=True) for key in keys] for row in rows
     ]
-    return tabulate(
+    table = cast(Any, tabulate)(
         normalized,
-        headers="keys",
-        tablefmt="plain",
+        headers=[human_table_header(key) for key in keys],
+        tablefmt=HUMAN_TABLE_FORMAT,
+        colalign=("left",) * len(keys),
         disable_numparse=True,
+        maxcolwidths=_table_column_widths(keys),
+        break_long_words=False,
     )
+    return cast(str, table)
+
+
+def _table_keys(rows: Sequence[Mapping[str, object]]) -> list[str]:
+    keys: list[str] = []
+    for row in rows:
+        for key in row:
+            if key not in keys:
+                keys.append(key)
+    return keys
+
+
+def human_table_header(key: str) -> str:
+    return " ".join(_human_table_header_part(part) for part in key.split("_"))
+
+
+def _human_table_header_part(part: str) -> str:
+    if part.lower() in HEADER_INITIALISMS:
+        return part.upper()
+    return part.capitalize()
+
+
+def _table_column_widths(keys: Sequence[str]) -> list[int]:
+    preferred = [
+        max(
+            HUMAN_TABLE_MIN_WIDTH,
+            HUMAN_TABLE_COLUMN_WIDTHS.get(key, 24),
+            len(human_table_header(key)),
+        )
+        for key in keys
+    ]
+    target_width = min(
+        max(
+            shutil.get_terminal_size(fallback=(HUMAN_TABLE_TARGET_WIDTH, 24)).columns,
+            80,
+        ),
+        HUMAN_TABLE_MAX_WIDTH,
+    )
+    border_width = 1 + (3 * len(keys))
+    content_width = max(target_width - border_width, HUMAN_TABLE_MIN_WIDTH * len(keys))
+    total_preferred = sum(preferred)
+    if total_preferred <= content_width:
+        return preferred
+    scale = content_width / total_preferred
+    return [max(HUMAN_TABLE_MIN_WIDTH, int(width * scale)) for width in preferred]
 
 
 def emit_object(value: object, *, output_format: str) -> None:
