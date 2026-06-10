@@ -7,14 +7,30 @@ import sys
 from types import ModuleType
 from typing import cast
 
-from click.testing import CliRunner
+from click.testing import CliRunner, Result
 import pytest
 
-import chartcoach.cli.catalog_index as catalog_index_cli
+import chartcoach.cli._catalog.index as catalog_index_cli
 import chartcoach.cli.common as common_cli
 from chartcoach.cli.main import main as chartcoach_cli
 
 from helpers import assert_cli_error
+
+
+def missing_index_extra_error() -> ModuleNotFoundError:
+    return ModuleNotFoundError(
+        "LanceDB indexing requires the optional `chartcoach[index]` dependencies.",
+        name="lancedb",
+    )
+
+
+def assert_index_extra_guidance(result: Result) -> None:
+    assert_cli_error(
+        result, "LanceDB indexing requires the optional `chartcoach[index]`"
+    )
+    assert "uv tool install 'chartcoach[index]'" in result.output
+    assert "uvx --from 'chartcoach[index]' chartcoach" in result.output
+    assert "uv run --extra index chartcoach" in result.output
 
 
 def test_catalog_index_create_passes_lancedb_embedding_options(
@@ -146,6 +162,120 @@ def test_catalog_find_without_index_extra_does_not_resolve_default_archive(
         result, "LanceDB indexing requires the optional `chartcoach[index]`"
     )
     assert "Install `chartcoach[index]` to use indexed discovery." in result.output
+    assert "uv tool install 'chartcoach[index]'" in result.output
+
+
+@pytest.mark.search
+def test_catalog_find_with_explicit_index_reports_missing_index_extra(
+    runner: CliRunner,
+    sample_catalog_path: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail_open_index(*_: object, **__: object) -> object:
+        raise missing_index_extra_error()
+
+    monkeypatch.setattr(catalog_index_cli, "open_index", fail_open_index)
+
+    result = runner.invoke(
+        chartcoach_cli,
+        [
+            "catalog",
+            "find",
+            "--source",
+            str(sample_catalog_path),
+            "--index",
+            str(tmp_path / "index"),
+            "axis",
+        ],
+    )
+
+    assert_index_extra_guidance(result)
+
+
+@pytest.mark.search
+def test_catalog_index_create_reports_missing_index_extra(
+    runner: CliRunner,
+    sample_catalog_path: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail_index(*_: object, **__: object) -> object:
+        raise missing_index_extra_error()
+
+    monkeypatch.setattr(catalog_index_cli, "index", fail_index)
+
+    result = runner.invoke(
+        chartcoach_cli,
+        [
+            "catalog",
+            "index",
+            "create",
+            "--source",
+            str(sample_catalog_path),
+            "--index",
+            str(tmp_path / "index"),
+        ],
+    )
+
+    assert_index_extra_guidance(result)
+
+
+@pytest.mark.search
+def test_catalog_index_create_embedding_reports_missing_index_extra(
+    runner: CliRunner,
+    sample_catalog_path: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail_if_index_runs(*_: object, **__: object) -> object:
+        raise AssertionError("index should not run when the embedding import fails")
+
+    monkeypatch.setitem(sys.modules, "lancedb", None)
+    monkeypatch.delitem(sys.modules, "lancedb.embeddings", raising=False)
+    monkeypatch.setattr(catalog_index_cli, "index", fail_if_index_runs)
+
+    result = runner.invoke(
+        chartcoach_cli,
+        [
+            "catalog",
+            "index",
+            "create",
+            "--source",
+            str(sample_catalog_path),
+            "--index",
+            str(tmp_path / "index"),
+            "--embedding",
+            "openai",
+        ],
+    )
+
+    assert_index_extra_guidance(result)
+
+
+@pytest.mark.search
+def test_catalog_index_info_reports_missing_index_extra(
+    runner: CliRunner,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail_open_index(*_: object, **__: object) -> object:
+        raise missing_index_extra_error()
+
+    monkeypatch.setattr(catalog_index_cli, "open_index", fail_open_index)
+
+    result = runner.invoke(
+        chartcoach_cli,
+        [
+            "catalog",
+            "index",
+            "info",
+            "--index",
+            str(tmp_path / "index"),
+        ],
+    )
+
+    assert_index_extra_guidance(result)
 
 
 @pytest.mark.search

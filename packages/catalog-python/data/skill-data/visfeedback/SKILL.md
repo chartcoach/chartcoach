@@ -7,6 +7,8 @@ description: Use this for visualization feedback with ChartCoach. Teaches agents
 
 Use ChartCoach primitives to ground visualization feedback in the current Guideline Catalog. This skill defines the workflow. It does not assume fixed labels, fixed section roles, or any one visualization source.
 
+Load `core` first when catalog source, index setup, package extras, or output formats are unclear. This workflow assumes the `chartcoach` command already points at the intended Catalog Instance.
+
 ## Start With The Live Catalog
 
 Read the catalog shape before filtering or citing:
@@ -19,8 +21,6 @@ chartcoach catalog manifest --format markdown
 ```
 
 Use these commands to learn valid section roles, label families, and table names for the current catalog. Do not guess role names or labels from memory.
-
-Omit `--source` to use the package-pinned default catalog. The first base command downloads and caches the manifest plus entries artifacts. Index artifacts are not downloaded unless indexed discovery needs them. Use `--source` only when the user provides a custom catalog locator.
 
 ## Inspect The Visualization First
 
@@ -39,6 +39,17 @@ If the visualization is interactive, capture the relevant state. Do not claim ho
 When an embedded chart blocks useful DOM inspection, switch to screenshot-led evidence. Capture the default state, the relevant hover or selected state, and an accessibility snapshot if the browser tool can provide one. Treat missing accessible text as an observed access gap only when the test actually covered that state.
 
 When working from saved browser artifacts, treat screenshots and saved Markdown visual notes as chart evidence. Treat snapshots, DOM excerpts, and code snippets as supporting evidence about labels, interaction states, and data fields.
+
+Use this evidence record before retrieval:
+
+| Field                | Record                                                                                    |
+| -------------------- | ----------------------------------------------------------------------------------------- |
+| Visible evidence     | What the chart shows in the observed state.                                               |
+| Data and task        | Data type, scale, variables, and reader task.                                             |
+| Encoding and support | Channels, labels, legends, axes, annotations, tooltips, source notes, and layout support. |
+| Failure mode         | The visible risk, ambiguity, or missing support.                                          |
+| Interaction state    | Default, hover, selected, toggled, animated, keyboard state, or unavailable.              |
+| Evidence boundary    | Screenshot, DOM, accessibility snapshot, source snippet, or inference.                    |
 
 ## Translate Evidence Into Search Signals
 
@@ -60,7 +71,15 @@ Decompose the visual evidence into separate searches when one query mixes too ma
 - failure mode
 - interaction state
 
-When a library term is too internal, translate it. For example, a pointer demo may need terms such as hover identity, exact value lookup, tooltip, keyboard access, and target visibility.
+When an implementation term is too internal, translate it into the reader task, encoding channel, interaction state, visible support, or failure mode it creates.
+
+Run broad-to-narrow searches:
+
+1. Start with generic chart facts and reader tasks.
+2. Add the visible support or failure mode.
+3. Inspect labels, roles, and values before using exact catalog vocabulary.
+4. Use `--show-matches` when text-filtered candidates need match evidence.
+5. Relax one predicate when results are empty.
 
 ## Query And Retrieve
 
@@ -85,27 +104,20 @@ Then inspect selected records with exact ids and manifest roles:
 ```sh
 chartcoach catalog read <guideline-id>
 chartcoach catalog read <guideline-id> --section <role-from-manifest> --source-detail minimal --format markdown
+chartcoach catalog cite <guideline-id> <another-guideline-id> --format markdown
 ```
+
+Do not cite a guideline from `catalog list`, `catalog query`, `catalog sql`, or `catalog find` alone. These commands produce candidates. `catalog read` produces the exact guideline text to verify. `catalog cite` formats guideline URLs and source references for verified ids.
 
 Use indexed discovery only after base navigation is too broad:
 
 ```sh
 chartcoach catalog find --mode fts --candidate-limit 80 --limit 10 --format compact "<query>"
-chartcoach catalog index create --index ./chartcoach-index
-chartcoach catalog find --index ./chartcoach-index --mode fts --candidate-limit 80 --limit 10 --format compact "<query>"
+chartcoach catalog find --mode vector --where "role = 'overview'" --format compact "<query>"
+chartcoach catalog find --mode hybrid --where "role = 'section.<manifest-role>'" --format compact "<query>"
 ```
 
-The first `catalog find` form uses the default catalog index when `chartcoach[index]` is installed and no custom `--source` is set. For a custom catalog source, build or provide an index with `--index` or `CHARTCOACH_INDEX`.
-
-Use `--mode hybrid` only after building the index with a LanceDB-native embedding function:
-
-```sh
-chartcoach catalog index create --index ./chartcoach-index --embedding sentence-transformers --embedding-option name=all-MiniLM-L6-v2
-chartcoach catalog index create --index ./chartcoach-index --embedding openai --embedding-var OPENAI_API_KEY=$OPENAI_API_KEY --embedding-option model=text-embedding-3-small
-chartcoach catalog find --index ./chartcoach-index --mode hybrid --format compact "<query>"
-```
-
-Embedding aliases, options, and variables are passed through to LanceDB. Do not invent ChartCoach-specific embedding model names.
+Use `--mode vector` or `--mode hybrid` only when the configured index supports vector search. Use `core` for index setup.
 
 Use section roles from the live catalog. If `catalog read` rejects a role, inspect valid roles and retry with current names.
 
@@ -115,15 +127,42 @@ Copy guideline ids exactly from compact search output. Do not construct ids from
 
 ## Write Feedback
 
-For each cited guideline, include:
+Classify retrieved guidance before writing the response:
+
+- respected
+- violated
+- adjacent
+- uncertain
+- rejected
+
+Use `rejected` as an internal trail for candidates that failed exact-read validation, had the wrong scope, or were retrieval false positives. Do not include rejected guidelines in the user-facing response by default. Surface them only when the user asks for retrieval provenance, audit detail, or a list of excluded candidates.
+
+For each user-facing guideline, include:
 
 - guideline id and title
 - why it applies to the observed chart
-- whether it is satisfied, violated, adjacent, or out of scope
+- whether it is respected, violated, adjacent, or uncertain
 - the visible evidence that supports the judgment
-- uncertainty when the screenshot or interaction state is incomplete
+- the discovery command that found the candidate
+- the exact `catalog read` command used before citation
+- the `catalog cite` command used when final output needs formatted references
+- uncertainty from missing screenshot detail, incomplete interaction state, ambiguous task or audience, unknown data semantics, unclear chart intent, or conflicting catalog evidence
 
 Keep the critique grounded in the chart and the catalog. Do not let retrieval false positives drive the feedback. If a result is close but scoped to a different chart family or task, say so and choose a better citation.
+
+Use this retrieval template in notes or final feedback when provenance matters:
+
+```text
+Visible evidence:
+Search signals:
+Commands tried:
+Exact reads:
+Respected:
+Violated:
+Adjacent:
+Rejected:
+Uncertainty:
+```
 
 ## Applicability Boundaries
 
@@ -131,8 +170,10 @@ Keep the critique grounded in the chart and the catalog. Do not let retrieval fa
 - If search results are adjacent but not exact, state the boundary and run a narrower query before citing.
 - For synthetic demos, library demos, or visualizations without a clear communication task, keep feedback bounded to visible evidence. Do not invent a redesign objective.
 - Tooltip and interaction claims need observed interaction evidence.
+- Screenshot-only review can support visible layout and labeling claims, but not hidden hover, keyboard, or animation claims.
+- DOM and source snippets can support field names and interaction wiring, but not final visual appearance without rendered evidence.
+- Accessibility snapshots can support accessible naming and structure only for the captured state.
 - Missing legends and hidden category identity often require visual inspection in addition to retrieval.
 - Dense plots need terms for overplotting, density, lookup, and label availability.
 - Map, projection, contour, density, and geometry examples often retrieve adjacent guidance. Preserve the applicability boundary.
 - Small multiples and dense demos often retrieve guidance for one visible subchart. State which panel, repeated mark, or interaction state the citation covers.
-- Specialized statistical charts may be valid for expert readers while still needing extra explanation for general audiences.

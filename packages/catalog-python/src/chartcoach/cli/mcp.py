@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import click
 
+from chartcoach.tools import format_error
+
 from chartcoach.constants import (
     DEFAULT_CATALOG_ARTIFACT_BASE_URL,
     INDEX_ENV,
@@ -12,6 +14,11 @@ from chartcoach.constants import (
 CONTEXT_SETTINGS = {"help_option_names": ["-h", "--help"]}
 TRANSPORT_CHOICES = ("stdio", "sse", "streamable-http")
 LOG_LEVEL_CHOICES = ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL")
+MCP_INDEX_EXTRA_HINTS = (
+    "Install with `uv tool install 'chartcoach[mcp,index]'` for a persistent CLI.",
+    "For one-off runs, use `uvx --from 'chartcoach[mcp,index]' chartcoach ...`.",
+    "From a checkout, use `uv run --extra mcp --extra index chartcoach ...`.",
+)
 
 
 def _is_missing_optional_dependency(exc: ModuleNotFoundError) -> bool:
@@ -124,7 +131,10 @@ def serve_command(
             ) from exc
         if _is_missing_search_dependency(exc):
             raise click.ClickException(
-                "Indexed MCP search requires the optional LanceDB dependencies. Install `chartcoach[mcp,index]` to use it."
+                format_error(
+                    "Indexed MCP search requires the optional LanceDB dependencies.",
+                    MCP_INDEX_EXTRA_HINTS,
+                )
             ) from exc
         raise
     except ValueError as exc:

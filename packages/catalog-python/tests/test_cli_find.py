@@ -8,7 +8,7 @@ from typing import cast
 from click.testing import CliRunner, Result
 import pytest
 
-import chartcoach.cli.catalog_index as catalog_index_cli
+import chartcoach.cli._catalog.index as catalog_index_cli
 from chartcoach.cli.main import main as chartcoach_cli
 
 from helpers import assert_cli_error, csv_rows, json_value, jsonl_rows

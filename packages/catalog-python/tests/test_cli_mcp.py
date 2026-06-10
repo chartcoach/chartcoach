@@ -51,7 +51,12 @@ def test_mcp_cli_renders_search_hint_for_missing_lancedb(
         ["mcp", "serve", "--source", "entries.parquet", "--index", "index"],
     )
 
-    assert_cli_error(result, "Install `chartcoach[mcp,index]` to use it.")
+    assert_cli_error(
+        result, "Indexed MCP search requires the optional LanceDB dependencies."
+    )
+    assert "uv tool install 'chartcoach[mcp,index]'" in result.output
+    assert "uvx --from 'chartcoach[mcp,index]' chartcoach" in result.output
+    assert "uv run --extra mcp --extra index chartcoach" in result.output
 
 
 def test_mcp_cli_renders_search_hint_for_missing_index(

@@ -301,7 +301,8 @@ def test_catalog_values_and_sql_report_empty_results(
         ],
     )
     assert values_result.exit_code == 0
-    assert values_result.output.strip() == "0 rows"
+    assert values_result.stdout.strip() == "0 rows"
+    assert "Try a shorter or broader --contains value." in values_result.stderr
 
     sql_result = runner.invoke(
         chartcoach_cli,

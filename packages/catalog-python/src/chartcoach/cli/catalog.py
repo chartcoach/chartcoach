@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import click
 
-from .catalog_index import register_index_commands
-from .catalog_lifecycle import register_lifecycle_commands
-from .catalog_navigation import register_navigation_commands
+from ._catalog.index import register_index_commands
+from ._catalog.lifecycle import register_lifecycle_commands
+from ._catalog.navigation import register_navigation_commands
 from .common import CONTEXT_SETTINGS
 
 
@@ -21,6 +21,7 @@ from .common import CONTEXT_SETTINGS
         "  list              List entries by id, title, description, and labels\n"
         "  query             Filter entries with composable base predicates\n"
         "  read              Read exact entries and selected sections\n"
+        "  cite              Print guideline URLs and formatted source citations\n"
         "  schema            Show queryable fields and tables\n"
         "  values            Count values for a field\n"
         "  sql               Run one read-only SELECT query\n\n"

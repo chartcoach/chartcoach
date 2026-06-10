@@ -51,6 +51,8 @@ Load a specialized skill when the task needs a narrower workflow:
 ```bash
 chartcoach skills get core          # catalog primitives, artifacts, optional search, retrieval
 chartcoach skills get visfeedback   # visualization critique with guideline citations
+chartcoach skills get visrec        # Visualization Recommendation and chart creation
+chartcoach skills get consult       # cited catalog consultation and knowledge-space exploration
 ```
 
 ## Why ChartCoach

@@ -6,24 +6,28 @@ from typing import cast
 
 import click
 
-from chartcoach.tools import ToolError, format_error
-
-from .catalog_logic import (
-    catalog_overview,
-    entry_records_to_markdown,
-    list_labels,
-    list_roles,
-    overview_table_rows,
-    query_entries,
-    retrieve_entry_records,
+from chartcoach.catalog.citations import (
+    DEFAULT_GUIDELINE_URL_TEMPLATE,
+    citation_records,
 )
-from .catalog_tables import (
+from chartcoach.catalog.introspection import (
     count_values,
     describe_tables,
     list_tables,
     parse_value_field,
 )
-from .common import (
+from chartcoach.catalog.navigation import (
+    catalog_overview,
+    list_labels,
+    list_roles,
+    overview_table_rows,
+    query_entries,
+    retrieve_entry_records,
+    text_matches_for_entry,
+)
+from chartcoach.tools import ToolError, format_error
+
+from ..common import (
     CONTEXT_SETTINGS,
     ROW_FORMATS,
     echo_warn,
@@ -33,8 +37,10 @@ from .common import (
     source_option,
     source_path,
 )
+from .rendering import citation_records_to_markdown, entry_records_to_markdown
 
 READ_FORMATS = ("markdown", "json", "jsonl")
+CITE_FORMATS = ("markdown", "json", "jsonl")
 
 
 @click.command("overview", context_settings=CONTEXT_SETTINGS)
@@ -109,7 +115,14 @@ def labels_command(
         raise click.ClickException(str(exc)) from exc
     visible_rows = rows[:limit]
     emit_rows(
-        visible_rows, output_format=output_format, empty_message="No labels matched."
+        visible_rows,
+        output_format=output_format,
+        empty_message="No labels matched.",
+        empty_hints=_labels_empty_hints(
+            family=family,
+            prefix=prefix,
+            contains=contains,
+        ),
     )
     if len(rows) > limit:
         echo_warn(
@@ -188,7 +201,16 @@ def list_command(
         )
     except ToolError as exc:
         raise click.ClickException(str(exc)) from exc
-    emit_rows(rows, output_format=output_format, empty_message="No entries matched.")
+    emit_rows(
+        rows,
+        output_format=output_format,
+        empty_message="No entries matched.",
+        empty_hints=_list_empty_hints(
+            labels=label,
+            label_prefixes=label_prefix,
+            contains=contains,
+        ),
+    )
 
 
 @click.command("query", context_settings=CONTEXT_SETTINGS)
@@ -243,6 +265,11 @@ def list_command(
     show_default=True,
     help="Output format.",
 )
+@click.option(
+    "--show-matches",
+    is_flag=True,
+    help="Include text-filter match evidence in query results.",
+)
 @click.pass_context
 def query_command(
     ctx: click.Context,
@@ -255,29 +282,179 @@ def query_command(
     section_contains: str | None,
     limit: int,
     output_format: str,
+    show_matches: bool,
 ) -> None:
     """Filter entries with composable base predicates."""
 
     try:
-        rows = (
-            query_entries(
-                load_catalog(ctx),
-                ids=entry_ids,
-                labels=labels,
-                any_labels=any_labels,
-                label_prefixes=label_prefixes,
-                contains=contains,
-                body_contains=body_contains,
-                section_contains=section_contains,
-                limit=limit,
-                include_body=False,
-            )
-            .select("id", "title", "description", "labels")
-            .to_dicts()
+        frame = query_entries(
+            load_catalog(ctx),
+            ids=entry_ids,
+            labels=labels,
+            any_labels=any_labels,
+            label_prefixes=label_prefixes,
+            contains=contains,
+            body_contains=body_contains,
+            section_contains=section_contains,
+            limit=limit,
+            include_body=show_matches,
         )
+        if show_matches:
+            rows = [
+                _query_row_with_matches(
+                    row,
+                    output_format=output_format,
+                    contains=contains,
+                    body_contains=body_contains,
+                    section_contains=section_contains,
+                )
+                for row in frame.to_dicts()
+            ]
+        else:
+            rows = frame.select("id", "title", "description", "labels").to_dicts()
     except ToolError as exc:
         raise click.ClickException(str(exc)) from exc
-    emit_rows(rows, output_format=output_format, empty_message="No entries matched.")
+    emit_rows(
+        rows,
+        output_format=output_format,
+        empty_message="No entries matched.",
+        empty_hints=_query_empty_hints(
+            labels=labels,
+            any_labels=any_labels,
+            label_prefixes=label_prefixes,
+            contains=contains,
+            body_contains=body_contains,
+            section_contains=section_contains,
+        ),
+    )
+
+
+def _query_row_with_matches(
+    row: Mapping[str, object],
+    *,
+    output_format: str,
+    contains: str | None,
+    body_contains: str | None,
+    section_contains: str | None,
+) -> dict[str, object]:
+    matches = text_matches_for_entry(
+        row,
+        contains=contains,
+        body_contains=body_contains,
+        section_contains=section_contains,
+    )
+    output: dict[str, object] = {
+        "id": row["id"],
+        "title": row["title"],
+        "description": row["description"],
+        "labels": row["labels"],
+    }
+    output["matches"] = _match_summary(matches) if output_format == "table" else matches
+    return output
+
+
+def _match_summary(matches: list[dict[str, object]]) -> str:
+    parts = []
+    for match in matches[:3]:
+        field = str(match.get("field") or "")
+        if field.startswith("section."):
+            role = str(match.get("role") or "section")
+            field = f"{role}.{field.removeprefix('section.')}"
+        parts.append(f"{field}: {match.get('snippet')}")
+    if len(matches) > 3:
+        parts.append(f"+{len(matches) - 3} more")
+    return " | ".join(parts)
+
+
+def _labels_empty_hints(
+    *,
+    family: str | None,
+    prefix: str | None,
+    contains: str | None,
+) -> list[str]:
+    hints = []
+    if contains:
+        hints.append("Try a shorter or broader --contains term.")
+        hints.append(
+            "Run `chartcoach catalog query --section-contains TEXT --format jsonl` when the concept may appear in guideline sections."
+        )
+    if family:
+        hints.append(
+            "Run `chartcoach catalog labels --format jsonl` to inspect all label families."
+        )
+    if prefix:
+        hints.append("Try a shorter --prefix or inspect labels by --family.")
+    if not hints:
+        hints.append("Run `chartcoach catalog overview --format json` to inspect catalog counts.")
+    return hints
+
+
+def _list_empty_hints(
+    *,
+    labels: tuple[str, ...],
+    label_prefixes: tuple[str, ...],
+    contains: str | None,
+) -> list[str]:
+    hints = []
+    if len(labels) > 1:
+        hints.append(
+            "Repeated --label filters are all-of. Remove one --label or use `chartcoach catalog query --any-label LABEL --any-label OTHER`."
+        )
+    elif labels:
+        hints.append("Try `chartcoach catalog labels --contains TEXT --format jsonl` to find related labels.")
+    if label_prefixes:
+        hints.append("Try a shorter --label-prefix or inspect labels with `chartcoach catalog labels --format jsonl`.")
+    if contains:
+        hints.append(
+            "Try a broader --contains term, or use `chartcoach catalog query --body-contains TEXT --format jsonl` for full body text."
+        )
+    if not hints:
+        hints.append("Run `chartcoach catalog overview --format json` to confirm the catalog has entries.")
+    return hints
+
+
+def _query_empty_hints(
+    *,
+    labels: tuple[str, ...],
+    any_labels: tuple[str, ...],
+    label_prefixes: tuple[str, ...],
+    contains: str | None,
+    body_contains: str | None,
+    section_contains: str | None,
+) -> list[str]:
+    hints = []
+    if len(labels) > 1:
+        hints.append(
+            "Repeated --label filters are all-of. Relax one --label or use repeated --any-label for alternatives."
+        )
+    elif labels:
+        hints.append("Try `chartcoach catalog labels --contains TEXT --format jsonl` to find broader labels.")
+    if any_labels:
+        hints.append("Remove one --any-label or inspect label families with `chartcoach catalog labels --format jsonl`.")
+    if label_prefixes:
+        hints.append("Try a shorter --label-prefix or inspect current labels with `chartcoach catalog labels --format jsonl`.")
+    if contains or body_contains or section_contains:
+        hints.append(
+            "Relax one text predicate or try broader --contains, --body-contains, or --section-contains text."
+        )
+    if not hints:
+        hints.append("Run `chartcoach catalog list --format jsonl` to inspect available entries.")
+    return hints
+
+
+def _values_empty_hints(*, field: str, contains: str | None) -> list[str]:
+    hints = []
+    if contains:
+        hints.append("Try a shorter or broader --contains value.")
+    hints.append(
+        "Use aliases such as labels, roles, label.family, label.category, or label.modifier."
+    )
+    hints.append(
+        "Run `chartcoach catalog schema` before querying a raw TABLE.COLUMN field."
+    )
+    if "." in field:
+        hints.append("Try `chartcoach catalog values labels --contains TEXT` when looking for label values.")
+    return hints
 
 
 @click.command("read", context_settings=CONTEXT_SETTINGS)
@@ -331,6 +508,50 @@ def read_command(
             click.echo(json.dumps(record, ensure_ascii=False, default=str))
     else:
         click.echo(entry_records_to_markdown(records).rstrip())
+
+
+@click.command("cite", context_settings=CONTEXT_SETTINGS)
+@source_option
+@click.argument("entry_ids", nargs=-1, required=True)
+@click.option(
+    "--url-template",
+    default=DEFAULT_GUIDELINE_URL_TEMPLATE,
+    show_default=True,
+    help="Guideline URL template. Must contain {id}.",
+)
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(CITE_FORMATS),
+    default="markdown",
+    show_default=True,
+    help="Output format.",
+)
+@click.pass_context
+def cite_command(
+    ctx: click.Context,
+    entry_ids: tuple[str, ...],
+    url_template: str,
+    output_format: str,
+) -> None:
+    """Print guideline URLs and formatted source citations."""
+
+    catalog = load_catalog(ctx)
+    try:
+        records = citation_records(
+            catalog,
+            ids=entry_ids,
+            url_template=url_template,
+        )
+    except ToolError as exc:
+        raise click.ClickException(str(exc)) from exc
+    if output_format == "json":
+        click.echo(json.dumps(records, indent=2, ensure_ascii=False, default=str))
+    elif output_format == "jsonl":
+        for record in records:
+            click.echo(json.dumps(record, ensure_ascii=False, default=str))
+    else:
+        click.echo(citation_records_to_markdown(records).rstrip())
 
 
 @click.command("schema", context_settings=CONTEXT_SETTINGS)
@@ -423,7 +644,11 @@ def values_command(
     except ToolError as exc:
         raise click.ClickException(str(exc)) from exc
     visible_rows = rows[:limit]
-    emit_rows(visible_rows, output_format=output_format)
+    emit_rows(
+        visible_rows,
+        output_format=output_format,
+        empty_hints=_values_empty_hints(field=field, contains=contains),
+    )
     if len(rows) > limit:
         echo_warn(
             f"Returned {limit} values.", detail="Increase --limit to inspect more."
@@ -491,6 +716,7 @@ def register_navigation_commands(group: click.Group) -> None:
     group.add_command(list_command)
     group.add_command(query_command)
     group.add_command(read_command)
+    group.add_command(cite_command)
     group.add_command(schema_command)
     group.add_command(values_command)
     group.add_command(sql_command)

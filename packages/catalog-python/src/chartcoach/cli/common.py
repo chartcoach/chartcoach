@@ -28,6 +28,14 @@ from chartcoach.tools import Tools, format_error
 CONTEXT_SETTINGS = {"help_option_names": ["-h", "--help"]}
 ROW_FORMATS = ("table", "json", "jsonl", "csv")
 SEARCH_FORMATS = ("table", "json", "jsonl", "csv", "markdown", "compact")
+INDEX_EXTRA_MESSAGE = (
+    "LanceDB indexing requires the optional `chartcoach[index]` dependencies."
+)
+INDEX_EXTRA_HINTS = (
+    "Install with `uv tool install 'chartcoach[index]'` for a persistent CLI.",
+    "For one-off runs, use `uvx --from 'chartcoach[index]' chartcoach ...`.",
+    "From a checkout, use `uv run --extra index chartcoach ...`.",
+)
 
 _Command = TypeVar("_Command", bound=Callable[..., object])
 
@@ -106,9 +114,10 @@ def _require_lancedb_available() -> None:
         return
     raise click.ClickException(
         format_error(
-            "LanceDB indexing requires the optional `chartcoach[index]` dependencies.",
+            INDEX_EXTRA_MESSAGE,
             [
                 "Install `chartcoach[index]` to use indexed discovery.",
+                *INDEX_EXTRA_HINTS,
                 f"Or pass --index PATH_OR_URI after installing the extra or set {INDEX_ENV}.",
             ],
         )
@@ -201,6 +210,7 @@ def emit_rows(
     *,
     output_format: str,
     empty_message: str = "0 rows",
+    empty_hints: Sequence[str] = (),
 ) -> None:
     if output_format == "json":
         click.echo(json.dumps(list(rows), indent=2, ensure_ascii=False, default=str))
@@ -213,6 +223,14 @@ def emit_rows(
         click.echo(empty_message)
     else:
         click.echo(rows_to_table(rows).rstrip())
+    if not rows and empty_hints:
+        emit_guidance(empty_message, empty_hints)
+
+
+def emit_guidance(message: str, hints: Sequence[str]) -> None:
+    click.echo(f"{message}\n\nGuidance:", err=True)
+    for hint in hints:
+        click.echo(f"  - {hint}", err=True)
 
 
 def rows_to_table(rows: Sequence[Mapping[str, object]]) -> str:
@@ -287,12 +305,15 @@ def search_cli_error(
     *,
     index_path: str | None = None,
     table_name: str = LANCE_DOCUMENT_TABLE,
+    missing_index_extra: bool = False,
 ) -> str:
     """Return a CLI search error with local index-path recovery hints."""
 
+    install_hints = list(INDEX_EXTRA_HINTS) if missing_index_extra else []
     return format_error(
         message,
         [
+            *install_hints,
             *_index_path_hints(index_path, table_name=table_name),
             (
                 "Build a full-text LanceDB table with "
