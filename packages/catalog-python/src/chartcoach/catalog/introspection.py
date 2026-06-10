@@ -51,7 +51,10 @@ def parse_value_field(field: str) -> tuple[str, str, bool]:
         raise CatalogLookupError(
             f"Unknown catalog value field: {field}",
             hints=[
+                "FIELD names the value dimension to count, not the observed value to find.",
                 "Use aliases such as labels, roles, label.family, label.category, or label.modifier.",
+                "Filter values with `--contains TEXT`, for example `chartcoach catalog values labels --contains TEXT`.",
+                "Use `chartcoach catalog labels --family FAMILY` to inspect one label family.",
                 "Use raw table fields as TABLE.COLUMN after inspecting `chartcoach catalog schema`.",
             ],
         )
@@ -105,12 +108,20 @@ def require_table(catalog: "Catalog", table: str) -> pl.DataFrame:
 def require_column(table: str, frame: pl.DataFrame, column: str) -> None:
     if column not in frame.columns:
         columns = ", ".join(frame.columns)
+        hints = [
+            f"Available columns on {table}: {columns}",
+            "Run `chartcoach catalog schema` to inspect fields.",
+        ]
+        if table == "labels" and column == "label":
+            hints.append(
+                "Use `chartcoach catalog values labels` or `chartcoach catalog values guideline_labels.label` for full label strings."
+            )
+            hints.append(
+                "Use `chartcoach catalog values label.family` for label family names."
+            )
         raise CatalogLookupError(
             f"Unknown column for table {table}: {column}",
-            hints=[
-                f"Available columns on {table}: {columns}",
-                "Run `chartcoach catalog schema` to inspect fields.",
-            ],
+            hints=hints,
         )
 
 

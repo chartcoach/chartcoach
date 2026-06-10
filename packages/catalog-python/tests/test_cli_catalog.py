@@ -75,6 +75,92 @@ def test_catalog_schema_and_values_report_tables(
     assert values == {"chart:bar": 1, "chart:line": 1}
 
 
+def test_catalog_schema_accepts_positional_table_names(
+    runner: CliRunner,
+    sample_catalog_path: Path,
+) -> None:
+    result = runner.invoke(
+        chartcoach_cli,
+        [
+            "catalog",
+            "schema",
+            "guidelines",
+            "--source",
+            str(sample_catalog_path),
+            "--format",
+            "jsonl",
+        ],
+    )
+
+    rows = jsonl_rows(result)
+    assert {row["table"] for row in rows} == {"guidelines"}
+    assert {"table": "guidelines", "column": "title", "type": "String"} in rows
+
+
+def test_catalog_schema_table_listing_rejects_table_filters(
+    runner: CliRunner,
+    sample_catalog_path: Path,
+) -> None:
+    result = runner.invoke(
+        chartcoach_cli,
+        [
+            "catalog",
+            "schema",
+            "guidelines",
+            "--source",
+            str(sample_catalog_path),
+            "--tables",
+        ],
+    )
+
+    assert result.exit_code == 1
+    assert "`catalog schema --tables` lists table names" in result.output
+    assert "catalog schema TABLE" in result.output
+
+
+def test_catalog_values_unknown_field_explains_field_shape(
+    runner: CliRunner,
+    sample_catalog_path: Path,
+) -> None:
+    result = runner.invoke(
+        chartcoach_cli,
+        [
+            "catalog",
+            "values",
+            "chart",
+            "--source",
+            str(sample_catalog_path),
+        ],
+    )
+
+    assert result.exit_code == 1
+    assert "FIELD names the value dimension to count" in result.output
+    assert "catalog values labels --contains TEXT" in result.output
+    assert "catalog labels --family FAMILY" in result.output
+
+
+def test_catalog_values_labels_table_column_points_to_full_label_field(
+    runner: CliRunner,
+    sample_catalog_path: Path,
+) -> None:
+    result = runner.invoke(
+        chartcoach_cli,
+        [
+            "catalog",
+            "values",
+            "labels.label",
+            "--source",
+            str(sample_catalog_path),
+        ],
+    )
+
+    assert result.exit_code == 1
+    assert "Unknown column for table labels: label" in result.output
+    assert "catalog values labels" in result.output
+    assert "catalog values guideline_labels.label" in result.output
+    assert "catalog values label.family" in result.output
+
+
 def test_catalog_table_format_uses_readable_columns(
     runner: CliRunner,
     sample_catalog_path: Path,

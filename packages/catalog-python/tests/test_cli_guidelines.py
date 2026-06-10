@@ -78,6 +78,14 @@ def test_catalog_help_lists_cite_command(runner: CliRunner) -> None:
     assert "cite              Print guideline URLs and formatted source citations" in result.output
 
 
+def test_catalog_without_command_prints_help(runner: CliRunner) -> None:
+    result = runner.invoke(chartcoach_cli, ["catalog"])
+
+    assert result.exit_code == 0
+    assert "Progressive Catalog Navigation:" in result.output
+    assert "cite              Print guideline URLs and formatted source citations" in result.output
+
+
 def test_catalog_query_filters_entries(
     runner: CliRunner,
     sample_catalog_path: Path,

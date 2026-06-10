@@ -22,6 +22,14 @@ def test_main_help_advertises_skills_command(runner: CliRunner) -> None:
     assert "Agent Skills:" in result.output
 
 
+def test_main_without_command_prints_help(runner: CliRunner) -> None:
+    result = runner.invoke(chartcoach_cli, [])
+
+    assert result.exit_code == 0
+    assert "Start here (for AI agents):" in result.output
+    assert "chartcoach skills get core" in result.output
+
+
 @pytest.fixture
 def skill_data_root(
     tmp_path: Path,

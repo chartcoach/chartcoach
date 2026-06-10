@@ -11,6 +11,8 @@ CONTEXT_SETTINGS = {"help_option_names": ["-h", "--help"]}
 
 @click.group(
     context_settings=CONTEXT_SETTINGS,
+    invoke_without_command=True,
+    no_args_is_help=False,
     help=(
         "ChartCoach catalog CLI.\n\n"
         "\b\n"
@@ -42,8 +44,13 @@ CONTEXT_SETTINGS = {"help_option_names": ["-h", "--help"]}
         "  skills path [name]           Print skill directory path"
     ),
 )
-def main() -> None:
+@click.pass_context
+def main(ctx: click.Context) -> None:
     """ChartCoach command-line interface."""
+
+    if ctx.invoked_subcommand is None:
+        click.echo(ctx.get_help())
+        ctx.exit(0)
 
 
 main.add_command(catalog_command)
