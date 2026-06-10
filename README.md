@@ -26,7 +26,12 @@ The top-level `$chartcoach` skill is a small router. It loads workflow skills sh
 | Ask what the catalog says, compare chart choices, or trace claims   | `consult`     |
 | Review an existing chart with observed visual evidence              | `visfeedback` |
 | Recommend a chart or encoding from a data task                      | `visrec`      |
+| Draft a local catalog improvement issue from retrieval friction     | `contribute`  |
 | Inspect CLI primitives, custom sources, output formats, and indexes | `core`        |
+
+ChartCoach treats source-traced visualization knowledge as an evolving shared resource. Friction in one person's critique, recommendation, or consultation workflow can become an improvement signal for the whole catalog community.
+
+The `contribute` workflow turns those signals into local issue drafts for human review. It never posts by default.
 
 ## Quickstart
 
