@@ -34,6 +34,7 @@ Before changing a module, read its nearest README, package manifest, and tests.
 - Site: `pnpm --dir apps/site lint` and `pnpm --dir apps/site build`.
 - JS packages: `pnpm --dir <package> lint`, `pnpm --dir <package> typecheck`,
   and the local build or test script.
-- Python packages: `uv run ruff check .`, `uv run ty check .`, and targeted
-  pytest commands such as `uv run pytest packages/catalog-python/tests`.
+- Python packages: `uv run ruff check .`, `uv run ty check .`,
+  `uv run pyrefly check`, and targeted pytest commands such as
+  `uv run pytest packages/catalog-python/tests`.
 - Cross-workspace: `pnpm lint`, `pnpm typecheck`, `pnpm build`, `pnpm test`.

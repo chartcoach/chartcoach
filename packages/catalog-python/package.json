@@ -5,7 +5,7 @@
   "license": "MIT",
   "scripts": {
     "lint": "uv run ruff check .",
-    "typecheck": "uv run --extra index --extra mcp ty check .",
+    "typecheck": "uv run --extra index --extra mcp ty check . && uv run --extra index --extra mcp pyrefly check --summary=none",
     "format": "uv run ruff format .",
     "build": "uv build",
     "test": "uv run --extra index --extra mcp pytest tests"
