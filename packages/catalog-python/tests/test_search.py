@@ -52,7 +52,7 @@ def _test_embedding() -> "EmbeddingFunction":
 
 
 def test_documents_return_lancedb_document_rows(sample_catalog: Catalog) -> None:
-    from chartcoach.search import documents
+    from chartcoach.search.lance import documents
 
     frame = documents(sample_catalog)
 
@@ -376,7 +376,8 @@ def test_search_rejects_rows_that_do_not_match_catalog(
 
 
 def test_search_rejects_malformed_lancedb_rows(sample_catalog: Catalog) -> None:
-    from chartcoach.search import documents, search
+    from chartcoach.search import search
+    from chartcoach.search.lance import documents
 
     catalog_documents = documents(sample_catalog)
 

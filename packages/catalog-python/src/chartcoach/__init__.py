@@ -1,11 +1,11 @@
-"""ChartCoach exposes catalog, guideline, and section models."""
+"""ChartCoach exposes catalog, entry, and section models."""
 
 from importlib.metadata import version
 
 from .catalog.collection import Catalog
+from .catalog.entries import Guideline, Section
+from .catalog.labels import ParsedLabel, parse_label
 from .catalog.manifest import CatalogManifest
-from .guideline.core import Guideline, Section
-from .guideline.labels import ParsedLabel, parse_label
 
 __version__ = version("chartcoach")
 

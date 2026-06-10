@@ -5,10 +5,14 @@ from pathlib import Path
 import polars as pl
 import pytest
 
-from chartcoach.catalog import Catalog, CatalogManifestError
+from chartcoach.catalog import (
+    Catalog,
+    CatalogManifestError,
+    Guideline,
+    Section as GuidelineSection,
+)
 from chartcoach.catalog.remote import read_release_metadata
 from chartcoach.catalog.storage import load_catalog_entry
-from chartcoach.guideline import Guideline, Section as GuidelineSection
 
 from catalog_testkit import write_catalog_entry, write_manifest
 

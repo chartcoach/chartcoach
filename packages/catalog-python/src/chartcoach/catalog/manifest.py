@@ -7,7 +7,7 @@ from pathlib import Path
 import re
 from typing import TYPE_CHECKING
 
-from ..guideline.labels import parse_label
+from .labels import parse_label
 
 if TYPE_CHECKING:
     from .collection import Catalog

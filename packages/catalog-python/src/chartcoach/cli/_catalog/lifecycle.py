@@ -5,7 +5,7 @@ from pathlib import Path
 import click
 
 from chartcoach.catalog import Catalog
-from chartcoach.catalog.navigation import validation_rows
+from chartcoach.catalog.summary import validation_rows
 from chartcoach.tools import format_error
 
 from ..common import (

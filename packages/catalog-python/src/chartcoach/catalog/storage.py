@@ -5,16 +5,16 @@ from os import PathLike
 from pathlib import Path
 from typing import TYPE_CHECKING, Iterable
 
-from ..guideline.bibliography import parse_bibtex
-from ..guideline.markdown import parse_guideline
-from .collection import _CatalogRecord
+from .entries import CatalogEntry
+from .markdown import parse_guideline
 from .manifest import CatalogManifest
+from .references import parse_bibtex
 
 if TYPE_CHECKING:
     from .collection import Catalog
 
 
-def load_catalog_entry(path: Path) -> _CatalogRecord:
+def load_catalog_entry(path: Path) -> CatalogEntry:
     """Load a single catalog entry from a folder on disk."""
     guideline_md_path = path / "guideline.md"
     if not guideline_md_path.exists():
@@ -29,7 +29,7 @@ def load_catalog_entry(path: Path) -> _CatalogRecord:
         bib_path = path / guideline.bibliography
         references = parse_bibtex(bib_path.read_text())
 
-    return _CatalogRecord(guideline=guideline, references=tuple(references))
+    return CatalogEntry(guideline=guideline, references=tuple(references))
 
 
 def load_catalog(folder_path: PathLike[str]) -> Catalog:
@@ -43,21 +43,18 @@ def load_catalog(folder_path: PathLike[str]) -> Catalog:
         raise FileNotFoundError(
             f"No entries directory found in catalog folder: {root}"
         )
-    entries: list[_CatalogRecord] = []
+    entries: list[CatalogEntry] = []
 
     for entry_path in sorted(entries_root.iterdir()):
         if not entry_path.is_dir():
             continue
         entries.append(load_catalog_entry(entry_path))
 
-    return Catalog.from_entries(
-        [entry.to_record() for entry in entries],
-        manifest=manifest,
-    )
+    return Catalog.from_entries(entries, manifest=manifest)
 
 
 def write_catalog_entries(
-    entries: Iterable[_CatalogRecord],
+    entries: Iterable[CatalogEntry],
     root: PathLike[str],
     *,
     manifest: CatalogManifest,

@@ -1,8 +1,7 @@
 import pytest
 
-from chartcoach.guideline import (
-    Guideline,
-    Section,
+from chartcoach.catalog.entries import Guideline, Section
+from chartcoach.catalog.markdown import (
     guideline_to_markdown,
     parse_guideline,
     parse_guideline_sections,

@@ -6,7 +6,8 @@ from typing import cast
 
 import click
 
-from chartcoach.catalog.citations import (
+from chartcoach.catalog.errors import CatalogError
+from chartcoach.catalog.references import (
     DEFAULT_GUIDELINE_URL_TEMPLATE,
     citation_records,
 )
@@ -16,14 +17,16 @@ from chartcoach.catalog.introspection import (
     list_tables,
     parse_value_field,
 )
-from chartcoach.catalog.navigation import (
+from chartcoach.catalog.query import (
+    query_entries,
+    text_matches_for_entry,
+)
+from chartcoach.catalog.read import retrieve_entry_records
+from chartcoach.catalog.summary import (
     catalog_overview,
     list_labels,
     list_roles,
     overview_table_rows,
-    query_entries,
-    retrieve_entry_records,
-    text_matches_for_entry,
 )
 from chartcoach.tools import ToolError, format_error
 
@@ -111,8 +114,8 @@ def labels_command(
             contains=contains,
             limit=limit + 1,
         )
-    except ToolError as exc:
-        raise click.ClickException(str(exc)) from exc
+    except (CatalogError, ToolError) as exc:
+        raise _command_error(exc) from exc
     visible_rows = rows[:limit]
     emit_rows(
         visible_rows,
@@ -199,8 +202,8 @@ def list_command(
             .select("id", "title", "description", "labels")
             .to_dicts()
         )
-    except ToolError as exc:
-        raise click.ClickException(str(exc)) from exc
+    except (CatalogError, ToolError) as exc:
+        raise _command_error(exc) from exc
     emit_rows(
         rows,
         output_format=output_format,
@@ -312,8 +315,8 @@ def query_command(
             ]
         else:
             rows = frame.select("id", "title", "description", "labels").to_dicts()
-    except ToolError as exc:
-        raise click.ClickException(str(exc)) from exc
+    except (CatalogError, ToolError) as exc:
+        raise _command_error(exc) from exc
     emit_rows(
         rows,
         output_format=output_format,
@@ -499,8 +502,8 @@ def read_command(
             roles=sections,
             source_detail=source_detail,
         )
-    except ToolError as exc:
-        raise click.ClickException(str(exc)) from exc
+    except (CatalogError, ToolError) as exc:
+        raise _command_error(exc) from exc
     if output_format == "json":
         click.echo(json.dumps(records, indent=2, ensure_ascii=False, default=str))
     elif output_format == "jsonl":
@@ -543,8 +546,8 @@ def cite_command(
             ids=entry_ids,
             url_template=url_template,
         )
-    except ToolError as exc:
-        raise click.ClickException(str(exc)) from exc
+    except (CatalogError, ToolError) as exc:
+        raise _command_error(exc) from exc
     if output_format == "json":
         click.echo(json.dumps(records, indent=2, ensure_ascii=False, default=str))
     elif output_format == "jsonl":
@@ -596,8 +599,8 @@ def schema_command(
             rows = list_tables(load_catalog(ctx), include_row_counts=row_counts)
         else:
             rows = describe_tables(tables=table_names)
-    except ToolError as exc:
-        raise click.ClickException(str(exc)) from exc
+    except (CatalogError, ToolError) as exc:
+        raise _command_error(exc) from exc
     emit_rows(rows, output_format=output_format)
 
 
@@ -641,8 +644,8 @@ def values_command(
             contains=contains,
             limit=limit + 1,
         )
-    except ToolError as exc:
-        raise click.ClickException(str(exc)) from exc
+    except (CatalogError, ToolError) as exc:
+        raise _command_error(exc) from exc
     visible_rows = rows[:limit]
     emit_rows(
         visible_rows,
@@ -686,8 +689,8 @@ def sql_command(
         from chartcoach.tools import Tools
 
         result = Tools(load_catalog(ctx)).sql(query, limit=limit)
-    except ToolError as exc:
-        raise click.ClickException(str(exc)) from exc
+    except (CatalogError, ToolError) as exc:
+        raise _command_error(exc) from exc
     except Exception as exc:
         raise click.ClickException(
             format_error(
@@ -707,6 +710,12 @@ def sql_command(
     emit_rows(cast(list[Mapping[str, object]], rows), output_format=output_format)
     if result["truncated"]:
         echo_warn(f"Returned {limit} rows.", detail="Increase --limit to inspect more.")
+
+
+def _command_error(exc: CatalogError | ToolError) -> click.ClickException:
+    message = getattr(exc, "message", str(exc))
+    hints = getattr(exc, "hints", ())
+    return click.ClickException(format_error(message, hints))
 
 
 def register_navigation_commands(group: click.Group) -> None:

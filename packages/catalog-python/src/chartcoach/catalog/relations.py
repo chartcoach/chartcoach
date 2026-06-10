@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 import polars as pl
 
-from .tables import (
+from .schemas import (
     GUIDELINES_SCHEMA,
     GUIDELINE_LABELS_SCHEMA,
     GUIDELINE_REFERENCES_SCHEMA,

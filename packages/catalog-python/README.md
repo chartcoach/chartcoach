@@ -53,7 +53,7 @@ table = index(
 )
 ```
 
-Use `open("scratch/chartcoach-index")` for an existing table. Use `documents(catalog)` when your code already owns a LanceDB connection and wants to call `db.create_table(...)` directly. Caller-owned tables should expose the catalog document columns `id`, `parent_id`, `role`, `labels`, `content_hash`, and `text`.
+Use `open("scratch/chartcoach-index")` for an existing table. Use `chartcoach.search.lance.documents(catalog)` when your code already owns a LanceDB connection and wants to call `db.create_table(...)` directly. Caller-owned tables should expose the catalog document columns `id`, `parent_id`, `role`, `labels`, `content_hash`, and `text`.
 
 `model(embedding_function)` returns the LanceDB model used by `index(..., embedding=...)`. It defines `id`, `parent_id`, `role`, `labels`, `content_hash`, `text`, and `vector`, with `text` bound to `embedding_function.SourceField()` and `vector` bound to `embedding_function.VectorField()`.
 
