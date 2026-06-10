@@ -5,14 +5,13 @@ from os import PathLike
 from pathlib import Path
 from urllib.parse import urlparse
 
-import dataclasses as dc
 import hashlib
 import json
 from typing import TYPE_CHECKING, cast
 
 import polars as pl
 
-from ..guideline.core import Guideline
+from .entries import CatalogEntry, Guideline
 
 if TYPE_CHECKING:
     import duckdb as duckdb_module
@@ -20,56 +19,7 @@ if TYPE_CHECKING:
     from ..duckdb import DuckDBConfigValue
 
     from .manifest import CatalogManifest
-    from .tables import ReferenceTables
-
-
-@dc.dataclass(frozen=True, slots=True)
-class _CatalogRecord:
-    """One guideline together with the references that support it."""
-
-    guideline: Guideline
-    references: tuple[str, ...] = dc.field(default_factory=tuple)
-
-    def __post_init__(self) -> None:
-        object.__setattr__(
-            self,
-            "references",
-            _str_sequence(self.references, "references"),
-        )
-
-    @classmethod
-    def from_mapping(cls, data: object) -> "_CatalogRecord":
-        """Build an entry from a raw mapping."""
-        if isinstance(data, cls):
-            return data
-        if not isinstance(data, Mapping):
-            raise TypeError("Catalog record data must be a mapping.")
-        values = cast(Mapping[str, object], data)
-        parsed_references = _str_sequence(values.get("references") or [], "references")
-        guideline = Guideline.from_mapping(values.get("guideline"))
-        top_level_id = values.get("id")
-        if top_level_id is not None and top_level_id != guideline.id:
-            raise ValueError(
-                f"catalog row id {top_level_id!r} does not match guideline id {guideline.id!r}."
-            )
-        return cls(
-            guideline=guideline,
-            references=parsed_references,
-        )
-
-    @property
-    def id(self) -> str:
-        """Return the stable id of this entry."""
-
-        return self.guideline.id
-
-    def to_record(self) -> dict[str, object]:
-        """Return the serialized entry shape used by catalog dataframes."""
-        return {
-            "id": self.id,
-            "guideline": self.guideline.to_record(),
-            "references": list(self.references),
-        }
+    from .references import ReferenceTables
 
 
 class Catalog:
@@ -109,7 +59,7 @@ class Catalog:
     @classmethod
     def from_entries(
         cls,
-        entries: Iterable[Guideline | Mapping[str, object]],
+        entries: Iterable[CatalogEntry | Guideline | Mapping[str, object]],
         *,
         manifest: "CatalogManifest | None" = None,
     ) -> "Catalog":
@@ -117,8 +67,8 @@ class Catalog:
 
         from .tables import build_catalog_df
 
-        catalog_records = tuple(_catalog_record(entry) for entry in entries)
-        return cls(build_catalog_df(catalog_records), manifest=manifest)
+        catalog_entries = tuple(_catalog_entry(entry) for entry in entries)
+        return cls(build_catalog_df(catalog_entries), manifest=manifest)
 
     @classmethod
     def from_folder(cls, folder_path: PathLike[str]) -> "Catalog":
@@ -221,7 +171,7 @@ class Catalog:
     def guideline_sources(self) -> pl.DataFrame:
         """Return source metadata joined to each guideline-reference edge."""
 
-        from .tables import build_guideline_sources_df
+        from .references import build_guideline_sources_df
 
         return build_guideline_sources_df(
             self.guideline_references(),
@@ -251,25 +201,25 @@ class Catalog:
 
         return connect_catalog(self, config=config)
 
-    def _entries(self) -> tuple[_CatalogRecord, ...]:
+    def _entries(self) -> tuple[CatalogEntry, ...]:
         """Build catalog entry objects from the serialized dataframe."""
 
         return tuple(
-            _CatalogRecord.from_mapping(row) for row in self.to_frame().to_dicts()
+            CatalogEntry.from_mapping(row) for row in self.to_frame().to_dicts()
         )
 
-    def _catalog_record(self, guideline_id: str) -> _CatalogRecord:
+    def _catalog_entry(self, guideline_id: str) -> CatalogEntry:
         """Return one internal storage entry by guideline id."""
 
         rows = self.to_frame().filter(pl.col("id") == guideline_id)
         if rows.is_empty():
             raise KeyError(guideline_id)
-        return _CatalogRecord.from_mapping(rows.row(0, named=True))
+        return CatalogEntry.from_mapping(rows.row(0, named=True))
 
     def entry(self, guideline_id: str) -> dict[str, object]:
         """Return one flat guideline record by id."""
 
-        storage_entry = self._catalog_record(guideline_id)
+        storage_entry = self._catalog_entry(guideline_id)
         return {
             **storage_entry.guideline.to_record(),
             "references": list(storage_entry.references),
@@ -339,7 +289,7 @@ class Catalog:
     def select(self, guideline_ids: Sequence[str]) -> "Catalog":
         """Return a new catalog with the requested guideline ids in order."""
 
-        from .tables import CATALOG_SCHEMA
+        from .schemas import CATALOG_SCHEMA
 
         wanted = pl.DataFrame(
             {"id": list(guideline_ids), "_order": range(len(guideline_ids))},
@@ -367,7 +317,7 @@ class Catalog:
         return self.to_frame().height
 
     def _reference_tables(self) -> "ReferenceTables":
-        from .tables import build_reference_tables
+        from .references import build_reference_tables
 
         if self._reference_tables_cache is None:
             self._reference_tables_cache = build_reference_tables(self.to_frame())
@@ -388,22 +338,24 @@ def _str_sequence(value: object, field: str) -> tuple[str, ...]:
     return tuple(parsed)
 
 
-def _catalog_record(data: object) -> _CatalogRecord:
+def _catalog_entry(data: object) -> CatalogEntry:
+    if isinstance(data, CatalogEntry):
+        return data
     if isinstance(data, Guideline):
-        return _CatalogRecord(guideline=data)
+        return CatalogEntry(guideline=data)
     if not isinstance(data, Mapping):
         raise TypeError("Catalog entries must be Guideline objects or mappings.")
     values = cast(Mapping[str, object], data)
     if "guideline" in values:
-        return _CatalogRecord.from_mapping(values)
-    return _CatalogRecord(
+        return CatalogEntry.from_mapping(values)
+    return CatalogEntry(
         guideline=Guideline.from_mapping(values),
         references=_str_sequence(values.get("references") or (), "references"),
     )
 
 
 def _normalize_catalog_frame(df: pl.DataFrame) -> pl.DataFrame:
-    from .tables import CATALOG_SCHEMA
+    from .schemas import CATALOG_SCHEMA
 
     missing = [
         column

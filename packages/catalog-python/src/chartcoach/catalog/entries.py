@@ -120,6 +120,54 @@ class Section:
         }
 
 
+@dc.dataclass(frozen=True, slots=True)
+class CatalogEntry:
+    """One catalog entry with a guideline and its raw BibTeX references."""
+
+    guideline: Guideline
+    references: tuple[str, ...] = dc.field(default_factory=tuple)
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "references",
+            _str_sequence(self.references, "references"),
+        )
+
+    @classmethod
+    def from_mapping(cls, data: object) -> "CatalogEntry":
+        """Build an entry from a serialized catalog row."""
+        if isinstance(data, cls):
+            return data
+        if not isinstance(data, Mapping):
+            raise TypeError("Catalog entry data must be a mapping.")
+        values = cast(Mapping[str, object], data)
+        guideline = Guideline.from_mapping(values.get("guideline"))
+        top_level_id = values.get("id")
+        if top_level_id is not None and top_level_id != guideline.id:
+            raise ValueError(
+                f"catalog row id {top_level_id!r} does not match guideline id {guideline.id!r}."
+            )
+        return cls(
+            guideline=guideline,
+            references=_str_sequence(values.get("references") or [], "references"),
+        )
+
+    @property
+    def id(self) -> str:
+        """Return the stable id of this catalog entry."""
+
+        return self.guideline.id
+
+    def to_record(self) -> dict[str, object]:
+        """Return the serialized entry shape used by catalog dataframes."""
+        return {
+            "id": self.id,
+            "guideline": self.guideline.to_record(),
+            "references": list(self.references),
+        }
+
+
 def _required_str(data: Mapping[str, object], key: str) -> str:
     value = data.get(key)
     if not isinstance(value, str):
@@ -194,4 +242,4 @@ def _section_to_body(section: Section) -> str:
     return f"## {section.title.strip()} <!-- role: {section.role} -->\n\n{content}".strip()
 
 
-__all__ = ["Guideline", "Section"]
+__all__ = ["CatalogEntry", "Guideline", "Section"]

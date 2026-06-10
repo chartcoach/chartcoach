@@ -87,13 +87,13 @@ def find_command(
     """Rank entries with an existing LanceDB index."""
 
     catalog = load_catalog(ctx)
+    resolved_index_path = require_index_path(
+        index_path,
+        source_path=source_path(ctx),
+        table_name=table_name,
+        use_default=True,
+    )
     try:
-        resolved_index_path = require_index_path(
-            index_path,
-            source_path=source_path(ctx),
-            table_name=table_name,
-            use_default=True,
-        )
         table = open_index(resolved_index_path, table_name=table_name)
         with quiet_runtime_stderr():
             result = search_guidelines(

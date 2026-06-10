@@ -105,6 +105,6 @@ table = index(
 )
 ```
 
-`open(uri, table_name="catalog_documents")` opens an existing LanceDB table. `documents(catalog)` returns the Polars dataframe used to create the table. `model(embedding)` returns the LanceDB model used when the table should store embedding metadata.
+`open(uri, table_name="catalog_documents")` opens an existing LanceDB table. `chartcoach.search.lance.documents(catalog)` returns the Polars dataframe used to create a caller-owned LanceDB table. `model(embedding)` returns the LanceDB model used when the table should store embedding metadata.
 
 `query(table, query, limit=10, where=None, mode="auto")` returns bounded raw document rows for CLI and MCP transports. Python callers can use `table.search(...)` directly when they need the full LanceDB query builder.

@@ -6,7 +6,7 @@ from collections.abc import Mapping
 import mdformat
 import yaml
 
-from .core import Guideline, Section
+from .entries import Guideline, Section
 
 SECTION_HEADING_RE = re.compile(r"^##\s+(.+?)\s*<!--\s*role:\s*(.*?)\s*-->\s*$")
 

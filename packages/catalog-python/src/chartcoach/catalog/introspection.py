@@ -1,17 +1,20 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
+from typing import TYPE_CHECKING
 
 import polars as pl
 
-from chartcoach.catalog import Catalog
-from chartcoach.catalog.relations import (
+from .errors import CatalogLookupError
+from .relations import (
     TABLE_SPECS,
     catalog_table_names,
     catalog_table_rows,
     catalog_table_schema,
 )
-from chartcoach.tools import ToolError
+
+if TYPE_CHECKING:
+    from .collection import Catalog
 
 VALUE_ALIASES: Mapping[str, tuple[str, str, bool]] = {
     "labels": ("guideline_labels", "label", False),
@@ -24,7 +27,7 @@ VALUE_ALIASES: Mapping[str, tuple[str, str, bool]] = {
 
 
 def list_tables(
-    catalog: Catalog, *, include_row_counts: bool = False
+    catalog: "Catalog", *, include_row_counts: bool = False
 ) -> list[dict[str, object]]:
     if include_row_counts:
         return catalog_table_rows(catalog)
@@ -45,7 +48,7 @@ def parse_value_field(field: str) -> tuple[str, str, bool]:
     if field in VALUE_ALIASES:
         return VALUE_ALIASES[field]
     if "." not in field:
-        raise ToolError(
+        raise CatalogLookupError(
             f"Unknown catalog value field: {field}",
             hints=[
                 "Use aliases such as labels, roles, label.family, label.category, or label.modifier.",
@@ -54,12 +57,12 @@ def parse_value_field(field: str) -> tuple[str, str, bool]:
         )
     table, column = field.split(".", 1)
     if not table or not column:
-        raise ToolError("Value fields must be aliases or TABLE.COLUMN.")
+        raise CatalogLookupError("Value fields must be aliases or TABLE.COLUMN.")
     return table, column, False
 
 
 def count_values(
-    catalog: Catalog,
+    catalog: "Catalog",
     table: str,
     column: str,
     *,
@@ -93,7 +96,7 @@ def count_values(
     )
 
 
-def require_table(catalog: Catalog, table: str) -> pl.DataFrame:
+def require_table(catalog: "Catalog", table: str) -> pl.DataFrame:
     if table not in catalog_table_names():
         raise unknown_table_error([table])
     return catalog.table(table)
@@ -102,7 +105,7 @@ def require_table(catalog: Catalog, table: str) -> pl.DataFrame:
 def require_column(table: str, frame: pl.DataFrame, column: str) -> None:
     if column not in frame.columns:
         columns = ", ".join(frame.columns)
-        raise ToolError(
+        raise CatalogLookupError(
             f"Unknown column for table {table}: {column}",
             hints=[
                 f"Available columns on {table}: {columns}",
@@ -111,9 +114,9 @@ def require_column(table: str, frame: pl.DataFrame, column: str) -> None:
         )
 
 
-def unknown_table_error(tables: Sequence[str]) -> ToolError:
+def unknown_table_error(tables: Sequence[str]) -> CatalogLookupError:
     available = ", ".join(catalog_table_names())
-    return ToolError(
+    return CatalogLookupError(
         f"Unknown table(s): {', '.join(tables)}",
         hints=[
             f"Available tables: {available}",

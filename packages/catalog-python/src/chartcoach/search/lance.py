@@ -8,7 +8,7 @@ import polars as pl
 
 from ..catalog.collection import Catalog
 from ..constants import LANCE_DOCUMENT_TABLE
-from .documents import build_docs_df
+from ..catalog.documents import build_docs_df
 
 if TYPE_CHECKING:
     from lancedb import DBConnection, Table

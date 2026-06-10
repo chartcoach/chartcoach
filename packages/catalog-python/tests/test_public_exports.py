@@ -12,16 +12,16 @@ from chartcoach.catalog import CatalogManifestError, ManifestDefinition
 from chartcoach.catalog import Catalog as CatalogExport
 from chartcoach.catalog import CatalogManifest as CatalogManifestExport
 from chartcoach.catalog import relations
+from chartcoach.catalog.entries import Section as CatalogSection
+from chartcoach.catalog.markdown import parse_guideline
 from chartcoach.duckdb import connect_catalog, register_catalog, write_duckdb
-from chartcoach.guideline import Section as GuidelineSection
-from chartcoach.guideline import parse_guideline
 from chartcoach.search import index, query, search
 
 
 def test_package_exports_intentional_public_models() -> None:
     assert Catalog is CatalogExport
     assert CatalogManifest is CatalogManifestExport
-    assert GuidelineSection is Section
+    assert CatalogSection is Section
     assert callable(parse_label)
     assert callable(parse_guideline)
     assert Guideline.__name__ == "Guideline"

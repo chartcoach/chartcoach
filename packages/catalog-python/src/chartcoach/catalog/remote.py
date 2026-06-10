@@ -13,7 +13,7 @@ from urllib.request import Request, urlopen
 
 from platformdirs import user_cache_path
 
-from chartcoach.constants import (
+from ..constants import (
     ARTIFACT_BASE_URL_ENV,
     CACHE_DIR_ENV,
     DEFAULT_CATALOG_ARTIFACT_BASE_URL,
