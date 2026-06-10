@@ -53,6 +53,7 @@ chartcoach skills get core          # catalog primitives, artifacts, optional se
 chartcoach skills get visfeedback   # visualization critique with guideline citations
 chartcoach skills get visrec        # Visualization Recommendation and chart creation
 chartcoach skills get consult       # cited catalog consultation and knowledge-space exploration
+chartcoach skills get contribute    # draft public-ready catalog improvement issues
 ```
 
 ## Why ChartCoach
@@ -62,3 +63,5 @@ chartcoach skills get consult       # cited catalog consultation and knowledge-s
 - CLI primitives for browsing, filtering, reading, SQL inspection, optional embedding search, skills, and MCP serving.
 - Default catalog access with local caching, so first-use downloads are automatic and later queries run locally.
 - Traceability back to the evidence behind each guideline, including research papers, books, blog posts, and other source material.
+- Source-traced visualization knowledge treated as an evolving shared resource, where friction in individual workflows can improve the catalog for the community.
+- A `contribute` workflow that turns those improvement signals into local catalog issue drafts for human review.
