@@ -9,7 +9,7 @@ npx skills add chartcoach/chartcoach --skill chartcoach
 codex 'Use $chartcoach to access visualization design guidelines. Start by giving me a thematic overview of the catalog.'
 ```
 
-The skill points agents to version-matched CLI-served workflows. The CLI exposes catalog primitives, and workflow details live in `chartcoach skills get <name>`.
+The skill points agents to version-matched CLI-served skills. The CLI exposes catalog primitives, and task guidance lives in `chartcoach skills get <name>`.
 
 The base package loads manifest-described catalog bundles, parses guidelines, and exposes typed records, Polars dataframe views, and native DuckDB SQL connections.
 
@@ -140,7 +140,7 @@ Install `chartcoach[mcp]` for catalog-only MCP tools. Install both `chartcoach[m
 chartcoach mcp serve
 ```
 
-Without an index, the MCP surface exposes only `sql`. Pass `--index` to also register `search` against an existing LanceDB table.
+Without an index, the MCP server exposes only `sql`. Pass `--index` to also register `search` against an existing LanceDB table.
 
 Run tests with `pnpm --dir packages/catalog-python test`.
 

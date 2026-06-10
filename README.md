@@ -1,6 +1,6 @@
 # ChartCoach
 
-Source-traced visualization design guidance for agents and humans.
+Visualization design guidelines for agents and humans, with stable ids, public pages, and source references.
 
 ChartCoach packages visualization guidelines as records that can be browsed, queried, read, and cited. Agents use the same Guideline Catalog that humans browse, so chart feedback and recommendations can point to stable guideline ids, public pages, and source references for grounded reasoning.
 
@@ -19,19 +19,19 @@ npx skills add chartcoach/chartcoach --skill chartcoach
 codex 'Hey $chartcoach, why should I avoid using a pie chart?'
 ```
 
-The top-level `$chartcoach` skill is a small router. It loads workflow skills shipped with the installed CLI:
+The top-level `$chartcoach` skill is a small router. It loads CLI-served skills shipped with the installed package:
 
 | User job                                                            | Skill         |
 | ------------------------------------------------------------------- | ------------- |
 | Ask what the catalog says, compare chart choices, or trace claims   | `consult`     |
 | Review an existing chart with observed visual evidence              | `visfeedback` |
 | Recommend a chart or encoding from a data task                      | `visrec`      |
-| Draft a local catalog improvement issue from retrieval friction     | `contribute`  |
-| Inspect CLI primitives, custom sources, output formats, and indexes | `core`        |
+| Draft a catalog issue when retrieval exposes missing or unclear guidance | `contribute`  |
+| Inspect CLI primitives, custom sources, output formats, and indexes     | `core`        |
 
-ChartCoach treats source-traced visualization knowledge as an evolving shared resource. Friction in one person's critique, recommendation, or consultation workflow can become an improvement signal for the whole catalog community.
+The Guideline Catalog is maintained as a shared resource. A failed search, missing topic, weak label, or unclear record from one chart task can become a catalog issue that improves future retrieval.
 
-The `contribute` workflow turns those signals into local issue drafts for human review. It never posts by default.
+`contribute` drafts that issue locally for human review. It never posts by default.
 
 ## Quickstart
 
@@ -66,7 +66,7 @@ chartcoach catalog cite "$GUIDELINE_ID" \
 
 `read` returns the guideline text. `cite` returns the public guideline page and formatted source references.
 
-Agents can inspect the same workflows directly:
+Agents can inspect the same skill text directly:
 
 ```bash
 chartcoach skills list
@@ -128,7 +128,7 @@ pnpm install
 uv sync --package chartcoach --all-groups
 ```
 
-Run the browser surfaces locally:
+Run the site and docs locally:
 
 ```bash
 pnpm --dir apps/site dev

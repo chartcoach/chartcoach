@@ -1,13 +1,13 @@
 ---
 name: visrec
-description: Use this for Visualization Recommendation with ChartCoach. Teaches agents how to turn a data task, audience, constraints, and output target into source-traced chart recommendations using manifest-driven catalog navigation and optional indexed discovery.
+description: Use this for Visualization Recommendation with ChartCoach. Teaches agents how to use a data task, audience, constraints, and output target to retrieve candidate guidelines, read exact records, and write cited chart recommendations with optional indexed discovery.
 ---
 
 # ChartCoach Visrec
 
-Use ChartCoach primitives to recommend visualization designs from a design brief. This skill starts from data, task, audience, constraints, and output target. Use `visfeedback` instead when the task starts from an existing chart and observed visual evidence.
+Use ChartCoach primitives and catalog records to recommend visualization designs from a design brief. This skill starts from data, task, audience, constraints, and output target. Use `visfeedback` instead when the task starts from an existing chart and observed visual evidence.
 
-Load `core` first when catalog source, index setup, package extras, or output formats are unclear. This workflow assumes the `chartcoach` command already points at the intended Catalog Instance.
+Load `core` first when catalog source, index setup, package extras, or output formats are unclear. This skill assumes the `chartcoach` command already points at the intended Catalog Instance.
 
 ## Start With The Live Catalog
 
@@ -41,7 +41,7 @@ Ask for missing data shape, task, or output target only when the recommendation 
 
 ## Translate Brief To Search Signals
 
-Search with generic visualization concepts:
+Search with chart-design concepts:
 
 - data type and scale
 - reader task

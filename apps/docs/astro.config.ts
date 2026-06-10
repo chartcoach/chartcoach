@@ -31,7 +31,7 @@ export default defineConfig({
     createDocsUrlLogger(docsUrl, docsUrlSource),
     starlight({
       title: "ChartCoach Docs",
-      description: "Technical reference for ChartCoach catalog packages and agent surfaces.",
+      description: "Technical reference for ChartCoach catalog packages, agent skills, and MCP tools.",
       customCss: ["./src/styles/docs.css"],
       editLink,
       social,

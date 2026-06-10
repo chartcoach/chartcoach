@@ -1,13 +1,13 @@
 ---
 name: visfeedback
-description: Use this for visualization feedback with ChartCoach. Teaches agents how to inspect a chart, translate visible evidence into catalog queries, retrieve source-traced guidance, and cite exact guideline ids without hard-coding catalog vocabulary.
+description: Use this for visualization feedback with ChartCoach. Teaches agents how to inspect a chart, translate visible evidence into catalog queries, retrieve matching guideline records, and cite exact guideline ids without hard-coding catalog vocabulary.
 ---
 
 # ChartCoach Visfeedback
 
-Use ChartCoach primitives to ground visualization feedback in the current Guideline Catalog. This skill defines the workflow. It does not assume fixed labels, fixed section roles, or any one visualization source.
+Use ChartCoach primitives to ground visualization feedback in the current Guideline Catalog. This skill defines the feedback steps. It does not assume fixed labels, fixed section roles, or any one visualization source.
 
-Load `core` first when catalog source, index setup, package extras, or output formats are unclear. This workflow assumes the `chartcoach` command already points at the intended Catalog Instance.
+Load `core` first when catalog source, index setup, package extras, or output formats are unclear. This skill assumes the `chartcoach` command already points at the intended Catalog Instance.
 
 ## Start With The Live Catalog
 
@@ -75,7 +75,7 @@ When an implementation term is too internal, translate it into the reader task, 
 
 Run broad-to-narrow searches:
 
-1. Start with generic chart facts and reader tasks.
+1. Start with chart facts and reader tasks.
 2. Add the visible support or failure mode.
 3. Inspect labels, roles, and values before using exact catalog vocabulary.
 4. Use `--show-matches` when text-filtered candidates need match evidence.
@@ -145,7 +145,7 @@ Classify retrieved guidance before writing the response:
 - uncertain
 - rejected
 
-Use `rejected` as an internal trail for candidates that failed exact-read validation, had the wrong scope, or were retrieval false positives. Do not include rejected guidelines in the user-facing response by default. Surface them only when the user asks for retrieval provenance, audit detail, or a list of excluded candidates.
+Use `rejected` as an internal trail for candidates that failed exact-read validation, had the wrong scope, or were retrieval false positives. Do not include rejected guidelines in the user-facing response by default. Include them only when the user asks for retrieval provenance, audit detail, or a list of excluded candidates.
 
 For each user-facing guideline, include:
 

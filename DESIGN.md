@@ -101,7 +101,7 @@ Do not copy dotconnect content, business sections, imagery, font files, icons, o
 
 Light and dark modes are supported contracts. The document root may use `data-theme="light"` or `data-theme="dark"`. ChartCoach tokens respond to those attributes wherever the experience renders.
 
-Every visible surface must be checked in both modes:
+Every visible page and component must be checked in both modes:
 
 - Header, navigation, theme toggle, and mobile menu.
 - Home hero, feature cards, and catalog sections.
@@ -109,11 +109,11 @@ Every visible surface must be checked in both modes:
 - Guideline detail title, labels, sections, bibliography, BibTeX block, and copy control.
 - Inline code, code blocks, tables, focus rings, and selection color.
 
-Do not create a separate theme system, duplicate mode props, or mode-specific component surfaces. Use CSS variables as the shared contract.
+Do not create a separate theme system, duplicate mode props, or mode-specific component variants. Use CSS variables as the shared contract.
 
 ## Colors
 
-The light palette uses a warm canvas, near-black ink, neutral layers, disciplined borders, and one ember accent. The dark palette keeps the same relationships with low-saturation near-black surfaces and warm text.
+The light palette uses a warm canvas, near-black ink, neutral layers, disciplined borders, and one ember accent. The dark palette keeps the same relationships with low-saturation near-black backgrounds and warm text.
 
 Implementation variables:
 
@@ -172,23 +172,23 @@ The header contains a text-only ChartCoach wordmark, primary navigation, social 
 
 ### Home Hero
 
-The hero states the value proposition in one headline and one paragraph. Keep it text-only until a real visual identity earns its place. The next section makes the catalog concrete through compact cards that name the review workflow, label browsing, and source-backed records.
+The hero states what the catalog provides in one headline and one paragraph. Keep it text-only until a real visual identity earns its place. The next section makes the catalog concrete through compact cards that name review, label browsing, and source-backed records.
 
 ### Catalog Cards
 
-Cards explain what visitors can inspect: guideline records, label filters, section roles, source references, search, and agent context. Each card should name one concrete action and link into the catalog workflow.
+Cards explain what visitors can inspect: guideline records, label filters, section roles, source references, search, and agent context. Each card should name one concrete action and link into the catalog path.
 
 ### Guideline Index
 
-The index is the main browser. The count, hint, filter input, suggestions, active filters, and cards should read as one workflow. Filtering must remain client-side and visibly update the count and card list.
+The index is the main browser. The count, hint, filter input, suggestions, active filters, and cards should read as one catalog task. Filtering must remain client-side and visibly update the count and card list.
 
 ### Guideline Detail
 
-The detail page is a reading surface. It prioritizes title, summary, copy markdown, labels, role-annotated sections, bibliography, and BibTeX. Code and references must pass contrast in both modes.
+The detail page is for reading one record. It prioritizes title, summary, copy markdown, labels, role-annotated sections, bibliography, and BibTeX. Code and references must pass contrast in both modes.
 
 ### Shared UI
 
-Shared React components expose their public surface from `@chartcoach/ui`. Application code must not import UI internals through `@chartcoach/ui/lib/*` or `@chartcoach/ui/components/*`. CSS remains available through `@chartcoach/ui/styles/*`.
+Shared React components expose their public API from `@chartcoach/ui`. Application code must not import UI internals through `@chartcoach/ui/lib/*` or `@chartcoach/ui/components/*`. CSS remains available through `@chartcoach/ui/styles/*`.
 
 ## Copy Rules
 

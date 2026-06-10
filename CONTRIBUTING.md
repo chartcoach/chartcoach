@@ -62,7 +62,7 @@ pnpm build
 pnpm test
 ```
 
-Surface-specific checks:
+Package-specific checks:
 
 ```sh
 pnpm --dir apps/site lint
@@ -84,4 +84,4 @@ loaders, JavaScript loaders, and browser rendering in sync.
 ## Documentation
 
 Public copy should be short, concrete, and source-backed. Prefer direct claims
-about what a reader can inspect or run. Avoid filler and generic rationale.
+about what a reader can inspect or run. Avoid filler and vague rationale.

@@ -1,13 +1,13 @@
 ---
 name: consult
-description: Use this to consult the ChartCoach Guideline Catalog. Teaches agents how to browse a manifest-described catalog, answer design questions with citations, compare viewpoints, and use optional indexed analysis without hard-coding section roles.
+description: Use this to consult the ChartCoach Guideline Catalog. Teaches agents how to read MANIFEST.md, answer design questions with citations, compare viewpoints, and use optional indexed analysis without hard-coding section roles.
 ---
 
 # ChartCoach Consult
 
-Use ChartCoach primitives to consult the Guideline Catalog with citations. Use this skill for design questions, chart-choice comparisons, tradeoff explanations, topic searches, source tracing, teaching, related guidance, conflicting guidance, boundary cases, and knowledge-space exploration.
+Use ChartCoach primitives and catalog records to consult the Guideline Catalog with citations. Use this skill for design questions, chart-choice comparisons, tradeoff explanations, topic searches, source tracing, teaching, related guidance, conflicting guidance, boundary cases, and related-record exploration.
 
-Load `core` first when catalog source, index setup, package extras, or output formats are unclear. This workflow assumes the `chartcoach` command already points at the intended Catalog Instance.
+Load `core` first when catalog source, index setup, package extras, or output formats are unclear. This skill assumes the `chartcoach` command already points at the intended Catalog Instance.
 
 ## Start With The Live Catalog
 
@@ -146,7 +146,7 @@ Answer shape:
 Failure mode:
 ```
 
-Generic operator patterns:
+Operator patterns that adapt to any role map:
 
 | Operator             | Question                                                                  | Role relationship                                                       |
 | -------------------- | ------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
@@ -171,7 +171,7 @@ If a catalog manifest defines roles like the current default catalog, these oper
 | Viewpoint Divergence | `section.advice` similar to `section.mistakes`.         |
 | Projection           | UMAP or atlas view over role-specific embeddings.       |
 
-Treat these examples as current-catalog examples, not ChartCoach contracts. Dense embeddings can surface topical overlap before logical fit, polarity, or strict conditionality.
+Treat these examples as current-catalog examples, not ChartCoach contracts. Dense embeddings can return topical overlap before logical fit, polarity, or strict conditionality.
 
 ## Answer Format
 
