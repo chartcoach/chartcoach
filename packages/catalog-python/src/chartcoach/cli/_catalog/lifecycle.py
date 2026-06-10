@@ -5,10 +5,10 @@ from pathlib import Path
 import click
 
 from chartcoach.catalog import Catalog
+from chartcoach.catalog.navigation import validation_rows
 from chartcoach.tools import format_error
 
-from .catalog_logic import validation_rows
-from .common import (
+from ..common import (
     CONTEXT_SETTINGS,
     ROW_FORMATS,
     echo_info,

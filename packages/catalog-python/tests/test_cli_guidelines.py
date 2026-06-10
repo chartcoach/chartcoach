@@ -10,7 +10,72 @@ import pytest
 from chartcoach import Catalog, CatalogManifest
 from chartcoach.cli.main import main as chartcoach_cli
 
-from helpers import assert_cli_error, jsonl_rows
+from helpers import assert_cli_error, csv_rows, jsonl_rows
+
+
+def citation_catalog_path(tmp_path: Path, manifest: CatalogManifest) -> Path:
+    catalog = Catalog.from_entries(
+        [
+            {
+                "id": "direct-labels",
+                "title": "Use direct labels",
+                "description": "Label marks directly.",
+                "body": "## Advice <!-- role: advice -->\n\nPlace labels near marks.",
+                "labels": ["chart:line"],
+                "sections": [
+                    {
+                        "role": "advice",
+                        "title": "Advice",
+                        "content": "Place labels near marks.",
+                    }
+                ],
+                "references": [
+                    """@article{smith2024,
+  title = {Readable charts},
+  author = {Smith, Ada},
+  year = {2024},
+  journal = {Journal of Charts},
+  doi = {10.0000/charts}
+}
+""",
+                    """@inproceedings{lee2022,
+  title = {Interactive labels},
+  author = {Lee, Bea},
+  year = {2022},
+  booktitle = {VIS Proceedings},
+  url = {https://example.test/labels}
+}
+""",
+                ],
+            },
+            {
+                "id": "full-axis-bars",
+                "title": "Use full value axes for bars",
+                "description": "Keep bar axes on the honest baseline.",
+                "body": "## Advice <!-- role: advice -->\n\nStart bar value axes at zero.",
+                "labels": ["chart:bar"],
+                "sections": [
+                    {
+                        "role": "advice",
+                        "title": "Advice",
+                        "content": "Start bar value axes at zero.",
+                    }
+                ],
+                "references": [],
+            },
+        ],
+        manifest=manifest,
+    )
+    source_path = tmp_path / "citation-entries.parquet"
+    catalog.write_parquet(source_path)
+    return source_path
+
+
+def test_catalog_help_lists_cite_command(runner: CliRunner) -> None:
+    result = runner.invoke(chartcoach_cli, ["catalog", "--help"])
+
+    assert result.exit_code == 0
+    assert "cite              Print guideline URLs and formatted source citations" in result.output
 
 
 def test_catalog_query_filters_entries(
@@ -178,6 +243,154 @@ def test_catalog_read_markdown_renders_source_metadata(
     assert "### Sources" in result.output
     assert "Smith, Ada" in result.output
     assert "Readable charts" in result.output
+
+
+def test_catalog_cite_markdown_renders_guideline_url_and_all_sources(
+    runner: CliRunner,
+    sample_manifest: CatalogManifest,
+    tmp_path: Path,
+) -> None:
+    source_path = citation_catalog_path(tmp_path, sample_manifest)
+
+    result = runner.invoke(
+        chartcoach_cli,
+        [
+            "catalog",
+            "cite",
+            "--source",
+            str(source_path),
+            "direct-labels",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert "## direct-labels" in result.output
+    assert (
+        "Guideline: [Use direct labels]"
+        "(https://chartcoach.github.io/guidelines/direct-labels) (`direct-labels`)"
+    ) in result.output
+    assert (
+        "- Lee, Bea (2022). Interactive labels. VIS Proceedings. "
+        "https://example.test/labels"
+    ) in result.output
+    assert (
+        "- Smith, Ada (2024). Readable charts. Journal of Charts. "
+        "https://doi.org/10.0000/charts"
+    ) in result.output
+    assert "@article" not in result.output
+    assert "title = {" not in result.output
+
+
+def test_catalog_cite_jsonl_preserves_requested_id_order_and_empty_sources(
+    runner: CliRunner,
+    sample_manifest: CatalogManifest,
+    tmp_path: Path,
+) -> None:
+    source_path = citation_catalog_path(tmp_path, sample_manifest)
+
+    result = runner.invoke(
+        chartcoach_cli,
+        [
+            "catalog",
+            "cite",
+            "--source",
+            str(source_path),
+            "full-axis-bars",
+            "direct-labels",
+            "--format",
+            "jsonl",
+        ],
+    )
+
+    rows = jsonl_rows(result)
+    assert [row["id"] for row in rows] == ["full-axis-bars", "direct-labels"]
+    assert rows[0]["url"] == "https://chartcoach.github.io/guidelines/full-axis-bars"
+    assert rows[0]["sources"] == []
+    sources = cast(list[dict[str, object]], rows[1]["sources"])
+    assert [source["reference_id"] for source in sources] == ["lee2022", "smith2024"]
+    assert all("bibtex" not in source for source in sources)
+
+
+def test_catalog_cite_json_includes_structured_source_citations(
+    runner: CliRunner,
+    sample_manifest: CatalogManifest,
+    tmp_path: Path,
+) -> None:
+    source_path = citation_catalog_path(tmp_path, sample_manifest)
+
+    result = runner.invoke(
+        chartcoach_cli,
+        [
+            "catalog",
+            "cite",
+            "--source",
+            str(source_path),
+            "direct-labels",
+            "--url-template",
+            "https://example.test/g/{id}/",
+            "--format",
+            "json",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    payload = cast(list[dict[str, object]], json.loads(result.output))
+    assert payload[0]["url"] == "https://example.test/g/direct-labels/"
+    assert payload[0]["guideline_citation"] == (
+        "[Use direct labels](https://example.test/g/direct-labels/) "
+        "(`direct-labels`)"
+    )
+    sources = cast(list[dict[str, object]], payload[0]["sources"])
+    assert sources[0] == {
+        "reference_id": "lee2022",
+        "source_type": "inproceedings",
+        "authors_text": "Lee, Bea",
+        "year": "2022",
+        "source_title": "Interactive labels",
+        "journal": None,
+        "booktitle": "VIS Proceedings",
+        "publisher": None,
+        "doi": None,
+        "url": "https://example.test/labels",
+        "citation": (
+            "Lee, Bea (2022). Interactive labels. VIS Proceedings. "
+            "https://example.test/labels"
+        ),
+    }
+    assert "bibtex" not in json.dumps(payload)
+
+
+def test_catalog_cite_reports_invalid_ids_and_url_templates(
+    runner: CliRunner,
+    sample_catalog_path: Path,
+) -> None:
+    missing_result = runner.invoke(
+        chartcoach_cli,
+        [
+            "catalog",
+            "cite",
+            "--source",
+            str(sample_catalog_path),
+            "direct-lables",
+        ],
+    )
+
+    assert_cli_error(missing_result, "Unknown entry id: direct-lables")
+
+    template_result = runner.invoke(
+        chartcoach_cli,
+        [
+            "catalog",
+            "cite",
+            "--source",
+            str(sample_catalog_path),
+            "direct-labels",
+            "--url-template",
+            "https://example.test/guidelines",
+        ],
+    )
+
+    assert_cli_error(template_result, "Guideline URL template must include `{id}`.")
 
 
 def test_catalog_read_can_select_section_roles(
@@ -386,7 +599,8 @@ def test_catalog_commands_report_no_matches(
         ],
     )
     assert list_result.exit_code == 0
-    assert list_result.output.strip() == "No entries matched."
+    assert list_result.stdout.strip() == "No entries matched."
+    assert "Try a broader --contains term" in list_result.stderr
 
     query_result = runner.invoke(
         chartcoach_cli,
@@ -400,7 +614,270 @@ def test_catalog_commands_report_no_matches(
         ],
     )
     assert query_result.exit_code == 0
-    assert query_result.output.strip() == ""
+    assert query_result.stdout.strip() == ""
+    assert "--body-contains" in query_result.stderr
+    assert "--section-contains" in query_result.stderr
+
+
+def test_catalog_empty_label_results_report_recovery_hints_on_stderr(
+    runner: CliRunner,
+    sample_catalog_path: Path,
+) -> None:
+    result = runner.invoke(
+        chartcoach_cli,
+        [
+            "catalog",
+            "labels",
+            "--source",
+            str(sample_catalog_path),
+            "--contains",
+            "not-present",
+            "--format",
+            "json",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert json.loads(result.stdout) == []
+    assert "Try a shorter or broader --contains term." in result.stderr
+    assert "catalog query --section-contains" in result.stderr
+
+
+def test_catalog_empty_query_with_strict_labels_suggests_any_label(
+    runner: CliRunner,
+    sample_catalog_path: Path,
+) -> None:
+    result = runner.invoke(
+        chartcoach_cli,
+        [
+            "catalog",
+            "query",
+            "--source",
+            str(sample_catalog_path),
+            "--label",
+            "chart:bar",
+            "--label",
+            "task:lookup",
+            "--format",
+            "jsonl",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert result.stdout == ""
+    assert "Repeated --label filters are all-of." in result.stderr
+    assert "--any-label" in result.stderr
+
+
+def test_catalog_empty_values_json_preserves_parseable_stdout(
+    runner: CliRunner,
+    sample_catalog_path: Path,
+) -> None:
+    result = runner.invoke(
+        chartcoach_cli,
+        [
+            "catalog",
+            "values",
+            "labels",
+            "--source",
+            str(sample_catalog_path),
+            "--contains",
+            "not-present",
+            "--format",
+            "json",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert json.loads(result.stdout) == []
+    assert "Use aliases such as labels, roles" in result.stderr
+    assert "catalog schema" in result.stderr
+
+
+def test_catalog_empty_csv_preserves_parseable_stdout(
+    runner: CliRunner,
+    sample_catalog_path: Path,
+) -> None:
+    result = runner.invoke(
+        chartcoach_cli,
+        [
+            "catalog",
+            "labels",
+            "--source",
+            str(sample_catalog_path),
+            "--contains",
+            "not-present",
+            "--format",
+            "csv",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert csv_rows(result) == []
+    assert "Guidance:" in result.stderr
+
+
+def test_catalog_query_show_matches_reports_title_and_description_hits(
+    runner: CliRunner,
+    sample_catalog_path: Path,
+) -> None:
+    title_result = runner.invoke(
+        chartcoach_cli,
+        [
+            "catalog",
+            "query",
+            "--source",
+            str(sample_catalog_path),
+            "--contains",
+            "Use direct",
+            "--show-matches",
+            "--format",
+            "jsonl",
+        ],
+    )
+    title_matches = cast(
+        list[dict[str, object]], jsonl_rows(title_result)[0]["matches"]
+    )
+    assert {
+        "predicate": "contains",
+        "field": "title",
+        "query": "Use direct",
+        "snippet": "Use direct labels",
+    } in title_matches
+
+    description_result = runner.invoke(
+        chartcoach_cli,
+        [
+            "catalog",
+            "query",
+            "--source",
+            str(sample_catalog_path),
+            "--contains",
+            "space permits",
+            "--show-matches",
+            "--format",
+            "jsonl",
+        ],
+    )
+    description_matches = cast(
+        list[dict[str, object]], jsonl_rows(description_result)[0]["matches"]
+    )
+    assert {
+        "predicate": "contains",
+        "field": "description",
+        "query": "space permits",
+        "snippet": "Label marks directly when space permits.",
+    } in description_matches
+
+
+def test_catalog_query_show_matches_reports_body_and_section_hits(
+    runner: CliRunner,
+    sample_catalog_path: Path,
+) -> None:
+    body_result = runner.invoke(
+        chartcoach_cli,
+        [
+            "catalog",
+            "query",
+            "--source",
+            str(sample_catalog_path),
+            "--body-contains",
+            "near marks",
+            "--show-matches",
+            "--format",
+            "json",
+        ],
+    )
+    body_payload = cast(list[dict[str, object]], json.loads(body_result.stdout))
+    body_matches = cast(list[dict[str, object]], body_payload[0]["matches"])
+    assert body_matches == [
+        {
+            "predicate": "body-contains",
+            "field": "body",
+            "query": "near marks",
+            "snippet": "## Advice <!-- role: advice --> Place labels near marks.",
+        }
+    ]
+
+    section_result = runner.invoke(
+        chartcoach_cli,
+        [
+            "catalog",
+            "query",
+            "--source",
+            str(sample_catalog_path),
+            "--section-contains",
+            "zero",
+            "--show-matches",
+            "--format",
+            "jsonl",
+        ],
+    )
+    section_matches = cast(
+        list[dict[str, object]], jsonl_rows(section_result)[0]["matches"]
+    )
+    assert section_matches == [
+        {
+            "predicate": "section-contains",
+            "field": "section.content",
+            "role": "advice",
+            "title": "Advice",
+            "query": "zero",
+            "snippet": "Start bar value axes at zero.",
+        }
+    ]
+
+
+def test_catalog_query_show_matches_table_adds_short_matches_column(
+    runner: CliRunner,
+    sample_catalog_path: Path,
+) -> None:
+    result = runner.invoke(
+        chartcoach_cli,
+        [
+            "catalog",
+            "query",
+            "--source",
+            str(sample_catalog_path),
+            "--contains",
+            "space permits",
+            "--show-matches",
+            "--format",
+            "table",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert result.stdout.splitlines()[0].split() == [
+        "id",
+        "title",
+        "description",
+        "labels",
+        "matches",
+    ]
+    assert "description: Label marks directly when space permits." in result.stdout
+
+
+def test_catalog_query_without_show_matches_keeps_default_shape(
+    runner: CliRunner,
+    sample_catalog_path: Path,
+) -> None:
+    result = runner.invoke(
+        chartcoach_cli,
+        [
+            "catalog",
+            "query",
+            "--source",
+            str(sample_catalog_path),
+            "--contains",
+            "space permits",
+            "--format",
+            "jsonl",
+        ],
+    )
+
+    rows = jsonl_rows(result)
+    assert list(rows[0]) == ["id", "title", "description", "labels"]
 
 
 def test_catalog_list_table_compacts_list_cells_and_machine_formats_preserve_lists(

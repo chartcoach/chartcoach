@@ -25,16 +25,16 @@ def jsonl_rows(result: Result) -> list[JsonObject]:
     assert result.exit_code == 0, result.output
     return [
         cast(JsonObject, json.loads(line))
-        for line in result.output.splitlines()
+        for line in result.stdout.splitlines()
         if line.strip()
     ]
 
 
 def json_value(result: Result) -> JsonObject:
     assert result.exit_code == 0, result.output
-    return cast(JsonObject, json.loads(result.output))
+    return cast(JsonObject, json.loads(result.stdout))
 
 
 def csv_rows(result: Result) -> list[dict[str, str]]:
     assert result.exit_code == 0, result.output
-    return list(csv.DictReader(io.StringIO(result.output)))
+    return list(csv.DictReader(io.StringIO(result.stdout)))

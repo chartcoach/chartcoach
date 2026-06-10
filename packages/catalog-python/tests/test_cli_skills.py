@@ -137,9 +137,14 @@ def test_packaged_skills_exclude_top_level_repo_skill(
     list_result = runner.invoke(chartcoach_cli, ["skills", "list", "--format", "jsonl"])
     assert list_result.exit_code == 0
     visible_names = {row["name"] for row in jsonl_rows(list_result)}
-    assert visible_names == {"core", "visfeedback"}
+    assert visible_names == {"consult", "core", "visfeedback", "visrec"}
+
+    for name in ("consult", "visrec"):
+        skill_result = runner.invoke(chartcoach_cli, ["skills", "get", name])
+        assert skill_result.exit_code == 0
+        assert f"name: {name}" in skill_result.output
 
     get_result = runner.invoke(chartcoach_cli, ["skills", "get", "chartcoach"])
     assert_cli_error(get_result, "Unknown CLI-served skill: chartcoach")
-    assert "Available CLI-served skills: core, visfeedback" in get_result.output
+    assert "Available CLI-served skills: consult, core, visfeedback, visrec" in get_result.output
     assert (repo_root / "skills" / "chartcoach" / "SKILL.md").exists()

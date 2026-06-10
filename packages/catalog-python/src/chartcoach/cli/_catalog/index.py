@@ -10,8 +10,9 @@ from chartcoach.search import Mode, index, open as open_index
 from chartcoach.search import search as search_guidelines
 from chartcoach.tools import ToolError
 
-from .common import (
+from ..common import (
     CONTEXT_SETTINGS,
+    INDEX_EXTRA_MESSAGE,
     SEARCH_FORMATS,
     emit_rows,
     guideline_search_rows_to_compact_markdown,
@@ -108,6 +109,15 @@ def find_command(
         raise click.ClickException(str(exc)) from exc
     except click.ClickException:
         raise
+    except ModuleNotFoundError as exc:
+        raise click.ClickException(
+            search_cli_error(
+                str(exc),
+                index_path=resolved_index_path,
+                table_name=table_name,
+                missing_index_extra=True,
+            )
+        ) from exc
     except Exception as exc:
         raise click.ClickException(
             search_cli_error(
@@ -211,6 +221,17 @@ def index_create_command(
             "embedding": embedding_name,
             "catalog_digest": catalog.digest(),
         }
+    except ModuleNotFoundError as exc:
+        raise click.ClickException(
+            search_cli_error(
+                str(exc),
+                index_path=resolved_index_path,
+                table_name=table_name,
+                missing_index_extra=True,
+            )
+        ) from exc
+    except click.ClickException:
+        raise
     except Exception as exc:
         raise click.ClickException(
             search_cli_error(
@@ -253,6 +274,15 @@ def index_info_command(
             "documents": table.count_rows(),
             "embedding_functions": embedding_functions_state(table),
         }
+    except ModuleNotFoundError as exc:
+        raise click.ClickException(
+            search_cli_error(
+                str(exc),
+                index_path=resolved_index_path,
+                table_name=table_name,
+                missing_index_extra=True,
+            )
+        ) from exc
     except Exception as exc:
         raise click.ClickException(
             search_cli_error(
@@ -285,7 +315,7 @@ def _embedding(
     try:
         from lancedb.embeddings import get_registry
     except ModuleNotFoundError as exc:
-        raise click.ClickException(search_cli_error(str(exc))) from exc
+        raise ModuleNotFoundError(INDEX_EXTRA_MESSAGE, name=exc.name) from exc
 
     registry = get_registry()
     for item in variables:
