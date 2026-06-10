@@ -558,6 +558,7 @@ def cite_command(
 
 
 @click.command("schema", context_settings=CONTEXT_SETTINGS)
+@click.argument("argument_table_names", nargs=-1, metavar="[TABLE]...")
 @source_option
 @click.option(
     "--table",
@@ -587,6 +588,7 @@ def cite_command(
 @click.pass_context
 def schema_command(
     ctx: click.Context,
+    argument_table_names: tuple[str, ...],
     table_names: tuple[str, ...],
     list_table_names: bool,
     row_counts: bool,
@@ -595,10 +597,21 @@ def schema_command(
     """Show queryable catalog fields and tables."""
 
     try:
+        selected_tables = (*table_names, *argument_table_names)
+        if list_table_names and selected_tables:
+            raise click.ClickException(
+                format_error(
+                    "`catalog schema --tables` lists table names and does not accept table filters.",
+                    [
+                        "Use `chartcoach catalog schema TABLE` to inspect one table's columns.",
+                        "Use `chartcoach catalog schema --table TABLE` to inspect one table's columns.",
+                    ],
+                )
+            )
         if list_table_names:
             rows = list_tables(load_catalog(ctx), include_row_counts=row_counts)
         else:
-            rows = describe_tables(tables=table_names)
+            rows = describe_tables(tables=selected_tables)
     except (CatalogError, ToolError) as exc:
         raise _command_error(exc) from exc
     emit_rows(rows, output_format=output_format)
@@ -631,7 +644,7 @@ def values_command(
     limit: int,
     output_format: str,
 ) -> None:
-    """Count values for a catalog field."""
+    """Count values for a field alias or TABLE.COLUMN."""
 
     catalog = load_catalog(ctx)
     try:

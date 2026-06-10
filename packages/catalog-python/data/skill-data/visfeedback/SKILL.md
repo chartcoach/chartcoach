@@ -95,7 +95,17 @@ chartcoach catalog query --label-prefix <prefix> --format jsonl
 chartcoach catalog sql "select id, title from guidelines limit 10" --format jsonl
 ```
 
-Use `catalog schema --tables --row-counts`, `catalog schema`, and `catalog values <field>` when you need exact fields, table names, or value counts.
+Use schema and values commands only for catalog structure and catalog vocabulary:
+
+```sh
+chartcoach catalog schema --tables --row-counts
+chartcoach catalog schema
+chartcoach catalog values labels --contains "<term>" --format jsonl
+chartcoach catalog values roles --format jsonl
+chartcoach catalog values label.family --format jsonl
+```
+
+For `catalog values`, pass a field alias or `TABLE.COLUMN` as the first argument. Do not pass an observed chart term, label family, or audience word as the field. Put search text in `--contains`, inspect label families with `catalog values label.family`, and inspect labels inside one family with `catalog labels --family <family>`.
 
 If a query returns no JSONL rows, relax one observed signal at a time. Inspect labels with `catalog labels --contains TEXT`, try a broader visual term in `--body-contains` or `--section-contains`, or use `catalog sql` when you need explicit boolean grouping. Do not jump to indexed discovery until the base path has had a reasonable pass.
 

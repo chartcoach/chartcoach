@@ -145,12 +145,18 @@ Use table primitives when you need exact schema, valid values, counts, or joins:
 ```sh
 chartcoach catalog schema --tables --row-counts
 chartcoach catalog schema
+chartcoach catalog schema guidelines
+chartcoach catalog schema --table guideline_labels
 chartcoach catalog values roles
 chartcoach catalog values labels --contains axis
 chartcoach catalog sql "select id, title from guidelines limit 5" --format jsonl
 ```
 
-For `catalog values`, use aliases when they fit: `labels`, `roles`, `label.family`, `label.category`, or `label.modifier`. Use raw `TABLE.COLUMN` fields only after `catalog schema` confirms the table and column.
+For `catalog schema`, pass table filters as positional names or repeated `--table` options. Use `--tables` only to list table names and optional row counts.
+
+For `catalog values`, the required `FIELD` is the value dimension to count, not the observed value to search for. Use aliases when they fit: `labels`, `roles`, `label.family`, `label.category`, or `label.modifier`. Use `--contains TEXT` to filter the values returned by that field. Use raw `TABLE.COLUMN` fields only after `catalog schema` confirms the table and column. Do not pass `--table` or `--column` to `catalog values`.
+
+Use `chartcoach catalog labels --family FAMILY` when you want labels inside one label family. Do not pass the family name as the `catalog values` field.
 
 Use SQL when exact filtering or joins are clearer than keyword matching. Keep queries read-only.
 
@@ -164,7 +170,9 @@ Empty output is a retrieval signal, not evidence that no relevant guideline exis
 | `catalog list --contains TEXT`         | Remember that `list` searches id, title, and description. Try `catalog query --body-contains TEXT` or `--section-contains TEXT` for full text. |
 | `catalog query --label A --label B`    | Repeated `--label` filters are all-of. Relax one label or use repeated `--any-label` for alternatives.                                         |
 | `catalog query` with text filters      | Relax one text predicate and try broader `--contains`, `--body-contains`, or `--section-contains` text.                                        |
-| `catalog values FIELD --contains TEXT` | Try a broader value, use an alias such as `labels` or `roles`, or inspect raw fields with `catalog schema`.                                    |
+| `catalog values FIELD --contains TEXT` | Keep `FIELD` as an alias or `TABLE.COLUMN`, then try a broader `--contains` value, use `labels` or `roles`, or inspect raw fields with `catalog schema`. |
+
+If Click reports an invalid `--format`, check the command format table before retrying. Formats are command-specific. `manifest` supports `markdown`, `json`, and `jsonl`. Row-oriented commands such as `schema`, `values`, `labels`, and `query` support `table`.
 
 ## Indexed Discovery
 
@@ -241,7 +249,7 @@ Search output reports indexed document roles. Values such as `overview`, `docume
 - Copy exact ids from CLI output before reading records.
 - Retrieve cited sections with `catalog read <id> --section <role-from-manifest>`.
 - Use `catalog cite <id>...` after exact reads to format guideline URLs and source references.
-- Use `catalog values --contains TEXT` when the visible value list is too broad.
+- Use `catalog values FIELD --contains TEXT` when the visible value list is too broad.
 - Keep searches task-specific: chart family, data type, visual encoding, reader task, failure mode, and interaction state.
 - Reject adjacent hits when the top result is scoped to a different chart family, reader task, or data type. Search again with sharper observed terms.
 - Keep discovery-to-citation provenance with the observed fact, discovery command, candidate id, exact-read command, and applicability group.

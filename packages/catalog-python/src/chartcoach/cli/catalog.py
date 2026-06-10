@@ -11,6 +11,8 @@ from .common import CONTEXT_SETTINGS
 @click.group(
     "catalog",
     context_settings=CONTEXT_SETTINGS,
+    invoke_without_command=True,
+    no_args_is_help=False,
     help=(
         "Inspect, query, build, and index ChartCoach catalogs.\n\n"
         "\b\n"
@@ -38,8 +40,13 @@ from .common import CONTEXT_SETTINGS
         "  export duckdb     Materialize catalog tables into DuckDB"
     ),
 )
-def catalog_command() -> None:
+@click.pass_context
+def catalog_command(ctx: click.Context) -> None:
     """Catalog command group."""
+
+    if ctx.invoked_subcommand is None:
+        click.echo(ctx.get_help())
+        ctx.exit(0)
 
 
 register_navigation_commands(catalog_command)
