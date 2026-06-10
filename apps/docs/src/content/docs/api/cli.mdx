@@ -6,12 +6,12 @@ description: Command groups and output contracts for the chartcoach command-line
 The `chartcoach` CLI reads catalog bundles, emits deterministic rows, writes DuckDB tables, and queries optional LanceDB indexes.
 
 ```bash
-uv run --package chartcoach chartcoach --help
+chartcoach --help
 ```
 
 Read-only commands use package-pinned release metadata under `https://artifacts.chartcoach.dev/catalog/releases/<version>/<digest>/metadata.json` when `--source` and `CHARTCOACH_SOURCE` are omitted. The Python package downloads the manifest and entries artifacts once into the user's platform cache directory and validates the package-pinned digest. The local cache mirrors `catalog/releases/<version>/<digest>/`. Indexed commands download default LanceDB artifacts only when an index is needed.
 
-Human `table` output uses aligned columns. JSON, JSONL, and CSV output keep machine-readable stdout. First-download notices are written to stderr.
+Human `table` output uses rounded, wrapped columns for terminal scanning. JSON, JSONL, and CSV output keep machine-readable stdout. First-download notices are written to stderr.
 
 For agent workflows, install the top-level `$chartcoach` skill and ask the agent to use it. The CLI exposes catalog primitives and CLI-served workflow skills.
 

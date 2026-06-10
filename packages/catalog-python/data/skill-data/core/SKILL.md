@@ -222,7 +222,7 @@ Search output reports indexed document roles. Values such as `overview`, `docume
 
 - Use `jsonl` for agent parsing and shell pipelines.
 - Use `json` when one command returns structured metadata.
-- Use `table` for quick human scanning with aligned plain-text columns.
+- Use `table` for human terminal scanning with rounded, wrapped columns.
 - Use `markdown` for full guideline reading.
 - Use `compact` for indexed citation triage from `catalog find`.
 - Use `csv` only when the shape is flat enough for tabular tools.

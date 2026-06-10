@@ -856,14 +856,14 @@ def test_catalog_query_show_matches_table_adds_short_matches_column(
     )
 
     assert result.exit_code == 0
-    assert result.stdout.splitlines()[0].split() == [
-        "id",
-        "title",
-        "description",
-        "labels",
-        "matches",
-    ]
-    assert "description: Label marks directly when space permits." in result.stdout
+    assert "ID" in result.stdout
+    assert "Title" in result.stdout
+    assert "Description" in result.stdout
+    assert "Labels" in result.stdout
+    assert "Matches" in result.stdout
+    assert "description: Label marks" in result.stdout
+    assert "directly when space" in result.stdout
+    assert "permits." in result.stdout
 
 
 def test_catalog_query_without_show_matches_keeps_default_shape(
@@ -906,7 +906,9 @@ def test_catalog_list_table_compacts_list_cells_and_machine_formats_preserve_lis
         ],
     )
     assert table_result.exit_code == 0
-    assert "chart:line, component:label, task:lookup" in table_result.output
+    assert "chart:line," in table_result.output
+    assert "component:label," in table_result.output
+    assert "task:lookup" in table_result.output
 
     json_result = runner.invoke(
         chartcoach_cli,

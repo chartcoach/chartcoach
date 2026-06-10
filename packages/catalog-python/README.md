@@ -93,7 +93,7 @@ from cc_index.main.catalog_documents
 limit 5;
 ```
 
-Run the CLI with `uv run --package chartcoach chartcoach --help`.
+Run the CLI with `chartcoach --help`.
 
 These commands read the package-pinned default catalog artifact, inspect table schemas, write DuckDB tables, read guideline sections, and query indexed guideline rows.
 
@@ -125,7 +125,7 @@ chartcoach catalog find \
   "overplotted scatter plot with too many points" --format jsonl
 ```
 
-Every row-oriented command supports `--format jsonl`, so shell tools can handle projection and token control. Human `table` output uses aligned columns for quick scanning. JSON, JSONL, and CSV keep machine-readable stdout.
+Every row-oriented command supports `--format jsonl`, so shell tools can handle projection and token control. Human `table` output uses rounded, wrapped columns for terminal scanning. JSON, JSONL, and CSV keep machine-readable stdout.
 
 ```bash
 chartcoach catalog schema --format jsonl |
