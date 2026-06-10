@@ -1,6 +1,8 @@
 # ChartCoach Docs
 
-Technical documentation for ChartCoach packages, command-line tools, agent skills, and MCP tools.
+Astro and Starlight scaffold for the next ChartCoach documentation site.
+
+The app currently ships one placeholder page so the docs build remains runnable while the documentation is rewritten.
 
 ```bash
 pnpm --dir apps/docs dev

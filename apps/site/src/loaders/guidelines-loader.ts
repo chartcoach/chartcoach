@@ -219,21 +219,14 @@ export function guidelinesLoader({
       for (const guideline of catalog) {
         const id = guideline.id;
         const references = [...guideline.references];
-        const referencesBib =
-          references.length > 0 ? references.join("\n\n") : undefined;
+        const referencesBib = references.length > 0 ? references.join("\n\n") : undefined;
         const referencesByKey = buildReferencesByKey(references);
 
-        const renderedBody = renderCitationsInMarkdown(
-          guideline.body,
-          referencesByKey,
-        );
+        const renderedBody = renderCitationsInMarkdown(guideline.body, referencesByKey);
         const citedKeys = new Set(renderedBody.citedKeys);
         const sections = await Promise.all(
           guideline.sections.map(async (section) => {
-            const renderedSection = renderCitationsInMarkdown(
-              section.content,
-              referencesByKey,
-            );
+            const renderedSection = renderCitationsInMarkdown(section.content, referencesByKey);
             for (const key of renderedSection.citedKeys) citedKeys.add(key);
 
             return {

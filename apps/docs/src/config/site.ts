@@ -8,25 +8,14 @@ export const monorepoRoot = fileURLToPath(new URL("../../../..", import.meta.url
 const docsSourceRoot = fileURLToPath(new URL("..", import.meta.url));
 const repoEnvPath = join(monorepoRoot, ".env");
 
-export const LOCAL_SITE_URL = "http://localhost:4321/";
 export const LOCAL_DOCS_URL = "http://localhost:4322/";
-export const SITE_URL_ENV = "CHARTCOACH_SITE_URL";
 export const DOCS_URL_ENV = "CHARTCOACH_DOCS_URL";
-export const DOCS_EDIT_BASE_URL_ENV = "CHARTCOACH_DOCS_EDIT_BASE_URL";
-export const REPOSITORY_URL_ENV = "CHARTCOACH_REPOSITORY_URL";
 
 export type DocsUrlSource = "env" | "local";
 
 export type DocsRuntimeConfig = {
   docsUrl: string;
   docsUrlSource: DocsUrlSource;
-  editLinkBaseUrl?: string;
-  repositoryUrl?: string;
-};
-
-export type DocsLinks = {
-  siteUrl: string;
-  repositoryUrl?: string;
 };
 
 type EnvMap = Record<string, string | undefined>;
@@ -77,14 +66,6 @@ function resolveConfiguredUrl(
   };
 }
 
-function resolveOptionalUrl(env: EnvMap, envName: string) {
-  const value = env[envName];
-  if (!value) {
-    return undefined;
-  }
-  return normalizeUrl(value);
-}
-
 export function getDocsRuntimeConfig(options: DocsRuntimeOptions = {}): DocsRuntimeConfig {
   const env = getEnv(options);
   const docsUrl = resolveConfiguredUrl(env, DOCS_URL_ENV, LOCAL_DOCS_URL);
@@ -92,16 +73,6 @@ export function getDocsRuntimeConfig(options: DocsRuntimeOptions = {}): DocsRunt
   return {
     docsUrl: docsUrl.url,
     docsUrlSource: docsUrl.source,
-    editLinkBaseUrl: resolveOptionalUrl(env, DOCS_EDIT_BASE_URL_ENV),
-    repositoryUrl: resolveOptionalUrl(env, REPOSITORY_URL_ENV),
-  };
-}
-
-export function getDocsLinks(options: DocsRuntimeOptions = {}): DocsLinks {
-  const env = getEnv(options);
-  return {
-    siteUrl: resolveConfiguredUrl(env, SITE_URL_ENV, LOCAL_SITE_URL).url,
-    repositoryUrl: resolveOptionalUrl(env, REPOSITORY_URL_ENV),
   };
 }
 

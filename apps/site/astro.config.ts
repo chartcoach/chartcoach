@@ -1,5 +1,4 @@
 import { defineConfig } from "astro/config";
-import mdx from "@astrojs/mdx";
 import sitemap from "@astrojs/sitemap";
 
 import {
@@ -16,5 +15,5 @@ const { siteUrl, siteUrlSource } = getSiteRuntimeConfig();
 export default defineConfig({
   site: siteUrl,
   vite: siteViteConfig,
-  integrations: [createSiteUrlLogger(siteUrl, siteUrlSource), mdx(), sitemap()],
+  integrations: [createSiteUrlLogger(siteUrl, siteUrlSource), sitemap()],
 });

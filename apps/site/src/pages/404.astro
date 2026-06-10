@@ -1,33 +1,8 @@
 ---
-import { getSiteLinks } from "@/config/site";
 import SiteLayout from "@/layouts/SiteLayout.astro";
-
-const { docsUrl } = getSiteLinks();
-const siteInnerClasses =
-  "mx-auto w-[min(100%_-_2rem,var(--page-width))] max-[24rem]:w-[min(100%_-_1.5rem,var(--page-width))]";
-const eyebrowClasses =
-  "m-0 mb-[0.7rem] font-mono text-[0.72rem] font-bold leading-[1.1] text-ember lowercase";
 ---
 
-<SiteLayout
-  title="Page not found"
-  description="The requested ChartCoach page does not exist."
->
-  <section class:list={[siteInnerClasses, "grid min-h-[60svh] content-center py-16"]} data-not-found-page>
-    <p class={eyebrowClasses}>404</p>
-    <h1 class="m-0 max-w-[42rem] text-balance font-display text-[2.5rem] font-semibold leading-[1] tracking-[0] text-foreground md:text-[4rem]">
-      This ChartCoach page does not exist.
-    </h1>
-    <p class="mt-4 max-w-[36rem] text-[1rem] leading-[1.6] text-muted-foreground">
-      Use the Guideline Catalog for record browsing or open the docs for technical reference.
-    </p>
-    <div class="mt-7 flex flex-wrap gap-3">
-      <a class="inline-flex min-h-11 items-center rounded-sm bg-primary px-4 py-2 text-[0.92rem] font-semibold text-primary-foreground no-underline" href="/guidelines/">
-        Browse guidelines
-      </a>
-      <a class="inline-flex min-h-11 items-center rounded-sm border border-[var(--line)] bg-[var(--surface-raised)] px-4 py-2 text-[0.92rem] font-semibold text-foreground no-underline" href={docsUrl}>
-        Open docs
-      </a>
-    </div>
-  </section>
+<SiteLayout title="Not found" description="Page not found.">
+  <h1>Not found</h1>
+  <p><a href="/">ChartCoach</a></p>
 </SiteLayout>
