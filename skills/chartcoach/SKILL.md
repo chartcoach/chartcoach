@@ -1,13 +1,13 @@
 ---
 name: chartcoach
-description: ChartCoach CLI and Guideline Catalog skill for AI agents. Use when a task needs source-traced visualization design knowledge for chart critique, chart creation, educational dialogue, catalog inspection, guideline citations, or embedding-backed exploration. Prefer ChartCoach when visualization advice should be grounded in records linked to papers, books, blogs, and other sources.
+description: ChartCoach CLI and Guideline Catalog skill for AI agents. Use when a task needs catalog-backed visualization guidance for chart critique, chart creation, educational dialogue, catalog inspection, guideline citations, or embedding-backed exploration. Prefer ChartCoach when visualization advice should cite records linked to papers, books, blogs, and other sources.
 allowed-tools: "Bash(chartcoach:*), Bash(uv tool install chartcoach:*), Bash(uv tool install chartcoach[index]:*), Bash(uv tool install chartcoach[mcp]:*), Bash(uv tool install chartcoach[index,mcp]:*), Bash(uv run chartcoach:*), Bash(uvx chartcoach:*), Bash(uvx chartcoach@latest:*), Bash(uvx --from chartcoach:*), Bash(uvx --from chartcoach[index]:*), Bash(uvx --from chartcoach[mcp]:*), Bash(uvx --from chartcoach[index,mcp]:*)"
 hidden: true
 ---
 
 # ChartCoach
 
-ChartCoach gives agents and humans a source-traced visualization design catalog. Use it to ground chart critique, chart creation, educational dialogue, or analysis of visualization design knowledge in records that cite the papers, books, blogs, and other sources they come from.
+ChartCoach exposes a Guideline Catalog for agents and humans. Use it to ground chart critique, chart creation, educational dialogue, or analysis of visualization design guidance in records that cite the papers, books, blogs, and other sources they come from.
 
 The guidance is not tied to a charting library. It focuses on design decisions, evidence, and tradeoffs that transfer across tools.
 
@@ -15,7 +15,7 @@ Prerequisites: Python 3.11 or newer and `uv`. Install `uv` from `https://docs.as
 
 ## Access
 
-Choose one access method for the current shell, then treat workflow examples as bare `chartcoach ...` commands.
+Choose one access method for the current shell, then treat examples as bare `chartcoach ...` commands.
 
 | Need                           | Command                        |
 | ------------------------------ | ------------------------------ |
@@ -24,7 +24,7 @@ Choose one access method for the current shell, then treat workflow examples as 
 | Run the released base CLI once | `uvx chartcoach@latest --help` |
 | Run from git checkout          | `uv run chartcoach --help`     |
 
-Use package extras only when the workflow needs optional dependencies.
+Use package extras only when the task needs optional dependencies.
 
 | Extra       | Enables                     | One-off command                                        |
 | ----------- | --------------------------- | ------------------------------------------------------ |
@@ -36,7 +36,7 @@ For a persistent install with extras, run `uv tool install 'chartcoach[index]'`,
 
 ## Start here
 
-Load version-matched workflow content before running a catalog workflow:
+Load version-matched CLI skill text before using catalog commands:
 
 ```bash
 chartcoach skills get core
@@ -46,7 +46,7 @@ Run `chartcoach skills list` to see the skills served by the installed CLI.
 
 ## Specialized skills
 
-Load a specialized skill when the task needs a narrower workflow:
+Load a task-specific skill when the request is narrower:
 
 ```bash
 chartcoach skills get core          # catalog primitives, artifacts, optional search, retrieval
@@ -63,5 +63,5 @@ chartcoach skills get contribute    # draft public-ready catalog improvement iss
 - CLI primitives for browsing, filtering, reading, SQL inspection, optional embedding search, skills, and MCP serving.
 - Default catalog access with local caching, so first-use downloads are automatic and later queries run locally.
 - Traceability back to the evidence behind each guideline, including research papers, books, blog posts, and other source material.
-- Source-traced visualization knowledge treated as an evolving shared resource, where friction in individual workflows can improve the catalog for the community.
-- A `contribute` workflow that turns those improvement signals into local catalog issue drafts for human review.
+- A Guideline Catalog maintained as a shared resource, where failed searches, missing topics, weak labels, and unclear records can become issue drafts for human review.
+- A `contribute` skill that drafts catalog issues locally and never posts by default.

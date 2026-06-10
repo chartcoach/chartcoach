@@ -5,7 +5,7 @@ import dataclasses as dc
 
 @dc.dataclass(frozen=True, slots=True)
 class ParsedLabel:
-    """One catalog label split into its generic shape."""
+    """One catalog label split into family, category, and optional modifier."""
 
     family: str
     category: str

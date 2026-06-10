@@ -7,7 +7,7 @@ description: Load this before using ChartCoach. Explains default catalog access,
 
 ChartCoach exposes a versioned Guideline Catalog and CLI primitives for inspecting and retrieving visualization guidance. Start with the base CLI and progressive disclosure. Use LanceDB only when overview, labels, roles, list, query, read, cite, schema, values, and SQL commands are not enough.
 
-## Command Surface
+## Commands
 
 All examples use `chartcoach` as the CLI command. If the command is not available, use the top-level `$chartcoach` access guidance first.
 
@@ -39,9 +39,9 @@ Use `chartcoach mcp serve` only when a human wants to start a server interface.
 
 Use `chartcoach skills list`, `chartcoach skills get <name>`, and `chartcoach skills path [name]` for CLI-served skills bundled with the installed package. The top-level `chartcoach` skill is installed separately by the agent skill system and is not served by `chartcoach skills get`.
 
-Workflow skills assume this setup is already resolved. Use this core skill for custom catalog sources, custom indexes, package extras, command formats, and recovery paths before loading `visfeedback`, `visrec`, or `consult`.
+Task skills assume this setup is already resolved. Use this core skill for custom catalog sources, custom indexes, package extras, command formats, and recovery paths before loading `visfeedback`, `visrec`, or `consult`.
 
-## Retrieval Workflow
+## Retrieval Steps
 
 Start from observed chart facts before searching:
 
@@ -53,7 +53,7 @@ Start from observed chart facts before searching:
 - interaction state
 - evidence source
 
-Translate those facts into generic visualization concepts before using catalog labels or text predicates. Search broad first, then narrow with labels, roles, sections, or text fields.
+Translate those facts into chart and reader concepts before using catalog labels or text predicates. Search broad first, then narrow with labels, roles, sections, or text fields.
 
 Treat `catalog list`, `catalog query`, `catalog sql`, and `catalog find` output as candidate discovery. A candidate becomes citeable only after an exact `catalog read <id>` retrieves the relevant guideline text. Use `catalog cite <id>...` after verification when the response needs guideline URLs and formatted source references.
 

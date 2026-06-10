@@ -1,15 +1,15 @@
 ---
 name: contribute
-description: Use this to draft local ChartCoach catalog improvement issues. Teaches agents how to turn individual retrieval friction into community-facing improvement signals for missing topics, wording gaps, labels, source gaps, and curation requests without posting anything.
+description: Use this to draft local ChartCoach catalog improvement issues. Teaches agents how to draft issue text when retrieval exposes missing topics, wording gaps, labels, source gaps, or curation requests without posting anything.
 ---
 
 # ChartCoach Contribute
 
-ChartCoach treats source-traced visualization knowledge as an evolving shared resource. Friction in one user's critique, recommendation, or consultation workflow can reveal catalog improvements that help the wider community: missing coverage, unclear wording, weak labels, or sources that need checking.
+The Guideline Catalog is maintained as a shared resource. Friction in one user's critique, recommendation, or consultation can reveal catalog improvements for future users: missing coverage, unclear wording, weak labels, or sources that need checking.
 
-Use this skill to turn those improvement signals into local Markdown issue drafts. The issue target is `https://github.com/chartcoach/catalog/issues/new`, but do not open, submit, post, or disclose anything by default. Draft the issue for human review. The human decides whether to share it, revise private details, attach artifacts, or open it.
+Use this skill to draft local Markdown issues from those cases. The issue target is `https://github.com/chartcoach/catalog/issues/new`, but do not open, submit, post, or disclose anything by default. Draft the issue for human review. The human decides whether to share it, revise private details, attach artifacts, or open it.
 
-Load `core` first when catalog source, index setup, package extras, or output formats are unclear. This workflow assumes the `chartcoach` command already points at the intended Catalog Instance.
+Load `core` first when catalog source, index setup, package extras, or output formats are unclear. This skill assumes the `chartcoach` command already points at the intended Catalog Instance.
 
 ## What Belongs Here
 
@@ -36,7 +36,7 @@ Route away from catalog issues when the problem is not content:
 
 ## Preserve The Retrieval Trace
 
-Start from what happened in the workflow:
+Start from what happened in the task:
 
 | Field             | Record                                                                                               |
 | ----------------- | ---------------------------------------------------------------------------------------------------- |

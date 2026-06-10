@@ -4,7 +4,7 @@ from collections.abc import Sequence
 
 
 class CatalogError(ValueError):
-    """Catalog primitive error with optional recovery hints."""
+    """Catalog operation error with optional recovery hints."""
 
     def __init__(self, message: str, *, hints: Sequence[str] = ()) -> None:
         super().__init__(message)

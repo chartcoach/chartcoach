@@ -83,7 +83,7 @@ const proofCards = [
   {
     icon: Bot,
     label: "agents",
-    title: "The same records ground workflows",
+    title: "The same records support agents",
     text: "People can read the catalog in the browser. Agents can use the same structured records as context.",
   },
 ];
@@ -92,7 +92,7 @@ const gettingStartedSteps = [
   {
     label: "01",
     title: "Open the catalog",
-    text: "Start with every Guideline Instance in one browser surface.",
+    text: "Start with every Guideline Instance in one browser.",
   },
   {
     label: "02",
@@ -151,7 +151,7 @@ const splitLayoutClasses = `${siteInnerClasses} grid grid-cols-[minmax(0,0.82fr)
 const previewPanelClasses = "overflow-hidden rounded-sm border border-line bg-surface shadow-card";
 const recordSectionsClasses =
   "grid border-t border-line [&>div]:grid [&>div]:grid-cols-[minmax(5.5rem,0.34fr)_minmax(0,1fr)] [&>div]:gap-4 [&>div]:border-b [&>div]:border-line [&>div]:py-[0.78rem] [&>div:last-child]:border-b-0 [&>div:last-child]:pb-0 max-[46rem]:[&>div]:grid-cols-1 max-[46rem]:[&>div]:gap-[0.45rem]";
-const workflowRowClasses =
+const catalogStepRowClasses =
   "grid grid-cols-[auto_minmax(0,0.7fr)_minmax(0,1fr)] items-center gap-[0.8rem] border-b border-line p-4 text-ink last:border-b-0 max-[46rem]:grid-cols-1 max-[46rem]:gap-[0.45rem] [&_svg]:text-ember [&_span]:font-semibold [&_code]:overflow-hidden [&_code]:border-line [&_code]:bg-canvas [&_code]:text-veil [&_code]:text-ellipsis [&_code]:whitespace-nowrap";
 ---
 
@@ -166,7 +166,7 @@ const workflowRowClasses =
         ChartCoach keeps visualization guidance source-backed.
       </h1>
       <p class={heroLedeClasses}>
-        ChartCoach turns visualization advice into inspectable Guideline Instances. Browse by label, read sectioned guidance, and follow the citations that support each recommendation.
+        ChartCoach stores visualization advice as inspectable Guideline Instances. Browse by label, read sectioned guidance, and follow the citations that support each recommendation.
       </p>
       <div class={actionRowClasses}>
         <a
@@ -256,7 +256,7 @@ const workflowRowClasses =
         <p class={eyebrowClasses}>inside a record</p>
         <h2 class={sectionTitleClasses}>Each Guideline Instance keeps the design claim close to its context.</h2>
         <p class={sectionCopyClasses}>
-          A record carries labels, role-separated sections, inline citations, and a bibliography payload that can move into review, teaching, or agent workflows.
+          A record carries labels, role-separated sections, inline citations, and a bibliography payload that can be reused in review notes, teaching material, or agent context.
         </p>
       </div>
 
@@ -289,25 +289,25 @@ const workflowRowClasses =
   <section class={mutedSectionClasses}>
     <div class={splitLayoutClasses}>
       <div class={sectionHeaderClasses}>
-        <p class={eyebrowClasses}>workflow</p>
+        <p class={eyebrowClasses}>use</p>
         <h2 class={sectionTitleClasses}>Start with the question, then use the catalog shape.</h2>
         <p class={sectionCopyClasses}>
-          ChartCoach works as a public browsing surface for people and as structured context for agents. The same record can support a design review, a teaching note, or a retrieval step.
+          ChartCoach provides a public catalog browser for people and structured records for agents. The same record can support a design review, a teaching note, or a retrieval step.
         </p>
       </div>
 
       <div class="grid overflow-hidden rounded-sm border border-line bg-surface shadow-card">
-        <div class={workflowRowClasses}>
+        <div class={catalogStepRowClasses}>
           <Search class="size-4" aria-hidden="true" focusable="false" />
           <span>search or filter</span>
           <code>chart:bar</code>
         </div>
-        <div class={workflowRowClasses}>
+        <div class={catalogStepRowClasses}>
           <BookOpen class="size-4" aria-hidden="true" focusable="false" />
           <span>read roles</span>
           <code>{sortedRoles.slice(0, 4).join(" / ")}</code>
         </div>
-        <div class={workflowRowClasses}>
+        <div class={catalogStepRowClasses}>
           <ClipboardCheck class="size-4" aria-hidden="true" focusable="false" />
           <span>reuse context</span>
           <code>markdown + bibtex</code>
