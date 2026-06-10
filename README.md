@@ -56,9 +56,13 @@ uv run --package chartcoach chartcoach catalog read <guideline-id> \
   --section <role-from-manifest> \
   --source-detail minimal \
   --format markdown
+
+uv run --package chartcoach chartcoach catalog cite <guideline-id> \
+  --format markdown
 ```
 
 `catalog read` prints deterministic guideline records. Each record includes the guideline id, title, description, labels, selected sections, and sources.
+`catalog cite` prints the public guideline URL and formatted source references for verified ids.
 
 Run one SQL query from the shell when a workflow needs joins:
 

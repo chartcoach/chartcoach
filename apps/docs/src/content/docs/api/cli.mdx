@@ -45,13 +45,19 @@ Filter entries with deterministic base predicates. This command does not use Lan
 
 Read exact entries and selected sections. Section roles come from the current manifest.
 
-`chartcoach catalog schema [--source PATH_OR_URL] [--table NAME] [--tables] [--row-counts] [--format table|json|jsonl|csv]`
+`chartcoach catalog cite [--source PATH_OR_URL] ID... [--url-template TEMPLATE] [--format markdown|json|jsonl]`
+
+Print guideline URLs and formatted source citations for exact ids. The default URL template is `https://chartcoach.github.io/guidelines/{id}`. Use this after `catalog read` verifies that each guideline applies.
+
+`chartcoach catalog schema [--source PATH_OR_URL] [TABLE...] [--table NAME] [--tables] [--row-counts] [--format table|json|jsonl|csv]`
 
 Show queryable catalog fields and tables.
 
+Pass table names positionally or with repeated `--table`. Use `--tables` only when listing table names and optional row counts.
+
 `chartcoach catalog values [--source PATH_OR_URL] FIELD [--contains TEXT] [--limit N] [--format table|json|jsonl|csv]`
 
-Count values for a catalog field. `FIELD` accepts aliases such as `labels`, `roles`, and `label.family`, or raw `TABLE.COLUMN` names after inspecting `catalog schema`.
+Count values for a field alias or raw `TABLE.COLUMN`. `FIELD` accepts aliases such as `labels`, `roles`, and `label.family`. Use `--contains TEXT` to filter returned values.
 
 `chartcoach catalog sql [--source PATH_OR_URL] QUERY [--limit N] [--format table|json|jsonl|csv]`
 

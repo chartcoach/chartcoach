@@ -73,6 +73,7 @@ pnpm --dir packages/catalog-python test
 uv build --package chartcoach
 uv run ruff check .
 uv run ty check .
+uv run pyrefly check --summary=none
 ```
 
 ## Data and Artifacts
