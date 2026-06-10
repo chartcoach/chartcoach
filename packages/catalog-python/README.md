@@ -99,9 +99,9 @@ These commands read the package-pinned default catalog artifact, inspect table s
 
 ```bash
 chartcoach catalog manifest --format markdown
-chartcoach catalog schema --tables --format jsonl
-chartcoach catalog schema --format jsonl
-chartcoach catalog values guideline_labels.label \
+chartcoach catalog schema --tables --row-counts --format jsonl
+chartcoach catalog schema guidelines --format jsonl
+chartcoach catalog values labels \
   --contains chart: --format jsonl
 chartcoach catalog sql \
   "select id, title from guidelines where list_contains(labels, 'chart:bar')" \
@@ -115,6 +115,8 @@ chartcoach catalog query \
   --label chart:bar --format jsonl
 chartcoach catalog read <guideline-id> \
   --section <role-from-manifest> --source-detail minimal --format jsonl
+chartcoach catalog cite <guideline-id> \
+  --format markdown
 INDEX_PATH=scratch/chartcoach-index
 chartcoach catalog index create --index "$INDEX_PATH"
 chartcoach catalog find \

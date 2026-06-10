@@ -36,6 +36,28 @@ Load an authored folder where `MANIFEST.md` sits beside `entries/`.
 
 Build a catalog from `Guideline` objects or flat guideline mappings.
 
+```python
+from chartcoach import Catalog, Guideline, Section
+
+catalog = Catalog.from_entries(
+    [
+        Guideline(
+            id="direct-labels",
+            title="Use direct labels",
+            description="Label marks directly.",
+            sections=[
+                Section(
+                    role="advice",
+                    title="Advice",
+                    content="Place labels near marks.",
+                )
+            ],
+            labels=["chart:line"],
+        )
+    ]
+)
+```
+
 `Guideline(...)`
 
 Construct a guideline with either `body` or `sections`. When only `body` is provided, the body must parse into section records. When only `sections` is provided, the markdown body is built from those sections. Serialized guideline records always contain both fields.
@@ -105,6 +127,6 @@ table = index(
 )
 ```
 
-`open(uri, table_name="catalog_documents")` opens an existing LanceDB table. `chartcoach.search.lance.documents(catalog)` returns the Polars dataframe used to create a caller-owned LanceDB table. `model(embedding)` returns the LanceDB model used when the table should store embedding metadata.
+`open(uri, table_name="catalog_documents")` opens an existing LanceDB table. `chartcoach.search.lance.documents(catalog)` returns catalog document rows for a caller-owned LanceDB table. `model(embedding)` returns the LanceDB model used when the table should store embedding metadata.
 
 `query(table, query, limit=10, where=None, mode="auto")` returns bounded raw document rows for CLI and MCP transports. Python callers can use `table.search(...)` directly when they need the full LanceDB query builder.
