@@ -16,6 +16,8 @@ SKILLS_ENV = "CHARTCOACH_SKILLS_DIR"
 SKILL_DATA_DIR = "skill-data"
 PACKAGED_DATA_DIR = "data"
 SUPPLEMENTARY_DIRS = ("references", "templates")
+SKILL_ORDER = ("core", "consult", "visfeedback", "visrec", "contribute")
+SKILL_ORDER_INDEX = {name: index for index, name in enumerate(SKILL_ORDER)}
 
 
 @dc.dataclass(frozen=True)
@@ -133,7 +135,11 @@ def _discover_skills() -> list[Skill]:
             skill = _read_skill(path)
             if skill is not None:
                 skills.setdefault(skill.name, skill)
-    return sorted(skills.values(), key=lambda skill: skill.name)
+    return sorted(skills.values(), key=_skill_sort_key)
+
+
+def _skill_sort_key(skill: Skill) -> tuple[int, str]:
+    return (SKILL_ORDER_INDEX.get(skill.name, len(SKILL_ORDER)), skill.name)
 
 
 def _skill_roots() -> list[Path]:
