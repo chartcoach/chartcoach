@@ -109,7 +109,6 @@ Browser code can load the same catalog through `@chartcoach/catalog/browser`.
 | `apps/docs`                   | Technical docs for the catalog, APIs, CLI, and MCP                          |
 | `packages/catalog-python`     | Python package, `chartcoach` CLI, agent skills, DuckDB, and optional search |
 | `packages/catalog-javascript` | JavaScript catalog loaders and wire types                                   |
-| `packages/ui`                 | Shared UI primitives and design tokens                                      |
 
 ## Learn More
 

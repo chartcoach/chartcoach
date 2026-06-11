@@ -1,13 +1,182 @@
 ---
-import { getCollection } from "astro:content";
-
+import { InstallCopy } from "@/components/InstallCopy";
 import SiteLayout from "@/layouts/SiteLayout.astro";
+import { ArrowRight, ChevronRight } from "@lucide/astro";
 
-const guidelines = await getCollection("guidelines");
+const workflowSteps = [
+  {
+    label: "Guidelines",
+    title: "Readable guidelines",
+    body: "Guidance stays inspectable.",
+  },
+  {
+    label: "Workflows",
+    title: "Grounded workflows",
+    body: "Agents use task-specific skills.",
+  },
+  {
+    label: "Decisions",
+    title: "Cited decisions",
+    body: "Outputs keep a source trail.",
+  },
+  {
+    label: "Improvement",
+    title: "Open improvement",
+    body: "The knowledge base evolves through use.",
+  },
+];
+
+const contextFeatures = [
+  {
+    title: "Scoped retrieval",
+    body: "Agents can read the relevant parts of a guideline.",
+  },
+  {
+    title: "Role-aware sections",
+    body: "Advice, context, exceptions, checks, fixes, and sources stay distinct.",
+  },
+  {
+    title: "Source trail",
+    body: "Decisions can point back to records and references.",
+  },
+  {
+    title: "Task skills",
+    body: "Feedback, recommendation, consultation, and contribution use different workflows.",
+  },
+  {
+    title: "Human-readable format",
+    body: "The same guidance can be inspected and revised directly.",
+  },
+  {
+    title: "Contribution path",
+    body: "Missing or unclear guidance can become a draft improvement.",
+  },
+];
 ---
 
-<SiteLayout>
-  <h1>ChartCoach</h1>
-  <p>{guidelines.length.toLocaleString()} guidelines loaded.</p>
-  <p><a href="/guidelines/">Open guidelines</a></p>
+<SiteLayout
+  title="ChartCoach"
+  description="ChartCoach publishes a source-traced visualization Guideline Catalog for browsing, packages, CLI tools, and agent-grounded chart feedback."
+>
+  <section class="relative flex items-start overflow-hidden px-6 pb-[clamp(4.5rem,9vh,6.5rem)] pt-[clamp(4rem,11vh,7rem)]">
+        <div class="grid-glow" aria-hidden="true"></div>
+        <div class="relative z-10 mx-auto flex max-w-[72rem] flex-col items-center text-center">
+          <p
+            class="mb-7 mt-0 inline-flex items-center rounded-full border border-border bg-surface/70 px-3.5 py-1 font-mono text-[0.6875rem] font-medium uppercase tracking-[0.16em] text-muted backdrop-blur"
+          >
+            EXPERIMENTAL
+          </p>
+          <h1 class="m-0 max-w-[54rem] text-balance text-[2.625rem] font-semibold leading-[1.02] tracking-normal text-fg sm:text-[3.75rem] lg:text-[4.5rem] xl:max-w-[66rem] xl:text-[5rem] 2xl:text-[5.5rem]">
+            Visualization Guidance for Humans and Agents
+          </h1>
+          <p class="mt-6 max-w-[49rem] text-pretty text-[1.125rem] leading-[1.65] text-muted sm:text-[1.25rem] xl:max-w-[56rem] xl:text-[1.375rem]">
+            A readable knowledge format for grounded visualization agents. ChartCoach supports chart critique, design recommendation,
+            and generation with citations to the records and sources behind each decision.
+          </p>
+          <InstallCopy client:load />
+          <div
+            class="mt-12 grid w-full grid-cols-2 overflow-hidden rounded-2xl border border-border text-left lg:grid-cols-4"
+            aria-label="ChartCoach workflow"
+          >
+            {
+              workflowSteps.map((step, index) => (
+                <article
+                  class={[
+                    "group relative flex min-h-[12rem] flex-col bg-bg p-4 transition-colors duration-200 hover:bg-surface-muted sm:min-h-[13rem] sm:p-7 xl:min-h-[14.5rem] xl:p-8",
+                    index % 2 === 1 ? "border-l border-border" : "",
+                    index >= 2 ? "border-t border-border lg:border-t-0" : "",
+                    index > 0 ? "lg:border-l lg:border-border" : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                >
+                  <div class="mb-6 flex items-center gap-2 sm:mb-7 sm:gap-2.5">
+                    <span class="flex h-6 w-6 items-center justify-center rounded-md border border-border font-mono text-[0.6875rem] tabular-nums text-muted transition-colors group-hover:border-fg/40 group-hover:text-fg xl:h-7 xl:w-7 xl:text-[0.75rem]">
+                      {index + 1}
+                    </span>
+                    <span class="font-mono text-[0.625rem] font-semibold uppercase tracking-[0.14em] text-muted sm:text-[0.6875rem] sm:tracking-[0.16em] xl:text-[0.75rem]">
+                      {step.label}
+                    </span>
+                  </div>
+                  <h2 class="m-0 text-[1.0625rem] font-semibold leading-snug tracking-normal text-fg xl:text-[1.25rem]">
+                    {step.title}
+                  </h2>
+                  <p class="m-0 mt-2.5 max-w-[15rem] text-[0.875rem] leading-[1.65] text-muted xl:max-w-[16rem] xl:text-[1rem]">
+                    {step.body}
+                  </p>
+                  {
+                    index < workflowSteps.length - 1 && (
+                      <span
+                        aria-hidden="true"
+                        class="pointer-events-none absolute right-0 top-1/2 z-10 hidden h-6 w-6 -translate-y-1/2 translate-x-[calc(50%+1px)] items-center justify-center rounded-full border border-border bg-bg text-muted lg:flex"
+                      >
+                        <ChevronRight class="h-3 w-3" stroke-width={1.5} />
+                      </span>
+                    )
+                  }
+                </article>
+              ))
+            }
+          </div>
+        </div>
+  </section>
+
+  <section class="relative z-10 px-6 py-[clamp(5.5rem,12vh,8rem)]">
+        <div class="mx-auto w-full max-w-[72rem]">
+          <h2 class="m-0 max-w-[35rem] text-[2.5rem] font-semibold leading-[1.02] tracking-normal text-fg sm:text-[3.25rem] lg:text-[4.25rem] xl:max-w-[40rem] xl:text-[4.75rem]">
+            Built for grounding agents.
+          </h2>
+          <p class="mt-7 max-w-[44rem] text-pretty text-[1.0625rem] leading-[1.65] text-muted xl:max-w-[50rem] xl:text-[1.1875rem]">
+            Visualization guidance is easier to navigate and apply when actions, context, caveats, checks, fixes, and sources stay separate.
+            ChartCoach keeps those parts readable for people and accessible to agents through skills, CLI commands, and structured queries.
+          </p>
+          <div
+            class="mt-12 grid overflow-hidden rounded-2xl border border-border bg-border text-left sm:grid-cols-2 lg:grid-cols-3"
+            aria-label="Grounded context features"
+          >
+            {
+              contextFeatures.map((feature) => (
+                <article class="min-h-[10rem] bg-bg p-6 transition-colors duration-200 hover:bg-surface-muted sm:p-7 xl:min-h-[11rem] xl:p-8">
+                  <div class="flex items-start gap-3">
+                    <span class="mt-[0.55rem] h-1.5 w-1.5 shrink-0 rounded-full bg-muted/45" aria-hidden="true"></span>
+                    <div>
+                      <h3 class="m-0 text-[0.9375rem] font-semibold leading-snug tracking-normal text-fg xl:text-[1.0625rem]">
+                        {feature.title}
+                      </h3>
+                      <p class="m-0 mt-3 text-[0.9375rem] leading-[1.6] text-muted xl:text-[1rem]">{feature.body}</p>
+                    </div>
+                  </div>
+                </article>
+              ))
+            }
+          </div>
+        </div>
+  </section>
+
+  <section class="relative z-10 border-t border-border">
+        <div class="mx-auto flex w-[min(100%-3rem,var(--container-content))] flex-col items-center px-6 py-[clamp(6rem,14vh,9rem)] text-center">
+          <h2 class="m-0 text-[2rem] font-semibold leading-[1.02] tracking-normal text-fg sm:text-[2.75rem] lg:text-[3.5rem] xl:text-[4rem]">
+            Explore the catalog
+          </h2>
+          <p class="mx-auto mt-6 max-w-[38rem] text-pretty text-[1.0625rem] leading-[1.6] text-muted xl:max-w-[44rem] xl:text-[1.1875rem]">
+            Open the guideline browser, inspect records there, then use the same ids in packages, CLI commands, or agent-grounded chart
+            feedback.
+          </p>
+          <div class="mt-9 flex flex-wrap items-center justify-center gap-3">
+            <a
+              href="/guidelines/"
+              class="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-fg bg-fg px-4 text-sm font-medium text-bg no-underline transition-colors hover:bg-fg/90 xl:text-[0.9375rem]"
+            >
+              Open guidelines
+              <ArrowRight class="h-3.5 w-3.5" stroke-width={1.5} aria-hidden="true" />
+            </a>
+            <a
+              href="https://github.com/chartcoach/chartcoach"
+              class="inline-flex h-11 items-center justify-center rounded-lg border border-border bg-bg px-4 text-sm font-medium text-fg no-underline transition-colors hover:bg-surface-muted xl:text-[0.9375rem]"
+            >
+              View source
+            </a>
+          </div>
+        </div>
+  </section>
 </SiteLayout>

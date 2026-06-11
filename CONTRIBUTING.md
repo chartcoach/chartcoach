@@ -68,7 +68,6 @@ Package-specific checks:
 pnpm --dir apps/site lint
 pnpm --dir apps/site build
 pnpm --dir packages/catalog-javascript test
-pnpm --dir packages/ui build
 pnpm --dir packages/catalog-python test
 uv build --package chartcoach
 uv run ruff check .
