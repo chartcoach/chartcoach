@@ -1,0 +1,71 @@
+---
+import { GuidelineSearch } from "@/components/GuidelineSearch";
+import { ThemeToggle } from "@/components/ThemeToggle";
+---
+
+<div class="relative min-h-screen overflow-hidden">
+  <header
+    class="sticky top-0 z-50 flex h-14 items-center justify-between gap-3 border-b border-border bg-bg/90 px-4 backdrop-blur-sm"
+  >
+    <a href="/" class="inline-flex items-center gap-2 text-sm font-semibold no-underline lg:text-[0.9375rem]" aria-label="ChartCoach home">
+      <span
+        class="flex h-5 w-5 items-center justify-center rounded-md border border-fg/30 font-mono text-[0.6875rem] leading-none text-fg"
+        aria-hidden="true"
+      >
+        C
+      </span>
+      <span>ChartCoach</span>
+    </a>
+    <nav class="flex items-center gap-2 text-sm text-muted sm:gap-3 lg:text-[0.9375rem]" aria-label="Primary">
+      <a href="/guidelines/" class="inline-flex h-8 items-center rounded-md px-1.5 no-underline transition-colors hover:text-fg">
+        Guidelines
+      </a>
+      <GuidelineSearch client:load />
+      <a
+        href="https://github.com/chartcoach/chartcoach"
+        target="_blank"
+        rel="noreferrer"
+        class="inline-flex h-8 w-8 items-center justify-center rounded-md no-underline transition-colors hover:bg-surface-muted hover:text-fg"
+        aria-label="ChartCoach on GitHub"
+      >
+        <svg class="h-[1.125rem] w-[1.125rem] shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path
+            fill-rule="evenodd"
+            clip-rule="evenodd"
+            d="M12 2C6.477 2 2 6.59 2 12.253c0 4.531 2.865 8.37 6.839 9.727.5.095.683-.222.683-.494 0-.244-.009-.89-.014-1.748-2.782.62-3.369-1.374-3.369-1.374-.455-1.184-1.11-1.5-1.11-1.5-.908-.637.069-.624.069-.624 1.004.072 1.532 1.056 1.532 1.056.892 1.566 2.34 1.114 2.91.852.091-.662.35-1.114.636-1.37-2.22-.26-4.555-1.139-4.555-5.067 0-1.12.39-2.034 1.03-2.751-.103-.26-.446-1.303.098-2.714 0 0 .84-.276 2.75 1.051A9.393 9.393 0 0 1 12 6.951a9.39 9.39 0 0 1 2.504.346c1.909-1.327 2.747-1.05 2.747-1.05.546 1.41.203 2.453.1 2.713.64.717 1.028 1.631 1.028 2.751 0 3.938-2.339 4.804-4.566 5.059.359.318.679.945.679 1.904 0 1.374-.013 2.483-.013 2.82 0 .274.18.594.688.493C19.138 20.62 22 16.782 22 12.253 22 6.59 17.523 2 12 2Z"
+          ></path>
+        </svg>
+      </a>
+      <ThemeToggle client:load />
+    </nav>
+  </header>
+
+  <main data-pagefind-body>
+    <slot />
+  </main>
+
+  <footer class="relative z-10 border-t border-border py-8">
+    <div class="mx-auto flex w-[min(100%-3rem,var(--container-content))] flex-col items-center gap-2 text-center md:flex-row md:justify-between md:text-left">
+      <a href="/" class="inline-flex items-center gap-2 text-sm font-semibold no-underline lg:text-[0.9375rem]">
+        <span
+          class="flex h-5 w-5 items-center justify-center rounded-md border border-fg/30 font-mono text-[0.6875rem] leading-none text-fg"
+          aria-hidden="true"
+        >
+          C
+        </span>
+        <span>ChartCoach</span>
+      </a>
+      <p class="m-0 text-[0.8125rem] text-muted lg:text-[0.875rem]">
+        Source-traced visualization guidance for humans and agents.
+        <a
+          href="https://github.com/vercel-labs/zerolang"
+          target="_blank"
+          rel="noreferrer"
+          class="whitespace-nowrap no-underline transition-colors hover:text-fg"
+        >
+          (zerolang design)
+        </a>
+      </p>
+    </div>
+  </footer>
+</div>

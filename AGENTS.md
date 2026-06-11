@@ -1,6 +1,6 @@
 # ChartCoach Agent Guide
 
-ChartCoach is a guideline catalog, public site, shared UI, and catalog-loader
+ChartCoach is a guideline catalog, public site, docs site, and catalog-loader
 monorepo. Use `pnpm` for JavaScript and `uv` for Python.
 
 ## Responsibility
@@ -16,7 +16,6 @@ Before changing a module, read its nearest README, package manifest, and tests.
 - `apps/docs`: Astro/Starlight technical docs site.
 - `packages/catalog-javascript`: JS loaders, parsers, and catalog wire types.
 - `packages/catalog-python`: Python catalog package and `chartcoach` CLI.
-- `packages/ui`: shared React primitives, design tokens, brand assets.
 
 ## Invariants
 

@@ -1,5 +1,6 @@
 ---
 import "@/styles/site.css";
+import SiteShell from "@/components/SiteShell.astro";
 
 interface Props {
   title?: string;
@@ -22,10 +23,21 @@ const canonical = Astro.site
     <title>{pageTitle}</title>
     <meta name="description" content={description} />
     {canonical && <link rel="canonical" href={canonical} />}
+    <script is:inline>
+      (() => {
+        const storageKey = "chartcoach-theme";
+        const root = document.documentElement;
+        const stored = localStorage.getItem(storageKey);
+        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        const isDark = stored ? stored === "dark" : prefersDark;
+        root.classList.toggle("dark", isDark);
+        root.style.colorScheme = isDark ? "dark" : "light";
+      })();
+    </script>
   </head>
   <body>
-    <main>
+    <SiteShell>
       <slot />
-    </main>
+    </SiteShell>
   </body>
 </html>
