@@ -1,0 +1,20 @@
+---
+title: ChartCoach
+description: Documentation for the ChartCoach project and the Guideline Catalog.
+---
+
+ChartCoach publishes a Guideline Catalog and loader packages for inspecting
+visualization design guidance.
+
+```bash
+pnpm --dir apps/docs build
+```
+
+The static docs build writes exported files to `apps/docs/out`. Serve that
+directory to test the same runtime contract used by deploy previews.
+
+<Cards>
+  <Card title="Catalog contract" href="/docs/catalog">
+    Inspect the Guideline Catalog record shape and loader entry points.
+  </Card>
+</Cards>

@@ -1,0 +1,29 @@
+---
+title: Guideline Catalog
+description: The Guideline Catalog is the source-traced collection loaded by ChartCoach packages.
+---
+
+The Guideline Catalog is a versioned collection of guideline records. ChartCoach
+loaders read the catalog and expose the records to browser and package
+consumers.
+
+## Record Shape
+
+Each catalog entry keeps the source identifier, guideline text, section roles,
+labels, and references needed for inspection.
+
+```ts
+type CatalogRecord = {
+  id: string;
+  title: string;
+  sections: Array<{
+    role: string;
+    text: string;
+  }>;
+};
+```
+
+## Loader Boundary
+
+Use the JavaScript or Python package to load catalog data through the supported
+package API. Do not depend on generated docs output as a data source.
