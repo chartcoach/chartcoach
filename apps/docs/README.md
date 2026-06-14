@@ -1,10 +1,15 @@
 # ChartCoach Docs
 
-Astro and Starlight scaffold for the next ChartCoach documentation site.
+Fumadocs and Next.js static documentation for ChartCoach.
 
-The app currently ships one placeholder page so the docs build remains runnable while the documentation is rewritten.
+Build the docs as static files:
 
 ```bash
-pnpm --dir apps/docs dev
 pnpm --dir apps/docs build
+```
+
+Serve the exported site from `apps/docs/out`:
+
+```bash
+pnpm --dir apps/docs start
 ```

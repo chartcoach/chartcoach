@@ -1,8 +1,9 @@
-# build output
-dist/
+# Next.js output
+.next/
+out/
 
-# generated types
-.astro/
+# Fumadocs generated source
+.source/
 
 # dependencies
 node_modules/
