@@ -9,8 +9,8 @@ export const monorepoRoot = fileURLToPath(new URL("../../../..", import.meta.url
 const siteSourceRoot = fileURLToPath(new URL("..", import.meta.url));
 const repoEnvPath = join(monorepoRoot, ".env");
 
-export const LOCAL_SITE_URL = "http://localhost:4321/";
-export const SITE_URL_ENV = "CHARTCOACH_SITE_URL";
+const LOCAL_SITE_URL = "http://localhost:4321/";
+const SITE_URL_ENV = "CHARTCOACH_SITE_URL";
 
 export type SiteUrlSource = "env" | "local";
 

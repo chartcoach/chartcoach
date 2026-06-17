@@ -1,8 +1,9 @@
 ---
 import { getCollection, getEntry } from "astro:content";
 
-import { GuidelineActions } from "@/components/GuidelineActions";
+import { GuidelineActions } from "@/components/guideline-actions";
 import SiteLayout from "@/layouts/SiteLayout.astro";
+import { serializeGuidelineSearchModel } from "@/lib/guideline-search-model";
 
 export async function getStaticPaths() {
   const guidelines = await getCollection("guidelines");
@@ -15,12 +16,19 @@ const guideline = await getEntry("guidelines", Astro.params.id as string);
 if (!guideline) throw new Error(`Guideline not found: ${Astro.params.id}`);
 
 const editHref = `https://github.com/chartcoach/catalog/blob/main/entries/${guideline.id}/guideline.md`;
+const searchRecordJson = serializeGuidelineSearchModel(guideline.data.search);
 ---
 
 <SiteLayout title={guideline.data.title} description={guideline.data.description}>
+  <script
+    type="application/json"
+    data-guideline-search-record
+    is:inline
+    set:html={searchRecordJson}
+  ></script>
   <article class="px-6 py-[clamp(4rem,9vh,6.5rem)]">
     <div class="mx-auto w-full max-w-[54rem]">
-      <div class="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between" data-pagefind-ignore>
+      <div class="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
         <a href="/guidelines/" class="inline-flex text-sm font-medium text-muted no-underline transition-colors hover:text-fg">
           Guidelines
         </a>
@@ -32,47 +40,49 @@ const editHref = `https://github.com/chartcoach/catalog/blob/main/entries/${guid
         />
       </div>
 
-      <h1 class="m-0 mt-8 text-[2.25rem] font-semibold leading-[1.08] tracking-normal text-fg sm:text-[3rem] lg:text-[4rem]">
-        {guideline.data.title}
-      </h1>
-      {guideline.data.description && <p class="m-0 mt-6 text-[1.0625rem] leading-[1.65] text-muted lg:text-[1.1875rem]">{guideline.data.description}</p>}
+      <div>
+        <h1 class="m-0 mt-8 text-[2.25rem] font-semibold leading-[1.08] tracking-normal text-fg sm:text-[3rem] lg:text-[4rem]">
+          {guideline.data.title}
+        </h1>
+        {guideline.data.description && <p class="m-0 mt-6 text-[1.0625rem] leading-[1.65] text-muted lg:text-[1.1875rem]">{guideline.data.description}</p>}
 
-      {
-        guideline.data.labels.length > 0 && (
-          <div class="mt-7">
-            <ul class="m-0 flex list-none flex-wrap gap-2 p-0">
-              {guideline.data.labels.map((label) => (
-                <li>
-                  <span class="inline-flex rounded-md bg-surface-muted px-2 py-1 font-mono text-[0.75rem] text-muted">{label}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )
-      }
-
-      <div class="mt-14 space-y-12">
         {
-          guideline.data.sections.map((section) => (
-            <section class="max-w-[48rem]">
-              <p class="m-0 font-mono text-[0.6875rem] font-semibold uppercase tracking-[0.16em] text-muted">
-                {section.role}
-              </p>
-              <h2 class="m-0 mt-3 text-[1.5rem] font-semibold leading-snug tracking-normal text-fg lg:text-[1.75rem]">
-                {section.title}
-              </h2>
-              <div
-                class="mt-4 text-[1rem] leading-[1.75] text-muted [&_a]:text-fg [&_a]:underline [&_ol]:my-4 [&_ol]:pl-6 [&_p]:my-4 [&_ul]:my-4 [&_ul]:pl-6"
-                set:html={section.html}
-              />
-            </section>
-          ))
+          guideline.data.labels.length > 0 && (
+            <div class="mt-7">
+              <ul class="m-0 flex list-none flex-wrap gap-2 p-0">
+                {guideline.data.labels.map((label) => (
+                  <li>
+                    <span class="inline-flex rounded-md bg-surface-muted px-2 py-1 font-mono text-[0.75rem] text-muted">{label}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )
         }
+
+        <div class="mt-14 space-y-12">
+          {
+            guideline.data.sections.map((section) => (
+              <section class="max-w-[48rem]">
+                <p class="m-0 font-mono text-[0.6875rem] font-semibold uppercase tracking-[0.16em] text-muted">
+                  {section.role}
+                </p>
+                <h2 class="m-0 mt-3 text-[1.5rem] font-semibold leading-snug tracking-normal text-fg lg:text-[1.75rem]">
+                  {section.title}
+                </h2>
+                <div
+                  class="mt-4 text-[1rem] leading-[1.75] text-muted [&_a]:text-fg [&_a]:underline [&_ol]:my-4 [&_ol]:pl-6 [&_p]:my-4 [&_ul]:my-4 [&_ul]:pl-6"
+                  set:html={section.html}
+                />
+              </section>
+            ))
+          }
+        </div>
       </div>
 
       {
         guideline.data.bibliographyHtml && (
-          <section class="mt-16 border-t border-border pt-8" data-pagefind-ignore>
+          <section class="mt-16 border-t border-border pt-8">
             <h2 class="m-0 text-[1.25rem] font-semibold tracking-normal text-fg">References</h2>
             <div
               class="mt-5 text-[0.9375rem] leading-[1.7] text-muted [&_a]:text-fg [&_a]:underline [&_ol]:pl-6 [&_p]:my-3 [&_ul]:pl-6"

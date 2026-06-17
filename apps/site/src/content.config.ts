@@ -12,6 +12,24 @@ export const collections = {
       description: z.string().optional(),
       labels: z.array(z.string()).default([]),
       markdown: z.string(),
+      search: z.object({
+        id: z.string(),
+        title: z.string(),
+        description: z.string().optional(),
+        labels: z.array(z.string()).default([]),
+        body: z.string(),
+        sections: z
+          .array(
+            z.object({
+              role: z.string(),
+              title: z.string(),
+              content: z.string(),
+            }),
+          )
+          .default([]),
+        bibliography: z.string().optional(),
+        references: z.array(z.string()).default([]),
+      }),
       sections: z
         .array(
           z.object({

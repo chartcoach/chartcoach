@@ -8,7 +8,7 @@ import {
   loadRepoEnvFile,
   siteViteConfig,
 } from "./src/config/site";
-import { pagefindSearch } from "./src/integrations/pagefind";
+import { oramaSearch } from "./src/integrations/orama-search";
 
 loadRepoEnvFile();
 
@@ -17,5 +17,15 @@ const { siteUrl, siteUrlSource } = getSiteRuntimeConfig();
 export default defineConfig({
   site: siteUrl,
   vite: siteViteConfig,
-  integrations: [react(), createSiteUrlLogger(siteUrl, siteUrlSource), sitemap(), pagefindSearch()],
+  integrations: [
+    react(),
+    createSiteUrlLogger(siteUrl, siteUrlSource),
+    sitemap(),
+    oramaSearch({
+      guidelines: {
+        language: "english",
+        pathMatcher: /^\/?guidelines\/(?!page\/)[^/]+\/?$/,
+      },
+    }),
+  ],
 });

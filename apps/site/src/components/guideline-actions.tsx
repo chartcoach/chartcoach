@@ -1,5 +1,5 @@
 import { Braces, Check, Copy, Pencil } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { writeClipboard } from "@/components/clipboard";
 
@@ -33,11 +33,13 @@ export function GuidelineActions({ markdown, bibtex, editHref }: GuidelineAction
   const canCopyBibtex = Boolean(bibtex?.trim());
   const copyStateMessage = state ? COPY_STATE_MESSAGES[state] : "";
 
-  useEffect(() => {
-    return () => {
-      if (resetTimer.current) clearTimeout(resetTimer.current);
-    };
+  const clearResetTimer = useCallback(() => {
+    if (!resetTimer.current) return;
+    clearTimeout(resetTimer.current);
+    resetTimer.current = null;
   }, []);
+
+  useEffect(() => clearResetTimer, [clearResetTimer]);
 
   async function copy(id: CopyId, text: string) {
     try {
@@ -47,7 +49,7 @@ export function GuidelineActions({ markdown, bibtex, editHref }: GuidelineAction
       setState("failed");
     }
 
-    if (resetTimer.current) clearTimeout(resetTimer.current);
+    clearResetTimer();
     resetTimer.current = setTimeout(() => setState(null), 1400);
   }
 
