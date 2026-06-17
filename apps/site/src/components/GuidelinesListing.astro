@@ -1,0 +1,206 @@
+---
+import {
+  GUIDELINES_PER_PAGE,
+  getGuidelinesPageHref,
+  type GuidelineEntry,
+} from "@/lib/guidelines-pagination";
+
+type Props = {
+  guidelines: GuidelineEntry[];
+  currentPage: number;
+  totalPages: number;
+  totalRecords: number;
+};
+
+type PaginationItem =
+  | {
+      type: "page";
+      key: string;
+      page: number;
+      href: string;
+      current: boolean;
+    }
+  | {
+      type: "ellipsis";
+      key: string;
+    };
+
+const { guidelines, currentPage, totalPages, totalRecords } = Astro.props;
+const previousHref = currentPage > 1 ? getGuidelinesPageHref(currentPage - 1) : null;
+const nextHref = currentPage < totalPages ? getGuidelinesPageHref(currentPage + 1) : null;
+const firstRecord = totalRecords === 0 ? 0 : (currentPage - 1) * GUIDELINES_PER_PAGE + 1;
+const lastRecord = totalRecords === 0 ? 0 : Math.min(firstRecord + guidelines.length - 1, totalRecords);
+const MAX_VISIBLE_LABELS = 5;
+
+function createPaginationItems(page: number, total: number): PaginationItem[] {
+  const pages = new Set([1, total]);
+
+  for (let offset = -2; offset <= 2; offset += 1) {
+    const candidate = page + offset;
+    if (candidate >= 1 && candidate <= total) pages.add(candidate);
+  }
+
+  const sortedPages = Array.from(pages).sort((a, b) => a - b);
+  const items: PaginationItem[] = [];
+  let previousPage = 0;
+
+  for (const pageNumber of sortedPages) {
+    if (previousPage > 0 && pageNumber - previousPage > 1) {
+      items.push({
+        type: "ellipsis",
+        key: `ellipsis-${previousPage}-${pageNumber}`,
+      });
+    }
+
+    items.push({
+      type: "page",
+      key: `page-${pageNumber}`,
+      page: pageNumber,
+      href: getGuidelinesPageHref(pageNumber),
+      current: pageNumber === page,
+    });
+
+    previousPage = pageNumber;
+  }
+
+  return items;
+}
+
+const paginationItems = createPaginationItems(currentPage, totalPages);
+---
+
+<section class="px-6 py-[clamp(4.5rem,10vh,7rem)]">
+  <div class="mx-auto w-full max-w-[72rem]">
+    <p class="m-0 font-mono text-[0.75rem] font-semibold uppercase tracking-[0.16em] text-muted">Catalog</p>
+    <div class="mt-5 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+      <div>
+        <h1 class="m-0 max-w-[42rem] text-[2.75rem] font-semibold leading-[1.02] tracking-normal text-fg sm:text-[3.5rem] lg:text-[4.5rem]">
+          Guidelines
+        </h1>
+        <p class="m-0 mt-5 max-w-[44rem] text-[1.0625rem] leading-[1.65] text-muted lg:text-[1.1875rem]">
+          Browse source-backed visualization guidance records. Guideline details keep sections, labels, and references inspectable.
+        </p>
+      </div>
+      <div class="font-mono text-[0.8125rem] font-medium uppercase tracking-[0.14em] text-muted md:text-right">
+        <p class="m-0">{totalRecords.toLocaleString()} records</p>
+        <p class="m-0 mt-1">Page {currentPage} of {totalPages}</p>
+      </div>
+    </div>
+
+    <ol class="mt-12 grid list-none gap-px overflow-hidden rounded-2xl border border-border bg-border p-0 text-left [grid-auto-rows:1fr] sm:grid-cols-2 lg:grid-cols-3">
+      {
+        guidelines.map((guideline) => {
+          const visibleLabels = guideline.data.labels.slice(0, MAX_VISIBLE_LABELS);
+          const hiddenLabelCount = guideline.data.labels.length - visibleLabels.length;
+
+          return (
+            <li class="bg-bg transition-colors hover:bg-surface-muted">
+              <a
+                href={`/guidelines/${guideline.id}/`}
+                class="flex h-full min-h-[20rem] flex-col p-5 text-fg no-underline sm:p-6"
+              >
+                <h2 class="m-0 min-h-[4.9rem] overflow-hidden text-[1.0625rem] font-semibold leading-snug tracking-normal [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:3] lg:text-[1.1875rem]">
+                  {guideline.data.title}
+                </h2>
+                {guideline.data.description ? (
+                  <p class="m-0 mt-4 min-h-[7.5rem] overflow-hidden text-[0.9375rem] leading-[1.6] text-muted [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:5] lg:text-[1rem]">
+                    {guideline.data.description}
+                  </p>
+                ) : (
+                  <span class="mt-4 min-h-[7.5rem]" aria-hidden="true"></span>
+                )}
+                {visibleLabels.length > 0 && (
+                  <ul class="m-0 flex min-h-[4.75rem] list-none content-start flex-wrap gap-2 pt-6">
+                    {visibleLabels.map((label) => (
+                      <li>
+                        <span class="inline-flex rounded-md bg-surface-muted px-2 py-1 font-mono text-[0.6875rem] text-muted">
+                          {label}
+                        </span>
+                      </li>
+                    ))}
+                    {hiddenLabelCount > 0 && (
+                      <li>
+                        <span
+                          class="inline-flex rounded-md bg-surface-muted px-2 py-1 font-mono text-[0.6875rem] text-muted"
+                          title={`${hiddenLabelCount} more labels`}
+                        >
+                          +{hiddenLabelCount}
+                        </span>
+                      </li>
+                    )}
+                  </ul>
+                )}
+              </a>
+            </li>
+          );
+        })
+      }
+    </ol>
+
+    {
+      totalPages > 1 && (
+        <nav
+          class="mt-10 flex flex-col gap-4 pt-8 sm:flex-row sm:items-center sm:justify-between"
+          aria-label="Guidelines pagination"
+        >
+          <p class="m-0 text-sm text-muted">
+            Showing {firstRecord.toLocaleString()}-{lastRecord.toLocaleString()} of {totalRecords.toLocaleString()} guidelines.
+          </p>
+          <div class="flex flex-wrap items-center gap-2">
+            {previousHref ? (
+              <a
+                href={previousHref}
+                class="inline-flex h-9 items-center justify-center rounded-md border border-border px-3 text-sm font-medium text-fg no-underline transition-colors hover:bg-surface-muted"
+              >
+                Previous
+              </a>
+            ) : (
+              <span class="inline-flex h-9 items-center justify-center rounded-md border border-border px-3 text-sm font-medium text-muted opacity-50">
+                Previous
+              </span>
+            )}
+            {
+              paginationItems.map((item) => (
+                <>
+                  {item.type === "ellipsis" && (
+                    <span class="inline-flex h-9 w-9 items-center justify-center text-sm text-muted" aria-hidden="true">
+                      ...
+                    </span>
+                  )}
+                  {item.type === "page" && item.current && (
+                    <span
+                      class="inline-flex h-9 min-w-9 items-center justify-center rounded-md border border-fg bg-fg px-3 text-sm font-medium text-bg"
+                      aria-current="page"
+                    >
+                      {item.page}
+                    </span>
+                  )}
+                  {item.type === "page" && !item.current && (
+                    <a
+                      href={item.href}
+                      class="inline-flex h-9 min-w-9 items-center justify-center rounded-md border border-border px-3 text-sm font-medium text-fg no-underline transition-colors hover:bg-surface-muted"
+                    >
+                      {item.page}
+                    </a>
+                  )}
+                </>
+              ))
+            }
+            {nextHref ? (
+              <a
+                href={nextHref}
+                class="inline-flex h-9 items-center justify-center rounded-md border border-border px-3 text-sm font-medium text-fg no-underline transition-colors hover:bg-surface-muted"
+              >
+                Next
+              </a>
+            ) : (
+              <span class="inline-flex h-9 items-center justify-center rounded-md border border-border px-3 text-sm font-medium text-muted opacity-50">
+                Next
+              </span>
+            )}
+          </div>
+        </nav>
+      )
+    }
+  </div>
+</section>

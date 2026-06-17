@@ -1,0 +1,11 @@
+packages:
+  - "apps/site"
+  - "apps/docs"
+  - "packages/catalog-javascript"
+  - "packages/catalog-python"
+minimumReleaseAge: 2880
+minimumReleaseAgeStrict: true
+allowBuilds:
+  citation-js: true
+  esbuild: true
+  sharp: true

@@ -1,0 +1,58 @@
+---
+import { GuidelineSearch } from "@/components/guideline-search";
+import SvgIcon from "@/components/SvgIcon.astro";
+import { ThemeToggle } from "@/components/theme-toggle";
+---
+
+<div class="relative min-h-screen overflow-hidden">
+  <header
+    class="sticky top-0 z-50 flex h-14 items-center justify-between gap-2 bg-bg/90 px-3 backdrop-blur-sm sm:gap-3 sm:px-4"
+  >
+    <a href="/" class="inline-flex items-center gap-2 text-sm font-semibold no-underline lg:text-[0.9375rem]" aria-label="ChartCoach home">
+      <span
+        class="flex h-5 w-5 items-center justify-center rounded-md border border-fg/30 font-mono text-[0.6875rem] leading-none text-fg"
+        aria-hidden="true"
+      >
+        C
+      </span>
+      <span>ChartCoach</span>
+    </a>
+    <nav class="flex items-center gap-1 text-sm text-muted sm:gap-3 lg:text-[0.9375rem]" aria-label="Primary">
+      <a href="/guidelines/" class="hidden h-8 items-center rounded-md px-1.5 no-underline transition-colors hover:text-fg min-[360px]:inline-flex">
+        Guidelines
+      </a>
+      <GuidelineSearch client:load />
+      <a
+        href="https://github.com/chartcoach/catalog"
+        target="_blank"
+        rel="noreferrer"
+        class="inline-flex h-8 w-8 items-center justify-center rounded-md no-underline transition-colors hover:bg-surface-muted hover:text-fg"
+        aria-label="ChartCoach catalog on GitHub"
+      >
+        <SvgIcon name="github" class="h-[1.125rem] w-[1.125rem] shrink-0" />
+      </a>
+      <ThemeToggle client:load />
+    </nav>
+  </header>
+
+  <main>
+    <slot />
+  </main>
+
+  <footer class="relative z-10 border-t border-border py-8">
+    <div class="mx-auto flex w-[min(100%-3rem,var(--container-content))] flex-col items-center gap-2 text-center md:flex-row md:justify-between md:text-left">
+      <a href="/" class="inline-flex items-center gap-2 text-sm font-semibold no-underline lg:text-[0.9375rem]">
+        <span
+          class="flex h-5 w-5 items-center justify-center rounded-md border border-fg/30 font-mono text-[0.6875rem] leading-none text-fg"
+          aria-hidden="true"
+        >
+          C
+        </span>
+        <span>ChartCoach</span>
+      </a>
+      <p class="m-0 text-[0.8125rem] text-muted lg:text-[0.875rem]">
+        Grounded visualization guidance for humans and agents.
+      </p>
+    </div>
+  </footer>
+</div>

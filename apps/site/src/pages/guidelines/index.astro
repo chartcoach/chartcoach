@@ -1,0 +1,24 @@
+---
+import { getCollection } from "astro:content";
+
+import GuidelinesListing from "@/components/GuidelinesListing.astro";
+import SiteLayout from "@/layouts/SiteLayout.astro";
+import {
+  getGuidelinePageCount,
+  paginateGuidelines,
+  sortGuidelines,
+} from "@/lib/guidelines-pagination";
+
+const allGuidelines = sortGuidelines(await getCollection("guidelines"));
+const totalPages = getGuidelinePageCount(allGuidelines.length);
+const guidelines = paginateGuidelines(allGuidelines, 1);
+---
+
+<SiteLayout title="Guidelines" description="List of ChartCoach guidelines.">
+  <GuidelinesListing
+    guidelines={guidelines}
+    currentPage={1}
+    totalPages={totalPages}
+    totalRecords={allGuidelines.length}
+  />
+</SiteLayout>

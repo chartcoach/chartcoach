@@ -1,0 +1,16 @@
+.env
+.cache/
+.pytest_cache/
+.ruff_cache/
+.venv/
+node_modules/
+*.egg-info
+__pycache__/
+*.pyc
+.DS_Store
+.coverage
+apps/visground/data/artifacts/
+dist/
+distlib/
+*.tsbuildinfo
+.omx/

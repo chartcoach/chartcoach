@@ -1,0 +1,29 @@
+[tool.uv.workspace]
+members = [
+    "packages/catalog-python",
+]
+
+[tool.uv]
+exclude-newer = "2 days"
+
+[dependency-groups]
+dev = [
+    "pyrefly>=1.0.0",
+    "pytest>=8.4.0",
+    "ruff>=0.14.5",
+    "ty>=0.0.11",
+]
+
+[tool.ruff.lint]
+pydocstyle = { convention = "numpy" }
+ignore = []
+
+[tool.pyrefly]
+project-includes = [
+    "packages/catalog-python/src/chartcoach",
+    "packages/catalog-python/tests",
+]
+search-path = [
+    "packages/catalog-python/src",
+    "packages/catalog-python/tests",
+]

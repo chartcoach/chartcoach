@@ -1,0 +1,13 @@
+{
+  "name": "catalog-python",
+  "version": "0.0.1",
+  "private": true,
+  "license": "Apache-2.0",
+  "scripts": {
+    "lint": "uv run ruff check .",
+    "typecheck": "uv run --extra index --extra mcp ty check . && uv run --extra index --extra mcp pyrefly check --summary=none",
+    "format": "uv run ruff format .",
+    "build": "uv build",
+    "test": "uv run --extra index --extra mcp pytest tests"
+  }
+}

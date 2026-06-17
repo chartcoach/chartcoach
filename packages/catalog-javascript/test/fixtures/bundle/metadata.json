@@ -1,0 +1,21 @@
+{
+  "version": "0.0.0",
+  "digest": "5918c38c974b41cf5a04f08a851fb42dad47a4602d8a72381ed6f3bf5e18a078",
+  "artifacts": [
+    {
+      "kind": "manifest",
+      "path": "MANIFEST.md",
+      "digest": "d0e809a6e254c677e35a2642650801c0e77b83f18d2319da2b4f860d886c96ee",
+      "bytes": 560,
+      "format": "markdown"
+    },
+    {
+      "kind": "entries",
+      "path": "entries.parquet",
+      "digest": "85763f492c8794dfd3c4ab02a5eb5dff8fb3899e49bc65167fb3d8921759adf3",
+      "bytes": 8160,
+      "format": "parquet",
+      "rows": 1
+    }
+  ]
+}

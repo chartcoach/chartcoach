@@ -1,0 +1,92 @@
+---
+import githubLogo from "@/assets/icons/github.svg?raw";
+import carnegieMellonLogo from "@/assets/logos/carnegie-mellon.svg?raw";
+import ethZurichLogo from "@/assets/logos/eth-zurich.svg?raw";
+import mbzuaiLogo from "@/assets/logos/mbzuai.svg?raw";
+import universityViennaLogo from "@/assets/logos/university-vienna.svg?raw";
+
+type SvgIconName = "github" | "eth-zurich" | "carnegie-mellon" | "university-vienna" | "mbzuai";
+type SvgIconTone = "mono" | "color";
+type LogoIconName = SvgIconName;
+
+interface Props {
+  name: SvgIconName;
+  tone?: SvgIconTone;
+  class?: string;
+  title?: string;
+}
+
+const logoMarkup: Record<LogoIconName, string> = {
+  github: githubLogo,
+  "eth-zurich": ethZurichLogo,
+  "carnegie-mellon": carnegieMellonLogo,
+  "university-vienna": universityViennaLogo,
+  mbzuai: mbzuaiLogo,
+};
+
+const brandColors: Record<
+  LogoIconName,
+  {
+    light: string;
+    dark: string;
+    reverseLight?: string;
+    reverseDark?: string;
+  }
+> = {
+  github: {
+    light: "#000000",
+    dark: "#ffffff",
+  },
+  "eth-zurich": {
+    light: "#000000",
+    dark: "#ffffff",
+  },
+  "carnegie-mellon": {
+    light: "#cc0003",
+    dark: "#cc0003",
+    reverseLight: "#ffffff",
+    reverseDark: "#ffffff",
+  },
+  "university-vienna": {
+    light: "#006599",
+    dark: "#58a9d4",
+  },
+  mbzuai: {
+    light: "#154677",
+    dark: "#86b6dc",
+  },
+};
+
+const { name, tone = "mono", title } = Astro.props;
+const className = Astro.props.class;
+const classes = ["svg-icon", className].filter(Boolean).join(" ");
+const hidden = title ? undefined : "true";
+const logo = logoMarkup[name];
+const colors = brandColors[name];
+const colorMode = tone === "color";
+const style = colors
+  ? [
+      `--svg-icon-primary:${colorMode ? "var(--svg-icon-brand-primary)" : "currentColor"}`,
+      `--svg-icon-reverse:${colorMode ? "var(--svg-icon-brand-reverse)" : "var(--color-bg)"}`,
+      `--svg-icon-brand-light:${colors.light}`,
+      `--svg-icon-brand-dark:${colors.dark}`,
+      `--svg-icon-brand-reverse-light:${colors.reverseLight ?? "var(--color-bg)"}`,
+      `--svg-icon-brand-reverse-dark:${colors.reverseDark ?? "var(--color-bg)"}`,
+    ].join(";")
+  : undefined;
+---
+
+{
+  logo && (
+    <span
+      class={classes}
+      style={style}
+      data-svg-icon-name={name}
+      aria-hidden={hidden}
+      role={title ? "img" : undefined}
+      aria-label={title}
+    >
+      <Fragment set:html={logo} />
+    </span>
+  )
+}

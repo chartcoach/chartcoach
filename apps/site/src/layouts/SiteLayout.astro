@@ -1,0 +1,43 @@
+---
+import "@/styles/site.css";
+import SiteShell from "@/components/SiteShell.astro";
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const title = Astro.props.title ?? "ChartCoach";
+const description = Astro.props.description ?? "ChartCoach guideline catalog.";
+const pageTitle = title === "ChartCoach" ? "ChartCoach" : `${title} | ChartCoach`;
+const canonical = Astro.site
+  ? new URL(Astro.url.pathname, Astro.site).toString()
+  : undefined;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+    {canonical && <link rel="canonical" href={canonical} />}
+    <script is:inline>
+      (() => {
+        const storageKey = "chartcoach-theme";
+        const root = document.documentElement;
+        const stored = localStorage.getItem(storageKey);
+        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        const isDark = stored ? stored === "dark" : prefersDark;
+        root.classList.toggle("dark", isDark);
+        root.style.colorScheme = isDark ? "dark" : "light";
+      })();
+    </script>
+  </head>
+  <body>
+    <SiteShell>
+      <slot />
+    </SiteShell>
+  </body>
+</html>
