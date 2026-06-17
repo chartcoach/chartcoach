@@ -8,6 +8,8 @@ import sanitizeHtml from "sanitize-html";
 import { DEFAULT_CATALOG_METADATA_URL, toMarkdown } from "@chartcoach/catalog";
 import { readCatalog } from "@chartcoach/catalog/server";
 
+import { createGuidelineSearchModel } from "@/lib/guideline-search-model";
+
 type RenderedCitations = {
   body: string;
   citedKeys: string[];
@@ -214,61 +216,76 @@ export function guidelinesLoader({
       }
 
       const catalog = await readCatalog(catalogSource);
+      const guidelines = Array.from(catalog);
       context.store.clear();
 
-      for (const guideline of catalog) {
-        const id = guideline.id;
-        const references = [...guideline.references];
-        const referencesBib = references.length > 0 ? references.join("\n\n") : undefined;
-        const referencesByKey = buildReferencesByKey(references);
+      const storeEntries = await Promise.all(
+        guidelines.map(async (guideline) => {
+          const id = guideline.id;
+          const references = [...guideline.references];
+          const referencesBib = references.length > 0 ? references.join("\n\n") : undefined;
+          const referencesByKey = buildReferencesByKey(references);
 
-        const renderedBody = renderCitationsInMarkdown(guideline.body, referencesByKey);
-        const citedKeys = new Set(renderedBody.citedKeys);
-        const sections = await Promise.all(
-          guideline.sections.map(async (section) => {
+          const renderedBody = renderCitationsInMarkdown(guideline.body, referencesByKey);
+          const citedKeys = new Set(renderedBody.citedKeys);
+          const sectionInputs = guideline.sections.map((section) => {
             const renderedSection = renderCitationsInMarkdown(section.content, referencesByKey);
             for (const key of renderedSection.citedKeys) citedKeys.add(key);
 
             return {
               role: section.role,
               title: section.title,
-              html: (await context.renderMarkdown(renderedSection.body)).html,
+              body: renderedSection.body,
             };
-          }),
-        );
-        const bibliographyHtml = renderBibliographyHtml(citedKeys, referencesByKey);
+          });
+          const sectionMarkdown = await Promise.all(
+            sectionInputs.map((section) => context.renderMarkdown(section.body)),
+          );
+          const sections = sectionInputs.map((section, index) => ({
+            role: section.role,
+            title: section.title,
+            html: sectionMarkdown[index]?.html ?? "",
+          }));
+          const bibliographyHtml = renderBibliographyHtml(citedKeys, referencesByKey);
 
-        const data = await context.parseData({
-          id,
-          data: {
-            id: guideline.id,
-            title: guideline.title,
-            description: guideline.description || undefined,
-            labels: [...guideline.labels],
-            markdown: toMarkdown(guideline),
-            sections,
-            bibliography: guideline.bibliography,
-            referencesBib,
-            citations: Array.from(citedKeys),
-            bibliographyHtml,
-          },
-        });
+          const [data, rendered] = await Promise.all([
+            context.parseData({
+              id,
+              data: {
+                id: guideline.id,
+                title: guideline.title,
+                description: guideline.description || undefined,
+                labels: [...guideline.labels],
+                markdown: toMarkdown(guideline),
+                search: createGuidelineSearchModel(guideline),
+                sections,
+                bibliography: guideline.bibliography,
+                referencesBib,
+                citations: Array.from(citedKeys),
+                bibliographyHtml,
+              },
+            }),
+            context.renderMarkdown(renderedBody.body),
+          ]);
+          const digest = context.generateDigest(`${renderedBody.body}\n\n${referencesBib ?? ""}`);
+          const filePath = isHttpUrl(catalogSource)
+            ? `${catalogSource}#${id}`
+            : path.relative(projectRoot, path.join(catalogSource, "entries", id, "guideline.md"));
 
-        const rendered = await context.renderMarkdown(renderedBody.body);
-        const digest = context.generateDigest(`${renderedBody.body}\n\n${referencesBib ?? ""}`);
-        const filePath = isHttpUrl(catalogSource)
-          ? `${catalogSource}#${id}`
-          : path.relative(projectRoot, path.join(catalogSource, "entries", id, "guideline.md"));
+          return {
+            id,
+            data,
+            body: renderedBody.body,
+            rendered,
+            digest,
+            filePath,
+            assetImports: rendered.metadata?.imagePaths,
+          };
+        }),
+      );
 
-        context.store.set({
-          id,
-          data,
-          body: renderedBody.body,
-          rendered,
-          digest,
-          filePath,
-          assetImports: rendered.metadata?.imagePaths,
-        });
+      for (const entry of storeEntries) {
+        context.store.set(entry);
       }
     },
   };

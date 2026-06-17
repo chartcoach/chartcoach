@@ -5,7 +5,7 @@ export type GuidelineEntry = CollectionEntry<"guidelines">;
 export const GUIDELINES_PER_PAGE = 24;
 
 export function sortGuidelines(guidelines: GuidelineEntry[]) {
-  return [...guidelines].sort((a, b) => a.data.title.localeCompare(b.data.title));
+  return guidelines.toSorted((a, b) => a.data.title.localeCompare(b.data.title));
 }
 
 export function getGuidelinePageCount(totalRecords: number, pageSize = GUIDELINES_PER_PAGE) {
