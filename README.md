@@ -14,20 +14,20 @@ ChartCoach packages visualization guidelines as records that can be browsed, que
 Install the ChartCoach skill once, then ask a normal chart-design question.
 
 ```bash
-npx skills add chartcoach/chartcoach --skill chartcoach
+npx skills add chartcoach/skills --skill chartcoach
 
 codex 'Hey $chartcoach, why should I avoid using a pie chart?'
 ```
 
 The top-level `$chartcoach` skill is a small router. It loads CLI-served skills shipped with the installed package:
 
-| User job                                                            | Skill         |
-| ------------------------------------------------------------------- | ------------- |
-| Ask what the catalog says, compare chart choices, or trace claims   | `consult`     |
-| Review an existing chart with observed visual evidence              | `visfeedback` |
-| Recommend a chart or encoding from a data task                      | `visrec`      |
+| User job                                                               | Skill         |
+| ---------------------------------------------------------------------- | ------------- |
+| Discuss what the catalog says, compare chart choices, or trace claims  | `discuss`     |
+| Review an existing chart with observed visual evidence                 | `visfeedback` |
+| Recommend a chart or encoding from a data task                         | `visrec`      |
 | Draft a catalog issue when retrieval exposes missing or unclear guidance | `contribute`  |
-| Inspect CLI primitives, custom sources, output formats, and indexes     | `core`        |
+| Inspect CLI primitives, custom sources, output formats, and indexes    | `core`        |
 
 The Guideline Catalog is maintained as a shared resource. A failed search, missing topic, weak label, or unclear record from one chart task can become a catalog issue that improves future retrieval.
 
@@ -70,7 +70,7 @@ Agents can inspect the same skill text directly:
 
 ```bash
 chartcoach skills list
-chartcoach skills get consult
+chartcoach skills get discuss
 ```
 
 ## Python

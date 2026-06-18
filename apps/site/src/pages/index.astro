@@ -4,29 +4,6 @@ import SvgIcon from "@/components/SvgIcon.astro";
 import SiteLayout from "@/layouts/SiteLayout.astro";
 import { ArrowRight, ChevronRight } from "@lucide/astro";
 
-const workflowSteps = [
-  {
-    label: "Guidelines",
-    title: "Readable guidelines",
-    body: "Guidance stays inspectable.",
-  },
-  {
-    label: "Workflows",
-    title: "Grounded workflows",
-    body: "Agents use task-specific skills.",
-  },
-  {
-    label: "Decisions",
-    title: "Cited decisions",
-    body: "Outputs keep a source trail.",
-  },
-  {
-    label: "Improvement",
-    title: "Open improvement",
-    body: "The knowledge base can evolve.",
-  },
-];
-
 const whyFacts = [
   {
     title: "Readable by people",
@@ -52,7 +29,7 @@ const useCases = [
     body: "Choose chart types or encodings from a task, audience, data shape, and constraints.",
   },
   {
-    title: "Ask",
+    title: "Discuss",
     body: "Discuss visualization design choices before the chart exists.",
   },
   {
@@ -92,6 +69,21 @@ const improvementItems = [
   {
     title: "Community review",
     body: "Improvements can flow back into the shared knowledge base.",
+  },
+];
+
+const statusItems = [
+  {
+    title: "Experimental release",
+    body: "ChartCoach is public so people can inspect the catalog, skills, and package behavior while the research system is still changing.",
+  },
+  {
+    title: "Active development",
+    body: "Updated June 18, 2026. The catalog, site, docs, and agent workflows are being revised as we test them with real chart tasks.",
+  },
+  {
+    title: "Not a stable product",
+    body: "Do not rely on ChartCoach as a stable product dependency yet. If you use it, email Peter so we can track use cases and failure modes.",
   },
 ];
 
@@ -137,40 +129,6 @@ const institutions = [
         and generation with citations to the records and sources behind each decision.
       </p>
       <InstallCopy client:load />
-      <div
-        class="mt-12 grid w-full grid-cols-2 overflow-hidden rounded-2xl border border-border text-left lg:grid-cols-4"
-        aria-label="ChartCoach trust basis"
-      >
-        {
-          workflowSteps.map((step, index) => (
-            <article
-              class={[
-                "group flex min-h-[10.5rem] flex-col bg-bg p-4 transition-colors duration-200 hover:bg-surface-muted sm:min-h-[12rem] sm:p-7 xl:min-h-[13rem] xl:p-8",
-                index % 2 === 1 ? "border-l border-border" : "",
-                index >= 2 ? "border-t border-border lg:border-t-0" : "",
-                index > 0 ? "lg:border-l lg:border-border" : "",
-              ]
-                .filter(Boolean)
-                .join(" ")}
-            >
-              <div class="mb-6 flex items-center gap-2 sm:mb-7 sm:gap-2.5">
-                <span class="flex h-6 w-6 items-center justify-center rounded-md border border-border font-mono text-[0.6875rem] tabular-nums text-muted transition-colors group-hover:border-fg/40 group-hover:text-fg xl:h-7 xl:w-7 xl:text-[0.75rem]">
-                  {index + 1}
-                </span>
-                <span class="font-mono text-[0.625rem] font-semibold uppercase tracking-[0.14em] text-muted sm:text-[0.6875rem] sm:tracking-[0.16em] xl:text-[0.75rem]">
-                  {step.label}
-                </span>
-              </div>
-              <h2 class="m-0 text-[1.0625rem] font-semibold leading-snug tracking-normal text-fg xl:text-[1.25rem]">
-                {step.title}
-              </h2>
-              <p class="m-0 mt-2.5 max-w-[15rem] text-[0.875rem] leading-[1.65] text-muted xl:max-w-[16rem] xl:text-[1rem]">
-                {step.body}
-              </p>
-            </article>
-          ))
-        }
-      </div>
     </div>
   </section>
 
@@ -192,13 +150,12 @@ const institutions = [
           </p>
           <p class="m-0">
             It follows earlier constraint-based work such as{" "}
-            <a href="https://github.com/cmudig/draco2" target="_blank" rel="noreferrer" class="text-fg underline decoration-border underline-offset-4 transition-colors hover:decoration-fg">Draco 2</a><span>, which made visualization design knowledge executable. Constraint systems are precise, but agent workflows also need
-              context, exceptions, and a source trail. ChartCoach adds a readable layer that agents can retrieve, cite, and improve with
-              human review.</span>
+            <a href="https://uwdata.github.io/draco/" target="_blank" rel="noreferrer" class="text-fg underline decoration-border underline-offset-4 transition-colors hover:decoration-fg">Draco</a><span> and </span><a href="https://github.com/cmudig/draco2" target="_blank" rel="noreferrer" class="text-fg underline decoration-border underline-offset-4 transition-colors hover:decoration-fg">Draco 2</a><span>, which made visualization design knowledge executable. ChartCoach represents the same kind of design knowledge as readable guideline records that agents can retrieve, cite, and improve with human review.</span>
           </p>
           <p class="m-0">
-            The goal is grounded visual design reasoning: feedback, recommendations, and evaluations that can be inspected after the answer
-            is generated.
+            The goal is grounded visualization design reasoning: feedback, recommendations, and evaluations that can be inspected after the
+            answer is generated. ChartCoach also advances visualization design knowledge by representing it as a shared resource for
+            researchers, builders, and catalog maintainers to inspect, reuse, and improve.
           </p>
         </div>
       </div>
@@ -374,13 +331,38 @@ const institutions = [
     </div>
   </section>
 
+  <section class="relative z-10 border-t border-border px-6 py-[clamp(4.5rem,10vh,7rem)]">
+    <div class="mx-auto grid w-full max-w-[72rem] gap-10 lg:grid-cols-[minmax(0,0.74fr)_minmax(28rem,1fr)] lg:items-start">
+      <div>
+        <p class="m-0 font-mono text-[0.75rem] font-semibold uppercase tracking-[0.16em] text-muted">Status</p>
+        <h2 class="m-0 mt-5 max-w-[36rem] text-[2.25rem] font-semibold leading-[1.04] tracking-normal text-fg sm:text-[3rem] lg:text-[3.75rem]">
+          Experimental and actively developed
+        </h2>
+        <p class="m-0 mt-6 max-w-[34rem] text-pretty text-[1.0625rem] leading-[1.65] text-muted xl:text-[1.1875rem]">
+          If you use ChartCoach in a project, classroom, paper workflow, or agent evaluation, email{" "}
+          <a href="mailto:pgyarmati@ethz.ch" class="text-fg underline decoration-border underline-offset-4 transition-colors hover:decoration-fg">pgyarmati@ethz.ch</a>.
+        </p>
+      </div>
+      <div class="grid gap-px overflow-hidden rounded-2xl border border-border bg-border text-left sm:grid-cols-3 lg:grid-cols-1">
+        {
+          statusItems.map((item) => (
+            <article class="bg-bg p-6 transition-colors duration-200 hover:bg-surface-muted sm:p-7">
+              <h3 class="m-0 text-[1rem] font-semibold leading-snug tracking-normal text-fg xl:text-[1.125rem]">{item.title}</h3>
+              <p class="m-0 mt-3 text-[0.9375rem] leading-[1.6] text-muted xl:text-[1rem]">{item.body}</p>
+            </article>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
   <section class="relative z-10 border-t border-border">
     <div class="mx-auto flex w-[min(100%-3rem,var(--container-content))] flex-col items-center px-6 py-[clamp(6rem,14vh,9rem)] text-center">
       <h2 class="m-0 max-w-[46rem] text-[2rem] font-semibold leading-[1.02] tracking-normal text-fg sm:text-[2.75rem] lg:text-[3.5rem] xl:text-[4rem]">
         Start with an agent or inspect the guidelines
       </h2>
       <p class="mx-auto mt-6 max-w-[42rem] text-pretty text-[1.0625rem] leading-[1.6] text-muted xl:text-[1.1875rem]">
-        Install the skill for agent workflows, or browse the guideline pages when you want to inspect the records and sources directly.
+        Install the skill for agent workflows, browse the guideline pages, and email Peter if you use ChartCoach while it is experimental.
       </p>
       <div class="mt-9 flex flex-wrap items-center justify-center gap-3">
         <a
@@ -389,6 +371,12 @@ const institutions = [
         >
           Open guidelines
           <ArrowRight class="h-3.5 w-3.5" stroke-width={1.5} aria-hidden="true" />
+        </a>
+        <a
+          href="mailto:pgyarmati@ethz.ch"
+          class="inline-flex h-11 items-center justify-center rounded-lg border border-border bg-bg px-4 text-sm font-medium text-fg no-underline transition-colors hover:bg-surface-muted xl:text-[0.9375rem]"
+        >
+          Get in touch
         </a>
         <a
           href="https://github.com/chartcoach/catalog"

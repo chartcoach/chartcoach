@@ -126,7 +126,7 @@ def test_skills_cli_prints_skill_paths(
     assert result.output.strip() == str(skill_dir)
 
 
-def test_packaged_skills_exclude_top_level_repo_skill(
+def test_packaged_skills_are_served_from_package_data(
     runner: CliRunner,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -137,9 +137,9 @@ def test_packaged_skills_exclude_top_level_repo_skill(
     list_result = runner.invoke(chartcoach_cli, ["skills", "list", "--format", "jsonl"])
     assert list_result.exit_code == 0
     visible_names = [row["name"] for row in jsonl_rows(list_result)]
-    assert visible_names == ["core", "consult", "visfeedback", "visrec", "contribute"]
+    assert visible_names == ["core", "discuss", "visfeedback", "visrec", "contribute"]
 
-    for name in ("consult", "contribute", "visrec"):
+    for name in ("discuss", "contribute", "visrec"):
         skill_result = runner.invoke(chartcoach_cli, ["skills", "get", name])
         assert skill_result.exit_code == 0
         assert f"name: {name}" in skill_result.output
@@ -147,7 +147,48 @@ def test_packaged_skills_exclude_top_level_repo_skill(
     get_result = runner.invoke(chartcoach_cli, ["skills", "get", "chartcoach"])
     assert_cli_error(get_result, "Unknown CLI-served skill: chartcoach")
     assert (
-        "Available CLI-served skills: core, consult, visfeedback, visrec, contribute"
+        "Available CLI-served skills: core, discuss, visfeedback, visrec, contribute"
         in get_result.output
     )
-    assert (repo_root / "skills" / "chartcoach" / "SKILL.md").exists()
+
+
+def test_packaged_contribute_skill_describes_catalog_issue_paths(
+    runner: CliRunner,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repo_root = Path(__file__).parents[3]
+    monkeypatch.chdir(repo_root)
+    monkeypatch.delenv("CHARTCOACH_SKILLS_DIR", raising=False)
+
+    result = runner.invoke(chartcoach_cli, ["skills", "get", "contribute"])
+
+    assert result.exit_code == 0
+    assert (
+        "https://github.com/chartcoach/catalog/issues/new?body=<encoded-body>"
+        in result.output
+    )
+    assert "`missing-guideline.md`" in result.output
+    assert "`improve-guideline.md`" in result.output
+    assert "`catalog-curation.md`" in result.output
+    assert "command -v gh" in result.output
+    assert "gh auth status --hostname github.com" in result.output
+    assert "gh issue create --repo chartcoach/catalog" in result.output
+    assert "ask for explicit approval" in result.output
+
+    for heading in (
+        "## Issue Type",
+        "## Summary",
+        "## Evidence From Use",
+        "## Related Guideline Records",
+        "## Suggested Catalog Change",
+        "## Public Disclosure Check",
+        "## Uncertainty",
+    ):
+        assert heading in result.output
+
+    for checklist_item in (
+        "- [ ] No private user data.",
+        "- [ ] No local filesystem paths.",
+        "- [ ] Any referenced guideline ids were verified with exact reads.",
+    ):
+        assert checklist_item in result.output

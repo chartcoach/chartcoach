@@ -5,7 +5,7 @@ Python tools for the ChartCoach guideline catalog.
 For agent use, install the ChartCoach skill once, then ask the current agent to use it:
 
 ```bash
-npx skills add chartcoach/chartcoach --skill chartcoach
+npx skills add chartcoach/skills --skill chartcoach
 codex 'Use $chartcoach to access visualization design guidelines. Start by giving me a thematic overview of the catalog.'
 ```
 

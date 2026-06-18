@@ -39,7 +39,7 @@ Use `chartcoach mcp serve` only when a human wants to start a server interface.
 
 Use `chartcoach skills list`, `chartcoach skills get <name>`, and `chartcoach skills path [name]` for CLI-served skills bundled with the installed package. The top-level `chartcoach` skill is installed separately by the agent skill system and is not served by `chartcoach skills get`.
 
-Task skills assume this setup is already resolved. Use this core skill for custom catalog sources, custom indexes, package extras, command formats, and recovery paths before loading `visfeedback`, `visrec`, or `consult`.
+Task skills assume this setup is already resolved. Use this core skill for custom catalog sources, custom indexes, package extras, command formats, and recovery paths before loading `visfeedback`, `visrec`, or `discuss`.
 
 ## Retrieval Steps
 
