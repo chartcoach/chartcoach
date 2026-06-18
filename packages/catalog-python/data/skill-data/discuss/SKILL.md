@@ -1,11 +1,11 @@
 ---
-name: consult
-description: Use this to consult the ChartCoach Guideline Catalog. Teaches agents how to read MANIFEST.md, answer design questions with citations, compare viewpoints, and use optional indexed analysis without hard-coding section roles.
+name: discuss
+description: Use this for cited discussion with the ChartCoach Guideline Catalog. Teaches agents how to read MANIFEST.md, answer design questions with citations, compare viewpoints, and use optional indexed analysis without hard-coding section roles.
 ---
 
-# ChartCoach Consult
+# ChartCoach Discuss
 
-Use ChartCoach primitives and catalog records to consult the Guideline Catalog with citations. Use this skill for design questions, chart-choice comparisons, tradeoff explanations, topic searches, source tracing, teaching, related guidance, conflicting guidance, boundary cases, and related-record exploration.
+Use ChartCoach primitives and catalog records for cited discussion with the Guideline Catalog. Use this skill for design questions, chart-choice comparisons, tradeoff explanations, topic searches, source tracing, teaching, related guidance, conflicting guidance, boundary cases, and related-record exploration.
 
 Load `core` first when catalog source, index setup, package extras, or output formats are unclear. This skill assumes the `chartcoach` command already points at the intended Catalog Instance.
 
@@ -47,7 +47,7 @@ Build a role map before role-scoped retrieval:
 
 One manifest role can belong to more than one group. Some Catalog Instances may not define every group.
 
-## No-Index Consultation
+## No-Index Discussion
 
 Use base CLI commands first:
 

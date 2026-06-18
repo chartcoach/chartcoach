@@ -138,9 +138,9 @@ const USE_CASES = [
     instruction: "suggest a clearer encoding.",
   },
   {
-    id: "ask",
-    label: "Ask",
-    instruction: "how should I show uncertainty?",
+    id: "discuss",
+    label: "Discuss",
+    instruction: "discuss how I should show uncertainty.",
   },
   {
     id: "evaluate",

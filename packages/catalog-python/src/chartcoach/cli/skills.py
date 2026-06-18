@@ -16,7 +16,7 @@ SKILLS_ENV = "CHARTCOACH_SKILLS_DIR"
 SKILL_DATA_DIR = "skill-data"
 PACKAGED_DATA_DIR = "data"
 SUPPLEMENTARY_DIRS = ("references", "templates")
-SKILL_ORDER = ("core", "consult", "visfeedback", "visrec", "contribute")
+SKILL_ORDER = ("core", "discuss", "visfeedback", "visrec", "contribute")
 SKILL_ORDER_INDEX = {name: index for index, name in enumerate(SKILL_ORDER)}
 
 
@@ -151,6 +151,10 @@ def _skill_roots() -> list[Path]:
     candidates: list[Path] = []
     candidates.extend(_walkup_skill_roots(Path.cwd()))
     candidates.extend(_walkup_skill_roots(Path(__file__).resolve()))
+    source_roots = _unique_paths(candidates)
+    if source_roots:
+        return source_roots
+
     data_root = Path(sysconfig.get_path("data")) / SKILL_DATA_DIR
     if data_root.is_dir():
         candidates.append(data_root)
