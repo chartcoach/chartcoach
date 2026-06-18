@@ -22,6 +22,7 @@ type ShellLineProps = {
 type MenuChevronProps = {
   open: boolean;
 };
+type MenuPlacement = "above" | "below";
 type AgentIcon =
   | {
       kind: "component";
@@ -125,6 +126,12 @@ const AGENTS = [
     icon: { kind: "asset", display: "mask", src: githubCopilotIconUrl },
   },
 ] as const satisfies readonly Agent[];
+
+const AGENT_MENU_ITEM_HEIGHT = 40;
+const AGENT_MENU_CHROME_HEIGHT = 10;
+const AGENT_MENU_GAP = 8;
+const AGENT_MENU_VIEWPORT_PADDING = 12;
+const AGENT_MENU_HEIGHT = AGENTS.length * AGENT_MENU_ITEM_HEIGHT + AGENT_MENU_CHROME_HEIGHT;
 
 const USE_CASES = [
   {
@@ -231,11 +238,27 @@ function MenuChevron({ open }: MenuChevronProps) {
 
 function useMenuDisclosure() {
   const [open, setOpen] = useState(false);
+  const [placement, setPlacement] = useState<MenuPlacement>("below");
   const menuRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
 
   const close = useCallback(() => setOpen(false), []);
-  const toggle = useCallback(() => setOpen((current) => !current), []);
+  const updatePlacement = useCallback(() => {
+    const trigger = triggerRef.current;
+    if (!trigger) return;
+
+    const rect = trigger.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom - AGENT_MENU_VIEWPORT_PADDING;
+    const spaceAbove = rect.top - AGENT_MENU_VIEWPORT_PADDING;
+    const needsAbove = spaceBelow < AGENT_MENU_HEIGHT + AGENT_MENU_GAP && spaceAbove > spaceBelow;
+    setPlacement(needsAbove ? "above" : "below");
+  }, []);
+  const toggle = useCallback(() => {
+    setOpen((current) => {
+      if (!current) updatePlacement();
+      return !current;
+    });
+  }, [updatePlacement]);
 
   useEffect(() => {
     if (!open) return;
@@ -254,14 +277,18 @@ function useMenuDisclosure() {
 
     document.addEventListener("pointerdown", handlePointerDown);
     document.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("resize", updatePlacement);
+    window.addEventListener("scroll", updatePlacement, true);
 
     return () => {
       document.removeEventListener("pointerdown", handlePointerDown);
       document.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("resize", updatePlacement);
+      window.removeEventListener("scroll", updatePlacement, true);
     };
-  }, [close, open]);
+  }, [close, open, updatePlacement]);
 
-  return { close, menuRef, open, toggle, triggerRef };
+  return { close, menuRef, open, placement, toggle, triggerRef };
 }
 
 export function InstallCopy() {
@@ -271,6 +298,8 @@ export function InstallCopy() {
   const agentMenuId = useId();
   const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const agentMenu = useMenuDisclosure();
+  const agentMenuPlacementClass =
+    agentMenu.placement === "above" ? "bottom-[calc(100%+0.45rem)]" : "top-[calc(100%+0.45rem)]";
   const activeAgent = AGENTS.find((agent) => agent.id === activeAgentId) ?? AGENTS[1];
   const activeUseCase = USE_CASES.find((useCase) => useCase.id === activeUseCaseId) ?? USE_CASES[0];
   const agentCommand = activeAgent.command(activeUseCase.instruction);
@@ -333,7 +362,10 @@ export function InstallCopy() {
                 id={agentMenuId}
                 role="menu"
                 aria-label="Agent"
-                className="absolute bottom-[calc(100%+0.45rem)] left-0 z-20 w-full min-w-[11rem] overflow-hidden rounded-md border border-border bg-bg p-1 sm:bottom-auto sm:top-[calc(100%+0.45rem)] sm:min-w-[13rem]"
+                className={[
+                  "absolute left-0 z-20 w-full min-w-[11rem] overflow-hidden rounded-md border border-border bg-bg p-1 sm:min-w-[13rem]",
+                  agentMenuPlacementClass,
+                ].join(" ")}
               >
                 {AGENTS.map((agent) => {
                   const selected = activeAgentId === agent.id;

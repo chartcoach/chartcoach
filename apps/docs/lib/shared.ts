@@ -2,7 +2,7 @@ export const appName = "ChartCoach";
 export const docsRoute = "/docs";
 
 export const gitConfig = {
-  user: "peter-gy",
-  repo: "chartcoach",
+  user: "chartcoach",
+  repo: "catalog",
   branch: "main",
 };
