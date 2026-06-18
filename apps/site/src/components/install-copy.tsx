@@ -154,6 +154,11 @@ const USE_CASES = [
     label: "Evaluate",
     instruction: "evaluate this chart for mobile use.",
   },
+  {
+    id: "contribute",
+    label: "Contribute",
+    instruction: "add a new guideline about using log scales.",
+  },
 ] as const satisfies readonly UseCase[];
 
 type AgentId = (typeof AGENTS)[number]["id"];
@@ -395,7 +400,7 @@ export function InstallCopy() {
             )}
           </div>
           <div
-            className="col-span-2 row-start-2 flex min-w-0 flex-1 flex-nowrap items-center gap-0 sm:col-auto sm:row-auto sm:flex-wrap"
+            className="col-span-2 row-start-2 flex min-w-0 flex-1 flex-wrap items-center gap-y-1 sm:col-auto sm:row-auto"
             aria-label="ChartCoach use case"
           >
             {USE_CASES.map((useCase, index) => {
@@ -424,7 +429,7 @@ export function InstallCopy() {
                     </span>
                   </button>
                   {index < USE_CASES.length - 1 && (
-                    <span className="mx-0.5 h-4 w-px shrink-0 bg-border sm:mx-1" aria-hidden="true" />
+                    <span className="mx-0.5 hidden h-4 w-px shrink-0 bg-border min-[420px]:block sm:mx-1" aria-hidden="true" />
                   )}
                 </Fragment>
               );
@@ -443,8 +448,8 @@ export function InstallCopy() {
             )}
           </button>
         </div>
-        <pre className="m-0 min-w-0 max-w-full overflow-x-auto px-4 py-3.5 font-mono text-[0.8125rem] leading-[1.6] tracking-normal text-code-fg sm:px-7 sm:py-5 sm:text-[0.9375rem] xl:text-[1rem]">
-          <code className="inline-block min-w-max whitespace-pre">
+        <pre className="m-0 min-w-0 max-w-full overflow-visible px-4 py-3.5 font-mono text-[0.8125rem] leading-[1.6] tracking-normal text-code-fg sm:px-7 sm:py-5 sm:text-[0.9375rem] xl:text-[1rem]">
+          <code className="block min-w-0 whitespace-pre-wrap break-words">
             {snippetLines.map((line, index) => (
               <span key={line} className={index === 0 ? "block" : "mt-3 block"}>
                 <span className="select-none text-muted/55">$ </span>
