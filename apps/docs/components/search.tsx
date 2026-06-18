@@ -15,6 +15,14 @@ import {
 } from "fumadocs-ui/components/dialog/search";
 import { useI18n } from "fumadocs-ui/contexts/i18n";
 
+function SearchDialogListEmpty() {
+  return (
+    <div className="py-12 text-center text-sm text-fd-muted-foreground">
+      No results found
+    </div>
+  );
+}
+
 export default function DefaultSearchDialog(props: SharedProps) {
   const { locale } = useI18n();
   const { search, setSearch, query } = useDocsSearch({
@@ -37,7 +45,10 @@ export default function DefaultSearchDialog(props: SharedProps) {
           <SearchDialogInput />
           <SearchDialogClose />
         </SearchDialogHeader>
-        <SearchDialogList items={query.data !== "empty" ? query.data : null} />
+        <SearchDialogList
+          Empty={SearchDialogListEmpty}
+          items={query.data !== "empty" ? query.data : null}
+        />
       </SearchDialogContent>
     </SearchDialog>
   );

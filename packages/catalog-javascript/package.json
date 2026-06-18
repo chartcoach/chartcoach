@@ -7,11 +7,10 @@
   "author": "Péter Ferenc Gyarmati <dev.petergy@gmail.com>",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/chartcoach/chartcoach.git",
-    "directory": "packages/catalog-javascript"
+    "url": "git+https://github.com/chartcoach/catalog.git"
   },
   "bugs": {
-    "url": "https://github.com/chartcoach/chartcoach/issues"
+    "url": "https://github.com/chartcoach/catalog/issues"
   },
   "files": [
     "dist",
