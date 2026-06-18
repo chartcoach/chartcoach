@@ -4,7 +4,7 @@ import SvgIcon from "@/components/SvgIcon.astro";
 import { ThemeToggle } from "@/components/theme-toggle";
 ---
 
-<div class="relative min-h-screen overflow-hidden">
+<div class="relative min-h-screen overflow-x-clip">
   <header
     class="sticky top-0 z-50 flex h-14 items-center justify-between gap-2 bg-bg/90 px-3 backdrop-blur-sm sm:gap-3 sm:px-4"
   >
@@ -20,6 +20,12 @@ import { ThemeToggle } from "@/components/theme-toggle";
     <nav class="flex items-center gap-1 text-sm text-muted sm:gap-3 lg:text-[0.9375rem]" aria-label="Primary">
       <a href="/guidelines/" class="hidden h-8 items-center rounded-md px-1.5 no-underline transition-colors hover:text-fg min-[360px]:inline-flex">
         Guidelines
+      </a>
+      <a
+        href="https://docs.chartcoach.dev/"
+        class="hidden h-8 items-center rounded-md px-1.5 no-underline transition-colors hover:text-fg sm:inline-flex"
+      >
+        Docs
       </a>
       <GuidelineSearch client:load />
       <a

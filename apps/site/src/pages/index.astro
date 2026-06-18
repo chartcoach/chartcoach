@@ -1,8 +1,10 @@
 ---
 import { InstallCopy } from "@/components/install-copy";
+import { GuidelineStory } from "@/components/guideline-story";
 import SvgIcon from "@/components/SvgIcon.astro";
 import SiteLayout from "@/layouts/SiteLayout.astro";
 import { ArrowRight, ChevronRight } from "@lucide/astro";
+import { getCollection } from "astro:content";
 
 const whyFacts = [
   {
@@ -83,7 +85,7 @@ const statusItems = [
   },
   {
     title: "Not a stable product",
-    body: "Do not rely on ChartCoach as a stable product dependency yet. If you use it, email Peter so we can track use cases and failure modes.",
+    body: "Do not rely on ChartCoach as a stable product dependency yet. If you use it, get in touch so we can track use cases and failure modes.",
   },
 ];
 
@@ -109,13 +111,15 @@ const institutions = [
     href: "https://mbzuai.ac.ae/",
   },
 ] as const;
+
+const guidelineCount = (await getCollection("guidelines")).length;
 ---
 
 <SiteLayout
   title="ChartCoach"
   description="ChartCoach gives agents access to readable visualization guidance for critique, recommendation, generation, and evaluation with citations to guideline records and sources."
 >
-  <section class="relative flex items-start overflow-hidden px-6 pb-[clamp(4.5rem,9vh,6.5rem)] pt-12 sm:pt-[clamp(4rem,11vh,7rem)]">
+  <section class="relative flex items-start overflow-visible px-6 pb-[clamp(4.5rem,9vh,6.5rem)] pt-12 sm:pt-[clamp(4rem,11vh,7rem)]">
     <div class="grid-glow" aria-hidden="true"></div>
     <div class="relative z-10 mx-auto flex w-full max-w-[72rem] flex-col items-center text-center">
       <p class="mb-6 mt-0 inline-flex items-center rounded-full border border-border bg-surface/70 px-3.5 py-1 font-mono text-[0.6875rem] font-medium uppercase tracking-[0.16em] text-muted backdrop-blur sm:mb-7">
@@ -131,6 +135,8 @@ const institutions = [
       <InstallCopy client:load />
     </div>
   </section>
+
+  <GuidelineStory guidelineCount={guidelineCount} client:load />
 
   <section class="relative z-10 border-t border-border px-6 py-[clamp(5.5rem,12vh,8rem)]">
     <div class="mx-auto grid w-full max-w-[72rem] gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,0.72fr)] lg:items-start">
@@ -362,7 +368,7 @@ const institutions = [
         Start with an agent or inspect the guidelines
       </h2>
       <p class="mx-auto mt-6 max-w-[42rem] text-pretty text-[1.0625rem] leading-[1.6] text-muted xl:text-[1.1875rem]">
-        Install the skill for agent workflows, browse the guideline pages, and email Peter if you use ChartCoach while it is experimental.
+        Install the skill for agent workflows, read the docs, browse the guideline pages, and get in touch if you use ChartCoach while it is experimental.
       </p>
       <div class="mt-9 flex flex-wrap items-center justify-center gap-3">
         <a
@@ -371,6 +377,12 @@ const institutions = [
         >
           Open guidelines
           <ArrowRight class="h-3.5 w-3.5" stroke-width={1.5} aria-hidden="true" />
+        </a>
+        <a
+          href="https://docs.chartcoach.dev/"
+          class="inline-flex h-11 items-center justify-center rounded-lg border border-border bg-bg px-4 text-sm font-medium text-fg no-underline transition-colors hover:bg-surface-muted xl:text-[0.9375rem]"
+        >
+          Open docs
         </a>
         <a
           href="mailto:pgyarmati@ethz.ch"
