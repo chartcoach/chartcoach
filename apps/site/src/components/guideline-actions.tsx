@@ -60,7 +60,6 @@ export function GuidelineActions({ markdown, bibtex, editHref }: GuidelineAction
         onClick={() => copy("markdown", markdown)}
         className="group relative inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-border bg-bg text-muted transition-colors hover:bg-surface-muted hover:text-fg"
         aria-label="Copy Markdown"
-        title="Copy Markdown"
       >
         {state === "markdown" ? (
           <Check className="h-4 w-4" aria-hidden="true" />
@@ -77,7 +76,6 @@ export function GuidelineActions({ markdown, bibtex, editHref }: GuidelineAction
         disabled={!canCopyBibtex}
         className="group relative inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-border bg-bg text-muted transition-colors hover:bg-surface-muted hover:text-fg disabled:cursor-not-allowed disabled:opacity-45"
         aria-label="Copy BibTeX"
-        title={canCopyBibtex ? "Copy BibTeX" : "No BibTeX references"}
       >
         {state === "bibtex" ? (
           <Check className="h-4 w-4" aria-hidden="true" />
@@ -94,7 +92,6 @@ export function GuidelineActions({ markdown, bibtex, editHref }: GuidelineAction
         rel="noreferrer"
         className="group relative inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-bg text-muted no-underline transition-colors hover:bg-surface-muted hover:text-fg"
         aria-label="Suggest edit"
-        title="Suggest edit"
       >
         <Pencil className="h-4 w-4" aria-hidden="true" />
         <Tooltip>Suggest edit</Tooltip>
