@@ -1,0 +1,97 @@
+name: Deploy Site
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/deploy-site.yml"
+      - "apps/site/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "packages/catalog-javascript/**"
+  pull_request:
+    paths:
+      - ".github/workflows/deploy-site.yml"
+      - "apps/site/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "packages/catalog-javascript/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  deployments: write
+
+concurrency:
+  group: deploy-site-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+  NODE_VERSION: 24
+
+jobs:
+  deploy:
+    name: Deploy chartcoach-site
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Enable pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Resolve deployment target
+        id: target
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            branch="pr-${{ github.event.pull_request.number }}"
+            url="https://${branch}.chartcoach-site.pages.dev/"
+          else
+            branch="${GITHUB_REF_NAME}"
+            url="https://chartcoach.dev/"
+          fi
+
+          echo "branch=${branch}" >> "$GITHUB_OUTPUT"
+          echo "url=${url}" >> "$GITHUB_OUTPUT"
+
+      - name: Build site
+        env:
+          CHARTCOACH_SITE_URL: ${{ steps.target.outputs.url }}
+        run: pnpm --dir apps/site build
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ env.CLOUDFLARE_ACCOUNT_ID }}
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          wranglerVersion: 4.101.0
+          command: pages deploy apps/site/dist --project-name chartcoach-site --branch ${{ steps.target.outputs.branch }} --commit-hash ${{ github.sha }}
+
+      - name: Write deployment summary
+        run: |
+          {
+            echo "### ChartCoach site"
+            echo ""
+            echo "- Project: \`chartcoach-site\`"
+            echo "- Branch: \`${{ steps.target.outputs.branch }}\`"
+            echo "- URL: ${{ steps.target.outputs.url }}"
+          } >> "$GITHUB_STEP_SUMMARY"
