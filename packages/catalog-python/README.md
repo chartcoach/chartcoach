@@ -126,7 +126,7 @@ Run one-off CLI commands with `uvx chartcoach@latest --help`.
 
 These commands read the package-pinned Default Catalog release, inspect table schemas, write DuckDB tables, read guideline sections, and query indexed guideline rows.
 The `@latest` selector follows the newest published package. Use
-`chartcoach@0.1.2` when output must stay tied to the `0.1.2` Default Catalog
+`chartcoach@0.1.3` when output must stay tied to the `0.1.2` Default Catalog
 release.
 
 ```bash
