@@ -1,20 +1,36 @@
 ---
-title: ChartCoach
-description: Documentation for the ChartCoach project and the Guideline Catalog.
+title: Query the catalog
+description: Access the visualization Guideline Catalog from the CLI, Python, JavaScript, or MCP.
 ---
 
-ChartCoach publishes a Guideline Catalog and loader packages for inspecting
-visualization design guidance.
+chartcoach gives you access to a versioned visualization guideline catalog from
+the CLI, Python, JavaScript, or MCP. Start with the CLI.
 
 ```bash
-pnpm --dir apps/docs build
+uvx chartcoach@latest catalog query --contains "legend" --limit 5 --format table
 ```
 
-The static docs build writes exported files to `apps/docs/out`. Serve that
-directory to test the same runtime contract used by deploy previews.
+Read the exact guideline before citing it:
 
-<Cards>
-  <Card title="Catalog contract" href="/docs/catalog">
-    Inspect the Guideline Catalog record shape and loader entry points.
-  </Card>
-</Cards>
+```bash
+uvx chartcoach@latest catalog read compare-percentages-with-bars-not-pies \
+  --source-detail minimal \
+  --format markdown
+uvx chartcoach@latest catalog cite compare-percentages-with-bars-not-pies \
+  --format markdown
+```
+
+## Next steps
+
+- [Getting started](/getting-started): run the first query, read one guideline,
+  and cite its sources.
+- [Querying](/querying): filter by text, labels, sections, SQL, and indexed
+  search with compact CLI, Python, and TypeScript examples.
+- [Catalog contract](/catalog): inspect stable ids, row shape, manifest,
+  source locators, cache behavior, release metadata, and SQL tables.
+- [CLI](/cli), [Python](/python), and [JavaScript](/javascript): use the same
+  catalog from terminal commands, notebooks, services, and apps.
+- [Agents](/agents) and [MCP](/mcp): route agent work through skills or expose
+  catalog SQL and search as MCP tools.
+- [Build a catalog](/build): validate authored entries and publish a catalog
+  bundle.

@@ -1,0 +1,57 @@
+---
+title: Getting started
+description: Run chartcoach with uvx, query the Default Catalog, read a guideline, and cite its sources.
+---
+
+Run chartcoach as a one-off CLI with `uvx`. The first catalog command reads the
+Default Catalog and prints guideline rows.
+
+Install `uv` from the [Astral installation guide](https://docs.astral.sh/uv/getting-started/installation/),
+then check that the CLI resolves:
+
+```bash
+uvx chartcoach@latest --help
+```
+
+<Callout title="Package version">
+Examples use `chartcoach@latest` for one-off access. Pin the package when
+output must stay tied to one catalog release.
+</Callout>
+
+## Query a topic
+
+```bash
+uvx chartcoach@latest catalog query --contains "pie chart" --limit 3 --format table
+```
+
+You should see rows with `id`, `title`, `description`, and `labels` columns.
+
+```text
+id                                      title
+combine-small-pie-slices-...            Group small pie slices...
+move-small-slice-labels-...             Place small-slice labels...
+replace-pie-with-stacked-bar-...        Use a stacked bar chart...
+```
+
+Use `table` for terminal reading. Use `json`, `jsonl`, or `csv` when another
+program reads stdout.
+
+## Read one guideline
+
+```bash
+uvx chartcoach@latest catalog read compare-percentages-with-bars-not-pies \
+  --source-detail minimal \
+  --format markdown
+```
+
+`read` returns the guideline text, labels, sections, and selected source
+metadata.
+
+## Cite its sources
+
+```bash
+uvx chartcoach@latest catalog cite compare-percentages-with-bars-not-pies \
+  --format markdown
+```
+
+`cite` returns the public guideline URL and formatted source references.

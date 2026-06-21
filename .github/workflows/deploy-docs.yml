@@ -28,7 +28,11 @@ concurrency:
 
 env:
   CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-  NODE_VERSION: 24
+  WRANGLER_VERSION: "4"
+  CLOUDFLARE_PAGES_PROJECT: chartcoach-docs
+  CLOUDFLARE_PAGES_PREVIEW_HOST: chartcoach-docs.pages.dev
+  CLOUDFLARE_PAGES_PRODUCTION_URL: https://docs.chartcoach.dev/
+  BUILD_OUTPUT_DIR: apps/docs/out
 
 jobs:
   deploy:
@@ -39,21 +43,18 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.0
 
-      - name: Enable pnpm
-        uses: pnpm/action-setup@v4
+      - name: Set up pnpm and install dependencies
+        uses: pnpm/action-setup@v6
         with:
-          run_install: false
+          standalone: true
+          cache: true
+          run_install: |
+            - args: [--frozen-lockfile]
 
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Verify package-managed Node
+        run: pnpm exec node --version
 
       - name: Resolve deployment target
         id: target
@@ -61,10 +62,10 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             branch="pr-${{ github.event.pull_request.number }}"
-            url="https://${branch}.chartcoach-docs.pages.dev/"
+            url="https://${branch}.${CLOUDFLARE_PAGES_PREVIEW_HOST}/"
           else
             branch="${GITHUB_REF_NAME}"
-            url="https://docs.chartcoach.dev/"
+            url="${CLOUDFLARE_PAGES_PRODUCTION_URL}"
           fi
 
           echo "branch=${branch}" >> "$GITHUB_OUTPUT"
@@ -74,20 +75,20 @@ jobs:
         run: pnpm --dir apps/docs build
 
       - name: Deploy to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v3
+        uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ env.CLOUDFLARE_ACCOUNT_ID }}
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-          wranglerVersion: 4.101.0
-          command: pages deploy apps/docs/out --project-name chartcoach-docs --branch ${{ steps.target.outputs.branch }} --commit-hash ${{ github.sha }}
+          wranglerVersion: ${{ env.WRANGLER_VERSION }}
+          command: pages deploy ${{ env.BUILD_OUTPUT_DIR }} --project-name ${{ env.CLOUDFLARE_PAGES_PROJECT }} --branch ${{ steps.target.outputs.branch }} --commit-hash ${{ github.sha }}
 
       - name: Write deployment summary
         run: |
           {
-            echo "### ChartCoach docs"
+            echo "### chartcoach docs"
             echo ""
-            echo "- Project: \`chartcoach-docs\`"
+            echo "- Project: \`${CLOUDFLARE_PAGES_PROJECT}\`"
             echo "- Branch: \`${{ steps.target.outputs.branch }}\`"
             echo "- URL: ${{ steps.target.outputs.url }}"
           } >> "$GITHUB_STEP_SUMMARY"

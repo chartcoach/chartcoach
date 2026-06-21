@@ -1,0 +1,103 @@
+---
+title: MCP
+description: Serve read-only chartcoach catalog SQL and optional indexed search tools over MCP.
+---
+
+The chartcoach MCP server exposes catalog SQL and optional indexed search tools
+for MCP clients. MCP, the Model Context Protocol, lets an agent client call
+server-provided tools during a session.
+
+```bash
+uvx --from 'chartcoach[mcp]@latest' chartcoach mcp serve
+```
+
+The package selector after `--from` installs extras. Use
+`chartcoach[mcp]@0.1.2` when the server must stay tied to one catalog release.
+
+With no index configured, the server registers `sql` for read-only catalog SQL.
+
+## Configure a client
+
+For stdio clients, point the server command at `uvx` and pass the package with
+`--from`:
+
+```json
+{
+  "mcpServers": {
+    "chartcoach": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "chartcoach[mcp,index]@latest",
+        "chartcoach",
+        "mcp",
+        "serve",
+        "--index",
+        "/absolute/path/to/chartcoach-index"
+      ]
+    }
+  }
+}
+```
+
+Desktop clients often launch servers from a different working directory. Use
+absolute paths for `--source` and `--index` when a client configuration owns
+those values.
+
+## Add search
+
+Run with the search extra and pass a LanceDB index. `catalog find` can resolve
+the package-pinned default index when `--index` is omitted. `mcp serve` does not
+auto-resolve that index because MCP server configuration should be explicit.
+
+Use a caller-owned index when you want to choose the path:
+
+```bash
+uvx --from 'chartcoach[mcp,index]@latest' chartcoach catalog index create \
+  --index ./chartcoach-index
+uvx --from 'chartcoach[mcp,index]@latest' chartcoach mcp serve \
+  --index ./chartcoach-index
+```
+
+To reuse the cached package-pinned index, resolve it with
+`chartcoach catalog index info --format json` and pass the returned path as
+`--index`.
+
+When an index is available, the server also registers:
+
+| Tool | Behavior |
+| --- | --- |
+| `search` | Run LanceDB search over indexed catalog document rows |
+
+The search table defaults to `catalog_documents`. Pass `--table` for another
+table name.
+
+## Source and runtime options
+
+Environment variables mirror the main options.
+
+| Variable | Behavior |
+| --- | --- |
+| `CHARTCOACH_SOURCE` | Catalog bundle, parquet file, authored folder, or metadata URL |
+| `CHARTCOACH_INDEX` | LanceDB database path or URI |
+| `CHARTCOACH_MCP_TRANSPORT` | `stdio`, `sse`, or `streamable-http` |
+| `CHARTCOACH_MCP_HOST` | Host for HTTP transports |
+| `CHARTCOACH_MCP_PORT` | Port for HTTP transports |
+| `CHARTCOACH_MCP_LOG_LEVEL` | `DEBUG`, `INFO`, `WARNING`, `ERROR`, or `CRITICAL` |
+
+## SQL boundary
+
+The `sql` tool accepts one `SELECT` statement. Multiple statements and mutating
+queries are rejected.
+
+```sql
+select g.id, g.title, s.role
+from guidelines g
+join sections s on s.guideline_id = g.id
+where s.content ilike '%legend%'
+limit 5
+```
+
+Use `uvx chartcoach@latest catalog schema --tables --row-counts` and
+`uvx chartcoach@latest catalog schema` to inspect table names and columns before
+configuring a client prompt.

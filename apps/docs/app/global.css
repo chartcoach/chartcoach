@@ -1,13 +1,16 @@
 @import "tailwindcss";
 @import "fumadocs-ui/css/neutral.css";
 @import "fumadocs-ui/css/preset.css";
-
-:root {
-  color-scheme: light;
-}
+@import "@chartcoach/brand/tokens.css";
+@import "@chartcoach/brand/logo.css";
 
 html {
   scrollbar-gutter: stable;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-weight: 400;
 }
 
 html > body[data-scroll-locked] {
