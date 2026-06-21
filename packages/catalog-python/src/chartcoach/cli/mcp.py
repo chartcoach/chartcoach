@@ -5,7 +5,6 @@ import click
 from chartcoach.tools import format_error
 
 from chartcoach.constants import (
-    DEFAULT_CATALOG_ARTIFACT_BASE_URL,
     INDEX_ENV,
     LANCE_DOCUMENT_TABLE,
     SOURCE_ENV,
@@ -15,9 +14,8 @@ CONTEXT_SETTINGS = {"help_option_names": ["-h", "--help"]}
 TRANSPORT_CHOICES = ("stdio", "sse", "streamable-http")
 LOG_LEVEL_CHOICES = ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL")
 MCP_INDEX_EXTRA_HINTS = (
-    "Install with `uv tool install 'chartcoach[mcp,index]'` for a persistent CLI.",
-    "For one-off runs, use `uvx --from 'chartcoach[mcp,index]' chartcoach ...`.",
-    "From a checkout, use `uv run --extra mcp --extra index chartcoach ...`.",
+    "For one-off runs, use `uvx --from 'chartcoach[mcp,index]@latest' chartcoach ...`.",
+    "From a checkout, use `uv run --package chartcoach --extra mcp --extra index chartcoach ...`.",
 )
 
 
@@ -46,16 +44,16 @@ def _has_missing_module(exc: ModuleNotFoundError, module_names: tuple[str, ...])
 @click.group(
     "mcp",
     context_settings=CONTEXT_SETTINGS,
-    help="Start and configure ChartCoach MCP servers.",
+    help="Start and configure chartcoach MCP servers.",
 )
 def mcp_command() -> None:
-    """Start and configure ChartCoach MCP servers."""
+    """Start and configure chartcoach MCP servers."""
 
 
 @mcp_command.command(
     "serve",
     context_settings=CONTEXT_SETTINGS,
-    short_help="Start the ChartCoach MCP server.",
+    short_help="Start the chartcoach MCP server.",
 )
 @click.option(
     "--source",
@@ -64,7 +62,7 @@ def mcp_command() -> None:
     metavar="PATH_OR_URL",
     help=(
         "Catalog bundle, entries parquet file, authored folder, or metadata URL. "
-        f"Defaults to ${SOURCE_ENV}, then {DEFAULT_CATALOG_ARTIFACT_BASE_URL}."
+        f"Defaults to ${SOURCE_ENV}, then the package-pinned Default Catalog release."
     ),
 )
 @click.option(
@@ -112,7 +110,7 @@ def serve_command(
     port: int | None,
     log_level: str | None,
 ) -> None:
-    """Start the ChartCoach MCP server."""
+    """Start the chartcoach MCP server."""
 
     try:
         _run_server(

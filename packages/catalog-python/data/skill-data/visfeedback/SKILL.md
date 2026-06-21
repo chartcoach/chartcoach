@@ -1,11 +1,11 @@
 ---
 name: visfeedback
-description: Use this for visualization feedback with ChartCoach. Teaches agents how to inspect a chart, translate visible evidence into catalog queries, retrieve matching guideline records, and cite exact guideline ids without hard-coding catalog vocabulary.
+description: Use this for visualization feedback with chartcoach. Teaches agents how to inspect a chart, translate visible evidence into catalog queries, retrieve matching guideline records, and cite exact guideline ids without hard-coding catalog vocabulary.
 ---
 
-# ChartCoach Visfeedback
+# chartcoach Visfeedback
 
-Use ChartCoach primitives to ground visualization feedback in the current Guideline Catalog. This skill defines the feedback steps. It does not assume fixed labels, fixed section roles, or any one visualization source.
+Use chartcoach primitives to ground visualization feedback in the current Guideline Catalog. This skill defines the feedback steps. It does not assume fixed labels, fixed section roles, or any one visualization source.
 
 Load `core` first when catalog source, index setup, package extras, or output formats are unclear. This skill assumes the `chartcoach` command already points at the intended Catalog Instance.
 
@@ -123,11 +123,11 @@ Use indexed discovery only after base navigation is too broad:
 
 ```sh
 chartcoach catalog find --mode fts --candidate-limit 80 --limit 10 --format compact "<query>"
-chartcoach catalog find --mode vector --where "role = 'overview'" --format compact "<query>"
-chartcoach catalog find --mode hybrid --where "role = 'section.<manifest-role>'" --format compact "<query>"
+chartcoach catalog find --mode fts --where "role = 'overview'" --format compact "<query>"
+chartcoach catalog find --mode fts --where "role = 'section.<manifest-role>'" --format compact "<query>"
 ```
 
-Use `--mode vector` or `--mode hybrid` only when the configured index supports vector search. Use `core` for index setup.
+Use `--mode vector` or `--mode hybrid` only with a caller-owned embedding index and its required credentials. Use `core` for custom index setup.
 
 Use section roles from the live catalog. If `catalog read` rejects a role, inspect valid roles and retry with current names.
 

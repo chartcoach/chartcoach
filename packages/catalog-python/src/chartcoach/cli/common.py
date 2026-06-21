@@ -19,7 +19,6 @@ from tabulate import tabulate
 from chartcoach.catalog import Catalog, default_catalog_bundle, default_index_path
 from chartcoach.catalog.remote import download_catalog_bundle, release_metadata_url
 from chartcoach.constants import (
-    DEFAULT_CATALOG_ARTIFACT_BASE_URL,
     INDEX_ENV,
     LANCE_DOCUMENT_TABLE,
     SOURCE_ENV,
@@ -62,9 +61,8 @@ INDEX_EXTRA_MESSAGE = (
     "LanceDB indexing requires the optional `chartcoach[index]` dependencies."
 )
 INDEX_EXTRA_HINTS = (
-    "Install with `uv tool install 'chartcoach[index]'` for a persistent CLI.",
-    "For one-off runs, use `uvx --from 'chartcoach[index]' chartcoach ...`.",
-    "From a checkout, use `uv run --extra index chartcoach ...`.",
+    "For one-off runs, use `uvx --from 'chartcoach[index]@latest' chartcoach ...`.",
+    "From a checkout, use `uv run --package chartcoach --extra index chartcoach ...`.",
 )
 
 _Command = TypeVar("_Command", bound=Callable[..., object])
@@ -80,7 +78,7 @@ def source_option(command: _Command) -> _Command:
         expose_value=False,
         help=(
             "Catalog bundle, entries parquet file, authored folder, or metadata URL. "
-            f"Defaults to ${SOURCE_ENV}, then {DEFAULT_CATALOG_ARTIFACT_BASE_URL}."
+            f"Defaults to ${SOURCE_ENV}, then the package-pinned Default Catalog release."
         ),
     )(command)
 
@@ -203,7 +201,7 @@ def source_path(ctx: click.Context) -> str | None:
 def report_cache_download(kind: str, source: str, target: Path) -> None:
     name = "catalog" if kind == "catalog" else "LanceDB index"
     echo_info(
-        f"Downloading ChartCoach {name}",
+        f"Downloading chartcoach {name}",
         detail=f"from {_display_source(source)}",
         err=True,
     )

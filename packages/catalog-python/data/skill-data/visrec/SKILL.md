@@ -1,11 +1,11 @@
 ---
 name: visrec
-description: Use this for Visualization Recommendation with ChartCoach. Teaches agents how to use a data task, audience, constraints, and output target to retrieve candidate guidelines, read exact records, and write cited chart recommendations with optional indexed discovery.
+description: Use this for Visualization Recommendation with chartcoach. Teaches agents how to use a data task, audience, constraints, and output target to retrieve candidate guidelines, read exact records, and write cited chart recommendations with optional indexed discovery.
 ---
 
-# ChartCoach Visrec
+# chartcoach Visrec
 
-Use ChartCoach primitives and catalog records to recommend visualization designs from a design brief. This skill starts from data, task, audience, constraints, and output target. Use `visfeedback` instead when the task starts from an existing chart and observed visual evidence.
+Use chartcoach primitives and catalog records to recommend visualization designs from a design brief. This skill starts from data, task, audience, constraints, and output target. Use `visfeedback` instead when the task starts from an existing chart and observed visual evidence.
 
 Load `core` first when catalog source, index setup, package extras, or output formats are unclear. This skill assumes the `chartcoach` command already points at the intended Catalog Instance.
 
@@ -91,14 +91,14 @@ Empty output is a retrieval signal. It is not evidence that the Guideline Catalo
 
 ## Optional Indexed Discovery
 
-Indexed discovery requires `chartcoach[index]` and a configured index. Use `core` for setup, custom catalog paths, and custom index paths.
+Indexed discovery requires `chartcoach[index]`. With the Default Catalog, `catalog find` resolves the cached default index when `--index` is omitted. Use `core` for custom catalog paths and caller-owned index paths.
 
 Use indexed discovery to broaden recall after base navigation:
 
 ```sh
 chartcoach catalog find --mode fts --candidate-limit 80 --limit 10 --format compact "<query>"
-chartcoach catalog find --mode vector --where "role = 'overview'" --format compact "<query>"
-chartcoach catalog find --mode hybrid --where "role = 'section.<manifest-role>'" --format compact "<query>"
+chartcoach catalog find --mode fts --where "role = 'overview'" --format compact "<query>"
+chartcoach catalog find --mode fts --where "role = 'section.<manifest-role>'" --format compact "<query>"
 ```
 
 Choose `<manifest-role>` after reading the manifest and roles. Search output reports indexed document roles such as `overview` and `section.<role>`. `catalog read --section` uses the manifest role name without the `section.` prefix.

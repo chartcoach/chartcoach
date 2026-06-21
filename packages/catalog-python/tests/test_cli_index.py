@@ -28,9 +28,8 @@ def assert_index_extra_guidance(result: Result) -> None:
     assert_cli_error(
         result, "LanceDB indexing requires the optional `chartcoach[index]`"
     )
-    assert "uv tool install 'chartcoach[index]'" in result.output
-    assert "uvx --from 'chartcoach[index]' chartcoach" in result.output
-    assert "uv run --extra index chartcoach" in result.output
+    assert "uvx --from 'chartcoach[index]@latest' chartcoach" in result.output
+    assert "uv run --package chartcoach --extra index chartcoach" in result.output
 
 
 def test_catalog_index_create_passes_lancedb_embedding_options(
@@ -162,7 +161,7 @@ def test_catalog_find_without_index_extra_does_not_resolve_default_archive(
         result, "LanceDB indexing requires the optional `chartcoach[index]`"
     )
     assert "Install `chartcoach[index]` to use indexed discovery." in result.output
-    assert "uv tool install 'chartcoach[index]'" in result.output
+    assert "uvx --from 'chartcoach[index]@latest' chartcoach" in result.output
 
 
 @pytest.mark.search
@@ -298,7 +297,7 @@ def test_catalog_index_info_preserves_object_store_uri(
 
     monkeypatch.setattr(catalog_index_cli, "open_index", fake_open_index)
 
-    uri = "s3://chartcoach/catalog/releases/0.0.0/digest/indexes/lancedb/openrouter/model/db"
+    uri = "s3://chartcoach/catalog/releases/0.1.2/digest/indexes/lancedb/openrouter/model/db"
     result = runner.invoke(
         chartcoach_cli,
         [

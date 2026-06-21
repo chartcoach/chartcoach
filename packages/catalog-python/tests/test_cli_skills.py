@@ -33,10 +33,10 @@ def skill_data_root(
     (skill_dir / "SKILL.md").write_text(
         "---\n"
         "name: core\n"
-        "description: Core ChartCoach skill.\n"
+        "description: Core chartcoach skill.\n"
         "---\n\n"
         "# Core\n\n"
-        "Use ChartCoach primitives.\n",
+        "Use chartcoach primitives.\n",
         encoding="utf-8",
     )
     references = skill_dir / "references"
@@ -66,7 +66,7 @@ def test_skills_cli_lists_visible_skills(
     assert jsonl_rows(result) == [
         {
             "name": "core",
-            "description": "Core ChartCoach skill.",
+            "description": "Core chartcoach skill.",
         }
     ]
 
