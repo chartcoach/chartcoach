@@ -1,15 +1,15 @@
 ---
 name: core
-description: Load this before using ChartCoach. Explains default catalog access, progressive catalog navigation, output formats, CLI-served skills, optional LanceDB discovery, and the CLI primitives agents should combine.
+description: Use this for chartcoach CLI mechanics, default catalog access, progressive catalog navigation, output formats, CLI-served skills, optional LanceDB discovery, and custom source recovery paths.
 ---
 
-# ChartCoach Core
+# chartcoach Core
 
-ChartCoach exposes a versioned Guideline Catalog and CLI primitives for inspecting and retrieving visualization guidance. Start with the base CLI and progressive disclosure. Use LanceDB only when overview, labels, roles, list, query, read, cite, schema, values, and SQL commands are not enough.
+chartcoach exposes a versioned Guideline Catalog and CLI primitives for inspecting and retrieving visualization guidance. Start with the base CLI and progressive disclosure. Use LanceDB only when overview, labels, roles, list, query, read, cite, schema, values, and SQL commands are not enough.
 
 ## Commands
 
-All examples use `chartcoach` as the CLI command. If the command is not available, use the top-level `$chartcoach` access guidance first.
+Examples use `chartcoach` as the command name inside an installed environment. For one-off runs, replace `chartcoach ...` with `uvx chartcoach@latest ...`. The `@latest` selector follows the newest published package. Use `chartcoach@0.1.2` when output must stay tied to the `0.1.2` Default Catalog release. When a command needs extras, use `uvx --from 'chartcoach[index]@latest' chartcoach ...`. The package selector after `--from` installs the package with extras, and the following `chartcoach` token is the executable to run.
 
 Base catalog commands:
 
@@ -39,7 +39,7 @@ Use `chartcoach mcp serve` only when a human wants to start a server interface.
 
 Use `chartcoach skills list`, `chartcoach skills get <name>`, and `chartcoach skills path [name]` for CLI-served skills bundled with the installed package. The top-level `chartcoach` skill is installed separately by the agent skill system and is not served by `chartcoach skills get`.
 
-Task skills assume this setup is already resolved. Use this core skill for custom catalog sources, custom indexes, package extras, command formats, and recovery paths before loading `visfeedback`, `visrec`, or `discuss`.
+Task skills assume this setup is already resolved. Use this core skill for custom catalog sources, custom indexes, package extras, command formats, and recovery paths before loading `visfeedback`, `visrec`, `discuss`, or `contribute`.
 
 ## Retrieval Steps
 
@@ -70,7 +70,21 @@ Record provenance for each cited guideline:
 
 ## Catalog Artifacts
 
-Omit `--source` to use the package-pinned default catalog release from `https://artifacts.chartcoach.dev`. The CLI resolves the release metadata, downloads `MANIFEST.md` and `entries.parquet` on first use, and caches them in the user's platform cache directory. The local cache mirrors the release layout: `catalog/releases/<version>/<digest>/`.
+Omit `--source` to use the package-pinned Default Catalog release from `https://artifacts.chartcoach.dev`. The CLI resolves the release metadata, downloads `MANIFEST.md` and `entries.parquet` on first use, and caches them below the chartcoach artifact cache root. The local cache mirrors the release layout: `artifacts/catalog/releases/<version>/<digest>/`.
+
+The Default Catalog is the chartcoach Guideline Catalog release selected by the installed package. The current release contains 781 guideline records and 262 source references. It follows the curation scheme described in https://arxiv.org/abs/2512.20306 and combines 100+ visualization perception and cognitive science papers, accessibility criteria, data journalism, rhetorical visualization research, and 36 practitioner posts from Datawrapper's Data Vis Do's & Don'ts series.
+
+Cache commands:
+
+```sh
+chartcoach catalog cache path
+chartcoach catalog cache versions --format jsonl
+chartcoach catalog cache list
+chartcoach catalog cache clear
+chartcoach catalog cache pull
+```
+
+`cache versions` reads `https://artifacts.chartcoach.dev/index.json`. `cache pull` downloads the newest listed release into the chartcoach artifact cache and includes the default LanceDB archive unless `--catalog-only` is passed.
 
 Set `CHARTCOACH_SOURCE` or pass `--source` only when the user provides a custom catalog locator. Accepted sources include a catalog bundle directory, an `entries.parquet` file, an authored folder, or a release metadata URL.
 
@@ -176,20 +190,22 @@ If Click reports an invalid `--format`, check the command format table before re
 
 ## Indexed Discovery
 
-`chartcoach catalog find` ranks entries with an existing LanceDB index. With the default catalog source and `chartcoach[index]` installed, it can resolve and cache the package-pinned default index when `--index` is omitted. With a custom source, pass `--index` or set `CHARTCOACH_INDEX`.
+`chartcoach catalog find` ranks entries with a LanceDB index. With the Default Catalog source and `chartcoach[index]` installed, it resolves and caches the package-pinned default index when `--index` is omitted. With a custom source, pass `--index` or set `CHARTCOACH_INDEX`.
 
 `chartcoach catalog index create` creates a LanceDB table from catalog document rows. `--index` accepts a local LanceDB database path or any URI that LanceDB can open, such as an object-store URI configured in the runtime environment.
 
 Use LanceDB after progressive disclosure is insufficient. Indexed discovery improves recall, but it can return plausible false positives. Use it to find candidate ids, then verify every cited guideline with `catalog read`.
 
-For the package-pinned default catalog, read-only search can resolve the default index artifact:
+For the package-pinned Default Catalog, read-only search can resolve the default index artifact:
 
 ```sh
 chartcoach catalog find --mode fts --candidate-limit 80 --limit 10 --format compact "direct labels line chart exact lookup"
-chartcoach catalog find --mode vector --where "role = 'overview'" --format compact "direct labels line chart exact lookup"
-chartcoach catalog find --mode hybrid --where "role = 'section.<manifest-role>'" --format compact "direct labels line chart exact lookup"
+chartcoach catalog find --mode fts --where "role = 'overview'" --format compact "direct labels line chart exact lookup"
+chartcoach catalog find --mode fts --where "role = 'section.<manifest-role>'" --format compact "direct labels line chart exact lookup"
 chartcoach catalog index info --format table
 ```
+
+The first default indexed command downloads and extracts the archive below the chartcoach artifact cache root: `artifacts/catalog/releases/<version>/<digest>/indexes/lancedb/<provider>/<model>/`. The cache keeps `index.tar.gz` and the extracted `db/` directory at their release-relative paths. Later default indexed commands reuse the local copy. Pass `--index` only for caller-owned indexes or custom catalog sources.
 
 With a custom catalog source, pass the same source and index path when creating and searching the index, or set `CHARTCOACH_SOURCE` and `CHARTCOACH_INDEX` for the current shell:
 
@@ -207,7 +223,7 @@ chartcoach catalog index create --index ./chartcoach-index --embedding openai --
 chartcoach catalog find --index ./chartcoach-index --mode hybrid --format compact "direct labels line chart exact lookup"
 ```
 
-Embedding options are passed to LanceDB's embedding function `create()` call. Embedding variables are registered with LanceDB before the embedding function is created. Do not invent a ChartCoach embedding model layer.
+Embedding options are passed to LanceDB's embedding function `create()` call. Embedding variables are registered with LanceDB before the embedding function is created. Do not invent a chartcoach embedding model layer.
 
 Published catalog releases can include two LanceDB index artifacts:
 

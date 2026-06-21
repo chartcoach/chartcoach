@@ -1,4 +1,4 @@
-"""ChartCoach exposes catalog, entry, and section models."""
+"""chartcoach exposes catalog, entry, and section models."""
 
 from importlib.metadata import version
 

@@ -84,7 +84,7 @@ def find_command(
     table_name: str,
     output_format: str,
 ) -> None:
-    """Rank entries with an existing LanceDB index."""
+    """Rank entries with a LanceDB index."""
 
     catalog = load_catalog(ctx)
     resolved_index_path = require_index_path(

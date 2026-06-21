@@ -13,7 +13,7 @@ try:
 except ModuleNotFoundError as exc:  # pragma: no cover - depends on install extras
     name = exc.name
     if name == "mcp" or (name is not None and name.startswith("mcp.")):
-        exc.add_note("Install `chartcoach[mcp]` to use the ChartCoach MCP server.")
+        exc.add_note("Install `chartcoach[mcp]` to use the chartcoach MCP server.")
     raise
 
 from .catalog.collection import Catalog
@@ -233,7 +233,7 @@ def main(
     source = resolved_settings.get("source")
 
     logger.info(
-        "Starting ChartCoach MCP server with transport=%s host=%s port=%s",
+        "Starting chartcoach MCP server with transport=%s host=%s port=%s",
         resolved_runtime.transport,
         resolved_runtime.host,
         resolved_runtime.port,

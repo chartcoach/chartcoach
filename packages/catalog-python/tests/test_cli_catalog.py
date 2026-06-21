@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 import shutil
+import tarfile
 from typing import cast
 
 from click.testing import CliRunner
@@ -13,8 +14,10 @@ from chartcoach import Catalog
 from chartcoach.catalog import remote as catalog_remote
 from chartcoach.catalog.remote import read_release_metadata
 from chartcoach.cli.main import main as chartcoach_cli
+from chartcoach.constants import DEFAULT_CATALOG_DIGEST, DEFAULT_CATALOG_VERSION
 
 from helpers import jsonl_rows
+from catalog_testkit import sha256
 
 
 def cache_default_catalog(
@@ -25,7 +28,14 @@ def cache_default_catalog(
     bundle_path = catalog.write_bundle(tmp_path / "default-bundle")
     metadata = read_release_metadata(bundle_path)
     cache_root = tmp_path / "cache"
-    target = cache_root / "catalog" / "releases" / metadata.version / metadata.digest
+    target = (
+        cache_root
+        / "artifacts"
+        / "catalog"
+        / "releases"
+        / metadata.version
+        / metadata.digest
+    )
     target.parent.mkdir(parents=True)
     shutil.copytree(bundle_path, target)
     monkeypatch.setenv("CHARTCOACH_CACHE_DIR", str(cache_root))
@@ -335,7 +345,7 @@ def test_default_catalog_downloads_once_without_fetching_indexes(
 
     assert first.exit_code == 0, first.output
     assert second.exit_code == 0, second.output
-    assert "Downloading ChartCoach catalog" in first.stderr
+    assert "Downloading chartcoach catalog" in first.stderr
     assert "Cache" in first.stderr
     assert second.stderr == ""
     assert downloads == [
@@ -343,12 +353,204 @@ def test_default_catalog_downloads_once_without_fetching_indexes(
         f"https://example.test/catalog/releases/{metadata.version}/{metadata.digest}/entries.parquet",
     ]
     cached_release = (
-        cache_root / "catalog" / "releases" / metadata.version / metadata.digest
+        cache_root
+        / "artifacts"
+        / "catalog"
+        / "releases"
+        / metadata.version
+        / metadata.digest
     )
     assert (cached_release / "metadata.json").exists()
     assert (cached_release / "MANIFEST.md").exists()
     assert (cached_release / "entries.parquet").exists()
     assert not (cached_release / "indexes").exists()
+
+
+def test_catalog_cache_versions_reads_artifact_index(
+    runner: CliRunner,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    artifact_index = {
+        "kind": "chartcoach-artifact-index",
+        "version": 1,
+        "catalogs": [
+            {
+                "name": "chartcoach/catalog",
+                "version": "0.0.0",
+                "digest": "old-digest",
+                "root": "catalog/releases/0.0.0/old-digest/",
+                "metadata": "catalog/releases/0.0.0/old-digest/metadata.json",
+                "artifacts": [],
+            },
+            {
+                "name": "chartcoach/catalog",
+                "version": "0.1.2",
+                "digest": "new-digest",
+                "root": "catalog/releases/0.1.2/new-digest/",
+                "metadata": "catalog/releases/0.1.2/new-digest/metadata.json",
+                "artifacts": [],
+            },
+        ],
+    }
+
+    def read_url_text(url: str) -> str:
+        assert url == "https://example.test/index.json"
+        return json.dumps(artifact_index)
+
+    monkeypatch.setattr(catalog_remote, "_read_url_text", read_url_text)
+
+    result = runner.invoke(
+        chartcoach_cli,
+        [
+            "catalog",
+            "cache",
+            "versions",
+            "--index-url",
+            "https://example.test/index.json",
+            "--format",
+            "jsonl",
+        ],
+    )
+
+    rows = jsonl_rows(result)
+    assert [row["version"] for row in rows] == ["0.0.0", "0.1.2"]
+    assert rows[1]["metadata"] == "catalog/releases/0.1.2/new-digest/metadata.json"
+
+
+def test_catalog_cache_clear_deletes_default_release(
+    runner: CliRunner,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    release_path = (
+        tmp_path
+        / "cache"
+        / "artifacts"
+        / "catalog"
+        / "releases"
+        / DEFAULT_CATALOG_VERSION
+        / DEFAULT_CATALOG_DIGEST
+    )
+    release_path.mkdir(parents=True)
+    (release_path / "metadata.json").write_text("{}")
+
+    monkeypatch.setenv("CHARTCOACH_CACHE_DIR", str(tmp_path / "cache"))
+
+    result = runner.invoke(chartcoach_cli, ["catalog", "cache", "clear"])
+
+    assert result.exit_code == 0, result.output
+    assert "Deleted cached artifacts" in result.output
+    assert not release_path.exists()
+
+
+def test_catalog_cache_pull_downloads_latest_catalog_and_index(
+    runner: CliRunner,
+    sample_catalog: Catalog,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    bundle_path = sample_catalog.write_bundle(tmp_path / "bundle")
+    metadata = read_release_metadata(bundle_path)
+    archive_source = tmp_path / "index.tar.gz"
+    table_dir = tmp_path / "index-source" / "catalog_documents.lance"
+    table_dir.mkdir(parents=True)
+    (table_dir / "data.txt").write_text("indexed rows")
+    with tarfile.open(archive_source, "w:gz") as archive:
+        archive.add(table_dir, arcname="catalog_documents.lance")
+    metadata = catalog_remote.CatalogReleaseMetadata(
+        version="9.0.0",
+        digest=metadata.digest,
+        artifacts=(
+            *metadata.artifacts,
+            catalog_remote.ArtifactDescriptor(
+                kind="lancedb-index",
+                path="indexes/lancedb/openrouter/model/index.tar.gz",
+                digest=sha256(archive_source),
+                bytes=archive_source.stat().st_size,
+                format="tar+gzip",
+                extra={"table": "catalog_documents"},
+            ),
+        ),
+    )
+    artifact_index = {
+        "kind": "chartcoach-artifact-index",
+        "version": 1,
+        "catalogs": [
+            {
+                "name": "chartcoach/catalog",
+                "version": "9.0.0",
+                "digest": metadata.digest,
+                "root": f"catalog/releases/9.0.0/{metadata.digest}/",
+                "metadata": f"catalog/releases/9.0.0/{metadata.digest}/metadata.json",
+                "artifacts": [
+                    {
+                        **artifact.to_record(),
+                        "path": f"catalog/releases/9.0.0/{metadata.digest}/{artifact.path}",
+                    }
+                    for artifact in metadata.artifacts
+                ],
+            }
+        ],
+    }
+    metadata_url = (
+        f"https://example.test/catalog/releases/9.0.0/{metadata.digest}/metadata.json"
+    )
+    downloads: list[str] = []
+
+    def read_url_text(url: str) -> str:
+        if url == "https://example.test/index.json":
+            return json.dumps(artifact_index)
+        if url == metadata_url:
+            return json.dumps(metadata.to_record())
+        raise AssertionError(f"Unexpected URL: {url}")
+
+    def download_file(url: str, path: Path) -> None:
+        downloads.append(url)
+        if url.endswith("/MANIFEST.md"):
+            shutil.copyfile(bundle_path / "MANIFEST.md", path)
+            return
+        if url.endswith("/entries.parquet"):
+            shutil.copyfile(bundle_path / "entries.parquet", path)
+            return
+        if url.endswith("/index.tar.gz"):
+            shutil.copyfile(archive_source, path)
+            return
+        raise AssertionError(f"Unexpected artifact URL: {url}")
+
+    monkeypatch.setenv("CHARTCOACH_CACHE_DIR", str(tmp_path / "cache"))
+    monkeypatch.setattr(catalog_remote, "_read_url_text", read_url_text)
+    monkeypatch.setattr(catalog_remote, "_download_file", download_file)
+
+    result = runner.invoke(
+        chartcoach_cli,
+        [
+            "catalog",
+            "cache",
+            "pull",
+            "--index-url",
+            "https://example.test/index.json",
+            "--format",
+            "json",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert "Downloading chartcoach catalog" in result.stderr
+    assert "Downloading chartcoach LanceDB index" in result.stderr
+    payload = cast(list[dict[str, object]], json.loads(result.stdout))
+    catalog_path = Path(cast(str, payload[0]["catalog_path"]))
+    index_path = Path(cast(str, payload[0]["index_path"]))
+    assert (catalog_path / "MANIFEST.md").is_file()
+    assert (catalog_path / "entries.parquet").is_file()
+    assert (
+        index_path / "catalog_documents.lance" / "data.txt"
+    ).read_text() == "indexed rows"
+    assert (index_path.parent / "index.tar.gz").is_file()
+    assert downloads == [
+        f"https://example.test/catalog/releases/9.0.0/{metadata.digest}/MANIFEST.md",
+        f"https://example.test/catalog/releases/9.0.0/{metadata.digest}/entries.parquet",
+        f"https://example.test/catalog/releases/9.0.0/{metadata.digest}/indexes/lancedb/openrouter/model/index.tar.gz",
+    ]
 
 
 def test_catalog_validate_uses_cached_default_source(

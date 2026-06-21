@@ -18,7 +18,7 @@ from .schemas import (
 if TYPE_CHECKING:
     from .collection import Catalog
 
-DEFAULT_GUIDELINE_URL_TEMPLATE = "https://chartcoach.github.io/guidelines/{id}"
+DEFAULT_GUIDELINE_URL_TEMPLATE = "https://chartcoach.dev/guidelines/{id}"
 CITATION_SOURCE_COLUMNS = (
     "reference_id",
     "source_type",
@@ -282,7 +282,7 @@ def validate_url_template(url_template: str) -> None:
         raise CatalogValidationError(
             "Guideline URL template must include `{id}`.",
             hints=(
-                "Use a template such as `https://chartcoach.github.io/guidelines/{id}`.",
+                "Use a template such as `https://chartcoach.dev/guidelines/{id}`.",
             ),
         )
 

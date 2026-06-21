@@ -14,7 +14,7 @@ CONTEXT_SETTINGS = {"help_option_names": ["-h", "--help"]}
     invoke_without_command=True,
     no_args_is_help=False,
     help=(
-        "ChartCoach catalog CLI.\n\n"
+        "chartcoach catalog CLI.\n\n"
         "\b\n"
         "Start here (for AI agents):\n"
         "  chartcoach skills get core\n\n"
@@ -33,7 +33,8 @@ CONTEXT_SETTINGS = {"help_option_names": ["-h", "--help"]}
         "Catalog Lifecycle:\n"
         "  catalog build                Build a catalog bundle\n"
         "  catalog validate             Validate a catalog source\n"
-        "  catalog export duckdb         Materialize DuckDB tables\n\n"
+        "  catalog export duckdb         Materialize DuckDB tables\n"
+        "  catalog cache                Inspect and prefetch artifact cache entries\n\n"
         "\b\n"
         "MCP Server:\n"
         "  mcp serve                    Start the MCP server\n\n"
@@ -46,7 +47,7 @@ CONTEXT_SETTINGS = {"help_option_names": ["-h", "--help"]}
 )
 @click.pass_context
 def main(ctx: click.Context) -> None:
-    """ChartCoach command-line interface."""
+    """chartcoach command-line interface."""
 
     if ctx.invoked_subcommand is None:
         click.echo(ctx.get_help())
