@@ -68,7 +68,7 @@ uvx chartcoach@latest catalog query --contains "pie chart" --limit 5 --format ta
 
 The table view is for reading results in a terminal. Each row has a stable guideline id.
 The `@latest` selector is for one-off access to the newest published package.
-Use `chartcoach@0.1.3` when output must stay tied to the `0.1.2` Default
+Use `chartcoach@0.1.3` when output must stay tied to the `0.1.3` Default
 Catalog release.
 
 When you want to use a result, switch the same query to JSON and pass the first id into `read` and `cite`:
