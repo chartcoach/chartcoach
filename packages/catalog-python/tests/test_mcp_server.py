@@ -29,7 +29,7 @@ def test_mcp_config_supports_explicit_index() -> None:
 
 
 def test_mcp_config_preserves_object_store_index_uri() -> None:
-    uri = "s3://chartcoach/catalog/releases/0.0.0/digest/indexes/lancedb/openrouter/model/db"
+    uri = "s3://chartcoach/catalog/releases/0.1.2/digest/indexes/lancedb/openrouter/model/db"
     config = mcp_server.configure(index=uri)
 
     assert config.settings["index"] == uri

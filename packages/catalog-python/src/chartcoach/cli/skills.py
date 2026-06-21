@@ -42,7 +42,7 @@ class Skill:
     "skills",
     invoke_without_command=True,
     context_settings=CONTEXT_SETTINGS,
-    help="List and print CLI-served ChartCoach agent skills.",
+    help="List and print CLI-served chartcoach agent skills.",
 )
 @click.option(
     "--format",
@@ -54,7 +54,7 @@ class Skill:
 )
 @click.pass_context
 def skills_command(ctx: click.Context, output_format: str) -> None:
-    """List and print CLI-served ChartCoach agent skills."""
+    """List and print CLI-served chartcoach agent skills."""
 
     if ctx.invoked_subcommand is None:
         _emit_skill_list(output_format)

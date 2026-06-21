@@ -141,6 +141,147 @@ class CatalogReleaseMetadata:
         raise KeyError(kind)
 
 
+@dataclass(frozen=True, slots=True)
+class CatalogArtifactRelease:
+    """One catalog release listed by the root artifact index."""
+
+    name: str
+    version: str
+    digest: str
+    root: str
+    metadata: str
+    artifacts: tuple[ArtifactDescriptor, ...]
+
+    @classmethod
+    def from_mapping(cls, value: object) -> Self:
+        """Parse one catalog release entry from index JSON data."""
+
+        if not isinstance(value, Mapping):
+            raise ValueError("Catalog artifact index release must be an object.")
+        raw = cast(Mapping[str, object], value)
+        artifacts = raw.get("artifacts")
+        if not isinstance(artifacts, list):
+            raise ValueError("Catalog artifact index release artifacts must be a list.")
+        return cls(
+            name=_string(raw, "name"),
+            version=_string(raw, "version"),
+            digest=_string(raw, "digest"),
+            root=_relative_index_path(raw, "root"),
+            metadata=_relative_index_path(raw, "metadata"),
+            artifacts=tuple(
+                ArtifactDescriptor.from_mapping(item) for item in artifacts
+            ),
+        )
+
+    def to_record(self) -> dict[str, object]:
+        """Return the JSON shape for this artifact index release."""
+
+        return {
+            "name": self.name,
+            "version": self.version,
+            "digest": self.digest,
+            "root": self.root,
+            "metadata": self.metadata,
+            "artifacts": [artifact.to_record() for artifact in self.artifacts],
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class CatalogArtifactIndex:
+    """Root artifact index for chartcoach catalog releases."""
+
+    kind: str
+    version: int
+    catalogs: tuple[CatalogArtifactRelease, ...]
+
+    @classmethod
+    def from_mapping(cls, value: object) -> Self:
+        """Parse the root artifact index from JSON data."""
+
+        if not isinstance(value, Mapping):
+            raise ValueError("Catalog artifact index must be an object.")
+        raw = cast(Mapping[str, object], value)
+        catalogs = raw.get("catalogs")
+        if not isinstance(catalogs, list):
+            raise ValueError("Catalog artifact index catalogs must be a list.")
+        kind = _string(raw, "kind")
+        if kind != "chartcoach-artifact-index":
+            raise ValueError(f"Unsupported catalog artifact index kind: {kind!r}")
+        version = _int(raw, "version")
+        return cls(
+            kind=kind,
+            version=version,
+            catalogs=tuple(
+                CatalogArtifactRelease.from_mapping(item) for item in catalogs
+            ),
+        )
+
+    @classmethod
+    def from_json(cls, text: str) -> Self:
+        """Parse the root artifact index from JSON text."""
+
+        return cls.from_mapping(json.loads(text))
+
+    def to_record(self) -> dict[str, object]:
+        """Return the JSON shape for this artifact index."""
+
+        return {
+            "kind": self.kind,
+            "version": self.version,
+            "catalogs": [catalog.to_record() for catalog in self.catalogs],
+        }
+
+    def catalog(
+        self,
+        *,
+        name: str = "chartcoach/catalog",
+        version: str | None = None,
+        digest: str | None = None,
+    ) -> CatalogArtifactRelease:
+        """Return one catalog release entry."""
+
+        matches = [
+            catalog
+            for catalog in self.catalogs
+            if catalog.name == name
+            and (version is None or catalog.version == version)
+            and (digest is None or catalog.digest == digest)
+        ]
+        if not matches:
+            raise KeyError(name, version, digest)
+        return sorted(matches, key=lambda catalog: _version_sort_key(catalog.version))[
+            -1
+        ]
+
+
+def default_artifact_index_url() -> str:
+    """Return the root artifact index URL."""
+
+    base_url = os.getenv(ARTIFACT_BASE_URL_ENV, DEFAULT_CATALOG_ARTIFACT_BASE_URL)
+    return urljoin(base_url.rstrip("/") + "/", "index.json")
+
+
+def read_artifact_index(index_url: str | None = None) -> CatalogArtifactIndex:
+    """Read the root artifact index from `index_url`."""
+
+    return CatalogArtifactIndex.from_json(
+        _read_url_text(index_url or default_artifact_index_url())
+    )
+
+
+def release_metadata_url_from_index(
+    release: CatalogArtifactRelease,
+    *,
+    base_url: str | None = None,
+) -> str:
+    """Return the metadata URL for one root artifact index release."""
+
+    resolved_base_url = base_url or os.getenv(
+        ARTIFACT_BASE_URL_ENV, DEFAULT_CATALOG_ARTIFACT_BASE_URL
+    )
+    return urljoin(resolved_base_url.rstrip("/") + "/", release.metadata)
+
+
 def default_release_metadata_url() -> str:
     """Return the package-pinned catalog metadata URL."""
 
@@ -166,7 +307,13 @@ def cache_root() -> Path:
 
     if raw := os.getenv(CACHE_DIR_ENV):
         return Path(raw).expanduser()
-    return user_cache_path("chartcoach")
+    return user_cache_path("chartcoach", appauthor=False)
+
+
+def artifact_cache_root() -> Path:
+    """Return the local cache root for chartcoach-owned artifacts."""
+
+    return cache_root() / "artifacts"
 
 
 def default_catalog_bundle(
@@ -193,6 +340,8 @@ def default_index_path(
 ) -> Path:
     """Return the cached package-pinned LanceDB index for `table_name`."""
 
+    if cached := _cached_default_index_path(table_name=table_name):
+        return cached
     return download_index_artifact(
         default_release_metadata_url(),
         table_name=table_name,
@@ -265,15 +414,14 @@ def download_index_artifact(
         )
 
     artifact = _index_archive_artifact(metadata, table_name=table_name)
+    release_path = _cache_path(metadata.version, metadata.digest)
     target = _index_cache_path(metadata.version, metadata.digest, artifact)
+    release_path.mkdir(parents=True, exist_ok=True)
+    (release_path / "metadata.json").write_text(_metadata_json(metadata))
     if _cached_index_is_valid(target, artifact):
         return target
     if reporter is not None:
         reporter("index", urljoin(resolved_metadata_url, artifact.path), target)
-
-    release_path = _cache_path(metadata.version, metadata.digest)
-    release_path.mkdir(parents=True, exist_ok=True)
-    (release_path / "metadata.json").write_text(_metadata_json(metadata))
 
     tmp = target.with_name(target.name + ".tmp")
     archive_path = release_path / artifact.path
@@ -284,12 +432,10 @@ def download_index_artifact(
     _download_file(urljoin(resolved_metadata_url, artifact.path), archive_path)
     _validate_file(archive_path, artifact)
     _extract_tar_archive(archive_path, tmp)
-    (tmp / "artifact.json").write_text(_json_record(artifact.to_record()))
 
     if target.exists():
         shutil.rmtree(target)
     tmp.rename(target)
-    archive_path.unlink(missing_ok=True)
     return target
 
 
@@ -335,7 +481,28 @@ def read_release_metadata(path: Path) -> CatalogReleaseMetadata:
 
 
 def _cache_path(version: str, digest: str) -> Path:
-    return cache_root() / "catalog" / "releases" / version / digest
+    return artifact_cache_root() / "catalog" / "releases" / version / digest
+
+
+def _cached_default_index_path(*, table_name: str) -> Path | None:
+    release_path = _cache_path(DEFAULT_CATALOG_VERSION, DEFAULT_CATALOG_DIGEST)
+    metadata_path = release_path / "metadata.json"
+    if not metadata_path.exists():
+        return None
+    try:
+        metadata = CatalogReleaseMetadata.from_json(metadata_path.read_text())
+        if (
+            metadata.version != DEFAULT_CATALOG_VERSION
+            or metadata.digest != DEFAULT_CATALOG_DIGEST
+        ):
+            return None
+        artifact = _index_archive_artifact(metadata, table_name=table_name)
+        target = _index_cache_path(metadata.version, metadata.digest, artifact)
+        if _cached_index_is_valid(target, artifact):
+            return target
+    except (OSError, ValueError, json.JSONDecodeError):
+        return None
+    return None
 
 
 def _index_cache_path(
@@ -375,7 +542,10 @@ def _replace_catalog_artifacts(
     if target.exists() and not target.is_dir():
         target.unlink()
     target.mkdir(parents=True, exist_ok=True)
-    for relative_path in ("metadata.json", *(artifact.path for artifact in _catalog_artifacts(metadata))):
+    for relative_path in (
+        "metadata.json",
+        *(artifact.path for artifact in _catalog_artifacts(metadata)),
+    ):
         source = tmp / relative_path
         destination = target / relative_path
         if destination.exists() and destination.is_dir():
@@ -386,20 +556,32 @@ def _replace_catalog_artifacts(
 
 
 def _cached_index_is_valid(path: Path, artifact: ArtifactDescriptor) -> bool:
-    marker = path / "artifact.json"
     table_name = artifact.extra.get("table")
-    if not path.is_dir() or not marker.is_file() or not isinstance(table_name, str):
+    if not path.is_dir() or not isinstance(table_name, str):
         return False
-    try:
-        record = ArtifactDescriptor.from_mapping(json.loads(marker.read_text()))
-    except (OSError, ValueError, json.JSONDecodeError):
+    if not (path / f"{table_name}.lance").is_dir():
         return False
-    return (
-        record.kind == artifact.kind
-        and record.digest == artifact.digest
-        and record.path == artifact.path
-        and (path / f"{table_name}.lance").is_dir()
-    )
+    if archive_path := _index_archive_cache_path(path, artifact):
+        if not archive_path.is_file():
+            return False
+        try:
+            _validate_file(archive_path, artifact)
+        except (OSError, ValueError):
+            return False
+    legacy_marker = path / "artifact.json"
+    if legacy_marker.is_file():
+        legacy_marker.unlink(missing_ok=True)
+    return True
+
+
+def _index_archive_cache_path(
+    path: Path,
+    artifact: ArtifactDescriptor,
+) -> Path | None:
+    artifact_path = PurePosixPath(artifact.path)
+    if not artifact_path.name.endswith(".tar.gz"):
+        return None
+    return path.parent / artifact_path.name
 
 
 def _read_url_text(url: str) -> str:
@@ -440,10 +622,6 @@ def _metadata_json(metadata: CatalogReleaseMetadata) -> str:
     return json.dumps(metadata.to_record(), indent=2, ensure_ascii=False) + "\n"
 
 
-def _json_record(record: Mapping[str, object]) -> str:
-    return json.dumps(record, indent=2, ensure_ascii=False) + "\n"
-
-
 def _require_artifact_kind(
     artifacts: Iterable[ArtifactDescriptor],
     kind: ArtifactKind,
@@ -452,9 +630,13 @@ def _require_artifact_kind(
         raise ValueError(f"Catalog release metadata is missing a {kind!r} artifact.")
 
 
-def _catalog_artifacts(metadata: CatalogReleaseMetadata) -> tuple[ArtifactDescriptor, ...]:
+def _catalog_artifacts(
+    metadata: CatalogReleaseMetadata,
+) -> tuple[ArtifactDescriptor, ...]:
     return tuple(
-        artifact for artifact in metadata.artifacts if artifact.kind in CATALOG_ARTIFACT_KINDS
+        artifact
+        for artifact in metadata.artifacts
+        if artifact.kind in CATALOG_ARTIFACT_KINDS
     )
 
 
@@ -470,7 +652,9 @@ def _index_archive_artifact(
             and artifact.extra.get("table") == table_name
         ):
             return artifact
-    raise ValueError(f"Catalog release metadata is missing a {table_name!r} LanceDB archive.")
+    raise ValueError(
+        f"Catalog release metadata is missing a {table_name!r} LanceDB archive."
+    )
 
 
 def _extract_tar_archive(archive_path: Path, target: Path) -> None:
@@ -484,7 +668,9 @@ def _extract_tar_archive(archive_path: Path, target: Path) -> None:
                 output_path.parent.mkdir(parents=True, exist_ok=True)
                 source = archive.extractfile(member)
                 if source is None:
-                    raise ValueError(f"Unreadable LanceDB archive member: {member.name!r}")
+                    raise ValueError(
+                        f"Unreadable LanceDB archive member: {member.name!r}"
+                    )
                 with source, output_path.open("wb") as output:
                     shutil.copyfileobj(source, output)
             else:
@@ -512,6 +698,17 @@ def _validate_relative_artifact_path(path: str) -> None:
         raise ValueError(f"Catalog artifact path must be relative: {path!r}")
 
 
+def _relative_index_path(value: Mapping[str, object], key: str) -> str:
+    path = _string(value, key)
+    _validate_relative_artifact_path(path)
+    return path
+
+
+def _version_sort_key(value: str) -> tuple[tuple[int, int | str], ...]:
+    parts = value.replace("-", ".").split(".")
+    return tuple((0, int(part)) if part.isdecimal() else (1, part) for part in parts)
+
+
 def _string(value: Mapping[str, object], key: str) -> str:
     raw = value.get(key)
     if not isinstance(raw, str) or not raw:
@@ -522,5 +719,7 @@ def _string(value: Mapping[str, object], key: str) -> str:
 def _int(value: Mapping[str, object], key: str) -> int:
     raw = value.get(key)
     if not isinstance(raw, int) or raw < 0:
-        raise ValueError(f"Catalog release metadata {key!r} must be a non-negative integer.")
+        raise ValueError(
+            f"Catalog release metadata {key!r} must be a non-negative integer."
+        )
     return raw

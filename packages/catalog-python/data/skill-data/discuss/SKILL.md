@@ -1,11 +1,11 @@
 ---
 name: discuss
-description: Use this for cited discussion with the ChartCoach Guideline Catalog. Teaches agents how to read MANIFEST.md, answer design questions with citations, compare viewpoints, and use optional indexed analysis without hard-coding section roles.
+description: Use this for cited discussion with the chartcoach Guideline Catalog. Teaches agents how to read MANIFEST.md, answer design questions with citations, compare viewpoints, and use optional indexed analysis without hard-coding section roles.
 ---
 
-# ChartCoach Discuss
+# chartcoach Discuss
 
-Use ChartCoach primitives and catalog records for cited discussion with the Guideline Catalog. Use this skill for design questions, chart-choice comparisons, tradeoff explanations, topic searches, source tracing, teaching, related guidance, conflicting guidance, boundary cases, and related-record exploration.
+Use chartcoach primitives and catalog records for cited discussion with the Guideline Catalog. Use this skill for design questions, chart-choice comparisons, tradeoff explanations, topic searches, source tracing, teaching, related guidance, conflicting guidance, boundary cases, and related-record exploration.
 
 Load `core` first when catalog source, index setup, package extras, or output formats are unclear. This skill assumes the `chartcoach` command already points at the intended Catalog Instance.
 
@@ -92,14 +92,14 @@ Discovery commands produce candidates. `catalog read` produces the exact guideli
 
 ## Optional Indexed Discovery
 
-Indexed discovery requires `chartcoach[index]` and a configured index. Use `core` for setup, custom catalog paths, and custom index paths.
+Indexed discovery requires `chartcoach[index]`. With the Default Catalog, `catalog find` resolves the cached default index when `--index` is omitted. Use `core` for custom catalog paths and caller-owned index paths.
 
 Use role-scoped discovery only after mapping roles:
 
 ```sh
 chartcoach catalog find --mode fts --candidate-limit 80 --limit 10 --format compact "<query>"
-chartcoach catalog find --mode vector --where "role = 'overview'" --format compact "<query>"
-chartcoach catalog find --mode hybrid --where "role = 'section.<manifest-role>'" --format compact "<query>"
+chartcoach catalog find --mode fts --where "role = 'overview'" --format compact "<query>"
+chartcoach catalog find --mode fts --where "role = 'section.<manifest-role>'" --format compact "<query>"
 ```
 
 Indexed discovery improves recall, but it can return plausible false positives. Read exact guideline sections before presenting a result as evidence.
@@ -111,7 +111,7 @@ Use three tiers for knowledge-space questions:
 | Tier                     | Use                                                                                                                                                           |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1. Base CLI              | Use manifest, roles, labels, query, SQL, and read. No index required.                                                                                         |
-| 2. CLI indexed discovery | Use `catalog find` with `--mode fts`, `--mode vector`, or `--mode hybrid`. Use `--where "role = 'section.<role>'"` after deriving `<role>` from the manifest. |
+| 2. CLI indexed discovery | Use default FTS discovery first. Use vector or hybrid search only with a caller-owned embedding index and its required credentials. Use `--where "role = 'section.<role>'"` after deriving `<role>` from the manifest. |
 | 3. Analysis environment  | Use a notebook, DuckDB, LanceDB, or equivalent vector table to compute pairwise operators over role-specific embeddings.                                      |
 
 Tier 2 returns candidate guideline ids. Tier 3 can score pairwise relationships such as similar recommendation with different context. Current CLI `catalog find` does not expose built-in pairwise cosine operator commands. Pairwise operators require an analysis table or notebook environment.
@@ -171,7 +171,7 @@ If a catalog manifest defines roles like the current default catalog, these oper
 | Viewpoint Divergence | `section.advice` similar to `section.mistakes`.         |
 | Projection           | UMAP or atlas view over role-specific embeddings.       |
 
-Treat these examples as current-catalog examples, not ChartCoach contracts. Dense embeddings can return topical overlap before logical fit, polarity, or strict conditionality.
+Treat these examples as current-catalog examples, not chartcoach contracts. Dense embeddings can return topical overlap before logical fit, polarity, or strict conditionality.
 
 ## Answer Format
 

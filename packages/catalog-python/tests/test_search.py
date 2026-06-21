@@ -36,7 +36,7 @@ def _test_embedding() -> "EmbeddingFunction":
     except Exception:
 
         @registry.register("chartcoach-test-embedding")
-        class ChartCoachTestEmbedding(TextEmbeddingFunction):
+        class chartcoachTestEmbedding(TextEmbeddingFunction):
             def ndims(self) -> int:
                 return 4
 
@@ -46,7 +46,7 @@ def _test_embedding() -> "EmbeddingFunction":
             ) -> list[list[float]]:
                 return [_embedding_vector(text) for text in texts]
 
-        embedding_class = ChartCoachTestEmbedding
+        embedding_class = chartcoachTestEmbedding
 
     return cast("EmbeddingFunction", embedding_class.create())
 

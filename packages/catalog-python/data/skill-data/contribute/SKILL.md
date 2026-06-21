@@ -1,9 +1,9 @@
 ---
 name: contribute
-description: Use this to draft local ChartCoach catalog improvement issues. Teaches agents how to draft issue text when retrieval exposes missing topics, wording gaps, labels, source gaps, or curation requests without posting anything.
+description: Use this to draft local chartcoach catalog improvement issues. Teaches agents how to draft issue text when retrieval exposes missing topics, wording gaps, labels, source gaps, or curation requests without posting anything.
 ---
 
-# ChartCoach Contribute
+# chartcoach Contribute
 
 The Guideline Catalog is maintained as a shared resource. Friction in one user's critique, recommendation, discussion, or search can reveal catalog improvements for future users: missing coverage, unclear wording, weak labels, or sources that need checking.
 
@@ -28,8 +28,8 @@ Route away from catalog issues when the problem is not content:
 
 | Problem                                                                        | Route                                                                  |
 | ------------------------------------------------------------------------------ | ---------------------------------------------------------------------- |
-| CLI bug, command crash, install failure, or confusing command syntax           | ChartCoach tooling issue.                                              |
-| Infrastructure, package, cache, release, or download failure                   | ChartCoach tooling or infrastructure issue.                            |
+| CLI bug, command crash, install failure, or confusing command syntax           | chartcoach tooling issue.                                              |
+| Infrastructure, package, cache, release, or download failure                   | chartcoach tooling or infrastructure issue.                            |
 | Pure index false positive                                                      | Retrieval tooling or index diagnostics.                                |
 | Index false positive caused by weak wording, labels, or missing topic coverage | Catalog issue.                                                         |
 | Private project preference or one-off user policy                              | Keep local unless the human wants to propose a general catalog change. |

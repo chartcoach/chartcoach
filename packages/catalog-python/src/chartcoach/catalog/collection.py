@@ -72,7 +72,7 @@ class Catalog:
 
     @classmethod
     def from_folder(cls, folder_path: PathLike[str]) -> "Catalog":
-        """Load a catalog from ChartCoach's folder layout on disk."""
+        """Load a catalog from chartcoach's folder layout on disk."""
 
         from .storage import load_catalog
 
