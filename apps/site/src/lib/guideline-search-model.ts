@@ -1,22 +1,14 @@
 import type { Guideline } from "@chartcoach/catalog";
 
-export type GuidelineSearchModel = {
-  id: string;
-  title: string;
+import { createGuidelineRecord, type GuidelineRecord } from "./guideline-record";
+
+export type GuidelineSearchModel = Omit<GuidelineRecord, "description"> & {
   description?: string;
-  labels: string[];
-  body: string;
-  sections: {
-    role: string;
-    title: string;
-    content: string;
-  }[];
-  bibliography?: string;
-  references: string[];
 };
 
 export type GuidelineSearchDocument = {
   path: string;
+  slug: string;
   title: string;
   description: string;
   labels: string[];
@@ -30,6 +22,7 @@ export type GuidelineSearchDocument = {
 
 export const GUIDELINE_SEARCH_SCHEMA = {
   path: "string",
+  slug: "string",
   title: "string",
   description: "string",
   labels: "string[]",
@@ -43,6 +36,7 @@ export const GUIDELINE_SEARCH_SCHEMA = {
 
 export const GUIDELINE_SEARCH_PROPERTIES = [
   "title",
+  "slug",
   "labels",
   "description",
   "sectionTitles",
@@ -55,6 +49,7 @@ export const GUIDELINE_SEARCH_PROPERTIES = [
 
 export const GUIDELINE_SEARCH_BOOST = {
   title: 5,
+  slug: 4,
   labels: 4,
   description: 3,
   sectionTitles: 3,
@@ -65,6 +60,26 @@ export const GUIDELINE_SEARCH_BOOST = {
   references: 0.4,
 } as const;
 
+function decodePathSegment(segment: string) {
+  try {
+    return decodeURIComponent(segment);
+  } catch {
+    return segment;
+  }
+}
+
+function createSlugSearchText(path: string) {
+  const slug = path
+    .split("/")
+    .filter(Boolean)
+    .at(-1);
+  if (!slug) return "";
+
+  const decodedSlug = decodePathSegment(slug);
+  const readableSlug = decodedSlug.replace(/[-_]+/g, " ");
+  return [...new Set([decodedSlug, readableSlug])].join(" ");
+}
+
 const SCRIPT_JSON_ESCAPES: Record<string, string> = {
   "<": "\\u003c",
   "\u2028": "\\u2028",
@@ -72,19 +87,10 @@ const SCRIPT_JSON_ESCAPES: Record<string, string> = {
 };
 
 export function createGuidelineSearchModel(guideline: Guideline): GuidelineSearchModel {
+  const record = createGuidelineRecord(guideline);
   return {
-    id: guideline.id,
-    title: guideline.title,
-    description: guideline.description || undefined,
-    labels: [...guideline.labels],
-    body: guideline.body,
-    sections: guideline.sections.map((section) => ({
-      role: section.role,
-      title: section.title,
-      content: section.content,
-    })),
-    bibliography: guideline.bibliography,
-    references: [...guideline.references],
+    ...record,
+    description: record.description || undefined,
   };
 }
 
@@ -94,6 +100,7 @@ export function createGuidelineSearchDocument(
 ): GuidelineSearchDocument {
   return {
     path,
+    slug: createSlugSearchText(path),
     title: model.title,
     description: model.description ?? "",
     labels: model.labels,

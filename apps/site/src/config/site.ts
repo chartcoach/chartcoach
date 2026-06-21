@@ -23,6 +23,8 @@ type EnvMap = Record<string, string | undefined>;
 type SiteRuntimeOptions = {
   env?: EnvMap;
 };
+type SiteViteConfig = NonNullable<AstroUserConfig["vite"]>;
+type SiteVitePlugin = NonNullable<SiteViteConfig["plugins"]>[number];
 
 type ProcessWithLoadEnvFile = typeof process & {
   loadEnvFile?: (path?: string) => void;
@@ -89,7 +91,7 @@ export function createSiteUrlLogger(siteUrl: string, source: SiteUrlSource): Ast
 
 export const siteViteConfig = {
   envDir: monorepoRoot,
-  plugins: [tailwindcss()],
+  plugins: [tailwindcss() as unknown as SiteVitePlugin],
   server: {
     fs: {
       allow: [monorepoRoot],
@@ -104,4 +106,4 @@ export const siteViteConfig = {
       "@": siteSourceRoot,
     },
   },
-} satisfies NonNullable<AstroUserConfig["vite"]>;
+} satisfies SiteViteConfig;

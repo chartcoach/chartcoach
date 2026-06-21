@@ -8,9 +8,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { DEFAULT_CATALOG_METADATA_URL } from "@chartcoach/catalog";
-import { readCatalog } from "@chartcoach/catalog/server";
-
+import { catalogSourceWatchFiles, loadSiteCatalog } from "../config/catalog-source";
 import {
   createGuidelineSearchDocument,
   createGuidelineSearchModel,
@@ -89,12 +87,8 @@ async function prepareOramaDbFromPages(
   return prepareOramaDbFromDocuments(dbConfig, documents);
 }
 
-async function prepareOramaDbFromCatalog(
-  dbConfig: OramaSearchDbOptions,
-  root: URL,
-) {
-  const catalogSource = resolveCatalogSource(root);
-  const catalog = await readCatalog(catalogSource);
+async function prepareOramaDbFromCatalog(dbConfig: OramaSearchDbOptions, root: URL) {
+  const catalog = await loadSiteCatalog(root);
   const documents: SearchDocument[] = [];
 
   for (const guideline of catalog) {
@@ -105,15 +99,6 @@ async function prepareOramaDbFromCatalog(
   return prepareOramaDbFromDocuments(dbConfig, documents);
 }
 
-function resolveCatalogSource(root: URL) {
-  const source = process.env.CHARTCOACH_SITE_CATALOG_SOURCE ?? DEFAULT_CATALOG_METADATA_URL;
-  return isHttpUrl(source) ? source : path.resolve(fileURLToPath(root), source);
-}
-
-function isHttpUrl(value: string): boolean {
-  return value.startsWith("http://") || value.startsWith("https://");
-}
-
 function requestDbName(requestUrl: string | undefined, dbNames: string[]) {
   if (!requestUrl) return undefined;
   const pathname = new URL(requestUrl, "http://localhost").pathname;
@@ -121,13 +106,9 @@ function requestDbName(requestUrl: string | undefined, dbNames: string[]) {
 }
 
 function watchCatalogSource(root: URL, server: ServerSetupOptions["server"], onChange: () => void) {
-  const catalogSource = resolveCatalogSource(root);
-  if (isHttpUrl(catalogSource)) return;
+  const watchedFiles = catalogSourceWatchFiles(root);
+  if (watchedFiles.length === 0) return;
 
-  const watchedFiles = [
-    path.join(catalogSource, "entries.parquet"),
-    path.join(catalogSource, "MANIFEST.md"),
-  ];
   server.watcher.add(watchedFiles);
   server.watcher.on("change", (changedPath) => {
     if (watchedFiles.includes(changedPath)) onChange();
@@ -152,7 +133,9 @@ export function oramaSearch(options: OramaSearchOptions): AstroIntegration {
       .then(({ db, indexedRecords }) => {
         logger
           .fork("chartcoach:orama-search")
-          .info(`Prepared ${dbName} dev search DB with ${indexedRecords.toLocaleString()} records.`);
+          .info(
+            `Prepared ${dbName} dev search DB with ${indexedRecords.toLocaleString()} records.`,
+          );
         return JSON.stringify(saveOramaDB(db));
       })
       .catch((error: unknown) => {

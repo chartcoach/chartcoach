@@ -1,29 +1,43 @@
 ---
+import BrandLogo from "@/components/BrandLogo.astro";
 import { GuidelineSearch } from "@/components/guideline-search";
 import SvgIcon from "@/components/SvgIcon.astro";
 import { ThemeToggle } from "@/components/theme-toggle";
+
+const footerLinks = [
+  {
+    label: "Guidelines",
+    href: "/guidelines/",
+  },
+  {
+    label: "GitHub",
+    href: "https://github.com/chartcoach/catalog",
+  },
+  {
+    label: "Paper",
+    href: "https://arxiv.org/abs/2512.20306",
+  },
+  {
+    label: "Contact",
+    href: "mailto:pgyarmati@ethz.ch",
+  },
+] as const;
 ---
 
 <div class="relative min-h-screen overflow-x-clip">
   <header
-    class="sticky top-0 z-50 flex h-14 items-center justify-between gap-2 bg-bg/90 px-3 backdrop-blur-sm sm:gap-3 sm:px-4"
+    class="sticky top-0 z-50 flex min-h-16 items-center justify-between gap-2 bg-bg/90 px-3 py-2 backdrop-blur-sm sm:gap-3 sm:px-4"
   >
-    <a href="/" class="inline-flex items-center gap-2 text-sm font-semibold no-underline lg:text-[0.9375rem]" aria-label="ChartCoach home">
-      <span
-        class="flex h-5 w-5 items-center justify-center rounded-md border border-fg/30 font-mono text-[0.6875rem] leading-none text-fg"
-        aria-hidden="true"
-      >
-        C
-      </span>
-      <span>ChartCoach</span>
+    <a href="/" class="inline-flex h-9 items-center no-underline" aria-label="chartcoach home">
+      <BrandLogo class="h-7 w-[6.97rem] sm:h-8 sm:w-[7.96rem]" />
     </a>
     <nav class="flex items-center gap-1 text-sm text-muted sm:gap-3 lg:text-[0.9375rem]" aria-label="Primary">
-      <a href="/guidelines/" class="hidden h-8 items-center rounded-md px-1.5 no-underline transition-colors hover:text-fg min-[360px]:inline-flex">
+      <a href="/guidelines/" class="hidden h-8 items-center rounded-md px-1.5 no-underline transition-colors hover:text-accent min-[360px]:inline-flex">
         Guidelines
       </a>
       <a
         href="https://docs.chartcoach.dev/"
-        class="hidden h-8 items-center rounded-md px-1.5 no-underline transition-colors hover:text-fg sm:inline-flex"
+        class="hidden h-8 items-center rounded-md px-1.5 no-underline transition-colors hover:text-accent sm:inline-flex"
       >
         Docs
       </a>
@@ -32,8 +46,8 @@ import { ThemeToggle } from "@/components/theme-toggle";
         href="https://github.com/chartcoach/catalog"
         target="_blank"
         rel="noreferrer"
-        class="inline-flex h-8 w-8 items-center justify-center rounded-md no-underline transition-colors hover:bg-surface-muted hover:text-fg"
-        aria-label="ChartCoach catalog on GitHub"
+        class="inline-flex h-8 w-8 items-center justify-center rounded-md no-underline transition-colors hover:bg-accent-muted hover:text-accent"
+        aria-label="chartcoach catalog on GitHub"
       >
         <SvgIcon name="github" class="h-[1.125rem] w-[1.125rem] shrink-0" />
       </a>
@@ -45,24 +59,41 @@ import { ThemeToggle } from "@/components/theme-toggle";
     <slot />
   </main>
 
-  <footer class="relative z-10 border-t border-border py-8">
-    <div class="mx-auto flex w-[min(100%-3rem,var(--container-content))] flex-col items-center gap-3 text-center md:flex-row md:justify-between md:text-left">
-      <a href="/" class="inline-flex items-center gap-2 text-sm font-semibold no-underline lg:text-[0.9375rem]">
-        <span
-          class="flex h-5 w-5 items-center justify-center rounded-md border border-fg/30 font-mono text-[0.6875rem] leading-none text-fg"
-          aria-hidden="true"
-        >
-          C
-        </span>
-        <span>ChartCoach</span>
-      </a>
-      <div class="flex flex-col items-center gap-1 md:items-end">
-        <p class="m-0 text-[0.8125rem] text-muted lg:text-[0.875rem]">
-          Experimental grounded visualization guidance for humans and agents.
-        </p>
-        <p class="m-0 text-[0.8125rem] text-muted lg:text-[0.875rem]">
-          Using ChartCoach? Email{" "}
-          <a href="mailto:pgyarmati@ethz.ch" class="text-fg underline decoration-border underline-offset-4 transition-colors hover:decoration-fg">pgyarmati@ethz.ch</a>.
+  <footer class="relative z-10 border-t border-border bg-surface-muted/35">
+    <div class="mx-auto flex w-[min(100%-3rem,var(--container-content))] flex-col gap-8 py-10 sm:py-12 md:flex-row md:items-end md:justify-between">
+      <div class="flex max-w-[32rem] flex-col items-start gap-5">
+        <a href="/" class="inline-flex rounded-lg no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/20" aria-label="chartcoach home">
+          <BrandLogo class="h-10 w-[9.95rem] sm:h-11 sm:w-[10.95rem]" />
+        </a>
+        <div class="grid gap-2">
+          <p class="m-0 text-[1rem] font-medium leading-6 text-fg">
+            Visualization knowledge layer for chart agents.
+          </p>
+          <p class="m-0 text-[0.9375rem] leading-6 text-muted">
+            Open catalog. Public review. Research prototype.
+          </p>
+        </div>
+      </div>
+      <div class="flex flex-col gap-4 md:items-end">
+        <nav class="flex flex-wrap items-center gap-x-2 gap-y-2 text-[0.9375rem] font-medium text-muted" aria-label="Footer">
+          {
+            footerLinks.map((link, index) => (
+              <>
+                {index > 0 && <span aria-hidden="true" class="text-border">·</span>}
+                <a
+                  href={link.href}
+                  target={link.href.startsWith("http") ? "_blank" : undefined}
+                  rel={link.href.startsWith("http") ? "noreferrer" : undefined}
+                  class="rounded-sm text-muted no-underline transition-colors hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/20"
+                >
+                  {link.label}
+                </a>
+              </>
+            ))
+          }
+        </nav>
+        <p class="m-0 text-[0.8125rem] leading-5 text-muted">
+          {new Date().getFullYear()} chartcoach
         </p>
       </div>
     </div>

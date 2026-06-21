@@ -1,5 +1,5 @@
 import { Check, ChevronDown, Copy } from "lucide-react";
-import { Fragment, useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import type { CSSProperties, ReactNode, SVGProps } from "react";
 
 import cursorIconUrl from "@/assets/icons/cursor.svg?url";
@@ -157,7 +157,7 @@ const USE_CASES = [
   {
     id: "contribute",
     label: "Contribute",
-    instruction: "add a new guideline about using log scales.",
+    instruction: "draft a GitHub issue for missing guidance about log scales.",
   },
 ] as const satisfies readonly UseCase[];
 
@@ -229,12 +229,12 @@ function ShellLine({ line }: ShellLineProps) {
 
 function MenuChevron({ open }: MenuChevronProps) {
   return (
-    <span className="flex h-full w-9 shrink-0 items-center justify-center text-muted" aria-hidden="true">
+    <span
+      className="flex h-full w-9 shrink-0 items-center justify-center text-muted"
+      aria-hidden="true"
+    >
       <ChevronDown
-        className={[
-          "h-4 w-4 transition-transform",
-          open ? "rotate-180" : "",
-        ].join(" ")}
+        className={["h-4 w-4 transition-transform", open ? "rotate-180" : ""].join(" ")}
         strokeWidth={1.8}
       />
     </span>
@@ -340,13 +340,16 @@ export function InstallCopy() {
   }
 
   return (
-    <div className="mt-6 w-full min-w-0 max-w-[46rem] sm:mt-10 xl:mt-12 xl:max-w-[52rem]">
+    <div className="home-install-copy mt-6 w-full min-w-0 max-w-[60rem] sm:mt-10 lg:mt-8 xl:mt-9 xl:max-w-[64rem]">
       <div
-        className="min-w-0 overflow-visible rounded-lg border border-border bg-surface text-left"
+        className="min-w-0 overflow-visible rounded-xl border border-border bg-code-bg text-left shadow-[0_1px_2px_color-mix(in_srgb,var(--color-fg)_8%,transparent)]"
         style={agentStyle}
       >
-        <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-2 gap-y-2 border-b border-border px-3 py-3 sm:flex sm:flex-row sm:items-center sm:gap-4 sm:px-5 xl:px-6">
-          <div ref={agentMenu.menuRef} className="relative min-w-0 sm:w-[13rem] sm:shrink-0">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-2 gap-y-3 rounded-t-[calc(0.75rem-1px)] border-b border-border bg-surface-muted px-3 py-3 sm:px-5 lg:flex lg:flex-row lg:items-center lg:gap-3 xl:gap-4 xl:px-6">
+          <div
+            ref={agentMenu.menuRef}
+            className="relative min-w-0 lg:w-[14.5rem] lg:shrink-0 xl:w-[15.5rem]"
+          >
             <button
               ref={agentMenu.triggerRef}
               type="button"
@@ -368,7 +371,7 @@ export function InstallCopy() {
                 role="menu"
                 aria-label="Agent"
                 className={[
-                  "absolute left-0 z-20 w-full min-w-[11rem] overflow-hidden rounded-md border border-border bg-bg p-1 sm:min-w-[13rem]",
+                  "absolute left-0 z-50 w-full min-w-[13.5rem] overflow-hidden rounded-md border border-border bg-bg p-1 sm:min-w-[14.5rem]",
                   agentMenuPlacementClass,
                 ].join(" ")}
               >
@@ -387,12 +390,16 @@ export function InstallCopy() {
                       }}
                       className={[
                         "flex h-10 w-full cursor-pointer items-center gap-2.5 rounded px-2.5 text-left text-sm font-medium transition-colors",
-                        selected ? "bg-surface-muted text-fg" : "text-muted hover:bg-surface-muted hover:text-fg",
+                        selected
+                          ? "bg-surface-muted text-fg"
+                          : "text-muted hover:bg-surface-muted hover:text-fg",
                       ].join(" ")}
                     >
                       <AgentLogo agent={agent} className="h-4 w-4 shrink-0" />
                       <span className="min-w-0 flex-1 truncate">{agent.label}</span>
-                      {selected && <Check className="h-3.5 w-3.5 shrink-0 text-fg" aria-hidden="true" />}
+                      {selected && (
+                        <Check className="h-3.5 w-3.5 shrink-0 text-fg" aria-hidden="true" />
+                      )}
                     </button>
                   );
                 })}
@@ -400,38 +407,32 @@ export function InstallCopy() {
             )}
           </div>
           <div
-            className="col-span-2 row-start-2 flex min-w-0 flex-1 flex-wrap items-center gap-y-1 sm:col-auto sm:row-auto"
-            aria-label="ChartCoach use case"
+            className="col-span-2 row-start-2 flex min-w-0 flex-1 flex-wrap items-center gap-y-1 lg:col-auto lg:row-auto lg:flex-nowrap"
+            aria-label="chartcoach use case"
           >
             {USE_CASES.map((useCase, index) => {
               const selected = activeUseCaseId === useCase.id;
               return (
-                <Fragment key={useCase.id}>
-                  <button
-                    type="button"
-                    aria-pressed={selected}
-                    onClick={() => {
-                      setActiveUseCaseId(useCase.id);
-                      resetSelectionState();
-                    }}
-                    className="group relative h-8 cursor-pointer rounded-sm border border-transparent px-2.5 text-[0.8125rem] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg/20 sm:px-3.5 sm:text-sm xl:h-9 xl:px-4 xl:text-[0.9375rem]"
-                  >
-                    <span className="invisible font-semibold">{useCase.label}</span>
-                    <span
-                      className={[
-                        "absolute inset-0 flex items-center justify-center transition-colors",
-                        selected
-                          ? "font-semibold text-fg"
-                          : "font-medium text-muted group-hover:text-fg",
-                      ].join(" ")}
-                    >
-                      {useCase.label}
-                    </span>
-                  </button>
-                  {index < USE_CASES.length - 1 && (
-                    <span className="mx-0.5 hidden h-4 w-px shrink-0 bg-border min-[420px]:block sm:mx-1" aria-hidden="true" />
-                  )}
-                </Fragment>
+                <button
+                  key={useCase.id}
+                  type="button"
+                  aria-pressed={selected}
+                  onClick={() => {
+                    setActiveUseCaseId(useCase.id);
+                    resetSelectionState();
+                  }}
+                  className={[
+                    "relative h-8 shrink-0 cursor-pointer bg-transparent px-2.5 text-[0.8125rem] transition-colors after:absolute after:bottom-0 after:left-1/2 after:h-0.5 after:w-5 after:-translate-x-1/2 after:rounded-full after:transition-colors focus-visible:rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-fg/20 sm:px-4 sm:text-[0.9375rem] xl:h-9 xl:px-5 xl:text-[1rem]",
+                    index > 0
+                      ? "before:absolute before:left-0 before:top-1/2 before:hidden before:h-4 before:-translate-y-1/2 before:border-l before:border-border sm:before:block"
+                      : "",
+                    selected
+                      ? "font-semibold text-accent after:bg-accent hover:text-accent"
+                      : "font-medium text-muted after:bg-transparent hover:text-fg",
+                  ].join(" ")}
+                >
+                  {useCase.label}
+                </button>
               );
             })}
           </div>
@@ -439,7 +440,7 @@ export function InstallCopy() {
             type="button"
             aria-label={copied ? "Agent commands copied" : "Copy agent commands"}
             onClick={handleCopy}
-            className="col-start-2 row-start-1 ml-auto flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-md border border-transparent bg-transparent text-muted transition-colors hover:bg-surface-muted hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg/20 sm:col-auto sm:row-auto sm:order-last"
+            className="col-start-2 row-start-1 ml-auto flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-md border border-transparent bg-transparent text-muted transition-colors hover:bg-surface-muted hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg/20 lg:col-auto lg:row-auto lg:order-last"
           >
             {copied ? (
               <Check className="h-5 w-5 text-fg" aria-hidden="true" />
@@ -448,10 +449,13 @@ export function InstallCopy() {
             )}
           </button>
         </div>
-        <pre className="m-0 min-w-0 max-w-full overflow-visible px-4 py-3.5 font-mono text-[0.8125rem] leading-[1.6] tracking-normal text-code-fg sm:px-7 sm:py-5 sm:text-[0.9375rem] xl:text-[1rem]">
+        <pre className="m-0 min-w-0 max-w-full overflow-x-auto px-4 py-3.5 font-mono text-[0.8125rem] leading-[1.65] tracking-normal text-code-fg sm:px-7 sm:py-5 sm:text-[0.9375rem] xl:text-[1rem]">
           <code className="block min-w-0 whitespace-pre-wrap break-words">
             {snippetLines.map((line, index) => (
-              <span key={line} className={index === 0 ? "block" : "mt-3 block"}>
+              <span
+                key={line}
+                className={index === 0 ? "home-install-line block" : "home-install-line mt-3 block"}
+              >
                 <span className="select-none text-muted/55">$ </span>
                 <ShellLine line={line} />
               </span>
