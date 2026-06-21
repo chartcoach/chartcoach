@@ -1,29 +1,66 @@
 # @chartcoach/catalog
 
-JavaScript package for loading manifest-described ChartCoach guideline catalogs as typed records.
+JavaScript models and parsers for chartcoach catalog artifacts.
+
+Read the package docs at [docs.chartcoach.dev/javascript](https://docs.chartcoach.dev/javascript).
+Read the catalog contract at [docs.chartcoach.dev/catalog](https://docs.chartcoach.dev/catalog).
+
+This package is currently a workspace package in the chartcoach monorepo.
 
 ```ts
-import { readCatalog } from "@chartcoach/catalog/server";
+import { DEFAULT_CATALOG, loadCatalog } from "@chartcoach/catalog"
 
-const catalog = await readCatalog();
-catalog.guidelines.map((guideline) => guideline.title);
+const entries = await fetch(DEFAULT_CATALOG.entriesUrl).then((response) =>
+  response.arrayBuffer(),
+)
+const manifestText = await fetch(DEFAULT_CATALOG.manifestUrl).then((response) =>
+  response.text(),
+)
+
+const catalog = await loadCatalog({ entries, manifestText })
+const guideline = catalog.require("compare-percentages-with-bars-not-pies")
 ```
 
-Use `@chartcoach/catalog/server` to read the default artifact metadata URL, explicit metadata URLs, catalog bundles, source folders, or parquet files from server runtimes.
-Use `@chartcoach/catalog/browser` with resolved artifact URLs from release metadata:
+`@chartcoach/catalog` accepts bytes that the caller already acquired. Use
+`fetch`, `fs.readFile`, `Bun.file`, `Deno.readFile`, or a test fixture to read
+the artifacts, then pass `entries` and optional manifest data to `loadCatalog`.
 
 ```ts
-import { artifact, artifactUrl, fetchCatalogRelease } from "@chartcoach/catalog";
-import { fetchCatalog } from "@chartcoach/catalog/browser";
+import { readFile } from "node:fs/promises"
+import { loadCatalog } from "@chartcoach/catalog"
 
-const release = await fetchCatalogRelease();
-const entries = artifactUrl(release.metadataUrl, artifact(release.metadata, "entries"));
-const manifest = artifactUrl(release.metadataUrl, artifact(release.metadata, "manifest"));
-
-const catalog = await fetchCatalog(entries, { manifest });
+const catalog = await loadCatalog({
+  entries: await readFile("entries.parquet"),
+  manifestText: await readFile("MANIFEST.md", "utf8"),
+})
 ```
 
-Build this package with `pnpm --dir packages/catalog-javascript build`.
+Parse release metadata when code needs artifact URLs:
+
+```ts
+import {
+  catalogArtifact,
+  catalogArtifactUrl,
+  parseCatalogReleaseMetadata,
+} from "@chartcoach/catalog"
+
+const metadata = parseCatalogReleaseMetadata(await response.json())
+const entriesUrl = catalogArtifactUrl(
+  metadataUrl,
+  catalogArtifact(metadata, "entries"),
+)
+
+const entries = await fetch(entriesUrl).then((response) => response.arrayBuffer())
+```
+
+Run package checks from the repository root:
+
+```bash
+pnpm --dir packages/catalog-javascript lint
+pnpm --dir packages/catalog-javascript typecheck
+pnpm --dir packages/catalog-javascript test
+pnpm --dir packages/catalog-javascript build
+```
 
 ## License
 

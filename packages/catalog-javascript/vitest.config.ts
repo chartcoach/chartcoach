@@ -9,14 +9,6 @@ export default defineConfig({
   resolve: {
     alias: [
       {
-        find: /^@chartcoach\/catalog\/server$/,
-        replacement: path.resolve(__dirname, "src/server.ts"),
-      },
-      {
-        find: /^@chartcoach\/catalog\/browser$/,
-        replacement: path.resolve(__dirname, "src/browser.ts"),
-      },
-      {
         find: /^@chartcoach\/catalog$/,
         replacement: path.resolve(__dirname, "src/index.ts"),
       },
