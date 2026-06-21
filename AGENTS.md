@@ -1,6 +1,6 @@
-# ChartCoach Agent Guide
+# chartcoach Agent Guide
 
-ChartCoach is a guideline catalog, public site, docs site, and catalog-loader
+chartcoach is a guideline catalog, public site, docs site, and catalog-loader
 monorepo. Use `pnpm` for JavaScript and `uv` for Python.
 
 ## Responsibility
@@ -14,6 +14,9 @@ Before changing a module, read its nearest README, package manifest, and tests.
 
 - `apps/site`: Astro and MDX marketing site with the Guideline Catalog browser.
 - `apps/docs`: Astro/Starlight technical docs site.
+- `packages/brand`: shared web identity package with canonical brand assets,
+  Poppins imports, CSS tokens, generated PNGs, and public asset sync checks for
+  `apps/site` and `apps/docs`.
 - `packages/catalog-javascript`: JS loaders, parsers, and catalog wire types.
 - `packages/catalog-python`: Python catalog package and `chartcoach` CLI.
 
@@ -31,6 +34,8 @@ Before changing a module, read its nearest README, package manifest, and tests.
 ## Commands
 
 - Site: `pnpm --dir apps/site lint` and `pnpm --dir apps/site build`.
+- Brand assets: `pnpm brand:sync` after changing canonical assets, then
+  `pnpm brand:check`.
 - JS packages: `pnpm --dir <package> lint`, `pnpm --dir <package> typecheck`,
   and the local build or test script.
 - Python packages: `uv run ruff check .`, `uv run ty check .`,

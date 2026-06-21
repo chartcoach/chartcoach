@@ -1,6 +1,7 @@
 packages:
   - "apps/site"
   - "apps/docs"
+  - "packages/brand"
   - "packages/catalog-javascript"
   - "packages/catalog-python"
 minimumReleaseAge: 2880

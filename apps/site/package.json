@@ -1,6 +1,6 @@
 {
   "name": "@chartcoach/site",
-  "version": "0.0.1",
+  "version": "0.1.2",
   "private": true,
   "license": "Apache-2.0",
   "type": "module",
@@ -8,18 +8,19 @@
     "dev": "astro dev",
     "lint": "oxlint . && astro check",
     "format": "oxfmt .",
-    "build": "astro build",
+    "build": "pnpm --dir ../../packages/brand check:assets && astro build",
     "typecheck": "astro check"
   },
   "dependencies": {
     "@astrojs/react": "^5.0.7",
     "@astrojs/sitemap": "^3.7.3",
+    "@chartcoach/brand": "workspace:*",
     "@chartcoach/catalog": "workspace:*",
-    "@lucide/astro": "^1.18.0",
+    "@lucide/astro": "^1.21.0",
     "@orama/orama": "^3.1.18",
-    "astro": "6.4.4",
+    "astro": "6.4.8",
     "citation-js": "^0.7.22",
-    "lucide-react": "^1.18.0",
+    "lucide-react": "^1.21.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "sanitize-html": "^2.17.5",
@@ -28,10 +29,14 @@
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
     "@tailwindcss/vite": "^4.3.1",
+    "@types/jsdom": "^28.0.3",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@types/sanitize-html": "^2.16.1",
+    "@types/turndown": "^5.0.6",
+    "jsdom": "^29.1.1",
     "tailwindcss": "^4.3.1",
+    "turndown": "^7.2.4",
     "typescript": "^5.9.3"
   }
 }
