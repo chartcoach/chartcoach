@@ -12,9 +12,7 @@
 
     "baseUrl": ".",
     "paths": {
-      "@chartcoach/catalog": ["./src/index.ts"],
-      "@chartcoach/catalog/server": ["./src/server.ts"],
-      "@chartcoach/catalog/browser": ["./src/browser.ts"]
+      "@chartcoach/catalog": ["./src/index.ts"]
     },
 
     "noEmit": true

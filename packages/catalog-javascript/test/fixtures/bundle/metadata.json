@@ -1,6 +1,6 @@
 {
-  "version": "0.0.0",
-  "digest": "5918c38c974b41cf5a04f08a851fb42dad47a4602d8a72381ed6f3bf5e18a078",
+  "version": "0.1.2",
+  "digest": "4aaac685e7c5bf38624f8f804c030d62df1434cb378dcae9dd4a6b297e772fda",
   "artifacts": [
     {
       "kind": "manifest",
@@ -12,8 +12,8 @@
     {
       "kind": "entries",
       "path": "entries.parquet",
-      "digest": "85763f492c8794dfd3c4ab02a5eb5dff8fb3899e49bc65167fb3d8921759adf3",
-      "bytes": 8160,
+      "digest": "69cc00f0447706f5b7d8ccabfcea62ab332c9de6956575bc2ecee63d9691e9e2",
+      "bytes": 8159,
       "format": "parquet",
       "rows": 1
     }

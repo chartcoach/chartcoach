@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   Catalog,
   CatalogError,
-  parseManifest,
+  parseCatalogManifest,
   type Guideline,
 } from "@chartcoach/catalog";
 
@@ -24,14 +24,14 @@ Chart-family labels such as \`chart:bar\`.
 
 describe("catalog manifest", () => {
   it("parses required headings and subheadings", () => {
-    const manifest = parseManifest(manifestMarkdown);
+    const manifest = parseCatalogManifest(manifestMarkdown);
 
     expect(manifest.sectionRoles.advice?.description).toContain("Actionable");
     expect(manifest.labelFamilies.chart?.examples).toContain("chart:bar");
   });
 
   it("rejects catalog entries with undefined manifest vocabulary", () => {
-    const manifest = parseManifest(manifestMarkdown);
+    const manifest = parseCatalogManifest(manifestMarkdown);
     const guidelines: Guideline[] = [
       {
         id: "g1",
