@@ -1,16 +1,23 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
+import { brandAssets } from "@chartcoach/brand";
+import "@chartcoach/brand/fonts.css";
 import { Provider } from "@/components/provider";
 
 import "./global.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "ChartCoach Docs",
-    template: "%s | ChartCoach Docs",
+    default: "chartcoach docs",
+    template: "%s | chartcoach docs",
   },
-  description: "Documentation for ChartCoach and the Guideline Catalog.",
+  description: "Documentation for chartcoach and the Guideline Catalog.",
+  icons: {
+    icon: brandAssets.favicon,
+    shortcut: brandAssets.favicon,
+    apple: brandAssets.appleTouchIcon,
+  },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

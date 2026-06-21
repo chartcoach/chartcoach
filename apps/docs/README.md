@@ -1,15 +1,37 @@
-# ChartCoach Docs
+# chartcoach docs
 
-Fumadocs and Next.js static documentation for ChartCoach.
+Fumadocs and Next.js static documentation for chartcoach. The published docs
+site is [docs.chartcoach.dev](https://docs.chartcoach.dev/).
+Content pages render at root paths such as `/getting-started` on that domain.
 
-Build the docs as static files:
+Run the docs locally:
 
 ```bash
+pnpm --dir apps/docs dev
+```
+
+Run checks from the repository root:
+
+```bash
+pnpm --dir apps/docs lint
+pnpm --dir apps/docs typecheck
 pnpm --dir apps/docs build
 ```
 
-Serve the exported site from `apps/docs/out`:
+The build writes static files to `apps/docs/out`. Serve that output with:
 
 ```bash
 pnpm --dir apps/docs start
 ```
+
+## LLM surfaces
+
+The docs app exports Fumadocs machine-readable routes for agents and search
+tools:
+
+- `/llms.txt`: page index generated from the Fumadocs page tree
+- `/llms-full.txt`: concatenated Markdown for every docs page
+- `/llms.mdx/docs/<path>/content.md`: Markdown for one docs page
+
+Rendered docs pages include Fumadocs page actions for copying the current page
+as Markdown and opening the Markdown route.

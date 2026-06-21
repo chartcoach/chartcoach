@@ -1,0 +1,68 @@
+---
+title: Agents
+description: Route chart discussion, feedback, recommendations, and catalog improvement drafts through chartcoach skills.
+---
+
+chartcoach provides agent skills. The top-level `$chartcoach` skill routes
+tasks to workflow skills bundled with the installed `chartcoach` package.
+
+```bash
+npx skills add chartcoach/skills
+uvx chartcoach@latest skills list
+```
+
+Ask for the job in the current agent session:
+
+```bash
+codex 'Use $chartcoach to review this dashboard screenshot for labeling, legend, and accessibility issues.'
+```
+
+## Skill paths
+
+| Skill | Use it for |
+| --- | --- |
+| `core` | Catalog source, output formats, command recovery, and index setup |
+| `discuss` | Cited design discussion, tradeoffs, comparisons, and source tracing |
+| `visfeedback` | Feedback on an observed chart or screenshot |
+| `visrec` | Visualization recommendations from a data task and constraints |
+| `contribute` | Local catalog improvement issue drafts |
+
+Inspect bundled skill text:
+
+```bash
+uvx chartcoach@latest skills list --format table
+uvx chartcoach@latest skills get visfeedback
+uvx chartcoach@latest skills get visrec
+```
+
+## Evidence flow
+
+Agents should keep retrieval and evidence separate:
+
+```text
+catalog shape -> candidate ids -> exact guideline -> citation -> answered claim
+```
+
+Read the live catalog shape with `overview`, `manifest`, `roles`, and `labels`.
+Discover candidate ids with `list`, `query`, `sql`, or `find`. Verify each
+candidate with `catalog read`, then produce links and source references with
+`catalog cite`.
+
+Search output is candidate evidence. Exact `catalog read` output is the text
+that can support a claim.
+
+## Contribution drafts
+
+Use `contribute` when retrieval exposes missing, weak, duplicated, or
+hard-to-apply catalog guidance.
+
+```bash
+uvx chartcoach@latest skills get contribute
+```
+
+The skill drafts local Markdown for the `chartcoach/catalog` issue surface. It
+does not post, submit, or disclose the draft unless a human approves that
+external action.
+
+Use [MCP](/mcp) when an agent platform should call catalog SQL or search
+through tool invocations.

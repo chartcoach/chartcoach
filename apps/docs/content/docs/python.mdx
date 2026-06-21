@@ -1,0 +1,114 @@
+---
+title: Python
+description: Load catalog bundles, inspect Polars tables, query with DuckDB, and create LanceDB search indexes.
+---
+
+The `chartcoach` package loads catalog instances into a Polars-first `Catalog`.
+
+Run one check without adding the package to a project:
+
+```bash
+uv run --with chartcoach python -c "from chartcoach import Catalog; print(Catalog.open().guidelines().select('id', 'title').head(3))"
+```
+
+Add the package from an application root:
+
+```bash
+uv add chartcoach
+uv add 'chartcoach[index]'
+uv add 'chartcoach[mcp,index]'
+```
+
+```python
+from chartcoach import Catalog
+
+catalog = Catalog.open()
+catalog.guidelines().select("id", "title").head(5)
+```
+
+`Catalog.open()` reads the package-pinned Default Catalog when no path is
+provided.
+
+## Loading
+
+```python
+from chartcoach import Catalog
+
+default_catalog = Catalog.open()
+bundle_catalog = Catalog.open("dist/catalog")
+parquet_catalog = Catalog.open("dist/catalog/entries.parquet")
+folder_catalog = Catalog.from_folder("catalog-source")
+```
+
+`Catalog.open(path)` accepts authored folders, bundle directories, standalone
+parquet files, and release metadata URLs. Bundle reads load `MANIFEST.md` and
+`entries.parquet`.
+
+## Tables
+
+`Catalog` exposes derived Polars tables through `guidelines()`, `sections()`,
+`labels()`, `guideline_labels()`, `references()`, `guideline_references()`, and
+`guideline_sources()`.
+
+Use `catalog.table(name)` when a caller receives a table name from the CLI, MCP,
+or docs. The [Catalog contract](/catalog#queryable-tables) lists table names
+and columns.
+
+## Entries
+
+```python
+entry = catalog.entry("compare-percentages-with-bars-not-pies")
+```
+
+`entry(id)` returns one flat guideline record with `references`. Unknown ids
+raise `KeyError`.
+
+Use `Catalog.from_entries()` with `Guideline` and `Section` objects for
+in-memory catalogs. `Guideline` requires either `body` or `sections` and
+derives one from the other when needed.
+
+## DuckDB
+
+Use DuckDB for joins across guideline tables.
+
+```python
+conn = catalog.duckdb()
+rows = conn.sql("select id, title from guidelines limit 5").pl()
+conn.close()
+```
+
+Write a durable database file for another tool:
+
+```python
+catalog.write_duckdb("./chartcoach-catalog.duckdb", overwrite=True)
+```
+
+## LanceDB search
+
+Add the `index` extra before using search in application code.
+
+```python
+from chartcoach.catalog import default_index_path
+from chartcoach.search import open as open_index, search
+
+table = open_index(default_index_path(table_name="catalog_documents"))
+hits = search(catalog, table, "overplotted scatter plots").to_dict()["rows"]
+```
+
+`default_index_path()` downloads and extracts the package-pinned index on first
+use. Later calls reuse the local copy.
+
+Use `index(catalog, "./chartcoach-index", embedding=...)` when the application
+needs to build a caller-owned table. Without an embedding function, `index()`
+creates a full-text table over the `text` column.
+
+## Write formats
+
+```python
+catalog.write_folder("dist/authored")
+catalog.write_parquet("dist/entries.parquet")
+catalog.write_bundle("dist/catalog", overwrite=True)
+```
+
+`write_bundle()` writes `MANIFEST.md`, `entries.parquet`, and `metadata.json`.
+It requires a catalog manifest.

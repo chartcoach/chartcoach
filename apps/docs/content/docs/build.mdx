@@ -1,0 +1,104 @@
+---
+title: Build a catalog
+description: Validate authored guideline folders, write catalog bundles, and export catalog tables.
+---
+
+Build a catalog when you maintain guideline entries or need a bundle for the
+site, CLI, Python, JavaScript, or MCP readers.
+
+## Folder contract
+
+An authored catalog folder contains a manifest and guideline entry folders:
+
+```text
+catalog-source/
+├── MANIFEST.md
+└── entries/
+    └── direct-labels/
+        ├── guideline.md
+        └── references.bib
+```
+
+The manifest defines section roles and label families. Each guideline keeps a
+stable id, title, description, labels, sections, and optional references.
+
+## Create a minimal catalog
+
+Create the manifest:
+
+```bash
+mkdir -p catalog-source/entries/direct-labels
+cat > catalog-source/MANIFEST.md <<'EOF'
+# Sample Catalog
+
+## Section roles
+
+### advice
+
+Actionable guidance for applying the guideline.
+
+## Label families
+
+### chart
+
+Chart-family labels such as `chart:line`.
+EOF
+```
+
+Create one guideline:
+
+```bash
+cat > catalog-source/entries/direct-labels/guideline.md <<'EOF'
+---
+id: direct-labels
+title: Use direct labels
+description: Label marks directly when space permits.
+labels:
+  - chart:line
+---
+
+## Advice <!-- role: advice -->
+
+Place the label close to the mark it names.
+EOF
+```
+
+## Validate
+
+```bash
+uvx chartcoach@latest catalog validate --source ./catalog-source --format table
+uvx chartcoach@latest catalog manifest --source ./catalog-source --format markdown
+```
+
+Validation catches missing manifests, undefined section roles, undefined label
+families, duplicate ids, and invalid rows.
+
+## Build a bundle
+
+```bash
+uvx chartcoach@latest catalog build \
+  --source ./catalog-source \
+  --out ./dist/catalog
+```
+
+The bundle contains `metadata.json`, `MANIFEST.md`, and `entries.parquet`.
+Readers can use the bundle directory as `--source`.
+
+```bash
+uvx chartcoach@latest catalog overview --source ./dist/catalog
+uvx chartcoach@latest catalog query --source ./dist/catalog --contains "legend"
+uvx chartcoach@latest catalog read --source ./dist/catalog direct-labels
+```
+
+## Export tables
+
+Write a DuckDB file when another tool needs durable SQL tables:
+
+```bash
+uvx chartcoach@latest catalog export duckdb \
+  --source ./dist/catalog \
+  --out ./dist/catalog.duckdb
+```
+
+Use [Catalog contract](/catalog) for authored Markdown, manifest, and bundle
+shape, metadata, source locators, and artifact descriptors.

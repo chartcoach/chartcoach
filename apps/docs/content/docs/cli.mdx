@@ -1,0 +1,127 @@
+---
+title: CLI
+description: Query, read, cite, validate, build, index, and export chartcoach catalog instances from the terminal.
+---
+
+The `chartcoach` CLI reads the package-pinned Default Catalog when `--source`
+is omitted. The examples use `uvx` so the command can run without a separate
+tool install.
+
+Install `uv` from the [Astral installation guide](https://docs.astral.sh/uv/getting-started/installation/).
+Use `uvx chartcoach@latest --help` and `uvx chartcoach@latest catalog --help`
+to inspect the live command tree.
+
+Use [Querying](/querying) for task examples across CLI, Python, and TypeScript.
+
+## Command groups
+
+| Task | Commands |
+| --- | --- |
+| Inspect | `overview`, `labels`, `roles`, `schema`, `values` |
+| Discover | `list`, `query`, `sql`, `find` |
+| Evidence | `read`, `cite` |
+| Cache | `cache path`, `cache list`, `cache versions`, `cache pull`, `cache clear` |
+| Index | `index create` |
+| Build | `validate`, `build`, `export duckdb` |
+
+## Output formats
+
+Row-oriented commands support `table`, `json`, `jsonl`, and `csv` unless the
+command has a narrower contract. Search also supports `compact` and `markdown`.
+
+Inspect [queryable tables](/catalog#queryable-tables) before writing SQL
+against a new catalog.
+
+## Sources
+
+Pass `--source` or set `CHARTCOACH_SOURCE` when a command should read a custom
+catalog.
+
+```bash
+uvx chartcoach@latest catalog validate --source ./dist/catalog
+CHARTCOACH_SOURCE=./dist/catalog uvx chartcoach@latest catalog overview
+```
+
+Accepted sources include bundle directories, authored folders, standalone
+`entries.parquet` files, and release metadata URLs.
+
+The [Catalog contract](/catalog) defines the Default Catalog, locator forms,
+release metadata, and cache layout.
+
+## Command recovery
+
+<Callout title="uvx is missing">
+Install `uv`, then open a new shell so the `uvx` executable is on `PATH`.
+</Callout>
+
+<Callout title="find is missing">
+Indexed discovery needs the `index` extra:
+
+```bash
+uvx --from 'chartcoach[index]@latest' chartcoach catalog find \
+  --mode fts \
+  "overplotted scatter plots"
+```
+</Callout>
+
+<Callout title="unknown guideline id">
+List or query ids first, then pass the exact id to `read` or `cite`. Do not
+derive ids from titles.
+</Callout>
+
+## Artifact cache
+
+Cache commands inspect and manage chartcoach-owned release artifacts:
+
+```bash
+uvx chartcoach@latest catalog cache path
+uvx chartcoach@latest catalog cache versions --format jsonl
+uvx chartcoach@latest catalog cache list
+```
+
+Use `cache pull` to warm a release and `cache clear` to remove cached
+artifacts. Pass `--catalog-only` when a warm cache only needs `metadata.json`,
+`MANIFEST.md`, and `entries.parquet`.
+
+## Indexed discovery
+
+Indexed commands require the `index` extra. Use `--from` so `uvx` creates a
+run environment with that extra:
+
+```bash
+uvx --from 'chartcoach[index]@latest' chartcoach catalog find \
+  --mode fts \
+  --limit 3 \
+  --format compact \
+  "overplotted scatter plot with too many points"
+```
+
+When `--source` and `--index` are omitted, `find` resolves the package-pinned
+LanceDB index for the Default Catalog. The first indexed command downloads and
+extracts the index. Default indexed examples use `--mode fts`, so no embedding
+credential is needed.
+
+The MCP server has a separate configuration boundary. `catalog find` can resolve
+the default cached index, but `mcp serve` registers `search` only when the server
+is configured with `--index` or `CHARTCOACH_INDEX`. See [MCP](/mcp).
+
+Build a caller-owned local index for custom catalog sources:
+
+```bash
+uvx --from 'chartcoach[index]@latest' chartcoach catalog index create \
+  --index ./chartcoach-index
+```
+
+Use `CHARTCOACH_INDEX` or `--index` to point commands at a caller-owned index.
+Indexed search returns candidate ids, so read exact records before citing them.
+
+## Build and export
+
+Validate an authored folder, build a bundle, or export DuckDB tables:
+
+```bash
+uvx chartcoach@latest catalog validate --source ./catalog-source
+uvx chartcoach@latest catalog build --source ./catalog-source --out ./dist/catalog
+uvx chartcoach@latest catalog export duckdb \
+  --out ./chartcoach-catalog.duckdb
+```
