@@ -1,6 +1,6 @@
 {
   "name": "@chartcoach/catalog",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "JavaScript models and artifact parsers for the chartcoach visualization guideline catalog.",
   "private": true,
   "license": "MIT",
