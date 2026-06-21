@@ -1,17 +1,42 @@
-# ChartCoach
+# chartcoach
 
 Visualization design guidelines for agents and humans, with stable ids, public pages, and source references.
 
-ChartCoach packages visualization guidelines as records that can be browsed, queried, read, and cited. Agents use the same Guideline Catalog that humans browse, so chart feedback and recommendations can point to stable guideline ids, public pages, and source references for grounded reasoning.
+chartcoach packages visualization guidelines as records that can be browsed, queried, read, and cited. Agents use the same Guideline Catalog that humans browse, so chart feedback and recommendations can point to stable guideline ids, public pages, and source references for grounded reasoning.
 
 - Ask design questions with citations.
 - Review existing charts against observed evidence.
 - Recommend charts from a data task, audience, and constraints.
 - Query a Guideline Catalog from the CLI, Python, JavaScript, or SQL.
 
+## Default Catalog
+
+The default catalog is the package-pinned chartcoach Guideline Catalog release.
+When no source is passed to a CLI command or `Catalog.open()`, chartcoach reads
+release metadata under
+`https://artifacts.chartcoach.dev/catalog/releases/<version>/<digest>/metadata.json`.
+The JavaScript package exposes the package-pinned artifact URLs through
+`DEFAULT_CATALOG`. JavaScript callers fetch or read those artifacts and pass
+the bytes to `loadCatalog`.
+Python CLI and package downloads use the chartcoach platformdirs cache root.
+All chartcoach-owned default artifacts live below
+`artifacts/catalog/releases/<version>/<digest>/` inside that cache.
+
+The current release contains 781 guideline records and 262 source references.
+It follows the curation scheme described in
+[Structured Visualization Design Knowledge for Grounding Generative Reasoning and Situated Feedback](https://arxiv.org/abs/2512.20306),
+combining 100+ visualization perception and cognitive science papers,
+accessibility criteria, data journalism, rhetorical visualization research, and
+36 practitioner posts from Datawrapper's
+[Data Vis Do's & Don'ts](https://www.datawrapper.de/blog/category/datavis-dos-and-donts)
+series.
+
+Read the catalog contract at
+[docs.chartcoach.dev/catalog](https://docs.chartcoach.dev/catalog).
+
 ## Agent Quickstart
 
-Install the ChartCoach skill once, then ask a normal chart-design question.
+Install the chartcoach skill once, then ask a normal chart-design question.
 
 ```bash
 npx skills add chartcoach/skills --skill chartcoach
@@ -35,32 +60,33 @@ The Guideline Catalog is maintained as a shared resource. A failed search, missi
 
 ## Quickstart
 
-Install the CLI, then search for a familiar chart topic:
+Run the CLI with `uvx`, then search for a familiar chart topic:
 
 ```bash
-uv tool install chartcoach
-
-chartcoach catalog query --contains "pie chart" --limit 5 --format table
+uvx chartcoach@latest catalog query --contains "pie chart" --limit 5 --format table
 ```
 
 The table view is for reading results in a terminal. Each row has a stable guideline id.
+The `@latest` selector is for one-off access to the newest published package.
+Use `chartcoach@0.1.2` when output must stay tied to the `0.1.2` Default
+Catalog release.
 
 When you want to use a result, switch the same query to JSON and pass the first id into `read` and `cite`:
 
 ```bash
 GUIDELINE_ID="$(
-  chartcoach catalog query \
+  uvx chartcoach@latest catalog query \
     --contains "pie chart" \
     --limit 5 \
     --format json |
     jq -r '.[0].id'
 )"
 
-chartcoach catalog read "$GUIDELINE_ID" \
+uvx chartcoach@latest catalog read "$GUIDELINE_ID" \
   --source-detail minimal \
   --format markdown
 
-chartcoach catalog cite "$GUIDELINE_ID" \
+uvx chartcoach@latest catalog cite "$GUIDELINE_ID" \
   --format markdown
 ```
 
@@ -69,8 +95,8 @@ chartcoach catalog cite "$GUIDELINE_ID" \
 Agents can inspect the same skill text directly:
 
 ```bash
-chartcoach skills list
-chartcoach skills get discuss
+uvx chartcoach@latest skills list
+uvx chartcoach@latest skills get discuss
 ```
 
 ## Python
@@ -92,14 +118,25 @@ conn.close()
 
 ## JavaScript
 
-```ts
-import { readCatalog } from "@chartcoach/catalog/server";
+`@chartcoach/catalog` is currently a workspace package in this repository.
 
-const catalog = await readCatalog();
-const firstGuideline = catalog.guidelines[0];
+```ts
+import { DEFAULT_CATALOG, loadCatalog } from "@chartcoach/catalog"
+
+const entries = await fetch(DEFAULT_CATALOG.entriesUrl).then((response) =>
+  response.arrayBuffer(),
+)
+const manifestText = await fetch(DEFAULT_CATALOG.manifestUrl).then((response) =>
+  response.text(),
+)
+
+const catalog = await loadCatalog({ entries, manifestText })
+const guideline = catalog.require("compare-percentages-with-bars-not-pies")
 ```
 
-Browser code can load the same catalog through `@chartcoach/catalog/browser`.
+`loadCatalog` accepts caller-owned bytes. In runtimes with file APIs, read
+`entries.parquet` and `MANIFEST.md` locally, then pass those values to the same
+function.
 
 ## What Is In This Repo
 
@@ -107,14 +144,18 @@ Browser code can load the same catalog through `@chartcoach/catalog/browser`.
 | ----------------------------- | --------------------------------------------------------------------------- |
 | `apps/site`                   | Guideline Catalog browser and public guideline pages                        |
 | `apps/docs`                   | Technical docs for the catalog, APIs, CLI, and MCP                          |
+| `packages/brand`              | Shared web brand assets, font imports, CSS tokens, and asset checks         |
 | `packages/catalog-python`     | Python package, `chartcoach` CLI, agent skills, DuckDB, and optional search |
-| `packages/catalog-javascript` | JavaScript catalog loaders and wire types                                   |
+| `packages/catalog-javascript` | JavaScript catalog models, artifact parsers, and wire types                 |
 
 ## Learn More
 
-- Browse guideline pages at `https://chartcoach.github.io/guidelines/`.
-- Read technical docs in [`apps/docs`](apps/docs).
+- Browse guideline pages at `https://chartcoach.dev/guidelines/`.
+- Read technical docs at `https://docs.chartcoach.dev/`.
+- Read the catalog contract at `https://docs.chartcoach.dev/catalog`.
+- Inspect docs source in [`apps/docs`](apps/docs).
 - Read Python package details in [`packages/catalog-python`](packages/catalog-python).
+- Read JavaScript package details in [`packages/catalog-javascript`](packages/catalog-javascript).
 - Inspect the public site source in [`apps/site`](apps/site).
 
 ## Develop
@@ -124,7 +165,7 @@ Install the repository toolchains:
 ```bash
 corepack enable pnpm
 pnpm install
-uv sync --package chartcoach --all-groups
+uv sync --package chartcoach --all-groups --all-extras
 ```
 
 Run the site and docs locally:
