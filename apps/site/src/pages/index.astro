@@ -3,100 +3,35 @@ import { InstallCopy } from "@/components/install-copy";
 import { GuidelineStory } from "@/components/guideline-story";
 import SvgIcon from "@/components/SvgIcon.astro";
 import SiteLayout from "@/layouts/SiteLayout.astro";
-import { ArrowRight, ChevronRight } from "@lucide/astro";
-import { getCollection } from "astro:content";
+import { ArrowRight, Mail } from "@lucide/astro";
 
-const whyFacts = [
+const loopSteps = [
   {
-    title: "Readable by people",
-    body: "Guidelines are written in natural language with structured metadata.",
+    label: "Human",
+    title: "Chart request",
+    body: "A person asks an agent to review, recommend, evaluate, or explain a chart decision.",
   },
   {
-    title: "Retrievable by agents",
-    body: "Task-specific skills pull the relevant guidance into context.",
+    label: "Agent",
+    title: "Guideline retrieval",
+    body: "The agent searches labels, section roles, references, and semantic matches in the Guideline Catalog.",
   },
   {
-    title: "Traceable to sources",
-    body: "Outputs can point back to guideline records and references.",
-  },
-];
-
-const useCases = [
-  {
-    title: "Review",
-    body: "Review a chart against guideline-backed evidence and suggest concrete fixes.",
+    label: "Answer",
+    title: "Grounded response",
+    body: "The answer cites the records behind the feedback and shows which guidance applies.",
   },
   {
-    title: "Recommend",
-    body: "Choose chart types or encodings from a task, audience, data shape, and constraints.",
+    label: "Public",
+    title: "Public contribution",
+    body: "When guidance is missing, weak, or contested, the agent can draft a GitHub issue for the public catalog repository so the community can review the proposed record.",
   },
-  {
-    title: "Discuss",
-    body: "Discuss visualization design choices before the chart exists.",
-  },
-  {
-    title: "Evaluate",
-    body: "Score or compare charts against explicit criteria, such as readability, accessibility, or mobile use.",
-  },
-  {
-    title: "Contribute",
-    body: "Draft a missing guideline from the current chart context for catalog review.",
-  },
-];
-
-const groundingSteps = [
-  {
-    title: "Guideline records",
-    body: "Readable guidance with labels, sections, and references.",
-  },
-  {
-    title: "Task-specific retrieval",
-    body: "The agent reads the guidance relevant to the chart task.",
-  },
-  {
-    title: "Grounded output",
-    body: "The response keeps a source trail for critique, recommendation, generation, or evaluation.",
-  },
-  {
-    title: "Human inspection",
-    body: "People can open the cited records and judge the reasoning.",
-  },
-];
-
-const improvementItems = [
-  {
-    title: "Manual authoring",
-    body: "Humans can write and revise guidelines directly.",
-  },
-  {
-    title: "Agent-assisted drafts",
-    body: "Agents can turn a missing topic or failed search into a reviewable improvement.",
-  },
-  {
-    title: "Community review",
-    body: "Improvements can flow back into the shared knowledge base.",
-  },
-];
-
-const statusItems = [
-  {
-    title: "Experimental release",
-    body: "ChartCoach is public so people can inspect the catalog, skills, and package behavior while the research system is still changing.",
-  },
-  {
-    title: "Active development",
-    body: "Updated June 18, 2026. The catalog, site, docs, and agent workflows are being revised as we test them with real chart tasks.",
-  },
-  {
-    title: "Not a stable product",
-    body: "Do not rely on ChartCoach as a stable product dependency yet. If you use it, get in touch so we can track use cases and failure modes.",
-  },
-];
+] as const;
 
 const institutions = [
   {
     icon: "eth-zurich",
-    label: "ETH Zurich",
+    label: "ETH Zürich",
     href: "https://ethz.ch/en.html",
   },
   {
@@ -115,213 +50,125 @@ const institutions = [
     href: "https://mbzuai.ac.ae/",
   },
 ] as const;
-
-const guidelineCount = (await getCollection("guidelines")).length;
 ---
 
 <SiteLayout
-  title="ChartCoach"
-  description="ChartCoach gives agents access to readable visualization guidance for critique, recommendation, generation, and evaluation with citations to guideline records and sources."
+  title="chartcoach"
+  description="chartcoach turns visualization design knowledge into source-traced records that chart agents can retrieve, cite, apply, and improve."
 >
-  <section class="relative flex items-start overflow-visible px-6 pb-[clamp(4.5rem,9vh,6.5rem)] pt-12 sm:pt-[clamp(4rem,11vh,7rem)]">
+  <section class="home-hero relative z-20 flex items-start overflow-visible px-6 pb-[clamp(4.5rem,9vh,6.5rem)] pt-12 sm:pt-[clamp(4rem,11vh,7rem)] lg:min-h-[calc(100svh-3.5rem)] lg:items-center lg:pb-[clamp(1.5rem,3.2vh,3rem)] lg:pt-[clamp(1.5rem,3.2vh,3rem)]">
     <div class="grid-glow" aria-hidden="true"></div>
     <div class="relative z-10 mx-auto flex w-full max-w-[72rem] flex-col items-center text-center">
-      <p class="mb-6 mt-0 inline-flex items-center rounded-full border border-border bg-surface/70 px-3.5 py-1 font-mono text-[0.6875rem] font-medium uppercase tracking-[0.16em] text-muted backdrop-blur sm:mb-7">
-        EXPERIMENTAL
+      <p class="home-hero-kicker mb-6 mt-0 inline-flex items-center rounded-full border border-border bg-surface/70 px-3.5 py-1 font-mono text-[0.6875rem] font-medium uppercase tracking-[0.16em] text-muted backdrop-blur sm:mb-7 lg:mb-5 xl:mb-6">
+        Experimental
       </p>
-      <h1 class="m-0 max-w-[54rem] text-balance text-[2.35rem] font-semibold leading-[1.02] tracking-normal text-fg sm:text-[3.75rem] lg:text-[4.5rem] xl:max-w-[66rem] xl:text-[5rem] 2xl:text-[5.5rem]">
-        Visualization guidance for humans and agents
+      <h1 class="home-hero-title m-0 max-w-[58rem] text-balance text-[2.35rem] font-semibold leading-[1.02] tracking-normal text-fg sm:text-[3.75rem] lg:text-[4.25rem] xl:max-w-[66rem] xl:text-[4.8rem] 2xl:text-[5.05rem]">
+        Visualization knowledge layer by humans for agents
       </h1>
-      <p class="mt-5 max-w-[49rem] text-pretty text-[1rem] leading-[1.6] text-muted sm:mt-6 sm:text-[1.25rem] sm:leading-[1.65] xl:max-w-[56rem] xl:text-[1.375rem]">
-        A readable knowledge format for grounded visualization agents. ChartCoach supports chart critique, design recommendation,
-        and generation with citations to the records and sources behind each decision.
+      <p class="home-hero-copy mt-5 max-w-[50rem] text-pretty text-[1rem] leading-[1.6] text-muted sm:mt-6 sm:text-[1.25rem] sm:leading-[1.65] lg:mt-5 lg:text-[1.125rem] lg:leading-[1.55] xl:max-w-[54rem] xl:text-[1.1875rem]">
+        chartcoach turns visualization design knowledge into source-traced records that agents can
+        retrieve, cite, apply, and improve. Use it to review charts, recommend encodings, evaluate
+        trade-offs, and explain where guidance comes from.
       </p>
       <InstallCopy client:load />
-    </div>
-  </section>
-
-  <GuidelineStory guidelineCount={guidelineCount} client:load />
-
-  <section class="relative z-10 border-t border-border px-6 py-[clamp(5.5rem,12vh,8rem)]">
-    <div class="mx-auto grid w-full max-w-[72rem] gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,0.72fr)] lg:items-start">
-      <div>
-        <p class="m-0 font-mono text-[0.75rem] font-semibold uppercase tracking-[0.16em] text-muted">Context</p>
-        <h2 class="m-0 mt-5 max-w-[43rem] text-[2.5rem] font-semibold leading-[1.02] tracking-normal text-fg sm:text-[3.25rem] lg:text-[4.25rem] xl:text-[4.75rem]">
-          Why ChartCoach exists
-        </h2>
-        <div class="mt-7 max-w-[48rem] space-y-5 text-pretty text-[1.0625rem] leading-[1.65] text-muted xl:text-[1.1875rem]">
-          <p class="m-0">
-            Visualization design knowledge is scattered across papers, examples, systems, and expert practice. Agents can produce fluent
-            chart advice while missing the context, exceptions, and evidence behind a recommendation.
-          </p>
-          <p class="m-0">
-            ChartCoach was created to make visualization guidance readable for people and retrievable for agents at the moment they reason
-            about a chart.
-          </p>
-          <p class="m-0">
-            It follows earlier constraint-based work such as{" "}
-            <a href="https://uwdata.github.io/draco/" target="_blank" rel="noreferrer" class="text-fg underline decoration-border underline-offset-4 transition-colors hover:decoration-fg">Draco</a><span> and </span><a href="https://github.com/cmudig/draco2" target="_blank" rel="noreferrer" class="text-fg underline decoration-border underline-offset-4 transition-colors hover:decoration-fg">Draco 2</a><span>, which made visualization design knowledge executable. ChartCoach represents the same kind of design knowledge as readable guideline records that agents can retrieve, cite, and improve with human review.</span>
-          </p>
-          <p class="m-0">
-            The goal is grounded visualization design reasoning: feedback, recommendations, and evaluations that can be inspected after the
-            answer is generated. ChartCoach also advances visualization design knowledge by representing it as a shared resource for
-            researchers, builders, and catalog maintainers to inspect, reuse, and improve.
-          </p>
-        </div>
-      </div>
-      <div class="grid overflow-hidden rounded-2xl border border-border bg-border text-left">
-        {
-          whyFacts.map((fact) => (
-            <article class="bg-bg p-6 transition-colors duration-200 hover:bg-surface-muted sm:p-7">
-              <h3 class="m-0 text-[1rem] font-semibold leading-snug tracking-normal text-fg xl:text-[1.125rem]">{fact.title}</h3>
-              <p class="m-0 mt-3 text-[0.9375rem] leading-[1.6] text-muted xl:text-[1rem]">{fact.body}</p>
-            </article>
-          ))
-        }
-      </div>
-    </div>
-  </section>
-
-  <section class="relative z-10 border-t border-border px-6 py-[clamp(5.5rem,12vh,8rem)]">
-    <div class="mx-auto w-full max-w-[72rem]">
-      <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <p class="m-0 font-mono text-[0.75rem] font-semibold uppercase tracking-[0.16em] text-muted">Use cases</p>
-          <h2 class="m-0 mt-5 max-w-[43rem] text-[2.5rem] font-semibold leading-[1.02] tracking-normal text-fg sm:text-[3.25rem] lg:text-[4.25rem] xl:text-[4.75rem]">
-            What agents can do with it
-          </h2>
-        </div>
-        <p class="m-0 max-w-[34rem] text-pretty text-[1.0625rem] leading-[1.65] text-muted xl:text-[1.1875rem]">
-          Give an agent ChartCoach context when the task needs visualization judgment that can be inspected afterward.
+      <div class="home-loop mt-16 w-full max-w-[72rem] text-left sm:mt-[4.5rem] lg:mt-16 xl:mt-20">
+        <p class="m-0 mb-4 font-mono text-[0.75rem] font-semibold uppercase tracking-[0.16em] text-muted">
+          Agent workflow
         </p>
-      </div>
-      <div
-        class="mt-12 grid overflow-hidden rounded-2xl border border-border bg-border text-left sm:grid-cols-2 lg:grid-cols-4"
-        aria-label="ChartCoach agent use cases"
-      >
-        {
-          useCases.map((useCase) => (
-            <article class="min-h-[13rem] bg-bg p-6 transition-colors duration-200 hover:bg-surface-muted sm:p-7 xl:min-h-[14rem] xl:p-8">
-              <h3 class="m-0 text-[1.125rem] font-semibold leading-snug tracking-normal text-fg xl:text-[1.25rem]">
-                {useCase.title}
-              </h3>
-              <p class="m-0 mt-4 text-[0.9375rem] leading-[1.65] text-muted xl:text-[1rem]">{useCase.body}</p>
-            </article>
-          ))
-        }
-      </div>
-    </div>
-  </section>
-
-  <section class="relative z-10 border-t border-border px-6 py-[clamp(5.5rem,12vh,8rem)]">
-    <div class="mx-auto w-full max-w-[72rem]">
-      <p class="m-0 font-mono text-[0.75rem] font-semibold uppercase tracking-[0.16em] text-muted">Mechanism</p>
-      <h2 class="m-0 mt-5 max-w-[42rem] text-[2.5rem] font-semibold leading-[1.02] tracking-normal text-fg sm:text-[3.25rem] lg:text-[4.25rem] xl:text-[4.75rem]">
-        How grounding works
-      </h2>
-      <p class="mt-7 max-w-[49rem] text-pretty text-[1.0625rem] leading-[1.65] text-muted xl:text-[1.1875rem]">
-        ChartCoach keeps advice, context, exceptions, checks, fixes, labels, and source references in separate parts of a guideline. Agents
-        can retrieve the parts relevant to a task, then cite the records and sources that shaped the answer.
-      </p>
-      <ol
-        class="mt-12 grid list-none gap-px overflow-hidden rounded-2xl border border-border bg-border p-0 text-left lg:grid-cols-4"
-        aria-label="Grounding flow"
-      >
-        {
-          groundingSteps.map((step, index) => (
-            <li class="relative bg-bg p-6 transition-colors duration-200 hover:bg-surface-muted sm:p-7 xl:min-h-[13rem] xl:p-8">
-              <span class="font-mono text-[0.6875rem] font-semibold uppercase tracking-[0.16em] text-muted">
-                {String(index + 1).padStart(2, "0")}
-              </span>
-              <h3 class="m-0 mt-8 text-[1.0625rem] font-semibold leading-snug tracking-normal text-fg xl:text-[1.1875rem]">
-                {step.title}
-              </h3>
-              <p class="m-0 mt-3 text-[0.9375rem] leading-[1.65] text-muted xl:text-[1rem]">{step.body}</p>
-              {
-                index < groundingSteps.length - 1 && (
+        <div class="grid grid-cols-1 gap-px overflow-hidden rounded-2xl border border-border bg-border sm:grid-cols-2 lg:grid-cols-4">
+          {
+            loopSteps.map((step, index) => (
+              <article class="home-loop-card group relative flex min-h-[16rem] flex-col bg-bg p-6 transition-colors duration-200 hover:bg-surface-muted sm:p-7 lg:min-h-[13.75rem] lg:p-5 xl:min-h-[14.25rem] xl:p-6">
+                <div class="home-loop-card-header mb-7 flex items-center gap-2.5 lg:mb-5">
+                  <span class="home-loop-card-index flex h-7 w-7 items-center justify-center rounded-md border border-border font-mono text-[0.75rem] tabular-nums text-muted transition-colors group-hover:border-fg/40 group-hover:text-fg">
+                    {index + 1}
+                  </span>
+                  <span class="home-loop-card-label font-mono text-[0.6875rem] font-semibold uppercase tracking-[0.16em] text-muted lg:text-[0.625rem]">
+                    {step.label}
+                  </span>
+                </div>
+                <h3 class="home-loop-card-title m-0 text-[1.25rem] font-semibold leading-snug tracking-normal text-fg lg:text-[1.125rem] xl:text-[1.1875rem]">
+                  {step.title}
+                </h3>
+                <p class="home-loop-card-copy m-0 mt-3 text-[0.9375rem] leading-[1.65] text-muted lg:mt-2.5 lg:text-[0.875rem] lg:leading-[1.5] xl:text-[0.9375rem]">
+                  {step.body}
+                </p>
+                {index < loopSteps.length - 1 && (
                   <span
                     aria-hidden="true"
-                    class="pointer-events-none absolute right-0 top-1/2 z-10 hidden h-6 w-6 -translate-y-1/2 translate-x-[calc(50%+1px)] items-center justify-center rounded-full border border-border bg-bg text-muted lg:flex"
+                    class="pointer-events-none absolute right-0 top-1/2 z-10 hidden -translate-y-1/2 translate-x-[calc(50%+1px)] lg:flex"
                   >
-                    <ChevronRight class="h-3 w-3" stroke-width={1.5} />
+                    <span class="flex h-7 w-7 items-center justify-center rounded-full border border-border bg-bg text-muted">
+                      <ArrowRight class="h-3.5 w-3.5" stroke-width={1.5} />
+                    </span>
                   </span>
-                )
-              }
-            </li>
-          ))
-        }
-      </ol>
+                )}
+              </article>
+            ))
+          }
+        </div>
+      </div>
     </div>
   </section>
 
-  <section class="relative z-10 border-t border-border px-6 py-[clamp(5.5rem,12vh,8rem)]">
-    <div class="mx-auto grid w-full max-w-[72rem] gap-12 lg:grid-cols-[minmax(0,0.95fr)_minmax(20rem,1fr)] lg:items-start">
-      <div>
-        <p class="m-0 font-mono text-[0.75rem] font-semibold uppercase tracking-[0.16em] text-muted">Contribution</p>
-        <h2 class="m-0 mt-5 max-w-[38rem] text-[2.5rem] font-semibold leading-[1.02] tracking-normal text-fg sm:text-[3.25rem] lg:text-[4.25rem] xl:text-[4.75rem]">
-          Knowledge that can improve
-        </h2>
-        <div class="mt-7 max-w-[43rem] space-y-5 text-pretty text-[1.0625rem] leading-[1.65] text-muted xl:text-[1.1875rem]">
-          <p class="m-0">
-            When guidance is missing, weak, or hard to apply, ChartCoach can help turn the working context into a draft improvement. A
-            human can review the draft, edit it, and send it to the catalog contribution surface.
-          </p>
-          <p class="m-0">
-            The knowledge base can grow through manual authoring, agent-assisted drafts, and community review.
-          </p>
-        </div>
-      </div>
-      <div class="grid gap-px overflow-hidden rounded-2xl border border-border bg-border text-left sm:grid-cols-3 lg:grid-cols-1">
-        {
-          improvementItems.map((item) => (
-            <article class="bg-bg p-6 transition-colors duration-200 hover:bg-surface-muted sm:p-7">
-              <h3 class="m-0 text-[1rem] font-semibold leading-snug tracking-normal text-fg xl:text-[1.125rem]">{item.title}</h3>
-              <p class="m-0 mt-3 text-[0.9375rem] leading-[1.6] text-muted xl:text-[1rem]">{item.body}</p>
-            </article>
-          ))
-        }
-      </div>
-    </div>
-  </section>
+  <GuidelineStory client:load />
 
   <section class="relative z-10 border-t border-border px-6 py-[clamp(5.5rem,12vh,8rem)]">
     <div class="mx-auto w-full max-w-[72rem]">
-      <div class="grid gap-10 lg:grid-cols-[minmax(0,0.82fr)_minmax(26rem,1fr)] lg:items-end">
+      <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
         <div>
-          <p class="m-0 font-mono text-[0.75rem] font-semibold uppercase tracking-[0.16em] text-muted">Research</p>
-          <h2 class="m-0 mt-5 max-w-[38rem] text-[2.5rem] font-semibold leading-[1.02] tracking-normal text-fg sm:text-[3.25rem] lg:text-[4.25rem] xl:text-[4.75rem]">
+          <p class="m-0 font-mono text-[0.75rem] font-semibold uppercase tracking-[0.16em] text-muted">
+            Research
+          </p>
+          <h2 class="m-0 mt-5 max-w-[42rem] text-[2.5rem] font-semibold leading-[1.02] tracking-normal text-fg sm:text-[3.25rem] lg:text-[3.9rem] xl:max-w-[56rem] xl:text-[4.35rem]">
             Backed by research
           </h2>
+          <div class="mt-7 max-w-[44rem] space-y-5 text-pretty text-[1.0625rem] leading-[1.65] text-muted xl:max-w-[61rem] xl:text-[1.1875rem]">
+            <p class="m-0">
+              chartcoach is developed by researchers from ETH Zürich, Carnegie Mellon University,
+              the University of Vienna, and MBZUAI. It builds on work in visualization
+              recommendation, chart linting, rule-based systems like{" "}
+              <a
+                href="https://github.com/cmudig/draco2"
+                target="_blank"
+                rel="noreferrer"
+                class="font-medium text-fg underline decoration-border decoration-1 underline-offset-[0.18em] transition-colors hover:decoration-fg"
+              >{"Draco"}</a><span>, accessibility guidance, data journalism, and </span>
+              <a
+                href="https://talking-charts.vda.univie.ac.at/talkingcharts.html"
+                target="_blank"
+                rel="noreferrer"
+                class="font-medium text-fg underline decoration-border decoration-1 underline-offset-[0.18em] transition-colors hover:decoration-fg"
+              >{"situated visualization feedback"}</a><span>.</span>
+            </p>
+            <p class="m-0">
+              The project packages that knowledge as records agents can use and people can
+              author and inspect.
+            </p>
+          </div>
         </div>
-        <div>
-          <p class="m-0 max-w-[43rem] text-pretty text-[1.0625rem] leading-[1.65] text-muted xl:text-[1.1875rem]">
-            ChartCoach builds on research into structured visualization design knowledge, grounded generative reasoning, and situated chart
-            feedback.
-          </p>
+        <div class="flex lg:justify-end">
           <a
             href="https://arxiv.org/abs/2512.20306"
             target="_blank"
             rel="noreferrer"
-            class="mt-5 inline-flex h-10 items-center gap-2 rounded-md border border-border bg-bg px-3.5 text-sm font-medium text-fg no-underline transition-colors hover:bg-surface-muted xl:text-[0.9375rem]"
+            class="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-border bg-bg px-4 text-sm font-medium text-fg no-underline transition-colors hover:bg-surface-muted xl:text-[0.9375rem]"
           >
             Read the paper
             <ArrowRight class="h-3.5 w-3.5" stroke-width={1.5} aria-hidden="true" />
           </a>
         </div>
       </div>
-      <p class="m-0 mt-12 font-mono text-[0.75rem] font-semibold uppercase tracking-[0.16em] text-muted">
-        Connected to research at
-      </p>
-      <ul class="m-0 mt-7 grid list-none gap-7 p-0 sm:grid-cols-2 lg:grid-cols-4" aria-label="Research institutions">
+      <ul class="m-0 mt-12 grid list-none grid-cols-2 gap-px overflow-hidden rounded-2xl border border-border bg-border p-0 lg:grid-cols-4" aria-label="Research institutions">
         {
           institutions.map((institution) => (
-            <li>
+            <li class="bg-bg">
               <a
                 href={institution.href}
                 target="_blank"
                 rel="noreferrer"
                 aria-label={institution.label}
-                class="research-logo-link flex h-20 items-center justify-center px-3 no-underline"
+                class="research-logo-link flex h-24 items-center justify-center bg-bg px-4 no-underline transition-colors hover:bg-surface-muted sm:h-28"
               >
                 <span
                   class:list={[
@@ -341,64 +188,40 @@ const guidelineCount = (await getCollection("guidelines")).length;
     </div>
   </section>
 
-  <section class="relative z-10 border-t border-border px-6 py-[clamp(4.5rem,10vh,7rem)]">
-    <div class="mx-auto grid w-full max-w-[72rem] gap-10 lg:grid-cols-[minmax(0,0.74fr)_minmax(28rem,1fr)] lg:items-start">
-      <div>
-        <p class="m-0 font-mono text-[0.75rem] font-semibold uppercase tracking-[0.16em] text-muted">Status</p>
-        <h2 class="m-0 mt-5 max-w-[36rem] text-[2.25rem] font-semibold leading-[1.04] tracking-normal text-fg sm:text-[3rem] lg:text-[3.75rem]">
-          Experimental and actively developed
-        </h2>
-        <p class="m-0 mt-6 max-w-[34rem] text-pretty text-[1.0625rem] leading-[1.65] text-muted xl:text-[1.1875rem]">
-          If you use ChartCoach in a project, classroom, paper workflow, or agent evaluation, email{" "}
-          <a href="mailto:pgyarmati@ethz.ch" class="text-fg underline decoration-border underline-offset-4 transition-colors hover:decoration-fg">pgyarmati@ethz.ch</a>.
-        </p>
-      </div>
-      <div class="grid gap-px overflow-hidden rounded-2xl border border-border bg-border text-left sm:grid-cols-3 lg:grid-cols-1">
-        {
-          statusItems.map((item) => (
-            <article class="bg-bg p-6 transition-colors duration-200 hover:bg-surface-muted sm:p-7">
-              <h3 class="m-0 text-[1rem] font-semibold leading-snug tracking-normal text-fg xl:text-[1.125rem]">{item.title}</h3>
-              <p class="m-0 mt-3 text-[0.9375rem] leading-[1.6] text-muted xl:text-[1rem]">{item.body}</p>
-            </article>
-          ))
-        }
-      </div>
-    </div>
-  </section>
-
   <section class="relative z-10 border-t border-border">
     <div class="mx-auto flex w-[min(100%-3rem,var(--container-content))] flex-col items-center px-6 py-[clamp(6rem,14vh,9rem)] text-center">
-      <h2 class="m-0 max-w-[46rem] text-[2rem] font-semibold leading-[1.02] tracking-normal text-fg sm:text-[2.75rem] lg:text-[3.5rem] xl:text-[4rem]">
-        Start with an agent or inspect the guidelines
+      <p class="m-0 mb-5 font-mono text-[0.75rem] font-semibold uppercase tracking-[0.16em] text-muted">
+        Experimental
+      </p>
+      <h2 class="m-0 max-w-[42rem] text-[2rem] font-semibold leading-[1.02] tracking-normal text-fg sm:text-[2.75rem] lg:text-[3.5rem] xl:text-[4rem]">
+        Actively developed
       </h2>
-      <p class="mx-auto mt-6 max-w-[42rem] text-pretty text-[1.0625rem] leading-[1.6] text-muted xl:text-[1.1875rem]">
-        Install the skill for agent workflows, read the docs, browse the guideline pages, and get in touch if you use ChartCoach while it is experimental.
+      <p class="mx-auto mt-6 max-w-[43rem] text-pretty text-[1.0625rem] leading-[1.6] text-muted xl:text-[1.1875rem]">
+        chartcoach is an active research prototype for chart agents, critique tools, evaluation
+        workflows, and visualization design systems. Browse the catalog, open a GitHub issue for
+        missing guidance, or get in touch about use cases and collaborations.
       </p>
       <div class="mt-9 flex flex-wrap items-center justify-center gap-3">
         <a
-          href="/guidelines/"
-          class="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-fg bg-fg px-4 text-sm font-medium text-bg no-underline transition-colors hover:bg-fg/90 xl:text-[0.9375rem]"
+          href="https://docs.chartcoach.dev/getting-started"
+          class="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-accent bg-accent px-4 text-sm font-medium text-white no-underline transition-colors hover:bg-accent/90 xl:text-[0.9375rem]"
         >
-          Open guidelines
+          Try chartcoach
           <ArrowRight class="h-3.5 w-3.5" stroke-width={1.5} aria-hidden="true" />
         </a>
         <a
-          href="https://docs.chartcoach.dev/"
-          class="inline-flex h-11 items-center justify-center rounded-lg border border-border bg-bg px-4 text-sm font-medium text-fg no-underline transition-colors hover:bg-surface-muted xl:text-[0.9375rem]"
+          href="/guidelines/"
+          class="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-border bg-bg px-4 text-sm font-medium text-fg no-underline transition-colors hover:bg-surface-muted xl:text-[0.9375rem]"
         >
-          Open docs
+          Browse the catalog
+          <ArrowRight class="h-3.5 w-3.5" stroke-width={1.5} aria-hidden="true" />
         </a>
         <a
           href="mailto:pgyarmati@ethz.ch"
-          class="inline-flex h-11 items-center justify-center rounded-lg border border-border bg-bg px-4 text-sm font-medium text-fg no-underline transition-colors hover:bg-surface-muted xl:text-[0.9375rem]"
+          class="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-border bg-bg px-4 text-sm font-medium text-fg no-underline transition-colors hover:bg-surface-muted xl:text-[0.9375rem]"
         >
           Get in touch
-        </a>
-        <a
-          href="https://github.com/chartcoach/catalog"
-          class="inline-flex h-11 items-center justify-center rounded-lg border border-border bg-bg px-4 text-sm font-medium text-fg no-underline transition-colors hover:bg-surface-muted xl:text-[0.9375rem]"
-        >
-          View catalog repo
+          <Mail class="h-3.5 w-3.5" stroke-width={1.5} aria-hidden="true" />
         </a>
       </div>
     </div>

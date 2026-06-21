@@ -3,6 +3,23 @@ import { z } from "astro/zod";
 
 import { guidelinesLoader } from "@/loaders/guidelines-loader";
 
+const guidelineSectionSchema = z.object({
+  role: z.string(),
+  title: z.string(),
+  content: z.string(),
+});
+
+const guidelineRecordSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  bibliography: z.string().optional(),
+  description: z.string(),
+  labels: z.array(z.string()).default([]),
+  body: z.string(),
+  sections: z.array(guidelineSectionSchema).default([]),
+  references: z.array(z.string()).default([]),
+});
+
 export const collections = {
   guidelines: defineCollection({
     loader: guidelinesLoader(),
@@ -12,23 +29,9 @@ export const collections = {
       description: z.string().optional(),
       labels: z.array(z.string()).default([]),
       markdown: z.string(),
-      search: z.object({
-        id: z.string(),
-        title: z.string(),
+      record: guidelineRecordSchema,
+      search: guidelineRecordSchema.extend({
         description: z.string().optional(),
-        labels: z.array(z.string()).default([]),
-        body: z.string(),
-        sections: z
-          .array(
-            z.object({
-              role: z.string(),
-              title: z.string(),
-              content: z.string(),
-            }),
-          )
-          .default([]),
-        bibliography: z.string().optional(),
-        references: z.array(z.string()).default([]),
       }),
       sections: z
         .array(

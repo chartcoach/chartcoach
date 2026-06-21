@@ -42,16 +42,13 @@ function subscribeTheme(onStoreChange: () => void) {
 
 export function ThemeToggle() {
   const theme = useSyncExternalStore(subscribeTheme, getThemeSnapshot, getServerThemeSnapshot);
+  const visibleTheme = theme ?? "light";
 
   useEffect(() => {
     if (theme) applyTheme(theme);
   }, [theme]);
 
-  if (!theme) {
-    return <div className="h-8 w-8" aria-hidden="true" />;
-  }
-
-  const isDark = theme === "dark";
+  const isDark = visibleTheme === "dark";
 
   return (
     <button

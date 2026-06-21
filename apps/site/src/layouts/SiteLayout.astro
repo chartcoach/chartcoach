@@ -1,4 +1,6 @@
 ---
+import { brandAssets } from "@chartcoach/brand";
+import "@chartcoach/brand/fonts.css";
 import "@/styles/site.css";
 import SiteShell from "@/components/SiteShell.astro";
 
@@ -7,9 +9,11 @@ interface Props {
   description?: string;
 }
 
-const title = Astro.props.title ?? "ChartCoach";
-const description = Astro.props.description ?? "ChartCoach guideline catalog.";
-const pageTitle = title === "ChartCoach" ? "ChartCoach" : `${title} | ChartCoach`;
+const title = Astro.props.title ?? "chartcoach";
+const description =
+  Astro.props.description ??
+  "chartcoach turns visualization design knowledge into source-traced records for chart agents.";
+const pageTitle = title === "chartcoach" ? "chartcoach" : `${title} | chartcoach`;
 const canonical = Astro.site
   ? new URL(Astro.url.pathname, Astro.site).toString()
   : undefined;
@@ -22,6 +26,8 @@ const canonical = Astro.site
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{pageTitle}</title>
     <meta name="description" content={description} />
+    <link rel="icon" type="image/svg+xml" href={brandAssets.favicon} />
+    <link rel="apple-touch-icon" href={brandAssets.appleTouchIcon} />
     {canonical && <link rel="canonical" href={canonical} />}
     <script is:inline>
       (() => {
@@ -30,7 +36,14 @@ const canonical = Astro.site
         const stored = localStorage.getItem(storageKey);
         const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
         const isDark = stored ? stored === "dark" : prefersDark;
+        const platform =
+          navigator.userAgentData?.platform ??
+          String(Reflect.get(navigator, "platform") ?? "");
+        const isApple =
+          /mac|iphone|ipad|ipod/i.test(platform) ||
+          (platform === "MacIntel" && navigator.maxTouchPoints > 1);
         root.classList.toggle("dark", isDark);
+        root.classList.toggle("os-apple", isApple);
         root.style.colorScheme = isDark ? "dark" : "light";
       })();
     </script>
