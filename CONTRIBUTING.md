@@ -1,6 +1,6 @@
 # Contributing
 
-ChartCoach is a research monorepo for a visualization guideline catalog, the
+chartcoach is a research monorepo for a visualization guideline catalog, the
 public site, shared UI, and catalog loaders.
 
 ## Checklist
