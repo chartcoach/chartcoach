@@ -19,7 +19,7 @@ export type CatalogManifest = {
 const headingPattern = /^(#{1,6})[ \t]+(.+?)[ \t]*#*[ \t]*$/;
 const codeSpanPattern = /`([^`\n]+)`/g;
 
-export function parseManifest(markdown: string): CatalogManifest {
+export function parseCatalogManifest(markdown: string): CatalogManifest {
   const requiredSeen = new Set<string>();
   const definitions: {
     "Section Roles": Record<string, ManifestDefinition>;

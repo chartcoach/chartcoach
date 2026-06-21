@@ -1,7 +1,9 @@
 import { parquetReadObjects } from "hyparquet";
 import { compressors } from "hyparquet-compressors";
-import { Catalog, type CatalogOptions, type Guideline } from "./model";
+import { Catalog, type Guideline } from "./model";
+import { CatalogError } from "./errors";
 import type { CatalogManifest } from "./manifest";
+import { parseCatalogManifest } from "./manifest";
 import { requireGuidelineFromWire } from "./wire";
 
 export type AsyncBuffer = {
@@ -10,8 +12,11 @@ export type AsyncBuffer = {
 };
 
 export type ParquetBytes = ArrayBuffer | ArrayBufferView;
-export type CatalogLoadOptions = CatalogOptions & {
+export type CatalogBytes = ParquetBytes | AsyncBuffer;
+export type LoadCatalogInput = CatalogBytes | {
+  entries: CatalogBytes;
   manifest?: CatalogManifest;
+  manifestText?: string;
 };
 
 function normalizeParquetBytes(bytes: ParquetBytes): ArrayBuffer {
@@ -24,13 +29,13 @@ function normalizeParquetBytes(bytes: ParquetBytes): ArrayBuffer {
 }
 
 export async function loadCatalog(
-  file: AsyncBuffer | ParquetBytes,
-  options: CatalogLoadOptions = {},
+  input: LoadCatalogInput,
 ): Promise<Catalog> {
+  const { entries, manifest } = resolveLoadCatalogInput(input);
   const normalizedFile =
-    file instanceof ArrayBuffer || ArrayBuffer.isView(file)
-      ? normalizeParquetBytes(file as ParquetBytes)
-      : file;
+    entries instanceof ArrayBuffer || ArrayBuffer.isView(entries)
+      ? normalizeParquetBytes(entries as ParquetBytes)
+      : entries;
 
   const rows = (await parquetReadObjects({
     file: normalizedFile,
@@ -41,5 +46,36 @@ export async function loadCatalog(
     requireGuidelineFromWire(row, `parquet row ${index}`),
   );
 
-  return new Catalog(guidelines, options);
+  return new Catalog(guidelines, { manifest });
+}
+
+function resolveLoadCatalogInput(input: LoadCatalogInput): {
+  entries: CatalogBytes;
+  manifest?: CatalogManifest;
+} {
+  if (isCatalogBytes(input)) return { entries: input };
+
+  if (input.manifest && input.manifestText !== undefined) {
+    throw new CatalogError("Pass manifest or manifestText, not both.");
+  }
+
+  return {
+    entries: input.entries,
+    manifest: input.manifestText === undefined
+      ? input.manifest
+      : parseCatalogManifest(input.manifestText),
+  };
+}
+
+function isCatalogBytes(value: LoadCatalogInput): value is CatalogBytes {
+  return (
+    value instanceof ArrayBuffer ||
+    ArrayBuffer.isView(value) ||
+    (
+      typeof value === "object" &&
+      value !== null &&
+      typeof (value as AsyncBuffer).byteLength === "number" &&
+      typeof (value as AsyncBuffer).slice === "function"
+    )
+  );
 }
