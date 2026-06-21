@@ -1,21 +1,13 @@
-import { Loader2, Search, X } from "lucide-react";
+import { Command, Loader2, Search, X } from "lucide-react";
 import { useCallback, useEffect, useId, useRef } from "react";
 
 import { normalizedSearchBase, useGuidelineSearch } from "@/components/use-guideline-search";
 
-import type {
-  IndexStatus,
-  SearchResult,
-  SearchStatus,
-} from "@/components/use-guideline-search";
+import type { IndexStatus, SearchResult, SearchStatus } from "@/components/use-guideline-search";
 import type { KeyboardEvent, RefObject } from "react";
 
 const EXCERPT_RADIUS = 92;
-const EXAMPLE_QUERIES = [
-  "color vision deficiency",
-  "tooltip values",
-  "uncertainty",
-] as const;
+const EXAMPLE_QUERIES = ["color vision deficiency", "tooltip values", "uncertainty"] as const;
 const RESULT_LABEL_LIMIT = 3;
 
 function classNames(...values: Array<string | false | null | undefined>) {
@@ -34,7 +26,7 @@ function normalizeResultHref(path: string) {
 }
 
 function cleanTitle(result: SearchResult) {
-  return (result.document.title || "Untitled guideline").replace(/\s+\|\s+ChartCoach$/i, "").trim();
+  return (result.document.title || "Untitled guideline").replace(/\s+\|\s+chartcoach$/i, "").trim();
 }
 
 function normalizeText(value: string) {
@@ -52,6 +44,7 @@ function queryTerms(query: string) {
 function searchTextSources(result: SearchResult) {
   const document = result.document;
   return [
+    document.slug,
     document.description,
     ...document.sectionTitles,
     document.body,
@@ -63,11 +56,13 @@ function searchTextSources(result: SearchResult) {
 }
 
 function createExcerpt(result: SearchResult, query: string) {
-  const source = searchTextSources(result)
-    .map(normalizeText)
-    .find((candidate) =>
-      queryTerms(query).some((term) => candidate.toLowerCase().includes(term)),
-    ) ?? normalizeText(result.document.description || result.document.body || result.document.title);
+  const source =
+    searchTextSources(result)
+      .map(normalizeText)
+      .find((candidate) =>
+        queryTerms(query).some((term) => candidate.toLowerCase().includes(term)),
+      ) ??
+    normalizeText(result.document.description || result.document.body || result.document.title);
 
   if (!source) return "";
 
@@ -116,10 +111,7 @@ function HighlightedText({ text, query }: { text: string; query: string }) {
       {parts.map((part, index) => {
         const matched = terms.includes(part.toLowerCase());
         return matched ? (
-          <mark
-            key={`${part}-${index}`}
-            className="rounded-sm bg-fg/10 px-[0.08em] text-fg"
-          >
+          <mark key={`${part}-${index}`} className="rounded-sm bg-fg/10 px-[0.08em] text-fg">
             {part}
           </mark>
         ) : (
@@ -133,6 +125,7 @@ function HighlightedText({ text, query }: { text: string; query: string }) {
 function useSearchShortcut(onOpen: () => void) {
   useEffect(() => {
     function handleShortcut(event: globalThis.KeyboardEvent) {
+      if (event.defaultPrevented) return;
       if (event.key.toLowerCase() !== "k") return;
       if (!event.metaKey && !event.ctrlKey) return;
 
@@ -143,6 +136,44 @@ function useSearchShortcut(onOpen: () => void) {
     window.addEventListener("keydown", handleShortcut);
     return () => window.removeEventListener("keydown", handleShortcut);
   }, [onOpen]);
+}
+
+function SearchShortcutHint() {
+  const keyClassName =
+    "grid h-5 place-items-center border border-border bg-bg font-mono text-[11px] font-medium leading-none text-muted";
+
+  return (
+    <span
+      className="hidden items-center sm:inline-flex"
+      aria-hidden="true"
+      data-search-shortcut
+    >
+      <kbd
+        className={classNames(
+          keyClassName,
+          "guideline-search-shortcut__modifier--control min-w-8 rounded-l border-r-0 px-1.5",
+        )}
+        data-search-shortcut-key="control"
+      >
+        Ctrl
+      </kbd>
+      <kbd
+        className={classNames(
+          keyClassName,
+          "guideline-search-shortcut__modifier--command w-5 rounded-l border-r-0 p-0",
+        )}
+        data-search-shortcut-key="command"
+      >
+        <Command aria-hidden="true" className="size-3" strokeWidth={2} />
+      </kbd>
+      <kbd
+        className={classNames(keyClassName, "w-5 rounded-r border-l-0 p-0")}
+        data-search-shortcut-key="k"
+      >
+        K
+      </kbd>
+    </span>
+  );
 }
 
 function SearchStatusText({
@@ -156,12 +187,13 @@ function SearchStatusText({
   query: string;
   resultCount: number;
 }) {
-  let message = "Search guideline titles, labels, and section text.";
+  let message = "Search guideline titles, slugs, labels, and section text.";
 
   if (indexStatus === "loading") message = "Loading search index...";
   if (indexStatus === "failed") message = "Search index failed to load.";
   if (indexStatus === "ready" && searchStatus === "searching") message = "Searching...";
-  if (indexStatus === "ready" && searchStatus === "empty") message = `No guidelines found for "${query}".`;
+  if (indexStatus === "ready" && searchStatus === "empty")
+    message = `No guidelines found for "${query}".`;
   if (indexStatus === "ready" && searchStatus === "ready") {
     message = `${resultCount.toLocaleString()} result${resultCount === 1 ? "" : "s"} for "${query}".`;
   }
@@ -169,39 +201,21 @@ function SearchStatusText({
   return <p className="m-0 min-h-5 text-sm leading-5 text-muted">{message}</p>;
 }
 
-function SearchTrigger({
-  open,
-  onOpen,
-}: {
-  open: boolean;
-  onOpen: () => void;
-}) {
+function SearchTrigger({ open, onOpen }: { open: boolean; onOpen: () => void }) {
   return (
-    <>
-      <button
-        type="button"
-        className="hidden h-8 items-center gap-2 rounded-md border border-border bg-surface-muted px-3 text-sm text-muted transition-colors hover:border-fg/25 hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/20 sm:flex"
-        aria-expanded={open}
-        aria-controls={open ? "guideline-search-dialog" : undefined}
-        onClick={onOpen}
-      >
-        <Search aria-hidden="true" className={iconClassName(false)} />
-        <span>Search guidelines</span>
-        <kbd className="rounded border border-border bg-bg px-1.5 py-0.5 font-mono text-[11px] leading-none text-muted">
-          ⌘K
-        </kbd>
-      </button>
-      <button
-        type="button"
-        className="flex size-8 items-center justify-center rounded-md border border-border bg-surface-muted text-muted transition-colors hover:border-fg/25 hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/20 sm:hidden"
-        aria-label="Search guidelines"
-        aria-expanded={open}
-        aria-controls={open ? "guideline-search-dialog" : undefined}
-        onClick={onOpen}
-      >
-        <Search aria-hidden="true" className={iconClassName(false)} />
-      </button>
-    </>
+    <button
+      type="button"
+      className="flex h-8 shrink-0 items-center justify-center gap-2 rounded-md border border-border bg-surface-muted px-2.5 text-sm text-muted transition-colors hover:border-fg/25 hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/20 min-[520px]:px-3"
+      aria-label="Search guidelines"
+      aria-keyshortcuts="Meta+K Control+K"
+      aria-expanded={open}
+      aria-controls={open ? "guideline-search-dialog" : undefined}
+      onClick={onOpen}
+    >
+      <Search aria-hidden="true" className={iconClassName(false)} />
+      <span className="hidden whitespace-nowrap min-[520px]:inline">Search guidelines</span>
+      <SearchShortcutHint />
+    </button>
   );
 }
 
@@ -443,21 +457,24 @@ export function GuidelineSearch() {
 
   useSearchShortcut(searchState.openSearch);
 
-  const setDialogElement = useCallback((node: HTMLDialogElement | null) => {
-    dialogCleanupRef.current?.();
-    dialogCleanupRef.current = null;
-    dialogRef.current = node;
-    if (!node) return;
+  const setDialogElement = useCallback(
+    (node: HTMLDialogElement | null) => {
+      dialogCleanupRef.current?.();
+      dialogCleanupRef.current = null;
+      dialogRef.current = node;
+      if (!node) return;
 
-    function handleClose() {
-      searchState.closeSearch();
-    }
+      function handleClose() {
+        searchState.closeSearch();
+      }
 
-    node.addEventListener("close", handleClose);
-    dialogCleanupRef.current = () => node.removeEventListener("close", handleClose);
-    if (!node.open) node.showModal();
-    setTimeout(() => inputRef.current?.focus(), 0);
-  }, [searchState.closeSearch]);
+      node.addEventListener("close", handleClose);
+      dialogCleanupRef.current = () => node.removeEventListener("close", handleClose);
+      if (!node.open) node.showModal();
+      setTimeout(() => inputRef.current?.focus(), 0);
+    },
+    [searchState.closeSearch],
+  );
 
   function focusAdjacentResult(direction: 1 | -1) {
     const links = resultLinks(dialogRef.current);

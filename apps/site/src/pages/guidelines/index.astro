@@ -14,7 +14,10 @@ const totalPages = getGuidelinePageCount(allGuidelines.length);
 const guidelines = paginateGuidelines(allGuidelines, 1);
 ---
 
-<SiteLayout title="Guidelines" description="List of ChartCoach guidelines.">
+<SiteLayout
+  title="Guideline Catalog"
+  description="Browse chartcoach guideline records with labels, role-marked sections, source references, and Markdown and JSON routes."
+>
   <GuidelinesListing
     guidelines={guidelines}
     currentPage={1}

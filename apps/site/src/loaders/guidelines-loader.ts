@@ -1,14 +1,19 @@
 import type { Loader } from "astro/loaders";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 
 import Cite from "citation-js";
 import sanitizeHtml from "sanitize-html";
 
-import { DEFAULT_CATALOG_METADATA_URL, toMarkdown } from "@chartcoach/catalog";
-import { readCatalog } from "@chartcoach/catalog/server";
+import { toMarkdown } from "@chartcoach/catalog";
 
-import { createGuidelineSearchModel } from "@/lib/guideline-search-model";
+import {
+  catalogSourceRecordPath,
+  catalogSourceWatchFiles,
+  loadSiteCatalog,
+  resolveCatalogSource,
+  resolveSiteCatalogSource,
+} from "../config/catalog-source";
+import { createGuidelineRecord } from "../lib/guideline-record";
+import { createGuidelineSearchModel } from "../lib/guideline-search-model";
 
 type RenderedCitations = {
   body: string;
@@ -201,21 +206,20 @@ function renderCitationsInMarkdown(
 }
 
 export function guidelinesLoader({
-  source = process.env.CHARTCOACH_SITE_CATALOG_SOURCE ?? DEFAULT_CATALOG_METADATA_URL,
+  source,
 }: {
   source?: string;
 } = {}): Loader {
   return {
     name: "chartcoach-guidelines-loader",
     async load(context) {
-      const projectRoot = fileURLToPath(context.config.root);
-      const catalogSource = isHttpUrl(source) ? source : path.resolve(projectRoot, source);
-      if (!isHttpUrl(catalogSource)) {
-        context.watcher?.add(path.join(catalogSource, "entries.parquet"));
-        context.watcher?.add(path.join(catalogSource, "MANIFEST.md"));
-      }
+      const catalogSource = source
+        ? resolveCatalogSource(source, context.config.root)
+        : resolveSiteCatalogSource(context.config.root);
+      const watchedFiles = catalogSourceWatchFiles(context.config.root, source);
+      if (watchedFiles.length > 0) context.watcher?.add(watchedFiles);
 
-      const catalog = await readCatalog(catalogSource);
+      const catalog = await loadSiteCatalog(context.config.root, source);
       const guidelines = Array.from(catalog);
       context.store.clear();
 
@@ -223,6 +227,7 @@ export function guidelinesLoader({
         guidelines.map(async (guideline) => {
           const id = guideline.id;
           const references = [...guideline.references];
+          const record = createGuidelineRecord(guideline);
           const referencesBib = references.length > 0 ? references.join("\n\n") : undefined;
           const referencesByKey = buildReferencesByKey(references);
 
@@ -257,6 +262,7 @@ export function guidelinesLoader({
                 description: guideline.description || undefined,
                 labels: [...guideline.labels],
                 markdown: toMarkdown(guideline),
+                record,
                 search: createGuidelineSearchModel(guideline),
                 sections,
                 bibliography: guideline.bibliography,
@@ -268,9 +274,7 @@ export function guidelinesLoader({
             context.renderMarkdown(renderedBody.body),
           ]);
           const digest = context.generateDigest(`${renderedBody.body}\n\n${referencesBib ?? ""}`);
-          const filePath = isHttpUrl(catalogSource)
-            ? `${catalogSource}#${id}`
-            : path.relative(projectRoot, path.join(catalogSource, "entries", id, "guideline.md"));
+          const filePath = catalogSourceRecordPath(context.config.root, catalogSource, id);
 
           return {
             id,
@@ -289,8 +293,4 @@ export function guidelinesLoader({
       }
     },
   };
-}
-
-function isHttpUrl(value: string): boolean {
-  return value.startsWith("http://") || value.startsWith("https://");
 }

@@ -75,10 +75,10 @@ const paginationItems = createPaginationItems(currentPage, totalPages);
     <div class="mt-5 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
       <div>
         <h1 class="m-0 max-w-[42rem] text-[2.75rem] font-semibold leading-[1.02] tracking-normal text-fg sm:text-[3.5rem] lg:text-[4.5rem]">
-          Guidelines
+          Guideline Catalog
         </h1>
         <p class="m-0 mt-5 max-w-[44rem] text-[1.0625rem] leading-[1.65] text-muted lg:text-[1.1875rem]">
-          Browse source-backed visualization guidance records. Guideline details keep sections, labels, and references inspectable.
+          Browse visualization guideline records with sections, labels, and references.
         </p>
       </div>
       <div class="font-mono text-[0.8125rem] font-medium uppercase tracking-[0.14em] text-muted md:text-right">
@@ -169,7 +169,7 @@ const paginationItems = createPaginationItems(currentPage, totalPages);
                   )}
                   {item.type === "page" && item.current && (
                     <span
-                      class="inline-flex h-9 min-w-9 items-center justify-center rounded-md border border-fg bg-fg px-3 text-sm font-medium text-bg"
+                      class="inline-flex h-9 min-w-9 items-center justify-center rounded-md border border-accent bg-accent px-3 text-sm font-medium text-white"
                       aria-current="page"
                     >
                       {item.page}
