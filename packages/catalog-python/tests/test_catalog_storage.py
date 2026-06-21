@@ -218,7 +218,7 @@ def test_catalog_write_bundle_includes_release_metadata(tmp_path: Path) -> None:
     catalog.write_bundle(tmp_path / "bundle")
 
     metadata = read_release_metadata(tmp_path / "bundle")
-    assert metadata.version == "0.1.2"
+    assert metadata.version == "0.1.3"
     assert metadata.digest == catalog.digest()
     assert metadata.artifact("manifest").path == "MANIFEST.md"
     assert metadata.artifact("entries").path == "entries.parquet"
