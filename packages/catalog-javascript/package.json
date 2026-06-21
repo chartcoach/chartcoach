@@ -1,16 +1,16 @@
 {
   "name": "@chartcoach/catalog",
-  "version": "0.1.0",
-  "description": "JavaScript loaders and wire types for the ChartCoach visualization guideline catalog.",
+  "version": "0.1.2",
+  "description": "JavaScript models and artifact parsers for the chartcoach visualization guideline catalog.",
   "private": true,
   "license": "MIT",
   "author": "Péter Ferenc Gyarmati <dev.petergy@gmail.com>",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/chartcoach/catalog.git"
+    "url": "git+https://github.com/chartcoach/chartcoach.git"
   },
   "bugs": {
-    "url": "https://github.com/chartcoach/catalog/issues"
+    "url": "https://github.com/chartcoach/chartcoach/issues"
   },
   "files": [
     "dist",
@@ -24,16 +24,6 @@
       "types": "./dist/index.d.ts",
       "source": "./src/index.ts",
       "default": "./dist/index.js"
-    },
-    "./server": {
-      "types": "./dist/server.d.ts",
-      "source": "./src/server.ts",
-      "default": "./dist/server.js"
-    },
-    "./browser": {
-      "types": "./dist/browser.d.ts",
-      "source": "./src/browser.ts",
-      "default": "./dist/browser.js"
     }
   },
   "scripts": {
@@ -44,13 +34,12 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "hyparquet": "^1.26.0",
+    "hyparquet": "^1.26.1",
     "hyparquet-compressors": "^1.1.1",
     "yaml": "^2.9.0"
   },
   "devDependencies": {
     "@types/node": "^22.19.21",
-    "oxlint": "^1.69.0",
     "tsc-alias": "^1.8.17",
     "typescript": "^5.9.3",
     "vitest": "^3.2.6"
