@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { brandAssets } from "@chartcoach/brand";
 import "@chartcoach/brand/fonts.css";
 import { Provider } from "@/components/provider";
-import { docsOrigin } from "@/lib/shared";
+import { docsOrigin, isPreviewDeployment } from "@/lib/shared";
 
 import "./global.css";
 
@@ -15,6 +15,21 @@ export const metadata: Metadata = {
     template: "%s | chartcoach docs",
   },
   description: "Documentation for chartcoach and the Guideline Catalog.",
+  robots: isPreviewDeployment()
+    ? {
+        index: false,
+        follow: false,
+        nocache: true,
+        googleBot: {
+          index: false,
+          follow: false,
+          noimageindex: true,
+        },
+      }
+    : {
+        index: true,
+        follow: true,
+      },
   icons: {
     icon: [
       { url: brandAssets.favicon, type: "image/svg+xml" },
