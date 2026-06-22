@@ -18,6 +18,149 @@ _SEARCH_HINTS = (
     "Use `chartcoach catalog index create --embedding ...` when vector or hybrid search is required.",
 )
 
+MCP_TOOL_SPECS: tuple[dict[str, object], ...] = (
+    {
+        "name": "sql",
+        "registered_when": "always",
+        "description": "Run one read-only SQL query over catalog tables.",
+        "arguments": [
+            {
+                "name": "statement",
+                "type": "string",
+                "required": True,
+                "description": "One SELECT statement over catalog tables.",
+            },
+            {
+                "name": "limit",
+                "type": "integer",
+                "required": False,
+                "default": 100,
+                "description": "Maximum rows to return. The value must be at least 1.",
+            },
+        ],
+        "returns": {
+            "type": "object",
+            "fields": [
+                {
+                    "name": "columns",
+                    "type": "array",
+                    "description": "Returned column names and Polars data types.",
+                },
+                {
+                    "name": "rows",
+                    "type": "array",
+                    "description": "Query rows as JSON objects.",
+                },
+                {
+                    "name": "row_count",
+                    "type": "integer",
+                    "description": "Number of returned rows.",
+                },
+                {
+                    "name": "truncated",
+                    "type": "boolean",
+                    "description": "True when more rows matched than the limit returned.",
+                },
+                {
+                    "name": "limit",
+                    "type": "integer",
+                    "description": "Applied row limit.",
+                },
+                {
+                    "name": "catalog_digest",
+                    "type": "string",
+                    "description": "Digest for the catalog instance that served the query.",
+                },
+            ],
+        },
+    },
+    {
+        "name": "search",
+        "registered_when": "only when --index or CHARTCOACH_INDEX is set",
+        "description": "Run LanceDB search over indexed catalog document rows.",
+        "arguments": [
+            {
+                "name": "search_query",
+                "type": "string",
+                "required": True,
+                "description": "Text query for FTS, vector, hybrid, or automatic indexed discovery.",
+            },
+            {
+                "name": "limit",
+                "type": "integer",
+                "required": False,
+                "default": 10,
+                "description": "Maximum candidate rows to return.",
+            },
+            {
+                "name": "where",
+                "type": "string or null",
+                "required": False,
+                "default": None,
+                "description": "Optional LanceDB filter expression.",
+            },
+            {
+                "name": "mode",
+                "type": "auto | fts | vector | hybrid",
+                "required": False,
+                "default": "auto",
+                "description": "Search mode. Use fts when no embedding function is configured.",
+            },
+        ],
+        "returns": {
+            "type": "object",
+            "fields": [
+                {
+                    "name": "query",
+                    "type": "string",
+                    "description": "Original search query.",
+                },
+                {
+                    "name": "mode",
+                    "type": "string",
+                    "description": "Applied search mode.",
+                },
+                {
+                    "name": "rows",
+                    "type": "array",
+                    "description": "Candidate rows with ids, labels, matched roles, snippets, and scores.",
+                },
+                {
+                    "name": "row_count",
+                    "type": "integer",
+                    "description": "Number of returned candidates.",
+                },
+                {
+                    "name": "limit",
+                    "type": "integer",
+                    "description": "Applied row limit.",
+                },
+                {
+                    "name": "where",
+                    "type": "string or null",
+                    "description": "Applied LanceDB filter expression.",
+                },
+                {
+                    "name": "index_path",
+                    "type": "string or null",
+                    "description": "Configured index path or URI.",
+                },
+                {
+                    "name": "table_name",
+                    "type": "string",
+                    "description": "LanceDB table that served the query.",
+                },
+            ],
+        },
+    },
+)
+
+
+def mcp_tool_specs() -> list[dict[str, object]]:
+    """Return MCP tool contracts without importing MCP runtime dependencies."""
+
+    return [dict(spec) for spec in MCP_TOOL_SPECS]
+
 
 class ToolError(ValueError):
     """Error that carries a message plus recovery hints."""
@@ -162,8 +305,10 @@ def _validate_select_query(statement: str) -> None:
 
 
 __all__ = [
+    "MCP_TOOL_SPECS",
     "ToolError",
     "Tools",
     "format_error",
+    "mcp_tool_specs",
     "search_error",
 ]

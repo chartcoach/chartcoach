@@ -252,11 +252,23 @@ def emit_rows(
     else:
         click.echo(rows_to_table(rows).rstrip())
     if not rows and empty_hints:
-        emit_guidance(empty_message, empty_hints)
+        emit_guidance(
+            empty_message,
+            empty_hints,
+            include_message=output_format in {"json", "jsonl", "csv"},
+        )
 
 
-def emit_guidance(message: str, hints: Sequence[str]) -> None:
-    click.echo(f"{message}\n\nGuidance:", err=True)
+def emit_guidance(
+    message: str,
+    hints: Sequence[str],
+    *,
+    include_message: bool = True,
+) -> None:
+    if include_message:
+        click.echo(f"{message}\n\nGuidance:", err=True)
+    else:
+        click.echo("Guidance:", err=True)
     for hint in hints:
         click.echo(f"  - {hint}", err=True)
 

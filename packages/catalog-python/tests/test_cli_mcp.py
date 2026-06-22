@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import cast
 
@@ -13,6 +14,32 @@ import chartcoach.mcp as mcp_server
 from helpers import assert_cli_error
 
 pytestmark = pytest.mark.mcp
+
+
+def test_mcp_tools_command_prints_tool_contracts(runner: CliRunner) -> None:
+    result = runner.invoke(chartcoach_cli, ["mcp", "tools", "--format", "json"])
+
+    assert result.exit_code == 0, result.output
+    rows = json.loads(result.output)
+    tools = {row["name"]: row for row in rows}
+    assert set(tools) == {"sql", "search"}
+    assert tools["sql"]["registered_when"] == "always"
+    assert tools["search"]["registered_when"] == (
+        "only when --index or CHARTCOACH_INDEX is set"
+    )
+    assert {arg["name"] for arg in tools["sql"]["arguments"]} == {
+        "statement",
+        "limit",
+    }
+    assert {arg["name"] for arg in tools["search"]["arguments"]} == {
+        "search_query",
+        "limit",
+        "where",
+        "mode",
+    }
+    assert "rows" in {
+        field["name"] for field in tools["search"]["returns"]["fields"]
+    }
 
 
 def test_mcp_cli_renders_install_hint_for_missing_optional_dependency(

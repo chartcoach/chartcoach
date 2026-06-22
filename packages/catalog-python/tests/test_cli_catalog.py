@@ -197,6 +197,30 @@ def test_catalog_table_format_uses_readable_columns(
     assert "chart:bar, component:axis" in result.output
 
 
+def test_catalog_query_empty_table_output_prints_status_once(
+    runner: CliRunner,
+    sample_catalog_path: Path,
+) -> None:
+    result = runner.invoke(
+        chartcoach_cli,
+        [
+            "catalog",
+            "query",
+            "--source",
+            str(sample_catalog_path),
+            "--contains",
+            "zzzzunlikelyagentquery",
+            "--format",
+            "table",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert result.output.count("No entries matched.") == 1
+    assert "Guidance:" in result.output
+    assert "Relax one text predicate" in result.output
+
+
 def test_cache_download_notice_redacts_credential_url(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
