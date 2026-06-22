@@ -14,9 +14,12 @@ export const brandSquareAccentPath =
 export const iconPath = `${brandAssetBasePath}/icon.svg` as const;
 export const iconWhitePath = `${brandAssetBasePath}/icon-white.svg` as const;
 export const faviconPath = `${brandAssetBasePath}/favicon.svg` as const;
+export const faviconPngPath = `${brandAssetBasePath}/favicon.png` as const;
 export const appIconLightPath = `${brandAssetBasePath}/app-icon-light.svg` as const;
 export const appIconDarkPath = `${brandAssetBasePath}/app-icon-dark.svg` as const;
-export const appleTouchIconPath = appIconLightPath;
+export const appIconLightPngPath = `${brandAssetBasePath}/app-icon-light.png` as const;
+export const appIconDarkPngPath = `${brandAssetBasePath}/app-icon-dark.png` as const;
+export const appleTouchIconPath = appIconLightPngPath;
 
 export const brandAssets = {
   logo: brandLogoPath,
@@ -28,8 +31,11 @@ export const brandAssets = {
   icon: iconPath,
   iconWhite: iconWhitePath,
   favicon: faviconPath,
+  faviconPng: faviconPngPath,
   appIconLight: appIconLightPath,
   appIconDark: appIconDarkPath,
+  appIconLightPng: appIconLightPngPath,
+  appIconDarkPng: appIconDarkPngPath,
   appleTouchIcon: appleTouchIconPath,
 } as const;
 
