@@ -1,0 +1,162 @@
+name: Publish
+
+on:
+  push:
+    tags:
+      - "[0-9]*.[0-9]*.[0-9]*"
+      - "v[0-9]*.[0-9]*.[0-9]*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build release artifacts
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Install JavaScript dependencies
+        run: |
+          pnpm install --frozen-lockfile
+          echo "$PWD/node_modules/.bin" >> "$GITHUB_PATH"
+          pnpm exec node --version
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v8
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Install Python runtime
+        run: uv python install "$(cat .python-version)"
+
+      - name: Install Python dependencies
+        run: uv sync --locked --package chartcoach --all-groups --all-extras
+
+      - name: Check release version
+        run: ./scripts/release.sh check-version "${{ github.ref_name }}"
+
+      - name: Check JavaScript formatting
+        run: make js-format-check
+
+      - name: Lint JavaScript
+        run: make js-lint
+
+      - name: Typecheck JavaScript
+        run: make js-typecheck
+
+      - name: Test JavaScript
+        run: make js-test
+
+      - name: Check Python formatting
+        run: make py-format-check
+
+      - name: Lint Python
+        run: make py-lint
+
+      - name: Typecheck Python
+        run: make py-typecheck
+
+      - name: Test Python
+        run: make py-test
+
+      - name: Build JavaScript
+        run: make js-build
+
+      - name: Build Python package
+        run: |
+          rm -rf dist/release
+          mkdir -p dist/release/python
+          uv build --package chartcoach --out-dir dist/release/python
+
+      - name: Build npm package
+        run: |
+          mkdir -p dist/release/npm
+          pnpm --dir packages/catalog-javascript pack --pack-destination ../../dist/release/npm
+
+      - name: Upload Python package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-dist
+          path: |
+            dist/release/python/*.tar.gz
+            dist/release/python/*.whl
+          retention-days: 7
+          if-no-files-found: error
+
+      - name: Upload npm package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-package
+          path: dist/release/npm/*.tgz
+          retention-days: 7
+          if-no-files-found: error
+
+  publish-pypi:
+    name: Publish to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v8
+
+      - name: Download Python package artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: python-dist
+          path: dist/python
+
+      - name: Publish Python package
+        run: uv publish --trusted-publishing always dist/python/*.tar.gz dist/python/*.whl
+
+  publish-npm:
+    name: Publish to npm
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Download npm package artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: npm-package
+          path: dist/npm
+
+      - name: Publish npm package
+        run: npx --yes npm@11.12.1 publish --access public dist/npm/*.tgz
+
+  release-notes:
+    name: Update release notes
+    needs:
+      - publish-pypi
+      - publish-npm
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Update release notes
+        run: npx changelogithub@14.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

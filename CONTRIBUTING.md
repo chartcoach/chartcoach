@@ -75,6 +75,29 @@ uv run ty check .
 uv run pyrefly check --summary=none
 ```
 
+## Publishing
+
+Releases publish the Python package `chartcoach` and the npm package
+`@chartcoach/catalog` from `.github/workflows/publish.yml`.
+
+Use the same version in `packages/catalog-python/pyproject.toml` and
+`packages/catalog-javascript/package.json`, then check the tag before pushing:
+
+```sh
+./scripts/release.sh check-version v0.1.5
+```
+
+The script accepts tags with or without a leading `v`. It fails when the Python
+and npm package versions differ, or when the tag does not match the package
+version.
+
+Pushing a matching `X.Y.Z` or `vX.Y.Z` tag starts the publish workflow. The
+build job installs pnpm and uv, runs the format, lint, typecheck, test, and
+build gates, builds the PyPI and npm packages, and uploads both outputs as
+GitHub artifacts. Separate jobs download those artifacts and publish them with
+trusted publishing through GitHub OIDC. After both publishes finish,
+`changelogithub` updates the GitHub release notes.
+
 ## Data and Artifacts
 
 Catalog entries are source data. Keep `guideline.md`, `references.bib`, Python
