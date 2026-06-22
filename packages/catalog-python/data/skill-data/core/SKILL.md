@@ -9,7 +9,7 @@ chartcoach exposes a versioned Guideline Catalog and CLI primitives for inspecti
 
 ## Commands
 
-Examples use `chartcoach` as the command name inside an installed environment. For one-off runs, replace `chartcoach ...` with `uvx chartcoach@latest ...`. The `@latest` selector follows the newest published package. Use `chartcoach@0.1.3` when output must stay tied to the `0.1.3` Default Catalog release. When a command needs extras, use `uvx --from 'chartcoach[index]@latest' chartcoach ...`. The package selector after `--from` installs the package with extras, and the following `chartcoach` token is the executable to run.
+Examples use `chartcoach` as the command name inside an installed environment. For one-off runs, replace `chartcoach ...` with `uvx chartcoach@latest ...`. The `@latest` selector follows the newest published package. Use `chartcoach@0.1.4` when output must stay tied to the `0.1.4` Default Catalog release. When a command needs extras, use `uvx --from 'chartcoach[index]@latest' chartcoach ...`. The package selector after `--from` installs the package with extras, and the following `chartcoach` token is the executable to run.
 
 Base catalog commands:
 

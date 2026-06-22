@@ -51,7 +51,7 @@ def test_artifact_cache_root_lives_under_platform_cache_root(
 def test_release_metadata_preserves_index_artifact_body() -> None:
     metadata = CatalogReleaseMetadata.from_mapping(
         {
-            "version": "0.1.3",
+            "version": "0.1.4",
             "digest": "catalog-digest",
             "artifacts": [
                 {
@@ -74,7 +74,7 @@ def test_release_metadata_preserves_index_artifact_body() -> None:
                     "format": "tar+gzip",
                     "table": "catalog_documents",
                     "catalog": {
-                        "version": "0.1.3",
+                        "version": "0.1.4",
                         "digest": "catalog-digest",
                     },
                     "embedding": {
@@ -94,9 +94,9 @@ def test_release_metadata_preserves_index_artifact_body() -> None:
                     "bytes": 4,
                     "format": "lancedb",
                     "table": "catalog_documents",
-                    "uri": "s3://chartcoach/catalog/releases/0.1.3/catalog-digest/indexes/lancedb/openrouter/openai-text-embedding-3-large/db",
+                    "uri": "s3://chartcoach/catalog/releases/0.1.4/catalog-digest/indexes/lancedb/openrouter/openai-text-embedding-3-large/db",
                     "catalog": {
-                        "version": "0.1.3",
+                        "version": "0.1.4",
                         "digest": "catalog-digest",
                     },
                     "embedding": {
@@ -122,7 +122,7 @@ def test_release_metadata_preserves_index_artifact_body() -> None:
         if artifact.kind == "lancedb-index" and artifact.format == "lancedb"
     ][0]
     assert direct_artifact.extra["uri"] == (
-        "s3://chartcoach/catalog/releases/0.1.3/catalog-digest/"
+        "s3://chartcoach/catalog/releases/0.1.4/catalog-digest/"
         "indexes/lancedb/openrouter/openai-text-embedding-3-large/db"
     )
     artifacts = cast(list[dict[str, object]], metadata.to_record()["artifacts"])
@@ -160,14 +160,14 @@ def test_artifact_index_resolves_latest_catalog_metadata_url() -> None:
                 },
                 {
                     "name": "chartcoach/catalog",
-                    "version": "0.1.3",
+                    "version": "0.1.4",
                     "digest": "new-digest",
-                    "root": "catalog/releases/0.1.3/new-digest/",
-                    "metadata": "catalog/releases/0.1.3/new-digest/metadata.json",
+                    "root": "catalog/releases/0.1.4/new-digest/",
+                    "metadata": "catalog/releases/0.1.4/new-digest/metadata.json",
                     "artifacts": [
                         {
                             "kind": "entries",
-                            "path": "catalog/releases/0.1.3/new-digest/entries.parquet",
+                            "path": "catalog/releases/0.1.4/new-digest/entries.parquet",
                             "digest": "entries-digest",
                             "bytes": 2,
                         }
@@ -179,14 +179,14 @@ def test_artifact_index_resolves_latest_catalog_metadata_url() -> None:
 
     release = index.catalog()
 
-    assert release.version == "0.1.3"
+    assert release.version == "0.1.4"
     assert release.digest == "new-digest"
     assert (
         release_metadata_url_from_index(
             release,
             base_url="https://example.test",
         )
-        == "https://example.test/catalog/releases/0.1.3/new-digest/metadata.json"
+        == "https://example.test/catalog/releases/0.1.4/new-digest/metadata.json"
     )
 
 
@@ -260,7 +260,7 @@ def test_download_index_artifact_extracts_and_caches_archive(
 
     metadata = CatalogReleaseMetadata.from_mapping(
         {
-            "version": "0.1.3",
+            "version": "0.1.4",
             "digest": "catalog-digest",
             "artifacts": [
                 {
@@ -319,7 +319,7 @@ def test_download_index_artifact_extracts_and_caches_archive(
         / "artifacts"
         / "catalog"
         / "releases"
-        / "0.1.3"
+        / "0.1.4"
         / "catalog-digest"
         / "indexes"
         / "lancedb"
@@ -341,7 +341,7 @@ def test_default_index_path_uses_cached_index_without_remote_metadata(
 ) -> None:
     cache_root = tmp_path / "cache"
     release_path = (
-        cache_root / "artifacts" / "catalog" / "releases" / "0.1.3" / "catalog-digest"
+        cache_root / "artifacts" / "catalog" / "releases" / "0.1.4" / "catalog-digest"
     )
     index_path = release_path / "indexes" / "lancedb" / "openrouter" / "model" / "db"
     (index_path / "catalog_documents.lance").mkdir(parents=True)
@@ -358,7 +358,7 @@ def test_default_index_path_uses_cached_index_without_remote_metadata(
         extra={"table": "catalog_documents"},
     )
     metadata = CatalogReleaseMetadata(
-        version="0.1.3",
+        version="0.1.4",
         digest="catalog-digest",
         artifacts=(
             ArtifactDescriptor(
@@ -383,7 +383,7 @@ def test_default_index_path_uses_cached_index_without_remote_metadata(
         raise AssertionError("cached default index should not fetch remote metadata")
 
     monkeypatch.setenv("CHARTCOACH_CACHE_DIR", str(cache_root))
-    monkeypatch.setattr(catalog_remote, "DEFAULT_CATALOG_VERSION", "0.1.3")
+    monkeypatch.setattr(catalog_remote, "DEFAULT_CATALOG_VERSION", "0.1.4")
     monkeypatch.setattr(catalog_remote, "DEFAULT_CATALOG_DIGEST", "catalog-digest")
     monkeypatch.setattr(catalog_remote, "_read_url_text", read_url_text)
 
@@ -495,7 +495,7 @@ def test_index_archive_rejects_windows_escape_paths(
 
     metadata = CatalogReleaseMetadata.from_mapping(
         {
-            "version": "0.1.3",
+            "version": "0.1.4",
             "digest": "catalog-digest",
             "artifacts": [
                 {
