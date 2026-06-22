@@ -3,7 +3,7 @@ import { CatalogError } from "./errors";
 const defaultCatalogArtifactBaseUrl = "https://artifacts.chartcoach.dev";
 const defaultCatalogDigest =
   "7cfd43ee820be252b8ae9058c4c36109a9c8415c6b3a5ff8a9127117b4a10c19";
-const defaultCatalogVersion = "0.1.3";
+const defaultCatalogVersion = "0.1.4";
 const defaultCatalogReleaseRootUrl = new URL(
   `catalog/releases/${defaultCatalogVersion}/${defaultCatalogDigest}/`,
   `${defaultCatalogArtifactBaseUrl}/`,

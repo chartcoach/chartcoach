@@ -1,6 +1,6 @@
 {
   "name": "@chartcoach/brand",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Shared brand assets, CSS tokens, and public asset checks for chartcoach web apps.",
   "private": true,
   "license": "Apache-2.0",

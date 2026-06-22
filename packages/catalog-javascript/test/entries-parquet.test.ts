@@ -92,7 +92,7 @@ describe("catalog artifact loading", () => {
 
   it("preserves index artifact bodies in release metadata", () => {
     const metadata = parseCatalogReleaseMetadata({
-      version: "0.1.3",
+      version: "0.1.4",
       digest: "catalog-digest",
       artifacts: [
         {
@@ -115,7 +115,7 @@ describe("catalog artifact loading", () => {
           format: "tar+gzip",
           table: "catalog_documents",
           catalog: {
-            version: "0.1.3",
+            version: "0.1.4",
             digest: "catalog-digest",
           },
           embedding: {
@@ -135,9 +135,9 @@ describe("catalog artifact loading", () => {
           bytes: 4,
           format: "lancedb",
           table: "catalog_documents",
-          uri: "s3://chartcoach/catalog/releases/0.1.3/catalog-digest/indexes/lancedb/openrouter/openai-text-embedding-3-large/db",
+          uri: "s3://chartcoach/catalog/releases/0.1.4/catalog-digest/indexes/lancedb/openrouter/openai-text-embedding-3-large/db",
           catalog: {
-            version: "0.1.3",
+            version: "0.1.4",
             digest: "catalog-digest",
           },
           embedding: {
@@ -173,12 +173,12 @@ describe("catalog artifact loading", () => {
       (item) => item.kind === "lancedb-index" && item.format === "lancedb",
     );
     expect(directArtifact?.uri).toBe(
-      "s3://chartcoach/catalog/releases/0.1.3/catalog-digest/indexes/lancedb/openrouter/openai-text-embedding-3-large/db",
+      "s3://chartcoach/catalog/releases/0.1.4/catalog-digest/indexes/lancedb/openrouter/openai-text-embedding-3-large/db",
     );
   });
 
   it("exposes package-pinned default artifact URLs", () => {
-    expect(DEFAULT_CATALOG.version).toBe("0.1.3");
+    expect(DEFAULT_CATALOG.version).toBe("0.1.4");
     expect(DEFAULT_CATALOG.metadataUrl).toContain(DEFAULT_CATALOG.digest);
     expect(DEFAULT_CATALOG.entriesUrl).toBe(
       new URL("entries.parquet", DEFAULT_CATALOG.releaseRootUrl).toString(),
