@@ -7,6 +7,10 @@ description: Decode chartcoach catalog artifact bytes into typed guideline recor
 Callers own artifact acquisition. Use `fetch`, a runtime file API, cache
 storage, or test fixtures to get bytes before calling `loadCatalog`.
 
+```bash
+npm install @chartcoach/catalog
+```
+
 ```ts
 import { DEFAULT_CATALOG, loadCatalog } from "@chartcoach/catalog"
 
@@ -20,11 +24,6 @@ const manifestText = await fetch(DEFAULT_CATALOG.manifestUrl).then((response) =>
 const catalog = await loadCatalog({ entries, manifestText })
 const guideline = catalog.require("compare-percentages-with-bars-not-pies")
 ```
-
-<Callout title="Package status">
-`@chartcoach/catalog` is currently internal. Use it from this repository or as
-a workspace dependency until a published package is available.
-</Callout>
 
 ## Local files
 
