@@ -1,6 +1,6 @@
 ---
-title: Catalog contract
-description: Core concepts, row shape, manifest, release metadata, cache behavior, and queryable tables for chartcoach catalogs.
+title: Cataloging scheme
+description: Catalog structure, row shape, manifest vocabulary, release metadata, cache behavior, and queryable tables for chartcoach catalogs.
 ---
 
 The Guideline Catalog is a versioned collection of citable visualization
@@ -9,7 +9,7 @@ sections, labels, and source references.
 
 ## Core concepts
 
-| Concept | Contract |
+| Scheme element | Meaning |
 | --- | --- |
 | Guideline id | Stable id used by `read`, `cite`, URLs, and table joins |
 | Section role | Catalog-defined role such as `advice` attached to one guideline section |
@@ -161,7 +161,7 @@ https://artifacts.chartcoach.dev/catalog/releases/<version>/<digest>/
 ```
 
 Release selection happens through package constants or explicit metadata URLs.
-There is no `catalog/current` object prefix in the catalog contract.
+There is no `catalog/current` object prefix in the cataloging scheme.
 
 CLI and Python readers accept these locator forms:
 
