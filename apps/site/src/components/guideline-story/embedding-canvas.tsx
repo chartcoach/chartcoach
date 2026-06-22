@@ -62,6 +62,17 @@ const sectionPointLayout: Record<GuidelineRole, Point2D> = {
   fix: { x: 0.78, y: 0.76 },
 };
 
+const compactLabelOffsets: Record<GuidelineRole, Point2D> = {
+  advice: { x: -30, y: 19 },
+  reason: { x: 11, y: -24 },
+  context: { x: -39, y: 25 },
+  exceptions: { x: -31, y: -28 },
+  costs: { x: 10, y: 21 },
+  mistakes: { x: -55, y: 25 },
+  check: { x: -22, y: -28 },
+  fix: { x: 11, y: 23 },
+};
+
 const sectionPoints: readonly SectionPoint[] = guidelineRoleSections.map((section) => ({
   role: section.role,
   text: section.text,
@@ -342,7 +353,19 @@ function drawSectionPoints(
     context.lineWidth = hovered ? 1.5 : 1;
     context.stroke();
 
-    if (!compact) {
+    if (compact) {
+      const offset = compactLabelOffsets[point.role];
+      drawRoleLabelPill(
+        context,
+        point.role,
+        projected.x + offset.x,
+        projected.y + offset.y,
+        bounds,
+        colors,
+        point.color,
+        reveal,
+      );
+    } else {
       drawText(context, point.role, projected.x + 14, projected.y + 5, colors.fg, {
         mono: true,
         size: 11,
@@ -350,6 +373,63 @@ function drawSectionPoints(
       });
     }
   }
+}
+
+function drawRoleLabelPill(
+  context: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  bounds: PlotBounds,
+  colors: CanvasColors,
+  color: string,
+  opacity: number,
+) {
+  const font = '650 9px SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace';
+  const paddingX = 5;
+  const height = 17;
+
+  context.save();
+  context.font = font;
+  const width = Math.ceil(context.measureText(text).width + paddingX * 2);
+  const left = clamp(x, bounds.left - 22, bounds.left + bounds.width + 22 - width);
+  const top = clamp(y, bounds.top - 28, bounds.top + bounds.height + 18 - height);
+
+  drawRoundedRect(context, left, top, width, height, 8);
+  context.fillStyle = withAlpha(colors.bg, 0.94 * opacity);
+  context.fill();
+  context.strokeStyle = withAlpha(color, 0.28 * opacity);
+  context.lineWidth = 1;
+  context.stroke();
+
+  context.font = font;
+  context.fillStyle = withAlpha(colors.fg, 0.82 * opacity);
+  context.textAlign = "left";
+  context.textBaseline = "middle";
+  context.fillText(text, left + paddingX, top + height / 2);
+  context.restore();
+}
+
+function drawRoundedRect(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number,
+) {
+  const corner = Math.min(radius, width / 2, height / 2);
+  context.beginPath();
+  context.moveTo(x + corner, y);
+  context.lineTo(x + width - corner, y);
+  context.quadraticCurveTo(x + width, y, x + width, y + corner);
+  context.lineTo(x + width, y + height - corner);
+  context.quadraticCurveTo(x + width, y + height, x + width - corner, y + height);
+  context.lineTo(x + corner, y + height);
+  context.quadraticCurveTo(x, y + height, x, y + height - corner);
+  context.lineTo(x, y + corner);
+  context.quadraticCurveTo(x, y, x + corner, y);
+  context.closePath();
 }
 
 function findHoveredSection(
