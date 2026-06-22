@@ -4,8 +4,7 @@ import { fileURLToPath } from "node:url";
 
 const packageRoot = fileURLToPath(new URL("..", import.meta.url));
 const sourceRoot = join(packageRoot, "src");
-const importPattern =
-  /(?:from\s*["']|import\(\s*["'])(\.[^"']*\.js)(?=["'])/g;
+const importPattern = /(?:from\s*["']|import\(\s*["'])(\.[^"']*\.js)(?=["'])/g;
 
 function* sourceFiles(dir) {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -23,9 +22,7 @@ for (const path of sourceFiles(sourceRoot)) {
   const text = readFileSync(path, "utf8");
   for (const match of text.matchAll(importPattern)) {
     const displayPath = relative(packageRoot, path);
-    console.error(
-      `${displayPath}: relative TypeScript import must omit .js: ${match[1]}`,
-    );
+    console.error(`${displayPath}: relative TypeScript import must omit .js: ${match[1]}`);
     failed = true;
   }
 }

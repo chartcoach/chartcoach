@@ -254,8 +254,7 @@ def _document_signatures(frame: pl.DataFrame) -> dict[str, tuple[object, ...]]:
     missing = [column for column in _DOCUMENT_COLUMNS if column not in frame.columns]
     if missing:
         raise ValueError(
-            "LanceDB table is missing catalog document column(s): "
-            + ", ".join(missing)
+            "LanceDB table is missing catalog document column(s): " + ", ".join(missing)
         )
     rows = frame.select(_DOCUMENT_COLUMNS).to_dicts()
     return {

@@ -11,12 +11,17 @@ const repoEnvPath = join(monorepoRoot, ".env");
 
 const LOCAL_SITE_URL = "http://localhost:4321/";
 const SITE_URL_ENV = "CHARTCOACH_SITE_URL";
+const CF_PAGES_ENV = "CF_PAGES";
+const CF_PAGES_BRANCH_ENV = "CF_PAGES_BRANCH";
+const CF_PAGES_URL_ENV = "CF_PAGES_URL";
+const PRODUCTION_BRANCH = "main";
 
-export type SiteUrlSource = "env" | "local";
+export type SiteUrlSource = "env" | "cloudflare" | "local";
 
 export type SiteRuntimeConfig = {
   siteUrl: string;
   siteUrlSource: SiteUrlSource;
+  isPreviewDeployment: boolean;
 };
 
 type EnvMap = Record<string, string | undefined>;
@@ -50,12 +55,12 @@ function normalizeUrl(value: string) {
   return new URL(value).toString();
 }
 
-function resolveConfiguredUrl(
-  env: EnvMap,
-  envName: string,
-  localDefault: string,
-): { url: string; source: SiteUrlSource } {
-  const value = env[envName];
+function isCloudflarePreview(env: EnvMap) {
+  return env[CF_PAGES_ENV] === "1" && env[CF_PAGES_BRANCH_ENV] !== PRODUCTION_BRANCH;
+}
+
+function resolveConfiguredUrl(env: EnvMap): { url: string; source: SiteUrlSource } {
+  const value = env[SITE_URL_ENV];
   if (value) {
     return {
       url: normalizeUrl(value),
@@ -63,18 +68,28 @@ function resolveConfiguredUrl(
     };
   }
 
+  const cloudflareUrl = env[CF_PAGES_URL_ENV];
+  if (cloudflareUrl) {
+    return {
+      url: normalizeUrl(cloudflareUrl),
+      source: "cloudflare",
+    };
+  }
+
   return {
-    url: normalizeUrl(localDefault),
+    url: normalizeUrl(LOCAL_SITE_URL),
     source: "local",
   };
 }
 
 export function getSiteRuntimeConfig(options: SiteRuntimeOptions = {}): SiteRuntimeConfig {
-  const siteUrl = resolveConfiguredUrl(getEnv(options), SITE_URL_ENV, LOCAL_SITE_URL);
+  const env = getEnv(options);
+  const siteUrl = resolveConfiguredUrl(env);
 
   return {
     siteUrl: siteUrl.url,
     siteUrlSource: siteUrl.source,
+    isPreviewDeployment: isCloudflarePreview(env),
   };
 }
 

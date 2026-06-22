@@ -3,10 +3,7 @@ import { stringify as stringifyYaml } from "yaml";
 import type { Guideline } from "./model";
 
 export function toMarkdown(
-  guideline: Pick<
-    Guideline,
-    "id" | "title" | "bibliography" | "description" | "labels" | "body"
-  >,
+  guideline: Pick<Guideline, "id" | "title" | "bibliography" | "description" | "labels" | "body">,
 ): string {
   const frontmatter = {
     id: guideline.id,

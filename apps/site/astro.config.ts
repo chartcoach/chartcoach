@@ -14,7 +14,7 @@ import { oramaSearch } from "./src/integrations/orama-search";
 
 loadRepoEnvFile();
 
-const { siteUrl, siteUrlSource } = getSiteRuntimeConfig();
+const { siteUrl, siteUrlSource, isPreviewDeployment } = getSiteRuntimeConfig();
 
 export default defineConfig({
   site: siteUrl,
@@ -22,7 +22,7 @@ export default defineConfig({
   integrations: [
     react(),
     createSiteUrlLogger(siteUrl, siteUrlSource),
-    sitemap(),
+    ...(!isPreviewDeployment ? [sitemap()] : []),
     llms({
       name: "chartcoach:llms",
       site: siteUrl,

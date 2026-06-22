@@ -72,9 +72,7 @@ export class Catalog implements Iterable<Guideline> {
 
   sectionRoles(): string[] {
     return sortedUnique(
-      this.guidelines.flatMap((guideline) =>
-        guideline.sections.map((section) => section.role),
-      ),
+      this.guidelines.flatMap((guideline) => guideline.sections.map((section) => section.role)),
     );
   }
 

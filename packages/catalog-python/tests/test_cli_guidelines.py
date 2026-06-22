@@ -342,8 +342,7 @@ def test_catalog_cite_json_includes_structured_source_citations(
     payload = cast(list[dict[str, object]], json.loads(result.output))
     assert payload[0]["url"] == "https://example.test/g/direct-labels/"
     assert payload[0]["guideline_citation"] == (
-        "[Use direct labels](https://example.test/g/direct-labels/) "
-        "(`direct-labels`)"
+        "[Use direct labels](https://example.test/g/direct-labels/) (`direct-labels`)"
     )
     sources = cast(list[dict[str, object]], payload[0]["sources"])
     assert sources[0] == {

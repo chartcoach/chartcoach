@@ -2,22 +2,19 @@
   "name": "@chartcoach/catalog",
   "version": "0.1.4",
   "description": "JavaScript models and artifact parsers for the chartcoach visualization guideline catalog.",
+  "bugs": {
+    "url": "https://github.com/chartcoach/chartcoach/issues"
+  },
   "license": "Apache-2.0",
   "author": "Péter Ferenc Gyarmati <dev.petergy@gmail.com>",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/chartcoach/chartcoach.git"
   },
-  "bugs": {
-    "url": "https://github.com/chartcoach/chartcoach/issues"
-  },
   "files": [
     "dist",
     "src"
   ],
-  "publishConfig": {
-    "access": "public"
-  },
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -28,8 +25,13 @@
       "default": "./dist/index.js"
     }
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && tsc -b tsconfig.build.json --force && tsc-alias -p tsconfig.build.json --resolve-full-paths --resolve-full-extension .js",
+    "format": "oxfmt src test scripts package.json tsconfig.json tsconfig.build.json vitest.config.ts",
+    "format:check": "oxfmt src test scripts package.json tsconfig.json tsconfig.build.json vitest.config.ts --check",
     "lint": "oxlint . && pnpm run lint:imports",
     "lint:imports": "node scripts/check-extensionless-imports.mjs",
     "test": "vitest run",

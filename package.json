@@ -4,12 +4,13 @@
   "private": true,
   "license": "Apache-2.0",
   "scripts": {
-    "dev": "portless",
-    "test": "pnpm -r --if-present test",
     "build": "pnpm -r --if-present build",
-    "typecheck": "pnpm -r --if-present typecheck",
+    "dev": "portless",
+    "format": "oxfmt package.json pnpm-workspace.yaml .github/workflows/ci.yml .github/workflows/publish.yml && pnpm -r --if-present format",
+    "format:check": "oxfmt --check package.json pnpm-workspace.yaml .github/workflows/ci.yml .github/workflows/publish.yml && pnpm -r --if-present format:check",
     "lint": "pnpm -r --if-present lint",
-    "format": "pnpm -r --if-present format"
+    "test": "pnpm -r --if-present test",
+    "typecheck": "pnpm -r --if-present typecheck"
   },
   "devDependencies": {
     "oxfmt": "^0.26.0",
@@ -20,7 +21,7 @@
   "devEngines": {
     "runtime": {
       "name": "node",
-      "version": "26.3.1",
+      "version": ">=24",
       "onFail": "download"
     }
   },

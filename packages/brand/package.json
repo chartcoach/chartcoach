@@ -1,9 +1,18 @@
 {
   "name": "@chartcoach/brand",
   "version": "0.1.4",
-  "description": "Shared brand assets, CSS tokens, and public asset checks for chartcoach web apps.",
   "private": true,
+  "description": "Shared brand assets, CSS tokens, and public asset checks for chartcoach web apps.",
   "license": "Apache-2.0",
+  "files": [
+    "assets",
+    "fonts.css",
+    "logo.css",
+    "scripts",
+    "src",
+    "styles",
+    "tokens.css"
+  ],
   "type": "module",
   "exports": {
     ".": {
@@ -15,23 +24,15 @@
     "./logo.css": "./logo.css",
     "./assets/brand/*": "./assets/brand/*"
   },
-  "files": [
-    "assets",
-    "scripts",
-    "src",
-    "styles",
-    "fonts.css",
-    "tokens.css",
-    "logo.css"
-  ],
   "scripts": {
     "build": "pnpm run check:assets && pnpm run typecheck",
-    "lint": "oxlint .",
-    "format": "oxfmt .",
-    "render:svg": "node scripts/render-svg-assets.mjs",
-    "render:png": "node scripts/render-png-assets.mjs",
-    "sync:assets": "pnpm run render:svg && pnpm run render:png && node scripts/sync-public-assets.mjs",
     "check:assets": "pnpm run render:svg -- --check && pnpm run render:png -- --check && node scripts/check-public-assets.mjs",
+    "format": "oxfmt .",
+    "format:check": "oxfmt . --check",
+    "lint": "oxlint .",
+    "render:png": "node scripts/render-png-assets.mjs",
+    "render:svg": "node scripts/render-svg-assets.mjs",
+    "sync:assets": "pnpm run render:svg && pnpm run render:png && node scripts/sync-public-assets.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {

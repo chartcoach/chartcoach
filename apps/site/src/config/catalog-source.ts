@@ -61,10 +61,7 @@ export function catalogSourceWatchFiles(root: URL, source?: string): string[] {
   const sourceStat = statSync(catalogSource);
   if (!sourceStat.isDirectory()) return [catalogSource];
 
-  return [
-    path.join(catalogSource, "entries.parquet"),
-    path.join(catalogSource, "MANIFEST.md"),
-  ];
+  return [path.join(catalogSource, "entries.parquet"), path.join(catalogSource, "MANIFEST.md")];
 }
 
 export function catalogSourceRecordPath(root: URL, catalogSource: string, id: string): string {
@@ -193,7 +190,10 @@ function cachedBundleIsValid(bundle: string): boolean {
 
   try {
     const metadata = JSON.parse(readFileSync(metadataPath, "utf8")) as CatalogReleaseMetadata;
-    if (metadata.version !== DEFAULT_CATALOG.version || metadata.digest !== DEFAULT_CATALOG.digest) {
+    if (
+      metadata.version !== DEFAULT_CATALOG.version ||
+      metadata.digest !== DEFAULT_CATALOG.digest
+    ) {
       return false;
     }
     if (!Array.isArray(metadata.artifacts)) return false;

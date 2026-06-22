@@ -5,16 +5,13 @@
   "license": "Apache-2.0",
   "type": "module",
   "scripts": {
+    "build": "pnpm --dir ../../packages/brand check:assets && astro build",
     "dev": "portless",
     "dev:app": "astro dev --host 127.0.0.1 --port ${PORT:-4321}",
-    "lint": "oxlint . && astro check",
     "format": "oxfmt .",
-    "build": "pnpm --dir ../../packages/brand check:assets && astro build",
+    "format:check": "oxfmt . --check",
+    "lint": "oxlint . && astro check",
     "typecheck": "astro check"
-  },
-  "portless": {
-    "name": "chartcoach",
-    "script": "dev:app"
   },
   "dependencies": {
     "@astrojs/react": "^5.0.7",
@@ -43,5 +40,9 @@
     "tailwindcss": "^4.3.1",
     "turndown": "^7.2.4",
     "typescript": "^5.9.3"
+  },
+  "portless": {
+    "name": "chartcoach",
+    "script": "dev:app"
   }
 }

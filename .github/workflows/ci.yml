@@ -1,0 +1,109 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  javascript:
+    name: JavaScript workspace
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Get pnpm store path
+        id: pnpm-store
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore pnpm store
+        uses: actions/cache@v5
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install JavaScript dependencies
+        run: |
+          pnpm install --frozen-lockfile
+          echo "$PWD/node_modules/.bin" >> "$GITHUB_PATH"
+          pnpm exec node --version
+
+      - name: Check JavaScript formatting
+        run: make js-format-check
+
+      - name: Lint JavaScript
+        run: make js-lint
+
+      - name: Typecheck JavaScript
+        run: make js-typecheck
+
+      - name: Test JavaScript
+        run: make js-test
+
+      - name: Build JavaScript
+        run: make js-build
+
+  python:
+    name: Python package ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - "3.11"
+          - "3.12"
+          - "3.13"
+          - "3.14"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v8.2.0
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install Python runtime
+        run: uv python install "${{ matrix.python-version }}"
+
+      - name: Install Python dependencies
+        run: uv sync --locked --package chartcoach --all-groups --all-extras
+
+      - name: Test Python package
+        run: make py-test
+
+      - name: Check Python formatting
+        if: matrix.python-version == '3.12'
+        run: make py-format-check
+
+      - name: Lint Python
+        if: matrix.python-version == '3.12'
+        run: make py-lint
+
+      - name: Typecheck Python
+        if: matrix.python-version == '3.12'
+        run: make py-typecheck
+
+      - name: Build Python package
+        if: matrix.python-version == '3.12'
+        run: make py-build

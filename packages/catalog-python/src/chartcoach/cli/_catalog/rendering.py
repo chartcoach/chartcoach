@@ -62,4 +62,3 @@ def source_label(source: Mapping[str, object]) -> str:
     if links:
         return f"{label} ({', '.join(links)})"
     return label
-

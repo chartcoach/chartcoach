@@ -235,7 +235,9 @@ def citation_records(
 
 
 def citation_source_from_row(row: Mapping[str, object]) -> dict[str, object]:
-    source = {column: row.get(column) for column in CITATION_SOURCE_COLUMNS if column in row}
+    source = {
+        column: row.get(column) for column in CITATION_SOURCE_COLUMNS if column in row
+    }
     source["citation"] = source_citation(source)
     return source
 
@@ -281,9 +283,7 @@ def validate_url_template(url_template: str) -> None:
     if "{id}" not in url_template:
         raise CatalogValidationError(
             "Guideline URL template must include `{id}`.",
-            hints=(
-                "Use a template such as `https://chartcoach.dev/guidelines/{id}`.",
-            ),
+            hints=("Use a template such as `https://chartcoach.dev/guidelines/{id}`.",),
         )
 
 

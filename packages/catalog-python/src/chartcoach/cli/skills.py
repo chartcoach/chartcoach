@@ -117,8 +117,7 @@ def _emit_skill_list(output_format: str) -> None:
     rows = [skill.to_row() for skill in _discover_skills() if not skill.hidden]
     if output_format == "table":
         rows = [
-            {"name": row["name"], "description": row["description"]}
-            for row in rows
+            {"name": row["name"], "description": row["description"]} for row in rows
         ]
     emit_rows(rows, output_format=output_format)
 

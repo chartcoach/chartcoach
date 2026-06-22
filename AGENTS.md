@@ -49,3 +49,12 @@ Before changing a module, read its nearest README, package manifest, and tests.
   `uv run pyrefly check`, and targeted pytest commands such as
   `uv run pytest packages/catalog-python/tests`.
 - Cross-workspace: `pnpm lint`, `pnpm typecheck`, `pnpm build`, `pnpm test`.
+- CI should keep visible workflow steps for install, format, lint, typecheck,
+  test, build, and publish. Use Makefile targets for the concrete QA gates, but
+  call simple `pnpm` and `uv` setup or publish commands directly.
+- Cloudflare Pages build commands should run `./scripts/cloudflare-setup.sh`
+  before the app build command.
+- Handoff QA: before handoff for code, workflow, package, or generated-asset
+  changes, run the relevant install plus format, lint, typecheck, test, and
+  build gates. If a gate cannot run, report the exact command, failure, and
+  remaining risk.

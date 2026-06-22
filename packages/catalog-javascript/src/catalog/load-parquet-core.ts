@@ -13,11 +13,13 @@ export type AsyncBuffer = {
 
 export type ParquetBytes = ArrayBuffer | ArrayBufferView;
 export type CatalogBytes = ParquetBytes | AsyncBuffer;
-export type LoadCatalogInput = CatalogBytes | {
-  entries: CatalogBytes;
-  manifest?: CatalogManifest;
-  manifestText?: string;
-};
+export type LoadCatalogInput =
+  | CatalogBytes
+  | {
+      entries: CatalogBytes;
+      manifest?: CatalogManifest;
+      manifestText?: string;
+    };
 
 function normalizeParquetBytes(bytes: ParquetBytes): ArrayBuffer {
   if (bytes instanceof ArrayBuffer) return bytes;
@@ -28,9 +30,7 @@ function normalizeParquetBytes(bytes: ParquetBytes): ArrayBuffer {
   return u8.slice().buffer;
 }
 
-export async function loadCatalog(
-  input: LoadCatalogInput,
-): Promise<Catalog> {
+export async function loadCatalog(input: LoadCatalogInput): Promise<Catalog> {
   const { entries, manifest } = resolveLoadCatalogInput(input);
   const normalizedFile =
     entries instanceof ArrayBuffer || ArrayBuffer.isView(entries)
@@ -61,9 +61,8 @@ function resolveLoadCatalogInput(input: LoadCatalogInput): {
 
   return {
     entries: input.entries,
-    manifest: input.manifestText === undefined
-      ? input.manifest
-      : parseCatalogManifest(input.manifestText),
+    manifest:
+      input.manifestText === undefined ? input.manifest : parseCatalogManifest(input.manifestText),
   };
 }
 
@@ -71,11 +70,9 @@ function isCatalogBytes(value: LoadCatalogInput): value is CatalogBytes {
   return (
     value instanceof ArrayBuffer ||
     ArrayBuffer.isView(value) ||
-    (
-      typeof value === "object" &&
+    (typeof value === "object" &&
       value !== null &&
       typeof (value as AsyncBuffer).byteLength === "number" &&
-      typeof (value as AsyncBuffer).slice === "function"
-    )
+      typeof (value as AsyncBuffer).slice === "function")
   );
 }

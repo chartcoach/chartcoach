@@ -30,13 +30,8 @@ describe("Catalog", () => {
     expect(catalog.length).toBe(2);
     expect(catalog.size).toBe(2);
     expect(catalog.get("axis-bars")?.title).toBe("Use full axes");
-    expect(catalog.require("line-labels").references).toEqual([
-      "@article{labels,title={Labels}}",
-    ]);
-    expect([...catalog].map((guideline) => guideline.id)).toEqual([
-      "axis-bars",
-      "line-labels",
-    ]);
+    expect(catalog.require("line-labels").references).toEqual(["@article{labels,title={Labels}}"]);
+    expect([...catalog].map((guideline) => guideline.id)).toEqual(["axis-bars", "line-labels"]);
     expect(catalog.labels()).toEqual(["chart:bar", "chart:line", "task:compare"]);
     expect(catalog.sectionRoles()).toEqual(["advice", "reason"]);
   });
