@@ -18,6 +18,24 @@ const githubIconStyle = {
   WebkitMask: `url("${githubIconUrl}") center / contain no-repeat`,
 } as CSSProperties;
 
+const accessListings = [
+  { id: "ts", label: "TS", title: "main.ts", language: "ts", lines: typescriptLines },
+  { id: "py", label: "Python", title: "main.py", language: "py", lines: pythonLines },
+  { id: "cli", label: "CLI", title: "terminal", language: "sh", lines: shellLines },
+] as const;
+
+const skillStages = [
+  { icon: Search, label: "retrieve", value: "guideline" },
+  { icon: Quote, label: "cite", value: "source" },
+  { icon: MessageSquare, label: "answer", value: "advice" },
+] as const;
+
+const improveSteps = [
+  ["01", "missing guidance", "No guideline covers the chart issue."],
+  ["02", "propose record", "Attach the source, context, and proposed labels."],
+  ["03", "community review", "Review the record in the public catalog repository."],
+] as const;
+
 export function StoryArtifact({
   id,
   active,
@@ -43,11 +61,11 @@ export function StoryArtifact({
   }
 }
 
-export function MarkdownArtifact() {
+function MarkdownArtifact() {
   return <CodeWindow title="guideline.md" language="markdown" lines={markdownLines} />;
 }
 
-export function SourceArtifact() {
+function SourceArtifact() {
   return (
     <article className="min-w-0 overflow-hidden">
       <div className="pb-6">
@@ -89,19 +107,15 @@ export function SourceArtifact() {
   );
 }
 
-export function StructuredArtifact() {
+function StructuredArtifact() {
   return <DenseCodeWindow title="guideline.json" language="json" lines={jsonLines} wrap />;
 }
 
-export function AccessArtifact() {
-  const listings = [
-    { id: "ts", label: "TS", title: "main.ts", language: "ts", lines: typescriptLines },
-    { id: "py", label: "Python", title: "main.py", language: "py", lines: pythonLines },
-    { id: "cli", label: "CLI", title: "terminal", language: "sh", lines: shellLines },
-  ];
-  const [activeListingId, setActiveListingId] = useState(listings[0].id);
+function AccessArtifact() {
+  const [activeListingId, setActiveListingId] =
+    useState<(typeof accessListings)[number]["id"]>(accessListings[0].id);
   const activeListing =
-    listings.find((listing) => listing.id === activeListingId) ?? listings[0];
+    accessListings.find((listing) => listing.id === activeListingId) ?? accessListings[0];
 
   return (
     <div className="bg-code-bg">
@@ -111,7 +125,7 @@ export function AccessArtifact() {
           role="tablist"
           aria-label="SDK examples"
         >
-          {listings.map((listing) => {
+          {accessListings.map((listing) => {
             const selected = activeListing.id === listing.id;
             return (
               <button
@@ -135,7 +149,7 @@ export function AccessArtifact() {
         <DenseCodeWindow {...activeListing} />
       </div>
       <div className="hidden sm:block">
-        {listings.map((listing, index) => (
+        {accessListings.map((listing, index) => (
           <div key={listing.title} className={index === 0 ? undefined : "border-t border-border"}>
             <DenseCodeWindow {...listing} />
           </div>
@@ -145,13 +159,7 @@ export function AccessArtifact() {
   );
 }
 
-export function SkillsArtifact() {
-  const stages = [
-    { icon: Search, label: "retrieve", value: "guideline" },
-    { icon: Quote, label: "cite", value: "source" },
-    { icon: MessageSquare, label: "answer", value: "advice" },
-  ];
-
+function SkillsArtifact() {
   return (
     <div className="grid gap-5">
       <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
@@ -175,12 +183,12 @@ export function SkillsArtifact() {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
-        {stages.map(({ icon: Icon, label, value }, index) => (
+        {skillStages.map(({ icon: Icon, label, value }, index) => (
           <div
             key={label}
             className={[
               "relative grid min-h-28 gap-4 rounded-lg border border-border bg-bg p-4",
-              index < stages.length - 1
+              index < skillStages.length - 1
                 ? "sm:after:absolute sm:after:left-full sm:after:top-1/2 sm:after:block sm:after:h-px sm:after:w-3 sm:after:bg-border"
                 : "",
             ].join(" ")}
@@ -206,13 +214,7 @@ export function SkillsArtifact() {
   );
 }
 
-export function ImproveArtifact() {
-  const steps = [
-    ["01", "missing guidance", "No guideline covers the chart issue."],
-    ["02", "propose record", "Attach the source, context, and proposed labels."],
-    ["03", "community review", "Review the record in the public catalog repository."],
-  ];
-
+function ImproveArtifact() {
   return (
     <div className="grid gap-6">
       <a
@@ -245,7 +247,7 @@ export function ImproveArtifact() {
       </a>
 
       <div className="grid gap-4 sm:grid-cols-3">
-        {steps.map(([number, label, body]) => (
+        {improveSteps.map(([number, label, body]) => (
           <div key={label} className="grid gap-3">
             <span className="font-mono text-[0.6875rem] font-semibold uppercase tracking-[0.14em] text-muted">
               {number}

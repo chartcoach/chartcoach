@@ -205,7 +205,7 @@ function SearchTrigger({ open, onOpen }: { open: boolean; onOpen: () => void }) 
   return (
     <button
       type="button"
-      className="flex h-8 shrink-0 items-center justify-center gap-2 rounded-md border border-border bg-surface-muted px-2.5 text-sm text-muted transition-colors hover:border-fg/25 hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/20 min-[520px]:px-3"
+      className="flex h-8 w-full min-w-0 items-center justify-start gap-2 rounded-md border border-border bg-surface-muted px-2.5 text-sm text-muted transition-colors hover:border-fg/25 hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/20 sm:w-auto sm:justify-center min-[520px]:px-3"
       aria-label="Search guidelines"
       aria-keyshortcuts="Meta+K Control+K"
       aria-expanded={open}
@@ -213,7 +213,7 @@ function SearchTrigger({ open, onOpen }: { open: boolean; onOpen: () => void }) 
       onClick={onOpen}
     >
       <Search aria-hidden="true" className={iconClassName(false)} />
-      <span className="hidden whitespace-nowrap min-[520px]:inline">Search guidelines</span>
+      <span className="min-w-0 truncate whitespace-nowrap">Search guidelines</span>
       <SearchShortcutHint />
     </button>
   );
@@ -533,7 +533,7 @@ export function GuidelineSearch() {
   }
 
   return (
-    <div>
+    <div className="min-w-0 flex-1 sm:flex-none">
       <SearchTrigger open={searchState.open} onOpen={searchState.openSearch} />
       {searchState.open ? (
         <dialog

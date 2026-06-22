@@ -1,8 +1,22 @@
 ---
 import BrandLogo from "@/components/BrandLogo.astro";
 import { GuidelineSearch } from "@/components/guideline-search";
+import { SiteMobileMenu } from "@/components/site-mobile-menu";
 import SvgIcon from "@/components/SvgIcon.astro";
 import { ThemeToggle } from "@/components/theme-toggle";
+
+const primaryLinks = [
+  {
+    label: "Guidelines",
+    href: "/guidelines/",
+  },
+  {
+    label: "Docs",
+    href: "https://docs.chartcoach.dev/",
+  },
+] as const;
+
+const githubHref = "https://github.com/chartcoach/catalog";
 
 const footerLinks = [
   {
@@ -28,30 +42,36 @@ const footerLinks = [
   <header
     class="sticky top-0 z-50 flex min-h-16 items-center justify-between gap-2 bg-bg/90 px-3 py-2 backdrop-blur-sm sm:gap-3 sm:px-4"
   >
-    <a href="/" class="inline-flex h-9 items-center no-underline" aria-label="chartcoach home">
+    <a href="/" class="inline-flex h-9 shrink-0 items-center no-underline" aria-label="chartcoach home">
       <BrandLogo class="h-7 w-[6.97rem] sm:h-8 sm:w-[7.96rem]" />
     </a>
-    <nav class="flex items-center gap-1 text-sm text-muted sm:gap-3 lg:text-[0.9375rem]" aria-label="Primary">
-      <a href="/guidelines/" class="hidden h-8 items-center rounded-md px-1.5 no-underline transition-colors hover:text-accent min-[360px]:inline-flex">
-        Guidelines
-      </a>
-      <a
-        href="https://docs.chartcoach.dev/"
-        class="hidden h-8 items-center rounded-md px-1.5 no-underline transition-colors hover:text-accent sm:inline-flex"
-      >
-        Docs
-      </a>
+    <nav class="flex min-w-0 flex-1 items-center justify-end gap-2 text-sm text-muted sm:gap-3 lg:text-[0.9375rem]" aria-label="Primary">
+      {
+        primaryLinks.map((link) => (
+          <a
+            href={link.href}
+            target={link.href.startsWith("http") ? "_blank" : undefined}
+            rel={link.href.startsWith("http") ? "noreferrer" : undefined}
+            class="hidden h-8 items-center rounded-md px-1.5 no-underline transition-colors hover:text-accent sm:inline-flex"
+          >
+            {link.label}
+          </a>
+        ))
+      }
       <GuidelineSearch client:load />
       <a
-        href="https://github.com/chartcoach/catalog"
+        href={githubHref}
         target="_blank"
         rel="noreferrer"
-        class="inline-flex h-8 w-8 items-center justify-center rounded-md no-underline transition-colors hover:bg-accent-muted hover:text-accent"
+        class="hidden h-8 w-8 items-center justify-center rounded-md no-underline transition-colors hover:bg-accent-muted hover:text-accent sm:inline-flex"
         aria-label="chartcoach catalog on GitHub"
       >
         <SvgIcon name="github" class="h-[1.125rem] w-[1.125rem] shrink-0" />
       </a>
-      <ThemeToggle client:load />
+      <div class="hidden sm:block">
+        <ThemeToggle client:load />
+      </div>
+      <SiteMobileMenu links={primaryLinks} githubHref={githubHref} client:load />
     </nav>
   </header>
 
