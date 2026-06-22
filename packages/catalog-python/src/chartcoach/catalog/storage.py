@@ -40,9 +40,7 @@ def load_catalog(folder_path: PathLike[str]) -> Catalog:
     manifest = CatalogManifest.from_path(root / "MANIFEST.md")
     entries_root = root / "entries"
     if not entries_root.exists():
-        raise FileNotFoundError(
-            f"No entries directory found in catalog folder: {root}"
-        )
+        raise FileNotFoundError(f"No entries directory found in catalog folder: {root}")
     entries: list[CatalogEntry] = []
 
     for entry_path in sorted(entries_root.iterdir()):

@@ -1,4 +1,9 @@
-export { Catalog, type CatalogOptions, type Guideline, type GuidelineSection } from "./catalog/model";
+export {
+  Catalog,
+  type CatalogOptions,
+  type Guideline,
+  type GuidelineSection,
+} from "./catalog/model";
 export { CatalogError } from "./catalog/errors";
 export {
   DEFAULT_CATALOG,

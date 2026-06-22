@@ -1,8 +1,4 @@
-import {
-  findBrandAssetDrift,
-  publicBrandTargets,
-  relativeToRepo,
-} from "./public-brand-assets.mjs";
+import { findBrandAssetDrift, publicBrandTargets, relativeToRepo } from "./public-brand-assets.mjs";
 
 let hasDrift = false;
 

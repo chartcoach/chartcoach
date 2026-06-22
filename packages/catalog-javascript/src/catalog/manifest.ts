@@ -33,10 +33,7 @@ export function parseCatalogManifest(markdown: string): CatalogManifest {
   let currentLines: string[] = [];
 
   function flushDefinition() {
-    if (
-      currentHeading !== "Section Roles" &&
-      currentHeading !== "Label Families"
-    ) {
+    if (currentHeading !== "Section Roles" && currentHeading !== "Label Families") {
       currentLines = [];
       return;
     }
@@ -87,9 +84,7 @@ export function parseCatalogManifest(markdown: string): CatalogManifest {
     ) {
       flushDefinition();
       if (!title) {
-        throw new CatalogError(
-          `Manifest heading ${currentHeading} contains an empty subheading.`,
-        );
+        throw new CatalogError(`Manifest heading ${currentHeading} contains an empty subheading.`);
       }
       currentName = title;
       currentLines = [];
@@ -119,7 +114,10 @@ export function parseCatalogManifest(markdown: string): CatalogManifest {
   };
 }
 
-export function validateManifestCoverage(guidelines: readonly Guideline[], manifest: CatalogManifest) {
+export function validateManifestCoverage(
+  guidelines: readonly Guideline[],
+  manifest: CatalogManifest,
+) {
   const usedRoles = new Set<string>();
   const usedFamilies = new Set<string>();
 

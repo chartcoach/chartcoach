@@ -99,24 +99,13 @@ export function DesktopStoryControl({
         isActive ? "opacity-100" : "opacity-38",
       ].join(" ")}
     >
-      <StoryControlButton
-        step={step}
-        index={index}
-        isActive={isActive}
-        onSelect={onSelect}
-      />
+      <StoryControlButton step={step} index={index} isActive={isActive} onSelect={onSelect} />
       <p className="m-0 min-w-0 pl-10 text-[1rem] leading-[1.55] text-muted">{step.body}</p>
     </div>
   );
 }
 
-export function MobileStoryControl({
-  step,
-  index,
-}: {
-  step: StoryStep;
-  index: number;
-}) {
+export function MobileStoryControl({ step, index }: { step: StoryStep; index: number }) {
   return (
     <div className="flex min-w-0 flex-col gap-4 opacity-100 transition-opacity duration-300 motion-reduce:transition-none">
       <StoryControlLabel step={step} index={index} />
@@ -154,13 +143,7 @@ export function ArtifactFrame({
   );
 }
 
-function ActiveArtifactHeader({
-  step,
-  header,
-}: {
-  step: StoryStep;
-  header: ArtifactHeaderMode;
-}) {
+function ActiveArtifactHeader({ step, header }: { step: StoryStep; header: ArtifactHeaderMode }) {
   return <StoryArtifactHeader step={step} expanded header={header} />;
 }
 
@@ -168,10 +151,7 @@ function StackedArtifactHeader({ step, first }: { step: StoryStep; first: boolea
   return (
     <StoryArtifactHeader
       step={step}
-      className={[
-        "border-x border-border bg-bg",
-        first ? "rounded-t-2xl border-t" : "",
-      ].join(" ")}
+      className={["border-x border-border bg-bg", first ? "rounded-t-2xl border-t" : ""].join(" ")}
     />
   );
 }
@@ -216,13 +196,7 @@ function StoryArtifactHeader({
   );
 }
 
-function StoryControlLabel({
-  step,
-  index,
-}: {
-  step: StoryStep;
-  index: number;
-}) {
+function StoryControlLabel({ step, index }: { step: StoryStep; index: number }) {
   return (
     <div className="flex min-w-0 flex-wrap items-center gap-4 text-left">
       <StoryControlContent step={step} index={index} active />

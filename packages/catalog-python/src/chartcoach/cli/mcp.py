@@ -29,7 +29,9 @@ def _is_missing_search_dependency(exc: ModuleNotFoundError) -> bool:
     return _has_missing_module(exc, ("lancedb",))
 
 
-def _has_missing_module(exc: ModuleNotFoundError, module_names: tuple[str, ...]) -> bool:
+def _has_missing_module(
+    exc: ModuleNotFoundError, module_names: tuple[str, ...]
+) -> bool:
     current: BaseException | None = exc
     while current is not None:
         if isinstance(current, ModuleNotFoundError):

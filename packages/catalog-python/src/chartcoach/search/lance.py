@@ -189,7 +189,11 @@ def _resolve_mode(table: "Table", search_query: Query, mode: Mode) -> Mode:
     if not isinstance(search_query, str):
         return mode
     has_embeddings = _has_embedding_functions(table)
-    if mode in {"vector", "hybrid"} and isinstance(search_query, str) and not has_embeddings:
+    if (
+        mode in {"vector", "hybrid"}
+        and isinstance(search_query, str)
+        and not has_embeddings
+    ):
         raise ValueError(
             f"{mode} search requires a LanceDB table with embeddings. "
             "Rebuild the index with `chartcoach catalog index create --embedding ...` "
@@ -205,6 +209,7 @@ def _has_embedding_functions(table: "Table") -> bool:
 def _document(row: dict[str, object]) -> Document:
     keys = [*_BASE_QUERY_COLUMNS, *_RANKING_COLUMNS]
     return cast(Document, {key: row[key] for key in keys if key in row})
+
 
 __all__ = [
     "Document",

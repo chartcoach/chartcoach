@@ -166,7 +166,9 @@ def load_catalog(ctx: click.Context) -> Catalog:
     path = source_path(ctx)
     try:
         if path is None:
-            return Catalog.from_bundle(default_catalog_bundle(reporter=report_cache_download))
+            return Catalog.from_bundle(
+                default_catalog_bundle(reporter=report_cache_download)
+            )
         if _is_http_url(path):
             return Catalog.from_bundle(
                 download_catalog_bundle(

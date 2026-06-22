@@ -37,9 +37,7 @@ def test_mcp_tools_command_prints_tool_contracts(runner: CliRunner) -> None:
         "where",
         "mode",
     }
-    assert "rows" in {
-        field["name"] for field in tools["search"]["returns"]["fields"]
-    }
+    assert "rows" in {field["name"] for field in tools["search"]["returns"]["fields"]}
 
 
 def test_mcp_cli_renders_install_hint_for_missing_optional_dependency(
