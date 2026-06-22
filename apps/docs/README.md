@@ -10,6 +10,9 @@ Run the docs locally:
 pnpm --dir apps/docs dev
 ```
 
+The dev script runs through portless at `https://docs.chartcoach.localhost`.
+Run `pnpm --dir apps/docs dev:app` to start Next.js directly.
+
 Run checks from the repository root:
 
 ```bash
