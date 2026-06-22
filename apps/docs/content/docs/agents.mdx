@@ -30,9 +30,9 @@ codex 'Use $chartcoach to review this dashboard screenshot for labeling, legend,
 Inspect bundled skill text:
 
 ```bash
-uvx chartcoach@latest skills list --format table
+uvx chartcoach@latest skills list --format jsonl
+uvx chartcoach@latest skills get core
 uvx chartcoach@latest skills get visfeedback
-uvx chartcoach@latest skills get visrec
 ```
 
 ## Evidence flow
@@ -50,6 +50,15 @@ candidate with `catalog read`, then produce links and source references with
 
 Search output is candidate evidence. Exact `catalog read` output is the text
 that can support a claim.
+
+```bash
+uvx chartcoach@latest catalog query --label chart:bar:use --limit 5 --format jsonl
+uvx chartcoach@latest catalog read compare-percentages-with-bars-not-pies \
+  --source-detail minimal \
+  --format json
+uvx chartcoach@latest catalog cite compare-percentages-with-bars-not-pies \
+  --format json
+```
 
 ## Contribution drafts
 

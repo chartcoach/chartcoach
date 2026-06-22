@@ -29,8 +29,31 @@ Use [Querying](/querying) for task examples across CLI, Python, and TypeScript.
 Row-oriented commands support `table`, `json`, `jsonl`, and `csv` unless the
 command has a narrower contract. Search also supports `compact` and `markdown`.
 
+Use JSONL for agent candidate rows:
+
+```bash
+uvx chartcoach@latest catalog query --label chart:bar:use --limit 5 --format jsonl
+uvx chartcoach@latest catalog read compare-percentages-with-bars-not-pies \
+  --source-detail minimal \
+  --format json
+uvx chartcoach@latest catalog cite compare-percentages-with-bars-not-pies \
+  --format json
+```
+
+Query and search rows are candidates. Use ids copied from `query`, `find`, or
+`list`. Do not generate ids from titles.
+
 Inspect [queryable tables](/catalog#queryable-tables) before writing SQL
 against a new catalog.
+
+## Extras
+
+| Need | Extra | One-off selector |
+| --- | --- | --- |
+| Base query, read, cite, SQL | none | `uvx chartcoach@latest ...` |
+| Indexed `catalog find` | `index` | `uvx --from 'chartcoach[index]@latest' chartcoach ...` |
+| MCP SQL server | `mcp` | `uvx --from 'chartcoach[mcp]@latest' chartcoach ...` |
+| MCP search server | `mcp,index` | `uvx --from 'chartcoach[mcp,index]@latest' chartcoach ...` |
 
 ## Sources
 
@@ -82,6 +105,10 @@ uvx chartcoach@latest catalog cache list
 Use `cache pull` to warm a release and `cache clear` to remove cached
 artifacts. Pass `--catalog-only` when a warm cache only needs `metadata.json`,
 `MANIFEST.md`, and `entries.parquet`.
+
+`Catalog.open()` and first CLI catalog reads download package-pinned artifacts.
+Indexed search downloads an index archive. Set `CHARTCOACH_CACHE_DIR` to
+isolate writes.
 
 ## Indexed discovery
 

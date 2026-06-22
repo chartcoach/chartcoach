@@ -21,16 +21,13 @@ output must stay tied to one catalog release.
 ## Query a topic
 
 ```bash
-uvx chartcoach@latest catalog query --contains "pie chart" --limit 3 --format table
+uvx chartcoach@latest catalog query --contains "pie chart" --limit 3 --format jsonl
 ```
 
-You should see rows with `id`, `title`, `description`, and `labels` columns.
+You should see one JSON object per row. The first row is the id used below.
 
-```text
-id                                      title
-combine-small-pie-slices-...            Group small pie slices...
-move-small-slice-labels-...             Place small-slice labels...
-replace-pie-with-stacked-bar-...        Use a stacked bar chart...
+```json
+{"id":"combine-small-pie-slices-into-an-others-category","title":"Group small pie slices into an others category","description":"For pie charts with many small slices, use grouped slices on the chart to improve readability and mitigate clutter from tiny wedges and many labels for readers.","labels":["purpose:refine","basis:heuristic","chart:pie-donut","lever:encoding","group-cardinality:many","quality:readability","polish:declutter"]}
 ```
 
 Use `table` for terminal reading. Use `json`, `jsonl`, or `csv` when another
@@ -39,9 +36,9 @@ program reads stdout.
 ## Read one guideline
 
 ```bash
-uvx chartcoach@latest catalog read compare-percentages-with-bars-not-pies \
+uvx chartcoach@latest catalog read combine-small-pie-slices-into-an-others-category \
   --source-detail minimal \
-  --format markdown
+  --format json
 ```
 
 `read` returns the guideline text, labels, sections, and selected source
@@ -50,8 +47,34 @@ metadata.
 ## Cite its sources
 
 ```bash
-uvx chartcoach@latest catalog cite compare-percentages-with-bars-not-pies \
-  --format markdown
+uvx chartcoach@latest catalog cite combine-small-pie-slices-into-an-others-category \
+  --format json
 ```
 
-`cite` returns the public guideline URL and formatted source references.
+`cite` returns the public guideline URL and structured source references.
+
+```json
+[
+  {
+    "id": "combine-small-pie-slices-into-an-others-category",
+    "url": "https://chartcoach.dev/guidelines/combine-small-pie-slices-into-an-others-category",
+    "sources": [
+      {
+        "reference_id": "muth_chart_types_guide_2025",
+        "source_title": "A friendly guide to choosing a chart type",
+        "doi": null,
+        "url": null
+      }
+    ]
+  }
+]
+```
+
+Use `markdown` when a person will read citation output. Use `json` or `jsonl`
+when an agent needs guideline ids, source keys, titles, and locator fields.
+
+<Callout title="Cache writes">
+`Catalog.open()` and first CLI catalog reads download package-pinned artifacts.
+Indexed search downloads an index archive. Set `CHARTCOACH_CACHE_DIR` to
+isolate writes.
+</Callout>
