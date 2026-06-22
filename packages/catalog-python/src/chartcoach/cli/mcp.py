@@ -2,13 +2,15 @@ from __future__ import annotations
 
 import click
 
-from chartcoach.tools import format_error
+from chartcoach.tools import format_error, mcp_tool_specs
 
 from chartcoach.constants import (
     INDEX_ENV,
     LANCE_DOCUMENT_TABLE,
     SOURCE_ENV,
 )
+
+from .common import ROW_FORMATS, emit_rows
 
 CONTEXT_SETTINGS = {"help_option_names": ["-h", "--help"]}
 TRANSPORT_CHOICES = ("stdio", "sse", "streamable-http")
@@ -48,6 +50,25 @@ def _has_missing_module(exc: ModuleNotFoundError, module_names: tuple[str, ...])
 )
 def mcp_command() -> None:
     """Start and configure chartcoach MCP servers."""
+
+
+@mcp_command.command(
+    "tools",
+    context_settings=CONTEXT_SETTINGS,
+    short_help="Print MCP tool contracts.",
+)
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(ROW_FORMATS),
+    default="json",
+    show_default=True,
+    help="Output format.",
+)
+def tools_command(output_format: str) -> None:
+    """Print MCP tool names, arguments, registration conditions, and return shapes."""
+
+    emit_rows(mcp_tool_specs(), output_format=output_format)
 
 
 @mcp_command.command(
@@ -166,4 +187,4 @@ def _run_server(
     )
 
 
-__all__ = ["mcp_command", "serve_command"]
+__all__ = ["mcp_command", "serve_command", "tools_command"]

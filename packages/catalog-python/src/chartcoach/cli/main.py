@@ -37,6 +37,7 @@ CONTEXT_SETTINGS = {"help_option_names": ["-h", "--help"]}
         "  catalog cache                Inspect and prefetch artifact cache entries\n\n"
         "\b\n"
         "MCP Server:\n"
+        "  mcp tools                    Print MCP tool contracts\n"
         "  mcp serve                    Start the MCP server\n\n"
         "\b\n"
         "Agent Skills:\n"
