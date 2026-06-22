@@ -9,13 +9,13 @@ provide ids for later `read` and `cite` calls.
 
 ## Candidate rows
 
-Find guideline ids from a topic phrase:
+Find guideline ids from a chart-decision label:
 
 ```bash tab="CLI"
 uvx chartcoach@latest catalog query \
-  --contains "legend" \
+  --label chart:bar:use \
   --limit 5 \
-  --format table
+  --format jsonl
 ```
 
 ```python tab="Python"
@@ -25,10 +25,7 @@ from chartcoach import Catalog
 catalog = Catalog.open()
 rows = (
     catalog.guidelines()
-    .filter(
-        pl.col("title").str.contains("legend", literal=True)
-        | pl.col("description").str.contains("legend", literal=True)
-    )
+    .filter(pl.col("labels").list.contains("chart:bar:use"))
     .select("id", "title", "labels")
     .head(5)
 )
@@ -43,10 +40,7 @@ const [entries, manifestText] = await Promise.all([
 ])
 const catalog = await loadCatalog({ entries, manifestText })
 const rows = catalog.guidelines
-  .filter((guideline) =>
-    guideline.title.toLowerCase().includes("legend")
-    || guideline.description.toLowerCase().includes("legend")
-  )
+  .filter((guideline) => guideline.labels.includes("chart:bar:use"))
   .slice(0, 5)
   .map(({ id, title, labels }) => ({ id, title, labels }))
 ```
@@ -80,10 +74,10 @@ Use exact ids for final text and citations.
 ```bash tab="CLI"
 uvx chartcoach@latest catalog read compare-percentages-with-bars-not-pies \
   --source-detail minimal \
-  --format markdown
+  --format json
 
 uvx chartcoach@latest catalog cite compare-percentages-with-bars-not-pies \
-  --format markdown
+  --format json
 ```
 
 ```python tab="Python"
@@ -122,7 +116,7 @@ uvx chartcoach@latest catalog query \
   --section-contains "small differences" \
   --show-matches \
   --limit 5 \
-  --format table
+  --format jsonl
 ```
 
 ## SQL joins and indexed search
@@ -140,6 +134,24 @@ limit 5
 " --format jsonl
 ```
 
+```python tab="Python"
+from chartcoach import Catalog
+
+catalog = Catalog.open()
+conn = catalog.duckdb()
+try:
+    rows = conn.sql("""
+        select g.id, g.title, s.role, s.content
+        from guidelines g
+        join sections s on s.guideline_id = g.id
+        where list_contains(g.labels, 'chart:bar:use')
+          and s.role = 'advice'
+        limit 5
+    """).pl()
+finally:
+    conn.close()
+```
+
 Use indexed discovery when keyword filters miss plausible guidelines:
 
 ```bash
@@ -150,8 +162,8 @@ uvx --from 'chartcoach[index]@latest' chartcoach catalog find \
   "overplotted scatter plot with too many points"
 ```
 
-For Python joins, use `catalog.duckdb()`. For Python indexed search, use
-`default_index_path()` with `chartcoach.search.open()`. For TypeScript joins,
-use the nested records returned by `loadCatalog()`. The
-[Catalog contract](/catalog) lists tables, columns, source locators, and
-manifest vocabulary.
+The first indexed command downloads and extracts the package-pinned index. For
+Python indexed search, use `default_index_path()` with
+`chartcoach.search.open()`. For TypeScript joins, use the nested records
+returned by `loadCatalog()`. The [Catalog contract](/catalog) lists tables,
+columns, source locators, and manifest vocabulary.

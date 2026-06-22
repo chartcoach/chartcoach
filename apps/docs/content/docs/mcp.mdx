@@ -7,6 +7,12 @@ The chartcoach MCP server exposes catalog SQL and optional indexed search tools
 for MCP clients. MCP, the Model Context Protocol, lets an agent client call
 server-provided tools during a session.
 
+Inspect tool contracts without starting a server:
+
+```bash
+uvx --from 'chartcoach[mcp,index]@latest' chartcoach mcp tools --format json
+```
+
 ```bash
 uvx --from 'chartcoach[mcp]@latest' chartcoach mcp serve
 ```
@@ -15,6 +21,25 @@ The package selector after `--from` installs extras. Use
 `chartcoach[mcp]@0.1.3` when the server must stay tied to one catalog release.
 
 With no index configured, the server registers `sql` for read-only catalog SQL.
+
+## Extras
+
+| Need | Extra | One-off selector |
+| --- | --- | --- |
+| Base query, read, cite, SQL | none | `uvx chartcoach@latest ...` |
+| Indexed `catalog find` | `index` | `uvx --from 'chartcoach[index]@latest' chartcoach ...` |
+| MCP SQL server | `mcp` | `uvx --from 'chartcoach[mcp]@latest' chartcoach ...` |
+| MCP search server | `mcp,index` | `uvx --from 'chartcoach[mcp,index]@latest' chartcoach ...` |
+
+## Tool contracts
+
+| Tool | Registered when | Arguments | Return shape |
+| --- | --- | --- | --- |
+| `sql` | Always | `statement` string, `limit` integer default `100` | `columns`, `rows`, `row_count`, `truncated`, `limit`, `catalog_digest` |
+| `search` | Only when `--index` or `CHARTCOACH_INDEX` is set | `search_query` string, `limit` integer default `10`, `where` string or null, `mode` `auto`, `fts`, `vector`, or `hybrid` | `query`, `mode`, `rows`, `row_count`, `limit`, `where`, `index_path`, `table_name` |
+
+The `sql` tool accepts one read-only `SELECT` statement. The `search` tool
+returns candidate rows. Read exact ids before citing them.
 
 ## Configure a client
 
@@ -63,6 +88,14 @@ To reuse the cached package-pinned index, resolve it with
 `chartcoach catalog index info --format json` and pass the returned path as
 `--index`.
 
+```bash
+INDEX_PATH="$(
+  uvx --from 'chartcoach[mcp,index]@latest' chartcoach catalog index info --format json |
+    jq -r '.[0].index_path'
+)"
+uvx --from 'chartcoach[mcp,index]@latest' chartcoach mcp serve --index "$INDEX_PATH"
+```
+
 When an index is available, the server also registers:
 
 | Tool | Behavior |
@@ -71,6 +104,10 @@ When an index is available, the server also registers:
 
 The search table defaults to `catalog_documents`. Pass `--table` for another
 table name.
+
+`Catalog.open()` and first CLI catalog reads download package-pinned artifacts.
+Indexed search downloads an index archive. Set `CHARTCOACH_CACHE_DIR` to
+isolate writes.
 
 ## Source and runtime options
 
