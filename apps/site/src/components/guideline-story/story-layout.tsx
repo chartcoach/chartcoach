@@ -179,15 +179,15 @@ function StoryArtifactHeader({
     <div
       data-story-surface-header
       className={[
-        "flex h-16 min-w-0 items-center justify-between gap-4 px-5 sm:px-6",
+        "flex min-h-16 min-w-0 items-center justify-end gap-4 px-5 py-4 sm:h-16 sm:justify-between sm:px-6 sm:py-0",
         expanded ? "bg-bg" : "border-b border-border bg-surface-muted/45",
         className,
       ].join(" ")}
     >
-      <p className="m-0 min-w-0 truncate text-[1rem] font-semibold leading-snug text-fg">
+      <p className="m-0 hidden min-w-0 text-[1rem] font-semibold leading-snug text-fg sm:block">
         {step.surface.intent}
       </p>
-      <div className="shrink-0 text-right">
+      <div className="min-w-0 text-right sm:shrink-0">
         <p className="m-0 font-mono text-[0.6875rem] font-semibold uppercase tracking-[0.14em] text-muted">
           {step.surface.form}
         </p>

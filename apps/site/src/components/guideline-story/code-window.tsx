@@ -42,7 +42,7 @@ function CodeWindowFrame({
       className="relative min-w-0 overflow-hidden bg-code-bg"
       aria-label={`${title} ${language} code example`}
     >
-      <span className="absolute left-5 top-4 z-10 min-w-0 max-w-[calc(100%-8rem)] truncate font-mono text-[0.6875rem] leading-none text-muted sm:left-6">
+      <span className="absolute left-5 top-4 z-10 min-w-0 max-w-[calc(100%-8rem)] break-words font-mono text-[0.6875rem] leading-none text-muted sm:left-6">
         {title}
       </span>
       <span className="absolute right-4 top-3.5 z-10 rounded-full border border-border bg-bg/82 px-2.5 py-1 font-mono text-[0.625rem] font-semibold uppercase leading-none tracking-[0.12em] text-muted shadow-[0_1px_2px_color-mix(in_srgb,var(--color-fg)_5%,transparent)] sm:right-5">
