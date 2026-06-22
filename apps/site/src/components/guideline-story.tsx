@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   ArtifactFrame,
   DesktopArtifactStack,
@@ -8,12 +8,14 @@ import {
 import { StoryArtifact } from "./guideline-story/artifacts";
 import { steps } from "./guideline-story/story-steps";
 
+const useBrowserLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
+
 export function GuidelineStory() {
   const [activeIndex, setActiveIndex] = useState(0);
   const activeIndexRef = useRef(activeIndex);
   const stepRefs = useRef<Array<HTMLDivElement | null>>([]);
 
-  useEffect(() => {
+  useBrowserLayoutEffect(() => {
     activeIndexRef.current = activeIndex;
   }, [activeIndex]);
 
@@ -45,7 +47,6 @@ export function GuidelineStory() {
       frame = window.requestAnimationFrame(update);
     };
 
-    update();
     window.addEventListener("scroll", schedule, { passive: true });
     window.addEventListener("resize", schedule);
 
@@ -112,7 +113,7 @@ export function GuidelineStory() {
             {steps.map((step, index) => (
               <div key={step.title} className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4">
                 <MobileStoryControl step={step} index={index} />
-                <ArtifactFrame step={step}>
+                <ArtifactFrame step={step} header="metadata">
                   <StoryArtifact id={step.artifact} active />
                 </ArtifactFrame>
               </div>

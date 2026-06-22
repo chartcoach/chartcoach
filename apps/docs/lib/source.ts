@@ -21,7 +21,7 @@ export function getPageMarkdownUrl(page: DocsPage) {
   };
 }
 
-export function getPageSourceUrl(page: DocsPage) {
+function getPageSourceUrl(page: DocsPage) {
   return `https://github.com/${gitConfig.user}/${gitConfig.repo}/blob/${gitConfig.branch}/apps/docs/content/docs/${page.path}`;
 }
 

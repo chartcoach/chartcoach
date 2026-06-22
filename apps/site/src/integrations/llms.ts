@@ -182,11 +182,14 @@ async function resolveSources(
   }
 
   const includePage = options.includePage ?? isHtmlPagePathname;
-  return (context.pages ?? [])
-    .map((page) => page.pathname)
-    .filter(includePage)
-    .map(normalizePageSource)
-    .sort((a, b) => a.pathname.localeCompare(b.pathname));
+  const sources: LlmPageSource[] = [];
+
+  for (const page of context.pages ?? []) {
+    if (!includePage(page.pathname)) continue;
+    sources.push(normalizePageSource(page.pathname));
+  }
+
+  return sources.sort((a, b) => a.pathname.localeCompare(b.pathname));
 }
 
 function extractEntryFromHtml(
