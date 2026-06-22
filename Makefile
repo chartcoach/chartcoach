@@ -5,17 +5,20 @@ ROOT_FORMAT_FILES := package.json pnpm-workspace.yaml .github/workflows/ci.yml .
 
 export PATH := $(CURDIR)/node_modules/.bin:$(PATH)
 
-.PHONY: js-format-check js-lint js-typecheck js-test js-build
+.PHONY: js-format-check js-lint js-typecheck js-test js-build js-prepare
 .PHONY: py-format-check py-lint py-typecheck py-test py-build
 
 js-format-check:
 	pnpm exec oxfmt --check $(ROOT_FORMAT_FILES)
 	pnpm -r $(JS_FILTERS) --if-present format:check
 
-js-lint:
+js-prepare:
+	pnpm --filter @chartcoach/catalog build
+
+js-lint: js-prepare
 	pnpm -r $(JS_FILTERS) --if-present lint
 
-js-typecheck:
+js-typecheck: js-prepare
 	pnpm -r $(JS_FILTERS) --if-present typecheck
 
 js-test:
