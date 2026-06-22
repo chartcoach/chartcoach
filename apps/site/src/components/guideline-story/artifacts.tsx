@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from "react";
+import { useState, type CSSProperties, type ReactNode } from "react";
 import { Bot, ExternalLink, MessageSquare, Quote, Search } from "lucide-react";
 import githubIconUrl from "@/assets/icons/github.svg?url";
 import {
@@ -95,18 +95,52 @@ export function StructuredArtifact() {
 
 export function AccessArtifact() {
   const listings = [
-    { title: "main.ts", language: "ts", lines: typescriptLines },
-    { title: "main.py", language: "py", lines: pythonLines },
-    { title: "terminal", language: "sh", lines: shellLines },
+    { id: "ts", label: "TS", title: "main.ts", language: "ts", lines: typescriptLines },
+    { id: "py", label: "Python", title: "main.py", language: "py", lines: pythonLines },
+    { id: "cli", label: "CLI", title: "terminal", language: "sh", lines: shellLines },
   ];
+  const [activeListingId, setActiveListingId] = useState(listings[0].id);
+  const activeListing =
+    listings.find((listing) => listing.id === activeListingId) ?? listings[0];
 
   return (
     <div className="bg-code-bg">
-      {listings.map((listing, index) => (
-        <div key={listing.title} className={index === 0 ? undefined : "border-t border-border"}>
-          <DenseCodeWindow {...listing} />
+      <div className="sm:hidden">
+        <div
+          className="grid grid-cols-3 gap-1 border-b border-border bg-bg/68 p-1"
+          role="tablist"
+          aria-label="SDK examples"
+        >
+          {listings.map((listing) => {
+            const selected = activeListing.id === listing.id;
+            return (
+              <button
+                key={listing.id}
+                type="button"
+                role="tab"
+                aria-selected={selected}
+                onClick={() => setActiveListingId(listing.id)}
+                className={[
+                  "min-w-0 rounded-md px-2.5 py-2 font-mono text-[0.6875rem] font-semibold uppercase tracking-[0.1em] transition-colors",
+                  selected
+                    ? "bg-bg text-fg shadow-[0_1px_2px_color-mix(in_srgb,var(--color-fg)_8%,transparent)]"
+                    : "text-muted hover:bg-bg/72 hover:text-fg",
+                ].join(" ")}
+              >
+                {listing.label}
+              </button>
+            );
+          })}
         </div>
-      ))}
+        <DenseCodeWindow {...activeListing} />
+      </div>
+      <div className="hidden sm:block">
+        {listings.map((listing, index) => (
+          <div key={listing.title} className={index === 0 ? undefined : "border-t border-border"}>
+            <DenseCodeWindow {...listing} />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -121,7 +155,7 @@ export function SkillsArtifact() {
   return (
     <div className="grid gap-5">
       <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
-        <p className="m-0 min-w-0 truncate font-mono text-[0.6875rem] font-semibold uppercase tracking-[0.14em] text-muted">
+        <p className="m-0 min-w-0 break-words font-mono text-[0.6875rem] font-semibold uppercase tracking-[0.14em] text-muted">
           chartcoach/skills
         </p>
         <span className="rounded-full border border-border bg-surface-muted px-2.5 py-1 font-mono text-[0.625rem] font-semibold uppercase leading-none tracking-[0.12em] text-muted">
@@ -134,7 +168,7 @@ export function SkillsArtifact() {
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-bg text-muted">
             <Bot className="h-4 w-4" aria-hidden="true" />
           </span>
-          <p className="m-0 min-w-0 truncate font-mono text-[1rem] font-semibold leading-snug text-fg">
+          <p className="m-0 min-w-0 break-words font-mono text-[1rem] font-semibold leading-snug text-fg">
             evaluate chart
           </p>
         </div>
@@ -191,15 +225,16 @@ export function ImproveArtifact() {
         <span className="block font-mono text-[0.6875rem] font-semibold uppercase tracking-[0.14em] text-muted">
           public catalog
         </span>
-        <span className="flex min-w-0 items-center justify-between gap-4">
-          <span className="flex min-w-0 items-center gap-3">
+        <span className="flex min-w-0 items-start justify-between gap-4">
+          <span className="flex min-w-0 items-start gap-3">
             <span
-              className="block h-4 w-4 shrink-0 bg-current text-fg"
+              className="mt-1 block h-4 w-4 shrink-0 bg-current text-fg"
               style={githubIconStyle}
               aria-hidden="true"
             />
-            <span className="min-w-0 truncate font-mono text-[1rem] font-semibold leading-snug text-fg underline decoration-border underline-offset-4 transition-colors group-hover:text-accent group-hover:decoration-accent">
-              github.com/chartcoach/catalog
+            <span className="min-w-0 break-normal font-mono text-[0.9375rem] font-semibold leading-snug text-fg underline decoration-border underline-offset-4 transition-colors group-hover:text-accent group-hover:decoration-accent sm:text-[1rem]">
+              github.com/chartcoach/<wbr />
+              catalog
             </span>
           </span>
           <ExternalLink
@@ -216,13 +251,13 @@ export function ImproveArtifact() {
               {number}
             </span>
             <h3 className="m-0 text-[1rem] font-semibold leading-snug text-fg">{label}</h3>
-            <p className="m-0 text-[0.875rem] leading-[1.55] text-muted">{body}</p>
+            <p className="m-0 break-words text-[0.875rem] leading-[1.55] text-muted">{body}</p>
           </div>
         ))}
       </div>
 
       <div className="rounded-lg border border-border bg-surface-muted/70 px-4 py-3.5 shadow-[0_1px_0_color-mix(in_srgb,var(--color-fg)_4%,transparent)]">
-        <div className="flex min-w-0 items-start gap-3">
+        <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start">
           <span
             className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-[#1f883d] text-[#1f883d]"
             aria-hidden="true"
@@ -230,14 +265,14 @@ export function ImproveArtifact() {
             <span className="h-1.5 w-1.5 rounded-full bg-current" />
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-[0.9375rem] font-semibold leading-snug text-fg">
+            <span className="block break-words text-[0.9375rem] font-semibold leading-snug text-fg">
               Add guideline for missing chart guidance
             </span>
-            <span className="mt-1 block truncate text-[0.75rem] leading-snug text-muted">
+            <span className="mt-1 block break-words text-[0.75rem] leading-snug text-muted">
               opened in chartcoach/catalog
             </span>
           </span>
-          <span className="shrink-0 rounded-full border border-[#1f883d]/45 bg-[#1f883d]/10 px-2 py-0.5 font-mono text-[0.625rem] font-semibold uppercase tracking-[0.1em] text-[#1f883d]">
+          <span className="w-fit shrink-0 rounded-full border border-[#1f883d]/45 bg-[#1f883d]/10 px-2 py-0.5 font-mono text-[0.625rem] font-semibold uppercase tracking-[0.1em] text-[#1f883d]">
             review
           </span>
         </div>
