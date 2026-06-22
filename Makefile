@@ -1,6 +1,8 @@
 PYTHON_PACKAGE := chartcoach
 PYTHON_PATH := packages/catalog-python
-JS_FILTERS := --filter @chartcoach/site --filter @chartcoach/docs --filter @chartcoach/brand --filter @chartcoach/catalog
+JS_PACKAGES := @chartcoach/site @chartcoach/docs @chartcoach/brand @chartcoach/catalog
+JS_FILTERS := $(foreach package,$(JS_PACKAGES),--filter $(package))
+JS_PREPARE_FILTERS := $(foreach package,$(JS_PACKAGES),--filter $(package)^...)
 ROOT_FORMAT_FILES := package.json pnpm-workspace.yaml .github/workflows/ci.yml .github/workflows/publish.yml
 
 export PATH := $(CURDIR)/node_modules/.bin:$(PATH)
@@ -13,7 +15,7 @@ js-format-check:
 	pnpm -r $(JS_FILTERS) --if-present format:check
 
 js-prepare:
-	pnpm --filter @chartcoach/catalog build
+	pnpm $(JS_PREPARE_FILTERS) --if-present build
 
 js-lint: js-prepare
 	pnpm -r $(JS_FILTERS) --if-present lint
