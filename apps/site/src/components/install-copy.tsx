@@ -2,6 +2,7 @@ import { Check, ChevronDown, Copy } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import type { CSSProperties, ReactNode, SVGProps } from "react";
 
+import antigravityIconUrl from "@/assets/icons/antigravity.svg?url";
 import cursorIconUrl from "@/assets/icons/cursor.svg?url";
 import geminiCliIconUrl from "@/assets/icons/geminicli.svg?url";
 import githubCopilotIconUrl from "@/assets/icons/githubcopilot.svg?url";
@@ -103,6 +104,13 @@ const AGENTS = [
     color: "var(--color-fg)",
     command: (instruction: string) => `opencode run ${singleQuote(prompt(instruction))}`,
     icon: { kind: "component", Component: OpenCodeIcon },
+  },
+  {
+    id: "antigravity",
+    label: "Antigravity",
+    color: "var(--color-fg)",
+    command: (instruction: string) => `agy -i ${doubleQuote(prompt(instruction))}`,
+    icon: { kind: "asset", display: "image", src: antigravityIconUrl },
   },
   {
     id: "cursor",
