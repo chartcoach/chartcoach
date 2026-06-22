@@ -9,6 +9,9 @@ Run it locally:
 pnpm --dir apps/site dev
 ```
 
+The dev script runs through portless at `https://chartcoach.localhost`.
+Run `pnpm --dir apps/site dev:app` to start Astro directly.
+
 Build static pages:
 
 ```bash

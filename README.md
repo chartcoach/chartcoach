@@ -175,6 +175,16 @@ pnpm --dir apps/site dev
 pnpm --dir apps/docs dev
 ```
 
+These commands run through portless. The site is available at
+`https://chartcoach.localhost`, and the docs are available at
+`https://docs.chartcoach.localhost`.
+
+Run both apps with one command:
+
+```bash
+pnpm dev
+```
+
 Run workspace checks:
 
 ```bash
