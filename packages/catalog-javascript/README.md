@@ -5,7 +5,11 @@ JavaScript models and parsers for chartcoach catalog artifacts.
 Read the package docs at [docs.chartcoach.dev/javascript](https://docs.chartcoach.dev/javascript).
 Read the catalog contract at [docs.chartcoach.dev/catalog](https://docs.chartcoach.dev/catalog).
 
-This package is currently a workspace package in the chartcoach monorepo.
+Install the package from an application root:
+
+```bash
+npm install @chartcoach/catalog
+```
 
 ```ts
 import { DEFAULT_CATALOG, loadCatalog } from "@chartcoach/catalog"
