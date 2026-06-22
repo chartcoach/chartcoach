@@ -116,7 +116,13 @@ export function EmbeddingCanvas({ active }: EmbeddingCanvasProps) {
       if (!startedAt.current || !active) startedAt.current = now;
       const elapsed = now - startedAt.current;
       const progress = reduceMotion ? 1 : easeOutCubic(Math.min(elapsed / 900, 1));
-      drawEmbedding(context, canvas, active ? progress : 1, reduceMotion ? 0 : elapsed, hoveredRole);
+      drawEmbedding(
+        context,
+        canvas,
+        active ? progress : 1,
+        reduceMotion ? 0 : elapsed,
+        hoveredRole,
+      );
 
       if (active || progress < 1) {
         animationFrame = window.requestAnimationFrame(render);
@@ -172,9 +178,7 @@ export function EmbeddingCanvas({ active }: EmbeddingCanvasProps) {
 
 function EmbeddingPopover({ hover }: { hover: HoverState }) {
   const transform =
-    hover.placement === "above"
-      ? "translate(-50%, calc(-100% - 14px))"
-      : "translate(-50%, 14px)";
+    hover.placement === "above" ? "translate(-50%, calc(-100% - 14px))" : "translate(-50%, 14px)";
 
   return (
     <div
@@ -221,7 +225,7 @@ function makeCatalogPoints(): CatalogPoint[] {
       x: clamp(cluster.x + Math.cos(angle) * radius, 0.07, 0.93),
       y: clamp(cluster.y + Math.sin(angle) * radius * 0.82, 0.14, 0.88),
       color: roleColors[role],
-      opacity: 0.18 + (((index * 13) % 8) / 100),
+      opacity: 0.18 + ((index * 13) % 8) / 100,
       radius: 1.8 + ((index * 11) % 5) * 0.2,
     };
   });
@@ -270,11 +274,7 @@ function drawEmbedding(
   drawSectionPoints(context, sectionPoints, bounds, colors, progress, pulse, hoveredRole, compact);
 }
 
-function drawGrid(
-  context: CanvasRenderingContext2D,
-  bounds: PlotBounds,
-  colors: CanvasColors,
-) {
+function drawGrid(context: CanvasRenderingContext2D, bounds: PlotBounds, colors: CanvasColors) {
   context.save();
   context.strokeStyle = withAlpha(colors.border, 0.42);
   context.lineWidth = 1;

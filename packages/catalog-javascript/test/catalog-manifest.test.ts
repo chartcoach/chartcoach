@@ -1,11 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  Catalog,
-  CatalogError,
-  parseCatalogManifest,
-  type Guideline,
-} from "@chartcoach/catalog";
+import { Catalog, CatalogError, parseCatalogManifest, type Guideline } from "@chartcoach/catalog";
 
 const manifestMarkdown = `# Sample Catalog
 

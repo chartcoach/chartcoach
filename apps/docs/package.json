@@ -5,17 +5,14 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
+    "build": "pnpm --dir ../../packages/brand check:assets && next build",
     "dev": "portless",
     "dev:app": "next dev --hostname 127.0.0.1",
+    "format": "oxfmt .oxlintrc.json app components lib package.json source.config.ts next.config.mjs postcss.config.mjs tsconfig.json",
+    "format:check": "oxfmt .oxlintrc.json app components lib package.json source.config.ts next.config.mjs postcss.config.mjs tsconfig.json --check",
     "lint": "oxlint .",
-    "format": "oxfmt .",
-    "build": "pnpm --dir ../../packages/brand check:assets && next build",
     "start": "serve out",
     "typecheck": "fumadocs-mdx && next typegen && tsc --noEmit"
-  },
-  "portless": {
-    "name": "docs.chartcoach",
-    "script": "dev:app"
   },
   "dependencies": {
     "@chartcoach/brand": "workspace:*",
@@ -36,5 +33,9 @@
     "serve": "^14.2.6",
     "tailwindcss": "^4.3.1",
     "typescript": "^5.9.3"
+  },
+  "portless": {
+    "name": "docs.chartcoach",
+    "script": "dev:app"
   }
 }

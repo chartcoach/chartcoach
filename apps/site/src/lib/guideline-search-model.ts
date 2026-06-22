@@ -69,10 +69,7 @@ function decodePathSegment(segment: string) {
 }
 
 function createSlugSearchText(path: string) {
-  const slug = path
-    .split("/")
-    .filter(Boolean)
-    .at(-1);
+  const slug = path.split("/").filter(Boolean).at(-1);
   if (!slug) return "";
 
   const decodedSlug = decodePathSegment(slug);

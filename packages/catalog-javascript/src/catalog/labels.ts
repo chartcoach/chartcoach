@@ -16,7 +16,9 @@ export function parseLabel(value: unknown, context = "label"): CatalogLabel {
     .split(":")
     .map((part) => part.trim());
   if ((parts.length !== 2 && parts.length !== 3) || parts.some((part) => part.length === 0)) {
-    throw new CatalogError(`${context} must use <family>:<category> or <family>:<category>:<modifier>.`);
+    throw new CatalogError(
+      `${context} must use <family>:<category> or <family>:<category>:<modifier>.`,
+    );
   }
   const [family, category, modifier] = parts as [string, string, string | undefined];
   return {

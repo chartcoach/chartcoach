@@ -143,11 +143,7 @@ function SearchShortcutHint() {
     "grid h-5 place-items-center border border-border bg-bg font-mono text-[11px] font-medium leading-none text-muted";
 
   return (
-    <span
-      className="hidden items-center sm:inline-flex"
-      aria-hidden="true"
-      data-search-shortcut
-    >
+    <span className="hidden items-center sm:inline-flex" aria-hidden="true" data-search-shortcut>
       <kbd
         className={classNames(
           keyClassName,

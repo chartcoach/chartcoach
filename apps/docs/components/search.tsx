@@ -16,11 +16,7 @@ import {
 import { useI18n } from "fumadocs-ui/contexts/i18n";
 
 function SearchDialogListEmpty() {
-  return (
-    <div className="py-12 text-center text-sm text-fd-muted-foreground">
-      No results found
-    </div>
-  );
+  return <div className="py-12 text-center text-sm text-fd-muted-foreground">No results found</div>;
 }
 
 export default function DefaultSearchDialog(props: SharedProps) {
@@ -32,12 +28,7 @@ export default function DefaultSearchDialog(props: SharedProps) {
   });
 
   return (
-    <SearchDialog
-      search={search}
-      onSearchChange={setSearch}
-      isLoading={query.isLoading}
-      {...props}
-    >
+    <SearchDialog search={search} onSearchChange={setSearch} isLoading={query.isLoading} {...props}>
       <SearchDialogOverlay />
       <SearchDialogContent>
         <SearchDialogHeader>

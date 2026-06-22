@@ -52,9 +52,7 @@ export function generateStaticParams() {
   return source.generateParams();
 }
 
-export async function generateMetadata({
-  params,
-}: DocsPageProps): Promise<Metadata> {
+export async function generateMetadata({ params }: DocsPageProps): Promise<Metadata> {
   const { slug } = await params;
   const page = source.getPage(slug);
   if (!page) notFound();

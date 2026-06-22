@@ -9,7 +9,7 @@ importers:
   .:
     devDependencies:
       node:
-        specifier: runtime:26.3.1
+        specifier: runtime:>=24
         version: runtime:26.3.1
       oxfmt:
         specifier: ^0.26.0

@@ -36,13 +36,7 @@ const improveSteps = [
   ["03", "community review", "Review the record in the public catalog repository."],
 ] as const;
 
-export function StoryArtifact({
-  id,
-  active,
-}: {
-  id: StoryArtifactId;
-  active: boolean;
-}) {
+export function StoryArtifact({ id, active }: { id: StoryArtifactId; active: boolean }) {
   switch (id) {
     case "markdown":
       return <MarkdownArtifact />;
@@ -112,8 +106,9 @@ function StructuredArtifact() {
 }
 
 function AccessArtifact() {
-  const [activeListingId, setActiveListingId] =
-    useState<(typeof accessListings)[number]["id"]>(accessListings[0].id);
+  const [activeListingId, setActiveListingId] = useState<(typeof accessListings)[number]["id"]>(
+    accessListings[0].id,
+  );
   const activeListing =
     accessListings.find((listing) => listing.id === activeListingId) ?? accessListings[0];
 
@@ -203,9 +198,7 @@ function SkillsArtifact() {
               <p className="m-0 font-mono text-[0.625rem] font-semibold uppercase tracking-[0.14em] text-muted">
                 {label}
               </p>
-              <p className="m-0 mt-2 text-[1rem] font-semibold leading-snug text-fg">
-                {value}
-              </p>
+              <p className="m-0 mt-2 text-[1rem] font-semibold leading-snug text-fg">{value}</p>
             </div>
           </div>
         ))}
@@ -235,7 +228,8 @@ function ImproveArtifact() {
               aria-hidden="true"
             />
             <span className="min-w-0 break-normal font-mono text-[0.9375rem] font-semibold leading-snug text-fg underline decoration-border underline-offset-4 transition-colors group-hover:text-accent group-hover:decoration-accent sm:text-[1rem]">
-              github.com/chartcoach/<wbr />
+              github.com/chartcoach/
+              <wbr />
               catalog
             </span>
           </span>

@@ -58,7 +58,16 @@ const wordmark = ({ fill, width, x, y }) => {
   </g>`;
 };
 
-const squareLockup = ({ accentColor, accentOn, background, dashColor, filename, stroke, title, wordmarkFill }) => {
+const squareLockup = ({
+  accentColor,
+  accentOn,
+  background,
+  dashColor,
+  filename,
+  stroke,
+  title,
+  wordmarkFill,
+}) => {
   const size = 512;
   const sourceSize = 207;
   const ringSize = (84 / sourceSize) * size;

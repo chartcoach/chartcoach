@@ -28,7 +28,9 @@ def _embedding_vector(text: str) -> list[float]:
 
 def _test_embedding() -> "EmbeddingFunction":
     registry_module = pytest.importorskip("lancedb.embeddings")
-    TextEmbeddingFunction = pytest.importorskip("lancedb.embeddings.base").TextEmbeddingFunction
+    TextEmbeddingFunction = pytest.importorskip(
+        "lancedb.embeddings.base"
+    ).TextEmbeddingFunction
 
     registry = registry_module.get_registry()
     try:
@@ -116,11 +118,15 @@ def test_index_returns_native_table_and_open_reads_it(
     assert table.name == "docs"
     assert opened.name == "docs"
     assert opened.count_rows() == table.count_rows()
-    rows = opened.search(
-        "direct labels",
-        query_type="fts",
-        fts_columns="text",
-    ).limit(2).to_list()
+    rows = (
+        opened.search(
+            "direct labels",
+            query_type="fts",
+            fts_columns="text",
+        )
+        .limit(2)
+        .to_list()
+    )
     assert rows[0]["parent_id"] == "direct-labels"
 
 
@@ -182,9 +188,7 @@ def test_index_uses_lancedb_embedding_function(
     rows = table.search("direct labels", query_type="vector").limit(1).to_list()
     assert rows[0]["parent_id"] == "direct-labels"
     vector_rows = (
-        table.search([1.0, 1.0, 0.0, 0.0], query_type="vector")
-        .limit(1)
-        .to_list()
+        table.search([1.0, 1.0, 0.0, 0.0], query_type="vector").limit(1).to_list()
     )
     assert vector_rows[0]["parent_id"] == "direct-labels"
     raw_rows = query(table, "direct labels", mode="vector", limit=1)
@@ -257,7 +261,9 @@ def test_query_fts_mode_does_not_parse_embedding_metadata() -> None:
     assert rows[0]["id"] == "direct-labels---overview"
 
 
-def test_query_auto_mode_falls_back_to_fts_when_embedding_metadata_is_unavailable() -> None:
+def test_query_auto_mode_falls_back_to_fts_when_embedding_metadata_is_unavailable() -> (
+    None
+):
     from chartcoach.search import query
 
     class FakeSearch:

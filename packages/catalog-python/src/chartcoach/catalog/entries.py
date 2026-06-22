@@ -239,7 +239,9 @@ def _section_to_body(section: Section) -> str:
     content = section.content.strip()
     if section.role == Section.DANGLING_ROLE:
         return content
-    return f"## {section.title.strip()} <!-- role: {section.role} -->\n\n{content}".strip()
+    return (
+        f"## {section.title.strip()} <!-- role: {section.role} -->\n\n{content}".strip()
+    )
 
 
 __all__ = ["CatalogEntry", "Guideline", "Section"]

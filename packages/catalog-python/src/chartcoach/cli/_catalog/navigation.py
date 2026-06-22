@@ -388,7 +388,9 @@ def _labels_empty_hints(
     if prefix:
         hints.append("Try a shorter --prefix or inspect labels by --family.")
     if not hints:
-        hints.append("Run `chartcoach catalog overview --format json` to inspect catalog counts.")
+        hints.append(
+            "Run `chartcoach catalog overview --format json` to inspect catalog counts."
+        )
     return hints
 
 
@@ -404,15 +406,21 @@ def _list_empty_hints(
             "Repeated --label filters are all-of. Remove one --label or use `chartcoach catalog query --any-label LABEL --any-label OTHER`."
         )
     elif labels:
-        hints.append("Try `chartcoach catalog labels --contains TEXT --format jsonl` to find related labels.")
+        hints.append(
+            "Try `chartcoach catalog labels --contains TEXT --format jsonl` to find related labels."
+        )
     if label_prefixes:
-        hints.append("Try a shorter --label-prefix or inspect labels with `chartcoach catalog labels --format jsonl`.")
+        hints.append(
+            "Try a shorter --label-prefix or inspect labels with `chartcoach catalog labels --format jsonl`."
+        )
     if contains:
         hints.append(
             "Try a broader --contains term, or use `chartcoach catalog query --body-contains TEXT --format jsonl` for full body text."
         )
     if not hints:
-        hints.append("Run `chartcoach catalog overview --format json` to confirm the catalog has entries.")
+        hints.append(
+            "Run `chartcoach catalog overview --format json` to confirm the catalog has entries."
+        )
     return hints
 
 
@@ -431,17 +439,25 @@ def _query_empty_hints(
             "Repeated --label filters are all-of. Relax one --label or use repeated --any-label for alternatives."
         )
     elif labels:
-        hints.append("Try `chartcoach catalog labels --contains TEXT --format jsonl` to find broader labels.")
+        hints.append(
+            "Try `chartcoach catalog labels --contains TEXT --format jsonl` to find broader labels."
+        )
     if any_labels:
-        hints.append("Remove one --any-label or inspect label families with `chartcoach catalog labels --format jsonl`.")
+        hints.append(
+            "Remove one --any-label or inspect label families with `chartcoach catalog labels --format jsonl`."
+        )
     if label_prefixes:
-        hints.append("Try a shorter --label-prefix or inspect current labels with `chartcoach catalog labels --format jsonl`.")
+        hints.append(
+            "Try a shorter --label-prefix or inspect current labels with `chartcoach catalog labels --format jsonl`."
+        )
     if contains or body_contains or section_contains:
         hints.append(
             "Relax one text predicate or try broader --contains, --body-contains, or --section-contains text."
         )
     if not hints:
-        hints.append("Run `chartcoach catalog list --format jsonl` to inspect available entries.")
+        hints.append(
+            "Run `chartcoach catalog list --format jsonl` to inspect available entries."
+        )
     return hints
 
 
@@ -456,7 +472,9 @@ def _values_empty_hints(*, field: str, contains: str | None) -> list[str]:
         "Run `chartcoach catalog schema` before querying a raw TABLE.COLUMN field."
     )
     if "." in field:
-        hints.append("Try `chartcoach catalog values labels --contains TEXT` when looking for label values.")
+        hints.append(
+            "Try `chartcoach catalog values labels --contains TEXT` when looking for label values."
+        )
     return hints
 
 

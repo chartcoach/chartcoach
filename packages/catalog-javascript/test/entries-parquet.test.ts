@@ -20,9 +20,7 @@ const entriesParquetPath = path.join(bundleFixtureRoot, "entries.parquet");
 const manifestPath = path.join(bundleFixtureRoot, "MANIFEST.md");
 
 describe("catalog artifact loading", () => {
-  function assertCatalogLooksParsed(catalog: {
-    guidelines: Array<{ sections: unknown }>;
-  }) {
+  function assertCatalogLooksParsed(catalog: { guidelines: Array<{ sections: unknown }> }) {
     expect(catalog.guidelines.length).toBeGreaterThan(0);
 
     const guidelineWithSections = catalog.guidelines.find((guideline) => {

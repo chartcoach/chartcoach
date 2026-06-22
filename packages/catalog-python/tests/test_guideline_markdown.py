@@ -112,7 +112,9 @@ def test_guideline_accepts_sections_and_derives_body() -> None:
         ),
     )
 
-    assert guideline.body == "## Advice <!-- role: advice -->\n\nPlace labels near marks."
+    assert (
+        guideline.body == "## Advice <!-- role: advice -->\n\nPlace labels near marks."
+    )
     assert guideline.to_record()["body"] == guideline.body
 
 
