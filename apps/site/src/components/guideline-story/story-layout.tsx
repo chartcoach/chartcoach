@@ -6,6 +6,8 @@ const STACK_HEADER_HEIGHT = 64;
 const STACK_HEADER_GAP = 0;
 const STACK_HEADER_STEP = STACK_HEADER_HEIGHT + STACK_HEADER_GAP;
 
+type ArtifactHeaderMode = "full" | "metadata";
+
 export function DesktopArtifactStack({
   steps,
   activeIndex,
@@ -127,10 +129,12 @@ export function ArtifactFrame({
   step,
   children,
   joinedTop = false,
+  header = "full",
 }: {
   step: StoryStep;
   children: ReactNode;
   joinedTop?: boolean;
+  header?: ArtifactHeaderMode;
 }) {
   const flushArtifact =
     step.artifact === "markdown" || step.artifact === "structured" || step.artifact === "access";
@@ -142,7 +146,7 @@ export function ArtifactFrame({
         joinedTop ? "rounded-b-2xl border-t-0" : "rounded-2xl",
       ].join(" ")}
     >
-      <ActiveArtifactHeader step={step} />
+      <ActiveArtifactHeader step={step} header={header} />
       <div className={["relative min-w-0 bg-bg", flushArtifact ? "p-0" : "p-5 sm:p-6"].join(" ")}>
         {children}
       </div>
@@ -150,8 +154,14 @@ export function ArtifactFrame({
   );
 }
 
-function ActiveArtifactHeader({ step }: { step: StoryStep }) {
-  return <StoryArtifactHeader step={step} expanded />;
+function ActiveArtifactHeader({
+  step,
+  header,
+}: {
+  step: StoryStep;
+  header: ArtifactHeaderMode;
+}) {
+  return <StoryArtifactHeader step={step} expanded header={header} />;
 }
 
 function StackedArtifactHeader({ step, first }: { step: StoryStep; first: boolean }) {
@@ -169,24 +179,31 @@ function StackedArtifactHeader({ step, first }: { step: StoryStep; first: boolea
 function StoryArtifactHeader({
   step,
   expanded = false,
+  header = "full",
   className = "",
 }: {
   step: StoryStep;
   expanded?: boolean;
+  header?: ArtifactHeaderMode;
   className?: string;
 }) {
+  const showIntent = header === "full";
+
   return (
     <div
       data-story-surface-header
       className={[
-        "flex min-h-16 min-w-0 items-center justify-end gap-4 px-5 py-4 sm:h-16 sm:justify-between sm:px-6 sm:py-0",
+        "flex min-h-16 min-w-0 items-center gap-4 px-5 py-4 sm:h-16 sm:px-6 sm:py-0",
+        showIntent ? "justify-end sm:justify-between" : "justify-end",
         expanded ? "bg-bg" : "border-b border-border bg-surface-muted/45",
         className,
       ].join(" ")}
     >
-      <p className="m-0 hidden min-w-0 text-[1rem] font-semibold leading-snug text-fg sm:block">
-        {step.surface.intent}
-      </p>
+      {showIntent ? (
+        <p className="m-0 hidden min-w-0 text-[1rem] font-semibold leading-snug text-fg sm:block">
+          {step.surface.intent}
+        </p>
+      ) : null}
       <div className="min-w-0 text-right sm:shrink-0">
         <p className="m-0 font-mono text-[0.6875rem] font-semibold uppercase tracking-[0.14em] text-muted">
           {step.surface.form}

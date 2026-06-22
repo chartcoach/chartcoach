@@ -266,6 +266,12 @@ function useMenuDisclosure() {
     const needsAbove = spaceBelow < AGENT_MENU_HEIGHT + AGENT_MENU_GAP && spaceAbove > spaceBelow;
     setPlacement(needsAbove ? "above" : "below");
   }, []);
+  const updatePlacementRef = useRef(updatePlacement);
+
+  useEffect(() => {
+    updatePlacementRef.current = updatePlacement;
+  }, [updatePlacement]);
+
   const toggle = useCallback(() => {
     setOpen((current) => {
       if (!current) updatePlacement();
@@ -288,18 +294,22 @@ function useMenuDisclosure() {
       triggerRef.current?.focus();
     }
 
+    function handleReposition() {
+      updatePlacementRef.current();
+    }
+
     document.addEventListener("pointerdown", handlePointerDown);
     document.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("resize", updatePlacement);
-    window.addEventListener("scroll", updatePlacement, true);
+    window.addEventListener("resize", handleReposition);
+    window.addEventListener("scroll", handleReposition, true);
 
     return () => {
       document.removeEventListener("pointerdown", handlePointerDown);
       document.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("resize", updatePlacement);
-      window.removeEventListener("scroll", updatePlacement, true);
+      window.removeEventListener("resize", handleReposition);
+      window.removeEventListener("scroll", handleReposition, true);
     };
-  }, [close, open, updatePlacement]);
+  }, [close, open]);
 
   return { close, menuRef, open, placement, toggle, triggerRef };
 }
@@ -415,7 +425,7 @@ export function InstallCopy() {
             )}
           </div>
           <div
-            className="col-span-2 row-start-2 flex min-w-0 flex-1 flex-wrap items-center gap-y-1 lg:col-auto lg:row-auto lg:flex-nowrap"
+            className="col-span-2 row-start-2 flex min-w-0 flex-1 flex-nowrap items-center justify-between lg:col-auto lg:row-auto lg:justify-start"
             aria-label="chartcoach use case"
           >
             {USE_CASES.map((useCase, index) => {
@@ -430,7 +440,7 @@ export function InstallCopy() {
                     resetSelectionState();
                   }}
                   className={[
-                    "relative h-8 shrink-0 cursor-pointer bg-transparent px-2.5 text-[0.8125rem] transition-colors after:absolute after:bottom-0 after:left-1/2 after:h-0.5 after:w-5 after:-translate-x-1/2 after:rounded-full after:transition-colors focus-visible:rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-fg/20 sm:px-4 sm:text-[0.9375rem] xl:h-9 xl:px-5 xl:text-[1rem]",
+                    "relative h-8 shrink-0 cursor-pointer bg-transparent px-0.5 text-[0.5625rem] transition-colors after:absolute after:bottom-0 after:left-1/2 after:h-0.5 after:w-5 after:-translate-x-1/2 after:rounded-full after:transition-colors focus-visible:rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-fg/20 min-[360px]:px-1 min-[360px]:text-[0.625rem] min-[390px]:text-[0.6875rem] sm:px-4 sm:text-[0.9375rem] xl:h-9 xl:px-5 xl:text-[1rem]",
                     index > 0
                       ? "before:absolute before:left-0 before:top-1/2 before:hidden before:h-4 before:-translate-y-1/2 before:border-l before:border-border sm:before:block"
                       : "",

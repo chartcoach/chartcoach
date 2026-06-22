@@ -3,7 +3,7 @@ import { getLLMText, source } from "@/lib/source";
 export const revalidate = false;
 
 export async function GET() {
-  const sortedPages = [...source.getPages()].sort((a, b) =>
+  const sortedPages = source.getPages().toSorted((a, b) =>
     a.url.localeCompare(b.url),
   );
   const pages = await Promise.all(sortedPages.map(getLLMText));
