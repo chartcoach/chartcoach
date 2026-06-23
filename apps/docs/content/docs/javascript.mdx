@@ -1,79 +1,80 @@
 ---
 title: JavaScript
-description: Decode chartcoach catalog artifact bytes into typed guideline records.
+description: Decode chartcoach catalog artifact bytes into typed guideline entries.
+icon: Braces
 ---
 
-`@chartcoach/catalog` turns catalog artifact bytes into a typed `Catalog`.
-Callers own artifact acquisition. Use `fetch`, a runtime file API, cache
-storage, or test fixtures to get bytes before calling `loadCatalog`.
+`@chartcoach/catalog` decodes catalog artifact bytes into a typed `Catalog`. Use
+`fetch`, a runtime file API, cache storage, or test fixtures to load bytes before
+calling `loadCatalog`.
 
 ```bash
 npm install @chartcoach/catalog
 ```
 
 ```ts
-import { DEFAULT_CATALOG, loadCatalog } from "@chartcoach/catalog"
+import { DEFAULT_CATALOG, loadCatalog } from "@chartcoach/catalog";
 
-const entries = await (await fetch(DEFAULT_CATALOG.entriesUrl)).arrayBuffer()
-const manifestText = await (await fetch(DEFAULT_CATALOG.manifestUrl)).text()
+const { entriesUrl, manifestUrl } = DEFAULT_CATALOG;
+const entries = await (await fetch(entriesUrl)).arrayBuffer();
+const manifestText = await (await fetch(manifestUrl)).text();
 
-const catalog = await loadCatalog({ entries, manifestText })
-const guideline = catalog.require("compare-percentages-with-bars-not-pies")
+const catalog = await loadCatalog({ entries, manifestText });
+const guideline = catalog.require("compare-percentages-with-bars-not-pies");
 ```
 
 ## Local files
 
-Use the same API in Node, Bun, Deno, Workers, browsers, and tests. The runtime
-chooses how to read files or URLs.
+Use `loadCatalog` in Node, Bun, Deno, Workers, browsers, and tests. Each runtime
+supplies the file or URL bytes before calling it.
 
 ```ts
-import { readFile } from "node:fs/promises"
-import { loadCatalog } from "@chartcoach/catalog"
+import { readFile } from "node:fs/promises";
+import { loadCatalog } from "@chartcoach/catalog";
 
 const catalog = await loadCatalog({
   entries: await readFile("dist/catalog/entries.parquet"),
   manifestText: await readFile("dist/catalog/MANIFEST.md", "utf8"),
-})
+});
 
 for (const guideline of catalog) {
-  console.log(guideline.id, guideline.title)
+  console.log(guideline.id, guideline.title);
 }
 ```
 
 Pass a standalone parquet artifact when manifest validation is not needed:
 
 ```ts
-import { loadCatalog } from "@chartcoach/catalog"
+import { loadCatalog } from "@chartcoach/catalog";
 
-const entries = await (await fetch("/catalog/entries.parquet")).arrayBuffer()
+const entries = await (await fetch("/catalog/entries.parquet")).arrayBuffer();
 
-const catalog = await loadCatalog(entries)
+const catalog = await loadCatalog(entries);
 ```
 
 ## Release metadata
 
 Use release metadata helpers when code receives a `metadata.json` value and
-needs artifact URLs.
+needs artifact URLs for `loadCatalog`.
 
 ```ts
 import {
+  DEFAULT_CATALOG,
   catalogArtifact,
   catalogArtifactUrl,
   loadCatalog,
   parseCatalogReleaseMetadata,
-} from "@chartcoach/catalog"
+} from "@chartcoach/catalog";
 
-const metadataUrl = "https://artifacts.chartcoach.dev/catalog/releases/0.1.4/7cfd43ee820be252b8ae9058c4c36109a9c8415c6b3a5ff8a9127117b4a10c19/metadata.json"
-const metadata = parseCatalogReleaseMetadata(
-  await (await fetch(metadataUrl)).json(),
-)
-const entriesUrl = catalogArtifactUrl(metadataUrl, catalogArtifact(metadata, "entries"))
-const manifestUrl = catalogArtifactUrl(metadataUrl, catalogArtifact(metadata, "manifest"))
+const { metadataUrl } = DEFAULT_CATALOG;
+const metadata = parseCatalogReleaseMetadata(await (await fetch(metadataUrl)).json());
+const entriesUrl = catalogArtifactUrl(metadataUrl, catalogArtifact(metadata, "entries"));
+const manifestUrl = catalogArtifactUrl(metadataUrl, catalogArtifact(metadata, "manifest"));
 
-const entries = await (await fetch(entriesUrl)).arrayBuffer()
-const manifestText = await (await fetch(manifestUrl)).text()
+const entries = await (await fetch(entriesUrl)).arrayBuffer();
+const manifestText = await (await fetch(manifestUrl)).text();
 
-const catalog = await loadCatalog({ entries, manifestText })
+const catalog = await loadCatalog({ entries, manifestText });
 ```
 
 ## `loadCatalog(input)`
@@ -85,18 +86,18 @@ const catalog = await loadCatalog({ entries, manifestText })
 - `input.entries`: Parquet bytes or an async buffer for `entries.parquet`.
 - `input.manifest`: Parsed `CatalogManifest`.
 - `input.manifestText`: Raw `MANIFEST.md` text. `loadCatalog` parses it and
-  validates section roles and label families against loaded records.
+  validates section roles and label families against loaded guideline entries.
 
 Pass either `manifest` or `manifestText`, not both.
 
 ## Catalog API
 
 ```ts
-catalog.length
-catalog.get("compare-percentages-with-bars-not-pies")
-catalog.require("compare-percentages-with-bars-not-pies")
-catalog.labels()
-catalog.sectionRoles()
+catalog.length;
+catalog.get("compare-percentages-with-bars-not-pies");
+catalog.require("compare-percentages-with-bars-not-pies");
+catalog.labels();
+catalog.sectionRoles();
 ```
 
 `Catalog` is iterable and stores immutable copies of loaded guidelines.

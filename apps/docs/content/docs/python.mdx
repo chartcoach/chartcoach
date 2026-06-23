@@ -1,22 +1,30 @@
 ---
 title: Python
 description: Load catalog bundles, inspect Polars tables, query with DuckDB, and create LanceDB search indexes.
+icon: Code
 ---
 
-Use `chartcoach.open()` as the top-level Python API. It returns a facade with a
-lazy `Catalog` and an optional LanceDB index.
+Use `chartcoach.open()` to inspect Default Catalog tables and run indexed search
+from Python.
 
 Run one check without adding the package to a project:
 
 ```bash
-uv run --with chartcoach python -c "import chartcoach; cc = chartcoach.open(); print(cc.catalog.guidelines().select('id', 'title').head(3))"
+uv run --with chartcoach python - <<'PY'
+import chartcoach
+
+cc = chartcoach.open()
+print(cc.catalog.guidelines().select("id", "title").head(3))
+PY
 ```
 
 Add the package from an application root:
 
 ```bash
 uv add chartcoach
+
 uv add 'chartcoach[index]'
+
 uv add 'chartcoach[mcp,index]'
 ```
 
@@ -27,10 +35,10 @@ cc = chartcoach.open()
 cc.catalog.guidelines().select("id", "title").head(5)
 ```
 
-`chartcoach.open()` points at the package-pinned Default Catalog when no path is
-provided. The `.catalog` namespace loads the catalog on first access and exposes
-derived Polars tables. The `.index` namespace resolves a LanceDB table when
-indexed search is used.
+`chartcoach.open()` uses the package-pinned Default Catalog when no path is
+provided. Accessing `.catalog` loads the catalog and returns derived Polars
+tables from methods such as `guidelines()` and `sections()`. Indexed search
+resolves a LanceDB table through `.index`.
 
 The first `.catalog` access, `cc.search()`, or CLI catalog read downloads
 package-pinned artifacts. Indexed search downloads an index archive. Set
@@ -62,18 +70,18 @@ rows = catalog.guidelines().select("id", "title")
 
 ## Facade sources and search indexes
 
-| Call | Catalog behavior | Indexed search behavior |
-| --- | --- | --- |
-| `chartcoach.open()` | Uses the package-pinned Default Catalog | `cc.search()` can resolve the package-pinned index |
-| `chartcoach.open("dist/catalog")` | Loads a custom source | Pass `index=` or `table=` before indexed search |
-| `chartcoach.open(catalog=catalog)` | Uses a caller-owned catalog | Pass `index=` or `table=` before indexed search |
-| `chartcoach.open(catalog=catalog, table=table)` | Uses caller-owned catalog and LanceDB table | `cc.search()` uses the injected table |
+| Call                                            | Catalog behavior                            | Indexed search behavior                            |
+| ----------------------------------------------- | ------------------------------------------- | -------------------------------------------------- |
+| `chartcoach.open()`                             | Uses the package-pinned Default Catalog     | `cc.search()` can resolve the package-pinned index |
+| `chartcoach.open("dist/catalog")`               | Loads a custom catalog source               | Pass `index=` or `table=` before indexed search    |
+| `chartcoach.open(catalog=catalog)`              | Uses a caller-owned catalog                 | Pass `index=` or `table=` before indexed search    |
+| `chartcoach.open(catalog=catalog, table=table)` | Uses caller-owned catalog and LanceDB table | `cc.search()` uses the injected table              |
 
 Pass either `source` or `catalog`, not both.
 
 ## Tables
 
-`Catalog` exposes derived Polars tables through `guidelines()`, `sections()`,
+`Catalog` returns derived Polars tables from `guidelines()`, `sections()`,
 `labels()`, `guideline_labels()`, `references()`, `guideline_references()`, and
 `guideline_sources()`.
 
@@ -91,11 +99,12 @@ print(entry["sections"][0]["role"])
 print(entry["references"])
 ```
 
-`entry(id)` returns the guideline record plus `references`: `id`, `title`,
-`bibliography`, `description`, `labels`, `body`, `sections`, and `references`.
+`entry(id)` returns the catalog record to inspect before using a candidate in
+feedback. Use its source references to explain where the recommendation came
+from.
 Unknown ids raise `KeyError`.
 
-Use citation records when an agent needs source provenance:
+Use `citation_records(...)` when an agent needs source references:
 
 ```python
 from chartcoach.catalog.references import citation_records
@@ -109,29 +118,30 @@ print(citations[0]["url"])
 print(citations[0]["sources"][0]["reference_id"])
 ```
 
-Citation records contain `id`, `title`, `url`, `guideline_citation`, and
-`sources`. Each source includes `reference_id`, `source_title`, `doi`, `url`,
-and a formatted `citation`.
+Each returned citation object contains `id`, `title`, `url`,
+`guideline_citation`, and `sources`. Each source includes `reference_id`,
+`source_title`, `doi`, `url`, and a formatted `citation`.
 
 ## Catalog API
 
-Use `Catalog` directly when code owns records, tables, or local catalog files.
+Use `Catalog` directly when code owns guideline entries, tables, or local
+catalog files.
 
-| API | Behavior |
-| --- | --- |
-| `Catalog.open(path=None)` | Loads the Default Catalog, remote metadata, local authored folder, bundle, or parquet file |
-| `Catalog.from_entries(entries, manifest=None)` | Builds an in-memory catalog from `CatalogEntry`, `Guideline`, or mapping objects |
-| `Catalog.from_frame(df, manifest=None)` | Builds a catalog from a serialized Polars dataframe |
-| `Catalog.from_folder(path)` | Reads an authored catalog folder |
-| `Catalog.from_parquet(path)` | Reads a standalone `entries.parquet` file |
-| `catalog.select(ids)` | Returns a catalog with the requested guideline ids in order and raises `KeyError` for missing ids |
-| `catalog.merge(other)` | Returns a catalog that combines both catalog tables and raises when manifests differ |
-| `catalog.manifest` | Returns the loaded `CatalogManifest`, or `None` |
-| `catalog.require_manifest()` | Returns the manifest or raises when the catalog has none |
-| `catalog.digest()` | Returns a stable digest of the serialized catalog table |
-| `CatalogManifest.from_text(markdown)` | Parses manifest Markdown |
-| `CatalogManifest.from_path(path)` | Reads and parses `MANIFEST.md` |
-| `parse_label(value)` | Splits a catalog label into family, category, and modifier fields |
+| API                                            | Behavior                                                                                          |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `Catalog.open(path=None)`                      | Loads the Default Catalog, remote metadata, local authored folder, bundle, or parquet file        |
+| `Catalog.from_entries(entries, manifest=None)` | Builds an in-memory catalog from `CatalogEntry`, `Guideline`, or mapping objects                  |
+| `Catalog.from_frame(df, manifest=None)`        | Builds a catalog from a serialized Polars dataframe                                               |
+| `Catalog.from_folder(path)`                    | Reads an authored catalog folder                                                                  |
+| `Catalog.from_parquet(path)`                   | Reads a standalone `entries.parquet` file                                                         |
+| `catalog.select(ids)`                          | Returns a catalog with the requested guideline ids in order and raises `KeyError` for missing ids |
+| `catalog.merge(other)`                         | Returns a catalog that combines both catalog tables and raises when manifests differ              |
+| `catalog.manifest`                             | Returns the loaded `CatalogManifest`, or `None`                                                   |
+| `catalog.require_manifest()`                   | Returns the manifest or raises when the catalog has none                                          |
+| `catalog.digest()`                             | Returns a stable digest of the serialized catalog table                                           |
+| `CatalogManifest.from_text(markdown)`          | Parses manifest Markdown                                                                          |
+| `CatalogManifest.from_path(path)`              | Reads and parses `MANIFEST.md`                                                                    |
+| `parse_label(value)`                           | Splits a catalog label into family, category, and modifier fields                                 |
 
 ```python
 from chartcoach import Catalog, Guideline, Section, parse_label
@@ -215,8 +225,8 @@ returns a `Result`. `Result.to_dict()` contains `query`, `rows`, `row_count`,
 `limit`, `candidate_limit`, and `where`.
 
 Each search hit contains `rank`, `id`, `title`, `description`, `labels`,
-`matched_document_id`, `matched_role`, `score`, and `matched_text`. Treat hits
-as candidates, then call `cc.catalog.entry(hit["id"])` and
+`matched_document_id`, `matched_role`, `score`, and `matched_text`. Use hits as
+candidate guidelines, then call `cc.catalog.entry(hit["id"])` and
 `citation_records(...)` before producing a sourced answer.
 
 Pass `index=` when application code owns an index path:

@@ -1,15 +1,19 @@
 {
   "title": "Docs",
   "pages": [
+    "---Start---",
     "index",
     "getting-started",
     "querying",
-    "catalog",
+    "---Interfaces---",
     "cli",
     "python",
     "javascript",
+    "---Agent access---",
     "agents",
     "mcp",
+    "---Catalog---",
+    "catalog",
     "build"
   ]
 }

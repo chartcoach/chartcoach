@@ -4,6 +4,7 @@ import { siteOrigin } from "@/lib/shared";
 
 export function baseOptions(): BaseLayoutProps {
   return {
+    githubUrl: "https://github.com/chartcoach",
     nav: {
       url: siteOrigin,
     },
