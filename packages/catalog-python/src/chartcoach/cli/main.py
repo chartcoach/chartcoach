@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import click
 
+from chartcoach import __version__
+
 from .catalog import catalog_command
 from .mcp import mcp_command
 from .skills import skills_command
@@ -46,6 +48,7 @@ CONTEXT_SETTINGS = {"help_option_names": ["-h", "--help"]}
         "  skills path [name]           Print skill directory path"
     ),
 )
+@click.version_option(__version__, prog_name="chartcoach")
 @click.pass_context
 def main(ctx: click.Context) -> None:
     """chartcoach command-line interface."""
