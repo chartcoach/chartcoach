@@ -4,8 +4,10 @@ packages:
   - "packages/brand"
   - "packages/catalog-javascript"
   - "packages/catalog-python"
-minimumReleaseAge: 2880
+minimumReleaseAge: 720
 minimumReleaseAgeStrict: true
+overrides:
+  "@tybys/wasm-util": "0.10.2"
 allowBuilds:
   citation-js: true
   esbuild: true

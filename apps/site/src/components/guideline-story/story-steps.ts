@@ -4,21 +4,21 @@ export const steps: readonly StoryStep[] = [
   {
     eyebrow: "Plain Markdown",
     title: "Readable by people",
-    body: "Guidelines stay in Markdown with clear titles, labels, and eight role-marked sections.",
+    body: "A guideline is a Markdown document with a small metadata header and natural-language sections for advice, rationale, context, checks, and fixes.",
     surface: {
       intent: "Readable by people",
-      form: "Guideline records",
-      detail: "plain-language roles",
+      form: "Markdown document",
+      detail: "advice, context, checks",
     },
     artifact: "markdown",
   },
   {
-    eyebrow: "Cited Sources",
+    eyebrow: "Source references",
     title: "Traceable to sources",
-    body: "Records carry references so feedback can point back to papers, standards, and practitioner material.",
+    body: "Guidelines cite papers, standards, and practitioner material, so feedback can name where its recommendation came from.",
     surface: {
       intent: "Traceable to sources",
-      form: "Cited references",
+      form: "Source references",
       detail: "papers and practice",
     },
     artifact: "source",
@@ -26,18 +26,18 @@ export const steps: readonly StoryStep[] = [
   {
     eyebrow: "Section Roles",
     title: "Structured for machines",
-    body: "Advice, reason, context, exceptions, costs, mistakes, check, and fix sections are available as fields.",
+    body: "Agents can ask for the advice, rationale, context, exceptions, costs, mistakes, checks, and fixes separately.",
     surface: {
       intent: "Structured for machines",
-      form: "Role-marked sections",
-      detail: "eight section roles",
+      form: "Role-annotated sections",
+      detail: "granular structure",
     },
     artifact: "structured",
   },
   {
     eyebrow: "Semantic Index",
     title: "Searchable by meaning",
-    body: "Each role-marked section can be retrieved by labels, role, text search, or semantic similarity.",
+    body: "The Guideline Catalog supports semantic search across guideline sections, so agents can retrieve the relevant passage for a chart task.",
     surface: {
       intent: "Searchable by meaning",
       form: "Semantic index",
@@ -48,18 +48,18 @@ export const steps: readonly StoryStep[] = [
   {
     eyebrow: "Open Formats",
     title: "Portable across tools",
-    body: "The same role-marked record can be loaded from the site, Markdown, JSON, Python, TypeScript, and the CLI.",
+    body: "People and apps can open the same guidance through public pages, Markdown, JSON, Python, TypeScript, and the CLI.",
     surface: {
       intent: "Portable across tools",
       form: "Open formats",
-      detail: "Markdown, JSON, SDKs",
+      detail: "Markdown, JSON, APIs",
     },
     artifact: "access",
   },
   {
-    eyebrow: "Agent Skill",
+    eyebrow: "Agent skills",
     title: "Agent-ready",
-    body: "Skills tell agents how to retrieve records, cite them, apply them, evaluate charts, and propose contributions.",
+    body: "Agent skills give agents a repeatable path from retrieval to cited answer, chart evaluation, and contribution draft.",
     surface: {
       intent: "Agent-ready",
       form: "Agent skills",
@@ -70,10 +70,10 @@ export const steps: readonly StoryStep[] = [
   {
     eyebrow: "Public Review",
     title: "Open to revision",
-    body: "Missing or contested guidance can become a GitHub issue in the public catalog repository.",
+    body: "After human confirmation, agents can draft a GitHub issue for missing or contested guidance in the catalog repository.",
     surface: {
       intent: "Open to revision",
-      form: "Public repository",
+      form: "catalog repository",
       detail: "GitHub issues and review",
     },
     artifact: "improve",

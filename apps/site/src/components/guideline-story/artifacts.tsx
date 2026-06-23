@@ -19,8 +19,8 @@ const githubIconStyle = {
 } as CSSProperties;
 
 const accessListings = [
-  { id: "ts", label: "TS", title: "main.ts", language: "ts", lines: typescriptLines },
   { id: "py", label: "Python", title: "main.py", language: "py", lines: pythonLines },
+  { id: "ts", label: "TS", title: "main.ts", language: "ts", lines: typescriptLines },
   { id: "cli", label: "CLI", title: "terminal", language: "sh", lines: shellLines },
 ] as const;
 
@@ -31,9 +31,13 @@ const skillStages = [
 ] as const;
 
 const improveSteps = [
-  ["01", "missing guidance", "No guideline covers the chart issue."],
-  ["02", "propose record", "Attach the source, context, and proposed labels."],
-  ["03", "community review", "Review the record in the public catalog repository."],
+  ["01", "missing guidance", "The chart issue needs a new guideline."],
+  [
+    "02",
+    "propose guideline entry",
+    "Draft the issue with source references, context, and proposed labels.",
+  ],
+  ["03", "community review", "Review the proposed guideline entry in the catalog repository."],
 ] as const;
 
 export function StoryArtifact({ id, active }: { id: StoryArtifactId; active: boolean }) {
@@ -118,7 +122,7 @@ function AccessArtifact() {
         <div
           className="grid grid-cols-3 gap-1 border-b border-border bg-bg/68 p-1"
           role="tablist"
-          aria-label="SDK examples"
+          aria-label="Python API, TypeScript API, and CLI examples"
         >
           {accessListings.map((listing) => {
             const selected = activeListing.id === listing.id;
@@ -215,10 +219,10 @@ function ImproveArtifact() {
         className="group grid min-w-0 gap-2 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-fg/30 focus-visible:ring-offset-4 focus-visible:ring-offset-bg"
         target="_blank"
         rel="noreferrer"
-        aria-label="Open the public chartcoach catalog repository on GitHub"
+        aria-label="Open the chartcoach catalog repository on GitHub"
       >
         <span className="block font-mono text-[0.6875rem] font-semibold uppercase tracking-[0.14em] text-muted">
-          public catalog
+          catalog repository
         </span>
         <span className="flex min-w-0 items-start justify-between gap-4">
           <span className="flex min-w-0 items-start gap-3">
@@ -265,7 +269,7 @@ function ImproveArtifact() {
               Add guideline for missing chart guidance
             </span>
             <span className="mt-1 block break-words text-[0.75rem] leading-snug text-muted">
-              opened in chartcoach/catalog
+              opened in catalog repository
             </span>
           </span>
           <span className="w-fit shrink-0 rounded-full border border-[#1f883d]/45 bg-[#1f883d]/10 px-2 py-0.5 font-mono text-[0.625rem] font-semibold uppercase tracking-[0.1em] text-[#1f883d]">

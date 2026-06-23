@@ -1,13 +1,14 @@
 ---
 title: MCP
 description: Serve read-only chartcoach catalog SQL and optional indexed search tools over MCP.
+icon: Cable
 ---
 
-The chartcoach MCP server exposes catalog SQL and optional indexed search tools
-for MCP clients. MCP, the Model Context Protocol, lets an agent client call
-server-provided tools during a session.
+The chartcoach MCP server lets MCP clients query the catalog during an agent
+session. It registers a read-only `sql` tool, and it registers `search` when the
+server starts with `--index` or `CHARTCOACH_INDEX`.
 
-Inspect tool contracts without starting a server:
+Inspect tool schemas without starting a server:
 
 ```bash
 uvx --from 'chartcoach[mcp,index]@latest' chartcoach mcp tools --format json
@@ -17,29 +18,30 @@ uvx --from 'chartcoach[mcp,index]@latest' chartcoach mcp tools --format json
 uvx --from 'chartcoach[mcp]@latest' chartcoach mcp serve
 ```
 
-The package selector after `--from` installs extras. Use
-`chartcoach[mcp]@0.1.4` when the server must stay tied to one catalog release.
+The package selector after `--from` installs extras. Pin
+`chartcoach[mcp]@<version>` when the MCP server must read the Default Catalog
+shipped by that package version.
 
 With no index configured, the server registers `sql` for read-only catalog SQL.
 
 ## Extras
 
-| Need | Extra | One-off selector |
-| --- | --- | --- |
-| Base query, read, cite, SQL | none | `uvx chartcoach@latest ...` |
-| Indexed `catalog find` | `index` | `uvx --from 'chartcoach[index]@latest' chartcoach ...` |
-| MCP SQL server | `mcp` | `uvx --from 'chartcoach[mcp]@latest' chartcoach ...` |
-| MCP search server | `mcp,index` | `uvx --from 'chartcoach[mcp,index]@latest' chartcoach ...` |
+| Need                        | Extra       | Package selector                                           |
+| --------------------------- | ----------- | ---------------------------------------------------------- |
+| Base query, read, cite, SQL | none        | `uvx chartcoach@latest ...`                                |
+| Indexed `catalog find`      | `index`     | `uvx --from 'chartcoach[index]@latest' chartcoach ...`     |
+| MCP SQL server              | `mcp`       | `uvx --from 'chartcoach[mcp]@latest' chartcoach ...`       |
+| MCP search server           | `mcp,index` | `uvx --from 'chartcoach[mcp,index]@latest' chartcoach ...` |
 
-## Tool contracts
+## Tool Schemas
 
-| Tool | Registered when | Arguments | Return shape |
-| --- | --- | --- | --- |
-| `sql` | Always | `statement` string, `limit` integer default `100` | `columns`, `rows`, `row_count`, `truncated`, `limit`, `catalog_digest` |
+| Tool     | Registered when                                  | Arguments                                                                                                                | Return shape                                                                       |
+| -------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------- |
+| `sql`    | Always                                           | `statement` string, `limit` integer default `100`                                                                        | `columns`, `rows`, `row_count`, `truncated`, `limit`, `catalog_digest`             |
 | `search` | Only when `--index` or `CHARTCOACH_INDEX` is set | `search_query` string, `limit` integer default `10`, `where` string or null, `mode` `auto`, `fts`, `vector`, or `hybrid` | `query`, `mode`, `rows`, `row_count`, `limit`, `where`, `index_path`, `table_name` |
 
-The `sql` tool accepts one read-only `SELECT` statement. The `search` tool
-returns candidate rows. Read exact ids before citing them.
+The `sql` tool accepts one read-only `SELECT` statement. The `search` tool finds
+candidate guidance for agent answers. Inspect exact ids before citing them.
 
 ## Configure a client
 
@@ -69,17 +71,51 @@ Desktop clients often launch servers from a different working directory. Use
 absolute paths for `--source` and `--index` when a client configuration owns
 those values.
 
+## Deployment environment
+
+A custom MCP deployment gives the chartcoach server process its own environment.
+Use that environment for catalog paths, index paths, cache isolation, and
+credentials required by LanceDB embedding functions.
+
+For semantic search with a caller-owned LanceDB index, set the embedding
+provider credentials in the same environment that serves MCP. LanceDB embedding
+functions can read provider API keys from environment variables or registry
+variables, and vector or hybrid text search uses the configured embedding
+function to embed the query.
+
+```json
+{
+  "mcpServers": {
+    "chartcoach": {
+      "command": "uvx",
+      "args": ["--from", "chartcoach[mcp,index]@latest", "chartcoach", "mcp", "serve"],
+      "env": {
+        "CHARTCOACH_INDEX": "/absolute/path/to/chartcoach-index",
+        "CHARTCOACH_CACHE_DIR": "/absolute/path/to/chartcoach-cache",
+        "OPENAI_API_KEY": "<provider-api-key>"
+      }
+    }
+  }
+}
+```
+
+Use the client or deployment secret store for real provider keys. LanceDB
+documents provider keys, environment variables, and registry variables in its
+[embedding-function configuration](https://docs.lancedb.com/embedding/index#using-an-embedding-function).
+
 ## Add search
 
-Run with the search extra and pass a LanceDB index. `catalog find` can resolve
-the package-pinned default index when `--index` is omitted. `mcp serve` does not
-auto-resolve that index because MCP server configuration should be explicit.
+Start the server with the `mcp,index` extra and pass a LanceDB index path.
+`catalog find` resolves the package-pinned default index for local CLI use.
+`mcp serve` registers `search` from the explicit `--index` path or
+`CHARTCOACH_INDEX` value in the MCP client configuration.
 
 Use a caller-owned index when you want to choose the path:
 
 ```bash
 uvx --from 'chartcoach[mcp,index]@latest' chartcoach catalog index create \
   --index ./chartcoach-index
+
 uvx --from 'chartcoach[mcp,index]@latest' chartcoach mcp serve \
   --index ./chartcoach-index
 ```
@@ -93,19 +129,20 @@ INDEX_PATH="$(
   uvx --from 'chartcoach[mcp,index]@latest' chartcoach catalog index info --format json |
     jq -r '.[0].index_path'
 )"
+
 uvx --from 'chartcoach[mcp,index]@latest' chartcoach mcp serve --index "$INDEX_PATH"
 ```
 
 When an index is available, the server also registers:
 
-| Tool | Behavior |
-| --- | --- |
+| Tool     | Behavior                                              |
+| -------- | ----------------------------------------------------- |
 | `search` | Run LanceDB search over indexed catalog document rows |
 
 The search table defaults to `catalog_documents`. Pass `--table` for another
 table name.
 
-`Catalog.open()` and first CLI catalog reads download package-pinned artifacts.
+`chartcoach.open()` and first CLI catalog reads download package-pinned artifacts.
 Indexed search downloads an index archive. Set `CHARTCOACH_CACHE_DIR` to
 isolate writes.
 
@@ -113,14 +150,14 @@ isolate writes.
 
 Environment variables mirror the main options.
 
-| Variable | Behavior |
-| --- | --- |
-| `CHARTCOACH_SOURCE` | Catalog bundle, parquet file, authored folder, or metadata URL |
-| `CHARTCOACH_INDEX` | LanceDB database path or URI |
-| `CHARTCOACH_MCP_TRANSPORT` | `stdio`, `sse`, or `streamable-http` |
-| `CHARTCOACH_MCP_HOST` | Host for HTTP transports |
-| `CHARTCOACH_MCP_PORT` | Port for HTTP transports |
-| `CHARTCOACH_MCP_LOG_LEVEL` | `DEBUG`, `INFO`, `WARNING`, `ERROR`, or `CRITICAL` |
+| Variable                   | Behavior                                                       |
+| -------------------------- | -------------------------------------------------------------- |
+| `CHARTCOACH_SOURCE`        | Catalog bundle, parquet file, authored folder, or metadata URL |
+| `CHARTCOACH_INDEX`         | LanceDB database path or URI                                   |
+| `CHARTCOACH_MCP_TRANSPORT` | `stdio`, `sse`, or `streamable-http`                           |
+| `CHARTCOACH_MCP_HOST`      | Host for HTTP transports                                       |
+| `CHARTCOACH_MCP_PORT`      | Port for HTTP transports                                       |
+| `CHARTCOACH_MCP_LOG_LEVEL` | `DEBUG`, `INFO`, `WARNING`, `ERROR`, or `CRITICAL`             |
 
 ## SQL boundary
 

@@ -7,7 +7,7 @@ description: Use this for Visualization Recommendation with chartcoach. Teaches 
 
 Use chartcoach primitives and catalog records to recommend visualization designs from a design brief. This skill starts from data, task, audience, constraints, and output target. Use `visfeedback` instead when the task starts from an existing chart and observed visual evidence.
 
-Load `core` first when catalog source, index setup, package extras, or output formats are unclear. This skill assumes the `chartcoach` command already points at the intended Catalog Instance.
+Load `core` first when catalog source, index setup, package extras, package defaults, or output formats are unclear. Run core's Package Defaults step before any command uses `$GUIDELINE_URL_TEMPLATE` or before describing the Default Catalog release. This skill assumes the `chartcoach` command already points at the intended Catalog Instance.
 
 ## Start With The Live Catalog
 
@@ -111,8 +111,10 @@ Read exact guideline records before citing:
 
 ```sh
 chartcoach catalog read <guideline-id> --section <role-from-manifest> --source-detail minimal --format markdown
-chartcoach catalog cite <guideline-id> <another-guideline-id> --format markdown
+chartcoach catalog cite <guideline-id> <another-guideline-id> --url-template "$GUIDELINE_URL_TEMPLATE" --format markdown
 ```
+
+For final links, follow `core` and resolve `$GUIDELINE_URL_TEMPLATE` from `CHARTCOACH_DEFAULTS`. Do not assemble guideline URLs manually.
 
 For every recommendation, keep:
 
@@ -120,7 +122,7 @@ For every recommendation, keep:
 - discovery command
 - candidate id
 - exact-read command
-- citation command when final output needs formatted references
+- citation command with the resolved URL template when final output needs formatted references
 - guideline id and title
 - section evidence
 - applicability or caveat

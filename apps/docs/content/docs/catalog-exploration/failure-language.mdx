@@ -1,0 +1,62 @@
+---
+title: Failure search
+description: Search indexed mistake sections when reviewer wording does not map cleanly to known labels.
+icon: SearchCheck
+---
+
+Use indexed search when a reviewer phrase does not map cleanly to a known label.
+This example searches only `mistakes` sections, then reads the exact section for
+one candidate guideline.
+
+```bash
+QUERY=${QUERY:-"uncertainty shown as exact values confidence interval misleading"}
+```
+
+## Search mistake sections
+
+```bash
+uvx --from 'chartcoach[index]@latest' chartcoach catalog find \
+  --mode fts \
+  --where "role = 'section.mistakes'" \
+  --limit 3 \
+  --format table \
+  "${QUERY}"
+```
+
+Output, shortened for the page:
+
+| Rank | Guideline id                                               | Matched role       | Matched text                                                                                                    |
+| ---: | ---------------------------------------------------------- | ------------------ | --------------------------------------------------------------------------------------------------------------- |
+|    1 | `use-standard-uncertainty-display-with-text-explanation`   | `section.mistakes` | Showing a confidence interval without any textual explanation.                                                  |
+|    2 | `do-not-use-caption-only-fixes-for-ci-charts`              | `section.mistakes` | Add definitions or extra text about prediction intervals while leaving the confidence-interval marks unchanged. |
+|    3 | `show-prediction-intervals-for-treatment-effect-judgments` | `section.mistakes` | Keep 95% confidence-interval bars and assume readers will mentally convert them into outcome variability.       |
+
+The index reports roles as `section.<role>`. Use the manifest role name when
+reading the exact record.
+
+## Read the selected section
+
+```bash
+GUIDELINE_ID=use-standard-uncertainty-display-with-text-explanation
+
+uvx chartcoach@latest catalog read "${GUIDELINE_ID}" \
+  --section mistakes \
+  --source-detail minimal \
+  --format markdown
+```
+
+Use JSONL with [jq](https://jqlang.org/) when a script or agent should consume
+search candidates:
+
+```bash
+uvx --from 'chartcoach[index]@latest' chartcoach catalog find \
+  --mode fts \
+  --where "role = 'section.mistakes'" \
+  --limit 3 \
+  --format jsonl \
+  "${QUERY}" |
+  jq -s 'map({id, title, role: .matched_role, text: (.matched_text | split("\n")[0])})'
+```
+
+Run `catalog read` or `catalog cite` before using a search result as evidence in
+an answer, critique, or generated page.

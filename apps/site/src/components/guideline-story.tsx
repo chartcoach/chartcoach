@@ -72,15 +72,15 @@ export function GuidelineStory() {
             </p>
             <h2 className="m-0 mt-5 max-w-[43rem] text-balance text-[2.25rem] font-semibold leading-[1.04] tracking-normal text-fg sm:text-[2.9rem] lg:text-[3.45rem] xl:text-[3.85rem]">
               <span className="whitespace-nowrap">Human-readable</span>,{" "}
-              <span className="whitespace-nowrap">agent-queryable</span>{" "}
+              <span className="whitespace-nowrap">agent-actionable</span>{" "}
               <span className="whitespace-nowrap">design knowledge</span>
             </h2>
           </div>
 
           <p className="m-0 min-w-0 max-w-[36rem] text-pretty text-[1.0625rem] leading-[1.65] text-muted lg:col-start-7 lg:col-end-13 lg:pt-9 xl:text-[1.1875rem]">
-            chartcoach represents each visualization design guideline as a record people can read
-            and agents can query. The same record carries sources, roles, labels, formats, and
-            contribution paths.
+            chartcoach represents each visualization design guideline as a catalog entry that people
+            can author and read while agents can query it. The same entry carries sources, roles,
+            labels, formats, and contribution paths.
           </p>
 
           <div className="hidden lg:col-start-1 lg:col-end-7 lg:row-start-2 lg:block lg:pb-64">

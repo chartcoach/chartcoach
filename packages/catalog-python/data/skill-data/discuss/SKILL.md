@@ -7,7 +7,7 @@ description: Use this for cited discussion with the chartcoach Guideline Catalog
 
 Use chartcoach primitives and catalog records for cited discussion with the Guideline Catalog. Use this skill for design questions, chart-choice comparisons, tradeoff explanations, topic searches, source tracing, teaching, related guidance, conflicting guidance, boundary cases, and related-record exploration.
 
-Load `core` first when catalog source, index setup, package extras, or output formats are unclear. This skill assumes the `chartcoach` command already points at the intended Catalog Instance.
+Load `core` first when catalog source, index setup, package extras, package defaults, or output formats are unclear. Run core's Package Defaults step before any command uses `$GUIDELINE_URL_TEMPLATE` or before describing the Default Catalog release. This skill assumes the `chartcoach` command already points at the intended Catalog Instance.
 
 ## Start With The Live Catalog
 
@@ -60,7 +60,7 @@ chartcoach catalog query --label <exact-label-from-labels> --format jsonl
 chartcoach catalog query --any-label <label-a> --any-label <label-b> --format jsonl
 chartcoach catalog sql "select guideline_id, role, title from sections where content ilike '%<concept>%'" --format jsonl
 chartcoach catalog read <guideline-id> --section <role-from-manifest> --source-detail minimal --format markdown
-chartcoach catalog cite <guideline-id> <another-guideline-id> --format markdown
+chartcoach catalog cite <guideline-id> <another-guideline-id> --url-template "$GUIDELINE_URL_TEMPLATE" --format markdown
 ```
 
 For compare questions, retrieve each option separately and then search for shared contexts, boundaries, and failure modes:
@@ -75,10 +75,10 @@ For source tracing:
 
 ```sh
 chartcoach catalog read <guideline-id> --source-detail minimal --format markdown
-chartcoach catalog cite <guideline-id> --format markdown
+chartcoach catalog cite <guideline-id> --url-template "$GUIDELINE_URL_TEMPLATE" --format markdown
 ```
 
-Discovery commands produce candidates. `catalog read` produces the exact guideline text needed for evidence. `catalog cite` produces live guideline URLs and every formatted source reference associated with the verified ids.
+Discovery commands produce candidates. `catalog read` produces the exact guideline text needed for evidence. `catalog cite` produces live guideline URLs and every formatted source reference associated with the verified ids. For final links, follow `core` and resolve `$GUIDELINE_URL_TEMPLATE` from `CHARTCOACH_DEFAULTS`. Do not assemble guideline URLs manually.
 
 ## Recover From Empty Results
 
@@ -171,7 +171,7 @@ If a catalog manifest defines roles like the current default catalog, these oper
 | Viewpoint Divergence | `section.advice` similar to `section.mistakes`.         |
 | Projection           | UMAP or atlas view over role-specific embeddings.       |
 
-Treat these examples as current-catalog examples, not chartcoach contracts. Dense embeddings can return topical overlap before logical fit, polarity, or strict conditionality.
+Treat these examples as current-catalog examples, not chartcoach-wide defaults. Dense embeddings can return topical overlap before logical fit, polarity, or strict conditionality.
 
 ## Answer Format
 
@@ -184,4 +184,4 @@ Source trail:
 Uncertainty:
 ```
 
-For each cited record, include the guideline id, title, relevant section, exact-read command, source detail when available, and the uncertainty or boundary around the claim.
+For each cited record, include the guideline id, title, relevant section, exact-read command, citation command with the resolved URL template, source detail when available, and the uncertainty or boundary around the claim.

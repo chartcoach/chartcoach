@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 import bibtexparser
 import polars as pl
 
+from ..constants import DEFAULT_GUIDELINE_URL_TEMPLATE
 from .errors import CatalogValidationError
 from .schemas import (
     GUIDELINE_REFERENCES_SCHEMA,
@@ -18,7 +19,6 @@ from .schemas import (
 if TYPE_CHECKING:
     from .collection import Catalog
 
-DEFAULT_GUIDELINE_URL_TEMPLATE = "https://chartcoach.dev/guidelines/{id}"
 CITATION_SOURCE_COLUMNS = (
     "reference_id",
     "source_type",
@@ -283,7 +283,7 @@ def validate_url_template(url_template: str) -> None:
     if "{id}" not in url_template:
         raise CatalogValidationError(
             "Guideline URL template must include `{id}`.",
-            hints=("Use a template such as `https://chartcoach.dev/guidelines/{id}`.",),
+            hints=(f"Use a template such as `{DEFAULT_GUIDELINE_URL_TEMPLATE}`.",),
         )
 
 

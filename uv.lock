@@ -165,6 +165,7 @@ dependencies = [
     { name = "platformdirs" },
     { name = "polars" },
     { name = "pyarrow" },
+    { name = "pydantic" },
     { name = "pyyaml" },
     { name = "tabulate" },
 ]
@@ -193,6 +194,7 @@ requires-dist = [
     { name = "platformdirs", specifier = ">=4" },
     { name = "polars", specifier = ">=1" },
     { name = "pyarrow", specifier = ">=18" },
+    { name = "pydantic", specifier = ">=2" },
     { name = "pyyaml", specifier = ">=6" },
     { name = "tabulate", specifier = ">=0.10.0" },
 ]

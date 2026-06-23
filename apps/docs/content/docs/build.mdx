@@ -1,10 +1,11 @@
 ---
 title: Build a catalog
 description: Validate authored guideline folders, write catalog bundles, and export catalog tables.
+icon: Hammer
 ---
 
-Build a catalog when you maintain guideline entries or need a bundle for the
-site, CLI, Python, JavaScript, or MCP readers.
+`catalog build` turns an authored guideline folder into a bundle that the site,
+CLI, Python, JavaScript, and MCP readers can load.
 
 ## Folder scheme
 
@@ -19,8 +20,9 @@ catalog-source/
         └── references.bib
 ```
 
-The manifest defines section roles and label families. Each guideline keeps a
-stable id, title, description, labels, sections, and optional references.
+The manifest defines section roles and label families. Each guideline entry
+keeps a stable id, title, description, labels, sections, and optional source
+references.
 
 ## Create a minimal catalog
 
@@ -67,11 +69,12 @@ EOF
 
 ```bash
 uvx chartcoach@latest catalog validate --source ./catalog-source --format table
+
 uvx chartcoach@latest catalog manifest --source ./catalog-source --format markdown
 ```
 
 Validation catches missing manifests, undefined section roles, undefined label
-families, duplicate ids, and invalid rows.
+families, duplicate ids, and invalid guideline entries.
 
 ## Build a bundle
 
@@ -82,11 +85,14 @@ uvx chartcoach@latest catalog build \
 ```
 
 The bundle contains `metadata.json`, `MANIFEST.md`, and `entries.parquet`.
-Readers can use the bundle directory as `--source`.
+Pass the bundle directory to `--source` to read the built catalog with
+`overview`, `query`, and `read`.
 
 ```bash
 uvx chartcoach@latest catalog overview --source ./dist/catalog
+
 uvx chartcoach@latest catalog query --source ./dist/catalog --contains "legend"
+
 uvx chartcoach@latest catalog read --source ./dist/catalog direct-labels
 ```
 
@@ -100,5 +106,5 @@ uvx chartcoach@latest catalog export duckdb \
   --out ./dist/catalog.duckdb
 ```
 
-Use [Cataloging scheme](/catalog) for authored Markdown, manifest, and bundle
-shape, metadata, source locators, and artifact descriptors.
+Authored Markdown, manifest and bundle shape, metadata, catalog sources, and
+artifact descriptors are defined in [Cataloging scheme](/catalog).

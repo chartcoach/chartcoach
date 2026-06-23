@@ -1,25 +1,27 @@
 ---
 title: Cataloging scheme
 description: Catalog structure, row shape, manifest vocabulary, release metadata, cache behavior, and queryable tables for chartcoach catalogs.
+icon: Database
 ---
 
-The Guideline Catalog is a versioned collection of citable visualization
-guidelines. Each guideline has a stable id, guideline text, role-annotated
-sections, labels, and source references.
+The Guideline Catalog lets agents and applications find chart guidance, inspect
+the exact recommendation, and cite the sources behind it. Its record shape keeps
+discovery, table joins, public links, and citation output aligned across the CLI,
+Python, JavaScript, and MCP.
 
 ## Core concepts
 
-| Scheme element | Meaning |
-| --- | --- |
-| Guideline id | Stable id used by `read`, `cite`, URLs, and table joins |
-| Section role | Catalog-defined role such as `advice` attached to one guideline section |
-| Label family | Catalog-defined prefix such as `chart` in labels like `chart:bar:use` |
-| Manifest | `MANIFEST.md`, which defines section roles and label families for one catalog |
-| Bundle | Publishable directory with `metadata.json`, `MANIFEST.md`, and `entries.parquet` |
-| Default Catalog | Package-pinned release used when no source is passed |
+| Scheme element  | Meaning                                                                          |
+| --------------- | -------------------------------------------------------------------------------- |
+| Guideline id    | Stable id used by `read`, `cite`, URLs, and table joins                          |
+| Section role    | Catalog-defined role such as `advice` attached to one guideline section          |
+| Label family    | Catalog-defined prefix such as `chart` in labels like `chart:bar:use`            |
+| Manifest        | `MANIFEST.md`, which defines section roles and label families for one catalog    |
+| Bundle          | Publishable directory with `metadata.json`, `MANIFEST.md`, and `entries.parquet` |
+| Default Catalog | Package-pinned release used when no source is passed                             |
 
-Inspect the manifest before hard-coding a role or label family. Those names are
-catalog vocabulary, not global chartcoach constants.
+Inspect the manifest before hard-coding a role or label family. Role and label
+names come from the catalog's manifest vocabulary.
 
 ```text
 catalog-release/
@@ -29,47 +31,56 @@ catalog-release/
 ```
 
 ```bash
-uvx chartcoach@latest catalog read compare-percentages-with-bars-not-pies --source-detail minimal --format markdown
+uvx chartcoach@latest catalog read compare-percentages-with-bars-not-pies \
+  --source-detail minimal \
+  --format markdown
 ```
 
 Use exact ids from `catalog list`, `catalog query`, `catalog sql`, or
-`catalog find`. Do not derive ids from titles.
+`catalog find`. Guideline ids are catalog data copied from command output.
 
 ## Default Catalog and pinning
 
 The Default Catalog is the package-pinned release used when a caller omits
-`--source` or `Catalog.open()` receives no path. JavaScript callers use
+`--source` or `chartcoach.open()` receives no source. JavaScript callers use
 `DEFAULT_CATALOG` for the same package-pinned artifact URLs and pass the loaded
 artifact bytes to `loadCatalog()`. The package constants select a release URL
 and digest, so repeated reads resolve the same bundle until the installed
-package changes or the caller passes a custom source.
+package changes or the caller passes a custom catalog source.
 
-The `0.1.4` release contains 781 guideline records and 262 source references.
-It follows the cataloging scheme described in
+Inspect the installed Default Catalog for current guideline entry counts, source
+references, version, and digest:
+
+```bash
+uvx chartcoach@latest catalog overview --format json
+```
+
+The Default Catalog follows the cataloging scheme described in
 [Structured Visualization Design Knowledge for Grounding Generative Reasoning and Situated Feedback](https://arxiv.org/abs/2512.20306).
 
-Examples use `chartcoach@latest` for one-off access to the newest published
-package. Pin `chartcoach@0.1.4` when output must match this catalog release.
+Pin `chartcoach@<version>` when CLI results must stay tied to the Default
+Catalog shipped by that package version.
 
-Use a custom source for another catalog instance:
+Use a custom catalog source for another catalog instance:
 
 ```bash
 uvx chartcoach@latest catalog validate --source ./dist/catalog
+
 CHARTCOACH_SOURCE=./dist/catalog uvx chartcoach@latest catalog overview
 ```
 
 ## Query and search engines
 
-chartcoach uses external engines at two boundaries:
+chartcoach delegates SQL and indexed search to two engines:
 
-| Engine | Responsibility in chartcoach | Reference |
-| --- | --- | --- |
-| DuckDB | Executes read-only SQL over catalog tables and writes `catalog export duckdb` database files for tools that need a durable SQL artifact | [DuckDB documentation](https://duckdb.org/docs/current/) |
-| LanceDB | Stores optional indexed catalog document rows for `catalog find`, MCP `search`, full-text search, vector search, and hybrid search | [LanceDB documentation](https://docs.lancedb.com/) |
+| Engine  | Responsibility in chartcoach                                                                                                            | Reference                                                |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| DuckDB  | Executes read-only SQL over catalog tables and writes `catalog export duckdb` database files for tools that need a durable SQL artifact | [DuckDB documentation](https://duckdb.org/docs/current/) |
+| LanceDB | Stores optional indexed catalog document rows for `catalog find`, MCP `search`, full-text search, vector search, and hybrid search      | [LanceDB documentation](https://docs.lancedb.com/)       |
 
-Use chartcoach docs for catalog shape, source locators, command behavior, and
-cache layout. Use the engine docs for SQL syntax, database-file behavior,
-LanceDB table configuration, embedding functions, and search modes.
+chartcoach defines catalog shape, catalog sources, command behavior, and cache
+layout. DuckDB and LanceDB define SQL syntax, database-file behavior, table
+configuration, embedding functions, and search modes.
 
 ## Serialized row
 
@@ -78,22 +89,22 @@ LanceDB table configuration, embedding functions, and search modes.
 
 ```ts
 type CatalogRow = {
-  id: string
+  id: string;
   guideline: {
-    id: string
-    title: string
-    bibliography?: string | null
-    description: string
-    labels: string[]
-    body: string
+    id: string;
+    title: string;
+    bibliography?: string | null;
+    description: string;
+    labels: string[];
+    body: string;
     sections: Array<{
-      role: string
-      title: string
-      content: string
-    }>
-  }
-  references: string[]
-}
+      role: string;
+      title: string;
+      content: string;
+    }>;
+  };
+  references: string[];
+};
 ```
 
 Loaders reject duplicate ids, mismatched row ids, invalid labels, empty section
@@ -103,7 +114,7 @@ roles, and manifest coverage gaps.
 
 An authored catalog folder stores each entry at `entries/<id>/guideline.md`.
 The guideline Markdown carries front matter, sections, and section role
-comments. Build and read commands serialize references into the row-level
+comments. Build and read commands serialize source references into the row-level
 `references` array.
 
 ## Manifest
@@ -133,20 +144,27 @@ Labels for chart families and visual forms, such as `chart:bar`.
 
 Label examples inside a family definition must belong to that family.
 
-## Release metadata and locators
+## Release metadata and catalog sources
 
 `metadata.json` names a catalog release and its artifacts. Base readers require
-`manifest` and `entries`. Indexed commands can use `lancedb-index`.
+`manifest` and `entries`. Indexed commands read `lancedb-index` when search
+should run from a published index.
 
-```json
-{
-  "version": "0.1.4",
-  "digest": "7cfd43ee820be252b8ae9058c4c36109a9c8415c6b3a5ff8a9127117b4a10c19",
-  "artifacts": [
-    { "kind": "manifest", "path": "MANIFEST.md", "digest": "...", "bytes": 1234 },
-    { "kind": "entries", "path": "entries.parquet", "digest": "...", "bytes": 5678, "rows": 781 }
-  ]
-}
+```ts
+type CatalogReleaseMetadata = {
+  version: string;
+  digest: string;
+  artifacts: Array<{
+    kind: "manifest" | "entries" | "lancedb-index";
+    path: string;
+    digest: string;
+    bytes: number;
+    rows?: number;
+    format?: string;
+    table?: string;
+    documents?: number;
+  }>;
+};
 ```
 
 Artifact descriptors include `kind`, `path`, `digest`, `bytes`, and
@@ -154,30 +172,30 @@ kind-specific fields such as `rows`, `format`, `table`, and `documents`. `path`
 must be relative and cannot contain `..`. Catalog clients resolve paths
 relative to the metadata URL.
 
-Published artifacts live below:
+A release root URL includes the catalog version, digest, and trailing slash:
 
 ```text
 https://artifacts.chartcoach.dev/catalog/releases/<version>/<digest>/
 ```
 
-Release selection happens through package constants or explicit metadata URLs.
-There is no `catalog/current` object prefix in the cataloging scheme.
+Select releases through package constants or explicit metadata URLs. Store the
+concrete metadata URL when a workflow needs to reproduce the same release.
 
-CLI and Python readers accept these locator forms:
+CLI and Python readers accept these catalog sources:
 
-| Locator | Behavior |
-| --- | --- |
-| omitted | Use the package-pinned Default Catalog |
-| metadata URL | Read release metadata and resolve artifacts |
-| release root URL | Append `metadata.json` |
-| bundle directory | Read local `MANIFEST.md` and `entries.parquet` |
-| authored folder | Read local `MANIFEST.md` and `entries/*/guideline.md` |
-| parquet file | Read serialized rows |
+| Catalog source   | Behavior                                              |
+| ---------------- | ----------------------------------------------------- |
+| omitted          | Use the package-pinned Default Catalog                |
+| metadata URL     | Read release metadata and resolve artifacts           |
+| release root URL | Append `metadata.json`                                |
+| bundle directory | Read local `MANIFEST.md` and `entries.parquet`        |
+| authored folder  | Read local `MANIFEST.md` and `entries/*/guideline.md` |
+| parquet file     | Read serialized rows                                  |
 
-The JavaScript package accepts artifact bytes. Use `DEFAULT_CATALOG`,
+The JavaScript package loads caller-provided artifact bytes. Use
+`DEFAULT_CATALOG` for the package-pinned artifact URLs. Use
 `parseCatalogReleaseMetadata()`, `catalogArtifact()`, and
-`catalogArtifactUrl()` to locate artifacts, then pass `entries` and optional
-manifest data to `loadCatalog()`.
+`catalogArtifactUrl()` when code starts from a `metadata.json` URL.
 
 ## Cache
 
@@ -202,18 +220,19 @@ Inspect the live schema before writing SQL:
 
 ```bash
 uvx chartcoach@latest catalog schema --tables --row-counts
+
 uvx chartcoach@latest catalog schema --format jsonl
 ```
 
-| Table | Contains |
-| --- | --- |
-| `guidelines` | Guideline rows with ids, titles, labels, body, and nested sections |
-| `sections` | One row per guideline section |
-| `labels` | Unique parsed label values |
-| `guideline_labels` | Guideline-to-label edges |
-| `references` | Parsed BibTeX reference entries |
-| `guideline_references` | Guideline-to-reference edges |
-| `guideline_sources` | Guideline rows joined to source metadata |
+| Table                  | Contains                                                           |
+| ---------------------- | ------------------------------------------------------------------ |
+| `guidelines`           | Guideline rows with ids, titles, labels, body, and nested sections |
+| `sections`             | One row per guideline section                                      |
+| `labels`               | Unique parsed label values                                         |
+| `guideline_labels`     | Guideline-to-label edges                                           |
+| `references`           | Parsed BibTeX source reference entries                             |
+| `guideline_references` | Guideline-to-reference edges                                       |
+| `guideline_sources`    | Guideline rows joined to source reference fields                   |
 
 `catalog sql` and MCP `sql` accept one read-only `SELECT` statement. Use
 `catalog schema TABLE` for columns before writing a join. Use
@@ -223,8 +242,11 @@ Inspect vocabulary before writing filters:
 
 ```bash
 uvx chartcoach@latest catalog values labels --contains chart: --format jsonl
+
 uvx chartcoach@latest catalog values roles --format jsonl
+
 uvx chartcoach@latest catalog values label.family --format jsonl
+
 uvx chartcoach@latest catalog values sections.role --format jsonl
 ```
 
@@ -233,5 +255,5 @@ Aliases such as `labels`, `roles`, `label.family`, `label.category`, and
 
 ## Loader boundary
 
-Use the Python or JavaScript package APIs as the supported data boundary. The
-generated docs output and public HTML pages are rendering artifacts.
+Load catalog data through the Python or JavaScript package APIs. Use generated
+docs output and public HTML pages for reading, linking, and search workflows.

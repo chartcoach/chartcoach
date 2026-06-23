@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import {
+  CHARTCOACH_DEFAULTS,
   DEFAULT_CATALOG,
   catalogArtifact,
   catalogArtifactUrl,
@@ -175,8 +176,15 @@ describe("catalog artifact loading", () => {
     );
   });
 
-  it("exposes package-pinned default artifact URLs", () => {
-    expect(DEFAULT_CATALOG.version).toBe("0.1.4");
+  it("derives package-pinned default artifact URLs from chartcoach defaults", () => {
+    expect(DEFAULT_CATALOG.version).toBe(CHARTCOACH_DEFAULTS.catalogVersion);
+    expect(DEFAULT_CATALOG.digest).toBe(CHARTCOACH_DEFAULTS.catalogDigest);
+    expect(DEFAULT_CATALOG.releaseRootUrl).toBe(
+      new URL(
+        `catalog/releases/${CHARTCOACH_DEFAULTS.catalogVersion}/${CHARTCOACH_DEFAULTS.catalogDigest}/`,
+        `${CHARTCOACH_DEFAULTS.catalogArtifactBaseUrl}/`,
+      ).toString(),
+    );
     expect(DEFAULT_CATALOG.metadataUrl).toContain(DEFAULT_CATALOG.digest);
     expect(DEFAULT_CATALOG.entriesUrl).toBe(
       new URL("entries.parquet", DEFAULT_CATALOG.releaseRootUrl).toString(),

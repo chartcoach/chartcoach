@@ -156,7 +156,7 @@ export function SiteMobileMenu({ links, githubHref }: SiteMobileMenuProps) {
                   target="_blank"
                   rel="noreferrer"
                   className="group flex min-h-14 items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-muted no-underline transition-colors hover:bg-bg/70 hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/20"
-                  aria-label="chartcoach catalog on GitHub"
+                  aria-label="chartcoach catalog repository on GitHub"
                   onClick={() => setOpen(false)}
                 >
                   <span className="flex min-w-0 items-center gap-3">
@@ -170,7 +170,7 @@ export function SiteMobileMenu({ links, githubHref }: SiteMobileMenuProps) {
                     <span className="grid min-w-0 gap-0.5">
                       <span className="text-[0.9375rem] font-medium leading-5 text-fg">GitHub</span>
                       <span className="truncate text-[0.8125rem] leading-5 text-muted">
-                        Public catalog repository
+                        Catalog repository
                       </span>
                     </span>
                   </span>

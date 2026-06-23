@@ -7,7 +7,7 @@ import click
 
 from chartcoach.constants import LANCE_DOCUMENT_TABLE
 from chartcoach.search import Mode, index, open as open_index
-from chartcoach.search import search as search_guidelines
+from chartcoach.search.index import search as search_guidelines
 from chartcoach.tools import ToolError
 
 from ..common import (

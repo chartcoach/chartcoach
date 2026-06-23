@@ -1,0 +1,13 @@
+{
+  "title": "Catalog exploration",
+  "description": "Reusable queries and pipelines for transforming catalog records with standard tools.",
+  "icon": "Waypoints",
+  "pages": [
+    "index",
+    "source-authors",
+    "conditional-guidance",
+    "evidence-boundaries",
+    "task-coverage",
+    "failure-language"
+  ]
+}

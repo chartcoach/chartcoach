@@ -7,7 +7,7 @@ description: Use this for visualization feedback with chartcoach. Teaches agents
 
 Use chartcoach primitives to ground visualization feedback in the current Guideline Catalog. This skill defines the feedback steps. It does not assume fixed labels, fixed section roles, or any one visualization source.
 
-Load `core` first when catalog source, index setup, package extras, or output formats are unclear. This skill assumes the `chartcoach` command already points at the intended Catalog Instance.
+Load `core` first when catalog source, index setup, package extras, package defaults, or output formats are unclear. Run core's Package Defaults step before any command uses `$GUIDELINE_URL_TEMPLATE` or before describing the Default Catalog release. This skill assumes the `chartcoach` command already points at the intended Catalog Instance.
 
 ## Start With The Live Catalog
 
@@ -114,10 +114,10 @@ Then inspect selected records with exact ids and manifest roles:
 ```sh
 chartcoach catalog read <guideline-id>
 chartcoach catalog read <guideline-id> --section <role-from-manifest> --source-detail minimal --format markdown
-chartcoach catalog cite <guideline-id> <another-guideline-id> --format markdown
+chartcoach catalog cite <guideline-id> <another-guideline-id> --url-template "$GUIDELINE_URL_TEMPLATE" --format markdown
 ```
 
-Do not cite a guideline from `catalog list`, `catalog query`, `catalog sql`, or `catalog find` alone. These commands produce candidates. `catalog read` produces the exact guideline text to verify. `catalog cite` formats guideline URLs and source references for verified ids.
+Do not cite a guideline from `catalog list`, `catalog query`, `catalog sql`, or `catalog find` alone. These commands produce candidates. `catalog read` produces the exact guideline text to verify. `catalog cite` formats guideline URLs and source references for verified ids. For final links, follow `core` and resolve `$GUIDELINE_URL_TEMPLATE` from `CHARTCOACH_DEFAULTS`. Do not assemble guideline URLs manually.
 
 Use indexed discovery only after base navigation is too broad:
 
@@ -155,7 +155,7 @@ For each user-facing guideline, include:
 - the visible evidence that supports the judgment
 - the discovery command that found the candidate
 - the exact `catalog read` command used before citation
-- the `catalog cite` command used when final output needs formatted references
+- the `catalog cite` command with the resolved URL template used when final output needs formatted references
 - uncertainty from missing screenshot detail, incomplete interaction state, ambiguous task or audience, unknown data semantics, unclear chart intent, or conflicting catalog evidence
 
 Keep the critique grounded in the chart and the catalog. Do not let retrieval false positives drive the feedback. If a result is close but scoped to a different chart family or task, say so and choose a better citation.
