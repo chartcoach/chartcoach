@@ -1,7 +1,8 @@
 import { brandAssets } from "@chartcoach/brand";
 import Image from "next/image";
+import type { ComponentProps } from "react";
 
-import { appName } from "@/lib/shared";
+import { appName, siteOrigin } from "@/lib/shared";
 
 export function BrandTitle() {
   return (
@@ -26,5 +27,18 @@ export function BrandTitle() {
       </span>
       <span className="sr-only">{appName}</span>
     </span>
+  );
+}
+
+export function BrandTitleLink({
+  href: _href,
+  rel: _rel,
+  target: _target,
+  ...props
+}: ComponentProps<"a">) {
+  return (
+    <a href={siteOrigin} {...props}>
+      <BrandTitle />
+    </a>
   );
 }

@@ -9,7 +9,7 @@ chartcoach exposes a versioned Guideline Catalog and CLI primitives for inspecti
 
 ## Commands
 
-Examples use `chartcoach` as the command name inside an installed environment. For one-off runs, replace `chartcoach ...` with `uvx chartcoach@latest ...`. The `@latest` selector follows the newest published package. Use `chartcoach@0.1.4` when output must stay tied to the `0.1.4` Default Catalog release. When a command needs extras, use `uvx --from 'chartcoach[index]@latest' chartcoach ...`. The package selector after `--from` installs the package with extras, and the following `chartcoach` token is the executable to run.
+Examples use `chartcoach` as the command name inside an installed environment. For one-off runs, replace `chartcoach ...` with `uvx chartcoach@latest ...`. The `@latest` selector follows the newest published package. Use an explicit `chartcoach@<version>` selector when output must stay tied to one package-pinned Default Catalog release. Resolve the selected release values from the installed package before naming a catalog version, digest, release root, URL template, index table, or default search limit. When a command needs extras, use `uvx --from 'chartcoach[index]@latest' chartcoach ...`. The package selector after `--from` installs the package with extras, and the following `chartcoach` token is the executable to run.
 
 Base catalog commands:
 
@@ -41,6 +41,28 @@ Use `chartcoach skills list`, `chartcoach skills get <name>`, and `chartcoach sk
 
 Task skills assume this setup is already resolved. Use this core skill for custom catalog sources, custom indexes, package extras, command formats, and recovery paths before loading `visfeedback`, `visrec`, `discuss`, or `contribute`.
 
+## Package Defaults
+
+Resolve package-pinned defaults from `chartcoach.constants.CHARTCOACH_DEFAULTS` before a skill needs a default URL, catalog release id, index table, or search limit. Do not copy literal default values into skill text, notes, citation commands, or final answers.
+
+```sh
+eval "$(chartcoach catalog defaults --format sh)"
+```
+
+Use the exported variables by purpose:
+
+| Variable                     | Resolved value               | Use                                                                                  |
+| ---------------------------- | ---------------------------- | ------------------------------------------------------------------------------------ |
+| `GUIDELINE_URL_TEMPLATE`     | `guidelineUrlTemplate`       | Pass to `catalog cite --url-template` when guideline links are needed.               |
+| `CATALOG_ARTIFACT_BASE_URL`  | `catalogArtifactBaseUrl`     | Describe or inspect the artifact index host selected by the installed package.       |
+| `CATALOG_RELEASE_ROOT_URL`   | `catalogReleaseRootUrl`      | Describe the release root for the package-pinned Default Catalog.                    |
+| `DEFAULT_CATALOG_VERSION`    | `catalogVersion`             | Name the package-pinned catalog version only after resolving it.                     |
+| `DEFAULT_CATALOG_DIGEST`     | `catalogDigest`              | Name the package-pinned catalog digest only after resolving it.                      |
+| `DEFAULT_INDEX_TOP_K`        | `indexTopK`                  | Describe the default indexed-search result count when the user asks about defaults.  |
+| `LANCE_DOCUMENT_TABLE`       | `lanceDocumentTable`         | Inspect raw LanceDB metadata or explain the default document table.                  |
+
+`CHARTCOACH_SOURCE`, `CHARTCOACH_INDEX`, `CHARTCOACH_ARTIFACT_BASE_URL`, and `CHARTCOACH_CACHE_DIR` are runtime overrides. Use them only when the user or environment provides a non-default catalog source, index, artifact host, or cache root.
+
 ## Retrieval Steps
 
 Start from observed chart facts before searching:
@@ -55,7 +77,7 @@ Start from observed chart facts before searching:
 
 Translate those facts into chart and reader concepts before using catalog labels or text predicates. Search broad first, then narrow with labels, roles, sections, or text fields.
 
-Treat `catalog list`, `catalog query`, `catalog sql`, and `catalog find` output as candidate discovery. A candidate becomes citeable only after an exact `catalog read <id>` retrieves the relevant guideline text. Use `catalog cite <id>...` after verification when the response needs guideline URLs and formatted source references.
+Treat `catalog list`, `catalog query`, `catalog sql`, and `catalog find` output as candidate discovery. A candidate becomes citeable only after an exact `catalog read <id>` retrieves the relevant guideline text. Use `catalog cite <id>... --url-template "$GUIDELINE_URL_TEMPLATE"` after verification when the response needs guideline URLs and formatted source references. Resolve package defaults first so `$GUIDELINE_URL_TEMPLATE` comes from the installed package.
 
 Record provenance for each cited guideline:
 
@@ -66,13 +88,14 @@ Record provenance for each cited guideline:
 | Candidate id        | The exact id copied from CLI output.                                  |
 | Exact-read command  | The `catalog read` command used before citation.                      |
 | Citation command    | The `catalog cite` command used for final guideline and source links. |
+| URL template source | The `CHARTCOACH_DEFAULTS.guideline_url_template` value resolved into `$GUIDELINE_URL_TEMPLATE`. |
 | Applicability group | Respected, violated, adjacent, rejected, or uncertain.                |
 
 ## Catalog Artifacts
 
-Omit `--source` to use the package-pinned Default Catalog release from `https://artifacts.chartcoach.dev`. The CLI resolves the release metadata, downloads `MANIFEST.md` and `entries.parquet` on first use, and caches them below the chartcoach artifact cache root. The local cache mirrors the release layout: `artifacts/catalog/releases/<version>/<digest>/`.
+Omit `--source` to use the package-pinned Default Catalog release. The CLI resolves the release metadata from package defaults, downloads `MANIFEST.md` and `entries.parquet` on first use, and caches them below the chartcoach artifact cache root. The local cache mirrors the release layout with the resolved catalog version and digest.
 
-The Default Catalog is the chartcoach Guideline Catalog release selected by the installed package. The current release contains 781 guideline records and 262 source references. It follows the curation scheme described in https://arxiv.org/abs/2512.20306 and combines 100+ visualization perception and cognitive science papers, accessibility criteria, data journalism, rhetorical visualization research, and 36 practitioner posts from Datawrapper's Data Vis Do's & Don'ts series.
+The Default Catalog is the chartcoach Guideline Catalog release selected by the installed package. Use `catalog overview --format json` for live record counts and source context. Use `DEFAULT_CATALOG_VERSION`, `DEFAULT_CATALOG_DIGEST`, `CATALOG_ARTIFACT_BASE_URL`, and `CATALOG_RELEASE_ROOT_URL` only after resolving package defaults.
 
 Cache commands:
 
@@ -84,7 +107,7 @@ chartcoach catalog cache clear
 chartcoach catalog cache pull
 ```
 
-`cache versions` reads `https://artifacts.chartcoach.dev/index.json`. `cache pull` downloads the newest listed release into the chartcoach artifact cache and includes the default LanceDB archive unless `--catalog-only` is passed.
+`cache versions` reads the artifact index under `$CATALOG_ARTIFACT_BASE_URL`. `cache pull` downloads the newest listed release into the chartcoach artifact cache and includes the default LanceDB archive unless `--catalog-only` is passed.
 
 Set `CHARTCOACH_SOURCE` or pass `--source` only when the user provides a custom catalog locator. Accepted sources include a catalog bundle directory, an `entries.parquet` file, an authored folder, or a release metadata URL.
 
@@ -92,7 +115,7 @@ Release metadata is the artifact inventory for one catalog release. It has `vers
 
 LanceDB artifacts identify their table, catalog version, catalog digest, embedding registry, embedding model, and embedding options so query-time code can use LanceDB's native embedding function metadata.
 
-The manifest defines section roles, label families, table contracts, and supported vocabulary for the current catalog. Treat labels and section roles as catalog-defined data, not global constants.
+The manifest defines section roles, label families, table shapes, and supported vocabulary for the current catalog. Treat labels and section roles as catalog-defined data, not global constants.
 
 ## Progressive Navigation
 
@@ -136,11 +159,13 @@ chartcoach catalog read <guideline-id> --format markdown
 chartcoach catalog read <guideline-id> --section <role-from-manifest> --source-detail minimal --format jsonl
 ```
 
-Use `catalog cite` after exact reads when final output needs guideline URLs and formatted source references:
+Resolve package defaults before final output cites guideline links. The Package Defaults command above sets `$GUIDELINE_URL_TEMPLATE` from the installed Python package.
+
+Use `catalog cite` after exact reads when final output needs guideline URLs and formatted source references. Pass the resolved template when recording provenance:
 
 ```sh
-chartcoach catalog cite <guideline-id> --format markdown
-chartcoach catalog cite <guideline-id> <another-guideline-id> --format jsonl
+chartcoach catalog cite <guideline-id> --url-template "$GUIDELINE_URL_TEMPLATE" --format markdown
+chartcoach catalog cite <guideline-id> <another-guideline-id> --url-template "$GUIDELINE_URL_TEMPLATE" --format jsonl
 ```
 
 To assemble cited evidence, combine these primitives:
@@ -148,7 +173,7 @@ To assemble cited evidence, combine these primitives:
 1. `catalog roles` or `catalog manifest` to learn valid section roles.
 2. `catalog query`, `catalog list`, `catalog sql`, or `catalog find` to identify exact ids.
 3. `catalog read <id> --section <role-from-manifest>` to retrieve the exact guideline section text.
-4. `catalog cite <id>...` to retrieve live guideline URLs and all formatted source references for the verified ids.
+4. `catalog cite <id>... --url-template "$GUIDELINE_URL_TEMPLATE"` to retrieve live guideline URLs and all formatted source references for the verified ids.
 
 Do not assume any section role exists. Read the manifest and use the current catalog's role names.
 
@@ -173,6 +198,10 @@ For `catalog values`, the required `FIELD` is the value dimension to count, not 
 Use `chartcoach catalog labels --family FAMILY` when you want labels inside one label family. Do not pass the family name as the `catalog values` field.
 
 Use SQL when exact filtering or joins are clearer than keyword matching. Keep queries read-only.
+
+Use reference metadata to choose the evidence scope for source-sensitive questions. `article`, `inproceedings`, and `incollection` describe academically published sources such as journal articles, conference papers, and book chapters. Queries that filter to those types answer published-source questions. Queries over all reference types include the full catalog evidence trail, including standards, practitioner posts, books, reports, preprints, and other curated sources.
+
+Do not treat `source_type` as a hard trust ranking. Treat it as a query dimension that changes the evidentiary boundary of the answer. When the answer depends on source evidence, inspect available values with `catalog values references.source_type` or `catalog values guideline_sources.source_type`, state which scope you used, and explain the consequence when you exclude or include non-published source types.
 
 ## No-Result Playbook
 
@@ -264,9 +293,10 @@ Search output reports indexed document roles. Values such as `overview`, `docume
 - Prefer base CLI progressive disclosure before LanceDB search.
 - Copy exact ids from CLI output before reading records.
 - Retrieve cited sections with `catalog read <id> --section <role-from-manifest>`.
-- Use `catalog cite <id>...` after exact reads to format guideline URLs and source references.
+- Resolve package defaults from `chartcoach.constants.CHARTCOACH_DEFAULTS` before final output cites guideline links or names package-pinned release values.
+- Use `catalog cite <id>... --url-template "$GUIDELINE_URL_TEMPLATE"` after exact reads to format guideline URLs and source references. Do not assemble guideline URLs from ids by hand.
 - Use `catalog values FIELD --contains TEXT` when the visible value list is too broad.
 - Keep searches task-specific: chart family, data type, visual encoding, reader task, failure mode, and interaction state.
 - Reject adjacent hits when the top result is scoped to a different chart family, reader task, or data type. Search again with sharper observed terms.
-- Keep discovery-to-citation provenance with the observed fact, discovery command, candidate id, exact-read command, and applicability group.
+- Keep discovery-to-citation provenance with the observed fact, discovery command, candidate id, exact-read command, citation command, URL template source, and applicability group.
 - If search against a custom catalog fails with a missing `--index`, build a local full-text index and retry with `--mode fts`.

@@ -38,7 +38,7 @@ Use exact ids from `catalog list`, `catalog query`, `catalog sql`, or
 ## Default Catalog and pinning
 
 The Default Catalog is the package-pinned release used when a caller omits
-`--source` or `Catalog.open()` receives no path. JavaScript callers use
+`--source` or `chartcoach.open()` receives no source. JavaScript callers use
 `DEFAULT_CATALOG` for the same package-pinned artifact URLs and pass the loaded
 artifact bytes to `loadCatalog()`. The package constants select a release URL
 and digest, so repeated reads resolve the same bundle until the installed

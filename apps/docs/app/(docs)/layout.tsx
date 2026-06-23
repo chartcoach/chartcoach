@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import { DocsLayout } from "fumadocs-ui/layouts/docs";
 
+import { DocsLayout } from "@/components/docs-layout";
 import { baseOptions } from "@/lib/layout.shared";
 import { source } from "@/lib/source";
 

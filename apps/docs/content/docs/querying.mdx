@@ -1,11 +1,13 @@
 ---
-title: Querying
+title: Find guidelines
 description: Find, filter, read, cite, join, and search chartcoach guidelines from CLI, Python, and TypeScript.
 ---
 
-Start with a catalog question. Use the CLI for inspection, Python for dataframe
-work, and TypeScript when an app needs loaded guideline records. Candidate rows
-provide ids for later `read` and `cite` calls.
+Use this page after [Getting started](/getting-started) when a chart question
+needs filters, section text search, SQL joins, or indexed discovery. Use the CLI
+for inspection, Python for dataframe work, and TypeScript when an app needs
+loaded guideline records. Candidate rows provide ids for later `read` and
+`cite` calls.
 
 ## Candidate rows
 
@@ -19,10 +21,10 @@ uvx chartcoach@latest catalog query \
 ```
 
 ```python tab="Python"
+import chartcoach
 import polars as pl
-from chartcoach import Catalog
 
-catalog = Catalog.open()
+catalog = chartcoach.open().catalog
 rows = (
     catalog.guidelines()
     .filter(pl.col("labels").list.contains("chart:bar:use"))
@@ -34,10 +36,9 @@ rows = (
 ```ts tab="TypeScript"
 import { DEFAULT_CATALOG, loadCatalog } from "@chartcoach/catalog"
 
-const [entries, manifestText] = await Promise.all([
-  fetch(DEFAULT_CATALOG.entriesUrl).then((response) => response.arrayBuffer()),
-  fetch(DEFAULT_CATALOG.manifestUrl).then((response) => response.text()),
-])
+const { entriesUrl, manifestUrl } = DEFAULT_CATALOG
+const entries = await (await fetch(entriesUrl)).arrayBuffer()
+const manifestText = await (await fetch(manifestUrl)).text()
 const catalog = await loadCatalog({ entries, manifestText })
 const rows = catalog.guidelines
   .filter((guideline) => guideline.labels.includes("chart:bar:use"))
@@ -81,10 +82,10 @@ uvx chartcoach@latest catalog cite compare-percentages-with-bars-not-pies \
 ```
 
 ```python tab="Python"
-from chartcoach import Catalog
+import chartcoach
 from chartcoach.catalog.references import citation_records
 
-catalog = Catalog.open()
+catalog = chartcoach.open().catalog
 entry = catalog.entry("compare-percentages-with-bars-not-pies")
 citations = citation_records(
     catalog,
@@ -93,15 +94,14 @@ citations = citation_records(
 ```
 
 ```ts tab="TypeScript"
-import { DEFAULT_CATALOG, loadCatalog } from "@chartcoach/catalog"
+import { CHARTCOACH_DEFAULTS, DEFAULT_CATALOG, loadCatalog } from "@chartcoach/catalog"
 
-const [entries, manifestText] = await Promise.all([
-  fetch(DEFAULT_CATALOG.entriesUrl).then((response) => response.arrayBuffer()),
-  fetch(DEFAULT_CATALOG.manifestUrl).then((response) => response.text()),
-])
+const { entriesUrl, manifestUrl } = DEFAULT_CATALOG
+const entries = await (await fetch(entriesUrl)).arrayBuffer()
+const manifestText = await (await fetch(manifestUrl)).text()
 const catalog = await loadCatalog({ entries, manifestText })
 const guideline = catalog.require("compare-percentages-with-bars-not-pies")
-const url = `https://chartcoach.dev/guidelines/${guideline.id}/`
+const url = CHARTCOACH_DEFAULTS.guidelineUrlTemplate.replace("{id}", guideline.id)
 ```
 
 The CLI prints formatted citation output. Python exposes structured citation
@@ -121,36 +121,68 @@ uvx chartcoach@latest catalog query \
 
 ## SQL joins and indexed search
 
-Use SQL when the question spans tables:
+Use SQL when the question spans tables. This query ranks paper authors by the
+number of distinct guidelines that cite their published papers:
 
 ```bash
 uvx chartcoach@latest catalog sql "
-select g.id, g.title, s.role, s.content
-from guidelines g
-join sections s on s.guideline_id = g.id
-where list_contains(g.labels, 'chart:bar:use')
-  and s.role = 'advice'
+with paper_sources as (
+  select
+    gr.guideline_id,
+    r.id as reference_id,
+    unnest(r.authors) as author
+  from guideline_references gr
+  join \"references\" r on r.id = gr.reference_id
+  where r.authors is not null
+    and r.source_type in ('article', 'inproceedings', 'incollection')
+)
+select
+  author,
+  count(distinct guideline_id) as guideline_count,
+  count(distinct reference_id) as source_count
+from paper_sources
+group by author
+order by guideline_count desc, source_count desc, author
 limit 5
 " --format jsonl
 ```
 
 ```python tab="Python"
-from chartcoach import Catalog
+import chartcoach
 
-catalog = Catalog.open()
+catalog = chartcoach.open().catalog
 conn = catalog.duckdb()
 try:
     rows = conn.sql("""
-        select g.id, g.title, s.role, s.content
-        from guidelines g
-        join sections s on s.guideline_id = g.id
-        where list_contains(g.labels, 'chart:bar:use')
-          and s.role = 'advice'
+        with paper_sources as (
+          select
+            gr.guideline_id,
+            r.id as reference_id,
+            unnest(r.authors) as author
+          from guideline_references gr
+          join "references" r on r.id = gr.reference_id
+          where r.authors is not null
+            and r.source_type in ('article', 'inproceedings', 'incollection')
+        )
+        select
+          author,
+          count(distinct guideline_id) as guideline_count,
+          count(distinct reference_id) as source_count
+        from paper_sources
+        group by author
+        order by guideline_count desc, source_count desc, author
         limit 5
     """).pl()
 finally:
     conn.close()
 ```
+
+The `source_type` predicate limits the join to academically published source
+records: journal articles, conference papers, and book chapters. Remove or
+change that predicate when a query should rank all catalog sources, including
+standards, practitioner posts, and preprints. The result has `author`,
+`guideline_count`, and `source_count` columns. Author names are counted as
+stored in the catalog source records.
 
 Use indexed discovery when keyword filters miss plausible guidelines:
 
@@ -162,8 +194,8 @@ uvx --from 'chartcoach[index]@latest' chartcoach catalog find \
   "overplotted scatter plot with too many points"
 ```
 
-The first indexed command downloads and extracts the package-pinned index. For
-Python indexed search, use `default_index_path()` with
-`chartcoach.search.open()`. For TypeScript joins, use the nested records
-returned by `loadCatalog()`. The [Cataloging scheme](/catalog) lists tables,
-columns, source locators, and manifest vocabulary.
+The first indexed command downloads and extracts the package-pinned index.
+Python callers can use `chartcoach.open().search(...)` to resolve and query
+that index without hardcoding the cache path. For TypeScript joins, use the
+nested records returned by `loadCatalog()`. The [Cataloging scheme](/catalog)
+lists tables, columns, source locators, and manifest vocabulary.

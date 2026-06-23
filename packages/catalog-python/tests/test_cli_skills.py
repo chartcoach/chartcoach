@@ -6,6 +6,7 @@ from click.testing import CliRunner
 import pytest
 
 from chartcoach.cli.main import main as chartcoach_cli
+from chartcoach.constants import CHARTCOACH_DEFAULTS
 
 from helpers import assert_cli_error, jsonl_rows
 
@@ -150,6 +151,69 @@ def test_packaged_skills_are_served_from_package_data(
         "Available CLI-served skills: core, discuss, visfeedback, visrec, contribute"
         in get_result.output
     )
+
+
+def test_packaged_core_skill_teaches_default_resolution_for_citations(
+    runner: CliRunner,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repo_root = Path(__file__).parents[3]
+    monkeypatch.chdir(repo_root)
+    monkeypatch.delenv("CHARTCOACH_SKILLS_DIR", raising=False)
+
+    result = runner.invoke(chartcoach_cli, ["skills", "get", "core"])
+
+    assert result.exit_code == 0
+    assert "## Package Defaults" in result.output
+    assert "CHARTCOACH_DEFAULTS" in result.output
+    assert "GUIDELINE_URL_TEMPLATE" in result.output
+    assert "CATALOG_RELEASE_ROOT_URL" in result.output
+    assert '--url-template "$GUIDELINE_URL_TEMPLATE"' in result.output
+
+
+def test_packaged_core_skill_distinguishes_academic_source_scope(
+    runner: CliRunner,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repo_root = Path(__file__).parents[3]
+    monkeypatch.chdir(repo_root)
+    monkeypatch.delenv("CHARTCOACH_SKILLS_DIR", raising=False)
+
+    result = runner.invoke(chartcoach_cli, ["skills", "get", "core"])
+
+    assert result.exit_code == 0
+    assert "academically published sources" in result.output
+    assert "article`, `inproceedings`, and `incollection`" in result.output
+    assert (
+        "Queries over all reference types include the full catalog evidence trail"
+        in (result.output)
+    )
+    assert "Do not treat `source_type` as a hard trust ranking" in result.output
+
+
+def test_packaged_skills_do_not_hardcode_package_default_values(
+    runner: CliRunner,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repo_root = Path(__file__).parents[3]
+    monkeypatch.chdir(repo_root)
+    monkeypatch.delenv("CHARTCOACH_SKILLS_DIR", raising=False)
+    copied_values = {
+        CHARTCOACH_DEFAULTS.catalog_artifact_base_url,
+        CHARTCOACH_DEFAULTS.guideline_url_template,
+        CHARTCOACH_DEFAULTS.catalog_digest,
+        CHARTCOACH_DEFAULTS.catalog_version,
+        CHARTCOACH_DEFAULTS.lance_document_table,
+    }
+    outputs: list[str] = []
+    for name in ("core", "discuss", "visfeedback", "visrec", "contribute"):
+        result = runner.invoke(chartcoach_cli, ["skills", "get", name])
+        assert result.exit_code == 0
+        outputs.append(result.output)
+    skill_text = "\n".join(outputs)
+
+    for value in copied_values:
+        assert value not in skill_text
 
 
 def test_packaged_contribute_skill_describes_catalog_issue_paths(

@@ -40,10 +40,10 @@ uv add chartcoach
 ```
 
 ```python
-from chartcoach import Catalog
+import chartcoach
 
-catalog = Catalog.open()
-catalog.guidelines().select("id", "title").head(5)
+cc = chartcoach.open()
+cc.catalog.guidelines().select("id", "title").head(5)
 ```
 
 Use DuckDB when you want SQL over guideline records, sections, labels, and
@@ -58,12 +58,8 @@ npm install @chartcoach/catalog
 ```ts
 import { DEFAULT_CATALOG, loadCatalog } from "@chartcoach/catalog"
 
-const entries = await fetch(DEFAULT_CATALOG.entriesUrl).then((response) =>
-  response.arrayBuffer(),
-)
-const manifestText = await fetch(DEFAULT_CATALOG.manifestUrl).then((response) =>
-  response.text(),
-)
+const entries = await (await fetch(DEFAULT_CATALOG.entriesUrl)).arrayBuffer()
+const manifestText = await (await fetch(DEFAULT_CATALOG.manifestUrl)).text()
 
 const catalog = await loadCatalog({ entries, manifestText })
 ```
@@ -73,7 +69,7 @@ const catalog = await loadCatalog({ entries, manifestText })
 - 🌐 Browse [chartcoach](https://chartcoach.dev/).
 - ✨ Read the [agent docs](https://docs.chartcoach.dev/agents).
 - 📚 Explore the [Guideline Catalog](https://chartcoach.dev/guidelines/).
-- 🧭 Read the [catalog contract](https://docs.chartcoach.dev/catalog).
+- 🧭 Read about the [cataloging scheme](https://docs.chartcoach.dev/catalog).
 
 ## Develop
 

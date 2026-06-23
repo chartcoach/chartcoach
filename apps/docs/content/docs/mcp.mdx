@@ -7,7 +7,7 @@ The chartcoach MCP server exposes catalog SQL and optional indexed search tools
 for MCP clients. MCP, the Model Context Protocol, lets an agent client call
 server-provided tools during a session.
 
-Inspect tool contracts without starting a server:
+Inspect tool schemas without starting a server:
 
 ```bash
 uvx --from 'chartcoach[mcp,index]@latest' chartcoach mcp tools --format json
@@ -31,7 +31,7 @@ With no index configured, the server registers `sql` for read-only catalog SQL.
 | MCP SQL server | `mcp` | `uvx --from 'chartcoach[mcp]@latest' chartcoach ...` |
 | MCP search server | `mcp,index` | `uvx --from 'chartcoach[mcp,index]@latest' chartcoach ...` |
 
-## Tool contracts
+## Tool Schemas
 
 | Tool | Registered when | Arguments | Return shape |
 | --- | --- | --- | --- |
@@ -105,7 +105,7 @@ When an index is available, the server also registers:
 The search table defaults to `catalog_documents`. Pass `--table` for another
 table name.
 
-`Catalog.open()` and first CLI catalog reads download package-pinned artifacts.
+`chartcoach.open()` and first CLI catalog reads download package-pinned artifacts.
 Indexed search downloads an index archive. Set `CHARTCOACH_CACHE_DIR` to
 isolate writes.
 

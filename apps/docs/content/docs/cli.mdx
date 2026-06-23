@@ -11,7 +11,7 @@ Install `uv` from the [Astral installation guide](https://docs.astral.sh/uv/gett
 Use `uvx chartcoach@latest --help` and `uvx chartcoach@latest catalog --help`
 to inspect the live command tree.
 
-Use [Querying](/querying) for task examples across CLI, Python, and TypeScript.
+Use [Find guidelines](/querying) for task examples across CLI, Python, and TypeScript.
 
 ## Command groups
 
@@ -27,7 +27,7 @@ Use [Querying](/querying) for task examples across CLI, Python, and TypeScript.
 ## Output formats
 
 Row-oriented commands support `table`, `json`, `jsonl`, and `csv` unless the
-command has a narrower contract. Search also supports `compact` and `markdown`.
+command has a narrower output set. Search also supports `compact` and `markdown`.
 
 Use JSONL for agent candidate rows:
 
@@ -106,7 +106,7 @@ Use `cache pull` to warm a release and `cache clear` to remove cached
 artifacts. Pass `--catalog-only` when a warm cache only needs `metadata.json`,
 `MANIFEST.md`, and `entries.parquet`.
 
-`Catalog.open()` and first CLI catalog reads download package-pinned artifacts.
+`chartcoach.open()` and first CLI catalog reads download package-pinned artifacts.
 Indexed search downloads an index archive. Set `CHARTCOACH_CACHE_DIR` to
 isolate writes.
 

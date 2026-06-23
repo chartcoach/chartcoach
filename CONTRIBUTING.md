@@ -10,7 +10,7 @@ Before sending a substantial change, make sure you have:
 - discussed broad API, data-shape, dependency, artifact, or UX changes first
 - installed both JavaScript and Python workspaces
 - run the checks closest to the files you touched
-- updated matching readers, docs, and lockfiles when a contract changes.
+- updated matching readers, docs, and lockfiles when behavior, data shapes, or dependencies change.
 
 ## Substantial Changes
 

@@ -5,7 +5,7 @@ monorepo. Use `pnpm` for JavaScript and `uv` for Python.
 
 ## Responsibility
 
-Treat the catalog, public APIs, site, and docs as user-facing contracts.
+Treat changes to the cataloging scheme, public APIs, site, and docs as user-facing surface changes.
 Prefer small, typed, source-backed changes over broad helpers or silent
 fallbacks. If a current caller does not need an alias or shim, remove it.
 Before changing a module, read its nearest README, package manifest, and tests.

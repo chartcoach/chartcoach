@@ -73,8 +73,11 @@ uvx chartcoach@latest catalog cite combine-small-pie-slices-into-an-others-categ
 Use `markdown` when a person will read citation output. Use `json` or `jsonl`
 when an agent needs guideline ids, source keys, titles, and locator fields.
 
+Next, use [Find guidelines](/querying) for filters, section text search, SQL
+joins, and indexed discovery across CLI, Python, and TypeScript.
+
 <Callout title="Cache writes">
-`Catalog.open()` and first CLI catalog reads download package-pinned artifacts.
+`chartcoach.open()` and first CLI catalog reads download package-pinned artifacts.
 Indexed search downloads an index archive. Set `CHARTCOACH_CACHE_DIR` to
 isolate writes.
 </Callout>

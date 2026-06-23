@@ -9,7 +9,7 @@ The Guideline Catalog is maintained as a shared resource. Friction in one user's
 
 Use this skill to draft local Markdown issues from those cases. The issue target is `https://github.com/chartcoach/catalog`. Do not open, submit, post, or disclose anything until the human approves it. The default handoff is a reviewed Markdown draft plus a prefilled issue URL using `https://github.com/chartcoach/catalog/issues/new?body=<encoded-body>`. If `gh` or an authenticated GitHub skill is available, offer issue creation only after approval.
 
-Load `core` first when catalog source, index setup, package extras, or output formats are unclear. This skill assumes the `chartcoach` command already points at the intended Catalog Instance.
+Load `core` first when catalog source, index setup, package extras, package defaults, or output formats are unclear. Run core's Package Defaults step before any command uses `$GUIDELINE_URL_TEMPLATE` or before describing the Default Catalog release. This skill assumes the `chartcoach` command already points at the intended Catalog Instance.
 
 ## What Belongs Here
 
@@ -50,10 +50,10 @@ Use exact reads before naming records in the issue:
 
 ```sh
 chartcoach catalog read <guideline-id> --source-detail minimal --format markdown
-chartcoach catalog cite <guideline-id> <another-guideline-id> --format markdown
+chartcoach catalog cite <guideline-id> <another-guideline-id> --url-template "$GUIDELINE_URL_TEMPLATE" --format markdown
 ```
 
-Discovery commands produce candidate ids. `catalog read` verifies the record text. `catalog cite` produces the public guideline page and formatted source references for verified ids.
+Discovery commands produce candidate ids. `catalog read` verifies the record text. `catalog cite` produces the public guideline page and formatted source references for verified ids. For final links, follow `core` and resolve `$GUIDELINE_URL_TEMPLATE` from `CHARTCOACH_DEFAULTS`. Do not assemble guideline URLs manually.
 
 If no guideline id was found, say which searches failed and which broader concepts were tried.
 
@@ -138,7 +138,7 @@ Use the lines that fit.
 - [ ] No local filesystem paths.
 - [ ] No unpublished screenshots or session artifacts unless intentionally attached.
 - [ ] Any referenced guideline ids were verified with exact reads.
-- [ ] Source-backed records were checked with `chartcoach catalog cite` when references are discussed.
+- [ ] Source-backed records were checked with `catalog cite` and the resolved guideline URL template when references are discussed.
 
 ## Uncertainty
 
