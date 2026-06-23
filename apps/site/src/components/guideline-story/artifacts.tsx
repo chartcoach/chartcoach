@@ -19,8 +19,8 @@ const githubIconStyle = {
 } as CSSProperties;
 
 const accessListings = [
-  { id: "ts", label: "TS", title: "main.ts", language: "ts", lines: typescriptLines },
   { id: "py", label: "Python", title: "main.py", language: "py", lines: pythonLines },
+  { id: "ts", label: "TS", title: "main.ts", language: "ts", lines: typescriptLines },
   { id: "cli", label: "CLI", title: "terminal", language: "sh", lines: shellLines },
 ] as const;
 
