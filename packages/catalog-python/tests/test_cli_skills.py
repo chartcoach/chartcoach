@@ -5,6 +5,7 @@ from pathlib import Path
 from click.testing import CliRunner
 import pytest
 
+from chartcoach import __version__
 from chartcoach.cli.main import main as chartcoach_cli
 from chartcoach.constants import CHARTCOACH_DEFAULTS
 
@@ -21,6 +22,13 @@ def test_main_without_command_exits_successfully(runner: CliRunner) -> None:
     result = runner.invoke(chartcoach_cli, [])
 
     assert result.exit_code == 0
+
+
+def test_main_version_prints_package_version(runner: CliRunner) -> None:
+    result = runner.invoke(chartcoach_cli, ["--version"])
+
+    assert result.exit_code == 0
+    assert result.output == f"chartcoach, version {__version__}\n"
 
 
 @pytest.fixture
