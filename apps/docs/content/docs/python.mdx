@@ -257,9 +257,16 @@ application code needs the native LanceDB table.
 Use `chartcoach.open(catalog=catalog, table=table)` when application code
 already owns a catalog and native LanceDB table.
 
-Use `chartcoach.search.index(catalog, "./chartcoach-index", embedding=...)`
-when the application needs to build a caller-owned table. Without an embedding
-function, `index()` creates a full-text table over the `text` column.
+Import `index` when the application needs to build a caller-owned table:
+
+```python
+from chartcoach.search import index
+
+table = index(catalog, "./chartcoach-index", embedding=...)
+```
+
+Without an embedding function, `index()` creates a full-text table over the
+`text` column.
 
 ## Write formats
 
