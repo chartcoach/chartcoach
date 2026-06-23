@@ -14,10 +14,70 @@ from chartcoach import Catalog
 from chartcoach.catalog import remote as catalog_remote
 from chartcoach.catalog.remote import read_release_metadata
 from chartcoach.cli.main import main as chartcoach_cli
-from chartcoach.constants import DEFAULT_CATALOG_DIGEST, DEFAULT_CATALOG_VERSION
+from chartcoach.constants import (
+    CHARTCOACH_DEFAULTS,
+    DEFAULT_CATALOG_DIGEST,
+    DEFAULT_CATALOG_VERSION,
+)
 
 from helpers import jsonl_rows
 from catalog_testkit import sha256
+
+
+def test_catalog_defaults_exports_package_pinned_values(runner: CliRunner) -> None:
+    result = runner.invoke(chartcoach_cli, ["catalog", "defaults", "--format", "json"])
+
+    assert result.exit_code == 0
+    assert json.loads(result.output) == {
+        **CHARTCOACH_DEFAULTS.to_record(),
+        "catalogReleaseRootUrl": CHARTCOACH_DEFAULTS.catalog_release_root_url,
+    }
+
+
+def test_catalog_defaults_exports_shell_variables(runner: CliRunner) -> None:
+    result = runner.invoke(chartcoach_cli, ["catalog", "defaults", "--format", "sh"])
+
+    assert result.exit_code == 0
+    lines = result.output.splitlines()
+    assert (
+        f"export DEFAULT_CATALOG_VERSION={CHARTCOACH_DEFAULTS.catalog_version}" in lines
+    )
+    assert (
+        f"export GUIDELINE_URL_TEMPLATE='{CHARTCOACH_DEFAULTS.guideline_url_template}'"
+    ) in lines
+    assert (
+        f"export CATALOG_RELEASE_ROOT_URL={CHARTCOACH_DEFAULTS.catalog_release_root_url}"
+        in lines
+    )
+
+
+def test_javascript_defaults_projection_matches_python_defaults() -> None:
+    defaults_path = (
+        Path(__file__).parents[3]
+        / "packages"
+        / "catalog-javascript"
+        / "src"
+        / "catalog"
+        / "chartcoach-defaults.ts"
+    )
+
+    defaults = CHARTCOACH_DEFAULTS.to_record()
+    assert defaults_path.read_text(encoding="utf-8") == "".join(
+        [
+            "export type ChartCoachDefaults = {\n",
+            "  catalogArtifactBaseUrl: string;\n",
+            "  catalogDigest: string;\n",
+            "  catalogVersion: string;\n",
+            "  guidelineUrlTemplate: string;\n",
+            "  indexTopK: number;\n",
+            "  lanceDocumentTable: string;\n",
+            "};\n",
+            "\n",
+            "export const CHARTCOACH_DEFAULTS = {\n",
+            *(f"  {key}: {json.dumps(defaults[key])},\n" for key in sorted(defaults)),
+            "} as const satisfies ChartCoachDefaults;\n",
+        ]
+    )
 
 
 def cache_default_catalog(

@@ -13,7 +13,7 @@ interface Props {
 const title = Astro.props.title ?? "chartcoach";
 const description =
   Astro.props.description ??
-  "chartcoach turns visualization design knowledge into source-traced records for chart agents.";
+  "chartcoach helps chart agents review charts with guidance they can inspect and cite.";
 const pageTitle = title === "chartcoach" ? "chartcoach" : `${title} | chartcoach`;
 const canonical = Astro.site
   ? new URL(Astro.url.pathname, Astro.site).toString()

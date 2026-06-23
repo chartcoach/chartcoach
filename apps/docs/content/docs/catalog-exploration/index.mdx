@@ -1,0 +1,51 @@
+---
+title: Overview
+description: Use chartcoach catalog tables, labels, sections, sources, and JSONL output as context for advanced queries and downstream tools.
+icon: ListTree
+---
+
+chartcoach exposes the Guideline Catalog as records, labels, sections, source
+references, SQL tables, table output, JSONL rows, and indexed text. Those pieces
+give shell commands, notebooks, dashboards, and agents the same reusable context
+with stable ids and source metadata.
+
+chartcoach is built for composability and interoperability: use table output for
+reading, JSONL for standard tools, and stable ids for follow-up reads and
+citations.
+
+Start by checking the current table list:
+
+```bash
+uvx chartcoach@latest catalog schema --tables --row-counts --format table
+```
+
+Output:
+
+| Table                  | Rows |
+| ---------------------- | ---: |
+| `guidelines`           |  781 |
+| `sections`             | 6248 |
+| `labels`               |  209 |
+| `guideline_labels`     | 5752 |
+| `references`           |  262 |
+| `guideline_references` | 1024 |
+| `guideline_sources`    | 1024 |
+
+Use `--format table` while exploring in a terminal. Switch to JSONL with
+[jq](https://jqlang.org/) when another tool should consume the same query:
+
+```bash
+uvx chartcoach@latest catalog schema --tables --row-counts --format jsonl |
+  jq -s 'map({table: .name, rows})'
+```
+
+Each guide starts with one question, runs one catalog query, and shows a small
+Markdown table.
+
+| Question                                                        | Guide                                                      |
+| --------------------------------------------------------------- | ---------------------------------------------------------- |
+| Which guidelines cite sources authored by a researcher?         | [Source authors](/catalog-exploration/source-authors)      |
+| Where does the catalog both recommend and warn against a topic? | [Use and avoid](/catalog-exploration/conditional-guidance) |
+| Which labels lean on papers, standards, posts, or reports?      | [Evidence mix](/catalog-exploration/evidence-boundaries)   |
+| Which chart families cluster around which reader tasks?         | [Task matrix](/catalog-exploration/task-coverage)          |
+| Which failure descriptions match reviewer language?             | [Failure search](/catalog-exploration/failure-language)    |

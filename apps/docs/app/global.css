@@ -4,6 +4,20 @@
 @import "@chartcoach/brand/tokens.css";
 @import "@chartcoach/brand/logo.css";
 
+html:root {
+  --color-fd-primary: var(--color-accent);
+  --color-fd-ring: var(--color-accent);
+  --color-fd-accent: var(--color-accent-muted);
+  --color-fd-accent-foreground: var(--color-accent);
+}
+
+html.dark {
+  --color-fd-primary: var(--color-brand-crimson-bright);
+  --color-fd-ring: var(--color-brand-crimson-bright);
+  --color-fd-accent: var(--color-accent-muted);
+  --color-fd-accent-foreground: var(--color-brand-crimson-bright);
+}
+
 html {
   scrollbar-gutter: stable;
 }

@@ -1,4 +1,4 @@
-from .index import Hit, Result, search
+from .index import Hit, Result
 from .lance import (
     Document,
     Mode,
@@ -19,5 +19,4 @@ __all__ = [
     "model",
     "open",
     "query",
-    "search",
 ]

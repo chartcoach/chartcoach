@@ -239,7 +239,7 @@ function SearchInputRow({
         Search guidelines
       </h2>
       <label className="sr-only" htmlFor={inputId}>
-        Search guideline records
+        Search guideline entries
       </label>
       <input
         id={inputId}

@@ -41,16 +41,16 @@ uvx chartcoach@latest catalog query --contains "pie chart" --limit 5 --format ta
 ## Python
 
 ```python
-from chartcoach import Catalog
+import chartcoach
 
-catalog = Catalog.open()
-catalog.guidelines().select("id", "title").head(5)
+cc = chartcoach.open()
+cc.catalog.guidelines().select("id", "title").head(5)
 ```
 
 Query the catalog with DuckDB when a notebook or script needs SQL:
 
 ```python
-conn = catalog.duckdb()
+conn = cc.catalog.duckdb()
 conn.sql("select id, title from guidelines limit 5").pl()
 conn.close()
 ```

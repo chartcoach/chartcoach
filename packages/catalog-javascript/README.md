@@ -3,7 +3,7 @@
 JavaScript models and parsers for chartcoach catalog artifacts.
 
 Read the package docs at [docs.chartcoach.dev/javascript](https://docs.chartcoach.dev/javascript).
-Read the catalog contract at [docs.chartcoach.dev/catalog](https://docs.chartcoach.dev/catalog).
+Read about the cataloging scheme at [docs.chartcoach.dev/catalog](https://docs.chartcoach.dev/catalog).
 
 Install the package from an application root:
 
@@ -14,12 +14,8 @@ npm install @chartcoach/catalog
 ```ts
 import { DEFAULT_CATALOG, loadCatalog } from "@chartcoach/catalog"
 
-const entries = await fetch(DEFAULT_CATALOG.entriesUrl).then((response) =>
-  response.arrayBuffer(),
-)
-const manifestText = await fetch(DEFAULT_CATALOG.manifestUrl).then((response) =>
-  response.text(),
-)
+const entries = await (await fetch(DEFAULT_CATALOG.entriesUrl)).arrayBuffer()
+const manifestText = await (await fetch(DEFAULT_CATALOG.manifestUrl)).text()
 
 const catalog = await loadCatalog({ entries, manifestText })
 const guideline = catalog.require("compare-percentages-with-bars-not-pies")
@@ -54,7 +50,7 @@ const entriesUrl = catalogArtifactUrl(
   catalogArtifact(metadata, "entries"),
 )
 
-const entries = await fetch(entriesUrl).then((response) => response.arrayBuffer())
+const entries = await (await fetch(entriesUrl)).arrayBuffer()
 ```
 
 Run package checks from the repository root:

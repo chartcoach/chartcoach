@@ -1,7 +1,8 @@
 # @chartcoach/site
 
-Astro site for the chartcoach Guideline Catalog browser and public guideline
-pages. The published site is [chartcoach.dev](https://chartcoach.dev/).
+Astro public site for the chartcoach Guideline Catalog browser and public
+guideline pages. The published public site is
+[chartcoach.dev](https://chartcoach.dev/).
 
 Run it locally:
 

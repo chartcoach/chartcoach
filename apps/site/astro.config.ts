@@ -28,7 +28,7 @@ export default defineConfig({
       site: siteUrl,
       title: "chartcoach",
       description:
-        "chartcoach turns visualization design knowledge into source-traced records for chart agents.",
+        "chartcoach turns visualization design knowledge into guideline entries with source references for chart agents.",
       pages: chartcoachLlmPages,
     }),
     oramaSearch({

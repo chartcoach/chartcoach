@@ -1,0 +1,98 @@
+---
+title: Use and avoid
+description: Find catalog topics that have both recommendation and warning labels.
+icon: GitCompare
+---
+
+Some catalog labels end with a modifier such as `use` or `avoid`. Compare those
+modifiers to find topics where the catalog carries both recommendation and
+warning records.
+
+```bash
+LIMIT=${LIMIT:-6}
+```
+
+## Find topics with both sides
+
+```bash
+uvx chartcoach@latest catalog sql "
+with modifier_counts as (
+  select
+    family,
+    category,
+    modifier,
+    count(distinct guideline_id) as guidelines
+  from guideline_labels
+  where modifier in ('use', 'avoid')
+  group by family, category, modifier
+), paired as (
+  select
+    use_rows.family,
+    use_rows.category,
+    use_rows.guidelines as use_guidelines,
+    avoid_rows.guidelines as avoid_guidelines,
+    use_rows.guidelines + avoid_rows.guidelines as total_guidelines,
+    round(avoid_rows.guidelines::double / (use_rows.guidelines + avoid_rows.guidelines), 2) as avoid_share
+  from modifier_counts use_rows
+  join modifier_counts avoid_rows
+    on avoid_rows.family = use_rows.family
+   and avoid_rows.category = use_rows.category
+   and avoid_rows.modifier = 'avoid'
+  where use_rows.modifier = 'use'
+)
+select
+  family,
+  category,
+  use_guidelines,
+  avoid_guidelines,
+  total_guidelines,
+  avoid_share
+from paired
+order by total_guidelines desc, avoid_share desc, family, category
+limit ${LIMIT}
+" --format table
+```
+
+Output:
+
+| Family      | Category      | Use guidelines | Avoid guidelines | Total guidelines | Avoid share |
+| ----------- | ------------- | -------------: | ---------------: | ---------------: | ----------: |
+| `aesthetic` | `color`       |             52 |               14 |               66 |        0.21 |
+| `chart`     | `bar`         |             33 |               26 |               59 |        0.44 |
+| `channel`   | `color-hue`   |             44 |               12 |               56 |        0.21 |
+| `component` | `annotation`  |             40 |                3 |               43 |        0.07 |
+| `chart`     | `line`        |             19 |               23 |               42 |        0.55 |
+| `structure` | `single-view` |             13 |               20 |               33 |        0.61 |
+
+## Read both sides of one topic
+
+Pick a row and read records from each side:
+
+```bash
+FAMILY=chart
+CATEGORY=line
+
+uvx chartcoach@latest catalog query \
+  --label "${FAMILY}:${CATEGORY}:use" \
+  --limit 3 \
+  --format table
+
+uvx chartcoach@latest catalog query \
+  --label "${FAMILY}:${CATEGORY}:avoid" \
+  --limit 3 \
+  --format table
+```
+
+Use JSONL with [jq](https://jqlang.org/) when you want to pass the same result
+to another tool:
+
+```bash
+uvx chartcoach@latest catalog query \
+  --label "${FAMILY}:${CATEGORY}:use" \
+  --limit 3 \
+  --format jsonl |
+  jq -s 'map({id, title, labels})'
+```
+
+This pattern gives an agent or review workflow context for when the same chart
+family depends on task, data shape, or reader goal.

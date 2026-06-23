@@ -1,13 +1,14 @@
 import { docs } from "collections/server";
 import { renderPlaceholder } from "fumadocs-core/mdx-plugins/remark-llms.runtime";
 import { loader } from "fumadocs-core/source";
+import { lucideIconsPlugin } from "fumadocs-core/source/lucide-icons";
 
 import { docsContentRoute, docsOrigin, docsRoute, gitConfig } from "@/lib/shared";
 
 export const source = loader({
   baseUrl: docsRoute,
   source: docs.toFumadocsSource(),
-  plugins: [],
+  plugins: [lucideIconsPlugin()],
 });
 
 type DocsPage = (typeof source)["$inferPage"];

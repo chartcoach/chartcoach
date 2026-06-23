@@ -1,16 +1,15 @@
+import { CHARTCOACH_DEFAULTS } from "./chartcoach-defaults";
 import { CatalogError } from "./errors";
+export { CHARTCOACH_DEFAULTS, type ChartCoachDefaults } from "./chartcoach-defaults";
 
-const defaultCatalogArtifactBaseUrl = "https://artifacts.chartcoach.dev";
-const defaultCatalogDigest = "7cfd43ee820be252b8ae9058c4c36109a9c8415c6b3a5ff8a9127117b4a10c19";
-const defaultCatalogVersion = "0.1.4";
 const defaultCatalogReleaseRootUrl = new URL(
-  `catalog/releases/${defaultCatalogVersion}/${defaultCatalogDigest}/`,
-  `${defaultCatalogArtifactBaseUrl}/`,
+  `catalog/releases/${CHARTCOACH_DEFAULTS.catalogVersion}/${CHARTCOACH_DEFAULTS.catalogDigest}/`,
+  `${CHARTCOACH_DEFAULTS.catalogArtifactBaseUrl}/`,
 ).toString();
 
 export const DEFAULT_CATALOG = {
-  version: defaultCatalogVersion,
-  digest: defaultCatalogDigest,
+  version: CHARTCOACH_DEFAULTS.catalogVersion,
+  digest: CHARTCOACH_DEFAULTS.catalogDigest,
   releaseRootUrl: defaultCatalogReleaseRootUrl,
   metadataUrl: new URL("metadata.json", defaultCatalogReleaseRootUrl).toString(),
   entriesUrl: new URL("entries.parquet", defaultCatalogReleaseRootUrl).toString(),

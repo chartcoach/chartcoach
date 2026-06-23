@@ -28,8 +28,8 @@ type OramaSearchDbOptions = {
 type OramaSearchOptions = Record<string, OramaSearchDbOptions>;
 type SearchDocument = ReturnType<typeof createGuidelineSearchDocument>;
 
-const searchRecordScriptPattern =
-  /<script\b(?=[^>]*\bdata-guideline-search-record\b)[^>]*>([\s\S]*?)<\/script>/i;
+const searchEntryScriptPattern =
+  /<script\b(?=[^>]*\bdata-guideline-search-entry\b)[^>]*>([\s\S]*?)<\/script>/i;
 
 function generatedHtmlPath(dir: URL, pathname: string) {
   const cleanPathname = pathname.replace(/^\/+/, "").replace(/\/+$/, "");
@@ -43,9 +43,9 @@ function documentPath(pathname: string) {
 
 function readGuidelineSearchDocument(filePath: string, pathname: string) {
   const htmlContent = readFileSync(filePath, { encoding: "utf8" });
-  const match = searchRecordScriptPattern.exec(htmlContent);
+  const match = searchEntryScriptPattern.exec(htmlContent);
   if (!match?.[1]) {
-    throw new Error(`Missing structured guideline search record in ${filePath}.`);
+    throw new Error(`Missing structured guideline search entry in ${filePath}.`);
   }
 
   const model = parseGuidelineSearchModel(match[1]);
@@ -134,7 +134,7 @@ export function oramaSearch(options: OramaSearchOptions): AstroIntegration {
         logger
           .fork("chartcoach:orama-search")
           .info(
-            `Prepared ${dbName} dev search DB with ${indexedRecords.toLocaleString()} records.`,
+            `Prepared ${dbName} dev search DB with ${indexedRecords.toLocaleString()} guideline entries.`,
           );
         return JSON.stringify(saveOramaDB(db));
       })
@@ -202,7 +202,7 @@ export function oramaSearch(options: OramaSearchOptions): AstroIntegration {
             const outputPath = path.join(assetsDir, `oramaDB_${dbName}.json`);
             writeFileSync(outputPath, JSON.stringify(saveOramaDB(db)), { encoding: "utf8" });
             searchLogger.info(
-              `Wrote ${dbName} search DB with ${indexedRecords.toLocaleString()} records.`,
+              `Wrote ${dbName} search DB with ${indexedRecords.toLocaleString()} guideline entries.`,
             );
           }),
         );

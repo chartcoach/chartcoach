@@ -2,15 +2,14 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 import json
+from shlex import quote
 from typing import cast
 
 import click
 
 from chartcoach.catalog.errors import CatalogError
-from chartcoach.catalog.references import (
-    DEFAULT_GUIDELINE_URL_TEMPLATE,
-    citation_records,
-)
+from chartcoach.catalog.references import citation_records
+from chartcoach.constants import CHARTCOACH_DEFAULTS, DEFAULT_GUIDELINE_URL_TEMPLATE
 from chartcoach.catalog.introspection import (
     count_values,
     describe_tables,
@@ -44,6 +43,54 @@ from .rendering import citation_records_to_markdown, entry_records_to_markdown
 
 READ_FORMATS = ("markdown", "json", "jsonl")
 CITE_FORMATS = ("markdown", "json", "jsonl")
+DEFAULTS_FORMATS = ("table", "json", "jsonl", "sh")
+
+
+@click.command("defaults", context_settings=CONTEXT_SETTINGS)
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(DEFAULTS_FORMATS),
+    default="table",
+    show_default=True,
+    help="Output format.",
+)
+def defaults_command(output_format: str) -> None:
+    """Print package-pinned default settings."""
+
+    record = {
+        **CHARTCOACH_DEFAULTS.to_record(),
+        "catalogReleaseRootUrl": CHARTCOACH_DEFAULTS.catalog_release_root_url,
+    }
+    if output_format == "sh":
+        for name, value in _defaults_shell_values(record).items():
+            click.echo(f"export {name}={quote(str(value))}")
+        return
+    if output_format == "json":
+        emit_object(record, output_format=output_format)
+        return
+    if output_format == "jsonl":
+        click.echo(json.dumps(record, ensure_ascii=False, default=str))
+        return
+    emit_rows(
+        [
+            {"name": name, "value": value}
+            for name, value in _defaults_shell_values(record).items()
+        ],
+        output_format=output_format,
+    )
+
+
+def _defaults_shell_values(record: Mapping[str, object]) -> dict[str, object]:
+    return {
+        "GUIDELINE_URL_TEMPLATE": record["guidelineUrlTemplate"],
+        "CATALOG_ARTIFACT_BASE_URL": record["catalogArtifactBaseUrl"],
+        "CATALOG_RELEASE_ROOT_URL": record["catalogReleaseRootUrl"],
+        "DEFAULT_CATALOG_VERSION": record["catalogVersion"],
+        "DEFAULT_CATALOG_DIGEST": record["catalogDigest"],
+        "DEFAULT_INDEX_TOP_K": record["indexTopK"],
+        "LANCE_DOCUMENT_TABLE": record["lanceDocumentTable"],
+    }
 
 
 @click.command("overview", context_settings=CONTEXT_SETTINGS)
@@ -750,6 +797,7 @@ def _command_error(exc: CatalogError | ToolError) -> click.ClickException:
 
 
 def register_navigation_commands(group: click.Group) -> None:
+    group.add_command(defaults_command)
     group.add_command(overview_command)
     group.add_command(labels_command)
     group.add_command(roles_command)

@@ -49,29 +49,32 @@ export const typescriptLines: readonly CodeLine[] = [
     t('"@chartcoach/catalog"', "string"),
   ),
   line(),
+  line(t("const", "keyword"), t(" { entriesUrl, manifestUrl } = "), t("DEFAULT_CATALOG")),
   line(
     t("const", "keyword"),
     t(" entries = "),
     t("await", "keyword"),
     t(" "),
+    t("("),
+    t("await", "keyword"),
+    t(" "),
     t("fetch", "function"),
-    t("(DEFAULT_CATALOG.entriesUrl)."),
-    t("then", "function"),
-    t("((response) => response."),
+    t("(entriesUrl))."),
     t("arrayBuffer", "function"),
-    t("())"),
+    t("()"),
   ),
   line(
     t("const", "keyword"),
     t(" manifestText = "),
     t("await", "keyword"),
     t(" "),
+    t("("),
+    t("await", "keyword"),
+    t(" "),
     t("fetch", "function"),
-    t("(DEFAULT_CATALOG.manifestUrl)."),
-    t("then", "function"),
-    t("((response) => response."),
+    t("(manifestUrl))."),
     t("text", "function"),
-    t("())"),
+    t("()"),
   ),
   line(
     t("const", "keyword"),
@@ -180,7 +183,7 @@ function jsonSectionText(role: (typeof guidelineRoleSections)[number]["role"]): 
     case "costs":
       return "Uses plot space.";
     case "mistakes":
-      return "Do not label dense marks.";
+      return "Label only compared marks.";
     case "check":
       return "Can values be read directly?";
     case "fix":

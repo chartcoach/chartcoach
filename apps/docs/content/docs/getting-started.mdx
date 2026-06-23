@@ -1,6 +1,7 @@
 ---
 title: Getting started
 description: Run chartcoach with uvx, query the Default Catalog, read a guideline, and cite its sources.
+icon: Rocket
 ---
 
 Run chartcoach as a one-off CLI with `uvx`. The first catalog command reads the
@@ -14,8 +15,8 @@ uvx chartcoach@latest --help
 ```
 
 <Callout title="Package version">
-Examples use `chartcoach@latest` for one-off access. Pin the package when
-output must stay tied to one catalog release.
+  Examples use `chartcoach@latest` for one-off access. Pin the package when output must stay tied to
+  one catalog release.
 </Callout>
 
 ## Query a topic
@@ -24,10 +25,24 @@ output must stay tied to one catalog release.
 uvx chartcoach@latest catalog query --contains "pie chart" --limit 3 --format jsonl
 ```
 
-You should see one JSON object per row. The first row is the id used below.
+Choose an `id` from the JSONL output. The examples below use
+`combine-small-pie-slices-into-an-others-category`.
 
-```json
-{"id":"combine-small-pie-slices-into-an-others-category","title":"Group small pie slices into an others category","description":"For pie charts with many small slices, use grouped slices on the chart to improve readability and mitigate clutter from tiny wedges and many labels for readers.","labels":["purpose:refine","basis:heuristic","chart:pie-donut","lever:encoding","group-cardinality:many","quality:readability","polish:declutter"]}
+```jsonl
+{
+  "id": "combine-small-pie-slices-into-an-others-category",
+  "title": "Group small pie slices into an others category",
+  "description": "For pie charts with many small slices, use grouped slices on the chart to improve readability and mitigate clutter from tiny wedges and many labels for readers.",
+  "labels": [
+    "purpose:refine",
+    "basis:heuristic",
+    "chart:pie-donut",
+    "lever:encoding",
+    "group-cardinality:many",
+    "quality:readability",
+    "polish:declutter"
+  ]
+}
 ```
 
 Use `table` for terminal reading. Use `json`, `jsonl`, or `csv` when another
@@ -41,29 +56,38 @@ uvx chartcoach@latest catalog read combine-small-pie-slices-into-an-others-categ
   --format json
 ```
 
-`read` returns the guideline text, labels, sections, and selected source
-metadata.
+`read` returns guideline text, labels, sections, and selected source references.
 
-## Cite its sources
+## Cite source references
 
 ```bash
 uvx chartcoach@latest catalog cite combine-small-pie-slices-into-an-others-category \
   --format json
 ```
 
-`cite` returns the public guideline URL and structured source references.
+`cite --format json` returns the public guideline URL, formatted guideline
+citation, and structured source references.
 
 ```json
 [
   {
     "id": "combine-small-pie-slices-into-an-others-category",
+    "title": "Group small pie slices into an others category",
     "url": "https://chartcoach.dev/guidelines/combine-small-pie-slices-into-an-others-category",
+    "guideline_citation": "[Group small pie slices into an others category](https://chartcoach.dev/guidelines/combine-small-pie-slices-into-an-others-category) (`combine-small-pie-slices-into-an-others-category`)",
     "sources": [
       {
-        "reference_id": "muth_chart_types_guide_2025",
-        "source_title": "A friendly guide to choosing a chart type",
+        "reference_id": "muth_pie_charts_2018",
+        "source_type": "misc",
+        "authors_text": "Lisa Charlotte Muth",
+        "year": "2018",
+        "source_title": "What to consider when creating pie charts",
+        "journal": null,
+        "booktitle": null,
+        "publisher": null,
         "doi": null,
-        "url": null
+        "url": null,
+        "citation": "Lisa Charlotte Muth (2018). What to consider when creating pie charts."
       }
     ]
   }
@@ -71,10 +95,12 @@ uvx chartcoach@latest catalog cite combine-small-pie-slices-into-an-others-categ
 ```
 
 Use `markdown` when a person will read citation output. Use `json` or `jsonl`
-when an agent needs guideline ids, source keys, titles, and locator fields.
+when an agent needs guideline ids, source reference keys, titles, and URLs.
+
+[Find guidelines](/querying) covers filters, section text search, SQL joins, and
+indexed discovery across CLI, Python, and TypeScript.
 
 <Callout title="Cache writes">
-`Catalog.open()` and first CLI catalog reads download package-pinned artifacts.
-Indexed search downloads an index archive. Set `CHARTCOACH_CACHE_DIR` to
-isolate writes.
+  `chartcoach.open()` and first CLI catalog reads download package-pinned artifacts. Indexed
+  discovery downloads an index archive. Set `CHARTCOACH_CACHE_DIR` to isolate writes.
 </Callout>

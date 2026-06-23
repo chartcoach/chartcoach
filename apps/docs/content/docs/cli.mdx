@@ -1,6 +1,7 @@
 ---
 title: CLI
 description: Query, read, cite, validate, build, index, and export chartcoach catalog instances from the terminal.
+icon: Terminal
 ---
 
 The `chartcoach` CLI reads the package-pinned Default Catalog when `--source`
@@ -11,70 +12,75 @@ Install `uv` from the [Astral installation guide](https://docs.astral.sh/uv/gett
 Use `uvx chartcoach@latest --help` and `uvx chartcoach@latest catalog --help`
 to inspect the live command tree.
 
-Use [Querying](/querying) for task examples across CLI, Python, and TypeScript.
+Catalog tasks have CLI, Python, and TypeScript examples in [Find guidelines](/querying).
 
 ## Command groups
 
-| Task | Commands |
-| --- | --- |
-| Inspect | `overview`, `labels`, `roles`, `schema`, `values` |
-| Discover | `list`, `query`, `sql`, `find` |
-| Evidence | `read`, `cite` |
-| Cache | `cache path`, `cache list`, `cache versions`, `cache pull`, `cache clear` |
-| Index | `index create` |
-| Build | `validate`, `build`, `export duckdb` |
+| Task     | Commands                                                                  |
+| -------- | ------------------------------------------------------------------------- |
+| Inspect  | `overview`, `labels`, `roles`, `schema`, `values`                         |
+| Discover | `list`, `query`, `sql`, `find`                                            |
+| Evidence | `read`, `cite`                                                            |
+| Cache    | `cache path`, `cache list`, `cache versions`, `cache pull`, `cache clear` |
+| Index    | `index create`                                                            |
+| Build    | `validate`, `build`, `export duckdb`                                      |
 
 ## Output formats
 
 Row-oriented commands support `table`, `json`, `jsonl`, and `csv` unless the
-command has a narrower contract. Search also supports `compact` and `markdown`.
+command has a narrower output set. The `find` command also supports `compact`
+and `markdown`.
 
-Use JSONL for agent candidate rows:
+Use JSONL for agent candidate guidelines:
 
 ```bash
 uvx chartcoach@latest catalog query --label chart:bar:use --limit 5 --format jsonl
+
 uvx chartcoach@latest catalog read compare-percentages-with-bars-not-pies \
   --source-detail minimal \
   --format json
+
 uvx chartcoach@latest catalog cite compare-percentages-with-bars-not-pies \
   --format json
 ```
 
-Query and search rows are candidates. Use ids copied from `query`, `find`, or
-`list`. Do not generate ids from titles.
+The `query`, `find`, and `list` commands find candidate guidance for later
+answers. Copy an id into `read` to inspect the recommendation or into `cite` to
+attach sources. Guideline ids are catalog data, so copy ids from command output.
 
 Inspect [queryable tables](/catalog#queryable-tables) before writing SQL
 against a new catalog.
 
 ## Extras
 
-| Need | Extra | One-off selector |
-| --- | --- | --- |
-| Base query, read, cite, SQL | none | `uvx chartcoach@latest ...` |
-| Indexed `catalog find` | `index` | `uvx --from 'chartcoach[index]@latest' chartcoach ...` |
-| MCP SQL server | `mcp` | `uvx --from 'chartcoach[mcp]@latest' chartcoach ...` |
-| MCP search server | `mcp,index` | `uvx --from 'chartcoach[mcp,index]@latest' chartcoach ...` |
+| Need                        | Extra       | Package selector                                           |
+| --------------------------- | ----------- | ---------------------------------------------------------- |
+| Base query, read, cite, SQL | none        | `uvx chartcoach@latest ...`                                |
+| Indexed `catalog find`      | `index`     | `uvx --from 'chartcoach[index]@latest' chartcoach ...`     |
+| MCP SQL server              | `mcp`       | `uvx --from 'chartcoach[mcp]@latest' chartcoach ...`       |
+| MCP search server           | `mcp,index` | `uvx --from 'chartcoach[mcp,index]@latest' chartcoach ...` |
 
 ## Sources
 
 Pass `--source` or set `CHARTCOACH_SOURCE` when a command should read a custom
-catalog.
+catalog source.
 
 ```bash
 uvx chartcoach@latest catalog validate --source ./dist/catalog
+
 CHARTCOACH_SOURCE=./dist/catalog uvx chartcoach@latest catalog overview
 ```
 
-Accepted sources include bundle directories, authored folders, standalone
+Accepted catalog sources include bundle directories, authored folders, standalone
 `entries.parquet` files, and release metadata URLs.
 
-The [Cataloging scheme](/catalog) defines the Default Catalog, locator forms,
+The [Cataloging scheme](/catalog) defines the Default Catalog, catalog source forms,
 release metadata, and cache layout.
 
 ## Command recovery
 
 <Callout title="uvx is missing">
-Install `uv`, then open a new shell so the `uvx` executable is on `PATH`.
+  Install `uv`, then open a new shell so the `uvx` executable is on `PATH`.
 </Callout>
 
 <Callout title="find is missing">
@@ -85,11 +91,12 @@ uvx --from 'chartcoach[index]@latest' chartcoach catalog find \
   --mode fts \
   "overplotted scatter plots"
 ```
+
 </Callout>
 
 <Callout title="unknown guideline id">
-List or query ids first, then pass the exact id to `read` or `cite`. Do not
-derive ids from titles.
+  List or query ids first, then pass the exact id to `read` or `cite`. Do not derive ids from
+  titles.
 </Callout>
 
 ## Artifact cache
@@ -98,16 +105,18 @@ Cache commands inspect and manage chartcoach-owned release artifacts:
 
 ```bash
 uvx chartcoach@latest catalog cache path
+
 uvx chartcoach@latest catalog cache versions --format jsonl
+
 uvx chartcoach@latest catalog cache list
 ```
 
-Use `cache pull` to warm a release and `cache clear` to remove cached
-artifacts. Pass `--catalog-only` when a warm cache only needs `metadata.json`,
-`MANIFEST.md`, and `entries.parquet`.
+Use `cache pull` to prefetch a release and `cache clear` to remove cached
+artifacts. Pass `--catalog-only` to prefetch `metadata.json`, `MANIFEST.md`, and
+`entries.parquet` without downloading index archives.
 
-`Catalog.open()` and first CLI catalog reads download package-pinned artifacts.
-Indexed search downloads an index archive. Set `CHARTCOACH_CACHE_DIR` to
+`chartcoach.open()` and first CLI catalog reads download package-pinned artifacts.
+Indexed `find` downloads an index archive. Set `CHARTCOACH_CACHE_DIR` to
 isolate writes.
 
 ## Indexed discovery
@@ -128,9 +137,9 @@ LanceDB index for the Default Catalog. The first indexed command downloads and
 extracts the index. Default indexed examples use `--mode fts`, so no embedding
 credential is needed.
 
-The MCP server has a separate configuration boundary. `catalog find` can resolve
-the default cached index, but `mcp serve` registers `search` only when the server
-is configured with `--index` or `CHARTCOACH_INDEX`. See [MCP](/mcp).
+`catalog find` can resolve the default cached index, but `mcp serve` registers
+`search` only when the server is configured with `--index` or
+`CHARTCOACH_INDEX`. [MCP](/mcp) defines the server-side search configuration.
 
 Build a caller-owned local index for custom catalog sources:
 
@@ -140,7 +149,8 @@ uvx --from 'chartcoach[index]@latest' chartcoach catalog index create \
 ```
 
 Use `CHARTCOACH_INDEX` or `--index` to point commands at a caller-owned index.
-Indexed search returns candidate ids, so read exact records before citing them.
+`catalog find` returns candidate guidelines, so read exact entries before citing
+them.
 
 ## Build and export
 
@@ -148,7 +158,9 @@ Validate an authored folder, build a bundle, or export DuckDB tables:
 
 ```bash
 uvx chartcoach@latest catalog validate --source ./catalog-source
+
 uvx chartcoach@latest catalog build --source ./catalog-source --out ./dist/catalog
+
 uvx chartcoach@latest catalog export duckdb \
   --out ./chartcoach-catalog.duckdb
 ```
