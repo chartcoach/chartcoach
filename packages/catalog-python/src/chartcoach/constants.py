@@ -28,7 +28,7 @@ class ChartCoachDefaults(BaseModel):
         default="7cfd43ee820be252b8ae9058c4c36109a9c8415c6b3a5ff8a9127117b4a10c19",
         min_length=1,
     )
-    catalog_version: str = Field(default="0.1.4", min_length=1)
+    catalog_version: str = Field(default="0.1.5", min_length=1)
     index_top_k: int = Field(default=10, ge=1)
     lance_document_table: str = Field(default="catalog_documents", min_length=1)
 
