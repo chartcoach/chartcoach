@@ -13,6 +13,7 @@ from chartcoach.catalog import (
 )
 from chartcoach.catalog.remote import read_release_metadata
 from chartcoach.catalog.storage import load_catalog_entry
+from chartcoach.constants import DEFAULT_CATALOG_VERSION
 
 from catalog_testkit import write_catalog_entry, write_manifest
 
@@ -218,7 +219,7 @@ def test_catalog_write_bundle_includes_release_metadata(tmp_path: Path) -> None:
     catalog.write_bundle(tmp_path / "bundle")
 
     metadata = read_release_metadata(tmp_path / "bundle")
-    assert metadata.version == "0.1.4"
+    assert metadata.version == DEFAULT_CATALOG_VERSION
     assert metadata.digest == catalog.digest()
     assert metadata.artifact("manifest").path == "MANIFEST.md"
     assert metadata.artifact("entries").path == "entries.parquet"
