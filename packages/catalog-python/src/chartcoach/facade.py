@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from os import PathLike
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
@@ -151,6 +151,8 @@ class CatalogIndex:
             return Path(location)
         parsed = urlparse(location)
         if parsed.scheme and parsed.scheme != "file":
+            if PureWindowsPath(location).drive.lower() == f"{parsed.scheme}:":
+                return Path(location)
             raise ValueError("LanceDB index is URI-backed. Use `.location` instead.")
         return Path(parsed.path if parsed.scheme == "file" else location)
 

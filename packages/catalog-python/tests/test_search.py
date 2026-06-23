@@ -280,6 +280,26 @@ def test_chartcoach_facade_accepts_injected_table_without_index_path(
         _ = cc.index.location
 
 
+def test_catalog_index_path_accepts_windows_drive_strings(
+    sample_catalog: Catalog,
+) -> None:
+    from chartcoach.facade import CatalogIndex
+
+    assert CatalogIndex(sample_catalog, location="C:\\index").path == Path("C:\\index")
+    assert CatalogIndex(sample_catalog, location="D:/index").path == Path("D:/index")
+
+
+def test_catalog_index_path_rejects_remote_uri(
+    sample_catalog: Catalog,
+) -> None:
+    from chartcoach.facade import CatalogIndex
+
+    index = CatalogIndex(sample_catalog, location="s3://bucket/index")
+
+    with pytest.raises(ValueError, match="URI-backed"):
+        _ = index.path
+
+
 def test_chartcoach_open_rejects_source_and_catalog(
     sample_catalog: Catalog,
 ) -> None:
