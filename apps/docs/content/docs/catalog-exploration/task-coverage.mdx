@@ -1,0 +1,70 @@
+---
+title: Task matrix
+description: Join chart and task labels to inspect which chart families cluster around which reader tasks.
+icon: Table2
+---
+
+Chart labels and task labels can be joined into a small matrix. Use it to pick
+examples, find well-covered chart-task pairs, or identify sparse areas for
+catalog review.
+
+```bash
+MIN_COUNT=${MIN_COUNT:-3}
+LIMIT=${LIMIT:-8}
+```
+
+## Build the matrix
+
+```bash
+uvx chartcoach@latest catalog sql "
+with chart_labels as (
+  select guideline_id, category as chart, coalesce(modifier, 'general') as stance
+  from guideline_labels
+  where family = 'chart'
+), task_labels as (
+  select guideline_id, category as task
+  from guideline_labels
+  where family = 'task'
+)
+select
+  chart_labels.chart,
+  chart_labels.stance,
+  task_labels.task,
+  count(distinct chart_labels.guideline_id) as guidelines
+from chart_labels
+join task_labels on task_labels.guideline_id = chart_labels.guideline_id
+group by chart_labels.chart, chart_labels.stance, task_labels.task
+having count(distinct chart_labels.guideline_id) >= ${MIN_COUNT}
+order by guidelines desc, chart_labels.chart, chart_labels.stance, task_labels.task
+limit ${LIMIT}
+" --format table
+```
+
+Output:
+
+| Chart     | Stance    | Task       | Guidelines |
+| --------- | --------- | ---------- | ---------: |
+| `bar`     | `general` | `compare`  |         28 |
+| `bar`     | `use`     | `compare`  |         14 |
+| `line`    | `avoid`   | `compare`  |          9 |
+| `scatter` | `general` | `compare`  |          8 |
+| `bar`     | `general` | `retrieve` |          7 |
+| `line`    | `use`     | `trend`    |          7 |
+| `scatter` | `use`     | `relate`   |          7 |
+| `bar`     | `use`     | `relate`   |          6 |
+
+## Drill into one cell
+
+```bash
+CHART_LABEL=chart:line:use
+TASK_LABEL=task:trend
+
+uvx chartcoach@latest catalog query \
+  --label "${CHART_LABEL}" \
+  --label "${TASK_LABEL}" \
+  --limit 5 \
+  --format table
+```
+
+Repeated `--label` filters are all-of. Use repeated `--any-label` flags when a
+query should match alternatives.
