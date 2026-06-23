@@ -117,7 +117,7 @@ export function serializeGuidelineSearchModel(model: GuidelineSearchModel): stri
 export function parseGuidelineSearchModel(value: string): GuidelineSearchModel {
   const model = JSON.parse(value) as Partial<GuidelineSearchModel>;
   if (!model.id || !model.title || !model.body) {
-    throw new Error("Guideline search record is missing required fields.");
+    throw new Error("Guideline search entry is missing required fields.");
   }
   if (
     !Array.isArray(model.labels) ||
@@ -126,7 +126,7 @@ export function parseGuidelineSearchModel(value: string): GuidelineSearchModel {
     !Array.isArray(model.references) ||
     !model.references.every(isString)
   ) {
-    throw new Error("Guideline search record has invalid collection fields.");
+    throw new Error("Guideline search entry has invalid collection fields.");
   }
 
   return {

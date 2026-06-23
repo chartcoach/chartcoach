@@ -16,15 +16,15 @@ const guideline = await getEntry("guidelines", Astro.params.id as string);
 if (!guideline) throw new Error(`Guideline not found: ${Astro.params.id}`);
 
 const editHref = `https://github.com/chartcoach/catalog/blob/main/entries/${guideline.id}/guideline.md`;
-const searchRecordJson = serializeGuidelineSearchModel(guideline.data.search);
+const searchEntryJson = serializeGuidelineSearchModel(guideline.data.search);
 ---
 
 <SiteLayout title={guideline.data.title} description={guideline.data.description}>
   <script
     type="application/json"
-    data-guideline-search-record
+    data-guideline-search-entry
     is:inline
-    set:html={searchRecordJson}
+    set:html={searchEntryJson}
   ></script>
   <article class="px-6 py-[clamp(4rem,9vh,6.5rem)]">
     <div class="mx-auto w-full max-w-[54rem]">
