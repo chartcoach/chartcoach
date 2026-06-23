@@ -156,10 +156,25 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v7
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Get pnpm store path
+        id: pnpm-store
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore pnpm store
+        uses: actions/cache@v5
         with:
-          node-version: 24
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: ${{ runner.os }}-pnpm-release-notes-node-24
+          restore-keys: |
+            ${{ runner.os }}-pnpm-release-notes-node-
+
+      - name: Install Node.js with pnpm
+        run: |
+          pnpm runtime set node 24 --global
+          node --version
 
       - name: Update release notes
         run: npx changelogithub@14.0.0
