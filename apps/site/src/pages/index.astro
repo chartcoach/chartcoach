@@ -3,7 +3,7 @@ import { InstallCopy } from "@/components/install-copy";
 import { GuidelineStory } from "@/components/guideline-story";
 import SvgIcon from "@/components/SvgIcon.astro";
 import SiteLayout from "@/layouts/SiteLayout.astro";
-import { ArrowRight, Mail } from "@lucide/astro";
+import { ArrowRight, Mail } from "lucide-react";
 
 const loopSteps = [
   {
@@ -14,17 +14,17 @@ const loopSteps = [
   {
     label: "Agent",
     title: "Guideline retrieval",
-    body: "The agent searches labels, section roles, references, and semantic matches in the Guideline Catalog.",
+    body: "The agent searches the Guideline Catalog by label, section role, source reference, and semantic match.",
   },
   {
     label: "Answer",
     title: "Grounded response",
-    body: "The answer cites the records behind the feedback and shows which guidance applies.",
+    body: "The answer cites the guideline entries it used and names the guidance applied to the chart.",
   },
   {
-    label: "Public",
+    label: "Community",
     title: "Public contribution",
-    body: "When guidance is missing, weak, or contested, the agent can (after confirmation) draft a GitHub issue for the public catalog repository so the community can review the proposed record.",
+    body: "When guidance is missing, weak, or contested, the agent drafts a catalog issue after receiving confirmation so the community can review the proposed guideline entry.",
   },
 ] as const;
 
@@ -54,7 +54,7 @@ const institutions = [
 
 <SiteLayout
   title="chartcoach"
-  description="chartcoach turns visualization design knowledge into source-traced records that chart agents can retrieve, cite, apply, and improve."
+  description="chartcoach helps chart agents review charts with guidance they can inspect and cite."
 >
   <section class="home-hero relative z-20 flex items-start overflow-visible px-6 pb-[clamp(4.5rem,9vh,6.5rem)] pt-12 sm:pt-[clamp(4rem,11vh,7rem)] lg:min-h-[calc(100svh-3.5rem)] lg:items-center lg:pb-[clamp(1.5rem,3.2vh,3rem)] lg:pt-[clamp(1.5rem,3.2vh,3rem)]">
     <div class="grid-glow" aria-hidden="true"></div>
@@ -63,12 +63,13 @@ const institutions = [
         Experimental
       </p>
       <h1 class="home-hero-title m-0 max-w-[58rem] text-balance text-[2.35rem] font-semibold leading-[1.02] tracking-normal text-fg sm:text-[3.75rem] lg:text-[4.25rem] xl:max-w-[66rem] xl:text-[4.8rem] 2xl:text-[5.05rem]">
-        Visualization knowledge layer by humans for agents
+        Visualization knowledge layer for agents by humans
       </h1>
       <p class="home-hero-copy mt-5 max-w-[50rem] text-pretty text-[1rem] leading-[1.6] text-muted sm:mt-6 sm:text-[1.25rem] sm:leading-[1.65] lg:mt-5 lg:text-[1.125rem] lg:leading-[1.55] xl:max-w-[54rem] xl:text-[1.1875rem]">
-        chartcoach turns visualization design knowledge into source-traced records that agents can
-        retrieve, cite, apply, and improve. Use it to review charts, recommend encodings, evaluate
-        trade-offs, and explain where guidance comes from.
+        chartcoach represents visualization design knowledge as guidelines that agents can retrieve,
+        cite, apply, and improve. Each guideline links back to its original sources, so agents can
+        explain where guidance comes from when reviewing charts, recommending encodings, and
+        evaluating trade-offs.
       </p>
       <InstallCopy client:load />
       <div class="home-loop mt-16 w-full max-w-[72rem] text-left sm:mt-[4.5rem] lg:mt-16 xl:mt-20">
@@ -99,7 +100,7 @@ const institutions = [
                     class="pointer-events-none absolute right-0 top-1/2 z-10 hidden -translate-y-1/2 translate-x-[calc(50%+1px)] lg:flex"
                   >
                     <span class="flex h-7 w-7 items-center justify-center rounded-full border border-border bg-bg text-muted">
-                      <ArrowRight class="h-3.5 w-3.5" stroke-width={1.5} />
+                      <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.5} />
                     </span>
                   </span>
                 )}
@@ -142,8 +143,8 @@ const institutions = [
               >{"situated visualization feedback"}</a><span>.</span>
             </p>
             <p class="m-0">
-              The project packages that knowledge as records agents can use and people can
-              author and inspect.
+              The Guideline Catalog brings that research into a form agents can cite and
+              people can author, review, and inspect.
             </p>
           </div>
         </div>
@@ -155,7 +156,7 @@ const institutions = [
             class="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-border bg-bg px-4 text-sm font-medium text-fg no-underline transition-colors hover:bg-surface-muted xl:text-[0.9375rem]"
           >
             Read the paper
-            <ArrowRight class="h-3.5 w-3.5" stroke-width={1.5} aria-hidden="true" />
+            <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden="true" />
           </a>
         </div>
       </div>
@@ -197,9 +198,10 @@ const institutions = [
         Actively developed
       </h2>
       <p class="mx-auto mt-6 max-w-[43rem] text-pretty text-[1.0625rem] leading-[1.6] text-muted xl:text-[1.1875rem]">
-        chartcoach is an active research prototype for chart agents, critique tools, evaluation
-        workflows, and visualization design systems. Browse the catalog, open a GitHub issue for
-        missing guidance, or get in touch about use cases and collaborations.
+        chartcoach is a research prototype for chart agents, critique tools, evaluation
+        workflows, and visualization design systems. Browse the Guideline Catalog, request
+        missing guidance in GitHub, or contact the research team about deployment and
+        collaboration.
       </p>
       <div class="mt-9 flex flex-wrap items-center justify-center gap-3">
         <a
@@ -207,21 +209,21 @@ const institutions = [
           class="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-accent bg-accent px-4 text-sm font-medium text-white no-underline transition-colors hover:bg-accent/90 xl:text-[0.9375rem]"
         >
           Try chartcoach
-          <ArrowRight class="h-3.5 w-3.5" stroke-width={1.5} aria-hidden="true" />
+          <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden="true" />
         </a>
         <a
           href="/guidelines/"
           class="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-border bg-bg px-4 text-sm font-medium text-fg no-underline transition-colors hover:bg-surface-muted xl:text-[0.9375rem]"
         >
-          Browse the catalog
-          <ArrowRight class="h-3.5 w-3.5" stroke-width={1.5} aria-hidden="true" />
+          Browse the Guideline Catalog
+          <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden="true" />
         </a>
         <a
           href="mailto:pgyarmati@ethz.ch"
           class="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-border bg-bg px-4 text-sm font-medium text-fg no-underline transition-colors hover:bg-surface-muted xl:text-[0.9375rem]"
         >
           Get in touch
-          <Mail class="h-3.5 w-3.5" stroke-width={1.5} aria-hidden="true" />
+          <Mail className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden="true" />
         </a>
       </div>
     </div>

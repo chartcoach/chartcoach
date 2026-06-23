@@ -27,7 +27,7 @@ export const guidelineRoleSections = [
   {
     role: "mistakes",
     title: "Common mistake",
-    text: "Do not label every mark in a dense chart.",
+    text: "Label only the marks readers need to compare in a dense chart.",
   },
   {
     role: "check",

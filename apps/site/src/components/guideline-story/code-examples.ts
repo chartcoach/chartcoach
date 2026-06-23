@@ -183,7 +183,7 @@ function jsonSectionText(role: (typeof guidelineRoleSections)[number]["role"]): 
     case "costs":
       return "Uses plot space.";
     case "mistakes":
-      return "Do not label dense marks.";
+      return "Label only compared marks.";
     case "check":
       return "Can values be read directly?";
     case "fix":
