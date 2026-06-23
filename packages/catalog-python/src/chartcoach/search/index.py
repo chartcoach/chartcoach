@@ -4,6 +4,7 @@ import dataclasses as dc
 from typing import TYPE_CHECKING, cast
 
 import polars as pl
+from pydantic import BaseModel, ConfigDict, Field, computed_field
 
 from ..catalog.collection import Catalog
 from ..constants import DEFAULT_INDEX_TOP_K
@@ -15,53 +16,47 @@ if TYPE_CHECKING:
 _DOCUMENT_COLUMNS = ("id", "parent_id", "role", "labels", "content_hash", "text")
 
 
-@dc.dataclass(frozen=True)
-class Hit:
-    rank: int
-    document_id: str
-    guideline_id: str
-    role: str
-    score: float | None
-    labels: list[str]
-    document: str
-    title: str
+class Hit(BaseModel):
+    """One guideline-level search hit."""
+
+    model_config = ConfigDict(frozen=True)
+
+    rank: int = Field(ge=1)
+    document_id: str = Field(min_length=1, serialization_alias="matched_document_id")
+    guideline_id: str = Field(min_length=1, serialization_alias="id")
+    role: str = Field(min_length=1, serialization_alias="matched_role")
+    score: float | None = None
+    labels: tuple[str, ...] = Field(default_factory=tuple)
+    document: str = Field(serialization_alias="matched_text")
+    title: str = Field(min_length=1)
     description: str
 
     def to_dict(self) -> dict[str, object]:
-        return {
-            "rank": self.rank,
-            "id": self.guideline_id,
-            "title": self.title,
-            "description": self.description,
-            "labels": self.labels,
-            "matched_document_id": self.document_id,
-            "matched_role": self.role,
-            "score": self.score,
-            "matched_text": self.document,
-        }
+        """Return the JSON row shape used by CLI and MCP output."""
+
+        return self.model_dump(mode="json", by_alias=True)
 
 
-@dc.dataclass(frozen=True)
-class Result:
-    query: str
-    rows: tuple[Hit, ...]
-    limit: int
-    candidate_limit: int
+class Result(BaseModel):
+    """Guideline-level search result."""
+
+    model_config = ConfigDict(frozen=True)
+
+    query: str = Field(min_length=1)
+    rows: tuple[Hit, ...] = Field(default_factory=tuple)
+    limit: int = Field(ge=1)
+    candidate_limit: int = Field(ge=0)
     where: str | None = None
 
+    @computed_field
     @property
     def row_count(self) -> int:
         return len(self.rows)
 
     def to_dict(self) -> dict[str, object]:
-        return {
-            "query": self.query,
-            "rows": [row.to_dict() for row in self.rows],
-            "row_count": self.row_count,
-            "limit": self.limit,
-            "candidate_limit": self.candidate_limit,
-            "where": self.where,
-        }
+        """Return the JSON result shape used by CLI and MCP output."""
+
+        return self.model_dump(mode="json", by_alias=True)
 
 
 @dc.dataclass(frozen=True)
@@ -84,6 +79,7 @@ def search(
     candidate_limit: int | None = None,
     where: str | None = None,
     mode: Mode = "auto",
+    validate_table: bool = True,
 ) -> Result:
     """Search indexed documents and return deduplicated guideline rows."""
 
@@ -94,7 +90,8 @@ def search(
     if candidate_limit is not None and candidate_limit < 1:
         raise ValueError("candidate_limit must be at least 1.")
 
-    _validate_table_documents(catalog, table)
+    if validate_table:
+        validate_table_documents(catalog, table)
     rows, resolved_candidate_limit = _search_unique_guideline_rows(
         table,
         text,
@@ -135,7 +132,7 @@ def search(
                 guideline_id=row.guideline_id,
                 role=row.role,
                 score=row.score,
-                labels=cast(list[str], guideline.get("labels") or row.labels),
+                labels=tuple(cast(list[str], guideline.get("labels") or row.labels)),
                 document=row.document,
                 title=cast(str, guideline["title"]),
                 description=cast(str, guideline["description"]),
@@ -226,7 +223,9 @@ def _guideline_rows(
     return rows
 
 
-def _validate_table_documents(catalog: Catalog, table: "Table") -> None:
+def validate_table_documents(catalog: Catalog, table: "Table") -> None:
+    """Raise when an index table does not match the catalog document rows."""
+
     expected = _document_signatures(documents(catalog))
     actual = _document_signatures(cast(pl.DataFrame, pl.from_arrow(table.to_arrow())))
     missing = sorted(set(expected) - set(actual))
@@ -336,4 +335,5 @@ __all__ = [
     "Hit",
     "Result",
     "search",
+    "validate_table_documents",
 ]

@@ -18,6 +18,7 @@ from .common import CONTEXT_SETTINGS
         "Inspect, query, build, and index chartcoach catalogs.\n\n"
         "\b\n"
         "Progressive Catalog Navigation:\n"
+        "  defaults          Print package-pinned default settings\n"
         "  overview          Summarize source, counts, roles, and label families\n"
         "  labels            List label values and counts\n"
         "  roles             List section roles and counts\n"

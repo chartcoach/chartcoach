@@ -130,6 +130,165 @@ def test_index_returns_native_table_and_open_reads_it(
     assert rows[0]["parent_id"] == "direct-labels"
 
 
+def test_chartcoach_facade_exposes_catalog_index_and_native_table(
+    sample_catalog: Catalog,
+    tmp_path: Path,
+) -> None:
+    import chartcoach
+    from chartcoach.search import index
+
+    index_path = tmp_path / "index"
+    index(sample_catalog, index_path)
+    cc = chartcoach.open(catalog=sample_catalog, index=index_path)
+
+    rows = cc.index.query(
+        "direct labels",
+        limit=1,
+        where="role = 'overview'",
+        mode="fts",
+    )
+    hits = cc.search(
+        "direct labels",
+        limit=1,
+        where="role = 'overview'",
+        mode="fts",
+    )
+
+    assert cc.catalog is sample_catalog
+    assert cc.index.path == index_path
+    assert cc.index.table.name == "catalog_documents"
+    assert not hasattr(cc.index, "search")
+    assert rows[0]["parent_id"] == "direct-labels"
+    assert hits.rows[0].guideline_id == "direct-labels"
+
+
+def test_chartcoach_search_validates_index_once(
+    sample_catalog: Catalog,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import chartcoach
+    import chartcoach.facade as facade
+    from chartcoach.search import index
+
+    index_path = tmp_path / "index"
+    index(sample_catalog, index_path)
+    calls = 0
+
+    def validate(catalog: Catalog, table: object) -> None:
+        nonlocal calls
+        assert catalog is sample_catalog
+        assert getattr(table, "name") == "catalog_documents"
+        calls += 1
+
+    monkeypatch.setattr(facade, "validate_table_documents", validate)
+    cc = chartcoach.open(catalog=sample_catalog, index=index_path)
+
+    for _ in range(2):
+        result = cc.search(
+            "direct labels",
+            limit=1,
+            where="role = 'overview'",
+            mode="fts",
+        )
+        assert result.rows[0].guideline_id == "direct-labels"
+
+    assert calls == 1
+
+
+def test_chartcoach_facade_resolves_default_index_path_for_default_catalog(
+    sample_catalog: Catalog,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import chartcoach.facade as facade
+
+    calls: dict[str, object] = {}
+
+    class FakeTable:
+        name = "docs"
+
+    def default_path(
+        *,
+        table_name: str,
+        reporter: object,
+    ) -> Path:
+        calls["table_name"] = table_name
+        calls["reporter"] = reporter
+        return tmp_path / "default-index"
+
+    def open_index(uri: object, *, table_name: str) -> FakeTable:
+        calls["uri"] = uri
+        calls["opened_table"] = table_name
+        return FakeTable()
+
+    monkeypatch.setattr(facade, "default_index_path", default_path)
+    monkeypatch.setattr(facade, "open_lance_index", open_index)
+    monkeypatch.setattr(
+        facade,
+        "open_catalog",
+        lambda source, *, reporter: sample_catalog,
+    )
+
+    chartcoach = facade.open(table_name="docs")
+
+    assert chartcoach.index.path == tmp_path / "default-index"
+    assert chartcoach.index.table.name == "docs"
+    assert calls == {
+        "table_name": "docs",
+        "reporter": None,
+        "uri": tmp_path / "default-index",
+        "opened_table": "docs",
+    }
+
+
+def test_chartcoach_facade_requires_index_for_injected_catalog(
+    sample_catalog: Catalog,
+) -> None:
+    import chartcoach
+
+    cc = chartcoach.open(catalog=sample_catalog)
+
+    with pytest.raises(ValueError, match="Pass index=.*custom catalog"):
+        _ = cc.index.table
+
+
+def test_chartcoach_facade_requires_index_for_custom_source(
+    sample_catalog_path: Path,
+) -> None:
+    import chartcoach
+
+    cc = chartcoach.open(sample_catalog_path)
+
+    with pytest.raises(ValueError, match="Pass index=.*custom catalog"):
+        _ = cc.index.table
+
+
+def test_chartcoach_facade_accepts_injected_table_without_index_path(
+    sample_catalog: Catalog,
+) -> None:
+    import chartcoach
+
+    class FakeTable:
+        name = "catalog_documents"
+
+    table = cast("Table", FakeTable())
+    cc = chartcoach.open(catalog=sample_catalog, table=table)
+
+    assert cc.index.table is table
+    with pytest.raises(ValueError, match="Pass index=.*custom catalog"):
+        _ = cc.index.location
+
+
+def test_chartcoach_open_rejects_source_and_catalog(
+    sample_catalog: Catalog,
+) -> None:
+    import chartcoach
+
+    with pytest.raises(ValueError, match="Pass source or catalog, not both"):
+        chartcoach.open("catalog.parquet", catalog=sample_catalog)
+
+
 def test_index_passes_remote_uri_to_lancedb(
     sample_catalog: Catalog,
     tmp_path: Path,
@@ -176,7 +335,8 @@ def test_index_uses_lancedb_embedding_function(
     sample_catalog: Catalog,
     tmp_path: Path,
 ) -> None:
-    from chartcoach.search import index, query, search
+    from chartcoach.search import index, query
+    from chartcoach.search.index import search
 
     table = index(
         sample_catalog,
@@ -328,7 +488,8 @@ def test_search_returns_guideline_level_hits(
     sample_catalog: Catalog,
     tmp_path: Path,
 ) -> None:
-    from chartcoach.search import index, search
+    from chartcoach.search import index
+    from chartcoach.search.index import search
 
     table = index(sample_catalog, tmp_path / "index")
     result = search(
@@ -359,7 +520,8 @@ def test_search_rejects_rows_that_do_not_match_catalog(
     sample_catalog: Catalog,
     tmp_path: Path,
 ) -> None:
-    from chartcoach.search import index, search
+    from chartcoach.search import index
+    from chartcoach.search.index import search
 
     table = index(sample_catalog, tmp_path / "index")
     stale_record = dict(sample_catalog.entry("full-axis-bars"))
@@ -382,7 +544,7 @@ def test_search_rejects_rows_that_do_not_match_catalog(
 
 
 def test_search_rejects_malformed_lancedb_rows(sample_catalog: Catalog) -> None:
-    from chartcoach.search import search
+    from chartcoach.search.index import search
     from chartcoach.search.lance import documents
 
     catalog_documents = documents(sample_catalog)

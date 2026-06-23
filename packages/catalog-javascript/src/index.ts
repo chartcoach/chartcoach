@@ -6,6 +6,7 @@ export {
 } from "./catalog/model";
 export { CatalogError } from "./catalog/errors";
 export {
+  CHARTCOACH_DEFAULTS,
   DEFAULT_CATALOG,
   catalogArtifact,
   catalogArtifactUrl,
@@ -13,6 +14,7 @@ export {
   type ArtifactDescriptor,
   type ArtifactKind,
   type CatalogReleaseMetadata,
+  type ChartCoachDefaults,
 } from "./catalog/artifacts";
 export {
   loadCatalog,

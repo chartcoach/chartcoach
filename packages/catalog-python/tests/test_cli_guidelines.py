@@ -9,6 +9,7 @@ import pytest
 
 from chartcoach import Catalog, CatalogManifest
 from chartcoach.cli.main import main as chartcoach_cli
+from chartcoach.constants import DEFAULT_GUIDELINE_URL_TEMPLATE
 
 from helpers import assert_cli_error, csv_rows, jsonl_rows
 
@@ -69,6 +70,10 @@ def citation_catalog_path(tmp_path: Path, manifest: CatalogManifest) -> Path:
     source_path = tmp_path / "citation-entries.parquet"
     catalog.write_parquet(source_path)
     return source_path
+
+
+def guideline_url(guideline_id: str) -> str:
+    return DEFAULT_GUIDELINE_URL_TEMPLATE.replace("{id}", guideline_id)
 
 
 def test_catalog_help_exits_successfully(runner: CliRunner) -> None:
@@ -271,8 +276,8 @@ def test_catalog_cite_markdown_renders_guideline_url_and_all_sources(
     assert result.exit_code == 0, result.output
     assert "## direct-labels" in result.output
     assert (
-        "Guideline: [Use direct labels]"
-        "(https://chartcoach.dev/guidelines/direct-labels) (`direct-labels`)"
+        f"Guideline: [Use direct labels]({guideline_url('direct-labels')})"
+        " (`direct-labels`)"
     ) in result.output
     assert (
         "- Lee, Bea (2022). Interactive labels. VIS Proceedings. "
@@ -309,7 +314,7 @@ def test_catalog_cite_jsonl_preserves_requested_id_order_and_empty_sources(
 
     rows = jsonl_rows(result)
     assert [row["id"] for row in rows] == ["full-axis-bars", "direct-labels"]
-    assert rows[0]["url"] == "https://chartcoach.dev/guidelines/full-axis-bars"
+    assert rows[0]["url"] == guideline_url("full-axis-bars")
     assert rows[0]["sources"] == []
     sources = cast(list[dict[str, object]], rows[1]["sources"])
     assert [source["reference_id"] for source in sources] == ["lee2022", "smith2024"]

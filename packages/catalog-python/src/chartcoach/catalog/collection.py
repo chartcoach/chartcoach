@@ -3,7 +3,6 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping, Sequence
 from os import PathLike
 from pathlib import Path
-from urllib.parse import urlparse
 
 import hashlib
 import json
@@ -101,21 +100,9 @@ class Catalog:
     def open(cls, path: str | PathLike[str] | None = None) -> "Catalog":
         """Load a catalog from a default, remote, local folder, bundle, or parquet file."""
 
-        if path is None:
-            from .remote import default_catalog_bundle
+        from .locator import open_catalog
 
-            return cls.from_bundle(default_catalog_bundle())
-        if isinstance(path, str) and _is_http_url(path):
-            from .remote import download_catalog_bundle, release_metadata_url
-
-            return cls.from_bundle(download_catalog_bundle(release_metadata_url(path)))
-
-        source = Path(path)
-        if source.is_dir():
-            if (source / "entries.parquet").exists():
-                return cls.from_bundle(source)
-            return cls.from_folder(source)
-        return cls.from_parquet(source)
+        return open_catalog(path)
 
     @property
     def manifest(self) -> "CatalogManifest | None":
@@ -422,8 +409,3 @@ def _dataframe_digest(df: pl.DataFrame) -> str:
         )
         hasher.update(payload.encode("utf-8"))
     return hasher.hexdigest()
-
-
-def _is_http_url(value: str) -> bool:
-    scheme = urlparse(value).scheme
-    return scheme in {"http", "https"}
