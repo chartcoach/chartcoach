@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 import io
 import json
 import shutil
 import tarfile
+import threading
+import time
 from pathlib import Path
 from typing import cast
 
@@ -240,6 +243,56 @@ def test_download_catalog_bundle_uses_release_root_without_index_download(
     assert (cached / "MANIFEST.md").exists()
     assert (cached / "entries.parquet").exists()
     assert not (cached / "indexes").exists()
+    assert downloads == [
+        f"https://example.test/catalog/releases/{metadata.version}/{metadata.digest}/MANIFEST.md",
+        f"https://example.test/catalog/releases/{metadata.version}/{metadata.digest}/entries.parquet",
+    ]
+
+
+def test_download_catalog_bundle_serializes_concurrent_cache_writes(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    write_manifest(tmp_path / "source")
+    write_catalog_entry(tmp_path / "source")
+    source_catalog = Catalog.from_folder(tmp_path / "source")
+    bundle_path = source_catalog.write_bundle(tmp_path / "bundle")
+    metadata = read_release_metadata(bundle_path)
+    release_url = f"https://example.test/catalog/releases/{metadata.version}/{metadata.digest}/metadata.json"
+    downloads: list[str] = []
+    downloads_lock = threading.Lock()
+    ready = threading.Barrier(2)
+
+    def read_url_text(url: str) -> str:
+        assert url == release_url
+        ready.wait(timeout=5)
+        return json.dumps(metadata.to_record())
+
+    def download_file(url: str, path: Path) -> None:
+        with downloads_lock:
+            downloads.append(url)
+        time.sleep(0.05)
+        if url.endswith("/MANIFEST.md"):
+            shutil.copyfile(bundle_path / "MANIFEST.md", path)
+            return
+        if url.endswith("/entries.parquet"):
+            shutil.copyfile(bundle_path / "entries.parquet", path)
+            return
+        raise AssertionError(f"Unexpected artifact URL: {url}")
+
+    monkeypatch.setenv("CHARTCOACH_CACHE_DIR", str(tmp_path / "cache"))
+    monkeypatch.setattr(catalog_remote, "_read_url_text", read_url_text)
+    monkeypatch.setattr(catalog_remote, "_download_file", download_file)
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        first, second = executor.map(
+            catalog_remote.download_catalog_bundle,
+            [release_url, release_url],
+        )
+
+    assert first == second
+    assert (first / "MANIFEST.md").exists()
+    assert (first / "entries.parquet").exists()
     assert downloads == [
         f"https://example.test/catalog/releases/{metadata.version}/{metadata.digest}/MANIFEST.md",
         f"https://example.test/catalog/releases/{metadata.version}/{metadata.digest}/entries.parquet",

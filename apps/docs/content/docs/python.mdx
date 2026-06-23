@@ -144,7 +144,7 @@ catalog files.
 | `parse_label(value)`                           | Splits a catalog label into family, category, and modifier fields                                 |
 
 ```python
-from chartcoach import Catalog, Guideline, Section, parse_label
+from chartcoach import Catalog, CatalogManifest, Guideline, Section, parse_label
 
 catalog = Catalog.from_entries(
     [
@@ -161,6 +161,19 @@ catalog = Catalog.from_entries(
             ],
         )
     ],
+    manifest=CatalogManifest.from_text("""
+## Section Roles
+
+### advice
+
+Actionable guidance for applying the guideline.
+
+## Label Families
+
+### chart
+
+Chart-family labels such as `chart:bar`.
+"""),
 )
 
 subset = catalog.select(["direct-labels"])
@@ -262,7 +275,7 @@ Import `index` when the application needs to build a caller-owned table:
 ```python
 from chartcoach.search import index
 
-table = index(catalog, "./chartcoach-index", embedding=...)
+table = index(catalog, "./chartcoach-index")
 ```
 
 Without an embedding function, `index()` creates a full-text table over the
