@@ -1,6 +1,6 @@
 [project]
 name = "chartcoach"
-version = "0.1.5"
+version = "0.1.6"
 description = "Python package and CLI for the chartcoach visualization guideline catalog."
 readme = "README.md"
 authors = [{ name = "Péter Ferenc Gyarmati", email = "dev.petergy@gmail.com" }]

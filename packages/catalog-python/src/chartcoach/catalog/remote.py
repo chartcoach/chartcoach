@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 import hashlib
 import json
@@ -7,7 +8,17 @@ import os
 from pathlib import Path, PurePosixPath
 import shutil
 import tarfile
-from typing import TYPE_CHECKING, Callable, Iterable, Literal, Mapping, Self, cast
+import time
+from typing import (
+    TYPE_CHECKING,
+    Callable,
+    Iterable,
+    Iterator,
+    Literal,
+    Mapping,
+    Self,
+    cast,
+)
 from urllib.parse import urljoin
 from urllib.request import Request, urlopen
 
@@ -28,6 +39,7 @@ ArtifactKind = Literal["manifest", "entries", "lancedb-index"]
 CATALOG_ARTIFACT_KINDS: tuple[ArtifactKind, ...] = ("manifest", "entries")
 DownloadKind = Literal["catalog", "index"]
 DownloadReporter = Callable[[DownloadKind, str, Path], None]
+CACHE_LOCK_STALE_SECONDS = 300
 
 
 @dataclass(frozen=True, slots=True)
@@ -373,23 +385,30 @@ def download_catalog_bundle(
     target = _cache_path(metadata.version, metadata.digest)
     if _cached_bundle_is_valid(target, expected_digest=metadata.digest):
         return target
-    if reporter is not None:
-        reporter("catalog", resolved_metadata_url, target)
+    with _cache_lock(target):
+        if _cached_bundle_is_valid(target, expected_digest=metadata.digest):
+            return target
+        if reporter is not None:
+            reporter("catalog", resolved_metadata_url, target)
 
-    tmp = target.with_name(target.name + ".tmp")
-    if tmp.exists():
-        shutil.rmtree(tmp)
-    tmp.mkdir(parents=True, exist_ok=True)
+        tmp = target.with_name(target.name + ".tmp")
+        if tmp.exists():
+            shutil.rmtree(tmp)
+        tmp.mkdir(parents=True, exist_ok=True)
 
-    (tmp / "metadata.json").write_text(_metadata_json(metadata))
-    for artifact in _catalog_artifacts(metadata):
-        artifact_url = urljoin(resolved_metadata_url, artifact.path)
-        output = tmp / artifact.path
-        output.parent.mkdir(parents=True, exist_ok=True)
-        _download_file(artifact_url, output)
-        _validate_file(output, artifact)
+        try:
+            (tmp / "metadata.json").write_text(_metadata_json(metadata))
+            for artifact in _catalog_artifacts(metadata):
+                artifact_url = urljoin(resolved_metadata_url, artifact.path)
+                output = tmp / artifact.path
+                output.parent.mkdir(parents=True, exist_ok=True)
+                _download_file(artifact_url, output)
+                _validate_file(output, artifact)
 
-    _replace_catalog_artifacts(tmp, target, metadata)
+            _replace_catalog_artifacts(tmp, target, metadata)
+        finally:
+            if tmp.exists():
+                shutil.rmtree(tmp)
     return target
 
 
@@ -416,26 +435,33 @@ def download_index_artifact(
     artifact = _index_archive_artifact(metadata, table_name=table_name)
     release_path = _cache_path(metadata.version, metadata.digest)
     target = _index_cache_path(metadata.version, metadata.digest, artifact)
-    release_path.mkdir(parents=True, exist_ok=True)
-    (release_path / "metadata.json").write_text(_metadata_json(metadata))
     if _cached_index_is_valid(target, artifact):
         return target
-    if reporter is not None:
-        reporter("index", urljoin(resolved_metadata_url, artifact.path), target)
+    with _cache_lock(release_path):
+        release_path.mkdir(parents=True, exist_ok=True)
+        (release_path / "metadata.json").write_text(_metadata_json(metadata))
+        if _cached_index_is_valid(target, artifact):
+            return target
+        if reporter is not None:
+            reporter("index", urljoin(resolved_metadata_url, artifact.path), target)
 
-    tmp = target.with_name(target.name + ".tmp")
-    archive_path = release_path / artifact.path
-    if tmp.exists():
-        shutil.rmtree(tmp)
-    tmp.mkdir(parents=True, exist_ok=True)
-    archive_path.parent.mkdir(parents=True, exist_ok=True)
-    _download_file(urljoin(resolved_metadata_url, artifact.path), archive_path)
-    _validate_file(archive_path, artifact)
-    _extract_tar_archive(archive_path, tmp)
+        tmp = target.with_name(target.name + ".tmp")
+        archive_path = release_path / artifact.path
+        if tmp.exists():
+            shutil.rmtree(tmp)
+        tmp.mkdir(parents=True, exist_ok=True)
+        archive_path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            _download_file(urljoin(resolved_metadata_url, artifact.path), archive_path)
+            _validate_file(archive_path, artifact)
+            _extract_tar_archive(archive_path, tmp)
 
-    if target.exists():
-        shutil.rmtree(target)
-    tmp.rename(target)
+            if target.exists():
+                shutil.rmtree(target)
+            tmp.rename(target)
+        finally:
+            if tmp.exists():
+                shutil.rmtree(tmp)
     return target
 
 
@@ -532,6 +558,40 @@ def _cached_bundle_is_valid(path: Path, *, expected_digest: str) -> bool:
     except (OSError, ValueError, json.JSONDecodeError):
         return False
     return True
+
+
+@contextmanager
+def _cache_lock(path: Path) -> Iterator[None]:
+    lock_path = path.with_name(path.name + ".lock")
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    while True:
+        try:
+            descriptor = os.open(
+                lock_path,
+                os.O_CREAT | os.O_EXCL | os.O_WRONLY,
+                0o644,
+            )
+        except FileExistsError:
+            if _lock_is_stale(lock_path):
+                lock_path.unlink(missing_ok=True)
+                continue
+            time.sleep(0.05)
+            continue
+        else:
+            with os.fdopen(descriptor, "w") as lock_file:
+                lock_file.write(f"{os.getpid()}\n")
+            break
+    try:
+        yield
+    finally:
+        lock_path.unlink(missing_ok=True)
+
+
+def _lock_is_stale(path: Path) -> bool:
+    try:
+        return time.time() - path.stat().st_mtime > CACHE_LOCK_STALE_SECONDS
+    except FileNotFoundError:
+        return False
 
 
 def _replace_catalog_artifacts(
