@@ -1,6 +1,0 @@
-[submodule "apps/visground/data/vis-judge-bench/VisJudgeBench"]
-	path = apps/visground/data/vis-judge-bench/VisJudgeBench
-	url = https://github.com/peter-gy/VisJudgeBench.git
-[submodule "apps/visground/data/vis-eval/VisEval"]
-	path = apps/visground/data/vis-eval/VisEval
-	url = https://github.com/peter-gy/VisEval.git
