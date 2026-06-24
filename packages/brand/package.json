@@ -39,7 +39,7 @@
     "@fontsource/poppins": "^5.2.7"
   },
   "devDependencies": {
-    "@types/node": "^22.19.21",
+    "@types/node": "^22.20.0",
     "sharp": "^0.35.2",
     "typescript": "^5.9.3"
   }
