@@ -1,6 +1,7 @@
 import { useState, type CSSProperties, type ReactNode } from "react";
 import { Bot, ExternalLink, MessageSquare, Quote, Search } from "lucide-react";
 import githubIconUrl from "@/assets/icons/github.svg?url";
+import { EXTERNAL_HREFS, externalHrefLabel } from "@/lib/routes";
 import {
   jsonLines,
   markdownLines,
@@ -212,10 +213,15 @@ function SkillsArtifact() {
 }
 
 function ImproveArtifact() {
+  const repositoryLabel = externalHrefLabel(EXTERNAL_HREFS.catalogRepository);
+  const repositoryBreakIndex = repositoryLabel.lastIndexOf("/") + 1;
+  const repositoryLabelStart = repositoryLabel.slice(0, repositoryBreakIndex);
+  const repositoryLabelEnd = repositoryLabel.slice(repositoryBreakIndex);
+
   return (
     <div className="grid gap-6">
       <a
-        href="https://github.com/chartcoach/catalog"
+        href={EXTERNAL_HREFS.catalogRepository}
         className="group grid min-w-0 gap-2 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-fg/30 focus-visible:ring-offset-4 focus-visible:ring-offset-bg"
         target="_blank"
         rel="noreferrer"
@@ -232,9 +238,13 @@ function ImproveArtifact() {
               aria-hidden="true"
             />
             <span className="min-w-0 break-normal font-mono text-[0.9375rem] font-semibold leading-snug text-fg underline decoration-border underline-offset-4 transition-colors group-hover:text-accent group-hover:decoration-accent sm:text-[1rem]">
-              github.com/chartcoach/
-              <wbr />
-              catalog
+              {repositoryLabelStart}
+              {repositoryLabelEnd ? (
+                <>
+                  <wbr />
+                  {repositoryLabelEnd}
+                </>
+              ) : null}
             </span>
           </span>
           <ExternalLink

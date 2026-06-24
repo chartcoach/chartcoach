@@ -1,6 +1,7 @@
 import type { Guideline } from "@chartcoach/catalog";
 
 import { createGuidelineRecord, type GuidelineRecord } from "./guideline-record";
+import { guidelinePath } from "./routes";
 
 export type GuidelineSearchModel = Omit<GuidelineRecord, "description"> & {
   description?: string;
@@ -93,7 +94,7 @@ export function createGuidelineSearchModel(guideline: Guideline): GuidelineSearc
 
 export function createGuidelineSearchDocument(
   model: GuidelineSearchModel,
-  path = `/guidelines/${model.id}/`,
+  path = guidelinePath(model.id),
 ): GuidelineSearchDocument {
   return {
     path,

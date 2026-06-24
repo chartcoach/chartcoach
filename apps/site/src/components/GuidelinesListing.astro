@@ -1,15 +1,15 @@
 ---
 import GuidelinesPagination from "@/components/GuidelinesPagination.astro";
 import { type GuidelineEntry } from "@/lib/guidelines-pagination";
+import { guidelinePath } from "@/lib/routes";
 
 type Props = {
   guidelines: GuidelineEntry[];
   currentPage: number;
   totalPages: number;
-  totalRecords: number;
 };
 
-const { guidelines, currentPage, totalPages, totalRecords } = Astro.props;
+const { guidelines, currentPage, totalPages } = Astro.props;
 const MAX_VISIBLE_LABELS = 5;
 ---
 
@@ -28,12 +28,11 @@ const MAX_VISIBLE_LABELS = 5;
       <GuidelinesPagination
         currentPage={currentPage}
         totalPages={totalPages}
-        totalRecords={totalRecords}
         class="lg:mt-0"
       />
     </div>
 
-    <ol class="mt-12 grid list-none gap-px overflow-hidden rounded-2xl border border-border bg-border p-0 text-left [grid-auto-rows:1fr] sm:grid-cols-2 lg:grid-cols-3">
+    <ol class="mt-12 grid list-none gap-px overflow-hidden rounded-2xl border border-border bg-border p-0 text-left sm:grid-cols-2 lg:grid-cols-3">
       {
         guidelines.map((guideline) => {
           const visibleLabels = guideline.data.labels.slice(0, MAX_VISIBLE_LABELS);
@@ -42,21 +41,21 @@ const MAX_VISIBLE_LABELS = 5;
           return (
             <li class="bg-bg transition-colors hover:bg-surface-muted">
               <a
-                href={`/guidelines/${guideline.id}/`}
-                class="flex h-full min-h-[20rem] flex-col p-5 text-fg no-underline sm:p-6"
+                href={guidelinePath(guideline.id)}
+                class="flex h-full flex-col p-5 text-fg no-underline sm:p-6"
               >
-                <h2 class="m-0 min-h-[4.9rem] overflow-hidden text-[1.0625rem] font-semibold leading-snug tracking-normal [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:3] lg:text-[1.1875rem]">
+                <h2 class="m-0 text-[1.0625rem] font-semibold leading-snug tracking-normal lg:text-[1.1875rem]">
                   {guideline.data.title}
                 </h2>
                 {guideline.data.description ? (
-                  <p class="m-0 mt-4 min-h-[7.5rem] overflow-hidden text-[0.9375rem] leading-[1.6] text-muted [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:5] lg:text-[1rem]">
+                  <p class="m-0 mt-4 text-[0.9375rem] leading-[1.6] text-muted lg:text-[1rem]">
                     {guideline.data.description}
                   </p>
                 ) : (
-                  <span class="mt-4 min-h-[7.5rem]" aria-hidden="true"></span>
+                  <span class="mt-4" aria-hidden="true"></span>
                 )}
                 {visibleLabels.length > 0 && (
-                  <ul class="m-0 flex min-h-[4.75rem] list-none content-start flex-wrap gap-2 pt-6">
+                  <ul class="m-0 mt-auto flex list-none content-start flex-wrap gap-2 pt-6">
                     {visibleLabels.map((label) => (
                       <li>
                         <span class="inline-flex rounded-md bg-surface-muted px-2 py-1 font-mono text-[0.6875rem] text-muted">
@@ -86,7 +85,6 @@ const MAX_VISIBLE_LABELS = 5;
     <GuidelinesPagination
       currentPage={currentPage}
       totalPages={totalPages}
-      totalRecords={totalRecords}
       class="mt-10 pt-8"
     />
   </div>
