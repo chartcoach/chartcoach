@@ -4,54 +4,65 @@ import { GuidelineSearch } from "@/components/guideline-search";
 import { SiteMobileMenu } from "@/components/site-mobile-menu";
 import SvgIcon from "@/components/SvgIcon.astro";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { EXTERNAL_HREFS, isExternalHttpHref, SITE_PATHS } from "@/lib/routes";
 
 const primaryLinks = [
   {
     label: "Guidelines",
-    href: "/guidelines/",
+    href: SITE_PATHS.guidelines,
   },
   {
     label: "Docs",
-    href: "https://docs.chartcoach.dev/",
+    href: EXTERNAL_HREFS.docs,
   },
 ] as const;
-
-const githubHref = "https://github.com/chartcoach/catalog";
 
 const footerLinks = [
   {
     label: "Guidelines",
-    href: "/guidelines/",
+    href: SITE_PATHS.guidelines,
   },
   {
     label: "GitHub",
-    href: "https://github.com/chartcoach/catalog",
+    href: EXTERNAL_HREFS.catalogRepository,
   },
   {
     label: "Paper",
-    href: "https://arxiv.org/abs/2512.20306",
+    href: EXTERNAL_HREFS.paper,
   },
   {
     label: "Contact",
-    href: "mailto:pgyarmati@ethz.ch",
+    href: EXTERNAL_HREFS.contact,
   },
 ] as const;
+
+interface Props {
+  fitViewport?: boolean;
+}
+
+const fitViewport = Astro.props.fitViewport ?? false;
 ---
 
-<div class="relative min-h-screen overflow-x-clip">
+<div
+  class:list={[
+    "relative flex flex-col overflow-x-clip",
+    fitViewport ? "h-svh overflow-hidden" : "min-h-screen",
+  ]}
+>
   <header
     class="sticky top-0 z-50 flex min-h-16 items-center justify-between gap-2 bg-bg/90 px-3 py-2 backdrop-blur-sm sm:gap-3 sm:px-4"
+    transition:persist="site-header"
   >
-    <a href="/" class="inline-flex h-9 shrink-0 items-center no-underline" aria-label="chartcoach home">
+    <a href={SITE_PATHS.home} class="inline-flex h-9 shrink-0 items-center no-underline" aria-label="chartcoach home">
       <BrandLogo class="h-7 w-[6.97rem] sm:h-8 sm:w-[7.96rem]" />
     </a>
     <nav class="flex min-w-0 flex-1 items-center justify-end gap-2 text-sm text-muted sm:gap-3 lg:text-[0.9375rem]" aria-label="Primary">
       {
         primaryLinks.map((link) => (
-          <a
-            href={link.href}
-            target={link.href.startsWith("http") ? "_blank" : undefined}
-            rel={link.href.startsWith("http") ? "noreferrer" : undefined}
+            <a
+              href={link.href}
+              target={isExternalHttpHref(link.href) ? "_blank" : undefined}
+              rel={isExternalHttpHref(link.href) ? "noreferrer" : undefined}
             class="hidden h-8 items-center rounded-md px-1.5 no-underline transition-colors hover:text-accent sm:inline-flex"
           >
             {link.label}
@@ -60,7 +71,7 @@ const footerLinks = [
       }
       <GuidelineSearch client:load />
       <a
-        href={githubHref}
+        href={EXTERNAL_HREFS.catalogRepository}
         target="_blank"
         rel="noreferrer"
         class="hidden h-8 w-8 items-center justify-center rounded-md no-underline transition-colors hover:bg-accent-muted hover:text-accent sm:inline-flex"
@@ -71,18 +82,18 @@ const footerLinks = [
       <div class="hidden sm:block">
         <ThemeToggle client:load />
       </div>
-      <SiteMobileMenu links={primaryLinks} githubHref={githubHref} client:load />
+      <SiteMobileMenu links={primaryLinks} githubHref={EXTERNAL_HREFS.catalogRepository} client:load />
     </nav>
   </header>
 
-  <main>
+  <main class="flex min-h-0 flex-1 flex-col" transition:animate="fade">
     <slot />
   </main>
 
-  <footer class="relative z-10 border-t border-border bg-surface-muted/35">
+  <footer class="relative z-10 border-t border-border bg-surface-muted/35" transition:persist="site-footer">
     <div class="mx-auto flex w-[min(100%-3rem,var(--container-content))] flex-col gap-8 py-10 sm:py-12 md:flex-row md:items-end md:justify-between">
       <div class="flex max-w-[32rem] flex-col items-start gap-5">
-        <a href="/" class="inline-flex rounded-lg no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/20" aria-label="chartcoach home">
+        <a href={SITE_PATHS.home} class="inline-flex rounded-lg no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/20" aria-label="chartcoach home">
           <BrandLogo class="h-10 w-[9.95rem] sm:h-11 sm:w-[10.95rem]" />
         </a>
         <div class="grid gap-2">
@@ -100,10 +111,10 @@ const footerLinks = [
             footerLinks.map((link, index) => (
               <>
                 {index > 0 && <span aria-hidden="true" class="text-border">·</span>}
-                <a
-                  href={link.href}
-                  target={link.href.startsWith("http") ? "_blank" : undefined}
-                  rel={link.href.startsWith("http") ? "noreferrer" : undefined}
+                  <a
+                    href={link.href}
+                    target={isExternalHttpHref(link.href) ? "_blank" : undefined}
+                    rel={isExternalHttpHref(link.href) ? "noreferrer" : undefined}
                   class="rounded-sm text-muted no-underline transition-colors hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/20"
                 >
                   {link.label}

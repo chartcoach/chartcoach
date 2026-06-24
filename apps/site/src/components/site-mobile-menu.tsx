@@ -3,6 +3,7 @@ import { ExternalLink } from "lucide-react";
 import { useEffect, useId, useState, useSyncExternalStore } from "react";
 
 import { ThemeToggle } from "@/components/theme-toggle";
+import { isExternalHttpHref, normalizePathname } from "@/lib/routes";
 
 type MobileMenuLink = {
   label: string;
@@ -23,18 +24,9 @@ function classNames(...values: Array<string | false | null | undefined>) {
   return values.filter(Boolean).join(" ");
 }
 
-function isExternalHref(href: string) {
-  return href.startsWith("http");
-}
-
-function normalizePath(path: string) {
-  if (!path) return "/";
-  return path.endsWith("/") ? path : `${path}/`;
-}
-
 function isActiveHref(href: string, pathname: string) {
-  if (isExternalHref(href)) return false;
-  return normalizePath(pathname) === normalizePath(href);
+  if (isExternalHttpHref(href)) return false;
+  return normalizePathname(pathname) === normalizePathname(href);
 }
 
 function subscribePathname(onChange: () => void) {
@@ -122,7 +114,7 @@ export function SiteMobileMenu({ links, githubHref }: SiteMobileMenuProps) {
               >
                 <ul className="m-0 grid list-none gap-1 p-0">
                   {links.map((link) => {
-                    const external = isExternalHref(link.href);
+                    const external = isExternalHttpHref(link.href);
                     const active = isActiveHref(link.href, pathname);
                     return (
                       <li key={link.href}>
