@@ -3,7 +3,11 @@ import { InstallCopy } from "@/components/install-copy";
 import { GuidelineStory } from "@/components/guideline-story";
 import SvgIcon from "@/components/SvgIcon.astro";
 import SiteLayout from "@/layouts/SiteLayout.astro";
+import { EXTERNAL_HREFS, SITE_PATHS } from "@/lib/routes";
 import { ArrowRight, Mail } from "lucide-react";
+
+const pageDescription =
+  "chartcoach helps chart agents review charts with guidance they can inspect and cite.";
 
 const loopSteps = [
   {
@@ -54,7 +58,15 @@ const institutions = [
 
 <SiteLayout
   title="chartcoach"
-  description="chartcoach helps chart agents review charts with guidance they can inspect and cite."
+  description={pageDescription}
+  og={{
+    kind: "home",
+    eyebrow: "Visualization knowledge layer",
+    title: "Design knowledge agents can cite.",
+    description:
+      "Visualization guidelines that agents retrieve, cite, apply, and improve, each linked back to its sources.",
+    verbs: ["Review", "Recommend", "Discuss", "Evaluate", "Contribute"],
+  }}
 >
   <section class="home-hero relative z-20 flex items-start overflow-visible px-6 pb-[clamp(4.5rem,9vh,6.5rem)] pt-12 sm:pt-[clamp(4rem,11vh,7rem)] lg:min-h-[calc(100svh-3.5rem)] lg:items-center lg:pb-[clamp(1.5rem,3.2vh,3rem)] lg:pt-[clamp(1.5rem,3.2vh,3rem)]">
     <div class="grid-glow" aria-hidden="true"></div>
@@ -150,7 +162,7 @@ const institutions = [
         </div>
         <div class="flex lg:justify-end">
           <a
-            href="https://arxiv.org/abs/2512.20306"
+            href={EXTERNAL_HREFS.paper}
             target="_blank"
             rel="noreferrer"
             class="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-border bg-bg px-4 text-sm font-medium text-fg no-underline transition-colors hover:bg-surface-muted xl:text-[0.9375rem]"
@@ -205,21 +217,21 @@ const institutions = [
       </p>
       <div class="mt-9 flex flex-wrap items-center justify-center gap-3">
         <a
-          href="https://docs.chartcoach.dev/getting-started"
+          href={EXTERNAL_HREFS.docsGettingStarted}
           class="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-accent bg-accent px-4 text-sm font-medium text-white no-underline transition-colors hover:bg-accent/90 xl:text-[0.9375rem]"
         >
           Try chartcoach
           <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden="true" />
         </a>
         <a
-          href="/guidelines/"
+          href={SITE_PATHS.guidelines}
           class="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-border bg-bg px-4 text-sm font-medium text-fg no-underline transition-colors hover:bg-surface-muted xl:text-[0.9375rem]"
         >
           Browse the Guideline Catalog
           <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden="true" />
         </a>
         <a
-          href="mailto:pgyarmati@ethz.ch"
+          href={EXTERNAL_HREFS.contact}
           class="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-border bg-bg px-4 text-sm font-medium text-fg no-underline transition-colors hover:bg-surface-muted xl:text-[0.9375rem]"
         >
           Get in touch

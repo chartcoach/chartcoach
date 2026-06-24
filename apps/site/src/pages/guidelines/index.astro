@@ -8,20 +8,35 @@ import {
   paginateGuidelines,
   sortGuidelines,
 } from "@/lib/guidelines-pagination";
+import { collectGuidelineRoles } from "@/lib/guideline-roles";
 
 const allGuidelines = sortGuidelines(await getCollection("guidelines"));
 const totalPages = getGuidelinePageCount(allGuidelines.length);
 const guidelines = paginateGuidelines(allGuidelines, 1);
+const guidelineRoles = collectGuidelineRoles(allGuidelines);
+const description =
+  "Browse chartcoach guideline pages for chart guidance, source links, and machine-readable Markdown and JSON.";
 ---
 
 <SiteLayout
   title="Guideline Catalog"
-  description="Browse chartcoach guideline pages for chart guidance, source links, and machine-readable Markdown and JSON."
+  description={description}
+  og={{
+    kind: "catalog",
+    eyebrow: "Structured sections",
+    title: "Guideline Catalog",
+    description,
+    badge: "Catalog",
+    stat: {
+      value: allGuidelines.length.toLocaleString(),
+      label: "guidelines, openly\nauthored and reviewed",
+    },
+    roles: guidelineRoles,
+  }}
 >
   <GuidelinesListing
     guidelines={guidelines}
     currentPage={1}
     totalPages={totalPages}
-    totalRecords={allGuidelines.length}
   />
 </SiteLayout>
