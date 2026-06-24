@@ -1,5 +1,16 @@
 export const brandAssetBasePath = "/brand" as const;
 
+export {
+  brandAssetTheme,
+  brandColors,
+  brandCssColorTokens,
+  brandOgTheme,
+  type BrandAssetThemeColorName,
+  type BrandColorName,
+  type BrandCssThemeMode,
+  type BrandOgThemeColorName,
+} from "./colors";
+
 export const brandLogoPath = `${brandAssetBasePath}/chartcoach-horizontal.svg` as const;
 export const brandLogoWhitePath = `${brandAssetBasePath}/chartcoach-horizontal-white.svg` as const;
 export const brandSquareLightPath = `${brandAssetBasePath}/chartcoach-square-light.svg` as const;

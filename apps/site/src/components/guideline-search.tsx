@@ -4,7 +4,7 @@ import { useCallback, useEffect, useId, useRef } from "react";
 import { normalizedSearchBase, useGuidelineSearch } from "@/components/use-guideline-search";
 
 import type { IndexStatus, SearchResult, SearchStatus } from "@/components/use-guideline-search";
-import type { KeyboardEvent, RefObject } from "react";
+import type { KeyboardEvent, MouseEvent, RefObject } from "react";
 
 const EXCERPT_RADIUS = 92;
 const EXAMPLE_QUERIES = ["color vision deficiency", "tooltip values", "uncertainty"] as const;
@@ -201,7 +201,7 @@ function SearchTrigger({ open, onOpen }: { open: boolean; onOpen: () => void }) 
   return (
     <button
       type="button"
-      className="flex h-8 w-full min-w-0 items-center justify-start gap-2 rounded-md border border-border bg-surface-muted px-2.5 text-sm text-muted transition-colors hover:border-fg/25 hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/20 sm:w-auto sm:justify-center min-[520px]:px-3"
+      className="flex h-8 w-full min-w-0 items-center justify-start gap-2 rounded-md border border-border bg-surface-muted px-2.5 text-sm text-muted transition-colors hover:border-fg/25 hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/20 max-[359px]:w-9 max-[359px]:shrink-0 max-[359px]:justify-center max-[359px]:px-0 sm:w-auto sm:justify-center min-[520px]:px-3"
       aria-label="Search guidelines"
       aria-keyshortcuts="Meta+K Control+K"
       aria-expanded={open}
@@ -209,7 +209,7 @@ function SearchTrigger({ open, onOpen }: { open: boolean; onOpen: () => void }) 
       onClick={onOpen}
     >
       <Search aria-hidden="true" className={iconClassName(false)} />
-      <span className="min-w-0 truncate whitespace-nowrap">Search guidelines</span>
+      <span className="min-w-0 whitespace-nowrap max-[359px]:hidden">Search guidelines</span>
       <SearchShortcutHint />
     </button>
   );
@@ -271,12 +271,14 @@ function SearchResultItem({
   query,
   result,
   onActivate,
+  onNavigate,
   onKeyDown,
 }: {
   active: boolean;
   query: string;
   result: SearchResult;
   onActivate: (id: string) => void;
+  onNavigate: (event: MouseEvent<HTMLAnchorElement>) => void;
   onKeyDown: (event: KeyboardEvent<HTMLAnchorElement>) => void;
 }) {
   const title = cleanTitle(result);
@@ -294,6 +296,7 @@ function SearchResultItem({
           "block rounded-md px-3 py-3 text-fg no-underline transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/20",
           active ? "bg-surface-muted" : "hover:bg-surface-muted/70",
         )}
+        onClick={onNavigate}
         onMouseMove={() => onActivate(result.id)}
         onFocus={() => onActivate(result.id)}
         onKeyDown={onKeyDown}
@@ -328,12 +331,14 @@ function SearchResultsList({
   query,
   results,
   onActivate,
+  onResultNavigate,
   onResultKeyDown,
 }: {
   activeResultId: string | null;
   query: string;
   results: SearchResult[];
   onActivate: (id: string) => void;
+  onResultNavigate: (event: MouseEvent<HTMLAnchorElement>) => void;
   onResultKeyDown: (event: KeyboardEvent<HTMLAnchorElement>) => void;
 }) {
   return (
@@ -345,6 +350,7 @@ function SearchResultsList({
           query={query}
           result={result}
           onActivate={onActivate}
+          onNavigate={onResultNavigate}
           onKeyDown={onResultKeyDown}
         />
       ))}
@@ -453,6 +459,16 @@ export function GuidelineSearch() {
 
   useSearchShortcut(searchState.openSearch);
 
+  const closeDialog = useCallback(() => {
+    if (dialogRef.current?.open) dialogRef.current.close();
+    searchState.closeSearch();
+  }, [searchState.closeSearch]);
+
+  useEffect(() => {
+    document.addEventListener("astro:before-preparation", closeDialog);
+    return () => document.removeEventListener("astro:before-preparation", closeDialog);
+  }, [closeDialog]);
+
   const setDialogElement = useCallback(
     (node: HTMLDialogElement | null) => {
       dialogCleanupRef.current?.();
@@ -501,12 +517,13 @@ export function GuidelineSearch() {
 
   function openActiveResult() {
     if (!searchState.activeResult) return;
+    closeDialog();
     window.location.href = normalizeResultHref(searchState.activeResult.document.path);
   }
 
   function handleSearchKeyDown(event: KeyboardEvent<HTMLInputElement | HTMLAnchorElement>) {
     if (event.key === "Escape") {
-      searchState.closeSearch();
+      closeDialog();
       return;
     }
 
@@ -528,8 +545,14 @@ export function GuidelineSearch() {
     }
   }
 
+  function handleResultClick(event: MouseEvent<HTMLAnchorElement>) {
+    if (event.defaultPrevented || event.button !== 0) return;
+    if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return;
+    closeDialog();
+  }
+
   return (
-    <div className="min-w-0 flex-1 sm:flex-none">
+    <div className="min-w-0 flex-1 max-[359px]:flex-none sm:flex-none">
       <SearchTrigger open={searchState.open} onOpen={searchState.openSearch} />
       {searchState.open ? (
         <dialog
@@ -545,7 +568,7 @@ export function GuidelineSearch() {
             indexStatus={searchState.indexStatus}
             onInputKeyDown={handleSearchKeyDown}
             query={searchState.query}
-            onClose={searchState.closeSearch}
+            onClose={closeDialog}
             onQueryChange={searchState.setQuery}
           />
           <div className="min-h-44 border-b border-border p-2">
@@ -555,6 +578,7 @@ export function GuidelineSearch() {
                 query={searchState.trimmedQuery}
                 results={searchState.results}
                 onActivate={searchState.setActiveResultId}
+                onResultNavigate={handleResultClick}
                 onResultKeyDown={handleSearchKeyDown}
               />
             ) : (

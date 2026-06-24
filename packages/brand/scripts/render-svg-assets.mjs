@@ -1,5 +1,6 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { brandAssetTheme } from "../src/colors.ts";
 import { sourceBrandDir } from "./public-brand-assets.mjs";
 
 const check = process.argv.includes("--check");
@@ -11,13 +12,14 @@ if (!wordmarkPath) {
   process.exit(1);
 }
 
+const svgColor = (color) => color.toUpperCase();
 const colors = {
-  accent: "#E0364B",
-  border: "#ECEBE8",
-  dark: "#1F1F1F",
-  darkBorder: "#333333",
-  muted: "#F2F1ED",
-  white: "#FFFFFF",
+  accent: svgColor(brandAssetTheme.accent),
+  border: svgColor(brandAssetTheme.border),
+  dark: svgColor(brandAssetTheme.dark),
+  darkBorder: svgColor(brandAssetTheme.darkBorder),
+  muted: svgColor(brandAssetTheme.muted),
+  white: svgColor(brandAssetTheme.white),
 };
 
 const baseRotations = [140, 160, 180, 200, 220, 240, 260, 280, 300, 320, 340];

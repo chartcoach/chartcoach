@@ -2,7 +2,7 @@ import type { APIRoute } from "astro";
 import type { CollectionEntry } from "astro:content";
 import { getCollection } from "astro:content";
 
-import { serializeGuidelineRecord } from "../../lib/guideline-record";
+import { serializeGuidelineRecord } from "@/lib/guideline-record";
 
 type Props = {
   guideline: CollectionEntry<"guidelines">;

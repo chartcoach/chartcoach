@@ -11,6 +11,7 @@ import {
 import { chartcoachLlmPages } from "./src/config/llms";
 import { llms } from "./src/integrations/llms";
 import { oramaSearch } from "./src/integrations/orama-search";
+import { satoriOg } from "./src/integrations/satori-og";
 
 loadRepoEnvFile();
 
@@ -37,5 +38,6 @@ export default defineConfig({
         pathMatcher: /^\/?guidelines\/(?!page\/)[^/]+\/?$/,
       },
     }),
+    satoriOg(),
   ],
 });

@@ -4,6 +4,13 @@ import { getCollection, getEntry } from "astro:content";
 import { GuidelineActions } from "@/components/guideline-actions";
 import SiteLayout from "@/layouts/SiteLayout.astro";
 import { serializeGuidelineSearchModel } from "@/lib/guideline-search-model";
+import {
+  catalogGuidelineMarkdownSourceHref,
+  guidelineJsonOgImagePath,
+  guidelineMarkdownOgImagePath,
+  SITE_PATHS,
+} from "@/lib/routes";
+import { summarizeGuidelineReferences } from "@/og/references";
 
 export async function getStaticPaths() {
   const guidelines = await getCollection("guidelines");
@@ -15,11 +22,56 @@ export async function getStaticPaths() {
 const guideline = await getEntry("guidelines", Astro.params.id as string);
 if (!guideline) throw new Error(`Guideline not found: ${Astro.params.id}`);
 
-const editHref = `https://github.com/chartcoach/catalog/blob/main/entries/${guideline.id}/guideline.md`;
+const editHref = catalogGuidelineMarkdownSourceHref(guideline.id);
 const searchEntryJson = serializeGuidelineSearchModel(guideline.data.search);
+const sectionRoles = guideline.data.sections.map((section) => section.role);
+const labels = guideline.data.labels.length > 0 ? guideline.data.labels : sectionRoles;
+const sourceCount = guideline.data.citations.length;
+const references = summarizeGuidelineReferences(guideline.data.referencesBib);
 ---
 
-<SiteLayout title={guideline.data.title} description={guideline.data.description}>
+<SiteLayout
+  title={guideline.data.title}
+  description={guideline.data.description}
+  og={{
+    kind: "guideline",
+    eyebrow: "Guideline Catalog",
+    title: guideline.data.title,
+    description: guideline.data.description ?? "Inspect this chartcoach guideline with section roles and source references.",
+    badge: "Guideline",
+    labels,
+    references,
+    metaItems: [
+      `${sectionRoles.length.toLocaleString()} sections`,
+      sourceCount > 0 ? `${sourceCount.toLocaleString()} sources` : "Source-traced",
+      "guideline.md",
+    ],
+    extraImages: [
+      {
+        imagePathname: guidelineJsonOgImagePath(guideline.id),
+        props: {
+          kind: "guideline-json",
+          badge: "JSON",
+          title: guideline.data.title,
+          description: guideline.data.description,
+          labels,
+          references,
+        },
+      },
+      {
+        imagePathname: guidelineMarkdownOgImagePath(guideline.id),
+        props: {
+          kind: "guideline-md",
+          badge: "Markdown",
+          title: guideline.data.title,
+          description: guideline.data.description,
+          labels,
+          references,
+        },
+      },
+    ],
+  }}
+>
   <script
     type="application/json"
     data-guideline-search-entry
@@ -29,7 +81,7 @@ const searchEntryJson = serializeGuidelineSearchModel(guideline.data.search);
   <article class="px-6 py-[clamp(4rem,9vh,6.5rem)]">
     <div class="mx-auto w-full max-w-[54rem]">
       <div class="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-        <a href="/guidelines/" class="inline-flex text-sm font-medium text-muted no-underline transition-colors hover:text-fg">
+        <a href={SITE_PATHS.guidelines} class="inline-flex text-sm font-medium text-muted no-underline transition-colors hover:text-fg">
           Guidelines
         </a>
         <GuidelineActions

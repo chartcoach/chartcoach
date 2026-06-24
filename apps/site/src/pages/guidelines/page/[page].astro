@@ -8,6 +8,7 @@ import {
   paginateGuidelines,
   sortGuidelines,
 } from "@/lib/guidelines-pagination";
+import { collectGuidelineRoles } from "@/lib/guideline-roles";
 
 export async function getStaticPaths() {
   const guidelines = sortGuidelines(await getCollection("guidelines"));
@@ -26,16 +27,30 @@ const allGuidelines = sortGuidelines(await getCollection("guidelines"));
 const currentPage = Number(Astro.props.page);
 const totalPages = getGuidelinePageCount(allGuidelines.length);
 const guidelines = paginateGuidelines(allGuidelines, currentPage);
+const guidelineRoles = collectGuidelineRoles(allGuidelines);
+const description =
+  "Browse chartcoach guideline pages for chart guidance, source links, and machine-readable Markdown and JSON.";
 ---
 
 <SiteLayout
   title={`Guideline Catalog, page ${currentPage}`}
-  description="Browse chartcoach guideline pages for chart guidance, source links, and machine-readable Markdown and JSON."
+  description={description}
+  og={{
+    kind: "catalog",
+    eyebrow: "Structured sections",
+    title: "Guideline Catalog",
+    description,
+    badge: `Page ${currentPage}`,
+    stat: {
+      value: allGuidelines.length.toLocaleString(),
+      label: "guidelines, openly\nauthored and reviewed",
+    },
+    roles: guidelineRoles,
+  }}
 >
   <GuidelinesListing
     guidelines={guidelines}
     currentPage={currentPage}
     totalPages={totalPages}
-    totalRecords={allGuidelines.length}
   />
 </SiteLayout>

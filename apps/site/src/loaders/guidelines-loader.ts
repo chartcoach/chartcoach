@@ -11,9 +11,9 @@ import {
   loadSiteCatalog,
   resolveCatalogSource,
   resolveSiteCatalogSource,
-} from "../config/catalog-source";
-import { createGuidelineRecord } from "../lib/guideline-record";
-import { createGuidelineSearchModel } from "../lib/guideline-search-model";
+} from "@/config/catalog-source";
+import { createGuidelineRecord } from "@/lib/guideline-record";
+import { createGuidelineSearchModel } from "@/lib/guideline-search-model";
 
 type RenderedCitations = {
   body: string;

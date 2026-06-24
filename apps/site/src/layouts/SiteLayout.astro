@@ -1,23 +1,49 @@
 ---
 import { brandAssets } from "@chartcoach/brand";
+import { ClientRouter } from "astro:transitions";
 import "@chartcoach/brand/fonts.css";
 import "@/styles/site.css";
 import SiteShell from "@/components/SiteShell.astro";
 import { getSiteRuntimeConfig } from "@/config/site";
+import { ogImagePathname, ogImageUrl } from "@/lib/routes";
+import { buildOgImageProps, buildOgPayload } from "@/og/meta";
+import {
+  OG_BUILD_PROPS_META,
+  OG_IMAGE_HEIGHT,
+  OG_IMAGE_WIDTH,
+  type OgImageInputWithExtras,
+} from "@/og/schema";
 
 interface Props {
   title?: string;
   description?: string;
+  og?: OgImageInputWithExtras;
+  fitViewport?: boolean;
 }
 
 const title = Astro.props.title ?? "chartcoach";
 const description =
   Astro.props.description ??
   "chartcoach helps chart agents review charts with guidance they can inspect and cite.";
+const ogInput = Astro.props.og ?? {};
 const pageTitle = title === "chartcoach" ? "chartcoach" : `${title} | chartcoach`;
 const canonical = Astro.site
   ? new URL(Astro.url.pathname, Astro.site).toString()
   : undefined;
+const ogImage = Astro.site ? ogImageUrl(Astro.site, Astro.url.pathname) : undefined;
+const ogProps = buildOgImageProps({
+  kind: "page",
+  title,
+  description,
+  ...ogInput,
+});
+const ogPayload = buildOgPayload({
+  imagePathname: ogImagePathname(Astro.url.pathname),
+  props: ogProps,
+  extraImages: ogInput.extraImages,
+  title,
+  description,
+});
 const { isPreviewDeployment } = getSiteRuntimeConfig();
 ---
 
@@ -28,6 +54,7 @@ const { isPreviewDeployment } = getSiteRuntimeConfig();
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{pageTitle}</title>
     <meta name="description" content={description} />
+    <meta name={OG_BUILD_PROPS_META} content={ogPayload} />
     {isPreviewDeployment && <meta name="robots" content="noindex,nofollow,noarchive" />}
     <link rel="icon" type="image/svg+xml" href={brandAssets.favicon} />
     <link rel="alternate icon" type="image/png" sizes="32x32" href={brandAssets.faviconPng} />
@@ -35,7 +62,21 @@ const { isPreviewDeployment } = getSiteRuntimeConfig();
     <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
     {canonical && <link rel="canonical" href={canonical} />}
-    <script is:inline>
+    {canonical && <meta property="og:url" content={canonical} />}
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={ogProps.description} />
+    {ogImage && <meta property="og:image" content={ogImage} />}
+    <meta property="og:image:width" content={String(OG_IMAGE_WIDTH)} />
+    <meta property="og:image:height" content={String(OG_IMAGE_HEIGHT)} />
+    <meta property="og:image:alt" content={`${ogProps.title} | chartcoach`} />
+    <meta property="twitter:card" content="summary_large_image" />
+    {canonical && <meta property="twitter:url" content={canonical} />}
+    <meta property="twitter:title" content={pageTitle} />
+    <meta property="twitter:description" content={ogProps.description} />
+    {ogImage && <meta property="twitter:image" content={ogImage} />}
+    <ClientRouter />
+    <script is:inline data-astro-rerun>
       (() => {
         const storageKey = "chartcoach-theme";
         const root = document.documentElement;
@@ -55,7 +96,7 @@ const { isPreviewDeployment } = getSiteRuntimeConfig();
     </script>
   </head>
   <body>
-    <SiteShell>
+    <SiteShell fitViewport={Astro.props.fitViewport}>
       <slot />
     </SiteShell>
   </body>

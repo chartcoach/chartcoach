@@ -20,7 +20,3 @@ export function paginateGuidelines(
   const start = (page - 1) * pageSize;
   return guidelines.slice(start, start + pageSize);
 }
-
-export function getGuidelinesPageHref(page: number) {
-  return page === 1 ? "/guidelines/" : `/guidelines/page/${page}/`;
-}

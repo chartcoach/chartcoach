@@ -1,22 +1,128 @@
 ---
+import SvgIcon from "@/components/SvgIcon.astro";
 import SiteLayout from "@/layouts/SiteLayout.astro";
+import { EXTERNAL_HREFS, isExternalHttpHref, SITE_PATHS } from "@/lib/routes";
+import { ArrowRight, BookOpen, Home } from "lucide-react";
+
+const recoveryLinks = [
+  {
+    label: "Home",
+    description: "Return to the chartcoach overview.",
+    href: SITE_PATHS.home,
+    icon: Home,
+  },
+  {
+    label: "Guideline Catalog",
+    description: "Browse the current public guideline index.",
+    href: SITE_PATHS.guidelines,
+    icon: BookOpen,
+  },
+  {
+    label: "Catalog repository",
+    description: "Review source entries or suggest a repair.",
+    href: EXTERNAL_HREFS.catalogRepository,
+    icon: "github",
+  },
+] as const;
 ---
 
-<SiteLayout title="Not found" description="The requested chartcoach page could not be found.">
-  <section class="px-6 py-[clamp(5rem,14vh,9rem)]">
-    <div class="mx-auto w-full max-w-[42rem] text-center">
-      <h1 class="m-0 text-[2.75rem] font-semibold leading-[1.02] tracking-normal text-fg sm:text-[3.5rem] lg:text-[4.5rem]">
-        Not found
-      </h1>
-      <p class="m-0 mt-6 text-[1.0625rem] leading-[1.65] text-muted">
-        This chartcoach page does not exist or has moved.
-      </p>
-      <a
-        href="/"
-        class="mt-9 inline-flex h-11 items-center justify-center rounded-lg border border-fg bg-fg px-4 text-sm font-medium text-bg no-underline transition-colors hover:bg-fg/90"
-      >
-        Return home
-      </a>
+<SiteLayout
+  title="Page not found"
+  description="The requested chartcoach page is not part of the current site."
+  fitViewport
+  og={{
+    kind: "page",
+    eyebrow: "chartcoach 404",
+    title: "Page not found",
+    description: "This route is outside the current chartcoach site.",
+    metaItems: ["Guideline Catalog", "Public repository"],
+  }}
+>
+  <section class="relative isolate flex min-h-0 flex-1 overflow-hidden px-6 py-5 max-[700px]:py-4 sm:py-7">
+    <div class="grid-glow" aria-hidden="true"></div>
+    <div
+      class="pointer-events-none absolute right-[-7rem] top-[-9rem] -z-10 hidden h-[26rem] w-[26rem] rounded-full border border-border opacity-70 lg:block"
+      aria-hidden="true"
+    >
+    </div>
+    <div
+      class="pointer-events-none absolute bottom-[-13rem] left-[-10rem] -z-10 hidden h-[28rem] w-[28rem] rounded-full border border-accent/25 opacity-60 lg:block"
+      aria-hidden="true"
+    >
+    </div>
+
+    <div class="mx-auto grid min-h-0 w-[min(100%,var(--container-content))] grid-cols-1 items-center gap-7 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-14">
+      <div class="max-w-[48rem]">
+        <p class="m-0 font-mono text-[0.75rem] font-semibold uppercase tracking-[0.18em] text-muted max-[700px]:text-[0.6875rem]">
+          404 / missing route
+        </p>
+        <h1 class="m-0 mt-4 max-w-[46rem] text-balance text-[3.05rem] font-semibold leading-[0.98] tracking-normal text-fg max-[700px]:mt-2.5 max-[700px]:text-[2.08rem] sm:text-[4.4rem] lg:text-[5.4rem] xl:text-[5.8rem] [@media(max-height:600px)]:text-[1.85rem]">
+          This page is not in the catalog.
+        </h1>
+        <p class="m-0 mt-5 max-w-[40rem] text-pretty text-[1rem] leading-[1.55] text-muted max-[700px]:mt-3 max-[700px]:hidden sm:text-[1.125rem]">
+          The address points outside the current chartcoach site. Continue from the
+          catalog, docs, or source repository.
+        </p>
+        <div class="mt-7 flex flex-wrap items-center gap-3 max-[700px]:mt-4 [@media(max-height:600px)]:hidden">
+          <a
+            href={SITE_PATHS.guidelines}
+            class="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-accent bg-accent px-4 text-sm font-medium text-white no-underline transition-colors hover:bg-accent/90"
+          >
+            Browse guidelines
+            <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.7} aria-hidden="true" />
+          </a>
+          <a
+            href={SITE_PATHS.home}
+            class="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-border bg-bg px-4 text-sm font-medium text-fg no-underline transition-colors hover:bg-surface-muted"
+          >
+            Return home
+          </a>
+        </div>
+      </div>
+
+      <aside class="relative min-w-0 border-l border-border pl-6 max-[700px]:hidden sm:pl-8 lg:pl-10" aria-label="Recovery links">
+        <div class="pointer-events-none absolute -left-px top-0 h-14 border-l border-accent" aria-hidden="true"></div>
+        <p class="m-0 font-mono text-[0.75rem] font-semibold uppercase tracking-[0.16em] text-muted max-[700px]:text-[0.6875rem]">
+          Route recovery
+        </p>
+        <div class="mt-5 grid gap-2.5 max-[700px]:mt-3 max-[700px]:gap-2">
+          {
+            recoveryLinks.map((link) => {
+              const Icon = link.icon;
+              const isExternal = isExternalHttpHref(link.href);
+              return (
+                <a
+                  href={link.href}
+                  target={isExternal ? "_blank" : undefined}
+                  rel={isExternal ? "noreferrer" : undefined}
+                  class="group grid min-w-0 grid-cols-[2.25rem_minmax(0,1fr)_auto] items-center gap-3 border border-border bg-bg px-3 py-2.5 text-left no-underline transition-colors hover:border-accent/45 hover:bg-surface-muted max-[700px]:py-2"
+                >
+                  <span class="flex h-9 w-9 items-center justify-center rounded-md bg-surface-muted text-muted transition-colors group-hover:text-accent">
+                    {Icon === "github" ? (
+                      <SvgIcon name="github" class="h-[1.125rem] w-[1.125rem] shrink-0" />
+                    ) : (
+                      <Icon className="h-[1.125rem] w-[1.125rem]" strokeWidth={1.6} aria-hidden="true" />
+                    )}
+                  </span>
+                  <span class="min-w-0">
+                    <span class="block text-[0.9375rem] font-semibold leading-5 text-fg">
+                      {link.label}
+                    </span>
+                    <span class="mt-1 block text-[0.8125rem] leading-5 text-muted max-[700px]:hidden">
+                      {link.description}
+                    </span>
+                  </span>
+                  <ArrowRight
+                    className="h-4 w-4 text-muted transition-colors group-hover:text-accent"
+                    strokeWidth={1.6}
+                    aria-hidden="true"
+                  />
+                </a>
+              );
+            })
+          }
+        </div>
+      </aside>
     </div>
   </section>
 </SiteLayout>

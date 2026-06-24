@@ -2,6 +2,13 @@ import { toMarkdown } from "@chartcoach/catalog";
 
 import type { LlmPageSource, LlmPageSourceContext } from "../integrations/llms";
 import { serializeGuidelineMarkdown } from "../lib/guideline-markdown";
+import {
+  EXTERNAL_HREFS,
+  GUIDELINE_ROUTE_PATTERNS,
+  guidelineMarkdownPath,
+  guidelinePath,
+  SITE_PATHS,
+} from "../lib/routes";
 import { loadSiteCatalog } from "./catalog-source";
 
 export async function chartcoachLlmPages({ root }: LlmPageSourceContext): Promise<LlmPageSource[]> {
@@ -11,11 +18,11 @@ export async function chartcoachLlmPages({ root }: LlmPageSourceContext): Promis
     const referencesBib = guideline.references.length > 0 ? guideline.references.join("\n\n") : "";
 
     return {
-      pathname: `/guidelines/${guideline.id}/`,
+      pathname: guidelinePath(guideline.id),
       title: guideline.title,
       description: guideline.description,
       markdown: serializeGuidelineMarkdown(toMarkdown(guideline), referencesBib),
-      markdownPathname: `/guidelines/${guideline.id}.md`,
+      markdownPathname: guidelineMarkdownPath(guideline.id),
       writeMarkdown: false,
     };
   });
@@ -26,11 +33,11 @@ export async function chartcoachLlmPages({ root }: LlmPageSourceContext): Promis
 function sitePages(guidelineCount: number): LlmPageSource[] {
   return [
     {
-      pathname: "/",
+      pathname: SITE_PATHS.home,
       title: "chartcoach",
       description:
         "chartcoach helps chart agents review charts with guidance they can inspect and cite.",
-      markdownPathname: "/index.md",
+      markdownPathname: SITE_PATHS.indexMarkdown,
       markdown: [
         "# chartcoach",
         "",
@@ -38,10 +45,10 @@ function sitePages(guidelineCount: number): LlmPageSource[] {
         "",
         "## Resources",
         "",
-        "- [Browse the Guideline Catalog](/guidelines/)",
-        "- [Read docs](https://docs.chartcoach.dev)",
-        "- [Catalog repository](https://github.com/chartcoach/catalog)",
-        "- [Agent skills](https://github.com/chartcoach/skills)",
+        `- [Browse the Guideline Catalog](${SITE_PATHS.guidelines})`,
+        `- [Read docs](${EXTERNAL_HREFS.docs})`,
+        `- [Catalog repository](${EXTERNAL_HREFS.catalogRepository})`,
+        `- [Agent skills](${EXTERNAL_HREFS.skillsRepository})`,
         "",
         "## What the catalog provides",
         "",
@@ -53,10 +60,10 @@ function sitePages(guidelineCount: number): LlmPageSource[] {
       ].join("\n"),
     },
     {
-      pathname: "/guidelines/",
+      pathname: SITE_PATHS.guidelines,
       title: "Guideline Catalog",
       description: `Browse ${guidelineCount.toLocaleString()} chartcoach guideline pages for chart guidance, source links, and machine-readable Markdown and JSON.`,
-      markdownPathname: "/guidelines.md",
+      markdownPathname: SITE_PATHS.guidelinesMarkdown,
       markdown: [
         "# Guideline Catalog",
         "",
@@ -64,7 +71,7 @@ function sitePages(guidelineCount: number): LlmPageSource[] {
         "",
         "Each guideline has a public page for reading, a Markdown route for agents, and a JSON route for apps that need the same guidance and source links.",
         "",
-        "Use `/guidelines/{id}.md` for the Markdown representation and `/guidelines/{id}.json` for the structured representation.",
+        `Use \`${GUIDELINE_ROUTE_PATTERNS.markdown}\` for the Markdown representation and \`${GUIDELINE_ROUTE_PATTERNS.json}\` for the structured representation.`,
       ].join("\n"),
     },
   ];

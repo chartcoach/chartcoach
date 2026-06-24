@@ -1,13 +1,9 @@
 ---
-import {
-  GUIDELINES_PER_PAGE,
-  getGuidelinesPageHref,
-} from "@/lib/guidelines-pagination";
+import { guidelinesPagePath } from "@/lib/routes";
 
 type Props = {
   currentPage: number;
   totalPages: number;
-  totalRecords: number;
   class?: string;
 };
 
@@ -24,13 +20,11 @@ type PaginationItem =
       key: string;
     };
 
-const { currentPage, totalPages, totalRecords, class: className = "" } = Astro.props;
-const previousHref = currentPage > 1 ? getGuidelinesPageHref(currentPage - 1) : null;
-const nextHref = currentPage < totalPages ? getGuidelinesPageHref(currentPage + 1) : null;
-const firstRecord = totalRecords === 0 ? 0 : (currentPage - 1) * GUIDELINES_PER_PAGE + 1;
-const lastRecord = totalRecords === 0 ? 0 : Math.min(currentPage * GUIDELINES_PER_PAGE, totalRecords);
+const { currentPage, totalPages, class: className = "" } = Astro.props;
+const previousHref = currentPage > 1 ? guidelinesPagePath(currentPage - 1) : null;
+const nextHref = currentPage < totalPages ? guidelinesPagePath(currentPage + 1) : null;
 const rootClass = [
-  "flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between",
+  "flex min-w-0 justify-start sm:justify-end",
   className,
 ]
   .filter(Boolean)
@@ -39,7 +33,7 @@ const rootClass = [
 function createPaginationItems(page: number, total: number): PaginationItem[] {
   const pages = new Set([1, total]);
 
-  for (let offset = -2; offset <= 2; offset += 1) {
+  for (let offset = -1; offset <= 1; offset += 1) {
     const candidate = page + offset;
     if (candidate >= 1 && candidate <= total) pages.add(candidate);
   }
@@ -60,7 +54,7 @@ function createPaginationItems(page: number, total: number): PaginationItem[] {
       type: "page",
       key: `page-${pageNumber}`,
       page: pageNumber,
-      href: getGuidelinesPageHref(pageNumber),
+      href: guidelinesPagePath(pageNumber),
       current: pageNumber === page,
     });
 
@@ -76,10 +70,7 @@ const paginationItems = createPaginationItems(currentPage, totalPages);
 {
   totalPages > 1 && (
     <nav class={rootClass} aria-label="Guidelines pagination">
-      <p class="m-0 text-sm text-muted">
-        Showing {firstRecord.toLocaleString()}-{lastRecord.toLocaleString()} of {totalRecords.toLocaleString()} guidelines.
-      </p>
-      <div class="flex flex-wrap items-center gap-2">
+      <div class="flex max-w-full flex-nowrap items-center gap-2 overflow-x-auto whitespace-nowrap pb-1">
         {previousHref ? (
           <a
             href={previousHref}
@@ -96,7 +87,7 @@ const paginationItems = createPaginationItems(currentPage, totalPages);
           paginationItems.map((item) => (
             <>
               {item.type === "ellipsis" && (
-                <span class="inline-flex h-9 w-9 items-center justify-center text-sm text-muted" aria-hidden="true">
+                <span class="inline-flex h-9 w-9 items-center justify-center text-sm text-muted max-[480px]:hidden" aria-hidden="true">
                   ...
                 </span>
               )}
@@ -111,7 +102,7 @@ const paginationItems = createPaginationItems(currentPage, totalPages);
               {item.type === "page" && !item.current && (
                 <a
                   href={item.href}
-                  class="inline-flex h-9 min-w-9 items-center justify-center rounded-md border border-border px-3 text-sm font-medium text-fg no-underline transition-colors hover:bg-surface-muted"
+                  class="inline-flex h-9 min-w-9 items-center justify-center rounded-md border border-border px-3 text-sm font-medium text-fg no-underline transition-colors hover:bg-surface-muted max-[480px]:hidden"
                 >
                   {item.page}
                 </a>
