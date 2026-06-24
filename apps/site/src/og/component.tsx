@@ -30,6 +30,49 @@ const theme = {
   white: "#FFFFFF",
 };
 
+// Current catalog title distribution: min 29, median 61, p90 82, max 125 chars.
+const guidelineTitleBreakpoints = {
+  shortest: 29,
+  median: 61,
+  p90: 82,
+  longest: 125,
+} as const;
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
+}
+
+function interpolate(value: number, from: number, to: number, start: number, end: number): number {
+  if (from === to) return end;
+  const progress = clamp((value - from) / (to - from), 0, 1);
+  return start + (end - start) * progress;
+}
+
+function guidelineTitleSize(title: string): number {
+  const length = title.length;
+  if (length <= guidelineTitleBreakpoints.median) {
+    return Math.round(
+      interpolate(
+        length,
+        guidelineTitleBreakpoints.shortest,
+        guidelineTitleBreakpoints.median,
+        58,
+        51,
+      ),
+    );
+  }
+
+  if (length <= guidelineTitleBreakpoints.p90) {
+    return Math.round(
+      interpolate(length, guidelineTitleBreakpoints.median, guidelineTitleBreakpoints.p90, 51, 47),
+    );
+  }
+
+  return Math.round(
+    interpolate(length, guidelineTitleBreakpoints.p90, guidelineTitleBreakpoints.longest, 47, 40),
+  );
+}
+
 function DashRing({
   accentColor,
   dashColor,
@@ -389,10 +432,10 @@ function LabelPill({ label }: { label: string }) {
         borderRadius: 6,
         color: theme.accent,
         fontFamily: "JetBrains Mono",
-        fontSize: 13,
+        fontSize: 14.5,
         fontWeight: 500,
         lineHeight: 1,
-        padding: "6px 10px",
+        padding: "7px 11px",
         whiteSpace: "nowrap",
       }}
     >
@@ -407,7 +450,7 @@ function labelRows(labels: string[]): string[][] {
   const rows: string[][] = [[]];
   let currentWidth = 0;
   for (const label of labels) {
-    const estimatedWidth = 24 + label.length * 7.4;
+    const estimatedWidth = 28 + label.length * 8.3;
     if (rows.at(-1)?.length && currentWidth + estimatedWidth > 1040) {
       rows.push([]);
       currentWidth = 0;
@@ -419,6 +462,8 @@ function labelRows(labels: string[]): string[][] {
 }
 
 function referenceRow(reference: OgReferenceSummary, index: number) {
+  const titleSize = reference.title.length > 112 ? 20 : reference.title.length > 84 ? 21 : 22;
+
   return (
     <div
       key={`${reference.title}-${index}`}
@@ -429,7 +474,7 @@ function referenceRow(reference: OgReferenceSummary, index: number) {
           color: theme.accent,
           flex: "none",
           fontFamily: "JetBrains Mono",
-          fontSize: 16,
+          fontSize: 18,
           fontWeight: 600,
           lineHeight: 1.3,
           paddingTop: 1,
@@ -443,9 +488,9 @@ function referenceRow(reference: OgReferenceSummary, index: number) {
           style={{
             display: "flex",
             color: "#1A1A1A",
-            fontSize: 18,
+            fontSize: titleSize,
             fontWeight: 500,
-            lineHeight: 1.3,
+            lineHeight: 1.24,
             width: 980,
           }}
         >
@@ -457,10 +502,10 @@ function referenceRow(reference: OgReferenceSummary, index: number) {
               display: "flex",
               color: theme.labelMuted,
               fontFamily: "JetBrains Mono",
-              fontSize: 13.5,
+              fontSize: 15,
               fontWeight: 400,
               lineHeight: 1.25,
-              marginTop: 4,
+              marginTop: 5,
             }}
           >
             {reference.meta}
@@ -472,7 +517,7 @@ function referenceRow(reference: OgReferenceSummary, index: number) {
 }
 
 function GuidelineImage(props: OgImageProps) {
-  const titleSize = props.title.length > 128 ? 31 : props.title.length > 96 ? 34 : 38;
+  const titleSize = guidelineTitleSize(props.title);
   const badge =
     props.badge ??
     (props.kind === "guideline-json"
@@ -485,7 +530,7 @@ function GuidelineImage(props: OgImageProps) {
   return (
     <div style={frameStyle(theme.white, theme.ink)}>
       <TopRule />
-      <div style={contentStyle("64px 72px")}>
+      <div style={contentStyle("58px 72px 56px")}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <BrandLockup tone="light" />
           <Badge tone="light">{badge.toUpperCase()}</Badge>
@@ -497,16 +542,16 @@ function GuidelineImage(props: OgImageProps) {
               color: theme.ink,
               fontSize: titleSize,
               fontWeight: 600,
-              letterSpacing: "-0.02em",
-              lineHeight: 1.12,
+              letterSpacing: "-0.022em",
+              lineHeight: titleSize >= 52 ? 1.04 : 1.07,
               maxWidth: 1040,
             }}
           >
             {props.title}
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 22 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 9, marginTop: 22 }}>
             {rows.map((row, rowIndex) => (
-              <div key={`label-row-${rowIndex}`} style={{ display: "flex", gap: 8 }}>
+              <div key={`label-row-${rowIndex}`} style={{ display: "flex", gap: 9 }}>
                 {row.map((label) => (
                   <LabelPill key={label} label={label} />
                 ))}
@@ -521,17 +566,17 @@ function GuidelineImage(props: OgImageProps) {
               borderTop: `1px solid ${theme.labelBorder}`,
               color: "#9A9893",
               fontFamily: "JetBrains Mono",
-              fontSize: 12,
+              fontSize: 13,
               fontWeight: 500,
               letterSpacing: "0.14em",
               lineHeight: 1,
-              marginBottom: 18,
+              marginBottom: 20,
               paddingTop: 18,
             }}
           >
             SOURCES
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             {props.references.map((reference, index) => referenceRow(reference, index))}
           </div>
         </div>
