@@ -2,7 +2,7 @@ import type { APIRoute } from "astro";
 import type { CollectionEntry } from "astro:content";
 import { getCollection } from "astro:content";
 
-import { serializeGuidelineMarkdown } from "../../lib/guideline-markdown";
+import { serializeGuidelineMarkdown } from "@/lib/guideline-markdown";
 
 type Props = {
   guideline: CollectionEntry<"guidelines">;
