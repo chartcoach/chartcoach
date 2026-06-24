@@ -20,11 +20,22 @@ brandAssets.favicon;
 brandAssets.logo;
 ```
 
+Use `brandColors` for shared color values and `brandOgTheme` for inline Satori
+styles:
+
+```ts
+import { brandColors, brandOgTheme } from "@chartcoach/brand";
+
+brandColors.crimson;
+brandOgTheme.accent;
+```
+
 The canonical files live in `assets/brand`. `render:svg` generates square
-lockup SVGs from the shared wordmark geometry. `render:png` renders one PNG for
-every SVG in `assets/brand`. The web apps still serve copied files from their
-own `public/brand` directories so Astro, Next static export, favicons, and
-apple touch icons keep predictable public URLs.
+lockup SVGs from the shared wordmark geometry and brand color tokens.
+`render:tokens` writes `styles/tokens.css` from the same color module.
+`render:png` renders one PNG for every SVG in `assets/brand`. The web apps
+serve copied files from their own `public/brand` directories so Astro, Next
+static export, favicons, and apple touch icons keep predictable public URLs.
 
 Regenerate SVGs, render PNGs, and sync public copies after changing canonical
 assets:

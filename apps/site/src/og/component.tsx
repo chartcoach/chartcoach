@@ -1,5 +1,7 @@
 import type { CSSProperties, ReactNode } from "react";
 
+import { brandOgTheme as theme } from "@chartcoach/brand";
+
 import {
   CHARTCOACH_WORDMARK_PATH,
   DASH_RING_ACCENT_ROTATIONS,
@@ -12,23 +14,6 @@ import {
   type OgReferenceSummary,
 } from "./schema";
 import { wrapOgText } from "./text";
-
-const theme = {
-  accent: "#E0364B",
-  coral: "#F25A6D",
-  dark: "#0A0A0A",
-  darkBorder: "#2A2A2A",
-  darkDivider: "#1F1F1F",
-  darkMuted: "#7C7A76",
-  darkText: "#B4B2AE",
-  darkTextStrong: "#F2F0EC",
-  ink: "#111111",
-  labelBorder: "#E4E4E4",
-  labelMuted: "#8A8884",
-  labelSeparator: "#C0BEB8",
-  labelSurface: "#F5F5F5",
-  white: "#FFFFFF",
-};
 
 // Current catalog title distribution: min 29, median 61, p90 82, max 125 chars.
 const guidelineTitleBreakpoints = {
@@ -71,6 +56,14 @@ function guidelineTitleSize(title: string): number {
   return Math.round(
     interpolate(length, guidelineTitleBreakpoints.p90, guidelineTitleBreakpoints.longest, 47, 40),
   );
+}
+
+function withAlpha(hex: string, alpha: number): string {
+  const normalized = hex.replace("#", "");
+  const red = Number.parseInt(normalized.slice(0, 2), 16);
+  const green = Number.parseInt(normalized.slice(2, 4), 16);
+  const blue = Number.parseInt(normalized.slice(4, 6), 16);
+  return `rgba(${red},${green},${blue},${alpha})`;
 }
 
 function DashRing({
@@ -143,7 +136,7 @@ function Badge({ children, tone }: { children?: ReactNode; tone: "dark" | "light
     <div
       style={{
         display: "flex",
-        border: `1px solid ${tone === "dark" ? theme.darkBorder : "rgba(224,54,75,0.4)"}`,
+        border: `1px solid ${tone === "dark" ? theme.darkBorder : withAlpha(theme.accent, 0.4)}`,
         borderRadius: 4,
         color: tone === "dark" ? theme.darkMuted : theme.accent,
         fontFamily: "JetBrains Mono",
@@ -258,7 +251,7 @@ function HomeImage(props: OgImageProps) {
                   display: "flex",
                   border: `1px solid ${theme.darkBorder}`,
                   borderRadius: 5,
-                  color: "#C9C7C3",
+                  color: theme.darkPillText,
                   fontFamily: "JetBrains Mono",
                   fontSize: 15,
                   fontWeight: 500,
@@ -385,7 +378,7 @@ function CatalogImage(props: OgImageProps) {
                     width: 8,
                     height: 8,
                     borderRadius: 99,
-                    backgroundColor: index === 0 ? theme.accent : "#3A3A3A",
+                    backgroundColor: index === 0 ? theme.accent : theme.darkRoleMuted,
                   }}
                 />
                 <span
@@ -400,7 +393,9 @@ function CatalogImage(props: OgImageProps) {
                   {role}
                 </span>
                 {index < roles.length - 1 && (
-                  <span style={{ color: "#3A3A3A", fontSize: 15, marginLeft: 11 }}>/</span>
+                  <span style={{ color: theme.darkRoleMuted, fontSize: 15, marginLeft: 11 }}>
+                    /
+                  </span>
                 )}
               </div>
             ))}
@@ -487,7 +482,7 @@ function referenceRow(reference: OgReferenceSummary, index: number) {
         <div
           style={{
             display: "flex",
-            color: "#1A1A1A",
+            color: theme.referenceTitle,
             fontSize: titleSize,
             fontWeight: 500,
             lineHeight: 1.24,
@@ -564,7 +559,7 @@ function GuidelineImage(props: OgImageProps) {
             style={{
               display: "flex",
               borderTop: `1px solid ${theme.labelBorder}`,
-              color: "#9A9893",
+              color: theme.sourceHeading,
               fontFamily: "JetBrains Mono",
               fontSize: 13,
               fontWeight: 500,

@@ -26,13 +26,14 @@
   },
   "scripts": {
     "build": "pnpm run check:assets && pnpm run typecheck",
-    "check:assets": "pnpm run render:svg -- --check && pnpm run render:png -- --check && node scripts/check-public-assets.mjs",
+    "check:assets": "pnpm run render:tokens -- --check && pnpm run render:svg -- --check && pnpm run render:png -- --check && node scripts/check-public-assets.mjs",
     "format": "oxfmt .",
     "format:check": "oxfmt . --check",
     "lint": "oxlint .",
     "render:png": "node scripts/render-png-assets.mjs",
     "render:svg": "node scripts/render-svg-assets.mjs",
-    "sync:assets": "pnpm run render:svg && pnpm run render:png && node scripts/sync-public-assets.mjs",
+    "render:tokens": "node scripts/render-token-css.mjs",
+    "sync:assets": "pnpm run render:tokens && pnpm run render:svg && pnpm run render:png && node scripts/sync-public-assets.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
