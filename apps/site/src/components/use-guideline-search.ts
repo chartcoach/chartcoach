@@ -24,7 +24,7 @@ const RESULT_LIMIT = 8;
 const INDEX_REQUEST_TIMEOUT_MS = 30_000;
 const baseUrl = import.meta.env.BASE_URL;
 export const normalizedSearchBase = baseUrl.replace(/\/$/, "");
-const dbUrl = `${normalizedSearchBase}/assets/oramaDB_guidelines.json`;
+const dbUrl = `${normalizedSearchBase}/assets/search-guidelines.json`;
 
 let databasePromise: Promise<AnyOrama> | undefined;
 
