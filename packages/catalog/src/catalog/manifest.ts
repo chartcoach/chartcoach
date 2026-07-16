@@ -127,6 +127,7 @@ export function validateManifestCoverage(
       if (!role) {
         throw new CatalogError("Section role values must not be empty.");
       }
+      if (role === "__dangling__") continue;
       usedRoles.add(role);
     }
     for (const label of guideline.labels) {

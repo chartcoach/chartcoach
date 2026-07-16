@@ -1,6 +1,6 @@
 {
   "name": "@chartcoach/catalog",
-  "version": "0.1.7",
+  "version": "0.2.0",
   "description": "JavaScript models and artifact parsers for the chartcoach visualization guideline catalog.",
   "bugs": {
     "url": "https://github.com/chartcoach/chartcoach/issues"
@@ -29,25 +29,20 @@
     "access": "public"
   },
   "scripts": {
-    "build": "node scripts/build.mjs",
-    "format": "oxfmt src test scripts package.json tsconfig.json tsconfig.build.json vitest.config.ts",
-    "format:check": "oxfmt src test scripts package.json tsconfig.json tsconfig.build.json vitest.config.ts --check",
-    "lint": "oxlint .",
-    "prepack": "pnpm run build",
-    "sync:defaults": "node scripts/sync-chartcoach-defaults.mjs",
-    "sync:defaults:check": "node scripts/sync-chartcoach-defaults.mjs --check",
-    "test": "vitest run",
+    "build": "vp pack",
+    "prepack": "vp run build",
+    "test": "vp test",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "hyparquet": "^1.26.1",
+    "hyparquet": "^1.26.2",
     "hyparquet-compressors": "^1.1.1",
     "yaml": "^2.9.0"
   },
   "devDependencies": {
-    "@types/node": "^22.20.0",
-    "tsc-alias": "^1.8.17",
-    "typescript": "^5.9.3",
-    "vitest": "^3.2.6"
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vite": "npm:@voidzero-dev/vite-plus-core@0.2.4",
+    "vite-plus": "catalog:"
   }
 }
