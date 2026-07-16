@@ -1,7 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 
-import { brandAssets } from "@chartcoach/brand";
+import appleTouchIcon from "@chartcoach/brand/assets/brand/app-icon-light.png";
+import faviconPng from "@chartcoach/brand/assets/brand/favicon.png";
+import favicon from "@chartcoach/brand/assets/brand/favicon.svg";
 import "@chartcoach/brand/fonts.css";
 import { Provider } from "@/components/provider";
 import { docsOrigin, isPreviewDeployment } from "@/lib/shared";
@@ -32,11 +34,11 @@ export const metadata: Metadata = {
       },
   icons: {
     icon: [
-      { url: brandAssets.favicon, type: "image/svg+xml" },
-      { url: brandAssets.faviconPng, type: "image/png", sizes: "32x32" },
+      { url: favicon.src, type: "image/svg+xml" },
+      { url: faviconPng.src, type: "image/png", sizes: "32x32" },
     ],
-    shortcut: [{ url: brandAssets.favicon, type: "image/svg+xml" }],
-    apple: [{ url: brandAssets.appleTouchIcon, sizes: "180x180" }],
+    shortcut: [{ url: favicon.src, type: "image/svg+xml" }],
+    apple: [{ url: appleTouchIcon.src, sizes: "180x180" }],
   },
 };
 

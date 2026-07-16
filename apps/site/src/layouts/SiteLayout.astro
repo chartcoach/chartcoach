@@ -1,5 +1,7 @@
 ---
-import { brandAssets } from "@chartcoach/brand";
+import appleTouchIcon from "@chartcoach/brand/assets/brand/app-icon-light.png";
+import faviconPng from "@chartcoach/brand/assets/brand/favicon.png";
+import favicon from "@chartcoach/brand/assets/brand/favicon.svg";
 import { ClientRouter } from "astro:transitions";
 import "@chartcoach/brand/fonts.css";
 import "@/styles/site.css";
@@ -56,9 +58,9 @@ const { isPreviewDeployment } = getSiteRuntimeConfig();
     <meta name="description" content={description} />
     <meta name={OG_BUILD_PROPS_META} content={ogPayload} />
     {isPreviewDeployment && <meta name="robots" content="noindex,nofollow,noarchive" />}
-    <link rel="icon" type="image/svg+xml" href={brandAssets.favicon} />
-    <link rel="alternate icon" type="image/png" sizes="32x32" href={brandAssets.faviconPng} />
-    <link rel="apple-touch-icon" href={brandAssets.appleTouchIcon} />
+    <link rel="icon" type="image/svg+xml" href={favicon.src} />
+    <link rel="alternate icon" type="image/png" sizes="32x32" href={faviconPng.src} />
+    <link rel="apple-touch-icon" href={appleTouchIcon.src} />
     <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
     {canonical && <link rel="canonical" href={canonical} />}

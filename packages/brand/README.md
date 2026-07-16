@@ -1,51 +1,41 @@
 # @chartcoach/brand
 
-`@chartcoach/brand` owns the shared chartcoach web identity. It provides the
-logo asset paths, public brand files, font imports, CSS tokens, and asset drift
-checks used by `apps/site` and `apps/docs`.
+`@chartcoach/brand` provides the logo files, Poppins imports, CSS color tokens,
+and shared logo styles used by the chartcoach web apps.
 
-Import the shared font face and app tokens from the app entry CSS or layout:
+Import the font faces from the app layout:
 
 ```ts
 import "@chartcoach/brand/fonts.css";
-import "@chartcoach/brand/tokens.css";
 ```
 
-Use `brandAssets` for public `/brand/...` paths:
+Import the tokens and logo styles from the app stylesheet:
 
-```ts
-import { brandAssets } from "@chartcoach/brand";
-
-brandAssets.favicon;
-brandAssets.logo;
+```css
+@import "@chartcoach/brand/tokens.css";
+@import "@chartcoach/brand/logo.css";
 ```
 
-Use `brandColors` for shared color values and `brandOgTheme` for inline Satori
-styles:
+Astro reads the emitted asset URL from `src`:
 
-```ts
-import { brandColors, brandOgTheme } from "@chartcoach/brand";
+```astro
+---
+import logo from "@chartcoach/brand/assets/brand/chartcoach-horizontal.svg";
+---
 
-brandColors.crimson;
-brandOgTheme.accent;
+<img src={logo.src} alt="chartcoach" />
 ```
 
-The canonical files live in `assets/brand`. `render:svg` generates square
-lockup SVGs from the shared wordmark geometry and brand color tokens.
-`render:tokens` writes `styles/tokens.css` from the same color module.
-`render:png` renders one PNG for every SVG in `assets/brand`. The web apps
-serve copied files from their own `public/brand` directories so Astro, Next
-static export, favicons, and apple touch icons keep predictable public URLs.
+Next passes the same static import to `next/image`:
 
-Regenerate SVGs, render PNGs, and sync public copies after changing canonical
-assets:
+```tsx
+import logo from "@chartcoach/brand/assets/brand/chartcoach-horizontal.svg";
+import Image from "next/image";
 
-```bash
-pnpm --dir packages/brand sync:assets
+export function Logo() {
+  return <Image src={logo} alt="chartcoach" />;
+}
 ```
 
-Check for stale generated SVGs, stale PNGs, and public-copy drift:
-
-```bash
-pnpm --dir packages/brand check:assets
-```
+Edit the reviewed SVG, PNG, and CSS sources in this package. The site and docs
+builds emit the files they import.
