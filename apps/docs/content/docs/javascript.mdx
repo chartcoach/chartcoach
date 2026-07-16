@@ -1,32 +1,48 @@
 ---
 title: JavaScript
-description: Decode chartcoach catalog artifact bytes into typed guideline entries.
+description: Load typed local bundles and verified digest-addressed releases in browser or server runtimes.
 icon: Braces
 ---
 
-`@chartcoach/catalog` decodes catalog artifact bytes into a typed `Catalog`. Use
-`fetch`, a runtime file API, cache storage, or test fixtures to load bytes before
-calling `loadCatalog`.
+Install the catalog loader:
 
 ```bash
 npm install @chartcoach/catalog
 ```
 
+## `open(options?)`
+
+Reads the selected release from `catalog.json`, verifies the release digest,
+then loads and verifies `MANIFEST.md` and `entries.parquet`.
+
 ```ts
-import { DEFAULT_CATALOG, loadCatalog } from "@chartcoach/catalog";
+import { open } from "@chartcoach/catalog";
 
-const { entriesUrl, manifestUrl } = DEFAULT_CATALOG;
-const entries = await (await fetch(entriesUrl)).arrayBuffer();
-const manifestText = await (await fetch(manifestUrl)).text();
-
-const catalog = await loadCatalog({ entries, manifestText });
+const catalog = await open();
 const guideline = catalog.require("compare-percentages-with-bars-not-pies");
 ```
 
-## Local files
+Pass a Fetch-compatible function with `open({ fetch })` when the runtime needs
+one.
 
-Use `loadCatalog` in Node, Bun, Deno, Workers, browsers, and tests. Each runtime
-supplies the file or URL bytes before calling it.
+## `openRelease(source, options?)`
+
+Loads an exact release from an absolute `release.json` URL.
+
+```ts
+import { openRelease } from "@chartcoach/catalog";
+
+const catalog = await openRelease(
+  "https://artifacts.chartcoach.dev/catalog/releases/<digest>/release.json",
+  { fetch },
+);
+```
+
+The digest in the URL must match the release record and its artifact envelope.
+
+## `loadCatalog({ entries, manifestText })`
+
+Loads a compiled bundle from caller-provided bytes and manifest text.
 
 ```ts
 import { readFile } from "node:fs/promises";
@@ -36,78 +52,51 @@ const catalog = await loadCatalog({
   entries: await readFile("dist/catalog/entries.parquet"),
   manifestText: await readFile("dist/catalog/MANIFEST.md", "utf8"),
 });
-
-for (const guideline of catalog) {
-  console.log(guideline.id, guideline.title);
-}
 ```
 
-Pass a standalone parquet artifact when manifest validation is not needed:
+The manifest defines the valid section roles and label families for every
+loaded row.
+
+## Catalog model
+
+Compiled rows are flat:
 
 ```ts
-import { loadCatalog } from "@chartcoach/catalog";
-
-const entries = await (await fetch("/catalog/entries.parquet")).arrayBuffer();
-
-const catalog = await loadCatalog(entries);
+type GuidelineRow = {
+  id: string;
+  title: string;
+  description: string;
+  labels: string[];
+  sections: Array<{ role: string; title: string; content: string }>;
+  references: string[];
+};
 ```
 
-## Release metadata
+`Catalog` provides `guidelines`, `length`, `get(id)`, `require(id)`, `labels()`,
+`sectionRoles()`, and iteration. Each `Guideline` receives a derived `body`
+from its ordered sections.
 
-Use release metadata helpers when code receives a `metadata.json` value and
-needs artifact URLs for `loadCatalog`.
+## Release model
+
+`parseCatalogRelease(value)` validates a schema 1 path-keyed record:
 
 ```ts
-import {
-  DEFAULT_CATALOG,
-  catalogArtifact,
-  catalogArtifactUrl,
-  loadCatalog,
-  parseCatalogReleaseMetadata,
-} from "@chartcoach/catalog";
+type ReleaseArtifact = {
+  sha256: string;
+  bytes: number;
+};
 
-const { metadataUrl } = DEFAULT_CATALOG;
-const metadata = parseCatalogReleaseMetadata(await (await fetch(metadataUrl)).json());
-const entriesUrl = catalogArtifactUrl(metadataUrl, catalogArtifact(metadata, "entries"));
-const manifestUrl = catalogArtifactUrl(metadataUrl, catalogArtifact(metadata, "manifest"));
-
-const entries = await (await fetch(entriesUrl)).arrayBuffer();
-const manifestText = await (await fetch(manifestUrl)).text();
-
-const catalog = await loadCatalog({ entries, manifestText });
+type CatalogRelease = {
+  schema_version: 1;
+  digest: string;
+  artifacts: Record<string, ReleaseArtifact>;
+};
 ```
 
-## `loadCatalog(input)`
+`MANIFEST.md` and `entries.parquet` are required. Profile artifacts use
+`profiles/<profile>/documents.parquet` and
+`profiles/<profile>/index.tar.gz`.
 
-`loadCatalog(input)` parses `entries.parquet` bytes and returns a `Catalog`.
-
-- `input`: `ArrayBuffer`, an `ArrayBufferView`, an async buffer with
-  `byteLength` and `slice(start, end)`, or an object with `entries`.
-- `input.entries`: Parquet bytes or an async buffer for `entries.parquet`.
-- `input.manifest`: Parsed `CatalogManifest`.
-- `input.manifestText`: Raw `MANIFEST.md` text. `loadCatalog` parses it and
-  validates section roles and label families against loaded guideline entries.
-
-Pass either `manifest` or `manifestText`, not both.
-
-## Catalog API
-
-```ts
-catalog.length;
-catalog.get("compare-percentages-with-bars-not-pies");
-catalog.require("compare-percentages-with-bars-not-pies");
-catalog.labels();
-catalog.sectionRoles();
-```
-
-`Catalog` is iterable and stores immutable copies of loaded guidelines.
-`require(id)` throws `CatalogError` when the id is unknown.
-
-`Guideline` contains `id`, `title`, optional `bibliography`, `description`,
-`labels`, `body`, `sections`, and `references`. Each section has `role`,
-`title`, and `content`.
-
-Use `parseCatalogManifest()` for raw manifest text. Use
-`parseCatalogReleaseMetadata()`, `catalogArtifact()`, and
-`catalogArtifactUrl()` when code needs release artifact URLs before loading a
-catalog.
+The package exports `Catalog`, `Guideline`, `GuidelineSection`,
+`CatalogRelease`, `ReleaseArtifact`, `loadCatalog`, `open`, `openRelease`,
+`parseCatalogRelease`, and `toMarkdown`.
