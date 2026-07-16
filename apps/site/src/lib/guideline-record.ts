@@ -3,7 +3,6 @@ import type { Guideline } from "@chartcoach/catalog";
 export type GuidelineRecord = {
   id: string;
   title: string;
-  bibliography?: string;
   description: string;
   labels: string[];
   body: string;
@@ -19,7 +18,6 @@ export function createGuidelineRecord(guideline: Guideline): GuidelineRecord {
   return {
     id: guideline.id,
     title: guideline.title,
-    bibliography: guideline.bibliography,
     description: guideline.description,
     labels: [...guideline.labels],
     body: guideline.body,
