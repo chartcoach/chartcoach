@@ -11,7 +11,6 @@ export type GuidelineSection = {
 export type Guideline = {
   id: string;
   title: string;
-  bibliography?: string;
   description: string;
   labels: readonly string[];
   body: string;
@@ -19,16 +18,12 @@ export type Guideline = {
   references: readonly string[];
 };
 
-export type CatalogOptions = {
-  manifest?: CatalogManifest;
-};
-
 export class Catalog implements Iterable<Guideline> {
   readonly guidelines: readonly Guideline[];
-  readonly manifest?: CatalogManifest;
+  readonly manifest: CatalogManifest;
   private readonly byId: Map<string, Guideline>;
 
-  constructor(guidelines: Iterable<Guideline> = [], options: CatalogOptions = {}) {
+  constructor(guidelines: Iterable<Omit<Guideline, "body">>, manifest: CatalogManifest) {
     const records = Array.from(guidelines, copyGuideline);
     const byId = new Map<string, Guideline>();
     for (const guideline of records) {
@@ -37,20 +32,14 @@ export class Catalog implements Iterable<Guideline> {
       }
       byId.set(guideline.id, guideline);
     }
-    if (options.manifest) {
-      validateManifestCoverage(records, options.manifest);
-    }
+    validateManifestCoverage(records, manifest);
 
     this.guidelines = records;
-    this.manifest = options.manifest;
+    this.manifest = manifest;
     this.byId = byId;
   }
 
   get length(): number {
-    return this.guidelines.length;
-  }
-
-  get size(): number {
     return this.guidelines.length;
   }
 
@@ -72,7 +61,9 @@ export class Catalog implements Iterable<Guideline> {
 
   sectionRoles(): string[] {
     return sortedUnique(
-      this.guidelines.flatMap((guideline) => guideline.sections.map((section) => section.role)),
+      this.guidelines.flatMap((guideline) =>
+        guideline.sections.map((section) => section.role).filter((role) => role !== "__dangling__"),
+      ),
     );
   }
 
@@ -81,21 +72,30 @@ export class Catalog implements Iterable<Guideline> {
   }
 }
 
-function copyGuideline(guideline: Guideline): Guideline {
+function copyGuideline(guideline: Omit<Guideline, "body">): Guideline {
+  const sections = guideline.sections.map((section) => ({
+    role: section.role,
+    title: section.title,
+    content: section.content,
+  }));
   return {
     id: guideline.id,
     title: guideline.title,
-    bibliography: guideline.bibliography,
     description: guideline.description,
     labels: [...guideline.labels],
-    body: guideline.body,
-    sections: guideline.sections.map((section) => ({
-      role: section.role,
-      title: section.title,
-      content: section.content,
-    })),
+    body: bodyFromSections(sections),
+    sections,
     references: [...guideline.references],
   };
+}
+
+function bodyFromSections(sections: readonly GuidelineSection[]): string {
+  return sections
+    .map((section) => {
+      if (section.role === "__dangling__") return section.content;
+      return `## ${section.title} <!-- role: ${section.role} -->\n\n${section.content}`;
+    })
+    .join("\n\n");
 }
 
 function sortedUnique(values: Iterable<string>): string[] {
