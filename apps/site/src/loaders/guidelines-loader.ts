@@ -265,7 +265,6 @@ export function guidelinesLoader({
                 record,
                 search: createGuidelineSearchModel(guideline),
                 sections,
-                bibliography: guideline.bibliography,
                 referencesBib,
                 citations: Array.from(citedKeys),
                 bibliographyHtml,

@@ -12,7 +12,6 @@ const guidelineSectionSchema = z.object({
 const guidelineRecordSchema = z.object({
   id: z.string(),
   title: z.string(),
-  bibliography: z.string().optional(),
   description: z.string(),
   labels: z.array(z.string()).default([]),
   body: z.string(),
@@ -42,7 +41,6 @@ export const collections = {
           }),
         )
         .default([]),
-      bibliography: z.string().optional(),
       referencesBib: z.string().optional(),
       citations: z.array(z.string()).default([]),
       bibliographyHtml: z.string().optional(),
