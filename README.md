@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://chartcoach.dev/brand/chartcoach-square-light.svg" width="128" alt="chartcoach logo">
+  <img src="packages/brand/assets/brand/chartcoach-square-light.svg" width="128" alt="chartcoach logo">
 </p>
 
 # chartcoach
@@ -13,41 +13,52 @@
   <a href="https://www.npmjs.com/package/@chartcoach/catalog"><img src="https://img.shields.io/npm/v/%40chartcoach%2Fcatalog?label=npm" alt="npm version"></a>
 </p>
 
-chartcoach packages visualization design guidance as records you can browse,
-query, cite, and use in agent workflows. The same Guideline Catalog powers the
-public site, CLI, Python package, JavaScript package, and agent skills.
+chartcoach packages visualization design guidance as records that people and
+agents can inspect, query, and cite. The Guideline Catalog powers the public
+site, CLI, Python package, JavaScript package, MCP server, and agent skills.
 
 ```bash
-uvx chartcoach@latest catalog query --contains "pie chart" --limit 5 --format table
+uvx --from 'chartcoach[curation]@latest' chartcoach catalog list \
+  --contains "pie chart" \
+  --limit 5
+```
+
+Read a selected guideline before citing it:
+
+```bash
+uvx --from 'chartcoach[curation]@latest' chartcoach catalog read \
+  compare-percentages-with-bars-not-pies
 ```
 
 ## Agents
 
-Install the chartcoach skill once, then ask a chart design question.
+Install the chartcoach skills, then invoke `$chartcoach` in an agent session.
 
 ```bash
 npx skills add chartcoach/skills
 codex 'Hey $chartcoach, how should I show uncertainty for a general audience?'
 ```
 
-Agents can also read the current docs map at
+The live documentation map is available at
 [docs.chartcoach.dev/llms.txt](https://docs.chartcoach.dev/llms.txt).
 
 ## Python
 
 ```bash
-uv add chartcoach
+uv add 'chartcoach[curation]'
 ```
 
 ```python
-import chartcoach
+from chartcoach import open_catalog, resolve_release
 
-cc = chartcoach.open()
-cc.catalog.guidelines().select("id", "title").head(5)
+release = resolve_release()
+catalog = open_catalog(release.digest)
+print(catalog.guidelines().select("id", "title").head(5))
 ```
 
-Use DuckDB when you want SQL over guideline records, sections, labels, and
-source references.
+The base package loads authored folders and compiled bundles. The `curation`
+extra adds published release storage, caching, LanceDB profile construction,
+UMAP projections, and nearest-neighbor artifacts.
 
 ## JavaScript
 
@@ -56,35 +67,33 @@ npm install @chartcoach/catalog
 ```
 
 ```ts
-import { DEFAULT_CATALOG, loadCatalog } from "@chartcoach/catalog";
+import { open } from "@chartcoach/catalog";
 
-const entries = await (await fetch(DEFAULT_CATALOG.entriesUrl)).arrayBuffer();
-const manifestText = await (await fetch(DEFAULT_CATALOG.manifestUrl)).text();
-
-const catalog = await loadCatalog({ entries, manifestText });
+const catalog = await open();
+const guideline = catalog.require("compare-percentages-with-bars-not-pies");
 ```
 
 ## Explore
 
-- 🌐 Browse [chartcoach](https://chartcoach.dev/).
-- ✨ Read the [agent docs](https://docs.chartcoach.dev/agents).
-- 📚 Explore the [Guideline Catalog](https://chartcoach.dev/guidelines/).
-- 🧭 Read about the [cataloging scheme](https://docs.chartcoach.dev/catalog).
+- Browse [chartcoach](https://chartcoach.dev/).
+- Read the [agent docs](https://docs.chartcoach.dev/agents).
+- Explore the [Guideline Catalog](https://chartcoach.dev/guidelines/).
+- Read the [cataloging scheme](https://docs.chartcoach.dev/catalog).
 
 ## Develop
 
 ```bash
-corepack enable pnpm
 pnpm install
-uv sync --package chartcoach --all-groups --all-extras
+uv sync --locked --package chartcoach --all-groups --all-extras
 ```
 
 ```bash
-pnpm dev
-pnpm lint
-pnpm typecheck
-pnpm test
+pnpm ready
+make format lint typecheck test build
 ```
+
+See [Development workflow](development_docs/development.md) for focused app and
+package commands.
 
 ## License
 
