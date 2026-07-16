@@ -1,36 +1,27 @@
 ---
 title: Build a catalog
-description: Validate authored guideline folders, write catalog bundles, and export catalog tables.
+description: Author guidelines, build a bundle, create embedding profiles, and publish an immutable release.
 icon: Hammer
 ---
 
-`catalog build` turns an authored guideline folder into a bundle that the site,
-CLI, Python, JavaScript, and MCP readers can load.
+`catalog build` compiles an authored folder into `MANIFEST.md` and
+`entries.parquet`.
 
-## Folder scheme
+## Author one guideline
 
-An authored catalog folder contains a manifest and guideline entry folders:
+Create the source tree:
 
 ```text
 catalog-source/
 ├── MANIFEST.md
 └── entries/
     └── direct-labels/
-        ├── guideline.md
-        └── references.bib
+        └── guideline.md
 ```
 
-The manifest defines section roles and label families. Each guideline entry
-keeps a stable id, title, description, labels, sections, and optional source
-references.
+Define every section role and label family in `MANIFEST.md`:
 
-## Create a minimal catalog
-
-Create the manifest:
-
-```bash
-mkdir -p catalog-source/entries/direct-labels
-cat > catalog-source/MANIFEST.md <<'EOF'
+```md
 # Sample Catalog
 
 ## Section Roles
@@ -44,13 +35,11 @@ Actionable guidance for applying the guideline.
 ### chart
 
 Chart-family labels such as `chart:line`.
-EOF
 ```
 
-Create one guideline:
+Write the guideline:
 
-```bash
-cat > catalog-source/entries/direct-labels/guideline.md <<'EOF'
+```md
 ---
 id: direct-labels
 title: Use direct labels
@@ -62,49 +51,135 @@ labels:
 ## Advice <!-- role: advice -->
 
 Place the label close to the mark it names.
-EOF
 ```
 
-## Validate
+An entry may declare `bibliography: references.bib` in its frontmatter and cite
+that file from section text.
+
+## Build the bundle
+
+Validate the authored folder, then compile it into a new directory:
 
 ```bash
-uvx chartcoach@latest catalog validate --source ./catalog-source --format table
-
-uvx chartcoach@latest catalog manifest --source ./catalog-source --format markdown
-```
-
-Validation catches missing manifests, undefined section roles, undefined label
-families, duplicate ids, and invalid guideline entries.
-
-## Build a bundle
-
-```bash
-uvx chartcoach@latest catalog build \
+chartcoach catalog validate --source ./catalog-source
+chartcoach catalog build \
   --source ./catalog-source \
   --out ./dist/catalog
 ```
 
-The bundle contains `metadata.json`, `MANIFEST.md`, and `entries.parquet`.
-Pass the bundle directory to `--source` to read the built catalog with
-`overview`, `query`, and `read`.
+Read the compiled result through the same catalog API:
 
 ```bash
-uvx chartcoach@latest catalog overview --source ./dist/catalog
-
-uvx chartcoach@latest catalog query --source ./dist/catalog --contains "legend"
-
-uvx chartcoach@latest catalog read --source ./dist/catalog direct-labels
+chartcoach catalog overview --source ./dist/catalog
+chartcoach catalog read --source ./dist/catalog direct-labels
 ```
 
-## Export tables
+## Build a release
 
-Write a DuckDB file when another tool needs durable SQL tables:
+Install curation dependencies and create native LanceDB embedding functions
+through the LanceDB registry.
 
 ```bash
-uvx chartcoach@latest catalog export duckdb \
-  --source ./dist/catalog \
-  --out ./dist/catalog.duckdb
+uv add 'chartcoach[curation]' sentence-transformers
 ```
 
-Authored Markdown, manifest and bundle shape, metadata, catalog sources, and
-artifact descriptors are defined in [Cataloging scheme](/catalog).
+```python
+from pathlib import Path
+
+from lancedb.embeddings import get_registry
+
+from chartcoach import open_catalog
+from chartcoach.catalog.curation.release_builder import (
+    EmbeddingProfile,
+    build_catalog_release,
+)
+
+registry = get_registry()
+small = registry.get("sentence-transformers").create(
+    name="all-MiniLM-L6-v2",
+    device="cpu",
+    normalize=True,
+    trust_remote_code=False,
+)
+
+release = build_catalog_release(
+    open_catalog("dist/catalog"),
+    root=Path("dist/release"),
+    profiles={
+        "sentence-transformers/all-MiniLM-L6-v2": EmbeddingProfile(
+            embedding=small,
+            umap={
+                "n_neighbors": 15,
+                "min_dist": 0.1,
+                "metric": "cosine",
+                "random_state": 42,
+            },
+        ),
+    },
+)
+
+print(release.digest)
+```
+
+Add another mapping entry for each vector space. An on-device model and a
+hosted model can share one release while preserving their separate vectors,
+projections, neighbors, and LanceDB metadata.
+
+The release directory contains the core catalog and one artifact pair per
+profile:
+
+```text
+release/
+├── release.json
+├── MANIFEST.md
+├── entries.parquet
+└── profiles/
+    └── sentence-transformers/all-MiniLM-L6-v2/
+        ├── documents.parquet
+        └── index.tar.gz
+```
+
+The profile Parquet file is ready for Embedding Atlas:
+
+```bash
+embedding-atlas \
+  dist/release/profiles/sentence-transformers/all-MiniLM-L6-v2/documents.parquet \
+  --text text \
+  --vector vector \
+  --x projection_x \
+  --y projection_y \
+  --neighbors neighbors
+```
+
+## Publish and select
+
+Release publication writes through the Obspec storage contract. Obstore
+provides local and S3-compatible implementations.
+
+```bash
+chartcoach catalog release validate ./dist/release
+chartcoach catalog release publish \
+  ./dist/release \
+  --store s3://chartcoach \
+  --dry-run
+chartcoach catalog release publish \
+  ./dist/release \
+  --store s3://chartcoach
+chartcoach catalog release select \
+  "$RELEASE_DIGEST" \
+  --store s3://chartcoach
+```
+
+Publication writes immutable objects under
+`catalog/releases/<digest>/`. Selection reads that published release and writes
+its full record to `catalog.json`.
+
+Prefetch the selected catalog and one profile into the local platform cache:
+
+```bash
+chartcoach catalog cache pull \
+  --profile sentence-transformers/all-MiniLM-L6-v2
+```
+
+Cache entries are disposable. A missing or incomplete entry is downloaded
+again on the next pull or open operation.
