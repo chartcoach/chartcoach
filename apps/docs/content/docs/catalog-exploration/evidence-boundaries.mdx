@@ -1,38 +1,27 @@
 ---
 title: Evidence mix
-description: Count source types by label so a query can include papers, standards, posts, reports, and other source material deliberately.
+description: Count source types by label to inspect the evidence attached to catalog guidance.
 icon: Library
 ---
 
-Catalog source records include `source_type`. Use that field to ask whether a
-label is grounded mostly in papers, standards, posts, reports, or a mix of
-sources.
+Source records expose a structural `source_type`. Inspect the live values:
+
+```bash
+chartcoach catalog sql "
+select source_type, count(*) as references
+from \"references\"
+group by source_type
+order by references desc, source_type
+"
+```
+
+Join source types to labels to compare their evidence mix:
 
 ```bash
 MIN_GUIDELINES=${MIN_GUIDELINES:-10}
 MIN_SOURCES=${MIN_SOURCES:-5}
-ORDER=${ORDER:-asc}
-```
 
-## Inspect source types
-
-```bash
-uvx chartcoach@latest catalog values references.source_type --format table
-```
-
-Output:
-
-| Source type     | References |
-| --------------- | ---------: |
-| `article`       |        112 |
-| `misc`          |        111 |
-| `inproceedings` |         38 |
-| `incollection`  |          1 |
-
-## Rank labels by source mix
-
-```bash
-uvx chartcoach@latest catalog sql "
+chartcoach catalog sql "
 with label_sources as (
   select
     gl.label,
@@ -41,49 +30,30 @@ with label_sources as (
     count(distinct case
       when gs.source_type in ('article', 'inproceedings', 'incollection')
       then gs.reference_id
-    end) as published_sources,
-    count(distinct case
-      when gs.source_type = 'misc'
-      then gs.reference_id
-    end) as misc_sources
+    end) as published_sources
   from guideline_labels gl
   left join guideline_sources gs on gs.guideline_id = gl.guideline_id
   group by gl.label
-), scored as (
-  select
-    label,
-    guidelines,
-    sources,
-    published_sources,
-    misc_sources,
-    round(published_sources::double / nullif(sources, 0), 2) as published_share
-  from label_sources
-  where guidelines >= ${MIN_GUIDELINES}
-    and sources >= ${MIN_SOURCES}
 )
-select *
-from scored
-order by published_share ${ORDER}, guidelines desc, label
-limit 5
-" --format table
+select
+  label,
+  guidelines,
+  sources,
+  published_sources,
+  round(published_sources::double / nullif(sources, 0), 2) as published_share
+from label_sources
+where guidelines >= ${MIN_GUIDELINES}
+  and sources >= ${MIN_SOURCES}
+order by published_share, guidelines desc, label
+limit 10
+"
 ```
 
-Output with `ORDER=asc`:
-
-| Label                   | Guidelines | Sources | Published sources | Misc sources | Published share |
-| ----------------------- | ---------: | ------: | ----------------: | -----------: | --------------: |
-| `basis:heuristic`       |        206 |      36 |                 0 |           36 |            0.00 |
-| `access:contrast:use`   |         10 |      14 |                 1 |           13 |            0.07 |
-| `access:keyboard:use`   |         10 |      18 |                 2 |           16 |            0.11 |
-| `quality:accessibility` |         66 |      80 |                10 |           70 |            0.13 |
-| `basis:accessibility`   |         50 |      80 |                10 |           70 |            0.13 |
-
-Use `ORDER=desc` to list labels with the largest published-source share:
+The grouping in this example treats articles, conference papers, and book
+chapters as published sources. Inspect the source records directly when a
+claim depends on publication venue, authority, recency, or study design.
 
 ```bash
-ORDER=desc
+chartcoach catalog read <guideline-id> --source-detail full
+chartcoach catalog cite <guideline-id>
 ```
-
-The published bucket includes `article`, `inproceedings`, and `incollection`.
-Keep `misc` in scope when the answer should include standards, practitioner
-posts, reports, and other curated material.
