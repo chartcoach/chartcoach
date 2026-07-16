@@ -1,3 +1,5 @@
+import type { OgImageJob, OgPayload } from "../integrations/og-images";
+
 export const OG_IMAGE_WIDTH = 1200;
 export const OG_IMAGE_HEIGHT = 630;
 export const OG_BUILD_PROPS_META = "chartcoach:og-props";
@@ -53,13 +55,8 @@ export type OgImageInputWithExtras = OgImageInput & {
   extraImages?: readonly OgExtraImageInput[];
 };
 
-export type OgBuildPayload = {
-  imagePathname: string;
-  props: OgImageProps;
-  extraImages: {
-    imagePathname: string;
-    props: OgImageProps;
-  }[];
+export type OgBuildPayload = OgPayload<OgImageProps> & {
+  extraImages: OgImageJob<OgImageProps>[];
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
