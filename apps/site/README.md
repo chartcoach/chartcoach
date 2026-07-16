@@ -13,18 +13,15 @@ pnpm --dir apps/site dev
 The dev script runs through portless at `https://chartcoach.localhost`.
 Run `pnpm --dir apps/site dev:app` to start Astro directly.
 
-Build static pages:
+Run focused checks and a build from the repository root:
 
 ```bash
+pnpm --dir apps/site test
+pnpm --dir apps/site typecheck
 pnpm --dir apps/site build
 ```
 
-Run lint and build checks from the repository root:
-
-```bash
-pnpm --dir apps/site lint
-pnpm --dir apps/site build
-```
+Run `pnpm ready` for the complete JavaScript workspace gate.
 
 ## License
 

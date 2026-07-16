@@ -13,21 +13,16 @@ pnpm --dir apps/docs dev
 The dev script runs through portless at `https://docs.chartcoach.localhost`.
 Run `pnpm --dir apps/docs dev:app` to start Next.js directly.
 
-Run checks from the repository root:
+Run a focused typecheck and build from the repository root:
 
 ```bash
-pnpm --dir apps/docs lint
-
 pnpm --dir apps/docs typecheck
-
 pnpm --dir apps/docs build
 ```
 
-The build writes static files to `apps/docs/out`. Serve that output with:
+Run `pnpm ready` for the complete JavaScript workspace gate.
 
-```bash
-pnpm --dir apps/docs start
-```
+The build writes static files to `apps/docs/out`.
 
 ## Machine-readable docs routes
 
