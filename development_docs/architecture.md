@@ -85,10 +85,11 @@ consumers pass paths or descriptor URIs.
 ## Lifecycle boundary
 
 Package tags publish the Python and npm packages after package CI. Catalog
-promotion starts from an already published immutable release. The promotion
-workflow verifies an exact release URL, builds the site from that URL, updates
-`catalog.json`, and deploys the prepared site. A failed deployment restores the
-previous selection.
+curation builds, validates, and publishes immutable releases independently.
+Before selection, consumers can open the exact `release.json` URL and the site
+can build against that URL through `CHARTCOACH_SITE_CATALOG_SOURCE`.
+`chartcoach catalog release select` updates `catalog.json` after those checks.
+Package publishing and catalog selection have separate triggers and identities.
 
 ## Cross-workspace changes
 

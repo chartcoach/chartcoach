@@ -67,19 +67,29 @@ Publish its immutable objects:
 chartcoach catalog release publish dist/release --store s3://chartcoach
 ```
 
-Publication can happen before public selection. The manually dispatched
-catalog workflow accepts the published digest. It verifies the exact remote
-release, builds the site from its `release.json` URL, selects the release, and
-deploys the prepared site. A deployment failure restores the prior selection.
+Publication can happen before public selection. The exact release URL can be
+verified and used for a site build before selection:
+
+```sh
+RELEASE_URL="https://artifacts.chartcoach.dev/catalog/releases/$RELEASE_DIGEST/release.json"
+chartcoach catalog overview --source "$RELEASE_URL"
+CHARTCOACH_SITE_CATALOG_SOURCE="$RELEASE_URL" pnpm --dir apps/site build
+```
+
+Select the verified release:
+
+```sh
+chartcoach catalog release select "$RELEASE_DIGEST" --store s3://chartcoach
+```
 
 The public catalog has one mutable selection record at `catalog.json`.
 `catalog/releases/<digest>/` remains immutable. Curation owns selection writes.
 Runtime readers fetch the selected record on each open and reuse verified
 immutable artifacts through their content digests.
 
-Package tags run `.github/workflows/publish.yml`. Catalog promotion runs
-`.github/workflows/catalog.yml`. A catalog update does not change either
-package version.
+Package tags run `.github/workflows/publish.yml`. Catalog publication and
+selection use the curation commands. A catalog update keeps both package
+versions unchanged.
 
 ## Change boundaries
 
