@@ -31,19 +31,20 @@ Start both web apps with:
 pnpm dev
 ```
 
-Run the complete JavaScript gate with:
+Run the complete repository gate with:
+
+```sh
+make check
+```
+
+`make check` runs the JavaScript and Python checks, tests, and builds. Use a
+focused package command while iterating.
+
+Run one workspace gate when the change stays within that boundary:
 
 ```sh
 pnpm ready
-```
-
-`pnpm ready` runs Vite+ checks, workspace tests, and a fixture-backed workspace
-build. Use a package command for a focused check while iterating.
-
-Run the Python gates with:
-
-```sh
-make format lint typecheck test build
+make python-check
 ```
 
 Run a focused test while iterating, then run the complete gate for every
