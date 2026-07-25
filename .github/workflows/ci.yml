@@ -38,7 +38,7 @@ jobs:
             - args: ['--frozen-lockfile']
 
       - name: Check JavaScript workspace
-        run: pnpm ready
+        run: vp run ready
 
   python:
     name: Python package ${{ matrix.python-version }}
