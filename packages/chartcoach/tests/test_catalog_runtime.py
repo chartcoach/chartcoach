@@ -133,6 +133,25 @@ def test_http_catalog_and_release_descriptors_share_verified_artifacts(
     assert requests[f"/catalog/releases/{release.digest}/entries.parquet"] == 1
 
 
+def test_http_catalog_identifies_chartcoach_to_the_server(
+    sample_catalog: Catalog,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    release_root, release = _write_release(sample_catalog, tmp_path / "release")
+    store = tmp_path / "store"
+    _publish_local(release_root, release, store)
+    monkeypatch.setattr(
+        "chartcoach.catalog.runtime._cache_root",
+        lambda: tmp_path / "cache",
+    )
+
+    with _serve(store, required_user_agent="chartcoach") as (base_url, _requests):
+        catalog = open_catalog(f"{base_url}/catalog.json")
+
+    assert catalog.release == release
+
+
 def test_selected_descriptor_refreshes_while_artifact_cache_is_reused(
     sample_catalog: Catalog,
     tmp_path: Path,
@@ -317,12 +336,22 @@ def _publish_local(
 
 
 @contextmanager
-def _serve(root: Path) -> Iterator[tuple[str, Counter[str]]]:
+def _serve(
+    root: Path,
+    *,
+    required_user_agent: str | None = None,
+) -> Iterator[tuple[str, Counter[str]]]:
     requests: Counter[str] = Counter()
 
     class Handler(SimpleHTTPRequestHandler):
         def do_GET(self) -> None:
             requests[self.path.split("?", 1)[0]] += 1
+            if (
+                required_user_agent is not None
+                and self.headers.get("User-Agent") != required_user_agent
+            ):
+                self.send_error(403)
+                return
             super().do_GET()
 
         def log_message(self, format: str, *args: Any) -> None:

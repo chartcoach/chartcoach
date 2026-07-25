@@ -399,7 +399,10 @@ def _http_options(
     timeout = float(raw_timeout)
     if timeout <= 0:
         raise CatalogError("HTTP storage option timeout must be a positive number.")
-    headers = {cast(str, key): cast(str, value) for key, value in raw_headers.items()}
+    headers = {"User-Agent": "chartcoach"}
+    headers.update(
+        {cast(str, key): cast(str, value) for key, value in raw_headers.items()}
+    )
     return headers, timeout
 
 
