@@ -89,9 +89,9 @@ from pathlib import Path
 from lancedb.embeddings import get_registry
 
 from chartcoach import open_catalog
-from chartcoach.catalog.curation.release_builder import (
+from chartcoach.catalog.curation import (
     EmbeddingProfile,
-    build_catalog_release,
+    build_release,
 )
 
 registry = get_registry()
@@ -102,9 +102,9 @@ small = registry.get("sentence-transformers").create(
     trust_remote_code=False,
 )
 
-release = build_catalog_release(
+release = build_release(
     open_catalog("dist/catalog"),
-    root=Path("dist/release"),
+    Path("dist/release"),
     profiles={
         "sentence-transformers/all-MiniLM-L6-v2": EmbeddingProfile(
             embedding=small,
@@ -153,8 +153,7 @@ embedding-atlas \
 
 ## Publish and select
 
-Release publication writes through the Obspec storage contract. Obstore
-provides local and S3-compatible implementations.
+Release publication accepts file, S3, GCS, and Azure destination URIs.
 
 ```bash
 chartcoach catalog release validate ./dist/release
@@ -174,12 +173,6 @@ Publication writes immutable objects under
 `catalog/releases/<digest>/`. Selection reads that published release and writes
 its full record to `catalog.json`.
 
-Prefetch the selected catalog and one profile into the local platform cache:
-
-```bash
-chartcoach catalog cache pull \
-  --profile sentence-transformers/all-MiniLM-L6-v2
-```
-
-Cache entries are disposable. A missing or incomplete entry is downloaded
-again on the next pull or open operation.
+Runtime readers cache verified immutable artifacts automatically. Opening
+`catalog.json` refreshes the selected release record before reusing cached
+artifact content.

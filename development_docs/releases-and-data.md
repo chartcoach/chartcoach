@@ -53,30 +53,39 @@ Each embedding profile represents one vector space. `documents.parquet`
 contains document metadata, vectors, UMAP coordinates, and nearest neighbors.
 `index.tar.gz` contains one native LanceDB table named `documents`.
 
-## Publication
+## Catalog lifecycle
 
-Validate and publish the immutable release before updating the public
-selection:
+Build and validate a release locally:
 
 ```sh
 chartcoach catalog release validate dist/release
-chartcoach catalog release publish dist/release --store s3://chartcoach
-chartcoach catalog release select "$RELEASE_DIGEST" --store s3://chartcoach
 ```
 
-Publication writes through Obspec operations. Obstore provides the concrete
-local and S3-compatible stores. The public catalog has one mutable selection
-record at `catalog.json`. It contains the selected release record, while
-`catalog/releases/<digest>/` remains immutable.
+Publish its immutable objects:
 
-`chartcoach.paths` constructs the object keys used by local stores, S3 stores,
-cache code, and release readers.
+```sh
+chartcoach catalog release publish dist/release --store s3://chartcoach
+```
+
+Publication can happen before public selection. The manually dispatched
+catalog workflow accepts the published digest. It verifies the exact remote
+release, builds the site from its `release.json` URL, selects the release, and
+deploys the prepared site. A deployment failure restores the prior selection.
+
+The public catalog has one mutable selection record at `catalog.json`.
+`catalog/releases/<digest>/` remains immutable. Curation owns selection writes.
+Runtime readers fetch the selected record on each open and reuse verified
+immutable artifacts through their content digests.
+
+Package tags run `.github/workflows/publish.yml`. Catalog promotion runs
+`.github/workflows/catalog.yml`. A catalog update does not change either
+package version.
 
 ## Change boundaries
 
 - A catalog row change updates both readers and the shared release fixture.
 - A release envelope change updates Python and JavaScript validation together.
-- A profile artifact change updates curation build, validation, cache, and
-  analysis consumers together.
+- A profile artifact change updates curation build, validation, runtime index
+  loading, and analysis consumers together.
 - A package release changes package versions and the package tag. Catalog
   publication changes the selected digest.

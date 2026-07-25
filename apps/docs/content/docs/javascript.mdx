@@ -1,6 +1,6 @@
 ---
 title: JavaScript
-description: Load typed local bundles and verified digest-addressed releases in browser or server runtimes.
+description: Load typed bundles and verified releases in browser or server runtimes.
 icon: Braces
 ---
 
@@ -10,39 +10,34 @@ Install the catalog loader:
 npm install @chartcoach/catalog
 ```
 
-## `open(options?)`
+## `openCatalog(source?, options?)`
 
-Reads the selected release from `catalog.json`, verifies the release digest,
-then loads and verifies `MANIFEST.md` and `entries.parquet`.
-
-```ts
-import { open } from "@chartcoach/catalog";
-
-const catalog = await open();
-const guideline = catalog.require("compare-percentages-with-bars-not-pies");
-```
-
-Pass a Fetch-compatible function with `open({ fetch })` when the runtime needs
-one.
-
-## `openRelease(source, options?)`
-
-Loads an exact release from an absolute `release.json` URL.
+`openCatalog` accepts an absolute HTTP or HTTPS URL ending in `catalog.json` or
+`release.json`. The default source is the official selected catalog.
 
 ```ts
-import { openRelease } from "@chartcoach/catalog";
+import { openCatalog } from "@chartcoach/catalog";
 
-const catalog = await openRelease(
+const selected = await openCatalog();
+const exact = await openCatalog(
   "https://artifacts.chartcoach.dev/catalog/releases/<digest>/release.json",
-  { fetch },
 );
+
+const guideline = selected.require("compare-percentages-with-bars-not-pies");
 ```
 
-The digest in the URL must match the release record and its artifact envelope.
+Pass a Fetch-compatible function when the runtime supplies one:
+
+```ts
+const catalog = await openCatalog(source, { fetch });
+```
+
+The loader verifies the release digest, artifact byte count, and artifact
+SHA-256 before decoding the catalog.
 
 ## `loadCatalog({ entries, manifestText })`
 
-Loads a compiled bundle from caller-provided bytes and manifest text.
+`loadCatalog` constructs a catalog from caller-provided bundle data.
 
 ```ts
 import { readFile } from "node:fs/promises";
@@ -53,9 +48,6 @@ const catalog = await loadCatalog({
   manifestText: await readFile("dist/catalog/MANIFEST.md", "utf8"),
 });
 ```
-
-The manifest defines the valid section roles and label families for every
-loaded row.
 
 ## Catalog model
 
@@ -73,30 +65,21 @@ type GuidelineRow = {
 ```
 
 `Catalog` provides `guidelines`, `length`, `get(id)`, `require(id)`, `labels()`,
-`sectionRoles()`, and iteration. Each `Guideline` receives a derived `body`
-from its ordered sections.
+`sectionRoles()`, and iteration. Each guideline receives a Markdown `body`
+derived from its ordered sections.
 
 ## Release model
 
 `parseCatalogRelease(value)` validates a schema 1 path-keyed record:
 
 ```ts
-type ReleaseArtifact = {
-  sha256: string;
-  bytes: number;
-};
-
 type CatalogRelease = {
   schema_version: 1;
   digest: string;
-  artifacts: Record<string, ReleaseArtifact>;
+  artifacts: Record<string, { sha256: string; bytes: number }>;
 };
 ```
 
-`MANIFEST.md` and `entries.parquet` are required. Profile artifacts use
-`profiles/<profile>/documents.parquet` and
-`profiles/<profile>/index.tar.gz`.
-
-The package exports `Catalog`, `Guideline`, `GuidelineSection`,
-`CatalogRelease`, `ReleaseArtifact`, `loadCatalog`, `open`, `openRelease`,
-`parseCatalogRelease`, and `toMarkdown`.
+The package exports `Catalog`, `CatalogError`, `CatalogRelease`, `FetchLike`,
+`Guideline`, `GuidelineSection`, `OpenCatalogOptions`, `ReleaseArtifact`,
+`loadCatalog`, `openCatalog`, `parseCatalogRelease`, and `toMarkdown`.
