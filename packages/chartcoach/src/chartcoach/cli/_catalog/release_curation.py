@@ -47,7 +47,7 @@ def release_validate_command(release_path: Path, output_format: str) -> None:
     "--store",
     "store_url",
     required=True,
-    help="S3 or local file URL that receives the release objects.",
+    help="File, S3, GCS, or Azure URL that receives the release objects.",
 )
 @click.option("--dry-run", is_flag=True, help="Print object keys without writing.")
 @click.option(
@@ -64,7 +64,7 @@ def release_publish_command(
     dry_run: bool,
     output_format: str,
 ) -> None:
-    """Publish an immutable release through an Obspec store."""
+    """Publish an immutable catalog release."""
 
     _store_scheme(store_url)
     if dry_run:
@@ -81,14 +81,12 @@ def release_publish_command(
         return
 
     try:
-        from chartcoach.catalog.curation.release_publisher import (
-            publish_catalog_release,
-        )
+        from chartcoach.catalog.curation import publish_release
     except ModuleNotFoundError as exc:
         raise click.ClickException(_curation_dependency_message(exc.name)) from exc
     try:
-        with storage_errors("publish", str(release_path)):
-            result = publish_catalog_release(_store(store_url), release_path)
+        with storage_errors("publish", "catalog destination"):
+            result = publish_release(release_path, store_url)
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
     _emit_release_result(result.to_record(), output_format=output_format)
@@ -100,7 +98,7 @@ def release_publish_command(
     "--store",
     "store_url",
     required=True,
-    help="S3 or local file URL containing the published release.",
+    help="File, S3, GCS, or Azure URL containing the published release.",
 )
 @click.option(
     "--dry-run",
@@ -135,14 +133,12 @@ def release_select_command(
         )
         return
     try:
-        from chartcoach.catalog.curation.release_publisher import (
-            select_catalog_release,
-        )
+        from chartcoach.catalog.curation import select_release
     except ModuleNotFoundError as exc:
         raise click.ClickException(_curation_dependency_message(exc.name)) from exc
     try:
         with storage_errors("select", paths.selected()):
-            release = select_catalog_release(_store(store_url), digest)
+            release = select_release(digest, store_url)
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
     _emit_release_result(
@@ -160,29 +156,31 @@ def register_release_commands(group: click.Group) -> None:
 
 def _store_scheme(value: str) -> str:
     scheme = urlsplit(value).scheme.lower()
-    if scheme not in {"file", "s3", "s3a"}:
+    if scheme not in {
+        "abfs",
+        "abfss",
+        "adl",
+        "az",
+        "azure",
+        "file",
+        "gcp",
+        "gcs",
+        "gs",
+        "s3",
+        "s3a",
+    }:
         raise click.BadParameter(
-            "must use an s3://, s3a://, or file:// URL",
+            "must use a file, S3, GCS, or Azure URL",
             param_hint="--store",
         )
     return scheme
 
 
-def _store(url: str):
-    try:
-        from obstore.store import from_url
-    except ModuleNotFoundError as exc:
-        raise click.ClickException(_curation_dependency_message(exc.name)) from exc
-    if _store_scheme(url) == "file":
-        return from_url(url, mkdir=True)
-    return from_url(url, client_options={"timeout": "15m"})
-
-
 def _validate_release_or_fail(release_path: Path) -> CatalogRelease:
     try:
-        from chartcoach.catalog.curation.validation import validate_curation_release
+        from chartcoach.catalog.curation import validate_release
 
-        return validate_curation_release(release_path)
+        return validate_release(release_path)
     except json.JSONDecodeError as exc:
         raise click.ClickException(
             f"Catalog release file is not valid JSON: {release_path / 'release.json'}"

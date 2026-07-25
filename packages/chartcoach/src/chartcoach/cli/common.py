@@ -3,25 +3,20 @@ from __future__ import annotations
 import json
 from collections.abc import Callable, Mapping, Sequence
 from contextlib import contextmanager
-from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Any, Iterator, TypeVar, cast
-from urllib.parse import urlparse, urlunparse
 
 import click
 from tabulate import tabulate
 
-from chartcoach.catalog.locator import open_catalog, open_index
-from chartcoach.catalog.paths import paths
+from chartcoach.catalog import open_catalog
+from chartcoach.catalog.errors import CatalogError
 from chartcoach.constants import (
-    INDEX_ENV,
     INDEX_PROFILE_ENV,
     SOURCE_ENV,
 )
 from chartcoach.tools import Tools, format_error
 
 if TYPE_CHECKING:
-    from lancedb import Table
-
     from chartcoach.catalog.collection import Catalog
 
 CONTEXT_SETTINGS = {"help_option_names": ["-h", "--help"]}
@@ -59,25 +54,12 @@ def source_option(command: _Command) -> _Command:
         "--source",
         "source_path",
         envvar=SOURCE_ENV,
-        metavar="PATH_OR_LOCATOR",
+        metavar="PATH_OR_URI",
         callback=_remember_source_path,
         expose_value=False,
         help=(
-            "Catalog bundle, authored folder, or exact release digest. "
-            f"Defaults to ${SOURCE_ENV}, then catalog.json."
-        ),
-    )(command)
-
-
-def required_index_option(command: _Command) -> _Command:
-    return click.option(
-        "--index",
-        "index_path",
-        envvar=INDEX_ENV,
-        metavar="PATH_OR_LOCATOR",
-        help=(
-            "LanceDB path, URI, or exact release digest. "
-            f"Defaults to ${INDEX_ENV} when set."
+            "Catalog folder, bundle, catalog.json, or release.json path or URI. "
+            f"Defaults to ${SOURCE_ENV}, then the official catalog."
         ),
     )(command)
 
@@ -86,46 +68,12 @@ def index_profile_option(command: _Command) -> _Command:
     return click.option(
         "--profile",
         envvar=INDEX_PROFILE_ENV,
+        required=True,
         help=(
-            "Published embedding profile for a remote LanceDB index. "
+            "Embedding profile in the catalog release. "
             f"Defaults to ${INDEX_PROFILE_ENV} when set."
         ),
     )(command)
-
-
-def require_index(
-    index_path: str | None,
-    *,
-    profile: str | None = None,
-) -> "Table":
-    if index_path is not None:
-        try:
-            with storage_errors("resolve index", str(index_path)):
-                return open_index(
-                    index_path,
-                    profile=profile,
-                )
-        except (ModuleNotFoundError, OSError, ValueError) as exc:
-            raise click.ClickException(
-                format_error(
-                    "Could not resolve the LanceDB index.",
-                    [
-                        str(exc),
-                        f"Pass --index PATH_OR_URI or set {INDEX_ENV}.",
-                    ],
-                )
-            ) from exc
-    raise click.ClickException(
-        format_error(
-            f"Pass --index PATH_OR_URI or set {INDEX_ENV}.",
-            [
-                "Pass a LanceDB path or a published release locator.",
-                "Pass --profile when --index names a published release.",
-                "Then pass the same index path to `chartcoach catalog find`.",
-                "Use `--mode fts` for a full-text-only index.",
-            ],
-        )
-    )
 
 
 def _remember_source_path(
@@ -145,40 +93,15 @@ def load_catalog(
 ) -> Catalog:
     source = source_path(ctx) if source is None else source
     try:
-        if source is None:
-            with storage_errors("load catalog", paths.selected()):
-                from chartcoach.catalog.collection import Catalog
-                from chartcoach.catalog.curation.cache import download_catalog_bundle
-
-                release, bundle = download_catalog_bundle()
-                ctx.ensure_object(dict)["release_digest"] = release.digest
-                return Catalog.from_bundle(bundle)
-        if _is_published_source(source):
-            ctx.ensure_object(dict)["release_digest"] = source
-            return open_catalog(source)
-        return open_catalog(source)
+        catalog = open_catalog(source)
+        ctx.ensure_object(dict)["release_digest"] = (
+            catalog.release.digest if catalog.release is not None else None
+        )
+        return catalog
     except ModuleNotFoundError as exc:
-        if "`chartcoach[curation]`" not in str(exc):
-            raise
         raise click.ClickException(str(exc)) from exc
-    except ValueError as exc:
+    except (CatalogError, OSError, ValueError) as exc:
         raise click.ClickException(str(exc)) from exc
-    except FileNotFoundError as exc:
-        raise click.ClickException(
-            format_error(
-                f"Catalog source not found: {source}",
-                [
-                    "Pass --source PATH to the command.",
-                    f"Or export {SOURCE_ENV}=PATH.",
-                ],
-            )
-        ) from exc
-
-
-def _is_published_source(source: str) -> bool:
-    return len(source) == 64 and all(
-        character in "0123456789abcdef" for character in source
-    )
 
 
 @contextmanager
@@ -204,7 +127,7 @@ def storage_errors(operation: str, target: str) -> Iterator[None]:
 
 def tools(ctx: click.Context) -> Tools:
     catalog = load_catalog(ctx)
-    return Tools(catalog, release_digest=catalog_release_digest(ctx))
+    return Tools(catalog, source=source_path(ctx))
 
 
 def source_path(ctx: click.Context) -> str | None:
@@ -215,16 +138,6 @@ def source_path(ctx: click.Context) -> str | None:
 def catalog_release_digest(ctx: click.Context) -> str | None:
     value = cast(Mapping[str, object], ctx.obj or {}).get("release_digest")
     return cast(str | None, value)
-
-
-def report_cache_download(kind: str, source: str, target: Path) -> None:
-    name = "catalog" if kind == "catalog" else "LanceDB index"
-    echo_info(
-        f"Downloading chartcoach {name}",
-        detail=f"from {_display_source(source)}",
-        err=True,
-    )
-    echo_info("Cache", detail=str(target), err=True)
 
 
 def echo_info(message: str, *, detail: str | None = None, err: bool = True) -> None:
@@ -339,24 +252,12 @@ def format_cell(value: object, *, human: bool = False) -> object:
     return value
 
 
-def _display_source(source: str) -> str:
-    parsed = urlparse(source)
-    if parsed.scheme not in {"http", "https"} or parsed.hostname is None:
-        return source
-    netloc = parsed.hostname
-    if parsed.port is not None:
-        netloc = f"{netloc}:{parsed.port}"
-    name = PurePosixPath(parsed.path).name
-    path = f"/.../{name}" if name else ""
-    return urlunparse((parsed.scheme, netloc, path, "", "", ""))
-
-
 def search_cli_error(
     message: str,
     *,
     missing_index_extra: bool = False,
 ) -> str:
-    """Return a CLI search error with local index-path recovery hints."""
+    """Return a CLI search error with release-profile recovery hints."""
 
     install_hints = (
         [
@@ -370,10 +271,7 @@ def search_cli_error(
         message,
         [
             *install_hints,
-            (
-                "Pass an existing LanceDB path with "
-                "`chartcoach catalog find --index PATH_OR_URI`."
-            ),
+            "Pass --source with catalog.json or release.json and select --profile.",
             "Use `--mode fts` for provider-free text retrieval.",
         ],
     )

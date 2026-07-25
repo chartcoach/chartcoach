@@ -156,17 +156,20 @@ dependencies = [
     { name = "bibtexparser" },
     { name = "click" },
     { name = "duckdb" },
+    { name = "platformdirs" },
     { name = "polars" },
     { name = "pyyaml" },
     { name = "tabulate" },
 ]
 
 [package.optional-dependencies]
+cloud = [
+    { name = "obstore" },
+]
 curation = [
     { name = "lancedb" },
     { name = "obspec" },
     { name = "obstore" },
-    { name = "platformdirs" },
     { name = "pyarrow" },
     { name = "umap-learn" },
 ]
@@ -194,8 +197,9 @@ requires-dist = [
     { name = "lancedb", marker = "extra == 'index'", specifier = ">=0.34" },
     { name = "mcp", extras = ["cli"], marker = "extra == 'mcp'", specifier = ">=1.9,<1.29" },
     { name = "obspec", marker = "extra == 'curation'", specifier = ">=0.1.0" },
+    { name = "obstore", marker = "extra == 'cloud'", specifier = ">=0.11.0" },
     { name = "obstore", marker = "extra == 'curation'", specifier = ">=0.11.0" },
-    { name = "platformdirs", marker = "extra == 'curation'", specifier = ">=4" },
+    { name = "platformdirs", specifier = ">=4" },
     { name = "polars", specifier = ">=1.39.0" },
     { name = "pyarrow", marker = "extra == 'curation'", specifier = ">=18" },
     { name = "pydantic-settings", marker = "extra == 'mcp'", specifier = "<2.15" },
@@ -203,7 +207,7 @@ requires-dist = [
     { name = "tabulate", specifier = ">=0.10.0" },
     { name = "umap-learn", marker = "extra == 'curation'", specifier = ">=0.5.12" },
 ]
-provides-extras = ["index", "mcp", "curation"]
+provides-extras = ["index", "cloud", "mcp", "curation"]
 
 [package.metadata.requires-dev]
 dev = [

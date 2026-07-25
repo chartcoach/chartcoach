@@ -1,30 +1,83 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
+from os import PathLike
 from pathlib import Path, PurePosixPath
-from typing import Protocol
+from typing import Any, Protocol, cast
+from urllib.parse import urlsplit
 
 from obspec import Get, Put
 from obspec.exceptions import AlreadyExistsError, NotFoundError, map_exception
+from obstore.store import from_url
 
 from ..paths import paths
 from ..releases import CatalogRelease
 from ..releases.hashing import release_digest
 from ..releases.models import safe_sha256
-from .validation import validate_curation_release
+from ..runtime import _copy_storage_options, _obstore_uri
+from .validation import validate_release
 
 
 _MAX_JSON_BYTES = 1024 * 1024
 
 
-class ReleaseStore(Get, Put, Protocol):
+_DESTINATION_SCHEMES = frozenset(
+    {
+        "abfs",
+        "abfss",
+        "adl",
+        "az",
+        "azure",
+        "file",
+        "gcp",
+        "gcs",
+        "gs",
+        "s3",
+        "s3a",
+    }
+)
+
+
+class _ReleaseStore(Get, Put, Protocol):
     """Object-store operations used to publish a release."""
 
 
-def publish_catalog_release(destination: ReleaseStore, root: Path) -> CatalogRelease:
+def publish_release(
+    source: PathLike[str],
+    destination: str,
+    *,
+    storage_options: Mapping[str, object] | None = None,
+) -> CatalogRelease:
+    """Publish one immutable release to a destination URI."""
+
+    return _publish_release(
+        _open_store(destination, storage_options),
+        Path(source),
+    )
+
+
+def select_release(
+    digest: str,
+    destination: str,
+    *,
+    storage_options: Mapping[str, object] | None = None,
+) -> CatalogRelease:
+    """Select a published release through the destination catalog.json."""
+
+    return _select_release(
+        _open_store(destination, storage_options),
+        digest,
+    )
+
+
+def _publish_release(
+    destination: _ReleaseStore,
+    root: Path,
+) -> CatalogRelease:
     """Validate and write one immutable release, committing release.json last."""
 
-    release = validate_curation_release(root)
+    release = validate_release(root)
     release_paths = paths.release(release.digest)
     release_path = release_paths.json()
     if existing := _existing_release(destination, release_path):
@@ -57,7 +110,7 @@ def publish_catalog_release(destination: ReleaseStore, root: Path) -> CatalogRel
     return release
 
 
-def select_catalog_release(store: ReleaseStore, digest: str) -> CatalogRelease:
+def _select_release(store: _ReleaseStore, digest: str) -> CatalogRelease:
     """Select an existing immutable release by digest."""
 
     digest = safe_sha256(digest, label="Catalog release digest")
@@ -70,6 +123,21 @@ def select_catalog_release(store: ReleaseStore, digest: str) -> CatalogRelease:
         mode="overwrite",
     )
     return release
+
+
+def _open_store(
+    destination: str,
+    storage_options: Mapping[str, object] | None,
+) -> _ReleaseStore:
+    scheme = urlsplit(destination).scheme.lower()
+    if scheme not in _DESTINATION_SCHEMES:
+        choices = ", ".join(sorted(f"{value}://" for value in _DESTINATION_SCHEMES))
+        raise ValueError(f"Catalog destination must use one of: {choices}.")
+    options = _copy_storage_options(storage_options)
+    if scheme == "file":
+        options.setdefault("mkdir", True)
+    store_factory = cast(Any, from_url)
+    return cast(_ReleaseStore, store_factory(_obstore_uri(destination), **options))
 
 
 def _existing_release(source: Get, path: str) -> CatalogRelease | None:
@@ -107,4 +175,4 @@ def _release_json_bytes(release: CatalogRelease) -> bytes:
     return data
 
 
-__all__ = ["publish_catalog_release", "select_catalog_release"]
+__all__ = ["publish_release", "select_release"]

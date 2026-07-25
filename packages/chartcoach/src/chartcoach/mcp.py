@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable
-from pathlib import Path
+from os import PathLike
 from typing import Literal
 
 try:
@@ -14,11 +14,7 @@ except ModuleNotFoundError as exc:  # pragma: no cover - depends on install extr
         exc.add_note("Install `chartcoach[mcp]` to use the chartcoach MCP server.")
     raise
 
-from .catalog.locator import (
-    _published_release_reference,
-    open_catalog,
-    open_index,
-)
+from .catalog import open_catalog, open_index
 from .tools import Tools, search_error
 
 Transport = Literal["stdio", "sse", "streamable-http"]
@@ -124,8 +120,7 @@ def _register_tools(
 
 def main(
     *,
-    source: str | Path | None = None,
-    index: str | Path | None = None,
+    source: str | PathLike[str] | None = None,
     profile: str | None = None,
     transport: str = DEFAULT_TRANSPORT,
     host: str = DEFAULT_HOST,
@@ -138,19 +133,7 @@ def main(
         raise ValueError("MCP port must be between 1 and 65535.")
     _configure_logging(resolved_log_level)
 
-    release_digest = (
-        _published_release_reference(source) if isinstance(source, str) else None
-    )
-    if source is None:
-        from .catalog.collection import Catalog
-        from .catalog.curation.cache import download_catalog_bundle
-
-        release, bundle = download_catalog_bundle()
-        release_digest = release.digest
-        catalog = Catalog.from_bundle(bundle)
-    else:
-        catalog = open_catalog(source)
-    resolved_index = index or (release_digest if profile else None)
+    catalog = open_catalog(source)
 
     logger.info(
         "Starting chartcoach MCP server with transport=%s host=%s port=%s",
@@ -158,15 +141,13 @@ def main(
         host,
         port,
     )
-    index_path: str | Path | None = None
     table = None
-    if resolved_index is not None:
+    if profile is not None:
         try:
             table = open_index(
-                resolved_index,
+                source,
                 profile=profile,
             )
-            index_path = resolved_index
         except ModuleNotFoundError:
             raise
         except Exception as exc:
@@ -174,8 +155,8 @@ def main(
     server_tools = Tools(
         catalog,
         table=table,
-        index_path=index_path,
-        release_digest=release_digest,
+        source=source,
+        profile=profile,
     )
     server = _build_server(host=host, port=port, log_level=resolved_log_level)
     _register_tools(

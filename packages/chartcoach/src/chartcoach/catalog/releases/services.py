@@ -25,10 +25,10 @@ def validate_runtime_release(root: Path) -> CatalogRelease:
     for path, artifact in release.artifacts.items():
         _validate_artifact(root, path, artifact)
 
-    from ..collection import Catalog
+    from ..collection import _load_catalog_bundle
 
     try:
-        Catalog.from_bundle(root)
+        _load_catalog_bundle(root / "MANIFEST.md", root / "entries.parquet")
     except Exception as exc:
         raise ValueError(f"Catalog bundle could not be loaded: {exc}") from exc
     return release

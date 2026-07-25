@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from os import PathLike
 from pathlib import Path, PurePosixPath
 from tempfile import TemporaryDirectory
 from typing import Protocol, cast
@@ -36,9 +37,10 @@ class _EmbeddingDefinition(Protocol):
     def sensitive_keys(self) -> list[str]: ...
 
 
-def validate_curation_release(root: Path) -> CatalogRelease:
+def validate_release(source: PathLike[str]) -> CatalogRelease:
     """Validate a complete release before publication."""
 
+    root = Path(source)
     release = validate_runtime_release(root)
     for profile, paths in _profiles(release).items():
         _validate_profile(
@@ -177,4 +179,4 @@ def _local_path(root: Path, path: str) -> Path:
     return root.joinpath(*PurePosixPath(path).parts)
 
 
-__all__ = ["validate_curation_release"]
+__all__ = ["validate_release"]

@@ -39,11 +39,11 @@ def build_command(
 ) -> None:
     """Build a catalog bundle from authored entries."""
 
-    from chartcoach.catalog.collection import Catalog
+    from chartcoach import open_catalog
 
     try:
-        catalog = Catalog.from_folder(source)
-    except FileNotFoundError as exc:
+        catalog = open_catalog(source)
+    except (OSError, ValueError) as exc:
         raise click.ClickException(str(exc)) from exc
     if len(catalog) == 0:
         raise click.ClickException(

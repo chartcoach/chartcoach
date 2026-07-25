@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import click
 
-from ._catalog.cache import register_cache_commands
 from ._catalog.index import register_index_commands
 from ._catalog.lifecycle import register_lifecycle_commands
 from ._catalog.navigation import register_navigation_commands
@@ -30,6 +29,5 @@ register_navigation_commands(catalog_command)
 register_index_commands(catalog_command)
 register_lifecycle_commands(catalog_command)
 register_release_commands(catalog_command)
-register_cache_commands(catalog_command)
 
 __all__ = ["catalog_command"]

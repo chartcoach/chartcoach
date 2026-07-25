@@ -7,7 +7,7 @@ from click.testing import CliRunner
 import pytest
 
 from chartcoach.catalog.collection import Catalog
-from chartcoach.catalog.curation.release_builder import build_catalog_release
+from chartcoach.catalog.curation import build_release
 from chartcoach.catalog.paths import paths
 from chartcoach.catalog.releases import CatalogRelease
 from chartcoach.cli.main import main
@@ -22,7 +22,7 @@ def test_release_publish_and_select_create_local_store(
     tmp_path: Path,
 ) -> None:
     release_root = tmp_path / "release"
-    release = build_catalog_release(sample_catalog, root=release_root)
+    release = build_release(sample_catalog, release_root)
     store = tmp_path / "store"
 
     published = runner.invoke(

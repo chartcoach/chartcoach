@@ -8,11 +8,11 @@ import pyarrow.parquet as pq
 import pytest
 
 from chartcoach.catalog.collection import Catalog
-from chartcoach.catalog.curation.release_builder import (
+from chartcoach.catalog.curation import (
     EmbeddingProfile,
-    build_catalog_release,
+    build_release,
+    validate_release,
 )
-from chartcoach.catalog.curation.validation import validate_curation_release
 from chartcoach.catalog.releases import CatalogRelease, ReleaseArtifact
 from chartcoach.catalog.releases.hashing import release_digest, sha256_file
 from chartcoach.catalog.releases.services import validate_runtime_release
@@ -36,7 +36,7 @@ def test_runtime_validation_loads_the_core_bundle(
     tmp_path: Path,
 ) -> None:
     root = tmp_path / "release"
-    release = build_catalog_release(sample_catalog, root=root)
+    release = build_release(sample_catalog, root)
 
     assert validate_runtime_release(root) == release
 
@@ -46,7 +46,7 @@ def test_runtime_validation_rejects_corrupt_artifacts(
     tmp_path: Path,
 ) -> None:
     root = tmp_path / "release"
-    build_catalog_release(sample_catalog, root=root)
+    build_release(sample_catalog, root)
     (root / "entries.parquet").write_bytes(b"corrupt")
 
     with pytest.raises(ValueError, match="byte count|SHA-256"):
@@ -64,7 +64,7 @@ def test_curation_validation_requires_complete_profiles(
     _write_release(root, artifacts)
 
     with pytest.raises(ValueError, match="missing index"):
-        validate_curation_release(root)
+        validate_release(root)
 
 
 @pytest.mark.parametrize(
@@ -116,7 +116,7 @@ def test_curation_validation_rejects_unsafe_embedding_metadata(
     _refresh_artifact(root, profile_path)
 
     with pytest.raises(ValueError, match=message):
-        validate_curation_release(root)
+        validate_release(root)
 
 
 def test_curation_validation_aligns_profile_and_index_row_identities(
@@ -138,14 +138,14 @@ def test_curation_validation_aligns_profile_and_index_row_identities(
     _refresh_artifact(root, profile_path)
 
     with pytest.raises(ValueError, match="row identities"):
-        validate_curation_release(root)
+        validate_release(root)
 
 
 def _profile_release(catalog: Catalog, tmp_path: Path) -> tuple[Path, CatalogRelease]:
     root = tmp_path / "release"
-    release = build_catalog_release(
+    release = build_release(
         catalog,
-        root=root,
+        root,
         profiles={
             _PROFILE: EmbeddingProfile(
                 embedding=deterministic_embedding(_EMBEDDING),

@@ -5,6 +5,7 @@ from pathlib import Path
 import polars as pl
 import pytest
 
+from chartcoach import CatalogError, open_catalog
 from chartcoach.catalog.collection import Catalog
 from chartcoach.catalog.entries import Guideline, Section
 from chartcoach.catalog.errors import CatalogValidationError
@@ -17,7 +18,7 @@ def test_authored_folder_compiles_catalog_rows_and_relations(tmp_path: Path) -> 
     write_manifest(tmp_path)
     write_catalog_entry(tmp_path)
 
-    catalog = Catalog.from_folder(tmp_path)
+    catalog = open_catalog(tmp_path)
 
     assert set(catalog.to_frame().columns) == {
         "id",
@@ -55,7 +56,7 @@ def test_authored_folder_loads_entries_in_id_order(tmp_path: Path) -> None:
     write_catalog_entry(tmp_path, "z-guideline")
     write_catalog_entry(tmp_path, "a-guideline")
 
-    catalog = Catalog.from_folder(tmp_path)
+    catalog = open_catalog(tmp_path)
 
     assert catalog.guidelines().get_column("id").to_list() == [
         "a-guideline",
@@ -66,10 +67,10 @@ def test_authored_folder_loads_entries_in_id_order(tmp_path: Path) -> None:
 def test_compiled_bundle_roundtrips_manifest_and_rows(tmp_path: Path) -> None:
     write_manifest(tmp_path / "source")
     write_catalog_entry(tmp_path / "source")
-    catalog = Catalog.from_folder(tmp_path / "source")
+    catalog = open_catalog(tmp_path / "source")
 
     bundle = catalog.write_bundle(tmp_path / "bundle")
-    reloaded = Catalog.from_bundle(bundle)
+    reloaded = open_catalog(bundle)
 
     assert reloaded.manifest.section_roles["advice"].name == "advice"
     assert reloaded.to_frame().equals(catalog.to_frame())
@@ -153,8 +154,8 @@ def test_catalog_rejects_duplicate_ids(sample_manifest: CatalogManifest) -> None
 def test_catalog_folder_requires_manifest(tmp_path: Path) -> None:
     write_catalog_entry(tmp_path)
 
-    with pytest.raises(FileNotFoundError, match="MANIFEST.md"):
-        Catalog.from_folder(tmp_path)
+    with pytest.raises(CatalogError, match="MANIFEST.md"):
+        open_catalog(tmp_path)
 
 
 def test_catalog_manifest_covers_compiled_vocabulary(tmp_path: Path) -> None:
@@ -182,7 +183,7 @@ Task-goal labels such as `goal:comparison`.
     write_catalog_entry(tmp_path)
 
     with pytest.raises(CatalogManifestError, match="undefined section role"):
-        Catalog.from_folder(tmp_path)
+        open_catalog(tmp_path)
 
 
 def test_compiled_bundle_rejects_invalid_rows(
@@ -218,4 +219,4 @@ def test_compiled_bundle_rejects_invalid_rows(
             r"title must be a string\."
         ),
     ):
-        Catalog.from_bundle(bundle)
+        open_catalog(bundle)

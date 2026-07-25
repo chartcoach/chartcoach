@@ -19,14 +19,22 @@ if TYPE_CHECKING:
     from ..duckdb import DuckDBConfigValue
     from .manifest import CatalogManifest
     from .references import ReferenceTables
+    from .releases import CatalogRelease
 
 
 class Catalog:
     """A manifest and its compiled guideline rows."""
 
-    def __init__(self, frame: pl.DataFrame, *, manifest: "CatalogManifest") -> None:
+    def __init__(
+        self,
+        frame: pl.DataFrame,
+        *,
+        manifest: "CatalogManifest",
+        release: "CatalogRelease | None" = None,
+    ) -> None:
         self._frame = _normalize_catalog_frame(frame)
         self._manifest = manifest
+        self._release = release
         self._reference_tables_cache: "ReferenceTables | None" = None
         _validate_unique_ids(self._frame)
 
@@ -47,32 +55,17 @@ class Catalog:
 
         return cls(build_catalog_df(tuple(guidelines)), manifest=manifest)
 
-    @classmethod
-    def from_folder(cls, folder_path: PathLike[str]) -> "Catalog":
-        """Load an authored catalog folder."""
-
-        from .storage import load_catalog
-
-        return load_catalog(folder_path)
-
-    @classmethod
-    def from_bundle(cls, path: str | PathLike[str]) -> "Catalog":
-        """Load a compiled catalog bundle."""
-
-        from .manifest import CatalogManifest
-
-        bundle_path = Path(path)
-        manifest = CatalogManifest.from_path(bundle_path / "MANIFEST.md")
-        return cls(
-            _read_catalog_parquet(bundle_path / "entries.parquet"),
-            manifest=manifest,
-        )
-
     @property
     def manifest(self) -> "CatalogManifest":
         """Return the catalog vocabulary manifest."""
 
         return self._manifest
+
+    @property
+    def release(self) -> "CatalogRelease | None":
+        """Return the verified release record for a descriptor-backed catalog."""
+
+        return self._release
 
     def to_frame(self) -> pl.DataFrame:
         """Return the compiled catalog rows."""
@@ -234,6 +227,21 @@ def _read_catalog_parquet(path: Path) -> pl.DataFrame:
     if not serialized.equals(canonical):
         raise CatalogValidationError("Catalog parquet rows must use canonical values.")
     return canonical
+
+
+def _load_catalog_bundle(
+    manifest_path: Path,
+    entries_path: Path,
+    *,
+    release: "CatalogRelease | None" = None,
+) -> Catalog:
+    from .manifest import CatalogManifest
+
+    return Catalog(
+        _read_catalog_parquet(entries_path),
+        manifest=CatalogManifest.from_path(manifest_path),
+        release=release,
+    )
 
 
 def _validate_unique_ids(frame: pl.DataFrame) -> None:

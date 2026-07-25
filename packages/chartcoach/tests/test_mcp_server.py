@@ -7,6 +7,8 @@ from typing import cast
 import pytest
 
 from chartcoach.catalog.collection import Catalog
+from chartcoach.catalog.releases import CatalogRelease, ReleaseArtifact
+from chartcoach.catalog.releases.hashing import release_digest
 import chartcoach.mcp as mcp_server
 from chartcoach.tools import Tools
 from catalog_testkit import deterministic_embedding
@@ -22,7 +24,8 @@ def test_mcp_registers_real_fastmcp_sql_and_search_tools(
     from chartcoach.catalog.curation.lancedb_index import build_lancedb_index
 
     async def exercise() -> None:
-        digest = "a" * 64
+        catalog = _released_catalog(sample_catalog)
+        assert catalog.release is not None
         index_path = tmp_path / "index"
         table = build_lancedb_index(
             sample_catalog,
@@ -33,10 +36,10 @@ def test_mcp_registers_real_fastmcp_sql_and_search_tools(
         mcp_server._register_tools(
             server,
             tools=Tools(
-                sample_catalog,
+                catalog,
                 table=table,
-                index_path=index_path,
-                release_digest=digest,
+                source=tmp_path / "release",
+                profile="test/deterministic",
             ),
             include_search=True,
         )
@@ -56,7 +59,7 @@ def test_mcp_registers_real_fastmcp_sql_and_search_tools(
         sql_payload = cast(dict[str, object], sql_payload)
         sql_rows = cast(list[dict[str, object]], sql_payload["rows"])
         assert sql_payload["row_count"] == 1
-        assert sql_payload["release_digest"] == digest
+        assert sql_payload["release_digest"] == catalog.release.digest
         assert sql_rows[0]["id"] == "direct-labels"
 
         search_result = await server.call_tool(
@@ -68,7 +71,24 @@ def test_mcp_registers_real_fastmcp_sql_and_search_tools(
         search_payload = cast(dict[str, object], search_payload)
         search_rows = cast(list[dict[str, object]], search_payload["rows"])
         assert search_payload["mode"] == "fts"
-        assert search_payload["index_path"] == str(index_path)
+        assert search_payload["source"] == str(tmp_path / "release")
+        assert search_payload["profile"] == "test/deterministic"
         assert search_rows[0]["id"] == "direct-labels"
 
     asyncio.run(exercise())
+
+
+def _released_catalog(catalog: Catalog) -> Catalog:
+    artifacts = {
+        "MANIFEST.md": ReleaseArtifact("1" * 64, 1),
+        "entries.parquet": ReleaseArtifact("2" * 64, 1),
+    }
+    release = CatalogRelease(
+        digest=release_digest(artifacts),
+        artifacts=artifacts,
+    )
+    return Catalog(
+        catalog.to_frame(),
+        manifest=catalog.manifest,
+        release=release,
+    )
