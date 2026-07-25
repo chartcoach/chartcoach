@@ -1,14 +1,8 @@
 declare module "citation-js" {
-  export type CiteFormat =
-    | "citation"
-    | "bibliography"
-    | "data"
-    | "bibtex"
-    | "citation-apa"
-    | string;
+  export type CiteFormat = string;
 
   export type CiteFormatOptions = {
-    format?: "text" | "html" | string;
+    format?: string;
     template?: string;
     lang?: string;
     [key: string]: unknown;

@@ -4,12 +4,18 @@
   "private": true,
   "license": "Apache-2.0",
   "scripts": {
-    "check": "vp check .github .vscode apps development_docs packages/brand packages/catalog AGENTS.md CONTRIBUTING.md README.md package.json pnpm-workspace.yaml vite.config.ts",
+    "build": "vp run -r build",
+    "check": "vp check --no-error-on-unmatched-pattern .github .vscode apps development_docs fixtures/catalog-release/MANIFEST.md packages/brand packages/catalog packages/chartcoach/README.md packages/chartcoach/data/skill-data packages/chartcoach/pyproject.toml AGENTS.md CONTRIBUTING.md README.md package.json pnpm-workspace.yaml pyproject.toml tsconfig.json vite.config.ts",
     "dev": "portless",
-    "ready": "vp run check && CHARTCOACH_SITE_CATALOG_SOURCE=../../fixtures/catalog-release vp run --filter '@chartcoach/*' typecheck && vp run --filter '@chartcoach/*' test && CHARTCOACH_SITE_CATALOG_SOURCE=../../fixtures/catalog-release vp run --filter '@chartcoach/*' build"
+    "ready": "vp run check && vp run typecheck && vp run test && vp run build",
+    "test": "vp run -r test",
+    "typecheck": "vp run -r typecheck"
   },
   "devDependencies": {
+    "@types/node": "catalog:",
     "portless": "^0.14.0",
+    "typescript": "catalog:",
+    "vite": "catalog:",
     "vite-plus": "catalog:"
   },
   "engines": {

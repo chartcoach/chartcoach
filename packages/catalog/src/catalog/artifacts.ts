@@ -152,7 +152,7 @@ async function sha256Bytes(value: Uint8Array): Promise<string> {
   if (!subtle) {
     throw new CatalogError("SHA-256 digest support is unavailable in this runtime.");
   }
-  const digest = await subtle.digest("SHA-256", value);
+  const digest = await subtle.digest("SHA-256", value.slice().buffer);
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
@@ -199,7 +199,7 @@ function isPortablePathSegment(value: string): boolean {
     value === "." ||
     value === ".." ||
     value.endsWith(".") ||
-    [...value].some((character) => FORBIDDEN_PATH_CHARACTERS.has(character))
+    Array.from(value).some((character) => FORBIDDEN_PATH_CHARACTERS.has(character))
   ) {
     return false;
   }

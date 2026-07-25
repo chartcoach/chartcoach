@@ -38,7 +38,10 @@ function logger() {
   return { ...child, fork: vi.fn(() => child) };
 }
 
-function integration(documents: { load(): readonly Document[]; watchFiles?(): readonly string[] }) {
+function integration(documents: {
+  load: () => readonly Document[];
+  watchFiles?: () => readonly string[];
+}) {
   return searchIndex<Document>({
     name: "test:search",
     databases: {

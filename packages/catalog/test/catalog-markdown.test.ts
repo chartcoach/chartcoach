@@ -11,8 +11,6 @@ describe("guideline markdown serialization", () => {
       description: "Use the outlet to choose framing.",
       labels: ["purpose:refine", "task:distribute"],
       body: "## Advice <!-- role: advice -->\nAdapt the chart.\n",
-      sections: [{ role: "advice", title: "Advice", content: "Adapt the chart." }],
-      references: [],
     });
 
     const [, frontmatter, body] = markdown.split("---");

@@ -57,7 +57,7 @@ export function GuidelineActions({ markdown, bibtex, editHref }: GuidelineAction
     <div className="flex flex-wrap items-center gap-2" aria-label="Guideline actions">
       <button
         type="button"
-        onClick={() => copy("markdown", markdown)}
+        onClick={() => void copy("markdown", markdown)}
         className="group relative inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-border bg-bg text-muted transition-colors hover:bg-surface-muted hover:text-fg"
         aria-label="Copy Markdown"
       >
@@ -71,7 +71,7 @@ export function GuidelineActions({ markdown, bibtex, editHref }: GuidelineAction
       <button
         type="button"
         onClick={() => {
-          if (bibtex) copy("bibtex", bibtex);
+          if (bibtex) void copy("bibtex", bibtex);
         }}
         disabled={!canCopyBibtex}
         className="group relative inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-border bg-bg text-muted transition-colors hover:bg-surface-muted hover:text-fg disabled:cursor-not-allowed disabled:opacity-45"

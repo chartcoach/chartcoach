@@ -28,7 +28,7 @@ export function parseCatalogManifest(markdown: string): CatalogManifest {
     "Section Roles": {},
     "Label Families": {},
   };
-  let currentHeading: keyof typeof definitions | string | undefined;
+  let currentHeading: string | undefined;
   let currentName: string | undefined;
   let currentLines: string[] = [];
 

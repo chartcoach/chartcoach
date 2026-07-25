@@ -1,7 +1,5 @@
 [tool.uv.workspace]
-members = [
-    "packages/chartcoach",
-]
+members = ["packages/chartcoach"]
 
 [tool.uv]
 exclude-newer = "2 days"
