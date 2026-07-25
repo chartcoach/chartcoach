@@ -34,7 +34,7 @@ describe("site catalog source loading", () => {
 
     const [catalog, reusedCatalog] = await Promise.all([firstLoad, secondLoad]);
 
-    expect(fetchCatalog.mock.calls.filter(([url]) => url.toString() === catalogUrl)).toHaveLength(
+    expect(fetchCatalog.mock.calls.filter(([url]) => requestUrl(url) === catalogUrl)).toHaveLength(
       1,
     );
     expect(catalog.require("direct-labels").id).toBe("direct-labels");
@@ -67,6 +67,21 @@ describe("site catalog source loading", () => {
     expect(catalogSourceRecordPath(new URL(".", import.meta.url), undefined, "direct-labels")).toBe(
       "chartcoach://catalog.json#direct-labels",
     );
+  });
+
+  it("loads an exact release URL without resolving it as a local path", async () => {
+    const { catalogSourceWatchFiles, loadSiteCatalog, resolveCatalogSource } =
+      await catalogSourceModule();
+    const fixture = await fixtureRelease();
+    const releaseUrl = releaseUrlFor(fixture.release.digest);
+    vi.stubGlobal("fetch", fetchFrom(releaseResponses(fixture)));
+    const root = new URL(".", import.meta.url);
+
+    const catalog = await loadSiteCatalog(root, releaseUrl);
+
+    expect(resolveCatalogSource(releaseUrl, root)).toBe(releaseUrl);
+    expect(catalogSourceWatchFiles(root, releaseUrl)).toEqual([]);
+    expect(catalog.require("direct-labels").id).toBe("direct-labels");
   });
 });
 
@@ -101,6 +116,7 @@ function releaseResponses(
   const releaseUrl = releaseUrlFor(fixture.release.digest);
   return new Map<string, BodyInit>([
     [`${artifactBaseUrl}/catalog.json`, JSON.stringify(fixture.release)],
+    [releaseUrl, JSON.stringify(fixture.release)],
     [new URL("MANIFEST.md", releaseUrl).toString(), fixture.manifest],
     [new URL("entries.parquet", releaseUrl).toString(), responseBytes(fixture.entries)],
   ]);
@@ -112,10 +128,14 @@ function responseBytes(bytes: Uint8Array): ArrayBuffer {
 
 function fetchFrom(responses: Map<string, BodyInit>) {
   return async (url: string | URL | Request) => {
-    const body = responses.get(url.toString());
+    const body = responses.get(requestUrl(url));
     if (body === undefined) return new Response("not found", { status: 404 });
     return new Response(body);
   };
+}
+
+function requestUrl(input: string | URL | Request): string {
+  return input instanceof Request ? input.url : input.toString();
 }
 
 async function readJsonFixture(name: string): Promise<Record<string, unknown>> {

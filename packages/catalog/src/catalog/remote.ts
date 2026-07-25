@@ -5,7 +5,6 @@ import {
   parseCatalogRelease,
   releaseArtifact,
   releaseArtifactUrl,
-  releaseUrlForDigest,
   type CatalogRelease,
   type ReleaseArtifact,
 } from "./artifacts";
@@ -19,37 +18,31 @@ export type OpenCatalogOptions = {
   fetch?: FetchLike;
 };
 
-export type OpenReleaseOptions = {
-  fetch?: FetchLike;
-};
-
 const CATALOG_REQUEST_TIMEOUT_MS = 15 * 60 * 1000;
 const CATALOG_BODY_READ_ERROR = "Failed to read catalog resource body.";
 const MAX_CATALOG_JSON_BYTES = 1024 * 1024;
 const MAX_CORE_ARTIFACT_BYTES = 64 * 1024 * 1024;
 
-export async function open(options: OpenCatalogOptions = {}): Promise<Catalog> {
-  const fetch = options.fetch ?? globalThis.fetch;
-  const release = parseCatalogRelease(await fetchJson(catalogUrl(), fetch, "no-cache"));
-  await assertReleaseDigest(release);
-  const releaseUrl = releaseUrlForDigest(release.digest);
-  return loadCatalogFromRelease(fetch, releaseUrl, release);
-}
-
-export async function openRelease(
-  source: string | URL,
-  options: OpenReleaseOptions = {},
+export async function openCatalog(
+  source: string | URL = catalogUrl(),
+  options: OpenCatalogOptions = {},
 ): Promise<Catalog> {
   const fetch = options.fetch ?? globalThis.fetch;
-  const { digest, url: releaseUrl } = requireReleaseUrl(source);
-  const release = parseCatalogRelease(await fetchJson(releaseUrl, fetch));
-  await assertReleaseDigest(release, digest, "Catalog release URL");
-  return loadCatalogFromRelease(fetch, releaseUrl, release);
+  const descriptor = requireDescriptorUrl(source);
+  const release = parseCatalogRelease(
+    await fetchJson(descriptor.url, fetch, descriptor.kind === "catalog" ? "no-cache" : undefined),
+  );
+  await assertReleaseDigest(release);
+  const artifactBase =
+    descriptor.kind === "catalog"
+      ? new URL(`catalog/releases/${release.digest}/`, descriptor.url).toString()
+      : new URL(".", descriptor.url).toString();
+  return loadCatalogFromRelease(fetch, artifactBase, release);
 }
 
 async function loadCatalogFromRelease(
   fetch: FetchLike,
-  releaseUrl: string,
+  artifactBase: string,
   release: CatalogRelease,
 ): Promise<Catalog> {
   const controller = new AbortController();
@@ -57,14 +50,14 @@ async function loadCatalogFromRelease(
     const [entries, manifest] = await Promise.all([
       fetchReleaseArtifact(
         fetch,
-        releaseUrl,
+        artifactBase,
         "entries.parquet",
         releaseArtifact(release, "entries.parquet"),
         controller.signal,
       ),
       fetchReleaseArtifact(
         fetch,
-        releaseUrl,
+        artifactBase,
         "MANIFEST.md",
         releaseArtifact(release, "MANIFEST.md"),
         controller.signal,
@@ -100,12 +93,16 @@ async function fetchJson(url: string, fetch: FetchLike, cache?: "no-cache"): Pro
 
 async function fetchReleaseArtifact(
   fetch: FetchLike,
-  releaseUrl: string,
+  artifactBase: string,
   path: string,
   artifact: ReleaseArtifact,
   signal: AbortSignal,
 ): Promise<ArrayBuffer> {
-  const response = await fetchCatalogResource(releaseArtifactUrl(releaseUrl, path), fetch, signal);
+  const response = await fetchCatalogResource(
+    releaseArtifactUrl(artifactBase, path),
+    fetch,
+    signal,
+  );
   const data = await readArtifactBytes(response, path, artifact);
   await assertReleaseArtifactBytes(path, artifact, data);
   return data;
@@ -214,28 +211,19 @@ async function fetchCatalogResource(
   return response;
 }
 
-function requireReleaseUrl(input: string | URL): { digest: string; url: string } {
+function requireDescriptorUrl(input: string | URL): { kind: "catalog" | "release"; url: string } {
   const value = input.toString();
   let url: URL;
   try {
     url = new URL(value);
   } catch {
-    throw new CatalogError("Catalog release URL must be an absolute URL.");
+    throw new CatalogError("Catalog source must be an absolute HTTP or HTTPS URL.");
   }
-  const parts = url.pathname.split("/");
-  const [catalog, releases, digest, record] = parts.slice(-4);
-  if (
-    !parts.slice(1).includes("") &&
-    catalog === "catalog" &&
-    releases === "releases" &&
-    record === "release.json"
-  ) {
-    try {
-      const decoded = decodeURIComponent(digest ?? "");
-      if (/^[a-f0-9]{64}$/.test(decoded)) return { digest: decoded, url: value };
-    } catch {
-      // The contract error below covers malformed path encoding.
-    }
+  if (url.protocol !== "http:" && url.protocol !== "https:") {
+    throw new CatalogError("Catalog source must use HTTP or HTTPS.");
   }
-  throw new CatalogError("Catalog release URL must use catalog/releases/<digest>/release.json.");
+  const name = url.pathname.split("/").at(-1);
+  if (name === "catalog.json") return { kind: "catalog", url: url.toString() };
+  if (name === "release.json") return { kind: "release", url: url.toString() };
+  throw new CatalogError("Catalog source URL must name catalog.json or release.json.");
 }
