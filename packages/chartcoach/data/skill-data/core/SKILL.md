@@ -1,6 +1,6 @@
 ---
 name: core
-description: Use this for chartcoach catalog sources, retrieval, citations, package extras, release digests, cache pull, and LanceDB search.
+description: Use this for chartcoach catalog sources, retrieval, citations, package capabilities, release identity, and LanceDB search.
 ---
 
 # chartcoach Core
@@ -93,30 +93,29 @@ Commands that read a catalog accept `--source`:
 ```sh
 chartcoach catalog overview --source ./authored-catalog
 chartcoach catalog overview --source ./dist/catalog
-chartcoach catalog overview --source <64-character-release-digest>
+chartcoach catalog overview \
+  --source https://artifacts.chartcoach.dev/catalog/releases/<digest>/release.json
 ```
 
 An authored folder contains `MANIFEST.md` and `entries/<id>/guideline.md`. A
-bundle contains `MANIFEST.md` and `entries.parquet`. A digest names an immutable
-published release. The default source is `CHARTCOACH_SOURCE`, then the selected
-release in `catalog.json`.
-
-Use `chartcoach catalog cache pull --profile <profile>` to prefetch the selected
-catalog and one index archive.
+bundle contains `MANIFEST.md` and `entries.parquet`. Remote sources name
+`catalog.json` or `release.json`. The default source is `CHARTCOACH_SOURCE`,
+then the official selected catalog.
 
 ## Choose Dependencies
 
-| Boundary                                                      | Package selector       |
-| ------------------------------------------------------------- | ---------------------- |
-| Local catalog, Polars, and DuckDB                             | `chartcoach`           |
-| Local LanceDB table                                           | `chartcoach[index]`    |
-| MCP server                                                    | `chartcoach[mcp]`      |
-| Published storage, cache, profile build, and release curation | `chartcoach[curation]` |
+| Boundary                                          | Package selector       |
+| ------------------------------------------------- | ---------------------- |
+| Local and HTTP catalog, Polars, and DuckDB        | `chartcoach`           |
+| S3, GCS, and Azure catalog sources                | `chartcoach[cloud]`    |
+| Release-backed LanceDB profiles                   | `chartcoach[index]`    |
+| MCP server                                        | `chartcoach[mcp]`      |
+| Profile build, release publication, and selection | `chartcoach[curation]` |
 
-For one-off published catalog work:
+For one-off selected catalog work:
 
 ```sh
-uvx --from 'chartcoach[curation]@latest' chartcoach catalog overview
+uvx chartcoach@latest catalog overview
 ```
 
 ## Output Contracts

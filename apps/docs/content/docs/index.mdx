@@ -10,7 +10,7 @@ of structured records.
 List candidate guidelines from the published catalog:
 
 ```bash
-uvx --from 'chartcoach[curation]@latest' chartcoach catalog list \
+uvx chartcoach@latest catalog list \
   --contains "direct labels" \
   --limit 5 \
   --format json
@@ -19,7 +19,7 @@ uvx --from 'chartcoach[curation]@latest' chartcoach catalog list \
 Read the exact record before using it as evidence:
 
 ```bash
-uvx --from 'chartcoach[curation]@latest' chartcoach catalog read \
+uvx chartcoach@latest catalog read \
   compare-percentages-with-bars-not-pies \
   --format markdown
 ```
@@ -27,7 +27,7 @@ uvx --from 'chartcoach[curation]@latest' chartcoach catalog read \
 Format its public URL and source references:
 
 ```bash
-uvx --from 'chartcoach[curation]@latest' chartcoach catalog cite \
+uvx chartcoach@latest catalog cite \
   compare-percentages-with-bars-not-pies
 ```
 

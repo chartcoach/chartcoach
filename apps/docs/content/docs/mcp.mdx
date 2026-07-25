@@ -1,35 +1,37 @@
 ---
 title: MCP
-description: Expose catalog SQL and LanceDB search to MCP clients.
+description: Expose catalog SQL and release-backed LanceDB search to MCP clients.
 icon: Plug
 ---
 
-Install the MCP server with the dependency boundary required by its tools:
+Install the MCP server:
 
 ```bash
-uvx --from 'chartcoach[mcp,curation]@latest' chartcoach mcp
+uvx --from 'chartcoach[mcp]@latest' chartcoach mcp
 ```
 
-The server registers `sql`. It also registers `search` when an index is
-configured.
-
-```bash
-uvx --from 'chartcoach[mcp,curation]@latest' chartcoach mcp \
-  --profile sentence-transformers/all-MiniLM-L6-v2
-```
-
-`sql` runs one read-only `SELECT` over the catalog tables. `search` accepts a
-query string, mode, limit, optional LanceDB filter, and an optional
-caller-provided vector. Vector and hybrid modes require that vector.
-
-## Local sources
-
-Use a compiled catalog bundle and LanceDB directory during local development:
+The server always registers `sql`. Install the index capability and select a
+profile to register `search`:
 
 ```bash
 uvx --from 'chartcoach[mcp,index]@latest' chartcoach mcp \
-  --source ./dist/catalog \
-  --index ./dist/index
+  --source https://artifacts.chartcoach.dev/catalog.json \
+  --profile sentence-transformers/all-MiniLM-L6-v2
+```
+
+The catalog and profile resolve through the same release envelope. `sql` runs
+one read-only `SELECT` over catalog tables. `search` accepts a query string,
+mode, limit, optional LanceDB filter, and an optional caller-provided vector.
+Vector and hybrid modes require that vector.
+
+## Exact release
+
+Use an exact `release.json` source for deterministic runs:
+
+```bash
+chartcoach mcp \
+  --source https://artifacts.chartcoach.dev/catalog/releases/<digest>/release.json \
+  --profile sentence-transformers/all-MiniLM-L6-v2
 ```
 
 ## Network transports
@@ -45,6 +47,4 @@ chartcoach mcp \
   --log-level info
 ```
 
-Use `CHARTCOACH_SOURCE`, `CHARTCOACH_INDEX`, and
-`CHARTCOACH_INDEX_PROFILE` to configure catalog and index selection for a
-managed process.
+Use `CHARTCOACH_SOURCE` and `CHARTCOACH_INDEX_PROFILE` for managed processes.

@@ -1,26 +1,18 @@
 ---
 title: CLI
-description: Inspect local or published catalogs, run SQL, search LanceDB profiles, and curate releases.
+description: Inspect local or remote catalogs, run SQL, search release profiles, and curate releases.
 icon: Terminal
 ---
 
-The chartcoach CLI reads an authored folder, a compiled bundle, or a published
-release digest.
+Catalog-reading commands use one source option:
 
 ```bash
-uvx chartcoach@latest catalog overview --source ./dist/catalog
+uvx chartcoach@latest catalog overview \
+  --source https://artifacts.chartcoach.dev/catalog.json
 ```
 
-Use `chartcoach[curation]` for the selected published release and storage
-workflows. Use `chartcoach[index]` for local LanceDB search.
-
-```bash
-uvx --from 'chartcoach[curation]@latest' chartcoach catalog overview
-uvx --from 'chartcoach[index]@latest' chartcoach catalog find \
-  --source ./dist/catalog \
-  --index ./dist/index \
-  "direct labels"
-```
+`--source` accepts a catalog folder, bundle, `catalog.json`, or `release.json`
+path or URI. It defaults to `CHARTCOACH_SOURCE`, then the official catalog.
 
 ## Catalog commands
 
@@ -36,30 +28,41 @@ uvx --from 'chartcoach[index]@latest' chartcoach catalog find \
 | `catalog sql`      | Run one read-only `SELECT` query.         |
 | `catalog find`     | Rank indexed documents with LanceDB.      |
 
-Tabular commands support `table` and `json`. `read`, `cite`, and `manifest`
-support `markdown` and `json`. `find` also supports `markdown` and `compact`.
+Search selects a profile from the same release source:
 
-## Lifecycle commands
+```bash
+uvx --from 'chartcoach[index]@latest' chartcoach catalog find \
+  --source https://artifacts.chartcoach.dev/catalog.json \
+  --profile sentence-transformers/all-MiniLM-L6-v2 \
+  "direct labels"
+```
+
+## Build commands
 
 ```bash
 chartcoach catalog validate --source ./catalog-source
 chartcoach catalog build --source ./catalog-source --out ./dist/catalog
-chartcoach catalog export duckdb --source ./dist/catalog --out ./dist/catalog.duckdb
+chartcoach catalog export duckdb \
+  --source ./dist/catalog \
+  --out ./dist/catalog.duckdb
 ```
 
-Release storage uses Obspec object keys with local file URLs or S3-compatible
-URLs:
+## Release commands
+
+The curation extra builds profile artifacts and writes catalog storage:
 
 ```bash
 chartcoach catalog release validate ./dist/release
-chartcoach catalog release publish ./dist/release --store s3://chartcoach
-chartcoach catalog release select "$RELEASE_DIGEST" --store s3://chartcoach
-chartcoach catalog cache pull --profile sentence-transformers/all-MiniLM-L6-v2
+chartcoach catalog release publish \
+  ./dist/release \
+  --store s3://chartcoach
+chartcoach catalog release select \
+  "$RELEASE_DIGEST" \
+  --store s3://chartcoach
 ```
 
-`release publish` writes immutable objects under the release digest. `release
-select` verifies that digest and writes its full release record to
-`catalog.json`.
+Publication writes immutable objects under the release digest. Selection
+verifies the published release and updates `catalog.json`.
 
 ## Agent and MCP commands
 
