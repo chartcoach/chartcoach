@@ -1,15 +1,14 @@
 from __future__ import annotations
 
-from io import BytesIO
 import json
-from pathlib import Path
 import subprocess
 import sys
 import tarfile
+from io import BytesIO
+from pathlib import Path
 
 from chartcoach.catalog.releases import CatalogRelease, ReleaseArtifact
 from chartcoach.catalog.releases.hashing import release_digest, sha256_file
-
 
 _RELEASE_FIXTURE = Path(__file__).parents[3] / "fixtures" / "catalog-release"
 

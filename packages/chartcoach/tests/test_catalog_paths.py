@@ -1,9 +1,7 @@
 from __future__ import annotations
 
 import pytest
-
 from chartcoach.catalog.paths import paths
-
 
 DIGEST = "8" * 64
 

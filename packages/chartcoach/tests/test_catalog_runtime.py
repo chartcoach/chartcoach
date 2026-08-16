@@ -1,18 +1,17 @@
 from __future__ import annotations
 
+import json
+import shutil
 from collections import Counter
 from collections.abc import Iterator
 from contextlib import contextmanager
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
-import json
 from pathlib import Path
-import shutil
 from threading import Thread
 from typing import Any
 
 import pytest
-
 from chartcoach import CatalogError, open_catalog
 from chartcoach.catalog.collection import Catalog
 from chartcoach.catalog.releases import CatalogRelease, ReleaseArtifact
@@ -201,9 +200,11 @@ def test_remote_artifact_integrity_is_checked_before_cache_commit(
     cache = tmp_path / "cache"
     monkeypatch.setattr("chartcoach.catalog.runtime._cache_root", lambda: cache)
 
-    with _serve(store) as (base_url, _requests):
-        with pytest.raises(CatalogError, match="byte count|SHA-256"):
-            open_catalog(f"{base_url}/catalog.json")
+    with (
+        _serve(store) as (base_url, _requests),
+        pytest.raises(CatalogError, match="byte count|SHA-256"),
+    ):
+        open_catalog(f"{base_url}/catalog.json")
 
     assert not (
         cache / "artifacts" / release.artifact("entries.parquet").sha256

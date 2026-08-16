@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Any, Iterator, TypeVar, cast
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 import click
 from tabulate import tabulate
@@ -83,7 +83,6 @@ def _remember_source_path(
 ) -> None:
     if value is not None:
         ctx.ensure_object(dict)["source_path"] = value
-    return None
 
 
 def load_catalog(
@@ -109,7 +108,8 @@ def storage_errors(operation: str, target: str) -> Iterator[None]:
     """Render installed object-store backend failures as CLI errors."""
 
     try:
-        from obspec.exceptions import BaseError as ObspecError, map_exception
+        from obspec.exceptions import BaseError as ObspecError
+        from obspec.exceptions import map_exception
         from obstore.exceptions import BaseError as ObstoreError
     except ModuleNotFoundError:
         yield

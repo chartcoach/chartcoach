@@ -3,12 +3,10 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from click.testing import CliRunner
 import pytest
-
 from chartcoach.catalog.collection import Catalog
 from chartcoach.cli.main import main as chartcoach_cli
-
+from click.testing import CliRunner
 from helpers import assert_cli_error
 
 
@@ -136,9 +134,8 @@ def test_duckdb_overwrite_preserves_existing_file_on_failure(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    import duckdb
-
     import chartcoach.duckdb as duckdb_module
+    import duckdb
 
     duckdb_path = tmp_path / "duckdb" / "catalog.duckdb"
     duckdb_module.write_duckdb(sample_catalog, duckdb_path)

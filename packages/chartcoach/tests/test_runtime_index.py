@@ -1,16 +1,14 @@
 from __future__ import annotations
 
-from pathlib import Path
 import shutil
+from pathlib import Path
 
 import pytest
-
+from catalog_testkit import deterministic_embedding
 from chartcoach import CatalogError, open_index
 from chartcoach.catalog.collection import Catalog
 from chartcoach.catalog.curation import EmbeddingProfile, build_release
 from chartcoach.catalog.documents import document_rows
-from catalog_testkit import deterministic_embedding
-
 
 pytestmark = [pytest.mark.curation, pytest.mark.search]
 _PROFILE = "test/deterministic"

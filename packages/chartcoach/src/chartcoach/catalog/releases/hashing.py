@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import hashlib
 import json
-from pathlib import Path
 from collections.abc import Mapping
+from pathlib import Path
 
 from .models import SCHEMA_VERSION, ReleaseArtifact
 

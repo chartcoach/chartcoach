@@ -20,7 +20,7 @@ class Guideline:
     title: str
     description: str
     labels: tuple[str, ...] = dc.field(default_factory=tuple)
-    sections: tuple["Section", ...] = dc.field(default_factory=tuple)
+    sections: tuple[Section, ...] = dc.field(default_factory=tuple)
     references: tuple[str, ...] = dc.field(default_factory=tuple)
 
     def __post_init__(self) -> None:
@@ -51,7 +51,7 @@ class Guideline:
         )
 
     @classmethod
-    def from_mapping(cls, data: object) -> "Guideline":
+    def from_mapping(cls, data: object) -> Guideline:
         """Build a guideline from one compiled catalog row."""
 
         if isinstance(data, cls):
@@ -116,7 +116,7 @@ class Section:
             raise ValueError("section title must not be empty.")
 
     @classmethod
-    def from_mapping(cls, data: object) -> "Section":
+    def from_mapping(cls, data: object) -> Section:
         """Build a section from one compiled section record."""
 
         if isinstance(data, cls):

@@ -4,9 +4,9 @@ from os import PathLike
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from ...constants import LANCE_DOCUMENT_TABLE
 from ..collection import Catalog
 from ..documents import document_rows
-from ...constants import LANCE_DOCUMENT_TABLE
 from .dependencies import CURATION_EXTRA, missing_curation_dependency
 
 if TYPE_CHECKING:
@@ -18,8 +18,8 @@ def build_lancedb_index(
     catalog: Catalog,
     uri: str | PathLike[str],
     *,
-    embedding: "EmbeddingFunction",
-) -> "Table":
+    embedding: EmbeddingFunction,
+) -> Table:
     """Build the fixed ChartCoach document table with native LanceDB embedding."""
 
     embedding = _validated_embedding(embedding)
@@ -38,7 +38,7 @@ def build_lancedb_index(
     return table
 
 
-def _embedding_config(embedding: "EmbeddingFunction") -> "EmbeddingFunctionConfig":
+def _embedding_config(embedding: EmbeddingFunction) -> EmbeddingFunctionConfig:
     try:
         from lancedb.embeddings import EmbeddingFunctionConfig
     except ModuleNotFoundError as exc:
@@ -50,7 +50,7 @@ def _embedding_config(embedding: "EmbeddingFunction") -> "EmbeddingFunctionConfi
     )
 
 
-def _validated_embedding(embedding: "EmbeddingFunction") -> "EmbeddingFunction":
+def _validated_embedding(embedding: EmbeddingFunction) -> EmbeddingFunction:
     from lancedb.embeddings import get_registry
 
     from .validation import _EMBEDDING_REMOTE_CODE_ERROR, _embedding_metadata_issue
@@ -69,7 +69,7 @@ def _validated_embedding(embedding: "EmbeddingFunction") -> "EmbeddingFunction":
     )
 
 
-def _connect(uri: str | PathLike[str]) -> "DBConnection":
+def _connect(uri: str | PathLike[str]) -> DBConnection:
     try:
         import lancedb
     except ModuleNotFoundError as exc:

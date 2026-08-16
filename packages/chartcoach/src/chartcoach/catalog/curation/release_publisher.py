@@ -18,7 +18,6 @@ from ..releases.models import safe_sha256
 from ..runtime import _copy_storage_options, _obstore_uri
 from .validation import validate_release
 
-
 _MAX_JSON_BYTES = 1024 * 1024
 
 

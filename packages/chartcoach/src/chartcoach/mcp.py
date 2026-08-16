@@ -6,7 +6,7 @@ from os import PathLike
 from typing import Literal
 
 try:
-    from mcp.server import FastMCP
+    from mcp.server import MCPServer
     from mcp.types import ToolAnnotations
 except ModuleNotFoundError as exc:  # pragma: no cover - depends on install extras
     name = exc.name
@@ -64,18 +64,15 @@ def _configure_logging(log_level: Level) -> None:
     logging.getLogger().setLevel(getattr(logging, log_level))
 
 
-def _build_server(*, host: str, port: int, log_level: Level) -> FastMCP:
-    return FastMCP(
+def _build_server(*, log_level: Level) -> MCPServer:
+    return MCPServer(
         "chartcoach",
-        json_response=True,
-        host=host,
-        port=port,
         log_level=log_level,
     )
 
 
 def _add_tool(
-    server: FastMCP,
+    server: MCPServer,
     func: Callable[..., object],
     *,
     name: str,
@@ -87,16 +84,16 @@ def _add_tool(
         name=name,
         description=description,
         annotations=ToolAnnotations(
-            readOnlyHint=True,
-            destructiveHint=False,
-            idempotentHint=True,
-            openWorldHint=open_world,
+            read_only_hint=True,
+            destructive_hint=False,
+            idempotent_hint=True,
+            open_world_hint=open_world,
         ),
     )
 
 
 def _register_tools(
-    server: FastMCP,
+    server: MCPServer,
     *,
     tools: Tools,
     include_search: bool = False,
@@ -115,6 +112,26 @@ def _register_tools(
             name="search",
             description="Run LanceDB search over indexed catalog document rows.",
             open_world=True,
+        )
+
+
+def _run_server(
+    server: MCPServer,
+    *,
+    transport: Transport,
+    host: str,
+    port: int,
+) -> None:
+    if transport == "stdio":
+        server.run()
+    elif transport == "sse":
+        server.run("sse", host=host, port=port)
+    else:
+        server.run(
+            "streamable-http",
+            host=host,
+            port=port,
+            json_response=True,
         )
 
 
@@ -158,13 +175,18 @@ def main(
         source=source,
         profile=profile,
     )
-    server = _build_server(host=host, port=port, log_level=resolved_log_level)
+    server = _build_server(log_level=resolved_log_level)
     _register_tools(
         server,
         tools=server_tools,
         include_search=table is not None,
     )
-    server.run(transport=resolved_transport)
+    _run_server(
+        server,
+        transport=resolved_transport,
+        host=host,
+        port=port,
+    )
 
 
 __all__ = ["main"]

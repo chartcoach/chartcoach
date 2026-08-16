@@ -13,7 +13,6 @@ from ..releases import CatalogRelease
 from ..releases.archive import extract_tar_archive
 from ..releases.services import validate_runtime_release
 
-
 _EMBEDDING_BINDING_ERROR = (
     "Profile native LanceDB embedding metadata must define exactly one "
     "text-to-vector binding."

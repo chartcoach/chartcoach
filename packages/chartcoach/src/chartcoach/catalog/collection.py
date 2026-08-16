@@ -29,13 +29,13 @@ class Catalog:
         self,
         frame: pl.DataFrame,
         *,
-        manifest: "CatalogManifest",
-        release: "CatalogRelease | None" = None,
+        manifest: CatalogManifest,
+        release: CatalogRelease | None = None,
     ) -> None:
         self._frame = _normalize_catalog_frame(frame)
         self._manifest = manifest
         self._release = release
-        self._reference_tables_cache: "ReferenceTables | None" = None
+        self._reference_tables_cache: ReferenceTables | None = None
         _validate_unique_ids(self._frame)
 
         from .manifest import validate_catalog_manifest
@@ -47,8 +47,8 @@ class Catalog:
         cls,
         guidelines: Iterable[Guideline],
         *,
-        manifest: "CatalogManifest",
-    ) -> "Catalog":
+        manifest: CatalogManifest,
+    ) -> Catalog:
         """Build a catalog from compiled guidelines and a manifest."""
 
         from .tables import build_catalog_df
@@ -56,13 +56,13 @@ class Catalog:
         return cls(build_catalog_df(tuple(guidelines)), manifest=manifest)
 
     @property
-    def manifest(self) -> "CatalogManifest":
+    def manifest(self) -> CatalogManifest:
         """Return the catalog vocabulary manifest."""
 
         return self._manifest
 
     @property
-    def release(self) -> "CatalogRelease | None":
+    def release(self) -> CatalogRelease | None:
         """Return the verified release record for a descriptor-backed catalog."""
 
         return self._release
@@ -123,8 +123,8 @@ class Catalog:
     def duckdb(
         self,
         *,
-        config: Mapping[str, "DuckDBConfigValue"] | None = None,
-    ) -> "duckdb_module.DuckDBPyConnection":
+        config: Mapping[str, DuckDBConfigValue] | None = None,
+    ) -> duckdb_module.DuckDBPyConnection:
         """Return an in-memory DuckDB connection over the catalog tables."""
 
         from ..duckdb import connect_catalog
@@ -181,7 +181,7 @@ class Catalog:
             raise KeyError(guideline_id)
         return Guideline.from_mapping(rows.row(0, named=True))
 
-    def _reference_tables(self) -> "ReferenceTables":
+    def _reference_tables(self) -> ReferenceTables:
         from .references import build_reference_tables
 
         if self._reference_tables_cache is None:
@@ -233,7 +233,7 @@ def _load_catalog_bundle(
     manifest_path: Path,
     entries_path: Path,
     *,
-    release: "CatalogRelease | None" = None,
+    release: CatalogRelease | None = None,
 ) -> Catalog:
     from .manifest import CatalogManifest
 

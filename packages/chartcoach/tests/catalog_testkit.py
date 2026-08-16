@@ -75,7 +75,7 @@ def write_catalog_entry(root: Path, entry_id: str = "direct-labels") -> Path:
 def deterministic_embedding(
     name: str,
     vector: Callable[[str, int], Sequence[float]] | None = None,
-) -> "EmbeddingFunction":
+) -> EmbeddingFunction:
     """Return a registered native LanceDB embedding for contract tests."""
 
     import numpy as np

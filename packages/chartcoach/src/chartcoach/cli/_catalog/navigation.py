@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from collections.abc import Mapping
 import json
+from collections.abc import Mapping
 from typing import cast
 
 import click
@@ -17,13 +17,15 @@ from chartcoach.tools import ToolError, format_error
 from ..common import (
     CONTEXT_SETTINGS,
     ROW_FORMATS,
+    catalog_release_digest,
     echo_warn,
     emit_object,
     emit_rows,
-    catalog_release_digest,
     load_catalog,
     source_option,
     source_path,
+)
+from ..common import (
     tools as catalog_tools,
 )
 from .rendering import citation_records_to_markdown, entry_records_to_markdown

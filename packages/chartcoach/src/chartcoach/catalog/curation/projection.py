@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import operator
 from collections.abc import Mapping
 from dataclasses import dataclass
-import operator
 from typing import SupportsIndex, cast
 
 import numpy as np
@@ -121,16 +121,23 @@ def _options(values: Mapping[str, object]) -> dict[str, object]:
         "random_state": 42,
     }
     options.update(values)
+    if isinstance(options["n_neighbors"], bool):
+        raise TypeError("UMAP n_neighbors must be an integer.")
     try:
         n_neighbors = operator.index(cast(SupportsIndex, options["n_neighbors"]))
-        random_state = operator.index(cast(SupportsIndex, options["random_state"]))
     except TypeError as exc:
-        raise ValueError("UMAP n_neighbors and random_state must be integers.") from exc
-    if isinstance(options["n_neighbors"], bool) or n_neighbors < 2:
+        raise TypeError("UMAP n_neighbors must be an integer.") from exc
+    if n_neighbors < 2:
         raise ValueError("UMAP n_neighbors must be an integer of at least 2.")
     if isinstance(options["random_state"], bool):
-        raise ValueError("UMAP random_state must be an integer.")
-    if not isinstance(options["metric"], str) or not options["metric"]:
+        raise TypeError("UMAP random_state must be an integer.")
+    try:
+        random_state = operator.index(cast(SupportsIndex, options["random_state"]))
+    except TypeError as exc:
+        raise TypeError("UMAP random_state must be an integer.") from exc
+    if not isinstance(options["metric"], str):
+        raise TypeError("UMAP metric must be a string.")
+    if not options["metric"]:
         raise ValueError("UMAP metric must be a non-empty string.")
     options["n_neighbors"] = n_neighbors
     options["random_state"] = random_state

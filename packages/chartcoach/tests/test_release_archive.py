@@ -1,11 +1,10 @@
 from __future__ import annotations
 
+import tarfile
 from io import BytesIO
 from pathlib import Path
-import tarfile
 
 import pytest
-
 from chartcoach.catalog.releases.archive import extract_tar_archive
 
 

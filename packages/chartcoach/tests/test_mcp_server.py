@@ -4,20 +4,20 @@ import asyncio
 from pathlib import Path
 from typing import cast
 
+import chartcoach.mcp as mcp_server
 import pytest
-
+from catalog_testkit import deterministic_embedding
 from chartcoach.catalog.collection import Catalog
 from chartcoach.catalog.releases import CatalogRelease, ReleaseArtifact
 from chartcoach.catalog.releases.hashing import release_digest
-import chartcoach.mcp as mcp_server
 from chartcoach.tools import Tools
-from catalog_testkit import deterministic_embedding
+from mcp.types import CallToolResult
 
 pytestmark = pytest.mark.mcp
 
 
 @pytest.mark.search
-def test_mcp_registers_real_fastmcp_sql_and_search_tools(
+def test_mcp_registers_sql_and_search_tools(
     sample_catalog: Catalog,
     tmp_path: Path,
 ) -> None:
@@ -32,7 +32,7 @@ def test_mcp_registers_real_fastmcp_sql_and_search_tools(
             index_path,
             embedding=deterministic_embedding("chartcoach-mcp-test"),
         )
-        server = mcp_server.FastMCP("chartcoach-test", json_response=True)
+        server = mcp_server.MCPServer("chartcoach-test")
         mcp_server._register_tools(
             server,
             tools=Tools(
@@ -46,6 +46,13 @@ def test_mcp_registers_real_fastmcp_sql_and_search_tools(
 
         tool_map = {tool.name: tool for tool in await server.list_tools()}
         assert set(tool_map) == {"sql", "search"}
+        assert tool_map["sql"].annotations is not None
+        assert tool_map["sql"].annotations.read_only_hint is True
+        assert tool_map["sql"].annotations.destructive_hint is False
+        assert tool_map["sql"].annotations.idempotent_hint is True
+        assert tool_map["sql"].annotations.open_world_hint is False
+        assert tool_map["search"].annotations is not None
+        assert tool_map["search"].annotations.open_world_hint is True
 
         sql_result = await server.call_tool(
             "sql",
@@ -54,9 +61,9 @@ def test_mcp_registers_real_fastmcp_sql_and_search_tools(
                 "limit": 1,
             },
         )
-        assert isinstance(sql_result, tuple)
-        _sql_content, sql_payload = sql_result
-        sql_payload = cast(dict[str, object], sql_payload)
+        assert isinstance(sql_result, CallToolResult)
+        assert sql_result.is_error is False
+        sql_payload = cast(dict[str, object], sql_result.structured_content)
         sql_rows = cast(list[dict[str, object]], sql_payload["rows"])
         assert sql_payload["row_count"] == 1
         assert sql_payload["release_digest"] == catalog.release.digest
@@ -66,9 +73,9 @@ def test_mcp_registers_real_fastmcp_sql_and_search_tools(
             "search",
             {"search_query": "direct labels", "limit": 1, "mode": "fts"},
         )
-        assert isinstance(search_result, tuple)
-        _search_content, search_payload = search_result
-        search_payload = cast(dict[str, object], search_payload)
+        assert isinstance(search_result, CallToolResult)
+        assert search_result.is_error is False
+        search_payload = cast(dict[str, object], search_result.structured_content)
         search_rows = cast(list[dict[str, object]], search_payload["rows"])
         assert search_payload["mode"] == "fts"
         assert search_payload["source"] == str(tmp_path / "release")

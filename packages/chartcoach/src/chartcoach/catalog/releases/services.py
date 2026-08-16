@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path, PurePosixPath
 import stat
+from pathlib import Path, PurePosixPath
 
 from .hashing import release_digest, sha256_file
 from .models import CatalogRelease, ReleaseArtifact
-
 
 _MAX_RELEASE_JSON_BYTES = 1024 * 1024
 _MAX_RUNTIME_ARTIFACT_BYTES = 64 * 1024**2

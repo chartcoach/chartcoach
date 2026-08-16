@@ -10,7 +10,7 @@ from .releases.models import safe_relative_path, safe_sha256
 
 @dataclass(frozen=True, slots=True)
 class _ProfilePaths:
-    release: "_ReleasePaths"
+    release: _ReleasePaths
     profile: str
 
     def documents(self) -> str:

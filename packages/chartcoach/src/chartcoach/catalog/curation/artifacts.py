@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from collections.abc import Mapping
 import gzip
 import json
-from pathlib import Path, PurePosixPath
 import tarfile
+from collections.abc import Mapping
+from pathlib import Path, PurePosixPath
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING
 
@@ -37,7 +37,7 @@ def build_release_artifacts(
     catalog: Catalog,
     root: Path,
     *,
-    profiles: Mapping[str, "EmbeddingProfile"],
+    profiles: Mapping[str, EmbeddingProfile],
 ) -> dict[str, ReleaseArtifact]:
     artifacts: dict[str, ReleaseArtifact] = {}
     for profile_name, profile in profiles.items():
@@ -71,7 +71,7 @@ def _profile_path(value: str) -> str:
 
 
 def _profile_table(
-    table: "Table",
+    table: Table,
     *,
     profile: str,
     umap: Mapping[str, object],
@@ -133,18 +133,18 @@ def _neighbors(projection: Projection) -> pa.Array:
 def _write_lancedb_archive(database: Path, archive_path: Path) -> None:
     if archive_path.exists():
         archive_path.unlink()
-    with archive_path.open("wb") as output:
-        with gzip.GzipFile(
-            filename="", mode="wb", fileobj=output, mtime=0
-        ) as compressed:
-            with tarfile.open(fileobj=compressed, mode="w") as archive:
-                for path in sorted(database.rglob("*")):
-                    archive.add(
-                        path,
-                        arcname=path.relative_to(database).as_posix(),
-                        recursive=False,
-                        filter=_normalized_tar_info,
-                    )
+    with (
+        archive_path.open("wb") as output,
+        gzip.GzipFile(filename="", mode="wb", fileobj=output, mtime=0) as compressed,
+        tarfile.open(fileobj=compressed, mode="w") as archive,
+    ):
+        for path in sorted(database.rglob("*")):
+            archive.add(
+                path,
+                arcname=path.relative_to(database).as_posix(),
+                recursive=False,
+                filter=_normalized_tar_info,
+            )
 
 
 def _normalized_tar_info(info: tarfile.TarInfo) -> tarfile.TarInfo:

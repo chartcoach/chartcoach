@@ -1,12 +1,11 @@
 from __future__ import annotations
 
+import re
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import PurePosixPath
-import re
 from types import MappingProxyType
 from typing import Self, cast
-
 
 SCHEMA_VERSION = 1
 REQUIRED_ARTIFACT_PATHS = ("MANIFEST.md", "entries.parquet")

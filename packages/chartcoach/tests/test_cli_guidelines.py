@@ -4,12 +4,11 @@ import json
 from pathlib import Path
 from typing import cast
 
-from click.testing import CliRunner
-
 from chartcoach import CatalogManifest
 from chartcoach.catalog.collection import Catalog
 from chartcoach.catalog.entries import Guideline, Section
 from chartcoach.cli.main import main as chartcoach_cli
+from click.testing import CliRunner
 
 
 def citation_catalog_path(tmp_path: Path, manifest: CatalogManifest) -> Path:

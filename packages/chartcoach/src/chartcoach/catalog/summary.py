@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 
 def catalog_overview(
-    catalog: "Catalog",
+    catalog: Catalog,
     *,
     source: str,
     release_digest: str | None = None,
@@ -28,7 +28,7 @@ def catalog_overview(
     }
 
 
-def overview_table_count_rows(catalog: "Catalog") -> list[dict[str, object]]:
+def overview_table_count_rows(catalog: Catalog) -> list[dict[str, object]]:
     return [
         {"name": "guidelines", "rows": len(catalog)},
         {"name": "sections", "rows": catalog.sections().height},
@@ -54,7 +54,7 @@ def overview_table_rows(overview: Mapping[str, object]) -> list[dict[str, object
     ]
 
 
-def validation_rows(catalog: "Catalog") -> list[dict[str, object]]:
+def validation_rows(catalog: Catalog) -> list[dict[str, object]]:
     manifest = catalog.manifest
     return [
         {"name": "manifest_section_roles", "rows": len(manifest.section_roles)},
@@ -66,7 +66,7 @@ def validation_rows(catalog: "Catalog") -> list[dict[str, object]]:
 
 
 def list_labels(
-    catalog: "Catalog",
+    catalog: Catalog,
     *,
     family: str | None = None,
     prefix: str | None = None,
@@ -98,7 +98,7 @@ def list_labels(
     )
 
 
-def list_roles(catalog: "Catalog") -> list[dict[str, object]]:
+def list_roles(catalog: Catalog) -> list[dict[str, object]]:
     count_rows = (
         catalog.sections().group_by("role").len("entries").sort("role").to_dicts()
     )

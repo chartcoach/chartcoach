@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 
 def list_tables(
-    catalog: "Catalog", *, include_row_counts: bool = False
+    catalog: Catalog, *, include_row_counts: bool = False
 ) -> list[dict[str, object]]:
     if include_row_counts:
         return catalog_table_rows(catalog)

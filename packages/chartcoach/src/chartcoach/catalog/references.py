@@ -170,7 +170,7 @@ def build_guideline_sources_df(
 
 
 def citation_records(
-    catalog: "Catalog",
+    catalog: Catalog,
     *,
     ids: Sequence[str],
     url_template: str = DEFAULT_GUIDELINE_URL_TEMPLATE,

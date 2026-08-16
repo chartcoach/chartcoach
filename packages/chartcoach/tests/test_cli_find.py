@@ -3,14 +3,12 @@ from __future__ import annotations
 from pathlib import Path
 from typing import cast
 
-from click.testing import CliRunner, Result
 import pytest
-
+from catalog_testkit import deterministic_embedding
 from chartcoach.catalog.collection import Catalog
 from chartcoach.catalog.curation import EmbeddingProfile, build_release
 from chartcoach.cli.main import main as chartcoach_cli
-from catalog_testkit import deterministic_embedding
-
+from click.testing import CliRunner, Result
 from helpers import json_value
 
 _PROFILE = "test/deterministic"

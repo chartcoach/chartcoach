@@ -16,11 +16,11 @@ from .catalog import (
 __version__ = version("chartcoach")
 
 __all__ = [
-    "__version__",
     "Catalog",
     "CatalogError",
     "CatalogManifest",
     "CatalogRelease",
+    "__version__",
     "open_catalog",
     "open_index",
 ]

@@ -3,11 +3,10 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from click.testing import CliRunner
-
 from chartcoach.catalog.collection import Catalog
 from chartcoach.catalog.curation import build_release
 from chartcoach.cli.main import main as chartcoach_cli
+from click.testing import CliRunner
 
 
 def test_catalog_overview_reports_local_content_identity(

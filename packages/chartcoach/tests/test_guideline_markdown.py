@@ -1,5 +1,4 @@
 import pytest
-
 from chartcoach.catalog.entries import Guideline, Section
 from chartcoach.catalog.markdown import parse_guideline
 
@@ -38,7 +37,7 @@ Dense charts may still need a legend.
 
 
 def test_parse_guideline_rejects_non_mapping_frontmatter() -> None:
-    with pytest.raises(ValueError, match="frontmatter must be a mapping"):
+    with pytest.raises(TypeError, match="frontmatter must be a mapping"):
         parse_guideline(
             """---
 - direct-labels

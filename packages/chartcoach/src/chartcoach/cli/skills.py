@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from collections.abc import Iterable, Sequence
 import dataclasses as dc
-from pathlib import Path, PurePosixPath
 import os
 import sysconfig
+from collections.abc import Iterable, Sequence
+from pathlib import Path, PurePosixPath
 
 import click
 import yaml
