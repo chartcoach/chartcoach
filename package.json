@@ -16,7 +16,7 @@
     "@types/node": "catalog:",
     "oxlint": "catalog:",
     "oxlint-tsgolint": "catalog:",
-    "portless": "^0.14.0",
+    "portless": "^0.15.5",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plus": "catalog:"
