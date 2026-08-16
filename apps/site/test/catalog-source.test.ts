@@ -1,14 +1,10 @@
 import { readFile } from "node:fs/promises";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
+import { parseCatalogRelease, type CatalogRelease, type JsonValue } from "@chartcoach/catalog";
 
 const releaseFixtureRoot = new URL("../../../fixtures/catalog-release/", import.meta.url);
 const artifactBaseUrl = "https://artifacts.chartcoach.dev";
-
-type ReleaseRecord = {
-  digest: string;
-  [key: string]: unknown;
-};
 
 describe("site catalog source loading", () => {
   beforeEach(() => {
@@ -90,7 +86,7 @@ function catalogSourceModule() {
 }
 
 async function fixtureRelease(): Promise<{
-  release: ReleaseRecord;
+  release: CatalogRelease;
   manifest: string;
   entries: Buffer;
 }> {
@@ -102,7 +98,7 @@ async function fixtureRelease(): Promise<{
   return {
     manifest,
     entries,
-    release: release as ReleaseRecord,
+    release: parseCatalogRelease(release),
   };
 }
 
@@ -123,7 +119,7 @@ function releaseResponses(
 }
 
 function responseBytes(bytes: Uint8Array): ArrayBuffer {
-  return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+  return Uint8Array.from(bytes).buffer;
 }
 
 function fetchFrom(responses: Map<string, BodyInit>) {
@@ -138,9 +134,6 @@ function requestUrl(input: string | URL | Request): string {
   return input instanceof Request ? input.url : input.toString();
 }
 
-async function readJsonFixture(name: string): Promise<Record<string, unknown>> {
-  return JSON.parse(await readFile(new URL(name, releaseFixtureRoot), "utf8")) as Record<
-    string,
-    unknown
-  >;
+async function readJsonFixture(name: string): Promise<JsonValue> {
+  return JSON.parse(await readFile(new URL(name, releaseFixtureRoot), "utf8"));
 }

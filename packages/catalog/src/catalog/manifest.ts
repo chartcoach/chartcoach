@@ -16,15 +16,17 @@ export type CatalogManifest = {
   labelFamilies: Record<string, ManifestDefinition>;
 };
 
+type ManifestDefinitions = {
+  "Section Roles": Record<string, ManifestDefinition>;
+  "Label Families": Record<string, ManifestDefinition>;
+};
+
 const headingPattern = /^(#{1,6})[ \t]+(.+?)[ \t]*#*[ \t]*$/;
 const codeSpanPattern = /`([^`\n]+)`/g;
 
 export function parseCatalogManifest(markdown: string): CatalogManifest {
   const requiredSeen = new Set<string>();
-  const definitions: {
-    "Section Roles": Record<string, ManifestDefinition>;
-    "Label Families": Record<string, ManifestDefinition>;
-  } = {
+  const definitions: ManifestDefinitions = {
     "Section Roles": {},
     "Label Families": {},
   };

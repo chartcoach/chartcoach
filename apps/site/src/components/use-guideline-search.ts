@@ -1,4 +1,4 @@
-import { create as createOrama, load, search } from "@orama/orama";
+import { create as createOrama, load, search, type RawData } from "@orama/orama";
 import { startTransition, useEffect, useMemo } from "react";
 import { create as createZustandStore } from "zustand";
 import { useShallow } from "zustand/react/shallow";
@@ -9,7 +9,6 @@ import {
   GUIDELINE_SEARCH_SCHEMA,
   type GuidelineSearchDocument,
 } from "@/lib/guideline-search-model";
-import type { AnyOrama, RawData } from "@orama/orama";
 
 export type IndexStatus = "idle" | "loading" | "ready" | "failed";
 export type SearchStatus = "idle" | "searching" | "ready" | "empty";
@@ -26,7 +25,13 @@ const baseUrl = import.meta.env.BASE_URL;
 export const normalizedSearchBase = baseUrl.replace(/\/$/, "");
 const dbUrl = `${normalizedSearchBase}/assets/search-guidelines.json`;
 
-let databasePromise: Promise<AnyOrama> | undefined;
+function createSearchDatabase() {
+  return createOrama({ schema: GUIDELINE_SEARCH_SCHEMA, language: "english" });
+}
+
+type GuidelineSearchDatabase = ReturnType<typeof createSearchDatabase>;
+
+let databasePromise: Promise<GuidelineSearchDatabase> | undefined;
 
 async function loadSearchDatabase() {
   const controller = new AbortController();
@@ -36,8 +41,8 @@ async function loadSearchDatabase() {
     const response = await fetch(dbUrl, { signal: controller.signal });
     if (!response.ok) throw new Error(`Search index request failed: ${response.status}`);
 
-    const rawData = JSON.parse(await response.text()) as RawData;
-    const db = createOrama({ schema: GUIDELINE_SEARCH_SCHEMA, language: "english" });
+    const rawData: RawData = JSON.parse(await response.text());
+    const db = createSearchDatabase();
     load(db, rawData);
     return db;
   } finally {
@@ -54,11 +59,22 @@ function resetSearchDatabase() {
   databasePromise = undefined;
 }
 
-function normalizeHits(hits: Awaited<ReturnType<typeof search>>["hits"]): SearchResult[] {
+async function searchGuidelines(db: GuidelineSearchDatabase, term: string) {
+  return search<GuidelineSearchDatabase, GuidelineSearchDocument>(db, {
+    term,
+    limit: RESULT_LIMIT,
+    properties: [...GUIDELINE_SEARCH_PROPERTIES],
+    boost: GUIDELINE_SEARCH_BOOST,
+  });
+}
+
+type GuidelineSearchHit = Awaited<ReturnType<typeof searchGuidelines>>["hits"][number];
+
+function normalizeHits(hits: readonly GuidelineSearchHit[]): SearchResult[] {
   return hits.map((hit) => ({
     id: hit.id,
     score: hit.score,
-    document: hit.document as unknown as GuidelineSearchDocument,
+    document: hit.document,
   }));
 }
 
@@ -220,14 +236,7 @@ export function useGuidelineSearch() {
     markSearchStarted();
 
     getSearchDatabase()
-      .then((db) =>
-        search(db, {
-          term: trimmedQuery,
-          limit: RESULT_LIMIT,
-          properties: [...GUIDELINE_SEARCH_PROPERTIES],
-          boost: GUIDELINE_SEARCH_BOOST,
-        }),
-      )
+      .then((db) => searchGuidelines(db, trimmedQuery))
       .then((searchResults) => {
         if (cancelled) return;
 

@@ -75,7 +75,7 @@ function formatCslMeta(reference: CslReference): string | undefined {
 function summarizeWithCitationJs(bibtex: string): OgReferenceSummary[] {
   const entries = bibtex.match(bibEntryPattern) ?? [];
   try {
-    return (new Cite(bibtex).data as CslReference[])
+    return new Cite<CslReference>(bibtex).data
       .flatMap((reference, index) => {
         if (!reference.title) return [];
         return [

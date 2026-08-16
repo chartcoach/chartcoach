@@ -1,4 +1,5 @@
 import { CatalogError } from "./errors";
+import { isJsonObject, isJsonString, type JsonObject, type JsonValue } from "./json";
 import { normalizeLabel } from "./labels";
 import type { Guideline, GuidelineSection } from "./model";
 
@@ -21,37 +22,31 @@ const catalogRowFields = [
 ] as const;
 const sectionFields = ["role", "title", "content"] as const;
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value && typeof value === "object" && !Array.isArray(value));
-}
-
-function hasFields(value: Record<string, unknown>, fields: readonly string[]): boolean {
+function hasFields(value: JsonObject, fields: readonly string[]): boolean {
   const keys = Object.keys(value);
   return keys.length === fields.length && fields.every((field) => Object.hasOwn(value, field));
 }
 
-function isStringArray(value: unknown): value is string[] {
-  return Array.isArray(value) && value.every((item) => typeof item === "string");
+function isStringArray(value: JsonValue | undefined): value is string[] {
+  return Array.isArray(value) && value.every(isJsonString);
 }
 
-function isGuidelineSection(value: unknown): value is GuidelineSection {
+function isGuidelineSection(value: JsonValue): value is GuidelineSection {
+  if (!isJsonObject(value) || !hasFields(value, sectionFields)) return false;
+  const { content, role, title } = value;
   return (
-    isRecord(value) &&
-    hasFields(value, sectionFields) &&
-    typeof value.role === "string" &&
-    value.role.length > 0 &&
-    value.role === value.role.trim() &&
-    typeof value.title === "string" &&
-    value.title === value.title.trim() &&
-    typeof value.content === "string" &&
-    value.content === value.content.trim() &&
-    (value.role === "__dangling__"
-      ? value.title.length === 0 && value.content.length > 0
-      : value.title.length > 0)
+    isJsonString(role) &&
+    role.length > 0 &&
+    role === role.trim() &&
+    isJsonString(title) &&
+    title === title.trim() &&
+    isJsonString(content) &&
+    content === content.trim() &&
+    (role === "__dangling__" ? title.length === 0 && content.length > 0 : title.length > 0)
   );
 }
 
-function isSectionArray(value: unknown): value is GuidelineSection[] {
+function isSectionArray(value: JsonValue | undefined): value is GuidelineSection[] {
   if (!Array.isArray(value) || value.length === 0 || !value.every(isGuidelineSection)) return false;
   const dangling = value.flatMap((section, index) =>
     section.role === "__dangling__" ? [index] : [],
@@ -59,20 +54,21 @@ function isSectionArray(value: unknown): value is GuidelineSection[] {
   return dangling.length === 0 || (dangling.length === 1 && dangling[0] === 0);
 }
 
-export function isCatalogRowWire(value: unknown): value is CatalogRowWire {
-  if (!isRecord(value) || !hasFields(value, catalogRowFields)) return false;
-  if (typeof value.id !== "string" || value.id.length === 0) return false;
-  if (typeof value.title !== "string" || typeof value.description !== "string") return false;
-  if (!isStringArray(value.labels) || !isSectionArray(value.sections)) return false;
-  if (!isStringArray(value.references)) return false;
+export function isCatalogRowWire(value: JsonValue): value is CatalogRowWire {
+  if (!isJsonObject(value) || !hasFields(value, catalogRowFields)) return false;
+  const { description, id, labels, references, sections, title } = value;
+  if (!isJsonString(id) || id.length === 0) return false;
+  if (!isJsonString(title) || !isJsonString(description)) return false;
+  if (!isStringArray(labels) || !isSectionArray(sections)) return false;
+  if (!isStringArray(references)) return false;
   try {
-    return value.labels.every((label) => normalizeLabel(label) === label);
+    return labels.every((label) => normalizeLabel(label) === label);
   } catch {
     return false;
   }
 }
 
-export function guidelineFromWire(value: unknown): Omit<Guideline, "body"> | null {
+export function guidelineFromWire(value: JsonValue): Omit<Guideline, "body"> | null {
   if (!isCatalogRowWire(value)) return null;
 
   const sections = value.sections.map((section) => ({ ...section }));
@@ -87,7 +83,7 @@ export function guidelineFromWire(value: unknown): Omit<Guideline, "body"> | nul
 }
 
 export function requireGuidelineFromWire(
-  value: unknown,
+  value: JsonValue,
   context?: string,
 ): Omit<Guideline, "body"> {
   const guideline = guidelineFromWire(value);

@@ -17,7 +17,7 @@ import type { StoryArtifactId } from "./types";
 const githubIconStyle = {
   mask: `url("${githubIconUrl}") center / contain no-repeat`,
   WebkitMask: `url("${githubIconUrl}") center / contain no-repeat`,
-} as CSSProperties;
+} satisfies CSSProperties;
 
 const accessListings = [
   { id: "py", label: "Python", title: "main.py", language: "py", lines: pythonLines },

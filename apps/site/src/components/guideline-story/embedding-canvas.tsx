@@ -40,7 +40,7 @@ type PlotBounds = {
   height: number;
 };
 
-const roleColors: Record<GuidelineRole, string> = {
+const roleColors = {
   advice: "#2563eb",
   reason: "#d97706",
   context: "#0891b2",
@@ -49,9 +49,9 @@ const roleColors: Record<GuidelineRole, string> = {
   mistakes: "#db2777",
   check: "#059669",
   fix: "#7c3aed",
-};
+} satisfies Record<GuidelineRole, string>;
 
-const sectionPointLayout: Record<GuidelineRole, Point2D> = {
+const sectionPointLayout = {
   advice: { x: 0.28, y: 0.48 },
   reason: { x: 0.55, y: 0.43 },
   context: { x: 0.35, y: 0.69 },
@@ -60,9 +60,9 @@ const sectionPointLayout: Record<GuidelineRole, Point2D> = {
   mistakes: { x: 0.51, y: 0.78 },
   check: { x: 0.39, y: 0.25 },
   fix: { x: 0.78, y: 0.76 },
-};
+} satisfies Record<GuidelineRole, Point2D>;
 
-const compactLabelOffsets: Record<GuidelineRole, Point2D> = {
+const compactLabelOffsets = {
   advice: { x: -30, y: 19 },
   reason: { x: 11, y: -24 },
   context: { x: -39, y: 25 },
@@ -71,7 +71,7 @@ const compactLabelOffsets: Record<GuidelineRole, Point2D> = {
   mistakes: { x: -55, y: 25 },
   check: { x: -22, y: -28 },
   fix: { x: 11, y: 23 },
-};
+} satisfies Record<GuidelineRole, Point2D>;
 
 const sectionPoints: readonly SectionPoint[] = guidelineRoleSections.map((section) => ({
   role: section.role,

@@ -11,6 +11,8 @@ import {
   parseCatalogRelease,
   type CatalogRelease,
   type FetchLike,
+  type JsonObject,
+  type JsonValue,
 } from "@chartcoach/catalog";
 import { requireGuidelineFromWire } from "../src/catalog/wire";
 
@@ -21,6 +23,11 @@ const manifestPath = path.join(releaseFixtureRoot, "MANIFEST.md");
 const invalidRowsPath = path.join(__dirname, "fixtures", "invalid-catalog-rows.json");
 const artifactBaseUrl = "https://artifacts.chartcoach.dev";
 const catalogUrl = `${artifactBaseUrl}/catalog.json`;
+
+type InvalidRowsFixture = {
+  row: JsonObject;
+  cases: Array<{ name: string; patch: JsonObject }>;
+};
 
 describe("catalog loading", () => {
   it("loads a compiled bundle and derives guideline markdown", async () => {
@@ -59,10 +66,7 @@ describe("catalog loading", () => {
   });
 
   it("rejects invalid compiled rows", async () => {
-    const fixture = JSON.parse(await readFile(invalidRowsPath, "utf8")) as {
-      row: Record<string, unknown>;
-      cases: Array<{ name: string; patch: Record<string, unknown> }>;
-    };
+    const fixture: InvalidRowsFixture = JSON.parse(await readFile(invalidRowsPath, "utf8"));
 
     for (const testCase of fixture.cases) {
       expect(
@@ -175,8 +179,8 @@ describe("published catalog releases", () => {
 
 describe("release records", () => {
   it("accepts opaque artifact paths and requires the core bundle paths", async () => {
-    const releaseRecord = await readReleaseRecord();
-    const artifacts = releaseRecord.artifacts as Record<string, unknown>;
+    const releaseRecord = parseCatalogRelease(await readReleaseRecord());
+    const artifacts = releaseRecord.artifacts;
     const opaque = { sha256: "4".repeat(64), bytes: 64 };
 
     expect(
@@ -197,9 +201,9 @@ describe("release records", () => {
   });
 
   it("rejects malformed artifact paths and descriptors", async () => {
-    const releaseRecord = await readReleaseRecord();
-    const artifacts = releaseRecord.artifacts as Record<string, unknown>;
-    const entry = artifacts["entries.parquet"] as Record<string, unknown>;
+    const releaseRecord = parseCatalogRelease(await readReleaseRecord());
+    const artifacts = releaseRecord.artifacts;
+    const entry = artifacts["entries.parquet"]!;
 
     expect(() =>
       parseCatalogRelease({
@@ -261,7 +265,7 @@ function releaseUrlFor(digest: string): string {
 }
 
 function responseBytes(bytes: Uint8Array): ArrayBuffer {
-  return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+  return Uint8Array.from(bytes).buffer;
 }
 
 function releaseWithArtifact(
@@ -302,8 +306,6 @@ function fetchFrom(responses: Map<string, BodyInit>): FetchLike {
   };
 }
 
-async function readReleaseRecord(): Promise<Record<string, unknown>> {
-  return JSON.parse(
-    await readFile(path.join(releaseFixtureRoot, "release.json"), "utf8"),
-  ) as Record<string, unknown>;
+async function readReleaseRecord(): Promise<JsonValue> {
+  return JSON.parse(await readFile(path.join(releaseFixtureRoot, "release.json"), "utf8"));
 }

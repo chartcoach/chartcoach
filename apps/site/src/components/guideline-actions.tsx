@@ -7,11 +7,11 @@ type CopyId = "markdown" | "bibtex";
 type CopyState = CopyId | "failed" | null;
 type CopyMessageState = Exclude<CopyState, null>;
 
-const COPY_STATE_MESSAGES: Record<CopyMessageState, string> = {
+const COPY_STATE_MESSAGES = {
   markdown: "Markdown copied",
   bibtex: "BibTeX copied",
   failed: "Copy failed",
-};
+} satisfies Record<CopyMessageState, string>;
 
 type GuidelineActionsProps = {
   markdown: string;

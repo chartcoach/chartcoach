@@ -42,6 +42,11 @@ const guidelineTitleBreakpoints = {
   longest: 125,
 } as const;
 
+type LabelParts = {
+  namespace?: string;
+  value: string;
+};
+
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }
@@ -425,7 +430,7 @@ function CatalogImage(props: OgImageProps) {
   );
 }
 
-function labelParts(label: string): { namespace?: string; value: string } {
+function labelParts(label: string): LabelParts {
   const separator = label.indexOf(":");
   if (separator < 1) return { value: label };
   return {

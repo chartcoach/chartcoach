@@ -70,9 +70,9 @@ function loadRemoteCatalog(source?: string): Promise<Catalog> {
   const existing = remoteCatalogs.get(key);
   if (existing) return existing;
 
-  const catalog = openCatalog(source).catch((error: unknown) => {
+  const catalog = openCatalog(source).catch((cause: unknown) => {
     remoteCatalogs.delete(key);
-    throw error;
+    throw cause;
   });
   remoteCatalogs.set(key, catalog);
   return catalog;

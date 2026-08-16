@@ -18,9 +18,7 @@ export async function getStaticPaths() {
   }));
 }
 
-export const GET: APIRoute = ({ props }) => {
-  const { guideline } = props as Props;
-
+export const GET: APIRoute<Props> = ({ props: { guideline } }) => {
   return new Response(serializeGuidelineRecord(guideline.data.record), {
     headers: {
       "Content-Type": "application/json; charset=utf-8",

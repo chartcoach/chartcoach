@@ -28,20 +28,18 @@ type EnvMap = Record<string, string | undefined>;
 type SiteRuntimeOptions = {
   env?: EnvMap;
 };
-type SiteViteConfig = NonNullable<AstroUserConfig["vite"]>;
-type SiteVitePlugin = NonNullable<SiteViteConfig["plugins"]>[number];
-
-type ProcessWithLoadEnvFile = typeof process & {
-  loadEnvFile?: (path?: string) => void;
+type SiteUrlResolution = {
+  url: string;
+  source: SiteUrlSource;
 };
+type SiteViteConfig = NonNullable<AstroUserConfig["vite"]>;
 
 let repoEnvLoaded = false;
 
 export function loadRepoEnvFile(envPath = repoEnvPath) {
   if (envPath === repoEnvPath && repoEnvLoaded) return;
 
-  const loadEnvFile = (process as ProcessWithLoadEnvFile).loadEnvFile;
-  if (typeof loadEnvFile === "function" && existsSync(envPath)) loadEnvFile(envPath);
+  if (existsSync(envPath)) process.loadEnvFile(envPath);
   if (envPath === repoEnvPath) repoEnvLoaded = true;
 }
 
@@ -59,7 +57,7 @@ function isCloudflarePreview(env: EnvMap) {
   return env[CF_PAGES_ENV] === "1" && env[CF_PAGES_BRANCH_ENV] !== PRODUCTION_BRANCH;
 }
 
-function resolveConfiguredUrl(env: EnvMap): { url: string; source: SiteUrlSource } {
+function resolveConfiguredUrl(env: EnvMap): SiteUrlResolution {
   const value = env[SITE_URL_ENV];
   if (value) {
     return {
@@ -106,7 +104,7 @@ export function createSiteUrlLogger(siteUrl: string, source: SiteUrlSource): Ast
 
 export const siteViteConfig = {
   envDir: monorepoRoot,
-  plugins: [tailwindcss() as unknown as SiteVitePlugin],
+  plugins: [tailwindcss()],
   server: {
     fs: {
       allow: [monorepoRoot],

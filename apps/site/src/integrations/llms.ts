@@ -6,10 +6,17 @@ import { fileURLToPath } from "node:url";
 import TurndownService from "turndown";
 
 type BuildDoneOptions = HookParameters<"astro:build:done">;
-type ConfigDoneOptions = HookParameters<"astro:config:done">;
 type ServerSetupOptions = HookParameters<"astro:server:setup">;
 type AstroPage = BuildDoneOptions["pages"][number];
 type MaybePromise<T> = T | Promise<T>;
+type LlmConfigDoneOptions = {
+  config: { root: URL };
+};
+type LlmBuildDoneOptions = {
+  pages: AstroPage[];
+  dir: URL;
+  logger: BuildDoneOptions["logger"];
+};
 
 export type LlmFileKind = "index" | "small" | "full";
 
@@ -40,9 +47,7 @@ export type LlmsIntegrationOptions = {
   title: string;
   description: string;
   name?: string;
-  pages?:
-    | readonly (string | LlmPageSource)[]
-    | ((context: LlmPageSourceContext) => MaybePromise<readonly (string | LlmPageSource)[]>);
+  loadPages?: (context: LlmPageSourceContext) => MaybePromise<readonly LlmPageSource[]>;
   includePage?: (pathname: string) => boolean;
   content?: {
     selector?: string;
@@ -60,11 +65,12 @@ export type LlmsIntegrationOptions = {
   };
 };
 
-const DEFAULT_FILE_PATHNAMES: Record<LlmFileKind, string> = {
+const LLM_FILE_KINDS = ["index", "small", "full"] as const;
+const DEFAULT_FILE_PATHNAMES = {
   index: "/llms.txt",
   small: "/llms-small.txt",
   full: "/llms-full.txt",
-};
+} satisfies Record<LlmFileKind, string>;
 const PAGE_SEPARATOR = "\n\n---\n\n";
 const defaultRemoveSelectors = ["script", "style", "header", "footer"];
 const jsdomVirtualConsole = new VirtualConsole();
@@ -124,8 +130,7 @@ function fileOutputPath(distDir: string, pathname: string) {
   return path.join(distDir, normalizeFilePathname(pathname).replace(/^\/+/, ""));
 }
 
-function normalizePageSource(source: string | LlmPageSource): LlmPageSource {
-  if (typeof source === "string") return { pathname: normalizePagePathname(source) };
+function normalizePageSource(source: LlmPageSource): LlmPageSource {
   return {
     ...source,
     pathname: normalizePagePathname(source.pathname),
@@ -160,20 +165,17 @@ function shouldWritePageMarkdown(
 
 function llmFilePathnames(options: LlmsIntegrationOptions) {
   const files = options.output?.files ?? {};
-  return (Object.keys(DEFAULT_FILE_PATHNAMES) as LlmFileKind[])
-    .map((kind) => {
-      const pathname = files[kind] ?? DEFAULT_FILE_PATHNAMES[kind];
-      return pathname === false ? null : ([kind, normalizeFilePathname(pathname)] as const);
-    })
-    .filter((value): value is readonly [LlmFileKind, string] => Boolean(value));
+  return LLM_FILE_KINDS.map((kind) => {
+    const pathname = files[kind] ?? DEFAULT_FILE_PATHNAMES[kind];
+    return pathname === false ? null : ([kind, normalizeFilePathname(pathname)] as const);
+  }).filter((value): value is readonly [LlmFileKind, string] => Boolean(value));
 }
 
 async function resolveSources(
   options: LlmsIntegrationOptions,
   context: LlmPageSourceContext,
 ): Promise<LlmPageSource[]> {
-  const sourceInput =
-    typeof options.pages === "function" ? await options.pages(context) : options.pages;
+  const sourceInput = options.loadPages ? await options.loadPages(context) : undefined;
 
   if (sourceInput) {
     return sourceInput
@@ -186,7 +188,7 @@ async function resolveSources(
 
   for (const page of context.pages ?? []) {
     if (!includePage(page.pathname)) continue;
-    sources.push(normalizePageSource(page.pathname));
+    sources.push(normalizePageSource({ pathname: page.pathname }));
   }
 
   return sources.sort((a, b) => a.pathname.localeCompare(b.pathname));
@@ -378,14 +380,14 @@ function requestPathname(requestUrl: string | undefined) {
   return new URL(requestUrl ?? "/", "http://localhost").pathname;
 }
 
-export function llms(options: LlmsIntegrationOptions): AstroIntegration {
+export function llms(options: LlmsIntegrationOptions) {
   let root: URL | undefined;
   const integrationName = options.name ?? "astro-llms";
 
   return {
     name: integrationName,
     hooks: {
-      "astro:config:done": ({ config }: ConfigDoneOptions) => {
+      "astro:config:done": ({ config }: LlmConfigDoneOptions) => {
         root = config.root;
       },
       "astro:server:setup": ({ server, logger }: ServerSetupOptions) => {
@@ -435,8 +437,8 @@ export function llms(options: LlmsIntegrationOptions): AstroIntegration {
             response.statusCode = 200;
             response.setHeader("Content-Type", "text/markdown; charset=utf-8");
             response.end(serializePageMarkdown(entry, options));
-          })().catch((error: unknown) => {
-            const message = error instanceof Error ? error.message : String(error);
+          })().catch((cause: unknown) => {
+            const message = cause instanceof Error ? cause.message : String(cause);
             llmLogger.error(`Failed to generate '${pathname}' in dev: ${message}`);
             response.statusCode = 500;
             response.setHeader("Content-Type", "text/plain; charset=utf-8");
@@ -444,7 +446,7 @@ export function llms(options: LlmsIntegrationOptions): AstroIntegration {
           });
         });
       },
-      "astro:build:done": async ({ pages, dir, logger }) => {
+      "astro:build:done": async ({ pages, dir, logger }: LlmBuildDoneOptions) => {
         if (!root) throw new Error("Astro config root is unavailable.");
 
         const distDir = fileURLToPath(dir);
@@ -479,5 +481,5 @@ export function llms(options: LlmsIntegrationOptions): AstroIntegration {
         );
       },
     },
-  };
+  } satisfies AstroIntegration;
 }

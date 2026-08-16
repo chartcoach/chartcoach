@@ -1,4 +1,5 @@
 import type { OgImageJob, OgPayload } from "../integrations/og-images";
+import { isJsonObject, isJsonString, type JsonValue } from "../lib/json";
 
 export const OG_IMAGE_WIDTH = 1200;
 export const OG_IMAGE_HEIGHT = 630;
@@ -59,36 +60,32 @@ export type OgBuildPayload = OgPayload<OgImageProps> & {
   extraImages: OgImageJob<OgImageProps>[];
 };
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
-
-function parseStringArray(value: unknown): string[] {
+function parseStringArray(value: JsonValue | undefined): string[] {
   if (!Array.isArray(value)) return [];
-  return value.filter((item): item is string => typeof item === "string");
+  return value.filter(isJsonString);
 }
 
-function parseStat(value: unknown): OgImageStat | undefined {
-  if (!isRecord(value)) return undefined;
-  if (typeof value.value !== "string" || typeof value.label !== "string") return undefined;
+function parseStat(value: JsonValue | undefined): OgImageStat | undefined {
+  if (!isJsonObject(value)) return undefined;
+  if (!isJsonString(value.value) || !isJsonString(value.label)) return undefined;
   return { value: value.value, label: value.label };
 }
 
-function parseReferences(value: unknown): OgReferenceSummary[] {
+function parseReferences(value: JsonValue | undefined): OgReferenceSummary[] {
   if (!Array.isArray(value)) return [];
-  return value.filter(isRecord).flatMap((item) => {
-    if (typeof item.title !== "string") return [];
+  return value.filter(isJsonObject).flatMap((item) => {
+    if (!isJsonString(item.title)) return [];
     return [
       {
         title: item.title,
-        meta: typeof item.meta === "string" ? item.meta : undefined,
+        meta: isJsonString(item.meta) ? item.meta : undefined,
       },
     ];
   });
 }
 
-export function parseOgImageProps(value: unknown): OgImageProps | null {
-  if (!isRecord(value)) return null;
+export function parseOgImageProps(value: JsonValue | undefined): OgImageProps | null {
+  if (!isJsonObject(value)) return null;
   const kind = value.kind;
   if (
     kind !== "home" &&
@@ -101,9 +98,9 @@ export function parseOgImageProps(value: unknown): OgImageProps | null {
     return null;
   }
   if (
-    typeof value.title !== "string" ||
-    typeof value.description !== "string" ||
-    typeof value.eyebrow !== "string"
+    !isJsonString(value.title) ||
+    !isJsonString(value.description) ||
+    !isJsonString(value.eyebrow)
   ) {
     return null;
   }
@@ -115,7 +112,7 @@ export function parseOgImageProps(value: unknown): OgImageProps | null {
     eyebrow: value.eyebrow,
     labels: parseStringArray(value.labels),
     metaItems: parseStringArray(value.metaItems),
-    badge: typeof value.badge === "string" ? value.badge : undefined,
+    badge: isJsonString(value.badge) ? value.badge : undefined,
     references: parseReferences(value.references),
     roles: parseStringArray(value.roles),
     stat: parseStat(value.stat),
@@ -123,13 +120,13 @@ export function parseOgImageProps(value: unknown): OgImageProps | null {
   };
 }
 
-export function parseOgBuildPayload(value: unknown): OgBuildPayload | null {
-  if (!isRecord(value) || typeof value.imagePathname !== "string") return null;
+export function parseOgBuildPayload(value: JsonValue): OgBuildPayload | null {
+  if (!isJsonObject(value) || !isJsonString(value.imagePathname)) return null;
   const props = parseOgImageProps(value.props);
   if (!props) return null;
   const extraImages = Array.isArray(value.extraImages)
     ? value.extraImages.flatMap((item) => {
-        if (!isRecord(item) || typeof item.imagePathname !== "string") return [];
+        if (!isJsonObject(item) || !isJsonString(item.imagePathname)) return [];
         const extraProps = parseOgImageProps(item.props);
         return extraProps ? [{ imagePathname: item.imagePathname, props: extraProps }] : [];
       })

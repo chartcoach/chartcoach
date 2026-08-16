@@ -1,12 +1,12 @@
-import type { AstroIntegration, HookParameters } from "astro";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { afterEach, describe, expect, it, vi } from "vite-plus/test";
+import { afterEach, describe, expect, it } from "vite-plus/test";
 
 import { llms } from "../../src/integrations/llms";
+import { createTestLogger } from "../astro";
 
 const temporaryDirectories: string[] = [];
 
@@ -39,14 +39,14 @@ describe("llms", () => {
       site: "https://example.com/",
       title: "Example docs",
       description: "Example documentation.",
-      pages: [
+      loadPages: () => [
         {
           pathname: "/guide/",
           title: "Guide",
           description: "Guide description.",
           markdown: "# Guide\n\nUse the guide.",
         },
-        "/rendered/",
+        { pathname: "/rendered/" },
       ],
     });
 
@@ -95,7 +95,7 @@ describe("llms", () => {
       site: "https://example.com/",
       title: "Example docs",
       description: "Example documentation.",
-      pages: [{ pathname: "/guide/", title: "Guide", markdown: "# Guide" }],
+      loadPages: () => [{ pathname: "/guide/", title: "Guide", markdown: "# Guide" }],
       output: {
         files: {
           index: "/agents.txt",
@@ -131,30 +131,17 @@ async function createBuild() {
   return { dist, root };
 }
 
-async function runBuild(integration: AstroIntegration, root: URL, dist: string) {
-  const configDone = requireHook(integration, "astro:config:done");
-  const buildDone = requireHook(integration, "astro:build:done");
-  const info = vi.fn();
-  const logger = {
-    fork: () => ({ info }),
-  } as unknown as HookParameters<"astro:build:done">["logger"];
+async function runBuild(integration: ReturnType<typeof llms>, root: URL, dist: string) {
+  const configDone = integration.hooks["astro:config:done"];
+  const buildDone = integration.hooks["astro:build:done"];
+  const { info, logger } = createTestLogger();
 
-  await configDone({ config: { root } } as HookParameters<"astro:config:done">);
+  configDone({ config: { root } });
   await buildDone({
     pages: [],
     dir: pathToFileURL(`${dist}/`),
-    assets: new Map(),
     logger,
-  } as HookParameters<"astro:build:done">);
+  });
 
   expect(info).toHaveBeenCalledOnce();
-}
-
-function requireHook<Hook extends keyof AstroIntegration["hooks"]>(
-  integration: AstroIntegration,
-  name: Hook,
-): NonNullable<AstroIntegration["hooks"][Hook]> {
-  const hook = integration.hooks[name];
-  if (typeof hook !== "function") throw new Error(`Missing ${name} hook.`);
-  return hook;
 }

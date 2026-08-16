@@ -10,10 +10,39 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 type BuildDoneOptions = HookParameters<"astro:build:done">;
-type ConfigDoneOptions = HookParameters<"astro:config:done">;
 type ServerSetupOptions = HookParameters<"astro:server:setup">;
 type AstroPage = BuildDoneOptions["pages"][number];
 type MaybePromise<T> = T | PromiseLike<T>;
+type SearchMiddleware = (
+  request: { url?: string },
+  response: {
+    statusCode: number;
+    setHeader(name: string, value: string): void;
+    end(value: string): void;
+  },
+  next: () => void,
+) => Promise<void>;
+type SearchDevServer = {
+  watcher: {
+    add(paths: string[]): void;
+    on(event: "change", listener: (path: string) => void): void;
+  };
+  middlewares: {
+    use(handler: SearchMiddleware): void;
+  };
+};
+type SearchConfigDoneOptions = {
+  config: { root: URL };
+};
+type SearchServerSetupOptions = {
+  server: SearchDevServer;
+  logger: ServerSetupOptions["logger"];
+};
+type SearchBuildDoneOptions = {
+  pages: AstroPage[];
+  dir: URL;
+  logger: BuildDoneOptions["logger"];
+};
 
 export type SearchIndexDatabase = {
   schema: AnySchema;
@@ -21,14 +50,14 @@ export type SearchIndexDatabase = {
   include(pathname: string): boolean;
 };
 
-export type SearchIndexDocuments<Document extends Record<string, unknown>> = {
+export type SearchIndexDocuments<Document extends object> = {
   load(context: { root: URL }): MaybePromise<readonly Document[]>;
   fromPage(context: { html: string; pathname: string }): MaybePromise<Document>;
   path(document: Document): string;
   watchFiles?(context: { root: URL }): readonly string[];
 };
 
-export type SearchIndexOptions<Document extends Record<string, unknown>> = {
+export type SearchIndexOptions<Document extends object> = {
   name?: string;
   databases: Record<string, SearchIndexDatabase>;
   documents: SearchIndexDocuments<Document>;
@@ -44,7 +73,7 @@ function generatedHtmlPath(dir: URL, pathname: string) {
   return fileURLToPath(new URL(relativePath, dir));
 }
 
-async function serializeDatabase<Document extends Record<string, unknown>>(
+async function serializeDatabase<Document extends object>(
   config: SearchIndexDatabase,
   documents: readonly Document[],
 ) {
@@ -56,7 +85,7 @@ async function serializeDatabase<Document extends Record<string, unknown>>(
   return JSON.stringify(saveOramaDb(db));
 }
 
-async function loadPageDocuments<Document extends Record<string, unknown>>(
+async function loadPageDocuments<Document extends object>(
   config: SearchIndexDatabase,
   pages: AstroPage[],
   dir: URL,
@@ -92,9 +121,7 @@ function requestedDatabase(requestUrl: string | undefined, names: string[]) {
   return names.find((name) => pathname.endsWith(`/assets/search-${name}.json`));
 }
 
-export function searchIndex<Document extends Record<string, unknown>>(
-  options: SearchIndexOptions<Document>,
-): AstroIntegration {
+export function searchIndex<Document extends object>(options: SearchIndexOptions<Document>) {
   const integrationName = options.name ?? "chartcoach:search-index";
   let root: URL | undefined;
   const devDatabases = new Map<string, Promise<string>>();
@@ -122,9 +149,9 @@ export function searchIndex<Document extends Record<string, unknown>>(
           );
         return json;
       })
-      .catch((error: unknown) => {
+      .catch((cause: unknown) => {
         devDatabases.delete(name);
-        throw error;
+        throw cause;
       });
 
     devDatabases.set(name, serialized);
@@ -134,10 +161,10 @@ export function searchIndex<Document extends Record<string, unknown>>(
   return {
     name: integrationName,
     hooks: {
-      "astro:config:done": ({ config }: ConfigDoneOptions) => {
+      "astro:config:done": ({ config }: SearchConfigDoneOptions) => {
         root = config.root;
       },
-      "astro:server:setup": ({ server, logger }: ServerSetupOptions) => {
+      "astro:server:setup": ({ server, logger }: SearchServerSetupOptions) => {
         if (root && options.documents.watchFiles) {
           const watchedFiles = [...options.documents.watchFiles({ root })];
           if (watchedFiles.length > 0) {
@@ -171,7 +198,7 @@ export function searchIndex<Document extends Record<string, unknown>>(
           }
         });
       },
-      "astro:build:done": async ({ pages, dir, logger }) => {
+      "astro:build:done": async ({ pages, dir, logger }: SearchBuildDoneOptions) => {
         const searchLogger = logger.fork(integrationName);
         const assetsDir = fileURLToPath(new URL("assets/", dir));
         if (!existsSync(assetsDir)) mkdirSync(assetsDir, { recursive: true });
@@ -194,5 +221,5 @@ export function searchIndex<Document extends Record<string, unknown>>(
         );
       },
     },
-  };
+  } satisfies AstroIntegration;
 }

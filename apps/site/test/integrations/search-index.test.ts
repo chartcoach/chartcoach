@@ -6,6 +6,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 
 import { searchIndex } from "../../src/integrations/search-index";
+import { createTestLogger } from "../astro";
 
 type Document = { path: string; title: string };
 type TestResponse = {
@@ -31,11 +32,6 @@ function temporaryDirectory() {
   const directory = mkdtempSync(path.join(os.tmpdir(), "chartcoach-search-index-"));
   temporaryDirectories.push(directory);
   return directory;
-}
-
-function logger() {
-  const child = { info: vi.fn(), warn: vi.fn(), error: vi.fn() };
-  return { ...child, fork: vi.fn(() => child) };
 }
 
 function integration(documents: {
@@ -67,13 +63,13 @@ describe("searchIndex", () => {
     writeFileSync(path.join(pageDirectory, "index.html"), "Use full axes", "utf8");
     const search = integration({ load: () => [] });
     const build = search.hooks["astro:build:done"];
-    if (!build) throw new Error("Missing build hook.");
+    const { logger } = createTestLogger();
 
     await build({
       dir: pathToFileURL(`${output}/`),
-      logger: logger(),
+      logger,
       pages: [{ pathname: "guidelines/axes" }, { pathname: "about" }],
-    } as never);
+    });
 
     const raw = JSON.parse(
       readFileSync(path.join(output, "assets", "search-guidelines.json"), "utf8"),
@@ -95,7 +91,6 @@ describe("searchIndex", () => {
     });
     const configDone = search.hooks["astro:config:done"];
     const serverSetup = search.hooks["astro:server:setup"];
-    if (!configDone || !serverSetup) throw new Error("Missing development hooks.");
     const changeListeners: Array<(path: string) => void> = [];
     let middleware: TestMiddleware | undefined;
     const server = {
@@ -112,8 +107,9 @@ describe("searchIndex", () => {
       },
     };
 
-    await configDone({ config: { root } } as never);
-    await serverSetup({ server, logger: logger() } as never);
+    const { logger } = createTestLogger();
+    configDone({ config: { root } });
+    serverSetup({ server, logger });
     expect(server.watcher.add).toHaveBeenCalledWith([watchFile]);
 
     async function request() {

@@ -24,6 +24,9 @@ type MenuChevronProps = {
   open: boolean;
 };
 type MenuPlacement = "above" | "below";
+type AgentStyle = CSSProperties & {
+  "--agent-color": string;
+};
 type AgentIcon =
   | {
       kind: "component";
@@ -179,7 +182,7 @@ function AgentLogo({ agent, className }: { agent: (typeof AGENTS)[number]; class
         backgroundColor: agent.color,
         mask: `url("${agent.icon.src}") center / contain no-repeat`,
         WebkitMask: `url("${agent.icon.src}") center / contain no-repeat`,
-      } as CSSProperties;
+      } satisfies CSSProperties;
 
       return (
         <span
@@ -191,7 +194,7 @@ function AgentLogo({ agent, className }: { agent: (typeof AGENTS)[number]; class
       );
     }
 
-    const iconStyle = { backgroundImage: `url("${agent.icon.src}")` } as CSSProperties;
+    const iconStyle = { backgroundImage: `url("${agent.icon.src}")` } satisfies CSSProperties;
 
     return (
       <span
@@ -204,7 +207,7 @@ function AgentLogo({ agent, className }: { agent: (typeof AGENTS)[number]; class
   }
 
   const Icon = agent.icon.Component;
-  const style = { color: agent.color } as CSSProperties;
+  const style = { color: agent.color } satisfies CSSProperties;
   return <Icon className={className} data-agent-icon={agent.id} style={style} />;
 }
 
@@ -328,7 +331,7 @@ export function InstallCopy() {
   const agentCommand = activeAgent.command(activeUseCase.instruction);
   const snippetLines = [INSTALL_COMMAND, agentCommand];
   const clipboardText = snippetLines.join("\n");
-  const agentStyle = { "--agent-color": activeAgent.color } as CSSProperties;
+  const agentStyle: AgentStyle = { "--agent-color": activeAgent.color };
 
   const clearResetTimer = useCallback(() => {
     if (!resetTimer.current) return;

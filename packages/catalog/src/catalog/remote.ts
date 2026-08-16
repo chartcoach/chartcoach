@@ -9,6 +9,7 @@ import {
   type ReleaseArtifact,
 } from "./artifacts";
 import { CatalogError } from "./errors";
+import { parseJson, type JsonValue } from "./json";
 import { loadCatalog } from "./load-parquet-core";
 import type { Catalog } from "./model";
 
@@ -22,6 +23,11 @@ const CATALOG_REQUEST_TIMEOUT_MS = 15 * 60 * 1000;
 const CATALOG_BODY_READ_ERROR = "Failed to read catalog resource body.";
 const MAX_CATALOG_JSON_BYTES = 1024 * 1024;
 const MAX_CORE_ARTIFACT_BYTES = 64 * 1024 * 1024;
+
+type CatalogDescriptor = {
+  kind: "catalog" | "release";
+  url: string;
+};
 
 export async function openCatalog(
   source: string | URL = catalogUrl(),
@@ -76,7 +82,7 @@ async function loadCatalogFromRelease(
   }
 }
 
-async function fetchJson(url: string, fetch: FetchLike, cache?: "no-cache"): Promise<unknown> {
+async function fetchJson(url: string, fetch: FetchLike, cache?: "no-cache"): Promise<JsonValue> {
   const response = await fetchCatalogResource(url, fetch, undefined, cache);
   const data = await readResponseBytes(
     response,
@@ -85,7 +91,7 @@ async function fetchJson(url: string, fetch: FetchLike, cache?: "no-cache"): Pro
   );
   try {
     const text = new TextDecoder("utf-8", { fatal: true }).decode(data);
-    return JSON.parse(text);
+    return parseJson(text);
   } catch {
     throw new CatalogError("Catalog JSON must contain valid UTF-8 JSON.");
   }
@@ -211,7 +217,7 @@ async function fetchCatalogResource(
   return response;
 }
 
-function requireDescriptorUrl(input: string | URL): { kind: "catalog" | "release"; url: string } {
+function requireDescriptorUrl(input: string | URL): CatalogDescriptor {
   const value = input.toString();
   let url: URL;
   try {
