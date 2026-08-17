@@ -1,115 +1,110 @@
 ---
 title: Python
-description: Open local and remote catalogs, query Polars and DuckDB tables, and load release-backed LanceDB profiles.
+description: Open catalog sources, inspect Polars tables, and query release-backed indexes.
 icon: Code
 ---
 
-Install the base package:
+`open_catalog` resolves a catalog source, verifies release artifacts when a
+descriptor is present, and returns a `Catalog` backed by Polars.
 
 ```bash
-uv add chartcoach
+uv pip install \
+  "chartcoach @ https://files.peter.gy/packages/python/chartcoach/0.2.0/5cc92c6f032d/chartcoach-0.2.0-py3-none-any.whl"
 ```
 
 ```python
 from chartcoach import open_catalog
 
-catalog = open_catalog()
-print(catalog.guidelines().select("id", "title").head(5))
+catalog = open_catalog(
+    "https://files.peter.gy/packages/python/chartcoach/0.2.0/docs-catalog/release.json"
+)
+rows = catalog.guidelines().select("id", "title", "description").head(5)
+print(rows)
 ```
 
-## `open_catalog(source=None, *, storage_options=None)`
-
-`open_catalog` accepts an authored folder, compiled bundle, release directory,
-or descriptor path or URI.
+The example pins an exact release. Pass another local or HTTP source when the
+application owns the catalog lifecycle:
 
 ```python
 authored = open_catalog("catalog-source")
 bundle = open_catalog("dist/catalog")
-local_release = open_catalog("dist/release")
-selected = open_catalog()
 exact = open_catalog(
     "https://artifacts.chartcoach.dev/catalog/releases/<digest>/release.json"
 )
 ```
 
-An authored folder contains `MANIFEST.md` and `entries/`. A bundle contains
-`MANIFEST.md` and `entries.parquet`. Remote sources name `catalog.json` or
-`release.json`.
+`catalog.release` contains the verified `CatalogRelease` for a descriptor or
+release directory. It is `None` for an authored folder or a plain bundle.
 
-S3, GCS, and Azure sources require `chartcoach[cloud]`. Provider settings pass
-through `storage_options`. Ambient provider credentials handle the common
-case.
+## Inspect one record
 
 ```python
-catalog = open_catalog(
-    "s3://research-artifacts/chartcoach/catalog.json",
-    storage_options={"region": "eu-central-1"},
-)
+record = catalog.entry("direct-labels")
+
+print(record["labels"])
+print(record["sections"][0]["role"])
+print(record["body"])
 ```
 
-`catalog.release` contains the verified `CatalogRelease` for descriptor-backed
-and release-directory sources. It is `None` for authored folders and plain
-bundles.
+`entry(id)` returns `id`, `title`, `description`, `labels`, `sections`,
+`references`, and the Markdown `body` derived from the ordered sections. An
+unknown id raises `KeyError`.
 
-## `Catalog`
+## Query normalized tables
 
-Every `Catalog` owns a `CatalogManifest`. Compiled rows contain `id`, `title`,
-`description`, `labels`, `sections`, and `references`.
+`Catalog` derives six tables from the compiled rows:
 
-```python
-guidelines = catalog.guidelines()
-sections = catalog.sections()
-references = catalog.references()
+| Method                   | One row per                        |
+| ------------------------ | ---------------------------------- |
+| `guidelines()`           | Guideline                          |
+| `sections()`             | Guideline section                  |
+| `guideline_labels()`     | Guideline and label                |
+| `references()`           | Parsed reference                   |
+| `guideline_references()` | Guideline and reference edge       |
+| `guideline_sources()`    | Guideline and enriched source edge |
 
-entry = catalog.entry("compare-percentages-with-bars-not-pies")
-body = entry["body"]
-```
-
-`Catalog(frame, *, manifest)` constructs a catalog from a Polars frame.
-`Catalog.from_guidelines(guidelines, *, manifest)` constructs one from compiled
-guideline values. File input goes through `open_catalog`.
-
-`Catalog` exposes six queryable tables through `table(name)` and `duckdb()`:
-`guidelines`, `sections`, `guideline_labels`, `references`,
-`guideline_references`, and `guideline_sources`.
+Use `table(name)` for dynamic lookup or register the tables in DuckDB:
 
 ```python
 with catalog.duckdb() as connection:
     rows = connection.sql("""
-        select id, title
-        from guidelines
-        where description ilike '%legend%'
+        select g.id, g.title
+        from guidelines g
+        join guideline_labels l on l.guideline_id = g.id
+        where l.label = 'operator:uncertainty'
+        order by g.id
+        limit 10
     """).fetchall()
 ```
 
-## `open_index(source=None, *, profile, storage_options=None)`
+## Open a search index
 
-`open_index` selects a native LanceDB profile from the same release source
-accepted by `open_catalog`.
+Install the index capability, then select a profile from the same release that
+owns the catalog rows:
 
 ```bash
-uv add 'chartcoach[index]'
+uv pip install \
+  "chartcoach[index] @ https://files.peter.gy/packages/python/chartcoach/0.2.0/5cc92c6f032d/chartcoach-0.2.0-py3-none-any.whl"
 ```
 
 ```python
 from chartcoach import open_index
 
 table = open_index(
-    "https://artifacts.chartcoach.dev/catalog.json",
+    "https://artifacts.chartcoach.dev/catalog/releases/<digest>/release.json",
     profile="sentence-transformers/all-MiniLM-L6-v2",
 )
 
-rows = (
+matches = (
     table.search("direct labels", query_type="fts", fts_columns="text")
-    .where("role = 'overview'")
+    .where("role = 'section.advice'")
     .limit(8)
     .to_list()
 )
 ```
 
-Standalone LanceDB directories use the LanceDB API directly.
+`open_index` returns the native LanceDB table. Vector and hybrid queries receive
+an embedding vector from the caller.
 
-## Top-level API
-
-The package exports `Catalog`, `CatalogError`, `CatalogManifest`,
+The top-level package exports `Catalog`, `CatalogError`, `CatalogManifest`,
 `CatalogRelease`, `open_catalog`, `open_index`, and `__version__`.

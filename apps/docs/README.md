@@ -25,6 +25,24 @@ Run `pnpm ready` for the complete JavaScript workspace gate.
 
 The build writes static files to `apps/docs/out`.
 
+## Live examples
+
+`@marimo-team/mdx-marimo` compiles `python marimo` fences during the docs build
+and includes their initial output in the static page. The browser runtime uses
+Pyodide to make those cells reactive after the page loads.
+
+`source.config.ts` routes notebook compilation through the repository's `uv`
+command so the build uses the same package-age policy as the Python workspace.
+Every `marimo-config` declares the versioned chartcoach wheel from
+`files.peter.gy`. The JavaScript page also pins `pyobservablejs==0.0.9`.
+The Getting started page preloads the Pyodide builds of Polars and PyArrow, then
+installs that wheel with dependency resolution disabled so its browser runtime
+uses the WASM-compatible packages already loaded in the kernel.
+
+The JavaScript notebook receives the workspace `@chartcoach/catalog` module
+from `CatalogNotebookRuntime`. This keeps the live SDK behavior aligned with
+the package source in the current checkout.
+
 ## Machine-readable docs routes
 
 The docs site exports Fumadocs machine-readable routes for agents and search

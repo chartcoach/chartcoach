@@ -1,43 +1,202 @@
 ---
 title: JavaScript
-description: Load typed bundles and verified releases in browser or server runtimes.
+description: Load a verified catalog, select records by id, and render guideline Markdown.
 icon: Braces
 ---
 
-Install the catalog loader:
-
-```bash
-npm install @chartcoach/catalog
-```
-
-## `openCatalog(source?, options?)`
-
-`openCatalog` accepts an absolute HTTP or HTTPS URL ending in `catalog.json` or
-`release.json`. The default source is the official selected catalog.
+`@chartcoach/catalog` loads verified Guideline Catalog releases in browsers and
+server runtimes. This page bundles the `0.2.0` workspace package.
 
 ```ts
 import { openCatalog } from "@chartcoach/catalog";
 
-const selected = await openCatalog();
-const exact = await openCatalog(
-  "https://artifacts.chartcoach.dev/catalog/releases/<digest>/release.json",
+const catalog = await openCatalog(
+  "https://files.peter.gy/packages/python/chartcoach/0.2.0/docs-catalog/release.json",
 );
+const guideline = catalog.require("direct-labels");
 
-const guideline = selected.require("compare-percentages-with-bars-not-pies");
+console.log(guideline.sections[0]?.content);
 ```
 
-Pass a Fetch-compatible function when the runtime supplies one:
+`openCatalog` verifies the release digest, artifact byte counts, and SHA-256
+hashes before it decodes the catalog.
 
-```ts
-const catalog = await openCatalog(source, { fetch });
+## Run the SDK in this page
+
+The live view uses `pyobservablejs==0.0.9` inside a marimo cell. JavaScript
+constructs a `Catalog` from three embedded records, selects one id, calls
+`require`, and renders the Markdown produced by `toMarkdown`.
+
+<CatalogNotebookRuntime />
+
+```marimo-config
+requires-python = ">=3.11"
+dependencies = [
+  "chartcoach @ https://files.peter.gy/packages/python/chartcoach/0.2.0/5cc92c6f032d/chartcoach-0.2.0-py3-none-any.whl",
+  "pyobservablejs==0.0.9",
+]
 ```
 
-The loader verifies the release digest, artifact byte count, and artifact
-SHA-256 before decoding the catalog.
+```python marimo output=false
+import sys
 
-## `loadCatalog({ entries, manifestText })`
+if sys.platform == "emscripten":
+    import micropip
 
-`loadCatalog` constructs a catalog from caller-provided bundle data.
+    await micropip.install("pyobservablejs==0.0.9")
+```
+
+```python marimo output=false
+import observablejs as obs
+
+records = [
+    {
+        "id": "compare-percentages-with-bars-not-pies",
+        "title": "Use bars for percentage comparisons",
+        "description": "Use aligned lengths when readers must compare category shares.",
+        "labels": ["chart:bar:use", "operator:part-whole"],
+        "sections": [
+            {
+                "role": "advice",
+                "title": "Bar encoding for shares",
+                "content": "Replace circle sectors with bars when readers need to see small percentage gaps.",
+            },
+            {
+                "role": "reason",
+                "title": "Why bars support comparison",
+                "content": "Bars place values on a common baseline, which makes close differences easier to judge.",
+            },
+        ],
+        "references": ["muth_chart_types_guide_2025"],
+    },
+    {
+        "id": "directly-label-series-instead-of-using-a-color-key",
+        "title": "Directly label colored series",
+        "description": "Attach series identity to the marks that readers inspect.",
+        "labels": ["chart:line:use", "operator:lookup"],
+        "sections": [
+            {
+                "role": "advice",
+                "title": "Move labels onto the marks",
+                "content": "Place each series name next to its line or area so readers can identify it without a color-key lookup.",
+            },
+            {
+                "role": "reason",
+                "title": "Why direct labels work",
+                "content": "Direct labels keep category identity beside the data and reduce back-and-forth scanning.",
+            },
+        ],
+        "references": ["muth_colorblindness_2020"],
+    },
+    {
+        "id": "co-locate-point-estimates-with-uncertainty-displays",
+        "title": "Co-locate estimates and uncertainty",
+        "description": "Keep the likely value and its predictive uncertainty in the same visual region.",
+        "labels": ["chart:timeline", "operator:uncertainty"],
+        "sections": [
+            {
+                "role": "advice",
+                "title": "Point estimate placement",
+                "content": "Place the point estimate on the uncertainty display so the likely value and surrounding outcomes share one glance.",
+            },
+            {
+                "role": "reason",
+                "title": "Why co-location works",
+                "content": "A separate point estimate can invite false precision by letting readers ignore the uncertainty range.",
+            },
+        ],
+        "references": ["kay_when_ish_my_bus_2016"],
+    },
+]
+
+manifest = {
+    "markdown": "# Demo Catalog\n",
+    "sectionRoles": {
+        "advice": {
+            "name": "advice",
+            "description": "The action a chart author can take.",
+            "examples": [],
+        },
+        "reason": {
+            "name": "reason",
+            "description": "The mechanism behind the advice.",
+            "examples": [],
+        },
+    },
+    "labelFamilies": {
+        "chart": {
+            "name": "chart",
+            "description": "Chart-family labels.",
+            "examples": ["chart:bar:use"],
+        },
+        "operator": {
+            "name": "operator",
+            "description": "Reading-operation labels.",
+            "examples": ["operator:lookup"],
+        },
+    },
+}
+```
+
+```python marimo
+catalog_notebook = obs.Notebook(
+    obs.js(
+        """
+        const sdk = globalThis.ChartCoachCatalog;
+        if (!sdk) throw new Error("ChartCoach Catalog SDK is unavailable");
+
+        const catalog = new sdk.Catalog(records, manifest);
+        """,
+        key="catalog",
+        display=False,
+    ),
+    obs.js(
+        """
+        const selectedId = view(Inputs.select(
+          catalog.guidelines.map((guideline) => guideline.id),
+          {
+            label: "Guideline",
+            format: (id) => catalog.require(id).title
+          }
+        ));
+        """,
+        key="selected_id",
+    ),
+    obs.js(
+        r"""
+        const selected = catalog.require(selectedId);
+        const markdown = sdk.toMarkdown(selected);
+
+        display(md`### ${selected.title}
+
+\`${selected.id}\`
+
+${selected.sections[0].content}
+
+**Labels:** ${selected.labels.map((label) => `\`${label}\``).join(" ")}
+        `);
+
+        display(html`<details>
+          <summary>Generated Markdown</summary>
+          <pre>${markdown}</pre>
+        </details>`);
+        """,
+        key="selected_record",
+    ),
+    variables={"records": records, "manifest": manifest},
+)
+
+catalog_view = catalog_notebook.view(capture_state=False)
+catalog_view
+```
+
+The initial record, labels, advice, and generated Markdown remain in the static
+page output while Python and the Observable runtime start. Changing the select
+reruns the dependent JavaScript cell in the browser.
+
+## Construct from caller-provided bytes
+
+Use `loadCatalog` when the application already owns the artifact transport:
 
 ```ts
 import { readFile } from "node:fs/promises";
@@ -49,37 +208,8 @@ const catalog = await loadCatalog({
 });
 ```
 
-## Catalog model
+`Catalog` exposes `guidelines`, `length`, `get(id)`, `require(id)`, `labels()`,
+`sectionRoles()`, and iteration. `toMarkdown(guideline)` serializes frontmatter
+plus the body derived from ordered sections.
 
-Compiled rows are flat:
-
-```ts
-type GuidelineRow = {
-  id: string;
-  title: string;
-  description: string;
-  labels: string[];
-  sections: Array<{ role: string; title: string; content: string }>;
-  references: string[];
-};
-```
-
-`Catalog` provides `guidelines`, `length`, `get(id)`, `require(id)`, `labels()`,
-`sectionRoles()`, and iteration. Each guideline receives a Markdown `body`
-derived from its ordered sections.
-
-## Release model
-
-`parseCatalogRelease(value)` validates a schema 1 path-keyed record:
-
-```ts
-type CatalogRelease = {
-  schema_version: 1;
-  digest: string;
-  artifacts: Record<string, { sha256: string; bytes: number }>;
-};
-```
-
-The package exports `Catalog`, `CatalogError`, `CatalogRelease`, `FetchLike`,
-`Guideline`, `GuidelineSection`, `OpenCatalogOptions`, `ReleaseArtifact`,
-`loadCatalog`, `openCatalog`, `parseCatalogRelease`, and `toMarkdown`.
+Use [Catalog model](/catalog) for the row and release shapes.

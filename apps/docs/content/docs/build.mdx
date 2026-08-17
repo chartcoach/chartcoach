@@ -1,15 +1,15 @@
 ---
-title: Build a catalog
-description: Author guidelines, build a bundle, create embedding profiles, and publish an immutable release.
+title: Build and publish
+description: Author one guideline, compile a bundle, and publish an immutable release.
 icon: Hammer
 ---
 
-`catalog build` compiles an authored folder into `MANIFEST.md` and
-`entries.parquet`.
+`catalog build` validates an authored folder and writes a compiled bundle with
+`MANIFEST.md` and `entries.parquet`.
 
-## Author one guideline
+## Author one record
 
-Create the source tree:
+Create this source tree:
 
 ```text
 catalog-source/
@@ -19,7 +19,7 @@ catalog-source/
         └── guideline.md
 ```
 
-Define every section role and label family in `MANIFEST.md`:
+Define the vocabulary in `MANIFEST.md`:
 
 ```md
 # Sample Catalog
@@ -37,7 +37,7 @@ Actionable guidance for applying the guideline.
 Chart-family labels such as `chart:line`.
 ```
 
-Write the guideline:
+Write `entries/direct-labels/guideline.md`:
 
 ```md
 ---
@@ -53,34 +53,33 @@ labels:
 Place the label close to the mark it names.
 ```
 
-An entry may declare `bibliography: references.bib` in its frontmatter and cite
-that file from section text.
+An entry can name `references.bib` through its frontmatter and cite those
+BibTeX records from section text.
 
-## Build the bundle
-
-Validate the authored folder, then compile it into a new directory:
+## Compile and inspect
 
 ```bash
 chartcoach catalog validate --source ./catalog-source
 chartcoach catalog build \
   --source ./catalog-source \
   --out ./dist/catalog
-```
 
-Read the compiled result through the same catalog API:
-
-```bash
 chartcoach catalog overview --source ./dist/catalog
 chartcoach catalog read --source ./dist/catalog direct-labels
 ```
 
+The output directory must be new. A failed build removes the partial directory
+so the next run starts from a known state.
+
 ## Build a release
 
-Install curation dependencies and create native LanceDB embedding functions
-through the LanceDB registry.
+Install curation dependencies and create each embedding function through the
+LanceDB registry:
 
 ```bash
-uv add 'chartcoach[curation]' sentence-transformers
+uv pip install \
+  "chartcoach[curation] @ https://files.peter.gy/packages/python/chartcoach/0.2.0/5cc92c6f032d/chartcoach-0.2.0-py3-none-any.whl" \
+  sentence-transformers==5.6.1
 ```
 
 ```python
@@ -89,13 +88,9 @@ from pathlib import Path
 from lancedb.embeddings import get_registry
 
 from chartcoach import open_catalog
-from chartcoach.catalog.curation import (
-    EmbeddingProfile,
-    build_release,
-)
+from chartcoach.catalog.curation import EmbeddingProfile, build_release
 
-registry = get_registry()
-small = registry.get("sentence-transformers").create(
+embedding = get_registry().get("sentence-transformers").create(
     name="all-MiniLM-L6-v2",
     device="cpu",
     normalize=True,
@@ -107,53 +102,27 @@ release = build_release(
     Path("dist/release"),
     profiles={
         "sentence-transformers/all-MiniLM-L6-v2": EmbeddingProfile(
-            embedding=small,
+            embedding=embedding,
             umap={
                 "n_neighbors": 15,
                 "min_dist": 0.1,
                 "metric": "cosine",
                 "random_state": 42,
             },
-        ),
+        )
     },
 )
 
 print(release.digest)
 ```
 
-Add another mapping entry for each vector space. An on-device model and a
-hosted model can share one release while preserving their separate vectors,
-projections, neighbors, and LanceDB metadata.
-
-The release directory contains the core catalog and one artifact pair per
-profile:
-
-```text
-release/
-├── release.json
-├── MANIFEST.md
-├── entries.parquet
-└── profiles/
-    └── sentence-transformers/all-MiniLM-L6-v2/
-        ├── documents.parquet
-        └── index.tar.gz
-```
-
-The profile Parquet file is ready for Embedding Atlas:
-
-```bash
-embedding-atlas \
-  dist/release/profiles/sentence-transformers/all-MiniLM-L6-v2/documents.parquet \
-  --text text \
-  --vector vector \
-  --x projection_x \
-  --y projection_y \
-  --neighbors neighbors
-```
+Each profile receives its own Parquet documents, projection, neighbors, and
+LanceDB archive inside the release.
 
 ## Publish and select
 
-Release publication accepts file, S3, GCS, and Azure destination URIs.
+Validate the release, preview the remote keys, publish the immutable directory,
+then select its digest:
 
 ```bash
 chartcoach catalog release validate ./dist/release
@@ -169,10 +138,7 @@ chartcoach catalog release select \
   --store s3://chartcoach
 ```
 
-Publication writes immutable objects under
-`catalog/releases/<digest>/`. Selection reads that published release and writes
-its full record to `catalog.json`.
+Publication writes `catalog/releases/<digest>/`. Selection verifies those
+objects and updates `catalog.json` with the full release envelope.
 
-Runtime readers cache verified immutable artifacts automatically. Opening
-`catalog.json` refreshes the selected release record before reusing cached
-artifact content.
+Use [Catalog model](/catalog) for the row, manifest, and release contracts.

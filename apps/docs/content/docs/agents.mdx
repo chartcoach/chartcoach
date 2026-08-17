@@ -1,18 +1,28 @@
 ---
-title: Agents
-description: Retrieve, verify, and cite Guideline Catalog records with chartcoach skills.
+title: Agent workflow
+description: Give an agent a bounded retrieval path from catalog vocabulary to exact cited records.
 icon: Bot
 ---
 
-Install the chartcoach skills, then invoke `$chartcoach` in the current agent
-session.
+Install the chartcoach skills, then name the task in the agent request:
 
 ```bash
 npx skills add chartcoach/skills
-codex 'Use $chartcoach to review this chart screenshot for labels and accessibility.'
+codex 'Use $chartcoach to review this chart for labels and accessibility.'
 ```
 
-The Python package also serves the skill text:
+## Skills
+
+| Skill         | Job                                                                                    |
+| ------------- | -------------------------------------------------------------------------------------- |
+| `core`        | Select a source, inspect vocabulary, retrieve records, and recover from command errors |
+| `discuss`     | Compare design choices and trace claims to catalog sources                             |
+| `visfeedback` | Review an observed chart or screenshot                                                 |
+| `visrec`      | Recommend a visualization from a task and constraints                                  |
+| `contribute`  | Draft a local catalog improvement issue for human review                               |
+
+The Python package can print the same skill text for environments that install
+agent instructions through another mechanism:
 
 ```bash
 uvx chartcoach@latest skills
@@ -20,25 +30,20 @@ uvx chartcoach@latest skills get core
 uvx chartcoach@latest skills get visfeedback
 ```
 
-## Skills
+## Retrieval contract
 
-| Skill         | Task                                                                                            |
-| ------------- | ----------------------------------------------------------------------------------------------- |
-| `core`        | Choose a catalog source, inspect vocabulary, retrieve records, and recover from command errors. |
-| `discuss`     | Compare design choices and trace claims to catalog sources.                                     |
-| `visfeedback` | Review an observed chart or screenshot.                                                         |
-| `visrec`      | Recommend a visualization from a data task and constraints.                                     |
-| `contribute`  | Draft a local catalog improvement issue for human review.                                       |
-
-## Evidence workflow
-
-Use a short retrieval chain:
+An agent should make each transition visible:
 
 ```text
-catalog vocabulary -> candidate ids -> exact record -> formatted citation -> claim
+catalog source
+  -> roles and labels
+  -> candidate ids
+  -> exact record sections
+  -> source citations
+  -> claim or recommendation
 ```
 
-Inspect roles and labels before using exact catalog vocabulary:
+Inspect vocabulary before using exact labels or section roles:
 
 ```bash
 chartcoach catalog overview --format json
@@ -46,16 +51,17 @@ chartcoach catalog roles --format json
 chartcoach catalog labels --format json
 ```
 
-Find candidates, then verify each selected record:
+Find a bounded candidate set, then read and cite the selected id:
 
 ```bash
-chartcoach catalog list --contains "direct labels" --format json
-chartcoach catalog read <guideline-id> --source-detail minimal --format markdown
+chartcoach catalog list --contains "direct labels" --limit 5 --format json
+chartcoach catalog read <guideline-id> --source-detail full --format markdown
 chartcoach catalog cite <guideline-id> --format markdown
 ```
 
-Use `catalog sql` for relationships across catalog tables. Use `catalog find`
-for broader indexed discovery. Both return candidates that still require an
-exact `catalog read`.
+Search snippets and SQL rows locate candidates. The exact record owns the
+advice, conditions, exceptions, checks, fixes, and source links that support an
+answer.
 
-[MCP](/mcp) exposes the SQL and indexed search steps as tool calls.
+Use the [MCP server](/mcp) when the client should call catalog SQL and index search as
+tools.

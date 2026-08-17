@@ -1,20 +1,18 @@
 {
-  "title": "Docs",
+  "title": "ChartCoach",
   "pages": [
-    "---Start---",
     "index",
     "getting-started",
+    "---Guide---",
     "querying",
-    "---Interfaces---",
-    "cli",
-    "python",
-    "javascript",
-    "---Agent access---",
     "agents",
     "mcp",
+    "---Interfaces---",
+    "python",
+    "javascript",
+    "cli",
     "---Catalog---",
     "catalog",
-    "catalog-exploration",
     "build"
   ]
 }

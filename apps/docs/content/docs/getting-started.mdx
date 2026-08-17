@@ -1,66 +1,78 @@
 ---
 title: Getting started
-description: Install chartcoach, inspect the catalog, read one guideline, and format its citations.
-icon: Rocket
+description: Load the Guideline Catalog as a dataframe, then inspect one record.
+icon: ScanSearch
 ---
 
-Open the selected catalog:
+`open_catalog` returns a `Catalog`. `to_frame()` exposes its compiled records as
+a Polars dataframe.
 
-```bash
-uvx chartcoach@latest catalog overview
+## Load the catalog
+
+<PythonNotebookRuntime />
+
+```marimo-config
+requires-python = ">=3.12"
+dependencies = [
+  "chartcoach @ https://files.peter.gy/packages/python/chartcoach/0.2.0/5cc92c6f032d/chartcoach-0.2.0-py3-none-any.whl",
+]
 ```
 
-`catalog overview` reports record counts, section roles, label families, and
-the selected release digest.
+```python marimo output=false
+import sys
 
-## Find and read a guideline
+if sys.platform == "emscripten":
+    import micropip
+    import pyodide_js
 
-Use `list` for deterministic filters over ids, titles, descriptions, and
-labels.
-
-```bash
-uvx chartcoach@latest catalog list \
-  --contains "legend" \
-  --limit 5 \
-  --format json
+    await pyodide_js.loadPackage(["polars", "pyarrow"])
+    await micropip.install("platformdirs==4.11.3")
+    await micropip.install(
+        "https://files.peter.gy/packages/python/chartcoach/0.2.0/5cc92c6f032d/chartcoach-0.2.0-py3-none-any.whl",
+        deps=False,
+    )
 ```
 
-Copy an `id` from the result and read the record:
+```python
+from chartcoach import open_catalog
 
-```bash
-uvx chartcoach@latest catalog read <guideline-id>
+catalog = open_catalog(
+    "https://files.peter.gy/packages/python/chartcoach/0.2.0/docs-catalog/release.json"
+)
+df = catalog.to_frame()
+df
 ```
 
-Use the same id to produce a public link and source citations:
+```python marimo
+from chartcoach import open_catalog
 
-```bash
-uvx chartcoach@latest catalog cite <guideline-id>
+catalog = open_catalog(
+    "https://files.peter.gy/packages/python/chartcoach/0.2.0/docs-catalog/release.json"
+)
+df = catalog.to_frame()
+df
 ```
 
-Candidate discovery and evidence retrieval are separate steps. `list`, `sql`,
-and `find` produce candidates. `read` returns the exact guideline text that an
-answer should check before `cite` formats its references.
+## Inspect one record
 
-## Select a catalog source
+Each dataframe row is one compiled guideline. `row(0, named=True)` returns the
+first row as a mapping, including its nested `labels`, `sections`, and
+`references` values.
 
-Pass `--source` to commands that read catalog records:
+```python
+import marimo as mo
 
-```bash
-chartcoach catalog overview --source ./catalog-source
-chartcoach catalog overview --source ./dist/catalog
-chartcoach catalog overview \
-  --source https://artifacts.chartcoach.dev/catalog/releases/<digest>/release.json
+row = df.row(0, named=True)
+mo.json(row)
 ```
 
-An authored folder contains `MANIFEST.md` and `entries/<id>/guideline.md`. A
-compiled bundle contains `MANIFEST.md` and `entries.parquet`. Exact remote
-releases use their `release.json` URI.
+```python marimo
+import marimo as mo
 
-When `--source` is absent, chartcoach reads `CHARTCOACH_SOURCE`, then the
-official `catalog.json`.
+row = df.row(0, named=True)
+mo.json(row)
+```
 
-## Continue
-
-- Use [Querying](/querying) for SQL and LanceDB retrieval.
-- Use [Agents](/agents) for source-backed agent workflows.
-- Use [Build a catalog](/build) to create bundles and releases.
+The dataframe row is the catalog wire shape. [Python](/python) covers the
+derived guideline, section, label, and reference tables. [Querying](/querying)
+covers filters, SQL, and indexed search.

@@ -1,46 +1,54 @@
 ---
-title: chartcoach docs
-description: Inspect, query, and cite visualization design guidelines from the CLI, Python, JavaScript, or MCP.
+title: Overview
+description: Inspect, query, and cite source-traced visualization guidelines.
 icon: BookOpen
 ---
 
-chartcoach exposes visualization design guidelines as a manifest-backed catalog
-of structured records.
+ChartCoach exposes source-traced visualization guidance as a versioned Guideline
+Catalog. Each record has a stable id, retrieval labels, ordered sections, and
+BibTeX references.
 
-List candidate guidelines from the published catalog:
+## Read a guideline
 
-```bash
-uvx chartcoach@latest catalog list \
-  --contains "direct labels" \
-  --limit 5 \
-  --format json
-```
-
-Read the exact record before using it as evidence:
+The CLI returns the complete record and its references:
 
 ```bash
 uvx chartcoach@latest catalog read \
-  compare-percentages-with-bars-not-pies \
+  directly-label-series-instead-of-using-a-color-key \
+  --source-detail full \
   --format markdown
 ```
 
-Format its public URL and source references:
+## Record structure
 
-```bash
-uvx chartcoach@latest catalog cite \
-  compare-percentages-with-bars-not-pies
-```
+<article className="guideline-preview" aria-label="Example guideline record">
+  <h3>Directly label colored series</h3>
+  <code>directly-label-series-instead-of-using-a-color-key</code>
+  <p>
+    {
+      "Label colored series on the chart so readers can identify a line or area without decoding a separate color key."
+    }
+  </p>
+  <dl>
+    <div>
+      <dt>Labels</dt>
+      <dd>
+        <code>chart:line:use</code> <code>operator:lookup</code>
+      </dd>
+    </div>
+    <div>
+      <dt>Sections</dt>
+      <dd>
+        <code>advice</code> <code>reason</code> <code>context</code> <code>check</code>
+      </dd>
+    </div>
+  </dl>
+</article>
 
-## Choose an interface
+The record keeps its advice beside the vocabulary used to retrieve it and the
+sources used to support it. Catalog releases preserve that shape across the
+[Python](/python), [JavaScript](/javascript), [CLI](/cli), and [MCP
+server](/mcp) interfaces.
 
-| Task                                                | Interface                 |
-| --------------------------------------------------- | ------------------------- |
-| Inspect and cite records from a terminal or agent   | [CLI](/cli)               |
-| Work with Polars, DuckDB, releases, or LanceDB      | [Python](/python)         |
-| Load a typed catalog in a browser or server runtime | [JavaScript](/javascript) |
-| Expose SQL and indexed search to an MCP client      | [MCP](/mcp)               |
-| Install task-specific agent instructions            | [Agents](/agents)         |
-| Author, build, and publish catalog artifacts        | [Build a catalog](/build) |
-
-The [cataloging scheme](/catalog) defines authored folders, compiled bundles,
-immutable releases, and embedding profiles.
+[Getting started](/getting-started) loads a release as a dataframe and inspects
+one record in the browser.

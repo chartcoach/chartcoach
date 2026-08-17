@@ -1,76 +1,95 @@
 ---
 title: CLI
-description: Inspect local or remote catalogs, run SQL, search release profiles, and curate releases.
+description: Navigate records, run bounded queries, and publish catalog releases from a shell.
 icon: Terminal
 ---
 
-Catalog-reading commands use one source option:
+Use the CLI to move from catalog context to candidate ids, exact records, and
+citations.
 
 ```bash
-uvx chartcoach@latest catalog overview \
-  --source https://artifacts.chartcoach.dev/catalog.json
+uvx chartcoach@latest catalog overview --format json
+uvx chartcoach@latest catalog list --contains "direct labels" --limit 5 --format json
+uvx chartcoach@latest catalog read <guideline-id> --format markdown
 ```
 
-`--source` accepts a catalog folder, bundle, `catalog.json`, or `release.json`
-path or URI. It defaults to `CHARTCOACH_SOURCE`, then the official catalog.
+## Commands
 
-## Catalog commands
+| Command            | Result                                                          |
+| ------------------ | --------------------------------------------------------------- |
+| `catalog overview` | Source, release digest, table counts, roles, and label families |
+| `catalog labels`   | Label values and counts                                         |
+| `catalog roles`    | Section roles and counts                                        |
+| `catalog list`     | Guideline ids, titles, descriptions, and labels                 |
+| `catalog read`     | Exact records or selected section roles                         |
+| `catalog cite`     | Public URLs and formatted source citations                      |
+| `catalog schema`   | DuckDB tables, fields, and row counts                           |
+| `catalog sql`      | One bounded read-only `SELECT`                                  |
+| `catalog find`     | Ranked documents from a release-backed LanceDB profile          |
 
-| Command            | Contract                                  |
-| ------------------ | ----------------------------------------- |
-| `catalog overview` | Report catalog counts and vocabulary.     |
-| `catalog labels`   | List label values and counts.             |
-| `catalog roles`    | List section roles and counts.            |
-| `catalog list`     | Filter guideline summaries.               |
-| `catalog read`     | Return exact guideline text.              |
-| `catalog cite`     | Format public links and source citations. |
-| `catalog schema`   | List DuckDB tables and columns.           |
-| `catalog sql`      | Run one read-only `SELECT` query.         |
-| `catalog find`     | Rank indexed documents with LanceDB.      |
+`--source` accepts an authored folder, compiled bundle, `catalog.json`, or
+`release.json` path or URI. A command flag wins over `CHARTCOACH_SOURCE`. When
+both are absent, the CLI opens the official selected catalog.
 
-Search selects a profile from the same release source:
+## Script against JSON
+
+Human tables and Markdown go to standard output. `--format json` emits ordinary
+JSON arrays or objects to standard output. Errors and recovery guidance go to
+standard error.
+
+```bash
+chartcoach catalog list \
+  --label operator:uncertainty \
+  --limit 10 \
+  --format json |
+  jq -r '.[].id'
+```
+
+`catalog list` defaults to 50 rows. `catalog sql` defaults to 100 rows. Pass a
+smaller `--limit` when another process will inspect every result.
+
+Exit codes follow the Click command contract:
+
+| Code | Meaning                                      |
+| ---: | -------------------------------------------- |
+|  `0` | Command completed                            |
+|  `1` | Catalog, query, storage, or capability error |
+|  `2` | Invalid command syntax or option value       |
+
+## Search an index
+
+Install the index capability and select a profile from the same release as the
+catalog:
 
 ```bash
 uvx --from 'chartcoach[index]@latest' chartcoach catalog find \
-  --source https://artifacts.chartcoach.dev/catalog.json \
   --profile sentence-transformers/all-MiniLM-L6-v2 \
+  --mode fts \
+  --where "role = 'section.advice'" \
+  --limit 5 \
   "direct labels"
 ```
 
-## Build commands
+Vector and hybrid modes receive one caller-provided vector value per embedding
+dimension. Full-text search runs without an embedding provider.
+
+## Build and publish
+
+Build commands write local artifacts. Release publication and selection accept
+`--dry-run` so you can inspect every object key before a remote write.
 
 ```bash
 chartcoach catalog validate --source ./catalog-source
 chartcoach catalog build --source ./catalog-source --out ./dist/catalog
-chartcoach catalog export duckdb \
-  --source ./dist/catalog \
-  --out ./dist/catalog.duckdb
-```
 
-## Release commands
-
-The curation extra builds profile artifacts and writes catalog storage:
-
-```bash
-chartcoach catalog release validate ./dist/release
 chartcoach catalog release publish \
   ./dist/release \
-  --store s3://chartcoach
-chartcoach catalog release select \
-  "$RELEASE_DIGEST" \
-  --store s3://chartcoach
+  --store s3://chartcoach \
+  --dry-run
 ```
 
-Publication writes immutable objects under the release digest. Selection
-verifies the published release and updates `catalog.json`.
+`catalog build` requires a new output directory. Publication writes immutable
+objects under the release digest. `catalog release select` verifies that
+published release before updating `catalog.json`.
 
-## Agent and MCP commands
-
-```bash
-chartcoach skills
-chartcoach skills get core
-chartcoach mcp --profile sentence-transformers/all-MiniLM-L6-v2
-```
-
-The [Agents](/agents) guide covers skill routing. The [MCP](/mcp) guide covers
-server transports and tool contracts.
+Use [Build and publish](/build) for the authored folder and release workflow.

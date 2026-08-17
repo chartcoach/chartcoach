@@ -38,12 +38,14 @@ tests read the same fixture.
 apps/site  -> packages/catalog
           -> packages/brand
 
-apps/docs  -> packages/brand
+apps/docs  -> packages/catalog
+           -> packages/brand
 ```
 
-`packages/catalog` is a browser-safe leaf. It stays independent from the apps,
-brand assets, and Node built-ins. The root Vite+ policy enforces this boundary.
-Cross-package TypeScript imports use package names.
+`packages/catalog` is a browser-safe leaf. The site and docs use its public
+entry point. It stays independent from the apps, brand assets, and Node
+built-ins. The root Vite+ policy enforces this boundary. Cross-package
+TypeScript imports use package names.
 
 The root `package.json` and `vite.config.ts` own JavaScript orchestration and
 shared policy. Package manifests own dependencies, focused scripts, tests, and

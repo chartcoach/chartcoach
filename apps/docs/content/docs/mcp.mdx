@@ -1,17 +1,21 @@
 ---
-title: MCP
-description: Expose catalog SQL and release-backed LanceDB search to MCP clients.
+title: MCP server
+description: Expose bounded catalog SQL and indexed search to an MCP client.
 icon: Plug
 ---
 
-Install the MCP server:
+Start the Model Context Protocol (MCP) server over standard input and output:
 
 ```bash
 uvx --from 'chartcoach[mcp]@latest' chartcoach mcp
 ```
 
-The server always registers `sql`. Install the index capability and select a
-profile to register `search`:
+The server registers `sql` for every catalog. `sql` accepts one read-only
+`SELECT` and caps the returned rows.
+
+## Add indexed search
+
+Install the index capability and select one profile to register `search`:
 
 ```bash
 uvx --from 'chartcoach[mcp,index]@latest' chartcoach mcp \
@@ -19,14 +23,11 @@ uvx --from 'chartcoach[mcp,index]@latest' chartcoach mcp \
   --profile sentence-transformers/all-MiniLM-L6-v2
 ```
 
-The catalog and profile resolve through the same release envelope. `sql` runs
-one read-only `SELECT` over catalog tables. `search` accepts a query string,
-mode, limit, optional LanceDB filter, and an optional caller-provided vector.
-Vector and hybrid modes require that vector.
+The catalog and index resolve through the same release descriptor. `search`
+accepts a query, mode, limit, optional LanceDB filter, and an optional vector.
+Vector and hybrid modes require the vector. Full-text mode does not.
 
-## Exact release
-
-Use an exact `release.json` source for deterministic runs:
+Use an exact `release.json` URI when a client run must keep one catalog digest:
 
 ```bash
 chartcoach mcp \
@@ -34,10 +35,15 @@ chartcoach mcp \
   --profile sentence-transformers/all-MiniLM-L6-v2
 ```
 
-## Network transports
+## Transports
 
-The default transport is `stdio`. SSE and streamable HTTP accept host, port,
-and log-level settings.
+| Transport         | Default boundary                   |
+| ----------------- | ---------------------------------- |
+| `stdio`           | One parent process owns the server |
+| `sse`             | HTTP listener on `127.0.0.1:8000`  |
+| `streamable-http` | HTTP listener on `127.0.0.1:8000`  |
+
+Start a local streamable HTTP endpoint:
 
 ```bash
 chartcoach mcp \
@@ -47,4 +53,12 @@ chartcoach mcp \
   --log-level info
 ```
 
-Use `CHARTCOACH_SOURCE` and `CHARTCOACH_INDEX_PROFILE` for managed processes.
+Changing `--host` can expose the server beyond the current machine. Put
+authentication and network policy in the process or platform that owns the
+listener before binding a public interface.
+
+`CHARTCOACH_SOURCE` supplies the source when `--source` is absent.
+`CHARTCOACH_INDEX_PROFILE` supplies the profile when `--profile` is absent.
+
+Use [Agent workflow](/agents) for the retrieval sequence that turns tool results into a
+source-grounded claim.

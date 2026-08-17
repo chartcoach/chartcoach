@@ -3,8 +3,10 @@
 @import "fumadocs-ui/css/preset.css";
 @import "@chartcoach/brand/tokens.css";
 @import "@chartcoach/brand/logo.css";
+@import "@marimo-team/mdx-marimo/styles.css";
 
 html:root {
+  --color-fd-muted-foreground: var(--color-muted);
   --color-fd-primary: var(--color-accent);
   --color-fd-ring: var(--color-accent);
   --color-fd-accent: var(--color-accent-muted);
@@ -30,4 +32,55 @@ body {
 html > body[data-scroll-locked] {
   margin-right: 0 !important;
   --removed-body-scroll-bar-size: 0 !important;
+}
+
+marimo-mdx-island {
+  display: block;
+  margin-block: 1.5rem;
+  --marimo-island-background: var(--color-fd-background);
+  --marimo-island-foreground: var(--color-fd-foreground);
+  --marimo-island-surface: var(--color-fd-card);
+  --marimo-island-muted-surface: var(--color-fd-muted);
+  --marimo-island-muted-foreground: var(--color-fd-muted-foreground);
+  --marimo-island-border: var(--color-fd-border);
+  --marimo-island-accent: var(--color-fd-primary);
+  --marimo-island-focus-ring: var(--color-fd-ring);
+  --marimo-island-radius: 0.375rem;
+  --marimo-island-margin-block: 1.25rem;
+}
+
+.guideline-preview {
+  margin-block: 1.75rem;
+  border-block: 1px solid var(--color-fd-border);
+  padding-block: 1.25rem;
+}
+
+.guideline-preview > :first-child {
+  margin-top: 0;
+}
+
+.guideline-preview > :last-child {
+  margin-bottom: 0;
+}
+
+.guideline-preview h3 {
+  margin-block: 0.25rem 0.5rem;
+  font-size: 1.25rem;
+}
+
+.guideline-preview dl {
+  display: grid;
+  gap: 0.75rem;
+  margin-block: 1rem 0;
+}
+
+.guideline-preview dt {
+  color: var(--color-fd-muted-foreground);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.guideline-preview dd {
+  margin: 0.25rem 0 0;
 }

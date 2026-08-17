@@ -1,59 +1,47 @@
 ---
-title: Cataloging scheme
-description: Authored folders, compiled rows, immutable releases, embedding profiles, and catalog object keys.
+title: Catalog model
+description: Understand guideline rows, manifests, bundles, releases, and search profiles.
 icon: Database
 ---
 
-The Guideline Catalog has three storage forms: an authored folder, a compiled
-bundle, and an immutable release.
+The Guideline Catalog is the versioned collection of source-traced guideline
+records. Each record keeps its retrieval labels, ordered prose sections, and
+source references together.
 
-## Authored folder
-
-```text
-catalog-source/
-├── MANIFEST.md
-└── entries/
-    └── direct-labels/
-        ├── guideline.md
-        └── references.bib
+```json
+{
+  "id": "directly-label-series-instead-of-using-a-color-key",
+  "title": "Directly label colored series",
+  "description": "Attach series identity to the marks that readers inspect.",
+  "labels": ["chart:line:use", "operator:lookup"],
+  "sections": [
+    {
+      "role": "advice",
+      "title": "Move labels onto the marks",
+      "content": "Place each series name next to its line or area."
+    }
+  ],
+  "references": ["@misc{muth_colorblindness_2020, ...}"]
+}
 ```
 
-`MANIFEST.md` defines section roles and label families. Each `guideline.md`
-contains frontmatter plus ordered Markdown sections whose headings carry a
-manifest role.
+The Markdown body is derived from the ordered `sections`. Reference ids in the
+section text resolve against the record's BibTeX strings.
 
-## Compiled bundle
+## Storage forms
 
-```text
-catalog/
-├── MANIFEST.md
-└── entries.parquet
-```
+| Form              | Contains                                              | Use it for               |
+| ----------------- | ----------------------------------------------------- | ------------------------ |
+| Authored folder   | `MANIFEST.md` and `entries/<id>/guideline.md`         | Review and curation      |
+| Compiled bundle   | `MANIFEST.md` and `entries.parquet`                   | Local readers and builds |
+| Immutable release | `release.json`, core artifacts, and optional profiles | Verified distribution    |
 
-Every `entries.parquet` row has six fields:
+`MANIFEST.md` defines every section role and label family used by its records.
+Readers validate that vocabulary when they open a catalog.
 
-```ts
-type GuidelineRow = {
-  id: string;
-  title: string;
-  description: string;
-  labels: string[];
-  sections: Array<{
-    role: string;
-    title: string;
-    content: string;
-  }>;
-  references: string[];
-};
-```
+## Release envelope
 
-The Markdown body is derived from `sections`. Reference ids point to BibTeX
-entries compiled from the authored folder.
-
-## Immutable release
-
-A release record is a schema 1 artifact envelope. Artifact paths are the map
-keys.
+A schema 1 release uses artifact paths as keys:
 
 ```ts
 type CatalogRelease = {
@@ -69,67 +57,50 @@ type CatalogRelease = {
 };
 ```
 
-The digest is the SHA-256 of the canonical schema version and artifact map.
-`MANIFEST.md` and `entries.parquet` are required. A release may contain any
-number of embedding profiles.
+`MANIFEST.md` and `entries.parquet` are required. The digest covers the schema
+version and canonical artifact map. Readers verify the digest, byte count, and
+SHA-256 value before decoding each artifact.
+
+A release can add one artifact pair per embedding profile:
 
 ```text
-catalog/releases/<digest>/
+release/
 ├── release.json
 ├── MANIFEST.md
 ├── entries.parquet
 └── profiles/
-    ├── sentence-transformers/all-MiniLM-L6-v2/
-    │   ├── documents.parquet
-    │   └── index.tar.gz
-    └── openai/text-embedding-3-large/
+    └── sentence-transformers/all-MiniLM-L6-v2/
         ├── documents.parquet
         └── index.tar.gz
 ```
 
-Each profile represents one embedding space. Its Parquet file contains native
-document fields plus vectors, UMAP coordinates, and nearest neighbors:
+Each `documents.parquet` row contains `id`, `parent_id`, `role`, `labels`,
+`content_hash`, `text`, the embedding vector, projection coordinates, and
+nearest neighbors. The matching archive contains one LanceDB table named
+`documents`.
+
+## Selection and immutability
+
+`catalog.json` contains the release selected for public access. It is the
+mutable entry document. The directory under
+`catalog/releases/<digest>/` remains immutable.
+
+Opening `catalog.json` refreshes the selection before reusing cached immutable
+artifacts. Opening an exact `release.json` keeps one digest across runs.
+
+## Query tables
+
+Readers derive six relational tables from the compiled rows:
 
 ```text
-row_id
-id
-parent_id
-role
-labels
-content_hash
-text
-vector
-projection_x
-projection_y
-neighbors
+guidelines
+sections
+guideline_labels
+references
+guideline_references
+guideline_sources
 ```
 
-`neighbors` contains `ids` and `distances`. Neighbor ids refer to `row_id`.
-The profile archive contains one LanceDB table named `documents` whose source
-column is `text` and vector column is `vector`.
-
-The profile Parquet file can be loaded directly in Embedding Atlas or another
-Arrow-compatible analysis tool.
-
-## Selected release
-
-`catalog.json` contains the full `CatalogRelease` selected for public access.
-Readers resolve that record, verify its digest, then fetch artifacts from
-`catalog/releases/<digest>/`.
-
-Selecting a release updates this one mutable entry document. Published release
-directories remain immutable.
-
-## Release sources
-
-Consumers open `catalog.json` for the current selection or `release.json` for
-one exact release. The Python runtime supports local paths, HTTP, and cloud
-descriptor URIs. The JavaScript runtime supports HTTP and HTTPS descriptors.
-Object keys remain curation infrastructure.
-
-## Queryable tables
-
-Python derives six tables from the compiled rows: `guidelines`, `sections`,
-`guideline_labels`, `references`, `guideline_references`, and
-`guideline_sources`. Run `chartcoach catalog schema --tables --row-counts` to
-inspect the current catalog before writing SQL.
+Run `chartcoach catalog schema --tables --row-counts` against the selected
+source before writing a query. Use [Querying](/querying) for complete
+filter, SQL, and indexed-search examples.

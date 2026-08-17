@@ -47,12 +47,7 @@ export default defineConfig({
           "no-restricted-imports": [
             "error",
             {
-              patterns: [
-                "@chartcoach/catalog",
-                "@chartcoach/catalog/*",
-                "@chartcoach/site",
-                "@chartcoach/site/*",
-              ],
+              patterns: ["@chartcoach/catalog/*", "@chartcoach/site", "@chartcoach/site/*"],
             },
           ],
         },

@@ -1,95 +1,93 @@
 ---
 title: Querying
-description: Filter catalog records, run read-only SQL, and compose native LanceDB queries.
+description: Use deterministic filters, read-only SQL, or indexed search against a catalog release.
 icon: Search
 ---
 
-Start with deterministic catalog navigation:
+Catalog queries return candidate ids through three retrieval paths.
+
+| Question shape                           | Use            | Returns                    |
+| ---------------------------------------- | -------------- | -------------------------- |
+| Known id, text fragment, or exact labels | `catalog list` | Guideline summaries        |
+| Relationship across tables               | `catalog sql`  | Bounded relational rows    |
+| Natural-language or section-level match  | `catalog find` | Ranked document candidates |
+
+Every path returns candidate ids. Use `catalog read` before applying a selected
+guideline as evidence.
+
+## Filter deterministic fields
 
 ```bash
-uvx chartcoach@latest catalog list \
-  --contains "axis labels" \
+chartcoach catalog list \
+  --label chart:line:use \
+  --label-prefix operator: \
+  --contains "label" \
   --limit 10 \
   --format json
 ```
 
-Use `labels` and `roles` to inspect the manifest vocabulary before adding exact
-filters.
+Repeated `--label` filters use all-of matching. Repeated `--label-prefix`
+filters require a match for each prefix. Run `catalog labels` and `catalog
+roles` before copying vocabulary into a script.
 
-```bash
-chartcoach catalog labels --contains "bar"
-chartcoach catalog roles
-chartcoach catalog list --label chart:bar:use
-```
+## Join catalog tables
 
-## SQL
-
-`catalog sql` runs one read-only `SELECT` over the catalog tables.
+Inspect the live tables and columns:
 
 ```bash
 chartcoach catalog schema --tables --row-counts
-chartcoach catalog schema sections guideline_sources
+chartcoach catalog schema guidelines guideline_labels
+```
 
+This query finds guidelines that combine a chart recommendation with an
+uncertainty operation:
+
+```bash
 chartcoach catalog sql "
   select distinct g.id, g.title
   from guidelines g
-  join sections s on s.guideline_id = g.id
-  where s.content ilike '%uncertainty%'
+  join guideline_labels chart
+    on chart.guideline_id = g.id
+  join guideline_labels operation
+    on operation.guideline_id = g.id
+  where chart.family = 'chart'
+    and chart.modifier = 'use'
+    and operation.label = 'operator:uncertainty'
   order by g.id
   limit 20
 " --format json
 ```
 
-The tables are `guidelines`, `sections`, `guideline_labels`, `references`,
-`guideline_references`, and `guideline_sources`.
+`catalog sql` accepts one read-only `SELECT` and applies its own result limit.
+The queryable tables are `guidelines`, `sections`, `guideline_labels`,
+`references`, `guideline_references`, and `guideline_sources`.
 
-## Indexed discovery
+## Search section text
 
-`catalog find` searches the native LanceDB `documents` table and deduplicates
-document matches by guideline id.
+Indexed roles make the matched part of a guideline explicit. Section roles use
+the `section.<role>` form:
 
 ```bash
 chartcoach catalog find \
   --profile sentence-transformers/all-MiniLM-L6-v2 \
   --mode fts \
-  --where "role = 'overview'" \
-  --limit 10 \
-  "direct labels"
+  --where "role = 'section.mistakes'" \
+  --limit 5 \
+  --format json \
+  "legend makes the lines hard to identify"
 ```
 
-Vector and hybrid modes receive one `--vector` value per dimension from the
-caller.
+Read the matched role from the selected record:
 
-## Native LanceDB
-
-Python callers receive the LanceDB table itself:
-
-```python
-from chartcoach import open_index
-
-table = open_index(
-    "https://artifacts.chartcoach.dev/catalog/releases/<digest>/release.json",
-    profile="sentence-transformers/all-MiniLM-L6-v2",
-)
-
-fts = table.search("direct labels", query_type="fts", fts_columns="text")
-rows = fts.where("role = 'overview'").limit(10).to_list()
+```bash
+chartcoach catalog read <guideline-id> \
+  --section mistakes \
+  --source-detail full \
+  --format markdown
 ```
 
-Compose vector search with an application-provided vector:
+Full-text search needs no embedding provider. Vector and hybrid modes use the
+profile's vector space and receive the query vector from the caller.
 
-```python
-query_vector = embed("direct labels")
-rows = (
-    table.search(
-        query_vector,
-        query_type="vector",
-        vector_column_name="vector",
-    )
-    .distance_type("cosine")
-    .limit(10)
-    .to_list()
-)
-```
-
-Read each selected guideline with `catalog read` before using it as evidence.
+Use [Python](/python) when the application should compose Polars, DuckDB, or
+native LanceDB queries directly.

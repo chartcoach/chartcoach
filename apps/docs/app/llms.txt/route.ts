@@ -7,7 +7,7 @@ export const revalidate = false;
 export function GET() {
   const body = llms(source)
     .index()
-    .replace(/^# Docs\b/, "# chartcoach docs")
+    .replace(/^# Docs\b/, "# chartcoach")
     .replace(/\n- \*\*Separator\*\*\n/g, "\n")
     .replace(/\n{3,}/g, "\n\n")
     .trimEnd();

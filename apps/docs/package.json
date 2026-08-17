@@ -13,6 +13,8 @@
   },
   "dependencies": {
     "@chartcoach/brand": "workspace:*",
+    "@chartcoach/catalog": "workspace:*",
+    "@marimo-team/mdx-marimo": "0.0.5",
     "fumadocs-core": "16.14.0",
     "fumadocs-mdx": "15.2.2",
     "fumadocs-ui": "16.14.0",
