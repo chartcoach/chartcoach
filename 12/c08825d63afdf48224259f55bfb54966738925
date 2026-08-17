@@ -1,0 +1,40 @@
+apps/docs/package.json
+  s_45e6fac1651d3a::t_eca71dace13207 16-18,20,30
+  s_72530fee014608::t_74a2297721402e 25
+apps/site/package.json
+  s_72530fee014608::t_74a2297721402e 18,22,27,33,38-39
+  s_45e6fac1651d3a::t_eca71dace13207 32,35
+pnpm-workspace.yaml
+  s_72530fee014608::t_c4820fe493650e 8,12-13,15-16,19
+  s_45e6fac1651d3a::t_eca71dace13207 10-11,14,17
+  s_72530fee014608::t_dc4bb4789ea5a7 18
+  s_72530fee014608::t_74a2297721402e 20
+  s_45e6fac1651d3a::t_83ec964985ffd1 21-24,27
+  s_72530fee014608::t_49273112b5f3e1 25
+packages/catalog/package.json
+  s_45e6fac1651d3a::t_eca71dace13207 39
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "12c08825d63afdf48224259f55bfb54966738925",
+  "prompts": {},
+  "sessions": {
+    "s_45e6fac1651d3a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a00a1a-d2bc-70f1-a84a-ab21c0e21e43",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Péter Ferenc Gyarmati <dev.petergy@gmail.com>"
+    },
+    "s_72530fee014608": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a009a0-55fd-7360-9d5f-b9563c1d1bd7",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Péter Ferenc Gyarmati <dev.petergy@gmail.com>"
+    }
+  }
+}
