@@ -1,0 +1,134 @@
+apps/docs/content/docs/agents.mdx
+  s_91102cc43e05a6::t_a0b67dc0608676 2,14,66
+  s_91102cc43e05a6::t_ef77f76d351e0d 3,7,11,15,23-25,33,35,38-43,46,54,57-58,62-64,67
+  s_91102cc43e05a6::t_672574e9fce396 16-22
+vite.config.ts
+  s_45e6fac1651d3a::t_83ec964985ffd1 3-5,23,25,29
+  s_72530fee014608::t_59095a8682850b 6-20,27-28,30-31,38-49
+  s_91102cc43e05a6::t_a81ab288d6b375 50
+pnpm-workspace.yaml
+  s_72530fee014608::t_c4820fe493650e 8,12-13,15-16,19
+  s_45e6fac1651d3a::t_eca71dace13207 10-11,14,17
+  s_72530fee014608::t_dc4bb4789ea5a7 18
+  s_72530fee014608::t_74a2297721402e 20
+  s_45e6fac1651d3a::t_83ec964985ffd1 21-24,27
+  s_72530fee014608::t_49273112b5f3e1 25
+  s_91102cc43e05a6::t_8b6014bbb57e22 28-29
+  s_91102cc43e05a6::t_24b1f016e342f5 44
+apps/docs/content/docs/build.mdx
+  s_91102cc43e05a6::t_a0b67dc0608676 2
+  s_91102cc43e05a6::t_495ac3c91384ab 3,7-8,10,12,22,40,56-57,59,71-73,76-77,91,93,105,112,119-120,124-125,141-142,144
+  s_91102cc43e05a6::t_d4da778c5e8904 80-81
+  s_91102cc43e05a6::t_da1a8c72462f88 82
+apps/docs/source.config.ts
+  s_91102cc43e05a6::t_00fefca227299e 4,29,40
+  s_91102cc43e05a6::t_d01297a853b0a0 7-12
+  s_91102cc43e05a6::t_2cc99545d4a982 30-39
+apps/docs/app/global.css
+  s_91102cc43e05a6::t_00fefca227299e 6,36-41,45
+  s_91102cc43e05a6::t_bfb2c603bf20de 9
+  s_91102cc43e05a6::t_cc88abc491ec38 42-44,46-54,56-65,67-85
+  s_91102cc43e05a6::t_a0b67dc0608676 55,66
+apps/docs/app/layout.tsx
+  s_91102cc43e05a6::t_a2a3e0accc89eb 16-17,19
+apps/docs/tsconfig.json
+  s_91102cc43e05a6::t_fba4fd63422337 19
+apps/docs/package.json
+  s_91102cc43e05a6::t_00fefca227299e 16-17
+  s_45e6fac1651d3a::t_eca71dace13207 18-20,22,32
+  s_72530fee014608::t_74a2297721402e 27
+apps/docs/components/notebook-runtime.tsx
+  s_91102cc43e05a6::t_00fefca227299e 1-25
+apps/docs/content/docs/javascript.mdx
+  s_91102cc43e05a6::t_52b3e44c5b51a8 3,10-12,17-18,21-22,24,26-28,30,32-33,40,50-61,63-111,141-165,167-185,187-195,197,199,211-213,215
+  s_91102cc43e05a6::t_55ab5b7780b6f0 7-8
+  s_91102cc43e05a6::t_3285d4f4721b46 13-16
+  s_91102cc43e05a6::t_be20330396b514 34,36-37
+  s_91102cc43e05a6::t_58fc0bd53f727a 35
+  s_91102cc43e05a6::t_2d391855c2b8ae 41,43-49
+  s_91102cc43e05a6::t_2634945bae6a39 62
+  s_91102cc43e05a6::t_92aaf56bc97275 112-138,186
+  s_91102cc43e05a6::t_96d5102fd176e3 166
+apps/docs/content/docs/cli.mdx
+  s_91102cc43e05a6::t_1bfdbbc2f7b127 3,7-8,11-13,20,30-32,34-52,58-62,67-69,73-79,87-88,91-93
+  s_91102cc43e05a6::t_a0b67dc0608676 16,95
+  s_91102cc43e05a6::t_672574e9fce396 18-19,21-28,53-57
+apps/docs/content/docs/getting-started.mdx
+  s_91102cc43e05a6::t_a0b67dc0608676 3,7-8,10-11,56,58-60,76-78
+  s_91102cc43e05a6::t_806d9efe93cd29 4,14-15,19,37,42-43,70,72-74
+  s_91102cc43e05a6::t_be20330396b514 12,16,18,39-41
+  s_91102cc43e05a6::t_58fc0bd53f727a 17,31
+  s_91102cc43e05a6::t_fc1863a50bb75a 21-22,24-25,33
+  s_91102cc43e05a6::t_fea7cf3fcedead 26,30,32
+  s_91102cc43e05a6::t_a3939db5436f32 28
+  s_91102cc43e05a6::t_201c7c71d14b1a 29
+  s_91102cc43e05a6::t_d01297a853b0a0 36,46-47,49-53,62-63,65-66,69
+apps/docs/content/docs/python.mdx
+  s_91102cc43e05a6::t_fe4c0d782184b9 3,7-8,21-22,36-37,39,44-47,49-51,53,55,66,71-76,80,82-83,94,98,106-107,109
+  s_91102cc43e05a6::t_3285d4f4721b46 11-12,18-20,42
+  s_91102cc43e05a6::t_55ab5b7780b6f0 25-26
+  s_91102cc43e05a6::t_672574e9fce396 57-64
+  s_91102cc43e05a6::t_d4da778c5e8904 86-87
+  s_91102cc43e05a6::t_f7bfe7177198f7 100
+apps/docs/components/mdx.tsx
+  s_91102cc43e05a6::t_00fefca227299e 4-5,9-10
+apps/docs/README.md
+  s_91102cc43e05a6::t_64dcb260355f71 28-35,41-45
+  s_91102cc43e05a6::t_6e3a0bb5d2b011 36,38
+  s_91102cc43e05a6::t_be20330396b514 37
+  s_91102cc43e05a6::t_a923e6c58c334c 39-40
+apps/docs/app/llms.txt/route.ts
+  s_91102cc43e05a6::t_b0594f4adff796 10
+apps/docs/content/docs/catalog.mdx
+  s_91102cc43e05a6::t_079142d500908d 2-3,7-25,28-29,31,39-40,42,44,60-64,67,72,77-80,82,84-86,88-89,91,93,95-102,104,106
+  s_91102cc43e05a6::t_672574e9fce396 33-37
+  s_91102cc43e05a6::t_a0b67dc0608676 105
+apps/docs/content/docs/index.mdx
+  s_91102cc43e05a6::t_a0b67dc0608676 2-3,7-9,11,13,17-18,22-23,25,48-51,53-54
+  s_91102cc43e05a6::t_a2a3e0accc89eb 24,26,32-34,38-40,44-47,52
+  s_91102cc43e05a6::t_672574e9fce396 27-31,35-37,41-43
+apps/docs/content/docs/mcp.mdx
+  s_91102cc43e05a6::t_a0b67dc0608676 2,38,63
+  s_91102cc43e05a6::t_d452d31645db0e 3,7,13-18,26-28,30,45-46,56-62,64
+  s_91102cc43e05a6::t_672574e9fce396 40-44
+apps/docs/content/docs/meta.json
+  s_91102cc43e05a6::t_a0b67dc0608676 2,6,8-9,13
+apps/docs/content/docs/querying.mdx
+  s_91102cc43e05a6::t_a0b67dc0608676 3,7
+  s_91102cc43e05a6::t_217e3a956eda25 8,14-18,21-24,29-31,33,35,39-43,45,49-55,61-63,65,67-68,74-77,80,82-86,89-90,92-93
+  s_91102cc43e05a6::t_672574e9fce396 9-13
+development_docs/architecture.md
+  s_91102cc43e05a6::t_fba4fd63422337 41-42,45-48
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "902baac2b2da159e26e477f503c12035afff6dc7",
+  "prompts": {},
+  "sessions": {
+    "s_45e6fac1651d3a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a00a1a-d2bc-70f1-a84a-ab21c0e21e43",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Péter Ferenc Gyarmati <dev.petergy@gmail.com>"
+    },
+    "s_72530fee014608": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a009a0-55fd-7360-9d5f-b9563c1d1bd7",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Péter Ferenc Gyarmati <dev.petergy@gmail.com>"
+    },
+    "s_91102cc43e05a6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a00eeb-01b9-7d61-ae01-b92e788f8991",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Péter Ferenc Gyarmati <dev.petergy@gmail.com>"
+    }
+  }
+}
