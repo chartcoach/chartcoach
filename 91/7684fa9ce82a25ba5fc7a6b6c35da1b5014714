@@ -1,0 +1,44 @@
+packages/chartcoach/src/chartcoach/catalog/documents.py
+  s_72530fee014608::t_05eaadd10d6e26 4,48
+  s_91102cc43e05a6::t_e40941871be67e 9,88-91
+  s_91102cc43e05a6::t_388f8fc6083c25 10
+packages/chartcoach/src/chartcoach/catalog/tables.py
+  s_91102cc43e05a6::t_e40941871be67e 8,71-74,87-90
+  s_72530fee014608::t_05eaadd10d6e26 13,21
+packages/chartcoach/src/chartcoach/catalog/query.py
+  s_91102cc43e05a6::t_e40941871be67e 9,127
+  s_72530fee014608::t_05eaadd10d6e26 18,62,71,80,89,108,123,138,176
+  s_72530fee014608::t_12ec061913d4c1 155
+packages/chartcoach/tests/test_polars_compat.py
+  s_91102cc43e05a6::t_e40941871be67e 1-52
+packages/chartcoach/src/chartcoach/catalog/_polars.py
+  s_91102cc43e05a6::t_e40941871be67e 1-28
+packages/chartcoach/src/chartcoach/catalog/references.py
+  s_91102cc43e05a6::t_6b832b3e0bf93e 12
+  s_91102cc43e05a6::t_388f8fc6083c25 86-91
+  s_72530fee014608::t_05eaadd10d6e26 176
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "917684fa9ce82a25ba5fc7a6b6c35da1b5014714",
+  "prompts": {},
+  "sessions": {
+    "s_72530fee014608": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a009a0-55fd-7360-9d5f-b9563c1d1bd7",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Péter Ferenc Gyarmati <dev.petergy@gmail.com>"
+    },
+    "s_91102cc43e05a6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a00eeb-01b9-7d61-ae01-b92e788f8991",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Péter Ferenc Gyarmati <dev.petergy@gmail.com>"
+    }
+  }
+}
