@@ -1,0 +1,124 @@
+apps/site/test/astro.ts
+  s_72530fee014608::t_ed0f0f012bdf27 1-40
+apps/site/test/catalog-source.test.ts
+  s_72530fee014608::t_7b1b23d0361415 4
+  s_72530fee014608::t_ed0f0f012bdf27 89,101,122,137-138
+packages/catalog/test/entries-parquet.test.ts
+  s_72530fee014608::t_363d8843385aad 14-15,27-31,69,182-183,204-206,268,309-310
+apps/site/src/integrations/og-images.ts
+  s_72530fee014608::t_726403d9f6ad91 14-15,29,35-39,88,104
+apps/site/src/types/citation-js.d.ts
+  s_72530fee014608::t_3812b9dfcef84c 10-11,13
+apps/site/src/components/clipboard.ts
+  s_72530fee014608::t_c9d119134b0403 2
+apps/site/src/components/guideline-actions.tsx
+  s_72530fee014608::t_3812b9dfcef84c 10,14
+apps/site/src/config/site.ts
+  s_72530fee014608::t_3812b9dfcef84c 31-33,35,42,60,107
+apps/site/src/components/install-copy.tsx
+  s_72530fee014608::t_3812b9dfcef84c 27-29,185,197,210
+  s_72530fee014608::t_c9d119134b0403 334
+apps/site/src/integrations/llms.ts
+  s_72530fee014608::t_d9d1064de88699 12-19,383,390,449
+  s_72530fee014608::t_d9d6e20b82ba7a 50,133,178,191
+  s_72530fee014608::t_c9d119134b0403 68-69,73,440-441
+  s_72530fee014608::t_7b1b23d0361415 168-171
+  s_72530fee014608::t_349983be4dc505 484
+apps/site/test/integrations/og-images.test.ts
+  s_72530fee014608::t_557f49db13beb4 6
+  s_72530fee014608::t_ed0f0f012bdf27 9-10,34,44,51,53-60,76
+packages/catalog/src/catalog/json.ts
+  s_72530fee014608::t_25317a70c6619f 1-2,6,8-28
+  s_72530fee014608::t_1d1c08337c026f 3-5
+  s_72530fee014608::t_557f49db13beb4 7
+apps/site/src/loaders/guidelines-loader.ts
+  s_72530fee014608::t_3812b9dfcef84c 27
+packages/catalog/src/catalog/labels.ts
+  s_72530fee014608::t_25317a70c6619f 10,20-22,31
+apps/site/test/integrations/search-index.test.ts
+  s_72530fee014608::t_d9d1064de88699 9
+  s_72530fee014608::t_ed0f0f012bdf27 66,70,72,110
+  s_72530fee014608::t_ee3f303972e529 111-112
+apps/site/astro.config.ts
+  s_72530fee014608::t_d9d6e20b82ba7a 42
+apps/site/src/integrations/search-index.ts
+  s_72530fee014608::t_d9d1064de88699 16-45,164,167,201
+  s_72530fee014608::t_c9d119134b0403 53,60,76,88,152,154
+  s_72530fee014608::t_7b1b23d0361415 124
+  s_72530fee014608::t_533cb55fb03fc4 224
+packages/catalog/src/catalog/load-parquet-core.ts
+  s_72530fee014608::t_25317a70c6619f 4,29-32,35-37,39,42
+apps/site/src/lib/guideline-search-model.ts
+  s_72530fee014608::t_7b1b23d0361415 4
+  s_72530fee014608::t_726403d9f6ad91 78-82,111-114,118-127,132,134,136-137,148,153-159
+apps/site/src/config/catalog-source.ts
+  s_72530fee014608::t_726403d9f6ad91 73,75
+apps/site/src/og/component.tsx
+  s_72530fee014608::t_3812b9dfcef84c 45-49,433
+apps/docs/lib/source.ts
+  s_72530fee014608::t_ee3f303972e529 32-35
+packages/catalog/src/catalog/wire.ts
+  s_72530fee014608::t_25317a70c6619f 2,25,30-31,34-36,38-45,49,57-63,65,71,86
+apps/site/src/components/SvgIcon.astro
+  s_72530fee014608::t_3812b9dfcef84c 11-16,25,31,33,56
+  s_72530fee014608::t_c9d119134b0403 63
+apps/site/src/pages/guidelines/[id].astro
+  s_72530fee014608::t_3812b9dfcef84c 22-24
+packages/catalog/src/catalog/manifest.ts
+  s_72530fee014608::t_25317a70c6619f 19-23,29
+apps/site/src/components/theme-toggle.tsx
+  s_72530fee014608::t_3812b9dfcef84c 25
+apps/site/src/pages/guidelines/[id].md.ts
+  s_72530fee014608::t_3812b9dfcef84c 21
+apps/site/src/components/guideline-story/artifacts.tsx
+  s_72530fee014608::t_3812b9dfcef84c 20
+apps/site/src/lib/json.ts
+  s_72530fee014608::t_726403d9f6ad91 1-20
+apps/site/src/og/schema.ts
+  s_72530fee014608::t_7b1b23d0361415 2
+  s_72530fee014608::t_726403d9f6ad91 63,65,68-70,74,76-77,81,87-88,101-103,115,123-124,129
+packages/catalog/src/catalog/remote.ts
+  s_72530fee014608::t_25317a70c6619f 12,27-31,85,94,220
+packages/catalog/src/catalog/artifacts.ts
+  s_72530fee014608::t_7b1b23d0361415 2
+  s_72530fee014608::t_25317a70c6619f 21,96,141,143-144,146,164-165,169,181,210,212,218,220,228
+apps/site/src/components/use-guideline-search.ts
+  s_72530fee014608::t_726403d9f6ad91 1,28-34,44-45,62-73,77,239
+apps/site/test/integrations/llms.test.ts
+  s_72530fee014608::t_557f49db13beb4 6
+  s_72530fee014608::t_d9d1064de88699 9,134-136
+  s_72530fee014608::t_d9d6e20b82ba7a 42,49,98
+  s_72530fee014608::t_ed0f0f012bdf27 137,144
+  s_72530fee014608::t_ee3f303972e529 139
+apps/site/src/pages/guidelines/[id].json.ts
+  s_72530fee014608::t_3812b9dfcef84c 21
+apps/site/src/components/guideline-story/embedding-canvas.tsx
+  s_72530fee014608::t_3812b9dfcef84c 43,52,54,63,65,74
+packages/catalog/src/index.ts
+  s_72530fee014608::t_bdf83a1605bfbf 3
+apps/site/src/layouts/SiteLayout.astro
+  s_72530fee014608::t_c9d119134b0403 90-91
+packages/catalog/README.md
+  s_72530fee014608::t_6957330b43b6cf 67-78
+  s_72530fee014608::t_bdf83a1605bfbf 82-84
+apps/site/src/components/guideline-story.tsx
+  s_72530fee014608::t_3812b9dfcef84c 11
+apps/site/src/og/references.ts
+  s_72530fee014608::t_3812b9dfcef84c 78
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "5895f243bc5df20bdc50b31a3512ed6a0270ef81",
+  "prompts": {},
+  "sessions": {
+    "s_72530fee014608": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a009a0-55fd-7360-9d5f-b9563c1d1bd7",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Péter Ferenc Gyarmati <dev.petergy@gmail.com>"
+    }
+  }
+}
