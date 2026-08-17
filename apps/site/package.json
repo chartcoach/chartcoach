@@ -6,12 +6,12 @@
   "type": "module",
   "scripts": {
     "prebuild": "vp run @chartcoach/catalog#build",
-    "build": "astro build",
+    "build": "CHARTCOACH_SITE_CATALOG_SOURCE=${CHARTCOACH_SITE_CATALOG_SOURCE:-../../fixtures/catalog-release} astro build",
     "dev": "portless",
     "dev:app": "astro dev --host 127.0.0.1 --port ${PORT:-4321}",
     "pretypecheck": "vp run @chartcoach/catalog#build",
     "test": "vp test",
-    "typecheck": "astro check"
+    "typecheck": "CHARTCOACH_SITE_CATALOG_SOURCE=${CHARTCOACH_SITE_CATALOG_SOURCE:-../../fixtures/catalog-release} astro check"
   },
   "dependencies": {
     "@astrojs/react": "^6.0.1",
