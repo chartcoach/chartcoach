@@ -1,0 +1,78 @@
+package.json
+  s_45e6fac1651d3a::t_83ec964985ffd1 9
+  s_45e6fac1651d3a::t_38ea6f335fae01 11
+  s_72530fee014608::t_e4584421c6fd1b 16,18
+  s_72530fee014608::t_49273112b5f3e1 19
+  s_72530fee014608::t_74a2297721402e 20
+tools/oxlint/anti-slop/index.ts
+  s_72530fee014608::t_afbf1f0fc40346 1-17,37-38,41-43
+tools/oxlint/anti-slop/rules/no-chained-type-assertions.ts
+  s_72530fee014608::t_afbf1f0fc40346 3,10-11,16-20,81,115-129,131-137,140-156,163-171
+tools/oxlint/anti-slop/rules/no-conditional-empty-object-spread.ts
+  s_72530fee014608::t_afbf1f0fc40346 3-4,34,48-51,60-61,133-134,137-157,159-164
+tools/oxlint/anti-slop/rules/no-widen-then-assert.ts
+  s_72530fee014608::t_afbf1f0fc40346 1-2,14-18,21-44,130,153-154,161-168,415-416,424-426,428,433-434,477,479-487,501-503,510-512,531-563,572-583,587,636-640,807-808,820-822,824,844-845,878-889,892,894-895,897-909,912-917,919-925,958-962,965-971,973-979,984-1002,1005-1011,1014-1035,1041-1047,1055-1062,1064,1074-1075,1078-1093,1096-1100,1104-1112,1114-1126,1137-1142
+tools/oxlint/anti-slop/shared/lexical-type-parameters.ts
+  s_72530fee014608::t_afbf1f0fc40346 1-5,9-11,15,30-33,36,59
+apps/site/src/loaders/guidelines-loader.ts
+  s_72530fee014608::t_3812b9dfcef84c 27
+  s_45e6fac1651d3a::t_9f3f6655437e78 32-35,212
+tools/oxlint/anti-slop/rules/no-object-parameters.ts
+  s_72530fee014608::t_afbf1f0fc40346 1-2,6-8,16-17,28-30,43-46,60,74,91
+tools/oxlint/anti-slop/rules/no-module-mocking.ts
+  s_72530fee014608::t_afbf1f0fc40346 3-4,13-14,38,40,57,64-65,85-89,99,101,113,175-176,182-200,202-207
+apps/site/src/components/guideline-story/embedding-canvas.tsx
+  s_45e6fac1651d3a::t_9f3f6655437e78 36-43,502
+  s_72530fee014608::t_3812b9dfcef84c 51,60,62,71,73,82
+vite.config.ts
+  s_45e6fac1651d3a::t_83ec964985ffd1 3-5,23,25,29
+  s_72530fee014608::t_59095a8682850b 6,9,16-20
+packages/catalog/test/entries-parquet.test.ts
+  s_72530fee014608::t_363d8843385aad 14-15,27-31,69,182-183,204-206,264,305-306
+  s_45e6fac1651d3a::t_9f3f6655437e78 226
+apps/site/test/catalog-source.test.ts
+  s_45e6fac1651d3a::t_9f3f6655437e78 4,88
+  s_72530fee014608::t_ed0f0f012bdf27 97,118,133-134
+tools/oxlint/anti-slop/rules/no-known-value-widening.ts
+  s_72530fee014608::t_afbf1f0fc40346 3-5,10,21-22,24-25,29,38-40,44,49-51,64-66,70-72,80-82,115-117,119-121,182-185,330
+tools/oxlint/anti-slop/rules/no-runtime-typeof.ts
+  s_72530fee014608::t_afbf1f0fc40346 1-2,5-7,13-14,24-27,71
+tools/oxlint/anti-slop/rules/no-unknown-returns.ts
+  s_72530fee014608::t_afbf1f0fc40346 1-2,6-29,31-32,34-36,40-47,49-62
+tools/oxlint/anti-slop/rules/no-unknown-type-aliases.ts
+  s_72530fee014608::t_afbf1f0fc40346 1-2,6-8,22,39
+tools/oxlint/anti-slop/rules/no-unsafe-dictionary-type.ts
+  s_72530fee014608::t_afbf1f0fc40346 3-5,8,14-15,53-55,57-58,66-67,78-79,90-93,116,139
+tools/oxlint/anti-slop/rules/require-safety-comment-for-type-assertion.ts
+  s_72530fee014608::t_afbf1f0fc40346 1-2,5-7,15,26-27,38,40,43-44,117-125,127-128,137-139,146-148,155,157-185
+tools/oxlint/anti-slop/shared/dictionary-types.ts
+  s_72530fee014608::t_afbf1f0fc40346 1-2,8,17-18,21-23,26-28,35-36,38-39,47,57-58,129-130,155-156,219-221,230-232,234-236,244-246,260-262,670,683-685,691,790-792,797,844-846,849,852-854,857,875,907-908,1124-1126,1194,1432,1439-1441,1474
+tools/oxlint/anti-slop/rules/no-unknown-parameters.ts
+  s_72530fee014608::t_afbf1f0fc40346 1-2,7-58,61,63-64,74-84,88-100
+tools/oxlint/anti-slop/shared/reflect-method.ts
+  s_72530fee014608::t_afbf1f0fc40346 2,15,38,42-43,101-108,119
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "e735ca75b1c4b4f57fe0857120bcaf77cfd44b82",
+  "prompts": {},
+  "sessions": {
+    "s_45e6fac1651d3a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a00a1a-d2bc-70f1-a84a-ab21c0e21e43",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Péter Ferenc Gyarmati <dev.petergy@gmail.com>"
+    },
+    "s_72530fee014608": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a009a0-55fd-7360-9d5f-b9563c1d1bd7",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Péter Ferenc Gyarmati <dev.petergy@gmail.com>"
+    }
+  }
+}
