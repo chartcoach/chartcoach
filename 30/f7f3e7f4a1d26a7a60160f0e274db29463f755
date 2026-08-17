@@ -1,7 +1,130 @@
+packages/chartcoach/src/chartcoach/__init__.py
+  s_72530fee014608::t_05eaadd10d6e26 23
+packages/chartcoach/src/chartcoach/catalog/releases/models.py
+  s_72530fee014608::t_05eaadd10d6e26 3
+packages/chartcoach/src/chartcoach/catalog/releases/services.py
+  s_72530fee014608::t_05eaadd10d6e26 5
+packages/chartcoach/src/chartcoach/catalog/collection.py
+  s_72530fee014608::t_05eaadd10d6e26 32-33,38,50-51,59,65,126-127,184,236
+packages/chartcoach/src/chartcoach/catalog/curation/artifacts.py
+  s_72530fee014608::t_05eaadd10d6e26 6-7,40,74,141-147
+  s_72530fee014608::t_12ec061913d4c1 136-140
+packages/chartcoach/src/chartcoach/catalog/curation/projection.py
+  s_72530fee014608::t_05eaadd10d6e26 3
+  s_72530fee014608::t_1a2fb8c0576689 124-125,129-130,133-140
+packages/chartcoach/src/chartcoach/catalog/markdown.py
+  s_72530fee014608::t_1a2fb8c0576689 72
+packages/chartcoach/src/chartcoach/cli/_catalog/navigation.py
+  s_72530fee014608::t_05eaadd10d6e26 4,20,27-28
+packages/chartcoach/tests/test_cli_skills.py
+  s_72530fee014608::t_05eaadd10d6e26 4,8
+packages/chartcoach/pyproject.toml
+  s_72530fee014608::t_9393827d1d7dfc 37,54
+  s_72530fee014608::t_5d204b6968209d 68
+packages/chartcoach/src/chartcoach/catalog/curation/lancedb_index.py
+  s_72530fee014608::t_05eaadd10d6e26 7,21-22,41,53,72
+packages/chartcoach/src/chartcoach/catalog/releases/hashing.py
+  s_72530fee014608::t_05eaadd10d6e26 6
+packages/chartcoach/tests/test_cli_catalog.py
+  s_72530fee014608::t_05eaadd10d6e26 9
+packages/chartcoach/tests/test_catalog_tools.py
+  s_72530fee014608::t_05eaadd10d6e26 7
+packages/chartcoach/tests/conftest.py
+  s_72530fee014608::t_05eaadd10d6e26 6,10
+packages/chartcoach/src/chartcoach/catalog/tables.py
+  s_72530fee014608::t_05eaadd10d6e26 12,20
+packages/chartcoach/tests/test_catalog_runtime.py
+  s_72530fee014608::t_05eaadd10d6e26 3-4
+  s_72530fee014608::t_1a2fb8c0576689 203-207
+packages/chartcoach/src/chartcoach/catalog/relations.py
+  s_72530fee014608::t_05eaadd10d6e26 12
+packages/chartcoach/tests/test_catalog_storage.py
+  s_72530fee014608::t_05eaadd10d6e26 7
+packages/chartcoach/src/chartcoach/catalog/releases/archive.py
+  s_72530fee014608::t_05eaadd10d6e26 3-4
+packages/chartcoach/tests/test_cli_find.py
+  s_72530fee014608::t_05eaadd10d6e26 7,11
+packages/chartcoach/src/chartcoach/catalog/runtime.py
+  s_72530fee014608::t_05eaadd10d6e26 6-8,104,129,168
+  s_72530fee014608::t_1a2fb8c0576689 82,89,134-142
+packages/chartcoach/tests/catalog_testkit.py
+  s_72530fee014608::t_05eaadd10d6e26 78
+packages/chartcoach/src/chartcoach/duckdb.py
+  s_72530fee014608::t_1a2fb8c0576689 56-57
+packages/chartcoach/tests/test_cli_release.py
+  s_72530fee014608::t_05eaadd10d6e26 12
+packages/chartcoach/tests/test_optional_boundaries.py
+  s_72530fee014608::t_05eaadd10d6e26 7-8
+packages/chartcoach/tests/test_release_validation.py
+  s_72530fee014608::t_05eaadd10d6e26 9
+packages/chartcoach/tests/test_cli_lifecycle.py
+  s_72530fee014608::t_05eaadd10d6e26 9,138
+packages/chartcoach/tests/test_search.py
+  s_72530fee014608::t_05eaadd10d6e26 8
+packages/chartcoach/tests/test_release_archive.py
+  s_72530fee014608::t_05eaadd10d6e26 3
+packages/chartcoach/src/chartcoach/catalog/query.py
+  s_72530fee014608::t_05eaadd10d6e26 17,61,70,79,88,107,122,137,175
+  s_72530fee014608::t_12ec061913d4c1 154
+packages/chartcoach/src/chartcoach/tools.py
+  s_72530fee014608::t_05eaadd10d6e26 3,13-14,40,143,153-154
+packages/chartcoach/src/chartcoach/catalog/entries.py
+  s_72530fee014608::t_05eaadd10d6e26 23,54,119
+packages/chartcoach/tests/test_release_builder.py
+  s_72530fee014608::t_05eaadd10d6e26 10
+  s_72530fee014608::t_cdb23cd0be4ba2 95-115
+packages/chartcoach/tests/test_runtime_index.py
+  s_72530fee014608::t_05eaadd10d6e26 4,7
+packages/chartcoach/src/chartcoach/catalog/paths.py
+  s_72530fee014608::t_05eaadd10d6e26 13
+packages/chartcoach/README.md
+  s_72530fee014608::t_446631753cf6ee 90-98
+packages/chartcoach/tests/test_mcp_server.py
+  s_72530fee014608::t_05eaadd10d6e26 7,9
+  s_72530fee014608::t_a5f564c4874320 14,35,49-55,64-66,76-78
+  s_72530fee014608::t_9393827d1d7dfc 20
+packages/chartcoach/src/chartcoach/catalog/introspection.py
+  s_72530fee014608::t_05eaadd10d6e26 19
+packages/chartcoach/src/chartcoach/mcp.py
+  s_72530fee014608::t_a5f564c4874320 9,67-68,75,87-90,96,118-137,178,184-188
+packages/chartcoach/src/chartcoach/cli/skills.py
+  s_72530fee014608::t_05eaadd10d6e26 6-7
+packages/chartcoach/tests/test_guideline_markdown.py
+  s_72530fee014608::t_1a2fb8c0576689 40
+packages/chartcoach/src/chartcoach/catalog/curation/release_builder.py
+  s_72530fee014608::t_05eaadd10d6e26 3-4,8,25
+packages/chartcoach/src/chartcoach/catalog/manifest.py
+  s_72530fee014608::t_05eaadd10d6e26 4-5,45,51,155,176,188,220
+packages/chartcoach/src/chartcoach/catalog/references.py
+  s_72530fee014608::t_05eaadd10d6e26 173
+packages/chartcoach/tests/test_release_publish.py
+  s_72530fee014608::t_05eaadd10d6e26 20
+uv.lock
+  ai_agent 177-178,202-203,205-206
+packages/chartcoach/src/chartcoach/catalog/documents.py
+  s_72530fee014608::t_05eaadd10d6e26 4,46
+packages/chartcoach/src/chartcoach/catalog/read.py
+  s_72530fee014608::t_05eaadd10d6e26 15,66
+packages/chartcoach/src/chartcoach/cli/common.py
+  s_72530fee014608::t_05eaadd10d6e26 4,6,111-112
+packages/chartcoach/tests/test_cli_guidelines.py
+  s_72530fee014608::t_05eaadd10d6e26 11
+packages/chartcoach/src/chartcoach/catalog/summary.py
+  s_72530fee014608::t_05eaadd10d6e26 15,31,57,69,101
 ---
 {
   "schema_version": "authorship/3.0.0",
   "git_ai_version": "1.5.2",
   "base_commit_sha": "30f7f3e7f4a1d26a7a60160f0e274db29463f755",
-  "prompts": {}
+  "prompts": {},
+  "sessions": {
+    "s_72530fee014608": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a009a0-55fd-7360-9d5f-b9563c1d1bd7",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Péter Ferenc Gyarmati <dev.petergy@gmail.com>"
+    }
+  }
 }
