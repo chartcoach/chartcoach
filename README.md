@@ -56,12 +56,12 @@ npm install @chartcoach/catalog
 ```
 
 ```ts
-import { DEFAULT_CATALOG, loadCatalog } from "@chartcoach/catalog"
+import { DEFAULT_CATALOG, loadCatalog } from "@chartcoach/catalog";
 
-const entries = await (await fetch(DEFAULT_CATALOG.entriesUrl)).arrayBuffer()
-const manifestText = await (await fetch(DEFAULT_CATALOG.manifestUrl)).text()
+const entries = await (await fetch(DEFAULT_CATALOG.entriesUrl)).arrayBuffer();
+const manifestText = await (await fetch(DEFAULT_CATALOG.manifestUrl)).text();
 
-const catalog = await loadCatalog({ entries, manifestText })
+const catalog = await loadCatalog({ entries, manifestText });
 ```
 
 ## Explore
