@@ -1,7 +1,7 @@
 import { CatalogError } from "./errors";
 import { isJsonNumber, isJsonObject, isJsonString, type JsonObject, type JsonValue } from "./json";
 
-const CATALOG_ARTIFACT_BASE_URL = "https://artifacts.chartcoach.dev/";
+const CATALOG_ARTIFACT_BASE_URL = "https://files.peter.gy/catalog/chartcoach/";
 const RELEASE_SCHEMA_VERSION = 1;
 const REQUIRED_ARTIFACTS = ["MANIFEST.md", "entries.parquet"] as const;
 const FORBIDDEN_PATH_CHARACTERS = new Set('<>:"\\|?*#%');
