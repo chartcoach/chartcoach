@@ -1,0 +1,64 @@
+tools/oxlint/anti-slop/rules/no-conditional-empty-object-spread.ts
+  s_72530fee014608::t_afbf1f0fc40346 1-49
+tools/oxlint/anti-slop/rules/no-object-parameters.ts
+  s_72530fee014608::t_afbf1f0fc40346 1-126
+tools/oxlint/anti-slop/shared/reflect-method.ts
+  s_72530fee014608::t_afbf1f0fc40346 1-35
+tools/oxlint/anti-slop/index.ts
+  s_72530fee014608::t_afbf1f0fc40346 1-41
+tools/oxlint/anti-slop/rules/no-unknown-parameters.ts
+  s_72530fee014608::t_afbf1f0fc40346 1-83
+tools/oxlint/anti-slop/rules/no-unsafe-dictionary-type.ts
+  s_72530fee014608::t_afbf1f0fc40346 1-134
+vite.config.ts
+  s_72530fee014608::t_59095a8682850b 3-17,20,27-31,38-52
+tools/oxlint/anti-slop/rules/no-shape-in-symbol-names.ts
+  s_72530fee014608::t_afbf1f0fc40346 1-39
+tools/oxlint/anti-slop/rules/no-unknown-returns.ts
+  s_72530fee014608::t_afbf1f0fc40346 1-115
+pnpm-workspace.yaml
+  s_72530fee014608::t_e4584421c6fd1b 23
+  s_72530fee014608::t_9c5bbccb22bee8 24
+  s_72530fee014608::t_49273112b5f3e1 25
+tools/oxlint/anti-slop/rules/no-module-mocking.ts
+  s_72530fee014608::t_afbf1f0fc40346 1-91
+tools/oxlint/anti-slop/rules/no-runtime-typeof.ts
+  s_72530fee014608::t_afbf1f0fc40346 1-67
+tools/oxlint/anti-slop/rules/no-widen-then-assert.ts
+  s_72530fee014608::t_afbf1f0fc40346 1-366
+tools/oxlint/anti-slop/shared/lexical-type-parameters.ts
+  s_72530fee014608::t_afbf1f0fc40346 1-61
+tools/oxlint/anti-slop/rules/no-known-value-widening.ts
+  s_72530fee014608::t_afbf1f0fc40346 1-247
+package.json
+  s_72530fee014608::t_e4584421c6fd1b 15,17
+  s_72530fee014608::t_49273112b5f3e1 18
+tools/oxlint/anti-slop/shared/dictionary-types.ts
+  s_72530fee014608::t_afbf1f0fc40346 1-502
+tools/oxlint/anti-slop/rules/no-chained-type-assertions.ts
+  s_72530fee014608::t_afbf1f0fc40346 1-77
+tools/oxlint/anti-slop/rules/require-safety-comment-for-type-assertion.ts
+  s_72530fee014608::t_afbf1f0fc40346 1-62
+tools/oxlint/anti-slop/rules/no-reflect-get.ts
+  s_72530fee014608::t_afbf1f0fc40346 1-28
+tools/oxlint/anti-slop/rules/no-reflect-apply.ts
+  s_72530fee014608::t_afbf1f0fc40346 1-28
+tools/oxlint/anti-slop/rules/no-unknown-type-aliases.ts
+  s_72530fee014608::t_afbf1f0fc40346 1-70
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "6295bbd417e294f9a3c45b5d27443e97fe554d1c",
+  "prompts": {},
+  "sessions": {
+    "s_72530fee014608": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a009a0-55fd-7360-9d5f-b9563c1d1bd7",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Péter Ferenc Gyarmati <dev.petergy@gmail.com>"
+    }
+  }
+}
