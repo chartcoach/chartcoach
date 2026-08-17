@@ -6,6 +6,7 @@ from urllib.parse import urlsplit
 
 import click
 
+from chartcoach.catalog._object_store import CATALOG_STORE_SCHEMES
 from chartcoach.catalog.paths import paths
 from chartcoach.catalog.releases import CatalogRelease
 from chartcoach.catalog.releases.models import safe_sha256
@@ -156,19 +157,7 @@ def register_release_commands(group: click.Group) -> None:
 
 def _store_scheme(value: str) -> str:
     scheme = urlsplit(value).scheme.lower()
-    if scheme not in {
-        "abfs",
-        "abfss",
-        "adl",
-        "az",
-        "azure",
-        "file",
-        "gcp",
-        "gcs",
-        "gs",
-        "s3",
-        "s3a",
-    }:
+    if scheme not in CATALOG_STORE_SCHEMES:
         raise click.BadParameter(
             "must use a file, S3, GCS, or Azure URL",
             param_hint="--store",
