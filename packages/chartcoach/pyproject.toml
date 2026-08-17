@@ -40,7 +40,8 @@ index = [
   "lancedb>=0.34",
 ]
 mcp = [
-  "mcp[cli]>=1.9",
+  "mcp[cli]>=1.9,<1.29",
+  "pydantic-settings<2.15",
 ]
 curation = [
   "lancedb>=0.34",
@@ -59,7 +60,7 @@ Repository = "https://github.com/chartcoach/chartcoach"
 Issues = "https://github.com/chartcoach/chartcoach/issues"
 
 [dependency-groups]
-dev = ["pyrefly>=1", "pytest>=9", "ruff>=0.14", "ty>=0.0.11"]
+dev = ["pytest>=9", "ruff>=0.14,<0.16", "ty>=0.0.11,<0.0.60"]
 
 [tool.pytest.ini_options]
 filterwarnings = [

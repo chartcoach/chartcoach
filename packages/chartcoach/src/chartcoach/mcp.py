@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable
 from pathlib import Path
-from typing import Literal, cast
+from typing import Literal
 
 try:
     from mcp.server import FastMCP
@@ -47,7 +47,7 @@ def _transport(value: str) -> Transport:
         raise ValueError(
             f"Unsupported MCP transport {resolved_transport!r}. Expected one of: {choices}."
         )
-    return cast(Transport, resolved_transport)
+    return resolved_transport
 
 
 def _level(value: str) -> Level:
@@ -57,7 +57,7 @@ def _level(value: str) -> Level:
         raise ValueError(
             f"Unsupported MCP log level {resolved_log_level!r}. Expected one of: {choices}."
         )
-    return cast(Level, resolved_log_level)
+    return resolved_log_level
 
 
 def _configure_logging(log_level: Level) -> None:
