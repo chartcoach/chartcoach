@@ -1,0 +1,30 @@
+apps/site/test/catalog-source.test.ts
+  s_45e6fac1651d3a::t_9f3f6655437e78 4,88
+apps/site/src/components/guideline-story/embedding-canvas.tsx
+  s_45e6fac1651d3a::t_9f3f6655437e78 36-43,502
+package.json
+  s_45e6fac1651d3a::t_83ec964985ffd1 9
+  s_45e6fac1651d3a::t_38ea6f335fae01 11
+apps/site/src/loaders/guidelines-loader.ts
+  s_45e6fac1651d3a::t_9f3f6655437e78 32-35,212
+packages/catalog/test/entries-parquet.test.ts
+  s_45e6fac1651d3a::t_9f3f6655437e78 226
+vite.config.ts
+  s_45e6fac1651d3a::t_83ec964985ffd1 3-5,23,25,29
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "e3e96efaf450bcb66a095c19e0e7a81a8cb06e5d",
+  "prompts": {},
+  "sessions": {
+    "s_45e6fac1651d3a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a00a1a-d2bc-70f1-a84a-ab21c0e21e43",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Péter Ferenc Gyarmati <dev.petergy@gmail.com>"
+    }
+  }
+}
