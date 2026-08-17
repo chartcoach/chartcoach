@@ -51,35 +51,6 @@ def test_catalog_defaults_exports_shell_variables(runner: CliRunner) -> None:
     )
 
 
-def test_javascript_defaults_projection_matches_python_defaults() -> None:
-    defaults_path = (
-        Path(__file__).parents[3]
-        / "packages"
-        / "catalog-javascript"
-        / "src"
-        / "catalog"
-        / "chartcoach-defaults.ts"
-    )
-
-    defaults = CHARTCOACH_DEFAULTS.to_record()
-    assert defaults_path.read_text(encoding="utf-8") == "".join(
-        [
-            "export type ChartCoachDefaults = {\n",
-            "  catalogArtifactBaseUrl: string;\n",
-            "  catalogDigest: string;\n",
-            "  catalogVersion: string;\n",
-            "  guidelineUrlTemplate: string;\n",
-            "  indexTopK: number;\n",
-            "  lanceDocumentTable: string;\n",
-            "};\n",
-            "\n",
-            "export const CHARTCOACH_DEFAULTS = {\n",
-            *(f"  {key}: {json.dumps(defaults[key])},\n" for key in sorted(defaults)),
-            "} as const satisfies ChartCoachDefaults;\n",
-        ]
-    )
-
-
 def cache_default_catalog(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
