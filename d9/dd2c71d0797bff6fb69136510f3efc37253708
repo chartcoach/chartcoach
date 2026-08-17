@@ -1,0 +1,75 @@
+tools/oxlint/anti-slop/rules/no-conditional-empty-object-spread.ts
+  s_72530fee014608::t_afbf1f0fc40346 1-49
+package.json
+  s_91102cc43e05a6::t_649e5fcd8a9371 9
+  s_72530fee014608::t_e4584421c6fd1b 15,17
+  s_72530fee014608::t_49273112b5f3e1 18
+tools/oxlint/anti-slop/rules/no-widen-then-assert.ts
+  s_72530fee014608::t_afbf1f0fc40346 1-366
+tools/oxlint/anti-slop/rules/require-safety-comment-for-type-assertion.ts
+  s_72530fee014608::t_afbf1f0fc40346 1-62
+tools/oxlint/anti-slop/rules/no-module-mocking.ts
+  s_72530fee014608::t_afbf1f0fc40346 1-91
+tools/oxlint/anti-slop/rules/no-runtime-typeof.ts
+  s_72530fee014608::t_afbf1f0fc40346 1-67
+tools/oxlint/anti-slop/shared/reflect-method.ts
+  s_72530fee014608::t_afbf1f0fc40346 1-35
+tools/oxlint/anti-slop/rules/no-known-value-widening.ts
+  s_72530fee014608::t_afbf1f0fc40346 1-247
+tools/oxlint/anti-slop/rules/no-shape-in-symbol-names.ts
+  s_72530fee014608::t_afbf1f0fc40346 1-39
+tools/oxlint/anti-slop/rules/no-unsafe-dictionary-type.ts
+  s_72530fee014608::t_afbf1f0fc40346 1-134
+tools/oxlint/anti-slop/index.ts
+  s_72530fee014608::t_afbf1f0fc40346 1-41
+tools/oxlint/anti-slop/rules/no-unknown-parameters.ts
+  s_72530fee014608::t_afbf1f0fc40346 1-83
+tools/oxlint/anti-slop/shared/lexical-type-parameters.ts
+  s_72530fee014608::t_afbf1f0fc40346 1-61
+tools/oxlint/anti-slop/rules/no-unknown-type-aliases.ts
+  s_72530fee014608::t_afbf1f0fc40346 1-70
+tools/oxlint/anti-slop/shared/dictionary-types.ts
+  s_72530fee014608::t_afbf1f0fc40346 1-502
+pnpm-workspace.yaml
+  s_72530fee014608::t_e4584421c6fd1b 23
+  s_72530fee014608::t_9c5bbccb22bee8 24
+  s_72530fee014608::t_49273112b5f3e1 25
+tools/oxlint/anti-slop/rules/no-reflect-apply.ts
+  s_72530fee014608::t_afbf1f0fc40346 1-28
+tools/oxlint/anti-slop/rules/no-unknown-returns.ts
+  s_72530fee014608::t_afbf1f0fc40346 1-115
+tools/oxlint/anti-slop/rules/no-chained-type-assertions.ts
+  s_72530fee014608::t_afbf1f0fc40346 1-77
+vite.config.ts
+  s_72530fee014608::t_59095a8682850b 3-17,20,27-31,38-52
+tools/oxlint/anti-slop/rules/no-object-parameters.ts
+  s_72530fee014608::t_afbf1f0fc40346 1-126
+tools/oxlint/anti-slop/rules/no-reflect-get.ts
+  s_72530fee014608::t_afbf1f0fc40346 1-28
+pnpm-lock.yaml
+  ai_agent 134,222,225-226,235-236,238,240-245,3683-3684,7290-7301,7314,7317,7331,7333-7346,7357,7359,7363,7397,7402,7404,7416,8434,9244-9268,9303-9326,9896
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "d9dd2c71d0797bff6fb69136510f3efc37253708",
+  "prompts": {},
+  "sessions": {
+    "s_72530fee014608": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a009a0-55fd-7360-9d5f-b9563c1d1bd7",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Péter Ferenc Gyarmati <dev.petergy@gmail.com>"
+    },
+    "s_91102cc43e05a6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a00eeb-01b9-7d61-ae01-b92e788f8991",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Péter Ferenc Gyarmati <dev.petergy@gmail.com>"
+    }
+  }
+}
