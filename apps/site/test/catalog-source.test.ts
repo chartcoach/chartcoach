@@ -1,4 +1,5 @@
 import { readFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { parseCatalogRelease, type JsonValue } from "@chartcoach/catalog";
@@ -10,6 +11,7 @@ describe("site catalog source loading", () => {
   beforeEach(() => {
     vi.resetModules();
     vi.stubEnv("CHARTCOACH_SITE_CATALOG_SOURCE", "");
+    vi.stubEnv("CF_PAGES", "");
   });
 
   afterEach(() => {
@@ -25,8 +27,8 @@ describe("site catalog source loading", () => {
     const fetchCatalog = vi.fn(fetchFrom(responses));
     vi.stubGlobal("fetch", fetchCatalog);
 
-    const firstLoad = loadSiteCatalog(new URL(".", import.meta.url));
-    const secondLoad = loadSiteCatalog(new URL("../", import.meta.url));
+    const firstLoad = loadSiteCatalog(new URL(".", import.meta.url), catalogUrl);
+    const secondLoad = loadSiteCatalog(new URL("../", import.meta.url), catalogUrl);
 
     const [catalog, reusedCatalog] = await Promise.all([firstLoad, secondLoad]);
 
@@ -47,21 +49,65 @@ describe("site catalog source loading", () => {
     const responses = releaseResponses({ ...fixture, release });
     vi.stubGlobal("fetch", fetchFrom(responses));
 
-    await expect(loadSiteCatalog(new URL(".", import.meta.url))).rejects.toThrow(
+    const catalogUrl = `${artifactBaseUrl}/catalog.json`;
+    await expect(loadSiteCatalog(new URL(".", import.meta.url), catalogUrl)).rejects.toThrow(
       "Catalog release digest " + digest + " does not match its artifact set",
     );
 
     const validResponses = releaseResponses(fixture);
     vi.stubGlobal("fetch", fetchFrom(validResponses));
 
-    const catalog = await loadSiteCatalog(new URL(".", import.meta.url));
+    const catalog = await loadSiteCatalog(new URL(".", import.meta.url), catalogUrl);
     expect(catalog.require("direct-labels").id).toBe("direct-labels");
   });
 
   it("records the catalog entry path for published entries", async () => {
     const { catalogSourceRecordPath } = await catalogSourceModule();
-    expect(catalogSourceRecordPath(new URL(".", import.meta.url), undefined, "direct-labels")).toBe(
-      "chartcoach://catalog.json#direct-labels",
+    const source = `${artifactBaseUrl}/catalog.json`;
+    expect(catalogSourceRecordPath(new URL(".", import.meta.url), source, "direct-labels")).toBe(
+      `${source}#direct-labels`,
+    );
+  });
+
+  it("uses the shared release fixture for local builds", async () => {
+    const { loadSiteCatalog, resolveSiteCatalogSource } = await catalogSourceModule();
+    const root = new URL("../", import.meta.url);
+
+    const source = resolveSiteCatalogSource(root);
+    const catalog = await loadSiteCatalog(root);
+
+    expect(source).toBe(fileURLToPath(releaseFixtureRoot).replace(/\/$/, ""));
+    expect(catalog.require("direct-labels").id).toBe("direct-labels");
+  });
+
+  it("requires an exact catalog source for Cloudflare Pages builds", async () => {
+    vi.stubEnv("CF_PAGES", "1");
+    const { resolveSiteCatalogSource } = await catalogSourceModule();
+
+    expect(() => resolveSiteCatalogSource(new URL("../", import.meta.url))).toThrow(
+      "CHARTCOACH_SITE_CATALOG_SOURCE must name an exact release for deployment",
+    );
+
+    vi.stubEnv("CHARTCOACH_SITE_CATALOG_SOURCE", `${artifactBaseUrl}/catalog.json`);
+    expect(() => resolveSiteCatalogSource(new URL("../", import.meta.url))).toThrow(
+      "must name an exact HTTPS release.json URL for deployment",
+    );
+
+    vi.stubEnv(
+      "CHARTCOACH_SITE_CATALOG_SOURCE",
+      `${artifactBaseUrl}/catalog/releases/latest/release.json`,
+    );
+    expect(() => resolveSiteCatalogSource(new URL("../", import.meta.url))).toThrow(
+      "must name an exact HTTPS release.json URL for deployment",
+    );
+
+    const releaseUrl = `${artifactBaseUrl}/catalog/releases/${"a".repeat(64)}/release.json`;
+    vi.stubEnv("CHARTCOACH_SITE_CATALOG_SOURCE", releaseUrl);
+    expect(resolveSiteCatalogSource(new URL("../", import.meta.url))).toBe(releaseUrl);
+
+    vi.stubEnv("CHARTCOACH_SITE_CATALOG_SOURCE", releaseUrl.replace("https://", "http://"));
+    expect(() => resolveSiteCatalogSource(new URL("../", import.meta.url))).toThrow(
+      "must name an exact HTTPS release.json URL for deployment",
     );
   });
 

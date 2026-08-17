@@ -22,11 +22,15 @@ pnpm --dir apps/site typecheck
 pnpm --dir apps/site build
 ```
 
-Typechecks and builds use the shared catalog release fixture by default. Set
-`CHARTCOACH_SITE_CATALOG_SOURCE` to build against an exact HTTP release
-descriptor.
+Local typechecks and builds use the shared catalog release fixture by default.
+Set `CHARTCOACH_SITE_CATALOG_SOURCE` to build against an exact HTTPS release
+descriptor. Cloudflare Pages builds require that variable and fail when it is
+missing or empty.
 
 Run `pnpm ready` for the complete JavaScript workspace gate.
+
+See [Web delivery](../../development_docs/architecture/web-delivery.md) for the
+catalog source, generated artifacts, and validation boundary.
 
 ## License
 
