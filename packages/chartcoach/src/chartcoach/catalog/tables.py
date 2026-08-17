@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 
 import polars as pl
 
+from ._polars import explode_frame
 from .labels import parse_label
 from .schemas import (
     CATALOG_SCHEMA,
@@ -67,11 +68,10 @@ def build_sections_df(guidelines_df: pl.DataFrame) -> pl.DataFrame:
     """Build a dataframe of guideline sections."""
     if guidelines_df.is_empty():
         return pl.DataFrame(schema=SECTIONS_SCHEMA)
-    sections = (
-        guidelines_df.select("id", "sections")
-        .explode("sections", empty_as_null=True)
-        .drop_nulls("sections")
-    )
+    sections = explode_frame(
+        guidelines_df.select("id", "sections"),
+        "sections",
+    ).drop_nulls("sections")
     if sections.is_empty():
         return pl.DataFrame(schema=SECTIONS_SCHEMA)
     return sections.unnest("sections").select(
@@ -84,11 +84,10 @@ def build_sections_df(guidelines_df: pl.DataFrame) -> pl.DataFrame:
 
 def build_guideline_labels_df(guidelines_df: pl.DataFrame) -> pl.DataFrame:
     """Build a dataframe of per-guideline labels."""
-    labels = (
-        guidelines_df.select("id", "labels")
-        .explode("labels", empty_as_null=True)
-        .drop_nulls()
-    )
+    labels = explode_frame(
+        guidelines_df.select("id", "labels"),
+        "labels",
+    ).drop_nulls()
     if labels.is_empty():
         return pl.DataFrame(schema=GUIDELINE_LABELS_SCHEMA)
 

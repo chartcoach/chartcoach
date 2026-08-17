@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 import polars as pl
 
+from ._polars import explode_expr
 from .errors import CatalogLookupError
 from .labels import parse_label
 
@@ -123,7 +124,7 @@ def distinct_strings(catalog: Catalog, *, table: str, column: str) -> set[str]:
     frame = catalog.table(table)
     value_expr = pl.col(column)
     if frame.schema[column].base_type() == pl.List:
-        value_expr = value_expr.explode(empty_as_null=True)
+        value_expr = explode_expr(value_expr)
     values = (
         frame.select(value_expr.alias("value"))
         .filter(pl.col("value").is_not_null())

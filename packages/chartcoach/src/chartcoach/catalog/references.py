@@ -9,6 +9,7 @@ import bibtexparser
 import polars as pl
 
 from ..constants import DEFAULT_GUIDELINE_URL_TEMPLATE
+from ._polars import explode_frame
 from .errors import CatalogValidationError
 from .schemas import (
     GUIDELINE_REFERENCES_SCHEMA,
@@ -82,11 +83,13 @@ def build_reference_tables(catalog_df: pl.DataFrame) -> ReferenceTables:
     """Build parsed reference tables in one BibTeX parse pass."""
 
     exploded = (
-        catalog_df.select(
-            pl.col("id").alias("guideline_id"),
-            pl.col("references").alias("bibtex"),
+        explode_frame(
+            catalog_df.select(
+                pl.col("id").alias("guideline_id"),
+                pl.col("references").alias("bibtex"),
+            ),
+            "bibtex",
         )
-        .explode("bibtex", empty_as_null=True)
         .drop_nulls("bibtex")
         .unique()
     )

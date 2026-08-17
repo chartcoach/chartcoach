@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING
 
 import polars as pl
 
+from ._polars import explode_frame
+
 if TYPE_CHECKING:
     from .collection import Catalog
 
@@ -83,8 +85,10 @@ def _build_section_docs_df(
     reference_map = _build_reference_map(references_df)
 
     return (
-        guidelines_df.select("id", "sections", "labels")
-        .explode("sections", empty_as_null=True)
+        explode_frame(
+            guidelines_df.select("id", "sections", "labels"),
+            "sections",
+        )
         .drop_nulls("sections")
         .unnest("sections")
         .with_columns(_role_occurrence=pl.col("role").cum_count().over(["id", "role"]))
