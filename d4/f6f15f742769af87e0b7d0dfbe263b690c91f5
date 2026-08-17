@@ -1,0 +1,48 @@
+apps/docs/package.json
+  s_72530fee014608::t_74a2297721402e 16-18,20,25,30
+pnpm-lock.yaml
+  ai_agent 116,208,217-218,220,222-227,235-236,238,240-242,244-245,3539,3753,3760,6957-6958,6960-6961,6963-6964,6966-6968,6981,6984,6998,7000-7013,7130,7132,7136,7174,7190,7320-7323,7325-7331,7344,7347,7367-7374,7385,7389,7393,7429,7434,7436,7448,8189,8502,8995-9019,9054-9069,9071,9073-9077,9245-9250,9272-9291,9293-9295,9828,9830-9854,9857-9858,9863-9866,9868,9870,9872,9879,9885-9886
+apps/site/package.json
+  s_91102cc43e05a6::t_95066bcece113a 8,15
+  s_72530fee014608::t_74a2297721402e 18,22,27,32-33,35,38-39
+pnpm-workspace.yaml
+  s_72530fee014608::t_c4820fe493650e 8,12-16,19
+  s_72530fee014608::t_dc4bb4789ea5a7 10-11,17-18,21-22
+  s_72530fee014608::t_74a2297721402e 20
+  s_72530fee014608::t_e4584421c6fd1b 23
+  s_72530fee014608::t_9c5bbccb22bee8 24
+  s_72530fee014608::t_49273112b5f3e1 25
+apps/docs/next-env.d.ts
+  s_72530fee014608::t_9202e96460ebf0 4
+package.json
+  s_91102cc43e05a6::t_649e5fcd8a9371 9
+  s_72530fee014608::t_e4584421c6fd1b 15,17
+  s_72530fee014608::t_49273112b5f3e1 18
+  s_72530fee014608::t_74a2297721402e 19
+packages/catalog/package.json
+  s_72530fee014608::t_74a2297721402e 39
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "d4f6f15f742769af87e0b7d0dfbe263b690c91f5",
+  "prompts": {},
+  "sessions": {
+    "s_72530fee014608": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a009a0-55fd-7360-9d5f-b9563c1d1bd7",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Péter Ferenc Gyarmati <dev.petergy@gmail.com>"
+    },
+    "s_91102cc43e05a6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a00eeb-01b9-7d61-ae01-b92e788f8991",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Péter Ferenc Gyarmati <dev.petergy@gmail.com>"
+    }
+  }
+}

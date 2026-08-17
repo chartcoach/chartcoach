@@ -1,0 +1,9 @@
+uv.lock
+  ai_agent 177-178,202-203,205-206
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "3a90d1f033781c9ede0f629851ca22dd8731ebba",
+  "prompts": {}
+}
