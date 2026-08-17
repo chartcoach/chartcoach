@@ -223,11 +223,7 @@ describe("release records", () => {
   });
 });
 
-async function fixtureRelease(): Promise<{
-  release: CatalogRelease;
-  manifest: string;
-  entries: Buffer;
-}> {
+async function fixtureRelease() {
   const [manifest, entries, releaseRecord] = await Promise.all([
     readFile(manifestPath, "utf8"),
     readFile(entriesParquetPath),
