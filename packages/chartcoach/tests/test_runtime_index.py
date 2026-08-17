@@ -32,7 +32,7 @@ def test_open_index_extracts_and_reuses_a_release_profile(
         },
     )
     cache = tmp_path / "cache"
-    monkeypatch.setattr("chartcoach.catalog.runtime._cache_root", lambda: cache)
+    monkeypatch.setattr("chartcoach.catalog.runtime.cache._cache_root", lambda: cache)
 
     first = open_index(release_root, profile=_PROFILE)
     artifact = release.artifact(f"profiles/{_PROFILE}/index.tar.gz")
@@ -65,7 +65,7 @@ def test_open_index_repairs_an_incomplete_extraction(
         },
     )
     cache = tmp_path / "cache"
-    monkeypatch.setattr("chartcoach.catalog.runtime._cache_root", lambda: cache)
+    monkeypatch.setattr("chartcoach.catalog.runtime.cache._cache_root", lambda: cache)
     open_index(release_root, profile=_PROFILE)
     artifact = release.artifact(f"profiles/{_PROFILE}/index.tar.gz")
     extracted = cache / "indexes" / artifact.sha256
@@ -75,6 +75,36 @@ def test_open_index_repairs_an_incomplete_extraction(
 
     assert repaired.count_rows() == document_rows(sample_catalog).height
     assert (extracted / "documents.lance").is_dir()
+
+
+def test_open_index_repairs_a_corrupt_completed_cache(
+    sample_catalog: Catalog,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    release_root = tmp_path / "release"
+    release = build_release(
+        sample_catalog,
+        release_root,
+        profiles={
+            _PROFILE: EmbeddingProfile(
+                embedding=deterministic_embedding(_EMBEDDING),
+                umap={"n_neighbors": 3},
+            )
+        },
+    )
+    cache = tmp_path / "cache"
+    monkeypatch.setattr("chartcoach.catalog.runtime.cache._cache_root", lambda: cache)
+    open_index(release_root, profile=_PROFILE)
+    artifact = release.artifact(f"profiles/{_PROFILE}/index.tar.gz")
+    extracted = cache / "indexes" / artifact.sha256
+    manifest = next((extracted / "documents.lance").rglob("*.manifest"))
+    manifest.unlink()
+
+    repaired = open_index(release_root, profile=_PROFILE)
+
+    assert repaired.count_rows() == document_rows(sample_catalog).height
+    assert next((extracted / "documents.lance").rglob("*.manifest")).is_file()
 
 
 def test_open_index_lists_available_profiles(
