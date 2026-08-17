@@ -1,0 +1,51 @@
+apps/site/package.json
+  s_91102cc43e05a6::t_95066bcece113a 8,15
+  s_72530fee014608::t_74a2297721402e 18,22,27,33,38-39
+  s_45e6fac1651d3a::t_eca71dace13207 32,35
+apps/docs/package.json
+  s_45e6fac1651d3a::t_eca71dace13207 16-18,20,30
+  s_72530fee014608::t_74a2297721402e 25
+packages/catalog/package.json
+  s_45e6fac1651d3a::t_eca71dace13207 39
+pnpm-lock.yaml
+  ai_agent 116,134,208,217-218,220,222-227,235-236,238,240-245,3500,3644-3645,6919-6920,6922-6923,6925-6926,6928-6930,6943,6946,6960,6962-6975,7024,7026,7030,7068,7084,7185-7191,7193,7209,7212,7226,7228-7241,7252,7254,7258,7292,7297,7299,7311,8078,8306,8875-8899,8934-8949,8951,8953-8957,9110-9116,9118-9126,9161-9174,9208-9216,9703,9705-9729,9732-9733,9738-9741,9743,9745,9747,9754,9760-9761,9771
+pnpm-workspace.yaml
+  s_72530fee014608::t_c4820fe493650e 8,12-13,15-16,19
+  s_45e6fac1651d3a::t_eca71dace13207 10-11,14,17
+  s_72530fee014608::t_dc4bb4789ea5a7 18
+  s_72530fee014608::t_74a2297721402e 20
+  s_45e6fac1651d3a::t_83ec964985ffd1 21-24,27
+  s_72530fee014608::t_49273112b5f3e1 25
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "6c2b9c7bb7a224aae4f5c92dccaef6057d5376fb",
+  "prompts": {},
+  "sessions": {
+    "s_45e6fac1651d3a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a00a1a-d2bc-70f1-a84a-ab21c0e21e43",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Péter Ferenc Gyarmati <dev.petergy@gmail.com>"
+    },
+    "s_72530fee014608": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a009a0-55fd-7360-9d5f-b9563c1d1bd7",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Péter Ferenc Gyarmati <dev.petergy@gmail.com>"
+    },
+    "s_91102cc43e05a6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a00eeb-01b9-7d61-ae01-b92e788f8991",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Péter Ferenc Gyarmati <dev.petergy@gmail.com>"
+    }
+  }
+}
