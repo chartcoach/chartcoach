@@ -1,0 +1,57 @@
+apps/docs/content/docs/(guide)/agents.mdx
+  s_91102cc43e05a6::t_f4d47890cbbe58 2-3,7
+development_docs/architecture.md
+  s_91102cc43e05a6::t_f4d47890cbbe58 3
+packages/brand/README.md
+  s_91102cc43e05a6::t_f4d47890cbbe58 3,38,48
+apps/docs/content/docs/(reference)/catalog.mdx
+  s_91102cc43e05a6::t_f4d47890cbbe58 59
+apps/docs/content/docs/(reference)/python.mdx
+  s_91102cc43e05a6::t_f4d47890cbbe58 13,63
+AGENTS.md
+  s_91102cc43e05a6::t_f4d47890cbbe58 1,3,50
+packages/catalog/README.md
+  s_91102cc43e05a6::t_f4d47890cbbe58 6
+packages/chartcoach/README.md
+  s_91102cc43e05a6::t_f4d47890cbbe58 7,85
+packages/chartcoach/data/skill-data/visrec/SKILL.md
+  s_91102cc43e05a6::t_f4d47890cbbe58 3
+apps/docs/content/docs/index.mdx
+  s_91102cc43e05a6::t_f4d47890cbbe58 7,24
+apps/docs/content/docs/(reference)/javascript.mdx
+  s_91102cc43e05a6::t_f4d47890cbbe58 79
+apps/docs/content/docs/meta.json
+  s_91102cc43e05a6::t_f4d47890cbbe58 2
+packages/chartcoach/data/skill-data/discuss/SKILL.md
+  s_91102cc43e05a6::t_f4d47890cbbe58 3
+packages/chartcoach/data/skill-data/contribute/SKILL.md
+  s_91102cc43e05a6::t_f4d47890cbbe58 3
+apps/docs/content/docs/(guide)/querying.mdx
+  s_91102cc43e05a6::t_f4d47890cbbe58 7
+packages/chartcoach/data/skill-data/core/SKILL.md
+  s_91102cc43e05a6::t_f4d47890cbbe58 3
+apps/docs/README.md
+  s_91102cc43e05a6::t_f4d47890cbbe58 1
+packages/chartcoach/data/skill-data/visfeedback/SKILL.md
+  s_91102cc43e05a6::t_f4d47890cbbe58 3
+README.md
+  s_91102cc43e05a6::t_f4d47890cbbe58 2,5,7,12,42,57,79
+apps/docs/content/docs/(reference)/mcp.mdx
+  s_91102cc43e05a6::t_f4d47890cbbe58 98,101
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "4ef0376cb0ff0bb87efca44cc6f79f47f72dcb6b",
+  "prompts": {},
+  "sessions": {
+    "s_91102cc43e05a6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a00eeb-01b9-7d61-ae01-b92e788f8991",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Péter Ferenc Gyarmati <dev.petergy@gmail.com>"
+    }
+  }
+}
