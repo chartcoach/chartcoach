@@ -1,0 +1,52 @@
+apps/site/package.json
+  s_91102cc43e05a6::t_44e365ec38b287 9,15
+vite.config.ts
+  s_91102cc43e05a6::t_e8016a9aab4ddd 55,67-70,72-73
+  s_91102cc43e05a6::t_cb357517e3b418 39
+  s_91102cc43e05a6::t_cb7e6a87f23c48 54,71
+Makefile
+  s_91102cc43e05a6::t_e8016a9aab4ddd 1-7,11-18,20-21,25,40-46
+apps/site/README.md
+  s_91102cc43e05a6::t_ddbe9c61002cb2 34
+apps/site/test/catalog-source.test.ts
+  s_91102cc43e05a6::t_4a0aa4645aa828 2
+  s_91102cc43e05a6::t_d594cb9a88b832 91,104-106
+  s_91102cc43e05a6::t_2db4667c04ebf8 14,30-31,52-53,60,66-68,70,72-74,76-77,79-81,83-85,88
+  s_91102cc43e05a6::t_71c0c2c70323b4 69,89,94,96-99,102
+  s_91102cc43e05a6::t_2a622d3e29617f 71,75,78,82,86-87,90,92-93,95,100-101,103,107-110
+package.json
+  s_91102cc43e05a6::t_e8016a9aab4ddd 10,12
+  s_91102cc43e05a6::t_f952a94284f9de 8
+tools/architecture/imports.test.mjs
+  s_91102cc43e05a6::t_cb357517e3b418 18,29-31,45-46
+  s_91102cc43e05a6::t_6adbb93e151f83 1-17,19-28,32-44,47-86
+scripts/cloudflare-setup.sh
+  s_91102cc43e05a6::t_a694bb1b1b4283 7-10,18,21-23,26-34,37-39
+apps/site/src/config/catalog-source.ts
+  s_91102cc43e05a6::t_2a622d3e29617f 21,106
+  s_91102cc43e05a6::t_2d6ea3bb65cb70 105
+  s_91102cc43e05a6::t_cb357517e3b418 59
+  s_91102cc43e05a6::t_44e365ec38b287 10-11,14,27-29,52,76-77,81,84
+  s_91102cc43e05a6::t_d594cb9a88b832 16-20,22-26,103-104
+  s_91102cc43e05a6::t_599572ca62b877 107
+tools/architecture/dependencies.test.mjs
+  s_91102cc43e05a6::t_e8016a9aab4ddd 1-14,16-24,26-36,38-49
+  s_91102cc43e05a6::t_8ebca072def408 15
+  s_91102cc43e05a6::t_f62d193e15dc51 25,37
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "88995a8aed2fcc37ed6505e3139e9e8e725c53d0",
+  "prompts": {},
+  "sessions": {
+    "s_91102cc43e05a6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a00eeb-01b9-7d61-ae01-b92e788f8991",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": null
+    }
+  }
+}
