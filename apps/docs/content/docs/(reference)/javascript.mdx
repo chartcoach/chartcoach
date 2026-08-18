@@ -1,0 +1,162 @@
+---
+title: JavaScript
+description: Open a catalog release, read a guideline by ID, and serialize it to Markdown.
+icon: Braces
+---
+
+`@chartcoach/catalog` fetches a selected or exact Guideline Catalog release and
+returns a `Catalog` of guideline records.
+
+## Install
+
+```bash
+npm install @chartcoach/catalog@0.2.0
+```
+
+## Open an exact release
+
+```ts
+import { openCatalog, toMarkdown } from "@chartcoach/catalog";
+
+const catalog = await openCatalog(
+  "https://files.peter.gy/packages/python/chartcoach/0.2.0/docs-catalog/c0f6dbec3dd31b07763b46fd458733db0b8b50c5793cf9447458119287129420/release.json",
+);
+const guideline = catalog.require("directly-label-series-instead-of-using-a-color-key");
+
+console.log(guideline.title);
+console.log(toMarkdown(guideline));
+```
+
+The first line is:
+
+```text
+Directly label colored series instead of relying on a color key
+```
+
+`openCatalog(source, { fetch })` accepts an absolute HTTP or HTTPS URL whose
+path names `catalog.json` or `release.json`. Omit `source` to open the official
+selected catalog. Pass a custom `fetch` implementation when the runtime does
+not use `globalThis.fetch`. The runtime must provide Web Crypto,
+`AbortSignal.timeout`, and `AbortSignal.any`.
+
+`openCatalog` verifies the release digest, then checks the byte count and
+SHA-256 hash of `MANIFEST.md` and `entries.parquet` before parsing them.
+`catalog.json` follows the current public selection. `release.json` keeps one
+digest across calls. Invalid source URLs, failed requests, malformed release
+data, and integrity mismatches reject the promise with `CatalogError`.
+
+## Try the SDK
+
+Choose a guideline to call `catalog.require(id)` in the browser. The preview
+shows its first section and labels. Open **Generated Markdown** to inspect the
+result of `toMarkdown(guideline)`.
+
+<CatalogNotebookRuntime />
+
+```marimo-config
+requires-python = ">=3.12"
+dependencies = [
+  "chartcoach @ https://files.peter.gy/packages/python/chartcoach/0.2.0/892f120cb377/chartcoach-0.2.0-py3-none-any.whl",
+  "pyobservablejs==0.0.9",
+]
+```
+
+```python marimo echo=false server-output=false
+import sys
+
+if sys.platform == "emscripten":
+    import micropip
+
+    await micropip.install("anywidget-bundle==0.0.1")
+    await micropip.install("pyobservablejs==0.0.9", deps=False)
+
+import observablejs as obs
+
+catalog_notebook = obs.Notebook(
+    obs.js(
+        """
+        const sdk = globalThis.ChartCoachCatalog;
+        if (!sdk) throw new Error("The chartcoach JavaScript SDK is unavailable");
+
+        const catalog = await sdk.openCatalog(
+          "https://files.peter.gy/packages/python/chartcoach/0.2.0/docs-catalog/c0f6dbec3dd31b07763b46fd458733db0b8b50c5793cf9447458119287129420/release.json"
+        );
+        """,
+        key="catalog",
+        display=False,
+    ),
+    obs.js(
+        """
+        const selectedId = view(Inputs.select(
+          catalog.guidelines.map((guideline) => guideline.id),
+          {
+            label: "Guideline",
+            value: "directly-label-series-instead-of-using-a-color-key",
+            format: (id) => catalog.require(id).title
+          }
+        ));
+        """,
+        key="selected_id",
+    ),
+    obs.js(
+        r"""
+        const selected = catalog.require(selectedId);
+        const markdown = sdk.toMarkdown(selected);
+
+        display(md`### ${selected.title}
+
+\`${selected.id}\`
+
+${selected.sections[0].content}
+
+**Labels:** ${selected.labels.map((label) => `\`${label}\``).join(" ")}
+        `);
+
+        display(html`<details>
+          <summary>Generated Markdown</summary>
+          <pre>${markdown}</pre>
+        </details>`);
+        """,
+        key="selected_record",
+    ),
+)
+
+catalog_view = catalog_notebook.view(capture_state=False)
+catalog_view
+```
+
+Choosing another guideline updates both the preview and generated Markdown.
+
+## Load a compiled bundle
+
+`loadCatalog` accepts `entries.parquet` bytes and `MANIFEST.md` text when your
+application has already fetched the two files:
+
+```ts
+import { readFile } from "node:fs/promises";
+import { loadCatalog } from "@chartcoach/catalog";
+
+const catalog = await loadCatalog({
+  entries: await readFile("dist/catalog/entries.parquet"),
+  manifestText: await readFile("dist/catalog/MANIFEST.md", "utf8"),
+});
+```
+
+`loadCatalog` validates the manifest vocabulary and guideline fields. It
+cannot verify a release digest or file hashes because it receives no
+`release.json`. Verify those files before calling `loadCatalog` when release
+integrity is required. Invalid manifests and decoded guideline rows cause
+`loadCatalog` to reject with `CatalogError`. Parquet decoding failures reject
+the promise with the reader's error.
+
+## Catalog methods
+
+- `catalog.guidelines` and iteration enumerate guideline records.
+- `catalog.length` returns the record count.
+- `catalog.get(id)` returns a guideline or `undefined`.
+- `catalog.require(id)` returns a guideline or throws `CatalogError` for an
+  unknown ID.
+- `catalog.labels()` returns the sorted labels used by the records.
+- `catalog.sectionRoles()` returns the sorted section roles.
+- `toMarkdown(guideline)` returns YAML frontmatter followed by the guideline
+  body.

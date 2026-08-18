@@ -1,54 +1,40 @@
-# ChartCoach agent guide
+# chartcoach agent guide
 
-ChartCoach is a visualization guidance monorepo. It contains the public site,
-product documentation, browser and Python catalog readers, CLI and MCP
-interfaces, and catalog curation tools.
+chartcoach publishes source-traced visualization guidance through one Guideline
+Catalog contract. The repository contains the catalog readers, curation tools,
+CLI, MCP server, public catalog site, and product documentation.
 
 Read the nearest package README and behavior tests before editing a package.
 Use the root commands to verify changes across package boundaries.
 
-## Command contract
+## Start from the product boundary
 
-Run commands from the repository root.
+| Product decision                                      | User result                                                         | Architectural owner                                    |
+| ----------------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------ |
+| One record format crosses every interface             | Python, JavaScript, CLI, MCP, site, and docs expose the same fields | Catalog models and the shared release fixture          |
+| Exact releases are content addressed                  | A digest resolves one verified artifact set                         | Release records, hashing, and runtime verification     |
+| Public selection is independent from package releases | Catalog promotion can move after artifact validation                | Curation selection service and release workflows       |
+| Runtime readers keep optional capabilities lazy       | The base package imports in Python and Pyodide                      | Python runtime composition and optional extras         |
+| Web apps consume package entry points                 | Site and docs behavior stays aligned with published SDKs            | JavaScript catalog package and app startup code        |
+| References stay attached to guidance                  | People and agents can inspect the source behind a recommendation    | Catalog records, Markdown rendering, and public routes |
 
-| Purpose                | Command                                                           | Expected result                |
-| ---------------------- | ----------------------------------------------------------------- | ------------------------------ |
-| Install JavaScript     | `pnpm install --frozen-lockfile`                                  | Lockfile installs unchanged    |
-| Install Python         | `uv sync --locked --package chartcoach --all-groups --all-extras` | Environment matches `uv.lock`  |
-| Check format and lint  | `pnpm check`                                                      | Vite+ reports no issues        |
-| Typecheck web packages | `pnpm typecheck`                                                  | TypeScript and app checks pass |
-| Test web packages      | `pnpm test`                                                       | Package tests pass             |
-| Build web packages     | `pnpm build`                                                      | Package builds complete        |
-| Check JavaScript       | `pnpm ready`                                                      | All JavaScript gates pass      |
-| Check Python           | `make python-check`                                               | All Python gates pass          |
-| Check the repository   | `make check`                                                      | Every handoff gate passes      |
-| Start both web apps    | `pnpm dev`                                                        | Portless starts both apps      |
+## Know where the complexity belongs
 
-Use `pnpm --dir <path> <script>` for a focused package loop. Use
-`uv run --locked --package chartcoach ...` for a focused Python command.
-Run `make check` before handoff.
+| Source of complexity                 | Contract it protects                                                    |
+| ------------------------------------ | ----------------------------------------------------------------------- |
+| Cross-language validation            | Python and JavaScript accept and reject the same wire records           |
+| Local, HTTP, and cloud catalog input | One source argument resolves to an authored catalog, bundle, or release |
+| Integrity checks and caching         | Bytes are verified before a cached artifact becomes visible             |
+| Optional embedding profiles          | Native LanceDB indexes stay tied to the release that owns their rows    |
+| Immutable publication                | Artifact writes complete before `release.json` commits the release      |
+| Generated web outputs                | Search, LLM pages, Open Graph images, and docs reflect one catalog      |
 
-When a dependency manifest changes, run `pnpm install` or `uv lock` as
-appropriate and include the matching lockfile update.
+Follow the complete maps in
+[Catalog files and records](development_docs/architecture/catalog-contract.md),
+[Python catalog code](development_docs/architecture/runtime-and-curation.md),
+and [Web apps](development_docs/architecture/web-delivery.md).
 
-## Workspace ownership
-
-| Path                       | Responsibility                                                               |
-| -------------------------- | ---------------------------------------------------------------------------- |
-| `apps/site`                | Astro public site, catalog browser, search, LLM pages, and Open Graph images |
-| `apps/docs`                | Next.js and Fumadocs product documentation                                   |
-| `packages/brand`           | Reviewed assets, font imports, and CSS tokens                                |
-| `packages/catalog`         | Browser-safe catalog loading, release validation, and catalog models         |
-| `packages/chartcoach`      | Python API, CLI, MCP server, runtime index access, and curation              |
-| `fixtures/catalog-release` | Wire fixture shared by readers, tests, and the site build                    |
-
-The root `package.json` and `vite.config.ts` own JavaScript orchestration and
-shared policy. Each package manifest owns its dependencies, focused scripts,
-tests, and build configuration. The root `pyproject.toml` defines a virtual uv
-workspace. Publishable Python metadata lives in
-`packages/chartcoach/pyproject.toml`.
-
-## Dependency direction
+## Preserve dependency direction
 
 The web package graph is:
 
@@ -56,51 +42,107 @@ The web package graph is:
 apps/site  -> packages/catalog
           -> packages/brand
 
-apps/docs  -> packages/brand
+apps/docs  -> packages/catalog
+          -> packages/brand
 ```
 
-`packages/catalog` is a browser-safe leaf. Keep it independent from the apps,
-brand assets, and Node built-ins. Vite+ enforces this boundary.
+`packages/catalog` is a browser-safe leaf. It imports no Node built-ins or
+chartcoach workspace package. The apps consume its public package entry point.
+They do not import each other. Root lint rules and
+`tools/architecture/dependencies.test.mjs` enforce this graph.
 
-Use package names for cross-package TypeScript imports. Keep app
-implementations private to their app. Add shared behavior to a package when it
-has a stable contract and more than one real consumer.
+The Python read path is:
 
-## Python boundaries
+```text
+public API -> runtime composition -> source and release resolution
+                                  -> local, HTTP, or cloud transport
+                                  -> verified artifact cache
+                                  -> catalog and index loaders
+```
 
-`open_catalog(source)` and `open_index(source, profile=...)` are the public
-read paths. Sources are local paths, `file://` URIs, or HTTP and HTTPS
-descriptor URLs. Capability extras add cloud sources, native indexes, MCP, and
-curation.
+`catalog/runtime/` owns read orchestration. `catalog/curation/` owns building,
+validation, publication, and selection. Each depends on release models and the
+small shared object-store URI helpers. They do not import each other. Optional
+provider and index imports happen inside the capability that needs them.
 
-`catalog/runtime.py` owns source resolution, downloads, integrity checks,
-caching, and safe extraction. Runtime modules may import release models.
-Curation modules own building, validation, publication, and selection. Keep
-runtime imports independent from curation.
+## Keep one mutable owner
 
-Package publication and catalog promotion have separate identities and
-workflows. Package tags publish PyPI and npm artifacts. Catalog promotion
-selects an already published immutable catalog release.
+| State                            | Owner                                       |
+| -------------------------------- | ------------------------------------------- |
+| Public `catalog.json` selection  | `catalog.curation.select_release`           |
+| Immutable release directory      | `catalog.curation.publish_release`          |
+| Content-addressed artifact cache | `catalog.runtime.cache`                     |
+| Extracted native index cache     | `catalog.runtime.cache`                     |
+| Site catalog source              | `apps/site/src/config/catalog-source.ts`    |
+| Docs notebook runtime            | `apps/docs/components/notebook-runtime.tsx` |
+| Docs-session JavaScript SDK      | `apps/docs/components/notebook-runtime.tsx` |
+| Generated site artifacts         | The integration that writes each artifact   |
 
-## Core invariants
+Every `catalog.json` write goes through the curation selection service.
+Release artifacts remain immutable after `release.json` is committed.
 
-- Keep one catalog wire shape across Python, JavaScript, the shared fixture,
-  and both web apps.
-- Treat catalog schemas, release records, public APIs, CLI output, and site
-  copy as user-facing contracts.
-- Keep digest-addressed catalog releases immutable.
-- Route every `catalog.json` selection write through the curation selection
-  service.
-- Keep the base Python package compatible with Pyodide.
-- Keep optional integrations behind capability extras.
-- Use the shared release fixture for contract tests and local static builds.
-  Catalog deployment supplies the exact remote release URL.
+## Read sources of truth in order
 
-Update both readers and the fixture when the catalog row or release envelope
-changes. Test through the nearest public API, command, generated artifact, or
-runtime boundary.
+1. `fixtures/catalog-release` for the shared release consumed by Python,
+   JavaScript, site, and contract tests.
+2. Python release and catalog models plus the JavaScript public package for
+   executable wire behavior.
+3. `catalog/runtime/` and `catalog/curation/` for read and write lifecycles.
+4. Package manifests, Vite+ boundary rules, and architecture contract tests for
+   dependency direction.
+5. `development_docs/` for contributor reasoning and `apps/docs/content/docs/`
+   for supported user workflows.
 
-## Generated paths
+## Workspace ownership
+
+| Path                       | Owns                                                                         |
+| -------------------------- | ---------------------------------------------------------------------------- |
+| `apps/site`                | Public catalog pages, search, LLM output, and Open Graph images              |
+| `apps/docs`                | Product documentation and live Python and JavaScript examples                |
+| `packages/brand`           | Reviewed assets, font imports, and CSS tokens                                |
+| `packages/catalog`         | Browser-safe catalog models, release verification, and Parquet loading       |
+| `packages/chartcoach`      | Python API, runtime readers, curation, CLI, MCP, Polars, DuckDB, and LanceDB |
+| `fixtures/catalog-release` | Cross-language release fixture                                               |
+| `tools/architecture`       | Executable workspace dependency contracts                                    |
+
+The owning package keeps its focused tests. Cross-language tests consume the
+same release fixture.
+
+## Command contract
+
+Run commands from the repository root.
+
+| Task                    | Command             |
+| ----------------------- | ------------------- |
+| List repository targets | `make help`         |
+| Install workspaces      | `make install`      |
+| Check JavaScript        | `pnpm ready`        |
+| Check Python            | `make python-check` |
+| Build product docs      | `make docs-build`   |
+| Build the public site   | `make site-build`   |
+| Check the repository    | `make check`        |
+| Start both web apps     | `pnpm dev`          |
+
+Use `pnpm --dir <path> <script>` for a focused web loop. Use
+`uv run --locked --package chartcoach ...` for a focused Python command. Run
+`make check` before handoff.
+
+When a dependency manifest changes, run `pnpm install` or `uv lock` and include
+the matching lockfile update.
+
+## Validate the consumer boundary
+
+- Run the focused owner tests while working.
+- Run both Python and JavaScript contract suites after a catalog row, manifest,
+  release record, artifact path, or digest change.
+- Build the site after changing catalog loading or generated public artifacts.
+- Build and inspect the docs after changing navigation, live cells, SDK
+  examples, or public contracts.
+- Use browser checks for visible site and docs behavior at desktop and narrow
+  widths.
+- Finish with `make check`.
+
+## Keep authored and generated files distinct
 
 Build tools own these paths:
 
@@ -112,11 +154,14 @@ Build tools own these paths:
 - `packages/catalog/dist/`
 - `dist/`
 
-Change source files and run the owning build. Update `pnpm-lock.yaml` and
-`uv.lock` through their package managers.
+Change their owning source and rebuild the artifact.
 
-## Development contracts
+## Route the task
 
-- [Architecture and ownership](development_docs/architecture.md)
-- [Development workflow](development_docs/development.md)
-- [Releases and catalog data](development_docs/releases-and-data.md)
+| Task                                      | Guide                                                                          |
+| ----------------------------------------- | ------------------------------------------------------------------------------ |
+| General contribution                      | [Contributing](CONTRIBUTING.md)                                                |
+| Catalog row, manifest, or release fields  | [Catalog files and records](development_docs/architecture/catalog-contract.md) |
+| Python source, transport, cache, or index | [Python catalog code](development_docs/architecture/runtime-and-curation.md)   |
+| Site, docs, or generated web output       | [Web apps](development_docs/architecture/web-delivery.md)                      |
+| Package release or catalog promotion      | [Releasing packages and catalog data](development_docs/releasing.md)           |

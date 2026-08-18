@@ -1,0 +1,90 @@
+---
+title: Use chartcoach with an agent
+description: Install chartcoach, find a guideline, read its full record, and cite its sources.
+icon: Bot
+---
+
+chartcoach ships agent instructions for the same `list`, `read`, and `cite`
+workflow available from the CLI. An agent searches for possible matches,
+checks the full guideline, and keeps the source citation with the resulting
+recommendation.
+
+## Install the CLI and save the instructions
+
+This page assumes `uv` and the Codex CLI are available.
+
+```bash
+uv tool install \
+  "chartcoach @ https://files.peter.gy/packages/python/chartcoach/0.2.0/892f120cb377/chartcoach-0.2.0-py3-none-any.whl"
+chartcoach --version
+chartcoach skills get core --full > chartcoach-core.md
+```
+
+`chartcoach-core.md` now contains the catalog workflow and its command
+reference. The Python package contains five focused instruction sets:
+
+| Skill         | Task                                                             |
+| ------------- | ---------------------------------------------------------------- |
+| `core`        | Choose a catalog, find records, read them, and format citations  |
+| `discuss`     | Compare visualization choices and explain tradeoffs              |
+| `visfeedback` | Review a rendered chart or screenshot                            |
+| `visrec`      | Recommend a chart from the data, task, audience, and constraints |
+| `contribute`  | Draft a catalog issue for human review                           |
+
+`chartcoach skills` lists their names and descriptions. `chartcoach skills get
+--all` prints all five instruction sets.
+
+## Find a guideline
+
+Set the catalog once, then search its IDs, titles, and descriptions for
+`direct labels`:
+
+```bash
+CATALOG_SOURCE="https://files.peter.gy/packages/python/chartcoach/0.2.0/docs-catalog/c0f6dbec3dd31b07763b46fd458733db0b8b50c5793cf9447458119287129420/release.json"
+
+chartcoach catalog list \
+  --source "$CATALOG_SOURCE" \
+  --contains "direct labels" \
+  --limit 5 \
+  --format json
+```
+
+The result includes this ID:
+
+```bash
+GUIDELINE_ID="directly-label-series-instead-of-using-a-color-key"
+```
+
+## Read and cite it
+
+Candidate results contain summaries. Read the selected record for its full
+advice, reasons, limits, checks, fixes, and source information:
+
+```bash
+chartcoach catalog read "$GUIDELINE_ID" \
+  --source "$CATALOG_SOURCE" \
+  --source-detail full \
+  --format markdown
+
+chartcoach catalog cite "$GUIDELINE_ID" \
+  --source "$CATALOG_SOURCE" \
+  --format markdown
+```
+
+The first command provides the text an agent should evaluate against the
+current chart. The second provides the public guideline link and formatted
+source citations.
+
+## Ask the agent
+
+Save the chart as `chart.png`, then give the image and instructions to the
+agent:
+
+```bash
+codex -i chart.png \
+  'Read chartcoach-core.md, then review the attached chart for labels and accessibility.'
+```
+
+A sound answer connects each suggested change to a visible fact about the
+chart, the applicable guideline section, any tradeoff or uncertainty, and the
+source citation.

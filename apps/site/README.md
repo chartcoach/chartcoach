@@ -1,37 +1,53 @@
 # @chartcoach/site
 
-Astro public site for the chartcoach Guideline Catalog browser and public
-guideline pages. The published public site is
+The Astro app reads a Guideline Catalog and builds public guideline pages,
+search data, machine-readable Markdown and JSON, Open Graph images, and a
+sitemap. The deployed catalog browser is
 [chartcoach.dev](https://chartcoach.dev/).
 
-Run it locally:
+## Run locally
+
+Run these commands from the repository root:
 
 ```bash
+make install
 pnpm --dir apps/site dev
 ```
 
-The dev script runs through portless at `https://chartcoach.localhost`.
-Run `pnpm --dir apps/site dev:app` to start Astro directly.
+Open `https://chartcoach.localhost` and confirm the fixture-backed catalog
+browser renders. The dev command uses portless. Run
+`pnpm --dir apps/site dev:app` to start Astro directly.
 
-Run focused checks and a build from the repository root:
+## Choose the catalog
 
-```bash
-pnpm --dir apps/site check
-pnpm --dir apps/site test
-pnpm --dir apps/site typecheck
-pnpm --dir apps/site build
-```
+`CHARTCOACH_SITE_CATALOG_SOURCE` selects the catalog used during development,
+typechecking, and builds:
 
-Local typechecks and builds use the shared catalog release fixture by default.
-Set `CHARTCOACH_SITE_CATALOG_SOURCE` to build against an exact HTTPS release
-descriptor. Cloudflare Pages builds require that variable and fail when it is
-missing or empty.
+| Context          | Accepted value                                                       |
+| ---------------- | -------------------------------------------------------------------- |
+| Unset            | Repository fixture at `fixtures/catalog-release`                     |
+| Local override   | Compiled bundle directory, `catalog.json` URL, or `release.json` URL |
+| Cloudflare Pages | HTTPS URL ending in `/<64-hex-digest>/release.json`                  |
 
-Run `pnpm ready` for the complete JavaScript workspace gate.
+Override paths can be absolute or relative to `apps/site`.
 
-See [Web delivery](../../development_docs/architecture/web-delivery.md) for the
-catalog source, generated artifacts, and validation boundary.
+Remote builds verify the release digest and the byte count and SHA-256 hash of
+`MANIFEST.md` and `entries.parquet`. Cloudflare Pages rejects missing values,
+local paths, HTTP URLs, `catalog.json`, and release URLs without a digest in
+the path.
+
+## Validate and build
+
+| Command                          | Purpose                                                 |
+| -------------------------------- | ------------------------------------------------------- |
+| `pnpm --dir apps/site check`     | Check formatting, lint rules, and TypeScript types      |
+| `pnpm --dir apps/site test`      | Run source, search, LLM, and Open Graph tests           |
+| `pnpm --dir apps/site typecheck` | Check Astro and TypeScript against the selected catalog |
+| `pnpm --dir apps/site build`     | Write the static site to `apps/site/dist`               |
+| `pnpm ready`                     | Check every JavaScript workspace package                |
+
+Run `make check` before handoff.
 
 ## License
 
-Apache-2.0. See [LICENSE](../../LICENSE).
+Licensed under [Apache-2.0](../../LICENSE).

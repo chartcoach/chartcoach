@@ -1,0 +1,71 @@
+---
+title: Getting started
+description: Open the Guideline Catalog as a dataframe, then inspect one complete record.
+icon: ScanSearch
+---
+
+The Guideline Catalog stores visualization guidelines with their labels,
+sections, and source references. This live Python example opens a fixed catalog
+release, displays its records as a Polars dataframe, and renders the first
+record as JSON.
+
+<PythonNotebookRuntime />
+
+```marimo-config
+requires-python = ">=3.12"
+dependencies = [
+  "chartcoach @ https://files.peter.gy/packages/python/chartcoach/0.2.0/892f120cb377/chartcoach-0.2.0-py3-none-any.whl",
+]
+```
+
+```python marimo output=false
+import sys
+
+if sys.platform == "emscripten":
+    import micropip
+    import pyodide_js
+
+    await pyodide_js.loadPackage(["polars", "pyarrow"])
+    await micropip.install("platformdirs==4.11.3")
+    await micropip.install(
+        "https://files.peter.gy/packages/python/chartcoach/0.2.0/892f120cb377/chartcoach-0.2.0-py3-none-any.whl",
+        deps=False,
+    )
+```
+
+## Open a catalog release
+
+The `release.json` URL identifies one exact set of files. `open_catalog`
+verifies those files before it returns the catalog.
+
+```python marimo echo=true
+from chartcoach import open_catalog
+
+catalog = open_catalog(
+    "https://files.peter.gy/packages/python/chartcoach/0.2.0/docs-catalog/c0f6dbec3dd31b07763b46fd458733db0b8b50c5793cf9447458119287129420/release.json"
+)
+df = catalog.to_frame()
+df
+```
+
+`df` contains one row per guideline. Its six columns hold the guideline ID,
+title, description, labels, sections, and source references.
+
+## Inspect the first guideline
+
+`named=True` returns a dictionary keyed by the dataframe column names.
+`mo.json` displays the nested labels, sections, and references as expandable
+JSON in a scrollable panel.
+
+```python marimo echo=true
+import marimo as mo
+
+row = df.row(0, named=True)
+mo.Html(
+    '<div tabindex="0" role="region" aria-label="Guideline JSON" '
+    f'style="max-height:32rem;overflow:auto">{mo.json(row).text}</div>'
+)
+```
+
+The dataframe gives a compact overview of the catalog. The dictionary shows
+all six fields stored in the selected dataframe row.

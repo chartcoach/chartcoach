@@ -1,0 +1,154 @@
+---
+title: Python
+description: Open a catalog, inspect guideline records, and query its Polars, DuckDB, or LanceDB tables.
+icon: Code
+---
+
+The `chartcoach` package opens local catalog files or published releases and
+returns a `Catalog`. A catalog provides the stored guideline rows plus tables
+for sections, labels, and references.
+
+## Install
+
+chartcoach supports Python 3.11 through 3.14.
+
+```bash
+uv pip install \
+  "chartcoach @ https://files.peter.gy/packages/python/chartcoach/0.2.0/892f120cb377/chartcoach-0.2.0-py3-none-any.whl"
+```
+
+## `open_catalog`
+
+```python
+open_catalog(
+    source: str | PathLike[str] | None = None,
+    *,
+    storage_options: Mapping[str, object] | None = None,
+) -> Catalog
+```
+
+`source` selects what to open:
+
+| Source                     | Result                                              |
+| -------------------------- | --------------------------------------------------- |
+| Omitted                    | Opens the currently selected public catalog         |
+| Authored folder            | Reads `MANIFEST.md` and `entries/<id>/guideline.md` |
+| Compiled bundle            | Reads `MANIFEST.md` and `entries.parquet`           |
+| Local release directory    | Reads its `release.json` and verifies listed files  |
+| `catalog.json` path or URL | Follows the release selected by that file           |
+| `release.json` path or URL | Opens one fixed release digest                      |
+
+Local paths, `file://`, HTTP, and HTTPS work with the base package. S3, GCS,
+and Azure sources require `chartcoach[cloud]`. Pass provider credentials and
+HTTP headers or timeouts through `storage_options`.
+
+This example opens a fixed release and reads one guideline by ID:
+
+```python
+from chartcoach import open_catalog
+
+catalog = open_catalog(
+    "https://files.peter.gy/packages/python/chartcoach/0.2.0/docs-catalog/c0f6dbec3dd31b07763b46fd458733db0b8b50c5793cf9447458119287129420/release.json"
+)
+record = catalog.entry("directly-label-series-instead-of-using-a-color-key")
+print(record["title"])
+```
+
+Expected output:
+
+```text
+Directly label colored series instead of relying on a color key
+```
+
+For `catalog.json` and `release.json`, chartcoach verifies the release digest
+and checks each required file's byte count and SHA-256 hash. Remote files are
+downloaded and cached after verification. Local files are verified in place.
+Invalid sources and failed verification raise `CatalogError`. A cloud URL
+without `chartcoach[cloud]` raises `ModuleNotFoundError`.
+
+`catalog.release` contains the verified `CatalogRelease` after opening a local
+release directory, `catalog.json`, or `release.json`. It is `None` for an
+authored folder or compiled bundle.
+
+## Read records and tables
+
+`catalog.entry(guideline_id)` returns a dictionary containing `id`, `title`,
+`description`, `labels`, `sections`, `references`, and the Markdown `body`
+derived from those sections. An unknown ID raises `KeyError`.
+
+The table methods return Polars dataframes:
+
+| Method                   | One row per                                        |
+| ------------------------ | -------------------------------------------------- |
+| `to_frame()`             | Stored guideline record                            |
+| `guidelines()`           | Guideline with its derived Markdown body           |
+| `sections()`             | Guideline section                                  |
+| `guideline_labels()`     | Guideline-label pair                               |
+| `references()`           | Parsed citation                                    |
+| `guideline_references()` | Guideline-reference pair                           |
+| `guideline_sources()`    | Guideline-reference pair with parsed source fields |
+
+`catalog.table(name)` returns one of the six query tables. An unknown table
+name raises `KeyError`.
+
+## Query with DuckDB
+
+`catalog.duckdb(config=None)` creates an in-memory DuckDB connection and
+registers the six query tables. Close the connection when the query is done.
+
+```python
+with catalog.duckdb() as connection:
+    rows = connection.sql("""
+        select g.id, g.title
+        from guidelines g
+        join guideline_labels l on l.guideline_id = g.id
+        where l.label = 'operator:uncertainty'
+        order by g.id
+        limit 10
+    """).fetchall()
+```
+
+## `open_index`
+
+```python
+open_index(
+    source: str | PathLike[str] | None = None,
+    *,
+    profile: str,
+    storage_options: Mapping[str, object] | None = None,
+) -> lancedb.Table
+```
+
+An index profile is a named LanceDB index stored in the same release as the
+catalog rows. Install the index dependencies before opening one:
+
+```bash
+uv pip install \
+  "chartcoach[index] @ https://files.peter.gy/packages/python/chartcoach/0.2.0/892f120cb377/chartcoach-0.2.0-py3-none-any.whl"
+```
+
+The following template assumes your release publishes the named profile.
+Replace the complete release URL and the profile value with those from your
+release:
+
+```python
+from chartcoach import open_index
+
+table = open_index(
+    "https://catalog.example.com/catalog/releases/<digest>/release.json",
+    profile="sentence-transformers/all-MiniLM-L6-v2",
+)
+
+matches = (
+    table.search("direct labels", query_type="fts", fts_columns="text")
+    .where("role = 'section.advice'")
+    .limit(8)
+    .to_list()
+)
+```
+
+`open_index` accepts a local release directory or a local or remote
+`catalog.json` or `release.json`. Omitting `source` opens the selected public
+catalog. Authored folders and compiled bundles do not contain release index
+files. A missing profile raises `CatalogError` and lists the available names.
+Missing index dependencies raise `ModuleNotFoundError`.

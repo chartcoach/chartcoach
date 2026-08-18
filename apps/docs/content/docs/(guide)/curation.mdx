@@ -1,0 +1,239 @@
+---
+title: Curate and publish
+description: Author a guideline, build a release, publish its files, and select it for public access.
+icon: Hammer
+---
+
+Catalog work moves through four visible states:
+
+```text
+guideline.md files
+  -> MANIFEST.md + entries.parquet
+  -> release.json + release files
+  -> catalog.json selecting the public release
+```
+
+`catalog build` creates `entries.parquet` from the authored Markdown files.
+`build_release` adds `release.json`, which records the byte count and SHA-256
+hash of every release file. The final selection command copies that release
+record to `catalog.json`.
+
+## Install the curation tools
+
+This guide assumes `uv`, Python 3.11 through 3.14, and a POSIX shell.
+
+```bash
+uv venv
+source .venv/bin/activate
+uv pip install \
+  "chartcoach[curation] @ https://files.peter.gy/packages/python/chartcoach/0.2.0/892f120cb377/chartcoach-0.2.0-py3-none-any.whl"
+```
+
+## Author a guideline
+
+Create `catalog-source/` with a manifest and one guideline:
+
+```text
+catalog-source/
+├── MANIFEST.md
+└── entries/
+    └── direct-labels/
+        └── guideline.md
+```
+
+`MANIFEST.md` lists every section role and label family used by the
+guidelines:
+
+```md
+# Sample Catalog
+
+## Section Roles
+
+### advice
+
+Recommended actions the reader can apply.
+
+## Label Families
+
+### chart
+
+Labels that identify the chart type, such as `chart:line`.
+```
+
+Write `entries/direct-labels/guideline.md`:
+
+```md
+---
+id: direct-labels
+title: Use direct labels
+description: Label marks directly when space permits.
+labels:
+  - chart:line
+---
+
+## Advice <!-- role: advice -->
+
+Place the label close to the mark it names.
+```
+
+A guideline can add `bibliography: references.bib` to its frontmatter. Place
+that file beside `guideline.md` and cite a BibTeX key as `[@smith2024]` in a
+section.
+
+## Validate and build the catalog
+
+Validate the authored files, write the two-file catalog, and read the result:
+
+```bash
+chartcoach catalog validate --source ./catalog-source
+chartcoach catalog build \
+  --source ./catalog-source \
+  --out ./dist/catalog
+
+chartcoach catalog overview --source ./dist/catalog
+chartcoach catalog read --source ./dist/catalog direct-labels
+```
+
+`dist/catalog` must not exist before `catalog build` runs. A failed build
+removes the partial directory. A successful build contains `MANIFEST.md` and
+`entries.parquet`.
+
+## Build a release
+
+A release combines the catalog files with a `release.json` record. The digest
+printed here identifies that exact set of files:
+
+```python
+from pathlib import Path
+
+from chartcoach import open_catalog
+from chartcoach.catalog.curation import build_release
+
+release = build_release(
+    open_catalog("dist/catalog"),
+    Path("dist/release"),
+)
+
+print(release.digest)
+```
+
+`dist/release` must also be new. The directory now contains `MANIFEST.md`,
+`entries.parquet`, and `release.json`.
+
+### Add a search index
+
+Search indexes are optional. Each named profile stores searchable document
+rows and a matching LanceDB index with the release. Building this example can
+download the embedding model when it is not already cached.
+
+```bash
+uv pip install sentence-transformers==5.6.1
+```
+
+```python
+from pathlib import Path
+
+from lancedb.embeddings import get_registry
+
+from chartcoach import open_catalog
+from chartcoach.catalog.curation import EmbeddingProfile, build_release
+
+embedding = get_registry().get("sentence-transformers").create(
+    name="all-MiniLM-L6-v2",
+    device="cpu",
+    normalize=True,
+    trust_remote_code=False,
+)
+
+release = build_release(
+    open_catalog("dist/catalog"),
+    Path("dist/release-indexed"),
+    profiles={
+        "sentence-transformers/all-MiniLM-L6-v2": EmbeddingProfile(
+            embedding=embedding,
+            umap={
+                "n_neighbors": 15,
+                "min_dist": 0.1,
+                "metric": "cosine",
+                "random_state": 42,
+            },
+        )
+    },
+)
+```
+
+For this profile, `build_release` writes `documents.parquet`, containing text,
+vectors, projection coordinates, and neighbor lists, plus `index.tar.gz`,
+containing the LanceDB table.
+
+## Publish the release
+
+The publish and select commands below write to remote object storage. They are
+intended for maintainers with store credentials, write permission, `jq`, and
+a public HTTPS base URL for the same storage. Their dry runs and the validation
+command do not write remote state.
+
+Set those deployment-specific values first:
+
+```bash
+CATALOG_STORE="s3://your-bucket/chartcoach"
+PUBLIC_BASE="https://catalog.example.com/chartcoach"
+RELEASE_DIRECTORY="dist/release"
+```
+
+Set `RELEASE_DIRECTORY="dist/release-indexed"` when publishing the optional
+indexed release built above.
+
+Validate the release and capture its digest:
+
+```bash
+RELEASE_DIGEST="$(
+  chartcoach catalog release validate "$RELEASE_DIRECTORY" --format json |
+    jq -r '.digest'
+)"
+```
+
+Preview the uploaded paths, then publish them:
+
+```bash
+chartcoach catalog release publish \
+  "$RELEASE_DIRECTORY" \
+  --store "$CATALOG_STORE" \
+  --dry-run
+
+chartcoach catalog release publish \
+  "$RELEASE_DIRECTORY" \
+  --store "$CATALOG_STORE"
+```
+
+Publication writes the release files under
+`catalog/releases/$RELEASE_DIGEST/` and writes `release.json` last. Verify the
+published catalog through its public URL:
+
+```bash
+RELEASE_URL="$PUBLIC_BASE/catalog/releases/$RELEASE_DIGEST/release.json"
+chartcoach catalog overview --source "$RELEASE_URL"
+```
+
+The overview command verifies the byte count and SHA-256 hash of
+`MANIFEST.md` and `entries.parquet` before reading them.
+
+## Select the public release
+
+Preview the change to `catalog.json`, then select the verified digest:
+
+```bash
+chartcoach catalog release select \
+  "$RELEASE_DIGEST" \
+  --store "$CATALOG_STORE" \
+  --dry-run
+
+chartcoach catalog release select \
+  "$RELEASE_DIGEST" \
+  --store "$CATALOG_STORE"
+```
+
+The final command reads the published `release.json`, verifies its digest, and
+writes that record to `$PUBLIC_BASE/catalog.json`. Readers of that URL will see
+the newly selected release. Calls and commands that omit `source` continue to
+read the official `files.peter.gy` catalog selection.

@@ -1,16 +1,37 @@
 ---
 name: core
-description: Use this for chartcoach catalog sources, retrieval, citations, package capabilities, release identity, and LanceDB search.
+description: Choose a chartcoach catalog, find guideline records, read them in full, and format their citations.
 ---
 
 # chartcoach Core
 
-Use the Guideline Catalog as a source-backed record system. Discover candidate
-ids, read the exact records, then format citations.
+Use the Guideline Catalog to find possible matches, read each selected record,
+and keep its source citation with the final answer.
 
-## Start With The Catalog
+## Choose the catalog
 
-Inspect the current vocabulary before using exact roles or labels:
+Set one source for the whole task:
+
+```sh
+export CHARTCOACH_SOURCE=./authored-catalog
+# or: export CHARTCOACH_SOURCE=./dist/catalog
+# or: export CHARTCOACH_SOURCE=https://files.peter.gy/catalog/chartcoach/catalog/releases/<digest>/release.json
+
+chartcoach catalog overview
+```
+
+An authored folder contains `MANIFEST.md` and `entries/<id>/guideline.md`. A
+compiled bundle contains `MANIFEST.md` and `entries.parquet`. A remote source
+names `catalog.json` or `release.json`.
+
+`--source` overrides `CHARTCOACH_SOURCE` for one command. When both are absent,
+commands open the official selected catalog. Prefer an exact `release.json`
+URL when the answer must keep one catalog digest.
+
+## Inspect labels and sections
+
+Each catalog defines its own section roles and label families in
+`MANIFEST.md`. Inspect the current values before using them as exact filters:
 
 ```sh
 chartcoach catalog overview --format json
@@ -18,12 +39,9 @@ chartcoach catalog roles --format json
 chartcoach catalog labels --format json
 ```
 
-The manifest defines section roles and label families for the active catalog.
-Treat its values as runtime data.
+## Find records
 
-## Retrieve And Verify
-
-Use `list` for deterministic filters:
+`catalog list` filters IDs, titles, descriptions, and labels:
 
 ```sh
 chartcoach catalog list --contains "axis labels" --format json
@@ -31,26 +49,11 @@ chartcoach catalog list --label <exact-label> --format json
 chartcoach catalog list --label-prefix <prefix> --format json
 ```
 
-Use repeated `--label` filters for all-of matching. Broaden `--contains`, remove
-one label, or shorten a prefix when a filter returns no rows.
+Repeated `--label` values all have to match. If a filter returns no rows,
+broaden `--contains`, remove one label, or shorten the prefix.
 
-Read every selected record before citing it:
-
-```sh
-chartcoach catalog read <guideline-id> \
-  --source-detail minimal \
-  --format markdown
-
-chartcoach catalog cite <guideline-id> --format markdown
-```
-
-`list`, `sql`, and `find` return candidates. `read` returns the exact text that
-supports or rejects a candidate. `cite` formats its public link and source
-references.
-
-## Query Relationships
-
-Inspect the schema, then run one read-only `SELECT`:
+`catalog sql` handles relationships between guideline, section, label, and
+source tables:
 
 ```sh
 chartcoach catalog schema --tables --row-counts
@@ -64,13 +67,28 @@ chartcoach catalog sql "
 " --format json
 ```
 
-Queryable tables are `guidelines`, `sections`, `guideline_labels`,
-`references`, `guideline_references`, and `guideline_sources`.
+SQL accepts one read-only `SELECT`.
 
-## Use Indexed Discovery
+## Read and cite each selection
 
-Use LanceDB when titles, descriptions, labels, and SQL text matching leave too
-many candidates:
+`list`, `sql`, and `find` return possible matches. Read the full record before
+using it, then format its link and references:
+
+```sh
+chartcoach catalog read <guideline-id> \
+  --source-detail minimal \
+  --format markdown
+
+chartcoach catalog cite <guideline-id> --format markdown
+```
+
+Discard a record when its chart family, reader task, audience, data type, or
+interaction state differs from the current case.
+
+## Search an indexed release
+
+`catalog find` needs `chartcoach[index]` and a release that includes the named
+profile. A profile is a search index stored with that release.
 
 ```sh
 chartcoach catalog find \
@@ -82,46 +100,31 @@ chartcoach catalog find \
   "<query>"
 ```
 
-Use `--mode vector` or `--mode hybrid` with one `--vector VALUE` per dimension.
-The calling application owns query-vector production. Copy ids exactly from
-the result and verify them with `catalog read`.
+Use `--mode vector` or `--mode hybrid` with one `--vector VALUE` per embedding
+dimension. The calling application creates that query vector. Copy guideline
+IDs exactly from the result and check them with `catalog read`.
 
-## Select A Source
+## Install optional features
 
-Commands that read a catalog accept `--source`:
+| Task                                        | Package selector       |
+| ------------------------------------------- | ---------------------- |
+| Local and HTTP catalogs, Polars, and DuckDB | `chartcoach`           |
+| S3, GCS, and Azure catalogs                 | `chartcoach[cloud]`    |
+| LanceDB search indexes                      | `chartcoach[index]`    |
+| MCP server                                  | `chartcoach[mcp]`      |
+| Build, publish, and select releases         | `chartcoach[curation]` |
 
-```sh
-chartcoach catalog overview --source ./authored-catalog
-chartcoach catalog overview --source ./dist/catalog
-chartcoach catalog overview \
-  --source https://files.peter.gy/catalog/chartcoach/catalog/releases/<digest>/release.json
-```
-
-An authored folder contains `MANIFEST.md` and `entries/<id>/guideline.md`. A
-bundle contains `MANIFEST.md` and `entries.parquet`. Remote sources name
-`catalog.json` or `release.json`. The default source is `CHARTCOACH_SOURCE`,
-then the official selected catalog.
-
-## Choose Dependencies
-
-| Boundary                                          | Package selector       |
-| ------------------------------------------------- | ---------------------- |
-| Local and HTTP catalog, Polars, and DuckDB        | `chartcoach`           |
-| S3, GCS, and Azure catalog sources                | `chartcoach[cloud]`    |
-| Release-backed LanceDB profiles                   | `chartcoach[index]`    |
-| MCP server                                        | `chartcoach[mcp]`      |
-| Profile build, release publication, and selection | `chartcoach[curation]` |
-
-For one-off selected catalog work:
+For a one-off inspection of the official catalog, override any exported
+source:
 
 ```sh
-uvx chartcoach@latest catalog overview
+CHARTCOACH_SOURCE= uvx chartcoach@latest catalog overview
 ```
 
-## Output Contracts
+## Output formats
 
 Tabular commands support `table` and `json`. `read`, `cite`, and `manifest`
 support `markdown` and `json`. `find` also supports `compact`.
 
-Keep ids as the join key across discovery, exact reads, citations, notes, and
-final answers.
+Use the same guideline ID in search results, full reads, citations, notes, and
+the final answer.

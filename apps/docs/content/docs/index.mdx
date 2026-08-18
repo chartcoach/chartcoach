@@ -1,46 +1,57 @@
 ---
-title: chartcoach docs
-description: Inspect, query, and cite visualization design guidelines from the CLI, Python, JavaScript, or MCP.
+title: Overview
+description: Find visualization guidelines and inspect the sources behind them.
 icon: BookOpen
 ---
 
-chartcoach exposes visualization design guidelines as a manifest-backed catalog
-of structured records.
+chartcoach helps you find visualization guidelines and inspect the sources
+behind each recommendation. The Guideline Catalog stores each guideline with
+labels for filtering, separate sections for advice and checks, and its source
+references.
 
-List candidate guidelines from the published catalog:
+## Read one guideline
 
-```bash
-uvx chartcoach@latest catalog list \
-  --contains "direct labels" \
-  --limit 5 \
-  --format json
-```
-
-Read the exact record before using it as evidence:
+This command reads a guideline from a fixed three-record catalog:
 
 ```bash
-uvx chartcoach@latest catalog read \
-  compare-percentages-with-bars-not-pies \
+uvx --from \
+  "chartcoach @ https://files.peter.gy/packages/python/chartcoach/0.2.0/892f120cb377/chartcoach-0.2.0-py3-none-any.whl" \
+  chartcoach catalog read directly-label-series-instead-of-using-a-color-key \
+  --source https://files.peter.gy/packages/python/chartcoach/0.2.0/docs-catalog/c0f6dbec3dd31b07763b46fd458733db0b8b50c5793cf9447458119287129420/release.json \
   --format markdown
 ```
 
-Format its public URL and source references:
+`uvx` downloads and runs the hosted chartcoach 0.2.0 Python package. The
+`release.json` URL fixes the catalog contents, so the command returns the same
+guideline on every run.
 
-```bash
-uvx chartcoach@latest catalog cite \
-  compare-percentages-with-bars-not-pies
+This shortened excerpt shows the guideline title and its first section:
+
+```text
+## directly-label-series-instead-of-using-a-color-key
+
+**Directly label colored series instead of relying on a color key**
+
+...
+
+### advice: Move labels onto the marks
+
+Label colored series directly on the chart instead of making readers decode
+them through a color key...
 ```
 
-## Choose an interface
+The complete output continues through the reasons, applicable situations,
+exceptions, costs, common mistakes, checks, fixes, and source list. The same
+record is available in the
+[catalog browser](https://chartcoach.dev/guidelines/directly-label-series-instead-of-using-a-color-key/).
 
-| Task                                                | Interface                 |
-| --------------------------------------------------- | ------------------------- |
-| Inspect and cite records from a terminal or agent   | [CLI](/cli)               |
-| Work with Polars, DuckDB, releases, or LanceDB      | [Python](/python)         |
-| Load a typed catalog in a browser or server runtime | [JavaScript](/javascript) |
-| Expose SQL and indexed search to an MCP client      | [MCP](/mcp)               |
-| Install task-specific agent instructions            | [Agents](/agents)         |
-| Author, build, and publish catalog artifacts        | [Build a catalog](/build) |
+## What a guideline contains
 
-The [cataloging scheme](/catalog) defines authored folders, compiled bundles,
-immutable releases, and embedding profiles.
+A guideline record keeps the information needed to find, apply, and cite one
+recommendation:
+
+- `id` names the guideline in commands and code.
+- `labels` support exact filtering, such as `quality:accessibility`.
+- `sections` separate the recommendation from its reasons, limits, checks, and
+  fixes.
+- `references` identify the sources cited by the sections.

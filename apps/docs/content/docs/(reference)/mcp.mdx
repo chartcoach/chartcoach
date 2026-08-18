@@ -1,0 +1,118 @@
+---
+title: MCP server
+description: Expose catalog SQL and indexed search as tools for an MCP client.
+icon: Plug
+---
+
+The Model Context Protocol (MCP) server opens one catalog and exposes tools for
+SQL and, when configured, indexed search.
+
+## Install and start
+
+Install both the MCP server and LanceDB support so either tool can be enabled:
+
+```bash
+uv tool install \
+  "chartcoach[mcp,index] @ https://files.peter.gy/packages/python/chartcoach/0.2.0/892f120cb377/chartcoach-0.2.0-py3-none-any.whl"
+```
+
+Start the default standard-input and standard-output (`stdio`) server against
+the three-record catalog:
+
+```bash
+chartcoach mcp \
+  --source https://files.peter.gy/packages/python/chartcoach/0.2.0/docs-catalog/c0f6dbec3dd31b07763b46fd458733db0b8b50c5793cf9447458119287129420/release.json
+```
+
+With `stdio`, the MCP client launches this command and communicates through
+the child process. There is no URL.
+
+## Tools
+
+### `sql`
+
+`sql` is available for every opened catalog.
+
+| Input       | Default  | Meaning                                        |
+| ----------- | -------- | ---------------------------------------------- |
+| `statement` | Required | One read-only `SELECT` over the catalog tables |
+| `limit`     | `100`    | Maximum rows returned                          |
+
+Example input:
+
+```json
+{
+  "statement": "select id, title from guidelines order by id limit 5",
+  "limit": 5
+}
+```
+
+The response contains `columns`, `rows`, `row_count`, `truncated`, `limit`,
+`content_digest`, and `release_digest`. The server rejects multiple statements
+and statements other than `SELECT`. DuckDB cannot open external files through
+this tool.
+
+### `search`
+
+Pass `--profile` when the release contains a named search index. The server
+then adds `search` with these inputs:
+
+| Input          | Default  | Meaning                                       |
+| -------------- | -------- | --------------------------------------------- |
+| `search_query` | Required | Text to search                                |
+| `mode`         | `fts`    | `fts`, `vector`, or `hybrid`                  |
+| `limit`        | `10`     | Maximum indexed documents considered          |
+| `where`        | `null`   | Optional filter over indexed document columns |
+| `vector`       | `null`   | Required for vector and hybrid search         |
+
+Full-text search needs `search_query` alone. Vector and hybrid search also
+need a vector with the profile's embedding dimensions. A filter such as
+`role = 'section.advice'` limits matches to the `advice` section.
+
+The next server command is a template. Replace `<digest>` and the profile name
+with values from a release that publishes that index:
+
+```bash
+chartcoach mcp \
+  --source "https://catalog.example.com/catalog/releases/<digest>/release.json" \
+  --profile sentence-transformers/all-MiniLM-L6-v2
+```
+
+Use an exact `release.json` URL so the catalog rows and search index stay fixed
+to the same digest. Search responses report that resolved digest.
+
+## Transports
+
+| Transport         | How the client connects                |
+| ----------------- | -------------------------------------- |
+| `stdio`           | Launches the command directly. No URL. |
+| `sse`             | `http://127.0.0.1:8000/sse`            |
+| `streamable-http` | `http://127.0.0.1:8000/mcp`            |
+
+Start a local streamable HTTP server with:
+
+```bash
+chartcoach mcp --transport streamable-http
+```
+
+chartcoach's HTTP transports do not configure authentication. Keep the
+default loopback host for local use. Before binding another address, place the
+endpoint behind an authenticated gateway or private network and block direct
+public access to the chartcoach port.
+
+## Configuration
+
+Command flags override their matching environment variables:
+
+| Variable                   | Default                   | Controls                             |
+| -------------------------- | ------------------------- | ------------------------------------ |
+| `CHARTCOACH_SOURCE`        | Official selected catalog | Catalog path or URL                  |
+| `CHARTCOACH_INDEX_PROFILE` | None                      | Search profile name                  |
+| `CHARTCOACH_MCP_TRANSPORT` | `stdio`                   | `stdio`, `sse`, or `streamable-http` |
+| `CHARTCOACH_MCP_HOST`      | `127.0.0.1`               | HTTP listener address                |
+| `CHARTCOACH_MCP_PORT`      | `8000`                    | HTTP listener port                   |
+| `CHARTCOACH_MCP_LOG_LEVEL` | `INFO`                    | Server log level                     |
+
+`search` returns candidate guideline IDs with `matched_role` and
+`matched_text`. Query `sections` and `guideline_sources` with `sql`, filtering
+on `guideline_id`, before applying a recommendation.

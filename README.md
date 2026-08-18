@@ -1,69 +1,79 @@
 <p align="center">
-  <img src="packages/brand/assets/brand/chartcoach-square-light.svg" width="128" alt="ChartCoach logo">
+  <img src="packages/brand/assets/brand/chartcoach-square-light.svg" width="128" alt="chartcoach logo">
 </p>
 
-# ChartCoach
+# chartcoach
 
-<p align="center">
-  Research-backed guidance for better visualization decisions.
-</p>
+chartcoach helps people, applications, and coding agents find visualization
+guidelines and inspect the sources behind each recommendation. The Guideline
+Catalog keeps a guideline's advice, limits, checks, fixes, and references in
+one record.
 
-<p align="center">
-  <a href="https://pypi.org/project/chartcoach/"><img src="https://img.shields.io/pypi/v/chartcoach?label=PyPI" alt="PyPI version"></a>
-  <a href="https://www.npmjs.com/package/@chartcoach/catalog"><img src="https://img.shields.io/npm/v/%40chartcoach%2Fcatalog?label=npm" alt="npm version"></a>
-</p>
+chartcoach is alpha software. The Python package supports Python 3.11 through
+3.14. Browse the catalog at
+[chartcoach.dev](https://chartcoach.dev/guidelines/).
 
-ChartCoach helps you choose, review, and explain chart designs. Its Guideline
-Catalog turns visualization research and practice into focused recommendations
-with references you can inspect and cite.
-
-Use ChartCoach to:
-
-- compare design choices while creating a visualization
-- review a chart and explain the reasoning behind suggested changes
-- give agents and visualization tools source-backed design guidance
-
-## Get started
-
-[Browse the Guideline Catalog](https://chartcoach.dev/guidelines/) or search it
-from the terminal without installing anything:
+## Read one guideline
 
 ```bash
-uvx chartcoach@latest catalog list --contains "percentages" --limit 5
-uvx chartcoach@latest catalog read compare-percentages-with-bars-not-pies
+uvx --from \
+  "chartcoach @ https://files.peter.gy/packages/python/chartcoach/0.2.0/892f120cb377/chartcoach-0.2.0-py3-none-any.whl" \
+  chartcoach catalog read directly-label-series-instead-of-using-a-color-key \
+  --source https://files.peter.gy/packages/python/chartcoach/0.2.0/docs-catalog/c0f6dbec3dd31b07763b46fd458733db0b8b50c5793cf9447458119287129420/release.json \
+  --format markdown
 ```
 
-The [getting started guide](https://docs.chartcoach.dev/getting-started) covers
-installation and the main ways to use ChartCoach.
+This shortened excerpt includes the title and first section:
 
-## Choose an interface
+```text
+## directly-label-series-instead-of-using-a-color-key
 
-| I want to                                      | Start here                                               |
-| ---------------------------------------------- | -------------------------------------------------------- |
-| Search and read guidance from a terminal       | [CLI guide](https://docs.chartcoach.dev/cli)             |
-| Ask an agent for visualization guidance        | [Agent guide](https://docs.chartcoach.dev/agents)        |
-| Query the catalog from Python                  | [Python API](https://docs.chartcoach.dev/python)         |
-| Load catalog records in a web application      | [JavaScript API](https://docs.chartcoach.dev/javascript) |
-| Connect ChartCoach to an MCP-compatible client | [MCP guide](https://docs.chartcoach.dev/mcp)             |
-| Understand the catalog structure               | [Catalog guide](https://docs.chartcoach.dev/catalog)     |
+**Directly label colored series instead of relying on a color key**
 
-Install the ChartCoach skills to use the catalog from an agent session:
+...
+
+### advice: Move labels onto the marks
+
+Label colored series directly on the chart instead of making readers decode
+them through a color key...
+```
+
+`uvx` downloads and runs the hosted 0.2.0 Python package. The `release.json`
+URL fixes the three catalog records used by this example. chartcoach verifies
+the release digest and the byte count and SHA-256 hash of its required files
+before reading them.
+
+## Interfaces
+
+| Interface                                                  | What it provides                                         |
+| ---------------------------------------------------------- | -------------------------------------------------------- |
+| [Catalog browser](https://chartcoach.dev/guidelines/)      | Public guideline pages and search                        |
+| [Python](https://docs.chartcoach.dev/python)               | Polars, DuckDB, and LanceDB access                       |
+| [JavaScript](https://docs.chartcoach.dev/javascript)       | Browser and server-side catalog loading                  |
+| [Catalog CLI](https://docs.chartcoach.dev/cli)             | Filtering, SQL, record reads, and citations              |
+| [MCP server](https://docs.chartcoach.dev/mcp)              | Catalog tools for Model Context Protocol clients         |
+| [Curate and publish](https://docs.chartcoach.dev/curation) | Authoring, validation, publication, and public selection |
+
+## Use chartcoach with an agent
+
+Install the CLI, save its agent instructions, and save the chart as
+`chart.png`:
 
 ```bash
-npx skills add chartcoach/skills
-codex 'Hey $chartcoach, how should I show uncertainty for a general audience?'
+uv tool install \
+  "chartcoach @ https://files.peter.gy/packages/python/chartcoach/0.2.0/892f120cb377/chartcoach-0.2.0-py3-none-any.whl"
+chartcoach skills get core --full > chartcoach-core.md
+codex -i chart.png \
+  'Read chartcoach-core.md, then review the attached chart for labels and accessibility.'
 ```
 
-Agent-readable documentation is available at
-[docs.chartcoach.dev/llms.txt](https://docs.chartcoach.dev/llms.txt).
+Agent hosts can also index the documentation through
+[llms.txt](https://docs.chartcoach.dev/llms.txt).
 
 ## Contribute
 
-See [Contributing](CONTRIBUTING.md) for setup and repository checks. The
-[architecture](development_docs/architecture.md) and
-[development workflow](development_docs/development.md) document package
-ownership and focused commands.
+Repository setup, focused commands, and pull request requirements live in
+[Contributing](CONTRIBUTING.md). Package ownership and catalog data flow are
+mapped in [Architecture](development_docs/architecture.md).
 
-## License
-
-Apache-2.0. See [LICENSE](LICENSE).
+chartcoach is licensed under the [Apache License 2.0](LICENSE).

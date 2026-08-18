@@ -1,92 +1,90 @@
 ---
 name: contribute
-description: Use this to draft a local chartcoach catalog improvement issue from a verified retrieval gap.
+description: Draft a chartcoach catalog issue when searches expose missing or misleading guidance.
 ---
 
 # chartcoach Contribute
 
-Draft a catalog issue when retrieval exposes missing coverage, unclear wording,
-weak labels, duplicate records, or a source gap. The target repository is
-`https://github.com/chartcoach/catalog`.
+Draft a catalog issue when searches reveal a missing topic, unclear wording,
+weak labels, duplicate records, or unsupported source claims. Keep the draft
+local until a human approves issue creation. Read `core` first so
+`CHARTCOACH_SOURCE` is set before running searches and reading referenced
+guidelines.
 
-Keep the draft local until a human approves issue creation. Load `core` for
-catalog selection and exact-read mechanics.
-
-## Confirm The Catalog Problem
+## Confirm the catalog problem
 
 Record:
 
-| Field          | Evidence                                                             |
-| -------------- | -------------------------------------------------------------------- |
-| User task      | The critique, recommendation, discussion, or search question.        |
-| Retrieval path | Terms, labels, roles, SQL, and indexed searches tried.               |
-| Result         | Missing, partial, surprising, duplicate, or weakly sourced record.   |
-| Diagnosis      | Why catalog content caused the problem.                              |
-| Related ids    | Records that partially match, conflict, duplicate, or need revision. |
+| Field       | Evidence                                                                |
+| ----------- | ----------------------------------------------------------------------- |
+| User task   | The critique, recommendation, discussion, or search question            |
+| Searches    | Words, labels, roles, SQL, and indexed searches tried                   |
+| Result      | Missing, partial, surprising, duplicate, or weakly sourced record       |
+| Diagnosis   | How record wording, labels, relationships, or sources caused the result |
+| Related IDs | Records that partially match, conflict, duplicate, or need revision     |
 
-Verify every named record:
+Read and cite every named record:
 
 ```sh
 chartcoach catalog read <guideline-id> --source-detail full
 chartcoach catalog cite <guideline-id>
 ```
 
-Route command crashes, install failures, cache failures, and storage failures to
-the chartcoach tooling repository. A retrieval false positive belongs in a
-catalog issue when wording or labels caused it.
+Report crashes, installation errors, cache errors, and storage errors at
+`https://github.com/chartcoach/chartcoach/issues`. File a catalog issue when
+record wording or labels caused a false match.
 
-## Choose One Change Type
+## Choose one change
 
-- Missing topic
-- Wording improvement
-- Relabeling
-- Split or merge
-- Cross-linking
-- Source trail
-- Manifest vocabulary
+- Add a missing topic.
+- Rewrite unclear guidance.
+- Add, remove, or replace labels.
+- Split duplicate ideas or merge duplicate records.
+- Add a relationship between records.
+- Repair or add source citations.
+- Add a section role or label family to the manifest.
 
-Use one primary type so the issue names a concrete maintainer action.
+Choose one primary change so the issue gives the catalog maintainer a clear
+action.
 
-## Draft The Issue
+## Draft the issue
 
 ```md
 ## Summary
 
 <Catalog problem and the recurring case where it appeared.>
 
-## Evidence From Use
+## Evidence from use
 
 - Task:
-- Retrieval path:
+- Searches:
 - Result:
 - Content diagnosis:
 
-## Related Guideline Records
+## Related guidelines
 
 - `<guideline-id>`: `<title>`
   - Relevant section:
   - Exact-read command:
   - Citation:
-  - Scope or gap:
+  - Why it applies or falls short:
 
-## Suggested Catalog Change
+## Suggested change
 
-<One concrete content, vocabulary, relationship, or source change.>
+<One concrete wording, label, relationship, or source change.>
 
-## Public Disclosure Check
+## Before publication
 
-- [ ] Private user data and local paths are excluded.
-- [ ] Referenced guideline ids were checked with exact reads.
-- [ ] Source claims were checked with `catalog cite`.
-
-## Uncertainty
-
-<What a catalog maintainer should verify.>
+- [ ] Remove private user data and local paths.
+- [ ] Check every guideline ID with `catalog read`.
+- [ ] Identify the cited sources with `catalog cite`, then inspect those sources
+      before judging whether a claim is supported.
+- [ ] Name anything the catalog maintainer still needs to verify.
 ```
 
-Use `None found` for a missing topic and preserve the failed retrieval terms.
+For a missing topic, write `None found` and keep the failed search terms.
 
-## Hand Off
+## Hand off for approval
 
 Return the proposed title, Markdown body, and a prefilled issue URL:
 
@@ -104,5 +102,5 @@ url = "https://github.com/chartcoach/catalog/issues/new?" + urlencode(
 print(url)
 ```
 
-Create the issue through `gh` or another GitHub integration after the human
+Create the issue through `gh` or another GitHub integration only after a human
 approves the reviewed title and body.

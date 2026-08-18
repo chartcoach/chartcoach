@@ -25,6 +25,8 @@ catalog:
   oxlint-tsgolint: 7.0.2001
 
 minimumReleaseAge: 20160
+minimumReleaseAgeExclude:
+  - "@marimo-team/mdx-marimo@0.0.5"
 minimumReleaseAgeStrict: true
 verifyDepsBeforeRun: install
 blockExoticSubdeps: true
@@ -39,6 +41,7 @@ peerDependencyRules:
     vite: "*"
 
 allowBuilds:
+  "@manzt/uv": true
   citation-js: true
   esbuild: true
   sharp: true
