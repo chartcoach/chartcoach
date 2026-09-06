@@ -2,19 +2,26 @@ PYTHON := uv run --locked --package chartcoach
 PYTHON_ALL := $(PYTHON) --all-extras
 PYTHON_PATH := packages/chartcoach
 
-.PHONY: format lint typecheck test build
+.PHONY: check python-check python-format python-lint python-typecheck python-test python-build
 
-format:
+check:
+	pnpm ready
+	$(MAKE) python-check
+	git diff --check
+
+python-check: python-format python-lint python-typecheck python-test python-build
+
+python-format:
 	$(PYTHON) ruff format --check $(PYTHON_PATH)
 
-lint:
+python-lint:
 	$(PYTHON) ruff check $(PYTHON_PATH)
 
-typecheck:
+python-typecheck:
 	$(PYTHON_ALL) ty check $(PYTHON_PATH)
 
-test:
+python-test:
 	$(PYTHON_ALL) pytest $(PYTHON_PATH)/tests
 
-build:
+python-build:
 	uv build --package chartcoach

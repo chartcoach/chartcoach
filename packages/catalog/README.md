@@ -1,51 +1,42 @@
 # @chartcoach/catalog
 
-`@chartcoach/catalog` loads compiled Guideline Catalog bundles and verified
-published releases into a typed `Catalog`.
+`@chartcoach/catalog` loads verified Guideline Catalog releases in browser and
+server runtimes.
 
 ```bash
 npm install @chartcoach/catalog
 ```
 
-## Open the selected catalog
+## Open a catalog
 
-`open(options?)` reads `catalog.json`, verifies its release record, and loads
-the manifest and entries from the immutable release directory.
-
-```ts
-import { open } from "@chartcoach/catalog";
-
-const catalog = await open();
-const guideline = catalog.require("compare-percentages-with-bars-not-pies");
-```
-
-Pass a Fetch-compatible function when the runtime needs one:
+`openCatalog(source?, options?)` accepts an absolute HTTP or HTTPS URL ending
+in `catalog.json` or `release.json`. The default is the official selected
+catalog.
 
 ```ts
-const catalog = await open({ fetch });
-```
+import { openCatalog } from "@chartcoach/catalog";
 
-## Open one release
-
-`openRelease(source, options?)` loads the release named by an absolute
-`release.json` URL.
-
-```ts
-import { openRelease } from "@chartcoach/catalog";
-
-const catalog = await openRelease(
+const selected = await openCatalog();
+const exact = await openCatalog(
   "https://artifacts.chartcoach.dev/catalog/releases/<digest>/release.json",
-  { fetch },
 );
+
+const guideline = selected.require("compare-percentages-with-bars-not-pies");
 ```
 
-The URL digest, release digest, artifact byte count, and artifact SHA-256 must
-agree before the catalog is decoded.
+Pass a Fetch-compatible function when the runtime supplies its own transport:
 
-## Load a local bundle
+```ts
+const catalog = await openCatalog(source, { fetch });
+```
 
-`loadCatalog({ entries, manifestText })` accepts `entries.parquet` bytes and
-the matching `MANIFEST.md` text.
+The loader verifies the release digest, artifact byte counts, and artifact
+SHA-256 values before decoding the catalog.
+
+## Load caller-provided bytes
+
+`loadCatalog({ entries, manifestText })` constructs a catalog from compiled
+bundle data:
 
 ```ts
 import { readFile } from "node:fs/promises";
@@ -57,24 +48,13 @@ const catalog = await loadCatalog({
 });
 ```
 
-Each compiled row has this shape:
+Each row contains `id`, `title`, `description`, `labels`, `sections`, and
+`references`. `Catalog` derives each guideline Markdown body from its ordered
+sections.
 
-```ts
-type GuidelineRow = {
-  id: string;
-  title: string;
-  description: string;
-  labels: string[];
-  sections: Array<{ role: string; title: string; content: string }>;
-  references: string[];
-};
-```
+## Release records
 
-`Catalog` derives `guideline.body` from the ordered sections.
-
-## Inspect a release record
-
-Schema 1 uses artifact paths as keys.
+Schema 1 uses artifact paths as keys:
 
 ```ts
 type CatalogRelease = {
@@ -84,29 +64,17 @@ type CatalogRelease = {
 };
 ```
 
-The required core paths are `MANIFEST.md` and `entries.parquet`. Each embedding
-profile adds:
+Use `parseCatalogRelease(value)` to validate a record. The required core paths
+are `MANIFEST.md` and `entries.parquet`.
 
-- `profiles/<profile>/documents.parquet`
-- `profiles/<profile>/index.tar.gz`
-
-Use `parseCatalogRelease` when an application needs to inspect a record before
-opening it.
-
-```ts
-import { parseCatalogRelease } from "@chartcoach/catalog";
-
-const release = parseCatalogRelease(await response.json());
-const entries = release.artifacts["entries.parquet"];
-```
-
-The package also exports `Catalog`, `Guideline`, `GuidelineSection`,
-`CatalogRelease`, `ReleaseArtifact`, `FetchLike`, `OpenCatalogOptions`, and
-`OpenReleaseOptions`.
+The package exports `Catalog`, `CatalogError`, `CatalogRelease`, `FetchLike`,
+`Guideline`, `GuidelineSection`, `OpenCatalogOptions`, `ReleaseArtifact`,
+`loadCatalog`, `openCatalog`, `parseCatalogRelease`, and `toMarkdown`.
 
 ## Check the package
 
 ```bash
+pnpm --dir packages/catalog check
 pnpm --dir packages/catalog typecheck
 pnpm --dir packages/catalog test
 pnpm --dir packages/catalog build

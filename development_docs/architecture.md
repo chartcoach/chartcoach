@@ -32,32 +32,72 @@ from those rows.
 The package owning a behavior also owns its focused tests. Cross-language wire
 tests read the same fixture.
 
-## Python dependency boundary
+## Dependency direction
 
-The base `chartcoach` package loads authored folders and compiled bundles with
-Pyodide-compatible dependencies. Optional extras own integration boundaries:
+```text
+apps/site  -> packages/catalog
+          -> packages/brand
 
-| Extra      | Boundary                                                                                      |
-| ---------- | --------------------------------------------------------------------------------------------- |
-| `index`    | Open native LanceDB indexes                                                                   |
-| `mcp`      | Run the MCP server                                                                            |
-| `curation` | Build embedding profiles, project vectors, cache releases, and publish through object storage |
+apps/docs  -> packages/brand
+```
+
+`packages/catalog` is a browser-safe leaf. It stays independent from the apps,
+brand assets, and Node built-ins. The root Vite+ policy enforces this boundary.
+Cross-package TypeScript imports use package names.
+
+The root `package.json` and `vite.config.ts` own JavaScript orchestration and
+shared policy. Package manifests own dependencies, focused scripts, tests, and
+build configuration. Shared external versions live in the pnpm catalog.
+
+The root `pyproject.toml` defines the uv workspace and development tools.
+Publishable Python metadata and build configuration live in
+`packages/chartcoach/pyproject.toml`.
+
+## Python runtime boundary
+
+`open_catalog(source)` and `open_index(source, profile=...)` classify a local
+path or descriptor URI before filesystem handling. Both functions resolve the
+same release envelope. A selected `catalog.json` points to immutable artifacts
+under `catalog/releases/<digest>/`. An exact `release.json` resolves artifacts
+beside that descriptor.
+
+`catalog/runtime.py` owns source normalization, HTTP reads, integrity checks,
+content-addressed caching, and safe index extraction. Runtime code can import
+release models. It cannot import curation.
+
+Optional extras own capability boundaries:
+
+| Extra      | Boundary                                                                |
+| ---------- | ----------------------------------------------------------------------- |
+| `cloud`    | Read S3, GCS, and Azure descriptor URIs through Obstore                 |
+| `index`    | Open release-backed native LanceDB profiles                             |
+| `mcp`      | Run the MCP server                                                      |
+| `curation` | Build profiles, validate releases, publish objects, and select releases |
 
 Curation accepts LanceDB embedding functions from the caller. Each profile
 keeps its own vector space, UMAP projection, neighbor graph, and native LanceDB
 archive.
 
-Obspec defines the storage operations used by curation. Obstore supplies local,
-HTTP, and S3-compatible stores. Cache and publication code use the same object
-key contract from `chartcoach.paths`.
+Obspec defines the internal write operations used by curation. Obstore supplies
+the concrete cloud and local adapters at the curation boundary. Public
+consumers pass paths or descriptor URIs.
+
+## Lifecycle boundary
+
+Package tags publish the Python and npm packages after package CI. Catalog
+curation builds, validates, and publishes immutable releases independently.
+Before selection, consumers can open the exact `release.json` URL and the site
+can build against that URL through `CHARTCOACH_SITE_CATALOG_SOURCE`.
+`chartcoach catalog release select` updates `catalog.json` after those checks.
+Package publishing and catalog selection have separate triggers and identities.
 
 ## Cross-workspace changes
 
 | Change                           | Update together                                                                |
 | -------------------------------- | ------------------------------------------------------------------------------ |
 | Catalog row or manifest shape    | Python reader, JavaScript reader, shared fixture, site consumers, product docs |
-| Release envelope or object keys  | Python release model, JavaScript release reader, `chartcoach.paths`, fixture   |
-| Embedding profile artifact shape | Curation builder, validator, cache, analysis documentation                     |
+| Release envelope or object keys  | Python release model, JavaScript release reader, curation services, fixture    |
+| Embedding profile artifact shape | Curation builder, validator, runtime index loader, analysis documentation      |
 | Brand asset or token             | `packages/brand` and its site or docs consumer                                 |
 | Dependency                       | Owning manifest and matching lockfile                                          |
 

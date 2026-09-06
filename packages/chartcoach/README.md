@@ -1,7 +1,8 @@
 # chartcoach
 
-`chartcoach` loads Guideline Catalog records, exposes them as Polars and DuckDB
-tables, and opens native LanceDB indexes.
+`chartcoach` loads Guideline Catalog records into Polars and DuckDB tables. The
+same source contract opens local catalogs, selected releases, exact releases,
+and release-backed LanceDB profiles.
 
 ```bash
 uv add chartcoach
@@ -10,57 +11,50 @@ uv add chartcoach
 ```python
 from chartcoach import open_catalog
 
-catalog = open_catalog("dist/catalog")
+catalog = open_catalog()
 print(catalog.guidelines().select("id", "title").head(5))
 ```
 
-`open_catalog` accepts an authored folder or a compiled bundle directory. Both
-contain `MANIFEST.md`. A bundle also contains `entries.parquet`.
+## Catalog sources
 
-## Public API
+`open_catalog(source)` accepts:
 
-The top-level package exports:
+- an authored folder with `MANIFEST.md` and `entries/`
+- a bundle with `MANIFEST.md` and `entries.parquet`
+- a release directory with `release.json`
+- a local `catalog.json` or `release.json`
+- an HTTP or HTTPS descriptor URI
+- a `file://` URI
+- an S3, GCS, or Azure descriptor URI with `chartcoach[cloud]`
 
-- `Catalog`
-- `CatalogManifest`
-- `CatalogRelease`
-- `open_catalog`
-- `open_index`
-- `resolve_release`
-- `paths`
-
-Compiled rows have six fields: `id`, `title`, `description`, `labels`,
-`sections`, and `references`. `Catalog.entry(id)` and `Catalog.guidelines()`
-derive Markdown bodies from the ordered sections.
-
-## Published releases
-
-Install the curation extra to read, cache, build, validate, and publish
-digest-addressed releases through Obspec and Obstore.
-
-```bash
-uv add 'chartcoach[curation]'
-```
+`source=None` opens
+`https://artifacts.chartcoach.dev/catalog.json`. Remote sources name
+`catalog.json` or `release.json` directly.
 
 ```python
-from chartcoach import open_catalog, paths, resolve_release
+catalog = open_catalog(
+    "https://artifacts.chartcoach.dev/catalog/releases/<digest>/release.json"
+)
 
-release = resolve_release()
-catalog = open_catalog(release.digest)
-release_paths = paths.release(release.digest)
-
-print(catalog.content_digest())
-print(release_paths.entries())
-print(release_paths.profile("sentence-transformers/all-MiniLM-L6-v2").index())
+if catalog.release is not None:
+    print(catalog.release.digest)
 ```
 
-`catalog.json` contains the selected release record. Passing a release digest
-to `resolve_release`, `open_catalog`, or `open_index` selects an immutable
-release.
+Cloud provider settings travel through `storage_options`:
+
+```python
+catalog = open_catalog(
+    "s3://research-artifacts/chartcoach/catalog.json",
+    storage_options={"region": "eu-central-1"},
+)
+```
+
+The top-level package exports `Catalog`, `CatalogError`, `CatalogManifest`,
+`CatalogRelease`, `open_catalog`, `open_index`, and `__version__`.
 
 ## Native LanceDB queries
 
-Install the index extra to open the fixed `documents` table.
+Install the index extra and select a profile from the same release source.
 
 ```bash
 uv add 'chartcoach[index]'
@@ -69,47 +63,29 @@ uv add 'chartcoach[index]'
 ```python
 from chartcoach import open_index
 
-table = open_index("dist/index")
-
-fts_rows = (
-    table.search("direct labels", query_type="fts", fts_columns="text")
-    .limit(8)
-    .to_list()
+table = open_index(
+    "https://artifacts.chartcoach.dev/catalog.json",
+    profile="sentence-transformers/all-MiniLM-L6-v2",
 )
 
-query_vector = embed("direct labels")
-vector_rows = (
-    table.search(
-        query_vector,
-        query_type="vector",
-        vector_column_name="vector",
-    )
-    .distance_type("cosine")
+rows = (
+    table.search("direct labels", query_type="fts", fts_columns="text")
     .limit(8)
     .to_list()
 )
 ```
 
-Use LanceDB query builders directly for filters, hybrid search, rerankers, and
-embedding functions. Vector and hybrid queries receive vectors from the
-calling application.
+Use LanceDB directly to open a standalone database.
 
-## Build embedding profiles
+## Build and publish releases
 
-`build_catalog_release` accepts any number of native LanceDB embedding
-functions. Each profile writes one analysis Parquet file and one LanceDB
-archive.
+The curation extra exposes one facade:
 
 ```python
-from pathlib import Path
-
 from lancedb.embeddings import get_registry
 
 from chartcoach import open_catalog
-from chartcoach.catalog.curation.release_builder import (
-    EmbeddingProfile,
-    build_catalog_release,
-)
+from chartcoach.catalog.curation import EmbeddingProfile, build_release
 
 embedding = get_registry().get("sentence-transformers").create(
     name="all-MiniLM-L6-v2",
@@ -118,9 +94,9 @@ embedding = get_registry().get("sentence-transformers").create(
     trust_remote_code=False,
 )
 
-release = build_catalog_release(
+release = build_release(
     open_catalog("dist/catalog"),
-    root=Path("dist/release"),
+    "dist/release",
     profiles={
         "sentence-transformers/all-MiniLM-L6-v2": EmbeddingProfile(
             embedding=embedding,
@@ -131,16 +107,22 @@ release = build_catalog_release(
 print(release.digest)
 ```
 
-The profile Parquet file contains vectors, UMAP coordinates, and nearest
-neighbors for analysis and Embedding Atlas. The archive contains the native
-LanceDB database.
-
-Publish the immutable release, then select its digest:
+Validate and publish the immutable release:
 
 ```bash
 chartcoach catalog release validate dist/release
 chartcoach catalog release publish dist/release --store s3://chartcoach
+```
+
+Public selection has its own lifecycle:
+
+```bash
 chartcoach catalog release select "$RELEASE_DIGEST" --store s3://chartcoach
 ```
 
-Local file URLs and S3-compatible URLs use the same object-key contract.
+The selected record lives at `catalog.json`. Immutable releases live under
+`catalog/releases/<digest>/`.
+
+## License
+
+Apache-2.0. See [LICENSE](LICENSE).

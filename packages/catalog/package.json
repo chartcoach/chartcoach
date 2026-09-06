@@ -30,6 +30,7 @@
   },
   "scripts": {
     "build": "vp pack",
+    "check": "vp check",
     "prepack": "vp run build",
     "test": "vp test",
     "typecheck": "tsc -p tsconfig.json --noEmit"
@@ -42,7 +43,7 @@
   "devDependencies": {
     "@types/node": "catalog:",
     "typescript": "catalog:",
-    "vite": "npm:@voidzero-dev/vite-plus-core@0.2.4",
+    "vite": "catalog:",
     "vite-plus": "catalog:"
   }
 }

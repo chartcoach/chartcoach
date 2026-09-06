@@ -15,10 +15,14 @@ for local Python tooling.
 
 ## JavaScript and web apps
 
-| Command      | Contract                                               |
-| ------------ | ------------------------------------------------------ |
-| `pnpm ready` | Format, lint, typecheck, test, and build the workspace |
-| `pnpm dev`   | Start the site and docs app through portless           |
+| Command          | Contract                                     |
+| ---------------- | -------------------------------------------- |
+| `pnpm check`     | Check formatting and type-aware lint rules   |
+| `pnpm typecheck` | Typecheck packages and both web apps         |
+| `pnpm test`      | Run package test suites                      |
+| `pnpm build`     | Build packages and both web apps             |
+| `pnpm ready`     | Run every JavaScript check, test, and build  |
+| `pnpm dev`       | Start the site and docs app through portless |
 
 Use a package-native command for a focused loop:
 
@@ -29,23 +33,25 @@ pnpm --dir apps/site typecheck
 pnpm --dir packages/catalog test
 ```
 
-The workspace gate supplies `fixtures/catalog-release` to site typechecks and
-static builds.
+Site typechecks and static builds use `fixtures/catalog-release` by default.
+Set `CHARTCOACH_SITE_CATALOG_SOURCE` to build against an exact HTTP release
+descriptor.
 
 ## Python
 
-| Command          | Contract                                       |
-| ---------------- | ---------------------------------------------- |
-| `make format`    | Check Ruff formatting                          |
-| `make lint`      | Run Ruff lint rules                            |
-| `make typecheck` | Run ty with package extras                     |
-| `make test`      | Run the Python test suite with package extras  |
-| `make build`     | Build the Python source distribution and wheel |
+| Command                 | Contract                                       |
+| ----------------------- | ---------------------------------------------- |
+| `make python-format`    | Check Ruff formatting                          |
+| `make python-lint`      | Run Ruff lint rules                            |
+| `make python-typecheck` | Run ty with package extras                     |
+| `make python-test`      | Run the Python test suite with package extras  |
+| `make python-build`     | Build the Python source distribution and wheel |
+| `make python-check`     | Run every Python check, test, and build        |
 
-Run all Python gates before handing off a package change:
+Run the Python gate before handing off a Python package change:
 
 ```sh
-make format lint typecheck test build
+make python-check
 ```
 
 Use uv directly for a focused test:
@@ -57,7 +63,11 @@ uv run --locked --package chartcoach --extra curation \
 
 ## Handoff
 
-Run the narrow command during iteration and the complete workspace gate before
-handoff. For a cross-language catalog change, run `pnpm ready` and all Python
-Make gates. Include the exact failing command when an environment blocks a
-gate.
+Run the narrow command during iteration and the complete repository gate before
+handoff:
+
+```sh
+make check
+```
+
+Include the exact failing command when an environment blocks a gate.

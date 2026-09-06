@@ -7,7 +7,7 @@ icon: Search
 Start with deterministic catalog navigation:
 
 ```bash
-uvx --from 'chartcoach[curation]@latest' chartcoach catalog list \
+uvx chartcoach@latest catalog list \
   --contains "axis labels" \
   --limit 10 \
   --format json
@@ -68,7 +68,7 @@ Python callers receive the LanceDB table itself:
 from chartcoach import open_index
 
 table = open_index(
-    "<64-character-release-digest>",
+    "https://artifacts.chartcoach.dev/catalog/releases/<digest>/release.json",
     profile="sentence-transformers/all-MiniLM-L6-v2",
 )
 

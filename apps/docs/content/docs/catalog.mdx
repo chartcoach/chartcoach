@@ -120,25 +120,12 @@ Readers resolve that record, verify its digest, then fetch artifacts from
 Selecting a release updates this one mutable entry document. Published release
 directories remain immutable.
 
-## Object-key API
+## Release sources
 
-`chartcoach.paths` constructs the same keys for local Obspec stores and
-S3-compatible stores.
-
-```python
-from chartcoach import paths
-
-release = paths.release("<64-character-release-digest>")
-profile = release.profile("sentence-transformers/all-MiniLM-L6-v2")
-
-paths.selected()
-release.root()
-release.json()
-release.manifest()
-release.entries()
-profile.documents()
-profile.index()
-```
+Consumers open `catalog.json` for the current selection or `release.json` for
+one exact release. The Python runtime supports local paths, HTTP, and cloud
+descriptor URIs. The JavaScript runtime supports HTTP and HTTPS descriptors.
+Object keys remain curation infrastructure.
 
 ## Queryable tables
 

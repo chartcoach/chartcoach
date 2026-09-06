@@ -4,10 +4,10 @@ description: Install chartcoach, inspect the catalog, read one guideline, and fo
 icon: Rocket
 ---
 
-Run the published catalog with the curation extra:
+Open the selected catalog:
 
 ```bash
-uvx --from 'chartcoach[curation]@latest' chartcoach catalog overview
+uvx chartcoach@latest catalog overview
 ```
 
 `catalog overview` reports record counts, section roles, label families, and
@@ -19,7 +19,7 @@ Use `list` for deterministic filters over ids, titles, descriptions, and
 labels.
 
 ```bash
-uvx --from 'chartcoach[curation]@latest' chartcoach catalog list \
+uvx chartcoach@latest catalog list \
   --contains "legend" \
   --limit 5 \
   --format json
@@ -28,13 +28,13 @@ uvx --from 'chartcoach[curation]@latest' chartcoach catalog list \
 Copy an `id` from the result and read the record:
 
 ```bash
-uvx --from 'chartcoach[curation]@latest' chartcoach catalog read <guideline-id>
+uvx chartcoach@latest catalog read <guideline-id>
 ```
 
 Use the same id to produce a public link and source citations:
 
 ```bash
-uvx --from 'chartcoach[curation]@latest' chartcoach catalog cite <guideline-id>
+uvx chartcoach@latest catalog cite <guideline-id>
 ```
 
 Candidate discovery and evidence retrieval are separate steps. `list`, `sql`,
@@ -48,15 +48,16 @@ Pass `--source` to commands that read catalog records:
 ```bash
 chartcoach catalog overview --source ./catalog-source
 chartcoach catalog overview --source ./dist/catalog
-chartcoach catalog overview --source <64-character-release-digest>
+chartcoach catalog overview \
+  --source https://artifacts.chartcoach.dev/catalog/releases/<digest>/release.json
 ```
 
 An authored folder contains `MANIFEST.md` and `entries/<id>/guideline.md`. A
-compiled bundle contains `MANIFEST.md` and `entries.parquet`. A digest resolves
-an immutable published release through the curation extra.
+compiled bundle contains `MANIFEST.md` and `entries.parquet`. Exact remote
+releases use their `release.json` URI.
 
 When `--source` is absent, chartcoach reads `CHARTCOACH_SOURCE`, then the
-release record in `catalog.json`.
+official `catalog.json`.
 
 ## Continue
 

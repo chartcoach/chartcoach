@@ -7,10 +7,11 @@
   "scripts": {
     "prebuild": "vp run @chartcoach/catalog#build",
     "build": "CHARTCOACH_SITE_CATALOG_SOURCE=${CHARTCOACH_SITE_CATALOG_SOURCE:-../../fixtures/catalog-release} astro build",
+    "check": "vp check",
     "dev": "portless",
     "dev:app": "astro dev --host 127.0.0.1 --port ${PORT:-4321}",
-    "pretypecheck": "vp run @chartcoach/catalog#build",
     "test": "vp test",
+    "pretypecheck": "vp run @chartcoach/catalog#build",
     "typecheck": "CHARTCOACH_SITE_CATALOG_SOURCE=${CHARTCOACH_SITE_CATALOG_SOURCE:-../../fixtures/catalog-release} astro check"
   },
   "dependencies": {
@@ -44,7 +45,7 @@
     "@types/turndown": "^5.0.6",
     "tailwindcss": "catalog:",
     "typescript": "catalog:",
-    "vite": "npm:@voidzero-dev/vite-plus-core@0.2.4",
+    "vite": "catalog:",
     "vite-plus": "catalog:"
   },
   "portless": {

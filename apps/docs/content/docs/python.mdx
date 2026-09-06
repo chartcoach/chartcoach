@@ -1,11 +1,10 @@
 ---
 title: Python
-description: Load manifest-backed catalogs, query Polars and DuckDB tables, resolve releases, and open native LanceDB indexes.
+description: Open local and remote catalogs, query Polars and DuckDB tables, and load release-backed LanceDB profiles.
 icon: Code
 ---
 
-Install the base package for authored folders, compiled bundles, Polars, and
-DuckDB:
+Install the base package:
 
 ```bash
 uv add chartcoach
@@ -14,41 +13,48 @@ uv add chartcoach
 ```python
 from chartcoach import open_catalog
 
-catalog = open_catalog("dist/catalog")
+catalog = open_catalog()
 print(catalog.guidelines().select("id", "title").head(5))
 ```
 
-## Top-level API
+## `open_catalog(source=None, *, storage_options=None)`
 
-The package exports `Catalog`, `CatalogManifest`, `CatalogRelease`,
-`open_catalog`, `open_index`, `resolve_release`, and `paths`.
-
-### `open_catalog(source=None)`
-
-Loads an authored folder, compiled bundle, selected published release, or exact
-release digest. Published sources require `chartcoach[curation]`.
+`open_catalog` accepts an authored folder, compiled bundle, release directory,
+or descriptor path or URI.
 
 ```python
-from chartcoach import open_catalog
-
 authored = open_catalog("catalog-source")
 bundle = open_catalog("dist/catalog")
-published = open_catalog()
-exact = open_catalog("<64-character-release-digest>")
+local_release = open_catalog("dist/release")
+selected = open_catalog()
+exact = open_catalog(
+    "https://artifacts.chartcoach.dev/catalog/releases/<digest>/release.json"
+)
 ```
 
-Local paths must name directories. Authored folders contain `MANIFEST.md` and
-an `entries` directory. Bundles contain `MANIFEST.md` and `entries.parquet`.
+An authored folder contains `MANIFEST.md` and `entries/`. A bundle contains
+`MANIFEST.md` and `entries.parquet`. Remote sources name `catalog.json` or
+`release.json`.
 
-### `Catalog`
+S3, GCS, and Azure sources require `chartcoach[cloud]`. Provider settings pass
+through `storage_options`. Ambient provider credentials handle the common
+case.
+
+```python
+catalog = open_catalog(
+    "s3://research-artifacts/chartcoach/catalog.json",
+    storage_options={"region": "eu-central-1"},
+)
+```
+
+`catalog.release` contains the verified `CatalogRelease` for descriptor-backed
+and release-directory sources. It is `None` for authored folders and plain
+bundles.
+
+## `Catalog`
 
 Every `Catalog` owns a `CatalogManifest`. Compiled rows contain `id`, `title`,
 `description`, `labels`, `sections`, and `references`.
-
-`Catalog(frame, *, manifest)` validates a flat Polars frame against the
-manifest. `Catalog.from_guidelines(guidelines, *, manifest)` builds the same
-object from compiled guideline values. Use `Catalog.from_folder(path)` or
-`Catalog.from_bundle(path)` for local storage forms.
 
 ```python
 guidelines = catalog.guidelines()
@@ -58,6 +64,10 @@ references = catalog.references()
 entry = catalog.entry("compare-percentages-with-bars-not-pies")
 body = entry["body"]
 ```
+
+`Catalog(frame, *, manifest)` constructs a catalog from a Polars frame.
+`Catalog.from_guidelines(guidelines, *, manifest)` constructs one from compiled
+guideline values. File input goes through `open_catalog`.
 
 `Catalog` exposes six queryable tables through `table(name)` and `duckdb()`:
 `guidelines`, `sections`, `guideline_labels`, `references`,
@@ -72,57 +82,23 @@ with catalog.duckdb() as connection:
     """).fetchall()
 ```
 
-### `CatalogManifest`
+## `open_index(source=None, *, profile, storage_options=None)`
 
-`CatalogManifest.from_text(markdown)` and `CatalogManifest.from_path(path)`
-parse section-role and label-family definitions. Catalog construction fails
-when a row uses a role or label family absent from its manifest.
+`open_index` selects a native LanceDB profile from the same release source
+accepted by `open_catalog`.
 
-### `CatalogRelease`
-
-`CatalogRelease` contains `schema_version`, `digest`, and a path-keyed
-`artifacts` mapping. `CatalogRelease.from_mapping(value)` parses a release
-record. `release.artifact(path)` returns the SHA-256 and byte count for one
-artifact.
-
-### `resolve_release(reference=None)`
-
-Returns the selected `CatalogRelease` or the release named by a digest. The
-curation extra supplies the Obspec and Obstore access layer.
-
-```python
-from chartcoach import resolve_release
-
-selected = resolve_release()
-exact = resolve_release(selected.digest)
+```bash
+uv add 'chartcoach[index]'
 ```
-
-### `paths`
-
-Constructs catalog object keys for local and remote stores.
-
-```python
-from chartcoach import paths
-
-release = paths.release("<64-character-release-digest>")
-
-paths.selected()
-release.json()
-release.manifest()
-release.entries()
-release.profile("sentence-transformers/all-MiniLM-L6-v2").documents()
-release.profile("sentence-transformers/all-MiniLM-L6-v2").index()
-```
-
-### `open_index(source=None, *, profile=None)`
-
-Returns the native LanceDB `documents` table. Local paths require
-`chartcoach[index]`. Published profiles require `chartcoach[curation]`.
 
 ```python
 from chartcoach import open_index
 
-table = open_index("dist/index")
+table = open_index(
+    "https://artifacts.chartcoach.dev/catalog.json",
+    profile="sentence-transformers/all-MiniLM-L6-v2",
+)
+
 rows = (
     table.search("direct labels", query_type="fts", fts_columns="text")
     .where("role = 'overview'")
@@ -131,21 +107,9 @@ rows = (
 )
 ```
 
-Vector search accepts a vector from the calling application:
+Standalone LanceDB directories use the LanceDB API directly.
 
-```python
-query_vector = embed("direct labels")
-rows = (
-    table.search(
-        query_vector,
-        query_type="vector",
-        vector_column_name="vector",
-    )
-    .distance_type("cosine")
-    .limit(8)
-    .to_list()
-)
-```
+## Top-level API
 
-Native LanceDB query builders also compose filters, hybrid search, rerankers,
-and application-provided embedding functions.
+The package exports `Catalog`, `CatalogError`, `CatalogManifest`,
+`CatalogRelease`, `open_catalog`, `open_index`, and `__version__`.

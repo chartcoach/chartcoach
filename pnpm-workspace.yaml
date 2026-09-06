@@ -23,6 +23,8 @@ catalog:
 
 minimumReleaseAge: 1440
 minimumReleaseAgeStrict: true
+verifyDepsBeforeRun: install
+blockExoticSubdeps: true
 
 overrides:
   vite: "catalog:"

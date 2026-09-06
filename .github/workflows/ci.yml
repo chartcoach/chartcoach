@@ -18,10 +18,6 @@ jobs:
     name: JavaScript workspace
     runs-on: ubuntu-latest
     timeout-minutes: 25
-    env:
-      CHECK_PATHS: >-
-        .github .vscode apps development_docs packages/brand packages/catalog
-        AGENTS.md CONTRIBUTING.md README.md package.json pnpm-workspace.yaml vite.config.ts
 
     steps:
       - name: Checkout
@@ -41,20 +37,8 @@ jobs:
           run-install: |
             - args: ['--frozen-lockfile']
 
-      - name: Check JavaScript formatting
-        run: printf '%s\n' "$CHECK_PATHS" | xargs vp fmt --check
-
-      - name: Lint JavaScript
-        run: printf '%s\n' "$CHECK_PATHS" | xargs vp lint
-
-      - name: Typecheck JavaScript
-        run: CHARTCOACH_SITE_CATALOG_SOURCE=../../fixtures/catalog-release vp run -r typecheck
-
-      - name: Test JavaScript
-        run: vp run -r test
-
-      - name: Build JavaScript
-        run: CHARTCOACH_SITE_CATALOG_SOURCE=../../fixtures/catalog-release vp run -r build
+      - name: Check JavaScript workspace
+        run: vp run ready
 
   python:
     name: Python package ${{ matrix.python-version }}
@@ -84,20 +68,20 @@ jobs:
         run: uv sync --locked --package chartcoach --all-groups --all-extras
 
       - name: Test Python package
-        run: make test
+        run: make python-test
 
       - name: Check Python formatting
         if: matrix.python-version == '3.12'
-        run: make format
+        run: make python-format
 
       - name: Lint Python
         if: matrix.python-version == '3.12'
-        run: make lint
+        run: make python-lint
 
       - name: Typecheck Python
         if: matrix.python-version == '3.12'
-        run: make typecheck
+        run: make python-typecheck
 
       - name: Build Python package
         if: matrix.python-version == '3.12'
-        run: make build
+        run: make python-build
