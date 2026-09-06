@@ -9,7 +9,7 @@ import {
   guidelinePath,
   SITE_PATHS,
 } from "../lib/routes";
-import { loadSiteCatalog } from "./catalog-source";
+import { loadSiteCatalog } from "./catalog-location";
 
 export async function chartcoachLlmPages({ root }: LlmPageSourceContext): Promise<LlmPageSource[]> {
   const catalog = await loadSiteCatalog(root);
@@ -55,7 +55,7 @@ function sitePages(guidelineCount: number): LlmPageSource[] {
         "- Human-readable guideline Markdown",
         "- Guidance available through the Python API, TypeScript API, and CLI",
         "- Section roles for advice, reason, context, exceptions, costs, mistakes, checks, and fixes",
-        "- Source references for grounded responses",
+        "- References for grounded responses",
         "- Search-ready guidance for embeddings, clustering, and coverage analysis",
       ].join("\n"),
     },

@@ -15,19 +15,19 @@ guidelines.
 
 Record:
 
-| Field       | Evidence                                                                |
-| ----------- | ----------------------------------------------------------------------- |
-| User task   | The critique, recommendation, discussion, or search question            |
-| Searches    | Words, labels, roles, SQL, and indexed searches tried                   |
-| Result      | Missing, partial, surprising, duplicate, or weakly sourced record       |
-| Diagnosis   | How record wording, labels, relationships, or sources caused the result |
-| Related IDs | Records that partially match, conflict, duplicate, or need revision     |
+| Field             | Evidence                                                                |
+| ----------------- | ----------------------------------------------------------------------- |
+| User task         | The critique, recommendation, discussion, or search question            |
+| Searches          | Words, labels, roles, SQL, and indexed searches tried                   |
+| Result            | Missing, partial, surprising, duplicate, or weakly sourced record       |
+| Diagnosis         | How record wording, labels, relationships, or sources caused the result |
+| Related entry IDs | Records that partially match, conflict, duplicate, or need revision     |
 
 Read and cite every named record:
 
 ```sh
-chartcoach catalog read <guideline-id> --source-detail full
-chartcoach catalog cite <guideline-id>
+chartcoach catalog read <guideline-entry-id> --source-detail minimal
+chartcoach catalog cite <guideline-entry-id>
 ```
 
 Report crashes, installation errors, cache errors, and storage errors at
@@ -63,7 +63,7 @@ action.
 
 ## Related guidelines
 
-- `<guideline-id>`: `<title>`
+- `<guideline-entry-id>`: `<title>`
   - Relevant section:
   - Exact-read command:
   - Citation:
@@ -76,7 +76,7 @@ action.
 ## Before publication
 
 - [ ] Remove private user data and local paths.
-- [ ] Check every guideline ID with `catalog read`.
+- [ ] Check every guideline entry ID with `catalog read`.
 - [ ] Identify the cited sources with `catalog cite`, then inspect those sources
       before judging whether a claim is supported.
 - [ ] Name anything the catalog maintainer still needs to verify.

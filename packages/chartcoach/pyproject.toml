@@ -26,23 +26,32 @@ dependencies = [
   "agent-plugins==0.2.0",
   "bibtexparser>=1.1",
   "click>=8",
-  "duckdb>=1.1",
+  "duckdb==1.5.5",
   "platformdirs>=4",
   "polars>=1.39.0",
   "pyyaml>=6",
   "tabulate>=0.10.0",
+  "typing-extensions==4.16.0",
 ]
 
 [project.optional-dependencies]
-index = ["lancedb>=0.34"]
+index = ["lancedb==0.38.0"]
 cloud = ["obstore>=0.11.0"]
 mcp = ["mcp[cli]>=2.0"]
 curation = [
-  "lancedb>=0.34",
+  "lancedb==0.38.0",
+  "numpy==2.2.6; python_version < '3.11'",
+  "numpy==2.4.6; python_version == '3.11'",
+  "numpy==2.5.2; python_version >= '3.12'",
   "obspec>=0.1.0",
   "obstore>=0.11.0",
   "pyarrow>=18",
-  "umap-learn>=0.5.12",
+]
+projection = [
+  "numpy==2.2.6; python_version < '3.11'",
+  "numpy==2.4.6; python_version == '3.11'",
+  "numpy==2.5.2; python_version >= '3.12'",
+  "umap-learn==0.5.12",
 ]
 
 [project.scripts]

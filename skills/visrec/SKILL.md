@@ -5,8 +5,8 @@ description: Recommend a visualization from the data, reader task, audience, and
 
 # chartcoach Visrec
 
-Use catalog records to recommend a visualization from a design brief. The
-`visfeedback` instructions cover an existing rendered chart. The `core`
+Use guideline entry records to recommend a visualization from a design brief.
+The `visfeedback` instructions cover an existing rendered chart. The `core`
 instructions must be read first. They set `CHARTCOACH_SOURCE` and inspect the
 current roles and labels before this workflow begins.
 
@@ -49,11 +49,10 @@ If an indexed profile is available and ordinary filters leave too many
 matches, use full-text search:
 
 ```sh
-chartcoach catalog find \
-  --profile <profile> \
+chartcoach catalog search \
+  --profile <profile-id> \
   --mode fts \
   --limit 10 \
-  --format compact \
   "<data> <task> <audience> <constraint>"
 ```
 
@@ -62,10 +61,10 @@ chartcoach catalog find \
 Read and cite every record used in the recommendation:
 
 ```sh
-chartcoach catalog read <guideline-id> \
-  --source-detail full \
+chartcoach catalog read <guideline-entry-id> \
+  --source-detail minimal \
   --format markdown
-chartcoach catalog cite <guideline-id> --format markdown
+chartcoach catalog cite <guideline-entry-id> --format markdown
 ```
 
 Discard a record when its chart family, task, audience, data type, or
@@ -78,7 +77,7 @@ Connect each decision to the brief and catalog evidence:
 ```text
 recommended chart or encoding
   -> fact from the data, task, audience, or constraints
-  -> guideline ID, title, and applicable section
+  -> guideline entry ID, title, and applicable section
   -> tradeoff or remaining uncertainty
   -> source citation
 ```

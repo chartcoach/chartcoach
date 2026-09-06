@@ -11,7 +11,7 @@ import duckdb
 import polars as pl
 from polars.datatypes import DataTypeClass
 
-from .catalog.collection import Catalog
+from .catalog.model import Catalog
 from .catalog.relations import iter_catalog_tables as _iter_catalog_tables
 
 DuckDBConfigValue: TypeAlias = str | bool | int | float | list[str]

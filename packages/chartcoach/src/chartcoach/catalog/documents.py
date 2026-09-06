@@ -9,7 +9,9 @@ import polars as pl
 from ._polars import explode_frame
 
 if TYPE_CHECKING:
-    from .collection import Catalog
+    from .model import Catalog
+
+DOCUMENTS_VERSION = 1
 
 
 def build_document_rows(
@@ -48,7 +50,10 @@ def build_document_rows(
 def document_rows(catalog: Catalog) -> pl.DataFrame:
     """Return the flat document rows for one catalog."""
 
-    return build_document_rows(catalog.guidelines(), catalog.references())
+    return build_document_rows(
+        catalog.table("guidelines"),
+        catalog.table("references"),
+    )
 
 
 def _content_hash(text: str) -> str:
@@ -218,4 +223,4 @@ def _validate_unique_document_ids(frame: pl.DataFrame) -> None:
         )
 
 
-__all__ = ["build_document_rows", "document_rows"]
+__all__ = ["DOCUMENTS_VERSION", "build_document_rows", "document_rows"]

@@ -7,22 +7,36 @@ import { describe, expect, it } from "vite-plus/test";
 
 import {
   loadCatalog,
+  loadCatalogData,
   openCatalog,
   parseCatalogRelease,
-  type CatalogRelease,
   type FetchLike,
   type JsonObject,
-  type JsonValue,
 } from "@chartcoach/catalog";
 import { requireGuidelineFromWire } from "../src/catalog/wire";
+import {
+  catalogResponses,
+  entriesParquetPath,
+  fetchFrom,
+  fixtureRelease,
+  manifestPath,
+  releaseDigest,
+  releaseResponses,
+  releaseUrlFor,
+  releaseWithArtifact,
+  responseBytes,
+} from "./catalog-testkit";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const releaseFixtureRoot = path.join(__dirname, "..", "..", "..", "fixtures", "catalog-release");
-const entriesParquetPath = path.join(releaseFixtureRoot, "entries.parquet");
-const manifestPath = path.join(releaseFixtureRoot, "MANIFEST.md");
-const invalidRowsPath = path.join(__dirname, "fixtures", "invalid-catalog-rows.json");
-const artifactBaseUrl = "https://files.peter.gy/catalog/chartcoach";
-const catalogUrl = `${artifactBaseUrl}/catalog.json`;
+const invalidRowsPath = path.join(
+  __dirname,
+  "..",
+  "..",
+  "..",
+  "fixtures",
+  "catalog-contract",
+  "invalid-catalog-rows.json",
+);
 
 type InvalidRowsFixture = {
   row: JsonObject;
@@ -36,12 +50,14 @@ describe("catalog loading", () => {
       readFile(manifestPath, "utf8"),
     ]);
 
-    const catalog = await loadCatalog({ entries, manifestText });
+    const catalog = await loadCatalogData({ entries, manifestText });
 
     expect(catalog.length).toBeGreaterThan(0);
     expect(catalog.manifest.sectionRoles.advice?.name).toBe("advice");
     expect(catalog.manifest.labelFamilies.chart?.name).toBe("chart");
     expect(catalog.guidelines[0]?.body).toContain("<!-- role:");
+    expect(catalog.release).toBeUndefined();
+    expect(catalog.releaseUrl).toBeUndefined();
   });
 
   it("loads typed-array and async-buffer Parquet bytes", async () => {
@@ -49,8 +65,8 @@ describe("catalog loading", () => {
     const entries = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
     const manifestText = await readFile(manifestPath, "utf8");
 
-    const typedArrayCatalog = await loadCatalog({ entries, manifestText });
-    const asyncBufferCatalog = await loadCatalog({
+    const typedArrayCatalog = await loadCatalogData({ entries, manifestText });
+    const asyncBufferCatalog = await loadCatalogData({
       entries: {
         byteLength: entries.byteLength,
         slice(start: number, end?: number) {
@@ -77,7 +93,51 @@ describe("catalog loading", () => {
   });
 });
 
-describe("published catalog releases", () => {
+describe("catalog release loading", () => {
+  it("verifies caller-provided release bytes", async () => {
+    const fixture = await fixtureRelease();
+    const catalog = await loadCatalog({
+      entries: fixture.entries,
+      manifest: Buffer.from(fixture.manifest),
+      release: fixture.release,
+      releaseUrl: `file:///catalog/releases/${fixture.release.digest}/release.json`,
+    });
+
+    expect(catalog.release?.digest).toBe(fixture.release.digest);
+    expect(catalog.releaseUrl).toBe(
+      `file:///catalog/releases/${fixture.release.digest}/release.json`,
+    );
+  });
+
+  it("bounds caller-provided release artifacts", async () => {
+    const fixture = await fixtureRelease();
+    const release = releaseWithArtifact(fixture.release, "entries.parquet", {
+      bytes: 64 * 1024 * 1024 + 1,
+    });
+
+    await expect(
+      loadCatalog({
+        entries: fixture.entries,
+        manifest: Buffer.from(fixture.manifest),
+        release,
+        releaseUrl: `file:///catalog/releases/${release.digest}/release.json`,
+      }),
+    ).rejects.toThrow("Catalog artifact exceeds size limit: entries.parquet");
+  });
+
+  it("requires an absolute release locator for caller-provided bytes", async () => {
+    const fixture = await fixtureRelease();
+
+    await expect(
+      loadCatalog({
+        entries: fixture.entries,
+        manifest: Buffer.from(fixture.manifest),
+        release: fixture.release,
+        releaseUrl: "relative/release.json",
+      }),
+    ).rejects.toThrow("Catalog release URL must be absolute");
+  });
+
   it("opens the selected catalog release", async () => {
     const fixture = await fixtureRelease();
 
@@ -87,6 +147,12 @@ describe("published catalog releases", () => {
 
     expect(catalog.require("direct-labels").id).toBe("direct-labels");
     expect(catalog.manifest.labelFamilies.chart?.name).toBe("chart");
+    expect(catalog.release).toEqual(fixture.release);
+    expect(catalog.release).not.toBe(fixture.release);
+    expect(catalog.releaseUrl).toBe(releaseUrlFor(fixture.release.digest));
+    expect(Object.isFrozen(catalog.release)).toBe(true);
+    expect(Object.isFrozen(catalog.release?.artifacts)).toBe(true);
+    expect((await catalog.describe()).release_digest).toBe(fixture.release.digest);
   });
 
   it("opens an exact release below a custom URL prefix", async () => {
@@ -103,6 +169,8 @@ describe("published catalog releases", () => {
     const catalog = await openCatalog(releaseUrl, { fetch: fetchFrom(responses) });
 
     expect(catalog.require("direct-labels").body).toContain("<!-- role: advice -->");
+    expect(catalog.release?.digest).toBe(fixture.release.digest);
+    expect(catalog.releaseUrl).toBe(releaseUrl);
   });
 
   it("rejects a release whose digest differs from its artifact set", async () => {
@@ -115,6 +183,55 @@ describe("published catalog releases", () => {
         fetch: fetchFrom(releaseResponses({ ...fixture, release }, digest)),
       }),
     ).rejects.toThrow("does not match its artifact set");
+  });
+
+  it("rejects profile metadata without its index archive", async () => {
+    const fixture = await fixtureRelease();
+    const artifacts = {
+      ...fixture.release.artifacts,
+      "profiles/minilm-normalized/profile.json": {
+        sha256: "c".repeat(64),
+        bytes: 1,
+      },
+    };
+    const release = {
+      schema_version: 1 as const,
+      artifacts,
+      digest: releaseDigest(artifacts),
+    };
+
+    await expect(
+      openCatalog(releaseUrlFor(release.digest), {
+        fetch: fetchFrom(releaseResponses({ ...fixture, release })),
+      }),
+    ).rejects.toThrow("missing index.tar.gz");
+  });
+
+  it("rejects a self-consistent release under another digest path", async () => {
+    const fixture = await fixtureRelease();
+    const wrongDigest = "0".repeat(64);
+
+    await expect(
+      openCatalog(releaseUrlFor(wrongDigest), {
+        fetch: fetchFrom(releaseResponses(fixture, wrongDigest)),
+      }),
+    ).rejects.toThrow("digest-addressed location");
+  });
+
+  it("composes a caller abort signal with catalog requests", async () => {
+    const controller = new AbortController();
+    const fetch: FetchLike = async (_input, init) => {
+      controller.abort();
+      if (init?.signal?.aborted) throw new DOMException("Aborted", "AbortError");
+      return new Response();
+    };
+
+    await expect(
+      openCatalog(releaseUrlFor("a".repeat(64)), {
+        fetch,
+        signal: controller.signal,
+      }),
+    ).rejects.toMatchObject({ name: "AbortError" });
   });
 
   it("rejects artifact bytes that differ from the release descriptor", async () => {
@@ -169,6 +286,41 @@ describe("published catalog releases", () => {
     );
   });
 
+  it("exposes a sanitized exact release URL", async () => {
+    const fixture = await fixtureRelease();
+    const releaseUrl =
+      `https://catalog-user:catalog-password@artifacts.example.test/catalog/releases/` +
+      `${fixture.release.digest}/release.json?signed=token#fragment`;
+    const responses = new Map<string, BodyInit>([
+      [releaseUrl, JSON.stringify(fixture.release)],
+      [new URL("MANIFEST.md", releaseUrl).toString(), fixture.manifest],
+      [new URL("entries.parquet", releaseUrl).toString(), responseBytes(fixture.entries)],
+    ]);
+
+    const catalog = await openCatalog(releaseUrl, { fetch: fetchFrom(responses) });
+
+    expect(catalog.releaseUrl).toBe(
+      `https://artifacts.example.test/catalog/releases/${fixture.release.digest}/release.json`,
+    );
+  });
+
+  it("cancels unsuccessful response bodies", async () => {
+    const digest = "a".repeat(64);
+    let cancelled = false;
+    const fetch: FetchLike = async () =>
+      new Response(
+        new ReadableStream({
+          cancel() {
+            cancelled = true;
+          },
+        }),
+        { status: 503 },
+      );
+
+    await expect(openCatalog(releaseUrlFor(digest), { fetch })).rejects.toThrow("HTTP 503");
+    expect(cancelled).toBe(true);
+  });
+
   it("requires a catalog descriptor URL", async () => {
     await expect(openCatalog("https://example.test/catalog/")).rejects.toThrow(
       "must name catalog.json or release.json",
@@ -179,7 +331,7 @@ describe("published catalog releases", () => {
 
 describe("release records", () => {
   it("accepts opaque artifact paths and requires the core bundle paths", async () => {
-    const releaseRecord = parseCatalogRelease(await readReleaseRecord());
+    const releaseRecord = (await fixtureRelease()).release;
     const artifacts = releaseRecord.artifacts;
     const opaque = { sha256: "4".repeat(64), bytes: 64 };
 
@@ -201,7 +353,7 @@ describe("release records", () => {
   });
 
   it("rejects malformed artifact paths and descriptors", async () => {
-    const releaseRecord = parseCatalogRelease(await readReleaseRecord());
+    const releaseRecord = (await fixtureRelease()).release;
     const artifacts = releaseRecord.artifacts;
     const entry = artifacts["entries.parquet"]!;
 
@@ -222,86 +374,3 @@ describe("release records", () => {
     ).toThrow("unsupported fields");
   });
 });
-
-async function fixtureRelease() {
-  const [manifest, entries, releaseRecord] = await Promise.all([
-    readFile(manifestPath, "utf8"),
-    readFile(entriesParquetPath),
-    readReleaseRecord(),
-  ]);
-  return {
-    manifest,
-    entries,
-    release: parseCatalogRelease(releaseRecord),
-  };
-}
-
-function catalogResponses(
-  fixture: Awaited<ReturnType<typeof fixtureRelease>>,
-): Map<string, BodyInit> {
-  const responses = releaseResponses(fixture);
-  responses.set(catalogUrl, JSON.stringify(fixture.release));
-  return responses;
-}
-
-function releaseResponses(
-  fixture: Awaited<ReturnType<typeof fixtureRelease>>,
-  digest = fixture.release.digest,
-): Map<string, BodyInit> {
-  const releaseUrl = releaseUrlFor(digest);
-  return new Map<string, BodyInit>([
-    [releaseUrl, JSON.stringify(fixture.release)],
-    [new URL("MANIFEST.md", releaseUrl).toString(), fixture.manifest],
-    [new URL("entries.parquet", releaseUrl).toString(), responseBytes(fixture.entries)],
-  ]);
-}
-
-function releaseUrlFor(digest: string): string {
-  return `https://files.peter.gy/catalog/chartcoach/catalog/releases/${digest}/release.json`;
-}
-
-function responseBytes(bytes: Uint8Array): ArrayBuffer {
-  return Uint8Array.from(bytes).buffer;
-}
-
-function releaseWithArtifact(
-  release: CatalogRelease,
-  path: string,
-  update: Partial<CatalogRelease["artifacts"][string]>,
-): CatalogRelease {
-  const artifacts = {
-    ...release.artifacts,
-    [path]: { ...release.artifacts[path]!, ...update },
-  };
-  return {
-    schema_version: 1,
-    artifacts,
-    digest: releaseDigest(artifacts),
-  };
-}
-
-function releaseDigest(artifacts: CatalogRelease["artifacts"]): string {
-  const canonicalArtifacts = Object.fromEntries(
-    Object.entries(artifacts)
-      .sort(([left], [right]) => (left === right ? 0 : left < right ? -1 : 1))
-      .map(([artifactPath, artifact]) => [
-        artifactPath,
-        { bytes: artifact.bytes, sha256: artifact.sha256 },
-      ]),
-  );
-  return createHash("sha256")
-    .update(JSON.stringify({ artifacts: canonicalArtifacts, schema_version: 1 }))
-    .digest("hex");
-}
-
-function fetchFrom(responses: Map<string, BodyInit>): FetchLike {
-  return async (input) => {
-    const body = responses.get(input.toString());
-    if (body === undefined) return new Response("not found", { status: 404 });
-    return new Response(body);
-  };
-}
-
-async function readReleaseRecord(): Promise<JsonValue> {
-  return JSON.parse(await readFile(path.join(releaseFixtureRoot, "release.json"), "utf8"));
-}

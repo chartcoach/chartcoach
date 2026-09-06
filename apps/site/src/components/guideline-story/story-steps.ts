@@ -13,15 +13,15 @@ export const steps: readonly StoryStep[] = [
     artifact: "markdown",
   },
   {
-    eyebrow: "Source references",
+    eyebrow: "References",
     title: "Traceable to sources",
     body: "Guidelines cite papers, standards, and practitioner material, so feedback can name where its recommendation came from.",
     surface: {
       intent: "Traceable to sources",
-      form: "Source references",
+      form: "References",
       detail: "papers and practice",
     },
-    artifact: "source",
+    artifact: "references",
   },
   {
     eyebrow: "Section Roles",

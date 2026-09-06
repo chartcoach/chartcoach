@@ -76,7 +76,7 @@ def deterministic_embedding(
     name: str,
     vector: Callable[[str, int], Sequence[float]] | None = None,
 ) -> EmbeddingFunction:
-    """Return a registered native LanceDB embedding for contract tests."""
+    """Return a registered LanceDB embedding for contract tests."""
 
     import numpy as np
     from lancedb.embeddings import TextEmbeddingFunction, get_registry

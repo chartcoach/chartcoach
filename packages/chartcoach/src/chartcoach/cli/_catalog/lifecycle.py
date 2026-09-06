@@ -37,7 +37,7 @@ def build_command(
     output_path: Path,
     dry_run: bool,
 ) -> None:
-    """Build a catalog bundle from authored entries."""
+    """Build a catalog bundle from authored guideline entries."""
 
     from chartcoach import open_catalog
 
@@ -57,7 +57,13 @@ def build_command(
         )
         return
     try:
-        catalog.write_bundle(output_path)
+        from chartcoach.catalog.curation import write_bundle
+
+        write_bundle(catalog, output_path)
+    except ModuleNotFoundError as exc:
+        raise click.ClickException(
+            "Catalog bundle builds require chartcoach[curation]."
+        ) from exc
     except FileExistsError as exc:
         raise click.ClickException(f"{output_path} already exists.") from exc
     echo_success(f"Wrote {len(catalog)} entries", detail=f"to {output_path}")
@@ -69,7 +75,7 @@ def build_command(
     "--format",
     "output_format",
     type=click.Choice(ROW_FORMATS),
-    default="table",
+    default="json",
     show_default=True,
     help="Output format.",
 )
@@ -140,7 +146,9 @@ def export_duckdb_command(
 
     catalog = load_catalog(ctx)
     try:
-        catalog.write_duckdb(output_path, overwrite=overwrite)
+        from chartcoach.duckdb import write_duckdb
+
+        write_duckdb(catalog, output_path, overwrite=overwrite)
     except FileExistsError as exc:
         raise click.ClickException(
             f"{output_path} already exists. Pass --overwrite."

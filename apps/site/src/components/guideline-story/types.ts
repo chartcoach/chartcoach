@@ -1,6 +1,6 @@
 export type StoryArtifactId =
   | "markdown"
-  | "source"
+  | "references"
   | "structured"
   | "embedding"
   | "access"

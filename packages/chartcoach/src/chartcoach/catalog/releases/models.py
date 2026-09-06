@@ -48,7 +48,7 @@ class ReleaseArtifact:
 
 @dataclass(frozen=True, slots=True)
 class CatalogRelease:
-    """An immutable artifact set addressed by its content digest."""
+    """An immutable artifact set addressed by its release digest."""
 
     digest: str
     artifacts: Mapping[str, ReleaseArtifact]

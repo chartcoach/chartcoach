@@ -1,13 +1,15 @@
 # @chartcoach/catalog
 
 `@chartcoach/catalog` fetches a selected or exact Guideline Catalog release,
-verifies its required files, and returns a `Catalog` of guideline records.
+verifies its files, and returns immutable `Guideline` values for querying,
+reading, and citation.
 
 chartcoach is alpha software. `openCatalog` requires a browser or server
 runtime with `fetch`, Web Crypto, `AbortSignal.timeout`, and `AbortSignal.any`.
-`loadCatalog` parses files that the application already holds.
+`loadCatalog` verifies release files that the application already holds.
+`loadCatalogData` parses descriptor-free bundle data.
 
-## Read one guideline
+## Query and read guidance
 
 ```bash
 npm install @chartcoach/catalog@0.2.0
@@ -19,12 +21,18 @@ import { openCatalog } from "@chartcoach/catalog";
 const catalog = await openCatalog(
   "https://files.peter.gy/packages/python/chartcoach/0.2.0/docs-catalog/c0f6dbec3dd31b07763b46fd458733db0b8b50c5793cf9447458119287129420/release.json",
 );
-const guideline = catalog.require("directly-label-series-instead-of-using-a-color-key");
+const candidates = catalog.query({ contains: "direct labels", limit: 5 });
+const ids = candidates.map(({ id }) => id);
+const records = catalog.read({ ids, sourceDetail: "minimal" });
+const citations = catalog.cite({ ids });
+const info = await catalog.describe();
 
-console.log(guideline.title);
+console.log(records[0]?.title);
 ```
 
-Expected output:
+`query`, `read`, and `cite` run synchronously over the loaded `Catalog`.
+`describe` is asynchronous because it computes SHA-256 digests and can fetch
+selected profile metadata.
 
 ```text
 Directly label colored series instead of relying on a color key
@@ -32,9 +40,9 @@ Directly label colored series instead of relying on a color key
 
 ## Choose a release URL
 
-`openCatalog(source, { fetch })` accepts an absolute HTTP or HTTPS URL:
+`openCatalog(location, { fetch, signal })` accepts an absolute HTTP or HTTPS URL:
 
-| Source         | Behavior                                      |
+| Location       | Behavior                                      |
 | -------------- | --------------------------------------------- |
 | `catalog.json` | Follows the currently selected public release |
 | `release.json` | Keeps one release digest across calls         |
@@ -42,36 +50,107 @@ Directly label colored series instead of relying on a color key
 
 The loader verifies the release digest, then checks the byte count and SHA-256
 hash of `MANIFEST.md` and `entries.parquet` before parsing them. Pass a custom
-`fetch` implementation when the runtime does not use `globalThis.fetch`.
+`fetch` implementation when the runtime does not use `globalThis.fetch`. Pass
+an `AbortSignal` to cancel descriptor and artifact requests.
+The returned catalog exposes the verified descriptor as `catalog.release` and
+its sanitized exact `release.json` URL as `catalog.releaseUrl`.
 
 ## Load files your app already has
 
-`loadCatalog` accepts Parquet bytes and manifest text:
+`loadCatalogData` accepts Parquet bytes and manifest text:
 
 ```ts
 import { readFile } from "node:fs/promises";
-import { loadCatalog } from "@chartcoach/catalog";
+import { loadCatalogData } from "@chartcoach/catalog";
 
-const catalog = await loadCatalog({
+const catalog = await loadCatalogData({
   entries: await readFile("dist/catalog/entries.parquet"),
   manifestText: await readFile("dist/catalog/MANIFEST.md", "utf8"),
 });
 ```
 
-`loadCatalog` validates the manifest vocabulary and guideline fields. It
-cannot verify a release digest or file hashes because it receives no
-`release.json`. Verify the two files before this call when release integrity is
-required.
+`loadCatalogData` validates the manifest vocabulary and guideline fields.
+Release integrity remains caller-owned because this input contains no
+`release.json`.
+
+Use `loadCatalog` when the application already has a parsed release and the
+files listed by its descriptor:
+
+```ts
+import { readFile } from "node:fs/promises";
+import { pathToFileURL } from "node:url";
+import { loadCatalog, parseCatalogRelease } from "@chartcoach/catalog";
+
+const releasePath = "dist/release/release.json";
+const release = parseCatalogRelease(JSON.parse(await readFile(releasePath, "utf8")));
+const catalog = await loadCatalog({
+  release,
+  releaseUrl: pathToFileURL(releasePath),
+  entries: await readFile("dist/release/entries.parquet"),
+  manifest: await readFile("dist/release/MANIFEST.md"),
+});
+```
+
+`loadCatalog` verifies the release digest and both core files before returning
+a catalog with its exact release URL. Each core file is capped at 64 MiB.
 
 ## Catalog methods
 
-- `catalog.guidelines` and iteration enumerate guideline records.
-- `catalog.length` returns the number of records.
-- `catalog.get(id)` returns a guideline or `undefined`.
-- `catalog.require(id)` returns a guideline or throws `CatalogError`.
-- `catalog.labels()` returns the sorted labels in the catalog.
-- `catalog.sectionRoles()` returns the sorted section roles.
-- `toMarkdown(guideline)` serializes one guideline to Markdown.
+| Method                                 | Result                                                                           |
+| -------------------------------------- | -------------------------------------------------------------------------------- |
+| `query(options?)`                      | Compact guideline entry candidates. The default limit is 50.                     |
+| `read({ ids, roles?, sourceDetail? })` | Guideline entry records with ordered sections and parsed sources.                |
+| `cite({ ids, urlTemplate? })`          | Guideline links, formatted guideline citations, and structured source citations. |
+| `describe({ profile?, signal? })`      | Catalog identity, vocabulary, profile names, and optional profile information.   |
+| `get(id)`                              | A `Guideline` or `undefined`.                                                    |
+| `require(id)`                          | A `Guideline` or a `CatalogError` with code `"lookup"`.                          |
+
+`catalog.guidelines`, iteration, `catalog.length`, `catalog.labels()`,
+`catalog.sectionRoles()`, `catalog.release`, `catalog.releaseUrl`, and
+`toMarkdown(guideline)` support direct application composition.
+
+JavaScript option names use camel case. Shared JSON result fields use snake
+case, including `source_title`, `reference_id`, and `release_digest`.
+
+## Inspect a profile
+
+```ts
+const info = await catalog.describe();
+const profile = info.profiles[0];
+
+if (profile !== undefined) {
+  const controller = new AbortController();
+  const details = await catalog.describe({ profile, signal: controller.signal });
+  console.log(details.profile?.distance_metric, details.profile?.dimensions);
+}
+```
+
+`describe({ profile })` verifies `profile.json` against the release byte count,
+SHA-256 hash, 64 KiB limit, catalog entries digest, and manifest digest. It
+keeps the index unopened and caches verified metadata per `Catalog` instance.
+Each call has its own cancellation signal.
+
+`ProfileInfo` contains the profile and document schema versions, embedding
+binding, dimensions, `distance_metric`, `python_requirements`, LanceDB version,
+and projection metadata.
+
+Catalogs created with `loadCatalog` retain the release descriptor and profile
+names from caller-held bytes. Use `openCatalog` to fetch profile metadata over
+HTTP.
+
+`Guideline` values, operation results, their nested arrays, and manifest
+definitions are frozen. Pass changed record objects to a new `Catalog`. Use
+`loadCatalogData` after writing changed rows to `entries.parquet`.
+
+`CatalogError` exposes `code`, `details`, and `hints`. Its codes use the shared
+Python and JavaScript error vocabulary.
+
+`parseProfileMetadata(value)` validates and freezes `profile.json`. Profiles use
+flat lowercase IDs such as `minilm-normalized` and contain `profile.json` plus
+`index.tar.gz`. A release may also contain `documents.parquet` and
+`projection.parquet` exports. The package exports `EntryCandidate`,
+`GuidelineEntryRecord`, `ProfileInfo`, constructor and loader inputs, operation
+options, manifest types, release types, and profile metadata types.
 
 | Page                                                 | Details                                                      |
 | ---------------------------------------------------- | ------------------------------------------------------------ |

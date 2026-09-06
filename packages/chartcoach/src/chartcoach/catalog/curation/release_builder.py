@@ -1,18 +1,22 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 from collections.abc import Mapping
 from dataclasses import dataclass, field
+from importlib.metadata import PackageNotFoundError, version
 from os import PathLike
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 from types import MappingProxyType
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypeAlias
 
-from ..collection import Catalog
+from ..model import Catalog
+from ..profile_layout import validate_profile_id
+from ..profiles import DistanceMetric, validate_requirements
 from ..releases import CatalogRelease, ReleaseArtifact
 from ..releases.hashing import release_digest, sha256_file
-from .artifacts import _profile_path, build_release_artifacts
+from .artifacts import build_release_artifacts
 
 if TYPE_CHECKING:
     from lancedb.embeddings import EmbeddingFunction
@@ -20,23 +24,73 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True, slots=True)
 class EmbeddingProfile:
-    """A LanceDB embedding function and its UMAP projection options."""
+    """Build configuration for one index profile and its optional exports."""
 
     embedding: EmbeddingFunction
-    umap: Mapping[str, object] = field(default_factory=dict)
+    distance_metric: DistanceMetric = "cosine"
+    python_requirements: Mapping[str, str] = field(default_factory=dict)
+    umap: Mapping[str, object] | None = None
+    export_documents: bool = False
 
     def __post_init__(self) -> None:
-        object.__setattr__(self, "umap", MappingProxyType(dict(self.umap)))
+        if self.distance_metric not in {"cosine", "l2", "dot"}:
+            raise ValueError(
+                f"Unsupported profile distance metric: {self.distance_metric!r}."
+            )
+        requirements = validate_requirements(self.python_requirements)
+        for distribution, expected in requirements.items():
+            try:
+                actual = version(distribution)
+            except PackageNotFoundError as exc:
+                raise ValueError(
+                    f"Profile requirement is not installed: {distribution}=={expected}."
+                ) from exc
+            if actual != expected:
+                raise ValueError(
+                    f"Profile requirement {distribution} must be {expected}, found {actual}."
+                )
+        object.__setattr__(self, "python_requirements", MappingProxyType(requirements))
+        if self.umap is not None:
+            object.__setattr__(self, "umap", MappingProxyType(dict(self.umap)))
+        if not isinstance(self.export_documents, bool):
+            raise TypeError("Profile export_documents must be a boolean.")
 
 
-_NO_PROFILES: Mapping[str, EmbeddingProfile] = MappingProxyType({})
+@dataclass(frozen=True, slots=True)
+class ProfileReuse:
+    """A profile from a verified local release reused for derived exports."""
+
+    release: str | PathLike[str]
+    profile: str
+    umap: Mapping[str, object] | None = None
+    export_documents: bool = False
+
+    def __post_init__(self) -> None:
+        value = os.fspath(self.release)
+        if not isinstance(value, str):
+            raise TypeError("Profile reuse release must contain text.")
+        object.__setattr__(self, "release", Path(value).absolute())
+        object.__setattr__(
+            self,
+            "profile",
+            validate_profile_id(self.profile),
+        )
+        if self.umap is not None:
+            object.__setattr__(self, "umap", MappingProxyType(dict(self.umap)))
+        if not isinstance(self.export_documents, bool):
+            raise TypeError("Profile export_documents must be a boolean.")
+
+
+ProfileBuild: TypeAlias = EmbeddingProfile | ProfileReuse
+
+_NO_PROFILES: Mapping[str, ProfileBuild] = MappingProxyType({})
 
 
 def build_release(
     catalog: Catalog,
     output: PathLike[str],
     *,
-    profiles: Mapping[str, EmbeddingProfile] = _NO_PROFILES,
+    profiles: Mapping[str, ProfileBuild] = _NO_PROFILES,
 ) -> CatalogRelease:
     profiles = _normalized_profiles(profiles)
     root = Path(output)
@@ -67,38 +121,15 @@ def build_release(
 
 
 def _normalized_profiles(
-    profiles: Mapping[str, EmbeddingProfile],
-) -> dict[str, EmbeddingProfile]:
-    normalized: dict[str, EmbeddingProfile] = {}
-    names: dict[str, str] = {}
+    profiles: Mapping[str, ProfileBuild],
+) -> dict[str, ProfileBuild]:
+    normalized: dict[str, ProfileBuild] = {}
     for value, profile in profiles.items():
-        name = _profile_path(value)
-        folded = name.casefold()
-        if previous := names.get(folded):
-            raise ValueError(f"Embedding profile names collide: {previous}, {name}")
-        names[folded] = name
+        name = validate_profile_id(value)
+        if not isinstance(profile, EmbeddingProfile | ProfileReuse):
+            raise TypeError(f"Profile {name!r} has an invalid build specification.")
         normalized[name] = profile
-    _validate_profile_artifact_paths(normalized)
     return normalized
-
-
-def _validate_profile_artifact_paths(
-    profiles: Mapping[str, EmbeddingProfile],
-) -> None:
-    generated = sorted(
-        PurePosixPath("profiles", profile, suffix)
-        for profile in profiles
-        for suffix in ("documents.parquet", "index.tar.gz")
-    )
-    for index, path in enumerate(generated):
-        parts = tuple(part.casefold() for part in path.parts)
-        for other in generated[index + 1 :]:
-            other_parts = tuple(part.casefold() for part in other.parts)
-            shorter = min(len(parts), len(other_parts))
-            if parts[:shorter] == other_parts[:shorter]:
-                raise ValueError(
-                    f"Embedding profile artifact paths collide: {path}, {other}"
-                )
 
 
 def _artifact(path: Path) -> ReleaseArtifact:
@@ -108,4 +139,4 @@ def _artifact(path: Path) -> ReleaseArtifact:
     )
 
 
-__all__ = ["EmbeddingProfile", "build_release"]
+__all__ = ["EmbeddingProfile", "ProfileBuild", "ProfileReuse", "build_release"]

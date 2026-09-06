@@ -6,17 +6,17 @@ icon: Search
 
 chartcoach offers three ways to search a catalog:
 
-| What you know                          | Command        |
-| -------------------------------------- | -------------- |
-| A label or phrase                      | `catalog list` |
-| A relationship between tables          | `catalog sql`  |
-| An idea, but not the catalog's wording | `catalog find` |
+| What you know                          | Command          |
+| -------------------------------------- | ---------------- |
+| A label or phrase                      | `catalog list`   |
+| A relationship between tables          | `catalog sql`    |
+| An idea, but not the catalog's wording | `catalog search` |
 
-After choosing an ID, `catalog read` returns the full guideline and `catalog
-cite` formats its sources.
+After choosing a guideline entry ID, `catalog read` returns the full guideline
+and `catalog cite` formats its sources.
 
-Install the CLI and set the fixed three-record source used by the runnable
-examples:
+Install the CLI and set the fixed three-entry catalog source used by the
+runnable examples:
 
 ```bash
 uv tool install \
@@ -28,8 +28,8 @@ CATALOG_SOURCE="https://files.peter.gy/packages/python/chartcoach/0.2.0/docs-cat
 ## Match labels and words
 
 This command requires the exact label `purpose:refine`, at least one label
-that starts with `quality:`, and the substring `label` in the guideline ID,
-title, or description:
+that starts with `quality:`, and the substring `label` in the guideline entry
+ID, title, or description:
 
 ```bash
 chartcoach catalog list \
@@ -41,15 +41,20 @@ chartcoach catalog list \
   --format json
 ```
 
-The result includes this guideline ID and title:
+The result includes this guideline entry ID and title:
 
 ```json
-[
-  {
-    "id": "directly-label-series-instead-of-using-a-color-key",
-    "title": "Directly label colored series instead of relying on a color key"
-  }
-]
+{
+  "rows": [
+    {
+      "id": "directly-label-series-instead-of-using-a-color-key",
+      "title": "Directly label colored series instead of relying on a color key"
+    }
+  ],
+  "row_count": 1,
+  "limit": 10,
+  "truncated": false
+}
 ```
 
 Run `chartcoach catalog labels --source "$CATALOG_SOURCE"` before using an
@@ -90,22 +95,24 @@ SQL results at 100 rows by default. Pass `--limit` to set another cap.
 
 ## Search within guideline sections
 
-`catalog find` searches an index stored with a catalog release. A profile is
-the name of that index. A filter such as `role = 'section.mistakes'` restricts
-matches to the `mistakes` section of each guideline.
+`catalog search` searches an index stored with a catalog release. An index
+profile is a flat release-scoped handle such as `minilm-normalized`. Its
+`profile.json` contains the embedding binding and Python requirements. A filter
+such as `role = 'section.mistakes'` restricts matches to the `mistakes` section
+of each guideline.
 
-The following template requires a release that publishes the named profile.
-Replace `<digest>` and the profile name with values from that release. The
-three-record demo release used earlier has no search index.
+The following template requires a release that publishes the named index
+profile. Replace `<digest>` and the profile name with values from that release.
+The three-entry demo release used earlier publishes no index profile.
 
 ```bash
 PROFILE_RELEASE_URL="https://catalog.example.com/catalog/releases/<digest>/release.json"
 
 uvx --from \
   "chartcoach[index] @ https://files.peter.gy/packages/python/chartcoach/0.2.0/892f120cb377/chartcoach-0.2.0-py3-none-any.whl" \
-  chartcoach catalog find \
+  chartcoach catalog search \
   --source "$PROFILE_RELEASE_URL" \
-  --profile sentence-transformers/all-MiniLM-L6-v2 \
+  --profile minilm-normalized \
   --mode fts \
   --where "role = 'section.mistakes'" \
   --limit 5 \
@@ -113,22 +120,29 @@ uvx --from \
   "legend makes the lines hard to identify"
 ```
 
-Full-text search (`fts`) needs the query string alone. Vector and hybrid
-search also need a vector created with the profile's embedding model.
+Full-text search (`fts`) uses the query string without constructing an
+embedding provider. Vector and hybrid modes pass the text to the LanceDB
+embedding function declared by the profile. Install the `python_requirements`
+reported by `catalog describe --profile NAME` before semantic search.
+
+Search returns `matches` and `match_count`. It reports `documents_considered`
+and `documents_truncated` separately from the unique guideline match count.
+Each `matched_excerpt` contains at most 360 characters. Vector scores are
+distances. FTS and hybrid scores are relevance.
 
 ## Read and cite the selected guideline
 
-Candidate results contain summaries. Read the selected guideline before
-applying its recommendation, then format its link and source citations. The ID
-below comes from the runnable `catalog list` example. Read an indexed-search
-result from the same release that produced it.
+List candidates and index matches contain summaries. Read the selected
+guideline entry before applying its recommendation, then format its link and
+source citations. The ID below comes from the runnable `catalog list` example.
+Read an index match from the same release that produced it.
 
 ```bash
 GUIDELINE_ID="directly-label-series-instead-of-using-a-color-key"
 
 chartcoach catalog read "$GUIDELINE_ID" \
   --source "$CATALOG_SOURCE" \
-  --source-detail full \
+  --source-detail minimal \
   --format markdown
 
 chartcoach catalog cite "$GUIDELINE_ID" \

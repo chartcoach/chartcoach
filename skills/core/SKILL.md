@@ -1,42 +1,35 @@
 ---
 name: core
-description: Choose a chartcoach catalog, find guideline records, read them in full, and format their citations.
+description: Open one Guideline Catalog, find guideline entries, read selected evidence, and format citations.
 ---
 
 # chartcoach Core
 
-Use the Guideline Catalog to find possible matches, read each selected record,
-and keep its source citation with the final answer.
+Open one Guideline Catalog for the task. Use compact candidates to choose
+records, then read and cite the selected guideline entry IDs from that same
+`Catalog`.
 
-## Use the Python interface
-
-Code-mode agents can keep discovery, catalog access, and result inspection in
-the current Python environment:
+## Use Python
 
 ```python
 import chartcoach.agent as cc
 
-source = None  # Pass a local bundle or release path for offline work.
-tools = cc.Tools.open(source)
-catalog = tools.catalog
+location = None  # Pass an authored folder, bundle, deployed root, or descriptor.
+catalog = cc.open_catalog(location)
+description = catalog.describe()
 
-candidates = cc.query_entries(
-    catalog,
+candidates = catalog.query(
     contains="direct labels",
-    limit=10,
-    include_body=False,
+    limit=5,
 ).to_dicts()
 if not candidates:
-    raise LookupError("No guidelines matched. Inspect cc.list_labels(catalog).")
+    raise LookupError("No guideline entries matched. Inspect catalog.describe().")
 
-ids = [row["id"] for row in candidates]
-records = cc.retrieve_entry_records(
-    catalog,
-    ids=ids,
-    source_detail="full",
-)
-citations = cc.citation_records(catalog, ids=ids)
+selected_ids = [row["id"] for row in candidates[:3]]
+records = catalog.read(ids=selected_ids, source_detail="minimal")
+citations = catalog.cite(ids=selected_ids)
 result = {
+    "description": description,
     "candidates": candidates,
     "records": records,
     "citations": citations,
@@ -44,82 +37,59 @@ result = {
 result
 ```
 
-`query_entries` returns a Polars DataFrame. The other calls return dictionaries
-or lists of dictionaries. Keep candidate IDs attached to the complete records
-and citations selected for the answer.
+`catalog.query()` returns a Polars DataFrame with `id`, `title`, `description`,
+and `labels`. Select candidates before calling `catalog.read()`. Pass
+`source_detail="full"` when the task needs every parsed source field and the
+entry's BibTeX references.
 
-## Use the terminal interface
+## Use the terminal
 
-Set one source for the whole task:
+Set one catalog source for the task:
 
 ```sh
 export CHARTCOACH_SOURCE=./authored-catalog
 # or: export CHARTCOACH_SOURCE=./dist/catalog
+# or: export CHARTCOACH_SOURCE=/srv/catalogs/chartcoach
 # or: export CHARTCOACH_SOURCE=https://files.peter.gy/catalog/chartcoach/catalog/releases/<digest>/release.json
 
-chartcoach catalog overview
+chartcoach catalog describe
 ```
 
-An authored folder contains `MANIFEST.md` and `entries/<id>/guideline.md`. A
-compiled bundle contains `MANIFEST.md` and `entries.parquet`. A remote source
-names `catalog.json` or `release.json`.
+`--source` overrides `CHARTCOACH_SOURCE`. When both are absent, commands open
+the official selected catalog. Use an exact `release.json` location when the
+task must retain one release digest.
 
-`--source` overrides `CHARTCOACH_SOURCE` for one command. When both are absent,
-commands open the official selected catalog. Prefer an exact `release.json`
-URL when the answer must keep one catalog digest.
-
-## Inspect labels and sections
-
-Each catalog defines its own section roles and label families in
-`MANIFEST.md`. Inspect the current values before using them as exact filters:
+Inspect vocabulary and catalog tables before applying exact filters:
 
 ```sh
-chartcoach catalog overview --format json
-chartcoach catalog roles --format json
-chartcoach catalog labels --format json
-```
-
-## Find records
-
-`catalog list` filters IDs, titles, descriptions, and labels:
-
-```sh
-chartcoach catalog list --contains "axis labels" --format json
-chartcoach catalog list --label <exact-label> --format json
-chartcoach catalog list --label-prefix <prefix> --format json
-```
-
-Repeated `--label` values all have to match. If a filter returns no rows,
-broaden `--contains`, remove one label, or shorten the prefix.
-
-`catalog sql` handles relationships between guideline, section, label, and
-source tables:
-
-```sh
+chartcoach catalog describe
+chartcoach catalog roles
+chartcoach catalog labels
 chartcoach catalog schema --tables --row-counts
 chartcoach catalog schema sections guideline_sources
+```
+
+Find compact candidates with filters or SQL:
+
+```sh
+chartcoach catalog list --contains "axis labels" --limit 5
+chartcoach catalog list --label <exact-label> --limit 5
 chartcoach catalog sql "
   select distinct g.id, g.title
   from guidelines g
   join sections s on s.guideline_id = g.id
   where s.content ilike '%uncertainty%'
   limit 20
-" --format json
+"
 ```
 
-SQL accepts one read-only `SELECT`.
-
-## Read and cite each selection
-
-`list`, `sql`, and `find` return possible matches. Read the full record before
-using it, then format its link and references:
+Read and cite selected guideline entry IDs:
 
 ```sh
-chartcoach catalog read <guideline-id> \
+chartcoach catalog read <guideline-entry-id> \
   --source-detail minimal \
   --format markdown
-
-chartcoach catalog cite <guideline-id> --format markdown
+chartcoach catalog cite <guideline-entry-id> --format markdown
 ```
 
 Discard a record when its chart family, reader task, audience, data type, or
@@ -127,60 +97,74 @@ interaction state differs from the current case.
 
 ## Search an indexed release
 
-`catalog find` needs `chartcoach[index]` and a release that includes the named
-profile. A profile is a search index stored with that release.
-
-In Python, open the catalog and index through one source-bound object:
+`catalog.describe()` lists flat profile IDs attached to a release. Explicit
+full-text search loads the profile index while keeping embedding
+providers idle:
 
 ```python
-indexed = cc.Tools.open(source, profile="<profile>")
-hits = indexed.search("<query>", mode="fts")
+result = catalog.search(
+    "direct labels",
+    profile="<profile-id>",
+    mode="fts",
+    limit=10,
+)
+matches = result["matches"]
 ```
 
-Use an exact `release.json` path or release directory when the catalog and
-index must remain fixed across calls.
+Use `mode="vector"` or `mode="hybrid"` after installing the profile's
+`python_requirements` and registering its LanceDB embedding alias. LanceDB
+reconstructs the persisted function and embeds the query text. A host sets
+referenced variables before the first semantic query:
 
-Use `rank` for result order. `score` is relevance for full-text and hybrid
-search, where larger values are stronger. It is distance for vector search,
-where smaller values are stronger.
+```python
+from lancedb.embeddings import get_registry
 
-The terminal equivalent is:
+get_registry().set_var("provider-key", "<secret>")
+result = catalog.search(
+    "direct labels",
+    profile="<profile-id>",
+    mode="vector",
+)
+matches = result["matches"]
+```
+
+Use the LanceDB table for numeric vectors, custom selection, reranking, and
+index tuning:
+
+```python
+table = catalog.index("<profile-id>")
+rows = table.search(
+    [0.1, 0.2, 0.3],
+    query_type="vector",
+    vector_column_name="vector",
+).limit(5).to_list()
+```
+
+The terminal search returns JSON by default:
 
 ```sh
-chartcoach catalog find \
-  --profile <profile> \
+chartcoach catalog search \
+  --profile <profile-id> \
   --mode fts \
   --where "role = 'section.<manifest-role>'" \
   --limit 10 \
-  --format compact \
   "<query>"
 ```
 
-Use `--mode vector` or `--mode hybrid` with one `--vector VALUE` per embedding
-dimension. The calling application creates that query vector. Copy guideline
-IDs exactly from the result and check them with `catalog read`.
+`limit` counts search document hits before guideline deduplication. Read the
+selected guideline entry to obtain complete evidence. Search previews expose
+at most 360 characters and report `excerpt_truncated`.
 
-## Install optional features
+## Install capability tiers
 
-| Task                                        | Package selector       |
-| ------------------------------------------- | ---------------------- |
-| Local and HTTP catalogs, Polars, and DuckDB | `chartcoach`           |
-| S3, GCS, and Azure catalogs                 | `chartcoach[cloud]`    |
-| LanceDB search indexes                      | `chartcoach[index]`    |
-| MCP server                                  | `chartcoach[mcp]`      |
-| Build, publish, and select releases         | `chartcoach[curation]` |
+| Task                                          | Package selector         |
+| --------------------------------------------- | ------------------------ |
+| Local and HTTP catalogs, Polars, and DuckDB   | `chartcoach`             |
+| S3, GCS, and Azure catalogs                   | `chartcoach[cloud]`      |
+| LanceDB tables and indexed search             | `chartcoach[index]`      |
+| Model Context Protocol server                 | `chartcoach[mcp]`        |
+| Build, validate, publish, and select releases | `chartcoach[curation]`   |
+| UMAP projection during profile production     | `chartcoach[projection]` |
 
-For a one-off inspection of the official catalog, override any exported
-source:
-
-```sh
-CHARTCOACH_SOURCE= uvx chartcoach@latest catalog overview
-```
-
-## Output formats
-
-Tabular commands support `table` and `json`. `read`, `cite`, and `manifest`
-support `markdown` and `json`. `find` also supports `compact`.
-
-Use the same guideline ID in search results, full reads, citations, notes, and
-the final answer.
+Use the same guideline entry ID in candidates, complete reads, citations,
+notes, and the final answer.

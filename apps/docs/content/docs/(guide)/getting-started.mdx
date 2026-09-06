@@ -5,8 +5,8 @@ icon: ScanSearch
 ---
 
 The Guideline Catalog stores visualization guidelines with their labels,
-sections, and source references. This live Python example opens a fixed catalog
-release, displays its records as a Polars dataframe, and renders the first
+sections, and BibTeX references. This live Python example opens a fixed catalog
+release, displays its entry rows as a Polars dataframe, and renders the first
 record as JSON.
 
 <PythonNotebookRuntime />
@@ -48,8 +48,8 @@ df = catalog.to_frame()
 df
 ```
 
-`df` contains one row per guideline. Its six columns hold the guideline ID,
-title, description, labels, sections, and source references.
+`df` contains one row per guideline entry. Its six columns hold the entry ID,
+title, description, labels, sections, and references.
 
 ## Inspect the first guideline
 

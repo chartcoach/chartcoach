@@ -20,7 +20,7 @@ export async function getStaticPaths() {
 }
 
 const id = Astro.params.id;
-if (!id) throw new Error("Guideline id is required.");
+if (!id) throw new Error("Guideline entry ID is required.");
 const guideline = await getEntry("guidelines", id);
 if (!guideline) throw new Error(`Guideline not found: ${Astro.params.id}`);
 
@@ -39,7 +39,9 @@ const references = summarizeGuidelineReferences(guideline.data.referencesBib);
     kind: "guideline",
     eyebrow: "Guideline Catalog",
     title: guideline.data.title,
-    description: guideline.data.description ?? "Inspect this chartcoach guideline with section roles and source references.",
+    description:
+      guideline.data.description ??
+      "Inspect this chartcoach guideline with section roles and references.",
     badge: "Guideline",
     labels,
     references,

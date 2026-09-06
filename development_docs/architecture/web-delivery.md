@@ -16,17 +16,24 @@ The apps do not import each other. Vite+ rules and the tests under
 
 ## Public site
 
-`apps/site/src/config/catalog-source.ts` chooses the catalog read by Astro.
+`apps/site/src/config/catalog-location.ts` chooses the catalog read by Astro.
 
-| Context          | Catalog source                                                    |
+| Context          | Catalog location                                                  |
 | ---------------- | ----------------------------------------------------------------- |
 | Local default    | `fixtures/catalog-release`                                        |
-| Local override   | `CHARTCOACH_SITE_CATALOG_SOURCE`                                  |
+| Local override   | `CHARTCOACH_SITE_CATALOG`                                         |
 | Cloudflare Pages | Exact HTTPS `release.json` URL containing its 64-character digest |
 
 Cloudflare Pages fails when the variable is missing, empty, local, mutable, or
 uses HTTP. This prevents a deployment from quietly building the small test
 fixture or following a moving `catalog.json` selection.
+
+Local inputs use the same descriptor-backed package loader as remote inputs.
+A directory with `release.json` verifies the core files listed by that release.
+A deployed root with `catalog.json` resolves `catalog/releases/<digest>/` and
+retains the exact release location. A directory with `MANIFEST.md` and
+`entries.parquet` is a descriptor-free bundle. A directory containing both
+selection and exact release descriptors is rejected.
 
 The loaded catalog feeds:
 
@@ -64,12 +71,12 @@ The JavaScript page needs one extra step. When the client bundle loads,
 `@chartcoach/catalog` module on `globalThis.ChartCoachCatalog`. The
 `pyobservablejs` cell reads that module when its custom element connects.
 
-| Change                            | Verify                                                         |
-| --------------------------------- | -------------------------------------------------------------- |
-| Python cell                       | Source, static output, and active browser output               |
-| JavaScript cell                   | SDK registration, selector interaction, and generated Markdown |
-| Navigation between notebook pages | Previous notebook stops and new notebook activates             |
-| Narrow layout                     | Page and live output stay within the viewport                  |
+| Change                            | Verify                                                                                 |
+| --------------------------------- | -------------------------------------------------------------------------------------- |
+| Python cell                       | Source, static output, and active browser output                                       |
+| JavaScript cell                   | SDK registration, query/read/cite results, awaited description, and generated Markdown |
+| Navigation between notebook pages | Previous notebook stops and new notebook activates                                     |
+| Narrow layout                     | Page and live output stay within the viewport                                          |
 
 ## Generated directories
 
@@ -89,7 +96,7 @@ directory. Do not edit generated output directly.
 
 | Change                     | Command and inspection                                       |
 | -------------------------- | ------------------------------------------------------------ |
-| Site catalog input         | `pnpm --dir apps/site test` and `pnpm --dir apps/site build` |
+| Site catalog location      | `pnpm --dir apps/site test` and `pnpm --dir apps/site build` |
 | Site output or search      | `pnpm --dir apps/site test` and inspect `apps/site/dist`     |
 | Docs content or navigation | `pnpm --dir apps/docs build` plus browser links and search   |
 | Live notebook              | Docs build plus desktop and narrow browser interaction       |

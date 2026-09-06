@@ -4,14 +4,35 @@ from collections.abc import Mapping, Sequence
 from typing import TYPE_CHECKING, Literal, cast
 
 import polars as pl
+from typing_extensions import NotRequired, TypedDict
 
 from .errors import CatalogValidationError
 from .query import query_entries, validate_ids, validate_section_roles
 
 if TYPE_CHECKING:
-    from .collection import Catalog
+    from .model import Catalog
 
 SourceDetail = Literal["none", "minimal", "full"]
+
+
+class SectionRecord(TypedDict):
+    """One ordered guideline section returned by `Catalog.read`."""
+
+    role: str
+    title: str
+    content: str
+
+
+class GuidelineEntryRecord(TypedDict):
+    """One complete selected guideline entry returned by `Catalog.read`."""
+
+    id: str
+    title: str
+    description: str
+    labels: list[str]
+    sections: list[SectionRecord]
+    sources: list[dict[str, object]]
+    references: NotRequired[list[str]]
 
 
 def retrieve_entry_records(
@@ -20,18 +41,19 @@ def retrieve_entry_records(
     ids: Sequence[str],
     roles: Sequence[str] = (),
     source_detail: SourceDetail = "minimal",
-) -> list[dict[str, object]]:
-    """Return complete guideline records for exact IDs.
+) -> list[GuidelineEntryRecord]:
+    """Return complete guideline entry records for exact guideline entry IDs.
 
     Args:
         catalog: Catalog to read.
-        ids: Guideline IDs in output order.
+        ids: Guideline entry IDs in output order.
         roles: Section roles to retain. Every role is retained when omitted.
         source_detail: `none` omits source rows, `minimal` includes citation
-            fields, and `full` also includes every source field and raw BibTeX.
+            fields, and `full` also includes every parsed source field plus the
+            entry's raw BibTeX references.
 
     Returns:
-        One dictionary per requested guideline ID.
+        One dictionary per requested guideline entry ID.
 
     Raises:
         CatalogError: An ID, role, or source detail value is invalid.
@@ -44,12 +66,23 @@ def retrieve_entry_records(
         return []
     frame = query_entries(catalog, ids=ids, limit=len(ids), include_body=True)
     role_set = set(roles) if roles else None
+    sources = (
+        None
+        if source_detail == "none"
+        else catalog.table("guideline_sources").filter(
+            pl.col("guideline_id").is_in(ids)
+        )
+    )
     return [
         entry_record_from_row(
             row,
             roles=role_set,
             source_detail=source_detail,
-            sources=source_rows(catalog, cast(str, row["id"]), detail=source_detail),
+            sources=source_rows(
+                sources,
+                cast(str, row["id"]),
+                detail=source_detail,
+            ),
         )
         for row in frame.to_dicts()
     ]
@@ -61,9 +94,9 @@ def entry_record_from_row(
     roles: set[str] | None,
     source_detail: SourceDetail,
     sources: list[dict[str, object]],
-) -> dict[str, object]:
+) -> GuidelineEntryRecord:
     raw_sections = cast(Sequence[Mapping[str, object]], row.get("sections") or ())
-    sections = [
+    sections: list[SectionRecord] = [
         {
             "role": str(section["role"]),
             "title": str(section["title"]),
@@ -72,10 +105,10 @@ def entry_record_from_row(
         for section in raw_sections
         if roles is None or section.get("role") in roles
     ]
-    record = {
-        "id": row["id"],
-        "title": row["title"],
-        "description": row["description"],
+    record: GuidelineEntryRecord = {
+        "id": str(row["id"]),
+        "title": str(row["title"]),
+        "description": str(row["description"]),
         "labels": list(cast(Sequence[str], row.get("labels") or ())),
         "sections": sections,
         "sources": sources,
@@ -86,18 +119,18 @@ def entry_record_from_row(
 
 
 def source_rows(
-    catalog: Catalog, guideline_id: str, *, detail: SourceDetail
+    frame: pl.DataFrame | None, guideline_id: str, *, detail: SourceDetail
 ) -> list[dict[str, object]]:
-    if detail == "none":
+    if detail == "none" or frame is None:
         return []
-    frame = catalog.guideline_sources().filter(pl.col("guideline_id") == guideline_id)
-    if frame.is_empty():
+    selected = frame.filter(pl.col("guideline_id") == guideline_id)
+    if selected.is_empty():
         return []
     columns = ["reference_id", "authors_text", "year", "source_title", "doi", "url"]
     if detail == "full":
-        columns = frame.columns
-    return frame.select(
-        [column for column in columns if column in frame.columns]
+        columns = [column for column in selected.columns if column != "bibtex"]
+    return selected.select(
+        [column for column in columns if column in selected.columns]
     ).to_dicts()
 
 
@@ -110,6 +143,8 @@ def _validate_source_detail(source_detail: str) -> None:
 
 
 __all__ = [
+    "GuidelineEntryRecord",
+    "SectionRecord",
     "SourceDetail",
     "entry_record_from_row",
     "retrieve_entry_records",

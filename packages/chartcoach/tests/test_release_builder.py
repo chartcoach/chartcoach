@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import json
+import os
+import subprocess
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -8,19 +11,18 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
 from catalog_testkit import deterministic_embedding
-from chartcoach.catalog.collection import Catalog
 from chartcoach.catalog.curation import (
     EmbeddingProfile,
+    ProfileReuse,
     build_release,
     validate_release,
 )
 from chartcoach.catalog.curation.projection import project_vectors
-from chartcoach.catalog.releases.archive import extract_tar_archive
+from chartcoach.catalog.model import Catalog
 from chartcoach.catalog.releases.hashing import release_digest
-from chartcoach.constants import LANCE_DOCUMENT_TABLE
 
 pytestmark = pytest.mark.curation
-_PROFILE = "test/deterministic"
+_PROFILE = "test-deterministic"
 _EMBEDDING = "chartcoach-release-test"
 
 
@@ -36,47 +38,266 @@ def test_core_release_contains_the_catalog_bundle(
     assert json.loads((root / "release.json").read_text()) == release.to_record()
 
 
-def test_profile_release_is_atlas_ready_and_opens_as_native_lancedb(
+@pytest.mark.parametrize("profile", ["provider/model", "Uppercase", "trailing-"])
+def test_profile_ids_are_flat_lowercase_names(
+    sample_catalog: Catalog,
+    tmp_path: Path,
+    profile: str,
+) -> None:
+    with pytest.raises(ValueError, match="lowercase portable single-component"):
+        build_release(
+            sample_catalog,
+            tmp_path / "release",
+            profiles={
+                profile: EmbeddingProfile(
+                    embedding=deterministic_embedding("invalid-profile-id")
+                )
+            },
+        )
+
+
+def test_profile_release_separates_index_documents_and_projection(
     sample_catalog: Catalog,
     tmp_path: Path,
 ) -> None:
     profile = EmbeddingProfile(
         embedding=deterministic_embedding(_EMBEDDING),
         umap={"n_neighbors": 3, "metric": "cosine", "random_state": 7},
+        export_documents=True,
     )
     root = tmp_path / "release"
     release = build_release(
         sample_catalog,
         root,
-        profiles={_PROFILE: profile, "research/alternate": profile},
+        profiles={_PROFILE: profile},
     )
 
     assert validate_release(root) == release
     profile_path = root / "profiles" / _PROFILE / "documents.parquet"
     documents = pq.read_table(profile_path)
-    assert {
+    assert set(documents.column_names) == {
         "row_id",
         "id",
+        "parent_id",
+        "role",
+        "labels",
+        "content_hash",
+        "text",
         "vector",
-        "projection_x",
-        "projection_y",
-        "neighbors",
-    }.issubset(documents.column_names)
+    }
     assert pa.types.is_fixed_size_list(documents.schema.field("vector").type)
     metadata = documents.schema.metadata or {}
     assert metadata[b"chartcoach_profile"] == _PROFILE.encode()
-    assert json.loads(metadata[b"chartcoach_projection"])["n_neighbors"] == 3
+    assert b"chartcoach_projection" not in metadata
 
-    database = tmp_path / "index"
-    extract_tar_archive(
-        root / "profiles" / _PROFILE / "index.tar.gz",
-        database,
+    projection = pq.read_table(root / "profiles" / _PROFILE / "projection.parquet")
+    assert set(projection.column_names) == {
+        "row_id",
+        "id",
+        "parent_id",
+        "role",
+        "projection_x",
+        "projection_y",
+        "neighbors",
+    }
+    projection_metadata = projection.schema.metadata or {}
+    assert projection_metadata[b"chartcoach_profile"] == _PROFILE.encode()
+    assert (
+        json.loads(projection_metadata[b"chartcoach_projection"])["options"][
+            "n_neighbors"
+        ]
+        == 3
+    )
+    profile_metadata = json.loads(
+        (root / "profiles" / _PROFILE / "profile.json").read_text()
     )
     import lancedb
 
-    table = lancedb.connect(database).open_table(LANCE_DOCUMENT_TABLE)
-    assert table.count_rows() == documents.num_rows
-    assert table.search(documents["vector"][0].as_py()).limit(1).to_list()
+    assert profile_metadata["entries_digest"] == sample_catalog.entries_digest()
+    assert profile_metadata["dimensions"] == 4
+    assert profile_metadata["distance_metric"] == "cosine"
+    assert profile_metadata["python_requirements"] == {}
+    assert profile_metadata["lancedb_version"] == lancedb.__version__
+    assert profile_metadata["projection"]["algorithm"] in {"linear", "umap"}
+
+
+def test_profile_exports_are_opt_in(
+    sample_catalog: Catalog,
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "release"
+    release = build_release(
+        sample_catalog,
+        root,
+        profiles={
+            _PROFILE: EmbeddingProfile(
+                embedding=deterministic_embedding("projection-free-profile")
+            )
+        },
+    )
+
+    metadata = json.loads((root / "profiles" / _PROFILE / "profile.json").read_text())
+    assert set(release.artifacts) == {
+        "MANIFEST.md",
+        "entries.parquet",
+        f"profiles/{_PROFILE}/profile.json",
+        f"profiles/{_PROFILE}/index.tar.gz",
+    }
+    assert metadata["projection"] is None
+    assert validate_release(root) == release
+
+
+def test_projection_builds_independently_of_the_document_export(
+    sample_catalog: Catalog,
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "release"
+    release = build_release(
+        sample_catalog,
+        root,
+        profiles={
+            _PROFILE: EmbeddingProfile(
+                embedding=deterministic_embedding("projection-only-export"),
+                umap={"n_neighbors": 3},
+            )
+        },
+    )
+
+    assert f"profiles/{_PROFILE}/documents.parquet" not in release.artifacts
+    assert f"profiles/{_PROFILE}/projection.parquet" in release.artifacts
+    assert validate_release(root) == release
+
+
+def test_document_export_builds_independently_of_projection(
+    sample_catalog: Catalog,
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "release"
+    release = build_release(
+        sample_catalog,
+        root,
+        profiles={
+            _PROFILE: EmbeddingProfile(
+                embedding=deterministic_embedding("documents-only-export"),
+                export_documents=True,
+            )
+        },
+    )
+
+    assert f"profiles/{_PROFILE}/documents.parquet" in release.artifacts
+    assert f"profiles/{_PROFILE}/projection.parquet" not in release.artifacts
+    assert validate_release(root) == release
+
+
+def test_profile_reuse_builds_projection_from_the_index_archive(
+    sample_catalog: Catalog,
+    tmp_path: Path,
+) -> None:
+    reusable_release = tmp_path / "reusable-release"
+    build_release(
+        sample_catalog,
+        reusable_release,
+        profiles={
+            _PROFILE: EmbeddingProfile(
+                embedding=deterministic_embedding("reusable-profile")
+            )
+        },
+    )
+    reusable_archive = reusable_release / "profiles" / _PROFILE / "index.tar.gz"
+    reusable_bytes = reusable_archive.read_bytes()
+
+    output = tmp_path / "reused"
+    release = build_release(
+        sample_catalog,
+        output,
+        profiles={
+            "projected-reuse": ProfileReuse(
+                release=reusable_release,
+                profile=_PROFILE,
+                umap={"n_neighbors": 3},
+            )
+        },
+    )
+
+    reused_root = output / "profiles" / "projected-reuse"
+    assert (reused_root / "index.tar.gz").read_bytes() == reusable_bytes
+    assert (reused_root / "projection.parquet").is_file()
+    assert validate_release(output) == release
+
+
+def test_profile_reuse_requires_the_same_catalog_identity(
+    sample_catalog: Catalog,
+    tmp_path: Path,
+) -> None:
+    reusable_release = tmp_path / "reusable-release"
+    build_release(
+        sample_catalog,
+        reusable_release,
+        profiles={
+            _PROFILE: EmbeddingProfile(
+                embedding=deterministic_embedding("identity-bound-reuse")
+            )
+        },
+    )
+    changed_rows = sample_catalog.to_frame()
+    changed_rows[0, "title"] = "Changed title"
+    changed = Catalog(changed_rows, manifest=sample_catalog.manifest)
+
+    with pytest.raises(ValueError, match="entries digest"):
+        build_release(
+            changed,
+            tmp_path / "reused",
+            profiles={
+                "reused-profile": ProfileReuse(
+                    release=reusable_release,
+                    profile=_PROFILE,
+                )
+            },
+        )
+
+
+def test_profile_reuse_exports_from_the_index_archive_in_a_fresh_process(
+    sample_catalog: Catalog,
+    tmp_path: Path,
+) -> None:
+    reusable_release = tmp_path / "reusable-release"
+    output = tmp_path / "reused"
+    build_release(
+        sample_catalog,
+        reusable_release,
+        profiles={
+            _PROFILE: EmbeddingProfile(
+                embedding=deterministic_embedding("fresh-process-reuse")
+            )
+        },
+    )
+    script = f"""
+from chartcoach import open_catalog
+from chartcoach.catalog.curation import ProfileReuse, build_release
+
+build_release(
+    open_catalog({str(reusable_release)!r}),
+    {str(output)!r},
+    profiles={{
+        "reexported": ProfileReuse(
+            release={str(reusable_release)!r},
+            profile={_PROFILE!r},
+            export_documents=True,
+        )
+    }},
+)
+"""
+
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        env={**os.environ, "PYTHONPATH": ""},
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert (output / "profiles" / "reexported" / "documents.parquet").is_file()
 
 
 def test_projection_is_deterministic_for_small_catalogs() -> None:
@@ -113,3 +334,35 @@ def test_projection_rejects_invalid_umap_option_types(
 
     with pytest.raises(TypeError, match=message):
         project_vectors(vectors, umap={option: value})
+
+
+def test_profile_rejects_unknown_lancedb_model_settings_before_embedding(
+    sample_catalog: Catalog,
+    tmp_path: Path,
+) -> None:
+    from lancedb.embeddings import get_registry
+
+    embedding = (
+        get_registry()
+        .get("sentence-transformers")
+        .create(
+            name="all-MiniLM-L6-v2",
+            revision="unforwarded-revision",
+            trust_remote_code=False,
+        )
+    )
+
+    with pytest.raises(ValueError, match="unsupported setting.*revision"):
+        build_release(
+            sample_catalog,
+            tmp_path / "release",
+            profiles={_PROFILE: EmbeddingProfile(embedding)},
+        )
+
+
+def test_profile_requirements_must_match_the_producer_environment() -> None:
+    with pytest.raises(ValueError, match=r"lancedb must be 0\.0\.0, found "):
+        EmbeddingProfile(
+            deterministic_embedding("profile-requirement-check"),
+            python_requirements={"lancedb": "0.0.0"},
+        )

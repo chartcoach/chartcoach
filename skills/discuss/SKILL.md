@@ -5,9 +5,9 @@ description: Compare visualization choices with chartcoach guidelines and their 
 
 # chartcoach Discuss
 
-Use catalog records to compare visualization choices or explain a tradeoff.
-Read `core` first. It sets `CHARTCOACH_SOURCE` and inspects the current roles
-and labels before this workflow begins.
+Use guideline entry records to compare visualization choices or explain a
+tradeoff. Read `core` first. It sets `CHARTCOACH_SOURCE` and inspects the
+current roles and labels before this workflow begins.
 
 ## Describe the decision
 
@@ -52,11 +52,10 @@ If ordinary filters return too many matches and an indexed profile is
 available, use full-text search:
 
 ```sh
-chartcoach catalog find \
-  --profile <profile> \
+chartcoach catalog search \
+  --profile <profile-id> \
   --mode fts \
   --limit 10 \
-  --format compact \
   "<task> <option> <constraint>"
 ```
 
@@ -66,10 +65,10 @@ Read each selected record, then focus on the sections relevant to the
 decision:
 
 ```sh
-chartcoach catalog read <guideline-id> \
-  --source-detail full \
+chartcoach catalog read <guideline-entry-id> \
+  --source-detail minimal \
   --format markdown
-chartcoach catalog cite <guideline-id> --format markdown
+chartcoach catalog cite <guideline-entry-id> --format markdown
 ```
 
 Discard a record when its chart family, task, audience, data type, or
@@ -86,7 +85,7 @@ For each recommendation or comparison, connect:
 ```text
 decision
   -> fact from the user's case
-  -> guideline ID, title, and applicable section
+  -> guideline entry ID, title, and applicable section
   -> tradeoff or remaining uncertainty
   -> source citation
 ```

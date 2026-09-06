@@ -5,7 +5,7 @@ import {
   parseGuidelineSearchModel,
   type GuidelineSearchDocument,
 } from "../lib/guideline-search-model";
-import { catalogSourceWatchFiles, loadSiteCatalog } from "./catalog-source";
+import { catalogLocationWatchFiles, loadSiteCatalog } from "./catalog-location";
 
 const searchEntryPattern =
   /<script\b(?=[^>]*\bdata-guideline-search-entry\b)[^>]*>([\s\S]*?)<\/script>/i;
@@ -25,5 +25,5 @@ export const guidelineSearchDocuments = {
     return createGuidelineSearchDocument(parseGuidelineSearchModel(match[1]), pathname);
   },
   path: (document) => document.path,
-  watchFiles: ({ root }) => catalogSourceWatchFiles(root),
+  watchFiles: ({ root }) => catalogLocationWatchFiles(root),
 } satisfies SearchIndexDocuments<GuidelineSearchDocument>;

@@ -3,15 +3,18 @@ from __future__ import annotations
 import dataclasses as dc
 import re
 from collections.abc import Iterable, Mapping
+from hashlib import sha256
 from os import PathLike
 from pathlib import Path
+from types import MappingProxyType
 from typing import TYPE_CHECKING
 
-from .entries import Section
+from .errors import CatalogValidationError
+from .guidelines import Section
 from .labels import parse_label
 
 if TYPE_CHECKING:
-    from .collection import Catalog
+    from .model import Catalog
 
 
 REQUIRED_MANIFEST_HEADINGS = ("Section Roles", "Label Families")
@@ -20,7 +23,7 @@ _HEADING_RE = re.compile(r"^(#{1,6})[ \t]+(.+?)[ \t]*#*[ \t]*$")
 _CODE_SPAN_RE = re.compile(r"`([^`\n]+)`")
 
 
-class CatalogManifestError(ValueError):
+class CatalogManifestError(CatalogValidationError):
     """Raised when a catalog manifest is missing a required contract."""
 
 
@@ -40,6 +43,18 @@ class CatalogManifest:
     markdown: str
     section_roles: Mapping[str, ManifestDefinition]
     label_families: Mapping[str, ManifestDefinition]
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "section_roles",
+            MappingProxyType(dict(self.section_roles)),
+        )
+        object.__setattr__(
+            self,
+            "label_families",
+            MappingProxyType(dict(self.label_families)),
+        )
 
     @classmethod
     def from_text(cls, markdown: str) -> CatalogManifest:
@@ -139,7 +154,7 @@ def parse_catalog_manifest(markdown: str) -> CatalogManifest:
     for heading in REQUIRED_MANIFEST_HEADINGS:
         if not definitions[heading]:
             raise CatalogManifestError(
-                f"Manifest heading {heading} must define entries."
+                f"Manifest heading {heading} must contain definitions."
             )
 
     _validate_label_family_examples(definitions["Label Families"].values())
@@ -173,8 +188,14 @@ def validate_catalog_manifest(catalog: Catalog, manifest: CatalogManifest) -> No
         )
 
 
+def manifest_digest(markdown: str) -> str:
+    """Return the SHA-256 digest of emitted UTF-8 manifest bytes."""
+
+    return sha256(markdown.encode("utf-8")).hexdigest()
+
+
 def _catalog_section_roles(catalog: Catalog) -> Iterable[str]:
-    for role in catalog.sections().get_column("role").to_list():
+    for role in catalog.table("sections").get_column("role").to_list():
         if not isinstance(role, str):
             raise CatalogManifestError("Section role values must be strings.")
         trimmed = role.strip()
@@ -186,7 +207,7 @@ def _catalog_section_roles(catalog: Catalog) -> Iterable[str]:
 
 
 def _catalog_label_families(catalog: Catalog) -> Iterable[str]:
-    for label in catalog.guideline_labels().get_column("label").to_list():
+    for label in catalog.table("guideline_labels").get_column("label").to_list():
         yield parse_label(label, context=f"label {label!r}").family
 
 
@@ -221,6 +242,7 @@ __all__ = [
     "CatalogManifest",
     "CatalogManifestError",
     "ManifestDefinition",
+    "manifest_digest",
     "parse_catalog_manifest",
     "validate_catalog_manifest",
 ]

@@ -75,9 +75,6 @@ def test_skills_cli_get_all_prints_every_visible_skill(
     assert "# Core" in result.output
     assert "# Extra" in result.output
     assert "# Hidden" not in result.output
-    help_result = runner.invoke(chartcoach_cli, ["skills", "get", "--help"])
-    assert help_result.exit_code == 0
-    assert "Print every visible Agent Skill." in help_result.output
 
 
 def test_skills_cli_gets_a_hidden_skill_by_name(

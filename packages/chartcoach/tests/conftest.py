@@ -4,9 +4,9 @@ from pathlib import Path
 
 import pytest
 from catalog_testkit import write_catalog_entry, write_manifest
-from chartcoach.catalog.collection import Catalog
-from chartcoach.catalog.entries import Guideline, Section
+from chartcoach.catalog.guidelines import Guideline, Section
 from chartcoach.catalog.manifest import CatalogManifest
+from chartcoach.catalog.model import Catalog
 from click.testing import CliRunner
 
 SAMPLE_MANIFEST_MARKDOWN = """# Sample Catalog
@@ -83,7 +83,9 @@ def sample_catalog_path(
     tmp_path: Path,
     sample_catalog: Catalog,
 ) -> Path:
-    return sample_catalog.write_bundle(tmp_path / "catalog")
+    from chartcoach.catalog.curation import write_bundle
+
+    return write_bundle(sample_catalog, tmp_path / "catalog")
 
 
 @pytest.fixture

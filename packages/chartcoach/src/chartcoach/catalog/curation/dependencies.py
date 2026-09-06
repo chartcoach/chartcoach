@@ -3,6 +3,7 @@ from __future__ import annotations
 import warnings
 
 CURATION_EXTRA = "chartcoach[curation]"
+PROJECTION_EXTRA = "chartcoach[projection]"
 
 
 def missing_curation_dependency(name: str | None) -> ModuleNotFoundError:
@@ -19,11 +20,15 @@ def require_umap() -> None:
             warnings.simplefilter("ignore", ImportWarning)
             import umap  # noqa: F401
     except ModuleNotFoundError as exc:
-        raise missing_curation_dependency(exc.name) from exc
+        raise ModuleNotFoundError(
+            f"UMAP projection requires optional `{PROJECTION_EXTRA}` dependencies.",
+            name=exc.name,
+        ) from exc
 
 
 __all__ = [
     "CURATION_EXTRA",
+    "PROJECTION_EXTRA",
     "missing_curation_dependency",
     "require_umap",
 ]

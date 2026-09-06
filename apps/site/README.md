@@ -2,7 +2,7 @@
 
 The Astro app reads a Guideline Catalog and builds public guideline pages,
 search data, machine-readable Markdown and JSON, Open Graph images, and a
-sitemap. The deployed catalog browser is
+sitemap. The deployed Guideline Catalog site is
 [chartcoach.dev](https://chartcoach.dev/).
 
 ## Run locally
@@ -25,14 +25,14 @@ to start Astro directly.
 
 ## Choose the catalog
 
-`CHARTCOACH_SITE_CATALOG_SOURCE` selects the catalog used during development,
+`CHARTCOACH_SITE_CATALOG` selects the catalog used during development,
 typechecking, and builds:
 
-| Context          | Accepted value                                                       |
-| ---------------- | -------------------------------------------------------------------- |
-| Unset            | Repository fixture at `fixtures/catalog-release`                     |
-| Local override   | Compiled bundle directory, `catalog.json` URL, or `release.json` URL |
-| Cloudflare Pages | HTTPS URL ending in `/<64-hex-digest>/release.json`                  |
+| Context          | Accepted value                                               |
+| ---------------- | ------------------------------------------------------------ |
+| Unset            | Repository fixture at `fixtures/catalog-release`             |
+| Local override   | Catalog directory, `catalog.json` URL, or `release.json` URL |
+| Cloudflare Pages | HTTPS URL ending in `/<64-hex-digest>/release.json`          |
 
 Override paths can be absolute or relative to `apps/site`.
 
@@ -46,7 +46,7 @@ the path.
 | Command                          | Purpose                                                 |
 | -------------------------------- | ------------------------------------------------------- |
 | `pnpm --dir apps/site check`     | Check formatting, lint rules, and TypeScript types      |
-| `pnpm --dir apps/site test`      | Run source, search, LLM, and Open Graph tests           |
+| `pnpm --dir apps/site test`      | Run location, search, LLM, and Open Graph tests         |
 | `pnpm --dir apps/site typecheck` | Check Astro and TypeScript against the selected catalog |
 | `pnpm --dir apps/site build`     | Write the static site to `apps/site/dist`               |
 | `pnpm ready`                     | Check every JavaScript workspace package                |

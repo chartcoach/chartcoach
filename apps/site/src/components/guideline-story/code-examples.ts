@@ -85,10 +85,10 @@ export const pythonLines: readonly CodeLine[] = [
   line(
     t("entry"),
     t(" = catalog."),
-    t("entry", "function"),
-    t("("),
+    t("read", "function"),
+    t("(ids=["),
     t('"direct-labels"', "string"),
-    t(")"),
+    t('], source_detail="full")[0]'),
   ),
   line(),
   line(t("summary"), t(" = {")),
@@ -101,8 +101,13 @@ export const pythonLines: readonly CodeLine[] = [
 export const shellLines: readonly CodeLine[] = [
   line(t("uv", "function"), t(" tool install "), t("chartcoach", "string")),
   line(t("chartcoach", "function"), t(" catalog read "), t("direct-labels", "string")),
-  line(t("chartcoach", "function"), t(" catalog find "), t('"legend lookup"', "string"), t(" \\")),
-  line(t("  --profile openai/text-embedding-3-large")),
+  line(
+    t("chartcoach", "function"),
+    t(" catalog search "),
+    t('"legend lookup"', "string"),
+    t(" \\"),
+  ),
+  line(t("  --profile openai-large")),
   line(t("chartcoach", "function"), t(" catalog cite "), t("direct-labels", "string")),
 ];
 

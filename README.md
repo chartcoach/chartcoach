@@ -6,8 +6,8 @@
 
 chartcoach helps people, applications, and coding agents find visualization
 guidelines and inspect the sources behind each recommendation. The Guideline
-Catalog keeps a guideline's advice, limits, checks, fixes, and references in
-one record.
+Catalog stores each guideline as an entry with its advice, limits, checks,
+fixes, and references.
 
 chartcoach is alpha software. The Python package supports Python 3.10 through
 3.14. Browse the catalog at
@@ -39,21 +39,21 @@ them through a color key...
 ```
 
 `uvx` downloads and runs the hosted 0.2.0 Python package. The `release.json`
-URL fixes the three catalog records used by this example. chartcoach verifies
+URL fixes the three guideline entries used by this example. chartcoach verifies
 the release digest and the byte count and SHA-256 hash of its required files
 before reading them.
 
 ## Interfaces
 
-| Interface                                                  | What it provides                                         |
-| ---------------------------------------------------------- | -------------------------------------------------------- |
-| [Catalog browser](https://chartcoach.dev/guidelines/)      | Public guideline pages and search                        |
-| [Python](https://docs.chartcoach.dev/python)               | Polars, DuckDB, and LanceDB access                       |
-| [JavaScript](https://docs.chartcoach.dev/javascript)       | Browser and server-side catalog loading                  |
-| [Catalog CLI](https://docs.chartcoach.dev/cli)             | Filtering, SQL, record reads, and citations              |
-| [MCP server](https://docs.chartcoach.dev/mcp)              | Catalog tools for Model Context Protocol clients         |
-| [Agent integration](https://docs.chartcoach.dev/agents)    | Code-mode Python API and packaged Agent Plugin resources |
-| [Curate and publish](https://docs.chartcoach.dev/curation) | Authoring, validation, publication, and public selection |
+| Interface                                                    | What it provides                                               |
+| ------------------------------------------------------------ | -------------------------------------------------------------- |
+| [Guideline Catalog site](https://chartcoach.dev/guidelines/) | Public guideline pages and search                              |
+| [Python](https://docs.chartcoach.dev/python)                 | Polars, DuckDB, and LanceDB access                             |
+| [JavaScript](https://docs.chartcoach.dev/javascript)         | Browser catalog queries, source reads, citations, and profiles |
+| [Catalog CLI](https://docs.chartcoach.dev/cli)               | Filtering, SQL, record reads, and citations                    |
+| [MCP server](https://docs.chartcoach.dev/mcp)                | Catalog tools for Model Context Protocol clients               |
+| [Agent integration](https://docs.chartcoach.dev/agents)      | Code-mode Python API and packaged Agent Plugin resources       |
+| [Curate and publish](https://docs.chartcoach.dev/curation)   | Authoring, validation, publication, and public selection       |
 
 ## Use chartcoach with a code-mode agent
 
@@ -68,14 +68,12 @@ instructions and call the catalog directly:
 import chartcoach.agent as cc
 
 help(cc)
-tools = cc.Tools.open()
-candidates = cc.query_entries(
-    tools.catalog,
-    contains="direct labels",
-    limit=5,
-    include_body=False,
-)
-core = cc.agent_skill()
+catalog = cc.open_catalog()
+candidates = catalog.query(contains="direct labels", limit=5)
+selected_ids = candidates.get_column("id").head(3).to_list()
+records = catalog.read(ids=selected_ids, source_detail="minimal")
+citations = catalog.cite(ids=selected_ids)
+core = cc.agent_plugin().skill("core")
 print(core.source)
 ```
 

@@ -6,12 +6,12 @@ import sanitizeHtml from "sanitize-html";
 import { toMarkdown } from "@chartcoach/catalog";
 
 import {
-  catalogSourceRecordPath,
-  catalogSourceWatchFiles,
+  catalogLocationRecordPath,
+  catalogLocationWatchFiles,
   loadSiteCatalog,
-  resolveCatalogSource,
-  resolveSiteCatalogSource,
-} from "@/config/catalog-source";
+  resolveCatalogLocation,
+  resolveSiteCatalogLocation,
+} from "@/config/catalog-location";
 import { createGuidelineRecord } from "@/lib/guideline-record";
 import { createGuidelineSearchModel } from "@/lib/guideline-search-model";
 
@@ -30,7 +30,7 @@ type ReferenceInfo = {
 };
 
 type GuidelinesLoaderOptions = {
-  source?: string;
+  location?: string;
 };
 
 function citeId(key: string): string {
@@ -209,17 +209,17 @@ function renderCitationsInMarkdown(
   };
 }
 
-export function guidelinesLoader({ source }: GuidelinesLoaderOptions = {}): Loader {
+export function guidelinesLoader({ location }: GuidelinesLoaderOptions = {}): Loader {
   return {
     name: "chartcoach-guidelines-loader",
     async load(context) {
-      const catalogSource = source
-        ? resolveCatalogSource(source, context.config.root)
-        : resolveSiteCatalogSource(context.config.root);
-      const watchedFiles = catalogSourceWatchFiles(context.config.root, source);
+      const catalogLocation = location
+        ? resolveCatalogLocation(location, context.config.root)
+        : resolveSiteCatalogLocation(context.config.root);
+      const watchedFiles = catalogLocationWatchFiles(context.config.root, location);
       if (watchedFiles.length > 0) context.watcher?.add(watchedFiles);
 
-      const catalog = await loadSiteCatalog(context.config.root, source);
+      const catalog = await loadSiteCatalog(context.config.root, location);
       const guidelines = Array.from(catalog);
       context.store.clear();
 
@@ -273,7 +273,7 @@ export function guidelinesLoader({ source }: GuidelinesLoaderOptions = {}): Load
             context.renderMarkdown(renderedBody.body),
           ]);
           const digest = context.generateDigest(`${renderedBody.body}\n\n${referencesBib ?? ""}`);
-          const filePath = catalogSourceRecordPath(context.config.root, catalogSource, id);
+          const filePath = catalogLocationRecordPath(context.config.root, catalogLocation, id);
 
           return {
             id,

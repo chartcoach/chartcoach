@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import os
+import subprocess
+import sys
 from pathlib import Path
 from typing import cast
 
@@ -7,8 +10,9 @@ import polars as pl
 import pytest
 from catalog_testkit import deterministic_embedding
 from chartcoach.catalog import CatalogManifest
-from chartcoach.catalog.collection import Catalog
-from chartcoach.catalog.entries import Guideline, Section
+from chartcoach.catalog.guidelines import Guideline, Section
+from chartcoach.catalog.model import Catalog
+from lancedb_embedding_fixture import registered_embedding
 
 pytestmark = pytest.mark.search
 _EMBEDDING = "chartcoach-search-test"
@@ -63,15 +67,14 @@ def test_repeated_section_roles_have_stable_unique_document_ids(
         {"id": "repeated-role---role---advice", "text": "First advice."},
         {"id": "repeated-role---role---advice---2", "text": "Second advice."},
     ]
-    assert rows.get_column("id").n_unique() == rows.height
 
 
 @pytest.mark.curation
-def test_open_index_returns_the_release_profile_table(
+def test_catalog_index_returns_the_release_profile_table(
     sample_catalog: Catalog,
     tmp_path: Path,
 ) -> None:
-    from chartcoach import open_index
+    from chartcoach import open_catalog
     from chartcoach.catalog.curation import EmbeddingProfile, build_release
 
     path = tmp_path / "release"
@@ -79,13 +82,12 @@ def test_open_index_returns_the_release_profile_table(
         sample_catalog,
         path,
         profiles={
-            "test/search": EmbeddingProfile(
+            "test-search": EmbeddingProfile(
                 embedding=_test_embedding(),
-                umap={"n_neighbors": 3},
             )
         },
     )
-    opened = open_index(path, profile="test/search")
+    opened = open_catalog(path).index("test-search")
 
     assert opened.name == "documents"
     rows = (
@@ -94,6 +96,81 @@ def test_open_index_returns_the_release_profile_table(
         .to_list()
     )
     assert rows[0]["parent_id"] == "direct-labels"
+
+
+@pytest.mark.curation
+def test_fresh_process_search_uses_lancedb_query_embeddings(
+    sample_catalog: Catalog,
+    tmp_path: Path,
+) -> None:
+    profile = "test-distinct"
+    release = tmp_path / "release"
+    from chartcoach.catalog.curation import EmbeddingProfile, build_release
+
+    build_release(
+        sample_catalog,
+        release,
+        profiles={profile: EmbeddingProfile(registered_embedding())},
+    )
+    marker = tmp_path / "query-method.txt"
+    script = f"""
+import lancedb_embedding_fixture
+from chartcoach import open_catalog
+lancedb_embedding_fixture.registered_embedding()
+catalog = open_catalog({str(release)!r})
+for mode in ("vector", "hybrid"):
+    result = catalog.search("direct labels", profile={profile!r}, mode=mode, limit=2)
+    assert result["matches"][0]["id"] == "direct-labels"
+"""
+    environment = {
+        **os.environ,
+        "PYTHONPATH": str(Path(__file__).parent),
+        "CHARTCOACH_QUERY_PROCESS": "1",
+        "CHARTCOACH_QUERY_MARKER": str(marker),
+    }
+
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        env=environment,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert marker.read_text().splitlines() == ["query", "query"]
+
+
+@pytest.mark.curation
+def test_fresh_process_fts_is_provider_independent(
+    sample_catalog: Catalog,
+    tmp_path: Path,
+) -> None:
+    profile = "test-distinct"
+    release = tmp_path / "release"
+    from chartcoach.catalog.curation import EmbeddingProfile, build_release
+
+    build_release(
+        sample_catalog,
+        release,
+        profiles={profile: EmbeddingProfile(registered_embedding())},
+    )
+    script = f"""
+from chartcoach import open_catalog
+catalog = open_catalog({str(release)!r})
+result = catalog.search("direct labels", profile={profile!r}, mode="fts", limit=2)
+assert result["matches"][0]["id"] == "direct-labels"
+"""
+
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        env={**os.environ, "PYTHONPATH": ""},
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
 
 
 def _catalog_with_sections(

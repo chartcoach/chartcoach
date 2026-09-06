@@ -36,7 +36,7 @@ const improveSteps = [
   [
     "02",
     "propose guideline entry",
-    "Draft the issue with source references, context, and proposed labels.",
+    "Draft the issue with references, context, and proposed labels.",
   ],
   ["03", "community review", "Review the proposed guideline entry in the catalog repository."],
 ] as const;
@@ -45,8 +45,8 @@ export function StoryArtifact({ id, active }: { id: StoryArtifactId; active: boo
   switch (id) {
     case "markdown":
       return <MarkdownArtifact />;
-    case "source":
-      return <SourceArtifact />;
+    case "references":
+      return <ReferencesArtifact />;
     case "structured":
       return <StructuredArtifact />;
     case "embedding":
@@ -64,7 +64,7 @@ function MarkdownArtifact() {
   return <CodeWindow title="guideline.md" language="markdown" lines={markdownLines} />;
 }
 
-function SourceArtifact() {
+function ReferencesArtifact() {
   return (
     <article className="min-w-0 overflow-hidden">
       <div className="pb-6">

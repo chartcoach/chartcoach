@@ -1,4 +1,5 @@
 import { CatalogError } from "./errors";
+import { canonicalJson, compareUnicode, sha256Bytes } from "./identity";
 import { isJsonNumber, isJsonObject, isJsonString, type JsonObject, type JsonValue } from "./json";
 
 const CATALOG_ARTIFACT_BASE_URL = "https://files.peter.gy/catalog/chartcoach/";
@@ -7,41 +8,55 @@ const REQUIRED_ARTIFACTS = ["MANIFEST.md", "entries.parquet"] as const;
 const FORBIDDEN_PATH_CHARACTERS = new Set('<>:"\\|?*#%');
 const WINDOWS_DEVICE_NAMES = new Set(["CON", "PRN", "AUX", "NUL", "CONIN$", "CONOUT$"]);
 
-export type ReleaseArtifact = {
+export type ReleaseArtifact = Readonly<{
   sha256: string;
   bytes: number;
-};
+}>;
 
-export type CatalogRelease = {
+export type CatalogRelease = Readonly<{
   schema_version: 1;
   digest: string;
-  artifacts: Record<string, ReleaseArtifact>;
-};
+  artifacts: Readonly<Record<string, ReleaseArtifact>>;
+}>;
 
 export function parseCatalogRelease(value: JsonValue): CatalogRelease {
   const record = requireRecord(value, "Catalog release");
   requireExactKeys(record, ["schema_version", "digest", "artifacts"], "Catalog release");
   requireSchemaVersion(record);
   const artifactRecords = requireRecord(record.artifacts, "Catalog artifacts");
-  const artifacts = Object.fromEntries(
-    Object.entries(artifactRecords)
-      .map(([path, artifact]): [string, ReleaseArtifact] => [
-        requireRelativePath(path, "Catalog artifact path"),
-        parseReleaseArtifact(artifact),
-      ])
-      .sort(([left], [right]) => compareText(left, right)),
-  );
+  const artifacts: Record<string, ReleaseArtifact> = Object.create(null);
+  for (const [path, artifact] of Object.entries(artifactRecords)
+    .map(([path, value]): [string, ReleaseArtifact] => [
+      requireRelativePath(path, "Catalog artifact path"),
+      parseReleaseArtifact(value),
+    ])
+    .sort(([left], [right]) => compareUnicode(left, right))) {
+    artifacts[path] = artifact;
+  }
   validateArtifactPaths(Object.keys(artifacts));
   for (const path of REQUIRED_ARTIFACTS) {
-    if (artifacts[path] === undefined) {
+    if (!Object.hasOwn(artifacts, path)) {
       throw new CatalogError(`Catalog release is missing artifact: ${path}.`);
     }
   }
-  return {
+  return Object.freeze({
     schema_version: RELEASE_SCHEMA_VERSION,
     digest: requiredSha256(record, "digest", "Catalog release"),
-    artifacts,
-  };
+    artifacts: Object.freeze(artifacts),
+  });
+}
+
+export function copyCatalogRelease(release: CatalogRelease): CatalogRelease {
+  return parseCatalogRelease({
+    schema_version: release.schema_version,
+    digest: release.digest,
+    artifacts: Object.fromEntries(
+      Object.entries(release.artifacts).map(([path, artifact]) => [
+        path,
+        { sha256: artifact.sha256, bytes: artifact.bytes },
+      ]),
+    ),
+  });
 }
 
 export async function assertReleaseDigest(
@@ -51,10 +66,16 @@ export async function assertReleaseDigest(
 ): Promise<void> {
   const actual = await catalogReleaseDigest(release);
   if (release.digest !== actual) {
-    throw new CatalogError(`${label} digest ${release.digest} does not match its artifact set.`);
+    throw new CatalogError(`${label} digest ${release.digest} does not match its artifact set.`, {
+      code: "integrity",
+      details: { expected_digest: release.digest, actual_digest: actual },
+    });
   }
   if (release.digest !== expected) {
-    throw new CatalogError(`${label} digest ${release.digest} does not match ${expected}.`);
+    throw new CatalogError(`${label} digest ${release.digest} does not match ${expected}.`, {
+      code: "integrity",
+      details: { expected_digest: expected, actual_digest: release.digest },
+    });
   }
 }
 
@@ -65,10 +86,17 @@ export async function assertReleaseArtifactBytes(
 ): Promise<void> {
   const bytes = bytesView(data);
   if (bytes.byteLength !== artifact.bytes) {
-    throw new CatalogError(`Catalog artifact byte count mismatch: ${path}`);
+    throw new CatalogError(`Catalog artifact byte count mismatch: ${path}`, {
+      code: "integrity",
+      details: { path, expected_bytes: artifact.bytes, actual_bytes: bytes.byteLength },
+    });
   }
-  if ((await sha256Bytes(bytes)) !== artifact.sha256) {
-    throw new CatalogError(`Catalog artifact SHA-256 mismatch: ${path}`);
+  const actual = await sha256Bytes(bytes);
+  if (actual !== artifact.sha256) {
+    throw new CatalogError(`Catalog artifact SHA-256 mismatch: ${path}`, {
+      code: "integrity",
+      details: { path, expected_sha256: artifact.sha256, actual_sha256: actual },
+    });
   }
 }
 
@@ -84,7 +112,10 @@ export function releaseUrlForDigest(digest: string): string {
 export function releaseArtifact(release: CatalogRelease, path: string): ReleaseArtifact {
   const artifact = release.artifacts[path];
   if (artifact === undefined) {
-    throw new CatalogError(`Catalog release is missing artifact: ${path}.`);
+    throw new CatalogError(`Catalog release is missing artifact: ${path}.`, {
+      code: "integrity",
+      details: { path },
+    });
   }
   return artifact;
 }
@@ -93,13 +124,42 @@ export function releaseArtifactUrl(releaseUrl: string | URL, path: string): stri
   return new URL(path, releaseUrl).toString();
 }
 
+export function assertReleaseLocation(releaseUrl: string | URL, release: CatalogRelease): void {
+  const url = requireReleaseUrl(releaseUrl);
+  if (url.pathname.split("/").at(-1) !== "release.json") return;
+  const parent = url.pathname.split("/").at(-2);
+  if (parent && /^[a-f0-9]{64}$/.test(parent) && parent !== release.digest) {
+    throw new CatalogError("Catalog release digest does not match its digest-addressed location.", {
+      code: "integrity",
+      details: { expected_digest: parent, actual_digest: release.digest },
+    });
+  }
+}
+
+export function sanitizeReleaseUrl(value: string | URL): string {
+  const url = requireReleaseUrl(value);
+  url.username = "";
+  url.password = "";
+  url.search = "";
+  url.hash = "";
+  return url.toString();
+}
+
+function requireReleaseUrl(value: string | URL): URL {
+  try {
+    return new URL(value);
+  } catch {
+    throw new CatalogError("Catalog release URL must be absolute.");
+  }
+}
+
 function parseReleaseArtifact(value: JsonValue): ReleaseArtifact {
   const record = requireRecord(value, "Catalog release artifact");
   requireExactKeys(record, ["sha256", "bytes"], "Catalog release artifact");
-  return {
+  return Object.freeze({
     sha256: requiredSha256(record, "sha256", "Catalog release artifact"),
     bytes: requiredInteger(record, "bytes", "Catalog release artifact"),
-  };
+  });
 }
 
 function validateArtifactPaths(paths: string[]): void {
@@ -136,24 +196,6 @@ async function catalogReleaseDigest(release: CatalogRelease): Promise<string> {
       }),
     ),
   );
-}
-
-function canonicalJson(value: JsonValue): string {
-  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
-  if (!isJsonObject(value)) return JSON.stringify(value) ?? "null";
-  return `{${Object.keys(value)
-    .sort()
-    .map((key) => `${JSON.stringify(key)}:${canonicalJson(value[key])}`)
-    .join(",")}}`;
-}
-
-async function sha256Bytes(value: Uint8Array): Promise<string> {
-  const subtle = globalThis.crypto?.subtle;
-  if (!subtle) {
-    throw new CatalogError("SHA-256 digest support is unavailable in this runtime.");
-  }
-  const digest = await subtle.digest("SHA-256", value.slice().buffer);
-  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
 function bytesView(data: ArrayBuffer | ArrayBufferView): Uint8Array {
@@ -235,11 +277,6 @@ function requireSha256(value: string, label: string): void {
   if (!/^[a-f0-9]{64}$/.test(value)) {
     throw new CatalogError(`${label} must be a lowercase SHA-256 digest.`);
   }
-}
-
-function compareText(left: string, right: string): number {
-  if (left === right) return 0;
-  return left < right ? -1 : 1;
 }
 
 function pathIsAscii(value: string): boolean {

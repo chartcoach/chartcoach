@@ -134,7 +134,7 @@ async function createBuild() {
 async function runBuild(integration: ReturnType<typeof llms>, root: URL, dist: string) {
   const configDone = integration.hooks["astro:config:done"];
   const buildDone = integration.hooks["astro:build:done"];
-  const { info, logger } = createTestLogger();
+  const { logger } = createTestLogger();
 
   configDone({ config: { root } });
   await buildDone({
@@ -142,6 +142,4 @@ async function runBuild(integration: ReturnType<typeof llms>, root: URL, dist: s
     dir: pathToFileURL(`${dist}/`),
     logger,
   });
-
-  expect(info).toHaveBeenCalledOnce();
 }

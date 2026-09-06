@@ -37,6 +37,7 @@ void test("workspace manifests preserve the web dependency graph", async () => {
 void test("the browser catalog keeps its dependency set deliberate", async () => {
   const manifest = await readManifest("packages/catalog/package.json");
   assert.deepEqual(Object.keys(manifest.dependencies ?? {}).sort(), [
+    "bibtex-parse",
     "hyparquet",
     "hyparquet-compressors",
     "yaml",

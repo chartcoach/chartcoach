@@ -4,8 +4,8 @@ import json
 from pathlib import Path
 
 import pytest
-from chartcoach.catalog.collection import Catalog
 from chartcoach.catalog.curation import build_release
+from chartcoach.catalog.model import Catalog
 from chartcoach.catalog.paths import paths
 from chartcoach.catalog.releases import CatalogRelease
 from chartcoach.cli.main import main

@@ -8,7 +8,7 @@ const siteRoot = new URL("../", import.meta.url);
 
 describe("LLM artifacts", () => {
   beforeEach(() => {
-    vi.stubEnv("CHARTCOACH_SITE_CATALOG_SOURCE", fileURLToPath(fixture));
+    vi.stubEnv("CHARTCOACH_SITE_CATALOG", fileURLToPath(fixture));
   });
 
   afterEach(() => {

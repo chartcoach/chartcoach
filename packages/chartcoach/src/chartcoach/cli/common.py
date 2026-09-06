@@ -11,17 +11,16 @@ from tabulate import tabulate
 from chartcoach.catalog import open_catalog
 from chartcoach.catalog.errors import CatalogError
 from chartcoach.constants import (
+    CATALOG_SOURCE_ENV,
     INDEX_PROFILE_ENV,
-    SOURCE_ENV,
 )
-from chartcoach.tools import Tools, format_error
 
 if TYPE_CHECKING:
-    from chartcoach.catalog.collection import Catalog
+    from chartcoach.catalog.model import Catalog
 
 CONTEXT_SETTINGS = {"help_option_names": ["-h", "--help"]}
 ROW_FORMATS = ("table", "json")
-SEARCH_FORMATS = ("table", "json", "markdown", "compact")
+SEARCH_FORMATS = ("table", "json", "markdown")
 HUMAN_TABLE_FORMAT = "rounded_outline"
 HUMAN_TABLE_COLUMN_WIDTHS = {
     "id": 32,
@@ -31,7 +30,7 @@ HUMAN_TABLE_COLUMN_WIDTHS = {
     "description": 48,
     "labels": 38,
     "matches": 52,
-    "matched_text": 52,
+    "matched_excerpt": 52,
     "content": 52,
     "text": 52,
     "source": 40,
@@ -53,13 +52,14 @@ def source_option(command: _Command) -> _Command:
     return click.option(
         "--source",
         "source_path",
-        envvar=SOURCE_ENV,
+        envvar=CATALOG_SOURCE_ENV,
         metavar="PATH_OR_URI",
         callback=_remember_source_path,
         expose_value=False,
         help=(
-            "Catalog folder, bundle, catalog.json, or release.json path or URI. "
-            f"Defaults to ${SOURCE_ENV}, then the official catalog."
+            "Catalog source: authored folder, bundle, deployed root, catalog.json, or "
+            "release.json path or URI. "
+            f"Defaults to ${CATALOG_SOURCE_ENV}, then the official catalog."
         ),
     )(command)
 
@@ -70,7 +70,7 @@ def index_profile_option(command: _Command) -> _Command:
         envvar=INDEX_PROFILE_ENV,
         required=True,
         help=(
-            "Embedding profile in the catalog release. "
+            "Index profile in the catalog release. "
             f"Defaults to ${INDEX_PROFILE_ENV} when set."
         ),
     )(command)
@@ -119,10 +119,6 @@ def storage_errors(operation: str, target: str) -> Iterator[None]:
         raise click.ClickException(
             f"Object-store {operation} failed for {target}: {mapped}"
         ) from exc
-
-
-def tools(ctx: click.Context) -> Tools:
-    return Tools.open(source_path(ctx))
 
 
 def source_path(ctx: click.Context) -> str | None:
@@ -242,101 +238,36 @@ def format_cell(value: object, *, human: bool = False) -> object:
     return value
 
 
-def search_cli_error(
-    message: str,
-    *,
-    missing_index_extra: bool = False,
-    hints: Sequence[str] = (),
-) -> str:
-    """Return a CLI search error with release-profile recovery hints."""
-
-    install_hints = (
-        [
-            "For one-off runs, use `uvx --from 'chartcoach[index]@latest' chartcoach ...`.",
-            "From a checkout, use `uv run --package chartcoach --extra index chartcoach ...`.",
-        ]
-        if missing_index_extra
-        else []
-    )
-    return format_error(
-        message,
-        [
-            *hints,
-            *install_hints,
-            "Pass --source with catalog.json or release.json and select --profile.",
-            "Use `--mode fts` for provider-free text retrieval.",
-        ],
-    )
-
-
-def guideline_search_rows_to_markdown(rows: Sequence[Mapping[str, object]]) -> str:
+def guideline_matches_to_markdown(matches: Sequence[Mapping[str, object]]) -> str:
     lines: list[str] = []
-    for row in rows:
-        lines.append(f"### {row['rank']}. {row['id']}")
+    for match in matches:
+        lines.append(f"### {match['rank']}. {match['id']}")
         lines.append("")
-        lines.append(f"**{row.get('title')}**")
+        lines.append(f"**{match.get('title')}**")
         lines.append("")
-        lines.append(str(row.get("description") or ""))
+        lines.append(str(match.get("description") or ""))
         lines.append("")
-        labels = row.get("labels")
+        labels = match.get("labels")
         if labels:
             lines.append(
                 "Labels: "
                 + ", ".join(f"`{label}`" for label in cast(list[str], labels))
             )
             lines.append("")
-        lines.append(f"- matched document role: `{row.get('matched_role')}`")
-        lines.append(f"- retrieval hint: {retrieval_hint(row.get('matched_role'))}")
-        lines.append(f"- matched document: `{row.get('matched_document_id')}`")
-        lines.append(f"- score: `{row.get('score')}`")
+        lines.append(f"- matched document role: `{match.get('matched_role')}`")
+        lines.append(f"- retrieval hint: {retrieval_hint(match.get('matched_role'))}")
+        lines.append(f"- matched document: `{match.get('matched_document_id')}`")
+        lines.append(f"- score: `{match.get('score')}`")
         lines.append("")
-        lines.append(str(row.get("matched_text") or ""))
-        lines.append("")
-    return "\n".join(lines)
-
-
-def guideline_search_rows_to_compact_markdown(
-    rows: Sequence[Mapping[str, object]],
-    *,
-    text_limit: int = 360,
-) -> str:
-    lines: list[str] = []
-    for row in rows:
-        lines.append(f"{row['rank']}. `{row['id']}` - {row.get('title')}")
-        description = str(row.get("description") or "")
-        if description:
-            lines.append(f"   {description}")
-        labels = row.get("labels")
-        if labels:
-            lines.append(
-                "   labels: "
-                + ", ".join(f"`{label}`" for label in cast(list[str], labels))
-            )
-        lines.append(
-            "   match: "
-            f"document role `{row.get('matched_role')}` "
-            f"({retrieval_hint(row.get('matched_role'))}), "
-            f"from `{row.get('matched_document_id')}`, "
-            f"score `{row.get('score')}`"
-        )
-        matched = " ".join(truncate(row.get("matched_text") or "", text_limit).split())
-        if matched:
-            lines.append(f"   text: {matched}")
+        lines.append(str(match.get("matched_excerpt") or ""))
         lines.append("")
     return "\n".join(lines)
-
-
-def truncate(value: object, limit: int) -> str:
-    text = "" if value is None else str(value)
-    if len(text) <= limit:
-        return text
-    return text[: limit - 3].rstrip() + "..."
 
 
 def retrieval_hint(role: object) -> str:
     if not isinstance(role, str) or not role:
-        return "retrieve by guideline id or a manifest section role"
+        return "retrieve by guideline entry ID or a manifest section role"
     prefix = "section."
     if role.startswith(prefix):
         return f"retrieve section `{role.removeprefix(prefix)}`"
-    return "retrieve by guideline id or a manifest section role"
+    return "retrieve by guideline entry ID or a manifest section role"

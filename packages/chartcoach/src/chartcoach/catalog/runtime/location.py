@@ -8,46 +8,48 @@ from typing import Literal
 from urllib.parse import unquote, urlsplit, urlunsplit
 from urllib.request import url2pathname
 
-from ...constants import CATALOG_ARTIFACT_BASE_URL, CATALOG_ENTRY_PATH
+from ...constants import CATALOG_ARTIFACT_BASE_URL, CATALOG_SELECTION_PATH
 from .._object_store import CLOUD_SCHEMES
 from ..errors import CatalogError
 
-OFFICIAL_CATALOG_URL = f"{CATALOG_ARTIFACT_BASE_URL.rstrip('/')}/{CATALOG_ENTRY_PATH}"
+OFFICIAL_CATALOG_URL = (
+    f"{CATALOG_ARTIFACT_BASE_URL.rstrip('/')}/{CATALOG_SELECTION_PATH}"
+)
 
 
 @dataclass(frozen=True, slots=True)
-class LocalSource:
+class LocalCatalogLocation:
     path: Path
 
 
 @dataclass(frozen=True, slots=True)
-class RemoteSource:
+class RemoteCatalogLocation:
     uri: str
     transport: Literal["http", "cloud"]
 
 
-def normalize_source(
-    source: str | PathLike[str] | None,
-) -> LocalSource | RemoteSource:
-    if source is None:
-        return RemoteSource(OFFICIAL_CATALOG_URL, "http")
-    if not isinstance(source, str):
-        value = os.fspath(source)
+def normalize_location(
+    location: str | PathLike[str] | None,
+) -> LocalCatalogLocation | RemoteCatalogLocation:
+    if location is None:
+        return RemoteCatalogLocation(OFFICIAL_CATALOG_URL, "http")
+    if not isinstance(location, str):
+        value = os.fspath(location)
         if not isinstance(value, str):
-            raise TypeError("Catalog source paths must contain text.")
-        return LocalSource(Path(value))
+            raise TypeError("Catalog location paths must contain text.")
+        return LocalCatalogLocation(Path(value))
 
-    scheme = path_scheme(source)
+    scheme = path_scheme(location)
     if scheme is None:
-        return LocalSource(Path(source))
+        return LocalCatalogLocation(Path(location))
     scheme = scheme.lower()
     if scheme == "file":
-        return LocalSource(file_uri_path(source))
+        return LocalCatalogLocation(file_uri_path(location))
     if scheme in {"http", "https"}:
-        return RemoteSource(source, "http")
+        return RemoteCatalogLocation(location, "http")
     if scheme in CLOUD_SCHEMES:
-        return RemoteSource(source, "cloud")
-    raise CatalogError(f"Unsupported catalog source scheme: {scheme}.")
+        return RemoteCatalogLocation(location, "cloud")
+    raise CatalogError(f"Unsupported catalog location scheme: {scheme}.")
 
 
 def path_scheme(value: str) -> str | None:
@@ -58,11 +60,11 @@ def path_scheme(value: str) -> str | None:
 def file_uri_path(uri: str) -> Path:
     parsed = urlsplit(uri)
     if parsed.query or parsed.fragment or parsed.netloc not in {"", "localhost"}:
-        raise CatalogError("file:// catalog sources must name a local path.")
+        raise CatalogError("file:// catalog locations must name a local path.")
     try:
         return Path(url2pathname(unquote(parsed.path)))
     except (UnicodeDecodeError, ValueError) as exc:
-        raise CatalogError("file:// catalog source is invalid.") from exc
+        raise CatalogError("file:// catalog location is invalid.") from exc
 
 
 def uri_name(uri: str) -> str:
@@ -88,10 +90,10 @@ def join_uri_path(base: str, *parts: str) -> str:
 
 
 __all__ = [
-    "LocalSource",
-    "RemoteSource",
+    "LocalCatalogLocation",
+    "RemoteCatalogLocation",
     "join_uri_path",
-    "normalize_source",
+    "normalize_location",
     "uri_name",
     "uri_parent",
 ]

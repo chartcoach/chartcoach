@@ -5,8 +5,8 @@ description: Review a rendered visualization with chartcoach guidelines and sour
 
 # chartcoach Visfeedback
 
-Inspect the rendered chart, find relevant catalog records, and connect each
-feedback claim to visible evidence. Read `core` first. It sets
+Inspect the rendered chart, find relevant guideline entry records, and connect
+each feedback claim to visible evidence. Read `core` first. It sets
 `CHARTCOACH_SOURCE` and inspects the current roles and labels before this
 workflow begins.
 
@@ -43,15 +43,14 @@ chartcoach catalog labels --contains "<visible concept>" --format json
 chartcoach catalog list --contains "<task or risk>" --format json
 ```
 
-Use SQL for section text or `catalog find` when an indexed profile is available
+Use SQL for section text or `catalog search` when an indexed profile is available
 and ordinary filters leave too many matches:
 
 ```sh
-chartcoach catalog find \
-  --profile <profile> \
+chartcoach catalog search \
+  --profile <profile-id> \
   --mode fts \
   --limit 10 \
-  --format compact \
   "<chart> <task> <risk>"
 ```
 
@@ -60,10 +59,10 @@ chartcoach catalog find \
 Read each selected record before citing it:
 
 ```sh
-chartcoach catalog read <guideline-id> \
+chartcoach catalog read <guideline-entry-id> \
   --source-detail minimal \
   --format markdown
-chartcoach catalog cite <guideline-id> --format markdown
+chartcoach catalog cite <guideline-entry-id> --format markdown
 ```
 
 For each record, decide whether it:
@@ -85,7 +84,7 @@ For each point, connect:
 ```text
 suggested change or decision to preserve the design
   -> visible chart evidence
-  -> guideline ID, title, and applicable section
+  -> guideline entry ID, title, and applicable section
   -> tradeoff or missing evidence
   -> source citation
 ```

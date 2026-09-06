@@ -15,7 +15,7 @@ from .schemas import (
 )
 
 if TYPE_CHECKING:
-    from .entries import Guideline
+    from .guidelines import Guideline
 
 
 def build_catalog_df(guidelines: Sequence[Guideline]) -> pl.DataFrame:
@@ -30,7 +30,7 @@ def build_catalog_df(guidelines: Sequence[Guideline]) -> pl.DataFrame:
 
 
 def build_guidelines_df(catalog_df: pl.DataFrame) -> pl.DataFrame:
-    """Build guideline rows with markdown derived from sections."""
+    """Build guideline entry rows with Markdown derived from sections."""
     if catalog_df.is_empty():
         return pl.DataFrame(schema=GUIDELINES_SCHEMA)
     section = pl.element()

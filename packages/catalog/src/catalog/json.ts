@@ -20,9 +20,13 @@ export function isJsonObject(value: JsonValue | undefined): value is JsonObject 
 }
 
 export function isJsonNumber(value: JsonValue | undefined): value is number {
-  return Object.prototype.toString.call(value) === "[object Number]";
+  return (
+    Object.prototype.toString.call(value) === "[object Number]" &&
+    value === value?.valueOf() &&
+    Number.isFinite(value)
+  );
 }
 
 export function isJsonString(value: JsonValue | undefined): value is string {
-  return Object.prototype.toString.call(value) === "[object String]";
+  return Object.prototype.toString.call(value) === "[object String]" && value === value?.valueOf();
 }

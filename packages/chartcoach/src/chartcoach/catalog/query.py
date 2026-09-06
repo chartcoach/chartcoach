@@ -16,7 +16,7 @@ from .errors import (
 from .labels import parse_label
 
 if TYPE_CHECKING:
-    from .collection import Catalog
+    from .model import Catalog
 
 
 def query_entries(
@@ -29,7 +29,7 @@ def query_entries(
     limit: int = 50,
     include_body: bool = True,
 ) -> pl.DataFrame:
-    """Return guideline rows selected by exact filters and a text substring.
+    """Return guideline entry rows selected by exact filters and a text substring.
 
     The result is a Polars DataFrame in catalog order, or in requested ID order
     when `ids` is supplied. `include_body=False` returns the compact `id`,
@@ -38,11 +38,11 @@ def query_entries(
     treats whitespace, hyphens, and underscores as equivalent separators.
     """
 
-    if limit < 1:
+    if isinstance(limit, bool) or not isinstance(limit, int) or limit < 1:
         raise CatalogValidationError("Query limit must be at least 1.")
     validate_filters(catalog, labels=labels, label_prefixes=label_prefixes)
     validate_ids(catalog, ids)
-    df = catalog.guidelines()
+    df = catalog.table("guidelines")
     if ids:
         order = pl.DataFrame({"id": list(ids), "_catalog_order": range(len(ids))})
         df = order.join(df, on="id", how="inner").sort("_catalog_order")
@@ -94,7 +94,7 @@ def validate_ids(catalog: Catalog, ids: Sequence[str]) -> None:
     require_string_sequence("ids", ids)
     if not ids:
         return
-    available = set(catalog.guidelines().get_column("id").to_list())
+    available = set(catalog.table("guidelines").get_column("id").to_list())
     for guideline_id in ids:
         if guideline_id not in available:
             raise unknown_id_error(catalog, guideline_id)
@@ -124,7 +124,7 @@ def validate_label_prefixes(catalog: Catalog, prefixes: Sequence[str]) -> None:
         raise CatalogLookupError(
             f"No labels match prefix(es): {', '.join(missing)}",
             hints=[
-                "Call `chartcoach.agent.list_labels(catalog)` to inspect labels in Python.",
+                "Call `catalog.describe()` to inspect label families in Python.",
                 "Run `chartcoach catalog labels` to inspect valid labels.",
                 "Run `chartcoach catalog labels --family FAMILY` after choosing a family.",
             ],
@@ -142,7 +142,7 @@ def validate_section_roles(catalog: Catalog, roles: Sequence[str]) -> None:
             f"Unknown section role(s): {', '.join(missing)}",
             hints=[
                 "Valid roles: " + ", ".join(sorted(available)),
-                "Call `chartcoach.agent.list_roles(catalog)` to inspect roles in Python.",
+                "Call `catalog.describe()` to inspect roles in Python.",
                 "Run `chartcoach catalog roles` to inspect section roles.",
             ],
         )
@@ -166,19 +166,26 @@ def distinct_strings(catalog: Catalog, *, table: str, column: str) -> set[str]:
 def unknown_id_error(catalog: Catalog, guideline_id: str) -> CatalogLookupError:
     suggestions = nearest_values(
         guideline_id,
-        [str(value) for value in catalog.guidelines().get_column("id").to_list()],
+        [
+            str(value)
+            for value in catalog.table("guidelines").get_column("id").to_list()
+        ],
     )
     hints = []
     if suggestions:
-        hints.append("Nearest entry ids: " + ", ".join(suggestions))
+        hints.append("Nearest guideline entry IDs: " + ", ".join(suggestions))
     hints.extend(
         [
-            "Call `chartcoach.agent.query_entries(catalog, contains=...)` to inspect IDs in Python.",
+            "Call `catalog.query(contains=...)` to inspect IDs in Python.",
             "Copy ids exactly from `chartcoach catalog list`.",
             "Run `chartcoach catalog read ID` with exact ids.",
         ]
     )
-    return CatalogLookupError(f"Unknown entry id: {guideline_id}", hints=hints)
+    return CatalogLookupError(
+        f"Unknown guideline entry ID: {guideline_id}",
+        details={"id": guideline_id, "suggestions": suggestions},
+        hints=hints,
+    )
 
 
 def unknown_label_error(catalog: Catalog, labels: Sequence[str]) -> CatalogLookupError:
@@ -201,18 +208,22 @@ def unknown_label_error(catalog: Catalog, labels: Sequence[str]) -> CatalogLooku
             family = None
         if family in available_families:
             hints.append(
-                f"Call `chartcoach.agent.list_labels(catalog, family={family!r})` in Python."
+                f"Call `catalog.query(label_prefixes=[{family + ':'!r}])` in Python."
             )
             hints.append(
                 f"Run `chartcoach catalog labels --family {family}` to inspect that family."
             )
     hints.extend(
         [
-            "Call `chartcoach.agent.list_labels(catalog)` to inspect labels in Python.",
+            "Call `catalog.describe()` to inspect label families in Python.",
             "Run `chartcoach catalog labels` to inspect valid labels.",
         ]
     )
-    return CatalogLookupError(f"Unknown label(s): {', '.join(labels)}", hints=hints)
+    return CatalogLookupError(
+        f"Unknown label(s): {', '.join(labels)}",
+        details={"labels": list(labels)},
+        hints=hints,
+    )
 
 
 def unknown_label_family_error(catalog: Catalog, family: str) -> CatalogLookupError:
@@ -223,7 +234,11 @@ def unknown_label_family_error(catalog: Catalog, family: str) -> CatalogLookupEr
     hints = ["Available label families: " + ", ".join(available)]
     if suggestions:
         hints.append("Nearest label families: " + ", ".join(suggestions))
-    return CatalogLookupError(f"Unknown label family: {family}", hints=hints)
+    return CatalogLookupError(
+        f"Unknown label family: {family}",
+        details={"family": family, "available": available},
+        hints=hints,
+    )
 
 
 def nearest_values(

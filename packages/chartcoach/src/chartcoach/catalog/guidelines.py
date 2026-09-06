@@ -14,7 +14,7 @@ SECTION_FIELDS = frozenset({"role", "title", "content"})
 
 @dc.dataclass(frozen=True, slots=True)
 class Guideline:
-    """One compiled guideline and its source references."""
+    """One compiled guideline and its BibTeX references."""
 
     id: str
     title: str
@@ -52,7 +52,7 @@ class Guideline:
 
     @classmethod
     def from_mapping(cls, data: object) -> Guideline:
-        """Build a guideline from one compiled catalog row."""
+        """Build a guideline from one compiled entry row."""
 
         if isinstance(data, cls):
             return data
@@ -76,7 +76,7 @@ class Guideline:
         return "\n\n".join(_section_to_body(section) for section in self.sections)
 
     def to_record(self) -> dict[str, object]:
-        """Return one compiled catalog row."""
+        """Return one compiled entry row."""
 
         return {
             "id": self.id,

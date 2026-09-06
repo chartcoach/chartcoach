@@ -1,83 +1,84 @@
 from __future__ import annotations
 
-import json
-from collections.abc import Mapping
+from collections.abc import Sequence
 from typing import cast
 
 import click
 
-from chartcoach.catalog.errors import CatalogError
-from chartcoach.constants import (
-    CATALOG_ARTIFACT_BASE_URL,
-    CATALOG_ENTRY_PATH,
-    DEFAULT_GUIDELINE_URL_TEMPLATE,
-)
-from chartcoach.tools import ToolError, format_error
+from chartcoach.catalog import SourceDetail
+from chartcoach.catalog.errors import CatalogError, format_error
+from chartcoach.catalog.identity import catalog_identity
+from chartcoach.constants import DEFAULT_GUIDELINE_URL_TEMPLATE
 
 from ..common import (
     CONTEXT_SETTINGS,
     ROW_FORMATS,
     echo_warn,
+    emit_guidance,
     emit_object,
     emit_rows,
     load_catalog,
     source_option,
-    source_path,
-)
-from ..common import (
-    tools as catalog_tools,
 )
 from .rendering import citation_records_to_markdown, entry_records_to_markdown
 
-READ_FORMATS = ("markdown", "json")
-CITE_FORMATS = ("markdown", "json")
+READ_FORMATS = ("json", "markdown")
+CITE_FORMATS = ("json", "markdown")
 
 
-@click.command("overview", context_settings=CONTEXT_SETTINGS)
+@click.command("describe", context_settings=CONTEXT_SETTINGS)
 @source_option
+@click.option("--profile", help="Load and report one verified index profile.")
 @click.option(
     "--format",
     "output_format",
     type=click.Choice(ROW_FORMATS),
-    default="table",
+    default="json",
     show_default=True,
     help="Output format.",
 )
 @click.pass_context
-def overview_command(ctx: click.Context, output_format: str) -> None:
-    """Summarize the catalog source, counts, roles, and labels."""
+def describe_command(
+    ctx: click.Context, profile: str | None, output_format: str
+) -> None:
+    """Describe catalog identity, tables, vocabulary, and index profiles."""
 
-    catalog = load_catalog(ctx)
-    from chartcoach.catalog.summary import catalog_overview, overview_table_rows
-
-    overview = catalog_overview(
-        catalog,
-        source=source_path(ctx)
-        or f"{CATALOG_ARTIFACT_BASE_URL.rstrip('/')}/{CATALOG_ENTRY_PATH}",
-    )
+    try:
+        description = load_catalog(ctx).describe(profile=profile)
+    except CatalogError as exc:
+        raise _command_error(exc) from exc
     if output_format == "json":
-        emit_object(overview)
+        emit_object(description)
         return
-    emit_rows(overview_table_rows(overview), output_format=output_format)
+    rows: list[dict[str, object]] = [
+        {"name": "resolved_location", "value": description["resolved_location"]},
+        {"name": "release_digest", "value": description["release_digest"]},
+        {"name": "entries_digest", "value": description["entries_digest"]},
+        {"name": "manifest_digest", "value": description["manifest_digest"]},
+        {"name": "profiles", "value": description["profiles"]},
+    ]
+    for table in description["tables"]:
+        rows.append({"name": f"table.{table['name']}", "value": table["rows"]})
+    emit_rows(rows, output_format=output_format)
 
 
 @click.command("labels", context_settings=CONTEXT_SETTINGS)
 @source_option
-@click.option("--family", help="Only include labels from this family.")
-@click.option("--prefix", help="Only include labels starting with this prefix.")
+@click.option("--family", help="Include labels from this family.")
+@click.option("--prefix", help="Include labels starting with this prefix.")
 @click.option("--contains", help="Case-insensitive substring filter over labels.")
 @click.option(
     "--limit",
     type=click.IntRange(min=1),
     default=50,
     show_default=True,
-    help="Maximum labels to print.",
+    help="Maximum labels to return.",
 )
 @click.option(
     "--format",
     "output_format",
     type=click.Choice(ROW_FORMATS),
-    default="table",
+    default="json",
     show_default=True,
     help="Output format.",
 )
@@ -90,24 +91,23 @@ def labels_command(
     limit: int,
     output_format: str,
 ) -> None:
-    """List label values and counts."""
+    """List label values and guideline entry counts."""
 
-    catalog = load_catalog(ctx)
     from chartcoach.catalog.summary import list_labels
 
     try:
         rows = list_labels(
-            catalog,
+            load_catalog(ctx),
             family=family,
             prefix=prefix,
             contains=contains,
             limit=limit + 1,
         )
-    except (CatalogError, ToolError) as exc:
+    except CatalogError as exc:
         raise _command_error(exc) from exc
-    visible_rows = rows[:limit]
+    visible = rows[:limit]
     emit_rows(
-        visible_rows,
+        visible,
         output_format=output_format,
         empty_message="No labels matched.",
         empty_hints=_labels_empty_hints(
@@ -128,19 +128,17 @@ def labels_command(
     "--format",
     "output_format",
     type=click.Choice(ROW_FORMATS),
-    default="table",
+    default="json",
     show_default=True,
     help="Output format.",
 )
 @click.pass_context
 def roles_command(ctx: click.Context, output_format: str) -> None:
-    """List section roles and counts."""
+    """List manifest section roles and guideline entry counts."""
 
-    catalog = load_catalog(ctx)
     from chartcoach.catalog.summary import list_roles
 
-    rows = list_roles(catalog)
-    emit_rows(rows, output_format=output_format)
+    emit_rows(list_roles(load_catalog(ctx)), output_format=output_format)
 
 
 @click.command("list", context_settings=CONTEXT_SETTINGS)
@@ -160,13 +158,13 @@ def roles_command(ctx: click.Context, output_format: str) -> None:
     type=click.IntRange(min=1),
     default=50,
     show_default=True,
-    help="Maximum rows to print.",
+    help="Maximum guideline entry candidates to return.",
 )
 @click.option(
     "--format",
     "output_format",
     type=click.Choice(ROW_FORMATS),
-    default="table",
+    default="json",
     show_default=True,
     help="Output format.",
 )
@@ -179,239 +177,182 @@ def list_command(
     limit: int,
     output_format: str,
 ) -> None:
-    """List entry ids and summaries."""
+    """Return compact guideline entry candidates."""
 
     catalog = load_catalog(ctx)
-    from chartcoach.catalog.query import query_entries
-
     try:
-        rows = (
-            query_entries(
-                catalog,
-                labels=label,
-                label_prefixes=label_prefix,
-                contains=contains,
-                limit=limit,
-                include_body=False,
-            )
-            .select("id", "title", "description", "labels")
-            .to_dicts()
-        )
-    except (CatalogError, ToolError) as exc:
-        raise _command_error(exc) from exc
-    emit_rows(
-        rows,
-        output_format=output_format,
-        empty_message="No entries matched.",
-        empty_hints=_list_empty_hints(
+        candidates = catalog.query(
             labels=label,
             label_prefixes=label_prefix,
             contains=contains,
-        ),
+            limit=limit + 1,
+        ).to_dicts()
+    except CatalogError as exc:
+        raise _command_error(exc) from exc
+    rows = candidates[:limit]
+    if output_format == "json":
+        emit_object(
+            {
+                "rows": rows,
+                "row_count": len(rows),
+                "limit": limit,
+                "truncated": len(candidates) > limit,
+                **catalog_identity(catalog),
+            }
+        )
+        if not rows:
+            emit_guidance(
+                "No guideline entries matched.",
+                _list_empty_hints(label, label_prefix, contains),
+            )
+        return
+    emit_rows(
+        rows,
+        output_format=output_format,
+        empty_message="No guideline entries matched.",
+        empty_hints=_list_empty_hints(label, label_prefix, contains),
     )
-
-
-def _labels_empty_hints(
-    *,
-    family: str | None,
-    prefix: str | None,
-    contains: str | None,
-) -> list[str]:
-    hints = []
-    if contains:
-        hints.append("Try a shorter or broader --contains term.")
-    if family:
-        hints.append(
-            "Run `chartcoach catalog labels --format json` to inspect all labels."
+    if len(candidates) > limit:
+        echo_warn(
+            f"Returned {limit} guideline entries.",
+            detail="Increase --limit to inspect more.",
         )
-    if prefix:
-        hints.append("Try a shorter --prefix or inspect labels by --family.")
-    if not hints:
-        hints.append(
-            "Run `chartcoach catalog overview --format json` to inspect catalog counts."
-        )
-    return hints
-
-
-def _list_empty_hints(
-    *,
-    labels: tuple[str, ...],
-    label_prefixes: tuple[str, ...],
-    contains: str | None,
-) -> list[str]:
-    hints = []
-    if len(labels) > 1:
-        hints.append("Repeated --label filters are all-of. Remove one --label.")
-    elif labels:
-        hints.append(
-            "Try `chartcoach catalog labels --contains TEXT --format json` to find related labels."
-        )
-    if label_prefixes:
-        hints.append(
-            "Try a shorter --label-prefix or inspect labels with `chartcoach catalog labels --format json`."
-        )
-    if contains:
-        hints.append("Try a broader --contains term.")
-    if not hints:
-        hints.append(
-            "Run `chartcoach catalog overview --format json` to confirm the catalog has entries."
-        )
-    return hints
 
 
 @click.command("read", context_settings=CONTEXT_SETTINGS)
 @source_option
-@click.argument("entry_ids", nargs=-1, required=True)
+@click.argument("guideline_ids", nargs=-1, required=True)
 @click.option(
-    "--section",
-    "sections",
+    "--role",
+    "roles",
     multiple=True,
-    help="Include only these section roles. Can be passed more than once.",
+    help="Include this section role. Repeat for additional roles.",
 )
 @click.option(
     "--source-detail",
     type=click.Choice(("none", "minimal", "full")),
     default="minimal",
     show_default=True,
-    help="Amount of source metadata to include.",
+    help="Bibliographic source detail included with each guideline entry.",
 )
 @click.option(
     "--format",
     "output_format",
     type=click.Choice(READ_FORMATS),
-    default="markdown",
+    default="json",
     show_default=True,
     help="Output format.",
 )
 @click.pass_context
 def read_command(
     ctx: click.Context,
-    entry_ids: tuple[str, ...],
-    sections: tuple[str, ...],
+    guideline_ids: tuple[str, ...],
+    roles: tuple[str, ...],
     source_detail: str,
     output_format: str,
 ) -> None:
-    """Read exact entries and selected sections."""
+    """Read complete guideline entry records by exact guideline entry ID."""
 
     catalog = load_catalog(ctx)
-    from chartcoach.catalog.read import SourceDetail, retrieve_entry_records
-
     try:
-        records = retrieve_entry_records(
-            catalog,
-            ids=entry_ids,
-            roles=sections,
+        records = catalog.read(
+            ids=guideline_ids,
+            roles=roles,
             source_detail=cast(SourceDetail, source_detail),
         )
-    except (CatalogError, ToolError) as exc:
+    except CatalogError as exc:
         raise _command_error(exc) from exc
     if output_format == "json":
-        click.echo(json.dumps(records, indent=2, ensure_ascii=False, default=str))
-    else:
-        click.echo(entry_records_to_markdown(records).rstrip())
+        emit_object({"records": records, **catalog_identity(catalog)})
+        return
+    click.echo(entry_records_to_markdown(records).rstrip())
 
 
 @click.command("cite", context_settings=CONTEXT_SETTINGS)
 @source_option
-@click.argument("entry_ids", nargs=-1, required=True)
+@click.argument("guideline_ids", nargs=-1, required=True)
 @click.option(
     "--url-template",
     default=DEFAULT_GUIDELINE_URL_TEMPLATE,
     show_default=True,
-    help="Guideline URL template. Must contain {id}.",
+    help="Guideline URL template containing {id}.",
 )
 @click.option(
     "--format",
     "output_format",
     type=click.Choice(CITE_FORMATS),
-    default="markdown",
+    default="json",
     show_default=True,
     help="Output format.",
 )
 @click.pass_context
 def cite_command(
     ctx: click.Context,
-    entry_ids: tuple[str, ...],
+    guideline_ids: tuple[str, ...],
     url_template: str,
     output_format: str,
 ) -> None:
-    """Print guideline URLs and formatted source citations."""
+    """Return guideline links and formatted source citations."""
 
     catalog = load_catalog(ctx)
-    from chartcoach.catalog.references import citation_records
-
     try:
-        records = citation_records(
-            catalog,
-            ids=entry_ids,
-            url_template=url_template,
-        )
-    except (CatalogError, ToolError) as exc:
+        records = catalog.cite(ids=guideline_ids, url_template=url_template)
+    except CatalogError as exc:
         raise _command_error(exc) from exc
     if output_format == "json":
-        click.echo(json.dumps(records, indent=2, ensure_ascii=False, default=str))
-    else:
-        click.echo(citation_records_to_markdown(records).rstrip())
+        emit_object({"records": records, **catalog_identity(catalog)})
+        return
+    click.echo(citation_records_to_markdown(records).rstrip())
 
 
 @click.command("schema", context_settings=CONTEXT_SETTINGS)
-@click.argument("argument_table_names", nargs=-1, metavar="[TABLE]...")
+@click.argument("table_names", nargs=-1, metavar="[TABLE]...")
 @source_option
-@click.option(
-    "--table",
-    "table_names",
-    multiple=True,
-    help="Only include this table. Can be passed more than once.",
-)
 @click.option(
     "--tables",
     "list_table_names",
     is_flag=True,
-    help="List tables instead of columns.",
+    help="List catalog tables in place of their columns.",
 )
 @click.option(
     "--row-counts",
     is_flag=True,
-    help="Include row counts when listing tables.",
+    help="Include row counts with --tables.",
 )
 @click.option(
     "--format",
     "output_format",
     type=click.Choice(ROW_FORMATS),
-    default="table",
+    default="json",
     show_default=True,
     help="Output format.",
 )
 @click.pass_context
 def schema_command(
     ctx: click.Context,
-    argument_table_names: tuple[str, ...],
     table_names: tuple[str, ...],
     list_table_names: bool,
     row_counts: bool,
     output_format: str,
 ) -> None:
-    """Show queryable catalog fields and tables."""
+    """Return catalog table names or column schemas."""
 
     from chartcoach.catalog.introspection import describe_tables, list_tables
 
     try:
-        selected_tables = (*table_names, *argument_table_names)
-        if list_table_names and selected_tables:
+        if list_table_names and table_names:
             raise click.ClickException(
                 format_error(
-                    "`catalog schema --tables` lists table names and does not accept table filters.",
-                    [
-                        "Use `chartcoach catalog schema TABLE` to inspect one table's columns.",
-                        "Use `chartcoach catalog schema --table TABLE` to inspect one table's columns.",
-                    ],
+                    "`catalog schema --tables` does not accept table names.",
+                    ["Use `chartcoach catalog schema TABLE` to inspect its columns."],
                 )
             )
-        if list_table_names:
-            rows = list_tables(load_catalog(ctx), include_row_counts=row_counts)
-        else:
-            rows = describe_tables(tables=selected_tables)
-    except (CatalogError, ToolError) as exc:
+        rows = (
+            list_tables(load_catalog(ctx), include_row_counts=row_counts)
+            if list_table_names
+            else describe_tables(tables=table_names)
+        )
+    except CatalogError as exc:
         raise _command_error(exc) from exc
     emit_rows(rows, output_format=output_format)
 
@@ -430,7 +371,7 @@ def schema_command(
     "--format",
     "output_format",
     type=click.Choice(ROW_FORMATS),
-    default="table",
+    default="json",
     show_default=True,
     help="Output format.",
 )
@@ -441,41 +382,60 @@ def sql_command(
     limit: int,
     output_format: str,
 ) -> None:
-    """Run one read-only SELECT query over catalog DuckDB tables."""
+    """Run one bounded read-only SELECT over catalog tables."""
 
     try:
-        result = catalog_tools(ctx).sql(query, limit=limit)
-    except (CatalogError, ToolError) as exc:
+        result = load_catalog(ctx).sql(query, limit=limit)
+    except CatalogError as exc:
         raise _command_error(exc) from exc
-    except Exception as exc:
-        raise click.ClickException(
-            format_error(
-                str(exc),
-                [
-                    "Run `chartcoach catalog schema --tables` to inspect table names.",
-                    "Run `chartcoach catalog schema` to inspect column names.",
-                ],
-            )
-        ) from exc
     if output_format == "json":
         emit_object(result)
         return
-    rows = result["rows"]
-    if not isinstance(rows, list) or not all(isinstance(row, Mapping) for row in rows):
-        raise click.ClickException("SQL result rows were not a list.")
-    emit_rows(cast(list[Mapping[str, object]], rows), output_format=output_format)
+    emit_rows(result["rows"], output_format=output_format)
     if result["truncated"]:
         echo_warn(f"Returned {limit} rows.", detail="Increase --limit to inspect more.")
 
 
-def _command_error(exc: CatalogError | ToolError) -> click.ClickException:
-    message = getattr(exc, "message", str(exc))
-    hints = getattr(exc, "hints", ())
-    return click.ClickException(format_error(message, hints))
+def _labels_empty_hints(
+    *, family: str | None, prefix: str | None, contains: str | None
+) -> list[str]:
+    hints = []
+    if contains:
+        hints.append("Try a shorter or broader --contains term.")
+    if family:
+        hints.append("Run `chartcoach catalog labels` to inspect label families.")
+    if prefix:
+        hints.append("Try a shorter --prefix or inspect labels by --family.")
+    if not hints:
+        hints.append("Run `chartcoach catalog describe` to inspect catalog counts.")
+    return hints
+
+
+def _list_empty_hints(
+    labels: Sequence[str],
+    label_prefixes: Sequence[str],
+    contains: str | None,
+) -> list[str]:
+    hints = []
+    if len(labels) > 1:
+        hints.append("Repeated --label filters are all-of. Remove one --label.")
+    elif labels:
+        hints.append("Run `chartcoach catalog labels` to inspect exact labels.")
+    if label_prefixes:
+        hints.append("Try a shorter --label-prefix.")
+    if contains:
+        hints.append("Try a broader --contains term.")
+    if not hints:
+        hints.append("Run `chartcoach catalog describe` to inspect the catalog.")
+    return hints
+
+
+def _command_error(exc: CatalogError) -> click.ClickException:
+    return click.ClickException(str(exc))
 
 
 def register_navigation_commands(group: click.Group) -> None:
-    group.add_command(overview_command)
+    group.add_command(describe_command)
     group.add_command(labels_command)
     group.add_command(roles_command)
     group.add_command(list_command)

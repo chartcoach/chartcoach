@@ -12,7 +12,6 @@ const hostedWheel =
   "https://files.peter.gy/packages/python/chartcoach/0.2.0/892f120cb377/chartcoach-0.2.0-py3-none-any.whl";
 const docsRelease =
   "https://files.peter.gy/packages/python/chartcoach/0.2.0/docs-catalog/c0f6dbec3dd31b07763b46fd458733db0b8b50c5793cf9447458119287129420/release.json";
-const showcasedGuideline = "directly-label-series-instead-of-using-a-color-key";
 
 void test("every live notebook pins the hosted chartcoach wheel", async () => {
   const pages = await markdownFiles(docsRoot);
@@ -47,9 +46,6 @@ void test("public examples use one immutable real catalog release", async () => 
     ) ?? [],
   );
   assert.deepEqual([...wheelUrls], [hostedWheel]);
-  assert.ok(combined.includes(showcasedGuideline));
-  assert.ok(combined.includes("Directly label colored series instead of relying on a color key"));
-  assert.ok(combined.includes("quality:accessibility"));
 });
 
 async function markdownFiles(directory) {

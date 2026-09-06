@@ -4,7 +4,7 @@ from os import PathLike
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from .entries import Guideline
+from .guidelines import Guideline
 from .manifest import CatalogManifest
 from .markdown import (
     _guideline_from_source,
@@ -14,7 +14,7 @@ from .markdown import (
 from .references import parse_bibtex
 
 if TYPE_CHECKING:
-    from .collection import Catalog
+    from .model import Catalog
 
 
 def load_catalog_entry(path: Path) -> Guideline:
@@ -39,7 +39,7 @@ def load_catalog_entry(path: Path) -> Guideline:
 def load_catalog(folder_path: PathLike[str]) -> Catalog:
     """Load an authored catalog folder."""
 
-    from .collection import Catalog
+    from .model import Catalog
 
     root = Path(folder_path)
     manifest = CatalogManifest.from_path(root / "MANIFEST.md")

@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vite-plus/test";
 
 import { GUIDELINE_SEARCH_SCHEMA } from "../src/lib/guideline-search-model";
-import { OG_BUILD_PROPS_META, OG_IMAGE_HEIGHT, OG_IMAGE_WIDTH } from "../src/og/schema";
+import { OG_BUILD_PROPS_META } from "../src/og/schema";
 
 const fixture = new URL("../../../fixtures/catalog-release/", import.meta.url);
 const siteRoot = new URL("../", import.meta.url);
@@ -17,7 +17,7 @@ let outputFiles: string[];
 
 beforeAll(async () => {
   outputDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "chartcoach-site-"));
-  vi.stubEnv("CHARTCOACH_SITE_CATALOG_SOURCE", fileURLToPath(fixture));
+  vi.stubEnv("CHARTCOACH_SITE_CATALOG", fileURLToPath(fixture));
   await build({
     logLevel: "silent",
     outDir: outputDirectory,
@@ -64,8 +64,8 @@ describe("generated site artifacts", () => {
 
     for (const image of expectedImages) {
       const bytes = await fs.readFile(path.join(outputDirectory, image));
-      expect(bytes.readUInt32BE(16), image).toBe(OG_IMAGE_WIDTH);
-      expect(bytes.readUInt32BE(20), image).toBe(OG_IMAGE_HEIGHT);
+      expect(bytes.readUInt32BE(16), image).toBe(1200);
+      expect(bytes.readUInt32BE(20), image).toBe(630);
     }
   });
 });

@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vite-plus/test";
 
-import { loadCatalog } from "@chartcoach/catalog";
+import { loadCatalogData } from "@chartcoach/catalog";
 
 const entriesPath = fileURLToPath(
   new URL("../../../fixtures/catalog-release/entries.parquet", import.meta.url),
@@ -14,7 +14,7 @@ describe("catalog manifest validation", () => {
     const entries = await readFile(entriesPath);
 
     await expect(
-      loadCatalog({
+      loadCatalogData({
         entries,
         manifestText: "# Catalog\n\n## Section Roles\n\n### advice\n\nActionable guidance.\n",
       }),
@@ -38,7 +38,7 @@ Actionable guidance.
 Chart-family labels such as \`chart:bar\`.
 `;
 
-    await expect(loadCatalog({ entries, manifestText })).rejects.toThrow(
+    await expect(loadCatalogData({ entries, manifestText })).rejects.toThrow(
       "Catalog manifest validation failed:",
     );
   });

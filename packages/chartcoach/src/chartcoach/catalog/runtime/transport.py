@@ -8,7 +8,7 @@ from urllib.request import Request, urlopen
 
 from .._object_store import obstore_uri
 from ..errors import CatalogError
-from .source import uri_name, uri_parent
+from .location import uri_name, uri_parent
 
 _READ_CHUNK_BYTES = 1024 * 1024
 
@@ -21,7 +21,7 @@ def read_local_bytes(path: Path, limit: int) -> bytes:
         with path.open("rb") as source:
             data = source.read(limit + 1)
     except OSError as exc:
-        raise CatalogError(f"Could not read catalog source: {path}") from exc
+        raise CatalogError(f"Could not read catalog location: {path}") from exc
     if len(data) > limit:
         raise CatalogError("Catalog JSON exceeds the 1 MiB limit.")
     return data
@@ -63,16 +63,16 @@ def remote_chunks(
     headers, timeout = _http_options(storage_options)
     if no_cache:
         headers["Cache-Control"] = "no-cache"
-    request = Request(uri, headers=headers)
     try:
+        request = Request(uri, headers=headers)
         with urlopen(request, timeout=timeout) as response:
             while chunk := response.read(_READ_CHUNK_BYTES):
                 yield chunk
-    except OSError as exc:
+    except (OSError, ValueError) as exc:
         raise CatalogError(
             f"Failed to load catalog resource over HTTP: {_display_http_uri(uri)}",
             hints=[
-                "Pass a local catalog or release path as `source` for offline work.",
+                "Pass a local catalog or release path as `location` for offline work.",
                 "The CLI accepts `--source PATH` or `CHARTCOACH_SOURCE=PATH`.",
             ],
         ) from exc
@@ -92,7 +92,7 @@ def _cloud_chunks(
         from obstore.store import from_url
     except ModuleNotFoundError as exc:
         raise ModuleNotFoundError(
-            "Cloud catalog sources require the optional `chartcoach[cloud]` "
+            "Cloud catalog locations require the optional `chartcoach[cloud]` "
             "dependencies.",
             name=exc.name,
         ) from exc

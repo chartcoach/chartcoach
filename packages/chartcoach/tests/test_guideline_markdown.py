@@ -1,5 +1,5 @@
 import pytest
-from chartcoach.catalog.entries import Guideline, Section
+from chartcoach.catalog.guidelines import Guideline, Section
 from chartcoach.catalog.markdown import parse_guideline
 
 

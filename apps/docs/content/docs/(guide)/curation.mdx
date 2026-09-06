@@ -26,15 +26,15 @@ This guide assumes `uv`, Python 3.10 through 3.14, and a POSIX shell.
 uv venv
 source .venv/bin/activate
 uv pip install \
-  "chartcoach[curation] @ https://files.peter.gy/packages/python/chartcoach/0.2.0/892f120cb377/chartcoach-0.2.0-py3-none-any.whl"
+  "chartcoach[curation,projection] @ https://files.peter.gy/packages/python/chartcoach/0.2.0/892f120cb377/chartcoach-0.2.0-py3-none-any.whl"
 ```
 
 ## Author a guideline
 
-Create `catalog-source/` with a manifest and one guideline:
+Create `authored-catalog/` with a manifest and one guideline entry:
 
 ```text
-catalog-source/
+authored-catalog/
 ├── MANIFEST.md
 └── entries/
     └── direct-labels/
@@ -85,12 +85,12 @@ section.
 Validate the authored files, write the two-file catalog, and read the result:
 
 ```bash
-chartcoach catalog validate --source ./catalog-source
+chartcoach catalog validate --source ./authored-catalog
 chartcoach catalog build \
-  --source ./catalog-source \
+  --source ./authored-catalog \
   --out ./dist/catalog
 
-chartcoach catalog overview --source ./dist/catalog
+chartcoach catalog describe --source ./dist/catalog
 chartcoach catalog read --source ./dist/catalog direct-labels
 ```
 
@@ -120,11 +120,14 @@ print(release.digest)
 `dist/release` must also be new. The directory now contains `MANIFEST.md`,
 `entries.parquet`, and `release.json`.
 
-### Add a search index
+### Add an index profile
 
-Search indexes are optional. Each named profile stores searchable document
-rows and a matching LanceDB index with the release. Building this example can
-download the embedding model when it is not already cached.
+Each index profile requires `profile.json` and `index.tar.gz`. The metadata
+records the entries and manifest digests, persisted embedding binding, vector
+dimensions, distance metric, Python requirements, LanceDB version, and
+projection metadata. Profile IDs are lowercase single-component names such as
+`minilm-normalized`. Building this example can download the embedding model
+when it is not already cached.
 
 ```bash
 uv pip install sentence-transformers==5.6.1
@@ -149,8 +152,11 @@ release = build_release(
     open_catalog("dist/catalog"),
     Path("dist/release-indexed"),
     profiles={
-        "sentence-transformers/all-MiniLM-L6-v2": EmbeddingProfile(
+        "minilm-normalized": EmbeddingProfile(
             embedding=embedding,
+            distance_metric="cosine",
+            python_requirements={"sentence-transformers": "5.6.1"},
+            export_documents=True,
             umap={
                 "n_neighbors": 15,
                 "min_dist": 0.1,
@@ -162,9 +168,50 @@ release = build_release(
 )
 ```
 
-For this profile, `build_release` writes `documents.parquet`, containing text,
-vectors, projection coordinates, and neighbor lists, plus `index.tar.gz`,
-containing the LanceDB table.
+This build writes `profile.json`, `index.tar.gz`, the requested portable
+`documents.parquet` export, and `projection.parquet`. The document export holds
+text, labels, hashes, and vectors. The projection export holds identity,
+coordinates, and the original vector-space neighbor graph.
+
+`export_documents=False`, the default, keeps the LanceDB table as the document
+and vector representation. `umap=None`, the default, skips
+[UMAP](https://umap-learn.readthedocs.io/) and omits `projection.parquet`. A
+mapping, including `{}`, requests projection and requires
+`chartcoach[projection]`. `EmbeddingProfile.distance_metric` controls index
+retrieval distance. `umap["metric"]` controls the projection neighbor graph.
+Every `python_requirements` value is an exact installed distribution version.
+`build_release` rejects a missing or different producer version.
+
+### Reuse an existing index profile
+
+`ProfileReuse` copies a verified index archive and can derive a new projection
+or portable document export from its stored vectors. It requires the same
+entries and manifest digests, so embeddings are reused with the catalog that
+owns them. `release` names an exact local release directory or its
+`release.json` file.
+
+```python
+from chartcoach import open_catalog
+from chartcoach.catalog.curation import ProfileReuse, build_release
+
+release = build_release(
+    open_catalog("dist/catalog"),
+    "dist/release-reprojected",
+    profiles={
+        "minilm-reprojected": ProfileReuse(
+            release="dist/release-indexed",
+            profile="minilm-normalized",
+            umap={"n_neighbors": 30, "random_state": 42},
+        )
+    },
+)
+```
+
+The copied `index.tar.gz` retains its embedding binding and producer LanceDB
+version. The new release digest covers the new profile ID and projection bytes.
+This build reads stored vectors and does not construct the embedding provider.
+Publication validation also checks the trusted alias registration and exact
+provider versions listed by the reused profile.
 
 ## Publish the release
 
@@ -212,11 +259,25 @@ published catalog through its public URL:
 
 ```bash
 RELEASE_URL="$PUBLIC_BASE/catalog/releases/$RELEASE_DIGEST/release.json"
-chartcoach catalog overview --source "$RELEASE_URL"
+chartcoach catalog describe --source "$RELEASE_URL"
 ```
 
-The overview command verifies the byte count and SHA-256 hash of
+The describe command verifies the byte count and SHA-256 hash of
 `MANIFEST.md` and `entries.parquet` before reading them.
+
+For an indexed release, inspect every profile and perform explicit FTS before
+selection:
+
+```bash
+chartcoach catalog describe \
+  --source "$RELEASE_URL" \
+  --profile minilm-normalized
+chartcoach catalog search \
+  --source "$RELEASE_URL" \
+  --profile minilm-normalized \
+  --mode fts \
+  "direct labels"
+```
 
 ## Select the public release
 
@@ -235,5 +296,5 @@ chartcoach catalog release select \
 
 The final command reads the published `release.json`, verifies its digest, and
 writes that record to `$PUBLIC_BASE/catalog.json`. Readers of that URL will see
-the newly selected release. Calls and commands that omit `source` continue to
-read the official `files.peter.gy` catalog selection.
+the newly selected release. Python calls that omit `location` and commands that
+omit `--source` read the official `files.peter.gy` catalog selection.

@@ -4,6 +4,15 @@ Python and JavaScript packages use version tags such as `v0.2.0`. Catalog data
 uses a SHA-256 digest computed from the files in one release. Either can change
 without changing the other.
 
+| Lifecycle                | Identity                                  |
+| ------------------------ | ----------------------------------------- |
+| Guideline entries        | Entries digest plus manifest digest       |
+| Compiled catalog release | SHA-256 digest over its artifact envelope |
+| Python and npm software  | Coordinated package version               |
+
+Public selection points `catalog.json` at an already published release. Site
+deployment consumes an exact release and does not create catalog identity.
+
 ## Publish the packages
 
 `packages/chartcoach` publishes `chartcoach` to PyPI.
@@ -42,7 +51,7 @@ authored Markdown
   -> remote catalog/releases/<digest>/
 ```
 
-`./catalog-source` in the build command is a caller-provided authored catalog.
+`./authored-catalog` in the build command is a caller-provided authored catalog.
 The commands also require `jq`. Both `dist/catalog` and `dist/release` must be
 absent before the build begins.
 
@@ -51,7 +60,7 @@ Build the compiled catalog, then build a local release:
 ```bash
 uv run --locked --package chartcoach --extra curation \
   chartcoach catalog build \
-  --source ./catalog-source \
+  --source ./authored-catalog \
   --out ./dist/catalog
 ```
 
@@ -87,6 +96,18 @@ CATALOG_STORE="s3://your-bucket/chartcoach"
 PUBLIC_BASE="https://catalog.example.com/chartcoach"
 ```
 
+Configure the serving layer before promotion:
+
+| Resource                        | Serving contract                                              |
+| ------------------------------- | ------------------------------------------------------------- |
+| `catalog/releases/<digest>/...` | Immutable caching and stable retention                        |
+| `catalog.json`                  | Revalidation-friendly caching and an ETag where available     |
+| Browser-readable artifacts      | Cross-origin `GET` and `HEAD` access from the product origins |
+
+Discovery reads descriptors rather than listing storage prefixes. Release
+artifacts stay relative to their release directory and contain no deployment
+paths or credentials.
+
 Preview the remote paths, then publish the release:
 
 ```bash
@@ -107,9 +128,29 @@ exact release:
 ```bash
 RELEASE_URL="$PUBLIC_BASE/catalog/releases/$RELEASE_DIGEST/release.json"
 uv run --locked --package chartcoach \
-  chartcoach catalog overview --source "$RELEASE_URL"
-CHARTCOACH_SITE_CATALOG_SOURCE="$RELEASE_URL" pnpm --dir apps/site build
+  chartcoach catalog describe --source "$RELEASE_URL"
+CHARTCOACH_SITE_CATALOG="$RELEASE_URL" pnpm --dir apps/site build
 ```
+
+For every profile listed by `catalog describe`, inspect its metadata and run
+provider-free FTS through the public release before selection:
+
+```bash
+PROFILE="minilm-normalized"
+uv run --locked --package chartcoach --extra index \
+  chartcoach catalog describe \
+  --source "$RELEASE_URL" \
+  --profile "$PROFILE"
+uv run --locked --package chartcoach --extra index \
+  chartcoach catalog search \
+  --source "$RELEASE_URL" \
+  --profile "$PROFILE" \
+  --mode fts \
+  "direct labels"
+```
+
+Provider-backed vector or hybrid smoke checks are explicit release actions.
+Run them with the declared Python requirements and authorized credentials.
 
 Preview the public selection, then update `catalog.json`:
 
@@ -130,8 +171,8 @@ through the public URL:
 
 ```bash
 uv run --locked --package chartcoach \
-  chartcoach catalog overview --source "$PUBLIC_BASE/catalog.json"
+  chartcoach catalog describe --source "$PUBLIC_BASE/catalog.json"
 ```
 
-Calls and commands that omit `source` continue to read the official
-`files.peter.gy` catalog selection.
+Python calls that omit `location` and commands that omit `--source` read the
+official `files.peter.gy` catalog selection.

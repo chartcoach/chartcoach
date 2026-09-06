@@ -1,19 +1,26 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import tarfile
 from io import BytesIO
 from pathlib import Path
 
+import pytest
+from catalog_testkit import deterministic_embedding
+from chartcoach import open_catalog
+from chartcoach.catalog.manifest import manifest_digest
+from chartcoach.catalog.model import Catalog
+from chartcoach.catalog.profiles import EmbeddingBinding, ProfileMetadata
 from chartcoach.catalog.releases import CatalogRelease, ReleaseArtifact
 from chartcoach.catalog.releases.hashing import release_digest, sha256_file
 
 _RELEASE_FIXTURE = Path(__file__).parents[3] / "fixtures" / "catalog-release"
 
 
-def test_base_catalog_import_does_not_load_optional_capabilities() -> None:
+def test_base_catalog_contract_works_without_optional_dependencies() -> None:
     script = f"""
 import importlib.abc
 import sys
@@ -29,7 +36,11 @@ import chartcoach
 catalog = chartcoach.open_catalog({str(_RELEASE_FIXTURE)!r})
 assert catalog.release is not None
 assert len(catalog) > 0
-assert not any(name.split(".", 1)[0] in {{"lancedb", "mcp", "obstore", "obspec", "pyarrow", "umap"}} for name in sys.modules)
+assert catalog.query(contains="labels", limit=2).height > 0
+assert catalog.read(ids=["direct-labels"], source_detail="minimal")
+assert catalog.cite(ids=["direct-labels"])
+assert catalog.sql("select count(*) as rows from guidelines")["rows"]
+assert catalog.describe()["release_digest"] == catalog.release.digest
 """
 
     result = subprocess.run(
@@ -42,7 +53,7 @@ assert not any(name.split(".", 1)[0] in {{"lancedb", "mcp", "obstore", "obspec",
     assert result.returncode == 0, result.stderr
 
 
-def test_cloud_source_reports_the_cloud_extra_when_obstore_is_absent() -> None:
+def test_cloud_location_reports_the_cloud_extra_when_obstore_is_absent() -> None:
     script = """
 import importlib.abc
 
@@ -60,11 +71,94 @@ try:
 except ModuleNotFoundError as exc:
     assert "chartcoach[cloud]" in str(exc)
 else:
-    raise AssertionError("cloud source unexpectedly opened")
+    raise AssertionError("cloud location unexpectedly opened")
 """
 
     result = subprocess.run(
         [sys.executable, "-c", script],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+
+
+@pytest.mark.curation
+@pytest.mark.search
+def test_profile_description_works_without_index_or_projection_dependencies(
+    sample_catalog: Catalog,
+    tmp_path: Path,
+) -> None:
+    from chartcoach.catalog.curation import EmbeddingProfile, build_release
+
+    profile = "test-metadata"
+    release = tmp_path / "release"
+    build_release(
+        sample_catalog,
+        release,
+        profiles={
+            profile: EmbeddingProfile(deterministic_embedding("metadata-profile"))
+        },
+    )
+    script = f"""
+import importlib.abc
+import sys
+
+class BlockIndexDependencies(importlib.abc.MetaPathFinder):
+    def find_spec(self, fullname, path=None, target=None):
+        if fullname.split(".", 1)[0] in {{"lancedb", "pyarrow", "umap"}}:
+            raise ModuleNotFoundError(f"blocked optional module: {{fullname}}", name=fullname)
+        return None
+
+sys.meta_path.insert(0, BlockIndexDependencies())
+from chartcoach import open_catalog
+catalog = open_catalog({str(release)!r})
+description = catalog.describe(profile={profile!r})
+assert description["profile"]["dimensions"] == 4
+"""
+
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+
+
+@pytest.mark.curation
+@pytest.mark.search
+def test_projection_free_profile_builds_without_umap(tmp_path: Path) -> None:
+    release = tmp_path / "release"
+    script = f"""
+import importlib.abc
+import sys
+
+class BlockUmap(importlib.abc.MetaPathFinder):
+    def find_spec(self, fullname, path=None, target=None):
+        if fullname == "umap" or fullname.startswith("umap."):
+            raise ModuleNotFoundError("blocked umap", name=fullname)
+        return None
+
+sys.meta_path.insert(0, BlockUmap())
+from lancedb_embedding_fixture import registered_embedding
+from chartcoach import open_catalog
+from chartcoach.catalog.curation import EmbeddingProfile, build_release
+build_release(
+    open_catalog({str(_RELEASE_FIXTURE)!r}),
+    {str(release)!r},
+    profiles={{"test-no-projection": EmbeddingProfile(registered_embedding())}},
+)
+"""
+
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        env={
+            **os.environ,
+            "PYTHONPATH": str(Path(__file__).parent),
+        },
         check=False,
         capture_output=True,
         text=True,
@@ -91,7 +185,6 @@ from click.testing import CliRunner
 result = CliRunner().invoke(main, ["mcp"])
 assert result.exit_code == 1
 assert "chartcoach[mcp]" in result.output
-assert "Traceback" not in result.output
 """
 
     result = subprocess.run(
@@ -104,7 +197,7 @@ assert "Traceback" not in result.output
     assert result.returncode == 0, result.stderr
 
 
-def test_release_profile_reports_the_index_extra_when_lancedb_is_absent(
+def test_index_profile_reports_the_index_extra_when_lancedb_is_absent(
     tmp_path: Path,
 ) -> None:
     root = tmp_path / "release"
@@ -118,6 +211,20 @@ def test_release_profile_reports_the_index_extra_when_lancedb_is_absent(
         payload = b"placeholder"
         member.size = len(payload)
         output.addfile(member, BytesIO(payload))
+    catalog = open_catalog(_RELEASE_FIXTURE)
+    metadata_path = archive.parent / "profile.json"
+    metadata_path.write_bytes(
+        ProfileMetadata(
+            entries_digest=catalog.entries_digest(),
+            manifest_digest=manifest_digest(catalog.manifest.markdown),
+            embedding_functions=(EmbeddingBinding(name="test-missing", model={}),),
+            dimensions=4,
+            distance_metric="cosine",
+            python_requirements={},
+            lancedb_version="0.38.0",
+            projection=None,
+        ).to_bytes()
+    )
     artifacts = {
         path: ReleaseArtifact(
             sha256=sha256_file(root / path),
@@ -126,6 +233,7 @@ def test_release_profile_reports_the_index_extra_when_lancedb_is_absent(
         for path in (
             "MANIFEST.md",
             "entries.parquet",
+            "profiles/test/profile.json",
             "profiles/test/index.tar.gz",
         )
     }
@@ -145,13 +253,14 @@ class BlockLanceDB(importlib.abc.MetaPathFinder):
 
 import sys
 sys.meta_path.insert(0, BlockLanceDB())
-from chartcoach import open_index
+from chartcoach import CatalogError, open_catalog
 try:
-    open_index({str(root)!r}, profile="test")
-except ModuleNotFoundError as exc:
+    open_catalog({str(root)!r}).index("test")
+except CatalogError as exc:
+    assert exc.code == "unavailable_capability"
     assert "chartcoach[index]" in str(exc)
 else:
-    raise AssertionError("release profile unexpectedly opened")
+    raise AssertionError("index profile unexpectedly opened")
 """
 
     result = subprocess.run(

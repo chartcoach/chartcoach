@@ -1,12 +1,14 @@
 ---
 title: Python
-description: Open a catalog, inspect guideline records, and query its Polars, DuckDB, or LanceDB tables.
+description: Open one Guideline Catalog and compose its entries with Polars, DuckDB, and LanceDB.
 icon: Code
 ---
 
-The `chartcoach` package opens local catalog files or published releases and
-returns a `Catalog`. A catalog provides the stored guideline rows plus tables
-for sections, labels, and references.
+`open_catalog()` returns one `Catalog`. Query, read, citation, SQL, and index
+operations on that object retain the same resolved release. Direct composition
+uses [Polars](https://docs.pola.rs/) dataframes,
+[DuckDB](https://duckdb.org/docs/stable/clients/python/overview) connections,
+and [LanceDB](https://lancedb.com/docs/search/) tables.
 
 ## Install
 
@@ -17,32 +19,7 @@ uv pip install \
   "chartcoach @ https://files.peter.gy/packages/python/chartcoach/0.2.0/892f120cb377/chartcoach-0.2.0-py3-none-any.whl"
 ```
 
-## `open_catalog`
-
-```python
-open_catalog(
-    source: str | PathLike[str] | None = None,
-    *,
-    storage_options: Mapping[str, object] | None = None,
-) -> Catalog
-```
-
-`source` selects what to open:
-
-| Source                     | Result                                              |
-| -------------------------- | --------------------------------------------------- |
-| Omitted                    | Opens the currently selected public catalog         |
-| Authored folder            | Reads `MANIFEST.md` and `entries/<id>/guideline.md` |
-| Compiled bundle            | Reads `MANIFEST.md` and `entries.parquet`           |
-| Local release directory    | Reads its `release.json` and verifies listed files  |
-| `catalog.json` path or URL | Follows the release selected by that file           |
-| `release.json` path or URL | Opens one fixed release digest                      |
-
-Local paths, `file://`, HTTP, and HTTPS work with the base package. S3, GCS,
-and Azure sources require `chartcoach[cloud]`. Pass provider credentials and
-HTTP headers or timeouts through `storage_options`.
-
-This example opens a fixed release and reads one guideline by ID:
+## Open and read a catalog
 
 ```python
 from chartcoach import open_catalog
@@ -50,7 +27,10 @@ from chartcoach import open_catalog
 catalog = open_catalog(
     "https://files.peter.gy/packages/python/chartcoach/0.2.0/docs-catalog/c0f6dbec3dd31b07763b46fd458733db0b8b50c5793cf9447458119287129420/release.json"
 )
-record = catalog.entry("directly-label-series-instead-of-using-a-color-key")
+record = catalog.read(
+    ids=["directly-label-series-instead-of-using-a-color-key"],
+    source_detail="minimal",
+)[0]
 print(record["title"])
 ```
 
@@ -60,95 +40,196 @@ Expected output:
 Directly label colored series instead of relying on a color key
 ```
 
-For `catalog.json` and `release.json`, chartcoach verifies the release digest
-and checks each required file's byte count and SHA-256 hash. Remote files are
-downloaded and cached after verification. Local files are verified in place.
-Invalid sources and failed verification raise `CatalogError`. A cloud URL
-without `chartcoach[cloud]` raises `ModuleNotFoundError`.
+```python
+open_catalog(
+    location: str | PathLike[str] | None = None,
+    *,
+    storage_options: Mapping[str, object] | None = None,
+) -> Catalog
+```
 
-`catalog.release` contains the verified `CatalogRelease` after opening a local
-release directory, `catalog.json`, or `release.json`. It is `None` for an
-authored folder or compiled bundle.
+`location` accepts an authored folder, compiled bundle, local deployed root,
+local release directory, or local or remote `catalog.json` or `release.json`.
+A deployed root contains `catalog.json` and
+`catalog/releases/<digest>/`. Omitting `location` opens the official selected
+catalog. Local paths, `file://`, HTTP, and HTTPS use the base package. S3, GCS,
+and Azure locations require `chartcoach[cloud]`.
 
-## Read records and tables
+Release-backed opening verifies the descriptor digest plus the byte counts and
+SHA-256 hashes of `MANIFEST.md` and `entries.parquet`. Profile files are
+verified when an operation reads them. `catalog.release` contains the
+immutable descriptor. Authored folders and compiled bundles set it to `None`.
 
-`catalog.entry(guideline_id)` returns a dictionary containing `id`, `title`,
-`description`, `labels`, `sections`, `references`, and the Markdown `body`
-derived from those sections. An unknown ID raises `KeyError`.
+## Select, read, and cite guidelines
 
-The table methods return Polars dataframes:
+```python
+candidates = catalog.query(contains="direct labels", limit=5)
+ids = candidates.get_column("id").head(3).to_list()
+records = catalog.read(ids=ids, source_detail="minimal")
+citations = catalog.cite(ids=ids)
+```
 
-| Method                   | One row per                                        |
-| ------------------------ | -------------------------------------------------- |
-| `to_frame()`             | Stored guideline record                            |
-| `guidelines()`           | Guideline with its derived Markdown body           |
-| `sections()`             | Guideline section                                  |
-| `guideline_labels()`     | Guideline-label pair                               |
-| `references()`           | Parsed citation                                    |
-| `guideline_references()` | Guideline-reference pair                           |
-| `guideline_sources()`    | Guideline-reference pair with parsed source fields |
+`catalog.query()` returns a Polars DataFrame with `id`, `title`, `description`,
+and `labels`. Exact guideline entry IDs retain their requested order. Repeated
+labels are all-of filters. Substring matching ignores case and treats spaces,
+hyphens, and underscores as equivalent separators.
 
-`catalog.table(name)` returns one of the six query tables. An unknown table
-name raises `KeyError`.
+`catalog.read()` returns complete guideline entry records for exact guideline
+entry IDs.
+`roles`
+filters section roles. `source_detail` accepts `none`, `minimal`, or `full`.
+Full source detail returns every parsed source field and the entry's BibTeX
+references.
 
-## Query with DuckDB
+`catalog.cite()` returns each guideline URL, its formatted citation, and its
+source citations. Pass `url_template="https://catalog.example/g/{id}"` for a
+custom public catalog.
 
-`catalog.duckdb(config=None)` creates an in-memory DuckDB connection and
-registers the six query tables. Close the connection when the query is done.
+## Inspect catalog identity
+
+```python
+description = catalog.describe()
+```
+
+`CatalogInfo` contains `resolved_location`, `entries_digest`,
+`manifest_digest`, `release_digest`, catalog table schemas and row counts,
+vocabulary, profile names, and optional `ProfileInfo`. Credentials, URL query
+parameters, and storage options stay private.
+
+Pass `profile=NAME` to read that profile's verified `profile.json`. `ProfileInfo`
+reports the profile and document schema versions, embedding binding,
+dimensions, `distance_metric`, `python_requirements`, LanceDB version, and
+projection metadata. Import `CatalogInfo` and `ProfileInfo` from `chartcoach`
+when application code needs these annotations. The index stays unopened and
+the embedding provider stays unconstructed.
+
+## Compose Polars tables
+
+`catalog.to_frame()` returns the six canonical stored fields. The catalog
+tables are:
+
+| `catalog.table(name)`  | One row per                                 |
+| ---------------------- | ------------------------------------------- |
+| `guidelines`           | Guideline entry with derived Markdown body  |
+| `sections`             | Guideline section                           |
+| `guideline_labels`     | Guideline-label pair                        |
+| `references`           | Parsed BibTeX reference                     |
+| `guideline_references` | Guideline-reference pair                    |
+| `guideline_sources`    | Guideline-reference pair with source fields |
+
+Every call returns an isolated Polars DataFrame handle.
+
+```python
+import polars as pl
+
+counts = (
+    catalog.table("guideline_labels")
+    .group_by("family")
+    .len()
+    .sort("len", descending=True)
+)
+line_guidelines = catalog.to_frame().filter(
+    pl.col("labels").list.contains("chart:line")
+)
+```
+
+## Compose DuckDB queries
+
+`catalog.duckdb(config=None)` returns a fresh caller-owned in-memory DuckDB
+connection containing the six catalog tables. Close it after use.
 
 ```python
 with catalog.duckdb() as connection:
     rows = connection.sql("""
-        select g.id, g.title
+        select g.id, g.title, s.role
         from guidelines g
-        join guideline_labels l on l.guideline_id = g.id
-        where l.label = 'operator:uncertainty'
+        join sections s on s.guideline_id = g.id
         order by g.id
-        limit 10
+        limit 5
     """).fetchall()
 ```
 
-## `open_index`
+`catalog.sql(statement, limit=100)` is the bounded transport-oriented path. It
+accepts one `SELECT`, disables DuckDB external access, converts values to JSON,
+and reports `columns`, `rows`, `row_count`, `limit`, `truncated`, and catalog
+identity.
 
-```python
-open_index(
-    source: str | PathLike[str] | None = None,
-    *,
-    profile: str,
-    storage_options: Mapping[str, object] | None = None,
-) -> lancedb.Table
-```
+Use `chartcoach.duckdb.register_catalog(connection, catalog)` to add the tables
+to an existing connection. `write_duckdb(catalog, output, overwrite=False)`
+writes a database file.
 
-An index profile is a named LanceDB index stored in the same release as the
-catalog rows. Install the index dependencies before opening one:
+## Open an index as a LanceDB table
+
+Install the index capability:
 
 ```bash
 uv pip install \
   "chartcoach[index] @ https://files.peter.gy/packages/python/chartcoach/0.2.0/892f120cb377/chartcoach-0.2.0-py3-none-any.whl"
 ```
 
-The following template assumes your release publishes the named profile.
-Replace the complete release URL and the profile value with those from your
-release:
+```python
+PROFILE = "minilm-normalized"
+table = catalog.index(PROFILE)
+fts = table.search(
+    "direct labels",
+    query_type="fts",
+    fts_columns="text",
+).limit(5).to_list()
+```
+
+The default table reads a protected shared extraction pinned to its published
+version. Pass a new `directory=Path(...)` to create a caller-owned writable
+extraction. The directory must not exist, and the caller owns its lifetime. A
+platform without POSIX permission protection requires this explicit directory.
+
+Numeric vectors, `.select()`, `.where()`, rerankers, batch queries, and index
+tuning use the returned LanceDB table directly. Apply the `distance_metric`
+reported by `catalog.describe(profile=PROFILE)` to vector queries.
+The release builder creates a full-text index. Vector search scans stored
+vectors until the release producer creates a LanceDB vector index explicitly.
+
+## Search for guideline matches
 
 ```python
-from chartcoach import open_index
-
-table = open_index(
-    "https://catalog.example.com/catalog/releases/<digest>/release.json",
-    profile="sentence-transformers/all-MiniLM-L6-v2",
+result = catalog.search(
+    "direct labels",
+    profile=PROFILE,
+    mode="fts",
+    limit=10,
+    where="role = 'section.advice'",
 )
+matches = result["matches"]
+```
 
-matches = (
-    table.search("direct labels", query_type="fts", fts_columns="text")
-    .where("role = 'section.advice'")
-    .limit(8)
-    .to_list()
+`fts` is the default and keeps embedding providers idle. `vector` and `hybrid`
+pass the text to the embedding function persisted in the LanceDB table. Install
+the exact `python_requirements` reported by
+`catalog.describe(profile=PROFILE)` and register custom aliases before semantic
+search.
+
+Registry variables remain caller-owned:
+
+```python
+from lancedb.embeddings import get_registry
+
+get_registry().set_var("provider-key", "<secret>")
+semantic = catalog.search(
+    "direct labels",
+    profile=PROFILE,
+    mode="vector",
 )
 ```
 
-`open_index` accepts a local release directory or a local or remote
-`catalog.json` or `release.json`. Omitting `source` opens the selected public
-catalog. Authored folders and compiled bundles do not contain release index
-files. A missing profile raises `CatalogError` and lists the available names.
-Missing index dependencies raise `ModuleNotFoundError`.
+Search results contain `matches` and `match_count`. They report
+`documents_considered` and `documents_truncated` separately from the unique
+guideline match count. Match excerpts contain at most 360 characters. Use
+`catalog.read()` for complete evidence. Vector scores are distances. FTS and
+hybrid scores are relevance.
+
+## Errors
+
+Expected chartcoach failures raise `CatalogError`. Its `code` is one of
+`lookup`, `invalid_input`, `integrity`, `unavailable_capability`,
+`incompatible_profile`, `embedding_failure`, or `response_too_large`.
+`details` carries machine-readable recovery context. LanceDB objects retain
+their own exception behavior.

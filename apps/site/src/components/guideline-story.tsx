@@ -73,7 +73,7 @@ export function GuidelineStory() {
             <h2 className="m-0 mt-5 max-w-[43rem] text-balance text-[2.25rem] font-semibold leading-[1.04] tracking-normal text-fg sm:text-[2.9rem] lg:text-[3.45rem] xl:text-[3.85rem]">
               <span className="whitespace-nowrap">Human-readable</span>,{" "}
               <span className="whitespace-nowrap">agent-actionable</span>{" "}
-              <span className="whitespace-nowrap">design knowledge</span>
+              <span className="whitespace-nowrap">visualization guidelines</span>
             </h2>
           </div>
 

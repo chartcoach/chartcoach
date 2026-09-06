@@ -3,153 +3,122 @@ from __future__ import annotations
 from collections.abc import Mapping
 from os import PathLike
 from pathlib import Path
-from typing import TYPE_CHECKING
 
-from ...constants import LANCE_DOCUMENT_TABLE
 from .._object_store import copy_storage_options
-from ..errors import CatalogError
-from ..releases.models import safe_relative_path
-from .cache import cached_index
-from .release import ReleaseLocation, profile_ids, release_location
-from .source import LocalSource, normalize_source
-
-if TYPE_CHECKING:
-    from lancedb import Table
-
-    from ..collection import Catalog
+from ..errors import CatalogError, CatalogProfileError
+from ..manifest import CatalogManifest, manifest_digest
+from ..model import Catalog, _read_catalog_parquet
+from ..profile_layout import discover_profile_artifacts
+from .location import LocalCatalogLocation, normalize_location
+from .profiles import load_profile_metadata, open_profile_index
+from .release import ReleaseLocation, release_location
 
 
 def open_catalog(
-    source: str | PathLike[str] | None = None,
+    location: str | PathLike[str] | None = None,
     *,
     storage_options: Mapping[str, object] | None = None,
 ) -> Catalog:
-    """Open an authored catalog, bundle, or release descriptor."""
+    """Open one authored catalog, bundle, or verified catalog release."""
 
     options = copy_storage_options(storage_options)
-    normalized = normalize_source(source)
-    if isinstance(normalized, LocalSource) and normalized.path.is_dir():
-        direct = _open_local_directory(normalized.path)
-        if direct is not None:
-            return direct
+    normalized = normalize_location(location)
+    if isinstance(normalized, LocalCatalogLocation) and normalized.path.is_dir():
+        return _open_local_directory(normalized.path.absolute(), options)
 
     return _open_release_catalog(release_location(normalized, options))
 
 
-def open_index(
-    source: str | PathLike[str] | None = None,
-    *,
-    profile: str,
-    storage_options: Mapping[str, object] | None = None,
-) -> Table:
-    """Open one release-backed native LanceDB profile."""
-
-    options = copy_storage_options(storage_options)
-    normalized = normalize_source(source)
-    _require_release_source(normalized)
-    return _open_release_index(
-        release_location(normalized, options),
-        profile=profile,
-    )
-
-
-def open_catalog_index(
-    source: str | PathLike[str] | None = None,
-    *,
-    profile: str,
-    storage_options: Mapping[str, object] | None = None,
-) -> tuple[Catalog, Table]:
-    """Open one release snapshot as a catalog and native index table."""
-
-    options = copy_storage_options(storage_options)
-    normalized = normalize_source(source)
-    _require_release_source(normalized)
-    location = release_location(normalized, options)
-    return (
-        _open_release_catalog(location),
-        _open_release_index(location, profile=profile),
-    )
-
-
 def _open_release_catalog(location: ReleaseLocation) -> Catalog:
-    from ..collection import _load_catalog_bundle
-
-    return _load_catalog_bundle(
-        location.artifact_path("MANIFEST.md"),
-        location.artifact_path("entries.parquet"),
-        release=location.release,
-    )
-
-
-def _open_release_index(location: ReleaseLocation, *, profile: str) -> Table:
-    profile = safe_relative_path(profile, label="Embedding profile")
-    artifact_path = f"profiles/{profile}/index.tar.gz"
     try:
-        archive = location.artifact_path(artifact_path)
-        artifact = location.release.artifact(artifact_path)
-    except KeyError:
-        choices = ", ".join(repr(value) for value in profile_ids(location.release))
-        raise CatalogError(
-            f"Catalog release does not publish profile {profile!r}. "
-            f"Available profiles: {choices or 'none'}."
-        ) from None
+        profiles = discover_profile_artifacts(location.release.artifacts)
+    except ValueError as exc:
+        raise CatalogProfileError(f"Catalog profile layout is invalid: {exc}") from exc
+    manifest_path = location.artifact_path("MANIFEST.md")
+    entries_path = location.artifact_path("entries.parquet")
+    manifest = CatalogManifest.from_path(manifest_path)
+    frame = _read_catalog_parquet(entries_path)
+    catalog = Catalog(frame, manifest=manifest)
+    entries_digest = catalog.entries_digest()
+    catalog_manifest_digest = manifest_digest(manifest.markdown)
 
-    try:
-        import lancedb
-    except ModuleNotFoundError as exc:
-        raise ModuleNotFoundError(
-            "Release-backed indexes require the optional `chartcoach[index]` "
-            "dependencies.",
-            name=exc.name,
-        ) from exc
-    index_path = cached_index(archive, artifact.sha256)
-    try:
-        return lancedb.connect(index_path).open_table(LANCE_DOCUMENT_TABLE)
-    except (OSError, RuntimeError, ValueError):
-        index_path = cached_index(archive, artifact.sha256, refresh=True)
-        return lancedb.connect(index_path).open_table(LANCE_DOCUMENT_TABLE)
-
-
-def _require_release_source(source: object) -> None:
-    if (
-        isinstance(source, LocalSource)
-        and source.path.is_dir()
-        and not (source.path / "release.json").is_file()
-    ):
-        raise CatalogError(
-            "Index sources must be a release directory, catalog.json, or "
-            "release.json path or URI."
+    def profile_loader(profile: str):
+        return load_profile_metadata(
+            location,
+            profile,
+            profiles=profiles,
+            entries_digest=entries_digest,
+            manifest_digest=catalog_manifest_digest,
         )
 
+    def index_loader(profile: str, directory: Path | None, public: bool):
+        return open_profile_index(
+            location,
+            profile,
+            profiles=profiles,
+            metadata=profile_loader(profile),
+            directory=directory,
+            public=public,
+        )
 
-def _open_local_directory(path: Path) -> Catalog | None:
+    return Catalog._from_runtime(
+        catalog,
+        release=location.release,
+        resolved_location=location.resolved_location,
+        profile_names=tuple(profiles),
+        profile_loader=profile_loader,
+        index_loader=index_loader,
+    )
+
+
+def _open_local_directory(
+    path: Path,
+    storage_options: Mapping[str, object],
+) -> Catalog:
+    selection_path = path / "catalog.json"
     release_path = path / "release.json"
+    if selection_path.is_file() and release_path.is_file():
+        raise CatalogError(
+            "Catalog directory is ambiguous because it contains both catalog.json "
+            "and release.json."
+        )
+    if selection_path.is_file():
+        return _open_release_catalog(
+            release_location(LocalCatalogLocation(selection_path), storage_options)
+        )
     if release_path.is_file():
-        return None
+        return _open_release_catalog(
+            release_location(LocalCatalogLocation(release_path), storage_options)
+        )
 
-    manifest = (path / "MANIFEST.md").is_file()
-    authored = manifest and (path / "entries").is_dir()
-    bundle = manifest and (path / "entries.parquet").is_file()
+    manifest_exists = (path / "MANIFEST.md").is_file()
+    authored = manifest_exists and (path / "entries").is_dir()
+    bundle = manifest_exists and (path / "entries.parquet").is_file()
     if authored and bundle:
         raise CatalogError(
             "Catalog directory is ambiguous because it contains both entries/ "
             "and entries.parquet."
         )
     if authored:
-        from ..storage import load_catalog
+        from ..authored import load_catalog
 
-        return load_catalog(path)
-    if bundle:
-        from ..collection import _load_catalog_bundle
-
-        return _load_catalog_bundle(
-            path / "MANIFEST.md",
-            path / "entries.parquet",
+        catalog = load_catalog(path)
+    elif bundle:
+        manifest = CatalogManifest.from_path(path / "MANIFEST.md")
+        catalog = Catalog(
+            _read_catalog_parquet(path / "entries.parquet"),
+            manifest=manifest,
         )
-    raise CatalogError(
-        "Catalog directory must contain release.json, or MANIFEST.md with "
-        "entries/ or entries.parquet."
+    else:
+        raise CatalogError(
+            "Catalog directory must contain catalog.json, release.json, or "
+            "MANIFEST.md with entries/ or entries.parquet."
+        )
+    return Catalog._from_runtime(
+        catalog,
+        release=None,
+        resolved_location=str(path),
     )
 
 
-__all__ = ["open_catalog", "open_catalog_index", "open_index"]
+__all__ = ["open_catalog"]

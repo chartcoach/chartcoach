@@ -39,15 +39,11 @@ def test_curation_does_not_import_runtime_or_cache_owners() -> None:
             or target.startswith(
                 (
                     "chartcoach.open_catalog",
-                    "chartcoach.open_index",
                     "chartcoach.catalog.open_catalog",
-                    "chartcoach.catalog.open_index",
                     "chartcoach.catalog.runtime",
                     ".open_catalog",
-                    ".open_index",
                     ".runtime",
                     "..open_catalog",
-                    "..open_index",
                     "..runtime",
                 )
             )

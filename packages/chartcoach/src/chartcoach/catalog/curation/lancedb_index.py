@@ -5,8 +5,9 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from ...constants import LANCE_DOCUMENT_TABLE
-from ..collection import Catalog
 from ..documents import document_rows
+from ..model import Catalog
+from ..profiles import embedding_bindings_from_bytes, validate_embedding_model
 from .dependencies import CURATION_EXTRA, missing_curation_dependency
 
 if TYPE_CHECKING:
@@ -20,7 +21,7 @@ def build_lancedb_index(
     *,
     embedding: EmbeddingFunction,
 ) -> Table:
-    """Build the fixed ChartCoach document table with native LanceDB embedding."""
+    """Build the fixed ChartCoach document table with a LanceDB embedding."""
 
     embedding = _validated_embedding(embedding)
     frame = document_rows(catalog).with_row_index("row_id")
@@ -53,20 +54,22 @@ def _embedding_config(embedding: EmbeddingFunction) -> EmbeddingFunctionConfig:
 def _validated_embedding(embedding: EmbeddingFunction) -> EmbeddingFunction:
     from lancedb.embeddings import get_registry
 
-    from .validation import _EMBEDDING_REMOTE_CODE_ERROR, _embedding_metadata_issue
-
-    if getattr(embedding, "trust_remote_code", False) is not False:
-        raise ValueError(_EMBEDDING_REMOTE_CODE_ERROR)
-
-    metadata = get_registry().get_table_metadata([_embedding_config(embedding)])
+    registry = get_registry()
+    metadata = registry.get_table_metadata([_embedding_config(embedding)])
     if metadata is None:
         raise ValueError("LanceDB did not serialize the embedding function.")
     raw = metadata["embedding_functions"]
-    if issue := _embedding_metadata_issue(raw):
-        raise ValueError(issue)
-    return (
-        get_registry().parse_functions({b"embedding_functions": raw})["vector"].function
+    bindings = embedding_bindings_from_bytes(raw)
+    if len(bindings) != 1:
+        raise ValueError("LanceDB must serialize exactly one embedding binding.")
+    binding = bindings[0]
+    definition = registry.get(binding.name)
+    validate_embedding_model(
+        binding.model,
+        allowed_fields=frozenset(definition.model_fields),
+        sensitive_fields=frozenset(definition.sensitive_keys()),
     )
+    return registry.parse_functions({b"embedding_functions": raw})["vector"].function
 
 
 def _connect(uri: str | PathLike[str]) -> DBConnection:

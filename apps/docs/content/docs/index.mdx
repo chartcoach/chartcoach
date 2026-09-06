@@ -5,13 +5,13 @@ icon: BookOpen
 ---
 
 chartcoach helps you find visualization guidelines and inspect the sources
-behind each recommendation. The Guideline Catalog stores each guideline with
-labels for filtering, separate sections for advice and checks, and its source
-references.
+behind each recommendation. The Guideline Catalog stores each guideline as an
+entry with labels for filtering, separate sections for advice and checks, and
+its references.
 
 ## Read one guideline
 
-This command reads a guideline from a fixed three-record catalog:
+This command reads a guideline from a fixed three-entry catalog:
 
 ```bash
 uvx --from \
@@ -43,14 +43,14 @@ them through a color key...
 The complete output continues through the reasons, applicable situations,
 exceptions, costs, common mistakes, checks, fixes, and source list. The same
 record is available in the
-[catalog browser](https://chartcoach.dev/guidelines/directly-label-series-instead-of-using-a-color-key/).
+[Guideline Catalog site](https://chartcoach.dev/guidelines/directly-label-series-instead-of-using-a-color-key/).
 
-## What a guideline contains
+## What a guideline entry contains
 
-A guideline record keeps the information needed to find, apply, and cite one
-recommendation:
+A guideline entry record keeps the information needed to find, apply, and cite
+one recommendation:
 
-- `id` names the guideline in commands and code.
+- `id` names the guideline entry in commands and code.
 - `labels` support exact filtering, such as `quality:accessibility`.
 - `sections` separate the recommendation from its reasons, limits, checks, and
   fixes.

@@ -17,6 +17,10 @@ def _artifacts() -> dict[str, ReleaseArtifact]:
             sha256="d" * 64,
             bytes=4,
         ),
+        "profiles/minilm/profile.json": ReleaseArtifact(
+            sha256="e" * 64,
+            bytes=5,
+        ),
     }
 
 
@@ -45,6 +49,6 @@ def test_release_requires_safe_core_paths() -> None:
         CatalogRelease(digest=release_digest(artifacts), artifacts=artifacts)
 
     artifacts = _artifacts()
-    artifacts["../outside"] = ReleaseArtifact(sha256="e" * 64, bytes=1)
+    artifacts["../outside"] = ReleaseArtifact(sha256="f" * 64, bytes=1)
     with pytest.raises(ValueError, match="portable relative path"):
         CatalogRelease(digest=release_digest(artifacts), artifacts=artifacts)

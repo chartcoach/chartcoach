@@ -3,10 +3,11 @@ from __future__ import annotations
 import dataclasses as dc
 from collections.abc import Mapping, Sequence
 from types import MappingProxyType
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import bibtexparser
 import polars as pl
+from typing_extensions import TypedDict
 
 from ..constants import DEFAULT_GUIDELINE_URL_TEMPLATE
 from ._polars import explode_frame
@@ -18,7 +19,7 @@ from .schemas import (
 )
 
 if TYPE_CHECKING:
-    from .collection import Catalog
+    from .model import Catalog
 
 CITATION_SOURCE_COLUMNS = (
     "reference_id",
@@ -53,6 +54,32 @@ class ParsedBibtexEntry:
 class ReferenceTables:
     references: pl.DataFrame
     guideline_references: pl.DataFrame
+
+
+class CitationSource(TypedDict, total=False):
+    """One formatted source attached to a guideline citation."""
+
+    reference_id: str
+    source_type: str | None
+    authors_text: str | None
+    year: str | None
+    source_title: str | None
+    journal: str | None
+    booktitle: str | None
+    publisher: str | None
+    doi: str | None
+    url: str | None
+    citation: str
+
+
+class CitationRecord(TypedDict):
+    """One public guideline citation and its source citations."""
+
+    id: str
+    title: str
+    url: str
+    guideline_citation: str
+    sources: list[CitationSource]
 
 
 def parse_bibtex(bibtex_content: str) -> list[str]:
@@ -101,7 +128,7 @@ def build_reference_tables(catalog_df: pl.DataFrame) -> ReferenceTables:
 
     bibtex_to_id: dict[str, str] = {}
     reference_rows: list[dict[str, object]] = []
-    seen_reference_ids: set[str] = set()
+    references_by_id: dict[str, ParsedBibtexEntry] = {}
     for bibtex in exploded.select("bibtex").unique().get_column("bibtex").to_list():
         if not isinstance(bibtex, str):
             continue
@@ -109,9 +136,15 @@ def build_reference_tables(catalog_df: pl.DataFrame) -> ReferenceTables:
         parsed = reference.entry
         reference_id = reference.id
         bibtex_to_id[bibtex] = reference_id
-        if reference_id in seen_reference_ids:
+        previous = references_by_id.get(reference_id)
+        if previous is not None:
+            if previous.entry != reference.entry:
+                raise CatalogValidationError(
+                    f"Conflicting BibTeX definitions for reference id: {reference_id}.",
+                    details={"reference_id": reference_id},
+                )
             continue
-        seen_reference_ids.add(reference_id)
+        references_by_id[reference_id] = reference
 
         authors_text = _string_or_none(parsed.get("author"))
         reference_rows.append(
@@ -177,8 +210,8 @@ def citation_records(
     *,
     ids: Sequence[str],
     url_template: str = DEFAULT_GUIDELINE_URL_TEMPLATE,
-) -> list[dict[str, object]]:
-    """Return public guideline links and formatted source citations for IDs.
+) -> list[CitationRecord]:
+    """Return public guideline links and source citations for guideline entry IDs.
 
     Each result contains `id`, `title`, `url`, `guideline_citation`, and a
     `sources` list. The default URL template targets the public catalog site.
@@ -193,15 +226,21 @@ def citation_records(
 
     order = pl.DataFrame({"id": list(ids), "_catalog_order": range(len(ids))})
     guideline_rows = (
-        order.join(catalog.guidelines().select("id", "title"), on="id", how="inner")
+        order.join(
+            catalog.table("guidelines").select("id", "title"),
+            on="id",
+            how="inner",
+        )
         .sort("_catalog_order")
         .drop("_catalog_order")
         .to_dicts()
     )
-    sources_by_guideline: dict[str, list[dict[str, object]]] = {
+    sources_by_guideline: dict[str, list[CitationSource]] = {
         str(guideline_id): [] for guideline_id in ids
     }
-    source_frame = catalog.guideline_sources().filter(pl.col("guideline_id").is_in(ids))
+    source_frame = catalog.table("guideline_sources").filter(
+        pl.col("guideline_id").is_in(ids)
+    )
     if not source_frame.is_empty():
         for row in source_frame.sort("guideline_id", "reference_id").to_dicts():
             guideline_id = str(row["guideline_id"])
@@ -209,7 +248,7 @@ def citation_records(
                 citation_source_from_row(row)
             )
 
-    records: list[dict[str, object]] = []
+    records: list[CitationRecord] = []
     for row in guideline_rows:
         guideline_id = str(row["id"])
         title = str(row["title"])
@@ -226,12 +265,12 @@ def citation_records(
     return records
 
 
-def citation_source_from_row(row: Mapping[str, object]) -> dict[str, object]:
+def citation_source_from_row(row: Mapping[str, object]) -> CitationSource:
     source = {
         column: row.get(column) for column in CITATION_SOURCE_COLUMNS if column in row
     }
     source["citation"] = source_citation(source)
-    return source
+    return cast(CitationSource, source)
 
 
 def guideline_citation(title: str, guideline_id: str, url: str) -> str:
@@ -316,6 +355,8 @@ def _doi_url(doi: str) -> str:
 
 __all__ = [
     "DEFAULT_GUIDELINE_URL_TEMPLATE",
+    "CitationRecord",
+    "CitationSource",
     "ParsedBibtexEntry",
     "ReferenceTables",
     "build_guideline_sources_df",

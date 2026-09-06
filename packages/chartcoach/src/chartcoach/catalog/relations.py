@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 
 import polars as pl
 
+from .errors import CatalogLookupError
 from .schemas import (
     GUIDELINE_LABELS_SCHEMA,
     GUIDELINE_REFERENCES_SCHEMA,
@@ -15,7 +16,7 @@ from .schemas import (
 )
 
 if TYPE_CHECKING:
-    from .collection import Catalog
+    from .model import Catalog
 
 TABLE_SCHEMAS: dict[str, Mapping[str, object]] = {
     "guidelines": GUIDELINES_SCHEMA,
@@ -37,8 +38,35 @@ def catalog_table(catalog: Catalog, name: str) -> pl.DataFrame:
     """Return one catalog table by name."""
 
     if name not in TABLE_SCHEMAS:
-        raise KeyError(name)
-    return getattr(catalog, name)()
+        raise CatalogLookupError(
+            f"Unknown table: {name}",
+            details={"table": name, "available": list(TABLE_SCHEMAS)},
+            hints=["Call catalog.describe() to inspect catalog tables."],
+        )
+    from .references import build_guideline_sources_df
+    from .tables import (
+        build_guideline_labels_df,
+        build_guidelines_df,
+        build_sections_df,
+    )
+
+    guidelines = build_guidelines_df(catalog.to_frame())
+    if name == "guidelines":
+        return guidelines
+    if name == "sections":
+        return build_sections_df(guidelines)
+    if name == "guideline_labels":
+        return build_guideline_labels_df(guidelines)
+
+    references = catalog._reference_tables()
+    if name == "references":
+        return references.references.clone()
+    if name == "guideline_references":
+        return references.guideline_references.clone()
+    return build_guideline_sources_df(
+        references.guideline_references,
+        references.references,
+    )
 
 
 def catalog_table_rows(catalog: Catalog) -> list[dict[str, object]]:

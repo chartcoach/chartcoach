@@ -1,15 +1,25 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
+from typing import cast
 
 import polars as pl
 import pytest
 from catalog_testkit import write_catalog_entry, write_manifest
 from chartcoach import CatalogError, open_catalog
-from chartcoach.catalog.collection import Catalog
-from chartcoach.catalog.entries import Guideline, Section
+from chartcoach.catalog.curation import write_bundle
 from chartcoach.catalog.errors import CatalogValidationError
+from chartcoach.catalog.guidelines import Guideline, Section
 from chartcoach.catalog.manifest import CatalogManifest, CatalogManifestError
+from chartcoach.catalog.model import Catalog
+
+_INVALID_ROWS_PATH = (
+    Path(__file__).parents[3]
+    / "fixtures"
+    / "catalog-contract"
+    / "invalid-catalog-rows.json"
+)
 
 
 def test_authored_folder_compiles_catalog_rows_and_relations(tmp_path: Path) -> None:
@@ -26,15 +36,23 @@ def test_authored_folder_compiles_catalog_rows_and_relations(tmp_path: Path) -> 
         "sections",
         "references",
     }
-    assert catalog.entry("direct-labels")["body"] == (
+    assert (
+        catalog.read(ids=["direct-labels"], source_detail="none")[0]["sections"][0][
+            "content"
+        ]
+        == "Place the label close to the mark it names [@smith2024]."
+    )
+    assert catalog.table("guidelines").filter(pl.col("id") == "direct-labels").item(
+        0, "body"
+    ) == (
         "## Advice <!-- role: advice -->\n\n"
         "Place the label close to the mark it names [@smith2024]."
     )
-    assert catalog.guideline_labels().get_column("label").to_list() == [
+    assert catalog.table("guideline_labels").get_column("label").to_list() == [
         "chart:line",
         "goal:comparison",
     ]
-    assert catalog.guideline_sources().select(
+    assert catalog.table("guideline_sources").select(
         "guideline_id",
         "reference_id",
         "source_title",
@@ -56,7 +74,7 @@ def test_authored_folder_loads_entries_in_id_order(tmp_path: Path) -> None:
 
     catalog = open_catalog(tmp_path)
 
-    assert catalog.guidelines().get_column("id").to_list() == [
+    assert catalog.table("guidelines").get_column("id").to_list() == [
         "a-guideline",
         "z-guideline",
     ]
@@ -67,14 +85,57 @@ def test_compiled_bundle_roundtrips_manifest_and_rows(tmp_path: Path) -> None:
     write_catalog_entry(tmp_path / "source")
     catalog = open_catalog(tmp_path / "source")
 
-    bundle = catalog.write_bundle(tmp_path / "bundle")
+    bundle = write_bundle(catalog, tmp_path / "bundle")
     reloaded = open_catalog(bundle)
 
     assert reloaded.manifest.section_roles["advice"].name == "advice"
     assert reloaded.to_frame().equals(catalog.to_frame())
 
 
-def test_content_digest_is_entry_order_stable(
+def test_catalog_owns_rows_reference_tables_and_manifest(
+    tmp_path: Path,
+    sample_manifest: CatalogManifest,
+) -> None:
+    write_manifest(tmp_path)
+    write_catalog_entry(tmp_path)
+    catalog = open_catalog(tmp_path)
+    digest = catalog.entries_digest()
+
+    rows = catalog.to_frame()
+    rows[0, "title"] = "Changed title"
+    references = catalog.table("references")
+    references[0, "title"] = "Changed source"
+    guideline_references = catalog.table("guideline_references")
+    guideline_references[0, "guideline_id"] = "changed-id"
+
+    assert catalog.read(ids=["direct-labels"], source_detail="none")[0]["title"] == (
+        "direct-labels"
+    )
+    assert catalog.table("references").get_column("title").to_list() == [
+        "Readable charts"
+    ]
+    assert catalog.table("guideline_references").get_column(
+        "guideline_id"
+    ).to_list() == ["direct-labels"]
+    assert catalog.entries_digest() == digest
+
+    section_roles = {"advice": sample_manifest.section_roles["advice"]}
+    label_families = dict(sample_manifest.label_families)
+    owned_manifest = CatalogManifest(
+        markdown=sample_manifest.markdown,
+        section_roles=section_roles,
+        label_families=label_families,
+    )
+    section_roles.clear()
+    label_families.clear()
+
+    assert list(owned_manifest.section_roles) == ["advice"]
+    assert set(owned_manifest.label_families) == {"chart", "component", "task"}
+    with pytest.raises(TypeError):
+        cast(dict[str, object], owned_manifest.section_roles)["reason"] = object()
+
+
+def test_entries_digest_is_entry_order_stable(
     sample_manifest: CatalogManifest,
 ) -> None:
     first = Guideline(
@@ -107,10 +168,10 @@ def test_content_digest_is_entry_order_stable(
     assert (
         Catalog.from_guidelines(
             [first, second], manifest=sample_manifest
-        ).content_digest()
+        ).entries_digest()
         == Catalog.from_guidelines(
             [second, first], manifest=sample_manifest
-        ).content_digest()
+        ).entries_digest()
     )
 
 
@@ -142,11 +203,19 @@ def test_catalog_rejects_duplicate_ids(sample_manifest: CatalogManifest) -> None
         sections=(Section(role="advice", title="Advice", content="Content."),),
     )
 
-    with pytest.raises(ValueError, match="duplicate guideline ids"):
+    with pytest.raises(ValueError, match="duplicate guideline entry IDs"):
         Catalog.from_guidelines(
             [guideline, guideline],
             manifest=sample_manifest,
         )
+
+
+def test_python_rejects_shared_invalid_catalog_rows() -> None:
+    fixture = json.loads(_INVALID_ROWS_PATH.read_text(encoding="utf-8"))
+
+    for test_case in fixture["cases"]:
+        with pytest.raises((TypeError, ValueError), match=".+"):
+            Guideline.from_mapping(fixture["row"] | test_case["patch"])
 
 
 def test_catalog_folder_requires_manifest(tmp_path: Path) -> None:
@@ -180,8 +249,12 @@ Task-goal labels such as `goal:comparison`.
     )
     write_catalog_entry(tmp_path)
 
-    with pytest.raises(CatalogManifestError, match="undefined section role"):
+    with pytest.raises(
+        CatalogManifestError, match="undefined section role"
+    ) as exc_info:
         open_catalog(tmp_path)
+
+    assert exc_info.value.code == "invalid_input"
 
 
 def test_compiled_bundle_rejects_invalid_rows(

@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from collections.abc import Mapping, Sequence
 
-from .entries import Guideline, Section
+from .guidelines import Guideline, Section
 
 SECTION_HEADING_RE = re.compile(r"^##\s+(.+?)\s*<!--\s*role:\s*(.*?)\s*-->\s*$")
 GUIDELINE_FRONTMATTER_FIELDS = frozenset({"id", "title", "description", "labels"})

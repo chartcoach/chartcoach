@@ -12,13 +12,13 @@ from .relations import (
 )
 
 if TYPE_CHECKING:
-    from .collection import Catalog
+    from .model import Catalog
 
 
 def list_tables(
     catalog: Catalog, *, include_row_counts: bool = False
 ) -> list[dict[str, object]]:
-    """Return query-table names and optional row counts.
+    """Return catalog table names and optional row counts.
 
     The default rows contain `name`, `columns`, and a null `rows` value.
     `include_row_counts=True` returns `name` and the current `rows` count.
@@ -33,7 +33,7 @@ def list_tables(
 
 
 def describe_tables(tables: Sequence[str] = ()) -> list[dict[str, object]]:
-    """Return the static column contract for selected query tables."""
+    """Return the static column contract for selected catalog tables."""
 
     require_string_sequence("tables", tables)
     try:
@@ -48,7 +48,7 @@ def unknown_table_error(tables: Sequence[str]) -> CatalogLookupError:
         f"Unknown table(s): {', '.join(tables)}",
         hints=[
             f"Available tables: {available}",
-            "Call `chartcoach.agent.describe_tables()` to inspect tables in Python.",
+            "Call `catalog.describe()` to inspect tables in Python.",
             "Run `chartcoach catalog schema --tables` to inspect tables.",
         ],
     )

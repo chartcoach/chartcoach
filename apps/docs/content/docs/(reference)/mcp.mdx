@@ -1,118 +1,153 @@
 ---
 title: MCP server
-description: Expose catalog SQL and indexed search as tools for an MCP client.
+description: Describe, run SQL, read, cite, and search one Guideline Catalog through MCP.
 icon: Plug
 ---
 
-The Model Context Protocol (MCP) server opens one catalog and exposes tools for
-SQL and, when configured, indexed search.
+The [Model Context Protocol](https://modelcontextprotocol.io/docs/learn/architecture)
+(MCP) server resolves one `Catalog` at startup. Every tool uses that catalog
+for the server lifetime.
 
 ## Install and start
 
-Install both the MCP server and LanceDB support so either tool can be enabled:
-
 ```bash
 uv tool install \
-  "chartcoach[mcp,index] @ https://files.peter.gy/packages/python/chartcoach/0.2.0/892f120cb377/chartcoach-0.2.0-py3-none-any.whl"
-```
+  "chartcoach[mcp] @ https://files.peter.gy/packages/python/chartcoach/0.2.0/892f120cb377/chartcoach-0.2.0-py3-none-any.whl"
 
-Start the default standard-input and standard-output (`stdio`) server against
-the three-record catalog:
-
-```bash
 chartcoach mcp \
   --source https://files.peter.gy/packages/python/chartcoach/0.2.0/docs-catalog/c0f6dbec3dd31b07763b46fd458733db0b8b50c5793cf9447458119287129420/release.json
 ```
 
-With `stdio`, the MCP client launches this command and communicates through
-the child process. There is no URL.
+The default standard-input and standard-output (`stdio`) transport is launched
+by the MCP client and has no URL.
 
-## Tools
+## Discovery workflow
 
-### `sql`
+Call the tools in this order:
 
-`sql` is available for every opened catalog.
+1. `describe` reports catalog identity, table schemas, vocabulary, and
+   profile names.
+2. `sql` selects compact guideline entry candidate IDs.
+3. `read` returns complete selected entry records and source fields.
+4. `cite` returns the public guideline and source citations.
+5. `search`, when configured, retrieves guideline matches from one startup index profile.
 
-| Input       | Default  | Meaning                                        |
-| ----------- | -------- | ---------------------------------------------- |
-| `statement` | Required | One read-only `SELECT` over the catalog tables |
-| `limit`     | `100`    | Maximum rows returned                          |
+One schema-first SQL query is:
 
-Example input:
+```sql
+select id, title
+from guidelines
+order by id
+limit 5
+```
+
+Every tool advertises a concrete success schema plus this error branch:
 
 ```json
 {
-  "statement": "select id, title from guidelines order by id limit 5",
-  "limit": 5
+  "error": {
+    "code": "lookup",
+    "message": "Unknown guideline entry ID: missing",
+    "details": {}
+  }
 }
 ```
 
-The response contains `columns`, `rows`, `row_count`, `truncated`, `limit`,
-`content_digest`, and `release_digest`. The server rejects multiple statements
-and statements other than `SELECT`. DuckDB cannot open external files through
-this tool.
+Expected failures set MCP `isError` to `true`. Stable codes distinguish
+`lookup`, `invalid_input`, `integrity`, `unavailable_capability`,
+`incompatible_profile`, `embedding_failure`, and `response_too_large`.
+
+## Tools
+
+### `describe`
+
+`describe(profile=null)` reports the bound catalog. Passing a profile
+reads its small verified `profile.json`. The index stays unopened and the
+embedding function stays unconstructed.
+
+### `sql`
+
+`sql(statement, limit=100)` accepts one read-only `SELECT`. `limit` is from 1
+through 100. The result contains typed columns, bounded rows, truncation state,
+and catalog identity. DuckDB external access is disabled.
+
+### `read`
+
+`read(ids, roles=null, source_detail="minimal")` accepts 1 through 100 guideline
+entry IDs and up to 100 section roles. Source detail is `none`, `minimal`, or
+`full`. The result contains `records`, `entries_digest`, `manifest_digest`, and
+`release_digest`.
+
+### `cite`
+
+`cite(ids, url_template=...)` accepts 1 through 100 guideline entry IDs. The
+result contains guideline links, formatted source citations, and catalog
+identity.
 
 ### `search`
 
-Pass `--profile` when the release contains a named search index. The server
-then adds `search` with these inputs:
+Start the server with an index profile:
 
-| Input          | Default  | Meaning                                       |
-| -------------- | -------- | --------------------------------------------- |
-| `search_query` | Required | Text to search                                |
-| `mode`         | `fts`    | `fts`, `vector`, or `hybrid`                  |
-| `limit`        | `10`     | Maximum indexed documents considered          |
-| `where`        | `null`   | Optional filter over indexed document columns |
-| `vector`       | `null`   | Required for vector and hybrid search         |
+```bash
+uv tool install \
+  "chartcoach[mcp,index] @ https://files.peter.gy/packages/python/chartcoach/0.2.0/892f120cb377/chartcoach-0.2.0-py3-none-any.whl"
 
-Full-text search needs `search_query` alone. Vector and hybrid search also
-need a vector with the profile's embedding dimensions. A filter such as
-`role = 'section.advice'` limits matches to the `advice` section.
+chartcoach mcp \
+  --source "https://catalog.example.com/catalog/releases/<digest>/release.json" \
+  --profile minilm-normalized
+```
 
-The next server command is a template. Replace `<digest>` and the profile name
-with values from a release that publishes that index:
+`search(text, limit=10, where=null, mode="fts")` binds the startup index profile.
+`limit` is from 1 through 100 and counts search document hits before guideline
+deduplication. The result contains `matches` and `match_count`. FTS and hybrid
+scores are relevance. Vector scores are distances. Match excerpts are bounded
+to 360 characters.
+
+Vector and hybrid search use the persisted LanceDB embedding function. Pass a
+caller-owned variable file when its embedding model contains `$var:name`
+values:
 
 ```bash
 chartcoach mcp \
-  --source "https://catalog.example.com/catalog/releases/<digest>/release.json" \
-  --profile sentence-transformers/all-MiniLM-L6-v2
+  --source "$CATALOG_SOURCE" \
+  --profile "$PROFILE" \
+  --embedding-vars ./embedding-vars.json
 ```
 
-Use an exact `release.json` URL so the catalog rows and search index stay fixed
-to the same digest. Search responses report that resolved digest.
+Registry-variable values stay out of result data, errors, logs, and artifacts.
+
+## Response budget
+
+Structured tool data is capped at 64 KiB. A complete result that exceeds the
+budget returns `response_too_large` with instructions to narrow guideline entry
+IDs, source detail, SQL columns, or result limits. Selected evidence and SQL
+scalar values are never silently clipped.
 
 ## Transports
 
-| Transport         | How the client connects                |
-| ----------------- | -------------------------------------- |
-| `stdio`           | Launches the command directly. No URL. |
-| `sse`             | `http://127.0.0.1:8000/sse`            |
-| `streamable-http` | `http://127.0.0.1:8000/mcp`            |
-
-Start a local streamable HTTP server with:
+| Transport         | Client connection           |
+| ----------------- | --------------------------- |
+| `stdio`           | Launch the command directly |
+| `sse`             | `http://127.0.0.1:8000/sse` |
+| `streamable-http` | `http://127.0.0.1:8000/mcp` |
 
 ```bash
 chartcoach mcp --transport streamable-http
 ```
 
-chartcoach's HTTP transports do not configure authentication. Keep the
-default loopback host for local use. Before binding another address, place the
-endpoint behind an authenticated gateway or private network and block direct
-public access to the chartcoach port.
+The HTTP transports have no built-in authentication. Keep the default
+loopback host for local use. Put any wider listener behind an authenticated
+gateway or private network.
 
 ## Configuration
 
-Command flags override their matching environment variables:
+Command options override matching environment variables:
 
-| Variable                   | Default                   | Controls                             |
-| -------------------------- | ------------------------- | ------------------------------------ |
-| `CHARTCOACH_SOURCE`        | Official selected catalog | Catalog path or URL                  |
-| `CHARTCOACH_INDEX_PROFILE` | None                      | Search profile name                  |
-| `CHARTCOACH_MCP_TRANSPORT` | `stdio`                   | `stdio`, `sse`, or `streamable-http` |
-| `CHARTCOACH_MCP_HOST`      | `127.0.0.1`               | HTTP listener address                |
-| `CHARTCOACH_MCP_PORT`      | `8000`                    | HTTP listener port                   |
-| `CHARTCOACH_MCP_LOG_LEVEL` | `INFO`                    | Server log level                     |
-
-`search` returns candidate guideline IDs with `matched_role` and
-`matched_text`. Query `sections` and `guideline_sources` with `sql`, filtering
-on `guideline_id`, before applying a recommendation.
+| Variable                   | Default                   | Controls              |
+| -------------------------- | ------------------------- | --------------------- |
+| `CHARTCOACH_SOURCE`        | Official selected catalog | Catalog path or URI   |
+| `CHARTCOACH_INDEX_PROFILE` | None                      | Startup index profile |
+| `CHARTCOACH_MCP_TRANSPORT` | `stdio`                   | Transport             |
+| `CHARTCOACH_MCP_HOST`      | `127.0.0.1`               | HTTP listener address |
+| `CHARTCOACH_MCP_PORT`      | `8000`                    | HTTP listener port    |
+| `CHARTCOACH_MCP_LOG_LEVEL` | `INFO`                    | Server log level      |

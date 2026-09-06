@@ -5,15 +5,15 @@ import type { Guideline } from "./model";
 export const REQUIRED_MANIFEST_HEADINGS = ["Section Roles", "Label Families"] as const;
 
 export type ManifestDefinition = {
-  name: string;
-  description: string;
-  examples: string[];
+  readonly name: string;
+  readonly description: string;
+  readonly examples: readonly string[];
 };
 
 export type CatalogManifest = {
-  markdown: string;
-  sectionRoles: Record<string, ManifestDefinition>;
-  labelFamilies: Record<string, ManifestDefinition>;
+  readonly markdown: string;
+  readonly sectionRoles: Readonly<Record<string, ManifestDefinition>>;
+  readonly labelFamilies: Readonly<Record<string, ManifestDefinition>>;
 };
 
 type ManifestDefinitions = {
@@ -24,11 +24,16 @@ type ManifestDefinitions = {
 const headingPattern = /^(#{1,6})[ \t]+(.+?)[ \t]*#*[ \t]*$/;
 const codeSpanPattern = /`([^`\n]+)`/g;
 
+function manifestDefinitions(): Record<string, ManifestDefinition> {
+  const definitions: Record<string, ManifestDefinition> = Object.create(null);
+  return definitions;
+}
+
 export function parseCatalogManifest(markdown: string): CatalogManifest {
   const requiredSeen = new Set<string>();
   const definitions: ManifestDefinitions = {
-    "Section Roles": {},
-    "Label Families": {},
+    "Section Roles": manifestDefinitions(),
+    "Label Families": manifestDefinitions(),
   };
   let currentHeading: string | undefined;
   let currentName: string | undefined;
@@ -104,16 +109,24 @@ export function parseCatalogManifest(markdown: string): CatalogManifest {
   }
   for (const heading of REQUIRED_MANIFEST_HEADINGS) {
     if (Object.keys(definitions[heading]).length === 0) {
-      throw new CatalogError(`Manifest heading ${heading} must define entries.`);
+      throw new CatalogError(`Manifest heading ${heading} must contain definitions.`);
     }
   }
   validateLabelFamilyExamples(Object.values(definitions["Label Families"]));
 
-  return {
+  return copyCatalogManifest({
     markdown: markdown.endsWith("\n") ? markdown : `${markdown}\n`,
     sectionRoles: definitions["Section Roles"],
     labelFamilies: definitions["Label Families"],
-  };
+  });
+}
+
+export function copyCatalogManifest(manifest: CatalogManifest): CatalogManifest {
+  return Object.freeze({
+    markdown: manifest.markdown,
+    sectionRoles: copyDefinitions(manifest.sectionRoles),
+    labelFamilies: copyDefinitions(manifest.labelFamilies),
+  });
 }
 
 export function validateManifestCoverage(
@@ -138,10 +151,10 @@ export function validateManifestCoverage(
   }
 
   const missingRoles = Array.from(usedRoles)
-    .filter((role) => manifest.sectionRoles[role] === undefined)
+    .filter((role) => !Object.hasOwn(manifest.sectionRoles, role))
     .sort();
   const missingFamilies = Array.from(usedFamilies)
-    .filter((family) => manifest.labelFamilies[family] === undefined)
+    .filter((family) => !Object.hasOwn(manifest.labelFamilies, family))
     .sort();
 
   const errors: string[] = [];
@@ -156,7 +169,7 @@ export function validateManifestCoverage(
   }
 }
 
-function validateLabelFamilyExamples(definitions: ManifestDefinition[]) {
+function validateLabelFamilyExamples(definitions: readonly ManifestDefinition[]) {
   for (const definition of definitions) {
     const familyExamples: string[] = [];
     const invalidExamples: string[] = [];
@@ -184,4 +197,18 @@ function validateLabelFamilyExamples(definitions: ManifestDefinition[]) {
       );
     }
   }
+}
+
+function copyDefinitions(
+  definitions: Readonly<Record<string, ManifestDefinition>>,
+): Readonly<Record<string, ManifestDefinition>> {
+  const owned = manifestDefinitions();
+  for (const [name, definition] of Object.entries(definitions)) {
+    owned[name] = Object.freeze({
+      name: definition.name,
+      description: definition.description,
+      examples: Object.freeze([...definition.examples]),
+    });
+  }
+  return Object.freeze(owned);
 }

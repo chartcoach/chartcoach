@@ -3,13 +3,13 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from chartcoach.catalog.collection import Catalog
 from chartcoach.catalog.curation import build_release
+from chartcoach.catalog.model import Catalog
 from chartcoach.cli.main import main as chartcoach_cli
 from click.testing import CliRunner
 
 
-def test_catalog_overview_reports_local_content_identity(
+def test_catalog_describe_reports_local_catalog_identity(
     runner: CliRunner,
     sample_catalog_path: Path,
 ) -> None:
@@ -17,27 +17,29 @@ def test_catalog_overview_reports_local_content_identity(
         chartcoach_cli,
         [
             "catalog",
-            "overview",
+            "describe",
             "--source",
             str(sample_catalog_path),
-            "--format",
-            "json",
         ],
     )
 
     assert result.exit_code == 0, result.output
-    overview = json.loads(result.stdout)
-    assert overview["source"] == str(sample_catalog_path)
-    assert overview["release_digest"] is None
-    assert len(overview["content_digest"]) == 64
-    assert {row["name"] for row in overview["tables"]} == {
+    description = json.loads(result.stdout)
+    assert description["resolved_location"] == str(sample_catalog_path)
+    assert description["release_digest"] is None
+    assert len(description["entries_digest"]) == 64
+    assert len(description["manifest_digest"]) == 64
+    assert {row["name"] for row in description["tables"]} == {
         "guidelines",
         "sections",
         "guideline_labels",
+        "references",
+        "guideline_references",
+        "guideline_sources",
     }
 
 
-def test_catalog_overview_preserves_the_resolved_release_digest(
+def test_catalog_describe_preserves_the_resolved_release_digest(
     runner: CliRunner,
     sample_catalog: Catalog,
     tmp_path: Path,
@@ -49,15 +51,47 @@ def test_catalog_overview_preserves_the_resolved_release_digest(
         chartcoach_cli,
         [
             "catalog",
-            "overview",
+            "describe",
             "--source",
             str(release_root),
-            "--format",
-            "json",
         ],
     )
 
     assert result.exit_code == 0, result.output
-    overview = json.loads(result.stdout)
-    assert overview["source"] == str(release_root)
-    assert overview["release_digest"] == release.digest
+    description = json.loads(result.stdout)
+    assert description["resolved_location"] == str(release_root / "release.json")
+    assert description["release_digest"] == release.digest
+
+
+def test_catalog_list_json_reports_truncation_and_successful_empty_results(
+    runner: CliRunner,
+    sample_catalog_path: Path,
+) -> None:
+    truncated = runner.invoke(
+        chartcoach_cli,
+        [
+            "catalog",
+            "list",
+            "--source",
+            str(sample_catalog_path),
+            "--limit",
+            "1",
+        ],
+    )
+    empty = runner.invoke(
+        chartcoach_cli,
+        [
+            "catalog",
+            "list",
+            "--source",
+            str(sample_catalog_path),
+            "--contains",
+            "no-such-guideline-text",
+        ],
+    )
+
+    assert truncated.exit_code == 0, truncated.output
+    assert json.loads(truncated.stdout)["truncated"] is True
+    assert empty.exit_code == 0, empty.output
+    assert json.loads(empty.stdout)["rows"] == []
+    assert "Guidance:" in empty.stderr
