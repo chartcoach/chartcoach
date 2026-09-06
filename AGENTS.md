@@ -1,60 +1,69 @@
 # chartcoach Agent Guide
 
-chartcoach is a guideline catalog, public site, docs site, and catalog-loader
-monorepo. Use `pnpm` for JavaScript and `uv` for Python.
+chartcoach is a visualization design guideline catalog monorepo with public web apps, Python and
+JavaScript readers, a CLI, and catalog curation tools.
 
 ## Responsibility
 
-Treat changes to the cataloging scheme, public APIs, site, and docs as user-facing surface changes.
-Prefer small, typed, source-backed changes over broad helpers or silent
-fallbacks. If a current caller does not need an alias or shim, remove it.
-Before changing a module, read its nearest README, package manifest, and tests.
+- Treat catalog schemas, release records, public APIs, CLI output, and site copy
+  as user-facing contracts.
+- Keep one catalog wire shape across Python, JavaScript, fixtures, and web apps.
+- Keep the base Python package compatible with Pyodide. Put LanceDB, Obstore,
+  UMAP, MCP, and other native or service integrations behind package extras.
+- Route curation storage through Obspec protocols and Obstore implementations.
+- Preserve immutable digest-addressed releases and the single `catalog.json`
+  selection record.
+- Prefer direct changes over aliases, compatibility layers, generated models,
+  and speculative abstractions.
+- Read the nearest README, package manifest, and behavior tests before editing a
+  package.
 
-## Repository Map
+## Ownership
 
-- `apps/site`: Astro and MDX marketing site with the Guideline Catalog browser.
-- `apps/docs`: Next.js and Fumadocs technical docs site.
-- `packages/brand`: shared web identity package with canonical brand assets,
-  Poppins imports, CSS tokens, generated PNGs, and public asset sync checks for
-  `apps/site` and `apps/docs`.
-- `packages/catalog-javascript`: JS loaders, parsers, and catalog wire types.
-- `packages/catalog-python`: Python catalog package and `chartcoach` CLI.
-
-## Invariants
-
-- Catalog entries are source data. Do not invent alternate record shapes in UI,
-  loaders, or site code.
-- Wire-shape changes must update the Python reader, JavaScript reader, docs, and
-  site code that consumes the shape.
-- Public copy should be terse and concrete. Say what the reader can inspect,
-  run, or compare. Avoid stock rationale and vague filler.
-- Dependency changes must include the matching lockfile changes.
-- `packages/catalog-python` is the only Python package intended for PyPI.
+- `apps/site`: Astro public site, Guideline Catalog browser, and site build integrations.
+- `apps/docs`: Next.js and Fumadocs product documentation.
+- `packages/brand`: reviewed web assets, font imports, and CSS tokens.
+- `packages/catalog`: browser-safe release and catalog readers.
+- `packages/chartcoach`: Python API, CLI, MCP server, and curation code.
+- `fixtures/catalog-release`: release contract shared by readers and the site.
 
 ## Commands
 
-- Local web dev: `pnpm dev` starts `apps/site` and `apps/docs` through the
-  top-level workspace `portless` dependency. Use `pnpm --dir apps/site dev`
-  for `https://chartcoach.localhost` and `pnpm --dir apps/docs dev` for
-  `https://docs.chartcoach.localhost`. The printed URL may include a proxy
-  port such as `:1355`.
-- Keep `portless` as a root workspace dev dependency. Do not add app-local
-  copies.
-- Site: `pnpm --dir apps/site lint` and `pnpm --dir apps/site build`.
-- Brand assets: `pnpm brand:sync` after changing canonical assets, then
-  `pnpm brand:check`.
-- JS packages: `pnpm --dir <package> lint`, `pnpm --dir <package> typecheck`,
-  and the local build or test script.
-- Python packages: `uv run ruff check .`, `uv run ty check .`,
-  `uv run pyrefly check`, and targeted pytest commands such as
-  `uv run pytest packages/catalog-python/tests`.
-- Cross-workspace: `pnpm lint`, `pnpm typecheck`, `pnpm build`, `pnpm test`.
-- CI should keep visible workflow steps for install, format, lint, typecheck,
-  test, build, and publish. Use Makefile targets for the concrete QA gates, but
-  call simple `pnpm` and `uv` setup or publish commands directly.
-- Cloudflare Pages build commands should run `./scripts/cloudflare-setup.sh`
-  before the app build command.
-- Handoff QA: before handoff for code, workflow, package, or generated-asset
-  changes, run the relevant install plus format, lint, typecheck, test, and
-  build gates. If a gate cannot run, report the exact command, failure, and
-  remaining risk.
+Install both workspaces from the repository root:
+
+```sh
+pnpm install
+uv sync --locked --package chartcoach --all-groups --all-extras
+```
+
+Run the complete JavaScript and web gate from the repository root:
+
+```sh
+pnpm ready
+```
+
+Use the Make gates for Python changes:
+
+```sh
+make format lint typecheck test build
+```
+
+`pnpm dev` starts both web apps. Package-native commands remain available for a
+focused build, test, typecheck, or dev server.
+
+## Change Rules
+
+- Update both readers and the shared fixture when the catalog wire shape changes.
+- Update lockfiles with dependency changes.
+- Keep shared web assets and styles in `packages/brand` and import them through
+  package exports.
+- Validate through the boundary changed by the patch. Run `pnpm ready` for a
+  cross-workspace JavaScript change and all Python Make gates for a Python
+  package change.
+- Report any skipped gate with its command, failure, and remaining risk.
+
+## Development Contracts
+
+- [Architecture and ownership](development_docs/architecture.md)
+- [Development workflow](development_docs/development.md)
+- [Releases and catalog data](development_docs/releases-and-data.md)

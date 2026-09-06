@@ -1,86 +1,61 @@
 ---
 title: Agents
-description: Route chart discussion, feedback, recommendations, and catalog improvement drafts through chartcoach Agent integrations.
+description: Retrieve, verify, and cite Guideline Catalog records with chartcoach skills.
 icon: Bot
 ---
 
-chartcoach provides Agent integrations through agent skills and MCP tools. The
-top-level `$chartcoach` skill routes tasks to workflow skills bundled with the
-installed `chartcoach` package.
+Install the chartcoach skills, then invoke `$chartcoach` in the current agent
+session.
 
 ```bash
 npx skills add chartcoach/skills
-
-uvx chartcoach@latest skills list
+codex 'Use $chartcoach to review this chart screenshot for labels and accessibility.'
 ```
 
-Invoke `$chartcoach` in the current agent session:
+The Python package also serves the skill text:
 
 ```bash
-codex \
-  'Use $chartcoach to review this chart screenshot for labels, legends, and accessibility.'
-```
-
-## Skill paths
-
-| Skill         | Use it for                                                          |
-| ------------- | ------------------------------------------------------------------- |
-| `core`        | Catalog source, output formats, command recovery, and index setup   |
-| `discuss`     | Cited design discussion, tradeoffs, comparisons, and source tracing |
-| `visfeedback` | Feedback on an observed chart or screenshot                         |
-| `visrec`      | Visualization recommendations from a data task and constraints      |
-| `contribute`  | Local catalog improvement issue drafts                              |
-
-Inspect bundled skill text:
-
-```bash
-uvx chartcoach@latest skills list --format jsonl
-
+uvx chartcoach@latest skills
 uvx chartcoach@latest skills get core
-
 uvx chartcoach@latest skills get visfeedback
 ```
 
-## Evidence flow
+## Skills
 
-Agents should separate discovery from cited evidence before writing feedback:
+| Skill         | Task                                                                                            |
+| ------------- | ----------------------------------------------------------------------------------------------- |
+| `core`        | Choose a catalog source, inspect vocabulary, retrieve records, and recover from command errors. |
+| `discuss`     | Compare design choices and trace claims to catalog sources.                                     |
+| `visfeedback` | Review an observed chart or screenshot.                                                         |
+| `visrec`      | Recommend a visualization from a data task and constraints.                                     |
+| `contribute`  | Draft a local catalog improvement issue for human review.                                       |
+
+## Evidence workflow
+
+Use a short retrieval chain:
 
 ```text
-catalog shape -> candidate guidelines -> exact guideline -> citation -> answered claim
+catalog vocabulary -> candidate ids -> exact record -> formatted citation -> claim
 ```
 
-Read the live catalog shape with `overview`, `manifest`, `roles`, and `labels`.
-Discover candidate guidelines with `list`, `query`, `sql`, or `find`. Verify
-each candidate guideline with `catalog read`, then produce links and source
-references with `catalog cite`.
-
-The `list`, `query`, `sql`, and `find` commands discover candidate guidance.
-`catalog read` fetches the exact text an agent should inspect before writing a
-sourced claim.
+Inspect roles and labels before using exact catalog vocabulary:
 
 ```bash
-uvx chartcoach@latest catalog query --label chart:bar:use --limit 5 --format jsonl
-
-uvx chartcoach@latest catalog read compare-percentages-with-bars-not-pies \
-  --source-detail minimal \
-  --format json
-
-uvx chartcoach@latest catalog cite compare-percentages-with-bars-not-pies \
-  --format json
+chartcoach catalog overview --format json
+chartcoach catalog roles --format json
+chartcoach catalog labels --format json
 ```
 
-## Contribution drafts
-
-Use `contribute` after retrieval identifies a catalog gap, conflict, duplicate,
-or guideline with unclear application. The skill drafts local issue Markdown for
-human review.
+Find candidates, then verify each selected record:
 
 ```bash
-uvx chartcoach@latest skills get contribute
+chartcoach catalog list --contains "direct labels" --format json
+chartcoach catalog read <guideline-id> --source-detail minimal --format markdown
+chartcoach catalog cite <guideline-id> --format markdown
 ```
 
-The draft stays local until a human approves posting, submitting, or disclosing
-it.
+Use `catalog sql` for relationships across catalog tables. Use `catalog find`
+for broader indexed discovery. Both return candidates that still require an
+exact `catalog read`.
 
-[MCP](/mcp) provides catalog SQL and search as tool invocations for agent
-platforms.
+[MCP](/mcp) exposes the SQL and indexed search steps as tool calls.

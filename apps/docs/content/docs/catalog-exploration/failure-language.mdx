@@ -1,62 +1,46 @@
 ---
 title: Failure search
-description: Search indexed mistake sections when reviewer wording does not map cleanly to known labels.
+description: Search indexed mistake sections with reviewer language, then verify the selected guideline.
 icon: SearchCheck
 ---
 
-Use indexed search when a reviewer phrase does not map cleanly to a known label.
-This example searches only `mistakes` sections, then reads the exact section for
-one candidate guideline.
+Use indexed search when reviewer wording maps poorly to exact titles or labels.
+This example restricts retrieval to the manifest's `mistakes` role.
 
 ```bash
 QUERY=${QUERY:-"uncertainty shown as exact values confidence interval misleading"}
-```
 
-## Search mistake sections
-
-```bash
-uvx --from 'chartcoach[index]@latest' chartcoach catalog find \
+chartcoach catalog find \
+  --profile openai/text-embedding-3-large \
   --mode fts \
   --where "role = 'section.mistakes'" \
-  --limit 3 \
-  --format table \
+  --limit 5 \
+  --format compact \
   "${QUERY}"
 ```
 
-Output, shortened for the page:
-
-| Rank | Guideline id                                               | Matched role       | Matched text                                                                                                    |
-| ---: | ---------------------------------------------------------- | ------------------ | --------------------------------------------------------------------------------------------------------------- |
-|    1 | `use-standard-uncertainty-display-with-text-explanation`   | `section.mistakes` | Showing a confidence interval without any textual explanation.                                                  |
-|    2 | `do-not-use-caption-only-fixes-for-ci-charts`              | `section.mistakes` | Add definitions or extra text about prediction intervals while leaving the confidence-interval marks unchanged. |
-|    3 | `show-prediction-intervals-for-treatment-effect-judgments` | `section.mistakes` | Keep 95% confidence-interval bars and assume readers will mentally convert them into outcome variability.       |
-
-The index reports roles as `section.<role>`. Use the manifest role name when
-reading the exact record.
-
-## Read the selected section
+Indexed roles use `section.<role>`. `catalog read --section` receives the
+manifest role itself:
 
 ```bash
-GUIDELINE_ID=use-standard-uncertainty-display-with-text-explanation
-
-uvx chartcoach@latest catalog read "${GUIDELINE_ID}" \
+chartcoach catalog read <guideline-id> \
   --section mistakes \
   --source-detail minimal \
   --format markdown
 ```
 
-Use JSONL with [jq](https://jqlang.org/) when a script or agent should consume
-search candidates:
+Use JSON when another process consumes search candidates:
 
 ```bash
-uvx --from 'chartcoach[index]@latest' chartcoach catalog find \
+chartcoach catalog find \
+  --profile openai/text-embedding-3-large \
   --mode fts \
   --where "role = 'section.mistakes'" \
-  --limit 3 \
-  --format jsonl \
+  --limit 5 \
+  --format json \
   "${QUERY}" |
-  jq -s 'map({id, title, role: .matched_role, text: (.matched_text | split("\n")[0])})'
+  jq '.rows[] | {id, title, role: .matched_role}'
 ```
 
-Run `catalog read` or `catalog cite` before using a search result as evidence in
-an answer, critique, or generated page.
+An indexed match identifies a candidate document. Read the guideline before
+using its text as evidence.

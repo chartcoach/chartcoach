@@ -1,135 +1,54 @@
 ---
 title: Source authors
-description: Join guidelines to source references to find guidance derived from sources authored by a selected researcher.
+description: Join guidelines to source records authored by a selected researcher.
 icon: UserRoundSearch
 ---
 
-Source-author queries answer questions such as "show me every guideline based
-on sources authored by Jeff Heer." Replace `AUTHOR` to search for another
-researcher.
+Search `authors_text` to connect a researcher to the guidelines that cite their
+work.
 
 ```bash
 AUTHOR=${AUTHOR:-Heer}
-LIMIT=${LIMIT:-4}
-```
+LIMIT=${LIMIT:-10}
 
-## Find matching sources
-
-```bash
-uvx chartcoach@latest catalog sql "
-select
-  id,
-  year,
-  source_type,
-  authors_text,
-  left(title, 72) as title
-from \"references\"
-where authors_text ilike '%${AUTHOR}%'
-order by year, id
-limit ${LIMIT}
-" --format table
-```
-
-Output:
-
-| ID                                           | Year | Source type     | Authors                                                                                   | Title                                                                                    |
-| -------------------------------------------- | ---- | --------------- | ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `heerCrowdsourcingGraphicalPerception2010`   | 2010 | `inproceedings` | Heer, Jeffrey and Bostock, Michael                                                        | Crowdsourcing graphical perception: using mechanical turk to assess visualization design |
-| `heerTourVisualizationZoo2010`               | 2010 | `article`       | Heer, Jeffrey and Bostock, Michael and Ogievetsky, Vadim                                  | A tour through the visualization zoo                                                     |
-| `segelNarrativeVisualizationTelling2010`     | 2010 | `article`       | Segel, E and Heer, J                                                                      | Narrative Visualization: Telling Stories with Data                                       |
-| `linSelectingSemanticallyResonantColors2013` | 2013 | `article`       | Lin, Sharon and Fortuna, Julie and Kulkarni, Chinmay and Stone, Maureen and Heer, Jeffrey | Selecting Semantically-Resonant Colors for Data Visualization                            |
-
-The query uses `authors_text`, so it catches full names and abbreviated source
-forms such as `Heer, J`.
-
-## Count the connected guidance
-
-```bash
-uvx chartcoach@latest catalog sql "
-select
-  count(distinct r.id) as matching_sources,
-  count(distinct g.id) as guidelines
-from guidelines g
-join guideline_sources gs on gs.guideline_id = g.id
-join \"references\" r on r.id = gs.reference_id
-where r.authors_text ilike '%${AUTHOR}%'
-" --format table
-```
-
-Output for `AUTHOR=Heer`:
-
-| Matching sources | Guidelines |
-| ---------------: | ---------: |
-|               11 |         47 |
-
-## List connected guidelines
-
-```bash
-LIMIT=${LIMIT:-6}
-
-uvx chartcoach@latest catalog sql "
+chartcoach catalog sql "
 select distinct
   g.id,
-  left(g.title, 80) as title,
+  g.title,
+  r.id as source_id,
   r.year,
-  r.id as source_id
+  r.authors_text
 from guidelines g
 join guideline_sources gs on gs.guideline_id = g.id
 join \"references\" r on r.id = gs.reference_id
 where r.authors_text ilike '%${AUTHOR}%'
 order by r.year, r.id, g.id
 limit ${LIMIT}
-" --format table
+"
 ```
 
-Output:
+`authors_text` preserves the structural BibTeX author list, including
+abbreviated names from the source record.
 
-| Guideline id                                                         | Title                                                                  | Year | Source id                                  |
-| -------------------------------------------------------------------- | ---------------------------------------------------------------------- | ---- | ------------------------------------------ |
-| `align-compared-bars-to-a-common-baseline`                           | Align compared bars to a common baseline                               | 2010 | `heerCrowdsourcingGraphicalPerception2010` |
-| `avoid-perfect-square-targets-in-rectangle-area-comparisons`         | Avoid perfect-square targets when readers must compare rectangle areas | 2010 | `heerCrowdsourcingGraphicalPerception2010` |
-| `set-chart-height-to-at-least-80-pixels-for-0-100-value-comparisons` | Set chart height to at least 80 pixels for 0-100 value comparisons     | 2010 | `heerCrowdsourcingGraphicalPerception2010` |
-| `set-reference-gridlines-near-20-percent-opacity`                    | Set reference gridlines near 20% opacity                               | 2010 | `heerCrowdsourcingGraphicalPerception2010` |
-
-Use JSONL with [jq](https://jqlang.org/) when another tool should consume the
-same rows:
+Count the connected records before choosing examples:
 
 ```bash
-uvx chartcoach@latest catalog sql "
-select distinct g.id, g.title, r.year, r.id as source_id
-from guidelines g
-join guideline_sources gs on gs.guideline_id = g.id
-join \"references\" r on r.id = gs.reference_id
-where r.authors_text ilike '%${AUTHOR}%'
-order by r.year, r.id, g.id
-limit ${LIMIT}
-" --format jsonl |
-  jq -s 'map({id, title, source_id, year})'
-```
-
-Choose ids from the output, then join them to their source rows:
-
-```bash
-uvx chartcoach@latest catalog sql "
+chartcoach catalog sql "
 select
-  gs.guideline_id,
-  gs.reference_id as source_id,
-  gs.year,
-  gs.source_type,
-  gs.doi
+  count(distinct r.id) as sources,
+  count(distinct gs.guideline_id) as guidelines
 from guideline_sources gs
-where gs.guideline_id in (
-  'align-compared-bars-to-a-common-baseline',
-  'use-semantically-resonant-hues-for-categorical-values'
-)
-order by gs.guideline_id, gs.year, gs.reference_id
-" --format table
+join \"references\" r on r.id = gs.reference_id
+where r.authors_text ilike '%${AUTHOR}%'
+" --format json
 ```
 
-Output:
+Read the selected guideline and format its source citations:
 
-| Guideline id                                            | Source id                                    | Year | Source type     | DOI                       |
-| ------------------------------------------------------- | -------------------------------------------- | ---- | --------------- | ------------------------- |
-| `align-compared-bars-to-a-common-baseline`              | `heerCrowdsourcingGraphicalPerception2010`   | 2010 | `inproceedings` | `10.1145/1753326.1753357` |
-| `align-compared-bars-to-a-common-baseline`              | `zengReviewCollationGraphical2023`           | 2023 | `inproceedings` | `10.1145/3544548.3581349` |
-| `use-semantically-resonant-hues-for-categorical-values` | `linSelectingSemanticallyResonantColors2013` | 2013 | `article`       | `10.1111/cgf.12127`       |
+```bash
+chartcoach catalog read <guideline-id> --source-detail full
+chartcoach catalog cite <guideline-id>
+```
+
+Use `guideline_sources` when the query needs guideline id and source metadata
+in one row. Use `references` when the source itself is the unit of analysis.

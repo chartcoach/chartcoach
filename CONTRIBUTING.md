@@ -1,109 +1,71 @@
 # Contributing
 
-chartcoach is a research monorepo for a visualization guideline catalog, the
-public site, shared UI, and catalog loaders.
-
-## Checklist
-
-Before sending a substantial change, make sure you have:
-
-- discussed broad API, data-shape, dependency, artifact, or UX changes first
-- installed both JavaScript and Python workspaces
-- run the checks closest to the files you touched
-- updated matching readers, docs, and lockfiles when behavior, data shapes, or dependencies change.
-
-## Substantial Changes
-
-Open an issue or talk with a maintainer before work that changes:
-
-1. catalog record shapes or parsing semantics
-2. published Python or JavaScript APIs
-3. required or optional dependencies
-4. generated artifact policy or stored data layout
-5. public site information architecture or visual direction
-6. default configuration
-7. broad internal boundaries or package ownership.
-
-## Setup
-
-Prerequisites:
-
-- Node 24, managed through `package.json` `devEngines`
-- pnpm through Corepack
-- Python 3.12 for local development, pinned by `.python-version`
-- uv for Python packages.
-
-The published `chartcoach` Python package supports Python 3.11 through 3.14.
-Local tooling is pinned to one interpreter so lockfile runs stay predictable.
-
-Install from the repository root:
+Install the JavaScript and Python workspaces from the repository root:
 
 ```sh
-corepack enable pnpm
 pnpm install
-uv sync --package chartcoach --all-groups
+uv sync --locked --package chartcoach --all-groups --all-extras
 ```
 
-## Common Commands
+The workspace selects Node through `.node-version`. Local Python tooling uses
+Python 3.12 from `.python-version`. The published Python package supports
+Python 3.11 through 3.14.
+
+## Propose a change
+
+Discuss a change with a maintainer before implementation when it affects:
+
+- the catalog record shape, manifest, or release layout
+- a published Python, JavaScript, CLI, or MCP contract
+- required dependencies or optional dependency boundaries
+- public site information architecture or visual direction
+- package publishing or catalog publication
+
+Small fixes can go directly to a pull request.
+
+## Develop
+
+Start both web apps with:
 
 ```sh
-pnpm --dir apps/site dev
+pnpm dev
 ```
 
-## Checks
-
-Run the closest command first, then broaden before packaging a
-cross-workspace change.
+Run the complete JavaScript gate with:
 
 ```sh
-pnpm lint
-pnpm typecheck
-pnpm build
-pnpm test
+pnpm ready
 ```
 
-Package-specific checks:
+`pnpm ready` runs Vite+ checks, workspace tests, and a fixture-backed workspace
+build. Use a package command for a focused check while iterating.
+
+Run the Python gates with:
 
 ```sh
-pnpm --dir apps/site lint
-pnpm --dir apps/site build
-pnpm --dir packages/catalog-javascript test
-pnpm --dir packages/catalog-python test
-uv build --package chartcoach
-uv run ruff check .
-uv run ty check .
-uv run pyrefly check --summary=none
+make format lint typecheck test build
 ```
 
-## Publishing
+Run a focused test while iterating, then run the complete gate for every
+workspace affected by the change.
 
-Releases publish the Python package `chartcoach` and the npm package
-`@chartcoach/catalog` from `.github/workflows/publish.yml`.
+## Keep contracts aligned
 
-Use the same version in `packages/catalog-python/pyproject.toml` and
-`packages/catalog-javascript/package.json`, then check the tag before pushing:
+- Update Python, JavaScript, fixtures, and consuming apps together when the wire
+  shape changes.
+- Add the matching lockfile change when a dependency changes.
+- Keep shared web assets and styles in `packages/brand`.
+- Keep public documentation aligned with released behavior.
+- Add tests at the nearest public API, CLI, file, or runtime boundary.
 
-```sh
-./scripts/release.sh check-version v0.1.5
-```
+## Open a pull request
 
-The script accepts tags with or without a leading `v`. It fails when the Python
-and npm package versions differ, or when the tag does not match the package
-version.
+Describe the supported behavior, the affected boundary, and the commands run.
+Include screenshots for visible site or docs changes. Report a skipped check
+with the command, failure, and remaining risk.
 
-Pushing a matching `X.Y.Z` or `vX.Y.Z` tag starts the publish workflow. The
-build job installs pnpm and uv, runs the format, lint, typecheck, test, and
-build gates, builds the PyPI and npm packages, and uploads both outputs as
-GitHub artifacts. Separate jobs download those artifacts and publish them with
-trusted publishing through GitHub OIDC. After both publishes finish,
-`changelogithub` updates the GitHub release notes.
+Repository contracts:
 
-## Data and Artifacts
-
-Catalog entries are source data. Keep `guideline.md`, `references.bib`, Python
-loaders, JavaScript loaders, and browser rendering in sync.
-
-## Documentation
-
-Public copy should be short, concrete, and source-backed. Prefer direct claims
-about what a reader can inspect or run. Avoid filler and vague rationale.
+- [Architecture and ownership](development_docs/architecture.md)
+- [Development workflow](development_docs/development.md)
+- [Releases and catalog data](development_docs/releases-and-data.md)

@@ -1,88 +1,46 @@
 ---
-title: Overview
-description: Programmatic access to visualization design guidelines, with agent skills and MCP tools.
+title: chartcoach docs
+description: Inspect, query, and cite visualization design guidelines from the CLI, Python, JavaScript, or MCP.
 icon: BookOpen
 ---
 
-chartcoach represents visualization design guidelines as structured, versioned
-catalog entries with source references. The
-[Guideline Catalog](https://chartcoach.dev/guidelines/) lets applications and
-agents find relevant guidance, inspect the exact guideline text, and trace it
-back to its original sources.
+chartcoach exposes visualization design guidelines as a manifest-backed catalog
+of structured records.
 
-Use the CLI, Python, and JavaScript APIs for programmatic catalog access. For
-agents, use chartcoach skills for retrieval and citation workflows, or MCP tools
-for direct catalog calls.
-
-## Browse the catalog
-
-Start with table output when you want to inspect matching guidelines in a
-terminal:
+List candidate guidelines from the published catalog:
 
 ```bash
-uvx chartcoach@latest catalog query \
-  --contains "legend" \
-  --limit 3 \
-  --format table
-
-# Other query formats: json, jsonl, csv.
-```
-
-The table view is for reading candidate rows directly. Use the returned id when
-you need exact guideline text or citations.
-
-## Ground an answer
-
-Use `query` or `find` to shortlist guideline ids, then `read` and `cite` exact
-entries before using them in an answer. Exact `read` and `cite` calls return the
-guideline text and source references for the answer to cite.
-
-Run a query, then read and cite one returned guideline:
-
-```bash
-uvx chartcoach@latest catalog query --contains "legend" --limit 5 --format jsonl
-
-uvx chartcoach@latest catalog read add-unlabeled-axis-ticks-to-continuous-color-keys \
-  --source-detail minimal \
-  --format json
-
-uvx chartcoach@latest catalog cite add-unlabeled-axis-ticks-to-continuous-color-keys \
+uvx --from 'chartcoach[curation]@latest' chartcoach catalog list \
+  --contains "direct labels" \
+  --limit 5 \
   --format json
 ```
 
-Use the id from a selected JSONL row in later `read` and `cite` calls. The
-`query` and `find` commands, plus `cc.search()`, find candidate guidance for an
-answer. `read` returns the exact guidance to inspect, and `cite` returns the
-sources to name.
+Read the exact record before using it as evidence:
 
-## Why use chartcoach
+```bash
+uvx --from 'chartcoach[curation]@latest' chartcoach catalog read \
+  compare-percentages-with-bars-not-pies \
+  --format markdown
+```
 
-1. **Structured guidance**: Each guideline has a stable id, role-marked
-   sections, labels, and source references that agents and applications can
-   address directly.
-2. **Traceable recommendations**: `read` returns the exact guideline text, and
-   `cite` returns the sources to name with the answer.
-3. **Programmatic access**: The CLI, Python API, JavaScript loader, and SQL
-   tables support terminal workflows, notebooks, services, and browser apps.
-4. **Agent-ready retrieval**: chartcoach skills guide agents through retrieval
-   and citation workflows, while MCP tools expose catalog calls to MCP clients.
-5. **Custom catalogs**: Build and validate a catalog instance when your team
-   needs its own guideline set, release metadata, or source bundle.
+Format its public URL and source references:
 
-<Callout title="Get in touch">
-  For questions about chartcoach, the Guideline Catalog, or research deployments, [reach out to
-  us](mailto:pgyarmati@ethz.ch).
-</Callout>
+```bash
+uvx --from 'chartcoach[curation]@latest' chartcoach catalog cite \
+  compare-percentages-with-bars-not-pies
+```
 
-## Next steps
+## Choose an interface
 
-| Task                                                             | Page                                |
-| ---------------------------------------------------------------- | ----------------------------------- |
-| Run the first query and citation flow                            | [Getting started](/getting-started) |
-| Move from a chart question to candidate guidelines               | [Find guidelines](/querying)        |
-| Inspect tables, catalog sources, release metadata, and row shape | [Cataloging scheme](/catalog)       |
-| Automate terminal workflows                                      | [CLI](/cli)                         |
-| Work in notebooks, services, or data pipelines                   | [Python](/python)                   |
-| Load catalog artifacts in an app                                 | [JavaScript](/javascript)           |
-| Route agent work through skills or MCP tools                     | [Agents](/agents) and [MCP](/mcp)   |
-| Validate and publish your own catalog instance                   | [Build a catalog](/build)           |
+| Task                                                | Interface                 |
+| --------------------------------------------------- | ------------------------- |
+| Inspect and cite records from a terminal or agent   | [CLI](/cli)               |
+| Work with Polars, DuckDB, releases, or LanceDB      | [Python](/python)         |
+| Load a typed catalog in a browser or server runtime | [JavaScript](/javascript) |
+| Expose SQL and indexed search to an MCP client      | [MCP](/mcp)               |
+| Install task-specific agent instructions            | [Agents](/agents)         |
+| Author, build, and publish catalog artifacts        | [Build a catalog](/build) |
+
+The [cataloging scheme](/catalog) defines authored folders, compiled bundles,
+immutable releases, and embedding profiles.
