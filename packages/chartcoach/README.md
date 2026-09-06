@@ -4,7 +4,7 @@ The `chartcoach` Python package opens a Guideline Catalog from local files or a
 published release. It provides the stored guideline records plus Polars and
 DuckDB tables for sections, labels, and references.
 
-chartcoach is alpha software and supports Python 3.11 through 3.14. Installing
+chartcoach is alpha software and supports Python 3.10 through 3.14. Installing
 the package also installs the `chartcoach` CLI.
 
 ## Read one guideline
