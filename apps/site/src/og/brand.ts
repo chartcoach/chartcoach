@@ -1,11 +1,5 @@
-import { readFileSync } from "node:fs";
-import { createRequire } from "node:module";
+import horizontalLogoSvg from "@chartcoach/brand/assets/brand/chartcoach-horizontal.svg?raw";
 
-const require = createRequire(import.meta.url);
-const horizontalLogoSvg = readFileSync(
-  require.resolve("@chartcoach/brand/assets/brand/chartcoach-horizontal.svg"),
-  "utf-8",
-);
 const wordmarkMatch = horizontalLogoSvg.match(/<path[^>]* d="([^"]+)"/);
 
 if (!wordmarkMatch) {

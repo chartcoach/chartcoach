@@ -1,7 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
 
-import { brandOgTheme as theme } from "@chartcoach/brand";
-
 import {
   CHARTCOACH_WORDMARK_PATH,
   DASH_RING_ACCENT_ROTATIONS,
@@ -14,6 +12,27 @@ import {
   type OgReferenceSummary,
 } from "./schema";
 import { wrapOgText } from "./text";
+
+const theme = {
+  accent: "#e0364b",
+  coral: "#f25a6d",
+  dark: "#0a0a0a",
+  darkBorder: "#2a2a2a",
+  darkDivider: "#1f1f1f",
+  darkMuted: "#7c7a76",
+  darkPillText: "#c9c7c3",
+  darkRoleMuted: "#3a3a3a",
+  darkText: "#b4b2ae",
+  darkTextStrong: "#f2f0ec",
+  ink: "#111111",
+  labelBorder: "#e4e4e4",
+  labelMuted: "#8a8884",
+  labelSeparator: "#c0beb8",
+  labelSurface: "#f5f5f5",
+  referenceTitle: "#1a1a1a",
+  sourceHeading: "#9a9893",
+  white: "#ffffff",
+} as const;
 
 // Current catalog title distribution: min 29, median 61, p90 82, max 125 chars.
 const guidelineTitleBreakpoints = {

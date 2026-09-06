@@ -1,47 +1,16 @@
 {
   "name": "@chartcoach/brand",
-  "version": "0.1.7",
+  "version": "0.2.0",
   "private": true,
-  "description": "Shared brand assets, CSS tokens, and public asset checks for chartcoach web apps.",
+  "description": "Shared brand assets and styles for chartcoach web apps.",
   "license": "Apache-2.0",
-  "files": [
-    "assets",
-    "fonts.css",
-    "logo.css",
-    "scripts",
-    "src",
-    "styles",
-    "tokens.css"
-  ],
-  "type": "module",
   "exports": {
-    ".": {
-      "types": "./src/index.ts",
-      "default": "./src/index.ts"
-    },
     "./fonts.css": "./fonts.css",
     "./tokens.css": "./tokens.css",
     "./logo.css": "./logo.css",
     "./assets/brand/*": "./assets/brand/*"
   },
-  "scripts": {
-    "build": "pnpm run check:assets && pnpm run typecheck",
-    "check:assets": "pnpm run render:tokens -- --check && pnpm run render:svg -- --check && pnpm run render:png -- --check && node scripts/check-public-assets.mjs",
-    "format": "oxfmt .",
-    "format:check": "oxfmt . --check",
-    "lint": "oxlint .",
-    "render:png": "node scripts/render-png-assets.mjs",
-    "render:svg": "node scripts/render-svg-assets.mjs",
-    "render:tokens": "node scripts/render-token-css.mjs",
-    "sync:assets": "pnpm run render:tokens && pnpm run render:svg && pnpm run render:png && node scripts/sync-public-assets.mjs",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
-  },
   "dependencies": {
-    "@fontsource/poppins": "^5.2.7"
-  },
-  "devDependencies": {
-    "@types/node": "^22.20.0",
-    "sharp": "^0.35.2",
-    "typescript": "^5.9.3"
+    "@fontsource/poppins": "catalog:"
   }
 }

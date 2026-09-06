@@ -1,4 +1,5 @@
-import { brandAssets } from "@chartcoach/brand";
+import logo from "@chartcoach/brand/assets/brand/chartcoach-horizontal.svg";
+import logoWhite from "@chartcoach/brand/assets/brand/chartcoach-horizontal-white.svg";
 import Image from "next/image";
 import type { ComponentProps } from "react";
 
@@ -9,7 +10,7 @@ export function BrandTitle() {
     <span className="inline-flex min-w-0 items-center">
       <span className="chartcoach-brand-logo h-7 w-[6.97rem]" aria-hidden="true">
         <Image
-          src={brandAssets.logo}
+          src={logo}
           alt=""
           width={112}
           height={28}
@@ -17,7 +18,7 @@ export function BrandTitle() {
           unoptimized
         />
         <Image
-          src={brandAssets.logoWhite}
+          src={logoWhite}
           alt=""
           width={112}
           height={28}

@@ -1,1 +1,23 @@
-@import "./styles/logo.css";
+.chartcoach-brand-logo {
+  display: inline-grid;
+  flex: none;
+}
+
+.chartcoach-brand-logo__image {
+  display: block;
+  grid-area: 1 / 1;
+  height: 100%;
+  width: 100%;
+}
+
+.chartcoach-brand-logo__image--dark {
+  display: none;
+}
+
+.dark .chartcoach-brand-logo__image--light {
+  display: none;
+}
+
+.dark .chartcoach-brand-logo__image--dark {
+  display: block;
+}

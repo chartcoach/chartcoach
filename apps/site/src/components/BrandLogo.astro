@@ -1,5 +1,6 @@
 ---
-import { brandAssets } from "@chartcoach/brand";
+import logo from "@chartcoach/brand/assets/brand/chartcoach-horizontal.svg";
+import logoWhite from "@chartcoach/brand/assets/brand/chartcoach-horizontal-white.svg";
 
 interface Props {
   class?: string;
@@ -10,14 +11,14 @@ const className = Astro.props.class;
 
 <span class:list={["chartcoach-brand-logo", className]} aria-hidden="true">
   <img
-    src={brandAssets.logo}
+    src={logo.src}
     alt=""
     class="chartcoach-brand-logo__image chartcoach-brand-logo__image--light"
     loading="eager"
     decoding="async"
   />
   <img
-    src={brandAssets.logoWhite}
+    src={logoWhite.src}
     alt=""
     class="chartcoach-brand-logo__image chartcoach-brand-logo__image--dark"
     loading="eager"
