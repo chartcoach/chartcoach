@@ -13,8 +13,14 @@ make install
 pnpm --dir apps/docs dev
 ```
 
-Open `https://docs.chartcoach.localhost`. The dev command uses portless. Run
-`pnpm --dir apps/docs dev:app` to start Next.js directly.
+The command starts Next.js through
+[Portless](https://github.com/vercel-labs/portless) and prints the local URL.
+With the default proxy settings, the primary checkout uses
+`https://docs.chartcoach.localhost`. A linked
+[Git worktree](https://git-scm.com/docs/git-worktree) adds a subdomain derived
+from its branch name, such as `https://search-ui.docs.chartcoach.localhost`, so
+concurrent checkouts keep separate routes. Run `pnpm --dir apps/docs dev:app`
+to start Next.js directly.
 
 ## Change the content
 

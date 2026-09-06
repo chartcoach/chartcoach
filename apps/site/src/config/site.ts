@@ -14,9 +14,10 @@ const SITE_URL_ENV = "CHARTCOACH_SITE_URL";
 const CF_PAGES_ENV = "CF_PAGES";
 const CF_PAGES_BRANCH_ENV = "CF_PAGES_BRANCH";
 const CF_PAGES_URL_ENV = "CF_PAGES_URL";
+const PORTLESS_URL_ENV = "PORTLESS_URL";
 const PRODUCTION_BRANCH = "main";
 
-export type SiteUrlSource = "env" | "cloudflare" | "local";
+export type SiteUrlSource = "env" | "cloudflare" | "portless" | "local";
 
 export type SiteRuntimeConfig = {
   siteUrl: string;
@@ -71,6 +72,14 @@ function resolveConfiguredUrl(env: EnvMap): SiteUrlResolution {
     return {
       url: normalizeUrl(cloudflareUrl),
       source: "cloudflare",
+    };
+  }
+
+  const portlessUrl = env[PORTLESS_URL_ENV];
+  if (portlessUrl) {
+    return {
+      url: normalizeUrl(portlessUrl),
+      source: "portless",
     };
   }
 
