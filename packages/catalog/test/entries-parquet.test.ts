@@ -7,8 +7,7 @@ import { describe, expect, it } from "vite-plus/test";
 
 import {
   loadCatalog,
-  open,
-  openRelease,
+  openCatalog,
   parseCatalogRelease,
   type CatalogRelease,
   type FetchLike,
@@ -47,7 +46,7 @@ describe("catalog loading", () => {
     const asyncBufferCatalog = await loadCatalog({
       entries: {
         byteLength: entries.byteLength,
-        slice(start, end) {
+        slice(start: number, end?: number) {
           return entries.slice(start, end).buffer;
         },
       },
@@ -78,7 +77,9 @@ describe("published catalog releases", () => {
   it("opens the selected catalog release", async () => {
     const fixture = await fixtureRelease();
 
-    const catalog = await open({ fetch: fetchFrom(catalogResponses(fixture)) });
+    const catalog = await openCatalog(undefined, {
+      fetch: fetchFrom(catalogResponses(fixture)),
+    });
 
     expect(catalog.require("direct-labels").id).toBe("direct-labels");
     expect(catalog.manifest.labelFamilies.chart?.name).toBe("chart");
@@ -95,7 +96,7 @@ describe("published catalog releases", () => {
       [new URL("entries.parquet", releaseUrl).toString(), responseBytes(fixture.entries)],
     ]);
 
-    const catalog = await openRelease(releaseUrl, { fetch: fetchFrom(responses) });
+    const catalog = await openCatalog(releaseUrl, { fetch: fetchFrom(responses) });
 
     expect(catalog.require("direct-labels").body).toContain("<!-- role: advice -->");
   });
@@ -106,7 +107,7 @@ describe("published catalog releases", () => {
     const release = { ...fixture.release, digest };
 
     await expect(
-      openRelease(releaseUrlFor(digest), {
+      openCatalog(releaseUrlFor(digest), {
         fetch: fetchFrom(releaseResponses({ ...fixture, release }, digest)),
       }),
     ).rejects.toThrow("does not match its artifact set");
@@ -118,7 +119,7 @@ describe("published catalog releases", () => {
     entries[0] ^= 0xff;
 
     await expect(
-      openRelease(releaseUrlFor(fixture.release.digest), {
+      openCatalog(releaseUrlFor(fixture.release.digest), {
         fetch: fetchFrom(releaseResponses({ ...fixture, entries })),
       }),
     ).rejects.toThrow("Catalog artifact SHA-256 mismatch: entries.parquet");
@@ -135,7 +136,7 @@ describe("published catalog releases", () => {
     const responses = releaseResponses({ ...fixture, release });
     responses.set(new URL("MANIFEST.md", releaseUrl).toString(), manifest);
 
-    await expect(openRelease(releaseUrl, { fetch: fetchFrom(responses) })).rejects.toThrow(
+    await expect(openCatalog(releaseUrl, { fetch: fetchFrom(responses) })).rejects.toThrow(
       "Catalog manifest must contain valid UTF-8",
     );
   });
@@ -145,7 +146,7 @@ describe("published catalog releases", () => {
     const oversized = new Uint8Array(1024 * 1024 + 1);
     const fetch: FetchLike = async () => new Response(oversized);
 
-    await expect(openRelease(releaseUrlFor(digest), { fetch })).rejects.toThrow(
+    await expect(openCatalog(releaseUrlFor(digest), { fetch })).rejects.toThrow(
       "Catalog JSON exceeds size limit",
     );
   });
@@ -159,9 +160,16 @@ describe("published catalog releases", () => {
       throw new Error(`Failed to fetch ${releaseUrl}`);
     };
 
-    await expect(openRelease(releaseUrl, { fetch })).rejects.toThrow(
+    await expect(openCatalog(releaseUrl, { fetch })).rejects.toThrow(
       "Failed to load catalog resource.",
     );
+  });
+
+  it("requires a catalog descriptor URL", async () => {
+    await expect(openCatalog("https://example.test/catalog/")).rejects.toThrow(
+      "must name catalog.json or release.json",
+    );
+    await expect(openCatalog("file:///tmp/catalog.json")).rejects.toThrow("must use HTTP or HTTPS");
   });
 });
 

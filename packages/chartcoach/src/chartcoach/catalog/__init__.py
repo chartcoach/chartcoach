@@ -1,15 +1,14 @@
 from .collection import Catalog
-from .locator import open_catalog, open_index, resolve_release
+from .errors import CatalogError
 from .manifest import CatalogManifest
-from .paths import paths
 from .releases import CatalogRelease
+from .runtime import open_catalog, open_index
 
 __all__ = [
     "Catalog",
+    "CatalogError",
     "CatalogManifest",
     "CatalogRelease",
     "open_catalog",
     "open_index",
-    "paths",
-    "resolve_release",
 ]

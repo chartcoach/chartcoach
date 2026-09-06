@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from lancedb import Table
 
 _SEARCH_HINTS = (
-    "Pass an existing LanceDB path to `chartcoach catalog find --index PATH_OR_URI`.",
+    "Pass a release source and embedding profile to `chartcoach catalog find`.",
     "Use `--mode fts` for provider-free text retrieval.",
 )
 
@@ -37,13 +37,13 @@ class Tools:
         catalog: Catalog,
         *,
         table: "Table | None" = None,
-        index_path: str | PathLike[str] | None = None,
-        release_digest: str | None = None,
+        source: str | PathLike[str] | None = None,
+        profile: str | None = None,
     ) -> None:
         self._catalog = catalog
         self._table = table
-        self._index_path = fspath(index_path) if index_path is not None else None
-        self._release_digest = release_digest
+        self._source = fspath(source) if source is not None else None
+        self._profile = profile
 
     @property
     def catalog(self) -> Catalog:
@@ -95,7 +95,11 @@ class Tools:
             "truncated": len(query_rows) > limit,
             "limit": limit,
             "content_digest": self.catalog.content_digest(),
-            "release_digest": self._release_digest,
+            "release_digest": (
+                self.catalog.release.digest
+                if self.catalog.release is not None
+                else None
+            ),
         }
 
     def search(
@@ -126,8 +130,13 @@ class Tools:
             "row_count": len(rows),
             "limit": limit,
             "where": where,
-            "index_path": self._index_path,
-            "release_digest": self._release_digest,
+            "source": self._source,
+            "profile": self._profile,
+            "release_digest": (
+                self.catalog.release.digest
+                if self.catalog.release is not None
+                else None
+            ),
         }
 
     def _require_table(self) -> "Table":

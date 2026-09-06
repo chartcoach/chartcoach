@@ -6,12 +6,11 @@ from importlib.metadata import version
 
 from .catalog import (
     Catalog,
+    CatalogError,
     CatalogManifest,
     CatalogRelease,
     open_catalog,
     open_index,
-    paths,
-    resolve_release,
 )
 
 __version__ = version("chartcoach")
@@ -19,10 +18,9 @@ __version__ = version("chartcoach")
 __all__ = [
     "__version__",
     "Catalog",
+    "CatalogError",
     "CatalogManifest",
     "CatalogRelease",
     "open_catalog",
     "open_index",
-    "paths",
-    "resolve_release",
 ]

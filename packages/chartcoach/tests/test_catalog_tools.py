@@ -6,6 +6,8 @@ from typing import cast
 import pytest
 
 from chartcoach.catalog.collection import Catalog
+from chartcoach.catalog.releases import CatalogRelease, ReleaseArtifact
+from chartcoach.catalog.releases.hashing import release_digest
 from chartcoach.tools import ToolError, Tools
 from catalog_testkit import deterministic_embedding
 
@@ -32,11 +34,12 @@ def test_tools_sql_returns_bounded_rows(sample_catalog: Catalog) -> None:
 
 
 def test_tools_preserve_published_release_identity(sample_catalog: Catalog) -> None:
-    digest = "a" * 64
+    catalog = _released_catalog(sample_catalog)
+    assert catalog.release is not None
 
-    result = Tools(sample_catalog, release_digest=digest).sql("select 1 as value")
+    result = Tools(catalog).sql("select 1 as value")
 
-    assert result["release_digest"] == digest
+    assert result["release_digest"] == catalog.release.digest
 
 
 def test_tools_sql_returns_json_values(sample_catalog: Catalog) -> None:
@@ -90,7 +93,8 @@ def test_tools_search_uses_configured_lancedb_table(
     result = Tools(
         sample_catalog,
         table=table,
-        index_path=tmp_path / "index",
+        source=tmp_path / "release",
+        profile="test/deterministic",
     ).search(
         "direct labels",
         limit=2,
@@ -111,10 +115,27 @@ def test_tools_search_uses_configured_lancedb_table(
     )
     assert isinstance(row["score"], float)
     assert result["mode"] == "fts"
-    assert result["index_path"] == str(tmp_path / "index")
+    assert result["source"] == str(tmp_path / "release")
+    assert result["profile"] == "test/deterministic"
 
 
 @pytest.mark.search
 def test_tools_search_requires_explicit_table(sample_catalog: Catalog) -> None:
     with pytest.raises(ToolError, match="LanceDB table is required"):
         Tools(sample_catalog).search("direct labels")
+
+
+def _released_catalog(catalog: Catalog) -> Catalog:
+    artifacts = {
+        "MANIFEST.md": ReleaseArtifact("1" * 64, 1),
+        "entries.parquet": ReleaseArtifact("2" * 64, 1),
+    }
+    release = CatalogRelease(
+        digest=release_digest(artifacts),
+        artifacts=artifacts,
+    )
+    return Catalog(
+        catalog.to_frame(),
+        manifest=catalog.manifest,
+        release=release,
+    )

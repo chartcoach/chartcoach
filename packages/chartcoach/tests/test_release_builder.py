@@ -9,12 +9,12 @@ import pyarrow.parquet as pq
 import pytest
 
 from chartcoach.catalog.collection import Catalog
-from chartcoach.catalog.curation.projection import project_vectors
-from chartcoach.catalog.curation.release_builder import (
+from chartcoach.catalog.curation import (
     EmbeddingProfile,
-    build_catalog_release,
+    build_release,
+    validate_release,
 )
-from chartcoach.catalog.curation.validation import validate_curation_release
+from chartcoach.catalog.curation.projection import project_vectors
 from chartcoach.catalog.releases.archive import extract_tar_archive
 from chartcoach.catalog.releases.hashing import release_digest
 from chartcoach.constants import LANCE_DOCUMENT_TABLE
@@ -31,7 +31,7 @@ def test_core_release_contains_the_catalog_bundle(
     tmp_path: Path,
 ) -> None:
     root = tmp_path / "release"
-    release = build_catalog_release(sample_catalog, root=root)
+    release = build_release(sample_catalog, root)
 
     assert set(release.artifacts) == {"MANIFEST.md", "entries.parquet"}
     assert release.digest == release_digest(release.artifacts)
@@ -47,13 +47,13 @@ def test_profile_release_is_atlas_ready_and_opens_as_native_lancedb(
         umap={"n_neighbors": 3, "metric": "cosine", "random_state": 7},
     )
     root = tmp_path / "release"
-    release = build_catalog_release(
+    release = build_release(
         sample_catalog,
-        root=root,
+        root,
         profiles={_PROFILE: profile, "research/alternate": profile},
     )
 
-    assert validate_curation_release(root) == release
+    assert validate_release(root) == release
     profile_path = root / "profiles" / _PROFILE / "documents.parquet"
     documents = pq.read_table(profile_path)
     assert {

@@ -68,19 +68,28 @@ def test_repeated_section_roles_have_stable_unique_document_ids(
     assert rows.get_column("id").n_unique() == rows.height
 
 
-def test_open_index_returns_the_fixed_native_table(
+@pytest.mark.curation
+def test_open_index_returns_the_release_profile_table(
     sample_catalog: Catalog,
     tmp_path: Path,
 ) -> None:
     from chartcoach import open_index
-    from chartcoach.catalog.curation.lancedb_index import build_lancedb_index
+    from chartcoach.catalog.curation import EmbeddingProfile, build_release
 
-    path = tmp_path / "index"
-    built = build_lancedb_index(sample_catalog, path, embedding=_test_embedding())
-    opened = open_index(path)
+    path = tmp_path / "release"
+    build_release(
+        sample_catalog,
+        path,
+        profiles={
+            "test/search": EmbeddingProfile(
+                embedding=_test_embedding(),
+                umap={"n_neighbors": 3},
+            )
+        },
+    )
+    opened = open_index(path, profile="test/search")
 
-    assert built.name == opened.name == "documents"
-    assert opened.count_rows() == built.count_rows()
+    assert opened.name == "documents"
     rows = (
         opened.search("direct labels", query_type="fts", fts_columns="text")
         .limit(1)

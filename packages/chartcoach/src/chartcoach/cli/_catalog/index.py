@@ -5,27 +5,25 @@ from typing import Literal, cast
 
 import click
 
+from chartcoach.catalog import open_index
 from chartcoach.tools import ToolError, Tools
 
 from ..common import (
     CONTEXT_SETTINGS,
     SEARCH_FORMATS,
-    catalog_release_digest,
     emit_rows,
     guideline_search_rows_to_compact_markdown,
     guideline_search_rows_to_markdown,
     index_profile_option,
     load_catalog,
-    require_index,
-    required_index_option,
     search_cli_error,
     source_option,
+    source_path,
 )
 
 
 @click.command("find", context_settings=CONTEXT_SETTINGS)
 @source_option
-@required_index_option
 @index_profile_option
 @click.argument("query")
 @click.option(
@@ -60,8 +58,7 @@ from ..common import (
 @click.pass_context
 def find_command(
     ctx: click.Context,
-    index_path: str | None,
-    profile: str | None,
+    profile: str,
     query: str,
     limit: int,
     where: str | None,
@@ -72,16 +69,14 @@ def find_command(
     """Rank entries with a LanceDB profile."""
 
     catalog = load_catalog(ctx)
-    resolved_index = index_path or (
-        catalog_release_digest(ctx) if profile is not None else None
-    )
     try:
-        table = require_index(resolved_index, profile=profile)
+        source = source_path(ctx)
+        table = open_index(source, profile=profile)
         result = Tools(
             catalog,
             table=table,
-            index_path=resolved_index,
-            release_digest=catalog_release_digest(ctx),
+            source=source,
+            profile=profile,
         ).search(
             query,
             limit=limit,

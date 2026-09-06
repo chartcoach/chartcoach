@@ -8,16 +8,40 @@ from obstore.store import LocalStore, MemoryStore
 import pytest
 
 from chartcoach.catalog.collection import Catalog
-from chartcoach.catalog.curation.release_builder import build_catalog_release
+from chartcoach.catalog.curation import (
+    build_release,
+    publish_release,
+    select_release,
+)
 from chartcoach.catalog.curation.release_publisher import (
-    publish_catalog_release,
-    select_catalog_release,
+    _publish_release,
+    _select_release,
 )
 from chartcoach.catalog.paths import paths
 from chartcoach.catalog.releases import CatalogRelease
 
 
 pytestmark = pytest.mark.curation
+
+
+def test_public_facade_publishes_and_selects_a_file_destination(
+    sample_catalog: Catalog,
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "release"
+    release = build_release(sample_catalog, root)
+    destination = (tmp_path / "objects").as_uri()
+
+    published = publish_release(root, destination)
+    selected = select_release(release.digest, destination)
+
+    assert published == selected == release
+    assert (
+        CatalogRelease.from_mapping(
+            json.loads((tmp_path / "objects" / paths.selected()).read_text())
+        )
+        == release
+    )
 
 
 @pytest.mark.parametrize("store_kind", ["memory", "local"])
@@ -27,15 +51,15 @@ def test_publish_and_select_release_by_digest(
     store_kind: str,
 ) -> None:
     root = tmp_path / "release"
-    release = build_catalog_release(sample_catalog, root=root)
+    release = build_release(sample_catalog, root)
     store = (
         MemoryStore()
         if store_kind == "memory"
         else LocalStore(tmp_path / "objects", mkdir=True)
     )
 
-    published = publish_catalog_release(store, root)
-    selected = select_catalog_release(store, release.digest)
+    published = _publish_release(store, root)
+    selected = _select_release(store, release.digest)
 
     assert published == release
     assert selected == release
@@ -50,13 +74,13 @@ def test_publish_repairs_an_uncommitted_artifact(
     tmp_path: Path,
 ) -> None:
     root = tmp_path / "release"
-    release = build_catalog_release(sample_catalog, root=root)
+    release = build_release(sample_catalog, root)
     store = MemoryStore()
     artifact_path = "entries.parquet"
     object_path = paths.release(release.digest).artifact(artifact_path)
     store.put(object_path, b"partial")
 
-    publish_catalog_release(store, root)
+    _publish_release(store, root)
 
     assert _read_bytes(store, object_path) == (root / artifact_path).read_bytes()
 
@@ -66,11 +90,11 @@ def test_publish_is_idempotent_after_release_commit(
     tmp_path: Path,
 ) -> None:
     root = tmp_path / "release"
-    build_catalog_release(sample_catalog, root=root)
+    build_release(sample_catalog, root)
     store = MemoryStore()
 
-    first = publish_catalog_release(store, root)
-    second = publish_catalog_release(store, root)
+    first = _publish_release(store, root)
+    second = _publish_release(store, root)
 
     assert second == first
 
@@ -80,14 +104,14 @@ def test_select_keeps_the_current_release_when_digest_is_missing(
     tmp_path: Path,
 ) -> None:
     root = tmp_path / "release"
-    release = build_catalog_release(sample_catalog, root=root)
+    release = build_release(sample_catalog, root)
     store = MemoryStore()
-    publish_catalog_release(store, root)
-    select_catalog_release(store, release.digest)
+    _publish_release(store, root)
+    _select_release(store, release.digest)
     current = _read_bytes(store, paths.selected())
 
     with pytest.raises(FileNotFoundError):
-        select_catalog_release(store, "0" * 64)
+        _select_release(store, "0" * 64)
 
     assert _read_bytes(store, paths.selected()) == current
 

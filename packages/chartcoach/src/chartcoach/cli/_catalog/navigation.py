@@ -7,8 +7,11 @@ from typing import cast
 import click
 
 from chartcoach.catalog.errors import CatalogError
-from chartcoach.catalog.paths import paths
-from chartcoach.constants import DEFAULT_GUIDELINE_URL_TEMPLATE
+from chartcoach.constants import (
+    CATALOG_ARTIFACT_BASE_URL,
+    CATALOG_ENTRY_PATH,
+    DEFAULT_GUIDELINE_URL_TEMPLATE,
+)
 from chartcoach.tools import ToolError, format_error
 
 from ..common import (
@@ -48,7 +51,8 @@ def overview_command(ctx: click.Context, output_format: str) -> None:
 
     overview = catalog_overview(
         catalog,
-        source=source_path(ctx) or paths.selected(),
+        source=source_path(ctx)
+        or f"{CATALOG_ARTIFACT_BASE_URL.rstrip('/')}/{CATALOG_ENTRY_PATH}",
         release_digest=catalog_release_digest(ctx),
     )
     if output_format == "json":

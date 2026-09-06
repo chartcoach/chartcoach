@@ -2,14 +2,13 @@ from __future__ import annotations
 
 import click
 
-from chartcoach.catalog.paths import paths
-from chartcoach.tools import format_error
-
 from chartcoach.constants import (
-    INDEX_ENV,
+    CATALOG_ARTIFACT_BASE_URL,
+    CATALOG_ENTRY_PATH,
     INDEX_PROFILE_ENV,
     SOURCE_ENV,
 )
+from chartcoach.tools import format_error
 
 from .common import storage_errors
 
@@ -24,10 +23,6 @@ MCP_INDEX_EXTRA_HINTS = (
     "For one-off runs, use `uvx --from 'chartcoach[mcp,index]@latest' chartcoach ...`.",
     "From a checkout, use `uv run --package chartcoach --extra mcp --extra index chartcoach ...`.",
 )
-MCP_CURATION_EXTRA_HINTS = (
-    "For one-off runs, use `uvx --from 'chartcoach[mcp,curation]@latest' chartcoach ...`.",
-    "From a checkout, use `uv run --package chartcoach --extra mcp --extra curation chartcoach ...`.",
-)
 
 
 def _is_missing_optional_dependency(exc: ModuleNotFoundError) -> bool:
@@ -38,19 +33,9 @@ def _is_missing_search_dependency(exc: ModuleNotFoundError) -> bool:
     return _has_missing_module(exc, ("lancedb",))
 
 
-def _is_missing_curation_dependency(exc: ModuleNotFoundError) -> bool:
-    current: BaseException | None = exc
-    while current is not None:
-        if isinstance(current, ModuleNotFoundError) and "`chartcoach[curation]`" in str(
-            current
-        ):
-            return True
-        current = current.__cause__
-    return False
-
-
 def _has_missing_module(
-    exc: ModuleNotFoundError, module_names: tuple[str, ...]
+    exc: ModuleNotFoundError,
+    module_names: tuple[str, ...],
 ) -> bool:
     current: BaseException | None = exc
     while current is not None:
@@ -74,26 +59,16 @@ def _has_missing_module(
     "--source",
     "source_path",
     envvar=SOURCE_ENV,
-    metavar="PATH_OR_LOCATOR",
+    metavar="PATH_OR_URI",
     help=(
-        "Catalog bundle, authored folder, or exact release digest. "
-        f"Defaults to ${SOURCE_ENV}, then catalog.json."
-    ),
-)
-@click.option(
-    "--index",
-    "index_path",
-    envvar=INDEX_ENV,
-    metavar="PATH_OR_LOCATOR",
-    help=(
-        "LanceDB path, URI, or exact release digest for search tools. "
-        f"Defaults to ${INDEX_ENV} when set."
+        "Catalog folder, bundle, catalog.json, or release.json path or URI. "
+        f"Defaults to ${SOURCE_ENV}, then the official catalog."
     ),
 )
 @click.option(
     "--profile",
     envvar=INDEX_PROFILE_ENV,
-    help="Published embedding profile. Uses the catalog release when --index is omitted.",
+    help="Embedding profile in the catalog release.",
 )
 @click.option(
     "--transport",
@@ -128,7 +103,6 @@ def _has_missing_module(
 )
 def mcp_command(
     source_path: str | None,
-    index_path: str | None,
     profile: str | None,
     transport: str,
     host: str,
@@ -139,7 +113,6 @@ def mcp_command(
 
     try:
         _run_server(
-            index_path=index_path,
             profile=profile,
             source_path=source_path,
             transport=transport,
@@ -159,13 +132,6 @@ def mcp_command(
                     MCP_INDEX_EXTRA_HINTS,
                 )
             ) from exc
-        if _is_missing_curation_dependency(exc):
-            raise click.ClickException(
-                format_error(
-                    "Published MCP catalogs require the optional curation dependencies.",
-                    MCP_CURATION_EXTRA_HINTS,
-                )
-            ) from exc
         raise
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
@@ -173,7 +139,6 @@ def mcp_command(
 
 def _run_server(
     *,
-    index_path: str | None,
     profile: str | None,
     source_path: str | None,
     transport: str,
@@ -183,9 +148,9 @@ def _run_server(
 ) -> None:
     from chartcoach import mcp
 
-    with storage_errors("MCP startup", source_path or paths.selected()):
+    default_source = f"{CATALOG_ARTIFACT_BASE_URL.rstrip('/')}/{CATALOG_ENTRY_PATH}"
+    with storage_errors("MCP startup", source_path or default_source):
         mcp.main(
-            index=index_path,
             profile=profile,
             source=source_path,
             transport=transport.lower(),

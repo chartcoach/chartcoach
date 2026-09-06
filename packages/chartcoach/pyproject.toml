@@ -7,12 +7,7 @@ authors = [{ name = "Péter Ferenc Gyarmati", email = "dev.petergy@gmail.com" }]
 license = "Apache-2.0"
 license-files = ["LICENSE"]
 requires-python = ">=3.11,<3.15"
-keywords = [
-  "data-visualization",
-  "guidelines",
-  "retrieval",
-  "visualization",
-]
+keywords = ["data-visualization", "guidelines", "retrieval", "visualization"]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Developers",
@@ -30,24 +25,20 @@ dependencies = [
   "bibtexparser>=1.1",
   "click>=8",
   "duckdb>=1.1",
+  "platformdirs>=4",
   "polars>=1.39.0",
   "pyyaml>=6",
   "tabulate>=0.10.0",
 ]
 
 [project.optional-dependencies]
-index = [
-  "lancedb>=0.34",
-]
-mcp = [
-  "mcp[cli]>=1.9,<1.29",
-  "pydantic-settings<2.15",
-]
+index = ["lancedb>=0.34"]
+cloud = ["obstore>=0.11.0"]
+mcp = ["mcp[cli]>=1.9,<1.29", "pydantic-settings<2.15"]
 curation = [
   "lancedb>=0.34",
   "obspec>=0.1.0",
   "obstore>=0.11.0",
-  "platformdirs>=4",
   "pyarrow>=18",
   "umap-learn>=0.5.12",
 ]
@@ -63,9 +54,7 @@ Issues = "https://github.com/chartcoach/chartcoach/issues"
 dev = ["pytest>=9", "ruff>=0.14,<0.16", "ty>=0.0.11,<0.0.60"]
 
 [tool.pytest.ini_options]
-filterwarnings = [
-  "error",
-]
+filterwarnings = ["error"]
 markers = [
   "curation: tests that require the chartcoach[curation] optional extra",
   "mcp: tests that require the chartcoach[mcp] optional extra",

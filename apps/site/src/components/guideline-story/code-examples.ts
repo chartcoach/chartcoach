@@ -40,7 +40,7 @@ export const typescriptLines: readonly CodeLine[] = [
   line(
     t("import", "keyword"),
     t(" { "),
-    t("open", "function"),
+    t("openCatalog", "function"),
     t(" } "),
     t("from", "keyword"),
     t(" "),
@@ -52,8 +52,8 @@ export const typescriptLines: readonly CodeLine[] = [
     t(" catalog = "),
     t("await", "keyword"),
     t(" "),
-    t("open", "function"),
-    t("({ fetch })"),
+    t("openCatalog", "function"),
+    t("()"),
   ),
   line(
     t("const", "keyword"),
@@ -78,12 +78,10 @@ export const pythonLines: readonly CodeLine[] = [
     t("import", "keyword"),
     t(" "),
     t("open_catalog", "function"),
-    t(", "),
-    t("resolve_release", "function"),
   ),
   line(),
-  line(t("release"), t(" = "), t("resolve_release", "function"), t("()")),
-  line(t("catalog"), t(" = "), t("open_catalog", "function"), t("("), t("release.digest"), t(")")),
+  line(t("catalog"), t(" = "), t("open_catalog", "function"), t("()")),
+  line(t("release"), t(" = catalog.release")),
   line(
     t("entry"),
     t(" = catalog."),
@@ -101,7 +99,7 @@ export const pythonLines: readonly CodeLine[] = [
 ];
 
 export const shellLines: readonly CodeLine[] = [
-  line(t("uv", "function"), t(" tool install "), t("'chartcoach[curation]'", "string")),
+  line(t("uv", "function"), t(" tool install "), t("chartcoach", "string")),
   line(t("chartcoach", "function"), t(" catalog read "), t("direct-labels", "string")),
   line(t("chartcoach", "function"), t(" catalog find "), t('"legend lookup"', "string"), t(" \\")),
   line(t("  --profile openai/text-embedding-3-large")),

@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 import json
+from os import PathLike
 from pathlib import Path
 from pathlib import PurePosixPath
 import shutil
@@ -32,13 +33,14 @@ class EmbeddingProfile:
 _NO_PROFILES: Mapping[str, EmbeddingProfile] = MappingProxyType({})
 
 
-def build_catalog_release(
+def build_release(
     catalog: Catalog,
+    output: PathLike[str],
     *,
-    root: Path,
     profiles: Mapping[str, EmbeddingProfile] = _NO_PROFILES,
 ) -> CatalogRelease:
     profiles = _normalized_profiles(profiles)
+    root = Path(output)
     root.parent.mkdir(parents=True, exist_ok=True)
     root.mkdir()
     try:
@@ -107,4 +109,4 @@ def _artifact(path: Path) -> ReleaseArtifact:
     )
 
 
-__all__ = ["EmbeddingProfile", "build_catalog_release"]
+__all__ = ["EmbeddingProfile", "build_release"]
