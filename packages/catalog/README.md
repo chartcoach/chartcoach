@@ -1,42 +1,52 @@
 # @chartcoach/catalog
 
-`@chartcoach/catalog` loads verified Guideline Catalog releases in browser and
-server runtimes.
+`@chartcoach/catalog` fetches a selected or exact Guideline Catalog release,
+verifies its required files, and returns a `Catalog` of guideline records.
+
+chartcoach is alpha software. `openCatalog` requires a browser or server
+runtime with `fetch`, Web Crypto, `AbortSignal.timeout`, and `AbortSignal.any`.
+`loadCatalog` parses files that the application already holds.
+
+## Read one guideline
 
 ```bash
-npm install @chartcoach/catalog
+npm install @chartcoach/catalog@0.2.0
 ```
-
-## Open a catalog
-
-`openCatalog(source?, options?)` accepts an absolute HTTP or HTTPS URL ending
-in `catalog.json` or `release.json`. The default is the official selected
-catalog.
 
 ```ts
 import { openCatalog } from "@chartcoach/catalog";
 
-const selected = await openCatalog();
-const exact = await openCatalog(
-  "https://artifacts.chartcoach.dev/catalog/releases/<digest>/release.json",
+const catalog = await openCatalog(
+  "https://files.peter.gy/packages/python/chartcoach/0.2.0/docs-catalog/c0f6dbec3dd31b07763b46fd458733db0b8b50c5793cf9447458119287129420/release.json",
 );
+const guideline = catalog.require("directly-label-series-instead-of-using-a-color-key");
 
-const guideline = selected.require("compare-percentages-with-bars-not-pies");
+console.log(guideline.title);
 ```
 
-Pass a Fetch-compatible function when the runtime supplies its own transport:
+Expected output:
 
-```ts
-const catalog = await openCatalog(source, { fetch });
+```text
+Directly label colored series instead of relying on a color key
 ```
 
-The loader verifies the release digest, artifact byte counts, and artifact
-SHA-256 values before decoding the catalog.
+## Choose a release URL
 
-## Load caller-provided bytes
+`openCatalog(source, { fetch })` accepts an absolute HTTP or HTTPS URL:
 
-`loadCatalog({ entries, manifestText })` constructs a catalog from compiled
-bundle data:
+| Source         | Behavior                                      |
+| -------------- | --------------------------------------------- |
+| `catalog.json` | Follows the currently selected public release |
+| `release.json` | Keeps one release digest across calls         |
+| Omitted        | Opens the official selected catalog           |
+
+The loader verifies the release digest, then checks the byte count and SHA-256
+hash of `MANIFEST.md` and `entries.parquet` before parsing them. Pass a custom
+`fetch` implementation when the runtime does not use `globalThis.fetch`.
+
+## Load files your app already has
+
+`loadCatalog` accepts Parquet bytes and manifest text:
 
 ```ts
 import { readFile } from "node:fs/promises";
@@ -48,52 +58,24 @@ const catalog = await loadCatalog({
 });
 ```
 
-Each row contains `id`, `title`, `description`, `labels`, `sections`, and
-`references`. `Catalog` derives each guideline Markdown body from its ordered
-sections.
+`loadCatalog` validates the manifest vocabulary and guideline fields. It
+cannot verify a release digest or file hashes because it receives no
+`release.json`. Verify the two files before this call when release integrity is
+required.
 
-## Release records
+## Catalog methods
 
-Schema 1 uses artifact paths as keys:
+- `catalog.guidelines` and iteration enumerate guideline records.
+- `catalog.length` returns the number of records.
+- `catalog.get(id)` returns a guideline or `undefined`.
+- `catalog.require(id)` returns a guideline or throws `CatalogError`.
+- `catalog.labels()` returns the sorted labels in the catalog.
+- `catalog.sectionRoles()` returns the sorted section roles.
+- `toMarkdown(guideline)` serializes one guideline to Markdown.
 
-```ts
-type CatalogRelease = {
-  schema_version: 1;
-  digest: string;
-  artifacts: Record<string, { sha256: string; bytes: number }>;
-};
-```
+| Page                                                 | Details                                                      |
+| ---------------------------------------------------- | ------------------------------------------------------------ |
+| [JavaScript](https://docs.chartcoach.dev/javascript) | Release loading, catalog methods, and Markdown serialization |
+| [Catalog data](https://docs.chartcoach.dev/catalog)  | Guideline fields and published file layouts                  |
 
-`parseCatalogRelease(value)` accepts a `JsonValue` and returns a validated
-`CatalogRelease`:
-
-```ts
-import { parseCatalogRelease, type JsonValue } from "@chartcoach/catalog";
-
-const value: JsonValue = JSON.parse(text);
-const release = parseCatalogRelease(value);
-```
-
-The function throws `CatalogError` when the record has an unsupported shape,
-an invalid artifact descriptor, or a missing core path. The required core paths
-are `MANIFEST.md` and `entries.parquet`.
-
-The package exports `Catalog`, `CatalogError`, `CatalogRelease`, `FetchLike`,
-`Guideline`, `GuidelineSection`, `JsonObject`, `JsonValue`, `OpenCatalogOptions`,
-`ReleaseArtifact`, `loadCatalog`, `openCatalog`, `parseCatalogRelease`, and
-`toMarkdown`.
-
-## Check the package
-
-```bash
-pnpm --dir packages/catalog check
-pnpm --dir packages/catalog typecheck
-pnpm --dir packages/catalog test
-pnpm --dir packages/catalog build
-```
-
-Run `pnpm ready` for the complete JavaScript workspace gate.
-
-## License
-
-Apache-2.0. See [LICENSE](../../LICENSE).
+Licensed under Apache-2.0.

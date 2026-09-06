@@ -1,34 +1,34 @@
 ---
 name: visfeedback
-description: Use this for source-backed feedback on an observed visualization with chartcoach.
+description: Review a rendered visualization with chartcoach guidelines and source citations.
 ---
 
 # chartcoach Visfeedback
 
-Inspect the rendered visualization, retrieve candidate catalog records, and
-connect each feedback claim to visible evidence. Load `core` for source and CLI
-mechanics.
+Inspect the rendered chart, find relevant catalog records, and connect each
+feedback claim to visible evidence. Read `core` first. It sets
+`CHARTCOACH_SOURCE` and inspects the current roles and labels before this
+workflow begins.
 
-## Record Visible Evidence
+## Inspect the chart
 
-Capture the state that the feedback covers:
+Record the state being reviewed:
 
-| Field             | Record                                                                            |
-| ----------------- | --------------------------------------------------------------------------------- |
-| Chart             | Marks, encodings, variables, units, scales, and layout.                           |
-| Reader task       | Overview, lookup, comparison, trend, distribution, relation, or anomaly.          |
-| Support           | Title, labels, legend, axes, annotations, tooltips, and source notes.             |
-| State             | Default, hover, selected, toggled, animated, or keyboard state.                   |
-| Risk              | Ambiguity, overplotting, hidden identity, clipping, contrast, or missing context. |
-| Evidence boundary | Screenshot, rendered DOM, accessibility snapshot, data, or inference.             |
+| Field             | Record                                                                           |
+| ----------------- | -------------------------------------------------------------------------------- |
+| Chart             | Marks, encodings, variables, units, scales, and layout                           |
+| Reader task       | Overview, lookup, comparison, trend, distribution, relation, or anomaly          |
+| Supporting text   | Title, labels, legend, axes, annotations, tooltips, and source notes             |
+| Interaction state | Default, hover, selected, toggled, animated, or keyboard state                   |
+| Risk              | Ambiguity, overplotting, hidden identity, clipping, contrast, or missing context |
+| Evidence          | Screenshot, rendered page, accessibility snapshot, data, or inference            |
 
-Capture each interactive state before making a claim about it. Use rendered
-evidence for appearance and accessibility evidence for accessible naming and
-structure.
+Inspect every state you discuss. Use the rendered chart for visual claims and
+an accessibility snapshot for names and structure.
 
-## Retrieve Candidates
+## Find records
 
-Translate visible facts into reader-facing search terms:
+Translate observed facts into ordinary search terms:
 
 ```text
 line chart direct labels many series exact lookup
@@ -36,14 +36,15 @@ dense scatterplot tooltip identity overplotting
 choropleth region names unfamiliar geography color key
 ```
 
-Inspect vocabulary, then search:
+Inspect the catalog labels, then search:
 
 ```sh
 chartcoach catalog labels --contains "<visible concept>" --format json
 chartcoach catalog list --contains "<task or risk>" --format json
 ```
 
-Use SQL for section text and `find` for broader indexed recall:
+Use SQL for section text or `catalog find` when an indexed profile is available
+and ordinary filters leave too many matches:
 
 ```sh
 chartcoach catalog find \
@@ -54,9 +55,9 @@ chartcoach catalog find \
   "<chart> <task> <risk>"
 ```
 
-## Verify And Classify
+## Check each record
 
-Read selected records before citing them:
+Read each selected record before citing it:
 
 ```sh
 chartcoach catalog read <guideline-id> \
@@ -65,31 +66,26 @@ chartcoach catalog read <guideline-id> \
 chartcoach catalog cite <guideline-id> --format markdown
 ```
 
-Classify each verified record as respected, violated, adjacent, or uncertain.
-Keep rejected retrieval matches in private notes when provenance is required.
+For each record, decide whether it:
 
-Reject a match whose chart family, reader task, data type, or interaction state
-falls outside the observed case. Screenshot evidence supports visible layout
-and labeling claims. Claims about hover, keyboard access, or animation require
-evidence from that state.
+- applies and the chart follows it
+- applies and the chart violates it
+- is related but outside this case
+- cannot be judged from the available evidence
 
-## Write Feedback
+Discard records whose chart family, reader task, data type, or interaction
+state differs from the observed case. A screenshot can support layout and
+labeling claims. Hover, keyboard, and animation claims need evidence from
+those states.
 
-For each point, include:
+## Write the feedback
 
-- the observed chart evidence
-- guideline id and title
-- respected, violated, adjacent, or uncertain status
-- the applicable section and scope
-- a concrete change or reason to preserve the current design
-- uncertainty from missing state, data semantics, audience, or intent
-
-Use this compact structure:
+For each point, connect:
 
 ```text
-Observed evidence:
-Feedback:
-Catalog record:
-Suggested action:
-Evidence boundary:
+suggested change or decision to preserve the design
+  -> visible chart evidence
+  -> guideline ID, title, and applicable section
+  -> tradeoff or missing evidence
+  -> source citation
 ```

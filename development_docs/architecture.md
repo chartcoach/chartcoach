@@ -1,36 +1,33 @@
-# Architecture and ownership
+# Architecture
 
-chartcoach keeps one Guideline Catalog contract across authored data, compiled
-artifacts, Python and JavaScript readers, and the two web apps.
-
-## Data flow
+chartcoach turns authored Markdown guidelines into verified catalog files read
+by Python, JavaScript, the CLI, the MCP server, the public site, and the docs.
 
 ```text
-authored folder
+MANIFEST.md + guideline.md files
   -> MANIFEST.md + entries.parquet
-  -> immutable release + optional embedding profiles
-  -> catalog.json selection
-  -> Python, JavaScript, site, docs, CLI, MCP, and agent consumers
+  -> release.json + release files
+  -> catalog.json selecting the public release
+  -> Python, JavaScript, CLI, MCP, site, docs, and agents
 ```
 
-An authored folder contains `MANIFEST.md` and `entries/<id>/guideline.md` files.
-Compilation preserves the manifest and writes the six-field catalog wire shape
-to `entries.parquet`. The readers derive Markdown bodies and queryable tables
-from those rows.
+The guideline record and four files are shared between these interfaces:
+`MANIFEST.md`, `entries.parquet`, `release.json`, and `catalog.json`.
 
-## Workspace ownership
+## Repository parts
 
-| Path                       | Owns                                                                          |
-| -------------------------- | ----------------------------------------------------------------------------- |
-| `apps/site`                | Astro pages, catalog browser, LLM output, search index, and Open Graph images |
-| `apps/docs`                | Next.js and Fumadocs product documentation                                    |
-| `packages/brand`           | Reviewed brand assets, font imports, and CSS tokens                           |
-| `packages/catalog`         | Browser-safe release validation, Parquet loading, and catalog models          |
-| `packages/chartcoach`      | Python catalog model, Polars and DuckDB tables, CLI, MCP, and curation        |
-| `fixtures/catalog-release` | Release artifacts shared by JavaScript, site, and Python contract tests       |
+| Path                       | Reads or writes                                                                                   |
+| -------------------------- | ------------------------------------------------------------------------------------------------- |
+| `packages/chartcoach`      | Python records, Polars and DuckDB tables, remote downloads, cache, release building, CLI, and MCP |
+| `packages/catalog`         | Browser-safe release loading, Parquet parsing, JavaScript records, and Markdown serialization     |
+| `apps/site`                | Public guideline pages, search data, LLM files, Open Graph images, and sitemap                    |
+| `apps/docs`                | Guides, reference pages, and live Python and JavaScript examples                                  |
+| `packages/brand`           | Shared logos, fonts, and CSS variables                                                            |
+| `fixtures/catalog-release` | Small release read by both clients and local site builds                                          |
 
-The package owning a behavior also owns its focused tests. Cross-language wire
-tests read the same fixture.
+The package or app that writes a value also owns its validation. Callers use
+the public package entry point instead of importing implementation files from
+another workspace package.
 
 ## Dependency direction
 
@@ -38,68 +35,40 @@ tests read the same fixture.
 apps/site  -> packages/catalog
           -> packages/brand
 
-apps/docs  -> packages/brand
+apps/docs  -> packages/catalog
+          -> packages/brand
 ```
 
-`packages/catalog` is a browser-safe leaf. It stays independent from the apps,
-brand assets, and Node built-ins. The root Vite+ policy enforces this boundary.
-Cross-package TypeScript imports use package names.
+`packages/catalog` imports no app, brand package, or Node built-in. The two
+apps do not import each other. Vite+ rules check source imports, and
+`tools/architecture` checks package manifests and relative paths.
 
-The root `package.json` and `vite.config.ts` own JavaScript orchestration and
-shared policy. Package manifests own dependencies, focused scripts, tests, and
-build configuration. Shared external versions live in the pnpm catalog.
+The Python read and write paths meet at the catalog and release models:
 
-The root `pyproject.toml` defines the uv workspace and development tools.
-Publishable Python metadata and build configuration live in
-`packages/chartcoach/pyproject.toml`.
+```text
+public API -> catalog/runtime/  -> catalog and release models
+curation/ ---------------------> catalog and release models
+```
 
-## Python runtime boundary
+`catalog/runtime/` reads sources, downloads and verifies files, and manages
+caches. `catalog/curation/` builds, validates, publishes, and selects releases.
+They share the small URI helpers in `catalog/_object_store.py` and do not import
+each other.
 
-`open_catalog(source)` and `open_index(source, profile=...)` classify a local
-path or descriptor URI before filesystem handling. Both functions resolve the
-same release envelope. A selected `catalog.json` points to immutable artifacts
-under `catalog/releases/<digest>/`. An exact `release.json` resolves artifacts
-beside that descriptor.
+## Files that change over time
 
-`catalog/runtime.py` owns source normalization, HTTP reads, integrity checks,
-content-addressed caching, and safe index extraction. Runtime code can import
-release models. It cannot import curation.
+| File or directory                        | What changes it              | When readers can trust it                                     |
+| ---------------------------------------- | ---------------------------- | ------------------------------------------------------------- |
+| `catalog.json`                           | `catalog release select`     | Its release digest is valid                                   |
+| `catalog/releases/<digest>/release.json` | `catalog release publish`    | Every listed file has been uploaded                           |
+| Download cache                           | Python runtime               | File size and SHA-256 match `release.json`                    |
+| Extracted LanceDB cache                  | Python runtime               | The `documents` table opens and the completion marker matches |
+| Generated site files                     | The owning Astro integration | The site build completes                                      |
+| Static notebook output                   | The MDX notebook compiler    | The cell executes during the docs build                       |
 
-Optional extras own capability boundaries:
+The detailed documents divide by the files and code they describe:
 
-| Extra      | Boundary                                                                |
-| ---------- | ----------------------------------------------------------------------- |
-| `cloud`    | Read S3, GCS, and Azure descriptor URIs through Obstore                 |
-| `index`    | Open release-backed native LanceDB profiles                             |
-| `mcp`      | Run the MCP server                                                      |
-| `curation` | Build profiles, validate releases, publish objects, and select releases |
-
-Curation accepts LanceDB embedding functions from the caller. Each profile
-keeps its own vector space, UMAP projection, neighbor graph, and native LanceDB
-archive.
-
-Obspec defines the internal write operations used by curation. Obstore supplies
-the concrete cloud and local adapters at the curation boundary. Public
-consumers pass paths or descriptor URIs.
-
-## Lifecycle boundary
-
-Package tags publish the Python and npm packages after package CI. Catalog
-curation builds, validates, and publishes immutable releases independently.
-Before selection, consumers can open the exact `release.json` URL and the site
-can build against that URL through `CHARTCOACH_SITE_CATALOG_SOURCE`.
-`chartcoach catalog release select` updates `catalog.json` after those checks.
-Package publishing and catalog selection have separate triggers and identities.
-
-## Cross-workspace changes
-
-| Change                           | Update together                                                                |
-| -------------------------------- | ------------------------------------------------------------------------------ |
-| Catalog row or manifest shape    | Python reader, JavaScript reader, shared fixture, site consumers, product docs |
-| Release envelope or object keys  | Python release model, JavaScript release reader, curation services, fixture    |
-| Embedding profile artifact shape | Curation builder, validator, runtime index loader, analysis documentation      |
-| Brand asset or token             | `packages/brand` and its site or docs consumer                                 |
-| Dependency                       | Owning manifest and matching lockfile                                          |
-
-Use [Development workflow](development.md) for the commands that verify each
-boundary.
+- [Catalog files and records](architecture/catalog-contract.md)
+- [Python catalog code](architecture/runtime-and-curation.md)
+- [Web apps](architecture/web-delivery.md)
+- [Releasing packages and catalog data](releasing.md)

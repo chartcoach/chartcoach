@@ -1,37 +1,40 @@
 ---
 name: discuss
-description: Use this for cited visualization design discussion, tradeoff analysis, comparison, and source tracing with chartcoach.
+description: Compare visualization choices with chartcoach guidelines and their source citations.
 ---
 
 # chartcoach Discuss
 
-Use catalog records to answer a visualization design question, compare options,
-or explain a tradeoff. Load `core` for catalog selection and shared command
-contracts.
+Use catalog records to compare visualization choices or explain a tradeoff.
+Read `core` first. It sets `CHARTCOACH_SOURCE` and inspects the current roles
+and labels before this workflow begins.
 
-## Frame The Question
+## Describe the decision
 
-Record the decision before retrieval:
+Record the facts that can change the answer:
 
-| Field         | Record                                                        |
-| ------------- | ------------------------------------------------------------- |
-| Decision      | What the user is choosing or trying to understand.            |
-| Data and task | Variables, scales, cardinality, units, and reader task.       |
-| Audience      | Knowledge, accessibility needs, and decision context.         |
-| Medium        | Static, interactive, dashboard, paper, slide, or mobile.      |
-| Constraints   | Space, color, print, interaction, uncertainty, and toolchain. |
+| Field         | Record                                                            |
+| ------------- | ----------------------------------------------------------------- |
+| Decision      | What the user is choosing or trying to understand                 |
+| Data and task | Variables, scales, units, number of categories, and reader task   |
+| Audience      | Knowledge, accessibility needs, and decision context              |
+| Medium        | Static, interactive, dashboard, paper, slide, or mobile           |
+| Constraints   | Space, color, print, interaction, uncertainty, and target library |
 
-State a reasonable assumption when one missing detail changes scope but still
-allows a bounded answer.
+Ask for a missing fact when it could change the recommendation. Otherwise
+state the assumption beside the affected claim.
 
-## Find Candidate Records
+## Find records
 
-Inspect the live roles and labels, then search with the user's concepts:
+Search with terms from the case:
 
 ```sh
 chartcoach catalog labels --contains "<concept>" --format json
 chartcoach catalog list --contains "<concept>" --format json
 ```
+
+Search competing options separately. Records matching both can explain when
+to choose one over the other.
 
 Use SQL when the question depends on section content, labels, or sources:
 
@@ -45,10 +48,8 @@ chartcoach catalog sql "
 " --format json
 ```
 
-Run separate searches for competing options. Shared results often carry the
-boundary between them.
-
-Use indexed discovery when deterministic retrieval remains broad:
+If ordinary filters return too many matches and an indexed profile is
+available, use full-text search:
 
 ```sh
 chartcoach catalog find \
@@ -59,37 +60,36 @@ chartcoach catalog find \
   "<task> <option> <constraint>"
 ```
 
-## Verify Claims
+## Check the records
 
-Read each selected record and its relevant section:
+Read each selected record, then focus on the sections relevant to the
+decision:
 
 ```sh
 chartcoach catalog read <guideline-id> \
-  --section <manifest-role> \
   --source-detail full \
   --format markdown
 chartcoach catalog cite <guideline-id> --format markdown
 ```
 
-Classify candidates as supporting, limiting, conflicting, adjacent, or rejected.
-Reject a topical match when its chart family, task, audience, data type, or
+Discard a record when its chart family, task, audience, data type, or
 interaction state differs from the user's case.
 
-Source records establish the published basis of a guideline. They do not prove
-that every detail in the source applies to the current decision. Keep that
-boundary next to the affected claim.
+`catalog cite` identifies the published sources attached to the guideline.
+Inspect a source before attributing an explanation or claim to it. Keep limits
+on its applicability beside the affected recommendation.
 
-## Write The Answer
+## Write the answer
+
+For each recommendation or comparison, connect:
 
 ```text
-Recommendation:
-Why it fits this case:
-Catalog evidence:
-Tradeoffs and alternatives:
-Source trail:
-Uncertainty:
+decision
+  -> fact from the user's case
+  -> guideline ID, title, and applicable section
+  -> tradeoff or remaining uncertainty
+  -> source citation
 ```
 
-Name the guideline id and title for each claim. Include the relevant section,
-the exact-read command when auditability matters, and the citation output when
-the response needs public links or references.
+Include an exact-read command when another reviewer needs to inspect the full
+record.

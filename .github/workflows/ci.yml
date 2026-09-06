@@ -23,6 +23,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v8.2.0
+
       - name: Read Node.js version
         id: node-version
         run: echo "version=$(cat .node-version)" >> "$GITHUB_OUTPUT"

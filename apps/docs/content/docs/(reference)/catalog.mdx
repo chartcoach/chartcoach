@@ -1,0 +1,143 @@
+---
+title: Catalog data
+description: Inspect guideline records, supported catalog sources, and the files in a published release.
+icon: Database
+---
+
+Each row in `entries.parquet` is one guideline record. The row stores its ID
+and summary, labels for filtering, ordered guidance sections, and BibTeX source
+entries.
+
+## Guideline record
+
+This excerpt uses exact values from the release in the live examples. It shows
+the first section and the complete source entry:
+
+```json
+{
+  "id": "directly-label-series-instead-of-using-a-color-key",
+  "title": "Directly label colored series instead of relying on a color key",
+  "description": "For color-coded series identification, prefer direct labels on chart marks to improve readability and mitigate color-key decoding for readers with color-vision deficiency.",
+  "labels": [
+    "purpose:refine",
+    "basis:heuristic",
+    "quality:accessibility",
+    "lever:text-annotation",
+    "component:label:use",
+    "component:legend:avoid",
+    "needs:color-vision-deficiency",
+    "polish:annotation"
+  ],
+  "sections": [
+    {
+      "role": "advice",
+      "title": "Move labels onto the marks",
+      "content": "Label colored series directly on the chart instead of making readers decode them through a color key. For example, place series names next to lines or areas, or label pie slices directly so readers do not have to match colors back and forth with a legend."
+    }
+  ],
+  "references": [
+    "@misc{muth_colorblindness_2020,\n author = {Lisa Charlotte Muth},\n howpublished = {\\url{https://www.datawrapper.de/blog/colorblindness-part2}},\n note = {Datawrapper Blog. Accessed: 2025-11-17},\n title = {What to consider when visualizing data for colorblind readers},\n year = {2020}\n}"
+  ]
+}
+```
+
+| Field         | Accepted value                                                  |
+| ------------- | --------------------------------------------------------------- |
+| `id`          | Non-empty string used by commands and APIs                      |
+| `title`       | String                                                          |
+| `description` | String                                                          |
+| `labels`      | Array of canonical `family:value` strings                       |
+| `sections`    | Non-empty array of valid `role`, `title`, and `content` objects |
+| `references`  | Array of BibTeX strings cited by the sections                   |
+
+Readers join `sections` in array order to produce the guideline body. A
+citation such as `[@muth_colorblindness_2020]` refers to the matching BibTeX
+key in `references`.
+
+## Catalog sources
+
+chartcoach opens these directory and file layouts:
+
+| Source            | Files                                         | Behavior                                      |
+| ----------------- | --------------------------------------------- | --------------------------------------------- |
+| Authored folder   | `MANIFEST.md` and `entries/<id>/guideline.md` | Reads the Markdown source used for curation   |
+| Compiled bundle   | `MANIFEST.md` and `entries.parquet`           | Reads local catalog rows directly             |
+| Selected release  | `catalog.json` plus the files it selects      | Follows the current release selection         |
+| Published release | `release.json` plus the files it lists        | Verifies the listed files before reading them |
+
+`MANIFEST.md` lists the section roles and label families accepted by that
+catalog. Readers reject records that use a role or label family missing from
+the manifest.
+
+## `release.json`
+
+`release.json` lists each catalog and search-index file that readers may load.
+It records the byte count and SHA-256 hash that readers verify. Current readers
+accept `schema_version: 1`:
+
+```ts
+type CatalogRelease = {
+  schema_version: 1;
+  digest: string;
+  artifacts: Record<
+    string,
+    {
+      sha256: string;
+      bytes: number;
+    }
+  >;
+};
+```
+
+Every release includes `MANIFEST.md` and `entries.parquet`. Readers first
+check that `digest` matches the `schema_version` and path-sorted `artifacts`
+entries. They then verify each required file's byte count and hash before
+parsing it.
+
+A release can also include a named search index:
+
+```text
+release/
+├── release.json
+├── MANIFEST.md
+├── entries.parquet
+└── profiles/
+    └── sentence-transformers/all-MiniLM-L6-v2/
+        ├── documents.parquet
+        └── index.tar.gz
+```
+
+The profile name identifies one vector space. Each `documents.parquet` row has
+`id`, `parent_id`, `role`, `labels`, `content_hash`, `text`, `vector`,
+`projection_x`, `projection_y`, and `neighbors`. The `neighbors` value contains
+row IDs and distances. `index.tar.gz` contains the matching LanceDB table named
+`documents`.
+
+## `catalog.json`
+
+`catalog.json` contains the record for the currently selected public release.
+Selecting another release overwrites this file. Files under
+`catalog/releases/<digest>/` keep the bytes recorded by that digest.
+
+Readers fetch `catalog.json` on each open so they see the current selection.
+Files already verified for the selected digest can come from cache. A specific
+`release.json` keeps the same digest across calls.
+
+## Query tables
+
+Python and the CLI derive six tables from the guideline records:
+
+| Table                  | One row per                                        |
+| ---------------------- | -------------------------------------------------- |
+| `guidelines`           | Guideline                                          |
+| `sections`             | Guideline section                                  |
+| `guideline_labels`     | Guideline-label pair                               |
+| `references`           | Parsed citation                                    |
+| `guideline_references` | Guideline-reference pair                           |
+| `guideline_sources`    | Guideline-reference pair with parsed source fields |
+
+Inspect the available tables, columns, and row counts before writing a query:
+
+```bash
+chartcoach catalog schema --tables --row-counts
+```

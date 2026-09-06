@@ -1,0 +1,143 @@
+---
+title: Catalog CLI
+description: Inspect catalogs, find guideline IDs, read their contents, and print their citations.
+icon: Terminal
+---
+
+`chartcoach catalog` reads, queries, builds, and publishes Guideline Catalogs.
+The top-level `chartcoach` command also provides `mcp` and `skills`.
+
+## Install
+
+```bash
+uv tool install \
+  "chartcoach @ https://files.peter.gy/packages/python/chartcoach/0.2.0/892f120cb377/chartcoach-0.2.0-py3-none-any.whl"
+```
+
+## Inspect one guideline
+
+Set an exact release for repeatable results, inspect it, find an ID, then read
+and cite the selected guideline:
+
+```bash
+CATALOG_SOURCE="https://files.peter.gy/packages/python/chartcoach/0.2.0/docs-catalog/c0f6dbec3dd31b07763b46fd458733db0b8b50c5793cf9447458119287129420/release.json"
+GUIDELINE_ID="directly-label-series-instead-of-using-a-color-key"
+
+chartcoach catalog overview --source "$CATALOG_SOURCE"
+chartcoach catalog list \
+  --source "$CATALOG_SOURCE" \
+  --contains "direct labels" \
+  --limit 5
+chartcoach catalog read "$GUIDELINE_ID" \
+  --source "$CATALOG_SOURCE" \
+  --source-detail full
+chartcoach catalog cite "$GUIDELINE_ID" \
+  --source "$CATALOG_SOURCE"
+```
+
+`overview` prints catalog counts, label families, and section roles. `list`
+prints short record summaries. `read --source-detail full` prints the complete
+guideline and source data. `cite` prints its public URL and formatted source
+citations.
+
+## Choose a catalog source
+
+Commands that read a catalog accept `--source`:
+
+| Source          | Behavior                                            |
+| --------------- | --------------------------------------------------- |
+| Authored folder | Reads `MANIFEST.md` and `entries/<id>/guideline.md` |
+| Compiled bundle | Reads `MANIFEST.md` and `entries.parquet`           |
+| `catalog.json`  | Follows the currently selected release              |
+| `release.json`  | Keeps one release digest across calls               |
+
+`--source` overrides `CHARTCOACH_SOURCE`. When both are absent, the CLI opens
+the official selected catalog. Prefer an exact `release.json` URL for scripts
+that need repeatable results.
+
+## Commands
+
+| Command                    | Result                                                    |
+| -------------------------- | --------------------------------------------------------- |
+| `catalog overview`         | Catalog source, digest, counts, roles, and label families |
+| `catalog manifest`         | `MANIFEST.md` contents                                    |
+| `catalog labels`           | Label values and counts                                   |
+| `catalog roles`            | Section roles and counts                                  |
+| `catalog list`             | Guideline IDs, titles, descriptions, and labels           |
+| `catalog read`             | Guideline content or selected section roles               |
+| `catalog cite`             | Public guideline URLs and formatted citations             |
+| `catalog schema`           | Query table names, columns, and row counts                |
+| `catalog sql`              | One read-only `SELECT` over the catalog tables            |
+| `catalog find`             | Ranked matches from a search index stored with a release  |
+| `catalog validate`         | Validation result and table counts                        |
+| `catalog build`            | New compiled bundle directory                             |
+| `catalog export duckdb`    | DuckDB file containing the query tables                   |
+| `catalog release validate` | Release digest and file checks                            |
+| `catalog release publish`  | Published files under the release digest                  |
+| `catalog release select`   | Updated `catalog.json` selection                          |
+
+Run `chartcoach catalog COMMAND --help` for the complete arguments and options
+of one command.
+
+## Common output and limits
+
+Human-readable tables and Markdown go to standard output. `--format json`
+emits JSON to standard output. Errors and recovery guidance go to standard
+error. The most-used read commands have these defaults:
+
+| Command          |                                      Default limit | JSON root                                         |
+| ---------------- | -------------------------------------------------: | ------------------------------------------------- |
+| `catalog list`   |                                      50 guidelines | Array                                             |
+| `catalog labels` |                                          50 labels | Array                                             |
+| `catalog sql`    |                                           100 rows | Object with `columns`, `rows`, and limit metadata |
+| `catalog find`   | 8 indexed documents before guideline deduplication | Object with ranked `rows` and search metadata     |
+| `catalog read`   |                                       No row limit | Array of requested guidelines                     |
+| `catalog cite`   |                                       No row limit | Array of requested citations                      |
+
+`catalog sql` rejects multiple statements and statements other than
+`SELECT`. DuckDB external access is disabled for these queries.
+
+The CLI returns these exit codes:
+
+| Code | Meaning                                               |
+| ---: | ----------------------------------------------------- |
+|  `0` | Command completed                                     |
+|  `1` | Catalog, query, storage, or optional dependency error |
+|  `2` | Invalid command syntax or option value                |
+
+## Search an index
+
+The `index` extra installs LanceDB support. A profile is a named search index
+stored in a release. `fts` searches indexed text. `vector` searches with one
+`--vector` value per embedding dimension. `hybrid` combines both inputs.
+
+Profile names appear in `release.json` artifact paths under
+`profiles/<profile>/`. The next command is a template. Replace the complete
+release URL and profile name with values from a release that publishes an
+index:
+
+```bash
+uvx --from \
+  "chartcoach[index] @ https://files.peter.gy/packages/python/chartcoach/0.2.0/892f120cb377/chartcoach-0.2.0-py3-none-any.whl" \
+  chartcoach catalog find \
+  --source "https://catalog.example.com/catalog/releases/<digest>/release.json" \
+  --profile sentence-transformers/all-MiniLM-L6-v2 \
+  --mode fts \
+  --where "role = 'section.advice'" \
+  --limit 5 \
+  "direct labels"
+```
+
+`--profile` can also come from `CHARTCOACH_INDEX_PROFILE`. Because the limit
+applies before matching documents are grouped by guideline ID, the final
+result can contain fewer guidelines than the requested limit.
+
+## Build and publish
+
+`catalog build` creates a compiled bundle from authored Markdown.
+[Curate and publish](/curation) starts with the required installation, then
+builds a release directory before publishing it.
+
+Release commands require `chartcoach[curation]`. `release publish --dry-run`
+prints the object paths without writing them. `release select --dry-run`
+prints the target `catalog.json` path without changing the public selection.

@@ -1,20 +1,4 @@
 {
-  "title": "Docs",
-  "pages": [
-    "---Start---",
-    "index",
-    "getting-started",
-    "querying",
-    "---Interfaces---",
-    "cli",
-    "python",
-    "javascript",
-    "---Agent access---",
-    "agents",
-    "mcp",
-    "---Catalog---",
-    "catalog",
-    "catalog-exploration",
-    "build"
-  ]
+  "title": "chartcoach",
+  "pages": ["index", "(guide)", "(reference)"]
 }

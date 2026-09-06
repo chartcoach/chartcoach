@@ -13,10 +13,10 @@ import "./global.css";
 export const metadata: Metadata = {
   metadataBase: new URL(docsOrigin),
   title: {
-    default: "chartcoach docs",
-    template: "%s | chartcoach docs",
+    default: "chartcoach",
+    template: "%s | chartcoach",
   },
-  description: "Documentation for chartcoach and the Guideline Catalog.",
+  description: "Find, inspect, query, and cite source-traced visualization guidelines.",
   robots: isPreviewDeployment()
     ? {
         index: false,
