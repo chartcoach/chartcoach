@@ -1,0 +1,28 @@
+apps/docs/content/docs/(guide)/agents.mdx
+  s_32c93274083551::t_492b757394d4c1 2-3,7-11,13,15,18-65,68,78-97,99,120,140
+README.md
+  s_32c93274083551::t_492b757394d4c1 55,58-83,85-86
+packages/chartcoach/src/chartcoach/agent.py
+  s_32c93274083551::t_492b757394d4c1 1
+packages/chartcoach/README.md
+  s_32c93274083551::t_492b757394d4c1 76,78-82,106,108-113
+development_docs/architecture/runtime-and-curation.md
+  s_32c93274083551::t_492b757394d4c1 73,82,91-95
+  s_32c93274083551::t_70dc56fa43f9dd 83-89
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "5903f07a4a8d8d309e9e7a87d84afc0a11c3ee3b",
+  "prompts": {},
+  "sessions": {
+    "s_32c93274083551": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a075e4-9329-7c33-8874-8463778e484e",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Péter Ferenc Gyarmati <dev.petergy@gmail.com>"
+    }
+  }
+}
