@@ -1,0 +1,1 @@
+"""Optional catalog curation workflows."""

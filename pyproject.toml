@@ -1,6 +1,6 @@
 [tool.uv.workspace]
 members = [
-    "packages/catalog-python",
+    "packages/chartcoach",
 ]
 
 [tool.uv]
@@ -9,13 +9,3 @@ exclude-newer = "2 days"
 [tool.ruff.lint]
 pydocstyle = { convention = "numpy" }
 ignore = []
-
-[tool.pyrefly]
-project-includes = [
-    "packages/catalog-python/src/chartcoach",
-    "packages/catalog-python/tests",
-]
-search-path = [
-    "packages/catalog-python/src",
-    "packages/catalog-python/tests",
-]

@@ -1,46 +1,20 @@
-PYTHON_PACKAGE := chartcoach
-PYTHON_PATH := packages/catalog-python
-JS_PACKAGES := @chartcoach/site @chartcoach/docs @chartcoach/brand @chartcoach/catalog
-JS_FILTERS := $(foreach package,$(JS_PACKAGES),--filter $(package))
-JS_PREPARE_FILTERS := $(foreach package,$(JS_PACKAGES),--filter $(package)^...)
-ROOT_FORMAT_FILES := package.json pnpm-workspace.yaml .github/workflows/ci.yml .github/workflows/publish.yml
+PYTHON := uv run --locked --package chartcoach
+PYTHON_ALL := $(PYTHON) --all-extras
+PYTHON_PATH := packages/chartcoach
 
-export PATH := $(CURDIR)/node_modules/.bin:$(PATH)
+.PHONY: format lint typecheck test build
 
-.PHONY: js-format-check js-lint js-typecheck js-test js-build js-prepare
-.PHONY: py-format-check py-lint py-typecheck py-test py-build
+format:
+	$(PYTHON) ruff format --check $(PYTHON_PATH)
 
-js-format-check:
-	pnpm exec oxfmt --check $(ROOT_FORMAT_FILES)
-	pnpm -r $(JS_FILTERS) --if-present format:check
+lint:
+	$(PYTHON) ruff check $(PYTHON_PATH)
 
-js-prepare:
-	pnpm $(JS_PREPARE_FILTERS) --if-present build
+typecheck:
+	$(PYTHON_ALL) ty check $(PYTHON_PATH)
 
-js-lint: js-prepare
-	pnpm -r $(JS_FILTERS) --if-present lint
+test:
+	$(PYTHON_ALL) pytest $(PYTHON_PATH)/tests
 
-js-typecheck: js-prepare
-	pnpm -r $(JS_FILTERS) --if-present typecheck
-
-js-test:
-	pnpm -r $(JS_FILTERS) --if-present test
-
-js-build:
-	pnpm -r $(JS_FILTERS) --if-present build
-
-py-format-check:
-	uv run --package $(PYTHON_PACKAGE) ruff format --check $(PYTHON_PATH)
-
-py-lint:
-	uv run --package $(PYTHON_PACKAGE) ruff check $(PYTHON_PATH)
-
-py-typecheck:
-	uv run --package $(PYTHON_PACKAGE) --extra index --extra mcp ty check $(PYTHON_PATH)
-	uv run --package $(PYTHON_PACKAGE) --extra index --extra mcp pyrefly check --summary=none
-
-py-test:
-	uv run --package $(PYTHON_PACKAGE) --extra index --extra mcp pytest $(PYTHON_PATH)/tests
-
-py-build:
-	uv build --package $(PYTHON_PACKAGE)
+build:
+	uv build --package chartcoach

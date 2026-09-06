@@ -78,20 +78,20 @@ jobs:
         run: uv sync --locked --package chartcoach --all-groups --all-extras
 
       - name: Test Python package
-        run: make py-test
+        run: make test
 
       - name: Check Python formatting
         if: matrix.python-version == '3.12'
-        run: make py-format-check
+        run: make format
 
       - name: Lint Python
         if: matrix.python-version == '3.12'
-        run: make py-lint
+        run: make lint
 
       - name: Typecheck Python
         if: matrix.python-version == '3.12'
-        run: make py-typecheck
+        run: make typecheck
 
       - name: Build Python package
         if: matrix.python-version == '3.12'
-        run: make py-build
+        run: make build
