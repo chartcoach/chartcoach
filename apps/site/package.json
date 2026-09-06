@@ -9,7 +9,8 @@
     "build": "astro build",
     "check": "vp check",
     "dev": "portless",
-    "dev:app": "astro dev --host 127.0.0.1 --port ${PORT:-4321}",
+    "predev:app": "vp run @chartcoach/catalog#build",
+    "dev:app": "trap 'exit 0' INT TERM; ASTRO_DEV_BACKGROUND=0 astro dev --ignore-lock --host 127.0.0.1 --port ${PORT:-4321}",
     "test": "vp test",
     "pretypecheck": "vp run @chartcoach/catalog#build",
     "typecheck": "astro check"
@@ -50,6 +51,7 @@
   },
   "portless": {
     "name": "chartcoach",
-    "script": "dev:app"
+    "script": "dev:app",
+    "proxy": true
   }
 }

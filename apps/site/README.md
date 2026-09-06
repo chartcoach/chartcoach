@@ -14,9 +14,14 @@ make install
 pnpm --dir apps/site dev
 ```
 
-Open `https://chartcoach.localhost` and confirm the fixture-backed catalog
-browser renders. The dev command uses portless. Run
-`pnpm --dir apps/site dev:app` to start Astro directly.
+The command starts Astro through
+[Portless](https://github.com/vercel-labs/portless) and prints the local URL.
+With the default proxy settings, the primary checkout uses
+`https://chartcoach.localhost`. A linked
+[Git worktree](https://git-scm.com/docs/git-worktree) adds a subdomain derived
+from its branch name, such as `https://search-ui.chartcoach.localhost`, so
+concurrent checkouts keep separate routes. Run `pnpm --dir apps/site dev:app`
+to start Astro directly.
 
 ## Choose the catalog
 

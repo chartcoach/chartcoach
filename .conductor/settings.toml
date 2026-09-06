@@ -1,0 +1,11 @@
+"$schema" = "https://conductor.build/schemas/settings.repo.schema.json"
+
+[scripts]
+setup = "make install"
+run_mode = "concurrent"
+
+[scripts.run.dev]
+available_in = ["local"]
+command = "pnpm dev"
+default = true
+icon = "play"

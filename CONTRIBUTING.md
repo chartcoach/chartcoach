@@ -33,6 +33,14 @@ Start both web apps with:
 pnpm dev
 ```
 
+[Portless](https://github.com/vercel-labs/portless) assigns each app an
+available local port and prints its local URL. With the default proxy settings,
+the primary checkout uses `https://chartcoach.localhost` and
+`https://docs.chartcoach.localhost`. Linked
+[Git worktrees](https://git-scm.com/docs/git-worktree) receive a subdomain
+derived from the branch name, which lets several worktrees run both apps
+concurrently.
+
 Run a focused command while iterating:
 
 | Area                     | Command                                                                                                          |
