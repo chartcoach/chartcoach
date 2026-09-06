@@ -33,6 +33,14 @@ type CanvasColors = {
   border: string;
 };
 
+type DrawTextOptions = {
+  align?: CanvasTextAlign;
+  maxWidth?: number;
+  mono?: boolean;
+  size?: number;
+  weight?: number;
+};
+
 type PlotBounds = {
   left: number;
   top: number;
@@ -491,13 +499,7 @@ function drawText(
   x: number,
   y: number,
   color: string,
-  options: {
-    align?: CanvasTextAlign;
-    maxWidth?: number;
-    mono?: boolean;
-    size?: number;
-    weight?: number;
-  } = {},
+  options: DrawTextOptions = {},
 ) {
   const font = options.mono
     ? 'SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace'

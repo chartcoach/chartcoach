@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
-import { parseCatalogRelease, type CatalogRelease, type JsonValue } from "@chartcoach/catalog";
+import { parseCatalogRelease, type JsonValue } from "@chartcoach/catalog";
 
 const releaseFixtureRoot = new URL("../../../fixtures/catalog-release/", import.meta.url);
 const artifactBaseUrl = "https://artifacts.chartcoach.dev";
@@ -85,11 +85,7 @@ function catalogSourceModule() {
   return import("../src/config/catalog-source");
 }
 
-async function fixtureRelease(): Promise<{
-  release: CatalogRelease;
-  manifest: string;
-  entries: Buffer;
-}> {
+async function fixtureRelease() {
   const [manifest, entries, release] = await Promise.all([
     readFile(new URL("MANIFEST.md", releaseFixtureRoot), "utf8"),
     readFile(new URL("entries.parquet", releaseFixtureRoot)),

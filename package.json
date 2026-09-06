@@ -6,8 +6,9 @@
   "scripts": {
     "build": "vp run -r build",
     "check": "vp check --no-error-on-unmatched-pattern .github .vscode apps development_docs fixtures/catalog-release/MANIFEST.md packages/brand packages/catalog packages/chartcoach/README.md packages/chartcoach/data/skill-data packages/chartcoach/pyproject.toml AGENTS.md CONTRIBUTING.md README.md package.json pnpm-workspace.yaml pyproject.toml tsconfig.json vite.config.ts",
+    "check:anti-slop": "node --test --test-concurrency=1 tools/oxlint/anti-slop/test/*.test.ts tools/oxlint/anti-slop/test/compatibility/*.test.ts && tsc -p tools/oxlint/anti-slop/tsconfig.json --noEmit",
     "dev": "portless",
-    "ready": "vp run check && vp run typecheck && vp run test && vp run build",
+    "ready": "pnpm check:anti-slop && vp run typecheck && vp run check && vp run test && vp run build",
     "test": "vp run -r test",
     "typecheck": "vp run -r typecheck"
   },

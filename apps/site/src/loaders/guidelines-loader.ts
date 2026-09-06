@@ -29,6 +29,10 @@ type ReferenceInfo = {
   hoverText?: string;
 };
 
+type GuidelinesLoaderOptions = {
+  source?: string;
+};
+
 function citeId(key: string): string {
   return `ref-${key.replace(/[^A-Za-z0-9:_-]/g, "_")}`;
 }
@@ -205,11 +209,7 @@ function renderCitationsInMarkdown(
   };
 }
 
-export function guidelinesLoader({
-  source,
-}: {
-  source?: string;
-} = {}): Loader {
+export function guidelinesLoader({ source }: GuidelinesLoaderOptions = {}): Loader {
   return {
     name: "chartcoach-guidelines-loader",
     async load(context) {
