@@ -11,10 +11,12 @@ try:
 except ModuleNotFoundError as exc:  # pragma: no cover - depends on install extras
     name = exc.name
     if name == "mcp" or (name is not None and name.startswith("mcp.")):
-        exc.add_note("Install `chartcoach[mcp]` to use the chartcoach MCP server.")
+        add_note = getattr(exc, "add_note", None)
+        if callable(add_note):
+            add_note("Install `chartcoach[mcp]` to use the chartcoach MCP server.")
     raise
 
-from .catalog import open_catalog, open_index
+from .catalog.errors import CatalogError
 from .tools import Tools, search_error
 
 Transport = Literal["stdio", "sse", "streamable-http"]
@@ -150,36 +152,29 @@ def main(
         raise ValueError("MCP port must be between 1 and 65535.")
     _configure_logging(resolved_log_level)
 
-    catalog = open_catalog(source)
-
+    try:
+        server_tools = Tools.open(source, profile=profile)
+    except ModuleNotFoundError:
+        raise
+    except CatalogError as exc:
+        if profile is None:
+            raise
+        raise ValueError(search_error(exc.message, hints=exc.hints)) from exc
+    except Exception as exc:
+        if profile is None:
+            raise
+        raise ValueError(search_error(str(exc))) from exc
     logger.info(
         "Starting chartcoach MCP server with transport=%s host=%s port=%s",
         resolved_transport,
         host,
         port,
     )
-    table = None
-    if profile is not None:
-        try:
-            table = open_index(
-                source,
-                profile=profile,
-            )
-        except ModuleNotFoundError:
-            raise
-        except Exception as exc:
-            raise ValueError(search_error(str(exc))) from exc
-    server_tools = Tools(
-        catalog,
-        table=table,
-        source=source,
-        profile=profile,
-    )
     server = _build_server(log_level=resolved_log_level)
     _register_tools(
         server,
         tools=server_tools,
-        include_search=table is not None,
+        include_search=profile is not None,
     )
     _run_server(
         server,

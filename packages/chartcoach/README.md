@@ -73,6 +73,40 @@ table = open_index(
 `open_index` returns the release's `documents` table. A missing profile raises
 `CatalogError` and lists the available names.
 
+## Use chartcoach from a notebook agent
+
+[marimo](https://docs.marimo.io/) code mode discovers `chartcoach.agent` when
+chartcoach is installed in the notebook's Python environment. The module
+exposes the same catalog operations used by the CLI and MCP server, plus the
+version-matched [Agent Plugin](https://peter-gy.github.io/agent-plugins/)
+resources:
+
+```python
+import chartcoach.agent as cc
+
+help(cc)
+tools = cc.Tools.open()
+catalog = tools.catalog
+candidates = cc.query_entries(
+    catalog,
+    contains="direct labels",
+    limit=5,
+    include_body=False,
+)
+core = cc.agent_skill()
+print(core.source)
+```
+
+`cc.agent_plugin()` returns an `agent_plugins.Plugin` object.
+`cc.agent_skills()` returns its `agent_plugins.Skill` objects in chartcoach
+workflow order. Use `cc.agent_plugin().skill(name)` for direct lookup,
+`skill.file(path)` for a checked packaged resource, and
+`cc.skill_description(skill)` when presenting a discovery list.
+
+The Agent Plugin also exposes the packaged MCP stdio entry through
+`cc.agent_plugin().mcp`. Install `chartcoach[mcp]` in the agent client's Python
+environment before it starts that server.
+
 ## Documentation
 
 | Page                                                       | Details                                                       |

@@ -73,6 +73,37 @@ else:
     assert result.returncode == 0, result.stderr
 
 
+def test_mcp_command_reports_the_extra_when_mcp_is_absent() -> None:
+    script = """
+import importlib.abc
+
+class BlockMCP(importlib.abc.MetaPathFinder):
+    def find_spec(self, fullname, path=None, target=None):
+        if fullname == "mcp" or fullname.startswith("mcp."):
+            raise ModuleNotFoundError("blocked mcp", name=fullname)
+        return None
+
+import sys
+sys.meta_path.insert(0, BlockMCP())
+from chartcoach.cli.main import main
+from click.testing import CliRunner
+
+result = CliRunner().invoke(main, ["mcp"])
+assert result.exit_code == 1
+assert "chartcoach[mcp]" in result.output
+assert "Traceback" not in result.output
+"""
+
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+
+
 def test_release_profile_reports_the_index_extra_when_lancedb_is_absent(
     tmp_path: Path,
 ) -> None:

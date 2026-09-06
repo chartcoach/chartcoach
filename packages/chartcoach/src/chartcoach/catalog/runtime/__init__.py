@@ -10,7 +10,7 @@ from .._object_store import copy_storage_options
 from ..errors import CatalogError
 from ..releases.models import safe_relative_path
 from .cache import cached_index
-from .release import profile_ids, release_location
+from .release import ReleaseLocation, profile_ids, release_location
 from .source import LocalSource, normalize_source
 
 if TYPE_CHECKING:
@@ -33,14 +33,7 @@ def open_catalog(
         if direct is not None:
             return direct
 
-    location = release_location(normalized, options)
-    from ..collection import _load_catalog_bundle
-
-    return _load_catalog_bundle(
-        location.artifact_path("MANIFEST.md"),
-        location.artifact_path("entries.parquet"),
-        release=location.release,
-    )
+    return _open_release_catalog(release_location(normalized, options))
 
 
 def open_index(
@@ -53,16 +46,42 @@ def open_index(
 
     options = copy_storage_options(storage_options)
     normalized = normalize_source(source)
-    if (
-        isinstance(normalized, LocalSource)
-        and normalized.path.is_dir()
-        and not (normalized.path / "release.json").is_file()
-    ):
-        raise CatalogError(
-            "Index sources must be a release directory, catalog.json, or "
-            "release.json path or URI."
-        )
+    _require_release_source(normalized)
+    return _open_release_index(
+        release_location(normalized, options),
+        profile=profile,
+    )
+
+
+def open_catalog_index(
+    source: str | PathLike[str] | None = None,
+    *,
+    profile: str,
+    storage_options: Mapping[str, object] | None = None,
+) -> tuple[Catalog, Table]:
+    """Open one release snapshot as a catalog and native index table."""
+
+    options = copy_storage_options(storage_options)
+    normalized = normalize_source(source)
+    _require_release_source(normalized)
     location = release_location(normalized, options)
+    return (
+        _open_release_catalog(location),
+        _open_release_index(location, profile=profile),
+    )
+
+
+def _open_release_catalog(location: ReleaseLocation) -> Catalog:
+    from ..collection import _load_catalog_bundle
+
+    return _load_catalog_bundle(
+        location.artifact_path("MANIFEST.md"),
+        location.artifact_path("entries.parquet"),
+        release=location.release,
+    )
+
+
+def _open_release_index(location: ReleaseLocation, *, profile: str) -> Table:
     profile = safe_relative_path(profile, label="Embedding profile")
     artifact_path = f"profiles/{profile}/index.tar.gz"
     try:
@@ -89,6 +108,18 @@ def open_index(
     except (OSError, RuntimeError, ValueError):
         index_path = cached_index(archive, artifact.sha256, refresh=True)
         return lancedb.connect(index_path).open_table(LANCE_DOCUMENT_TABLE)
+
+
+def _require_release_source(source: object) -> None:
+    if (
+        isinstance(source, LocalSource)
+        and source.path.is_dir()
+        and not (source.path / "release.json").is_file()
+    ):
+        raise CatalogError(
+            "Index sources must be a release directory, catalog.json, or "
+            "release.json path or URI."
+        )
 
 
 def _open_local_directory(path: Path) -> Catalog | None:
@@ -121,4 +152,4 @@ def _open_local_directory(path: Path) -> Catalog | None:
     )
 
 
-__all__ = ["open_catalog", "open_index"]
+__all__ = ["open_catalog", "open_catalog_index", "open_index"]

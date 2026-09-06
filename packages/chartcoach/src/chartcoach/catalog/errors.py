@@ -12,7 +12,10 @@ class CatalogError(ValueError):
         self.hints = tuple(hints)
 
     def __str__(self) -> str:
-        return self.message
+        if not self.hints:
+            return self.message
+        guidance = "\n".join(f"  - {hint}" for hint in self.hints)
+        return f"{self.message}\n\nGuidance:\n{guidance}"
 
 
 class CatalogLookupError(CatalogError):
@@ -23,8 +26,24 @@ class CatalogValidationError(CatalogError):
     """Raised when catalog input violates a supported contract."""
 
 
+def require_string_sequence(name: str, values: Sequence[str]) -> None:
+    """Reject a scalar string or a sequence containing non-string values."""
+
+    if isinstance(values, str):
+        raise CatalogValidationError(
+            f"{name} must be a sequence of strings, not one string.",
+            hints=[f"Pass {name}=[{values!r}]."],
+        )
+    if not all(isinstance(value, str) for value in values):
+        raise CatalogValidationError(
+            f"{name} must contain strings.",
+            hints=[f"Pass {name} as a list or tuple of strings."],
+        )
+
+
 __all__ = [
     "CatalogError",
     "CatalogLookupError",
     "CatalogValidationError",
+    "require_string_sequence",
 ]

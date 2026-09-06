@@ -70,6 +70,32 @@ Imports for these libraries stay inside the code that needs them. The base
 package therefore imports in ordinary Python and Pyodide without loading the
 optional libraries.
 
+## Python interface adapters
+
+Catalog modules own query, read, citation, summary, schema, build, publication,
+and selection behavior. `chartcoach.tools.Tools` owns the SQL and indexed
+search operations shared by the CLI and Model Context Protocol server.
+
+`chartcoach.agent` presents the read-side query, read, citation, summary,
+schema, and tool callables to code-mode agents. Its dynamic module help starts
+with an executable catalog workflow and points to the Agent Skills installed
+with the package. `chartcoach.skills` owns Agent Plugin discovery, skill
+workflow order, description extraction, and source rendering. It delegates
+packaged skill selection, exact instruction reads, and checked resource lookup
+to `agent_plugins.Plugin` and `agent_plugins.Skill`. ChartCoach's skill service
+also projects the `hidden` field used by discovery lists. The Click commands in
+`chartcoach.cli` parse terminal input and render the returned values.
+
+The Python build uses
+[`agent-plugins`](https://peter-gy.github.io/agent-plugins/) to wrap
+[uv's build backend](https://docs.astral.sh/uv/concepts/build-backend/). The
+wrapper packages the repository-root `plugin.json` and `skills/` tree beside
+the Python library. It also packages root `mcp.json`, which declares the
+installed `chartcoach mcp` stdio server. Distribution metadata records these
+installed paths. Editable installs point that metadata at the authored
+repository files. Reinstall the editable package after adding, moving, or
+deleting a plugin file so the recorded file inventory matches the tree.
+
 ## Curation flow
 
 ```text

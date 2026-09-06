@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from pathlib import Path
 from typing import cast
 
@@ -8,7 +9,8 @@ from catalog_testkit import deterministic_embedding
 from chartcoach.catalog.collection import Catalog
 from chartcoach.catalog.releases import CatalogRelease, ReleaseArtifact
 from chartcoach.catalog.releases.hashing import release_digest
-from chartcoach.tools import ToolError, Tools
+from chartcoach.catalog.runtime.source import LocalSource, RemoteSource
+from chartcoach.tools import ToolError, Tools, search_error
 
 
 def test_tools_sql_returns_bounded_rows(sample_catalog: Catalog) -> None:
@@ -118,10 +120,63 @@ def test_tools_search_uses_configured_lancedb_table(
     assert result["profile"] == "test/deterministic"
 
 
+@pytest.mark.curation
+@pytest.mark.search
+def test_tools_open_binds_catalog_index_and_provenance(
+    sample_catalog: Catalog,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import chartcoach.catalog.runtime as catalog_runtime
+    from chartcoach.catalog.curation import EmbeddingProfile, build_release
+
+    profile = "test/deterministic"
+    release = tmp_path / "release"
+    build_release(
+        sample_catalog,
+        release,
+        profiles={
+            profile: EmbeddingProfile(
+                embedding=deterministic_embedding("chartcoach-tools-open-test"),
+                umap={"n_neighbors": 3},
+            )
+        },
+    )
+    release_location = catalog_runtime.release_location
+    resolutions = 0
+
+    def count_release_resolution(
+        source: LocalSource | RemoteSource,
+        storage_options: Mapping[str, object],
+    ):
+        nonlocal resolutions
+        resolutions += 1
+        return release_location(source, storage_options)
+
+    monkeypatch.setattr(catalog_runtime, "release_location", count_release_resolution)
+
+    tools = Tools.open(release, profile=profile)
+    result = tools.search("direct labels", limit=1, mode="fts")
+
+    assert tools.catalog.release is not None
+    assert result["source"] == str(release)
+    assert result["profile"] == profile
+    assert result["release_digest"] == tools.catalog.release.digest
+    assert resolutions == 1
+
+
 @pytest.mark.search
 def test_tools_search_requires_explicit_table(sample_catalog: Catalog) -> None:
-    with pytest.raises(ToolError, match="LanceDB table is required"):
+    with pytest.raises(ToolError, match=r"Tools\.open\(source, profile=profile\)"):
         Tools(sample_catalog).search("direct labels")
+
+
+def test_search_error_merges_structured_guidance() -> None:
+    message = search_error("Search failed.", hints=("Inspect the selected release.",))
+
+    assert message.count("Guidance:") == 1
+    assert "Inspect the selected release." in message
+    assert "Tools.open(source, profile=profile)" in message
 
 
 def _released_catalog(catalog: Catalog) -> Catalog:

@@ -8,7 +8,47 @@ description: Choose a chartcoach catalog, find guideline records, read them in f
 Use the Guideline Catalog to find possible matches, read each selected record,
 and keep its source citation with the final answer.
 
-## Choose the catalog
+## Use the Python interface
+
+Code-mode agents can keep discovery, catalog access, and result inspection in
+the current Python environment:
+
+```python
+import chartcoach.agent as cc
+
+source = None  # Pass a local bundle or release path for offline work.
+tools = cc.Tools.open(source)
+catalog = tools.catalog
+
+candidates = cc.query_entries(
+    catalog,
+    contains="direct labels",
+    limit=10,
+    include_body=False,
+).to_dicts()
+if not candidates:
+    raise LookupError("No guidelines matched. Inspect cc.list_labels(catalog).")
+
+ids = [row["id"] for row in candidates]
+records = cc.retrieve_entry_records(
+    catalog,
+    ids=ids,
+    source_detail="full",
+)
+citations = cc.citation_records(catalog, ids=ids)
+result = {
+    "candidates": candidates,
+    "records": records,
+    "citations": citations,
+}
+result
+```
+
+`query_entries` returns a Polars DataFrame. The other calls return dictionaries
+or lists of dictionaries. Keep candidate IDs attached to the complete records
+and citations selected for the answer.
+
+## Use the terminal interface
 
 Set one source for the whole task:
 
@@ -89,6 +129,22 @@ interaction state differs from the current case.
 
 `catalog find` needs `chartcoach[index]` and a release that includes the named
 profile. A profile is a search index stored with that release.
+
+In Python, open the catalog and index through one source-bound object:
+
+```python
+indexed = cc.Tools.open(source, profile="<profile>")
+hits = indexed.search("<query>", mode="fts")
+```
+
+Use an exact `release.json` path or release directory when the catalog and
+index must remain fixed across calls.
+
+Use `rank` for result order. `score` is relevance for full-text and hybrid
+search, where larger values are stronger. It is distance for vector search,
+where smaller values are stronger.
+
+The terminal equivalent is:
 
 ```sh
 chartcoach catalog find \

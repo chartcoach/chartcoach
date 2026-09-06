@@ -5,7 +5,7 @@ from typing import Literal, cast
 
 import click
 
-from chartcoach.catalog import open_index
+from chartcoach.catalog.errors import CatalogError
 from chartcoach.tools import ToolError, Tools
 
 from ..common import (
@@ -15,7 +15,6 @@ from ..common import (
     guideline_search_rows_to_compact_markdown,
     guideline_search_rows_to_markdown,
     index_profile_option,
-    load_catalog,
     search_cli_error,
     source_option,
     source_path,
@@ -68,16 +67,9 @@ def find_command(
 ) -> None:
     """Rank entries with a LanceDB profile."""
 
-    catalog = load_catalog(ctx)
     try:
         source = source_path(ctx)
-        table = open_index(source, profile=profile)
-        result = Tools(
-            catalog,
-            table=table,
-            source=source,
-            profile=profile,
-        ).search(
+        result = Tools.open(source, profile=profile).search(
             query,
             limit=limit,
             where=where,
@@ -94,6 +86,10 @@ def find_command(
                 str(exc),
                 missing_index_extra=True,
             )
+        ) from exc
+    except CatalogError as exc:
+        raise click.ClickException(
+            search_cli_error(exc.message, hints=exc.hints)
         ) from exc
     except Exception as exc:
         raise click.ClickException(search_cli_error(str(exc))) from exc

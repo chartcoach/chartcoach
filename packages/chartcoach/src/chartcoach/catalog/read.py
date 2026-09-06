@@ -1,14 +1,17 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Literal, cast
 
 import polars as pl
 
-from .query import query_entries, validate_section_roles
+from .errors import CatalogValidationError
+from .query import query_entries, validate_ids, validate_section_roles
 
 if TYPE_CHECKING:
     from .collection import Catalog
+
+SourceDetail = Literal["none", "minimal", "full"]
 
 
 def retrieve_entry_records(
@@ -16,9 +19,29 @@ def retrieve_entry_records(
     *,
     ids: Sequence[str],
     roles: Sequence[str] = (),
-    source_detail: str = "minimal",
+    source_detail: SourceDetail = "minimal",
 ) -> list[dict[str, object]]:
+    """Return complete guideline records for exact IDs.
+
+    Args:
+        catalog: Catalog to read.
+        ids: Guideline IDs in output order.
+        roles: Section roles to retain. Every role is retained when omitted.
+        source_detail: `none` omits source rows, `minimal` includes citation
+            fields, and `full` also includes every source field and raw BibTeX.
+
+    Returns:
+        One dictionary per requested guideline ID.
+
+    Raises:
+        CatalogError: An ID, role, or source detail value is invalid.
+    """
+
+    _validate_source_detail(source_detail)
     validate_section_roles(catalog, roles)
+    if not ids:
+        validate_ids(catalog, ids)
+        return []
     frame = query_entries(catalog, ids=ids, limit=len(ids), include_body=True)
     role_set = set(roles) if roles else None
     return [
@@ -36,7 +59,7 @@ def entry_record_from_row(
     row: Mapping[str, object],
     *,
     roles: set[str] | None,
-    source_detail: str,
+    source_detail: SourceDetail,
     sources: list[dict[str, object]],
 ) -> dict[str, object]:
     raw_sections = cast(Sequence[Mapping[str, object]], row.get("sections") or ())
@@ -63,7 +86,7 @@ def entry_record_from_row(
 
 
 def source_rows(
-    catalog: Catalog, guideline_id: str, *, detail: str
+    catalog: Catalog, guideline_id: str, *, detail: SourceDetail
 ) -> list[dict[str, object]]:
     if detail == "none":
         return []
@@ -78,4 +101,17 @@ def source_rows(
     ).to_dicts()
 
 
-__all__ = ["entry_record_from_row", "retrieve_entry_records", "source_rows"]
+def _validate_source_detail(source_detail: str) -> None:
+    if source_detail not in {"none", "minimal", "full"}:
+        raise CatalogValidationError(
+            f"Unknown source detail: {source_detail!r}",
+            hints=["Choose one of: none, minimal, full."],
+        )
+
+
+__all__ = [
+    "SourceDetail",
+    "entry_record_from_row",
+    "retrieve_entry_records",
+    "source_rows",
+]

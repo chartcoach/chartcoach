@@ -92,11 +92,7 @@ def load_catalog(
 ) -> Catalog:
     source = source_path(ctx) if source is None else source
     try:
-        catalog = open_catalog(source)
-        ctx.ensure_object(dict)["release_digest"] = (
-            catalog.release.digest if catalog.release is not None else None
-        )
-        return catalog
+        return open_catalog(source)
     except ModuleNotFoundError as exc:
         raise click.ClickException(str(exc)) from exc
     except (CatalogError, OSError, ValueError) as exc:
@@ -126,18 +122,12 @@ def storage_errors(operation: str, target: str) -> Iterator[None]:
 
 
 def tools(ctx: click.Context) -> Tools:
-    catalog = load_catalog(ctx)
-    return Tools(catalog, source=source_path(ctx))
+    return Tools.open(source_path(ctx))
 
 
 def source_path(ctx: click.Context) -> str | None:
     path = cast(Mapping[str, object], ctx.obj or {}).get("source_path")
     return cast(str | None, path)
-
-
-def catalog_release_digest(ctx: click.Context) -> str | None:
-    value = cast(Mapping[str, object], ctx.obj or {}).get("release_digest")
-    return cast(str | None, value)
 
 
 def echo_info(message: str, *, detail: str | None = None, err: bool = True) -> None:
@@ -256,6 +246,7 @@ def search_cli_error(
     message: str,
     *,
     missing_index_extra: bool = False,
+    hints: Sequence[str] = (),
 ) -> str:
     """Return a CLI search error with release-profile recovery hints."""
 
@@ -270,6 +261,7 @@ def search_cli_error(
     return format_error(
         message,
         [
+            *hints,
             *install_hints,
             "Pass --source with catalog.json or release.json and select --profile.",
             "Use `--mode fts` for provider-free text retrieval.",

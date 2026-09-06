@@ -17,7 +17,6 @@ from chartcoach.tools import ToolError, format_error
 from ..common import (
     CONTEXT_SETTINGS,
     ROW_FORMATS,
-    catalog_release_digest,
     echo_warn,
     emit_object,
     emit_rows,
@@ -55,7 +54,6 @@ def overview_command(ctx: click.Context, output_format: str) -> None:
         catalog,
         source=source_path(ctx)
         or f"{CATALOG_ARTIFACT_BASE_URL.rstrip('/')}/{CATALOG_ENTRY_PATH}",
-        release_digest=catalog_release_digest(ctx),
     )
     if output_format == "json":
         emit_object(overview)
@@ -296,14 +294,14 @@ def read_command(
     """Read exact entries and selected sections."""
 
     catalog = load_catalog(ctx)
-    from chartcoach.catalog.read import retrieve_entry_records
+    from chartcoach.catalog.read import SourceDetail, retrieve_entry_records
 
     try:
         records = retrieve_entry_records(
             catalog,
             ids=entry_ids,
             roles=sections,
-            source_detail=source_detail,
+            source_detail=cast(SourceDetail, source_detail),
         )
     except (CatalogError, ToolError) as exc:
         raise _command_error(exc) from exc

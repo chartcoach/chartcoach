@@ -13,8 +13,9 @@ if TYPE_CHECKING:
     from .catalog.collection import Catalog
 
 _SEARCH_HINTS = (
-    "Pass a release source and embedding profile to `chartcoach catalog find`.",
-    "Use `--mode fts` for provider-free text retrieval.",
+    "Open indexed tools with `Tools.open(source, profile=profile)`.",
+    "Use `mode='fts'` for provider-free text retrieval.",
+    "The CLI equivalent is `chartcoach catalog find --source SOURCE --profile PROFILE QUERY`.",
 )
 
 
@@ -31,7 +32,7 @@ class ToolError(ValueError):
 
 
 class Tools:
-    """Raw catalog tools shared by CLI and MCP transports."""
+    """Catalog SQL and search operations shared by Python, CLI, and MCP."""
 
     def __init__(
         self,
@@ -45,6 +46,53 @@ class Tools:
         self._table = table
         self._source = fspath(source) if source is not None else None
         self._profile = profile
+
+    @classmethod
+    def open(
+        cls,
+        source: str | PathLike[str] | None = None,
+        *,
+        profile: str | None = None,
+        storage_options: Mapping[str, object] | None = None,
+    ) -> Tools:
+        """Open one catalog and its optional release-backed search table.
+
+        Use this constructor when the same source and profile must identify
+        the catalog, search table, and provenance returned by `search()`.
+
+        Args:
+            source: Authored catalog, bundle, `catalog.json`, or `release.json`
+                path or URI. The official selected catalog is used when
+                omitted. Use an exact `release.json` or release directory when
+                the catalog and index must remain fixed across calls.
+            profile: Named embedding profile to open for `search()`. SQL is
+                available when omitted.
+            storage_options: Credentials and transport options passed to both
+                catalog and index loading.
+
+        Returns:
+            Tools bound to the opened catalog and optional search table.
+        """
+
+        if profile is not None:
+            from .catalog.runtime import open_catalog_index
+
+            catalog, table = open_catalog_index(
+                source,
+                profile=profile,
+                storage_options=storage_options,
+            )
+        else:
+            from .catalog import open_catalog
+
+            catalog = open_catalog(source, storage_options=storage_options)
+            table = None
+        return cls(
+            catalog,
+            table=table,
+            source=source,
+            profile=profile,
+        )
 
     @property
     def catalog(self) -> Catalog:
@@ -112,7 +160,12 @@ class Tools:
         where: str | None = None,
         mode: Literal["fts", "vector", "hybrid"] = "fts",
     ) -> dict[str, object]:
-        """Search indexed documents and present one row per guideline."""
+        """Search indexed documents and return one row per guideline.
+
+        Rows are ordered by `rank`. The `score` is relevance for full-text and
+        hybrid search, where larger values are stronger. It is distance for
+        vector search, where smaller values are stronger.
+        """
 
         table = self._require_table()
         rows = _search_guidelines(
@@ -276,12 +329,12 @@ def format_error(message: str, hints: Sequence[str]) -> str:
     return f"{message}\n\nGuidance:\n{joined_hints}"
 
 
-def search_error(message: str) -> str:
+def search_error(message: str, *, hints: Sequence[str] = ()) -> str:
     """Return a search error message with recovery guidance."""
 
     return format_error(
         message,
-        _SEARCH_HINTS,
+        (*hints, *_SEARCH_HINTS),
     )
 
 
