@@ -29,7 +29,10 @@ function getPageSourceUrl(page: DocsPage) {
 export async function getLLMText(page: DocsPage) {
   const processed = await renderPlaceholder(await page.data.getText("processed"), {
     Callout({ attributes, children }) {
-      const title = typeof attributes.title === "string" ? attributes.title : "Note";
+      const title =
+        Object.prototype.toString.call(attributes.title) === "[object String]"
+          ? String(attributes.title)
+          : "Note";
       const lines = children.trim().split("\n");
       const content = lines.map((line) => `> ${line}`.trimEnd()).join("\n");
 

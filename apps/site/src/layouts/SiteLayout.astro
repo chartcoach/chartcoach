@@ -87,10 +87,8 @@ const { isPreviewDeployment } = getSiteRuntimeConfig();
         const isDark = stored ? stored === "dark" : prefersDark;
         const platform =
           navigator.userAgentData?.platform ??
-          String(Reflect.get(navigator, "platform") ?? "");
-        const isApple =
-          /mac|iphone|ipad|ipod/i.test(platform) ||
-          (platform === "MacIntel" && navigator.maxTouchPoints > 1);
+          navigator.userAgent;
+        const isApple = /mac|iphone|ipad|ipod/i.test(platform);
         root.classList.toggle("dark", isDark);
         root.classList.toggle("os-apple", isApple);
         root.style.colorScheme = isDark ? "dark" : "light";

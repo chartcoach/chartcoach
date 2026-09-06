@@ -24,7 +24,7 @@ type RenderedCitations = {
 type ReferenceInfo = {
   key: string;
   bibtex: string;
-  csl?: unknown[];
+  csl?: object[];
   inlineHtml?: string;
   hoverText?: string;
 };

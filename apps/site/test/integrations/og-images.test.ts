@@ -3,9 +3,11 @@ import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { createElement } from "react";
-import { afterEach, describe, expect, it, vi } from "vite-plus/test";
+import { afterEach, describe, expect, it } from "vite-plus/test";
 
 import { ogImages, type OgPayload } from "../../src/integrations/og-images";
+import type { JsonValue } from "../../src/lib/json";
+import { createTestLogger, requireIntegrationHook } from "../astro";
 
 type ImageProps = { color: string };
 
@@ -23,18 +25,13 @@ function temporaryDirectory() {
   return directory;
 }
 
-function logger() {
-  const child = { info: vi.fn(), warn: vi.fn(), error: vi.fn() };
-  return { ...child, fork: vi.fn(() => child) };
-}
-
 function Image({ color }: ImageProps) {
   return createElement("div", {
     style: { backgroundColor: color, display: "flex", height: "100%", width: "100%" },
   });
 }
 
-function integration(parsePayload: (value: unknown) => OgPayload<ImageProps> | null) {
+function integration(parsePayload: (value: JsonValue) => OgPayload<ImageProps> | null) {
   return ogImages({
     component: Image,
     metaName: "test:og-payload",
@@ -44,18 +41,23 @@ function integration(parsePayload: (value: unknown) => OgPayload<ImageProps> | n
   });
 }
 
-function htmlWithPayload(payload: unknown) {
+function htmlWithPayload(payload: JsonValue) {
   const content = JSON.stringify(payload).replaceAll("&", "&amp;").replaceAll('"', "&quot;");
   return `<!doctype html><html><head><meta name="test:og-payload" content="${content}"></head><body>Page</body></html>`;
 }
 
 async function runBuild(
   output: string,
-  parsePayload: (value: unknown) => OgPayload<ImageProps> | null,
+  parsePayload: (value: JsonValue) => OgPayload<ImageProps> | null,
 ) {
-  const build = integration(parsePayload).hooks["astro:build:done"];
-  if (!build) throw new Error("Missing astro:build:done hook");
-  await build({ dir: pathToFileURL(`${output}/`), logger: logger() } as never);
+  const build = requireIntegrationHook(integration(parsePayload), "astro:build:done");
+  const { logger } = createTestLogger();
+  await build({
+    assets: new Map(),
+    dir: pathToFileURL(`${output}/`),
+    logger,
+    pages: [],
+  });
 }
 
 describe("ogImages", () => {
@@ -71,7 +73,7 @@ describe("ogImages", () => {
     };
     writeFileSync(htmlPath, htmlWithPayload(payload));
 
-    await runBuild(output, (value) => value as OgPayload<ImageProps>);
+    await runBuild(output, () => payload);
 
     expect(readFileSync(htmlPath, "utf8")).not.toContain("test:og-payload");
     for (const name of ["main.png", "extra.png"]) {

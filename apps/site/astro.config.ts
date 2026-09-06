@@ -39,7 +39,7 @@ export default defineConfig({
       title: "chartcoach",
       description:
         "chartcoach turns visualization design knowledge into guideline entries with source references for chart agents.",
-      pages: chartcoachLlmPages,
+      loadPages: chartcoachLlmPages,
     }),
     searchIndex({
       name: "chartcoach:search-index",

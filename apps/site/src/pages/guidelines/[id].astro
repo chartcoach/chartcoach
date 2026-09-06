@@ -19,7 +19,9 @@ export async function getStaticPaths() {
   }));
 }
 
-const guideline = await getEntry("guidelines", Astro.params.id as string);
+const id = Astro.params.id;
+if (!id) throw new Error("Guideline id is required.");
+const guideline = await getEntry("guidelines", id);
 if (!guideline) throw new Error(`Guideline not found: ${Astro.params.id}`);
 
 const editHref = catalogGuidelineMarkdownSourceHref(guideline.id);

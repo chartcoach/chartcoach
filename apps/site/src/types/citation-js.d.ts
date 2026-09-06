@@ -5,13 +5,12 @@ declare module "citation-js" {
     format?: string;
     template?: string;
     lang?: string;
-    [key: string]: unknown;
   };
 
-  export default class Cite {
-    data: unknown[];
+  export default class Cite<Data extends object = object> {
+    data: Data[];
 
-    constructor(input?: unknown);
+    constructor(input?: string | Data | readonly Data[]);
 
     format(type: CiteFormat, options?: CiteFormatOptions): string;
   }

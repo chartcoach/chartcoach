@@ -64,12 +64,24 @@ type CatalogRelease = {
 };
 ```
 
-Use `parseCatalogRelease(value)` to validate a record. The required core paths
+`parseCatalogRelease(value)` accepts a `JsonValue` and returns a validated
+`CatalogRelease`:
+
+```ts
+import { parseCatalogRelease, type JsonValue } from "@chartcoach/catalog";
+
+const value: JsonValue = JSON.parse(text);
+const release = parseCatalogRelease(value);
+```
+
+The function throws `CatalogError` when the record has an unsupported shape,
+an invalid artifact descriptor, or a missing core path. The required core paths
 are `MANIFEST.md` and `entries.parquet`.
 
 The package exports `Catalog`, `CatalogError`, `CatalogRelease`, `FetchLike`,
-`Guideline`, `GuidelineSection`, `OpenCatalogOptions`, `ReleaseArtifact`,
-`loadCatalog`, `openCatalog`, `parseCatalogRelease`, and `toMarkdown`.
+`Guideline`, `GuidelineSection`, `JsonObject`, `JsonValue`, `OpenCatalogOptions`,
+`ReleaseArtifact`, `loadCatalog`, `openCatalog`, `parseCatalogRelease`, and
+`toMarkdown`.
 
 ## Check the package
 

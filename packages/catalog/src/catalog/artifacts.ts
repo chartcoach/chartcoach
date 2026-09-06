@@ -1,4 +1,5 @@
 import { CatalogError } from "./errors";
+import { isJsonNumber, isJsonObject, isJsonString, type JsonObject, type JsonValue } from "./json";
 
 const CATALOG_ARTIFACT_BASE_URL = "https://artifacts.chartcoach.dev/";
 const RELEASE_SCHEMA_VERSION = 1;
@@ -17,7 +18,7 @@ export type CatalogRelease = {
   artifacts: Record<string, ReleaseArtifact>;
 };
 
-export function parseCatalogRelease(value: unknown): CatalogRelease {
+export function parseCatalogRelease(value: JsonValue): CatalogRelease {
   const record = requireRecord(value, "Catalog release");
   requireExactKeys(record, ["schema_version", "digest", "artifacts"], "Catalog release");
   requireSchemaVersion(record);
@@ -92,7 +93,7 @@ export function releaseArtifactUrl(releaseUrl: string | URL, path: string): stri
   return new URL(path, releaseUrl).toString();
 }
 
-function parseReleaseArtifact(value: unknown): ReleaseArtifact {
+function parseReleaseArtifact(value: JsonValue): ReleaseArtifact {
   const record = requireRecord(value, "Catalog release artifact");
   requireExactKeys(record, ["sha256", "bytes"], "Catalog release artifact");
   return {
@@ -137,13 +138,12 @@ async function catalogReleaseDigest(release: CatalogRelease): Promise<string> {
   );
 }
 
-function canonicalJson(value: unknown): string {
-  if (value === null || typeof value !== "object") return JSON.stringify(value);
+function canonicalJson(value: JsonValue): string {
   if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
-  const record = value as Record<string, unknown>;
-  return `{${Object.keys(record)
+  if (!isJsonObject(value)) return JSON.stringify(value) ?? "null";
+  return `{${Object.keys(value)
     .sort()
-    .map((key) => `${JSON.stringify(key)}:${canonicalJson(record[key])}`)
+    .map((key) => `${JSON.stringify(key)}:${canonicalJson(value[key])}`)
     .join(",")}}`;
 }
 
@@ -161,12 +161,12 @@ function bytesView(data: ArrayBuffer | ArrayBufferView): Uint8Array {
   return new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
-  if (!isRecord(value)) throw new CatalogError(`${label} must be an object.`);
+function requireRecord(value: JsonValue, label: string): JsonObject {
+  if (!isJsonObject(value)) throw new CatalogError(`${label} must be an object.`);
   return value;
 }
 
-function requireExactKeys(value: Record<string, unknown>, expected: string[], label: string): void {
+function requireExactKeys(value: JsonObject, expected: readonly string[], label: string): void {
   const actual = Object.keys(value);
   const missing = expected.filter((key) => !actual.includes(key)).sort();
   const unexpected = actual.filter((key) => !expected.includes(key)).sort();
@@ -178,7 +178,7 @@ function requireExactKeys(value: Record<string, unknown>, expected: string[], la
   }
 }
 
-function requireSchemaVersion(value: Record<string, unknown>): void {
+function requireSchemaVersion(value: JsonObject): void {
   const version = requiredInteger(value, "schema_version", "Catalog release");
   if (version !== RELEASE_SCHEMA_VERSION) {
     throw new CatalogError(`Catalog release schema_version must be ${RELEASE_SCHEMA_VERSION}.`);
@@ -207,17 +207,17 @@ function isPortablePathSegment(value: string): boolean {
   return !WINDOWS_DEVICE_NAMES.has(basename) && !/^(?:COM|LPT)[1-9]$/.test(basename);
 }
 
-function requiredString(value: Record<string, unknown>, key: string, label: string): string {
+function requiredString(value: JsonObject, key: string, label: string): string {
   const raw = value[key];
-  if (typeof raw !== "string" || raw.length === 0) {
+  if (!isJsonString(raw) || raw.length === 0) {
     throw new CatalogError(`${label} ${key} must be a string.`);
   }
   return raw;
 }
 
-function requiredInteger(value: Record<string, unknown>, key: string, label: string): number {
+function requiredInteger(value: JsonObject, key: string, label: string): number {
   const raw = value[key];
-  if (typeof raw !== "number" || !Number.isSafeInteger(raw) || raw < 0) {
+  if (!isJsonNumber(raw) || !Number.isSafeInteger(raw) || raw < 0) {
     throw new CatalogError(
       `${label} ${key} must be an integer from 0 through ${Number.MAX_SAFE_INTEGER}.`,
     );
@@ -225,7 +225,7 @@ function requiredInteger(value: Record<string, unknown>, key: string, label: str
   return raw;
 }
 
-function requiredSha256(value: Record<string, unknown>, key: string, label: string): string {
+function requiredSha256(value: JsonObject, key: string, label: string): string {
   const digest = requiredString(value, key, label);
   requireSha256(digest, `${label} ${key}`);
   return digest;
@@ -253,8 +253,4 @@ function pathIsAscii(value: string): boolean {
 
 function asciiLower(value: string): string {
   return value.replace(/[A-Z]/g, (character) => character.toLowerCase());
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }

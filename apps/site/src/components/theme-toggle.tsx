@@ -22,7 +22,7 @@ function applyTheme(theme: Theme) {
 }
 
 function getThemeSnapshot(): ThemeSnapshot {
-  if (typeof window === "undefined") return null;
+  if (globalThis.window === undefined) return null;
   return getPreferredTheme();
 }
 

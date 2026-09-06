@@ -20,6 +20,9 @@ catalog:
   typescript: ^5.9.3
   vite: npm:@voidzero-dev/vite-plus-core@0.2.4
   vite-plus: 0.2.4
+  oxlint: 1.78.0
+  "@oxlint/plugins": 1.78.0
+  oxlint-tsgolint: 7.0.2001
 
 minimumReleaseAge: 1440
 minimumReleaseAgeStrict: true

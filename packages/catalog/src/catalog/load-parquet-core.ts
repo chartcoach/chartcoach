@@ -1,6 +1,7 @@
 import { parquetReadObjects } from "hyparquet";
 import { compressors } from "hyparquet-compressors";
 import { Catalog, type Guideline } from "./model";
+import type { JsonObject } from "./json";
 import { parseCatalogManifest } from "./manifest";
 import { requireGuidelineFromWire } from "./wire";
 
@@ -25,17 +26,20 @@ function normalizeParquetBytes(bytes: ParquetBytes): ArrayBuffer {
   return u8.slice().buffer;
 }
 
+function isParquetBytes(bytes: CatalogBytes): bytes is ParquetBytes {
+  return bytes instanceof ArrayBuffer || ArrayBuffer.isView(bytes);
+}
+
 export async function loadCatalog(input: LoadCatalogInput): Promise<Catalog> {
   const manifest = parseCatalogManifest(input.manifestText);
-  const normalizedFile =
-    input.entries instanceof ArrayBuffer || ArrayBuffer.isView(input.entries)
-      ? normalizeParquetBytes(input.entries as ParquetBytes)
-      : input.entries;
+  const normalizedFile = isParquetBytes(input.entries)
+    ? normalizeParquetBytes(input.entries)
+    : input.entries;
 
-  const rows = (await parquetReadObjects({
+  const rows: JsonObject[] = await parquetReadObjects({
     file: normalizedFile,
     compressors,
-  })) as Array<Record<string, unknown>>;
+  });
 
   const guidelines: Array<Omit<Guideline, "body">> = rows.map((row, index) =>
     requireGuidelineFromWire(row, `parquet row ${index}`),

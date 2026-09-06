@@ -7,10 +7,7 @@ export type CatalogLabel = {
   modifier?: string;
 };
 
-export function parseLabel(value: unknown, context = "label"): CatalogLabel {
-  if (typeof value !== "string") {
-    throw new CatalogError(`${context} must be a string.`);
-  }
+export function parseLabel(value: string, context = "label"): CatalogLabel {
   const parts = value
     .trim()
     .split(":")
@@ -20,7 +17,9 @@ export function parseLabel(value: unknown, context = "label"): CatalogLabel {
       `${context} must use <family>:<category> or <family>:<category>:<modifier>.`,
     );
   }
-  const [family, category, modifier] = parts as [string, string, string | undefined];
+  const family = parts[0]!;
+  const category = parts[1]!;
+  const modifier = parts[2];
   return {
     value: modifier === undefined ? `${family}:${category}` : `${family}:${category}:${modifier}`,
     family,
@@ -29,6 +28,6 @@ export function parseLabel(value: unknown, context = "label"): CatalogLabel {
   };
 }
 
-export function normalizeLabel(value: unknown, context = "label"): string {
+export function normalizeLabel(value: string, context = "label"): string {
   return parseLabel(value, context).value;
 }

@@ -1,6 +1,7 @@
 import type { Guideline } from "@chartcoach/catalog";
 
 import { createGuidelineRecord, type GuidelineRecord } from "./guideline-record";
+import { isJsonObject, isJsonString, parseJson, type JsonValue } from "./json";
 import { guidelinePath } from "./routes";
 
 export type GuidelineSearchModel = Omit<GuidelineRecord, "description"> & {
@@ -74,11 +75,11 @@ function createSlugSearchText(path: string) {
   return [...new Set([decodedSlug, readableSlug])].join(" ");
 }
 
-const SCRIPT_JSON_ESCAPES: Record<string, string> = {
-  "<": "\\u003c",
-  "\u2028": "\\u2028",
-  "\u2029": "\\u2029",
-};
+const SCRIPT_JSON_ESCAPES = new Map([
+  ["<", "\\u003c"],
+  ["\u2028", "\\u2028"],
+  ["\u2029", "\\u2029"],
+]);
 
 export function createGuidelineSearchModel(guideline: Guideline): GuidelineSearchModel {
   const record = createGuidelineRecord(guideline);
@@ -107,20 +108,33 @@ export function createGuidelineSearchDocument(
 }
 
 export function serializeGuidelineSearchModel(model: GuidelineSearchModel): string {
-  return JSON.stringify(model).replace(/[<\u2028\u2029]/g, (match) => SCRIPT_JSON_ESCAPES[match]);
+  return JSON.stringify(model).replace(
+    /[<\u2028\u2029]/g,
+    (match) => SCRIPT_JSON_ESCAPES.get(match) ?? match,
+  );
 }
 
 export function parseGuidelineSearchModel(value: string): GuidelineSearchModel {
-  const model = JSON.parse(value) as Partial<GuidelineSearchModel>;
-  if (!model.id || !model.title || !model.body) {
+  const model = parseJson(value);
+  if (
+    !isJsonObject(model) ||
+    !isJsonString(model.id) ||
+    model.id.length === 0 ||
+    !isJsonString(model.title) ||
+    model.title.length === 0 ||
+    !isJsonString(model.body) ||
+    model.body.length === 0
+  ) {
     throw new Error("Guideline search entry is missing required fields.");
   }
   if (
     !Array.isArray(model.labels) ||
-    !model.labels.every(isString) ||
+    !model.labels.every(isJsonString) ||
     !Array.isArray(model.sections) ||
+    !model.sections.every(isSearchSection) ||
     !Array.isArray(model.references) ||
-    !model.references.every(isString)
+    !model.references.every(isJsonString) ||
+    (model.description !== undefined && !isJsonString(model.description))
   ) {
     throw new Error("Guideline search entry has invalid collection fields.");
   }
@@ -131,15 +145,16 @@ export function parseGuidelineSearchModel(value: string): GuidelineSearchModel {
     description: model.description,
     labels: model.labels,
     body: model.body,
-    sections: model.sections.map((section) => ({
-      role: String(section.role ?? ""),
-      title: String(section.title ?? ""),
-      content: String(section.content ?? ""),
-    })),
+    sections: model.sections,
     references: model.references,
   };
 }
 
-function isString(value: unknown): value is string {
-  return typeof value === "string";
+function isSearchSection(value: JsonValue): value is GuidelineSearchModel["sections"][number] {
+  return (
+    isJsonObject(value) &&
+    isJsonString(value.role) &&
+    isJsonString(value.title) &&
+    isJsonString(value.content)
+  );
 }

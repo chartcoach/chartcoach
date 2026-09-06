@@ -12,7 +12,10 @@
     "typecheck": "vp run -r typecheck"
   },
   "devDependencies": {
+    "@oxlint/plugins": "catalog:",
     "@types/node": "catalog:",
+    "oxlint": "catalog:",
+    "oxlint-tsgolint": "catalog:",
     "portless": "^0.14.0",
     "typescript": "catalog:",
     "vite": "catalog:",

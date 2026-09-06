@@ -11,6 +11,8 @@ import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import satori from "satori";
 
+import { parseJson, type JsonValue } from "../lib/json";
+
 export type OgImageJob<Props> = {
   imagePathname: string;
   props: Props;
@@ -24,12 +26,17 @@ export type OgImagesOptions<Props extends object> = {
   component: ComponentType<Props>;
   name?: string;
   metaName: string;
-  parsePayload: (value: unknown) => OgPayload<Props> | null;
+  parsePayload: (value: JsonValue) => OgPayload<Props> | null;
   width: number;
   height: number;
 };
 
 type FontOptions = NonNullable<Parameters<typeof satori>[1]["fonts"]>;
+type ReadPayloadResult<Props> = {
+  found: boolean;
+  html: string;
+  payload: OgPayload<Props> | null;
+};
 
 const require = createRequire(import.meta.url);
 const fontFamilies = [
@@ -78,7 +85,7 @@ function readPayload<Props extends object>(
   html: string,
   metaName: string,
   parsePayload: OgImagesOptions<Props>["parsePayload"],
-): { found: boolean; html: string; payload: OgPayload<Props> | null } {
+): ReadPayloadResult<Props> {
   const dom = new JSDOM(html);
   const marker = Array.from(dom.window.document.querySelectorAll("meta[name]")).find(
     (element) => element.getAttribute("name") === metaName,
@@ -94,7 +101,7 @@ function readPayload<Props extends object>(
     return {
       found: true,
       html: dom.serialize(),
-      payload: parsePayload(JSON.parse(rawPayload)),
+      payload: parsePayload(parseJson(rawPayload)),
     };
   } finally {
     dom.window.close();

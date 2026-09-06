@@ -8,6 +8,12 @@ import universityViennaLogo from "@/assets/logos/university-vienna.svg?raw";
 type SvgIconName = "github" | "eth-zurich" | "carnegie-mellon" | "university-vienna" | "mbzuai";
 type SvgIconTone = "mono" | "color";
 type LogoIconName = SvgIconName;
+type BrandColor = {
+  light: string;
+  dark: string;
+  reverseLight?: string;
+  reverseDark?: string;
+};
 
 interface Props {
   name: SvgIconName;
@@ -16,23 +22,15 @@ interface Props {
   title?: string;
 }
 
-const logoMarkup: Record<LogoIconName, string> = {
+const logoMarkup = {
   github: githubLogo,
   "eth-zurich": ethZurichLogo,
   "carnegie-mellon": carnegieMellonLogo,
   "university-vienna": universityViennaLogo,
   mbzuai: mbzuaiLogo,
-};
+} satisfies Record<LogoIconName, string>;
 
-const brandColors: Record<
-  LogoIconName,
-  {
-    light: string;
-    dark: string;
-    reverseLight?: string;
-    reverseDark?: string;
-  }
-> = {
+const brandColors = {
   github: {
     light: "#000000",
     dark: "#ffffff",
@@ -55,14 +53,14 @@ const brandColors: Record<
     light: "#154677",
     dark: "#86b6dc",
   },
-};
+} satisfies Record<LogoIconName, BrandColor>;
 
 const { name, tone = "mono", title } = Astro.props;
 const className = Astro.props.class;
 const classes = ["svg-icon", className].filter(Boolean).join(" ");
 const hidden = title ? undefined : "true";
 const logo = logoMarkup[name];
-const colors = brandColors[name];
+const colors: BrandColor = brandColors[name];
 const colorMode = tone === "color";
 const style = colors
   ? [

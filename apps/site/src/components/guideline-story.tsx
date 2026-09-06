@@ -8,7 +8,7 @@ import {
 import { StoryArtifact } from "./guideline-story/artifacts";
 import { steps } from "./guideline-story/story-steps";
 
-const useBrowserLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
+const useBrowserLayoutEffect = globalThis.window === undefined ? useEffect : useLayoutEffect;
 
 export function GuidelineStory() {
   const [activeIndex, setActiveIndex] = useState(0);
