@@ -1,0 +1,33 @@
+apps/docs/content/docs/(reference)/python.mdx
+  s_647f3219a5dec8::t_785073e9d5dc2b 13
+packages/chartcoach/pyproject.toml
+  s_647f3219a5dec8::t_785073e9d5dc2b 9,17
+apps/docs/content/docs/(guide)/curation.mdx
+  s_647f3219a5dec8::t_785073e9d5dc2b 23
+packages/chartcoach/src/chartcoach/catalog/releases/models.py
+  s_647f3219a5dec8::t_8c9de5694e5caa 8,33,81
+CONTRIBUTING.md
+  s_647f3219a5dec8::t_785073e9d5dc2b 11
+.github/workflows/ci.yml
+  s_647f3219a5dec8::t_785073e9d5dc2b 54
+README.md
+  s_647f3219a5dec8::t_785073e9d5dc2b 12
+packages/chartcoach/README.md
+  s_647f3219a5dec8::t_785073e9d5dc2b 7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "1b15193b8b4954fd5c66950f39be773b7e26862c",
+  "prompts": {},
+  "sessions": {
+    "s_647f3219a5dec8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a075c2-7d4d-7f93-9b5f-b6f5c7eba0a3",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Péter Ferenc Gyarmati <dev.petergy@gmail.com>"
+    }
+  }
+}
