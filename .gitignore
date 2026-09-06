@@ -1,6 +1,7 @@
 .env
 .github/secrets
 .cache/
+.wrangler/
 .pytest_cache/
 .ruff_cache/
 .venv/
