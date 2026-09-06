@@ -17,6 +17,7 @@ from chartcoach import CatalogError, open_catalog
 from chartcoach.catalog.collection import Catalog
 from chartcoach.catalog.releases import CatalogRelease, ReleaseArtifact
 from chartcoach.catalog.releases.hashing import release_digest, sha256_file
+from chartcoach.catalog.runtime import transport as catalog_transport
 
 
 def test_open_catalog_accepts_the_local_source_matrix(
@@ -72,6 +73,31 @@ def test_top_level_api_is_the_supported_catalog_contract() -> None:
         "(source: 'str | PathLike[str] | None' = None, *, profile: 'str', "
         "storage_options: 'Mapping[str, object] | None' = None) -> 'Table'"
     )
+
+
+def test_http_errors_redact_credentials(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail(*_: object, **__: object) -> None:
+        raise OSError("offline")
+
+    monkeypatch.setattr(catalog_transport, "urlopen", fail)
+    uri = "https://user:password@example.test/catalog.json?token=secret#fragment"
+
+    with pytest.raises(CatalogError) as exc_info:
+        list(
+            catalog_transport.remote_chunks(
+                uri,
+                transport="http",
+                storage_options={},
+            )
+        )
+
+    message = str(exc_info.value)
+    assert "https://example.test/catalog.json" in message
+    assert "user:password" not in message
+    assert "token=secret" not in message
+    assert "#fragment" not in message
 
 
 def test_digest_shaped_source_is_an_ordinary_local_path(

@@ -73,6 +73,45 @@ table = open_index(
 `open_index` returns the release's `documents` table. A missing profile raises
 `CatalogError` and lists the available names.
 
+## Use chartcoach from a code-mode agent
+
+chartcoach follows the open
+[Agent Plugins specification](https://agent-plugins.org/). The installed Python
+distribution carries its version-matched Agent Skills and Model Context
+Protocol server configuration. A code-mode agent can inspect those components
+and call the chartcoach Python API directly:
+
+```python
+import chartcoach.agent as cc
+
+help(cc)
+tools = cc.Tools.open()
+catalog = tools.catalog
+candidates = cc.query_entries(
+    catalog,
+    contains="direct labels",
+    limit=5,
+    include_body=False,
+)
+core = cc.agent_skill()
+print(core.source)
+```
+
+`cc.agent_plugin()` returns an `agent_plugins.Plugin` object.
+`cc.agent_skills()` returns its `agent_plugins.Skill` objects in chartcoach
+workflow order. Use `cc.agent_plugin().skill(name)` for direct lookup,
+`skill.file(path)` for a checked packaged resource, and
+`cc.skill_description(skill)` when presenting a discovery list.
+
+The Agent Plugin also declares the packaged MCP stdio entry through
+`cc.agent_plugin().mcp`. Install `chartcoach[mcp]` in the agent client's Python
+environment before it starts that server. Agents can inspect the complete
+module workflow with `help(cc)`.
+
+[marimo](https://docs.marimo.io/) is one environment for code-mode agents. It
+discovers `chartcoach.agent` through the installed `marimo.agent.capability`
+entry point.
+
 ## Documentation
 
 | Page                                                       | Details                                                       |

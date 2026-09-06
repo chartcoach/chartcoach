@@ -52,12 +52,38 @@ before reading them.
 | [JavaScript](https://docs.chartcoach.dev/javascript)       | Browser and server-side catalog loading                  |
 | [Catalog CLI](https://docs.chartcoach.dev/cli)             | Filtering, SQL, record reads, and citations              |
 | [MCP server](https://docs.chartcoach.dev/mcp)              | Catalog tools for Model Context Protocol clients         |
+| [Agent integration](https://docs.chartcoach.dev/agents)    | Code-mode Python API and packaged Agent Plugin resources |
 | [Curate and publish](https://docs.chartcoach.dev/curation) | Authoring, validation, publication, and public selection |
 
-## Use chartcoach with an agent
+## Use chartcoach with a code-mode agent
 
-Install the CLI, save its agent instructions, and save the chart as
-`chart.png`:
+chartcoach follows the open
+[Agent Plugins specification](https://agent-plugins.org/), which defines how a
+package exposes Agent Skills and Model Context Protocol servers to compatible
+clients. The Python distribution carries those components beside the
+`chartcoach.agent` module, so code-mode agents can inspect the matching
+instructions and call the catalog directly:
+
+```python
+import chartcoach.agent as cc
+
+help(cc)
+tools = cc.Tools.open()
+candidates = cc.query_entries(
+    tools.catalog,
+    contains="direct labels",
+    limit=5,
+    include_body=False,
+)
+core = cc.agent_skill()
+print(core.source)
+```
+
+[marimo](https://docs.marimo.io/) is one code-mode environment that discovers
+the module automatically through its installed capability entry point.
+
+For a terminal-driven agent, install the CLI, save its core instructions, and
+save the chart as `chart.png`:
 
 ```bash
 uv tool install \

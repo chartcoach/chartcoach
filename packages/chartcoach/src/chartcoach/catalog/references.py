@@ -178,6 +178,12 @@ def citation_records(
     ids: Sequence[str],
     url_template: str = DEFAULT_GUIDELINE_URL_TEMPLATE,
 ) -> list[dict[str, object]]:
+    """Return public guideline links and formatted source citations for IDs.
+
+    Each result contains `id`, `title`, `url`, `guideline_citation`, and a
+    `sources` list. The default URL template targets the public catalog site.
+    """
+
     from .query import validate_ids
 
     validate_ids(catalog, ids)

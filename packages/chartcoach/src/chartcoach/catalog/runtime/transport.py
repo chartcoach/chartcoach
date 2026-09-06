@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping
 from pathlib import Path
 from typing import Any, Literal, cast
+from urllib.parse import urlsplit, urlunsplit
 from urllib.request import Request, urlopen
 
 from .._object_store import obstore_uri
@@ -68,7 +69,19 @@ def remote_chunks(
             while chunk := response.read(_READ_CHUNK_BYTES):
                 yield chunk
     except OSError as exc:
-        raise CatalogError("Failed to load catalog resource over HTTP.") from exc
+        raise CatalogError(
+            f"Failed to load catalog resource over HTTP: {_display_http_uri(uri)}",
+            hints=[
+                "Pass a local catalog or release path as `source` for offline work.",
+                "The CLI accepts `--source PATH` or `CHARTCOACH_SOURCE=PATH`.",
+            ],
+        ) from exc
+
+
+def _display_http_uri(uri: str) -> str:
+    parsed = urlsplit(uri)
+    netloc = parsed.netloc.rsplit("@", 1)[-1]
+    return urlunsplit((parsed.scheme, netloc, parsed.path, "", ""))
 
 
 def _cloud_chunks(

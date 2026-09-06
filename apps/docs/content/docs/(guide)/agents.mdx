@@ -1,27 +1,71 @@
 ---
-title: Use chartcoach with an agent
-description: Install chartcoach, find a guideline, read its full record, and cite its sources.
+title: Use chartcoach from a code-mode agent
+description: Inspect the packaged Agent Plugin and call source-traced catalog operations from Python.
 icon: Bot
 ---
 
-chartcoach ships agent instructions for the same `list`, `read`, and `cite`
-workflow available from the CLI. An agent searches for possible matches,
-checks the full guideline, and keeps the source citation with the resulting
-recommendation.
+chartcoach follows the open
+[Agent Plugins specification](https://agent-plugins.org/). An Agent Plugin is a
+package directory that exposes Agent Skills and Model Context Protocol (MCP)
+servers through fixed, portable locations. Installing chartcoach carries those
+components beside the Python library at the same version.
 
-## Install the CLI and save the instructions
+## Call chartcoach from code mode
 
-This page assumes `uv` and the Codex CLI are available.
+Install chartcoach in the Python environment used by the agent:
 
 ```bash
-uv tool install \
-  "chartcoach @ https://files.peter.gy/packages/python/chartcoach/0.2.0/892f120cb377/chartcoach-0.2.0-py3-none-any.whl"
-chartcoach --version
-chartcoach skills get core --full > chartcoach-core.md
+uv add chartcoach
 ```
 
-`chartcoach-core.md` now contains the catalog workflow and its command
-reference. The Python package contains five focused instruction sets:
+A code-mode agent can inspect the module workflow, search for candidates, read
+the selected record, and retain its source citations:
+
+```python
+import chartcoach.agent as cc
+
+help(cc)
+tools = cc.Tools.open()
+catalog = tools.catalog
+candidates = cc.query_entries(
+    catalog,
+    contains="direct labels",
+    limit=5,
+    include_body=False,
+).to_dicts()
+
+guideline_id = candidates[0]["id"]
+record = cc.retrieve_entry_records(
+    catalog,
+    ids=[guideline_id],
+    source_detail="full",
+)[0]
+citations = cc.citation_records(catalog, ids=[guideline_id])
+```
+
+`Tools.open()` binds SQL and optional indexed search to the same catalog
+release. `query_entries()` returns candidate rows. `retrieve_entry_records()`
+returns the full guideline, and `citation_records()` retains its public link
+and source citations.
+
+## Inspect the Agent Plugin
+
+`cc.agent_plugin()` returns the installed `agent_plugins.Plugin`. Its skills
+and MCP configuration match the installed chartcoach version:
+
+```python
+plugin = cc.agent_plugin()
+core = plugin.skill("core")
+
+print(plugin.tree())
+print(core.source)
+print(core.file("SKILL.md"))
+
+if plugin.mcp is not None:
+    print(plugin.mcp.servers)
+```
+
+The Python package contains five focused Agent Skills:
 
 | Skill         | Task                                                             |
 | ------------- | ---------------------------------------------------------------- |
@@ -31,10 +75,28 @@ reference. The Python package contains five focused instruction sets:
 | `visrec`      | Recommend a chart from the data, task, audience, and constraints |
 | `contribute`  | Draft a catalog issue for human review                           |
 
-`chartcoach skills` lists their names and descriptions. `chartcoach skills get
---all` prints all five instruction sets.
+`cc.agent_skills()` returns them in chartcoach workflow order.
 
-## Find a guideline
+[marimo](https://docs.marimo.io/) is one environment for code-mode agents. It
+discovers `chartcoach.agent` through the installed `marimo.agent.capability`
+entry point. Other agents can import the same module or inspect the standard
+Agent Plugin directory through their own client integration.
+
+## Use the terminal workflow
+
+Agents that operate through a terminal can read the same packaged instructions
+through the CLI. This workflow assumes `uv` and the Codex CLI are available:
+
+```bash
+uv tool install \
+  "chartcoach @ https://files.peter.gy/packages/python/chartcoach/0.2.0/892f120cb377/chartcoach-0.2.0-py3-none-any.whl"
+chartcoach --version
+chartcoach skills get core --full > chartcoach-core.md
+```
+
+`chartcoach-core.md` contains the catalog workflow and its command reference.
+
+### Find a guideline
 
 Set the catalog once, then search its IDs, titles, and descriptions for
 `direct labels`:
@@ -55,7 +117,7 @@ The result includes this ID:
 GUIDELINE_ID="directly-label-series-instead-of-using-a-color-key"
 ```
 
-## Read and cite it
+### Read and cite it
 
 Candidate results contain summaries. Read the selected record for its full
 advice, reasons, limits, checks, fixes, and source information:
@@ -75,7 +137,7 @@ The first command provides the text an agent should evaluate against the
 current chart. The second provides the public guideline link and formatted
 source citations.
 
-## Ask the agent
+### Ask the agent
 
 Save the chart as `chart.png`, then give the image and instructions to the
 agent:

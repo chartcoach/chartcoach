@@ -57,6 +57,18 @@ def test_curation_does_not_import_runtime_or_cache_owners() -> None:
     assert violations == []
 
 
+def test_agent_interfaces_do_not_import_cli_adapters() -> None:
+    package_root = _CATALOG_ROOT.parent
+    sources = [package_root / "agent.py", package_root / "skills.py"]
+
+    violations = _matching_imports(
+        sources,
+        lambda target: target.startswith(("chartcoach.cli", ".cli")),
+    )
+
+    assert violations == []
+
+
 def test_import_targets_include_from_import_aliases() -> None:
     tree = ast.parse(
         """

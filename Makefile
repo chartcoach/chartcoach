@@ -38,6 +38,7 @@ python-test:
 
 python-build:
 	$(UV) build --package chartcoach
+	UV="$(UV)" $(PYTHON) python $(PYTHON_PATH)/tests/verify_built_package.py
 
 docs-build: ## Build the product documentation.
 	$(PNPM) --dir apps/docs build

@@ -17,10 +17,20 @@ def catalog_overview(
     source: str,
     release_digest: str | None = None,
 ) -> dict[str, object]:
+    """Return catalog identity, primary table counts, roles, and label families.
+
+    `release_digest` defaults to the digest carried by a release-backed
+    catalog. The three table counts summarize authored guideline content. Use
+    `list_tables(catalog, include_row_counts=True)` for all query tables.
+    """
+
     manifest = catalog.manifest
+    resolved_release_digest = release_digest
+    if resolved_release_digest is None and catalog.release is not None:
+        resolved_release_digest = catalog.release.digest
     return {
         "source": source,
-        "release_digest": release_digest,
+        "release_digest": resolved_release_digest,
         "content_digest": catalog.content_digest(),
         "tables": overview_table_count_rows(catalog),
         "section_roles": list(manifest.section_roles),
@@ -73,6 +83,8 @@ def list_labels(
     contains: str | None = None,
     limit: int = 50,
 ) -> list[dict[str, object]]:
+    """Return label counts after optional family, prefix, and text filters."""
+
     available_families = distinct_strings(
         catalog, table="guideline_labels", column="family"
     )
@@ -99,6 +111,8 @@ def list_labels(
 
 
 def list_roles(catalog: Catalog) -> list[dict[str, object]]:
+    """Return each manifest section role with its guideline count and purpose."""
+
     count_rows = (
         catalog.sections().group_by("role").len("entries").sort("role").to_dicts()
     )

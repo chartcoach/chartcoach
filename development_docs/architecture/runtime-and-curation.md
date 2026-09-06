@@ -70,6 +70,37 @@ Imports for these libraries stay inside the code that needs them. The base
 package therefore imports in ordinary Python and Pyodide without loading the
 optional libraries.
 
+## Python and agent interfaces
+
+Catalog modules own query, read, citation, summary, schema, build, publication,
+and selection behavior. `chartcoach.tools.Tools` owns the SQL and indexed
+search operations shared by the CLI and Model Context Protocol server.
+
+`chartcoach.agent` presents the read-side query, read, citation, summary,
+schema, and tool callables to code-mode agents. Its dynamic module help starts
+with an executable catalog workflow and points to the Agent Skills installed
+with the package. Marimo registers this module through its capability entry
+point as one code-mode host integration. `chartcoach.skills` owns Agent Plugin
+discovery, skill workflow order, description extraction, and source rendering.
+It delegates packaged skill selection, exact instruction reads, and checked
+resource lookup to `agent_plugins.Plugin` and `agent_plugins.Skill`.
+ChartCoach's skill service also projects the `hidden` field used by discovery
+lists. The Click commands in `chartcoach.cli` parse terminal input and render
+the returned values.
+
+The repository root follows the open
+[Agent Plugins specification](https://agent-plugins.org/) with `plugin.json`,
+`skills/`, and `mcp.json` at their standard locations. The Python build uses
+the [`agent-plugins`](https://peter-gy.github.io/agent-plugins/) packaging
+library to wrap
+[uv's build backend](https://docs.astral.sh/uv/concepts/build-backend/). The
+wrapper packages the repository-root `plugin.json` and `skills/` tree beside
+the Python library. It also packages root `mcp.json`, which declares the
+installed `chartcoach mcp` stdio server. Distribution metadata records these
+installed paths. Editable installs point that metadata at the authored
+repository files. Reinstall the editable package after adding, moving, or
+deleting a plugin file so the recorded file inventory matches the tree.
+
 ## Curation flow
 
 ```text
