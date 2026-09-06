@@ -1,4 +1,4 @@
-"""Use ChartCoach from notebook agents."""
+"""Use ChartCoach from code-mode agents."""
 
 from __future__ import annotations
 
