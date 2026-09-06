@@ -1,0 +1,933 @@
+packages/chartcoach/src/chartcoach/catalog/summary.py
+  s_b2fc299f4eea16::t_419f9176b04a79 10
+  s_b2fc299f4eea16::t_343dbbdb65a1e0 3
+  s_b2fc299f4eea16::t_13ca72008fba65 19-20,40,63-67
+packages/catalog/src/catalog/wire.ts
+  s_b2fc299f4eea16::t_85280e18fbdae0 3,31-33,36,57-59
+  s_b2fc299f4eea16::t_2f18e34dcf747e 50
+  s_b2fc299f4eea16::t_b6a07badeaeda5 2
+fixtures/catalog-contract/invalid-catalog-rows.json
+  s_b2fc299f4eea16::t_b6a07badeaeda5 17-20
+packages/chartcoach/src/chartcoach/catalog/references.py
+  s_b2fc299f4eea16::t_feb5b2c39771e7 6,273
+  s_b2fc299f4eea16::t_b2d08a5e0e1705 131,139-145,147
+  s_b2fc299f4eea16::t_4db3fea30e8565 10
+  s_b2fc299f4eea16::t_419f9176b04a79 22
+  s_b2fc299f4eea16::t_13ca72008fba65 59-84,213,229-233,238,241-243,251,268,358-359
+apps/docs/content/docs/(guide)/querying.mdx
+  s_b2fc299f4eea16::t_79378da6f77682 101-102
+  s_b2fc299f4eea16::t_09abe8cf7c0fb4 115
+  s_b2fc299f4eea16::t_b8450d4eb3b67c 18
+  s_b2fc299f4eea16::t_abda14ce52f15d 13,113
+  s_b2fc299f4eea16::t_a69b3470d77e8a 47-57,123,127,145
+  s_b2fc299f4eea16::t_259b3c77432eac 98-100,124-126,128-131,135-138
+  s_b2fc299f4eea16::t_3578afa896efd1 9-12
+packages/chartcoach/src/chartcoach/catalog/read.py
+  s_b2fc299f4eea16::t_13ca72008fba65 18-25,28,32-37,69-75,81-85,122,124,126-127,132-133,147
+  s_b2fc299f4eea16::t_419f9176b04a79 13
+  s_b2fc299f4eea16::t_435381a625db7f 27,52-53,131
+  s_b2fc299f4eea16::t_feb5b2c39771e7 109-111
+  s_b2fc299f4eea16::t_dd31b59464b1b9 26,44,97,108,146
+  s_b2fc299f4eea16::t_a33f4041f32f99 99
+  s_b2fc299f4eea16::t_338db68d1e9410 29-31
+  s_b2fc299f4eea16::t_066c5bfa225a35 49,56
+  s_b2fc299f4eea16::t_4db3fea30e8565 7
+apps/site/src/config/search.ts
+  s_b2fc299f4eea16::t_d5b7f84242e5d9 8,28
+packages/catalog/package.json
+  s_b2fc299f4eea16::t_6d9ed102fb401b 39
+packages/chartcoach/src/chartcoach/agent.py
+  s_b2fc299f4eea16::t_9dcdfec9d47d6a 1
+  s_b2fc299f4eea16::t_b6f46a3ed925ad 5-10,12,14-15,19-20,22
+packages/chartcoach/src/chartcoach/catalog/errors.py
+  s_b2fc299f4eea16::t_11abab0ded8fdc 3-15,21-30,33-34,44-45,50-53,55-65,67-71,73-80,108-109,111-112,114-115
+  s_b2fc299f4eea16::t_50d592eec9a507 72
+  s_b2fc299f4eea16::t_9dcdfec9d47d6a 54,66
+  s_b2fc299f4eea16::t_a0c1ca515b51a0 38,98-104,117
+packages/chartcoach/src/chartcoach/catalog/paths.py
+  s_b2fc299f4eea16::t_28b09175eb316e 8-15,24-30,35,41-50,87
+packages/chartcoach/tests/verify_built_package.py
+  s_b2fc299f4eea16::t_3b85e5207a1997 138,156-157,159,161,164-168,171-181
+packages/chartcoach/tests/conftest.py
+  s_b2fc299f4eea16::t_419f9176b04a79 7
+  s_b2fc299f4eea16::t_70f597c3e30761 9
+  s_b2fc299f4eea16::t_18b6a2bfd38303 86-88
+apps/site/src/components/guideline-story/types.ts
+  s_b2fc299f4eea16::t_aa542bff75b0ad 3
+packages/chartcoach/src/chartcoach/catalog/runtime/cache.py
+  s_b2fc299f4eea16::t_dc1f70c35a9606 179-181
+  s_b2fc299f4eea16::t_762ec9822df706 108,184-188,193,195-196
+  s_b2fc299f4eea16::t_4db3fea30e8565 7
+  s_b2fc299f4eea16::t_d72f24101073f0 4,23-24,100-104,107,109-110,112-117,124,132-137,165-168,173-178,182-183,189-192,194,197-199,205-232,237-242
+  s_b2fc299f4eea16::t_cb8ade0066bd33 16,53-55,59,61,76,79-81,83-85,87-89,120
+  s_b2fc299f4eea16::t_cb5273db0f10cf 92-99,105-106,125-130
+  s_b2fc299f4eea16::t_66a26265a4cebf 171,200
+packages/chartcoach/tests/test_cli_catalog.py
+  s_b2fc299f4eea16::t_ea4eadab8fb7b0 20,27,29,32,36-38,42,54,61,63
+  s_b2fc299f4eea16::t_d89c5e4de7417a 12
+  s_b2fc299f4eea16::t_70f597c3e30761 7
+  s_b2fc299f4eea16::t_dd31b59464b1b9 28,30-31,62
+  s_b2fc299f4eea16::t_4f5d2ea0e3e6be 64-97
+packages/chartcoach/src/chartcoach/mcp.py
+  s_b2fc299f4eea16::t_fac53f0d903c23 44
+  s_b2fc299f4eea16::t_dd31b59464b1b9 86,88-89,108-109,168-169,175-176,205-207
+  s_b2fc299f4eea16::t_52f3835923c2fa 12,229-253
+  s_b2fc299f4eea16::t_377b455d6351e7 24,56,61,64,67,73,75-81,90-92,94,113,119,134,139-140,144,158,163,167,174,180,199-200
+  s_b2fc299f4eea16::t_a75c69c1482b1b 326,426,428-432,434
+  s_b2fc299f4eea16::t_bfecd7bdbea4d9 287,289-290,360,377,389,397-398,538,551
+  s_b2fc299f4eea16::t_066c5bfa225a35 406
+  s_b2fc299f4eea16::t_289a8e632d26d2 464
+  s_b2fc299f4eea16::t_2ca9cb4d3a59ae 552-553
+  s_b2fc299f4eea16::t_2476b09edea958 490-502,507-512
+  s_b2fc299f4eea16::t_1370f8bcb7783a 3,6-7,11,21-23,25,34,45-48,52-55,57-60,62-63,65-66,68-72,74,82-85,87,93,95-96,98-102,104-107,110-112,114-118,135-138,141,156-157,159-162,164-166,170-173,177-179,181-198,201-204,208-228,254-255,257-258,263,267-268,273,288,291-292,321-323,329-330,332-350,352-355,362,364-374,379-384,387-388,390-394,396,399,402-405,409-416,418-425,427,433,435-437,439-443,445-448,451,453-456,461-463,465-469,473-489,503-506,513-515,540,563-565
+  s_b2fc299f4eea16::t_77ebad02711301 351,358
+  s_b2fc299f4eea16::t_94ede837937316 444
+  s_b2fc299f4eea16::t_b7a04c998748d6 363
+  s_b2fc299f4eea16::t_072457ff86240b 261,271,356-357,359,361,375-376,378,470-472
+  s_b2fc299f4eea16::t_8d4ba6fc32d28d 325,327-328,331,417,438
+  s_b2fc299f4eea16::t_1f002101fee00b 120-133,142-143,145-155
+  s_b2fc299f4eea16::t_533ccabe5f6eb6 97,103
+apps/site/astro.config.ts
+  s_b2fc299f4eea16::t_056683f5d87be6 41
+apps/site/src/pages/guidelines/[id].astro
+  s_b2fc299f4eea16::t_056683f5d87be6 42-44
+apps/docs/content/docs/(reference)/cli.mdx
+  s_b2fc299f4eea16::t_f93004db1075a2 28-30,71-72,86,101,104-109,128
+  s_b2fc299f4eea16::t_c2469c22bf8940 7-8,10,19,24-25,52-59,68-70,73-77,87,92,102,110-116,118-125,127,129-130,132-135
+  s_b2fc299f4eea16::t_c1a49ceca9ef17 34-51
+  s_b2fc299f4eea16::t_3578afa896efd1 78-82
+  s_b2fc299f4eea16::t_09abe8cf7c0fb4 94
+  s_b2fc299f4eea16::t_6642531e458897 3,65
+  s_b2fc299f4eea16::t_79378da6f77682 103
+  s_b2fc299f4eea16::t_b953d7d1e840c2 60-64,66-67
+packages/chartcoach/tests/test_lifecycle_identity.py
+  s_b2fc299f4eea16::t_395bb842e6995e 24,30,39,62,67,70
+  s_b2fc299f4eea16::t_e81c772d3e2374 78-82
+  s_b2fc299f4eea16::t_7806eca2604568 4,74-77,83-89
+  s_b2fc299f4eea16::t_dd31b59464b1b9 18,63-64
+  s_b2fc299f4eea16::t_52e07d8be45058 1-2,5-6,8-11,20-23,25-29,31-38,40-55,57-61,65-66,68-69,71-73
+  s_b2fc299f4eea16::t_c69e59fdd21f63 56
+  s_b2fc299f4eea16::t_5e7ee2b2899c88 12-17,19,90-141,143-147
+  s_b2fc299f4eea16::t_a22474ade77bd5 3,7,142
+packages/catalog/src/catalog/bibtex.ts
+  s_b2fc299f4eea16::t_30a33339a39769 1-18
+packages/catalog/src/catalog/json.ts
+  s_b2fc299f4eea16::t_fa700dbad125e1 23-24,26-27
+  s_b2fc299f4eea16::t_0bef2fcad09165 25,31
+packages/catalog/src/catalog/profile.ts
+  s_b2fc299f4eea16::t_dd31b59464b1b9 18-19,31-32,70-71,90-91
+  s_b2fc299f4eea16::t_152f61f3928bb2 47,182,185,195,197-210,220-222,229-231
+  s_b2fc299f4eea16::t_6bf6543e4a7898 105,211,218
+  s_b2fc299f4eea16::t_f92897b05b0be2 156-159
+  s_b2fc299f4eea16::t_0dbe4ad389411a 138-140,143,160-162,164-171,173-177,268-271
+  s_b2fc299f4eea16::t_7f6ee8d734867a 1-3,5-17,20-21,24-30,33-34,37-45,60-69,72-79,83,85-89,93,96-104,106-134,136-137,147-155,163,172,178-179,186-188,232-250,254-267,272-281,283-286
+  s_b2fc299f4eea16::t_c27c1503f1575a 48-59,189-191,212-217,219,223
+  s_b2fc299f4eea16::t_fef103eb70371f 46
+  s_b2fc299f4eea16::t_36a07a1605bcc5 181,183-184,224-225,227-228
+  s_b2fc299f4eea16::t_3aa5fc7f506504 180,192-194,196
+  s_b2fc299f4eea16::t_f906ba5b21c9fb 92
+  s_b2fc299f4eea16::t_d2290a38e4f61b 251-253
+  s_b2fc299f4eea16::t_1a6cdb44c70516 226
+  s_b2fc299f4eea16::t_76838b466cf1fd 4,22,135,144-146
+  s_b2fc299f4eea16::t_c7cfac6e5b0659 141-142,282
+  s_b2fc299f4eea16::t_4bcdd7a83394b3 23,35-36,80-82,84,94-95
+apps/site/src/pages/404.astro
+  s_b2fc299f4eea16::t_3994507d788da5 22
+apps/docs/content/docs/(reference)/mcp.mdx
+  s_b2fc299f4eea16::t_8d4ba6fc32d28d 64
+  s_b2fc299f4eea16::t_01c1d07a9710b7 3,28,50,65-66,72,84,100-103,105
+  s_b2fc299f4eea16::t_6642531e458897 30-31,33,106-107
+  s_b2fc299f4eea16::t_dd31b59464b1b9 78
+  s_b2fc299f4eea16::t_feedb4f71e9fa4 7,9
+  s_b2fc299f4eea16::t_9fa2bca6226732 8
+  s_b2fc299f4eea16::t_555202d7d07f8d 15,21-22,24,26-27,29,32,35,37-42,44,48-49,51-52,56-58,60-63,67-71,74,76-77,79,81,83,85-88,91-93,99,108-116,118,120-126,131,137-139,143
+  s_b2fc299f4eea16::t_09abe8cf7c0fb4 96
+  s_b2fc299f4eea16::t_3578afa896efd1 127-130,145-152
+development_docs/releasing.md
+  s_b2fc299f4eea16::t_7d4974bd7c03a2 10,12-15,136-138,140-152
+  s_b2fc299f4eea16::t_392be44bc1e82b 9,54,63,135,153,177-178
+  s_b2fc299f4eea16::t_f919196a2f84cf 99-100,106-110
+  s_b2fc299f4eea16::t_abda14ce52f15d 131,174
+  s_b2fc299f4eea16::t_09abe8cf7c0fb4 139
+  s_b2fc299f4eea16::t_dd31b59464b1b9 132
+  s_b2fc299f4eea16::t_03ba199b767719 101-105
+  s_b2fc299f4eea16::t_3578afa896efd1 7-8,11
+packages/chartcoach/tests/test_profile_contract.py
+  s_b2fc299f4eea16::t_afc35c14d774e5 29-32
+  s_b2fc299f4eea16::t_0388e33b4ce45c 64,75-79,83-94
+  s_b2fc299f4eea16::t_8d354793f85c7e 100
+  s_b2fc299f4eea16::t_fc5b8f929731a9 28
+  s_b2fc299f4eea16::t_1ee2e96c509386 8-11,101-108
+  s_b2fc299f4eea16::t_a50cf5e9df0783 80
+  s_b2fc299f4eea16::t_5b4a696d2cc383 81
+  s_b2fc299f4eea16::t_3aa5fc7f506504 82
+  s_b2fc299f4eea16::t_40feaeadf80680 13,52
+  s_b2fc299f4eea16::t_6bf6543e4a7898 109-113
+  s_b2fc299f4eea16::t_64362d964deb8f 65-74
+  s_b2fc299f4eea16::t_4ee4e1e78971ec 45,53-62
+  s_b2fc299f4eea16::t_14e67348cd6236 1-7,12,14-27,33-44,46-51,63,95-99
+packages/chartcoach/src/chartcoach/catalog/profiles.py
+  s_b2fc299f4eea16::t_6bf6543e4a7898 87-91,188-192,196-200,482,485-486
+  s_b2fc299f4eea16::t_a50cf5e9df0783 491,493
+  s_b2fc299f4eea16::t_362ac36b914027 342,361
+  s_b2fc299f4eea16::t_f4a9d86bb56a0f 341,343-347,349-350,352-354,581
+  s_b2fc299f4eea16::t_1b356d90b5d3b5 492
+  s_b2fc299f4eea16::t_c7cfac6e5b0659 440
+  s_b2fc299f4eea16::t_dd31b59464b1b9 28-29,63,176-177,261-263,300-301,578
+  s_b2fc299f4eea16::t_3aa5fc7f506504 400,462-469
+  s_b2fc299f4eea16::t_4db3fea30e8565 385-387,397-399
+  s_b2fc299f4eea16::t_e260ca394426f6 412,414-415,505-506,583
+  s_b2fc299f4eea16::t_87bddae03a74c5 44,212-214,216-217,222,402,404,470-481,489,498
+  s_b2fc299f4eea16::t_dc1f70c35a9606 92-94,291-293,405-407,508
+  s_b2fc299f4eea16::t_0e6dd15ed5400f 408-410
+  s_b2fc299f4eea16::t_36a07a1605bcc5 401,403,494-496
+  s_b2fc299f4eea16::t_e6c5a1db62106e 563-567,569
+  s_b2fc299f4eea16::t_2c171f914e6dc2 576
+  s_b2fc299f4eea16::t_feb5b2c39771e7 109-112,158-162
+  s_b2fc299f4eea16::t_26c7ffc6297970 384,388-396
+  s_b2fc299f4eea16::t_64362d964deb8f 417-423,435
+  s_b2fc299f4eea16::t_85c3ec0600a32c 5,513-514
+  s_b2fc299f4eea16::t_d67ee7635a1c76 268-270,568
+  s_b2fc299f4eea16::t_76d04cc131f02a 436-439
+  s_b2fc299f4eea16::t_6c97208db34d34 12
+  s_b2fc299f4eea16::t_94ede837937316 230,253,339-340,577,579
+  s_b2fc299f4eea16::t_11abab0ded8fdc 1-4,6-11,13-18,20-27,30-31,34-43,45-62,65-66,74-78,80-86,95-108,113-157,163-175,178-179,182-187,193-195,201-203,206-208,210-211,215,224-229,231-251,258-260,264-267,277-290,294-299,302-305,308-322,324-325,331,334-338,355-360,362-383,411,413,416,424-434,441-461,483-484,487-488,490,497,499-504,507,509-512,515-562,570-575,580,582,584
+  s_b2fc299f4eea16::t_c0eda43888de65 19,32-33,64,67-73,79,180-181,204-205,209,218-221,223,252,254-257,271-276,306-307,323,326-330,332-333,348,351
+packages/chartcoach/src/chartcoach/cli/_catalog/lifecycle.py
+  s_b2fc299f4eea16::t_49ea255cbe0170 60-62,149-151
+  s_b2fc299f4eea16::t_d78de66ea05909 63-66,78
+packages/chartcoach/src/chartcoach/catalog/runtime/release.py
+  s_b2fc299f4eea16::t_a52c15559255bb 73,76-77,81,84,103,106,110-111,117,119,121,124,130,135,138-140
+  s_b2fc299f4eea16::t_4db3fea30e8565 188
+  s_b2fc299f4eea16::t_cb8ade0066bd33 159-161
+  s_b2fc299f4eea16::t_dd31b59464b1b9 44
+  s_b2fc299f4eea16::t_94ede837937316 16-22
+  s_b2fc299f4eea16::t_cf1ee479f2ac0f 7,9,11,34,38,42-43,45-46,48,86,95-101,123,125-129,131,136-137,141-149,173-176,179-180,196-198,200
+  s_b2fc299f4eea16::t_3bcd15b034467e 47,199
+  s_b2fc299f4eea16::t_26c7ffc6297970 185-187,190-193
+  s_b2fc299f4eea16::t_dc1f70c35a9606 39-41,92-93,189
+  s_b2fc299f4eea16::t_e4333aba8ac5a6 177-178,181-184
+packages/chartcoach/src/chartcoach/catalog/search.py
+  s_b2fc299f4eea16::t_dd31b59464b1b9 23,52-54,166-168
+  s_b2fc299f4eea16::t_94ede837937316 258
+  s_b2fc299f4eea16::t_387a5220dd9168 1-22,25-39,41-45,48-51,55-66,68-89,92-97,99-101,103-114,116-123,125-130,132-133,135-137,139,141-159,162-165,169-199,201-211,213-257
+  s_b2fc299f4eea16::t_50d592eec9a507 24,46-47,67,90-91,98,102,115,124,131,134,138,140,160-161,200,212
+  s_b2fc299f4eea16::t_3b4fc45a4b6fdd 40
+apps/site/test/integrations/llms.test.ts
+  s_b2fc299f4eea16::t_7806eca2604568 137
+packages/chartcoach/src/chartcoach/catalog/identity.py
+  s_b2fc299f4eea16::t_dd31b59464b1b9 7,16-17,25-26
+  s_b2fc299f4eea16::t_9acba290aae66b 14,22
+  s_b2fc299f4eea16::t_387a5220dd9168 1-6,8-13,15,18-21,23-24,27-31
+packages/chartcoach/src/chartcoach/catalog/runtime/location.py
+  s_b2fc299f4eea16::t_a52c15559255bb 32,34,36-37,39,42,44,47,49,51-52,63,67
+  s_b2fc299f4eea16::t_94ede837937316 15-17
+  s_b2fc299f4eea16::t_3bcd15b034467e 11,21,26,31,33,35,40,93-94,96
+packages/chartcoach/src/chartcoach/catalog/embedding.py
+  s_b2fc299f4eea16::t_a0c1ca515b51a0 1-39,47-51,53-61
+  s_b2fc299f4eea16::t_072457ff86240b 52
+  s_b2fc299f4eea16::t_87bddae03a74c5 40-46
+packages/catalog/src/index.ts
+  s_b2fc299f4eea16::t_0f9ca8640c5f01 14
+  s_b2fc299f4eea16::t_41ad4c7909ab36 13
+  s_b2fc299f4eea16::t_7f6ee8d734867a 43-44,46-49
+  s_b2fc299f4eea16::t_e9e03bf22e955e 22-23
+  s_b2fc299f4eea16::t_dd31b59464b1b9 10,28,31
+  s_b2fc299f4eea16::t_019fe13d9f5bf1 1-9,11-12,21,26-27,29-30,32-41
+  s_b2fc299f4eea16::t_4bcdd7a83394b3 24-25
+  s_b2fc299f4eea16::t_76838b466cf1fd 45
+packages/chartcoach/src/chartcoach/catalog/documents.py
+  s_b2fc299f4eea16::t_04f2b0f55fcd76 53-56
+  s_b2fc299f4eea16::t_419f9176b04a79 12
+  s_b2fc299f4eea16::t_6c97208db34d34 14,226
+packages/catalog/test/catalog-loading.test.ts
+  s_b2fc299f4eea16::t_46e932a77460f6 10,53,68-69,99,119,132
+  s_b2fc299f4eea16::t_ce55786fc4ce0c 188
+  s_b2fc299f4eea16::t_553100bd93881c 17-28,31-39,59-60,96-98,100-118,120-131,133-140,150-155,172-173,189-236,289-323,334,356
+skills/visfeedback/SKILL.md
+  s_b2fc299f4eea16::t_6f92fad4d40316 51
+  s_b2fc299f4eea16::t_46af079e289ecb 46,50
+packages/chartcoach/src/chartcoach/catalog/curation/validation.py
+  s_b2fc299f4eea16::t_db8fe3fd3ad3fb 58,67,73-74,78,83,177,180,184,373-374,378
+  s_b2fc299f4eea16::t_435381a625db7f 133,143,214,228,303
+  s_b2fc299f4eea16::t_dd31b59464b1b9 18,176,178-179
+  s_b2fc299f4eea16::t_de1b0e7f1257dd 75-77,79-82
+  s_b2fc299f4eea16::t_6e736b8474418d 93-96
+  s_b2fc299f4eea16::t_b8d95f3af20180 319-321,323,377,379
+  s_b2fc299f4eea16::t_a0c25bc0bf207c 287
+  s_b2fc299f4eea16::t_70f597c3e30761 19
+  s_b2fc299f4eea16::t_b356109b3b6432 4-6,10,12-13,17,20-26,31-32,34-46,49,54-57,59-60,65-66,68-70,84-92,97-110,115-116,118,120-123,127,130-132,134-142,144-161,167-172,174-175,183,185-195,199-213,215-227,229-286,288-292,295-302,304-318,322,324-325,327-372,375-376,380
+  s_b2fc299f4eea16::t_1f17a93cc33e0a 64
+  s_b2fc299f4eea16::t_362ac36b914027 71
+development_docs/architecture/catalog-contract.md
+  s_b2fc299f4eea16::t_5dff8f8f3de6fa 58
+  s_b2fc299f4eea16::t_d0d380d995a2e5 6,50,65-66,68,73-78,83-84,104-105,113-116,127
+  s_b2fc299f4eea16::t_36d1262921ace6 102-103,112,117
+  s_b2fc299f4eea16::t_f5477cb1018f27 126,128-129
+  s_b2fc299f4eea16::t_6cf8a5886221f9 106-111
+  s_b2fc299f4eea16::t_cbe11e04a9224d 60,67,72
+  s_b2fc299f4eea16::t_d32720b77ed4af 59,61-62,69-71,79-82,85
+  s_b2fc299f4eea16::t_9b78cb78f5cc0c 97-101
+packages/catalog/src/catalog/errors.ts
+  s_b2fc299f4eea16::t_9f3e15aa060f2d 1-17,19-23,26-28
+development_docs/architecture.md
+  s_b2fc299f4eea16::t_f5477cb1018f27 22
+  s_b2fc299f4eea16::t_cd8bb24f3f38da 46,65
+  s_b2fc299f4eea16::t_3578afa896efd1 60-64,66-67
+  s_b2fc299f4eea16::t_d212a3d02ac804 19-21,23-26
+packages/chartcoach/tests/test_guideline_markdown.py
+  s_b2fc299f4eea16::t_419f9176b04a79 2
+packages/chartcoach/src/chartcoach/catalog/curation/dependencies.py
+  s_b2fc299f4eea16::t_e260ca394426f6 6,23-26,31
+packages/catalog/test/catalog-operations.test.ts
+  s_b2fc299f4eea16::t_e2804e2c19e7b9 6
+  s_b2fc299f4eea16::t_068695a77044d6 67-69,78-79
+  s_b2fc299f4eea16::t_2fc1e5d81542df 96-107
+  s_b2fc299f4eea16::t_2a68b01e079e11 120-122
+  s_b2fc299f4eea16::t_2ba11051918864 137
+  s_b2fc299f4eea16::t_dd31b59464b1b9 37-38,44,140
+  s_b2fc299f4eea16::t_644b86851d617a 1-2,4-5,7-26,30-36,39-43,45-51,53-56,59-61,64-66,80-95,108-119,123-136,138-139,141-174
+  s_b2fc299f4eea16::t_a7bb7e55c0fd39 3
+  s_b2fc299f4eea16::t_97651419b0ea58 27-29
+  s_b2fc299f4eea16::t_7f262dfc346a09 52,57-58,62-63
+  s_b2fc299f4eea16::t_1b744b006649d4 70-77
+packages/chartcoach/src/chartcoach/catalog/curation/bundle.py
+  s_b2fc299f4eea16::t_97f349bfad4549 1-6,8-22
+  s_b2fc299f4eea16::t_419f9176b04a79 7
+apps/site/src/config/catalog-location.ts
+  s_b2fc299f4eea16::t_d73e0062111968 192
+  s_b2fc299f4eea16::t_3618de6278f7dc 9,34,36-37,51-56,59-61,67-69,90-93,95,105,111,119-121,123,127,139,144,147-148,150,152,155-157,161-162,165-166,169,191
+  s_b2fc299f4eea16::t_d5b7f84242e5d9 1,5,7-8,10-14,16-17,19-20,23-33,40,46,48,62-64,70-71,74-81,84-87,94,96-104,107-109,112-118,122,124-126,128-138,140-143,145-146,149,151,153-154,158,179,184-185,190
+packages/catalog/src/catalog/open.ts
+  s_b2fc299f4eea16::t_4bcdd7a83394b3 38,42
+  s_b2fc299f4eea16::t_e54f81126769c0 267
+  s_b2fc299f4eea16::t_019fe13d9f5bf1 4,13,17,23,30,44-49,52,57-61,67,69,72,80,87,91-93,100-106,111,133,140,149,157,224,236-240,249-266,268-310
+  s_b2fc299f4eea16::t_15fd416bbd2faf 15,90
+  s_b2fc299f4eea16::t_f046b7b6e52ff1 317,320,325
+  s_b2fc299f4eea16::t_1705038b7b1690 159,170
+  s_b2fc299f4eea16::t_d212a3d02ac804 188
+packages/chartcoach/src/chartcoach/catalog/curation/release_builder.py
+  s_b2fc299f4eea16::t_2c171f914e6dc2 16,27,30-31,36-40,61,63,69,71-72
+  s_b2fc299f4eea16::t_94ede837937316 52
+  s_b2fc299f4eea16::t_de1b0e7f1257dd 76
+  s_b2fc299f4eea16::t_419f9176b04a79 14
+  s_b2fc299f4eea16::t_97f349bfad4549 8,32,41-51,53-54
+  s_b2fc299f4eea16::t_8568e31ea1743a 4,10,12,15,19,33,55-60,62,64-68,70,73-75,77-81,84-86,93,124-126,128-130,142
+packages/chartcoach/tests/test_release_publish.py
+  s_b2fc299f4eea16::t_8124ab181a16e9 118-121
+  s_b2fc299f4eea16::t_70f597c3e30761 19
+  s_b2fc299f4eea16::t_7b0e25dfd89887 8,10,97-106,108-117
+  s_b2fc299f4eea16::t_d060cd58acb277 22
+  s_b2fc299f4eea16::t_b275b2f441ba21 47,53
+  s_b2fc299f4eea16::t_7806eca2604568 96
+  s_b2fc299f4eea16::t_19e5b9f0ab7bc1 107
+packages/chartcoach/tests/test_catalog_operations.py
+  s_b2fc299f4eea16::t_c69e59fdd21f63 208,275
+  s_b2fc299f4eea16::t_89e35ee6e4813f 103
+  s_b2fc299f4eea16::t_7553eaa12aaf18 280
+  s_b2fc299f4eea16::t_9a614fc55536cf 9-10,144-145,147-150,164,167-168,177,179,183-184,186,188-189,196-197,201,205,207,209,211-216,218-219,221,224-226,228-231,239-247,297-301
+  s_b2fc299f4eea16::t_97651419b0ea58 45-52
+  s_b2fc299f4eea16::t_d89c5e4de7417a 91
+  s_b2fc299f4eea16::t_65dc9688ddf1b0 15-17,27-36,38-44,53-56,92-93
+  s_b2fc299f4eea16::t_34ba6826ffa043 222
+  s_b2fc299f4eea16::t_dd31b59464b1b9 62-63,100,162-163
+  s_b2fc299f4eea16::t_5a1cf72e93d3b3 251,257-273,277,283-285,287,292-294
+  s_b2fc299f4eea16::t_06485aa2cc8d12 3,14,18-26,37,57-61,64-90,94-99
+  s_b2fc299f4eea16::t_419f9176b04a79 11
+  s_b2fc299f4eea16::t_70f597c3e30761 12
+  s_b2fc299f4eea16::t_506ee9dc582b55 302-317
+  s_b2fc299f4eea16::t_86cd809787315c 13,101-102,104-143
+  s_b2fc299f4eea16::t_302ad95067856c 146,202,232-238,252,288,290-291
+apps/site/README.md
+  s_b2fc299f4eea16::t_d73e0062111968 31-35
+  s_b2fc299f4eea16::t_3a1da7d6d7c031 5
+  s_b2fc299f4eea16::t_392be44bc1e82b 49
+  s_b2fc299f4eea16::t_dd31b59464b1b9 28
+apps/docs/content/docs/index.mdx
+  s_b2fc299f4eea16::t_3a1da7d6d7c031 46
+  s_b2fc299f4eea16::t_75de2f5267539b 9
+packages/chartcoach/src/chartcoach/cli/_catalog/index.py
+  s_b2fc299f4eea16::t_8418427ab22875 3,8,14,18,23,26,30,32,41-45,51,56,59,63,68,70-75,80,83,91-92,94,96,100
+  s_b2fc299f4eea16::t_9b9d122ab687ac 16,66,85,88-89,93,95
+  s_b2fc299f4eea16::t_435381a625db7f 40
+packages/chartcoach/src/chartcoach/catalog/profile_layout.py
+  s_b2fc299f4eea16::t_28b09175eb316e 1-35,37-82,84-89,91-113
+  s_b2fc299f4eea16::t_9acba290aae66b 36,83,90
+packages/chartcoach/tests/test_release_validation.py
+  s_b2fc299f4eea16::t_79e943cc007ccf 85-100
+  s_b2fc299f4eea16::t_7806eca2604568 275,296
+  s_b2fc299f4eea16::t_b876722c25d57d 291-295
+  s_b2fc299f4eea16::t_30af528ce60d8c 244-255,258
+  s_b2fc299f4eea16::t_8d354793f85c7e 219-221,224-225,229-230,236,240,256
+  s_b2fc299f4eea16::t_bb42e2f650aa99 259-274
+  s_b2fc299f4eea16::t_5497085526e16b 55
+  s_b2fc299f4eea16::t_1ad9921cac6275 56-65,67
+  s_b2fc299f4eea16::t_190141525f20bd 66,68-84,194-204,213-215
+  s_b2fc299f4eea16::t_dba19d8b0ef0b2 324
+  s_b2fc299f4eea16::t_54b696abddb29e 226-228,231-235,237-239,241-243
+  s_b2fc299f4eea16::t_62b82940d9afaf 4,6,17,20,276-282,284-289,297-308,310-311,345-354,357-358,360-361
+  s_b2fc299f4eea16::t_70f597c3e30761 18
+  s_b2fc299f4eea16::t_cdd8453e3c4126 355-356,359
+  s_b2fc299f4eea16::t_3ff4c58ff5a6d0 130,153-175,183-193
+  s_b2fc299f4eea16::t_c69e59fdd21f63 25
+  s_b2fc299f4eea16::t_500e467dde7d5a 222-223
+  s_b2fc299f4eea16::t_19e5b9f0ab7bc1 283,290,309,344
+packages/chartcoach/src/chartcoach/catalog/authored.py
+  s_b2fc299f4eea16::t_b79892a8c3c220 7,17,42
+packages/chartcoach/tests/test_search.py
+  s_b2fc299f4eea16::t_e4b7b358d09a43 103,124,163
+  s_b2fc299f4eea16::t_a3c760e4870729 3-5,102,104-106,108-117,119,121-123,125-145,147-149,151-162,164-174
+  s_b2fc299f4eea16::t_419f9176b04a79 13-14
+  s_b2fc299f4eea16::t_c69e59fdd21f63 86,91,107,150
+  s_b2fc299f4eea16::t_19e5b9f0ab7bc1 15,118,120
+  s_b2fc299f4eea16::t_5e3de40729b9ed 74,78
+  s_b2fc299f4eea16::t_7767dc2c3c825f 146
+skills/discuss/SKILL.md
+  s_b2fc299f4eea16::t_46af079e289ecb 55,69
+  s_b2fc299f4eea16::t_6f92fad4d40316 56
+development_docs/architecture/web-delivery.md
+  s_b2fc299f4eea16::t_6e5036a2349cc6 31,37
+  s_b2fc299f4eea16::t_d5b7f84242e5d9 19
+  s_b2fc299f4eea16::t_f5477cb1018f27 77
+  s_b2fc299f4eea16::t_d212a3d02ac804 74-76,78-79
+  s_b2fc299f4eea16::t_392be44bc1e82b 21,24,32-36,99
+packages/chartcoach/src/chartcoach/catalog/curation/__init__.py
+  s_b2fc299f4eea16::t_dddc9172bd7dc4 4,10-11
+  s_b2fc299f4eea16::t_97f349bfad4549 3,16
+packages/chartcoach/tests/test_profile_layout.py
+  s_b2fc299f4eea16::t_a704c0fc819d5c 1-9,11-28,30-44,46-48
+  s_b2fc299f4eea16::t_e4b7b358d09a43 10,45,49
+  s_b2fc299f4eea16::t_94ede837937316 29
+packages/catalog/test/profile-description.test.ts
+  s_b2fc299f4eea16::t_dd31b59464b1b9 193-194
+  s_b2fc299f4eea16::t_ce55786fc4ce0c 45-47,49-50,75-77,112-115,120-121
+  s_b2fc299f4eea16::t_7c484d5e47c21a 1-42,44,48,53-71,73-74,78-111,116-119,122-123,125-192,195-209
+  s_b2fc299f4eea16::t_67fcb3aa03782a 43,51-52
+  s_b2fc299f4eea16::t_db75cfcbacbef1 72,124
+packages/chartcoach/tests/test_agent.py
+  s_b2fc299f4eea16::t_500e467dde7d5a 67,96
+  s_b2fc299f4eea16::t_00c05728b7b4cb 9,34-36,57,68-76,78-82,85-87,91,93,99-103
+packages/chartcoach/src/chartcoach/catalog/markdown.py
+  s_b2fc299f4eea16::t_419f9176b04a79 6
+packages/chartcoach/src/chartcoach/catalog/curation/artifacts.py
+  s_b2fc299f4eea16::t_2c171f914e6dc2 130,202-203,206-207,217-218
+  s_b2fc299f4eea16::t_db8fe3fd3ad3fb 191
+  s_b2fc299f4eea16::t_d3aedb1a39fd18 5,8,18-25,42,57,61-65,69-70,73,76,86-87,89-95,97-103,110-116,118-125,129,131-133,135-143,147-149,151-158,161-162,166-170,175-176,185-186,195-196,198-201,204-205,208-209,219
+  s_b2fc299f4eea16::t_5f15d968586fc5 28
+  s_b2fc299f4eea16::t_feb5b2c39771e7 10,30
+  s_b2fc299f4eea16::t_dd31b59464b1b9 16,213-214
+  s_b2fc299f4eea16::t_419f9176b04a79 17
+  s_b2fc299f4eea16::t_d6916fd4a5efab 26-27,29,31-33,78-79,81-85,88,96,117,146,150,159-160,163-165,171-174,177-184,187-190,192-194,197,210-212,215-216,220-224,226,232,235,240-241
+  s_b2fc299f4eea16::t_b8d95f3af20180 104-106
+  s_b2fc299f4eea16::t_b1684c62556368 75
+  s_b2fc299f4eea16::t_1f17a93cc33e0a 126,128
+skills/core/SKILL.md
+  s_b2fc299f4eea16::t_52cc1d94310630 3,8,16-17,41-42,61,100,113-116,130,153
+  s_b2fc299f4eea16::t_6f92fad4d40316 106,124,134,146
+  s_b2fc299f4eea16::t_b8450d4eb3b67c 46
+  s_b2fc299f4eea16::t_bb5580dce892b4 51
+  s_b2fc299f4eea16::t_b2ff3413e1748c 25,85,104,110,122,127,154-155,168-169
+  s_b2fc299f4eea16::t_c24ad87cf9c392 99,101
+  s_b2fc299f4eea16::t_251a9d07574a1f 9,11,18,20,22,27-29,31,39-40,44,54,57-59,64-68,71,74-75,82,102-103,105,107-109,111,119-121,123,125-126,131,133,135-140,142,145,157
+  s_b2fc299f4eea16::t_3578afa896efd1 159-166
+packages/catalog/test/catalog-testkit.ts
+  s_b2fc299f4eea16::t_c23c3c836b16ec 1-6,8-23,25-48,50,52,54-135
+  s_b2fc299f4eea16::t_e2804e2c19e7b9 24,51,53
+  s_b2fc299f4eea16::t_46e932a77460f6 7,49
+packages/chartcoach/src/chartcoach/catalog/tables.py
+  s_b2fc299f4eea16::t_419f9176b04a79 18
+apps/docs/content/docs/(reference)/javascript.mdx
+  s_b2fc299f4eea16::t_cd8d687051d875 223,225
+  s_b2fc299f4eea16::t_cbed3b8ff789ec 41-43,52-53,166-167,170-173,175-176,179-187,190,276
+  s_b2fc299f4eea16::t_23325a6d78c38a 258,265-267,271-274,279,281-282
+  s_b2fc299f4eea16::t_86e3d073c6c11e 259-262
+  s_b2fc299f4eea16::t_ad0b101bd8df51 275,277-278
+  s_b2fc299f4eea16::t_63958d2d09eba8 3,19,24-28,30,90,99,112-113,120,122-124,143,193,195-209,214,217-220,226-229,232,240-249,251-253,263-264
+  s_b2fc299f4eea16::t_26159452826ccc 49,210,237
+  s_b2fc299f4eea16::t_3b1bba88ec8196 91
+  s_b2fc299f4eea16::t_ec2cad5b34ee3f 50
+  s_b2fc299f4eea16::t_5994baabb26800 8,39-40,51,142,147,152,154,160-163,168-169,174,178,189,194,211-213,215-216,224,230-231,235-236,250,254-257,268-270,280,283-286
+  s_b2fc299f4eea16::t_3d88beba6dd7e9 126,188,233-234,238-239
+  s_b2fc299f4eea16::t_03ba199b767719 177
+  s_b2fc299f4eea16::t_362ac36b914027 221-222
+  s_b2fc299f4eea16::t_525b27a795b90c 57-58
+packages/chartcoach/tests/test_cli_guidelines.py
+  s_b2fc299f4eea16::t_e274a4f62a96df 65-67
+  s_b2fc299f4eea16::t_dd31b59464b1b9 89,133
+  s_b2fc299f4eea16::t_8dd184fc1f514e 88,90,131-132
+  s_b2fc299f4eea16::t_419f9176b04a79 8-9
+apps/docs/content/docs/(reference)/catalog.mdx
+  s_b2fc299f4eea16::t_dd31b59464b1b9 126-127
+  s_b2fc299f4eea16::t_24c6c86414f515 109,121-125,128-141,144-149,174-175
+  s_b2fc299f4eea16::t_1f9126512fbf0b 3,7-9,11,14,57,61,63,76,115-116,118,142-143,150,155,168,177,183,186
+  s_b2fc299f4eea16::t_1c662d4e7692ee 62,64-68,107-108,110-111,114,117,119-120,151-154,156-162
+packages/chartcoach/tests/test_embedding_variables.py
+  s_b2fc299f4eea16::t_69aa1cc6a849a6 1-10,12,14-15,17-28,30-55,57-70,72-86,88-124,128-138
+  s_b2fc299f4eea16::t_c69e59fdd21f63 16
+  s_b2fc299f4eea16::t_70f597c3e30761 11
+  s_b2fc299f4eea16::t_19e5b9f0ab7bc1 13,29,56,71,87
+  s_b2fc299f4eea16::t_02dda6bc00b124 125-127
+packages/chartcoach/tests/catalog_testkit.py
+  s_b2fc299f4eea16::t_19e5b9f0ab7bc1 79
+packages/catalog/src/catalog/artifacts.ts
+  s_b2fc299f4eea16::t_79527268e726d9 27,50-59
+  s_b2fc299f4eea16::t_e9e03bf22e955e 129-131,136-139,141-145,154-155
+  s_b2fc299f4eea16::t_c49021f3eb64bf 2,33
+  s_b2fc299f4eea16::t_2d3c81b057b1eb 69-72,75-78,89-92,94-99,115-118,132-135
+  s_b2fc299f4eea16::t_9cdaf3c019517e 127
+  s_b2fc299f4eea16::t_e132d4256af753 128,140,146-153
+  s_b2fc299f4eea16::t_85280e18fbdae0 11,14,16,19-20,28-32,34-35,38,42,45-49,159,162
+fixtures/catalog-contract/profile.json
+  s_b2fc299f4eea16::t_7f6ee8d734867a 1-3,6-16,19-21
+  s_b2fc299f4eea16::t_dd31b59464b1b9 4-5
+  s_b2fc299f4eea16::t_435381a625db7f 17-18
+AGENTS.md
+  s_b2fc299f4eea16::t_e991af6cde772d 57,75-76
+  s_b2fc299f4eea16::t_6cf8a5886221f9 23-30,161-167
+apps/site/src/components/SiteShell.astro
+  s_b2fc299f4eea16::t_eeaa7b9e7a2816 101
+tools/architecture/dependencies.test.mjs
+  s_b2fc299f4eea16::t_6d9ed102fb401b 40
+packages/chartcoach/tests/test_cli_lifecycle.py
+  s_b2fc299f4eea16::t_419f9176b04a79 7
+packages/chartcoach/tests/test_catalog_authored.py
+  s_b2fc299f4eea16::t_dd31b59464b1b9 102,120,138,171,174
+  s_b2fc299f4eea16::t_ac1b9be697968a 3,5,11,13,15-22,39-47,51,55,77,88,95-101,103-119,121-137,213-220,252-254,257-258
+  s_b2fc299f4eea16::t_88e129a00bf6f7 206
+packages/chartcoach/src/chartcoach/catalog/query.py
+  s_b2fc299f4eea16::t_066c5bfa225a35 176,185
+  s_b2fc299f4eea16::t_ee15b45b4da46d 184,186-188,222-226,237-241
+  s_b2fc299f4eea16::t_83b3bb45b45d4e 127,145,179,211,218
+  s_b2fc299f4eea16::t_419f9176b04a79 19
+  s_b2fc299f4eea16::t_fac53f0d903c23 41
+  s_b2fc299f4eea16::t_04f2b0f55fcd76 45,97,169-172
+packages/chartcoach/src/chartcoach/catalog/sql.py
+  s_b2fc299f4eea16::t_dd31b59464b1b9 33-34,80-81
+  s_b2fc299f4eea16::t_387a5220dd9168 4,7,9,11-12,14-15,18-19,21-22,25,28-32,35,38-39,41,43-47,49-55,57-64,66-79,82-83,104-105,117,122,126-127,130,135
+  s_b2fc299f4eea16::t_50d592eec9a507 26
+packages/chartcoach/src/chartcoach/catalog/runtime/transport.py
+  s_b2fc299f4eea16::t_faab1acdcdab1c 67,71
+  s_b2fc299f4eea16::t_0188d997e685f6 24
+  s_b2fc299f4eea16::t_3bcd15b034467e 11
+packages/chartcoach/src/chartcoach/catalog/manifest.py
+  s_b2fc299f4eea16::t_70f597c3e30761 13
+  s_b2fc299f4eea16::t_dd31b59464b1b9 191,245
+  s_b2fc299f4eea16::t_04f2b0f55fcd76 198,210
+  s_b2fc299f4eea16::t_419f9176b04a79 17
+  s_b2fc299f4eea16::t_c74c1f6b944cb7 6,193-196
+  s_b2fc299f4eea16::t_675f0abaab2b62 9,47-57
+  s_b2fc299f4eea16::t_5efcac24888460 157
+  s_b2fc299f4eea16::t_3e97e236e98d83 192
+  s_b2fc299f4eea16::t_5dbbb25e13334c 12,26
+packages/chartcoach/src/chartcoach/duckdb.py
+  s_b2fc299f4eea16::t_419f9176b04a79 14
+packages/chartcoach/src/chartcoach/cli/_catalog/navigation.py
+  s_b2fc299f4eea16::t_072457ff86240b 3,204-207
+  s_b2fc299f4eea16::t_28ed4308d62012 10,31,44,226-227,229,236,250,260,266,303,315,338,385
+  s_b2fc299f4eea16::t_b7a04c998748d6 161,184,192,199,215,254
+  s_b2fc299f4eea16::t_766880de76bf37 200
+  s_b2fc299f4eea16::t_a33f4041f32f99 60-61
+  s_b2fc299f4eea16::t_dd31b59464b1b9 54,56-57
+  s_b2fc299f4eea16::t_94ede837937316 8
+  s_b2fc299f4eea16::t_7ff905cf9baa2b 9,11,17,25-26,29,36,41-43,46-49,51,53,55,58-59,62,67-68,75,81,94,100,106,108,110,131,137,141,167,180,185-190,193-198,201-203,208,212-213,216-218,224,242,249,258-259,263,267-268,273,278,284,291,295,299-300,304-305,309,320,326,343,346-347,350-355,374,388-389,394,399-434,438
+packages/catalog/test/profile-metadata.test.ts
+  s_b2fc299f4eea16::t_fa700dbad125e1 26-33
+  s_b2fc299f4eea16::t_0388e33b4ce45c 52,54,57-58,77
+  s_b2fc299f4eea16::t_7f6ee8d734867a 1-2,5-6,9-17,34-35,38-40,42-46,48-51,78
+  s_b2fc299f4eea16::t_a50cf5e9df0783 65-67
+  s_b2fc299f4eea16::t_ce55786fc4ce0c 22
+  s_b2fc299f4eea16::t_9f2ad64b4f1fa1 68-70
+  s_b2fc299f4eea16::t_462c6484d20787 4,7-8,36-37,41,47
+  s_b2fc299f4eea16::t_d91870a7f9a65e 25
+  s_b2fc299f4eea16::t_f906ba5b21c9fb 18-21,23-24
+  s_b2fc299f4eea16::t_3aa5fc7f506504 71-73
+  s_b2fc299f4eea16::t_7374aca4d7fe70 3,53,55-56,59-64,74-76
+packages/chartcoach/tests/test_release_builder.py
+  s_b2fc299f4eea16::t_aa421532cc093e 113-115,119,123,136-139,141-150,157
+  s_b2fc299f4eea16::t_70f597c3e30761 21
+  s_b2fc299f4eea16::t_d63d1eb8df9bf1 4-6,268-269,271-292,295,297-310
+  s_b2fc299f4eea16::t_9f739a386d7308 348-349,351-355,364-374,376-377,379
+  s_b2fc299f4eea16::t_5497085526e16b 44
+  s_b2fc299f4eea16::t_7767dc2c3c825f 161,182
+  s_b2fc299f4eea16::t_3926f69597f594 239-256,258-262,264-267,312-313
+  s_b2fc299f4eea16::t_134dcb5ad04dcc 61,120-121,203,226,257,263,270,294,350,378
+  s_b2fc299f4eea16::t_b34e2a0a2fe21a 68,80,83-87,89,93-94,96-112,135,140,151-156,159-160,162-179
+  s_b2fc299f4eea16::t_b275b2f441ba21 74,116-117,122,158,296,375
+  s_b2fc299f4eea16::t_b8d95f3af20180 95
+  s_b2fc299f4eea16::t_ae4178fe6fe27a 43,45-60
+  s_b2fc299f4eea16::t_d060cd58acb277 293,311
+  s_b2fc299f4eea16::t_d67ee7635a1c76 356-363
+  s_b2fc299f4eea16::t_81397616ca4d31 16,180-181,204-225,227-236
+  s_b2fc299f4eea16::t_dd31b59464b1b9 118
+  s_b2fc299f4eea16::t_c69e59fdd21f63 27
+  s_b2fc299f4eea16::t_dd0cbdefe1e4ab 183-202
+packages/catalog/src/catalog/query.ts
+  s_b2fc299f4eea16::t_d73e0062111968 20-23
+  s_b2fc299f4eea16::t_b4d35d70a7d09f 2,40,98
+  s_b2fc299f4eea16::t_41ad4c7909ab36 57,111-114
+  s_b2fc299f4eea16::t_068695a77044d6 24-26
+  s_b2fc299f4eea16::t_9f3e15aa060f2d 1,3-12,14-19,27-39,41-56,58-97,99-110,115
+  s_b2fc299f4eea16::t_dd31b59464b1b9 13
+apps/site/src/loaders/guidelines-loader.ts
+  s_b2fc299f4eea16::t_0188d997e685f6 33,212,216-217,219,222
+  s_b2fc299f4eea16::t_d5b7f84242e5d9 9-10,12-14,218,276
+packages/catalog/test/catalog-model.test.ts
+  s_b2fc299f4eea16::t_dd31b59464b1b9 63,65-66
+  s_b2fc299f4eea16::t_a8daa50d8139ef 4,91-125,131-149
+  s_b2fc299f4eea16::t_0f9ca8640c5f01 83,85
+  s_b2fc299f4eea16::t_2f18e34dcf747e 129-130
+  s_b2fc299f4eea16::t_88e129a00bf6f7 88
+  s_b2fc299f4eea16::t_79527268e726d9 126-128
+  s_b2fc299f4eea16::t_b865cdf1a4228b 50,52,62,64,67-82,84
+packages/chartcoach/README.md
+  s_b2fc299f4eea16::t_67e7d224957608 62
+  s_b2fc299f4eea16::t_82de90be58c167 46
+  s_b2fc299f4eea16::t_32a82e4fd69c95 4
+  s_b2fc299f4eea16::t_09abe8cf7c0fb4 76
+  s_b2fc299f4eea16::t_e684d403a82351 22-25,57-59,71,73,98-103,108-109
+  s_b2fc299f4eea16::t_ba6a8f10f3cac2 35-36,38,40,42,52,54,60-61,79-84,122-127
+apps/site/src/components/guideline-story/code-examples.ts
+  s_b2fc299f4eea16::t_d1f74d3aba841b 88-89
+  s_b2fc299f4eea16::t_3717073f7d33be 110
+  s_b2fc299f4eea16::t_75e99baf35a5b5 91
+  s_b2fc299f4eea16::t_3578afa896efd1 104-109
+packages/chartcoach/tests/test_cli_release.py
+  s_b2fc299f4eea16::t_70f597c3e30761 8
+skills/contribute/SKILL.md
+  s_b2fc299f4eea16::t_46af079e289ecb 29
+packages/catalog/src/catalog/manifest.ts
+  s_b2fc299f4eea16::t_85280e18fbdae0 8-10,14-16,27,30-31,35-36,117,121-129,154,157,172,201-213
+  s_b2fc299f4eea16::t_79527268e726d9 28-29
+  s_b2fc299f4eea16::t_5efcac24888460 112
+apps/docs/content/docs/(guide)/agents.mdx
+  s_b2fc299f4eea16::t_74a00d16efccf7 8,20-26,29-30,33-34,36-40,62-64,79,83,88,95-97
+  s_b2fc299f4eea16::t_3578afa896efd1 54-60
+  s_b2fc299f4eea16::t_b8450d4eb3b67c 74
+  s_b2fc299f4eea16::t_c048927d51bee9 3,7,10,31
+apps/site/src/config/llms.ts
+  s_b2fc299f4eea16::t_aa542bff75b0ad 58
+  s_b2fc299f4eea16::t_d5b7f84242e5d9 12
+packages/chartcoach/src/chartcoach/catalog/runtime/__init__.py
+  s_b2fc299f4eea16::t_70f597c3e30761 10
+  s_b2fc299f4eea16::t_52be0a1aedafe2 8,14,33,35-36,49,58,68
+  s_b2fc299f4eea16::t_b0284e807f6acc 65,118
+  s_b2fc299f4eea16::t_94ede837937316 12
+  s_b2fc299f4eea16::t_dd31b59464b1b9 9,42,50,67,120
+  s_b2fc299f4eea16::t_a52c15559255bb 18,25,43,51
+  s_b2fc299f4eea16::t_db8fe3fd3ad3fb 22,34
+  s_b2fc299f4eea16::t_3bcd15b034467e 26,87,91
+  s_b2fc299f4eea16::t_cb5273db0f10cf 54,61
+  s_b2fc299f4eea16::t_0639693a6d2ab2 37-41
+  s_b2fc299f4eea16::t_419f9176b04a79 103
+  s_b2fc299f4eea16::t_fb4b7b058d8593 13,45-48,52,55-57,59-60,62-64,69-70,79,94-96,104-113,117,119,124
+  s_b2fc299f4eea16::t_4ee6ab88c7c3b9 44
+  s_b2fc299f4eea16::t_cbee926c12b668 11
+  s_b2fc299f4eea16::t_8c85a05495cacb 27,74-78,80,82-86,90,92,114-115
+packages/catalog/src/catalog/parquet.ts
+  s_b2fc299f4eea16::t_4bcdd7a83394b3 32,36,63,92,109-115,132
+  s_b2fc299f4eea16::t_019fe13d9f5bf1 3-15,18-19,22,37-43,60-61,64-91,93-108,116,127,131
+  s_b2fc299f4eea16::t_dd31b59464b1b9 16-17
+  s_b2fc299f4eea16::t_15fd416bbd2faf 59,62
+apps/site/src/components/guideline-story/story-steps.ts
+  s_b2fc299f4eea16::t_aa542bff75b0ad 16,21,24
+packages/chartcoach/tests/test_catalog_paths.py
+  s_b2fc299f4eea16::t_a704c0fc819d5c 11,31
+  s_b2fc299f4eea16::t_8d354793f85c7e 12,19-22
+packages/chartcoach/src/chartcoach/catalog/runtime/profiles.py
+  s_b2fc299f4eea16::t_db8fe3fd3ad3fb 36,58,82,86,107,127,135,143,149,153,159,163,168,181,187,189,191,194
+  s_b2fc299f4eea16::t_8c85a05495cacb 15,23
+  s_b2fc299f4eea16::t_52be0a1aedafe2 4,33,39-41,51-55,81,88-90,200-202,207-208,211,214
+  s_b2fc299f4eea16::t_cd25b55ed3b9d9 22
+  s_b2fc299f4eea16::t_9965112326ba0b 47-49,93,114,121-126,128-129,137,150-152
+  s_b2fc299f4eea16::t_50d592eec9a507 138,142,175,222
+  s_b2fc299f4eea16::t_362ac36b914027 37
+  s_b2fc299f4eea16::t_94ede837937316 166
+  s_b2fc299f4eea16::t_dd31b59464b1b9 34,56,61-62,65,70-71
+  s_b2fc299f4eea16::t_9d2324141c625f 1-3,5-8,16-21,24-32,35,38,42-46,50,57,59-60,63-64,66-69,72-80,83,85,87,91-92,94-103,112-113,130-133,139-141,144-148,154-158,160-162,164-165,167,169-174,176-180,182-183,185-186,188,190,192-193,195-199,209-210,212-213,215-221,223-229
+  s_b2fc299f4eea16::t_a7c4ed125b2f41 9-14,203-206
+  s_b2fc299f4eea16::t_dc1f70c35a9606 134,136,184
+  s_b2fc299f4eea16::t_cb5273db0f10cf 84,104-106,108-111,115-120
+packages/chartcoach/pyproject.toml
+  s_b2fc299f4eea16::t_abe5e93f6c4e24 43,45,49-51,53-54
+  s_b2fc299f4eea16::t_379cb880979fe3 29,34,38,42
+  s_b2fc299f4eea16::t_b90c82c3c38589 44,52
+packages/catalog/test/profile-layout.test.ts
+  s_b2fc299f4eea16::t_ce55786fc4ce0c 9,21,53,56
+  s_b2fc299f4eea16::t_499a9b578cca94 42-49
+  s_b2fc299f4eea16::t_8367648e57b5a4 1-8,10-20,22-41,57-70
+  s_b2fc299f4eea16::t_f4b78521ec93a2 50-52,54-55
+packages/chartcoach/src/chartcoach/catalog/guidelines.py
+  s_b2fc299f4eea16::t_aa542bff75b0ad 17
+packages/catalog/src/catalog/description.ts
+  s_b2fc299f4eea16::t_90f79479818aba 1,3-17,19,27-30,32,35-37,39-46,48-54,57-65,69-70,72-73,92,95-97,99,102-111,115,117-151,153-154,156-157,161,164-185
+  s_b2fc299f4eea16::t_4bcdd7a83394b3 20-26,74-91,93-94,112,116,155,158-160,162-163
+  s_b2fc299f4eea16::t_068695a77044d6 66-68
+  s_b2fc299f4eea16::t_2ae62de5985aa7 152
+  s_b2fc299f4eea16::t_dd31b59464b1b9 2,18,31,33-34,38,47,55-56,71,98,100-101,113-114
+packages/chartcoach/src/chartcoach/catalog/model.py
+  s_b2fc299f4eea16::t_dd31b59464b1b9 23,42,59,67,139,220
+  s_b2fc299f4eea16::t_b79892a8c3c220 5,7,11-12,17,20,22,24,41,43,45,53-58,60,62-66,68-72,80,88,94,99,101,103,106,108,110-118,120-131,133-138,140-148,151-157,159,161,163,166-168,175,181-182,186,188,191-196,198,200,202-206,208,210-218,223,226-227,229-242,248,292,311,313
+  s_b2fc299f4eea16::t_9acba290aae66b 31,44,61,104,164,189,207,221,228
+  s_b2fc299f4eea16::t_33cb9aa0aca255 119
+  s_b2fc299f4eea16::t_70f597c3e30761 13
+  s_b2fc299f4eea16::t_70e7aada34b4c3 26-27,184,209
+  s_b2fc299f4eea16::t_066c5bfa225a35 312
+fixtures/catalog-contract/operations.json
+  s_b2fc299f4eea16::t_dd31b59464b1b9 147-148,204
+  s_b2fc299f4eea16::t_97651419b0ea58 77-107,109-116
+  s_b2fc299f4eea16::t_44082edc3c43f6 1-76,117-146,149-203,205-206
+  s_b2fc299f4eea16::t_1dd3e3d635b18c 108
+packages/chartcoach/src/chartcoach/constants.py
+  s_b2fc299f4eea16::t_3e97e236e98d83 13
+  s_b2fc299f4eea16::t_94ede837937316 14
+  s_b2fc299f4eea16::t_dd31b59464b1b9 6
+  s_b2fc299f4eea16::t_0dbc6e9ee4ec96 3
+packages/chartcoach/src/chartcoach/cli/mcp.py
+  s_b2fc299f4eea16::t_dd31b59464b1b9 9,146
+  s_b2fc299f4eea16::t_0dbc6e9ee4ec96 10,54,59
+  s_b2fc299f4eea16::t_bfecd7bdbea4d9 151
+  s_b2fc299f4eea16::t_348d6ab8a36749 3-4,67-71,106,117,137,150
+  s_b2fc299f4eea16::t_0cb323f943474d 57-58
+packages/chartcoach/src/chartcoach/cli/common.py
+  s_b2fc299f4eea16::t_9b9d122ab687ac 241,243-244,246,248,250,257-260,262
+  s_b2fc299f4eea16::t_0cb323f943474d 60-61
+  s_b2fc299f4eea16::t_419f9176b04a79 19
+  s_b2fc299f4eea16::t_0dbc6e9ee4ec96 14,55,62
+  s_b2fc299f4eea16::t_b28df8e8bcf1e2 23
+  s_b2fc299f4eea16::t_343dbbdb65a1e0 33
+README.md
+  s_b2fc299f4eea16::t_6cf8a5886221f9 48-56
+  s_b2fc299f4eea16::t_e684d403a82351 71-76
+apps/site/test/llms-output.test.ts
+  s_b2fc299f4eea16::t_dd31b59464b1b9 11
+packages/chartcoach/src/chartcoach/catalog/curation/lancedb_index.py
+  s_b2fc299f4eea16::t_435381a625db7f 24
+  s_b2fc299f4eea16::t_70f597c3e30761 9
+  s_b2fc299f4eea16::t_5c776637ad7a2b 10,57-58,62-70,72
+apps/site/src/pages/index.astro
+  s_b2fc299f4eea16::t_056683f5d87be6 21
+  s_b2fc299f4eea16::t_eeaa7b9e7a2816 64-65,78,81-83
+packages/chartcoach/tests/test_optional_boundaries.py
+  s_b2fc299f4eea16::t_176e65079018ba 4,159
+  s_b2fc299f4eea16::t_3a9dbea8be981e 131-132,134-145,147-151,153,158,160-161
+  s_b2fc299f4eea16::t_19e5b9f0ab7bc1 146
+  s_b2fc299f4eea16::t_51389f27878d76 93-94
+  s_b2fc299f4eea16::t_3e61bdbaef4bc3 39-43,257,259-261
+  s_b2fc299f4eea16::t_419f9176b04a79 15
+  s_b2fc299f4eea16::t_7e9e12c0367dbf 11-12,87-88,90-92,96-100,102-107,109-113,115-118
+  s_b2fc299f4eea16::t_38da031f475ced 13-14,16,215-228,237
+  s_b2fc299f4eea16::t_b5c681adc0ed91 101
+  s_b2fc299f4eea16::t_439e8f1d2fd734 56,74
+  s_b2fc299f4eea16::t_500e467dde7d5a 89,108,114
+  s_b2fc299f4eea16::t_c69e59fdd21f63 95,152
+  s_b2fc299f4eea16::t_8d354793f85c7e 23,133
+packages/catalog/src/catalog/profile-layout.ts
+  s_b2fc299f4eea16::t_9cdaf3c019517e 42
+  s_b2fc299f4eea16::t_4bcdd7a83394b3 15,41,44-46,54
+  s_b2fc299f4eea16::t_499a9b578cca94 11,66-71
+  s_b2fc299f4eea16::t_892952c95f44a8 1-10,12,22-38,40,43,47-49,60,72
+  s_b2fc299f4eea16::t_90f79479818aba 13-14,16-21,39,50-53,55-59,61-65
+packages/chartcoach/src/chartcoach/catalog/introspection.py
+  s_b2fc299f4eea16::t_aa542bff75b0ad 21,36
+  s_b2fc299f4eea16::t_419f9176b04a79 15
+  s_b2fc299f4eea16::t_83b3bb45b45d4e 51
+apps/site/src/components/guideline-story/artifacts.tsx
+  s_b2fc299f4eea16::t_aa542bff75b0ad 39,48-49,67
+packages/catalog/src/catalog/read.ts
+  s_b2fc299f4eea16::t_068695a77044d6 34-37
+  s_b2fc299f4eea16::t_dd31b59464b1b9 20
+  s_b2fc299f4eea16::t_b4d35d70a7d09f 1-3,5-19,21-29,38-95
+  s_b2fc299f4eea16::t_41ad4c7909ab36 4
+  s_b2fc299f4eea16::t_d73e0062111968 30-33
+packages/chartcoach/tests/test_catalog_runtime.py
+  s_b2fc299f4eea16::t_2e6199f55795e3 226-237
+  s_b2fc299f4eea16::t_70f597c3e30761 19
+  s_b2fc299f4eea16::t_500e467dde7d5a 76,315
+  s_b2fc299f4eea16::t_70528cae5809d5 293-300,508,521-523
+  s_b2fc299f4eea16::t_521704aeb66ac5 343-344,349-350
+  s_b2fc299f4eea16::t_0b2c3cea4978c2 175-177
+  s_b2fc299f4eea16::t_f1f130d523f134 213,215,219-221,223
+  s_b2fc299f4eea16::t_feabfc71cbb005 52-53
+  s_b2fc299f4eea16::t_7806eca2604568 26,121-131,186,253,423-426,436,444,452
+  s_b2fc299f4eea16::t_c8433ee3d6c053 42,50,61,65-73
+  s_b2fc299f4eea16::t_dd31b59464b1b9 51,111,113,181
+  s_b2fc299f4eea16::t_969bc857d39711 77-99
+  s_b2fc299f4eea16::t_67fcb3aa03782a 304-314
+  s_b2fc299f4eea16::t_2da146c9486547 16,18,269-271,277-286,290,301,316-320
+  s_b2fc299f4eea16::t_c69e59fdd21f63 276
+  s_b2fc299f4eea16::t_cdd8453e3c4126 302-303
+  s_b2fc299f4eea16::t_fd48523397e80f 31,106,109-110,112,114-117,192,205,461
+  s_b2fc299f4eea16::t_0920dc756cdd01 407
+  s_b2fc299f4eea16::t_885c49a845c156 23,159-174,178-180,182-183
+packages/catalog/src/catalog/identity.ts
+  s_b2fc299f4eea16::t_9f3e15aa060f2d 1-4,8-20,22-24,26-62
+  s_b2fc299f4eea16::t_dd31b59464b1b9 5,25
+  s_b2fc299f4eea16::t_b4d35d70a7d09f 6-7,21
+packages/chartcoach/src/chartcoach/catalog/description.py
+  s_b2fc299f4eea16::t_f38bacaddb3126 1-2,4-8,11-13,16-18,20-25,27-41,43,45,48-51,53-55,57-66,68,71,74-91,95-116
+  s_b2fc299f4eea16::t_3e97e236e98d83 19,26
+  s_b2fc299f4eea16::t_1f002101fee00b 3,14,92-94
+  s_b2fc299f4eea16::t_dd31b59464b1b9 44,46-47,52,67,72
+  s_b2fc299f4eea16::t_70f597c3e30761 15
+  s_b2fc299f4eea16::t_9acba290aae66b 9-10,42,69-70,73
+  s_b2fc299f4eea16::t_362ac36b914027 56
+apps/site/src/components/guideline-story.tsx
+  s_b2fc299f4eea16::t_3994507d788da5 76
+apps/docs/content/docs/(guide)/getting-started.mdx
+  s_b2fc299f4eea16::t_416f0f2c7e6e56 8,51-52
+packages/chartcoach/src/chartcoach/__init__.py
+  s_b2fc299f4eea16::t_dd31b59464b1b9 15-16,35-36
+  s_b2fc299f4eea16::t_94ede837937316 17,37
+  s_b2fc299f4eea16::t_435381a625db7f 1
+  s_b2fc299f4eea16::t_49ea255cbe0170 10,13-14,18-21,30,33-34,38-41
+packages/catalog/src/catalog/model.ts
+  s_b2fc299f4eea16::t_835923d7314785 2,188
+  s_b2fc299f4eea16::t_85280e18fbdae0 3,5,17-18,20,24,26,34-37,39-40,42-43,55,63,65-66,131,166-167,170,173-184,190-192,194-201,209-211,214-215,217-218,220,222-226
+  s_b2fc299f4eea16::t_2d1ecf07bb2330 52-53,69-71,73-75,140-141,154-156
+  s_b2fc299f4eea16::t_4bcdd7a83394b3 44,72,76,136-137,139,143,149,152
+  s_b2fc299f4eea16::t_79527268e726d9 168-169,171-172,189,193,202-205,208,212-213,216,219,221,227-228
+  s_b2fc299f4eea16::t_dd31b59464b1b9 13-14,38,99,103,161
+  s_b2fc299f4eea16::t_3664a03501980e 6-12,15-16,41,45,91-92,94,100-102,104-110,123-128,138,144-148,150-151,153,157-160,162-165
+  s_b2fc299f4eea16::t_066c5bfa225a35 59,90,93
+  s_b2fc299f4eea16::t_3cd0c952fd8314 68
+  s_b2fc299f4eea16::t_892952c95f44a8 142
+packages/catalog/README.md
+  s_b2fc299f4eea16::t_23325a6d78c38a 53-54,147
+  s_b2fc299f4eea16::t_cdaf0199c39b86 9-10,33-35,43,45,60,64,66,72-77,82,86,94-95,124,129-131,137-139,143,148-153
+  s_b2fc299f4eea16::t_03ba199b767719 85
+  s_b2fc299f4eea16::t_d73e0062111968 99-100,102-106
+  s_b2fc299f4eea16::t_b2ff3413e1748c 101
+  s_b2fc299f4eea16::t_86e3d073c6c11e 133-136
+  s_b2fc299f4eea16::t_63958d2d09eba8 30,142
+  s_b2fc299f4eea16::t_26159452826ccc 55,127
+  s_b2fc299f4eea16::t_d7b54a3c2e8808 145-146
+  s_b2fc299f4eea16::t_fe0086c6c02304 78-81,83-84,87-93
+  s_b2fc299f4eea16::t_c98cf3cc39ee79 4-5,12,24-28,107-123,125-126,128,132,140-141,144
+  s_b2fc299f4eea16::t_ec2cad5b34ee3f 56
+skills/visrec/SKILL.md
+  s_b2fc299f4eea16::t_46af079e289ecb 52,65
+  s_b2fc299f4eea16::t_6f92fad4d40316 53
+development_docs/architecture/runtime-and-curation.md
+  s_b2fc299f4eea16::t_171ffa7816f795 117,121
+  s_b2fc299f4eea16::t_b2ff3413e1748c 156-160
+  s_b2fc299f4eea16::t_119b7cfbe50f48 42,44-46,126,161,166,170-171,173-175
+  s_b2fc299f4eea16::t_d7be3761ce1e2f 5,8-13,16-27,40,47-48,50-56,68-78,81-86,89-90,92-93,96-97,99-102,109-110,113-116,127-128,136-137,145-147,154,167-169,176-178
+  s_b2fc299f4eea16::t_0532f6e7066b95 95
+  s_b2fc299f4eea16::t_f5477cb1018f27 37
+  s_b2fc299f4eea16::t_d212a3d02ac804 39,57-67
+  s_b2fc299f4eea16::t_b8450d4eb3b67c 119-120
+  s_b2fc299f4eea16::t_c5a57e74dd3709 138
+  s_b2fc299f4eea16::t_362ac36b914027 150-153
+  s_b2fc299f4eea16::t_c45e74241005aa 3-4,14-15,31,34,38,41,43,49,79,91,94,98,103-108,111-112,118,122-125,132,155,162-165,172
+  s_b2fc299f4eea16::t_03ba199b767719 36
+  s_b2fc299f4eea16::t_3578afa896efd1 28-29,32-33,35,129-131,133-135
+  s_b2fc299f4eea16::t_6cf8a5886221f9 30,179-185
+packages/chartcoach/tests/test_mcp_server.py
+  s_b2fc299f4eea16::t_70f597c3e30761 12
+  s_b2fc299f4eea16::t_004e14a95d0243 40,80,88-89,105,115,132
+  s_b2fc299f4eea16::t_8d4ba6fc32d28d 66
+  s_b2fc299f4eea16::t_40feaeadf80680 92-99
+  s_b2fc299f4eea16::t_d12bf531269a32 10-11,15,18,21,25-26,28-33,35-37,39,41-42,44-45,47-53,57-65,67-70,75-76,78,81-84,86-87,90-91,100-101,103,106-109,114,116-119,125-126,128-131,133-134,136
+  s_b2fc299f4eea16::t_ee15b45b4da46d 121-122,124
+  s_b2fc299f4eea16::t_c69e59fdd21f63 24
+  s_b2fc299f4eea16::t_fef103eb70371f 123
+  s_b2fc299f4eea16::t_1f002101fee00b 54-55
+  s_b2fc299f4eea16::t_e4b7b358d09a43 71-74,110-111
+  s_b2fc299f4eea16::t_066c5bfa225a35 120
+packages/chartcoach/src/chartcoach/catalog/releases/models.py
+  s_b2fc299f4eea16::t_9acba290aae66b 51
+packages/catalog/src/catalog/references.ts
+  s_b2fc299f4eea16::t_a6c279b74866f9 178,182
+  s_b2fc299f4eea16::t_e54f81126769c0 6
+  s_b2fc299f4eea16::t_b4d35d70a7d09f 2-3,5,7-91,93-97,102-104,106-144,151-162,164,166-167,169-174,176-177,183-186,191-192,194-205,207-281
+  s_b2fc299f4eea16::t_41ad4c7909ab36 92,145-150,187-190
+  s_b2fc299f4eea16::t_0f261ed311d8ba 4,105
+  s_b2fc299f4eea16::t_068695a77044d6 98-101
+  s_b2fc299f4eea16::t_30a33339a39769 1,165
+  s_b2fc299f4eea16::t_6d9ed102fb401b 163,175,179-181,193,206
+  s_b2fc299f4eea16::t_90f79479818aba 168
+apps/docs/content/docs/(guide)/curation.mdx
+  s_b2fc299f4eea16::t_83afa4f510978b 212
+  s_b2fc299f4eea16::t_3dec5d10990034 34,37,88,90,125-130,157-158,176,180-182,185,187-190,202,213-214
+  s_b2fc299f4eea16::t_07b0f9b2dffe59 159,171-175,177-179,184,186,192-201,203-211
+  s_b2fc299f4eea16::t_abda14ce52f15d 93,262
+  s_b2fc299f4eea16::t_09abe8cf7c0fb4 155,274,277
+  s_b2fc299f4eea16::t_f206dea85fc793 183
+  s_b2fc299f4eea16::t_8f3b368768f464 29,265,268-273,275-276,278-280
+  s_b2fc299f4eea16::t_7b7f1afcbfb22a 299-300
+  s_b2fc299f4eea16::t_0a4a048a986ecf 191
+packages/chartcoach/src/chartcoach/catalog/__init__.py
+  s_b2fc299f4eea16::t_49ea255cbe0170 1,6,8,15,18-19,23-26
+  s_b2fc299f4eea16::t_70f597c3e30761 4,10
+  s_b2fc299f4eea16::t_dd31b59464b1b9 5,20-21
+  s_b2fc299f4eea16::t_94ede837937316 9,22
+packages/chartcoach/tests/lancedb_embedding_fixture.py
+  s_b2fc299f4eea16::t_19e5b9f0ab7bc1 1-131
+apps/site/test/catalog-location.test.ts
+  s_b2fc299f4eea16::t_d5b7f84242e5d9 1-4,15,25,47,67,75,83-100,102-169,174,176-177,180-181,186,189,194-195,197-198,204-205,213-214,219-220
+  s_b2fc299f4eea16::t_d73e0062111968 69-71
+  s_b2fc299f4eea16::t_44040ffdf5eb54 12,68,78,81,172
+  s_b2fc299f4eea16::t_009efc4a3bfe3b 101
+packages/chartcoach/tests/test_cli_search.py
+  s_b2fc299f4eea16::t_80dc77cf3bd530 30,54,58,60
+  s_b2fc299f4eea16::t_e4b7b358d09a43 31
+  s_b2fc299f4eea16::t_0cbe345c0b20b0 55
+  s_b2fc299f4eea16::t_374ece5c66b34b 15,18,21,46,50
+  s_b2fc299f4eea16::t_c69e59fdd21f63 14
+  s_b2fc299f4eea16::t_b275b2f441ba21 36,43-44,48,53,56-57,59,61-62
+  s_b2fc299f4eea16::t_70f597c3e30761 9
+packages/chartcoach/tests/test_release_contract.py
+  s_b2fc299f4eea16::t_52e07d8be45058 20-23,52
+packages/chartcoach/tests/test_runtime_index.py
+  s_b2fc299f4eea16::t_70f597c3e30761 13
+  s_b2fc299f4eea16::t_6442a64dc125ce 81-82
+  s_b2fc299f4eea16::t_004e14a95d0243 14
+  s_b2fc299f4eea16::t_40feaeadf80680 62-65
+  s_b2fc299f4eea16::t_e925541bd8a2d6 3,10,21,26,30-31,33-34,41-44,47,52-54,56,58-60,68,73,76,78-80,85-86,89-91,94,102,105,109,111-137,208-209,211-214,221,223-232
+  s_b2fc299f4eea16::t_dd31b59464b1b9 199
+  s_b2fc299f4eea16::t_8e788496a4911a 210
+  s_b2fc299f4eea16::t_bdc0a3cd810955 83,233-238
+  s_b2fc299f4eea16::t_1ae00d5a62efd0 110
+  s_b2fc299f4eea16::t_acabab36691cab 140-157,159-160
+  s_b2fc299f4eea16::t_92e7e5948790f8 188
+  s_b2fc299f4eea16::t_e4b7b358d09a43 158
+  s_b2fc299f4eea16::t_c69e59fdd21f63 17
+  s_b2fc299f4eea16::t_cacc105341a608 7,138-139,161-187,189-198,200-207
+apps/site/test/generated-artifacts.test.ts
+  s_b2fc299f4eea16::t_dd31b59464b1b9 20
+packages/chartcoach/src/chartcoach/catalog/relations.py
+  s_b2fc299f4eea16::t_419f9176b04a79 19
+  s_b2fc299f4eea16::t_aa542bff75b0ad 44
+  s_b2fc299f4eea16::t_958c295b4c48d8 8,41-43,45
+  s_b2fc299f4eea16::t_04f2b0f55fcd76 46-69
+packages/catalog/test/catalog-manifest.test.ts
+  s_b2fc299f4eea16::t_46e932a77460f6 6,17,41
+apps/docs/content/docs/(reference)/python.mdx
+  s_b2fc299f4eea16::t_feedb4f71e9fa4 10-11
+  s_b2fc299f4eea16::t_6ecf263cab9239 23-41,63,66-69,72-75,79,82-86,88-90,104,118,120-121,123-132,134-136,142,144,146,150-151,153,156-158,161,170-179,182-183,191,193-197,200,202,208-217,224-231,233
+  s_b2fc299f4eea16::t_c3f981cb521470 180-181
+  s_b2fc299f4eea16::t_59b9ef2a0bf302 155,199
+  s_b2fc299f4eea16::t_362ac36b914027 101-102
+  s_b2fc299f4eea16::t_237e482bc1de71 3,7-9,22,45,51,54,56,59-60,77-78,80-81,87,93-96,98-100,106-107,111,114,152,159,184-185,187,189,192,203-206,221-223,232
+  s_b2fc299f4eea16::t_0e4a2c1cc88509 52-53,55,186
+  s_b2fc299f4eea16::t_eeaa7b9e7a2816 137
+  s_b2fc299f4eea16::t_3578afa896efd1 109-110,112-113,115-116
+  s_b2fc299f4eea16::t_09abe8cf7c0fb4 169
+  s_b2fc299f4eea16::t_7ced5df0e4160a 58,61
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "9ab48739f2c9731cbedc8e6ffcc4a406d3625e5a",
+  "prompts": {},
+  "sessions": {
+    "s_b2fc299f4eea16": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a07701-a536-7f73-bfd5-6731d2663cd9",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": null
+    }
+  }
+}
