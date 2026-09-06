@@ -21,7 +21,7 @@ const releaseFixtureRoot = path.join(__dirname, "..", "..", "..", "fixtures", "c
 const entriesParquetPath = path.join(releaseFixtureRoot, "entries.parquet");
 const manifestPath = path.join(releaseFixtureRoot, "MANIFEST.md");
 const invalidRowsPath = path.join(__dirname, "fixtures", "invalid-catalog-rows.json");
-const artifactBaseUrl = "https://artifacts.chartcoach.dev";
+const artifactBaseUrl = "https://files.peter.gy/catalog/chartcoach";
 const catalogUrl = `${artifactBaseUrl}/catalog.json`;
 
 type InvalidRowsFixture = {
@@ -257,7 +257,7 @@ function releaseResponses(
 }
 
 function releaseUrlFor(digest: string): string {
-  return `https://artifacts.chartcoach.dev/catalog/releases/${digest}/release.json`;
+  return `https://files.peter.gy/catalog/chartcoach/catalog/releases/${digest}/release.json`;
 }
 
 function responseBytes(bytes: Uint8Array): ArrayBuffer {

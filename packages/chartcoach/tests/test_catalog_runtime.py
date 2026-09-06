@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 import json
 import shutil
 from collections import Counter
@@ -63,6 +64,14 @@ def test_top_level_api_is_the_supported_catalog_contract() -> None:
         "open_catalog",
         "open_index",
     }
+    assert str(inspect.signature(chartcoach.open_catalog)) == (
+        "(source: 'str | PathLike[str] | None' = None, *, "
+        "storage_options: 'Mapping[str, object] | None' = None) -> 'Catalog'"
+    )
+    assert str(inspect.signature(chartcoach.open_index)) == (
+        "(source: 'str | PathLike[str] | None' = None, *, profile: 'str', "
+        "storage_options: 'Mapping[str, object] | None' = None) -> 'Table'"
+    )
 
 
 def test_digest_shaped_source_is_an_ordinary_local_path(
@@ -112,7 +121,7 @@ def test_http_catalog_and_release_descriptors_share_verified_artifacts(
     store = tmp_path / "store"
     _publish_local(release_root, release, store)
     monkeypatch.setattr(
-        "chartcoach.catalog.runtime._cache_root",
+        "chartcoach.catalog.runtime.cache._cache_root",
         lambda: tmp_path / "cache",
     )
 
@@ -141,7 +150,7 @@ def test_http_catalog_identifies_chartcoach_to_the_server(
     store = tmp_path / "store"
     _publish_local(release_root, release, store)
     monkeypatch.setattr(
-        "chartcoach.catalog.runtime._cache_root",
+        "chartcoach.catalog.runtime.cache._cache_root",
         lambda: tmp_path / "cache",
     )
 
@@ -166,7 +175,7 @@ def test_selected_descriptor_refreshes_while_artifact_cache_is_reused(
     _publish_local(first_root, first, store)
     _publish_local(second_root, second, store, select=False)
     monkeypatch.setattr(
-        "chartcoach.catalog.runtime._cache_root",
+        "chartcoach.catalog.runtime.cache._cache_root",
         lambda: tmp_path / "cache",
     )
 
@@ -198,7 +207,7 @@ def test_remote_artifact_integrity_is_checked_before_cache_commit(
     entries = store / "catalog" / "releases" / release.digest / "entries.parquet"
     entries.write_bytes(b"corrupt")
     cache = tmp_path / "cache"
-    monkeypatch.setattr("chartcoach.catalog.runtime._cache_root", lambda: cache)
+    monkeypatch.setattr("chartcoach.catalog.runtime.cache._cache_root", lambda: cache)
 
     with (
         _serve(store) as (base_url, _requests),
@@ -266,7 +275,7 @@ def test_cloud_transport_receives_a_copy_of_storage_options(
 
     monkeypatch.setattr("obstore.store.from_url", from_url)
     monkeypatch.setattr(
-        "chartcoach.catalog.runtime._cache_root",
+        "chartcoach.catalog.runtime.cache._cache_root",
         lambda: tmp_path / "cache",
     )
     storage_options: dict[str, object] = {

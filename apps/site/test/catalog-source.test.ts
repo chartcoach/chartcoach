@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test"
 import { parseCatalogRelease, type JsonValue } from "@chartcoach/catalog";
 
 const releaseFixtureRoot = new URL("../../../fixtures/catalog-release/", import.meta.url);
-const artifactBaseUrl = "https://artifacts.chartcoach.dev";
+const artifactBaseUrl = "https://files.peter.gy/catalog/chartcoach";
 
 describe("site catalog source loading", () => {
   beforeEach(() => {

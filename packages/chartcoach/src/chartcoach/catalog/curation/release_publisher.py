@@ -11,31 +11,14 @@ from obspec import Get, Put
 from obspec.exceptions import AlreadyExistsError, NotFoundError, map_exception
 from obstore.store import from_url
 
+from .._object_store import CATALOG_STORE_SCHEMES, copy_storage_options, obstore_uri
 from ..paths import paths
 from ..releases import CatalogRelease
 from ..releases.hashing import release_digest
 from ..releases.models import safe_sha256
-from ..runtime import _copy_storage_options, _obstore_uri
 from .validation import validate_release
 
 _MAX_JSON_BYTES = 1024 * 1024
-
-
-_DESTINATION_SCHEMES = frozenset(
-    {
-        "abfs",
-        "abfss",
-        "adl",
-        "az",
-        "azure",
-        "file",
-        "gcp",
-        "gcs",
-        "gs",
-        "s3",
-        "s3a",
-    }
-)
 
 
 class _ReleaseStore(Get, Put, Protocol):
@@ -129,14 +112,14 @@ def _open_store(
     storage_options: Mapping[str, object] | None,
 ) -> _ReleaseStore:
     scheme = urlsplit(destination).scheme.lower()
-    if scheme not in _DESTINATION_SCHEMES:
-        choices = ", ".join(sorted(f"{value}://" for value in _DESTINATION_SCHEMES))
+    if scheme not in CATALOG_STORE_SCHEMES:
+        choices = ", ".join(sorted(f"{value}://" for value in CATALOG_STORE_SCHEMES))
         raise ValueError(f"Catalog destination must use one of: {choices}.")
-    options = _copy_storage_options(storage_options)
+    options = copy_storage_options(storage_options)
     if scheme == "file":
         options.setdefault("mkdir", True)
     store_factory = cast(Any, from_url)
-    return cast(_ReleaseStore, store_factory(_obstore_uri(destination), **options))
+    return cast(_ReleaseStore, store_factory(obstore_uri(destination), **options))
 
 
 def _existing_release(source: Get, path: str) -> CatalogRelease | None:

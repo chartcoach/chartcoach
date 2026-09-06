@@ -94,7 +94,7 @@ Commands that read a catalog accept `--source`:
 chartcoach catalog overview --source ./authored-catalog
 chartcoach catalog overview --source ./dist/catalog
 chartcoach catalog overview \
-  --source https://artifacts.chartcoach.dev/catalog/releases/<digest>/release.json
+  --source https://files.peter.gy/catalog/chartcoach/catalog/releases/<digest>/release.json
 ```
 
 An authored folder contains `MANIFEST.md` and `entries/<id>/guideline.md`. A
