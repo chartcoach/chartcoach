@@ -7,9 +7,9 @@ Python workspaces with:
 make install
 ```
 
-The workspace selects Node through `.node-version` and Python through
-`.python-version`. The published Python package supports Python 3.11 through
-3.14.
+The workspace selects Node through `engines.node` in `package.json` and Python
+through `.python-version`. The published Python package supports Python 3.11
+through 3.14.
 
 ## Find the code to change
 
