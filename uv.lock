@@ -5,8 +5,8 @@ resolution-markers = [
     "python_full_version >= '3.14' and sys_platform == 'win32'",
     "python_full_version >= '3.14' and sys_platform != 'win32'",
     "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform == 'win32'",
-    "python_full_version < '3.12' and sys_platform == 'win32'",
     "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform != 'win32'",
+    "python_full_version < '3.12' and sys_platform == 'win32'",
     "python_full_version < '3.12' and sys_platform != 'win32'",
 ]
 
@@ -17,14 +17,6 @@ exclude-newer-span = "P2D"
 [manifest]
 members = [
     "chartcoach",
-]
-
-[manifest.dependency-groups]
-dev = [
-    { name = "pyrefly", specifier = ">=1" },
-    { name = "pytest", specifier = ">=9" },
-    { name = "ruff", specifier = ">=0.14" },
-    { name = "ty", specifier = ">=0.0.11" },
 ]
 
 [[package]]
@@ -182,7 +174,10 @@ mcp = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "pyrefly" },
     { name = "pytest" },
+    { name = "ruff" },
+    { name = "ty" },
 ]
 
 [package.metadata]
@@ -203,7 +198,12 @@ requires-dist = [
 provides-extras = ["index", "mcp"]
 
 [package.metadata.requires-dev]
-dev = [{ name = "pytest", specifier = ">=8.4.0" }]
+dev = [
+    { name = "pyrefly", specifier = ">=1" },
+    { name = "pytest", specifier = ">=9" },
+    { name = "ruff", specifier = ">=0.14" },
+    { name = "ty", specifier = ">=0.0.11" },
+]
 
 [[package]]
 name = "click"

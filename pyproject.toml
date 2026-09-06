@@ -6,14 +6,6 @@ members = [
 [tool.uv]
 exclude-newer = "2 days"
 
-[dependency-groups]
-dev = [
-    "pyrefly>=1",
-    "pytest>=9",
-    "ruff>=0.14",
-    "ty>=0.0.11",
-]
-
 [tool.ruff.lint]
 pydocstyle = { convention = "numpy" }
 ignore = []

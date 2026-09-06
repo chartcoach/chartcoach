@@ -44,20 +44,8 @@ jobs:
           echo "$PWD/node_modules/.bin" >> "$GITHUB_PATH"
           pnpm exec node --version
 
-      - name: Check JavaScript formatting
-        run: make js-format-check
-
-      - name: Lint JavaScript
-        run: make js-lint
-
-      - name: Typecheck JavaScript
-        run: make js-typecheck
-
-      - name: Test JavaScript
-        run: make js-test
-
-      - name: Build JavaScript
-        run: make js-build
+      - name: Check JavaScript workspace
+        run: pnpm ready
 
   python:
     name: Python package ${{ matrix.python-version }}

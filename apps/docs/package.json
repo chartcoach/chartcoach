@@ -1,39 +1,34 @@
 {
   "name": "@chartcoach/docs",
-  "version": "0.1.7",
+  "version": "0.2.0",
   "private": true,
   "license": "Apache-2.0",
   "type": "module",
   "scripts": {
-    "build": "pnpm --dir ../../packages/brand check:assets && next build",
+    "build": "next build",
     "dev": "portless",
     "dev:app": "next dev --hostname 127.0.0.1",
-    "format": "oxfmt .oxlintrc.json app components content/docs lib package.json source.config.ts next.config.mjs postcss.config.mjs tsconfig.json",
-    "format:check": "oxfmt .oxlintrc.json app components content/docs lib package.json source.config.ts next.config.mjs postcss.config.mjs tsconfig.json --check",
-    "lint": "oxlint .",
-    "start": "serve out",
     "typecheck": "fumadocs-mdx && next typegen && tsc --noEmit"
   },
   "dependencies": {
     "@chartcoach/brand": "workspace:*",
-    "fumadocs-core": "16.10.4",
+    "fumadocs-core": "16.10.5",
     "fumadocs-mdx": "15.0.12",
-    "fumadocs-ui": "16.10.4",
-    "lucide-react": "^1.21.0",
+    "fumadocs-ui": "16.10.5",
+    "lucide-react": "catalog:",
     "next": "16.2.9",
-    "react": "^19.2.7",
-    "react-dom": "^19.2.7"
+    "react": "catalog:",
+    "react-dom": "catalog:"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.3.1",
+    "@tailwindcss/postcss": "^4.3.2",
     "@types/mdx": "^2.0.14",
-    "@types/node": "^24.13.2",
-    "@types/react": "^19.2.17",
-    "@types/react-dom": "^19.2.3",
-    "postcss": "^8.5.15",
-    "serve": "^14.2.6",
-    "tailwindcss": "^4.3.1",
-    "typescript": "^5.9.3"
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "postcss": "^8.5.19",
+    "tailwindcss": "catalog:",
+    "typescript": "catalog:"
   },
   "portless": {
     "name": "docs.chartcoach",

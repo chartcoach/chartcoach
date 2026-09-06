@@ -5,12 +5,14 @@
   "license": "Apache-2.0",
   "type": "module",
   "scripts": {
+    "prebuild": "vp run @chartcoach/catalog#build",
     "build": "pnpm --dir ../../packages/brand check:assets && astro build",
     "dev": "portless",
     "dev:app": "astro dev --host 127.0.0.1 --port ${PORT:-4321}",
     "format": "oxfmt .",
     "format:check": "oxfmt . --check",
     "lint": "oxlint . && astro check",
+    "pretypecheck": "vp run @chartcoach/catalog#build",
     "typecheck": "astro check"
   },
   "dependencies": {

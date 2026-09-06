@@ -55,7 +55,7 @@ Repository = "https://github.com/chartcoach/chartcoach"
 Issues = "https://github.com/chartcoach/chartcoach/issues"
 
 [dependency-groups]
-dev = ["pytest>=8.4.0"]
+dev = ["pyrefly>=1", "pytest>=9", "ruff>=0.14", "ty>=0.0.11"]
 
 [tool.pytest.ini_options]
 markers = [

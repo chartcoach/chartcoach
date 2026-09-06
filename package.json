@@ -1,29 +1,19 @@
 {
   "name": "chartcoach",
-  "version": "0.1.7",
+  "version": "0.2.0",
   "private": true,
   "license": "Apache-2.0",
   "scripts": {
-    "build": "pnpm -r --if-present build",
+    "check": "vp check .github .vscode apps development_docs packages/brand packages/catalog AGENTS.md CONTRIBUTING.md README.md package.json pnpm-workspace.yaml vite.config.ts",
     "dev": "portless",
-    "format": "oxfmt package.json pnpm-workspace.yaml .github/workflows/ci.yml .github/workflows/publish.yml && pnpm -r --if-present format",
-    "format:check": "oxfmt --check package.json pnpm-workspace.yaml .github/workflows/ci.yml .github/workflows/publish.yml && pnpm -r --if-present format:check",
-    "lint": "pnpm -r --if-present lint",
-    "test": "pnpm -r --if-present test",
-    "typecheck": "pnpm -r --if-present typecheck"
+    "ready": "vp run check && vp run --filter '@chartcoach/*' typecheck && vp run --filter '@chartcoach/*' test && vp run --filter '@chartcoach/*' build"
   },
   "devDependencies": {
-    "oxfmt": "^0.26.0",
-    "oxlint": "^1.71.0",
     "portless": "^0.14.0",
-    "typescript": "^5.9.3"
+    "vite-plus": "catalog:"
   },
-  "devEngines": {
-    "runtime": {
-      "name": "node",
-      "version": "26.3.1",
-      "onFail": "download"
-    }
+  "engines": {
+    "node": ">=22.18.0"
   },
-  "packageManager": "pnpm@11.8.0+sha512.c1f5e7c4cb241c8f174b743851d82f42b802324afc8b0f116b96adb15aa06664948dde36960a3ba1079ba5b4b29dd0140135b94b5b5f5263592249d68e555f26"
+  "packageManager": "pnpm@11.13.1+sha512.b2fc7683b8a6525414e7d13e1ba28caaddde96bf66ec540bfaeb7e702b81f3e0be4d1f295edf7f9fe0396740a8dce4509c582ddf79891f4543fea32d37645f25"
 }
