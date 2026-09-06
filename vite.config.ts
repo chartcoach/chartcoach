@@ -36,7 +36,7 @@ export default defineConfig({
           "no-restricted-imports": [
             "error",
             {
-              patterns: ["node:*", "@chartcoach/*"],
+              patterns: ["node:*", "@chartcoach/*", "../**/apps/**", "../**/brand/**"],
             },
           ],
         },
@@ -48,10 +48,11 @@ export default defineConfig({
             "error",
             {
               patterns: [
-                "@chartcoach/catalog",
                 "@chartcoach/catalog/*",
                 "@chartcoach/site",
                 "@chartcoach/site/*",
+                "../**/packages/**",
+                "../**/site/**",
               ],
             },
           ],
@@ -63,7 +64,13 @@ export default defineConfig({
           "no-restricted-imports": [
             "error",
             {
-              patterns: ["@chartcoach/docs", "@chartcoach/docs/*"],
+              patterns: [
+                "@chartcoach/catalog/*",
+                "@chartcoach/docs",
+                "@chartcoach/docs/*",
+                "../**/packages/**",
+                "../**/docs/**",
+              ],
             },
           ],
         },
