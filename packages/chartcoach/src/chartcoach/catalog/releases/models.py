@@ -5,7 +5,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import PurePosixPath
 from types import MappingProxyType
-from typing import Self, cast
+from typing import cast
 
 SCHEMA_VERSION = 1
 REQUIRED_ARTIFACT_PATHS = ("MANIFEST.md", "entries.parquet")
@@ -30,7 +30,7 @@ class ReleaseArtifact:
         )
 
     @classmethod
-    def from_mapping(cls, value: object) -> Self:
+    def from_mapping(cls, value: object) -> ReleaseArtifact:
         raw = _mapping(value, label="Catalog release artifact")
         _require_exact_keys(
             raw,
@@ -78,7 +78,7 @@ class CatalogRelease:
         object.__setattr__(self, "artifacts", MappingProxyType(artifacts))
 
     @classmethod
-    def from_mapping(cls, value: object) -> Self:
+    def from_mapping(cls, value: object) -> CatalogRelease:
         raw = _mapping(value, label="Catalog release")
         _require_exact_keys(
             raw,

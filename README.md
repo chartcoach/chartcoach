@@ -9,7 +9,7 @@ guidelines and inspect the sources behind each recommendation. The Guideline
 Catalog keeps a guideline's advice, limits, checks, fixes, and references in
 one record.
 
-chartcoach is alpha software. The Python package supports Python 3.11 through
+chartcoach is alpha software. The Python package supports Python 3.10 through
 3.14. Browse the catalog at
 [chartcoach.dev](https://chartcoach.dev/guidelines/).
 
