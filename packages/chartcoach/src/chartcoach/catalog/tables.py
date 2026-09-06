@@ -8,8 +8,8 @@ import polars as pl
 from .labels import parse_label
 from .schemas import (
     CATALOG_SCHEMA,
-    GUIDELINES_SCHEMA,
     GUIDELINE_LABELS_SCHEMA,
+    GUIDELINES_SCHEMA,
     SECTIONS_SCHEMA,
 )
 
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from .entries import Guideline
 
 
-def build_catalog_df(guidelines: Sequence["Guideline"]) -> pl.DataFrame:
+def build_catalog_df(guidelines: Sequence[Guideline]) -> pl.DataFrame:
     """Build the serialized catalog dataframe."""
     if not guidelines:
         return pl.DataFrame(schema=CATALOG_SCHEMA)

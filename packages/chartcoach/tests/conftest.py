@@ -2,15 +2,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from click.testing import CliRunner
 import pytest
-
+from catalog_testkit import write_catalog_entry, write_manifest
 from chartcoach.catalog.collection import Catalog
 from chartcoach.catalog.entries import Guideline, Section
 from chartcoach.catalog.manifest import CatalogManifest
-
-from catalog_testkit import write_catalog_entry, write_manifest
-
+from click.testing import CliRunner
 
 SAMPLE_MANIFEST_MARKDOWN = """# Sample Catalog
 

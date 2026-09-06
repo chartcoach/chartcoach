@@ -87,11 +87,15 @@ from lancedb.embeddings import get_registry
 from chartcoach import open_catalog
 from chartcoach.catalog.curation import EmbeddingProfile, build_release
 
-embedding = get_registry().get("sentence-transformers").create(
-    name="all-MiniLM-L6-v2",
-    device="cpu",
-    normalize=True,
-    trust_remote_code=False,
+embedding = (
+    get_registry()
+    .get("sentence-transformers")
+    .create(
+        name="all-MiniLM-L6-v2",
+        device="cpu",
+        normalize=True,
+        trust_remote_code=False,
+    )
 )
 
 release = build_release(

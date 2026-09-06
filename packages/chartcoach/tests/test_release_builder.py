@@ -7,7 +7,7 @@ import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
-
+from catalog_testkit import deterministic_embedding
 from chartcoach.catalog.collection import Catalog
 from chartcoach.catalog.curation import (
     EmbeddingProfile,
@@ -18,8 +18,6 @@ from chartcoach.catalog.curation.projection import project_vectors
 from chartcoach.catalog.releases.archive import extract_tar_archive
 from chartcoach.catalog.releases.hashing import release_digest
 from chartcoach.constants import LANCE_DOCUMENT_TABLE
-from catalog_testkit import deterministic_embedding
-
 
 pytestmark = pytest.mark.curation
 _PROFILE = "test/deterministic"
@@ -94,3 +92,24 @@ def test_projection_is_deterministic_for_small_catalogs() -> None:
     assert np.array_equal(first.coordinates, second.coordinates)
     assert np.array_equal(first.neighbor_ids, second.neighbor_ids)
     assert np.isfinite(first.neighbor_distances).all()
+
+
+@pytest.mark.parametrize(
+    ("option", "value", "message"),
+    [
+        ("n_neighbors", True, "n_neighbors must be an integer"),
+        ("n_neighbors", 2.5, "n_neighbors must be an integer"),
+        ("random_state", True, "random_state must be an integer"),
+        ("random_state", 2.5, "random_state must be an integer"),
+        ("metric", 42, "metric must be a string"),
+    ],
+)
+def test_projection_rejects_invalid_umap_option_types(
+    option: str,
+    value: object,
+    message: str,
+) -> None:
+    vectors = np.asarray([[1.0, 0.0], [0.0, 1.0]], dtype=np.float32)
+
+    with pytest.raises(TypeError, match=message):
+        project_vectors(vectors, umap={option: value})

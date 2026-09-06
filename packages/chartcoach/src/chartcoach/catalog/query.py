@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 
 def query_entries(
-    catalog: "Catalog",
+    catalog: Catalog,
     *,
     ids: Sequence[str] = (),
     labels: Sequence[str] = (),
@@ -58,7 +58,7 @@ def query_entries(
 
 
 def validate_filters(
-    catalog: "Catalog",
+    catalog: Catalog,
     *,
     labels: Sequence[str] = (),
     label_prefixes: Sequence[str] = (),
@@ -67,7 +67,7 @@ def validate_filters(
     validate_label_prefixes(catalog, label_prefixes)
 
 
-def validate_ids(catalog: "Catalog", ids: Sequence[str]) -> None:
+def validate_ids(catalog: Catalog, ids: Sequence[str]) -> None:
     if not ids:
         return
     available = set(catalog.guidelines().get_column("id").to_list())
@@ -76,7 +76,7 @@ def validate_ids(catalog: "Catalog", ids: Sequence[str]) -> None:
             raise unknown_id_error(catalog, guideline_id)
 
 
-def validate_labels(catalog: "Catalog", labels: Sequence[str]) -> None:
+def validate_labels(catalog: Catalog, labels: Sequence[str]) -> None:
     if not labels:
         return
     available = distinct_strings(catalog, table="guideline_labels", column="label")
@@ -85,7 +85,7 @@ def validate_labels(catalog: "Catalog", labels: Sequence[str]) -> None:
         raise unknown_label_error(catalog, missing)
 
 
-def validate_label_prefixes(catalog: "Catalog", prefixes: Sequence[str]) -> None:
+def validate_label_prefixes(catalog: Catalog, prefixes: Sequence[str]) -> None:
     if not prefixes:
         return
     available = distinct_strings(catalog, table="guideline_labels", column="label")
@@ -104,7 +104,7 @@ def validate_label_prefixes(catalog: "Catalog", prefixes: Sequence[str]) -> None
         )
 
 
-def validate_section_roles(catalog: "Catalog", roles: Sequence[str]) -> None:
+def validate_section_roles(catalog: Catalog, roles: Sequence[str]) -> None:
     if not roles:
         return
     available = set(catalog.manifest.section_roles)
@@ -119,7 +119,7 @@ def validate_section_roles(catalog: "Catalog", roles: Sequence[str]) -> None:
         )
 
 
-def distinct_strings(catalog: "Catalog", *, table: str, column: str) -> set[str]:
+def distinct_strings(catalog: Catalog, *, table: str, column: str) -> set[str]:
     frame = catalog.table(table)
     value_expr = pl.col(column)
     if frame.schema[column].base_type() == pl.List:
@@ -134,7 +134,7 @@ def distinct_strings(catalog: "Catalog", *, table: str, column: str) -> set[str]
     return {value for value in values if isinstance(value, str)}
 
 
-def unknown_id_error(catalog: "Catalog", guideline_id: str) -> CatalogLookupError:
+def unknown_id_error(catalog: Catalog, guideline_id: str) -> CatalogLookupError:
     suggestions = nearest_values(
         guideline_id,
         [str(value) for value in catalog.guidelines().get_column("id").to_list()],
@@ -151,9 +151,7 @@ def unknown_id_error(catalog: "Catalog", guideline_id: str) -> CatalogLookupErro
     return CatalogLookupError(f"Unknown entry id: {guideline_id}", hints=hints)
 
 
-def unknown_label_error(
-    catalog: "Catalog", labels: Sequence[str]
-) -> CatalogLookupError:
+def unknown_label_error(catalog: Catalog, labels: Sequence[str]) -> CatalogLookupError:
     available = sorted(
         distinct_strings(catalog, table="guideline_labels", column="label")
     )
@@ -174,7 +172,7 @@ def unknown_label_error(
     return CatalogLookupError(f"Unknown label(s): {', '.join(labels)}", hints=hints)
 
 
-def unknown_label_family_error(catalog: "Catalog", family: str) -> CatalogLookupError:
+def unknown_label_family_error(catalog: Catalog, family: str) -> CatalogLookupError:
     available = sorted(
         distinct_strings(catalog, table="guideline_labels", column="family")
     )

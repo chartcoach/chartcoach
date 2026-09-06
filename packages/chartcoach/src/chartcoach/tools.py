@@ -1,15 +1,16 @@
 from __future__ import annotations
 
+import math
 from collections.abc import Mapping, Sequence
 from datetime import date, datetime, time
 from decimal import Decimal
-import math
 from os import PathLike, fspath
 from typing import TYPE_CHECKING, Any, Literal, cast
 
 if TYPE_CHECKING:
-    from .catalog.collection import Catalog
     from lancedb import Table
+
+    from .catalog.collection import Catalog
 
 _SEARCH_HINTS = (
     "Pass a release source and embedding profile to `chartcoach catalog find`.",
@@ -36,7 +37,7 @@ class Tools:
         self,
         catalog: Catalog,
         *,
-        table: "Table | None" = None,
+        table: Table | None = None,
         source: str | PathLike[str] | None = None,
         profile: str | None = None,
     ) -> None:
@@ -139,7 +140,7 @@ class Tools:
             ),
         }
 
-    def _require_table(self) -> "Table":
+    def _require_table(self) -> Table:
         if self._table is None:
             raise ToolError(
                 "LanceDB table is required.",
@@ -149,8 +150,8 @@ class Tools:
 
 
 def _search_guidelines(
-    catalog: "Catalog",
-    table: "Table",
+    catalog: Catalog,
+    table: Table,
     search_query: str,
     *,
     vector: Sequence[float] | None,

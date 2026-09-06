@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping
 import dataclasses as dc
+import re
+from collections.abc import Iterable, Mapping
 from os import PathLike
 from pathlib import Path
-import re
 from typing import TYPE_CHECKING
 
 from .entries import Section
@@ -42,13 +42,13 @@ class CatalogManifest:
     label_families: Mapping[str, ManifestDefinition]
 
     @classmethod
-    def from_text(cls, markdown: str) -> "CatalogManifest":
+    def from_text(cls, markdown: str) -> CatalogManifest:
         """Parse a `MANIFEST.md` string."""
 
         return parse_catalog_manifest(markdown)
 
     @classmethod
-    def from_path(cls, path: str | PathLike[str]) -> "CatalogManifest":
+    def from_path(cls, path: str | PathLike[str]) -> CatalogManifest:
         """Read and parse `MANIFEST.md`."""
 
         return parse_catalog_manifest(Path(path).read_text(encoding="utf-8"))
@@ -152,7 +152,7 @@ def parse_catalog_manifest(markdown: str) -> CatalogManifest:
     )
 
 
-def validate_catalog_manifest(catalog: "Catalog", manifest: CatalogManifest) -> None:
+def validate_catalog_manifest(catalog: Catalog, manifest: CatalogManifest) -> None:
     """Validate catalog section roles and label families against a manifest."""
 
     errors: list[str] = []
@@ -173,7 +173,7 @@ def validate_catalog_manifest(catalog: "Catalog", manifest: CatalogManifest) -> 
         )
 
 
-def _catalog_section_roles(catalog: "Catalog") -> Iterable[str]:
+def _catalog_section_roles(catalog: Catalog) -> Iterable[str]:
     for role in catalog.sections().get_column("role").to_list():
         if not isinstance(role, str):
             raise CatalogManifestError("Section role values must be strings.")
@@ -185,7 +185,7 @@ def _catalog_section_roles(catalog: "Catalog") -> Iterable[str]:
         yield trimmed
 
 
-def _catalog_label_families(catalog: "Catalog") -> Iterable[str]:
+def _catalog_label_families(catalog: Catalog) -> Iterable[str]:
     for label in catalog.guideline_labels().get_column("label").to_list():
         yield parse_label(label, context=f"label {label!r}").family
 
@@ -217,10 +217,10 @@ def _validate_label_family_examples(definitions: Iterable[ManifestDefinition]) -
 
 
 __all__ = [
+    "REQUIRED_MANIFEST_HEADINGS",
     "CatalogManifest",
     "CatalogManifestError",
     "ManifestDefinition",
-    "REQUIRED_MANIFEST_HEADINGS",
     "parse_catalog_manifest",
     "validate_catalog_manifest",
 ]

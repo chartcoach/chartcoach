@@ -4,14 +4,12 @@ from pathlib import Path
 
 import polars as pl
 import pytest
-
+from catalog_testkit import write_catalog_entry, write_manifest
 from chartcoach import CatalogError, open_catalog
 from chartcoach.catalog.collection import Catalog
 from chartcoach.catalog.entries import Guideline, Section
 from chartcoach.catalog.errors import CatalogValidationError
 from chartcoach.catalog.manifest import CatalogManifest, CatalogManifestError
-
-from catalog_testkit import write_catalog_entry, write_manifest
 
 
 def test_authored_folder_compiles_catalog_rows_and_relations(tmp_path: Path) -> None:

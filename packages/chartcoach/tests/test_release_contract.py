@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import pytest
-
 from chartcoach.catalog.releases import CatalogRelease, ReleaseArtifact
 from chartcoach.catalog.releases.hashing import release_digest
 

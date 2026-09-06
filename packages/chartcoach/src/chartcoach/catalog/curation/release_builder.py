@@ -1,12 +1,11 @@
 from __future__ import annotations
 
+import json
+import shutil
 from collections.abc import Mapping
 from dataclasses import dataclass, field
-import json
 from os import PathLike
-from pathlib import Path
-from pathlib import PurePosixPath
-import shutil
+from pathlib import Path, PurePosixPath
 from types import MappingProxyType
 from typing import TYPE_CHECKING
 
@@ -23,7 +22,7 @@ if TYPE_CHECKING:
 class EmbeddingProfile:
     """A LanceDB embedding function and its UMAP projection options."""
 
-    embedding: "EmbeddingFunction"
+    embedding: EmbeddingFunction
     umap: Mapping[str, object] = field(default_factory=dict)
 
     def __post_init__(self) -> None:

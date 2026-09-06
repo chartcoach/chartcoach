@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping
-from dataclasses import dataclass
 import hashlib
 import json
 import os
+import shutil
+from collections.abc import Iterable, Mapping
+from dataclasses import dataclass
 from os import PathLike
 from pathlib import Path, PurePosixPath
-import shutil
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, Any, Literal, cast
 from urllib.parse import unquote, urlsplit, urlunsplit
@@ -79,14 +79,14 @@ class _ReleaseLocation:
         if self.transport == "local":
             base = self.artifact_base
             if not isinstance(base, Path):
-                raise AssertionError("Local release base must be a path.")
+                raise TypeError("Local release base must be a path.")
             local_path = base.joinpath(*PurePosixPath(path).parts)
             _verify_local_artifact(base, local_path, path, artifact)
             return local_path
 
         base = self.artifact_base
         if not isinstance(base, str):
-            raise AssertionError("Remote release base must be a URI.")
+            raise TypeError("Remote release base must be a URI.")
         uri = _join_uri_path(base, path)
         return _cache_remote_artifact(
             uri,
@@ -101,7 +101,7 @@ def open_catalog(
     source: str | PathLike[str] | None = None,
     *,
     storage_options: Mapping[str, object] | None = None,
-) -> "Catalog":
+) -> Catalog:
     """Open an authored catalog, bundle, or release descriptor."""
 
     options = _copy_storage_options(storage_options)
@@ -126,17 +126,20 @@ def open_index(
     *,
     profile: str,
     storage_options: Mapping[str, object] | None = None,
-) -> "Table":
+) -> Table:
     """Open one release-backed native LanceDB profile."""
 
     options = _copy_storage_options(storage_options)
     normalized = _normalize_source(source)
-    if isinstance(normalized, _LocalSource) and normalized.path.is_dir():
-        if not (normalized.path / "release.json").is_file():
-            raise CatalogError(
-                "Index sources must be a release directory, catalog.json, or "
-                "release.json path or URI."
-            )
+    if (
+        isinstance(normalized, _LocalSource)
+        and normalized.path.is_dir()
+        and not (normalized.path / "release.json").is_file()
+    ):
+        raise CatalogError(
+            "Index sources must be a release directory, catalog.json, or "
+            "release.json path or URI."
+        )
     location = _release_location(normalized, options)
     profile = safe_relative_path(profile, label="Embedding profile")
     artifact_path = f"profiles/{profile}/index.tar.gz"
@@ -162,7 +165,7 @@ def open_index(
     return lancedb.connect(index_path).open_table(LANCE_DOCUMENT_TABLE)
 
 
-def _open_local_directory(path: Path) -> "Catalog | None":
+def _open_local_directory(path: Path) -> Catalog | None:
     release_path = path / "release.json"
     if release_path.is_file():
         return None

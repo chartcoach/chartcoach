@@ -5,12 +5,10 @@ from typing import cast
 
 import polars as pl
 import pytest
-
+from catalog_testkit import deterministic_embedding
 from chartcoach.catalog import CatalogManifest
 from chartcoach.catalog.collection import Catalog
 from chartcoach.catalog.entries import Guideline, Section
-from catalog_testkit import deterministic_embedding
-
 
 pytestmark = pytest.mark.search
 _EMBEDDING = "chartcoach-search-test"

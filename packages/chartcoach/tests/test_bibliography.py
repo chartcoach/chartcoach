@@ -1,12 +1,10 @@
 from __future__ import annotations
 
 import pytest
-
 from chartcoach.catalog.references import (
     parse_bibtex,
     parse_bibtex_reference,
 )
-
 
 BIBTEX = """% generated note
 @article{smith2024,

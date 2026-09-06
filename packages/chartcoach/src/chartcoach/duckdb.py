@@ -53,9 +53,8 @@ def write_duckdb(
     """Write catalog tables into a DuckDB database file."""
 
     path = Path(output_path)
-    if path.exists():
-        if not overwrite:
-            raise FileExistsError(f"{path} already exists. Pass overwrite=True.")
+    if path.exists() and not overwrite:
+        raise FileExistsError(f"{path} already exists. Pass overwrite=True.")
     path.parent.mkdir(parents=True, exist_ok=True)
 
     fd, raw_temp_path = tempfile.mkstemp(

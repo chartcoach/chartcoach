@@ -3,15 +3,13 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from click.testing import CliRunner
 import pytest
-
 from chartcoach.catalog.collection import Catalog
 from chartcoach.catalog.curation import build_release
 from chartcoach.catalog.paths import paths
 from chartcoach.catalog.releases import CatalogRelease
 from chartcoach.cli.main import main
-
+from click.testing import CliRunner
 
 pytestmark = pytest.mark.curation
 

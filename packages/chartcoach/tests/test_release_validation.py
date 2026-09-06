@@ -6,7 +6,7 @@ from pathlib import Path
 import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
-
+from catalog_testkit import deterministic_embedding
 from chartcoach.catalog.collection import Catalog
 from chartcoach.catalog.curation import (
     EmbeddingProfile,
@@ -16,8 +16,6 @@ from chartcoach.catalog.curation import (
 from chartcoach.catalog.releases import CatalogRelease, ReleaseArtifact
 from chartcoach.catalog.releases.hashing import release_digest, sha256_file
 from chartcoach.catalog.releases.services import validate_runtime_release
-from catalog_testkit import deterministic_embedding
-
 
 pytestmark = pytest.mark.curation
 _PROFILE = "test/deterministic"

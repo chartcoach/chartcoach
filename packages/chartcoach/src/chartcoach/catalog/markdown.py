@@ -69,7 +69,7 @@ def parse_markdown_with_frontmatter(markdown: str) -> tuple[dict[str, object], s
 
     frontmatter = yaml.safe_load(parts[1].strip()) or {}
     if not isinstance(frontmatter, Mapping):
-        raise ValueError("Guideline frontmatter must be a mapping.")
+        raise TypeError("Guideline frontmatter must be a mapping.")
     return dict(frontmatter), parts[2].strip()
 
 

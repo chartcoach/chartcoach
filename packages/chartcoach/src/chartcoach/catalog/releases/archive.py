@@ -1,13 +1,12 @@
 from __future__ import annotations
 
+import shutil
+import tarfile
 from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path, PurePosixPath
-import shutil
-import tarfile
 
 from .models import safe_relative_path
-
 
 _MAX_ARCHIVE_MEMBERS = 100_000
 _MAX_ARCHIVE_MEMBER_BYTES = 2 * 1024**3

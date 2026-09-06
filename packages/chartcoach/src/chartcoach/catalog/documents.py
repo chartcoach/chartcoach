@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
 import hashlib
+from collections.abc import Mapping, Sequence
 from typing import TYPE_CHECKING
 
 import polars as pl
@@ -43,7 +43,7 @@ def build_document_rows(
     )
 
 
-def document_rows(catalog: "Catalog") -> pl.DataFrame:
+def document_rows(catalog: Catalog) -> pl.DataFrame:
     """Return the flat document rows for one catalog."""
 
     return build_document_rows(catalog.guidelines(), catalog.references())

@@ -4,9 +4,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from obstore.store import LocalStore, MemoryStore
 import pytest
-
 from chartcoach.catalog.collection import Catalog
 from chartcoach.catalog.curation import (
     build_release,
@@ -19,7 +17,7 @@ from chartcoach.catalog.curation.release_publisher import (
 )
 from chartcoach.catalog.paths import paths
 from chartcoach.catalog.releases import CatalogRelease
-
+from obstore.store import LocalStore, MemoryStore
 
 pytestmark = pytest.mark.curation
 

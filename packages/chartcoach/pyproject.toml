@@ -34,7 +34,7 @@ dependencies = [
 [project.optional-dependencies]
 index = ["lancedb>=0.34"]
 cloud = ["obstore>=0.11.0"]
-mcp = ["mcp[cli]>=1.9,<1.29", "pydantic-settings<2.15"]
+mcp = ["mcp[cli]>=2.0"]
 curation = [
   "lancedb>=0.34",
   "obspec>=0.1.0",
@@ -51,7 +51,7 @@ Repository = "https://github.com/chartcoach/chartcoach"
 Issues = "https://github.com/chartcoach/chartcoach/issues"
 
 [dependency-groups]
-dev = ["pytest>=9", "ruff>=0.14,<0.16", "ty>=0.0.11,<0.0.60"]
+dev = ["pytest>=9", "ruff>=0.16", "ty>=0.0.11"]
 
 [tool.pytest.ini_options]
 filterwarnings = ["error"]
@@ -65,5 +65,5 @@ markers = [
 data = { data = "data" }
 
 [build-system]
-requires = ["uv_build>=0.10.11,<0.12.0"]
+requires = ["uv_build>=0.12.0,<0.13"]
 build-backend = "uv_build"

@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-from pathlib import Path
 import json
+from pathlib import Path
 
-from click.testing import CliRunner
 import pytest
-
 from chartcoach.cli.main import main as chartcoach_cli
+from click.testing import CliRunner
 
 
 @pytest.fixture

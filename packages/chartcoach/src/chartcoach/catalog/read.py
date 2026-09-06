@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 
 def retrieve_entry_records(
-    catalog: "Catalog",
+    catalog: Catalog,
     *,
     ids: Sequence[str],
     roles: Sequence[str] = (),
@@ -63,7 +63,7 @@ def entry_record_from_row(
 
 
 def source_rows(
-    catalog: "Catalog", guideline_id: str, *, detail: str
+    catalog: Catalog, guideline_id: str, *, detail: str
 ) -> list[dict[str, object]]:
     if detail == "none":
         return []

@@ -4,12 +4,11 @@ from pathlib import Path
 from typing import cast
 
 import pytest
-
+from catalog_testkit import deterministic_embedding
 from chartcoach.catalog.collection import Catalog
 from chartcoach.catalog.releases import CatalogRelease, ReleaseArtifact
 from chartcoach.catalog.releases.hashing import release_digest
 from chartcoach.tools import ToolError, Tools
-from catalog_testkit import deterministic_embedding
 
 
 def test_tools_sql_returns_bounded_rows(sample_catalog: Catalog) -> None:
