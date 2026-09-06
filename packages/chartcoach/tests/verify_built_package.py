@@ -96,7 +96,6 @@ def _verify_installed_wheel() -> None:
                 uv,
                 "pip",
                 "install",
-                "--offline",
                 "--python",
                 str(python),
                 str(_WHEEL),
