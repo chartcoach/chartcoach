@@ -14,24 +14,11 @@ EOF
 }
 
 python_package_version() {
-  uv run --package chartcoach python - <<'PY'
-import tomllib
-from pathlib import Path
-
-with Path("packages/catalog-python/pyproject.toml").open("rb") as stream:
-    print(tomllib.load(stream)["project"]["version"])
-PY
+  uv version --short --package chartcoach
 }
 
 npm_package_version() {
-  node - <<'JS'
-const { readFileSync } = require("node:fs");
-
-const manifest = JSON.parse(
-  readFileSync("packages/catalog-javascript/package.json", "utf8"),
-);
-console.log(manifest.version);
-JS
+  node -p "require('./packages/catalog/package.json').version"
 }
 
 check_version() {

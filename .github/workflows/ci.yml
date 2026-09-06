@@ -18,34 +18,43 @@ jobs:
     name: JavaScript workspace
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    env:
+      CHECK_PATHS: >-
+        .github .vscode apps development_docs packages/brand packages/catalog
+        AGENTS.md CONTRIBUTING.md README.md package.json pnpm-workspace.yaml vite.config.ts
 
     steps:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v6
+      - name: Read Node.js version
+        id: node-version
+        run: echo "version=$(cat .node-version)" >> "$GITHUB_OUTPUT"
 
-      - name: Get pnpm store path
-        id: pnpm-store
-        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
-
-      - name: Restore pnpm store
-        uses: actions/cache@v5
+      - name: Set up Vite+
+        uses: voidzero-dev/setup-vp@2dec1e33f4ab2c6d5bce1b0c4607961bb1a3f7a1 # v1
         with:
-          path: ${{ steps.pnpm-store.outputs.path }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
+          version: 0.2.4
+          node-version: ${{ steps.node-version.outputs.version }}
+          sfw: true
+          cache: true
+          run-install: |
+            - args: ['--frozen-lockfile']
 
-      - name: Install JavaScript dependencies
-        run: |
-          pnpm install --frozen-lockfile
-          echo "$PWD/node_modules/.bin" >> "$GITHUB_PATH"
-          pnpm exec node --version
+      - name: Check JavaScript formatting
+        run: printf '%s\n' "$CHECK_PATHS" | xargs vp fmt --check
 
-      - name: Check JavaScript workspace
-        run: pnpm ready
+      - name: Lint JavaScript
+        run: printf '%s\n' "$CHECK_PATHS" | xargs vp lint
+
+      - name: Typecheck JavaScript
+        run: CHARTCOACH_SITE_CATALOG_SOURCE=../../fixtures/catalog-release vp run -r typecheck
+
+      - name: Test JavaScript
+        run: vp run -r test
+
+      - name: Build JavaScript
+        run: CHARTCOACH_SITE_CATALOG_SOURCE=../../fixtures/catalog-release vp run -r build
 
   python:
     name: Python package ${{ matrix.python-version }}
@@ -70,9 +79,6 @@ jobs:
           enable-cache: true
           cache-dependency-glob: uv.lock
           python-version: ${{ matrix.python-version }}
-
-      - name: Install Python runtime
-        run: uv python install "${{ matrix.python-version }}"
 
       - name: Install Python dependencies
         run: uv sync --locked --package chartcoach --all-groups --all-extras
