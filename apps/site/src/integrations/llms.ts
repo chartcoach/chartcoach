@@ -259,7 +259,7 @@ async function entryFromSource(
   return extractEntryFromHtml(source, await readHtml(source.pathname), turndown, options);
 }
 
-function buildFile(
+function buildLlmFile(
   kind: LlmFileKind,
   entries: readonly LlmPageEntry[],
   options: LlmsIntegrationOptions,
@@ -380,7 +380,7 @@ function requestPathname(requestUrl: string | undefined) {
 
 export function llms(options: LlmsIntegrationOptions): AstroIntegration {
   let root: URL | undefined;
-  const integrationName = options.name ?? "astro:llms";
+  const integrationName = options.name ?? "astro-llms";
 
   return {
     name: integrationName,
@@ -421,7 +421,7 @@ export function llms(options: LlmsIntegrationOptions): AstroIntegration {
               const [kind] = llmFile;
               response.statusCode = 200;
               response.setHeader("Content-Type", "text/plain; charset=utf-8");
-              response.end(buildFile(kind, entries, options));
+              response.end(buildLlmFile(kind, entries, options));
               return;
             }
 
@@ -460,7 +460,7 @@ export function llms(options: LlmsIntegrationOptions): AstroIntegration {
           ...llmFilePathnames(options).map(([kind, pathname]) =>
             fs.writeFile(
               fileOutputPath(distDir, pathname),
-              buildFile(kind, entries, options),
+              buildLlmFile(kind, entries, options),
               "utf-8",
             ),
           ),

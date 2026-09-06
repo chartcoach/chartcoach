@@ -6,7 +6,7 @@
   "scripts": {
     "check": "vp check .github .vscode apps development_docs packages/brand packages/catalog AGENTS.md CONTRIBUTING.md README.md package.json pnpm-workspace.yaml vite.config.ts",
     "dev": "portless",
-    "ready": "vp run check && vp run --filter '@chartcoach/*' typecheck && vp run --filter '@chartcoach/*' test && vp run --filter '@chartcoach/*' build"
+    "ready": "vp run check && CHARTCOACH_SITE_CATALOG_SOURCE=../../fixtures/catalog-release vp run --filter '@chartcoach/*' typecheck && vp run --filter '@chartcoach/*' test && CHARTCOACH_SITE_CATALOG_SOURCE=../../fixtures/catalog-release vp run --filter '@chartcoach/*' build"
   },
   "devDependencies": {
     "portless": "^0.14.0",

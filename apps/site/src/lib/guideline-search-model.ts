@@ -17,7 +17,6 @@ export type GuidelineSearchDocument = {
   sectionRoles: string[];
   sectionTitles: string[];
   sectionContent: string[];
-  bibliography: string;
   references: string[];
 };
 
@@ -31,7 +30,6 @@ export const GUIDELINE_SEARCH_SCHEMA = {
   sectionRoles: "string[]",
   sectionTitles: "string[]",
   sectionContent: "string[]",
-  bibliography: "string",
   references: "string[]",
 } as const;
 
@@ -44,7 +42,6 @@ export const GUIDELINE_SEARCH_PROPERTIES = [
   "sectionRoles",
   "body",
   "sectionContent",
-  "bibliography",
   "references",
 ] as const;
 
@@ -57,7 +54,6 @@ export const GUIDELINE_SEARCH_BOOST = {
   sectionRoles: 2,
   body: 1.6,
   sectionContent: 1.3,
-  bibliography: 0.5,
   references: 0.4,
 } as const;
 
@@ -106,7 +102,6 @@ export function createGuidelineSearchDocument(
     sectionRoles: model.sections.map((section) => section.role),
     sectionTitles: model.sections.map((section) => section.title),
     sectionContent: model.sections.map((section) => section.content),
-    bibliography: model.bibliography ?? "",
     references: model.references,
   };
 }
@@ -141,7 +136,6 @@ export function parseGuidelineSearchModel(value: string): GuidelineSearchModel {
       title: String(section.title ?? ""),
       content: String(section.content ?? ""),
     })),
-    bibliography: model.bibliography,
     references: model.references,
   };
 }

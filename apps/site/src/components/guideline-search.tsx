@@ -50,7 +50,6 @@ function searchTextSources(result: SearchResult) {
     document.body,
     ...document.sectionContent,
     ...document.labels,
-    document.bibliography,
     ...document.references,
   ];
 }

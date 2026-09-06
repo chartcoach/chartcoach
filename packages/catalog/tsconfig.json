@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "strict": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022"],
+    "types": ["node"],
+
+    "paths": {
+      "@chartcoach/catalog": ["./src/index.ts"]
+    },
+
+    "noEmit": true
+  },
+  "include": ["src/**/*.ts"]
+}

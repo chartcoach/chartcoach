@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "digest": "ecf5b98d8d3f24978caafdd4740312becdc6e944a6a9c70b36e2ab4c984dccc9",
+  "artifacts": {
+    "MANIFEST.md": {
+      "sha256": "f6f9175bbef6849d6f053a8186fa314d485308b05e7d0b1ddcb385dbeb2a3726",
+      "bytes": 224
+    },
+    "entries.parquet": {
+      "sha256": "4a3d618c8efba1d49f13ccc8d1456f1b9b9d31628fce1554a7692882e2b493bd",
+      "bytes": 4775
+    }
+  }
+}
