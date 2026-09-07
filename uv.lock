@@ -14,15 +14,6 @@ exclude-newer-span = "P2D"
 
 [options.exclude-newer-package]
 agent-plugins = "2026-09-07T16:53:00Z"
-gistwidget = false
-jupyter-book-marimo = false
-marimo = false
-marimo-export = false
-marimo-jupyter-extension = false
-marimo-lens = false
-marimo-studio = false
-mkdocs-marimo = false
-moutils = false
 
 [manifest]
 members = [
