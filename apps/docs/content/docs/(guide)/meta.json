@@ -1,4 +1,5 @@
 {
-  "title": "Guide",
-  "pages": ["getting-started", "querying", "agents", "curation"]
+  "title": "Guides",
+  "defaultOpen": true,
+  "pages": ["getting-started", "catalogs", "querying", "agents", "curation"]
 }

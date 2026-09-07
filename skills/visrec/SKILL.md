@@ -6,9 +6,8 @@ description: Recommend a visualization from the data, reader task, audience, and
 # chartcoach Visrec
 
 Use guideline entry records to recommend a visualization from a design brief.
-The `visfeedback` instructions cover an existing rendered chart. The `core`
-instructions must be read first. They set `CHARTCOACH_SOURCE` and inspect the
-current roles and labels before this workflow begins.
+Use `visfeedback` for an existing rendered chart. Read `core` for catalog
+selection, retrieval, and citation.
 
 ## Describe the brief
 
@@ -25,50 +24,34 @@ Ask for the data fields, reader task, or output when missing information could
 change the chart choice. Otherwise state the assumption beside the affected
 recommendation.
 
+Preserve the measured quantity, units, aggregation, and meaning of uncertainty
+when proposing a design. Distinguish facts supplied by the brief from
+assumptions that still need confirmation.
+
 ## Find records
 
-Search the task and each important constraint separately:
-
-```sh
-chartcoach catalog list \
-  --contains "<reader task>" \
-  --format json
-chartcoach catalog list \
-  --contains "<constraint>" \
-  --format json
-```
-
-Check the current labels and roles before passing them as exact filters:
-
-```sh
-chartcoach catalog labels --contains "<concept>" --format json
-chartcoach catalog roles --format json
-```
-
-If an indexed profile is available and ordinary filters leave too many
-matches, use full-text search:
-
-```sh
-chartcoach catalog search \
-  --profile <profile-id> \
-  --mode fts \
-  --limit 10 \
-  "<data> <task> <audience> <constraint>"
-```
+Follow `core` to search the reader task and each important constraint. Use
+short terms such as `comparison`, `uncertainty`, or `labels` separately with
+`contains`. Use full-text search for combined concepts when a profile is
+available. Recover from empty matches before deciding that the catalog lacks
+guidance for the brief.
 
 ## Check the records
 
-Read and cite every record used in the recommendation:
+Read and cite selected records together:
 
 ```sh
-chartcoach catalog read <guideline-entry-id> \
+chartcoach catalog read <first-id> <second-id> \
   --source-detail minimal \
   --format markdown
-chartcoach catalog cite <guideline-entry-id> --format markdown
+chartcoach catalog cite <first-id> <second-id> --format markdown
 ```
 
 Discard a record when its chart family, task, audience, data type, or
-interaction state differs from the brief.
+interaction state differs from the brief. Check its applicable situations and
+exceptions, including what its quantities or intervals represent. A matching
+title or retrieval score is a candidate for inspection, not proof that the
+recommendation fits.
 
 ## Write the recommendation
 
@@ -83,4 +66,6 @@ recommended chart or encoding
 ```
 
 Keep library-specific implementation advice separate from statements supported
-by the catalog record.
+by the catalog record. Identify sources with `cite` and inspect a publication
+before attributing a specific claim to it. When the catalog supports part of a
+design, distinguish that guidance from your additional reasoning.

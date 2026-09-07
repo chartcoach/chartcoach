@@ -1,6 +1,6 @@
 import { CatalogError } from "./errors";
 import { isJsonString } from "./json";
-import type { Catalog } from "./model";
+import type { Catalog, GuidelineSection } from "./model";
 import { sourceRecords, type FullSourceRecord, type MinimalSourceRecord } from "./references";
 
 export type SourceDetail = "none" | "minimal" | "full";
@@ -11,18 +11,12 @@ export type ReadOptions = Readonly<{
   sourceDetail?: SourceDetail;
 }>;
 
-export type SectionRecord = Readonly<{
-  role: string;
-  title: string;
-  content: string;
-}>;
-
 export type GuidelineEntryRecord = Readonly<{
   id: string;
   title: string;
   description: string;
   labels: readonly string[];
-  sections: readonly SectionRecord[];
+  sections: readonly GuidelineSection[];
   sources: readonly (MinimalSourceRecord | FullSourceRecord)[];
   references?: readonly string[];
 }>;

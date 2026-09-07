@@ -10,19 +10,16 @@ and inspection commands emit JSON by default.
 ## Install and inspect one guideline
 
 ```bash
-uv tool install \
-  "chartcoach @ https://files.peter.gy/packages/python/chartcoach/0.2.0/892f120cb377/chartcoach-0.2.0-py3-none-any.whl"
+uv tool install chartcoach
 
-CATALOG_SOURCE="https://files.peter.gy/packages/python/chartcoach/0.2.0/docs-catalog/c0f6dbec3dd31b07763b46fd458733db0b8b50c5793cf9447458119287129420/release.json"
 GUIDELINE_ID="directly-label-series-instead-of-using-a-color-key"
 
-chartcoach catalog describe --source "$CATALOG_SOURCE"
+chartcoach catalog describe
 chartcoach catalog list \
-  --source "$CATALOG_SOURCE" \
   --contains "direct labels" \
   --limit 5
-chartcoach catalog read "$GUIDELINE_ID" --source "$CATALOG_SOURCE"
-chartcoach catalog cite "$GUIDELINE_ID" --source "$CATALOG_SOURCE"
+chartcoach catalog read "$GUIDELINE_ID"
+chartcoach catalog cite "$GUIDELINE_ID"
 ```
 
 `--source` sets the catalog source and overrides `CHARTCOACH_SOURCE`. When both
@@ -83,15 +80,15 @@ exits `0` and returns an empty result.
 
 ## Search an index
 
-Full-text search uses the release's LanceDB table and keeps embedding
-providers idle:
+Set `CATALOG_SOURCE` to an indexed release and `PROFILE` to a name reported by
+`catalog describe --source "$CATALOG_SOURCE"`. Full-text search uses its
+LanceDB table and keeps embedding providers idle:
 
 ```bash
-uvx --from \
-  "chartcoach[index] @ https://files.peter.gy/packages/python/chartcoach/0.2.0/892f120cb377/chartcoach-0.2.0-py3-none-any.whl" \
+uvx --from "chartcoach[index]" \
   chartcoach catalog search \
-  --source "https://catalog.example.com/catalog/releases/<digest>/release.json" \
-  --profile minilm-normalized \
+  --source "$CATALOG_SOURCE" \
+  --profile "$PROFILE" \
   --mode fts \
   --where "role = 'section.advice'" \
   --limit 5 \
@@ -124,12 +121,35 @@ chartcoach catalog search \
   "direct labels"
 ```
 
-The file maps LanceDB registry variable names to string values. Its values stay
-out of logs, result data, errors, and release artifacts.
+Create `embedding-vars.json` with the variable names required by your profile
+and real credentials. Restrict access to the file and keep it out of version
+control. The file maps LanceDB registry variable names to string values.
+chartcoach excludes its values from results, errors, and release artifacts.
+Embedding providers control their own diagnostic logs.
 
 ## Build and publish
 
 `catalog build` creates a compiled bundle from authored Markdown. Release
-commands require `chartcoach[curation]`. `release publish --dry-run` prints
-object paths. `release select --dry-run` prints the target selection without
-changing it. [Curate and publish](/curation) documents the complete lifecycle.
+commands require `chartcoach[curation]`.
+
+`catalog release validate DIRECTORY` checks local files. For published
+validation, set `CATALOG_STORE` to the object-store URI and `RELEASE_DIGEST` to
+the intended release digest:
+
+```bash
+chartcoach catalog release validate --store "$CATALOG_STORE"
+chartcoach catalog release validate --store "$CATALOG_STORE" --digest "$RELEASE_DIGEST"
+chartcoach catalog release validate --store "$CATALOG_STORE" --expect-digest "$RELEASE_DIGEST"
+```
+
+`--store` downloads fresh artifacts into temporary files and validates the
+selected catalog against its published descriptor. `--digest` chooses an exact
+candidate. `--expect-digest` checks the selected catalog and fails if its digest
+differs. Choose a local directory or `--store`. `--expect-digest` and `--digest`
+are mutually exclusive. Validation uses stored vectors, so embedding providers
+and credentials are not required.
+
+`release publish --dry-run` prints object paths. `release select --dry-run`
+validates fresh candidate bytes and prints the selection target. Selection
+writes `catalog.json` after the same validation. [Curate and publish](/curation)
+documents the complete lifecycle.

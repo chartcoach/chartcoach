@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import pytest
-from chartcoach.catalog.releases import CatalogRelease, ReleaseArtifact
-from chartcoach.catalog.releases.hashing import release_digest
+from chartcoach import CatalogRelease, ReleaseArtifact
+from chartcoach._catalog.releases.hashing import release_digest
 
 
 def _artifacts() -> dict[str, ReleaseArtifact]:

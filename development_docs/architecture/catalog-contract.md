@@ -146,7 +146,7 @@ from pathlib import Path
 import sys
 
 from chartcoach import open_catalog
-from chartcoach.catalog.curation import build_release
+from chartcoach.curation import build_release
 
 root = Path(sys.argv[1])
 build_release(open_catalog(root / "catalog"), root / "release")

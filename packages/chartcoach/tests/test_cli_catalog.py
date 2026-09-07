@@ -3,9 +3,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from chartcoach.catalog.curation import build_release
-from chartcoach.catalog.model import Catalog
+from chartcoach import Catalog
 from chartcoach.cli.main import main as chartcoach_cli
+from chartcoach.curation import build_release
 from click.testing import CliRunner
 
 

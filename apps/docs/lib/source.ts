@@ -1,5 +1,4 @@
 import { docs } from "collections/server";
-import { renderPlaceholder } from "fumadocs-core/mdx-plugins/remark-llms.runtime";
 import { loader } from "fumadocs-core/source";
 import { lucideIconsPlugin } from "fumadocs-core/source/lucide-icons";
 
@@ -27,19 +26,7 @@ function getPageSourceUrl(page: DocsPage) {
 }
 
 export async function getLLMText(page: DocsPage) {
-  const processed = await renderPlaceholder(await page.data.getText("processed"), {
-    Callout({ attributes, children }) {
-      const title =
-        Object.prototype.toString.call(attributes.title) === "[object String]"
-          ? String(attributes.title)
-          : "Note";
-      const lines = children.trim().split("\n");
-      const content = lines.map((line) => `> ${line}`.trimEnd()).join("\n");
-
-      return `> **${title}**
-${content}`;
-    },
-  });
+  const processed = await page.data.getText("processed");
   const description = page.data.description ? `${page.data.description}\n\n` : "";
 
   return `# ${page.data.title}

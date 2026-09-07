@@ -1,4 +1,4 @@
-import { count, create, load } from "@orama/orama";
+import { count, create, load, search as query } from "zbsearch";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
@@ -77,6 +77,10 @@ describe("searchIndex", () => {
     const db = create({ schema: { path: "string", title: "string" } });
     load(db, raw);
     expect(count(db)).toBe(1);
+    const results = await query(db, { term: "axes" });
+    expect(results.hits.map((hit) => hit.document)).toEqual([
+      { path: "/guidelines/axes/", title: "Use full axes" },
+    ]);
   });
 
   it("serves and invalidates the development database when a source changes", async () => {

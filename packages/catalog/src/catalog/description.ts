@@ -3,16 +3,11 @@ import { catalogEntriesDigest, manifestDigest } from "./identity";
 import type { Catalog } from "./model";
 import type { ProfileMetadata } from "./profile";
 import type { ReleaseProfile } from "./profile-layout";
+import type { ManifestDefinition } from "./manifest";
 
 export type DescribeOptions = Readonly<{
   profile?: string;
   signal?: AbortSignal;
-}>;
-
-export type VocabularyInfo = Readonly<{
-  name: string;
-  description: string;
-  examples: readonly string[];
 }>;
 
 export type ProfileInfo = Readonly<{
@@ -32,8 +27,8 @@ export type CatalogInfo = Readonly<{
   release_digest: string | null;
   entries_digest: string;
   manifest_digest: string;
-  section_roles: readonly VocabularyInfo[];
-  label_families: readonly VocabularyInfo[];
+  section_roles: readonly ManifestDefinition[];
+  label_families: readonly ManifestDefinition[];
   profiles: readonly string[];
   profile: ProfileInfo | null;
 }>;
@@ -172,7 +167,7 @@ function vocabulary(
     description: string;
     examples: readonly string[];
   }>[],
-): readonly VocabularyInfo[] {
+): readonly ManifestDefinition[] {
   return Object.freeze(
     definitions.map((definition) =>
       Object.freeze({

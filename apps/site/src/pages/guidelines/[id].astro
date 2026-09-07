@@ -97,7 +97,7 @@ const references = summarizeGuidelineReferences(guideline.data.referencesBib);
       </div>
 
       <div>
-        <h1 class="m-0 mt-8 text-[2.25rem] font-semibold leading-[1.08] tracking-normal text-fg sm:text-[3rem] lg:text-[4rem]">
+        <h1 class="m-0 mt-8 text-pretty text-[2rem] font-semibold leading-[1.15] tracking-normal text-fg sm:text-[2.5rem] lg:text-[3rem]">
           {guideline.data.title}
         </h1>
         {guideline.data.description && <p class="m-0 mt-6 text-[1.0625rem] leading-[1.65] text-muted lg:text-[1.1875rem]">{guideline.data.description}</p>}
@@ -127,7 +127,7 @@ const references = summarizeGuidelineReferences(guideline.data.referencesBib);
                   {section.title}
                 </h2>
                 <div
-                  class="mt-4 text-[1rem] leading-[1.75] text-muted [&_a]:text-fg [&_a]:underline [&_ol]:my-4 [&_ol]:pl-6 [&_p]:my-4 [&_ul]:my-4 [&_ul]:pl-6"
+                  class="guideline-prose mt-4 text-[1rem] leading-[1.75] text-muted [&_a]:text-fg [&_a]:underline [&_ol]:my-4 [&_ol]:pl-6 [&_p]:my-4 [&_ul]:my-4 [&_ul]:pl-6"
                   set:html={section.html}
                 />
               </section>
@@ -141,7 +141,7 @@ const references = summarizeGuidelineReferences(guideline.data.referencesBib);
           <section class="mt-16 border-t border-border pt-8">
             <h2 class="m-0 text-[1.25rem] font-semibold tracking-normal text-fg">References</h2>
             <div
-              class="mt-5 text-[0.9375rem] leading-[1.7] text-muted [&_a]:text-fg [&_a]:underline [&_ol]:pl-6 [&_p]:my-3 [&_ul]:pl-6"
+              class="guideline-prose mt-5 text-[0.9375rem] leading-[1.7] text-muted [&_a]:text-fg [&_a]:underline [&_ol]:pl-6 [&_p]:my-3 [&_ul]:pl-6"
               set:html={guideline.data.bibliographyHtml}
             />
           </section>

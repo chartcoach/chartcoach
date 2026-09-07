@@ -7,15 +7,48 @@ from pathlib import Path
 import polars as pl
 import pytest
 from catalog_testkit import deterministic_embedding
-from chartcoach import CatalogError, open_catalog
-from chartcoach.catalog.curation import EmbeddingProfile, build_release
-from chartcoach.catalog.documents import document_rows
-from chartcoach.catalog.model import Catalog
-from chartcoach.catalog.releases import CatalogRelease
+from chartcoach import Catalog, CatalogError, open_catalog
+from chartcoach._catalog.releases import CatalogRelease
+from chartcoach._catalog.search import catalog_search
+from chartcoach.curation import EmbeddingProfile, build_release
 
 pytestmark = [pytest.mark.curation, pytest.mark.search]
 _PROFILE = "test-deterministic"
 _EMBEDDING = "chartcoach-runtime-index-test"
+
+
+def test_native_index_and_parquet_composition_from_an_offline_release(
+    sample_catalog: Catalog, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        "chartcoach._catalog.runtime.cache._cache_root", lambda: tmp_path / "cache"
+    )
+    root = tmp_path / "release"
+    build_release(
+        sample_catalog,
+        root,
+        profiles={
+            _PROFILE: EmbeddingProfile(
+                deterministic_embedding("chartcoach-native-composition"),
+                export_documents=True,
+            )
+        },
+    )
+    cached = open_catalog(root).cache()
+    shutil.rmtree(root)
+    catalog = open_catalog(cached)
+    table = catalog.index(_PROFILE)
+    hits = (
+        table.search("labels", query_type="fts", fts_columns="text").limit(10).to_list()
+    )
+    ids = list(dict.fromkeys(hit["parent_id"] for hit in hits))
+    assert catalog.read(ids=ids)[0]["id"] == "direct-labels"
+    documents = catalog.artifact(f"profiles/{_PROFILE}/documents.parquet")
+    with catalog.duckdb() as connection:
+        connection.read_parquet(str(documents)).create_view("documents")
+        assert connection.sql(
+            "select distinct g.id from guidelines g join documents d on d.parent_id = g.id order by g.id"
+        ).fetchall() == [("direct-labels",), ("full-axis-bars",)]
 
 
 def test_catalog_index_reuses_one_protected_generation(
@@ -25,7 +58,7 @@ def test_catalog_index_reuses_one_protected_generation(
 ) -> None:
     release_root, release = _profile_release(sample_catalog, tmp_path)
     cache = tmp_path / "cache"
-    monkeypatch.setattr("chartcoach.catalog.runtime.cache._cache_root", lambda: cache)
+    monkeypatch.setattr("chartcoach._catalog.runtime.cache._cache_root", lambda: cache)
 
     first = open_catalog(release_root).index(_PROFILE)
     second = open_catalog(release_root / "release.json").index(_PROFILE)
@@ -34,9 +67,7 @@ def test_catalog_index_reuses_one_protected_generation(
     generations = list((root / "generations").iterdir())
 
     assert (
-        first.count_rows()
-        == second.count_rows()
-        == document_rows(sample_catalog).height
+        first.count_rows() == second.count_rows() == sample_catalog.documents().height
     )
     assert len(generations) == 1
     assert generations[0].stat().st_mode & 0o222 == 0
@@ -50,7 +81,7 @@ def test_shared_index_blocks_writes_after_deliberate_unpinning(
 ) -> None:
     release_root, _ = _profile_release(sample_catalog, tmp_path)
     monkeypatch.setattr(
-        "chartcoach.catalog.runtime.cache._cache_root", lambda: tmp_path / "cache"
+        "chartcoach._catalog.runtime.cache._cache_root", lambda: tmp_path / "cache"
     )
     table = open_catalog(release_root).index(_PROFILE)
 
@@ -60,7 +91,7 @@ def test_shared_index_blocks_writes_after_deliberate_unpinning(
 
     assert (
         open_catalog(release_root).index(_PROFILE).count_rows()
-        == document_rows(sample_catalog).height
+        == sample_catalog.documents().height
     )
 
 
@@ -71,7 +102,7 @@ def test_index_repair_publishes_a_new_generation(
 ) -> None:
     release_root, release = _profile_release(sample_catalog, tmp_path)
     cache = tmp_path / "cache"
-    monkeypatch.setattr("chartcoach.catalog.runtime.cache._cache_root", lambda: cache)
+    monkeypatch.setattr("chartcoach._catalog.runtime.cache._cache_root", lambda: cache)
     open_catalog(release_root).index(_PROFILE)
     artifact = release.artifact(f"profiles/{_PROFILE}/index.tar.gz")
     root = cache / "indexes-v2" / artifact.sha256
@@ -84,7 +115,7 @@ def test_index_repair_publishes_a_new_generation(
     repaired = open_catalog(release_root).index(_PROFILE)
     second = _current_generation(root)
 
-    assert repaired.count_rows() == document_rows(sample_catalog).height
+    assert repaired.count_rows() == sample_catalog.documents().height
     assert second != first
     assert first.exists()
     assert len(list((root / "generations").iterdir())) == 2
@@ -122,7 +153,7 @@ def test_caller_owned_index_directory_is_writable_and_isolated(
 ) -> None:
     release_root, _ = _profile_release(sample_catalog, tmp_path)
     monkeypatch.setattr(
-        "chartcoach.catalog.runtime.cache._cache_root", lambda: tmp_path / "cache"
+        "chartcoach._catalog.runtime.cache._cache_root", lambda: tmp_path / "cache"
     )
     catalog = open_catalog(release_root)
     directory = tmp_path / "writable-index"
@@ -131,7 +162,7 @@ def test_caller_owned_index_directory_is_writable_and_isolated(
     table.delete("true")
 
     assert table.count_rows() == 0
-    assert catalog.index(_PROFILE).count_rows() == document_rows(sample_catalog).height
+    assert catalog.index(_PROFILE).count_rows() == sample_catalog.documents().height
     with pytest.raises(FileExistsError):
         catalog.index(_PROFILE, directory=directory)
 
@@ -143,9 +174,9 @@ def test_non_posix_public_index_requires_a_caller_owned_directory(
 ) -> None:
     release_root, _ = _profile_release(sample_catalog, tmp_path)
     cache = tmp_path / "cache"
-    monkeypatch.setattr("chartcoach.catalog.runtime.cache._cache_root", lambda: cache)
+    monkeypatch.setattr("chartcoach._catalog.runtime.cache._cache_root", lambda: cache)
     monkeypatch.setattr(
-        "chartcoach.catalog.runtime.profiles.shared_index_cache_supported",
+        "chartcoach._catalog.runtime.profiles.shared_index_cache_supported",
         lambda: False,
     )
     catalog = open_catalog(release_root)
@@ -154,7 +185,9 @@ def test_non_posix_public_index_requires_a_caller_owned_directory(
         catalog.index(_PROFILE)
 
     assert exc_info.value.code == "unavailable_capability"
-    assert catalog.search("direct labels", profile=_PROFILE, mode="fts")["matches"]
+    assert catalog_search(catalog, "direct labels", profile=_PROFILE, mode="fts")[
+        "matches"
+    ]
 
 
 def test_open_catalog_keeps_profile_loads_on_the_resolved_selection(
@@ -181,7 +214,7 @@ def test_open_catalog_keeps_profile_loads_on_the_resolved_selection(
     selection = store / "catalog.json"
     selection.write_text(json.dumps(first_release.to_record()))
     monkeypatch.setattr(
-        "chartcoach.catalog.runtime.cache._cache_root", lambda: tmp_path / "cache"
+        "chartcoach._catalog.runtime.cache._cache_root", lambda: tmp_path / "cache"
     )
     monkeypatch.chdir(store)
     catalog = open_catalog(".")
@@ -194,7 +227,7 @@ def test_open_catalog_keeps_profile_loads_on_the_resolved_selection(
     assert catalog.read(ids=["direct-labels"], source_detail="none")[0]["title"] == (
         "Use direct labels"
     )
-    assert catalog.index(_PROFILE).count_rows() == document_rows(sample_catalog).height
+    assert catalog.index(_PROFILE).count_rows() == sample_catalog.documents().height
     assert catalog.describe()["resolved_location"] == str(
         releases / first_release.digest / "release.json"
     )

@@ -12,7 +12,7 @@ from uuid import uuid4
 
 from platformdirs import user_cache_path
 
-from ...constants import LANCE_DOCUMENT_TABLE
+from ..._constants import LANCE_DOCUMENT_TABLE
 from ..errors import CatalogError, CatalogIntegrityError
 from ..releases import ReleaseArtifact
 from ..releases.archive import extract_tar_archive

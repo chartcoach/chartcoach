@@ -25,8 +25,10 @@ dark images when the document has the `.dark` class.
 
 ## Import an image
 
-[`assets/brand`](assets/brand/) contains horizontal wordmarks, square logos,
-favicons, and the app icon.
+[`assets/brand`](assets/brand/) contains horizontal and vertical lockups, a
+square logo, favicons, and the app icon. The transparent vertical lockups in
+the root README use `chartcoach-vertical.svg` on light backgrounds and
+`chartcoach-vertical-white.svg` on dark backgrounds.
 
 In Astro, read the imported asset URL from `logo.src`:
 

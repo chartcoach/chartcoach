@@ -62,6 +62,7 @@ export async function loadCatalog(input: LoadCatalogInput): Promise<Catalog> {
 export async function loadCatalogWithProfileLoader(
   input: LoadCatalogInput,
   profileLoader?: ProfileLoader,
+  artifactLoader?: CatalogReleaseContext["artifactLoader"],
 ): Promise<Catalog> {
   const release = copyCatalogRelease(input.release);
   await assertReleaseDigest(release);
@@ -91,8 +92,26 @@ export async function loadCatalogWithProfileLoader(
   }
   return parseCatalogData(
     { entries: input.entries, manifestText },
-    { release, releaseUrl: sanitizeReleaseUrl(input.releaseUrl), profileLoader },
+    {
+      release,
+      releaseUrl: sanitizeReleaseUrl(input.releaseUrl),
+      profileLoader,
+      artifactLoader: artifactLoader ?? suppliedArtifacts(input),
+    },
   );
+}
+
+function suppliedArtifacts(input: LoadCatalogInput): CatalogReleaseContext["artifactLoader"] {
+  const entries = new Uint8Array(normalizeParquetBytes(input.entries)).slice();
+  const manifest = new Uint8Array(normalizeParquetBytes(input.manifest)).slice();
+  return async (path, signal) => {
+    signal?.throwIfAborted();
+    if (path === "entries.parquet") return entries.slice();
+    if (path === "MANIFEST.md") return manifest.slice();
+    throw new CatalogError(`Artifact bytes were not supplied: ${path}`, {
+      code: "unavailable_capability",
+    });
+  };
 }
 
 function assertCoreArtifactSize(

@@ -18,9 +18,15 @@ import { parseProfileMetadata } from "./profile";
 
 export type FetchLike = (input: string | URL, init?: RequestInit) => Promise<Response>;
 
+export interface ArtifactCache {
+  get(sha256: string, bytes: number): Promise<Uint8Array | undefined>;
+  put(sha256: string, bytes: Uint8Array): Promise<void>;
+}
+
 export type OpenCatalogOptions = {
   fetch?: FetchLike;
   signal?: AbortSignal;
+  cache?: ArtifactCache;
 };
 
 const CATALOG_REQUEST_TIMEOUT_MS = 15 * 60 * 1000;
@@ -39,7 +45,7 @@ export async function openCatalog(
   options: OpenCatalogOptions = {},
 ): Promise<Catalog> {
   const fetch = options.fetch ?? globalThis.fetch;
-  const descriptor = requireDescriptorUrl(location);
+  const descriptor = requireDescriptorUrl(location, options.fetch !== undefined);
   const release = parseCatalogRelease(
     await fetchJson(
       descriptor.url,
@@ -58,7 +64,7 @@ export async function openCatalog(
     descriptor.kind === "catalog"
       ? new URL(`catalog/releases/${release.digest}/release.json`, descriptor.url).toString()
       : descriptor.url;
-  return loadCatalogFromRelease(fetch, artifactBase, releaseUrl, release, options.signal);
+  return loadCatalogFromRelease(fetch, artifactBase, releaseUrl, release, options);
 }
 
 async function loadCatalogFromRelease(
@@ -66,30 +72,57 @@ async function loadCatalogFromRelease(
   artifactBase: string,
   releaseUrl: string,
   release: CatalogRelease,
-  signal?: AbortSignal,
+  options: OpenCatalogOptions,
 ): Promise<Catalog> {
+  const signal = options.signal;
+  const artifacts = new Map<string, Uint8Array>();
+  const loadArtifact = async (path: string, signal?: AbortSignal): Promise<Uint8Array> => {
+    const timeout = AbortSignal.timeout(CATALOG_REQUEST_TIMEOUT_MS);
+    signal = signal ? AbortSignal.any([signal, timeout]) : timeout;
+    signal?.throwIfAborted();
+    const descriptor = releaseArtifact(release, path);
+    const maximum =
+      path === "entries.parquet" || path === "MANIFEST.md" ? MAX_CORE_ARTIFACT_BYTES : 1024 ** 3;
+    if (descriptor.bytes > maximum)
+      throw new CatalogError(`Catalog artifact exceeds size limit: ${path}`);
+    const retain =
+      path === "entries.parquet" ||
+      path === "MANIFEST.md" ||
+      descriptor.bytes <= MAX_PROFILE_METADATA_BYTES;
+    const memory = artifacts.get(path);
+    if (memory) return memory.slice();
+    const cached = await options.cache?.get(descriptor.sha256, descriptor.bytes);
+    if (cached) {
+      try {
+        await assertReleaseArtifactBytes(path, descriptor, cached);
+        signal?.throwIfAborted();
+        if (retain) artifacts.set(path, cached.slice());
+        return cached.slice();
+      } catch (error) {
+        if (!(error instanceof CatalogError) || error.code !== "integrity") throw error;
+      }
+    }
+    const bytes = new Uint8Array(
+      await fetchReleaseArtifact(fetch, artifactBase, path, descriptor, signal),
+    );
+    await assertReleaseArtifactBytes(path, descriptor, bytes);
+    signal?.throwIfAborted();
+    await options.cache?.put(descriptor.sha256, bytes.slice());
+    signal?.throwIfAborted();
+    if (retain) artifacts.set(path, bytes);
+    return bytes.slice();
+  };
   const controller = new AbortController();
   const requestSignal = signal ? AbortSignal.any([controller.signal, signal]) : controller.signal;
   try {
     const [entries, manifest] = await Promise.all([
-      fetchReleaseArtifact(
-        fetch,
-        artifactBase,
-        "entries.parquet",
-        releaseArtifact(release, "entries.parquet"),
-        requestSignal,
-      ),
-      fetchReleaseArtifact(
-        fetch,
-        artifactBase,
-        "MANIFEST.md",
-        releaseArtifact(release, "MANIFEST.md"),
-        requestSignal,
-      ),
+      loadArtifact("entries.parquet", requestSignal),
+      loadArtifact("MANIFEST.md", requestSignal),
     ]);
     return loadCatalogWithProfileLoader(
       { entries, manifest, release, releaseUrl },
-      profileLoader(fetch, artifactBase, release),
+      profileLoader(loadArtifact, release),
+      loadArtifact,
     );
   } catch (error) {
     controller.abort(error);
@@ -103,6 +136,8 @@ async function fetchJson(
   signal?: AbortSignal,
   cache?: "no-cache",
 ): Promise<JsonValue> {
+  const timeout = AbortSignal.timeout(CATALOG_REQUEST_TIMEOUT_MS);
+  signal = signal ? AbortSignal.any([signal, timeout]) : timeout;
   const response = await fetchCatalogResource(url, fetch, signal, cache);
   const data = await readResponseBytes(
     response,
@@ -123,7 +158,7 @@ async function fetchReleaseArtifact(
   artifactBase: string,
   path: string,
   artifact: ReleaseArtifact,
-  signal: AbortSignal,
+  signal?: AbortSignal,
 ): Promise<ArrayBuffer> {
   const response = await fetchCatalogResource(
     releaseArtifactUrl(artifactBase, path),
@@ -139,10 +174,12 @@ async function readArtifactBytes(
   artifact: ReleaseArtifact,
   signal?: AbortSignal,
 ): Promise<ArrayBuffer> {
-  const absoluteLimitApplies = artifact.bytes > MAX_CORE_ARTIFACT_BYTES;
+  const maximum =
+    path === "entries.parquet" || path === "MANIFEST.md" ? MAX_CORE_ARTIFACT_BYTES : 1024 ** 3;
+  const absoluteLimitApplies = artifact.bytes > maximum;
   return readResponseBytes(
     response,
-    Math.min(artifact.bytes, MAX_CORE_ARTIFACT_BYTES),
+    Math.min(artifact.bytes, maximum),
     absoluteLimitApplies
       ? `Catalog artifact exceeds size limit: ${path}`
       : `Catalog artifact byte count mismatch: ${path}`,
@@ -164,6 +201,12 @@ async function readResponseBytes(
     throw new CatalogError(CATALOG_BODY_READ_ERROR);
   }
   if (!reader) return new ArrayBuffer(0);
+  const activeReader = reader;
+  const abort = () => {
+    void activeReader.cancel(signal?.reason).catch(() => {});
+  };
+  signal?.addEventListener("abort", abort, { once: true });
+  if (signal?.aborted) abort();
 
   const chunks: Uint8Array[] = [];
   let size = 0;
@@ -171,15 +214,12 @@ async function readResponseBytes(
   while (!failure) {
     try {
       const result = await reader.read();
+      signal?.throwIfAborted();
       if (result.done) break;
       const { value } = result;
       size += value.byteLength;
       if (size > limit) {
-        try {
-          await reader.cancel();
-        } catch {
-          // The size error remains the public failure for this request.
-        }
+        void reader.cancel().catch(() => {});
         failure = new CatalogError(limitError);
         break;
       }
@@ -188,6 +228,7 @@ async function readResponseBytes(
       failure = signal?.aborted ? abortReason(signal) : new CatalogError(CATALOG_BODY_READ_ERROR);
     }
   }
+  signal?.removeEventListener("abort", abort);
   try {
     reader.releaseLock();
   } catch {
@@ -247,8 +288,7 @@ async function fetchCatalogResource(
 }
 
 function profileLoader(
-  fetch: FetchLike,
-  artifactBase: string,
+  loadArtifact: (path: string, signal?: AbortSignal) => Promise<Uint8Array>,
   release: CatalogRelease,
 ): ProfileLoader {
   return async (profile, signal) => {
@@ -261,23 +301,21 @@ function profileLoader(
       });
     }
 
-    let response: Response;
+    let data: Uint8Array;
     try {
-      response = await fetchCatalogResource(releaseArtifactUrl(artifactBase, path), fetch, signal);
-    } catch {
+      data = await loadArtifact(path, signal);
+    } catch (error) {
       if (signal?.aborted) throw abortReason(signal);
-      throw new CatalogError(`Profile metadata could not be loaded: ${profile.name}.`, {
-        code: "integrity",
-        details: { profile: profile.name },
-      });
+      throw new CatalogError(
+        error instanceof CatalogError
+          ? error.message
+          : `Profile metadata could not be loaded: ${profile.name}.`,
+        {
+          code: "integrity",
+          details: { profile: profile.name },
+        },
+      );
     }
-    const data = await readResponseBytes(
-      response,
-      artifact.bytes,
-      `Catalog artifact byte count mismatch: ${path}`,
-      signal,
-    );
-    await assertReleaseArtifactBytes(path, artifact, data);
     let value: JsonValue;
     try {
       const text = new TextDecoder("utf-8", { fatal: true }).decode(data);
@@ -308,7 +346,7 @@ function abortReason(signal: AbortSignal): Error {
     : new DOMException("The operation was aborted.", "AbortError");
 }
 
-function requireDescriptorUrl(input: string | URL): CatalogDescriptor {
+function requireDescriptorUrl(input: string | URL, customFetch: boolean): CatalogDescriptor {
   const value = input.toString();
   let url: URL;
   try {
@@ -316,7 +354,7 @@ function requireDescriptorUrl(input: string | URL): CatalogDescriptor {
   } catch {
     throw new CatalogError("Catalog location must be an absolute HTTP or HTTPS URL.");
   }
-  if (url.protocol !== "http:" && url.protocol !== "https:") {
+  if (!customFetch && url.protocol !== "http:" && url.protocol !== "https:") {
     throw new CatalogError("Catalog location must use HTTP or HTTPS.");
   }
   const name = url.pathname.split("/").at(-1);

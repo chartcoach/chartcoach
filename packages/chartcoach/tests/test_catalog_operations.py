@@ -6,16 +6,55 @@ from typing import cast
 
 import pytest
 from catalog_testkit import deterministic_embedding
-from chartcoach import CatalogError, open_catalog
-from chartcoach.catalog.curation import EmbeddingProfile, build_release
-from chartcoach.catalog.guidelines import Guideline, Section
-from chartcoach.catalog.model import Catalog
-from chartcoach.catalog.read import SourceDetail
+from chartcoach import Catalog, CatalogError, Guideline, Section, open_catalog
+from chartcoach._catalog.read import SourceDetail
+from chartcoach._catalog.search import catalog_search
+from chartcoach._catalog.sql import catalog_sql
+from chartcoach.curation import EmbeddingProfile, build_release
 
 _CONTRACT = (
     Path(__file__).parents[3] / "fixtures" / "catalog-contract" / "operations.json"
 )
 _RELEASE = Path(__file__).parents[3] / "fixtures" / "catalog-release"
+
+
+def test_source_reads_and_citations_preserve_bibtex_grouping(
+    sample_catalog: Catalog,
+) -> None:
+    expected = json.loads(_CONTRACT.read_text())["protected_bibliography"]
+    catalog = _catalog_with_references(sample_catalog, [expected["reference"]])
+    source = catalog.read(ids=["reference-0"], source_detail="full")[0]["sources"][0]
+    assert source["source_title"] == expected["source_title"]
+    assert source["authors_text"] == expected["authors_text"]
+    assert (
+        catalog.cite(ids=["reference-0"])[0]["sources"][0]["citation"]
+        == expected["citation"]
+    )
+
+
+@pytest.mark.parametrize(
+    "case",
+    json.loads(_CONTRACT.read_text(encoding="utf-8"))["bibliography_urls"],
+    ids=lambda case: case["name"],
+)
+def test_source_urls_agree_across_reads_citations_and_tables(
+    sample_catalog: Catalog, case: dict[str, str | None]
+) -> None:
+    reference = cast(str, case["reference"])
+    catalog = _catalog_with_references(sample_catalog, [reference])
+    minimal = catalog.read(ids=["reference-0"])[0]
+    full = catalog.read(ids=["reference-0"], source_detail="full")[0]
+    citation = catalog.cite(ids=["reference-0"])[0]["sources"][0]
+
+    for source in (minimal["sources"][0], full["sources"][0], citation):
+        assert source["url"] == case["url"]
+        assert source["doi"] == case["doi"]
+    assert citation["citation"] == case["citation"]
+    assert full["references"] == [reference]
+    for name in ("references", "guideline_sources"):
+        assert catalog.table(name).select("url", "doi").to_dicts() == [
+            {"url": case["url"], "doi": case["doi"]}
+        ]
 
 
 def test_python_matches_the_shared_catalog_operation_contract() -> None:
@@ -146,7 +185,8 @@ def test_catalog_query_rejects_separator_only_text(
 def test_catalog_sql_returns_bounded_rows_and_catalog_identity(
     sample_catalog: Catalog,
 ) -> None:
-    result = sample_catalog.sql(
+    result = catalog_sql(
+        sample_catalog,
         "select id, title from guidelines order by id",
         limit=1,
     )
@@ -165,8 +205,8 @@ def test_catalog_sql_returns_bounded_rows_and_catalog_identity(
 
 
 def test_catalog_sql_returns_json_values(sample_catalog: Catalog) -> None:
-    result = sample_catalog.sql(
-        "select date '2026-07-11' as day, 1.25::decimal(4, 2) as value"
+    result = catalog_sql(
+        sample_catalog, "select date '2026-07-11' as day, 1.25::decimal(4, 2) as value"
     )
 
     assert result["rows"] == [{"day": "2026-07-11", "value": "1.25"}]
@@ -181,7 +221,7 @@ def test_catalog_sql_rejects_non_read_only_queries(
     statement: str,
 ) -> None:
     with pytest.raises(CatalogError) as exc_info:
-        sample_catalog.sql(statement)
+        catalog_sql(sample_catalog, statement)
 
     assert exc_info.value.code == "invalid_input"
 
@@ -194,7 +234,9 @@ def test_catalog_sql_disables_external_file_access(
     external_csv.write_text("x\n1\n")
 
     with pytest.raises(CatalogError, match="Cannot access file"):
-        sample_catalog.sql(f"select * from read_csv_auto({external_csv.as_posix()!r})")
+        catalog_sql(
+            sample_catalog, f"select * from read_csv_auto({external_csv.as_posix()!r})"
+        )
 
 
 @pytest.mark.search
@@ -216,12 +258,14 @@ def test_catalog_search_returns_bounded_fts_matches(
         },
     )
     monkeypatch.setattr(
-        "chartcoach.catalog.runtime.cache._cache_root", lambda: tmp_path / "cache"
+        "chartcoach._catalog.runtime.cache._cache_root", lambda: tmp_path / "cache"
     )
     catalog = open_catalog(release_root)
     assert catalog.release is not None
 
-    result = catalog.search("direct labels", profile=profile, limit=2, mode="fts")
+    result = catalog_search(
+        catalog, "direct labels", profile=profile, limit=2, mode="fts"
+    )
 
     assert result["profile"] == profile
     assert result["mode"] == "fts"
@@ -281,10 +325,10 @@ def test_catalog_search_marks_bounded_match_excerpts(
         },
     )
     monkeypatch.setattr(
-        "chartcoach.catalog.runtime.cache._cache_root", lambda: tmp_path / "cache"
+        "chartcoach._catalog.runtime.cache._cache_root", lambda: tmp_path / "cache"
     )
 
-    result = open_catalog(release).search("needle", profile=profile, limit=1)
+    result = catalog_search(open_catalog(release), "needle", profile=profile, limit=1)
     match = result["matches"][0]
 
     assert len(match["matched_excerpt"]) == 360
@@ -298,7 +342,7 @@ def test_sql_json_conversion_rejects_non_finite_values(
     sample_catalog: Catalog,
 ) -> None:
     with pytest.raises(CatalogError, match="cannot be represented as JSON"):
-        sample_catalog.sql("select 'NaN'::double as value")
+        catalog_sql(sample_catalog, "select 'NaN'::double as value")
 
 
 def _catalog_with_references(catalog: Catalog, references: list[str]) -> Catalog:

@@ -1,18 +1,23 @@
 from __future__ import annotations
 
 import json
+import os
+import shutil
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from types import MappingProxyType
 from typing import Literal
 from urllib.parse import urlsplit, urlunsplit
+from uuid import uuid4
 
-from ..errors import CatalogError, CatalogIntegrityError
+import chartcoach._catalog.runtime.cache as artifact_cache
+
+from ..errors import CatalogError, CatalogIntegrityError, CatalogLookupError
 from ..releases import CatalogRelease
 from ..releases.hashing import release_digest
 from ..releases.services import MAX_RELEASE_ARTIFACT_BYTES
-from .cache import cache_remote_artifact, verify_local_artifact
+from .cache import _symlink_component, cache_remote_artifact, verify_local_artifact
 from .location import (
     LocalCatalogLocation,
     RemoteCatalogLocation,
@@ -47,7 +52,13 @@ class ReleaseLocation:
         return sanitize_location(self.descriptor)
 
     def artifact_path(self, path: str) -> Path:
-        artifact = self.release.artifact(path)
+        try:
+            artifact = self.release.artifact(path)
+        except KeyError as exc:
+            raise CatalogLookupError(
+                f"Unknown release artifact: {path}",
+                details={"path": path, "available": list(self.release.artifacts)},
+            ) from exc
         if self.transport == "local":
             base = self.artifact_base
             if not isinstance(base, Path):
@@ -67,6 +78,40 @@ class ReleaseLocation:
             path=path,
             artifact=artifact,
         )
+
+    def cache(self) -> Path:
+        root = artifact_cache._cache_root() / "releases" / self.release.digest
+        if root.is_symlink():
+            raise CatalogIntegrityError("Cached release directory cannot be a symlink.")
+        root.mkdir(parents=True, exist_ok=True)
+        for name, artifact in self.release.artifacts.items():
+            target = root.joinpath(*PurePosixPath(name).parts)
+            if _symlink_component(root, target) is not None:
+                raise CatalogIntegrityError(
+                    f"Cached artifact cannot contain a symlink: {name}"
+                )
+            try:
+                verify_local_artifact(root, target, name, artifact)
+                continue
+            except CatalogIntegrityError:
+                pass
+            source = self.artifact_path(name)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            staged = target.parent / f".{target.name}.{uuid4().hex}.tmp"
+            try:
+                shutil.copyfile(source, staged)
+                verify_local_artifact(root, staged, name, artifact)
+                os.replace(staged, target)
+            finally:
+                staged.unlink(missing_ok=True)
+        descriptor = root / "release.json"
+        staged = root / f".release.{uuid4().hex}.tmp"
+        try:
+            staged.write_text(json.dumps(self.release.to_record()), encoding="utf-8")
+            os.replace(staged, descriptor)
+        finally:
+            staged.unlink(missing_ok=True)
+        return root
 
 
 def release_location(
@@ -105,15 +150,7 @@ def release_location(
         raise CatalogError(
             "Remote catalog locations must name catalog.json or release.json."
         )
-    release = parse_release(
-        read_remote_bytes(
-            location.uri,
-            transport=location.transport,
-            storage_options=storage_options,
-            limit=_MAX_JSON_BYTES,
-            no_cache=name == "catalog.json",
-        )
-    )
+    release = _remote_release(location, storage_options)
     _validate_descriptor_digest(location.uri, release)
     base = (
         join_uri_path(uri_parent(location.uri), "catalog", "releases", release.digest)
@@ -130,6 +167,41 @@ def release_location(
         location.transport,
         storage_options,
     )
+
+
+def _remote_release(
+    location: RemoteCatalogLocation, storage_options: Mapping[str, object]
+) -> CatalogRelease:
+    parts = PurePosixPath(urlsplit(location.uri).path)
+    expected = parts.parent.name if parts.name == "release.json" else ""
+    directory = artifact_cache._cache_root() / "descriptors"
+    if len(expected) == 64 and all(char in "0123456789abcdef" for char in expected):
+        try:
+            cached = parse_release(
+                read_local_bytes(directory / f"{expected}.json", _MAX_JSON_BYTES)
+            )
+            _validate_descriptor_digest(location.uri, cached)
+            return cached
+        except (CatalogError, OSError):
+            pass
+    release = parse_release(
+        read_remote_bytes(
+            location.uri,
+            transport=location.transport,
+            storage_options=storage_options,
+            limit=_MAX_JSON_BYTES,
+            no_cache=parts.name == "catalog.json",
+        )
+    )
+    _validate_descriptor_digest(location.uri, release)
+    directory.mkdir(parents=True, exist_ok=True)
+    temporary = directory / f".{release.digest}.{uuid4().hex}.tmp"
+    try:
+        temporary.write_text(json.dumps(release.to_record()), encoding="utf-8")
+        os.replace(temporary, directory / f"{release.digest}.json")
+    finally:
+        temporary.unlink(missing_ok=True)
+    return release
 
 
 def sanitize_location(location: Path | str) -> str:

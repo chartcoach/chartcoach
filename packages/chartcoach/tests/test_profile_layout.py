@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import pytest
-from chartcoach.catalog.profile_layout import (
+from chartcoach._catalog.profile_layout import (
     discover_profile_artifacts,
     profile_artifact_path,
 )

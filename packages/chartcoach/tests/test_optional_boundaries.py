@@ -10,12 +10,10 @@ from pathlib import Path
 
 import pytest
 from catalog_testkit import deterministic_embedding
-from chartcoach import open_catalog
-from chartcoach.catalog.manifest import manifest_digest
-from chartcoach.catalog.model import Catalog
-from chartcoach.catalog.profiles import EmbeddingBinding, ProfileMetadata
-from chartcoach.catalog.releases import CatalogRelease, ReleaseArtifact
-from chartcoach.catalog.releases.hashing import release_digest, sha256_file
+from chartcoach import Catalog, CatalogRelease, ReleaseArtifact, open_catalog
+from chartcoach._catalog.manifest import manifest_digest
+from chartcoach._catalog.profiles import EmbeddingBinding, ProfileMetadata
+from chartcoach._catalog.releases.hashing import release_digest, sha256_file
 
 _RELEASE_FIXTURE = Path(__file__).parents[3] / "fixtures" / "catalog-release"
 
@@ -39,7 +37,8 @@ assert len(catalog) > 0
 assert catalog.query(contains="labels", limit=2).height > 0
 assert catalog.read(ids=["direct-labels"], source_detail="minimal")
 assert catalog.cite(ids=["direct-labels"])
-assert catalog.sql("select count(*) as rows from guidelines")["rows"]
+with catalog.duckdb() as connection:
+    assert connection.sql("select count(*) from guidelines").fetchone()[0] > 0
 assert catalog.describe()["release_digest"] == catalog.release.digest
 """
 
@@ -90,7 +89,7 @@ def test_profile_description_works_without_index_or_projection_dependencies(
     sample_catalog: Catalog,
     tmp_path: Path,
 ) -> None:
-    from chartcoach.catalog.curation import EmbeddingProfile, build_release
+    from chartcoach.curation import EmbeddingProfile, build_release
 
     profile = "test-metadata"
     release = tmp_path / "release"
@@ -145,7 +144,7 @@ class BlockUmap(importlib.abc.MetaPathFinder):
 sys.meta_path.insert(0, BlockUmap())
 from lancedb_embedding_fixture import registered_embedding
 from chartcoach import open_catalog
-from chartcoach.catalog.curation import EmbeddingProfile, build_release
+from chartcoach.curation import EmbeddingProfile, build_release
 build_release(
     open_catalog({str(_RELEASE_FIXTURE)!r}),
     {str(release)!r},

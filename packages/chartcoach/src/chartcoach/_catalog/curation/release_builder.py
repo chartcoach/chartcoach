@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import os
 import shutil
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from importlib.metadata import PackageNotFoundError, version
 from os import PathLike
@@ -19,6 +19,7 @@ from ..releases.hashing import release_digest, sha256_file
 from .artifacts import build_release_artifacts
 
 if TYPE_CHECKING:
+    from lancedb import Table
     from lancedb.embeddings import EmbeddingFunction
 
 
@@ -31,6 +32,7 @@ class EmbeddingProfile:
     python_requirements: Mapping[str, str] = field(default_factory=dict)
     umap: Mapping[str, object] | None = None
     export_documents: bool = False
+    configure: Callable[[Table], None] | None = None
 
     def __post_init__(self) -> None:
         if self.distance_metric not in {"cosine", "l2", "dot"}:
@@ -81,7 +83,38 @@ class ProfileReuse:
             raise TypeError("Profile export_documents must be a boolean.")
 
 
-ProfileBuild: TypeAlias = EmbeddingProfile | ProfileReuse
+@dataclass(frozen=True, slots=True)
+class IndexProfile:
+    """Materialize existing document vectors and configure the release's native indexes."""
+
+    index: Table
+    distance_metric: DistanceMetric = "cosine"
+    python_requirements: Mapping[str, str] = field(default_factory=dict)
+    umap: Mapping[str, object] | None = None
+    export_documents: bool = False
+    configure: Callable[[Table], None] | None = None
+
+    def __post_init__(self) -> None:
+        from lancedb import Table
+
+        if not isinstance(self.index, Table):
+            raise TypeError("IndexProfile requires a native LanceDB table.")
+        if self.distance_metric not in {"cosine", "l2", "dot"}:
+            raise ValueError(
+                f"Unsupported profile distance metric: {self.distance_metric!r}."
+            )
+        object.__setattr__(
+            self,
+            "python_requirements",
+            MappingProxyType(validate_requirements(self.python_requirements)),
+        )
+        if self.umap is not None:
+            object.__setattr__(self, "umap", MappingProxyType(dict(self.umap)))
+        if not isinstance(self.export_documents, bool):
+            raise TypeError("Profile export_documents must be a boolean.")
+
+
+ProfileBuild: TypeAlias = EmbeddingProfile | IndexProfile | ProfileReuse
 
 _NO_PROFILES: Mapping[str, ProfileBuild] = MappingProxyType({})
 
@@ -126,8 +159,21 @@ def _normalized_profiles(
     normalized: dict[str, ProfileBuild] = {}
     for value, profile in profiles.items():
         name = validate_profile_id(value)
-        if not isinstance(profile, EmbeddingProfile | ProfileReuse):
+        if not isinstance(profile, EmbeddingProfile | IndexProfile | ProfileReuse):
             raise TypeError(f"Profile {name!r} has an invalid build specification.")
+        if profile.umap is not None:
+            from ..profiles import ProjectionMetadata
+            from .projection import _options
+
+            ProjectionMetadata.from_mapping(
+                {"algorithm": "umap", "options": _options(profile.umap)}
+            )
+        if (
+            isinstance(profile, EmbeddingProfile | IndexProfile)
+            and profile.configure is not None
+            and not callable(profile.configure)
+        ):
+            raise TypeError(f"Profile {name!r} configure must be callable.")
         normalized[name] = profile
     return normalized
 
@@ -139,4 +185,10 @@ def _artifact(path: Path) -> ReleaseArtifact:
     )
 
 
-__all__ = ["EmbeddingProfile", "ProfileBuild", "ProfileReuse", "build_release"]
+__all__ = [
+    "EmbeddingProfile",
+    "IndexProfile",
+    "ProfileBuild",
+    "ProfileReuse",
+    "build_release",
+]

@@ -1,71 +1,70 @@
 ---
 title: Getting started
-description: Open the Guideline Catalog as a dataframe, then inspect one complete record.
+description: Read one guideline and print the citation for its source.
 icon: ScanSearch
 ---
 
-The Guideline Catalog stores visualization guidelines with their labels,
-sections, and BibTeX references. This live Python example opens a fixed catalog
-release, displays its entry rows as a Polars dataframe, and renders the first
-record as JSON.
+This example opens the public catalog, reads a guideline about direct
+labels, and retrieves its citations. It needs network access on the first run.
 
-<PythonNotebookRuntime />
+## Set up Python
 
-```marimo-config
-requires-python = ">=3.12"
-dependencies = [
-  "chartcoach @ https://files.peter.gy/packages/python/chartcoach/0.2.0/892f120cb377/chartcoach-0.2.0-py3-none-any.whl",
-]
+Use [uv](https://docs.astral.sh/uv/), the Python environment manager, to create
+an environment and install chartcoach. In a POSIX shell:
+
+```bash
+uv venv
+source .venv/bin/activate
+uv pip install chartcoach
 ```
 
-```python marimo output=false
-import sys
+Keep this environment active for the Python and CLI examples in these docs.
+For Node.js setup, see [JavaScript and TypeScript](/javascript#install).
 
-if sys.platform == "emscripten":
-    import micropip
-    import pyodide_js
+## Read a guideline
 
-    await pyodide_js.loadPackage(["polars", "pyarrow"])
-    await micropip.install("platformdirs==4.11.3")
-    await micropip.install(
-        "https://files.peter.gy/packages/python/chartcoach/0.2.0/892f120cb377/chartcoach-0.2.0-py3-none-any.whl",
-        deps=False,
-    )
-```
+Save this as `read-guideline.py`:
 
-## Open a catalog release
-
-The `release.json` URL identifies one exact set of files. `open_catalog`
-verifies those files before it returns the catalog.
-
-```python marimo echo=true
+```python title="read-guideline.py"
 from chartcoach import open_catalog
 
-catalog = open_catalog(
-    "https://files.peter.gy/packages/python/chartcoach/0.2.0/docs-catalog/c0f6dbec3dd31b07763b46fd458733db0b8b50c5793cf9447458119287129420/release.json"
-)
-df = catalog.to_frame()
-df
+catalog = open_catalog()
+guideline_id = "directly-label-series-instead-of-using-a-color-key"
+record = catalog.read(ids=[guideline_id])[0]
+print(record["title"])
 ```
 
-`df` contains one row per guideline entry. Its six columns hold the entry ID,
-title, description, labels, sections, and references.
+Run it:
 
-## Inspect the first guideline
-
-`named=True` returns a dictionary keyed by the dataframe column names.
-`mo.json` displays the nested labels, sections, and references as expandable
-JSON in a scrollable panel.
-
-```python marimo echo=true
-import marimo as mo
-
-row = df.row(0, named=True)
-mo.Html(
-    '<div tabindex="0" role="region" aria-label="Guideline JSON" '
-    f'style="max-height:32rem;overflow:auto">{mo.json(row).text}</div>'
-)
+```bash
+python read-guideline.py
 ```
 
-The dataframe gives a compact overview of the catalog. The dictionary shows
-all six fields stored in the selected dataframe row.
+Expected output:
+
+```text
+Directly label colored series instead of relying on a color key
+```
+
+`record` contains the guideline's labels, ordered sections, and parsed source
+details. `open_catalog()` opens the currently selected public release,
+verifies downloaded files, and keeps them in your user cache.
+
+## Read the advice and cite its source
+
+Add these lines to the same file and run it again:
+
+```python
+for section in record["sections"]:
+    if section["role"] == "advice":
+        print(section["content"])
+
+citation = catalog.cite(ids=[guideline_id])[0]
+print(citation["guideline_citation"])
+for source in citation["sources"]:
+    print(source["citation"])
+```
+
+The output contains the advice, a link to the guideline, and its source
+citation. Use [Find guidelines](/querying) to choose records for your own task,
+or [Open and cache catalogs](/catalogs) to use another catalog.

@@ -6,19 +6,19 @@ from typing import Any
 
 import pytest
 from catalog_testkit import deterministic_embedding
-from chartcoach.catalog.curation import (
+from chartcoach import Catalog
+from chartcoach._catalog.curation.release_publisher import (
+    _publish_release,
+    _select_release,
+)
+from chartcoach._catalog.paths import paths
+from chartcoach._catalog.releases import CatalogRelease
+from chartcoach.curation import (
     EmbeddingProfile,
     build_release,
     publish_release,
     select_release,
 )
-from chartcoach.catalog.curation.release_publisher import (
-    _publish_release,
-    _select_release,
-)
-from chartcoach.catalog.model import Catalog
-from chartcoach.catalog.paths import paths
-from chartcoach.catalog.releases import CatalogRelease
 from obstore.store import MemoryStore
 
 pytestmark = pytest.mark.curation
@@ -134,6 +134,52 @@ def test_select_keeps_the_current_release_when_digest_is_missing(
 
     with pytest.raises(FileNotFoundError):
         _select_release(store, "0" * 64)
+
+    assert _read_bytes(store, paths.selected()) == current
+
+
+@pytest.mark.parametrize("damage", ["missing", "corrupt"])
+def test_committed_publish_rejects_damaged_artifacts_without_repair(
+    sample_catalog: Catalog, tmp_path: Path, damage: str
+) -> None:
+    root = tmp_path / "release"
+    release = build_release(sample_catalog, root)
+    store = MemoryStore()
+    _publish_release(store, root)
+    key = paths.release(release.digest).artifact("entries.parquet")
+    if damage == "missing":
+        store.delete(key)
+    else:
+        store.put(key, b"corrupt")
+
+    with pytest.raises((FileNotFoundError, ValueError)):
+        _publish_release(store, root)
+
+    if damage == "missing":
+        with pytest.raises(FileNotFoundError):
+            _read_bytes(store, key)
+    else:
+        assert _read_bytes(store, key) == b"corrupt"
+
+
+def test_select_keeps_current_selection_when_candidate_artifacts_are_corrupt(
+    sample_catalog: Catalog, tmp_path: Path
+) -> None:
+    root = tmp_path / "release"
+    release = build_release(sample_catalog, root)
+    store = MemoryStore()
+    _publish_release(store, root)
+    _select_release(store, release.digest)
+    current = _read_bytes(store, paths.selected())
+    candidate_root = tmp_path / "candidate"
+    candidate = build_release(
+        Catalog.from_guidelines([], manifest=sample_catalog.manifest), candidate_root
+    )
+    _publish_release(store, candidate_root)
+    store.put(paths.release(candidate.digest).artifact("entries.parquet"), b"corrupt")
+
+    with pytest.raises(ValueError, match="byte count"):
+        _select_release(store, candidate.digest)
 
     assert _read_bytes(store, paths.selected()) == current
 

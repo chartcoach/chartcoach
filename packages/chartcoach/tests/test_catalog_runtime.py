@@ -14,13 +14,17 @@ from typing import Any
 
 import pytest
 from catalog_testkit import deterministic_embedding
-from chartcoach import CatalogError, open_catalog
-from chartcoach.catalog.curation import EmbeddingProfile, build_release, write_bundle
-from chartcoach.catalog.model import Catalog
-from chartcoach.catalog.releases import CatalogRelease, ReleaseArtifact
-from chartcoach.catalog.releases.hashing import release_digest, sha256_file
-from chartcoach.catalog.runtime import transport as catalog_transport
-from chartcoach.catalog.runtime.release import ReleaseLocation
+from chartcoach import (
+    Catalog,
+    CatalogError,
+    CatalogRelease,
+    ReleaseArtifact,
+    open_catalog,
+)
+from chartcoach._catalog.releases.hashing import release_digest, sha256_file
+from chartcoach._catalog.runtime import transport as catalog_transport
+from chartcoach._catalog.runtime.release import ReleaseLocation
+from chartcoach.curation import EmbeddingProfile, build_release, write_bundle
 
 
 def test_open_catalog_accepts_the_local_location_matrix(
@@ -109,13 +113,15 @@ def test_top_level_api_is_the_supported_catalog_contract() -> None:
         "CitationRecord",
         "CitationSource",
         "GuidelineEntryRecord",
-        "SearchResult",
-        "GuidelineMatch",
+        "Guideline",
+        "Section",
+        "ManifestDefinition",
+        "ReleaseArtifact",
+        "MinimalSourceRecord",
+        "FullSourceRecord",
         "ProfileInfo",
         "SectionRecord",
         "SourceDetail",
-        "SqlColumn",
-        "SqlResult",
         "__version__",
         "open_catalog",
     }
@@ -151,10 +157,50 @@ def test_http_errors_redact_credentials(
         )
 
     message = str(exc_info.value)
+    assert exc_info.value.code == "operation_failed"
     assert "https://example.test/catalog.json" in message
     assert "user:password" not in message
     assert "token=secret" not in message
     assert "#fragment" not in message
+
+
+def test_http_configuration_errors_remain_invalid_input() -> None:
+    with pytest.raises(CatalogError) as exc_info:
+        list(
+            catalog_transport.remote_chunks(
+                "https://example.test/catalog.json",
+                transport="http",
+                storage_options={"timeout": -1},
+            )
+        )
+
+    assert exc_info.value.code == "invalid_input"
+
+
+def test_cloud_read_failure_has_safe_operational_guidance(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import obstore.store
+
+    class UnavailableStore:
+        def get(self, path: str) -> None:
+            raise OSError("upstream-private-diagnostic")
+
+    monkeypatch.setattr(
+        obstore.store, "from_url", lambda *_args, **_kwargs: UnavailableStore()
+    )
+
+    with pytest.raises(CatalogError) as exc_info:
+        list(
+            catalog_transport.remote_chunks(
+                "s3://example/catalog.json", transport="cloud", storage_options={}
+            )
+        )
+
+    assert exc_info.value.code == "operation_failed"
+    assert exc_info.value.details["operation"] == "read_cloud"
+    assert exc_info.value.hints
+    assert "upstream-private-diagnostic" not in str(exc_info.value)
 
 
 def test_catalog_description_redacts_exact_release_credentials(
@@ -174,7 +220,7 @@ def test_catalog_description_redacts_exact_release_credentials(
         storage_options={},
     )
     monkeypatch.setattr(
-        "chartcoach.catalog.runtime.release_location", lambda *_: location
+        "chartcoach._catalog.runtime.release_location", lambda *_: location
     )
 
     catalog = open_catalog("https://example.test/release.json")
@@ -247,7 +293,7 @@ def test_http_catalog_and_release_descriptors_share_verified_artifacts(
     store = tmp_path / "store"
     _publish_local(release_root, release, store)
     monkeypatch.setattr(
-        "chartcoach.catalog.runtime.cache._cache_root",
+        "chartcoach._catalog.runtime.cache._cache_root",
         lambda: tmp_path / "cache",
     )
 
@@ -262,7 +308,7 @@ def test_http_catalog_and_release_descriptors_share_verified_artifacts(
 
     assert selected.release == exact.release == release
     assert requests["/catalog.json"] == 1
-    assert requests[f"/catalog/releases/{release.digest}/release.json"] == 1
+    assert requests[f"/catalog/releases/{release.digest}/release.json"] == 0
     assert requests[f"/catalog/releases/{release.digest}/MANIFEST.md"] == 1
     assert requests[f"/catalog/releases/{release.digest}/entries.parquet"] == 1
 
@@ -288,7 +334,7 @@ def test_opening_and_description_keep_profile_artifacts_lazy(
     store = tmp_path / "store"
     _publish_local(release_root, release, store)
     monkeypatch.setattr(
-        "chartcoach.catalog.runtime.cache._cache_root", lambda: tmp_path / "cache"
+        "chartcoach._catalog.runtime.cache._cache_root", lambda: tmp_path / "cache"
     )
 
     with _serve(store, required_header=("X-Profile-Test", "bound")) as (
@@ -336,7 +382,7 @@ def test_selected_descriptor_refreshes_while_artifact_cache_is_reused(
     _publish_local(first_root, first, store)
     _publish_local(second_root, second, store, select=False)
     monkeypatch.setattr(
-        "chartcoach.catalog.runtime.cache._cache_root",
+        "chartcoach._catalog.runtime.cache._cache_root",
         lambda: tmp_path / "cache",
     )
 
@@ -368,7 +414,7 @@ def test_remote_artifact_integrity_is_checked_before_cache_commit(
     entries = store / "catalog" / "releases" / release.digest / "entries.parquet"
     entries.write_bytes(b"corrupt")
     cache = tmp_path / "cache"
-    monkeypatch.setattr("chartcoach.catalog.runtime.cache._cache_root", lambda: cache)
+    monkeypatch.setattr("chartcoach._catalog.runtime.cache._cache_root", lambda: cache)
 
     with (
         _serve(store) as (base_url, _requests),
@@ -379,6 +425,55 @@ def test_remote_artifact_integrity_is_checked_before_cache_commit(
     assert not (
         cache / "artifacts" / release.artifact("entries.parquet").sha256
     ).exists()
+
+
+def test_cached_release_reopens_offline_and_repairs_artifact_bytes(
+    sample_catalog: Catalog, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root, release = _write_release(sample_catalog, tmp_path / "release")
+    store = tmp_path / "store"
+    _publish_local(root, release, store)
+    monkeypatch.setattr(
+        "chartcoach._catalog.runtime.cache._cache_root", lambda: tmp_path / "cache"
+    )
+    with _serve(store) as (base, requests):
+        url = f"{base}/catalog/releases/{release.digest}/release.json"
+        first = open_catalog(url)
+        parquet = first.artifact("entries.parquet")
+        with first.duckdb() as connection:
+            assert connection.read_parquet(str(parquet)).count("*").fetchone() == (2,)
+        repeated = open_catalog(url)
+        assert repeated.release == release
+        parquet.write_bytes(b"x" * parquet.stat().st_size)
+        repaired = open_catalog(url)
+        local = repaired.cache()
+        assert requests[f"/catalog/releases/{release.digest}/release.json"] == 1
+        assert requests[f"/catalog/releases/{release.digest}/entries.parquet"] == 2
+    assert open_catalog(url).release == release
+    assert (
+        open_catalog(local).read(ids=["direct-labels"])[0]["title"]
+        == "Use direct labels"
+    )
+    assert first.cache() == local
+    with pytest.raises(CatalogError, match="Unknown release artifact"):
+        first.artifact("../secret")
+
+
+def test_cached_release_does_not_write_through_a_symlink(
+    sample_catalog: Catalog, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root, _ = _write_release(sample_catalog, tmp_path / "release")
+    cache = tmp_path / "cache"
+    monkeypatch.setattr("chartcoach._catalog.runtime.cache._cache_root", lambda: cache)
+    local = open_catalog(root).cache()
+    external = tmp_path / "external"
+    external.write_bytes(b"caller content")
+    target = local / "entries.parquet"
+    target.unlink()
+    target.symlink_to(external)
+    with pytest.raises(CatalogError, match="symlink"):
+        open_catalog(root).cache()
+    assert external.read_bytes() == b"caller content"
 
 
 def test_release_rejects_an_oversized_core_artifact(
@@ -439,7 +534,7 @@ def test_cloud_transport_forwards_storage_options_to_catalog_resources(
 
     monkeypatch.setattr("obstore.store.from_url", from_url)
     monkeypatch.setattr(
-        "chartcoach.catalog.runtime.cache._cache_root",
+        "chartcoach._catalog.runtime.cache._cache_root",
         lambda: tmp_path / "cache",
     )
     storage_options = dict(expected_options)
@@ -451,6 +546,17 @@ def test_cloud_transport_forwards_storage_options_to_catalog_resources(
 
     assert catalog.release == release
     assert storage_options == expected_options
+    local = catalog.cache()
+    objects.clear()
+    exact = open_catalog(
+        f"s3://bucket/catalog/releases/{release.digest}/release.json",
+        storage_options=storage_options,
+    )
+    assert exact.release == release
+    assert (
+        open_catalog(local).read(ids=["direct-labels"])[0]["title"]
+        == "Use direct labels"
+    )
 
 
 def _write_release(

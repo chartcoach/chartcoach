@@ -4,13 +4,13 @@ from os import PathLike
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from ...constants import LANCE_DOCUMENT_TABLE
-from ..documents import document_rows
+from ..._constants import LANCE_DOCUMENT_TABLE
 from ..model import Catalog
 from ..profiles import embedding_bindings_from_bytes, validate_embedding_model
 from .dependencies import CURATION_EXTRA, missing_curation_dependency
 
 if TYPE_CHECKING:
+    import pyarrow as pa
     from lancedb import DBConnection, Table
     from lancedb.embeddings import EmbeddingFunction, EmbeddingFunctionConfig
 
@@ -24,8 +24,8 @@ def build_lancedb_index(
     """Build the fixed ChartCoach document table with a LanceDB embedding."""
 
     embedding = _validated_embedding(embedding)
-    frame = document_rows(catalog).with_row_index("row_id")
-    rows = frame.to_arrow()
+    frame = catalog.documents()
+    rows = _index_rows(frame.to_arrow())
     table = _connect(uri).create_table(
         LANCE_DOCUMENT_TABLE,
         data=rows.to_reader(max_chunksize=128),
@@ -37,6 +37,19 @@ def build_lancedb_index(
 
         table.create_index("text", config=FTS())
     return table
+
+
+def _index_rows(rows: pa.Table) -> pa.Table:
+    import pyarrow as pa
+
+    fields = []
+    for field in rows.schema:
+        if pa.types.is_large_string(field.type):
+            field = field.with_type(pa.string())
+        elif field.name == "labels":
+            field = field.with_type(pa.list_(pa.string()))
+        fields.append(field)
+    return rows.cast(pa.schema(fields, metadata=rows.schema.metadata))
 
 
 def _embedding_config(embedding: EmbeddingFunction) -> EmbeddingFunctionConfig:

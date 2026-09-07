@@ -8,15 +8,15 @@ from typing import TYPE_CHECKING, Any, TypeVar, cast
 import click
 from tabulate import tabulate
 
-from chartcoach.catalog import open_catalog
-from chartcoach.catalog.errors import CatalogError
-from chartcoach.constants import (
+from chartcoach._catalog import open_catalog
+from chartcoach._catalog.errors import CatalogError
+from chartcoach._constants import (
     CATALOG_SOURCE_ENV,
     INDEX_PROFILE_ENV,
 )
 
 if TYPE_CHECKING:
-    from chartcoach.catalog.model import Catalog
+    from chartcoach._catalog.model import Catalog
 
 CONTEXT_SETTINGS = {"help_option_names": ["-h", "--help"]}
 ROW_FORMATS = ("table", "json")

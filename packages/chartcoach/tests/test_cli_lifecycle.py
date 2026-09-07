@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 
 import pytest
-from chartcoach.catalog.model import Catalog
+from chartcoach import Catalog
 from chartcoach.cli.main import main as chartcoach_cli
 from click.testing import CliRunner
 from helpers import assert_cli_error

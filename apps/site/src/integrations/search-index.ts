@@ -1,9 +1,4 @@
-import {
-  create as createOramaDb,
-  insertMultiple as insertDocuments,
-  save as saveOramaDb,
-  type AnySchema,
-} from "@orama/orama";
+import { create, insertMultiple, save, type AnySchema, type Language } from "zbsearch";
 import type { AstroIntegration, HookParameters } from "astro";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
@@ -46,7 +41,7 @@ type SearchBuildDoneOptions = {
 
 export type SearchIndexDatabase = {
   schema: AnySchema;
-  language?: string;
+  language?: Language;
   include(pathname: string): boolean;
 };
 
@@ -78,11 +73,11 @@ async function serializeDatabase<Document extends object>(
   documents: readonly Document[],
 ) {
   const language = config.language ?? "english";
-  const db = createOramaDb({ schema: config.schema, language });
+  const db = create({ schema: config.schema, language });
 
-  await Promise.resolve(insertDocuments(db, [...documents], undefined, language));
+  await insertMultiple(db, [...documents], undefined, language);
 
-  return JSON.stringify(saveOramaDb(db));
+  return JSON.stringify(save(db));
 }
 
 async function loadPageDocuments<Document extends object>(

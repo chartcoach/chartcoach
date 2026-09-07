@@ -57,7 +57,7 @@ def build_command(
         )
         return
     try:
-        from chartcoach.catalog.curation import write_bundle
+        from chartcoach.curation import write_bundle
 
         write_bundle(catalog, output_path)
     except ModuleNotFoundError as exc:
@@ -84,7 +84,7 @@ def validate_command(ctx: click.Context, output_format: str) -> None:
     """Validate a catalog source and report table counts."""
 
     catalog = load_catalog(ctx)
-    from chartcoach.catalog.summary import validation_rows
+    from chartcoach._catalog.summary import validation_rows
 
     if len(catalog) == 0:
         source = source_path(ctx)

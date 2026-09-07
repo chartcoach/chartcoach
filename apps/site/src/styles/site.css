@@ -41,6 +41,124 @@ pre {
   @apply overflow-x-auto;
 }
 
+.guideline-prose {
+  overflow-wrap: anywhere;
+}
+
+.guideline-prose img,
+.guideline-prose svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.guideline-prose table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.guideline-story {
+  border-top: 1px solid var(--color-border);
+  padding-block: clamp(3.5rem, 8vw, 6rem);
+  scroll-margin-top: 5rem;
+}
+
+.story-intro {
+  display: grid;
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+}
+
+.story-intro > * {
+  min-width: 0;
+}
+
+.story-title {
+  margin: 1rem 0 0;
+  font-size: clamp(1.7rem, 4vw, 3.5rem);
+  font-weight: 600;
+  line-height: 1.12;
+  text-wrap: balance;
+}
+
+.story-grid,
+.story-step {
+  display: grid;
+  min-width: 0;
+  gap: 3rem;
+}
+
+.story-step {
+  gap: 1.25rem;
+  scroll-margin-top: 6rem;
+}
+
+.story-narrative {
+  min-width: 0;
+  scroll-margin-top: 8rem;
+}
+
+.story-copy {
+  display: grid;
+  grid-template-columns: 1.5rem minmax(0, 1fr);
+  gap: 0.75rem 1rem;
+}
+
+.story-number {
+  display: grid;
+  place-items: center;
+  height: 1.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.25rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--color-muted);
+}
+
+.story-panel {
+  min-width: 0;
+  overflow-anchor: none;
+}
+
+.story-artifact {
+  min-width: 0;
+  overflow: clip;
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  background: var(--color-bg);
+}
+
+.story-artifact-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.375rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+  padding: 1rem 1.25rem;
+}
+
+.story-artifact-body {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 1024px) and (min-height: 640px) {
+  .story-step {
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+    gap: 3rem;
+  }
+
+  .story-grid {
+    gap: 6rem;
+  }
+
+  .story-copy {
+    position: sticky;
+    top: 6rem;
+  }
+}
+
 .cc-code-token--comment {
   color: #6b7280;
   font-style: italic;

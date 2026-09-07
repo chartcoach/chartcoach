@@ -13,6 +13,7 @@ import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
 
+from ..._constants import LANCE_DOCUMENT_TABLE
 from ..manifest import manifest_digest
 from ..model import Catalog
 from ..profile_layout import (
@@ -33,7 +34,7 @@ from ..profiles import (
 )
 from ..releases import ReleaseArtifact
 from ..releases.hashing import sha256_file
-from .lancedb_index import build_lancedb_index
+from .lancedb_index import _index_rows, build_lancedb_index
 from .projection import Projection, project_vectors
 
 if TYPE_CHECKING:
@@ -56,21 +57,44 @@ def build_release_artifacts(
     *,
     profiles: Mapping[str, ProfileBuild],
 ) -> dict[str, ReleaseArtifact]:
-    artifacts: dict[str, ReleaseArtifact] = {}
-    for profile_name, profile in profiles.items():
-        directory = root / PROFILE_ROOT / profile_name
-        documents_path = directory / PROFILE_DOCUMENTS_FILE
-        archive_path = directory / PROFILE_INDEX_FILE
-        metadata_path = directory / PROFILE_METADATA_FILE
-        projection_path = directory / PROFILE_PROJECTION_FILE
-        directory.mkdir(parents=True, exist_ok=True)
+    from .release_builder import EmbeddingProfile
 
-        with TemporaryDirectory(prefix="chartcoach-lancedb-") as temporary:
-            database = Path(temporary) / "index"
-            table, reused_metadata, reused_archive = _profile_table(
+    artifacts: dict[str, ReleaseArtifact] = {}
+    with TemporaryDirectory(prefix="chartcoach-lancedb-") as temporary:
+        prepared = {
+            name: _profile_table(catalog, Path(temporary) / name, profile=profile)
+            for name, profile in profiles.items()
+            if not isinstance(profile, EmbeddingProfile)
+        }
+        for name, (table, metadata, _) in prepared.items():
+            profile = profiles[name]
+            projection = (
+                None
+                if profile.umap is None
+                else ProjectionMetadata.from_mapping(
+                    {"algorithm": "umap", "options": profile.umap}
+                )
+            )
+            _profile_metadata(
                 catalog,
-                database,
+                table,
+                table.to_arrow(),
                 profile=profile,
+                reused_metadata=metadata,
+                projection=projection,
+            ).to_bytes()
+        for profile_name, profile in profiles.items():
+            directory = root / PROFILE_ROOT / profile_name
+            documents_path = directory / PROFILE_DOCUMENTS_FILE
+            archive_path = directory / PROFILE_INDEX_FILE
+            metadata_path = directory / PROFILE_METADATA_FILE
+            projection_path = directory / PROFILE_PROJECTION_FILE
+            directory.mkdir(parents=True, exist_ok=True)
+            database = Path(temporary) / profile_name
+            table, reused_metadata, reused_archive = (
+                prepared[profile_name]
+                if profile_name in prepared
+                else _profile_table(catalog, database, profile=profile)
             )
             documents = table.to_arrow().sort_by([("row_id", "ascending")])
             projection, projection_metadata = _projection_table(
@@ -99,11 +123,11 @@ def build_release_artifacts(
             else:
                 shutil.copyfile(reused_archive, archive_path)
 
-        for path in (metadata_path, archive_path, documents_path, projection_path):
-            if path.is_file():
-                artifacts[profile_artifact_path(profile_name, path.name)] = _artifact(
-                    path
-                )
+            for path in (metadata_path, archive_path, documents_path, projection_path):
+                if path.is_file():
+                    artifacts[profile_artifact_path(profile_name, path.name)] = (
+                        _artifact(path)
+                    )
     return artifacts
 
 
@@ -113,7 +137,40 @@ def _profile_table(
     *,
     profile: ProfileBuild,
 ) -> tuple[Table, ProfileMetadata | None, Path | None]:
-    from .release_builder import EmbeddingProfile
+    from .release_builder import EmbeddingProfile, IndexProfile
+
+    if isinstance(profile, IndexProfile):
+        import lancedb
+        from lancedb.index import FTS
+
+        from .validation import _validate_documents
+
+        source_table = profile.index
+        if source_table.count_rows() != len(catalog.documents()):
+            raise ValueError(
+                "Native index row count does not match the catalog documents"
+            )
+        documents = source_table.to_arrow()
+        _validate_documents(
+            documents, catalog.documents().to_arrow(), label="Native index"
+        )
+        _vectors(documents, label="Native index")
+        raw = (documents.schema.metadata or {}).get(b"embedding_functions")
+        if raw is None:
+            raise ValueError("Native index must declare its embedding binding.")
+        documents = documents.select(
+            [*catalog.documents().columns, "vector"]
+        ).replace_schema_metadata({b"embedding_functions": raw})
+        # Arrow supplies complete vectors and metadata. An explicit embedding
+        # configuration would make LanceDB construct providers during ingestion.
+        table = lancedb.connect(database).create_table(
+            LANCE_DOCUMENT_TABLE, data=_index_rows(documents)
+        )
+        if documents.num_rows:
+            table.create_index("text", config=FTS())
+        if profile.configure is not None:
+            profile.configure(table)
+        return table, None, None
 
     if isinstance(profile, EmbeddingProfile):
         table = build_lancedb_index(
@@ -121,6 +178,8 @@ def _profile_table(
             database,
             embedding=profile.embedding,
         )
+        if profile.configure is not None:
+            profile.configure(table)
         return table, None, None
 
     from .validation import _open_reusable_profile
@@ -193,10 +252,12 @@ def _profile_metadata(
     _, dimensions = _vectors(documents, label="Profile")
 
     if reused_metadata is None:
-        from .release_builder import EmbeddingProfile
+        from .release_builder import EmbeddingProfile, IndexProfile
 
-        if not isinstance(profile, EmbeddingProfile):
-            raise TypeError("Fresh profile metadata requires an EmbeddingProfile.")
+        if not isinstance(profile, EmbeddingProfile | IndexProfile):
+            raise TypeError(
+                "Fresh profile metadata requires an embedding or index profile."
+            )
         import lancedb
 
         distance_metric = profile.distance_metric
@@ -207,7 +268,7 @@ def _profile_metadata(
         python_requirements = reused_metadata.python_requirements
         lancedb_version = reused_metadata.lancedb_version
 
-    return ProfileMetadata(
+    metadata = ProfileMetadata(
         schema_version=1,
         documents_version=DOCUMENTS_VERSION,
         entries_digest=catalog.entries_digest(),
@@ -219,6 +280,14 @@ def _profile_metadata(
         lancedb_version=lancedb_version,
         projection=projection,
     )
+    from .validation import (
+        _validate_documents,
+        _validate_native_indexes,
+    )
+
+    _validate_documents(documents, catalog.documents().to_arrow(), label="LanceDB")
+    _validate_native_indexes(table, metadata, documents.num_rows)
+    return metadata
 
 
 def _vectors(documents: pa.Table, *, label: str) -> tuple[np.ndarray, int]:

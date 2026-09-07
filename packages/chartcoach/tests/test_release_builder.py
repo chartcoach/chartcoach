@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -11,19 +12,135 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
 from catalog_testkit import deterministic_embedding
-from chartcoach.catalog.curation import (
+from chartcoach import Catalog, CatalogManifest, open_catalog
+from chartcoach._catalog.curation.projection import project_vectors
+from chartcoach._catalog.releases.hashing import release_digest
+from chartcoach.curation import (
     EmbeddingProfile,
+    IndexProfile,
     ProfileReuse,
     build_release,
     validate_release,
 )
-from chartcoach.catalog.curation.projection import project_vectors
-from chartcoach.catalog.model import Catalog
-from chartcoach.catalog.releases.hashing import release_digest
 
 pytestmark = pytest.mark.curation
 _PROFILE = "test-deterministic"
 _EMBEDDING = "chartcoach-release-test"
+
+
+def test_native_index_vectors_are_materialized_and_configured_for_release(
+    sample_catalog: Catalog,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import lancedb
+    from lancedb.embeddings import EmbeddingFunctionConfig
+    from lancedb.index import BTree
+
+    source = tmp_path / "native"
+    embedding = deterministic_embedding("native-prebuilt-profile")
+    connection = lancedb.connect(source)
+    table = connection.create_table(
+        "documents",
+        data=sample_catalog.documents().to_arrow(),
+        embedding_functions=[
+            EmbeddingFunctionConfig(
+                source_column="text", vector_column="vector", function=embedding
+            ),
+        ],
+    )
+    connection.create_table("unrelated", data=[{"secret": "caller data"}])
+    vectors = table.to_arrow()["vector"].to_pylist()
+
+    def forbid_provider(*args, **kwargs):
+        raise AssertionError("Packaging constructed the embedding provider")
+
+    monkeypatch.setattr(type(embedding), "create", forbid_provider)
+
+    def configure(table):
+        table.create_index("parent_id", config=BTree())
+
+    output = tmp_path / "release"
+    build_release(
+        sample_catalog,
+        output,
+        profiles={
+            "native": IndexProfile(table, configure=configure, export_documents=True)
+        },
+    )
+    assert list(table.list_indices()) == []
+    shutil.rmtree(source)
+    assert validate_release(output)
+    released = open_catalog(output).index("native")
+    assert released.to_arrow()["vector"].to_pylist() == vectors
+    assert (
+        released.search("labels", query_type="fts", fts_columns="text")
+        .where("parent_id = 'direct-labels'")
+        .limit(1)
+        .to_list()
+    )
+    assert {index.index_type for index in released.list_indices()} == {"FTS", "BTree"}
+    documents = pq.read_table(output / "profiles/native/documents.parquet")
+    assert (
+        documents.select(sample_catalog.documents().columns).to_pylist()
+        == sample_catalog.documents().to_dicts()
+    )
+
+
+def test_profile_reuse_accepts_manifest_prose_changes_with_identical_documents(
+    sample_catalog: Catalog,
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "source"
+    first = build_release(
+        sample_catalog,
+        source,
+        profiles={
+            "model": EmbeddingProfile(deterministic_embedding("reuse-vocabulary"))
+        },
+    )
+    manifest = CatalogManifest.from_text(
+        sample_catalog.manifest.markdown.replace(
+            "Actionable guidance", "Practical guidance"
+        )
+    )
+    revised = Catalog(sample_catalog.to_frame(), manifest=manifest)
+    assert revised.documents().equals(sample_catalog.documents())
+    output = tmp_path / "revised"
+    second = build_release(
+        revised, output, profiles={"model": ProfileReuse(source, "model")}
+    )
+    assert first.artifact("profiles/model/index.tar.gz") == second.artifact(
+        "profiles/model/index.tar.gz"
+    )
+    assert first.digest != second.digest
+    assert validate_release(output) == second
+    assert (
+        open_catalog(output).describe(profile="model")["manifest_digest"]
+        != open_catalog(source).describe()["manifest_digest"]
+    )
+
+
+def test_projection_options_are_checked_before_embedding_work(
+    sample_catalog: Catalog,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    embedding = deterministic_embedding("projection-preflight")
+
+    def forbid_provider(*args, **kwargs):
+        raise AssertionError("Embedding started before options were checked")
+
+    monkeypatch.setattr(type(embedding), "create", forbid_provider)
+    with pytest.raises(ValueError, match="n_components"):
+        build_release(
+            sample_catalog,
+            tmp_path / "release",
+            profiles={
+                "paid": EmbeddingProfile(embedding),
+                "invalid": EmbeddingProfile(embedding, umap={"n_components": 3}),
+            },
+        )
 
 
 def test_core_release_contains_the_catalog_bundle(
@@ -225,9 +342,10 @@ def test_profile_reuse_builds_projection_from_the_index_archive(
     assert validate_release(output) == release
 
 
-def test_profile_reuse_requires_the_same_catalog_identity(
+def test_profile_reuse_requires_the_same_indexed_documents(
     sample_catalog: Catalog,
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     reusable_release = tmp_path / "reusable-release"
     build_release(
@@ -242,16 +360,23 @@ def test_profile_reuse_requires_the_same_catalog_identity(
     changed_rows = sample_catalog.to_frame()
     changed_rows[0, "title"] = "Changed title"
     changed = Catalog(changed_rows, manifest=sample_catalog.manifest)
+    expensive = deterministic_embedding("preflight-before-embedding")
 
-    with pytest.raises(ValueError, match="entries digest"):
+    def forbid_embedding(*args, **kwargs):
+        raise AssertionError("Embeddings started before reusable inputs were checked")
+
+    monkeypatch.setattr(type(expensive), "compute_source_embeddings", forbid_embedding)
+
+    with pytest.raises(ValueError, match="document rows"):
         build_release(
             changed,
             tmp_path / "reused",
             profiles={
+                "expensive": EmbeddingProfile(expensive),
                 "reused-profile": ProfileReuse(
                     release=reusable_release,
                     profile=_PROFILE,
-                )
+                ),
             },
         )
 
@@ -273,7 +398,7 @@ def test_profile_reuse_exports_from_the_index_archive_in_a_fresh_process(
     )
     script = f"""
 from chartcoach import open_catalog
-from chartcoach.catalog.curation import ProfileReuse, build_release
+from chartcoach.curation import ProfileReuse, build_release
 
 build_release(
     open_catalog({str(reusable_release)!r}),

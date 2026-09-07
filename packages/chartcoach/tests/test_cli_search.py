@@ -5,9 +5,9 @@ from typing import cast
 
 import pytest
 from catalog_testkit import deterministic_embedding
-from chartcoach.catalog.curation import EmbeddingProfile, build_release
-from chartcoach.catalog.model import Catalog
+from chartcoach import Catalog
 from chartcoach.cli.main import main as chartcoach_cli
+from chartcoach.curation import EmbeddingProfile, build_release
 from click.testing import CliRunner, Result
 from helpers import json_value
 

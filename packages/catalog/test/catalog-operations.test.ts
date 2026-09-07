@@ -134,6 +134,32 @@ describe("catalog operations", () => {
     );
   });
 
+  it("preserves BibTeX grouping and escapes through source reads and citations", () => {
+    const expected = operations.protected_bibliography;
+    const catalog = new Catalog(
+      [guideline("protected", [], expected.reference)],
+      operationManifest(),
+    );
+    const source = catalog.read({ ids: ["protected"], sourceDetail: "full" })[0]?.sources[0];
+    expect(source?.source_title).toBe(expected.source_title);
+    expect(source?.authors_text).toBe(expected.authors_text);
+    expect(catalog.cite({ ids: ["protected"] })[0]?.sources[0]?.citation).toBe(expected.citation);
+  });
+
+  it.each(operations.bibliography_urls)("preserves source URLs: $name", (expected) => {
+    const catalog = new Catalog([guideline("source", [], expected.reference)], operationManifest());
+    const minimal = catalog.read({ ids: ["source"] })[0]!;
+    const full = catalog.read({ ids: ["source"], sourceDetail: "full" })[0]!;
+    const citation = catalog.cite({ ids: ["source"] })[0]!.sources[0]!;
+
+    for (const source of [minimal.sources[0]!, full.sources[0]!, citation]) {
+      expect(source.url).toBe(expected.url);
+      expect(source.doi).toBe(expected.doi);
+    }
+    expect(citation.citation).toBe(expected.citation);
+    expect(full.references).toEqual([expected.reference]);
+  });
+
   it("matches the Python entries digest for supplementary-plane ids", async () => {
     const catalog = new Catalog(operations.identity.records, operationManifest());
 

@@ -50,13 +50,12 @@ def catalog_table(catalog: Catalog, name: str) -> pl.DataFrame:
         build_sections_df,
     )
 
-    guidelines = build_guidelines_df(catalog.to_frame())
     if name == "guidelines":
-        return guidelines
+        return build_guidelines_df(catalog.to_frame())
     if name == "sections":
-        return build_sections_df(guidelines)
+        return build_sections_df(catalog.table("guidelines"))
     if name == "guideline_labels":
-        return build_guideline_labels_df(guidelines)
+        return build_guideline_labels_df(catalog.table("guidelines"))
 
     references = catalog._reference_tables()
     if name == "references":
@@ -73,8 +72,7 @@ def catalog_table_rows(catalog: Catalog) -> list[dict[str, object]]:
     """Return table names and row counts."""
 
     return [
-        {"name": name, "rows": catalog_table(catalog, name).height}
-        for name in TABLE_SCHEMAS
+        {"name": name, "rows": catalog.table(name).height} for name in TABLE_SCHEMAS
     ]
 
 
@@ -99,7 +97,7 @@ def iter_catalog_tables(catalog: Catalog) -> Iterable[tuple[str, pl.DataFrame]]:
     """Yield each catalog table for exports."""
 
     for name in TABLE_SCHEMAS:
-        yield name, catalog_table(catalog, name)
+        yield name, catalog.table(name)
 
 
 __all__ = [

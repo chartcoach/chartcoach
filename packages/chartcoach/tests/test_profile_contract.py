@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 from chartcoach import CatalogError
-from chartcoach.catalog.profiles import (
+from chartcoach._catalog.profiles import (
     ProfileMetadata,
     validate_embedding_model,
 )

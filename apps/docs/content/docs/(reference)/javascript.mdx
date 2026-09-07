@@ -1,26 +1,30 @@
 ---
-title: JavaScript
+title: JavaScript and TypeScript
 description: Open a catalog release, query guidance, read sources, and inspect profile metadata.
 icon: Braces
 ---
 
-`@chartcoach/catalog` fetches a selected or exact Guideline Catalog release and
-returns a `Catalog` of guideline entries.
+`@chartcoach/catalog` reads guideline entries and verified release files in
+browsers and Node.js. Use `@chartcoach/catalog/node` for local paths and a
+persistent file cache.
 
 ## Install
 
 ```bash
-npm install @chartcoach/catalog@0.2.0
+npm install @chartcoach/catalog
 ```
 
-## Open an exact release
+Save the first example as `read-guideline.mjs` in your project and run
+`node read-guideline.mjs`.
+Subsequent snippets assume the `catalog` created by this example unless they
+open another catalog explicitly.
 
-```ts
+## Open and read a catalog
+
+```js title="read-guideline.mjs"
 import { openCatalog } from "@chartcoach/catalog";
 
-const catalog = await openCatalog(
-  "https://files.peter.gy/packages/python/chartcoach/0.2.0/docs-catalog/c0f6dbec3dd31b07763b46fd458733db0b8b50c5793cf9447458119287129420/release.json",
-);
+const catalog = await openCatalog();
 const candidates = catalog.query({ contains: "direct labels", limit: 5 });
 const ids = candidates.map(({ id }) => id);
 const records = catalog.read({ ids, sourceDetail: "minimal" });
@@ -36,11 +40,12 @@ The first line is:
 Directly label colored series instead of relying on a color key
 ```
 
-`openCatalog(location, { fetch, signal })` accepts an absolute HTTP or HTTPS URL
+`openCatalog(location?, { fetch?, signal?, cache? })` accepts an absolute HTTP or HTTPS URL
 whose path names `catalog.json` or `release.json`. Omit `location` to open the
 official selected catalog. Pass a custom `fetch` implementation when the
-runtime does not use `globalThis.fetch`. Pass an `AbortSignal` to cancel
-descriptor and artifact requests. The runtime must provide Web Crypto,
+application needs authentication or another URL scheme, such as S3. Pass an `AbortSignal`
+to cancel opening. Later `describe` and `artifact` calls accept their own
+signals. The runtime must provide Web Crypto,
 `AbortSignal.timeout`, and `AbortSignal.any`.
 
 `openCatalog` verifies the release digest, then checks the byte count and
@@ -52,100 +57,11 @@ userinfo, query parameters, and fragments removed. Invalid locations, failed
 requests, malformed release data, and integrity mismatches reject the promise
 with `CatalogError`.
 
-## Try the SDK
-
-Choose a candidate returned by `catalog.query()` in the browser. The preview
-shows the record, citation, release identity, and generated Markdown.
-
-<CatalogNotebookRuntime />
-
-```marimo-config
-requires-python = ">=3.12"
-dependencies = [
-  "chartcoach @ https://files.peter.gy/packages/python/chartcoach/0.2.0/892f120cb377/chartcoach-0.2.0-py3-none-any.whl",
-  "pyobservablejs==0.0.9",
-]
-```
-
-```python marimo echo=false server-output=false
-import sys
-
-if sys.platform == "emscripten":
-    import micropip
-
-    await micropip.install("anywidget-bundle==0.0.1")
-    await micropip.install("pyobservablejs==0.0.9", deps=False)
-
-import observablejs as obs
-
-catalog_notebook = obs.Notebook(
-    obs.js(
-        """
-        const sdk = globalThis.ChartCoachCatalog;
-        if (!sdk) throw new Error("The chartcoach JavaScript SDK is unavailable");
-
-        const catalog = await sdk.openCatalog(
-          "https://files.peter.gy/packages/python/chartcoach/0.2.0/docs-catalog/c0f6dbec3dd31b07763b46fd458733db0b8b50c5793cf9447458119287129420/release.json"
-        );
-        const catalogInfo = await catalog.describe();
-        const candidates = catalog.query({ limit: 20 });
-        """,
-        key="catalog",
-        display=False,
-    ),
-    obs.js(
-        """
-        const selectedId = view(Inputs.select(
-          candidates.map((guideline) => guideline.id),
-          {
-            label: "Guideline",
-            value: "directly-label-series-instead-of-using-a-color-key",
-            format: (id) => catalog.require(id).title
-          }
-        ));
-        """,
-        key="selected_id",
-    ),
-    obs.js(
-        r"""
-        const selected = catalog.require(selectedId);
-        const record = catalog.read({ ids: [selectedId], sourceDetail: "minimal" })[0];
-        const citation = catalog.cite({ ids: [selectedId] })[0];
-        const markdown = sdk.toMarkdown(selected);
-
-        display(md`### ${selected.title}
-
-\`${selected.id}\`
-
-${record.sections[0].content}
-
-**Labels:** ${record.labels.map((label) => `\`${label}\``).join(" ")}
-
-**Citation:** ${citation.guideline_citation}
-
-**Release:** \`${catalogInfo.release_digest}\`
-        `);
-
-        display(html`<details>
-          <summary>Generated Markdown</summary>
-          <pre>${markdown}</pre>
-        </details>`);
-        """,
-        key="selected_record",
-    ),
-)
-
-catalog_view = catalog_notebook.view(capture_state=False)
-catalog_view
-```
-
-Choosing another guideline updates the selected entry record, citation, and
-generated Markdown.
-
 ## Load a compiled bundle
 
-`loadCatalogData` accepts `entries.parquet` bytes and `MANIFEST.md` text when your
-application has already fetched the two files:
+For a bundle built with [curation](/curation), `loadCatalogData` accepts
+`entries.parquet` bytes and `MANIFEST.md` text. The paths in this example are
+relative to the process's working directory:
 
 ```ts
 import { readFile } from "node:fs/promises";
@@ -166,7 +82,8 @@ the promise with the reader's error.
 ## Load verified release files
 
 `loadCatalog` verifies a parsed release and caller-provided core bytes. Use it
-for local files or a transport that already owns retrieval:
+when your application already owns retrieval. This example requires a built
+release at `dist/release` relative to the process's working directory:
 
 ```ts
 import { readFile } from "node:fs/promises";
@@ -196,8 +113,8 @@ records and can fetch profile metadata.
 
 ```ts
 const candidates = catalog.query({
-  labels: ["chart:line"],
-  labelPrefixes: ["task:"],
+  labels: ["purpose:refine"],
+  labelPrefixes: ["quality:"],
   contains: "direct labels",
   limit: 5,
 });
@@ -210,7 +127,10 @@ const description = await catalog.describe();
 
 - `query(options?)` returns compact `EntryCandidate` values with `id`, `title`,
   `description`, and `labels`. Labels and label prefixes are conjunctive. The
-  default limit is 50.
+  default limit is 50. `contains` matches a contiguous phrase in the ID, title,
+  or description, ignoring case and normalizing whitespace, hyphens, and
+  underscores. Empty matches return an empty array. Shorten the phrase or
+  query section text through the application's data engine when needed.
 - `read({ ids, roles?, sourceDetail? })` preserves requested guideline entry ID
   order, duplicate IDs, and authored section order. It returns
   `GuidelineEntryRecord` values.
@@ -221,9 +141,18 @@ const description = await catalog.describe();
 - `describe({ profile?, signal? })` returns snake-case identity, vocabulary,
   profile names, and optional `ProfileInfo`. Calls with the default options are
   also awaited.
-- `get`, `require`, `guidelines`, iteration, `length`, `labels()`,
-  `sectionRoles()`, `release`, `releaseUrl`, and `toMarkdown` support direct
-  application code.
+
+| Member                                  | Result                                                        |
+| --------------------------------------- | ------------------------------------------------------------- |
+| `catalog.get(id)`                       | `Guideline`, or `undefined` when absent                       |
+| `catalog.require(id)`                   | `Guideline`, or `CatalogError` with code `lookup`             |
+| `catalog.guidelines`, iteration         | Complete stored guidelines in catalog order                   |
+| `catalog.length`                        | Number of guideline entries                                   |
+| `catalog.labels()`                      | Sorted distinct labels                                        |
+| `catalog.sectionRoles()`                | Sorted distinct roles used by guidelines                      |
+| `catalog.manifest`                      | Manifest Markdown and vocabulary definitions                  |
+| `catalog.release`, `catalog.releaseUrl` | Release descriptor and sanitized exact location, when present |
+| `toMarkdown(guideline)`                 | Authored Markdown with frontmatter and ordered sections       |
 
 JavaScript options use camel case. Shared operation records use snake case for
 fields such as `source_title`, `reference_id`, and `release_digest`. Nullable
@@ -261,27 +190,127 @@ cached per `Catalog` instance. Cancellation affects one description call.
 binding, dimensions, `distance_metric`, `python_requirements`, LanceDB version,
 and projection metadata.
 
-Use `parseProfileMetadata(value)` when an application already holds a profile
-JSON value:
-
-`parseProfileMetadata(value)` validates the versioned `profile.json` contract
+`parseProfileMetadata(value)` validates an already parsed `profile.json` value
 and returns immutable metadata. It checks exact fields, digests, dimensions,
 distance metric, LanceDB embedding binding, exact Python requirement versions,
 projection metadata, and portable registry-variable syntax. Profile IDs use
 lowercase single-component names such as `minilm-normalized`.
 
-```ts
-import { parseProfileMetadata } from "@chartcoach/catalog";
+Parsing validates the record shape. Use `catalog.describe({ profile })` to
+also verify the metadata's bytes and relationship to the loaded catalog.
 
-const response = await fetch(
-  "https://catalog.example.com/catalog/releases/<digest>/profiles/minilm-normalized/profile.json",
-);
-if (!response.ok) throw new Error(`Profile request failed: ${response.status}`);
-const profile = parseProfileMetadata(await response.json());
-console.log(profile.distance_metric, profile.dimensions);
+## Use release files with native tools
+
+```ts
+const bytes = await catalog.artifact("entries.parquet");
+const artifacts = Object.keys(catalog.release?.artifacts ?? {});
 ```
 
-The package exports `GuidelineInput`, `LoadCatalogInput`,
-`LoadCatalogDataInput`, loader options, `EntryCandidate`,
-`GuidelineEntryRecord`, `ProfileInfo`, `CatalogInfo`, `CatalogManifest`, release
-types, and profile metadata types.
+`artifact(path, { signal? })` returns verified `Uint8Array` bytes. The release
+inventory includes available document and projection Parquet exports beneath
+`profiles/<profile>/`. Core files and small metadata are reused in memory.
+For application-owned persistence, pass `{ cache }` to `openCatalog`. An
+`ArtifactCache` implements:
+
+```ts
+interface ArtifactCache {
+  get(sha256: string, size: number): Promise<Uint8Array | undefined>;
+  put(sha256: string, bytes: Uint8Array): Promise<void>;
+}
+```
+
+Cached bytes are verified before reuse. Core files are limited to 64 MiB each.
+Optional artifact byte reads are limited to 1 GiB.
+
+## Node.js files and cache
+
+For a built release at `dist/release`, request native file paths:
+
+```ts
+import { openCatalog, artifactPath } from "@chartcoach/catalog/node";
+
+const catalog = await openCatalog("./dist/release");
+const path = await artifactPath(catalog, "entries.parquet");
+```
+
+Pass `path` to the [DuckDB Node client](https://duckdb.org/docs/stable/clients/node_neo/overview)
+or an Arrow/Parquet reader. `artifactPath` verifies cached files and streams
+missing files to disk. It accepts an optional third argument `{ signal }`.
+The default cache follows the platform's per-user cache location and shares
+Python's `chartcoach` artifact layout. Pass `{ cacheDirectory: "/data/catalog-cache" }`
+to Node's `openCatalog` to choose another directory.
+
+The Node entry accepts bundle directories, local release directories, deployed
+roots, local descriptor paths, and remote descriptor URLs. Exact
+digest-addressed releases reopen offline once their core files are cached.
+Selection descriptors refresh on each open. Optional files are cached on demand.
+
+## Open S3 with an existing storage client
+
+An application can supply its own [AWS SDK S3 client](https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/javascript_s3_code_examples.html).
+Install `@aws-sdk/client-s3` in that application and configure its credentials
+through the SDK's credential providers. Set `CATALOG_SOURCE` to your S3
+descriptor URI. The adapter returns the SDK response body as a web stream and
+forwards cancellation:
+
+```ts
+import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { openCatalog } from "@chartcoach/catalog/node";
+
+const s3 = new S3Client({ region: "eu-central-1" });
+const catalog = await openCatalog(process.env.CATALOG_SOURCE, {
+  fetch: async (input, init) => {
+    const url = new URL(input);
+    const object = await s3.send(
+      new GetObjectCommand({
+        Bucket: url.hostname,
+        Key: decodeURIComponent(url.pathname.slice(1)),
+      }),
+      { abortSignal: init?.signal ?? undefined },
+    );
+    if (!object.Body) throw new Error("S3 object body is missing");
+    return new Response(object.Body.transformToWebStream());
+  },
+});
+```
+
+chartcoach verifies descriptor and artifact bytes independently of transport.
+Browser consumers use the same custom-fetch option with the browser entry
+point and a credential strategy appropriate for the application.
+
+## Construct a catalog from records
+
+Given manifest Markdown in `manifestText` and entry records in `guidelines`:
+
+```ts
+import { Catalog, parseCatalogManifest } from "@chartcoach/catalog";
+
+const manifest = parseCatalogManifest(manifestText);
+const catalog = new Catalog(guidelines, manifest);
+```
+
+`guidelines` is an iterable of `GuidelineInput` records. Each contains `id`,
+`title`, `description`, `labels`, `sections`, and BibTeX `references`. Each
+`GuidelineSection` contains `role`, `title`, and `content`. The constructor
+derives the Markdown body and validates vocabulary coverage.
+
+## Types and parsers
+
+Import these contracts from `@chartcoach/catalog`:
+
+| Group               | Exports                                                                                                                                              |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Entries             | `GuidelineInput`, `Guideline`, `GuidelineSection`, `EntryCandidate`, `GuidelineEntryRecord`                                                          |
+| Sources             | `SourceDetail`, `MinimalSourceRecord`, `FullSourceRecord`, `CitationRecord`, `CitationSource`                                                        |
+| Catalog description | `CatalogInfo`, `ProfileInfo`                                                                                                                         |
+| Manifest            | `CatalogManifest`, `ManifestDefinition`, `parseCatalogManifest`                                                                                      |
+| Release             | `CatalogRelease`, `ReleaseArtifact`, `parseCatalogRelease`                                                                                           |
+| Profiles            | `ProfileMetadata`, `EmbeddingBinding`, `ProjectionMetadata`, `DistanceMetric`, `parseProfileMetadata`                                                |
+| Options             | `OpenCatalogOptions`, `LoadCatalogInput`, `LoadCatalogDataInput`, `QueryOptions`, `ReadOptions`, `CiteOptions`, `DescribeOptions`, `ArtifactOptions` |
+| Transport           | `FetchLike`, `ArtifactCache`                                                                                                                         |
+| Errors and JSON     | `CatalogError`, `CatalogErrorCode`, `CatalogErrorOptions`, `JsonObject`, `JsonValue`                                                                 |
+
+`parseCatalogManifest` accepts Markdown text. `parseCatalogRelease` and
+`parseProfileMetadata` accept parsed JSON values and validate their fields.
+Loaders additionally verify release integrity. The Node entry exports
+`openCatalog`, `artifactPath`, and `NodeOpenCatalogOptions`.

@@ -5,8 +5,9 @@ from typing import Literal, cast
 
 import click
 
-from chartcoach.catalog.embedding import apply_embedding_variables
-from chartcoach.catalog.errors import CatalogError
+from chartcoach._catalog.embedding import apply_embedding_variables
+from chartcoach._catalog.errors import CatalogError
+from chartcoach._catalog.search import catalog_search
 
 from ..common import (
     CONTEXT_SETTINGS,
@@ -69,7 +70,8 @@ def search_command(
     try:
         if resolved_mode != "fts" and embedding_vars is not None:
             apply_embedding_variables(embedding_vars)
-        result = load_catalog(ctx).search(
+        result = catalog_search(
+            load_catalog(ctx),
             text,
             profile=profile,
             mode=resolved_mode,

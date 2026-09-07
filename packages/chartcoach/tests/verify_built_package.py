@@ -48,7 +48,7 @@ def _verify_wheel() -> None:
         }
         assert plugin_files == set(_PLUGIN_FILES)
         assert "chartcoach/agent.py" in names
-        assert "chartcoach/skills.py" in names
+        assert "chartcoach/curation.py" in names
 
         marker = json.loads(
             archive.read(f"{metadata_root}/agent_plugins.json").decode("utf-8")
@@ -75,7 +75,7 @@ def _verify_sdist() -> None:
     }
     assert plugin_files == set(_PLUGIN_FILES)
     assert f"{_DISTRIBUTION}/src/chartcoach/agent.py" in names
-    assert f"{_DISTRIBUTION}/src/chartcoach/skills.py" in names
+    assert f"{_DISTRIBUTION}/src/chartcoach/curation.py" in names
 
 
 def _verify_installed_wheel() -> None:
@@ -122,15 +122,14 @@ def _verify_installed_wheel() -> None:
 _INSTALLED_SMOKE = """
 import json
 import os
-from importlib.metadata import distribution, version
+from importlib.metadata import distribution
 from pathlib import Path
 
 import chartcoach.agent as cc
-from chartcoach import ProfileInfo
+from chartcoach import ProfileInfo, Catalog, CatalogManifest, Guideline, Section
 from chartcoach.cli.main import main
 from click.testing import CliRunner
 
-assert version("agent-plugins") == "0.2.0"
 plugin = cc.agent_plugin()
 assert plugin.manifest.name == "chartcoach"
 expected_files = tuple(json.loads(os.environ["CHARTCOACH_EXPECTED_PLUGIN_FILES"]))
@@ -166,7 +165,13 @@ citations = catalog.cite(ids=[candidates[0]["id"]])
 assert citations[0]["id"] == "direct-labels"
 description = catalog.describe()
 assert description["release_digest"] == catalog.release.digest
-assert catalog.sql("select count(*) as rows from guidelines")["rows"] == [{"rows": 6}]
+with catalog.duckdb() as connection:
+    assert connection.sql("select count(*) from guidelines").fetchone() == (6,)
+    assert connection.read_parquet(str(catalog.artifact("entries.parquet"))).count("*").fetchone() == (6,)
+constructed = Catalog.from_guidelines([
+    Guideline("example", "Use labels", "Label the marks.", sections=(Section("advice", "Advice", "Use labels."),)),
+], manifest=CatalogManifest.from_text(catalog.manifest.markdown))
+assert constructed.read(ids=["example"])[0]["title"] == "Use labels"
 
 runner = CliRunner()
 source = os.environ["CHARTCOACH_FIXTURE_RELEASE"]

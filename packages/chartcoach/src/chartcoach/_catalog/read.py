@@ -15,6 +15,24 @@ if TYPE_CHECKING:
 SourceDetail = Literal["none", "minimal", "full"]
 
 
+class MinimalSourceRecord(TypedDict):
+    reference_id: str
+    authors_text: str | None
+    year: str | None
+    source_title: str | None
+    doi: str | None
+    url: str | None
+
+
+class FullSourceRecord(MinimalSourceRecord):
+    guideline_id: str
+    source_type: str | None
+    authors: list[str]
+    journal: str | None
+    booktitle: str | None
+    publisher: str | None
+
+
 class SectionRecord(TypedDict):
     """One ordered guideline section returned by `Catalog.read`."""
 
@@ -31,7 +49,7 @@ class GuidelineEntryRecord(TypedDict):
     description: str
     labels: list[str]
     sections: list[SectionRecord]
-    sources: list[dict[str, object]]
+    sources: list[MinimalSourceRecord | FullSourceRecord]
     references: NotRequired[list[str]]
 
 
@@ -111,7 +129,7 @@ def entry_record_from_row(
         "description": str(row["description"]),
         "labels": list(cast(Sequence[str], row.get("labels") or ())),
         "sections": sections,
-        "sources": sources,
+        "sources": cast(list[MinimalSourceRecord | FullSourceRecord], sources),
     }
     if source_detail == "full":
         record["references"] = list(cast(Sequence[str], row.get("references") or ()))

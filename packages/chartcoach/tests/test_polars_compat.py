@@ -4,7 +4,7 @@ from typing import cast
 
 import polars as pl
 import pytest
-from chartcoach.catalog._polars import explode_expr, explode_frame
+from chartcoach._catalog._polars import explode_expr, explode_frame
 
 
 class LegacyFrame:

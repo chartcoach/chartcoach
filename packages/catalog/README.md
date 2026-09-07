@@ -12,15 +12,13 @@ runtime with `fetch`, Web Crypto, `AbortSignal.timeout`, and `AbortSignal.any`.
 ## Query and read guidance
 
 ```bash
-npm install @chartcoach/catalog@0.2.0
+npm install @chartcoach/catalog
 ```
 
 ```ts
 import { openCatalog } from "@chartcoach/catalog";
 
-const catalog = await openCatalog(
-  "https://files.peter.gy/packages/python/chartcoach/0.2.0/docs-catalog/c0f6dbec3dd31b07763b46fd458733db0b8b50c5793cf9447458119287129420/release.json",
-);
+const catalog = await openCatalog();
 const candidates = catalog.query({ contains: "direct labels", limit: 5 });
 const ids = candidates.map(({ id }) => id);
 const records = catalog.read({ ids, sourceDetail: "minimal" });
@@ -30,13 +28,18 @@ const info = await catalog.describe();
 console.log(records[0]?.title);
 ```
 
+```text
+Directly label colored series instead of relying on a color key
+```
+
 `query`, `read`, and `cite` run synchronously over the loaded `Catalog`.
 `describe` is asynchronous because it computes SHA-256 digests and can fetch
 selected profile metadata.
 
-```text
-Directly label colored series instead of relying on a color key
-```
+`contains` matches a contiguous phrase in the ID, title, or description,
+ignoring case and normalizing whitespace, hyphens, and underscores. For empty
+matches, shorten the phrase or follow [Find guidelines](https://docs.chartcoach.dev/querying)
+to query section text with the application's data engine.
 
 ## Choose a release URL
 
@@ -144,6 +147,51 @@ definitions are frozen. Pass changed record objects to a new `Catalog`. Use
 
 `CatalogError` exposes `code`, `details`, and `hints`. Its codes use the shared
 Python and JavaScript error vocabulary.
+
+## Compose verified artifacts
+
+```ts
+const entries = await catalog.artifact("entries.parquet");
+const paths = Object.keys(catalog.release?.artifacts ?? {});
+```
+
+`artifact(path, { signal? })` returns a caller-owned `Uint8Array` after checking
+its byte count and SHA-256 hash. The release inventory lists optional files
+such as `profiles/<profile>/documents.parquet` and
+`profiles/<profile>/projection.parquet`. Pass Parquet bytes to your data library.
+Core bytes and small metadata are reused in memory.
+`loadCatalog` makes its supplied core bytes available through the same method.
+
+`openCatalog` accepts an optional `cache` with asynchronous `get(sha256, bytes)` and
+`put(sha256, bytes)` methods. Cached bytes are verified before reuse. A custom
+`fetch` can resolve other URI schemes, including S3, using the caller's storage
+client and credentials. Return a standard `Response` and forward its request
+signal to the client.
+
+## Open local files and cache releases in Node.js
+
+```ts
+import { openCatalog, artifactPath } from "@chartcoach/catalog/node";
+
+const catalog = await openCatalog("./dist/release");
+const entriesPath = await artifactPath(catalog, "entries.parquet");
+```
+
+The Node entry point accepts local bundles, release directories, deployed
+roots, descriptor paths, and remote descriptor URLs. It caches verified bytes
+in the per-user platform cache directory, sharing the `chartcoach` cache layout
+with Python. `cacheDirectory` overrides that location.
+`artifactPath(catalog, path, { signal? })` streams a missing artifact to disk and
+returns a verified local path for native DuckDB, Arrow, or other file readers.
+It verifies an existing file before reuse. Each artifact is capped at 1 GiB,
+and core files at 64 MiB.
+
+Opening `catalog.json` refreshes the selection. A digest-addressed
+`release.json` URL can reopen offline after its descriptor and core files have
+been cached. Optional files become available offline after they are requested.
+
+Use the browser entry point in browser applications. Node filesystem imports
+are confined to `@chartcoach/catalog/node`.
 
 `parseProfileMetadata(value)` validates and freezes `profile.json`. Profiles use
 flat lowercase IDs such as `minilm-normalized` and contain `profile.json` plus

@@ -46,8 +46,9 @@ apps/docs  -> packages/catalog
           -> packages/brand
 ```
 
-`packages/catalog` is a browser-safe leaf. It imports no Node built-ins or
-chartcoach workspace package. The apps consume its public package entry point.
+`@chartcoach/catalog` is a browser-safe entry point. It imports no Node built-ins
+or chartcoach workspace package. `@chartcoach/catalog/node` owns Node filesystem
+loading and persistent caching. The apps consume the browser package entry point.
 They do not import each other. Root lint rules and
 `tools/architecture/dependencies.test.mjs` enforce this graph.
 
@@ -60,7 +61,7 @@ public API -> runtime composition -> location and release resolution
                                   -> catalog and index loaders
 ```
 
-`catalog/runtime/` owns read orchestration. `catalog/curation/` owns building,
+`_catalog/runtime/` owns read orchestration. `_catalog/curation/` owns building,
 validation, publication, and selection. Each depends on release models and the
 small shared object-store URI helpers. They do not import each other. Optional
 provider and index imports happen inside the capability that needs them.
@@ -69,10 +70,10 @@ provider and index imports happen inside the capability that needs them.
 
 | State                            | Owner                                       |
 | -------------------------------- | ------------------------------------------- |
-| Public `catalog.json` selection  | `catalog.curation.select_release`           |
-| Immutable release directory      | `catalog.curation.publish_release`          |
-| Content-addressed artifact cache | `catalog.runtime.cache`                     |
-| Extracted index cache            | `catalog.runtime.cache`                     |
+| Public `catalog.json` selection  | `curation.select_release`                   |
+| Immutable release directory      | `curation.publish_release`                  |
+| Content-addressed artifact cache | `_catalog.runtime.cache`                    |
+| Extracted index cache            | `_catalog.runtime.cache`                    |
 | Site catalog location            | `apps/site/src/config/catalog-location.ts`  |
 | Docs notebook runtime            | `apps/docs/components/notebook-runtime.tsx` |
 | Docs-session JavaScript SDK      | `apps/docs/components/notebook-runtime.tsx` |
@@ -87,7 +88,7 @@ Release artifacts are immutable after `release.json` is committed.
    JavaScript, site, and contract tests.
 2. Python release and catalog models plus the JavaScript public package for
    executable wire behavior.
-3. `catalog/runtime/` and `catalog/curation/` for read and write lifecycles.
+3. `_catalog/runtime/` and `_catalog/curation/` for read and write lifecycles.
 4. Package manifests, Vite+ boundary rules, and architecture contract tests for
    dependency direction.
 5. `development_docs/` for contributor reasoning and `apps/docs/content/docs/`

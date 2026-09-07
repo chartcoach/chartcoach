@@ -9,14 +9,14 @@ import polars as pl
 import pytest
 from catalog_testkit import deterministic_embedding
 from chartcoach import Catalog, CatalogManifest
-from chartcoach.catalog.curation import (
+from chartcoach._catalog.manifest import manifest_digest
+from chartcoach._catalog.releases import CatalogRelease
+from chartcoach.curation import (
     EmbeddingProfile,
     build_release,
     publish_release,
     select_release,
 )
-from chartcoach.catalog.manifest import manifest_digest
-from chartcoach.catalog.releases import CatalogRelease
 
 pytestmark = pytest.mark.curation
 

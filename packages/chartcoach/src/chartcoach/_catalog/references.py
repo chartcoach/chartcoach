@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import dataclasses as dc
+import re
 from collections.abc import Mapping, Sequence
 from types import MappingProxyType
 from typing import TYPE_CHECKING, cast
@@ -9,7 +10,7 @@ import bibtexparser
 import polars as pl
 from typing_extensions import TypedDict
 
-from ..constants import DEFAULT_GUIDELINE_URL_TEMPLATE
+from .._constants import DEFAULT_GUIDELINE_URL_TEMPLATE
 from ._polars import explode_frame
 from .errors import CatalogValidationError
 from .schemas import (
@@ -56,7 +57,7 @@ class ReferenceTables:
     guideline_references: pl.DataFrame
 
 
-class CitationSource(TypedDict, total=False):
+class CitationSource(TypedDict):
     """One formatted source attached to a guideline citation."""
 
     reference_id: str
@@ -158,7 +159,7 @@ def build_reference_tables(catalog_df: pl.DataFrame) -> ReferenceTables:
                 "journal": _string_or_none(parsed.get("journal")),
                 "booktitle": _string_or_none(parsed.get("booktitle")),
                 "publisher": _string_or_none(parsed.get("publisher")),
-                "url": _string_or_none(parsed.get("url")),
+                "url": _reference_url(parsed),
                 "doi": _string_or_none(parsed.get("doi")),
                 "bibtex": bibtex,
             }
@@ -329,6 +330,18 @@ def _string_or_none(value: object) -> str | None:
         return None
     text = str(value).strip()
     return text or None
+
+
+def _reference_url(entry: Mapping[str, object]) -> str | None:
+    explicit = _string_or_none(entry.get("url"))
+    value = explicit or _string_or_none(entry.get("howpublished"))
+    if value is None:
+        return None
+    wrapped = re.fullmatch(r"\\url\{([^{}]*)\}", value)
+    candidate = wrapped.group(1) if wrapped else value
+    if re.fullmatch(r"https?://[^\s{}\\/?#]+[^\s{}\\]*", candidate, re.IGNORECASE):
+        return candidate
+    return explicit
 
 
 def _split_authors(authors_text: str | None) -> list[str]:

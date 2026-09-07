@@ -7,7 +7,7 @@ from pathlib import Path
 import agent_plugins
 import chartcoach.agent as chartcoach_agent
 from chartcoach import Catalog, CatalogError, open_catalog
-from chartcoach import skills as skill_service
+from chartcoach import _skills as skill_service
 
 _PROJECT = Path(__file__).parents[1]
 _FIXTURE_RELEASE = _PROJECT.parents[1] / "fixtures" / "catalog-release"

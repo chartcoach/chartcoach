@@ -4,7 +4,10 @@ import json
 import logging
 from collections.abc import Callable
 from pathlib import Path
-from typing import Annotated, Literal
+from typing import Annotated, Literal, TypeVar
+
+from chartcoach._catalog.search import catalog_search
+from chartcoach._catalog.sql import catalog_sql
 
 try:
     from mcp.server import MCPServer
@@ -18,11 +21,15 @@ except ModuleNotFoundError as exc:  # pragma: no cover - depends on install extr
             add_note("Install `chartcoach[mcp]` to use the chartcoach MCP server.")
     raise
 
-from .catalog import Catalog, SourceDetail, open_catalog
-from .catalog.embedding import apply_embedding_variables
-from .catalog.errors import CatalogError, CatalogResponseTooLargeError
-from .catalog.identity import catalog_identity
-from .constants import DEFAULT_GUIDELINE_URL_TEMPLATE
+from ._catalog import Catalog, SourceDetail, open_catalog
+from ._catalog.embedding import apply_embedding_variables
+from ._catalog.errors import (
+    CatalogError,
+    CatalogErrorCode,
+    CatalogResponseTooLargeError,
+)
+from ._catalog.identity import catalog_identity
+from ._constants import DEFAULT_GUIDELINE_URL_TEMPLATE
 
 Transport = Literal["stdio", "sse", "streamable-http"]
 Level = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
@@ -209,40 +216,41 @@ class SearchToolResult(_ResultModel):
 
 
 class ErrorBody(_ResultModel):
-    code: Literal[
-        "lookup",
-        "invalid_input",
-        "integrity",
-        "unavailable_capability",
-        "incompatible_profile",
-        "embedding_failure",
-        "response_too_large",
-    ]
+    code: CatalogErrorCode
     message: str
     details: dict[str, object]
+    hints: list[str]
 
 
 class ErrorToolResult(_ResultModel):
     error: ErrorBody
 
 
-class DescribeOutput(RootModel[DescribeToolResult | ErrorToolResult]):
+_ResultT = TypeVar("_ResultT", bound=BaseModel)
+
+
+class _ObjectOutput(RootModel[_ResultT]):
+    # MCP object schemas require an explicit root type even for object unions.
+    model_config = ConfigDict(json_schema_extra={"type": "object"})
+
+
+class DescribeOutput(_ObjectOutput[DescribeToolResult | ErrorToolResult]):
     pass
 
 
-class SqlOutput(RootModel[SqlToolResult | ErrorToolResult]):
+class SqlOutput(_ObjectOutput[SqlToolResult | ErrorToolResult]):
     pass
 
 
-class ReadOutput(RootModel[ReadToolResult | ErrorToolResult]):
+class ReadOutput(_ObjectOutput[ReadToolResult | ErrorToolResult]):
     pass
 
 
-class CiteOutput(RootModel[CiteToolResult | ErrorToolResult]):
+class CiteOutput(_ObjectOutput[CiteToolResult | ErrorToolResult]):
     pass
 
 
-class SearchOutput(RootModel[SearchToolResult | ErrorToolResult]):
+class SearchOutput(_ObjectOutput[SearchToolResult | ErrorToolResult]):
     pass
 
 
@@ -338,7 +346,7 @@ def _register_tools(
     def sql(statement: str, *, limit: McpLimit = 100) -> SqlCallResult:
         try:
             return _success(
-                catalog.sql(statement, limit=limit),
+                catalog_sql(catalog, statement, limit=limit),
                 SqlToolResult,
                 "Returned bounded SQL rows.",
             )
@@ -433,7 +441,8 @@ def _register_tools(
                     apply_embedding_variables(embedding_vars)
                     embedding_variables_loaded = True
                 return _success(
-                    catalog.search(
+                    catalog_search(
+                        catalog,
                         text,
                         profile=search_profile,
                         mode=mode,
@@ -485,6 +494,7 @@ def _failure(error: CatalogError) -> CallToolResult:
             code=error.code,
             message=error.message,
             details=dict(error.details),
+            hints=list(error.hints),
         )
     ).model_dump(mode="json")
     if _structured_size(payload) > MAX_STRUCTURED_RESPONSE_BYTES:
@@ -498,10 +508,11 @@ def _failure(error: CatalogError) -> CallToolResult:
                 code=error.code,
                 message=error.message,
                 details=dict(error.details),
+                hints=list(error.hints),
             )
         ).model_dump(mode="json")
     return CallToolResult(
-        content=[TextContent(type="text", text=error.message)],
+        content=[TextContent(type="text", text=str(error))],
         structured_content=payload,
         is_error=True,
     )

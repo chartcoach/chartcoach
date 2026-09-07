@@ -11,6 +11,7 @@ CatalogErrorCode: TypeAlias = Literal[
     "unavailable_capability",
     "incompatible_profile",
     "embedding_failure",
+    "operation_failed",
     "response_too_large",
 ]
 
@@ -74,6 +75,12 @@ class CatalogEmbeddingError(CatalogError):
     default_code: CatalogErrorCode = "embedding_failure"
 
 
+class CatalogOperationError(CatalogError):
+    """Raised when a catalog resource or native operation fails."""
+
+    default_code: CatalogErrorCode = "operation_failed"
+
+
 class CatalogResponseTooLargeError(CatalogError):
     """Raised when a bounded transport result exceeds its byte budget."""
 
@@ -111,6 +118,7 @@ __all__ = [
     "CatalogErrorCode",
     "CatalogIntegrityError",
     "CatalogLookupError",
+    "CatalogOperationError",
     "CatalogProfileError",
     "CatalogResponseTooLargeError",
     "CatalogValidationError",

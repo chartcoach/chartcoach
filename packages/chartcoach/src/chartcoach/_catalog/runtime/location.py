@@ -8,7 +8,7 @@ from typing import Literal
 from urllib.parse import unquote, urlsplit, urlunsplit
 from urllib.request import url2pathname
 
-from ...constants import CATALOG_ARTIFACT_BASE_URL, CATALOG_SELECTION_PATH
+from ..._constants import CATALOG_ARTIFACT_BASE_URL, CATALOG_SELECTION_PATH
 from .._object_store import CLOUD_SCHEMES
 from ..errors import CatalogError
 

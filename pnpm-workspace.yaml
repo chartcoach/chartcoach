@@ -6,12 +6,11 @@ catalogMode: prefer
 
 catalog:
   "@fontsource/poppins": ^5.3.0
-  "@orama/orama": ^3.1.18
   "@types/jsdom": ^28.0.3
-  "@types/node": ^26.1.2
+  "@types/node": ^26.4.1
   "@types/react": ^19.2.18
-  "@types/react-dom": ^19.2.4
-  lucide-react: ^1.28.0
+  "@types/react-dom": ^19.2.7
+  lucide-react: ^1.41.0
   react: ^19.2.8
   react-dom: ^19.2.8
   astro: 7.1.6
@@ -24,9 +23,7 @@ catalog:
   "@oxlint/plugins": 1.76.0
   oxlint-tsgolint: 7.0.2001
 
-minimumReleaseAge: 20160
-minimumReleaseAgeExclude:
-  - "@marimo-team/mdx-marimo@0.0.5"
+minimumReleaseAge: 2880
 minimumReleaseAgeStrict: true
 verifyDepsBeforeRun: install
 blockExoticSubdeps: true
@@ -41,7 +38,6 @@ peerDependencyRules:
     vite: "*"
 
 allowBuilds:
-  "@manzt/uv": true
   citation-js: true
   esbuild: true
   sharp: true

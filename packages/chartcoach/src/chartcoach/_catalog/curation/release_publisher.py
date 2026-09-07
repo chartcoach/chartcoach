@@ -1,24 +1,22 @@
 from __future__ import annotations
 
-import json
 from collections.abc import Mapping
 from os import PathLike
 from pathlib import Path, PurePosixPath
-from typing import Any, Protocol, cast
-from urllib.parse import urlsplit
+from typing import Protocol, cast
 
 from obspec import Get, Put
 from obspec.exceptions import AlreadyExistsError, NotFoundError, map_exception
-from obstore.store import from_url
 
-from .._object_store import CATALOG_STORE_SCHEMES, copy_storage_options, obstore_uri
 from ..paths import paths
 from ..releases import CatalogRelease
-from ..releases.hashing import release_digest
-from ..releases.models import safe_sha256
+from .published_validation import (
+    _open_store,
+    _read_release,
+    _release_json_bytes,
+    _validate_published_release,
+)
 from .validation import validate_release
-
-_MAX_JSON_BYTES = 1024 * 1024
 
 
 class _ReleaseStore(Get, Put, Protocol):
@@ -34,7 +32,7 @@ def publish_release(
     """Publish one immutable release to a destination URI."""
 
     return _publish_release(
-        _open_store(destination, storage_options),
+        cast(_ReleaseStore, _open_store(destination, storage_options, create=True)),
         Path(source),
     )
 
@@ -48,7 +46,7 @@ def select_release(
     """Select a published release through the destination catalog.json."""
 
     return _select_release(
-        _open_store(destination, storage_options),
+        cast(_ReleaseStore, _open_store(destination, storage_options)),
         digest,
     )
 
@@ -67,7 +65,7 @@ def _publish_release(
             raise ValueError(
                 f"Published catalog release does not match: {release_path}"
             )
-        return release
+        return _validate_published_release(destination, release.digest)
 
     for artifact_path in release.artifacts:
         source_path = root.joinpath(*PurePosixPath(artifact_path).parts)
@@ -89,37 +87,20 @@ def _publish_release(
             raise ValueError(
                 f"Published catalog release does not match: {release_path}"
             ) from exc
+        return _validate_published_release(destination, release.digest)
     return release
 
 
 def _select_release(store: _ReleaseStore, digest: str) -> CatalogRelease:
     """Select an existing immutable release by digest."""
 
-    digest = safe_sha256(digest, label="Catalog release digest")
-    release = _read_release(store, paths.release(digest).json())
-    if release.digest != digest or release.digest != release_digest(release.artifacts):
-        raise ValueError(f"Catalog release does not match digest {digest!r}.")
+    release = _validate_published_release(store, digest)
     store.put(
         paths.selected(),
         _release_json_bytes(release),
         mode="overwrite",
     )
     return release
-
-
-def _open_store(
-    destination: str,
-    storage_options: Mapping[str, object] | None,
-) -> _ReleaseStore:
-    scheme = urlsplit(destination).scheme.lower()
-    if scheme not in CATALOG_STORE_SCHEMES:
-        choices = ", ".join(sorted(f"{value}://" for value in CATALOG_STORE_SCHEMES))
-        raise ValueError(f"Catalog destination must use one of: {choices}.")
-    options = copy_storage_options(storage_options)
-    if scheme == "file":
-        options.setdefault("mkdir", True)
-    store_factory = cast(Any, from_url)
-    return cast(_ReleaseStore, store_factory(obstore_uri(destination), **options))
 
 
 def _existing_release(source: Get, path: str) -> CatalogRelease | None:
@@ -129,32 +110,6 @@ def _existing_release(source: Get, path: str) -> CatalogRelease | None:
         if isinstance(map_exception(exc), NotFoundError):
             return None
         raise
-
-
-def _read_release(source: Get, path: str) -> CatalogRelease:
-    return CatalogRelease.from_mapping(_read_json(source, path))
-
-
-def _read_json(source: Get, path: str) -> object:
-    data = bytearray()
-    for buffer in source.get(path):
-        view = memoryview(buffer)
-        if len(data) + view.nbytes > _MAX_JSON_BYTES:
-            raise ValueError("Catalog release JSON exceeds the 1 MiB limit.")
-        data.extend(view)
-    return json.loads(data)
-
-
-def _release_json_bytes(release: CatalogRelease) -> bytes:
-    data = json.dumps(
-        release.to_record(),
-        ensure_ascii=False,
-        separators=(",", ":"),
-        sort_keys=True,
-    ).encode("utf-8")
-    if len(data) > _MAX_JSON_BYTES:
-        raise ValueError("Catalog release JSON exceeds the 1 MiB limit.")
-    return data
 
 
 __all__ = ["publish_release", "select_release"]

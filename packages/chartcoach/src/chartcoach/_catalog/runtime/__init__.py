@@ -68,6 +68,8 @@ def _open_release_catalog(location: ReleaseLocation) -> Catalog:
         profile_names=tuple(profiles),
         profile_loader=profile_loader,
         index_loader=index_loader,
+        artifact_loader=location.artifact_path,
+        cache_loader=location.cache,
     )
 
 

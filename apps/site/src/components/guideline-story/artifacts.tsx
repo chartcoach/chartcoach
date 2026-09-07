@@ -1,4 +1,4 @@
-import { useState, type CSSProperties, type ReactNode } from "react";
+import { useId, useState, type CSSProperties, type ReactNode } from "react";
 import { Bot, ExternalLink, MessageSquare, Quote, Search } from "lucide-react";
 import githubIconUrl from "@/assets/icons/github.svg?url";
 import { EXTERNAL_HREFS, externalHrefLabel } from "@/lib/routes";
@@ -41,7 +41,7 @@ const improveSteps = [
   ["03", "community review", "Review the proposed guideline entry in the catalog repository."],
 ] as const;
 
-export function StoryArtifact({ id, active }: { id: StoryArtifactId; active: boolean }) {
+export function StoryArtifact({ id }: { id: StoryArtifactId }) {
   switch (id) {
     case "markdown":
       return <MarkdownArtifact />;
@@ -50,7 +50,7 @@ export function StoryArtifact({ id, active }: { id: StoryArtifactId; active: boo
     case "structured":
       return <StructuredArtifact />;
     case "embedding":
-      return <EmbeddingCanvas active={active} />;
+      return <EmbeddingCanvas />;
     case "access":
       return <AccessArtifact />;
     case "skills":
@@ -107,53 +107,76 @@ function ReferencesArtifact() {
 }
 
 function StructuredArtifact() {
-  return <DenseCodeWindow title="guideline.json" language="json" lines={jsonLines} wrap />;
+  return <DenseCodeWindow title="sections" language="json" lines={jsonLines} />;
 }
 
 function AccessArtifact() {
   const [activeListingId, setActiveListingId] = useState<(typeof accessListings)[number]["id"]>(
     accessListings[0].id,
   );
-  const activeListing =
-    accessListings.find((listing) => listing.id === activeListingId) ?? accessListings[0];
+  const groupId = useId();
 
   return (
     <div className="bg-code-bg">
-      <div className="sm:hidden">
-        <div
-          className="grid grid-cols-3 gap-1 border-b border-border bg-bg/68 p-1"
-          role="tablist"
-          aria-label="Python API, TypeScript API, and CLI examples"
-        >
-          {accessListings.map((listing) => {
-            const selected = activeListing.id === listing.id;
-            return (
-              <button
-                key={listing.id}
-                type="button"
-                role="tab"
-                aria-selected={selected}
-                onClick={() => setActiveListingId(listing.id)}
-                className={[
-                  "min-w-0 rounded-md px-2.5 py-2 font-mono text-[0.6875rem] font-semibold uppercase tracking-[0.1em] transition-colors",
-                  selected
-                    ? "bg-bg text-fg shadow-[0_1px_2px_color-mix(in_srgb,var(--color-fg)_8%,transparent)]"
-                    : "text-muted hover:bg-bg/72 hover:text-fg",
-                ].join(" ")}
-              >
-                {listing.label}
-              </button>
-            );
-          })}
-        </div>
-        <DenseCodeWindow {...activeListing} />
+      <div
+        className="grid grid-cols-3 gap-1 border-b border-border bg-bg p-1"
+        role="tablist"
+        aria-label="Python API, TypeScript API, and CLI examples"
+      >
+        {accessListings.map((listing, index) => {
+          const selected = activeListingId === listing.id;
+          return (
+            <button
+              key={listing.id}
+              type="button"
+              role="tab"
+              id={`${groupId}-${listing.id}-tab`}
+              aria-controls={`${groupId}-${listing.id}-panel`}
+              aria-selected={selected}
+              tabIndex={selected ? 0 : -1}
+              data-format={listing.id}
+              onClick={() => setActiveListingId(listing.id)}
+              onKeyDown={(event) => {
+                const key = event.key;
+                if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(key)) return;
+                event.preventDefault();
+                const nextIndex =
+                  key === "Home"
+                    ? 0
+                    : key === "End"
+                      ? accessListings.length - 1
+                      : (index + (key === "ArrowRight" ? 1 : -1) + accessListings.length) %
+                        accessListings.length;
+                const next = accessListings[nextIndex];
+                setActiveListingId(next.id);
+                event.currentTarget.parentElement
+                  ?.querySelector<HTMLButtonElement>(`[data-format="${next.id}"]`)
+                  ?.focus({ preventScroll: true });
+              }}
+              className={`min-h-11 min-w-0 rounded-md px-2.5 py-2 font-mono text-xs font-semibold uppercase tracking-[0.1em] focus-visible:outline-2 focus-visible:outline-offset-[-2px] ${selected ? "bg-surface-muted text-fg" : "text-muted hover:text-fg"}`}
+            >
+              {listing.label}
+            </button>
+          );
+        })}
       </div>
-      <div className="hidden sm:block">
-        {accessListings.map((listing, index) => (
-          <div key={listing.title} className={index === 0 ? undefined : "border-t border-border"}>
-            <DenseCodeWindow {...listing} />
-          </div>
-        ))}
+      <div className="grid min-w-0">
+        {accessListings.map((listing) => {
+          const selected = listing.id === activeListingId;
+          return (
+            <div
+              key={listing.id}
+              role="tabpanel"
+              id={`${groupId}-${listing.id}-panel`}
+              aria-labelledby={`${groupId}-${listing.id}-tab`}
+              aria-hidden={!selected}
+              inert={!selected}
+              className={`col-start-1 row-start-1 min-w-0 ${selected ? "visible" : "invisible"}`}
+            >
+              <DenseCodeWindow {...listing} />
+            </div>
+          );
+        })}
       </div>
     </div>
   );

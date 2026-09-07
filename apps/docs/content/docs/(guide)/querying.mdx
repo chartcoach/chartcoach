@@ -1,155 +1,134 @@
 ---
 title: Find guidelines
-description: Filter by labels or words, join catalog tables with SQL, and inspect a chosen record.
+description: Find candidates, read the relevant sections, and cite the evidence you use.
 icon: Search
 ---
 
-chartcoach offers three ways to search a catalog:
+Start with what you know about the chart:
 
-| What you know                          | Command          |
-| -------------------------------------- | ---------------- |
-| A label or phrase                      | `catalog list`   |
-| A relationship between tables          | `catalog sql`    |
-| An idea, but not the catalog's wording | `catalog search` |
+| What you know                                       | Use                                    |
+| --------------------------------------------------- | -------------------------------------- |
+| An exact label, term, or short phrase               | `catalog list`                         |
+| A relationship between labels, sections, or sources | `catalog sql`                          |
+| A topic to search within guideline text             | `catalog search` with an index profile |
 
-After choosing a guideline entry ID, `catalog read` returns the full guideline
-and `catalog cite` formats its sources.
-
-Install the CLI and set the fixed three-entry catalog source used by the
-runnable examples:
+Install the CLI with [uv](https://docs.astral.sh/uv/):
 
 ```bash
-uv tool install \
-  "chartcoach @ https://files.peter.gy/packages/python/chartcoach/0.2.0/892f120cb377/chartcoach-0.2.0-py3-none-any.whl"
-
-CATALOG_SOURCE="https://files.peter.gy/packages/python/chartcoach/0.2.0/docs-catalog/c0f6dbec3dd31b07763b46fd458733db0b8b50c5793cf9447458119287129420/release.json"
+uv tool install chartcoach
 ```
 
-## Match labels and words
+Commands use the public catalog by default. For another catalog, set
+`CHARTCOACH_SOURCE` to its descriptor location or pass `--source`. Use an exact
+release when a sequence of commands must keep the same catalog contents.
 
-This command requires the exact label `purpose:refine`, at least one label
-that starts with `quality:`, and the substring `label` in the guideline entry
-ID, title, or description:
+## Filter candidates
+
+Find recommendations about labels that also address quality:
 
 ```bash
 chartcoach catalog list \
-  --source "$CATALOG_SOURCE" \
   --label purpose:refine \
   --label-prefix quality: \
-  --contains "label" \
+  --contains label \
   --limit 10 \
-  --format json
+  --format table
 ```
 
-The result includes this guideline entry ID and title:
+Every filter must match. `--contains` matches one contiguous substring in the
+ID, title, or description. Matching ignores case and treats whitespace,
+hyphens, and underscores as equivalent separators. Search `labels` and
+`overlap` separately when those concepts need not appear together.
 
-```json
-{
-  "rows": [
-    {
-      "id": "directly-label-series-instead-of-using-a-color-key",
-      "title": "Directly label colored series instead of relying on a color key"
-    }
-  ],
-  "row_count": 1,
-  "limit": 10,
-  "truncated": false
-}
-```
+The result includes candidate IDs, which you pass to `read` and `cite`.
+Inspect `catalog labels` before using unfamiliar exact labels.
 
-Run `chartcoach catalog labels --source "$CATALOG_SOURCE"` before using an
-exact label from an unfamiliar catalog.
+In Python, use `catalog.query(labels=[...], contains="label", limit=10)`.
+In JavaScript, use `catalog.query({ labels: [...], contains: "label", limit: 10 })`.
 
-## Join catalog tables
+If nothing matches, shorten the phrase or relax exact filters. Section text
+can match even when the entry's title and description do not. Search it with
+SQL, or use full-text search when the release has an index profile. An empty
+query result alone does not establish that the catalog has no relevant guidance.
 
-Inspect the available tables and columns before writing SQL:
+## Query section text and relationships with SQL
+
+Inspect the tables and columns before writing a query:
 
 ```bash
-chartcoach catalog schema --source "$CATALOG_SOURCE" --tables --row-counts
-chartcoach catalog schema \
-  --source "$CATALOG_SOURCE" \
-  guidelines guideline_labels
+chartcoach catalog schema guidelines sections
 ```
 
-The next query returns guidelines with both `purpose:refine` and any label in
-the `quality` family:
+Find a term in section text, including catalogs with no index profile:
 
 ```bash
 chartcoach catalog sql "
   select distinct g.id, g.title
   from guidelines g
-  join guideline_labels purpose
-    on purpose.guideline_id = g.id
-  join guideline_labels quality
-    on quality.guideline_id = g.id
-  where purpose.label = 'purpose:refine'
-    and quality.family = 'quality'
+  join sections s on s.guideline_id = g.id
+  where s.content ilike '%label%'
   order by g.id
-  limit 20
-" --source "$CATALOG_SOURCE" --format json
+" --limit 10 --format table
 ```
 
-The JSON object contains `columns`, `rows`, `row_count`, `truncated`, the
-applied `limit`, and catalog digests. This query returns two rows. The CLI caps
-SQL results at 100 rows by default. Pass `--limit` to set another cap.
+Use [native DuckDB in Python](/python#compose-duckdb-queries) for application
+queries, parameters, and exports. The CLI accepts one read-only `SELECT` and
+bounds its output.
 
-## Search within guideline sections
+## Search guideline text
 
-`catalog search` searches an index stored with a catalog release. An index
-profile is a flat release-scoped handle such as `minilm-normalized`. Its
-`profile.json` contains the embedding binding and Python requirements. A filter
-such as `role = 'section.mistakes'` restricts matches to the `mistakes` section
-of each guideline.
-
-The following template requires a release that publishes the named index
-profile. Replace `<digest>` and the profile name with values from that release.
-The three-entry demo release used earlier publishes no index profile.
+An index profile contains searchable documents and their embedding binding.
+Set `CATALOG_SOURCE` to a release with profiles, run `catalog describe` for
+their names, and set `PROFILE` to the one you want:
 
 ```bash
-PROFILE_RELEASE_URL="https://catalog.example.com/catalog/releases/<digest>/release.json"
+uvx --from "chartcoach[index]" chartcoach catalog describe --source "$CATALOG_SOURCE"
 
-uvx --from \
-  "chartcoach[index] @ https://files.peter.gy/packages/python/chartcoach/0.2.0/892f120cb377/chartcoach-0.2.0-py3-none-any.whl" \
-  chartcoach catalog search \
-  --source "$PROFILE_RELEASE_URL" \
-  --profile minilm-normalized \
+uvx --from "chartcoach[index]" chartcoach catalog search \
+  --source "$CATALOG_SOURCE" \
+  --profile "$PROFILE" \
   --mode fts \
-  --where "role = 'section.mistakes'" \
   --limit 5 \
-  --format json \
-  "legend makes the lines hard to identify"
+  "direct labels"
 ```
 
-Full-text search (`fts`) uses the query string without constructing an
-embedding provider. Vector and hybrid modes pass the text to the LanceDB
-embedding function declared by the profile. Install the `python_requirements`
-reported by `catalog describe --profile NAME` before semantic search.
+Full-text search (`fts`) uses the stored text index and keeps embedding
+providers idle. Use it for several concepts such as `labels overlap`.
+`vector` and `hybrid` embed the query through the profile's LanceDB binding.
+Install its reported
+`python_requirements` and supply any required credentials before using those
+modes. See [CLI search](/cli#search-an-index) for configuration.
 
-Search returns `matches` and `match_count`. It reports `documents_considered`
-and `documents_truncated` separately from the unique guideline match count.
-Each `matched_excerpt` contains at most 360 characters. Vector scores are
-distances. FTS and hybrid scores are relevance.
+To search a specific section, add `--where "role = 'section.advice'"`.
+Python applications can use [the native LanceDB table](/python#search-and-read-matching-guidelines)
+for filtering, reranking, and batch queries.
 
-## Read and cite the selected guideline
+The limit counts search documents before deduplication into guideline matches.
+Compare `documents_considered`, `match_count`, and `documents_truncated` when
+checking coverage. An additional `--where "role = 'overview'"` search can
+broaden candidates when many hits share a parent. Read complete entries to
+recover their section context and exceptions.
 
-List candidates and index matches contain summaries. Read the selected
-guideline entry before applying its recommendation, then format its link and
-source citations. The ID below comes from the runnable `catalog list` example.
-Read an index match from the same release that produced it.
+`score_kind` is `distance` for vector search, where lower values rank first,
+and `relevance` for full-text and hybrid search, where higher values rank first.
+Scores describe retrieval within that query, mode, and profile. They do not
+measure whether a recommendation applies to the user's chart.
+
+## Read and cite selected guidance
+
+Pass selected IDs together to read and cite. For example:
 
 ```bash
 GUIDELINE_ID="directly-label-series-instead-of-using-a-color-key"
-
-chartcoach catalog read "$GUIDELINE_ID" \
-  --source "$CATALOG_SOURCE" \
-  --source-detail minimal \
-  --format markdown
-
-chartcoach catalog cite "$GUIDELINE_ID" \
-  --source "$CATALOG_SOURCE" \
-  --format markdown
+RELATED_ID="place-labels-and-annotations-next-to-marks"
+chartcoach catalog read "$GUIDELINE_ID" "$RELATED_ID" --format markdown
+chartcoach catalog cite "$GUIDELINE_ID" "$RELATED_ID" --format markdown
 ```
 
-The `read` output contains every section in the selected record, followed by
-its source list. The `cite` output contains the public guideline URL and
-formatted source citations.
+Read the advice, applicable situations, and exceptions before applying it.
+`cite` returns the guideline link and formatted source citations. When a search
+used a custom catalog, pass that same `--source` to both commands.
+
+Inspect the publication before attributing a specific claim to it. A returned
+citation identifies an attached source, while the record's context and the
+chart evidence determine whether its guidance fits the task.

@@ -1,5 +1,6 @@
-import { count, create, load } from "@orama/orama";
+import { count, create, load } from "zbsearch";
 import { build } from "astro";
+import { JSDOM } from "jsdom";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -32,6 +33,18 @@ afterAll(async () => {
 });
 
 describe("generated site artifacts", () => {
+  it("renders the structured example as parseable section records", async () => {
+    const html = await fs.readFile(path.join(outputDirectory, "index.html"), "utf8");
+    const document = new JSDOM(html).window.document;
+    const example = document.querySelector('[aria-label="sections json code example"] code');
+    expect(example).not.toBeNull();
+    expect(JSON.parse(example!.textContent!)).toContainEqual({
+      role: "advice",
+      title: "Advice",
+      content: "Label marks.",
+    });
+  });
+
   it("indexes every generated guideline", async () => {
     const guidelineJsonFiles = outputFiles.filter((file) => /^guidelines\/[^/]+\.json$/.test(file));
     const raw = JSON.parse(

@@ -6,9 +6,8 @@ description: Review a rendered visualization with chartcoach guidelines and sour
 # chartcoach Visfeedback
 
 Inspect the rendered chart, find relevant guideline entry records, and connect
-each feedback claim to visible evidence. Read `core` first. It sets
-`CHARTCOACH_SOURCE` and inspects the current roles and labels before this
-workflow begins.
+each feedback claim to visible evidence. Read `core` for catalog selection,
+retrieval, and citation. Use `visrec` when the task starts from a design brief.
 
 ## Inspect the chart
 
@@ -22,47 +21,33 @@ Record the state being reviewed:
 | Interaction state | Default, hover, selected, toggled, animated, or keyboard state                   |
 | Risk              | Ambiguity, overplotting, hidden identity, clipping, contrast, or missing context |
 | Evidence          | Screenshot, rendered page, accessibility snapshot, data, or inference            |
+| Uncertainty       | Unreadable values, ambiguous marks, missing context, and untested behavior       |
 
 Inspect every state you discuss. Use the rendered chart for visual claims and
 an accessibility snapshot for names and structure.
 
+Separate what you can observe from what you infer. Confirm the marks and
+encoding before retrieving chart-family advice. If an image is ambiguous,
+qualify the interpretation or request the smallest missing evidence, such as a
+larger image or the underlying chart. A retrieved guideline cannot confirm
+what the image depicts.
+
 ## Find records
 
-Translate observed facts into ordinary search terms:
-
-```text
-line chart direct labels many series exact lookup
-dense scatterplot tooltip identity overplotting
-choropleth region names unfamiliar geography color key
-```
-
-Inspect the catalog labels, then search:
-
-```sh
-chartcoach catalog labels --contains "<visible concept>" --format json
-chartcoach catalog list --contains "<task or risk>" --format json
-```
-
-Use SQL for section text or `catalog search` when an indexed profile is available
-and ordinary filters leave too many matches:
-
-```sh
-chartcoach catalog search \
-  --profile <profile-id> \
-  --mode fts \
-  --limit 10 \
-  "<chart> <task> <risk>"
-```
+Follow `core` to query the observed chart, task, and risks. Search concepts such
+as `labels`, `overlap`, and `contrast` separately with `contains`, or combine
+them in full-text search when a profile is available. Base retrieval on
+observed facts and keep uncertain interpretations explicit.
 
 ## Check each record
 
-Read each selected record before citing it:
+Read selected records together before citing them:
 
 ```sh
-chartcoach catalog read <guideline-entry-id> \
+chartcoach catalog read <first-id> <second-id> \
   --source-detail minimal \
   --format markdown
-chartcoach catalog cite <guideline-entry-id> --format markdown
+chartcoach catalog cite <first-id> <second-id> --format markdown
 ```
 
 For each record, decide whether it:
@@ -75,7 +60,13 @@ For each record, decide whether it:
 Discard records whose chart family, reader task, data type, or interaction
 state differs from the observed case. A screenshot can support layout and
 labeling claims. Hover, keyboard, and animation claims need evidence from
-those states.
+those states. Read the applicable situations and exceptions even when the
+title appears to match. A citation establishes which source is attached to a
+record. Inspect that source before attributing a specific claim to it.
+
+When evidence is missing, state which conclusion cannot be made and the next
+inspection needed. Continue with the feedback supported by the available
+evidence.
 
 ## Write the feedback
 

@@ -21,7 +21,7 @@ type GuidelineActionsProps = {
 
 function Tooltip({ children }: { children: string }) {
   return (
-    <span className="pointer-events-none absolute left-1/2 top-[calc(100%+0.45rem)] z-20 -translate-x-1/2 whitespace-nowrap rounded-md border border-border bg-bg px-2 py-1 text-[0.6875rem] font-medium text-fg opacity-0 shadow-sm transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
+    <span className="pointer-events-none absolute left-0 top-[calc(100%+0.45rem)] z-20 whitespace-nowrap rounded-md border border-border bg-bg px-2 py-1 text-[0.6875rem] font-medium text-fg opacity-0 shadow-sm transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100 sm:left-auto sm:right-0">
       {children}
     </span>
   );
@@ -58,7 +58,7 @@ export function GuidelineActions({ markdown, bibtex, editHref }: GuidelineAction
       <button
         type="button"
         onClick={() => void copy("markdown", markdown)}
-        className="group relative inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-border bg-bg text-muted transition-colors hover:bg-surface-muted hover:text-fg"
+        className="group relative inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-md border border-border bg-bg text-muted transition-colors hover:bg-surface-muted hover:text-fg"
         aria-label="Copy Markdown"
       >
         {state === "markdown" ? (
@@ -74,7 +74,7 @@ export function GuidelineActions({ markdown, bibtex, editHref }: GuidelineAction
           if (bibtex) void copy("bibtex", bibtex);
         }}
         disabled={!canCopyBibtex}
-        className="group relative inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-border bg-bg text-muted transition-colors hover:bg-surface-muted hover:text-fg disabled:cursor-not-allowed disabled:opacity-45"
+        className="group relative inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-md border border-border bg-bg text-muted transition-colors hover:bg-surface-muted hover:text-fg disabled:cursor-not-allowed disabled:opacity-45"
         aria-label="Copy BibTeX"
       >
         {state === "bibtex" ? (
@@ -90,7 +90,7 @@ export function GuidelineActions({ markdown, bibtex, editHref }: GuidelineAction
         href={editHref}
         target="_blank"
         rel="noreferrer"
-        className="group relative inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-bg text-muted no-underline transition-colors hover:bg-surface-muted hover:text-fg"
+        className="group relative inline-flex h-11 w-11 items-center justify-center rounded-md border border-border bg-bg text-muted no-underline transition-colors hover:bg-surface-muted hover:text-fg"
         aria-label="Suggest edit"
       >
         <Pencil className="h-4 w-4" aria-hidden="true" />

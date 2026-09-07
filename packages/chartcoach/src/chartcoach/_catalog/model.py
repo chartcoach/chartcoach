@@ -4,11 +4,12 @@ import hashlib
 import json
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal
+from threading import RLock
+from typing import TYPE_CHECKING
 
 import polars as pl
 
-from ..constants import DEFAULT_GUIDELINE_URL_TEMPLATE
+from .._constants import DEFAULT_GUIDELINE_URL_TEMPLATE
 from .errors import CatalogCapabilityError, CatalogValidationError
 from .guidelines import Guideline
 
@@ -23,8 +24,6 @@ if TYPE_CHECKING:
     from .read import GuidelineEntryRecord, SourceDetail
     from .references import CitationRecord, ReferenceTables
     from .releases import CatalogRelease
-    from .search import SearchResult
-    from .sql import SqlResult
 
 
 class Catalog:
@@ -44,6 +43,12 @@ class Catalog:
         self._profile_loader: Callable[[str], ProfileMetadata] | None = None
         self._index_loader: Callable[[str, Path | None, bool], Table] | None = None
         self._reference_tables_cache: ReferenceTables | None = None
+        self._tables_cache: dict[str, pl.DataFrame] = {}
+        self._documents_cache: pl.DataFrame | None = None
+        self._entries_digest_cache: str | None = None
+        self._derived_lock = RLock()
+        self._artifact_loader: Callable[[str], Path] | None = None
+        self._cache_loader: Callable[[], Path] | None = None
         _validate_unique_ids(self._frame)
 
         from .manifest import validate_catalog_manifest
@@ -60,6 +65,8 @@ class Catalog:
         profile_names: Sequence[str] = (),
         profile_loader: Callable[[str], ProfileMetadata] | None = None,
         index_loader: Callable[[str, Path | None, bool], Table] | None = None,
+        artifact_loader: Callable[[str], Path] | None = None,
+        cache_loader: Callable[[], Path] | None = None,
     ) -> Catalog:
         if not isinstance(catalog, cls):
             raise TypeError("Runtime catalog must be a Catalog instance.")
@@ -68,6 +75,8 @@ class Catalog:
         catalog._profile_names = tuple(profile_names)
         catalog._profile_loader = profile_loader
         catalog._index_loader = index_loader
+        catalog._artifact_loader = artifact_loader
+        catalog._cache_loader = cache_loader
         return catalog
 
     @classmethod
@@ -105,7 +114,22 @@ class Catalog:
 
         from .relations import catalog_table
 
-        return catalog_table(self, name)
+        with self._derived_lock:
+            if name not in self._tables_cache:
+                self._tables_cache[name] = catalog_table(self, name)
+            return self._tables_cache[name].clone()
+
+    def documents(self) -> pl.DataFrame:
+        """Return canonical index documents with stable row IDs for native ingestion."""
+
+        from .documents import build_document_rows
+
+        with self._derived_lock:
+            if self._documents_cache is None:
+                self._documents_cache = build_document_rows(
+                    self.table("guidelines"), self.table("references")
+                ).with_row_index("row_id")
+            return self._documents_cache.clone()
 
     def query(
         self,
@@ -174,16 +198,23 @@ class Catalog:
     ) -> duckdb_module.DuckDBPyConnection:
         """Return a fresh caller-owned DuckDB connection over catalog tables."""
 
-        from ..duckdb import connect_catalog
+        from ..duckdb import _connect_catalog
 
-        return connect_catalog(self, config=config)
+        return _connect_catalog(self, config=config)
 
-    def sql(self, statement: str, *, limit: int = 100) -> SqlResult:
-        """Run one bounded read-only SELECT over the catalog tables."""
+    def artifact(self, path: str) -> Path:
+        """Return a verified local release file, downloading it into the cache as needed."""
 
-        from .sql import catalog_sql
+        if self._artifact_loader is None:
+            raise CatalogCapabilityError("Artifact access requires a catalog release.")
+        return self._artifact_loader(path)
 
-        return catalog_sql(self, statement, limit=limit)
+    def cache(self) -> Path:
+        """Cache every release artifact and return a directory that opens offline."""
+
+        if self._cache_loader is None:
+            raise CatalogCapabilityError("Release caching requires a catalog release.")
+        return self._cache_loader()
 
     def index(self, profile: str, *, directory: Path | None = None) -> Table:
         """Return the selected profile's index as a LanceDB table."""
@@ -195,32 +226,13 @@ class Catalog:
             )
         return self._index_loader(profile, directory, True)
 
-    def search(
-        self,
-        text: str,
-        *,
-        profile: str,
-        mode: Literal["fts", "vector", "hybrid"] = "fts",
-        limit: int = 10,
-        where: str | None = None,
-    ) -> SearchResult:
-        """Return bounded guideline matches from one index profile."""
-
-        from .search import catalog_search
-
-        return catalog_search(
-            self,
-            text,
-            profile=profile,
-            mode=mode,
-            limit=limit,
-            where=where,
-        )
-
     def entries_digest(self) -> str:
         """Return a stable digest of the canonical guideline entry records."""
 
-        return _dataframe_digest(self._frame)
+        with self._derived_lock:
+            if self._entries_digest_cache is None:
+                self._entries_digest_cache = _dataframe_digest(self._frame)
+            return self._entries_digest_cache
 
     def __len__(self) -> int:
         return self._frame.height
@@ -244,9 +256,10 @@ class Catalog:
     def _reference_tables(self) -> ReferenceTables:
         from .references import build_reference_tables
 
-        if self._reference_tables_cache is None:
-            self._reference_tables_cache = build_reference_tables(self._frame)
-        return self._reference_tables_cache
+        with self._derived_lock:
+            if self._reference_tables_cache is None:
+                self._reference_tables_cache = build_reference_tables(self._frame)
+            return self._reference_tables_cache
 
 
 def _normalize_catalog_frame(frame: pl.DataFrame) -> pl.DataFrame:

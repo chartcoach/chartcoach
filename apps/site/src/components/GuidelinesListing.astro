@@ -16,19 +16,17 @@ const MAX_VISIBLE_LABELS = 5;
 <section class="px-6 py-[clamp(4.5rem,10vh,7rem)]">
   <div class="mx-auto w-full max-w-[72rem]">
     <p class="m-0 font-mono text-[0.75rem] font-semibold uppercase tracking-[0.16em] text-muted">Catalog</p>
-    <div class="mt-5 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(28rem,35rem)] lg:items-end">
-      <div>
-        <h1 class="m-0 max-w-[42rem] text-[2.75rem] font-semibold leading-[1.02] tracking-normal text-fg sm:text-[3.5rem] lg:text-[4.5rem]">
+    <h1 class="m-0 mt-5 text-[2.75rem] font-semibold leading-[1.02] tracking-normal text-fg sm:text-[3.5rem] lg:text-[4.5rem]">
           Guideline Catalog
-        </h1>
-        <p class="m-0 mt-5 max-w-[44rem] text-[1.0625rem] leading-[1.65] text-muted lg:text-[1.1875rem]">
+    </h1>
+    <div class="mt-5 flex min-w-0 flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+        <p class="m-0 max-w-[44rem] text-[1.0625rem] leading-[1.65] text-muted lg:text-[1.1875rem]">
           Browse guideline summaries, then open one to inspect the full guidance and sources.
         </p>
-      </div>
       <GuidelinesPagination
         currentPage={currentPage}
         totalPages={totalPages}
-        class="lg:mt-0"
+        class="lg:shrink-0"
       />
     </div>
 

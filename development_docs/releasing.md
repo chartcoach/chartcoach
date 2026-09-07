@@ -1,6 +1,6 @@
 # Releasing packages and catalog data
 
-Python and JavaScript packages use version tags such as `v0.2.0`. Catalog data
+Python and JavaScript packages use matching version tags. Catalog data
 uses a SHA-256 digest computed from the files in one release. Either can change
 without changing the other.
 
@@ -22,7 +22,6 @@ contain the same version.
 Set the proposed tag and compare it with both manifests:
 
 ```bash
-RELEASE_TAG="v0.2.0"
 ./scripts/release.sh check-version "$RELEASE_TAG"
 ```
 
@@ -69,7 +68,7 @@ uv run --locked --package chartcoach --extra curation python - <<'PY'
 from pathlib import Path
 
 from chartcoach import open_catalog
-from chartcoach.catalog.curation import build_release
+from chartcoach.curation import build_release
 
 release = build_release(
     open_catalog("dist/catalog"),
@@ -89,12 +88,8 @@ RELEASE_DIGEST="$(
 )"
 ```
 
-Set the remote store and the HTTPS base URL that serves the same files:
-
-```bash
-CATALOG_STORE="s3://your-bucket/chartcoach"
-PUBLIC_BASE="https://catalog.example.com/chartcoach"
-```
+Set `CATALOG_STORE` to the destination object-store URI and `PUBLIC_BASE` to
+the HTTPS base URL serving the same files.
 
 Configure the serving layer before promotion:
 
@@ -121,9 +116,24 @@ uv run --locked --package chartcoach --extra curation \
   --store "$CATALOG_STORE"
 ```
 
-Publication uploads the listed files and writes `release.json` last. Verify
-the required files through their public URL and build the site against that
-exact release:
+Publication uploads the listed files and writes `release.json` last. Repeating
+publication verifies the committed objects before returning success.
+
+Validate the candidate from fresh object-store bytes:
+
+```bash
+uv run --locked --package chartcoach --extra curation \
+  chartcoach catalog release validate \
+  --store "$CATALOG_STORE" \
+  --digest "$RELEASE_DIGEST"
+```
+
+Published validation downloads every listed artifact into temporary files. It
+checks hashes, catalog records, document derivation, stored vectors, native
+indexes, and exports. Embedding providers and their credentials are not needed
+for these checks.
+
+Verify the reader endpoint and build the site against that exact release:
 
 ```bash
 RELEASE_URL="$PUBLIC_BASE/catalog/releases/$RELEASE_DIGEST/release.json"
@@ -165,14 +175,22 @@ uv run --locked --package chartcoach --extra curation \
   --store "$CATALOG_STORE"
 ```
 
-The final command changes the release read from `$PUBLIC_BASE/catalog.json`.
-The files under the digest path remain unchanged. Confirm the selection
-through the public URL:
+Selection validates the candidate's fresh published bytes before writing
+`catalog.json`. Its dry run performs the same validation. The files under the
+digest path remain unchanged.
+
+Confirm that the stored selection matches the intended digest and its
+published descriptor, then check the public reader endpoint:
 
 ```bash
+uv run --locked --package chartcoach --extra curation \
+  chartcoach catalog release validate \
+  --store "$CATALOG_STORE" \
+  --expect-digest "$RELEASE_DIGEST"
+
 uv run --locked --package chartcoach \
   chartcoach catalog describe --source "$PUBLIC_BASE/catalog.json"
 ```
 
 Python calls that omit `location` and commands that omit `--source` read the
-official `files.peter.gy` catalog selection.
+official catalog selection.

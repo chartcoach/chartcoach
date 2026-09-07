@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from importlib.metadata import version
 
-from .catalog import (
+from ._catalog import (
     Catalog,
     CatalogError,
     CatalogInfo,
@@ -13,15 +13,15 @@ from .catalog import (
     CitationRecord,
     CitationSource,
     GuidelineEntryRecord,
-    GuidelineMatch,
     ProfileInfo,
-    SearchResult,
     SectionRecord,
     SourceDetail,
-    SqlColumn,
-    SqlResult,
     open_catalog,
 )
+from ._catalog.guidelines import Guideline, Section
+from ._catalog.manifest import ManifestDefinition
+from ._catalog.read import FullSourceRecord, MinimalSourceRecord
+from ._catalog.releases import ReleaseArtifact
 
 __version__ = version("chartcoach")
 
@@ -33,14 +33,16 @@ __all__ = [
     "CatalogRelease",
     "CitationRecord",
     "CitationSource",
+    "FullSourceRecord",
+    "Guideline",
     "GuidelineEntryRecord",
-    "GuidelineMatch",
+    "ManifestDefinition",
+    "MinimalSourceRecord",
     "ProfileInfo",
-    "SearchResult",
+    "ReleaseArtifact",
+    "Section",
     "SectionRecord",
     "SourceDetail",
-    "SqlColumn",
-    "SqlResult",
     "__version__",
     "open_catalog",
 ]

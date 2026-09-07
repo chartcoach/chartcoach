@@ -18,23 +18,29 @@ export const markdownLines: readonly CodeLine[] = [
   ]),
 ];
 
-export const jsonLines: readonly CodeLine[] = [
-  line(t("{", "punctuation")),
-  line(t('  "id"', "key"), t(": "), t('"direct-labels"', "string"), t(",", "punctuation")),
-  line(t('  "title"', "key"), t(": "), t('"Use direct labels"', "string"), t(",", "punctuation")),
-  line(t('  "labels"', "key"), t(": "), t("[", "punctuation")),
-  line(t("    "), t('"chart:bar"', "string"), t(",", "punctuation")),
-  line(t("    "), t('"task:compare"', "string"), t(",", "punctuation")),
-  line(t("    "), t('"quality:readability"', "string")),
-  line(t("  ", "plain"), t("]", "punctuation"), t(",", "punctuation")),
-  line(t('  "sections"', "key"), t(": "), t("[", "punctuation")),
-  ...guidelineRoleSections.flatMap((section, index) => jsonSectionLines(section, index)),
-  line(t("  ", "plain"), t("]", "punctuation"), t(",", "punctuation")),
-  line(t('  "references"', "key"), t(": "), t("[", "punctuation")),
-  line(t("    "), t('"muth_text_in_data_visualizations_2022"', "string")),
-  line(t("  "), t("]", "punctuation")),
-  line(t("}", "punctuation")),
-];
+export const jsonLines: readonly CodeLine[] = JSON.stringify(
+  guidelineRoleSections.map(({ role }) => ({
+    role,
+    title: role[0].toUpperCase() + role.slice(1),
+    content: jsonSectionText(role),
+  })),
+  null,
+  2,
+)
+  .split("\n")
+  .map((source) => {
+    const parts = source.split(/("(?:[^"\\]|\\.)*")/g);
+    return parts.map((part, index) =>
+      t(
+        part,
+        part.startsWith('"')
+          ? parts[index + 1]?.trimStart().startsWith(":")
+            ? "key"
+            : "string"
+          : "punctuation",
+      ),
+    );
+  });
 
 export const typescriptLines: readonly CodeLine[] = [
   line(
@@ -119,49 +125,23 @@ function line(...tokens: CodeToken[]): CodeLine {
   return tokens;
 }
 
-function jsonSectionLines(
-  section: (typeof guidelineRoleSections)[number],
-  index: number,
-): CodeLine[] {
-  const text = jsonSectionText(section.role);
-
-  return [
-    line(
-      t("    "),
-      t("{", "punctuation"),
-      t(" "),
-      t('"role"', "key"),
-      t(": "),
-      t(`"${section.role}"`, "string"),
-      t(",", "punctuation"),
-      t(" "),
-      t('"text"', "key"),
-      t(": "),
-      t(`"${text}"`, "string"),
-      t(" "),
-      t("}", "punctuation"),
-      ...(index < guidelineRoleSections.length - 1 ? [t(",", "punctuation")] : []),
-    ),
-  ];
-}
-
 function jsonSectionText(role: (typeof guidelineRoleSections)[number]["role"]): string {
   switch (role) {
     case "advice":
-      return "Place labels beside values.";
+      return "Label marks.";
     case "reason":
-      return "Reduce legend lookup work.";
+      return "Less lookup.";
     case "context":
-      return "Use with small bar sets.";
+      return "Few series.";
     case "exceptions":
-      return "Keep legends when labels crowd.";
+      return "Crowded marks.";
     case "costs":
-      return "Uses plot space.";
+      return "Uses space.";
     case "mistakes":
-      return "Label only compared marks.";
+      return "Avoid clutter.";
     case "check":
-      return "Can values be read directly?";
+      return "Clear values?";
     case "fix":
-      return "Move labels beside marks.";
+      return "Move labels.";
   }
 }

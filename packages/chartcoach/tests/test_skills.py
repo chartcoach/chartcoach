@@ -5,7 +5,7 @@ from pathlib import Path
 
 import agent_plugins
 import pytest
-from chartcoach import skills as skill_service
+from chartcoach import _skills as skill_service
 
 
 def test_skill_services_return_agent_plugin_objects(

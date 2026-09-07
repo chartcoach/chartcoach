@@ -4,7 +4,7 @@ from pathlib import Path
 
 import click
 
-from chartcoach.constants import (
+from chartcoach._constants import (
     CATALOG_ARTIFACT_BASE_URL,
     CATALOG_SELECTION_PATH,
     CATALOG_SOURCE_ENV,

@@ -7,8 +7,8 @@ import sys
 from pathlib import Path
 
 import pytest
-from chartcoach.catalog.curation import EmbeddingProfile, build_release
-from chartcoach.catalog.model import Catalog
+from chartcoach import Catalog
+from chartcoach.curation import EmbeddingProfile, build_release
 from lancedb.embeddings import get_registry
 from lancedb_embedding_fixture import variable_embedding_definition
 
@@ -68,7 +68,9 @@ raise SystemExit(result.exit_code)
     result = _run(script)
 
     assert result.returncode == 1
-    assert "LanceDB embedding search failed" in result.stdout
+    assert "Required LanceDB embedding variables are unset" in result.stdout
+    assert _VARIABLE in result.stdout
+    assert "--embedding-vars" in result.stdout
     assert "producer-secret-value" not in result.stdout
     assert "producer-secret-value" not in result.stderr
 
@@ -110,6 +112,43 @@ asyncio.run(run())
     assert result.stdout.strip() == "distance"
     assert secret not in result.stdout
     assert secret not in result.stderr
+
+
+def test_mcp_missing_variable_reports_setup_and_allows_fts(
+    sample_catalog: Catalog,
+    tmp_path: Path,
+) -> None:
+    release = _variable_release(sample_catalog, tmp_path)
+    script = f"""
+import asyncio
+from lancedb_embedding_fixture import variable_embedding_definition
+variable_embedding_definition()
+from chartcoach import open_catalog
+from chartcoach.mcp import MCPServer, _register_tools
+from mcp.types import CallToolResult
+async def run():
+    server = MCPServer("test")
+    _register_tools(server, catalog=open_catalog({str(release)!r}), profile={_PROFILE!r})
+    failed = await server.call_tool("search", {{"text": "direct labels", "mode": "vector"}})
+    assert isinstance(failed, CallToolResult)
+    assert failed.is_error is True
+    error = failed.structured_content["error"]
+    assert error["code"] == "unavailable_capability"
+    assert error["details"]["variables"] == [{_VARIABLE!r}]
+    assert error["hints"]
+    print(failed.model_dump_json())
+    recovered = await server.call_tool("search", {{"text": "direct labels", "mode": "fts"}})
+    assert isinstance(recovered, CallToolResult)
+    assert recovered.is_error is False
+asyncio.run(run())
+"""
+
+    result = _run(script)
+
+    assert result.returncode == 0, result.stderr
+    assert "--embedding-vars" in result.stdout
+    assert "producer-secret-value" not in result.stdout
+    assert "producer-secret-value" not in result.stderr
 
 
 def _variable_release(catalog: Catalog, tmp_path: Path) -> Path:

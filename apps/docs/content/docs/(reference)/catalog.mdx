@@ -4,13 +4,14 @@ description: Inspect guideline entries, catalog locations, and the files in a pu
 icon: Database
 ---
 
-Each row in `entries.parquet` is one guideline entry. The row stores its ID and
-summary, labels for filtering, ordered guidance sections, and BibTeX
-references.
+Each row in `entries.parquet` is one guideline entry. This
+[Parquet](https://parquet.apache.org/docs/) file stores tabular data for Python,
+JavaScript, and database readers. Entries contain labels, ordered sections,
+and [BibTeX](https://www.bibtex.org/) source records for citations.
 
 ## Guideline entry record
 
-This excerpt uses exact values from the release in the live examples. It shows
+This excerpt uses exact values from the quickstart's catalog. It shows
 the first section and complete reference:
 
 ```json
@@ -58,14 +59,14 @@ key in `references`.
 
 chartcoach opens these directory and file layouts:
 
-| Location                | Files                                         | Behavior                                      |
-| ----------------------- | --------------------------------------------- | --------------------------------------------- |
-| Authored folder         | `MANIFEST.md` and `entries/<id>/guideline.md` | Reads the Markdown entries used for curation  |
-| Compiled bundle         | `MANIFEST.md` and `entries.parquet`           | Reads local guideline entry rows directly     |
-| Local deployed root     | `catalog.json` and `catalog/releases/`        | Opens and verifies the selected release       |
-| Exact release directory | `release.json` plus the files it lists        | Verifies the listed files before reading them |
-| Remote selection        | A `catalog.json` URL                          | Follows the current release selection         |
-| Remote exact release    | A `release.json` URL                          | Keeps one release digest                      |
+| Location                | Files                                         | Behavior                                     |
+| ----------------------- | --------------------------------------------- | -------------------------------------------- |
+| Authored folder         | `MANIFEST.md` and `entries/<id>/guideline.md` | Reads the Markdown entries used for curation |
+| Compiled bundle         | `MANIFEST.md` and `entries.parquet`           | Reads local guideline entry rows directly    |
+| Local deployed root     | `catalog.json` and `catalog/releases/`        | Opens and verifies the selected release      |
+| Exact release directory | `release.json` plus the files it lists        | Verifies files as they are read              |
+| Remote selection        | A `catalog.json` URL                          | Follows the current release selection        |
+| Remote exact release    | A `release.json` URL                          | Keeps one release digest                     |
 
 `MANIFEST.md` lists the section roles and label families accepted by that
 catalog. Readers reject records that use a role or label family missing from
@@ -117,34 +118,17 @@ requirements, and projection metadata belong in `profile.json`.
 
 `index.tar.gz` contains the LanceDB table named `documents`, including
 document identities, text, labels, vectors, and embedding metadata.
-`profile.json` binds that table to the catalog:
+`profile.json` describes the index:
 
-```json
-{
-  "schema_version": 1,
-  "documents_version": 1,
-  "entries_digest": "<entries-digest>",
-  "manifest_digest": "<manifest-digest>",
-  "embedding_functions": [
-    {
-      "name": "sentence-transformers",
-      "model": {
-        "name": "all-MiniLM-L6-v2",
-        "device": "cpu",
-        "normalize": true,
-        "trust_remote_code": false
-      },
-      "source_column": "text",
-      "vector_column": "vector"
-    }
-  ],
-  "dimensions": 384,
-  "distance_metric": "cosine",
-  "python_requirements": { "sentence-transformers": "5.6.1" },
-  "lancedb_version": "0.38.0",
-  "projection": null
-}
-```
+| Field                                 | Meaning                                            |
+| ------------------------------------- | -------------------------------------------------- |
+| `schema_version`, `documents_version` | Metadata and document formats                      |
+| `entries_digest`, `manifest_digest`   | Catalog contents indexed by this profile           |
+| `embedding_functions`                 | LanceDB registry bindings from text to vectors     |
+| `dimensions`, `distance_metric`       | Vector size and retrieval distance                 |
+| `python_requirements`                 | Exact dependency versions recorded by the producer |
+| `lancedb_version`                     | Producer's LanceDB version                         |
+| `projection`                          | Projection algorithm and options, or `null`        |
 
 The metadata file is at most 64 KiB and has a closed schema. Registry variable
 references use `$var:name`. Values remain caller-owned. Every profile contains

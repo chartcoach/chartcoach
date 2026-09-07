@@ -2,7 +2,8 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "paths": {
-      "@chartcoach/catalog": ["./src/index.ts"]
+      "@chartcoach/catalog": ["./src/index.ts"],
+      "@chartcoach/catalog/node": ["./src/node.ts"]
     }
   },
   "include": ["src", "test", "vite.config.ts"]

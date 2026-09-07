@@ -13,9 +13,10 @@ export default defineConfig({
   },
   pack: {
     dts: true,
-    entry: ["src/index.ts"],
+    entry: ["src/index.ts", "src/node.ts"],
     format: ["esm"],
     platform: "neutral",
+    deps: { neverBundle: [/^node:/] },
     target: "es2022",
   },
   test: {

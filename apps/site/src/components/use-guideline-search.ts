@@ -1,4 +1,4 @@
-import { create as createOrama, load, search, type RawData } from "@orama/orama";
+import { create, load, search, type RawData } from "zbsearch";
 import { startTransition, useEffect, useMemo } from "react";
 import { create as createZustandStore } from "zustand";
 import { useShallow } from "zustand/react/shallow";
@@ -26,7 +26,7 @@ export const normalizedSearchBase = baseUrl.replace(/\/$/, "");
 const dbUrl = `${normalizedSearchBase}/assets/search-guidelines.json`;
 
 function createSearchDatabase() {
-  return createOrama({ schema: GUIDELINE_SEARCH_SCHEMA, language: "english" });
+  return create({ schema: GUIDELINE_SEARCH_SCHEMA, language: "english" });
 }
 
 type GuidelineSearchDatabase = ReturnType<typeof createSearchDatabase>;

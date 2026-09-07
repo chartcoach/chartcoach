@@ -7,7 +7,7 @@ from urllib.parse import urlsplit, urlunsplit
 from urllib.request import Request, urlopen
 
 from .._object_store import obstore_uri
-from ..errors import CatalogError
+from ..errors import CatalogError, CatalogOperationError, CatalogValidationError
 from .location import uri_name, uri_parent
 
 _READ_CHUNK_BYTES = 1024 * 1024
@@ -21,7 +21,11 @@ def read_local_bytes(path: Path, limit: int) -> bytes:
         with path.open("rb") as source:
             data = source.read(limit + 1)
     except OSError as exc:
-        raise CatalogError(f"Could not read catalog location: {path}") from exc
+        raise CatalogOperationError(
+            f"Could not read catalog location: {path}",
+            details={"operation": "read_local"},
+            hints=["Check that the catalog file exists and is readable."],
+        ) from exc
     if len(data) > limit:
         raise CatalogError("Catalog JSON exceeds the 1 MiB limit.")
     return data
@@ -68,9 +72,15 @@ def remote_chunks(
         with urlopen(request, timeout=timeout) as response:
             while chunk := response.read(_READ_CHUNK_BYTES):
                 yield chunk
-    except (OSError, ValueError) as exc:
-        raise CatalogError(
+    except ValueError as exc:
+        raise CatalogValidationError(
+            "Could not construct the catalog HTTP request.",
+            hints=["Check the catalog URL and HTTP storage options."],
+        ) from exc
+    except OSError as exc:
+        raise CatalogOperationError(
             f"Failed to load catalog resource over HTTP: {_display_http_uri(uri)}",
+            details={"operation": "read_http"},
             hints=[
                 "Pass a local catalog or release path as `location` for offline work.",
                 "The CLI accepts `--source PATH` or `CHARTCOACH_SOURCE=PATH`.",
@@ -103,10 +113,28 @@ def _cloud_chunks(
             obstore_uri(uri_parent(uri)),
             **dict(storage_options),
         )
+    except (TypeError, ValueError) as exc:
+        raise CatalogValidationError(
+            "Could not configure the catalog cloud storage client.",
+            hints=["Check the catalog URI and storage client options."],
+        ) from exc
+    except Exception as exc:
+        raise CatalogOperationError(
+            "Could not open catalog cloud storage.",
+            details={"operation": "open_cloud"},
+            hints=[
+                "Check the storage client's configuration and access to the bucket."
+            ],
+        ) from exc
+    try:
         yield from store.get(uri_name(uri))
     except Exception as exc:
-        raise CatalogError(
-            "Failed to load catalog resource from cloud storage."
+        raise CatalogOperationError(
+            "Failed to load catalog resource from cloud storage.",
+            details={"operation": "read_cloud"},
+            hints=[
+                "Check that the catalog object exists and the storage client can read it."
+            ],
         ) from exc
 
 

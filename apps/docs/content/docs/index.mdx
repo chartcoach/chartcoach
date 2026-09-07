@@ -1,57 +1,35 @@
 ---
 title: Overview
-description: Find visualization guidelines and inspect the sources behind them.
+description: Find visualization guidance, read its limits, and cite its sources.
 icon: BookOpen
 ---
 
-chartcoach helps you find visualization guidelines and inspect the sources
-behind each recommendation. The Guideline Catalog stores each guideline as an
-entry with labels for filtering, separate sections for advice and checks, and
-its references.
+chartcoach gives people and agents a searchable Guideline Catalog for creating
+and reviewing charts. Each guideline entry contains a recommendation, labels,
+sections such as advice and checks, and references to its sources.
 
-## Read one guideline
+For example, [directly labeling series](https://chartcoach.dev/guidelines/directly-label-series-instead-of-using-a-color-key/)
+comes with advice on placement, reasons to use it, exceptions, and source
+citations. Read the complete entry before applying the recommendation.
 
-This command reads a guideline from a fixed three-entry catalog:
+## What do you want to do?
 
-```bash
-uvx --from \
-  "chartcoach @ https://files.peter.gy/packages/python/chartcoach/0.2.0/892f120cb377/chartcoach-0.2.0-py3-none-any.whl" \
-  chartcoach catalog read directly-label-series-instead-of-using-a-color-key \
-  --source https://files.peter.gy/packages/python/chartcoach/0.2.0/docs-catalog/c0f6dbec3dd31b07763b46fd458733db0b8b50c5793cf9447458119287129420/release.json \
-  --format markdown
-```
+| Task                                                | Start here                           |
+| --------------------------------------------------- | ------------------------------------ |
+| Read and cite your first guideline                  | [Getting started](/getting-started)  |
+| Open a local or remote catalog and keep it cached   | [Open and cache catalogs](/catalogs) |
+| Find guidance for a chart or reader task            | [Find guidelines](/querying)         |
+| Give an agent access to catalog evidence            | [Use with agents](/agents)           |
+| Add guidelines, build indexes, or publish a catalog | [Curate and publish](/curation)      |
 
-`uvx` downloads and runs the hosted chartcoach 0.2.0 Python package. The
-`release.json` URL fixes the catalog contents, so the command returns the same
-guideline on every run.
+## Choose an interface
 
-This shortened excerpt shows the guideline title and its first section:
+| Interface                                | Use it for                                                                    |
+| ---------------------------------------- | ----------------------------------------------------------------------------- |
+| [Python](/python)                        | Catalog records, Polars dataframes, DuckDB queries, and native LanceDB tables |
+| [JavaScript and TypeScript](/javascript) | Catalog records in browsers and Node.js, with verified artifact access        |
+| [CLI](/cli)                              | Terminal inspection, bounded SQL and search, and curation commands            |
+| [MCP](/mcp)                              | Catalog tools for a client that supports the Model Context Protocol           |
 
-```text
-## directly-label-series-instead-of-using-a-color-key
-
-**Directly label colored series instead of relying on a color key**
-
-...
-
-### advice: Move labels onto the marks
-
-Label colored series directly on the chart instead of making readers decode
-them through a color key...
-```
-
-The complete output continues through the reasons, applicable situations,
-exceptions, costs, common mistakes, checks, fixes, and source list. The same
-record is available in the
-[Guideline Catalog site](https://chartcoach.dev/guidelines/directly-label-series-instead-of-using-a-color-key/).
-
-## What a guideline entry contains
-
-A guideline entry record keeps the information needed to find, apply, and cite
-one recommendation:
-
-- `id` names the guideline entry in commands and code.
-- `labels` support exact filtering, such as `quality:accessibility`.
-- `sections` separate the recommendation from its reasons, limits, checks, and
-  fixes.
-- `references` identify the sources cited by the sections.
+Use [Catalog data](/catalog) to inspect the record fields, table relationships,
+and release files shared by these interfaces.

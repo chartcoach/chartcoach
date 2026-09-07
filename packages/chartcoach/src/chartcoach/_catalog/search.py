@@ -10,6 +10,8 @@ from .errors import (
     CatalogCapabilityError,
     CatalogEmbeddingError,
     CatalogError,
+    CatalogLookupError,
+    CatalogOperationError,
     CatalogProfileError,
     CatalogValidationError,
 )
@@ -17,6 +19,9 @@ from .identity import catalog_identity
 from .profiles import ProfileMetadata, validate_embedding_model
 
 if TYPE_CHECKING:
+    from lancedb import Table
+    from lancedb.query import LanceEmptyQueryBuilder
+
     from .model import Catalog
 
 
@@ -72,12 +77,32 @@ def catalog_search(
         raise CatalogValidationError(f"Unsupported search mode: {mode!r}.")
     if isinstance(limit, bool) or not isinstance(limit, int) or limit < 1:
         raise CatalogValidationError("Search limit must be at least 1.")
+    if where is not None and (not isinstance(where, str) or not where.strip()):
+        raise CatalogValidationError(
+            "Search filter must be a non-empty SQL expression."
+        )
 
     metadata = catalog._profile_metadata(profile)
     if mode != "fts":
         _validate_semantic_environment(metadata, profile=profile)
-
     table = catalog._search_table(profile)
+    if where is not None:
+        _validate_filter(table, where, profile=profile)
+    if mode != "fts":
+        try:
+            # LanceDB caches the constructed functions on this native table.
+            _ = table.embedding_functions
+        except CatalogError:
+            raise
+        except Exception as exc:
+            raise CatalogEmbeddingError(
+                f"LanceDB could not initialize the embedding function for profile {profile!r}.",
+                details={"profile": profile, "operation": "initialize_embedding"},
+                hints=[
+                    "Inspect the profile embedding model and its exact requirements with catalog.describe(profile=...)."
+                ],
+            ) from exc
+
     try:
         query = table.search(
             text,
@@ -89,21 +114,28 @@ def catalog_search(
             query = query.where(where)
         if mode != "fts":
             query = cast(Any, query).distance_type(metadata.distance_metric)
-        document_hits = query.limit(limit + 1).to_list()
+        columns = ["id", "parent_id", "role", "text"]
+        if mode == "fts":
+            columns.append("_score")
+        elif mode == "vector":
+            columns.append("_distance")
+        # Hybrid applies the same projection to both branches. LanceDB adds each
+        # branch's score before its native reranker produces _relevance_score.
+        document_hits = query.select(columns).limit(limit + 1).to_list()
     except CatalogError:
         raise
     except Exception as exc:
-        if mode == "fts":
-            raise CatalogValidationError(
-                f"LanceDB full-text search failed for profile {profile!r}.",
-                details={"profile": profile, "exception_type": type(exc).__name__},
-            ) from exc
-        raise CatalogEmbeddingError(
-            f"LanceDB embedding search failed for profile {profile!r}.",
-            details={"profile": profile, "exception_type": type(exc).__name__},
-            hints=[
-                "Register the profile alias, install its exact requirements, and set required registry variables."
-            ],
+        hints = [
+            "Check that the local index is readable and inspect catalog.describe(profile=...) for its configuration."
+        ]
+        if mode != "fts":
+            hints.append(
+                "Use FTS mode to search text independently of the embedding provider."
+            )
+        raise CatalogOperationError(
+            f"LanceDB search failed for profile {profile!r}.",
+            details={"profile": profile, "mode": mode, "operation": "search"},
+            hints=hints,
         ) from exc
 
     considered = document_hits[:limit]
@@ -112,12 +144,22 @@ def catalog_search(
         parent_id = _match_string(hit, "parent_id")
         if parent_id not in parent_ids:
             parent_ids.append(parent_id)
-    candidates = {
-        str(row["id"]): row
-        for row in catalog.query(
-            ids=parent_ids, limit=max(1, len(parent_ids))
-        ).to_dicts()
-    }
+    try:
+        candidates = (
+            {
+                str(row["id"]): row
+                for row in catalog.query(
+                    ids=parent_ids, limit=len(parent_ids)
+                ).to_dicts()
+            }
+            if parent_ids
+            else {}
+        )
+    except CatalogLookupError as exc:
+        raise CatalogProfileError(
+            "Indexed guideline entry is absent from the catalog.",
+            details={"profile": profile, "guideline_id": exc.details.get("id")},
+        ) from exc
     score_kind: Literal["distance", "relevance"] = (
         "distance" if mode == "vector" else "relevance"
     )
@@ -170,6 +212,33 @@ def catalog_search(
     }
 
 
+def _validate_filter(table: Table, where: str, *, profile: str) -> None:
+    try:
+        columns = table.schema.names
+        # output_schema plans the native predicate without executing rows or
+        # constructing an embedding function, and retains typed input errors.
+        query = cast("LanceEmptyQueryBuilder", table.search())
+        try:
+            query.where(where).select(["id"]).limit(1).output_schema()
+        except ValueError as exc:
+            raise CatalogValidationError(
+                "LanceDB could not validate the index filter against its document columns.",
+                details={"profile": profile, "columns": columns},
+                hints=[
+                    "Available document columns: " + ", ".join(columns) + ".",
+                    "Inspect catalog.index(profile).schema in Python, or omit the filter to search all documents.",
+                ],
+            ) from exc
+    except CatalogError:
+        raise
+    except Exception as exc:
+        raise CatalogOperationError(
+            f"LanceDB could not plan the index filter for profile {profile!r}.",
+            details={"profile": profile, "operation": "plan_filter"},
+            hints=["Check that the local index is readable before retrying."],
+        ) from exc
+
+
 def _validate_semantic_environment(metadata: ProfileMetadata, *, profile: str) -> None:
     binding = metadata.embedding_functions[0]
     try:
@@ -214,6 +283,25 @@ def _validate_semantic_environment(metadata: ProfileMetadata, *, profile: str) -
             },
             hints=[
                 "Install the exact versions reported by catalog.describe(profile=...)."
+            ],
+        )
+    missing_variables: list[str] = []
+    for value in binding.model.values():
+        if isinstance(value, str) and value.startswith("$var:"):
+            name = value.removeprefix("$var:")
+            try:
+                get_registry().get_var(name)
+            except KeyError:
+                missing_variables.append(name)
+    if missing_variables:
+        raise CatalogCapabilityError(
+            "Required LanceDB embedding variables are unset: "
+            + ", ".join(sorted(set(missing_variables)))
+            + ".",
+            details={"profile": profile, "variables": sorted(set(missing_variables))},
+            hints=[
+                "Set the listed names with the LanceDB registry's set_var(name, value).",
+                "CLI and MCP accept --embedding-vars PATH. Start a new MCP server after updating its variable file.",
             ],
         )
 

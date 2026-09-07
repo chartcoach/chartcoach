@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import pytest
-from chartcoach.catalog.references import (
+from chartcoach._catalog.references import (
     parse_bibtex,
     parse_bibtex_reference,
 )

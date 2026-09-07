@@ -199,7 +199,7 @@ function parseReference(bibtex: string): ParsedReference {
     journal: textOrNull(properties.journal),
     booktitle: textOrNull(properties.booktitle),
     publisher: textOrNull(properties.publisher),
-    url: textOrNull(properties.url),
+    url: referenceUrl(properties),
     doi: textOrNull(properties.doi),
     fingerprint: canonicalJson({
       type: entry.type.toLowerCase(),
@@ -272,6 +272,15 @@ function textOrNull(value: string | undefined): string | null {
   if (value === undefined) return null;
   const text = value.trim();
   return text || null;
+}
+
+function referenceUrl(properties: Readonly<Record<string, string>>): string | null {
+  const explicit = textOrNull(properties.url);
+  const value = explicit ?? textOrNull(properties.howpublished);
+  if (value === null) return null;
+  const wrapped = /^\\url\{([^{}]*)\}$/.exec(value);
+  const candidate = wrapped?.[1] ?? value;
+  return /^https?:\/\/[^\s{}\\/?#]+[^\s{}\\]*$/i.test(candidate) ? candidate : explicit;
 }
 
 function doiUrl(value: string): string {

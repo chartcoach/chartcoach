@@ -44,11 +44,11 @@ function queryTerms(query: string) {
 function searchTextSources(result: SearchResult) {
   const document = result.document;
   return [
-    document.slug,
     document.description,
-    ...document.sectionTitles,
-    document.body,
     ...document.sectionContent,
+    document.body,
+    ...document.sectionTitles,
+    document.slug,
     ...document.labels,
     ...document.references,
   ];
@@ -200,7 +200,7 @@ function SearchTrigger({ open, onOpen }: { open: boolean; onOpen: () => void }) 
   return (
     <button
       type="button"
-      className="flex h-8 w-full min-w-0 items-center justify-start gap-2 rounded-md border border-border bg-surface-muted px-2.5 text-sm text-muted transition-colors hover:border-fg/25 hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/20 max-[359px]:w-9 max-[359px]:shrink-0 max-[359px]:justify-center max-[359px]:px-0 sm:w-auto sm:justify-center min-[520px]:px-3"
+      className="flex h-11 w-full min-w-0 items-center justify-start gap-2 rounded-md border border-border bg-surface-muted px-2.5 text-sm text-muted transition-colors hover:border-fg/25 hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/20 max-[399px]:w-11 max-[399px]:shrink-0 max-[399px]:justify-center max-[399px]:px-0 sm:w-auto sm:justify-center min-[520px]:px-3"
       aria-label="Search guidelines"
       aria-keyshortcuts="Meta+K Control+K"
       aria-expanded={open}
@@ -208,7 +208,7 @@ function SearchTrigger({ open, onOpen }: { open: boolean; onOpen: () => void }) 
       onClick={onOpen}
     >
       <Search aria-hidden="true" className={iconClassName(false)} />
-      <span className="min-w-0 whitespace-nowrap max-[359px]:hidden">Search guidelines</span>
+      <span className="min-w-0 whitespace-nowrap max-[399px]:hidden">Search guidelines</span>
       <SearchShortcutHint />
     </button>
   );
@@ -232,7 +232,7 @@ function SearchInputRow({
   onQueryChange: (query: string) => void;
 }) {
   return (
-    <div className="flex h-14 items-center gap-3 border-b border-border px-3 sm:px-4">
+    <div className="flex h-14 shrink-0 items-center gap-3 border-b border-border px-3 sm:px-4">
       <Search aria-hidden="true" className={iconClassName(true)} />
       <h2 id="guideline-search-title" className="sr-only">
         Search guidelines
@@ -255,7 +255,7 @@ function SearchInputRow({
       ) : null}
       <button
         type="button"
-        className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted transition-colors hover:bg-surface-muted hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/20"
+        className="flex size-11 shrink-0 items-center justify-center rounded-md text-muted transition-colors hover:bg-surface-muted hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/20"
         aria-label="Close search"
         onClick={onClose}
       >
@@ -341,7 +341,7 @@ function SearchResultsList({
   onResultKeyDown: (event: KeyboardEvent<HTMLAnchorElement>) => void;
 }) {
   return (
-    <ol className="guideline-search-results max-h-[min(56vh,28rem)] list-none space-y-1 overflow-y-auto p-1">
+    <ol className="m-0 list-none space-y-1 p-1">
       {results.map((result) => (
         <SearchResultItem
           key={result.id}
@@ -431,7 +431,7 @@ function SearchFooter({
   searchStatus: SearchStatus;
 }) {
   return (
-    <div className="px-4 py-3">
+    <div className="shrink-0 px-4 py-3">
       <SearchStatusText
         indexStatus={indexStatus}
         searchStatus={searchStatus}
@@ -551,7 +551,7 @@ export function GuidelineSearch() {
   }
 
   return (
-    <div className="min-w-0 flex-1 max-[359px]:flex-none sm:flex-none">
+    <div className="min-w-0 flex-1 max-[399px]:flex-none sm:flex-none">
       <SearchTrigger open={searchState.open} onOpen={searchState.openSearch} />
       {searchState.open ? (
         <dialog
@@ -559,7 +559,7 @@ export function GuidelineSearch() {
           ref={setDialogElement}
           aria-labelledby="guideline-search-title"
           tabIndex={-1}
-          className="guideline-search-dialog fixed left-1/2 top-16 z-50 m-0 max-h-[calc(100vh-5rem)] w-[calc(100vw-1.5rem)] max-w-2xl -translate-x-1/2 overflow-hidden rounded-lg border border-border bg-bg p-0 text-fg shadow-2xl sm:top-24 sm:max-h-[calc(100vh-7rem)] sm:w-[calc(100vw-2rem)]"
+          className="guideline-search-dialog fixed left-1/2 top-16 z-50 m-0 flex max-h-[calc(100dvh-5rem)] flex-col w-[calc(100vw-1.5rem)] max-w-2xl -translate-x-1/2 overflow-hidden rounded-lg border border-border bg-bg p-0 text-fg shadow-2xl sm:top-24 sm:max-h-[calc(100dvh-7rem)] sm:w-[calc(100vw-2rem)]"
         >
           <SearchInputRow
             inputId={inputId}
@@ -570,7 +570,7 @@ export function GuidelineSearch() {
             onClose={closeDialog}
             onQueryChange={searchState.setQuery}
           />
-          <div className="min-h-44 border-b border-border p-2">
+          <div className="guideline-search-results min-h-0 max-h-[min(56dvh,28rem)] overflow-y-auto overscroll-contain border-b border-border p-2">
             {hasResults ? (
               <SearchResultsList
                 activeResultId={searchState.activeResultId}

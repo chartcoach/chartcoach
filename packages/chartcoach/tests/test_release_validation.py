@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 from collections.abc import Callable
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -9,17 +11,16 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
 from catalog_testkit import deterministic_embedding
-from chartcoach.catalog.curation import (
+from chartcoach import Catalog, CatalogRelease, ReleaseArtifact
+from chartcoach._catalog.curation.artifacts import _write_lancedb_archive
+from chartcoach._catalog.releases.archive import extract_tar_archive
+from chartcoach._catalog.releases.hashing import release_digest, sha256_file
+from chartcoach._catalog.releases.services import validate_runtime_release
+from chartcoach.curation import (
     EmbeddingProfile,
     build_release,
     validate_release,
 )
-from chartcoach.catalog.curation.artifacts import _write_lancedb_archive
-from chartcoach.catalog.model import Catalog
-from chartcoach.catalog.releases import CatalogRelease, ReleaseArtifact
-from chartcoach.catalog.releases.archive import extract_tar_archive
-from chartcoach.catalog.releases.hashing import release_digest, sha256_file
-from chartcoach.catalog.releases.services import validate_runtime_release
 
 pytestmark = pytest.mark.curation
 _PROFILE = "test-deterministic"
@@ -256,20 +257,48 @@ def test_release_validation_treats_the_producer_lancedb_version_as_provenance(
     validate_release(root)
 
 
-def test_release_validation_requires_a_trusted_registered_alias(
+def test_release_validation_is_independent_of_the_embedding_provider_environment(
     sample_catalog: Catalog,
     tmp_path: Path,
 ) -> None:
-    root, _ = _profile_release(sample_catalog, tmp_path)
+    from lancedb.embeddings import get_registry
+    from lancedb_embedding_fixture import SECRET_ALIAS, variable_embedding_definition
+
+    registry = get_registry()
+    registry.set_var("validation-provider-key", "producer-only-credential")
+    embedding = variable_embedding_definition().create(
+        api_key="$var:validation-provider-key", max_retries=0
+    )
+    root = tmp_path / "release"
+    build_release(
+        sample_catalog, root, profiles={_PROFILE: EmbeddingProfile(embedding)}
+    )
     metadata_path = f"profiles/{_PROFILE}/profile.json"
     path = root / metadata_path
     metadata = json.loads(path.read_text())
-    metadata["embedding_functions"][0]["name"] = "unregistered-alias"
+    metadata["python_requirements"] = {
+        "chartcoach-test-unavailable-provider": "123.0.0"
+    }
     path.write_text(json.dumps(metadata))
     _refresh_artifact(root, metadata_path)
 
-    with pytest.raises(ValueError, match="alias is not registered"):
-        validate_release(root)
+    script = f"""
+from lancedb.embeddings import get_registry
+from chartcoach.curation import validate_release
+try:
+    get_registry().get({SECRET_ALIAS!r})
+except KeyError:
+    pass
+else:
+    raise AssertionError("The fresh validator process has the producer alias registered")
+validate_release({str(root)!r})
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", script], capture_output=True, text=True, check=False
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "producer-only-credential" not in result.stdout + result.stderr
 
 
 def test_release_validation_detects_changed_lancedb_text_with_stable_ids(

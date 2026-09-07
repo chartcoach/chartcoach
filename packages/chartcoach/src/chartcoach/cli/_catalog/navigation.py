@@ -5,10 +5,11 @@ from typing import cast
 
 import click
 
-from chartcoach.catalog import SourceDetail
-from chartcoach.catalog.errors import CatalogError, format_error
-from chartcoach.catalog.identity import catalog_identity
-from chartcoach.constants import DEFAULT_GUIDELINE_URL_TEMPLATE
+from chartcoach._catalog import SourceDetail
+from chartcoach._catalog.errors import CatalogError, format_error
+from chartcoach._catalog.identity import catalog_identity
+from chartcoach._catalog.sql import catalog_sql
+from chartcoach._constants import DEFAULT_GUIDELINE_URL_TEMPLATE
 
 from ..common import (
     CONTEXT_SETTINGS,
@@ -93,7 +94,7 @@ def labels_command(
 ) -> None:
     """List label values and guideline entry counts."""
 
-    from chartcoach.catalog.summary import list_labels
+    from chartcoach._catalog.summary import list_labels
 
     try:
         rows = list_labels(
@@ -136,7 +137,7 @@ def labels_command(
 def roles_command(ctx: click.Context, output_format: str) -> None:
     """List manifest section roles and guideline entry counts."""
 
-    from chartcoach.catalog.summary import list_roles
+    from chartcoach._catalog.summary import list_roles
 
     emit_rows(list_roles(load_catalog(ctx)), output_format=output_format)
 
@@ -337,7 +338,7 @@ def schema_command(
 ) -> None:
     """Return catalog table names or column schemas."""
 
-    from chartcoach.catalog.introspection import describe_tables, list_tables
+    from chartcoach._catalog.introspection import describe_tables, list_tables
 
     try:
         if list_table_names and table_names:
@@ -385,7 +386,7 @@ def sql_command(
     """Run one bounded read-only SELECT over catalog tables."""
 
     try:
-        result = load_catalog(ctx).sql(query, limit=limit)
+        result = catalog_sql(load_catalog(ctx), query, limit=limit)
     except CatalogError as exc:
         raise _command_error(exc) from exc
     if output_format == "json":

@@ -42,13 +42,7 @@ def _validate_artifact(
     artifact_path: str,
     artifact: ReleaseArtifact,
 ) -> None:
-    if artifact.bytes > MAX_RELEASE_ARTIFACT_BYTES:
-        raise ValueError(f"Catalog artifact exceeds the 1 GiB limit: {artifact_path}")
-    if (
-        artifact_path in {"MANIFEST.md", "entries.parquet"}
-        and artifact.bytes > _MAX_RUNTIME_ARTIFACT_BYTES
-    ):
-        raise ValueError(f"Runtime artifact exceeds the 64 MiB limit: {artifact_path}")
+    validate_artifact_size(artifact_path, artifact)
 
     path = root.joinpath(*PurePosixPath(artifact_path).parts)
     _require_regular_file(root, path, label=f"Catalog artifact {artifact_path!r}")
@@ -57,6 +51,18 @@ def _validate_artifact(
         raise ValueError(f"Catalog artifact byte count does not match: {artifact_path}")
     if sha256_file(path) != artifact.sha256:
         raise ValueError(f"Catalog artifact SHA-256 does not match: {artifact_path}")
+
+
+def validate_artifact_size(artifact_path: str, artifact: ReleaseArtifact) -> None:
+    """Reject artifact sizes beyond the local and published release limits."""
+
+    if artifact.bytes > MAX_RELEASE_ARTIFACT_BYTES:
+        raise ValueError(f"Catalog artifact exceeds the 1 GiB limit: {artifact_path}")
+    if (
+        artifact_path in {"MANIFEST.md", "entries.parquet"}
+        and artifact.bytes > _MAX_RUNTIME_ARTIFACT_BYTES
+    ):
+        raise ValueError(f"Runtime artifact exceeds the 64 MiB limit: {artifact_path}")
 
 
 def _require_regular_file(root: Path, path: Path, *, label: str) -> None:
@@ -84,4 +90,4 @@ def _symlink_component(root: Path, path: Path) -> Path | None:
     return None
 
 
-__all__ = ["validate_runtime_release"]
+__all__ = ["validate_artifact_size", "validate_runtime_release"]

@@ -7,12 +7,10 @@ from typing import cast
 import polars as pl
 import pytest
 from catalog_testkit import write_catalog_entry, write_manifest
-from chartcoach import CatalogError, open_catalog
-from chartcoach.catalog.curation import write_bundle
-from chartcoach.catalog.errors import CatalogValidationError
-from chartcoach.catalog.guidelines import Guideline, Section
-from chartcoach.catalog.manifest import CatalogManifest, CatalogManifestError
-from chartcoach.catalog.model import Catalog
+from chartcoach import Catalog, CatalogError, Guideline, Section, open_catalog
+from chartcoach._catalog.errors import CatalogValidationError
+from chartcoach._catalog.manifest import CatalogManifest, CatalogManifestError
+from chartcoach.curation import write_bundle
 
 _INVALID_ROWS_PATH = (
     Path(__file__).parents[3]

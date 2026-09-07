@@ -1,0 +1,120 @@
+---
+title: Open and cache catalogs
+description: Choose local files or a remote release, then reuse verified files across runs.
+icon: FolderOpen
+---
+
+Use a `catalog.json` location to follow a catalog's current selection. Use an
+exact `release.json` location when a task must keep the same catalog contents.
+Both resolve to one catalog whose reads and index loads retain that release.
+
+## Open local files
+
+With the [Python environment](/getting-started#set-up-python) active:
+
+```python
+from chartcoach import open_catalog
+
+catalog = open_catalog("./dist/catalog")
+print(catalog.describe()["entries_digest"])
+```
+
+`dist/catalog` must contain one of the supported layouts:
+
+| Input           | Required files                                  |
+| --------------- | ----------------------------------------------- |
+| Authored folder | `MANIFEST.md` and `entries/<id>/guideline.md`   |
+| Compiled bundle | `MANIFEST.md` and `entries.parquet`             |
+| Exact release   | `release.json` and its listed files             |
+| Deployed root   | `catalog.json` and `catalog/releases/<digest>/` |
+
+[Curate and publish](/curation) builds these files from authored guidelines.
+
+## Open a remote release
+
+Set `CATALOG_SOURCE` to the full descriptor URL for your deployment:
+
+```python
+import os
+
+catalog = open_catalog(os.environ["CATALOG_SOURCE"])
+```
+
+HTTP and HTTPS use the base package. Opening a release downloads and verifies
+the manifest and entry data. Profile files download when requested.
+
+For S3, GCS, or Azure, install the cloud capability in the active environment:
+
+```bash
+uv pip install "chartcoach[cloud]"
+```
+
+Set `CATALOG_SOURCE` to your bucket's descriptor URI and configure read
+credentials. For S3:
+
+```python
+import os
+
+catalog = open_catalog(
+    os.environ["CATALOG_SOURCE"],
+    storage_options={"region": "eu-central-1"},
+)
+```
+
+[obstore](https://developmentseed.org/obstore/latest/), the object-storage
+client, resolves credentials and endpoint options. Supply a custom `endpoint`
+in `storage_options` for an S3-compatible service. Keep secrets in the client's
+credential environment or your secret manager.
+
+The CLI accepts the same location through `--source`. Set
+`CHARTCOACH_SOURCE` to reuse it across commands. An explicit flag wins.
+
+## Reuse files across runs
+
+Python caches verified remote artifacts in the per-user directory selected by
+[platformdirs](https://platformdirs.readthedocs.io/). Reopening a digest-addressed
+release reuses its cached descriptor and core files. Opening `catalog.json`
+refreshes the selection.
+
+To download every artifact and keep an offline release directory:
+
+```python
+local = catalog.cache()
+offline = open_catalog(local)
+print(offline.describe()["release_digest"])
+```
+
+`cache()` includes every profile's index and optional exports, which can be
+large. To fetch one file, choose a path from the release inventory:
+
+```python
+print(list(catalog.release.artifacts))
+entries = catalog.artifact("entries.parquet")
+```
+
+Pass `entries` to DuckDB, Polars, or another Parquet reader. Both `artifact()`
+and `cache()` require a release. Use [build_release](/curation#build-a-release)
+to package an authored folder or bundle first.
+
+## Use Node.js or a browser
+
+The [Node entry point](/javascript#nodejs-files-and-cache) opens local bundles,
+releases, and remote descriptors. It shares Python's default artifact cache and
+returns verified paths through `artifactPath()`.
+
+The browser entry returns verified bytes through `catalog.artifact()`. Supply
+an `ArtifactCache` for persistence. For private storage, provide a custom
+`fetch` backed by your application's credential or signed-URL flow. See
+[S3 access](/javascript#open-s3-with-an-existing-storage-client).
+
+## If opening fails
+
+| Failure                     | Check                                                            |
+| --------------------------- | ---------------------------------------------------------------- |
+| Location cannot be read     | Descriptor path, network access, and storage credentials         |
+| Integrity mismatch          | The descriptor and artifacts belong to the same complete release |
+| Cloud capability missing    | Install the `cloud` extra in the active environment              |
+| Requested profile is absent | Inspect `catalog.describe()["profiles"]` before opening an index |
+
+Readers reject mismatched bytes. Rebuild and publish a new release when
+catalog contents change.

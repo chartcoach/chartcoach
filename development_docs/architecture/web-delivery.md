@@ -1,14 +1,13 @@
 # Web apps
 
 The public site and product docs are separate applications. Both import the
-shared brand package, and both can read the browser-safe catalog package.
+shared brand package. The public site also reads the catalog package.
 
 ```text
 apps/site  -> @chartcoach/catalog
           -> @chartcoach/brand
 
-apps/docs  -> @chartcoach/catalog
-          -> @chartcoach/brand
+apps/docs  -> @chartcoach/brand
 ```
 
 The apps do not import each other. Vite+ rules and the tests under
@@ -55,28 +54,10 @@ lists pages in navigation order.
 The docs app also exports `/llms.txt`, `/llms-full.txt`, and one Markdown route
 per page.
 
-### Live examples
-
-Live examples move through three observable stages:
-
-1. During the docs build, `@marimo-team/mdx-marimo` executes each
-   `python marimo` fence and stores its initial output in the page.
-2. In the browser, Pyodide starts the Python cells and replaces the static
-   output with the active result.
-3. Client navigation stops the previous notebook and mounts the notebook on
-   the new page.
-
-The JavaScript page needs one extra step. When the client bundle loads,
-`apps/docs/components/notebook-runtime.tsx` registers the current
-`@chartcoach/catalog` module on `globalThis.ChartCoachCatalog`. The
-`pyobservablejs` cell reads that module when its custom element connects.
-
-| Change                            | Verify                                                                                 |
-| --------------------------------- | -------------------------------------------------------------------------------------- |
-| Python cell                       | Source, static output, and active browser output                                       |
-| JavaScript cell                   | SDK registration, query/read/cite results, awaited description, and generated Markdown |
-| Navigation between notebook pages | Previous notebook stops and new notebook activates                                     |
-| Narrow layout                     | Page and live output stay within the viewport                                          |
+Fumadocs derives navigation from `meta.json`, table-of-contents headings from
+MDX, and the static search index from the same source collection. Code examples
+render as highlighted, copyable blocks. Validate examples against the workspace
+packages when their API or instructions change.
 
 ## Generated directories
 
@@ -99,5 +80,4 @@ directory. Do not edit generated output directly.
 | Site catalog location      | `pnpm --dir apps/site test` and `pnpm --dir apps/site build` |
 | Site output or search      | `pnpm --dir apps/site test` and inspect `apps/site/dist`     |
 | Docs content or navigation | `pnpm --dir apps/docs build` plus browser links and search   |
-| Live notebook              | Docs build plus desktop and narrow browser interaction       |
 | Shared web import          | `pnpm check:architecture`                                    |

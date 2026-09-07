@@ -49,7 +49,10 @@ void test("the browser catalog rejects both Node builtin spellings", () => {
 function importViolation(zone, file, specifier) {
   if (zone.name === "catalog") {
     const builtin = specifier.replace(/^node:/, "");
-    if (specifier.startsWith("node:") || nodeBuiltins.has(builtin)) return "Node builtin";
+    const nodeEntry = file === path.join(catalogRoot, "src/node.ts");
+    if (!nodeEntry && (specifier.startsWith("node:") || nodeBuiltins.has(builtin)))
+      return "Node builtin";
+    if (!nodeEntry && specifier.endsWith("/node")) return "Node entry point";
     if (specifier.startsWith("@chartcoach/")) return "workspace dependency";
   }
 

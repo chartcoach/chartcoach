@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import math
 from collections.abc import Mapping
-from importlib.metadata import PackageNotFoundError, version
 from os import PathLike
 from pathlib import Path, PurePosixPath
 from tempfile import TemporaryDirectory
@@ -13,8 +12,7 @@ import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-from ...constants import LANCE_DOCUMENT_TABLE
-from ..documents import document_rows
+from ..._constants import LANCE_DOCUMENT_TABLE
 from ..manifest import manifest_digest
 from ..model import Catalog, _load_catalog_bundle
 from ..profile_layout import ProfileArtifacts, discover_profile_artifacts
@@ -22,7 +20,6 @@ from ..profiles import (
     MAX_PROFILE_BYTES,
     ProfileMetadata,
     embedding_bindings_from_bytes,
-    validate_embedding_model,
 )
 from ..releases import CatalogRelease
 from ..releases.archive import extract_tar_archive
@@ -47,7 +44,7 @@ _PROJECTION_COLUMNS = frozenset((*_PROJECTION_ID_COLUMNS, *_PROJECTION_VALUE_COL
 
 
 def validate_release(source: Path | str) -> CatalogRelease:
-    """Validate a complete release before publication."""
+    """Validate all files and derived data in a local release."""
 
     root = Path(source)
     release = validate_runtime_release(root)
@@ -95,18 +92,18 @@ def _open_reusable_profile(
             f"Reusable profile {profile!r} has inconsistent projection metadata."
         )
     _validate_profile_identity(reused_catalog, metadata)
-    _validate_profile_identity(catalog, metadata)
     archive = _local_path(root, artifacts.index)
     extract_tar_archive(archive, database)
 
     import lancedb
 
     table = lancedb.connect(database).open_table(LANCE_DOCUMENT_TABLE)
-    expected = document_rows(catalog).with_row_index("row_id").to_arrow()
+    expected = catalog.documents().to_arrow()
     indexed = _by_row_id(table.to_arrow())
     _validate_documents(indexed, expected, label="LanceDB")
     _vectors(indexed, metadata, label="LanceDB")
     _validate_binding(indexed, metadata, label="LanceDB")
+    _validate_native_indexes(table, metadata, indexed.num_rows)
     return table, metadata, archive
 
 
@@ -119,8 +116,7 @@ def _validate_profile(
     try:
         metadata = _read_profile_metadata(root, artifacts.metadata)
         _validate_profile_identity(catalog, metadata)
-        _validate_profile_environment(metadata)
-        expected = document_rows(catalog).with_row_index("row_id").to_arrow()
+        expected = catalog.documents().to_arrow()
 
         with TemporaryDirectory(prefix="chartcoach-index-") as directory:
             database = Path(directory) / "index"
@@ -132,6 +128,7 @@ def _validate_profile(
             _validate_documents(indexed, expected, label="LanceDB")
             index_vectors = _vectors(indexed, metadata, label="LanceDB")
             _validate_binding(indexed, metadata, label="LanceDB")
+            _validate_native_indexes(table, metadata, indexed.num_rows)
 
         if artifacts.documents is not None:
             documents = _by_row_id(
@@ -180,32 +177,24 @@ def _validate_profile_identity(catalog: Catalog, metadata: ProfileMetadata) -> N
         raise ValueError("profile manifest digest does not match MANIFEST.md")
 
 
-def _validate_profile_environment(metadata: ProfileMetadata) -> None:
-    for distribution, expected in metadata.python_requirements.items():
-        try:
-            actual = version(distribution)
-        except PackageNotFoundError as exc:
+def _validate_native_indexes(
+    table: Table, metadata: ProfileMetadata, rows: int
+) -> None:
+    indexes = list(table.list_indices())
+    if rows and not any(
+        index.index_type == "FTS" and index.columns == ["text"] for index in indexes
+    ):
+        raise ValueError("Index must provide full-text search on the text column.")
+    for index in indexes:
+        stats = table.index_stats(index.name)
+        if (
+            stats is not None
+            and stats.distance_type is not None
+            and stats.distance_type != metadata.distance_metric
+        ):
             raise ValueError(
-                f"profile requirement is not installed: {distribution}=={expected}"
-            ) from exc
-        if actual != expected:
-            raise ValueError(
-                f"profile requirement {distribution} must be {expected}, found {actual}"
+                f"Index {index.name!r} distance metric disagrees with the profile."
             )
-    binding = metadata.embedding_functions[0]
-    from lancedb.embeddings import get_registry
-
-    try:
-        definition = get_registry().get(binding.name)
-    except KeyError as exc:
-        raise ValueError(
-            f"profile embedding alias is not registered: {binding.name!r}"
-        ) from exc
-    validate_embedding_model(
-        binding.model,
-        allowed_fields=frozenset(definition.model_fields),
-        sensitive_fields=frozenset(definition.sensitive_keys()),
-    )
 
 
 def _validate_document_export(
@@ -247,6 +236,8 @@ def _validate_documents(
         raise ValueError(f"{label} is missing columns: {', '.join(sorted(missing))}")
     selected = actual.select(_DOCUMENT_COLUMNS).sort_by([("row_id", "ascending")])
     expected = expected.select(_DOCUMENT_COLUMNS).sort_by([("row_id", "ascending")])
+    if not pa.types.is_integer(selected.schema.field("row_id").type):
+        raise ValueError(f"{label} row_id must contain integers")
     if selected.num_rows != expected.num_rows:
         raise ValueError(f"{label} row count does not match the catalog documents")
     row_ids = selected["row_id"].to_pylist()
@@ -255,8 +246,12 @@ def _validate_documents(
     ids = selected["id"].to_pylist()
     if len(set(ids)) != len(ids):
         raise ValueError(f"{label} document ids must be unique")
-    if not selected.equals(expected):
-        raise ValueError(f"{label} document rows do not match the catalog derivation")
+    if selected.to_pylist() != expected.to_pylist():
+        raise ValueError(
+            f"{label} document rows do not match the catalog derivation. "
+            "Regenerate the affected index or document export from catalog.documents() "
+            "before building or publishing the release."
+        )
 
 
 def _by_row_id(table: pa.Table) -> pa.Table:
@@ -324,7 +319,10 @@ def _validate_projection(
     expected_identity = expected.select(_PROJECTION_ID_COLUMNS).sort_by(
         [("row_id", "ascending")]
     )
-    if not identity.equals(expected_identity):
+    if (
+        not pa.types.is_integer(identity.schema.field("row_id").type)
+        or identity.to_pylist() != expected_identity.to_pylist()
+    ):
         raise ValueError("projection document identities do not match the catalog")
     raw = (table.schema.metadata or {}).get(b"chartcoach_projection")
     if (

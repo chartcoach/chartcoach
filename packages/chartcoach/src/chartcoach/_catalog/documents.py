@@ -2,14 +2,10 @@ from __future__ import annotations
 
 import hashlib
 from collections.abc import Mapping, Sequence
-from typing import TYPE_CHECKING
 
 import polars as pl
 
 from ._polars import explode_frame
-
-if TYPE_CHECKING:
-    from .model import Catalog
 
 DOCUMENTS_VERSION = 1
 
@@ -44,15 +40,6 @@ def build_document_rows(
         "labels",
         "content_hash",
         "text",
-    )
-
-
-def document_rows(catalog: Catalog) -> pl.DataFrame:
-    """Return the flat document rows for one catalog."""
-
-    return build_document_rows(
-        catalog.table("guidelines"),
-        catalog.table("references"),
     )
 
 
@@ -223,4 +210,4 @@ def _validate_unique_document_ids(frame: pl.DataFrame) -> None:
         )
 
 
-__all__ = ["DOCUMENTS_VERSION", "build_document_rows", "document_rows"]
+__all__ = ["DOCUMENTS_VERSION", "build_document_rows"]

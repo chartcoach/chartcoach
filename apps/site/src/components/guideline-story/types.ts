@@ -12,7 +12,6 @@ export type StoryStep = {
   title: string;
   body: string;
   surface: {
-    intent: string;
     form: string;
     detail: string;
   };

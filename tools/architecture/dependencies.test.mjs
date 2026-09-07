@@ -12,7 +12,7 @@ const dependencyFields = [
 const workspaceContracts = [
   {
     path: "apps/docs/package.json",
-    internal: ["@chartcoach/brand", "@chartcoach/catalog"],
+    internal: ["@chartcoach/brand"],
   },
   {
     path: "apps/site/package.json",

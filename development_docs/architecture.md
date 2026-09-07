@@ -21,7 +21,7 @@ The guideline entry record and four files are shared between these interfaces:
 | `packages/chartcoach`      | Python guideline entry records, Polars and DuckDB tables, remote downloads, cache, release building, CLI, and MCP |
 | `packages/catalog`         | Browser-safe release loading, querying, parsed source reads, citations, profile inspection, and Parquet parsing   |
 | `apps/site`                | Public guideline pages, search data, LLM files, Open Graph images, and sitemap                                    |
-| `apps/docs`                | Guides, reference pages, and live Python and JavaScript examples                                                  |
+| `apps/docs`                | Guides and API reference with static code examples                                                                |
 | `packages/brand`           | Shared logos, fonts, and CSS variables                                                                            |
 | `fixtures/catalog-release` | Small release read by both clients and local site builds                                                          |
 
@@ -35,24 +35,25 @@ another workspace package.
 apps/site  -> packages/catalog
           -> packages/brand
 
-apps/docs  -> packages/catalog
-          -> packages/brand
+apps/docs  -> packages/brand
 ```
 
-`packages/catalog` imports no app, brand package, or Node built-in. The two
+The `@chartcoach/catalog` browser entry imports no app, brand package, or Node
+built-in. `@chartcoach/catalog/node` owns Node filesystem loading and persistent
+artifact caching. The two
 apps do not import each other. Vite+ rules check source imports, and
 `tools/architecture` checks package manifests and relative paths.
 
 The Python read and write paths meet at the catalog, profile, and release models:
 
 ```text
-public API -> catalog/runtime/  -> catalog and release models
+public API -> _catalog/runtime/  -> catalog and release models
 curation/ ---------------------> catalog and release models
 ```
 
-`catalog/runtime/` resolves catalog locations, downloads and verifies files, and manages
-caches. `catalog/curation/` builds, validates, publishes, and selects releases.
-They share the small URI helpers in `catalog/_object_store.py` and do not import
+`_catalog/runtime/` resolves catalog locations, downloads and verifies files, and manages
+caches. `_catalog/curation/` builds, validates, publishes, and selects releases.
+They share the small URI helpers in `_catalog/_object_store.py` and do not import
 each other.
 
 ## Files that change over time
@@ -64,7 +65,6 @@ each other.
 | Download cache                           | Python runtime               | File size and SHA-256 match `release.json`                                   |
 | Extracted LanceDB cache                  | Python runtime               | A sealed generation matches the archive digest and opens at a pinned version |
 | Generated site files                     | The owning Astro integration | The site build completes                                                     |
-| Static notebook output                   | The MDX notebook compiler    | The cell executes during the docs build                                      |
 
 The detailed documents divide by the files and code they describe:
 

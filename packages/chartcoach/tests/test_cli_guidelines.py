@@ -4,9 +4,7 @@ import json
 from pathlib import Path
 from typing import cast
 
-from chartcoach import CatalogManifest
-from chartcoach.catalog.guidelines import Guideline, Section
-from chartcoach.catalog.model import Catalog
+from chartcoach import Catalog, CatalogManifest, Guideline, Section
 from chartcoach.cli.main import main as chartcoach_cli
 from click.testing import CliRunner
 
@@ -62,7 +60,7 @@ def citation_catalog_path(tmp_path: Path, manifest: CatalogManifest) -> Path:
         manifest=manifest,
     )
     source_path = tmp_path / "citation-catalog"
-    from chartcoach.catalog.curation import write_bundle
+    from chartcoach.curation import write_bundle
 
     write_bundle(catalog, source_path)
     return source_path

@@ -1,6 +1,6 @@
 import pytest
-from chartcoach.catalog.guidelines import Guideline, Section
-from chartcoach.catalog.markdown import parse_guideline
+from chartcoach import Guideline, Section
+from chartcoach._catalog.markdown import parse_guideline
 
 
 def test_parse_guideline_builds_sections_and_derived_body() -> None:

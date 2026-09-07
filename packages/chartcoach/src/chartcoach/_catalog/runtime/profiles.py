@@ -5,10 +5,12 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from ...constants import LANCE_DOCUMENT_TABLE
+from ..._constants import LANCE_DOCUMENT_TABLE
 from ..errors import (
     CatalogCapabilityError,
+    CatalogError,
     CatalogLookupError,
+    CatalogOperationError,
     CatalogProfileError,
     CatalogValidationError,
 )
@@ -118,15 +120,7 @@ def open_profile_index(
             refresh=True,
             protected=protected,
         )
-        try:
-            table = _open_and_validate(
-                lancedb, target, profile=profile, metadata=metadata
-            )
-        except (OSError, RuntimeError, ValueError) as exc:
-            raise CatalogProfileError(
-                f"Profile {profile!r} LanceDB table could not be opened.",
-                details={"profile": profile, "exception_type": type(exc).__name__},
-            ) from exc
+        table = _open_and_validate(lancedb, target, profile=profile, metadata=metadata)
     table.checkout(table.version)
     return table
 
@@ -134,8 +128,17 @@ def open_profile_index(
 def _open_and_validate(
     lancedb, target: Path, *, profile: str, metadata: ProfileMetadata
 ):
-    table = lancedb.connect(target).open_table(LANCE_DOCUMENT_TABLE)
-    _validate_lancedb_table(table, profile=profile, metadata=metadata)
+    try:
+        table = lancedb.connect(target).open_table(LANCE_DOCUMENT_TABLE)
+        _validate_lancedb_table(table, profile=profile, metadata=metadata)
+    except CatalogError:
+        raise
+    except (OSError, RuntimeError, ValueError) as exc:
+        raise CatalogOperationError(
+            f"Profile {profile!r} LanceDB table could not be opened.",
+            details={"profile": profile, "operation": "open_index"},
+            hints=["Check that the local index directory is readable."],
+        ) from exc
     return table
 
 

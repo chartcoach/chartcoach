@@ -8,8 +8,7 @@ description: Draft a chartcoach catalog issue when searches expose missing or mi
 Draft a catalog issue when searches reveal a missing topic, unclear wording,
 weak labels, duplicate records, or unsupported source claims. Keep the draft
 local until a human approves issue creation. Read `core` first so
-`CHARTCOACH_SOURCE` is set before running searches and reading referenced
-guidelines.
+searches, reads, and citations use the same catalog and its retrieval contract.
 
 ## Confirm the catalog problem
 
@@ -23,11 +22,16 @@ Record:
 | Diagnosis         | How record wording, labels, relationships, or sources caused the result |
 | Related entry IDs | Records that partially match, conflict, duplicate, or need revision     |
 
-Read and cite every named record:
+For an empty search, follow `core` to shorten phrases, relax filters, and
+inspect section text or an available index. Distinguish a query mismatch from
+missing guidance. Read context and exceptions before treating a related record
+as a false match.
+
+Read and cite the named records together:
 
 ```sh
-chartcoach catalog read <guideline-entry-id> --source-detail minimal
-chartcoach catalog cite <guideline-entry-id>
+chartcoach catalog read <first-id> <second-id> --source-detail minimal
+chartcoach catalog cite <first-id> <second-id>
 ```
 
 Report crashes, installation errors, cache errors, and storage errors at

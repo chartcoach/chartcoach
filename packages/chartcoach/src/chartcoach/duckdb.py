@@ -3,21 +3,22 @@ from __future__ import annotations
 import os
 import tempfile
 from collections.abc import Mapping
+from dataclasses import dataclass
 from os import PathLike
 from pathlib import Path
 from typing import TypeAlias
+from uuid import uuid4
 
 import duckdb
 import polars as pl
-from polars.datatypes import DataTypeClass
 
-from .catalog.model import Catalog
-from .catalog.relations import iter_catalog_tables as _iter_catalog_tables
+from ._catalog.model import Catalog
+from ._catalog.relations import iter_catalog_tables as _iter_catalog_tables
 
 DuckDBConfigValue: TypeAlias = str | bool | int | float | list[str]
 
 
-def connect_catalog(
+def _connect_catalog(
     catalog: Catalog,
     *,
     config: Mapping[str, DuckDBConfigValue] | None = None,
@@ -40,7 +41,7 @@ def register_catalog(
     """Create or replace catalog tables in a caller-owned DuckDB connection."""
 
     for relation_name, frame in _iter_catalog_tables(catalog):
-        _replace_table_from_rows(conn, relation_name, frame)
+        _replace_table(conn, relation_name, frame)
     return conn
 
 
@@ -79,40 +80,33 @@ def write_duckdb(
     return path
 
 
-def _replace_table_from_rows(
+@dataclass(frozen=True, slots=True)
+class _ArrowStream:
+    # Expose the Arrow protocol directly so DuckDB does not route Polars
+    # objects through its optional PyArrow integration.
+    frame: pl.DataFrame
+
+    def __arrow_c_stream__(self, requested_schema: object | None = None) -> object:
+        return self.frame.__arrow_c_stream__(requested_schema)
+
+
+def _replace_table(
     conn: duckdb.DuckDBPyConnection,
     relation_name: str,
     frame: pl.DataFrame,
 ) -> None:
-    columns = ", ".join(
-        f'"{name}" {_duckdb_type(dtype)}' for name, dtype in frame.schema.items()
-    )
-    conn.execute(f'create or replace table "{relation_name}" ({columns})')
-    if frame.is_empty():
-        return
-    placeholders = ", ".join("?" for _ in frame.columns)
-    conn.executemany(
-        f'insert into "{relation_name}" values ({placeholders})',
-        frame.iter_rows(),
-    )
-
-
-def _duckdb_type(dtype: DataTypeClass | pl.DataType) -> str:
-    if dtype == pl.String:
-        return "VARCHAR"
-    if isinstance(dtype, pl.List):
-        return f"{_duckdb_type(dtype.inner)}[]"
-    if isinstance(dtype, pl.Struct):
-        fields = ", ".join(
-            f'"{field.name}" {_duckdb_type(field.dtype)}' for field in dtype.fields
+    source = f"_chartcoach_{uuid4().hex}"
+    conn.register(source, _ArrowStream(frame))
+    try:
+        conn.execute(
+            f'create or replace table "{relation_name}" as select * from "{source}"'
         )
-        return f"STRUCT({fields})"
-    raise TypeError(f"Unsupported catalog DuckDB type: {dtype}")
+    finally:
+        conn.unregister(source)
 
 
 __all__ = [
     "DuckDBConfigValue",
-    "connect_catalog",
     "register_catalog",
     "write_duckdb",
 ]

@@ -39,10 +39,13 @@ export type CatalogReleaseContext = Readonly<{
   release: CatalogRelease;
   releaseUrl: string;
   profileLoader?: ProfileLoader;
+  artifactLoader: (path: string, signal?: AbortSignal) => Promise<Uint8Array>;
 }>;
 
 const releaseByCatalog = new WeakMap<Catalog, CatalogReleaseContext>();
 const descriptionByCatalog = new WeakMap<Catalog, DescriptionContext>();
+
+export type ArtifactOptions = Readonly<{ signal?: AbortSignal }>;
 
 export class Catalog implements Iterable<Guideline> {
   readonly guidelines: readonly Guideline[];
@@ -78,6 +81,22 @@ export class Catalog implements Iterable<Guideline> {
 
   get length(): number {
     return this.guidelines.length;
+  }
+
+  async artifact(path: string, options: ArtifactOptions = {}): Promise<Uint8Array> {
+    const context = releaseByCatalog.get(this);
+    if (!context) {
+      throw new CatalogError("Artifact access requires a catalog release.", {
+        code: "unavailable_capability",
+      });
+    }
+    if (!Object.hasOwn(context.release.artifacts, path)) {
+      throw new CatalogError(`Unknown release artifact: ${path}`, {
+        code: "lookup",
+        details: { path, available: Object.keys(context.release.artifacts) },
+      });
+    }
+    return context.artifactLoader(path, options.signal);
   }
 
   get(id: string): Guideline | undefined {
@@ -141,6 +160,7 @@ export function catalogWithRelease(catalog: Catalog, context: CatalogReleaseCont
     Object.freeze({
       release,
       releaseUrl: context.releaseUrl,
+      artifactLoader: context.artifactLoader,
     }),
   );
   descriptionByCatalog.set(

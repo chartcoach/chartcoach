@@ -31,7 +31,7 @@ export default defineConfig({
     },
     overrides: [
       {
-        files: ["packages/catalog/src/**"],
+        files: ["packages/catalog/src/catalog/**", "packages/catalog/src/index.ts"],
         rules: {
           "no-restricted-imports": [
             "error",
