@@ -180,10 +180,14 @@ def test_release_rejects_distribution_files_outside_the_verified_set(
     )
 
 
+@pytest.mark.parametrize(
+    "unavailable_url", [_NPM, "https://registry.npmjs.org/catalog.tgz"]
+)
 def test_final_verification_retries_transient_registry_errors(
     release_files: Path,
     registry: dict[str, bytes | int],
     monkeypatch: pytest.MonkeyPatch,
+    unavailable_url: str,
 ) -> None:
     _publish(registry, release_files)
     open_url = urllib.request.urlopen
@@ -191,7 +195,7 @@ def test_final_verification_retries_transient_registry_errors(
 
     def transient(url: str, *, timeout: int) -> object:
         nonlocal requests
-        if url == _NPM:
+        if url == unavailable_url:
             requests += 1
             if requests == 1:
                 raise urllib.error.HTTPError(url, 503, "unavailable", Message(), None)

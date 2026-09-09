@@ -23,6 +23,7 @@ def _read_json(url: str) -> dict[str, Any] | None:
         with urllib.request.urlopen(url, timeout=30) as response:
             return json.load(response)
     except urllib.error.HTTPError as error:
+        error.close()
         if error.code == 404:
             return None
         raise
@@ -40,9 +41,13 @@ def _verify_download(url: str, expected: str, algorithm: str) -> None:
     if not url.startswith("https://"):
         raise ValueError(f"Registry returned a non-HTTPS artifact URL: {url}")
     digest = hashlib.new(algorithm)
-    with urllib.request.urlopen(url, timeout=30) as response:
-        for chunk in iter(lambda: response.read(1024 * 1024), b""):
-            digest.update(chunk)
+    try:
+        with urllib.request.urlopen(url, timeout=30) as response:
+            for chunk in iter(lambda: response.read(1024 * 1024), b""):
+                digest.update(chunk)
+    except urllib.error.HTTPError as error:
+        error.close()
+        raise
     if digest.hexdigest() != expected:
         raise ValueError(
             f"Published artifact bytes differ from the verified build: {url}"
