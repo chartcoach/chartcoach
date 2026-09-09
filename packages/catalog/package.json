@@ -41,10 +41,10 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "bibtex-parse": "2.1.0",
-    "hyparquet": "^1.29.2",
-    "hyparquet-compressors": "^1.1.1",
-    "yaml": "^2.9.0"
+    "hyparquet": ">=1.29.2",
+    "hyparquet-compressors": ">=1.1.1",
+    "refkit-js": ">=0.3.0",
+    "yaml": ">=2.9.0"
   },
   "devDependencies": {
     "@types/node": "catalog:",

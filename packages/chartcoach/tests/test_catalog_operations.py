@@ -18,6 +18,20 @@ _CONTRACT = (
 _RELEASE = Path(__file__).parents[3] / "fixtures" / "catalog-release"
 
 
+def test_source_fields_survive_citation_metadata_recovery(
+    sample_catalog: Catalog,
+) -> None:
+    expected = json.loads(_CONTRACT.read_text())["bibliography_render_recovery"]
+    catalog = _catalog_with_references(sample_catalog, [expected["reference"]])
+    record = catalog.read(ids=["reference-0"], source_detail="full")[0]
+    assert record["sources"][0]["year"] == expected["year"]
+    assert record["references"] == [expected["reference"]]
+    assert (
+        catalog.cite(ids=["reference-0"])[0]["sources"][0]["citation"]
+        == expected["citation"]
+    )
+
+
 def test_source_reads_and_citations_preserve_bibtex_grouping(
     sample_catalog: Catalog,
 ) -> None:

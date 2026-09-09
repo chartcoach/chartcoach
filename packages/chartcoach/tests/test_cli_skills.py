@@ -166,8 +166,8 @@ def test_skills_cli_rejects_invalid_configured_directories(
     result = runner.invoke(chartcoach_cli, ["skills", "--format", "json"])
 
     assert result.exit_code == 1
-    assert "CHARTCOACH_SKILLS_DIR" in result.output
-    assert str(configured) in result.output
+    assert "CHARTCOACH_SKILLS_DIR" in result.stderr
+    assert str(configured) in result.stderr
 
 
 def test_skills_cli_bounds_configured_symlink_loops(
@@ -183,7 +183,7 @@ def test_skills_cli_bounds_configured_symlink_loops(
     result = runner.invoke(chartcoach_cli, ["skills", "--format", "json"])
 
     assert result.exit_code == 1
-    assert "CHARTCOACH_SKILLS_DIR cannot be resolved" in result.output
+    assert "CHARTCOACH_SKILLS_DIR cannot be resolved" in result.stderr
 
 
 def test_skills_cli_preserves_installed_plugin_recovery(
@@ -199,8 +199,8 @@ def test_skills_cli_preserves_installed_plugin_recovery(
     result = runner.invoke(chartcoach_cli, ["skills", "--format", "json"])
 
     assert result.exit_code == 1
-    assert "marker missing" in result.output
-    assert "Reinstall chartcoach" in result.output
+    assert "marker missing" in result.stderr
+    assert "Reinstall chartcoach" in result.stderr
 
 
 def test_skills_cli_named_get_ignores_malformed_siblings(
@@ -230,7 +230,7 @@ def test_skills_cli_translates_description_errors(
     result = runner.invoke(chartcoach_cli, ["skills", "--format", "json"])
 
     assert result.exit_code == 1
-    assert "Error: Cannot load Agent Skills:" in result.output
+    assert "Error: Cannot load Agent Skills:" in result.stderr
 
 
 def test_skills_cli_reports_unknown_skills(
@@ -240,7 +240,7 @@ def test_skills_cli_reports_unknown_skills(
     result = runner.invoke(chartcoach_cli, ["skills", "get", "missing"])
 
     assert result.exit_code == 1
-    assert result.output.endswith(
+    assert result.stderr.endswith(
         "Error: Unknown CLI-served skill: missing. "
         "Available CLI-served skills: core, extra.\n"
     )

@@ -8,7 +8,7 @@ PYTHON := $(UV) run --locked --package chartcoach
 PYTHON_ALL := $(PYTHON) --all-extras
 PYTHON_PATH := packages/chartcoach
 
-.PHONY: help install check python-check python-format python-lint python-typecheck python-test python-build docs-build site-build
+.PHONY: help install check python-check python-format python-lint python-typecheck python-test python-build python-minimum docs-build site-build
 
 help: ## List development targets.
 	@awk 'BEGIN {FS = ":.*## "} /^[a-zA-Z0-9_-]+:.*## / {printf "  %-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -39,6 +39,9 @@ python-test:
 python-build:
 	$(UV) build --package chartcoach
 	UV="$(UV)" $(PYTHON) python $(PYTHON_PATH)/tests/verify_built_package.py
+
+python-minimum: python-build ## Test the built wheel with lowest compatible direct dependencies.
+	UV="$(UV)" $(PYTHON) python $(PYTHON_PATH)/tests/verify_built_package.py --minimum-dependencies
 
 docs-build: ## Build the product documentation.
 	$(PNPM) --dir apps/docs build

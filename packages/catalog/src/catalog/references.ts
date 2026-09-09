@@ -1,8 +1,11 @@
-import { parseBibtexEntries, type BibtexEntry } from "./bibtex";
+import { BibDocument, Document, init, Library, ParseError, Style } from "refkit-js";
 import { CatalogError } from "./errors";
 import { canonicalJson, compareUnicode } from "./identity";
-import { isJsonString } from "./json";
+import { isJsonString, type JsonObject } from "./json";
 import type { Catalog } from "./model";
+
+await init();
+const citationStyle = Style.load("apa");
 
 export const DEFAULT_GUIDELINE_URL_TEMPLATE = "https://chartcoach.dev/guidelines/{id}";
 
@@ -70,6 +73,7 @@ type ParsedReference = Readonly<{
   url: string | null;
   doi: string | null;
   fingerprint: string;
+  citation: string;
 }>;
 
 type ReferenceIndex = Readonly<{
@@ -135,11 +139,16 @@ function referenceIndex(catalog: Catalog): ReferenceIndex {
   if (cached) return cached;
 
   const byId = new Map<string, ParsedReference>();
+  const parsed = new Map<string, ParsedReference>();
   const idsByGuideline = new Map<string, readonly string[]>();
   for (const guideline of catalog.guidelines) {
     const ids = new Set<string>();
     for (const bibtex of guideline.references) {
-      const reference = parseReference(bibtex);
+      let reference = parsed.get(bibtex);
+      if (!reference) {
+        reference = parseReference(bibtex);
+        parsed.set(bibtex, reference);
+      }
       const previous = byId.get(reference.id);
       if (previous && previous.fingerprint !== reference.fingerprint) {
         throw new CatalogError(
@@ -160,26 +169,30 @@ function referenceIndex(catalog: Catalog): ReferenceIndex {
 }
 
 function parseReference(bibtex: string): ParsedReference {
-  let entries: readonly BibtexEntry[];
   try {
-    entries = parseBibtexEntries(bibtex);
+    return parsedReference(bibtex);
   } catch (error) {
+    if (error instanceof CatalogError) throw error;
+    const details: JsonObject = {
+      exception_type: error instanceof Error ? error.name : "Error",
+    };
+    if (error instanceof ParseError) {
+      details.diagnostics = error.diagnostics.map((diagnostic) => ({ ...diagnostic }));
+    }
     throw new CatalogError("BibTeX reference could not be parsed.", {
-      details: { exception_type: error instanceof Error ? error.name : "Error" },
+      details,
     });
   }
+}
+
+function parsedReference(bibtex: string): ParsedReference {
+  const document = BibDocument.parse(bibtex);
+  const entries = document.resolve();
   if (entries.length !== 1) {
     throw new CatalogError(`Expected one BibTeX entry, found ${entries.length}.`);
   }
   const entry = entries[0]!;
-  if (!entry.key || !entry.type) {
-    throw new CatalogError("BibTeX entry must contain a key and type.");
-  }
-  const properties = Object.fromEntries(
-    Object.entries(entry)
-      .filter(([name, value]) => name !== "key" && name !== "type" && value !== null)
-      .map(([name, value]) => [name.toLowerCase(), String(value)]),
-  );
+  const properties = entry.fields;
   const authorsText = textOrNull(properties.author);
   const authors = Object.freeze(
     authorsText === null
@@ -191,7 +204,7 @@ function parseReference(bibtex: string): ParsedReference {
   );
   return Object.freeze({
     id: entry.key,
-    sourceType: entry.type.toLowerCase(),
+    sourceType: entry.entryType,
     authors,
     authorsText,
     year: textOrNull(properties.year),
@@ -201,8 +214,15 @@ function parseReference(bibtex: string): ParsedReference {
     publisher: textOrNull(properties.publisher),
     url: referenceUrl(properties),
     doi: textOrNull(properties.doi),
+    citation: new Document(
+      Library.parseBibtex(document.tidy().bibtex, { recovery: "report" }),
+      citationStyle,
+      {
+        locale: "en-US",
+      },
+    ).fullBibliography().text,
     fingerprint: canonicalJson({
-      type: entry.type.toLowerCase(),
+      type: entry.entryType,
       label: entry.key,
       properties: { ...properties },
     }),
@@ -250,22 +270,13 @@ function citationSource(reference: ParsedReference): CitationSource {
     doi: reference.doi,
     url: reference.url,
   };
-  return Object.freeze({ ...source, citation: sourceCitation(source) });
-}
-
-function sourceCitation(source: Omit<CitationSource, "citation">): string {
-  const authors = source.authors_text?.trim() ?? "";
-  const year = source.year?.trim() ?? "";
-  const title = source.source_title?.trim() ?? "";
-  const container = source.journal?.trim() || source.booktitle?.trim() || "";
-  const publisher = source.publisher?.trim() ?? "";
-  const first = authors && year ? `${authors} (${year})` : authors || (year ? `(${year})` : "");
-  const parts = [first, title, container, publisher].filter(Boolean);
-  let citation = parts.map((part) => part.replace(/\.+$/, "")).join(". ");
-  if (!citation) citation = source.reference_id || "Source";
-  if (!citation.endsWith(".")) citation += ".";
-  const links = [source.doi ? doiUrl(source.doi) : "", source.url ?? ""].filter(Boolean);
-  return links.length > 0 ? `${citation} ${links.join(" ")}` : citation;
+  const locators = [source.doi ? doiUrl(source.doi) : null, source.url].filter(
+    (value): value is string => value !== null && !reference.citation.includes(value),
+  );
+  return Object.freeze({
+    ...source,
+    citation: [reference.citation, ...new Set(locators)].join(" "),
+  });
 }
 
 function textOrNull(value: string | undefined): string | null {
@@ -284,7 +295,5 @@ function referenceUrl(properties: Readonly<Record<string, string>>): string | nu
 }
 
 function doiUrl(value: string): string {
-  return `https://doi.org/${value
-    .replace(/^https:\/\/doi\.org\//, "")
-    .replace(/^http:\/\/doi\.org\//, "")}`;
+  return `https://doi.org/${value.replace(/^https?:\/\/doi\.org\//, "")}`;
 }

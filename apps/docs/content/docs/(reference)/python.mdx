@@ -84,7 +84,8 @@ Full source detail returns every parsed source field and the entry's BibTeX
 references.
 
 `catalog.cite()` returns each guideline URL, its formatted citation, and its
-source citations. Pass `url_template="https://catalog.example/g/{id}"` for a
+source citations, formatted with [RefKit](https://peter-gy.github.io/refkit/)'s APA style and supplemented with source
+locators. Pass `url_template="https://catalog.example/g/{id}"` for a
 custom public catalog. A citation identifies an attached source. Inspect the
 publication before attributing a specific claim to it.
 

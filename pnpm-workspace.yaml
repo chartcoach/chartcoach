@@ -13,17 +13,19 @@ catalog:
   lucide-react: ^1.41.0
   react: ^19.2.8
   react-dom: ^19.2.8
-  astro: 7.1.6
+  astro: 7.3.1
   jsdom: ^30.0.1
   tailwindcss: ^4.3.3
   typescript: ^6.0.3
-  vite: npm:@voidzero-dev/vite-plus-core@0.2.4
-  vite-plus: 0.2.4
-  oxlint: 1.76.0
-  "@oxlint/plugins": 1.76.0
+  vite: npm:@voidzero-dev/vite-plus-core@0.3.0
+  vite-plus: 0.3.0
+  oxlint: 1.79.0
+  "@oxlint/plugins": 1.79.0
   oxlint-tsgolint: 7.0.2001
 
 minimumReleaseAge: 2880
+minimumReleaseAgeExclude:
+  - "refkit-js"
 minimumReleaseAgeStrict: true
 verifyDepsBeforeRun: install
 blockExoticSubdeps: true
@@ -38,6 +40,5 @@ peerDependencyRules:
     vite: "*"
 
 allowBuilds:
-  citation-js: true
   esbuild: true
   sharp: true

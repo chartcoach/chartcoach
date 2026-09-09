@@ -16,7 +16,7 @@ def assert_cli_error(
 ) -> None:
     assert result.exit_code == exit_code, result.output
     assert isinstance(result.exception, SystemExit)
-    assert expected in result.output
+    assert expected in result.stderr
 
 
 def json_value(result: Result) -> JsonObject:

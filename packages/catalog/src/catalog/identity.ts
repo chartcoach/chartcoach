@@ -5,20 +5,18 @@ import type { Guideline } from "./model";
 export async function catalogEntriesDigest(guidelines: readonly Guideline[]): Promise<string> {
   const rows = [...guidelines]
     .sort((left, right) => compareUnicode(left.id, right.id))
-    .map(
-      (guideline): JsonObject => ({
-        id: guideline.id,
-        title: guideline.title,
-        description: guideline.description,
-        labels: guideline.labels,
-        sections: guideline.sections.map((section) => ({
-          role: section.role,
-          title: section.title,
-          content: section.content,
-        })),
-        references: guideline.references,
-      }),
-    );
+    .map((guideline): JsonObject => ({
+      id: guideline.id,
+      title: guideline.title,
+      description: guideline.description,
+      labels: guideline.labels,
+      sections: guideline.sections.map((section) => ({
+        role: section.role,
+        title: section.title,
+        content: section.content,
+      })),
+      references: guideline.references,
+    }));
   return sha256Text(rows.map(canonicalJson).join(""));
 }
 

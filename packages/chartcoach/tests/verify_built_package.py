@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import configparser
 import json
 import os
@@ -30,9 +31,18 @@ _PLUGIN_FILES = tuple(
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Verify built ChartCoach distributions."
+    )
+    parser.add_argument(
+        "--minimum-dependencies",
+        action="store_true",
+        help="Install the lowest compatible direct dependencies and run the full tests.",
+    )
+    options = parser.parse_args()
     _verify_wheel()
     _verify_sdist()
-    _verify_installed_wheel()
+    _verify_installed_wheel(minimum_dependencies=options.minimum_dependencies)
     print(f"Verified {_WHEEL.name} and {_SDIST.name}")
 
 
@@ -78,7 +88,7 @@ def _verify_sdist() -> None:
     assert f"{_DISTRIBUTION}/src/chartcoach/curation.py" in names
 
 
-def _verify_installed_wheel() -> None:
+def _verify_installed_wheel(*, minimum_dependencies: bool = False) -> None:
     with tempfile.TemporaryDirectory(prefix="chartcoach-package-") as directory:
         root = Path(directory)
         environment = root / "venv"
@@ -91,15 +101,29 @@ def _verify_installed_wheel() -> None:
         python = environment / (
             "Scripts/python.exe" if os.name == "nt" else "bin/python"
         )
+        requirements = []
+        if minimum_dependencies:
+            requirements = [
+                "--resolution",
+                "lowest-direct",
+                "--only-binary",
+                ":all:",
+                "--requirements",
+                str(_REPOSITORY / "packages/chartcoach/pyproject.toml"),
+            ]
+        install = [
+            uv,
+            "--directory",
+            str(_REPOSITORY),
+            "pip",
+            "install",
+            "--python",
+            str(python),
+            str(_WHEEL),
+            *requirements,
+        ]
         subprocess.run(
-            [
-                uv,
-                "pip",
-                "install",
-                "--python",
-                str(python),
-                str(_WHEEL),
-            ],
+            install,
             check=True,
             cwd=root,
         )
@@ -117,6 +141,23 @@ def _verify_installed_wheel() -> None:
             cwd=root,
             env=smoke_environment,
         )
+        if minimum_dependencies:
+            subprocess.run(
+                [*install, "--all-extras", "pytest>=9.0.3"],
+                check=True,
+                cwd=root,
+            )
+            subprocess.run(
+                [
+                    python,
+                    "-m",
+                    "pytest",
+                    str(_REPOSITORY / "packages/chartcoach/tests"),
+                ],
+                check=True,
+                cwd=root,
+                env=smoke_environment,
+            )
 
 
 _INSTALLED_SMOKE = """

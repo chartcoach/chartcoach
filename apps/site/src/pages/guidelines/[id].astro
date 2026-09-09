@@ -29,7 +29,7 @@ const searchEntryJson = serializeGuidelineSearchModel(guideline.data.search);
 const sectionRoles = guideline.data.sections.map((section) => section.role);
 const labels = guideline.data.labels.length > 0 ? guideline.data.labels : sectionRoles;
 const sourceCount = guideline.data.citations.length;
-const references = summarizeGuidelineReferences(guideline.data.referencesBib);
+const references = summarizeGuidelineReferences(guideline.data.record.references);
 ---
 
 <SiteLayout

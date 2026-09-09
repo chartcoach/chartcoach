@@ -24,35 +24,23 @@ classifiers = [
 ]
 dependencies = [
   "agent-plugins>=0.2",
-  "bibtexparser>=1.1",
-  "click>=8",
-  "duckdb==1.5.5",
+  "refkit>=0.3.0",
+  "polars-refkit>=0.3.0",
+  "click>=8.3.3",
+  "duckdb>=1.5.5",
   "platformdirs>=4",
   "polars>=1.39.0",
   "pyyaml>=6",
   "tabulate>=0.10.0",
-  "typing-extensions==4.16.0",
+  "typing-extensions>=4.6.0",
 ]
 
 [project.optional-dependencies]
-index = ["lancedb==0.38.0"]
+index = ["lancedb>=0.38.0", "pyarrow>=23.0.1"]
 cloud = ["obstore>=0.11.0"]
-mcp = ["mcp[cli]>=2.0"]
-curation = [
-  "lancedb==0.38.0",
-  "numpy==2.2.6; python_version < '3.11'",
-  "numpy==2.4.6; python_version == '3.11'",
-  "numpy==2.5.2; python_version >= '3.12'",
-  "obspec>=0.1.0",
-  "obstore>=0.11.0",
-  "pyarrow>=18",
-]
-projection = [
-  "numpy==2.2.6; python_version < '3.11'",
-  "numpy==2.4.6; python_version == '3.11'",
-  "numpy==2.5.2; python_version >= '3.12'",
-  "umap-learn==0.5.12",
-]
+mcp = ["mcp>=2.0", "pydantic>=2.12"]
+curation = ["chartcoach[index,cloud]", "numpy>=1.24", "obspec>=0.1.0"]
+projection = ["numpy>=1.24", "umap-learn>=0.5.12"]
 
 [project.scripts]
 chartcoach = "chartcoach.cli.main:main"
@@ -65,7 +53,7 @@ Repository = "https://github.com/chartcoach/chartcoach"
 Issues = "https://github.com/chartcoach/chartcoach/issues"
 
 [dependency-groups]
-dev = ["pytest>=9", "ruff>=0.16", "ty>=0.0.11"]
+dev = ["pytest>=9.0.3", "ruff>=0.16", "ty>=0.0.11"]
 
 [tool.pytest.ini_options]
 filterwarnings = ["error"]

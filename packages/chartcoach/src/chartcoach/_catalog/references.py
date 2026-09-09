@@ -6,8 +6,9 @@ from collections.abc import Mapping, Sequence
 from types import MappingProxyType
 from typing import TYPE_CHECKING, cast
 
-import bibtexparser
 import polars as pl
+import polars_refkit
+import refkit
 from typing_extensions import TypedDict
 
 from .._constants import DEFAULT_GUIDELINE_URL_TEMPLATE
@@ -37,24 +38,10 @@ CITATION_SOURCE_COLUMNS = (
 
 
 @dc.dataclass(frozen=True, slots=True)
-class ParsedBibtexEntry:
-    """One parsed BibTeX entry plus its serialized BibTeX."""
-
-    entry: Mapping[str, object]
-    bibtex: str
-
-    @property
-    def id(self) -> str:
-        value = self.entry.get("ID")
-        if not isinstance(value, str) or not value:
-            raise ValueError("BibTeX entry must contain an 'ID' field.")
-        return value
-
-
-@dc.dataclass(frozen=True, slots=True)
 class ReferenceTables:
     references: pl.DataFrame
     guideline_references: pl.DataFrame
+    citations: Mapping[str, str]
 
 
 class CitationSource(TypedDict):
@@ -84,31 +71,51 @@ class CitationRecord(TypedDict):
 
 
 def parse_bibtex(bibtex_content: str) -> list[str]:
-    """Return individual BibTeX entries parsed from a `.bib` file."""
+    """Return self-contained BibTeX entries from a bibliography."""
 
-    database = bibtexparser.loads(bibtex_content)
-    return [_dump_bibtex_entry(entry) for entry in database.entries]
+    document = _parse_document(bibtex_content)
+    source = bibtex_content.encode("utf-8")
+    context = [
+        source[block["span"][0] : block["span"][1]].decode("utf-8")
+        for block in document.blocks
+        if block["kind"] in {"string", "preamble"}
+    ]
+    return [
+        "\n".join([*context, source[entry.span[0] : entry.span[1]].decode("utf-8")])
+        for entry in document.entries.occurrences()
+    ]
 
 
-def parse_bibtex_reference(bibtex_str: str) -> ParsedBibtexEntry:
-    """Parse one BibTeX reference and retain its normalized serialized form."""
+def parse_bibtex_reference(bibtex_str: str) -> refkit.types.ResolvedBibEntry:
+    """Resolve the source fields of one BibTeX reference."""
 
-    database = bibtexparser.loads(bibtex_str)
-    if not database.entries:
+    document = _parse_document(bibtex_str)
+    try:
+        entries = document.resolve()
+    except refkit.ParseError as exc:
+        raise CatalogValidationError(
+            "Invalid BibTeX reference.", details={"diagnostics": exc.diagnostics}
+        ) from exc
+    if not entries:
         preview = bibtex_str.strip().replace("\n", " ")[:80]
         raise ValueError(f"No BibTeX entry parsed from input: {preview!r}.")
-    if len(database.entries) != 1:
-        raise ValueError(f"Expected one BibTeX entry, found {len(database.entries)}.")
-    entry = dict(database.entries[0])
-    bibtex = _dump_bibtex_entry(entry)
-    return ParsedBibtexEntry(
-        entry=MappingProxyType(entry),
-        bibtex=bibtex,
-    )
+    if len(entries) != 1:
+        raise ValueError(f"Expected one BibTeX entry, found {len(entries)}.")
+    return entries[0]
+
+
+def _parse_document(source: str) -> refkit.BibDocument:
+    document = refkit.BibDocument.parse(source)
+    if document.failed_blocks:
+        raise CatalogValidationError(
+            "Invalid BibTeX bibliography.",
+            details={"failed_blocks": document.failed_blocks},
+        )
+    return document
 
 
 def build_reference_tables(catalog_df: pl.DataFrame) -> ReferenceTables:
-    """Build parsed reference tables in one BibTeX parse pass."""
+    """Build source records and cached APA citations for distinct references."""
 
     exploded = (
         explode_frame(
@@ -125,21 +132,22 @@ def build_reference_tables(catalog_df: pl.DataFrame) -> ReferenceTables:
         return ReferenceTables(
             references=pl.DataFrame(schema=REFERENCES_SCHEMA),
             guideline_references=pl.DataFrame(schema=GUIDELINE_REFERENCES_SCHEMA),
+            citations=MappingProxyType({}),
         )
 
     bibtex_to_id: dict[str, str] = {}
     reference_rows: list[dict[str, object]] = []
-    references_by_id: dict[str, ParsedBibtexEntry] = {}
+    references_by_id: dict[str, refkit.types.ResolvedBibEntry] = {}
     for bibtex in exploded.select("bibtex").unique().get_column("bibtex").to_list():
         if not isinstance(bibtex, str):
             continue
         reference = parse_bibtex_reference(bibtex)
-        parsed = reference.entry
-        reference_id = reference.id
+        parsed = reference["fields"]
+        reference_id = reference["key"]
         bibtex_to_id[bibtex] = reference_id
         previous = references_by_id.get(reference_id)
         if previous is not None:
-            if previous.entry != reference.entry:
+            if previous != reference:
                 raise CatalogValidationError(
                     f"Conflicting BibTeX definitions for reference id: {reference_id}.",
                     details={"reference_id": reference_id},
@@ -151,7 +159,7 @@ def build_reference_tables(catalog_df: pl.DataFrame) -> ReferenceTables:
         reference_rows.append(
             {
                 "id": reference_id,
-                "source_type": _entry_type_or_none(parsed.get("ENTRYTYPE")),
+                "source_type": reference["entry_type"],
                 "authors": _split_authors(authors_text),
                 "authors_text": authors_text,
                 "year": _string_or_none(parsed.get("year")),
@@ -170,17 +178,45 @@ def build_reference_tables(catalog_df: pl.DataFrame) -> ReferenceTables:
         if isinstance(bibtex, str) and bibtex in bibtex_to_id
     ]
 
+    references = pl.DataFrame(reference_rows, schema=REFERENCES_SCHEMA).sort("id")
+    rendered = references.select(
+        "id",
+        "doi",
+        "url",
+        polars_refkit.full_bibliography(
+            polars_refkit.tidy_bibtex(pl.col("bibtex")),
+            style="apa",
+            locale="en-US",
+            recovery="report",
+        ).alias("citation"),
+    )
+    citations = {}
+    for reference_id, doi, url, citation in rendered.iter_rows():
+        if citation is None:
+            raise CatalogValidationError(
+                f"Could not render BibTeX reference: {reference_id}.",
+                details={"reference_id": reference_id},
+            )
+        doi_url = (
+            "https://doi.org/"
+            + doi.removeprefix("https://doi.org/").removeprefix("http://doi.org/")
+            if doi
+            else None
+        )
+        # CSL styles can omit a publication URL when a DOI is present.
+        for locator in (doi_url, url):
+            if locator and locator not in citation:
+                citation = f"{citation} {locator}"
+        citations[reference_id] = citation
+
     return ReferenceTables(
-        references=(
-            pl.DataFrame(reference_rows, schema=REFERENCES_SCHEMA)
-            .unique("id")
-            .sort("id")
-        ),
+        references=references,
         guideline_references=(
             pl.DataFrame(edge_rows, schema=GUIDELINE_REFERENCES_SCHEMA)
             .unique()
             .sort("guideline_id", "reference_id")
         ),
+        citations=MappingProxyType(citations),
     )
 
 
@@ -243,10 +279,11 @@ def citation_records(
         pl.col("guideline_id").is_in(ids)
     )
     if not source_frame.is_empty():
+        citations = catalog._reference_tables().citations
         for row in source_frame.sort("guideline_id", "reference_id").to_dicts():
             guideline_id = str(row["guideline_id"])
             sources_by_guideline.setdefault(guideline_id, []).append(
-                citation_source_from_row(row)
+                citation_source_from_row(row, citations[str(row["reference_id"])])
             )
 
     records: list[CitationRecord] = []
@@ -266,49 +303,18 @@ def citation_records(
     return records
 
 
-def citation_source_from_row(row: Mapping[str, object]) -> CitationSource:
+def citation_source_from_row(
+    row: Mapping[str, object], citation: str
+) -> CitationSource:
     source = {
         column: row.get(column) for column in CITATION_SOURCE_COLUMNS if column in row
     }
-    source["citation"] = source_citation(source)
+    source["citation"] = citation
     return cast(CitationSource, source)
 
 
 def guideline_citation(title: str, guideline_id: str, url: str) -> str:
     return f"[{title}]({url}) (`{guideline_id}`)"
-
-
-def source_citation(source: Mapping[str, object]) -> str:
-    authors = _clean_source_part(source.get("authors_text"))
-    year = _clean_source_part(source.get("year"))
-    title = _clean_source_part(source.get("source_title"))
-    container = _clean_source_part(source.get("journal")) or _clean_source_part(
-        source.get("booktitle")
-    )
-    publisher = _clean_source_part(source.get("publisher"))
-    doi = _clean_source_part(source.get("doi"))
-    url = _clean_source_part(source.get("url"))
-
-    first = ""
-    if authors and year:
-        first = f"{authors} ({year})"
-    elif authors:
-        first = authors
-    elif year:
-        first = f"({year})"
-
-    parts = [part for part in (first, title, container, publisher) if part]
-    citation = ". ".join(part.rstrip(".") for part in parts)
-    if not citation:
-        citation = str(source.get("reference_id") or "Source")
-    if not citation.endswith("."):
-        citation += "."
-
-    links = [_doi_url(doi) if doi else "", url or ""]
-    visible_links = [link for link in links if link]
-    if visible_links:
-        citation = f"{citation} {' '.join(visible_links)}"
-    return citation
 
 
 def validate_url_template(url_template: str) -> None:
@@ -317,12 +323,6 @@ def validate_url_template(url_template: str) -> None:
             "Guideline URL template must include `{id}`.",
             hints=(f"Use a template such as `{DEFAULT_GUIDELINE_URL_TEMPLATE}`.",),
         )
-
-
-def _dump_bibtex_entry(entry: Mapping[str, object]) -> str:
-    database = bibtexparser.bibdatabase.BibDatabase()
-    database.entries = [dict(entry)]
-    return bibtexparser.dumps(database).strip()
 
 
 def _string_or_none(value: object) -> str | None:
@@ -350,27 +350,10 @@ def _split_authors(authors_text: str | None) -> list[str]:
     return [part.strip() for part in authors_text.split(" and ") if part.strip()]
 
 
-def _entry_type_or_none(value: object) -> str | None:
-    text = _string_or_none(value)
-    if text is None:
-        return None
-    return text.lower()
-
-
-def _clean_source_part(value: object) -> str:
-    return str(value or "").strip()
-
-
-def _doi_url(doi: str) -> str:
-    normalized = doi.removeprefix("https://doi.org/").removeprefix("http://doi.org/")
-    return f"https://doi.org/{normalized}"
-
-
 __all__ = [
     "DEFAULT_GUIDELINE_URL_TEMPLATE",
     "CitationRecord",
     "CitationSource",
-    "ParsedBibtexEntry",
     "ReferenceTables",
     "build_guideline_sources_df",
     "build_reference_tables",
@@ -379,5 +362,4 @@ __all__ = [
     "guideline_citation",
     "parse_bibtex",
     "parse_bibtex_reference",
-    "source_citation",
 ]

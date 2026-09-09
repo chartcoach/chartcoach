@@ -48,6 +48,12 @@ to cancel opening. Later `describe` and `artifact` calls accept their own
 signals. The runtime must provide Web Crypto,
 `AbortSignal.timeout`, and `AbortSignal.any`.
 
+Reference parsing and APA citations use [RefKit](https://peter-gy.github.io/refkit/).
+Importing the SDK initializes its WebAssembly engine. Browser bundlers must emit
+RefKit's `.wasm` asset at its module-relative URL. A restrictive
+[Content Security Policy](https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP)
+must allow `'wasm-unsafe-eval'` in `script-src` and the asset origin in `connect-src`.
+
 `openCatalog` verifies the release digest, then checks the byte count and
 SHA-256 hash of `MANIFEST.md` and `entries.parquet` before parsing them.
 `catalog.json` follows the current public selection. `release.json` keeps one

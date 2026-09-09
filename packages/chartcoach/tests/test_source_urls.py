@@ -77,7 +77,7 @@ def test_cli_citation_includes_the_publication_locator(
     citation = json.loads(result.output)["records"][0]["sources"][0]
     assert citation["url"] == _SOURCE_URL
     assert citation["citation"] == (
-        "Lisa Charlotte Muth (2020). "
+        "Muth, L. C. (2020,). "
         "What to consider when visualizing data for colorblind readers. "
         "https://www.datawrapper.de/blog/colorblindness-part2"
     )

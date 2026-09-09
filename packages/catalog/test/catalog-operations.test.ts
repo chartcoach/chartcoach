@@ -134,6 +134,15 @@ describe("catalog operations", () => {
     );
   });
 
+  it("retains source fields when citation metadata needs recovery", () => {
+    const expected = operations.bibliography_render_recovery;
+    const catalog = new Catalog([guideline("source", [], expected.reference)], operationManifest());
+    const record = catalog.read({ ids: ["source"], sourceDetail: "full" })[0]!;
+    expect(record.sources[0]?.year).toBe(expected.year);
+    expect(record.references).toEqual([expected.reference]);
+    expect(catalog.cite({ ids: ["source"] })[0]?.sources[0]?.citation).toBe(expected.citation);
+  });
+
   it("preserves BibTeX grouping and escapes through source reads and citations", () => {
     const expected = operations.protected_bibliography;
     const catalog = new Catalog(
@@ -144,6 +153,33 @@ describe("catalog operations", () => {
     expect(source?.source_title).toBe(expected.source_title);
     expect(source?.authors_text).toBe(expected.authors_text);
     expect(catalog.cite({ ids: ["protected"] })[0]?.sources[0]?.citation).toBe(expected.citation);
+  });
+
+  it("rejects incomplete references and ambiguous entry or field definitions", () => {
+    for (const reference of [
+      "@article{broken, title={Unclosed}",
+      "@article{first, title={First}} @article{second, title={Second}}",
+      "@article{duplicate, title={First}, title={Second}}",
+    ]) {
+      const catalog = new Catalog([guideline("source", [], reference)], operationManifest());
+      expect(() => catalog.read({ ids: ["source"] })).toThrow(CatalogError);
+      expect(() => catalog.cite({ ids: ["source"] })).toThrow(CatalogError);
+    }
+  });
+
+  it("renders author names with CSL while retaining the authored source fields", () => {
+    const reference =
+      "@article{names, author={Doe, Jane and Roe, John}, title={A chart}, year={2024}}";
+    const catalog = new Catalog([guideline("source", [], reference)], operationManifest());
+
+    const source = catalog.read({ ids: ["source"], sourceDetail: "full" })[0]!.sources[0]!;
+    expect(source.authors_text).toBe("Doe, Jane and Roe, John");
+    expect(catalog.cite({ ids: ["source"] })[0]!.sources[0]!.citation).toBe(
+      "Doe, J., & Roe, J. (2024). A chart.",
+    );
+    expect(catalog.read({ ids: ["source"], sourceDetail: "full" })[0]!.references).toEqual([
+      reference,
+    ]);
   });
 
   it.each(operations.bibliography_urls)("preserves source URLs: $name", (expected) => {

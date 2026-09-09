@@ -114,11 +114,16 @@
       }
     ]
   },
+  "bibliography_render_recovery": {
+    "reference": "@article{source, title={Charts}, year={forthcoming}}",
+    "year": "forthcoming",
+    "citation": "Charts. (n.d.)."
+  },
   "protected_bibliography": {
     "reference": "@string{topic = {Visual {Data}}}\n@article{protected2024, author = {{Research Group}}, title = {A } # topic # { Guide \\& Examples}, year = 2024}",
     "source_title": "A Visual {Data} Guide \\& Examples",
     "authors_text": "{Research Group}",
-    "citation": "{Research Group} (2024). A Visual {Data} Guide \\& Examples."
+    "citation": "Research Group. (2024). A Visual Data Guide & Examples."
   },
   "bibliography_urls": [
     {
@@ -126,63 +131,63 @@
       "reference": "@misc{muth_colorblindness_2020,\n author = {Lisa Charlotte Muth},\n howpublished = {\\url{https://www.datawrapper.de/blog/colorblindness-part2}},\n note = {Datawrapper Blog. Accessed: 2025-11-17},\n title = {What to consider when visualizing data for colorblind readers},\n year = {2020}\n}",
       "url": "https://www.datawrapper.de/blog/colorblindness-part2",
       "doi": null,
-      "citation": "Lisa Charlotte Muth (2020). What to consider when visualizing data for colorblind readers. https://www.datawrapper.de/blog/colorblindness-part2"
+      "citation": "Muth, L. C. (2020,). What to consider when visualizing data for colorblind readers. https://www.datawrapper.de/blog/colorblindness-part2"
     },
     {
       "name": "plain locator preserves its query and fragment",
       "reference": "@misc{source, title={Source}, howpublished={https://example.test/paper?view=full&part=2#figure%203}}",
       "url": "https://example.test/paper?view=full&part=2#figure%203",
       "doi": null,
-      "citation": "Source. https://example.test/paper?view=full&part=2#figure%203"
+      "citation": "Source. (n.d.). https://example.test/paper?view=full&part=2#figure%203"
     },
     {
       "name": "explicit URL takes precedence and keeps DOI distinct",
       "reference": "@article{source, title={Source}, url={https://example.test/primary}, howpublished={\\url{https://example.test/alternate}}, doi={10.0000/figures}}",
       "url": "https://example.test/primary",
       "doi": "10.0000/figures",
-      "citation": "Source. https://doi.org/10.0000/figures https://example.test/primary"
+      "citation": "Source. (n.d.). https://doi.org/10.0000/figures https://example.test/primary"
     },
     {
       "name": "wrapped explicit URL takes precedence",
       "reference": "@misc{source, title={Source}, url={\\url{https://example.test/primary}}, howpublished={https://example.test/alternate}}",
       "url": "https://example.test/primary",
       "doi": null,
-      "citation": "Source. https://example.test/primary"
+      "citation": "Source. (n.d.). https://example.test/primary"
     },
     {
       "name": "empty explicit URL permits a source locator",
       "reference": "@misc{source, title={Source}, url={ }, howpublished={\\url{http://example.test/paper}}}",
       "url": "http://example.test/paper",
       "doi": null,
-      "citation": "Source. http://example.test/paper"
+      "citation": "Source. (n.d.). http://example.test/paper"
     },
     {
       "name": "explicit locator takes precedence across schemes",
       "reference": "@misc{source, title={Source}, url={ftp://example.test/paper}, howpublished={https://example.test/alternate}}",
       "url": "ftp://example.test/paper",
       "doi": null,
-      "citation": "Source. ftp://example.test/paper"
+      "citation": "Source. (n.d.). Retrieved ftp://example.test/paper"
     },
     {
       "name": "descriptive publication text is not a locator",
       "reference": "@misc{source, title={Source}, howpublished={Available at \\url{https://example.test/paper}}}",
       "url": null,
       "doi": null,
-      "citation": "Source."
+      "citation": "Source. (n.d.)."
     },
     {
       "name": "multiple wrapped URLs remain ambiguous",
       "reference": "@misc{source, title={Source}, howpublished={\\url{https://example.test/one} \\url{https://example.test/two}}}",
       "url": null,
       "doi": null,
-      "citation": "Source."
+      "citation": "Source. (n.d.)."
     },
     {
       "name": "source locator requires an HTTP authority",
       "reference": "@misc{source, title={Source}, howpublished={\\url{https:///paper}}}",
       "url": null,
       "doi": null,
-      "citation": "Source."
+      "citation": "Source. (n.d.)."
     }
   ],
   "cite": {
@@ -207,7 +212,7 @@
             "publisher": null,
             "doi": null,
             "url": null,
-            "citation": "Smith, Ada (2024). Readable charts. Journal of Charts."
+            "citation": "Smith, A. (2024). Readable charts. Journal of Charts."
           }
         ]
       }

@@ -146,7 +146,7 @@ def test_catalog_cite_json_includes_structured_source_citations(
         "doi": None,
         "url": "https://example.test/labels",
         "citation": (
-            "Lee, Bea (2022). Interactive labels. VIS Proceedings. "
+            "Lee, B. (2022,). Interactive labels. VIS Proceedings. "
             "https://example.test/labels"
         ),
     }

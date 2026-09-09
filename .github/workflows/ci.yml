@@ -32,7 +32,7 @@ jobs:
       - name: Set up Vite+
         uses: voidzero-dev/setup-vp@2dec1e33f4ab2c6d5bce1b0c4607961bb1a3f7a1 # v1
         with:
-          version: 0.2.4
+          version: 0.3.0
           node-version-file: package.json
           sfw: true
           cache: true
@@ -41,6 +41,20 @@ jobs:
 
       - name: Check JavaScript workspace
         run: vp run ready
+
+  python-minimum:
+    name: Python minimum dependencies
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v8.2.0
+        with:
+          python-version: "3.10"
+      - name: Test minimum dependency versions
+        run: make python-minimum
 
   python:
     name: Python package ${{ matrix.python-version }}

@@ -36,6 +36,12 @@ Directly label colored series instead of relying on a color key
 `describe` is asynchronous because it computes SHA-256 digests and can fetch
 selected profile metadata.
 
+Reference parsing and APA citations use [RefKit](https://peter-gy.github.io/refkit/).
+The module initializes its WebAssembly engine during import. Browser builds must
+serve RefKit's bundled `.wasm` asset at its module-relative URL. A restrictive
+[Content Security Policy](https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP)
+must allow `'wasm-unsafe-eval'` in `script-src` and the asset origin in `connect-src`.
+
 `contains` matches a contiguous phrase in the ID, title, or description,
 ignoring case and normalizing whitespace, hyphens, and underscores. For empty
 matches, shorten the phrase or follow [Find guidelines](https://docs.chartcoach.dev/querying)
