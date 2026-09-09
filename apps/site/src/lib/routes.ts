@@ -42,7 +42,7 @@ export function guidelinePath(guidelineId: string): string {
   return `/guidelines/${pathSegment(guidelineId)}/`;
 }
 
-export function guidelineJsonPath(guidelineId: string): string {
+function guidelineJsonPath(guidelineId: string): string {
   return `/guidelines/${pathSegment(guidelineId)}.json`;
 }
 

@@ -2,7 +2,7 @@ import type { CollectionEntry } from "astro:content";
 
 export type GuidelineEntry = CollectionEntry<"guidelines">;
 
-export const GUIDELINES_PER_PAGE = 24;
+const GUIDELINES_PER_PAGE = 24;
 
 export function sortGuidelines(guidelines: GuidelineEntry[]) {
   return guidelines.toSorted((a, b) => a.data.title.localeCompare(b.data.title));

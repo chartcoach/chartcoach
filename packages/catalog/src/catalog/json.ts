@@ -1,4 +1,4 @@
-export type JsonScalar = boolean | null | number | string;
+type JsonScalar = boolean | null | number | string;
 
 export interface JsonObject {
   [key: string]: JsonValue;

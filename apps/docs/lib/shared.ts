@@ -14,7 +14,7 @@ export function isPreviewDeployment(env: EnvMap = process.env) {
   return env.CF_PAGES === "1" && env.CF_PAGES_BRANCH !== productionBranch;
 }
 
-export function resolveDocsOrigin(env: EnvMap = process.env) {
+function resolveDocsOrigin(env: EnvMap = process.env) {
   const value = env[docsOriginEnv] || (isPreviewDeployment(env) ? env.CF_PAGES_URL : undefined);
   return normalizeOrigin(value ?? canonicalDocsOrigin);
 }

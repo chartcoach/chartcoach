@@ -22,13 +22,13 @@ import { parseCatalogManifest } from "./manifest";
 import { releaseProfileNames } from "./profile-layout";
 import { requireGuidelineFromWire } from "./wire";
 
-export type AsyncBuffer = {
+type AsyncBuffer = {
   byteLength: number;
   slice(start: number, end?: number): ArrayBuffer | Promise<ArrayBuffer>;
 };
 
-export type ParquetBytes = ArrayBuffer | ArrayBufferView;
-export type CatalogBytes = ParquetBytes | AsyncBuffer;
+type ParquetBytes = ArrayBuffer | ArrayBufferView;
+type CatalogBytes = ParquetBytes | AsyncBuffer;
 export type LoadCatalogDataInput = {
   entries: CatalogBytes;
   manifestText: string;

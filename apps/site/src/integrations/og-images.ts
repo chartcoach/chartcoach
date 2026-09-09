@@ -42,13 +42,13 @@ const require = createRequire(import.meta.url);
 const fontFamilies = [
   {
     name: "Poppins",
-    package: "@fontsource/poppins",
+    directory: path.dirname(require.resolve("@fontsource/poppins/package.json")),
     file: "poppins",
     weights: [400, 500, 600, 700],
   },
   {
     name: "JetBrains Mono",
-    package: "@fontsource/jetbrains-mono",
+    directory: path.dirname(require.resolve("@fontsource/jetbrains-mono/package.json")),
     file: "jetbrains-mono",
     weights: [400, 500, 600],
   },
@@ -59,8 +59,10 @@ function loadFonts(): FontOptions {
     family.weights.map((weight) => ({
       name: family.name,
       data: readFileSync(
-        require.resolve(
-          `${family.package}/files/${family.file}-latin-${weight.toString()}-normal.woff`,
+        path.join(
+          family.directory,
+          "files",
+          `${family.file}-latin-${weight.toString()}-normal.woff`,
         ),
       ),
       weight,

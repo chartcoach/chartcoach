@@ -87,6 +87,13 @@ file, or browser behavior that readers depend on.
 
 ## Validate
 
+Run `pnpm check:unused` to find unused JavaScript and TypeScript files, exports,
+and dependencies with [Knip](https://knip.dev/). The command generates the docs
+collections before analysis and also runs through `pnpm ready`. Framework
+plugins discover routes, build configuration, MDX, and tests. `knip.jsonc`
+defines the root tooling scope. Keep public SDK entry points declared in
+`package.json` exports and add precise entry patterns for code loaded by filename.
+
 Run the full repository check before handoff:
 
 ```bash

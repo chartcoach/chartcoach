@@ -2,7 +2,7 @@ import { CatalogError } from "./errors";
 import { parseLabel } from "./labels";
 import type { Guideline } from "./model";
 
-export const REQUIRED_MANIFEST_HEADINGS = ["Section Roles", "Label Families"] as const;
+const REQUIRED_MANIFEST_HEADINGS = ["Section Roles", "Label Families"] as const;
 
 export type ManifestDefinition = {
   readonly name: string;

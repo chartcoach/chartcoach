@@ -5,15 +5,9 @@ export const OG_IMAGE_WIDTH = 1200;
 export const OG_IMAGE_HEIGHT = 630;
 export const OG_BUILD_PROPS_META = "chartcoach:og-props";
 
-export type OgImageKind =
-  | "home"
-  | "catalog"
-  | "guideline"
-  | "guideline-json"
-  | "guideline-md"
-  | "page";
+type OgImageKind = "home" | "catalog" | "guideline" | "guideline-json" | "guideline-md" | "page";
 
-export type OgImageStat = {
+type OgImageStat = {
   value: string;
   label: string;
 };
@@ -84,7 +78,7 @@ function parseReferences(value: JsonValue | undefined): OgReferenceSummary[] {
   });
 }
 
-export function parseOgImageProps(value: JsonValue | undefined): OgImageProps | null {
+function parseOgImageProps(value: JsonValue | undefined): OgImageProps | null {
   if (!isJsonObject(value)) return null;
   const kind = value.kind;
   if (

@@ -104,11 +104,6 @@ export function catalogUrl(): string {
   return new URL("catalog.json", CATALOG_ARTIFACT_BASE_URL).toString();
 }
 
-export function releaseUrlForDigest(digest: string): string {
-  requireSha256(digest, "Catalog release digest");
-  return new URL(`catalog/releases/${digest}/release.json`, CATALOG_ARTIFACT_BASE_URL).toString();
-}
-
 export function releaseArtifact(release: CatalogRelease, path: string): ReleaseArtifact {
   const artifact = release.artifacts[path];
   if (artifact === undefined) {

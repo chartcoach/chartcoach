@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import type { AstroIntegration, AstroUserConfig } from "astro";
 import tailwindcss from "@tailwindcss/vite";
 
-export const monorepoRoot = fileURLToPath(new URL("../../../..", import.meta.url));
+const monorepoRoot = fileURLToPath(new URL("../../../..", import.meta.url));
 const siteSourceRoot = fileURLToPath(new URL("..", import.meta.url));
 const repoEnvPath = join(monorepoRoot, ".env");
 

@@ -7,7 +7,7 @@ import type { Catalog } from "./model";
 await init();
 const citationStyle = Style.load("apa");
 
-export const DEFAULT_GUIDELINE_URL_TEMPLATE = "https://chartcoach.dev/guidelines/{id}";
+const DEFAULT_GUIDELINE_URL_TEMPLATE = "https://chartcoach.dev/guidelines/{id}";
 
 export type MinimalSourceRecord = Readonly<{
   reference_id: string;

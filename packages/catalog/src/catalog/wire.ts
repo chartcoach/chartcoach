@@ -2,7 +2,7 @@ import { CatalogError } from "./errors";
 import { isJsonObject, type JsonObject, type JsonValue } from "./json";
 import { isGuidelineInput, type GuidelineInput, type GuidelineSection } from "./model";
 
-export type CatalogRowWire = {
+type CatalogRowWire = {
   id: string;
   title: string;
   description: string;
@@ -26,14 +26,14 @@ function hasFields(value: JsonObject, fields: readonly string[]): boolean {
   return keys.length === fields.length && fields.every((field) => Object.hasOwn(value, field));
 }
 
-export function isCatalogRowWire(value: JsonValue): value is CatalogRowWire {
+function isCatalogRowWire(value: JsonValue): value is CatalogRowWire {
   if (!isJsonObject(value) || !hasFields(value, catalogRowFields)) return false;
   const sections = value.sections;
   if (!Array.isArray(sections) || !sections.every(sectionHasExactFields)) return false;
   return isGuidelineInput(value);
 }
 
-export function guidelineFromWire(value: JsonValue): GuidelineInput | null {
+function guidelineFromWire(value: JsonValue): GuidelineInput | null {
   if (!isCatalogRowWire(value)) return null;
 
   const sections = value.sections.map((section) => ({ ...section }));

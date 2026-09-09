@@ -118,6 +118,7 @@ Run commands from the repository root.
 | List repository targets | `make help`         |
 | Install workspaces      | `make install`      |
 | Check JavaScript        | `pnpm ready`        |
+| Find unused JavaScript  | `pnpm check:unused` |
 | Check Python            | `make python-check` |
 | Build product docs      | `make docs-build`   |
 | Build the public site   | `make site-build`   |
