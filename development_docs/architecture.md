@@ -22,6 +22,7 @@ The guideline entry record and four files are shared between these interfaces:
 | `packages/catalog`         | Browser-safe release loading, querying, parsed source reads, citations, profile inspection, and Parquet parsing   |
 | `apps/site`                | Public guideline pages, search data, LLM files, Open Graph images, and sitemap                                    |
 | `apps/docs`                | Guides and API reference with static code examples                                                                |
+| `apps/chat`                | Chart review interface, filtered retrieval, and Eve agent integration                                             |
 | `packages/brand`           | Shared logos, fonts, and CSS variables                                                                            |
 | `fixtures/catalog-release` | Small release read by both clients and local site builds                                                          |
 
@@ -36,11 +37,14 @@ apps/site  -> packages/catalog
           -> packages/brand
 
 apps/docs  -> packages/brand
+
+apps/chat  -> packages/catalog
+          -> packages/brand
 ```
 
 The `@chartcoach/catalog` browser entry imports no app, brand package, or Node
 built-in. `@chartcoach/catalog/node` owns Node filesystem loading and persistent
-artifact caching. The two
+artifact caching. The
 apps do not import each other. Vite+ rules check source imports, and
 `tools/architecture` checks package manifests and relative paths.
 

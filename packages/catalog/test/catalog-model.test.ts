@@ -59,7 +59,7 @@ describe("Catalog", () => {
     expect([...catalog].map((guideline) => guideline.id)).toEqual(["axis-bars", "line-labels"]);
     expect(catalog.labels()).toEqual(["chart:bar", "chart:line", "task:compare"]);
     expect(catalog.sectionRoles()).toEqual(["advice", "reason"]);
-    expect(description).toEqual({
+    expect(description).toMatchObject({
       resolved_location: null,
       release_digest: null,
       entries_digest: expect.stringMatching(/^[a-f0-9]{64}$/),

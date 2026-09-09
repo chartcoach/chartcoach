@@ -1,4 +1,4 @@
-from .description import CatalogInfo
+from .description import CatalogInfo, TableColumnInfo, TableInfo
 from .errors import CatalogError
 from .manifest import CatalogManifest
 from .model import Catalog
@@ -26,5 +26,7 @@ __all__ = [
     "SourceDetail",
     "SqlColumn",
     "SqlResult",
+    "TableColumnInfo",
+    "TableInfo",
     "open_catalog",
 ]

@@ -21,6 +21,31 @@ type NodeContext = { cacheDirectory: string; fetch: FetchLike };
 const contexts = new WeakMap<Catalog, NodeContext>();
 
 export type NodeOpenCatalogOptions = OpenCatalogOptions & { cacheDirectory?: string };
+export type IndexPathOptions = ArtifactOptions & { directory?: string };
+
+/** Return a verified profile's extracted database directory for native LanceDB clients. */
+export async function indexPath(
+  catalog: Catalog,
+  profile: string,
+  options: IndexPathOptions = {},
+): Promise<string> {
+  options.signal?.throwIfAborted();
+  if (!catalog.release)
+    throw new CatalogError("Index access requires a catalog release.", {
+      code: "unavailable_capability",
+    });
+  await catalog.describe({ profile, signal: options.signal });
+  const path = `profiles/${profile}/index.tar.gz`;
+  const artifact = releaseArtifact(catalog.release, path);
+  const { extractIndex } = await import("./node/index-cache");
+  return extractIndex({
+    archive: () => artifactPath(catalog, path, options),
+    digest: artifact.sha256,
+    cacheDirectory: contexts.get(catalog)?.cacheDirectory ?? defaultCacheDirectory(),
+    directory: options.directory,
+    signal: options.signal,
+  });
+}
 
 export async function openCatalog(
   location?: string | URL,

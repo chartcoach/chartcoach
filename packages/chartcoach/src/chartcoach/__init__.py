@@ -16,6 +16,8 @@ from ._catalog import (
     ProfileInfo,
     SectionRecord,
     SourceDetail,
+    TableColumnInfo,
+    TableInfo,
     open_catalog,
 )
 from ._catalog.guidelines import Guideline, Section
@@ -43,6 +45,8 @@ __all__ = [
     "Section",
     "SectionRecord",
     "SourceDetail",
+    "TableColumnInfo",
+    "TableInfo",
     "__version__",
     "open_catalog",
 ]

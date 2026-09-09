@@ -138,7 +138,9 @@ def build_reference_tables(catalog_df: pl.DataFrame) -> ReferenceTables:
     bibtex_to_id: dict[str, str] = {}
     reference_rows: list[dict[str, object]] = []
     references_by_id: dict[str, refkit.types.ResolvedBibEntry] = {}
-    for bibtex in exploded.select("bibtex").unique().get_column("bibtex").to_list():
+    for bibtex in (
+        exploded.select("bibtex").unique().sort("bibtex").get_column("bibtex").to_list()
+    ):
         if not isinstance(bibtex, str):
             continue
         reference = parse_bibtex_reference(bibtex)

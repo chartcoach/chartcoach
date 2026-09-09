@@ -132,6 +132,15 @@ def test_reference_keys_deduplicate_equivalent_definitions_and_reject_conflicts(
     )
 
     assert equivalent.table("references").get_column("id").to_list() == ["shared2024"]
+    reverse = _catalog_with_references(
+        sample_catalog,
+        list(reversed(contract["bibliography"]["equivalent"])),
+    )
+    assert equivalent.table("references").equals(reverse.table("references"))
+    assert (
+        equivalent.table("references").item(0, "bibtex")
+        in contract["bibliography"]["equivalent"]
+    )
 
     conflicting = _catalog_with_references(
         sample_catalog,

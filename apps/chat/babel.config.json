@@ -1,0 +1,27 @@
+{
+  "presets": ["next/babel"],
+  "env": {
+    "test": {
+      "presets": [
+        [
+          "next/babel",
+          {
+            "preset-react": { "runtime": "automatic" },
+            "transform-runtime": { "helpers": false }
+          }
+        ]
+      ]
+    }
+  },
+  "plugins": [
+    [
+      "@stylexjs/babel-plugin",
+      {
+        "runtimeInjection": false,
+        "enableInlinedConditionalMerge": true,
+        "treeshakeCompensation": true,
+        "unstable_moduleResolution": { "type": "commonJS" }
+      }
+    ]
+  ]
+}

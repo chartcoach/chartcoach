@@ -16,6 +16,7 @@ import { citationRecords, type CitationRecord, type CiteOptions } from "./refere
 import { releaseProfiles } from "./profile-layout";
 import type { CatalogRelease } from "./artifacts";
 import { copyCatalogRelease } from "./artifacts";
+import { catalogTable, type CatalogTables, type TableName } from "./tables";
 
 export type GuidelineSection = Readonly<{
   role: string;
@@ -125,6 +126,10 @@ export class Catalog implements Iterable<Guideline> {
 
   cite(options: CiteOptions): readonly CitationRecord[] {
     return citationRecords(this, options);
+  }
+
+  table<Name extends TableName>(name: Name): CatalogTables[Name] {
+    return catalogTable(this, name);
   }
 
   labels(): string[] {

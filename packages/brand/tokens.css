@@ -1,3 +1,5 @@
+@import "./palette.css";
+
 @theme static {
   --color-bg: #ffffff;
   --color-fg: #171717;
@@ -7,11 +9,11 @@
   --color-surface-muted: #fafafa;
   --color-code-bg: #f5f5f5;
   --color-code-fg: #171717;
-  --color-brand-dark: #1f1f1f;
-  --color-brand-crimson: #e0364b;
-  --color-brand-crimson-bright: #f25a6d;
-  --color-brand-neutral: #bfbfbf;
-  --color-brand-paper: #efeeeb;
+  --color-brand-dark: var(--brand-dark);
+  --color-brand-crimson: var(--brand-crimson);
+  --color-brand-crimson-bright: var(--brand-crimson-bright);
+  --color-brand-neutral: var(--brand-neutral);
+  --color-brand-paper: var(--brand-paper);
   --color-accent: var(--color-brand-crimson);
   --color-accent-muted: #fdecef;
 

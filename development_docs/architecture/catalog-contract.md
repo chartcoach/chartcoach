@@ -166,6 +166,6 @@ Run:
 uv run --locked --package chartcoach --all-extras \
   pytest packages/chartcoach/tests/test_release_contract.py \
   packages/chartcoach/tests/test_catalog_runtime.py
-pnpm --dir packages/catalog test
+pnpm exec vp run @chartcoach/catalog#test
 pnpm --dir apps/site build
 ```

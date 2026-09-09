@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 import tempfile
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from os import PathLike
 from pathlib import Path
@@ -13,6 +13,7 @@ import duckdb
 import polars as pl
 
 from ._catalog.model import Catalog
+from ._catalog.query import validate_ids
 from ._catalog.relations import iter_catalog_tables as _iter_catalog_tables
 
 DuckDBConfigValue: TypeAlias = str | bool | int | float | list[str]
@@ -37,10 +38,34 @@ def _connect_catalog(
 def register_catalog(
     conn: duckdb.DuckDBPyConnection,
     catalog: Catalog,
+    *,
+    ids: Sequence[str] | None = None,
 ) -> duckdb.DuckDBPyConnection:
-    """Create or replace catalog tables in a caller-owned DuckDB connection."""
+    """Create or replace catalog tables in a caller-owned DuckDB connection.
 
-    for relation_name, frame in _iter_catalog_tables(catalog):
+    `ids` selects guideline entries and their complete linked reference records.
+    Omit it for every entry, or pass an empty sequence for six empty typed tables.
+    Unknown IDs raise `CatalogLookupError` before any table is replaced.
+    The returned connection is `conn` and remains caller-owned.
+    """
+
+    reference_ids: list[str] = []
+    if ids is not None:
+        validate_ids(catalog, ids)
+        reference_ids = (
+            catalog.table("guideline_references")
+            .filter(pl.col("guideline_id").is_in(ids))
+            .get_column("reference_id")
+            .to_list()
+        )
+    tables = list(_iter_catalog_tables(catalog))
+    for relation_name, frame in tables:
+        if ids is not None:
+            if relation_name == "references":
+                frame = frame.filter(pl.col("id").is_in(reference_ids))
+            else:
+                key = "id" if relation_name == "guidelines" else "guideline_id"
+                frame = frame.filter(pl.col(key).is_in(ids))
         _replace_table(conn, relation_name, frame)
     return conn
 
@@ -98,8 +123,11 @@ def _replace_table(
     source = f"_chartcoach_{uuid4().hex}"
     conn.register(source, _ArrowStream(frame))
     try:
+        # Empty Arrow arrays can use unaligned sentinel buffers. Bind their
+        # schema while letting DuckDB skip the source scan.
+        limit = " limit 0" if frame.is_empty() else ""
         conn.execute(
-            f'create or replace table "{relation_name}" as select * from "{source}"'
+            f'create or replace table "{relation_name}" as select * from "{source}"{limit}'
         )
     finally:
         conn.unregister(source)

@@ -8,11 +8,17 @@ icon: Braces
 browsers and Node.js. Use `@chartcoach/catalog/node` for local paths and a
 persistent file cache.
 
+Follow [Build a chart-review app](/next) for a complete application using local
+embeddings, native LanceDB queries, and guideline citations.
+
 ## Install
 
 ```bash
 npm install @chartcoach/catalog
 ```
+
+Use Node.js 22.19 or later. Browser applications require the Web APIs and
+WebAssembly setup described with `openCatalog`.
 
 Save the first example as `read-guideline.mjs` in your project and run
 `node read-guideline.mjs`.
@@ -113,7 +119,7 @@ Each core file is capped at 64 MiB. Use `openCatalog` when
 
 ## Catalog methods
 
-`query`, `read`, and `cite` return frozen JavaScript arrays synchronously from
+`query`, `read`, `cite`, and `table` return frozen JavaScript arrays synchronously from
 the loaded `Catalog`. `describe` returns a promise because it hashes the loaded
 records and can fetch profile metadata.
 
@@ -173,6 +179,133 @@ Catalogs created with `loadCatalogData` expose `undefined` for `release` and
 `releaseUrl` because that call receives the two bundle files directly.
 
 `CatalogError` exposes `code`, `details`, and `hints` for programmatic recovery.
+
+## Compose catalog tables
+
+`catalog.table(name)` returns cached immutable rows. Its six table names and
+fields match Python's `catalog.table(name)`:
+
+| Table                  | Rows                                                        |
+| ---------------------- | ----------------------------------------------------------- |
+| `guidelines`           | Guideline entries with derived Markdown and nested sections |
+| `sections`             | Individual sections linked by `guideline_id`                |
+| `guideline_labels`     | Parsed labels linked by `guideline_id`                      |
+| `references`           | Distinct bibliographic sources, including authored BibTeX   |
+| `guideline_references` | Guideline-to-reference links                                |
+| `guideline_sources`    | Linked source details for each guideline                    |
+
+```ts
+const sources = catalog.table("guideline_sources");
+console.log(sources[0]?.authors);
+const { tables } = await catalog.describe();
+console.log(tables.map(({ name, rows }) => ({ name, rows })));
+```
+
+`tables` contains `{ name, rows, columns }`. Columns use the same logical type
+names in Python and JavaScript, such as `String` and `List(String)`.
+Schema metadata remains available for empty tables. Unknown table names raise
+`CatalogError` with code `lookup`. Parsed references and table projections are
+cached per catalog. Nested arrays and records are frozen.
+
+## Register tables in DuckDB
+
+Install [DuckDB's Node.js client](https://duckdb.org/docs/stable/clients/node_neo/overview)
+to use the optional adapter:
+
+```bash
+npm install @chartcoach/catalog @duckdb/node-api
+```
+
+```ts
+import { DuckDBInstance } from "@duckdb/node-api";
+import { registerCatalog } from "@chartcoach/catalog/duckdb";
+
+const db = await DuckDBInstance.create(":memory:");
+const connection = await db.connect();
+try {
+  await registerCatalog(connection, catalog);
+  const result = await connection.runAndReadAll(
+    'SELECT source_type, count(*) FROM "references" GROUP BY source_type',
+  );
+  console.log(result.getRowsJson());
+} finally {
+  connection.closeSync();
+  db.closeSync();
+}
+```
+
+`registerCatalog(connection, catalog, options?)` returns a promise for the same
+native connection. It creates or replaces the six named catalog tables and
+preserves unrelated tables. The caller owns configuration, transactions, and
+connection lifetime.
+
+Pass `{ ids: [...] }` to register selected guideline entries and all their linked
+references. Duplicate IDs are accepted. Omitted `ids` selects every entry, while
+`{ ids: [] }` creates six empty tables with complete schemas. Unknown IDs and
+invalid references fail before replacing tables.
+
+The adapter exports `RegisterCatalogOptions` from `@chartcoach/catalog/duckdb`.
+DuckDB remains an optional peer dependency. Its native SQL results report native
+types such as `VARCHAR`, independently of the catalog's logical schema metadata.
+
+## Query in a browser worker
+
+[`@duckdb/duckdb-wasm`](https://duckdb.org/docs/stable/clients/wasm/overview) runs
+DuckDB in a browser worker. Install it alongside the catalog package:
+
+```bash
+npm install @chartcoach/catalog @duckdb/duckdb-wasm
+```
+
+Create and own the worker and connection using
+[DuckDB's browser setup](https://duckdb.org/docs/stable/clients/wasm/instantiation).
+Given that native `AsyncDuckDBConnection` as `connection` and the loaded `catalog`:
+
+```ts
+import { registerCatalog } from "@chartcoach/catalog/duckdb-wasm";
+
+await registerCatalog(connection, catalog);
+const result = await connection.query(
+  'SELECT source_type, count(*) FROM "references" GROUP BY source_type',
+);
+console.log(result.toArray());
+```
+
+`registerCatalog(connection, catalog, { ids? })` returns the same connection and
+has the same table, selection, and transaction contract as the Node adapter.
+`RegisterCatalogOptions` is exported from this entry point. Workers, connections,
+and database instances remain caller-owned. Registration releases its temporary
+in-memory files after materializing the tables.
+
+For native Parquet queries, register the verified artifact bytes with DuckDB's
+filesystem. The catalog reuses bytes fetched while opening the release:
+
+```ts
+await connection.bindings.registerFileBuffer(
+  "entries.parquet",
+  await catalog.artifact("entries.parquet"),
+);
+try {
+  const result = await connection.query(
+    "SELECT id, title, labels FROM read_parquet('entries.parquet') LIMIT 5",
+  );
+  console.log(result.toArray());
+} finally {
+  await connection.bindings.dropFile("entries.parquet");
+}
+```
+
+Use DuckDB's EH bundle with a browser that supports WebAssembly exception handling.
+The chat app checks that capability and serves the worker and WASM files from
+the installed package. A restrictive
+Content Security Policy must allow workers, `'wasm-unsafe-eval'`, and the
+configured DuckDB extension repository in `connect-src`. The default repository
+is `https://extensions.duckdb.org`, which supplies the version-matched JSON
+extension on first use. TypeScript projects using the current DuckDB-WASM
+declarations may need `skipLibCheck` for its upstream declaration dependencies.
+
+The [chat app guide](/next) demonstrates this setup with Mosaic, a library that
+coordinates SQL queries and linked selections across interactive views.
 
 ## Inspect profile metadata
 
@@ -251,6 +384,69 @@ roots, local descriptor paths, and remote descriptor URLs. Exact
 digest-addressed releases reopen offline once their core files are cached.
 Selection descriptors refresh on each open. Optional files are cached on demand.
 
+## Query an index with LanceDB
+
+[LanceDB](https://lancedb.github.io/lancedb/js/) opens the extracted search
+database and provides native full-text and vector queries. Install its client
+in the application:
+
+```bash
+npm install @lancedb/lancedb
+```
+
+Open a release built with an index profile. This example uses `./dist/release`:
+
+```ts
+import { connect } from "@lancedb/lancedb";
+import { openCatalog, indexPath } from "@chartcoach/catalog/node";
+
+const catalog = await openCatalog("./dist/release");
+const [profile] = (await catalog.describe()).profiles;
+if (!profile) throw new Error("Choose a catalog release with an index profile.");
+
+const db = await connect(await indexPath(catalog, profile));
+const table = await db.openTable("documents");
+try {
+  await table.checkout(await table.version());
+  const matches = await table.query().fullTextSearch("direct labels").limit(5).toArray();
+  const ids = [...new Set(matches.map((row) => row.parent_id))];
+  console.log(catalog.read({ ids }));
+} finally {
+  table.close();
+  db.close();
+}
+```
+
+### `indexPath(catalog, profile, options?)`
+
+Returns a promise for the extracted database directory containing
+`documents.lance`. The catalog must come from a release whose profile metadata
+can be loaded. The function verifies the profile's relationship to the catalog,
+checks the archive's size and SHA-256 hash, and extracts bounded regular files.
+Unsafe paths, links, and colliding names reject the operation.
+
+- `catalog`: A catalog returned by `openCatalog`.
+- `profile`: A name listed by `catalog.describe()`.
+- `options.directory`: A new directory for a writable, caller-owned extraction.
+  Existing directories are rejected. The caller owns its cleanup.
+- `options.signal`: Cancels metadata loading, artifact retrieval, or extraction.
+
+On POSIX systems, omitting `directory` reuses a completed read-only cache
+generation. Concurrent callers do not receive partially extracted data. Windows
+requires `directory` because POSIX permission protection is unavailable there.
+Failed or cancelled extraction cleans the incomplete directory.
+
+Pin the native table with `checkout` before reading shared cached data. To modify
+an index, request a caller-owned directory and open that directory with LanceDB.
+Use `table.vectorSearch(vector)` for query vectors produced by your application.
+The profile's distance metric and vector dimensions are available through
+`catalog.describe({ profile })`.
+
+Full-text and numeric-vector queries require no embedding provider credentials.
+For string-based embedding queries, configure a compatible function through
+LanceDB's JavaScript embedding registry. A stored Python embedding binding does
+not register a JavaScript provider.
+
 ## Open S3 with an existing storage client
 
 An application can supply its own [AWS SDK S3 client](https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/javascript_s3_code_examples.html).
@@ -309,6 +505,7 @@ Import these contracts from `@chartcoach/catalog`:
 | Entries             | `GuidelineInput`, `Guideline`, `GuidelineSection`, `EntryCandidate`, `GuidelineEntryRecord`                                                          |
 | Sources             | `SourceDetail`, `MinimalSourceRecord`, `FullSourceRecord`, `CitationRecord`, `CitationSource`                                                        |
 | Catalog description | `CatalogInfo`, `ProfileInfo`                                                                                                                         |
+| Tables              | `CatalogTables`, `TableName`, `TableInfo`, `TableColumnInfo`                                                                                         |
 | Manifest            | `CatalogManifest`, `ManifestDefinition`, `parseCatalogManifest`                                                                                      |
 | Release             | `CatalogRelease`, `ReleaseArtifact`, `parseCatalogRelease`                                                                                           |
 | Profiles            | `ProfileMetadata`, `EmbeddingBinding`, `ProjectionMetadata`, `DistanceMetric`, `parseProfileMetadata`                                                |
@@ -319,4 +516,5 @@ Import these contracts from `@chartcoach/catalog`:
 `parseCatalogManifest` accepts Markdown text. `parseCatalogRelease` and
 `parseProfileMetadata` accept parsed JSON values and validate their fields.
 Loaders additionally verify release integrity. The Node entry exports
-`openCatalog`, `artifactPath`, and `NodeOpenCatalogOptions`.
+`openCatalog`, `artifactPath`, `indexPath`, `NodeOpenCatalogOptions`, and
+`IndexPathOptions`.

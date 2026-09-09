@@ -3,7 +3,9 @@
   "compilerOptions": {
     "paths": {
       "@chartcoach/catalog": ["./src/index.ts"],
-      "@chartcoach/catalog/node": ["./src/node.ts"]
+      "@chartcoach/catalog/node": ["./src/node.ts"],
+      "@chartcoach/catalog/duckdb": ["./src/duckdb.ts"],
+      "@chartcoach/catalog/duckdb-wasm": ["./src/duckdb-wasm.ts"]
     }
   },
   "include": ["src", "test", "vite.config.ts"]

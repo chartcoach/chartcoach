@@ -36,7 +36,14 @@ export default defineConfig({
           "no-restricted-imports": [
             "error",
             {
-              patterns: ["node:*", "@chartcoach/*", "../**/apps/**", "../**/brand/**"],
+              patterns: [
+                "node:*",
+                "@chartcoach/*",
+                "../node/**",
+                "./node/**",
+                "../**/apps/**",
+                "../**/brand/**",
+              ],
             },
           ],
         },

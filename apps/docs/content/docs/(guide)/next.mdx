@@ -1,0 +1,174 @@
+---
+title: Build a chart-review app
+description: Review charts with guideline-grounded feedback and visual citations.
+icon: Bot
+---
+
+The [chat app](https://github.com/chartcoach/chartcoach/tree/main/apps/chat)
+lets a user upload a chart, ask a question, and receive guideline-grounded feedback.
+[Eve](https://eve.dev/docs/guides/frontend/nextjs) runs the agent behind the
+Next.js app. [assistant-ui](https://www.assistant-ui.com/docs) provides the thread,
+composer, attachment controls, and scrolling. [Streamdown](https://streamdown.ai/)
+formats the recommendations.
+A small embedding model runs on your CPU for semantic search. Keyword search uses
+LanceDB's full-text index, and DuckDB runs SQL over the catalog.
+
+## Start the app
+
+Use Node.js 24 or later on macOS or Linux and [pnpm](https://pnpm.io/), the
+repository's JavaScript package manager. From a ChartCoach checkout:
+
+```bash
+pnpm install --frozen-lockfile
+cp apps/chat/.env.example apps/chat/.env.local
+pnpm --dir apps/chat dev
+```
+
+Open the local URL printed by [Portless](https://github.com/vercel-labs/portless).
+Next.js and Eve share that origin through `withEve()` in `next.config.ts`.
+
+Set `OPENAI_BASE`, `OPENAI_API_KEY`, and `OPENAI_MODEL` in `.env.local` for your
+OpenAI-compatible endpoint. Choose a model that accepts images. The supplied
+settings target a local endpoint, which must already be running.
+`CATALOG_SOURCE` and `CATALOG_PROFILE` select the deployed catalog and MiniLM index.
+
+## Send a chart
+
+Drop a PNG, JPEG, or WebP image up to 3 MiB anywhere in the app, or choose
+**Add chart** to select it. Ask:
+
+> What is the most important improvement supported by the guidelines?
+
+The client connects Eve's message store to assistant-ui's
+[external-store runtime](https://www.assistant-ui.com/docs/runtimes/custom/external-store).
+The composer owns the draft and attachments. Its send callback requests the
+app's [structured review](https://github.com/chartcoach/chartcoach/blob/main/apps/chat/shared/review.ts)
+when sending the prompt and image to Eve:
+
+```ts
+import { reviewSchema } from "../../shared/review";
+
+await agent.send(
+  [
+    { type: "text", text: prompt },
+    { type: "file", data: imageDataUrl, mediaType: file.type, filename: file.name },
+  ],
+  { outputSchema: reviewSchema },
+);
+```
+
+Eve stores uploaded bytes in a local sandbox and restores them for model calls,
+including follow-up turns. The image-size limit keeps those bytes within Eve's
+model-visible attachment bound. Questions, images, and retrieved guidance go to
+your configured LLM. Local session and attachment data persist under `.eve/`.
+
+## Choose your agent's knowledge
+
+Open **Knowledge** to brush a publication-year range, choose source types, and
+include or exclude authors. [Mosaic](https://uwdata.github.io/mosaic/) links these
+views through DuckDB-WASM, which runs SQL in a browser worker. Facet counts reflect
+your other selections, and the matching-guideline preview shows candidate titles.
+
+The first opening loads verified Parquet and manifest bytes over authenticated
+HTTPS, then registers the catalog with `@chartcoach/catalog/duckdb-wasm`.
+DuckDB also queries the original Parquet directly. Worker and WASM assets are
+served by the app, and DuckDB loads its version-matched JSON extension on first
+use. Draft changes query the loaded local database. Reopening the panel reuses it.
+
+Author, year, and source-type requirements must match the same linked source.
+Excluded authors disqualify guidelines through any linked source. The browser
+captures the full selection query used by Mosaic's count view.
+
+Choose **Use these guidelines** to start a fresh review and preserve your chart and message draft.
+The first message sends that query and the catalog identity in a compressed
+header. The server validates and executes the exact query, then stores the
+resolved guideline IDs privately for the session. Follow-ups reuse that scope
+for search, SQL, schema inspection, and reads. Qualifying guidelines keep their complete source context.
+Adjust a zero-match selection before sending a question.
+
+## Connect observation to evidence
+
+The agent first identifies the chart's visible marks, labels, encodings, and
+values. Its instructions separate observations from uncertain interpretations.
+The authored tools support several retrieval paths:
+
+| Tool                | Result                                                                     |
+| ------------------- | -------------------------------------------------------------------------- |
+| `search_guidelines` | Vector, keyword, or hybrid search, returning up to five candidate entries. |
+| `describe_catalog`  | Actual SQL tables, columns, row counts, and catalog vocabulary.            |
+| `query_catalog`     | Bounded SELECT results and canonical guideline candidates.                 |
+| `read_guidelines`   | Up to three entries with their sections, sources, and citation links.      |
+
+Use vector search for meaning, keyword search for known terms, and hybrid search
+when both matter. The helper gets a verified index directory from `indexPath()`.
+Vector and hybrid queries embed the question locally. Keyword queries use the
+existing full-text index. Document `parent_id` values identify entries to read.
+The read tool combines
+`catalog.read()` with `catalog.cite()` so advice travels with its reasoning,
+exceptions, and sources.
+
+Each finding compares a guideline's requirement with an observation and classifies
+it as **Working well**, **Improve**, or **Check**. Its action explains what
+to retain, change, or verify. Applicability comes first, so an unreadable or
+cropped feature does not establish a violation.
+
+One primary guideline directly grounds each finding. Optional supporting
+guidelines add qualification or corroboration. All cited IDs must come from
+successful reads. Findings lead with the action and link to the primary guideline
+by title. Expand **Why this applies** to compare the observation with the authored
+requirement and inspect supporting citations.
+
+The guideline panel appears beside the conversation as search matches arrive.
+It marks entries when read, then identifies primary and supporting guidance when
+the review is verified. On narrow screens, expand **Guidelines** to inspect it.
+Primary guidelines follow the finding order. Supporting guidance and explored
+entries are expandable. Select a guideline title to open its
+[Open Graph](https://ogp.me/) preview, with one preview open at a time. Next.js
+loads these images from `chartcoach.dev`. A failed image leaves the citation link
+available.
+**Review activity** groups the tool calls in one expandable section.
+
+Missing context produces a clarifying question. Unrelated requests and searches
+with no applicable guidelines produce a short scope or no-match response.
+
+The first indexed search downloads the index. Vector and hybrid queries also
+download about 86 MiB of embedding weights. These are cached in the platform's
+per-user `chartcoach` cache. Later calls reuse the catalog, native table, and CPU model.
+
+## Explore catalog structure with SQL
+
+Ask the agent to inspect the schema before using SQL. For example:
+
+> Inspect the catalog and use SQL to find label guidance from sources published since 2020. Read a relevant entry and apply it to my chart.
+
+The app uses [DuckDB's Node.js client](https://duckdb.org/docs/stable/clients/node_neo/overview)
+with `registerCatalog()` from `@chartcoach/catalog/duckdb` to materialize the six
+canonical catalog tables. `catalog.describe()` supplies their schemas. Later
+queries reuse those tables. Filtered databases register eligible guideline IDs
+and their complete reference records.
+Joins use `guidelines.id` and the other tables' `guideline_id` columns.
+Source metadata comes from the catalog reader's reference parser.
+
+The agent's SQL connection accepts one SELECT statement with external access and
+extension loading disabled. Queries have a five-second deadline and return at
+most 50 rows, with SQL row data capped at 64 KiB. Expanded tool details show the
+executed query and typed results. SQL candidates still require a guideline read
+before they can support feedback.
+
+## Check the full flow
+
+With the app running, use its printed URL:
+
+```bash
+pnpm --dir apps/chat eval --url "$APP_URL"
+```
+
+The evals send chart questions and an image fixture through Next.js and Eve. They
+check visible image details, retrieval methods, SQL exploration, assessments, evidence roles, read-before-cite behavior, and
+out-of-scope requests. A model-graded check compares the recommendations with the
+cited guideline text. They use the configured LLM, so run them when provider
+access is available.
+
+Follow the [chat README](https://github.com/chartcoach/chartcoach/tree/main/apps/chat)
+for the file map, model settings, builds, and production authentication. See
+[JavaScript and TypeScript](/javascript) for the catalog API contracts.

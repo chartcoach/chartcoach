@@ -62,6 +62,7 @@ export type CitationRecord = Readonly<{
 
 type ParsedReference = Readonly<{
   id: string;
+  bibtex: string;
   sourceType: string;
   authors: readonly string[];
   authorsText: string | null;
@@ -134,7 +135,7 @@ export function citationRecords(catalog: Catalog, options: CiteOptions): readonl
   );
 }
 
-function referenceIndex(catalog: Catalog): ReferenceIndex {
+export function referenceIndex(catalog: Catalog): ReferenceIndex {
   const cached = indexes.get(catalog);
   if (cached) return cached;
 
@@ -158,7 +159,10 @@ function referenceIndex(catalog: Catalog): ReferenceIndex {
           },
         );
       }
-      byId.set(reference.id, previous ?? reference);
+      byId.set(
+        reference.id,
+        previous && compareUnicode(previous.bibtex, reference.bibtex) <= 0 ? previous : reference,
+      );
       ids.add(reference.id);
     }
     idsByGuideline.set(guideline.id, Object.freeze([...ids].sort(compareUnicode)));
@@ -204,6 +208,7 @@ function parsedReference(bibtex: string): ParsedReference {
   );
   return Object.freeze({
     id: entry.key,
+    bibtex,
     sourceType: entry.entryType,
     authors,
     authorsText,

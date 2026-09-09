@@ -122,6 +122,8 @@ def test_top_level_api_is_the_supported_catalog_contract() -> None:
         "ProfileInfo",
         "SectionRecord",
         "SourceDetail",
+        "TableColumnInfo",
+        "TableInfo",
         "__version__",
         "open_catalog",
     }

@@ -4,6 +4,7 @@ import type { Catalog } from "./model";
 import type { ProfileMetadata } from "./profile";
 import type { ReleaseProfile } from "./profile-layout";
 import type { ManifestDefinition } from "./manifest";
+import { catalogTableInfo, type TableInfo } from "./tables";
 
 export type DescribeOptions = Readonly<{
   profile?: string;
@@ -27,6 +28,7 @@ export type CatalogInfo = Readonly<{
   release_digest: string | null;
   entries_digest: string;
   manifest_digest: string;
+  tables: readonly TableInfo[];
   section_roles: readonly ManifestDefinition[];
   label_families: readonly ManifestDefinition[];
   profiles: readonly string[];
@@ -94,6 +96,7 @@ export async function describeCatalog(
     release_digest: context.releaseDigest,
     entries_digest: identity.entriesDigest,
     manifest_digest: identity.manifestDigest,
+    tables: catalogTableInfo(catalog),
     section_roles: vocabulary(Object.values(catalog.manifest.sectionRoles)),
     label_families: vocabulary(Object.values(catalog.manifest.labelFamilies)),
     profiles: Object.freeze(context.profiles.map((item) => item.name)),

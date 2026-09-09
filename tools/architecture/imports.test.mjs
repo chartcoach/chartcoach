@@ -9,9 +9,11 @@ import ts from "typescript";
 
 const repositoryRoot = fileURLToPath(new URL("../../", import.meta.url));
 const catalogRoot = path.join(repositoryRoot, "packages/catalog");
+const chatRoot = path.join(repositoryRoot, "apps/chat");
 const sourceZones = [
   { name: "docs", root: path.join(repositoryRoot, "apps/docs") },
   { name: "site", root: path.join(repositoryRoot, "apps/site") },
+  { name: "chat", root: chatRoot },
   { name: "catalog", root: path.join(catalogRoot, "src") },
 ];
 const sourceExtensions = new Set([".astro", ".js", ".jsx", ".mjs", ".ts", ".tsx"]);
@@ -47,19 +49,44 @@ void test("the browser catalog rejects both Node builtin spellings", () => {
 });
 
 function importViolation(zone, file, specifier) {
+  if (zone.name === "chat") {
+    const reason = chatImportViolation(file, specifier);
+    if (reason) return reason;
+  }
   if (zone.name === "catalog") {
     const builtin = specifier.replace(/^node:/, "");
-    const nodeEntry = file === path.join(catalogRoot, "src/node.ts");
+    const nodeEntry =
+      file === path.join(catalogRoot, "src/node.ts") ||
+      isWithin(path.join(catalogRoot, "src/node"), file);
+    const duckdbEntry = file === path.join(catalogRoot, "src/duckdb.ts");
+    if (!duckdbEntry && specifier === "@duckdb/node-api") return "optional native dependency";
     if (!nodeEntry && (specifier.startsWith("node:") || nodeBuiltins.has(builtin)))
       return "Node builtin";
     if (!nodeEntry && specifier.endsWith("/node")) return "Node entry point";
+    if (
+      !nodeEntry &&
+      specifier.startsWith(".") &&
+      isWithin(path.join(catalogRoot, "src/node"), path.resolve(path.dirname(file), specifier))
+    )
+      return "Node implementation";
+    if (
+      !duckdbEntry &&
+      specifier.startsWith(".") &&
+      ["src/duckdb", "src/duckdb.ts"].some(
+        (entry) => path.resolve(path.dirname(file), specifier) === path.join(catalogRoot, entry),
+      )
+    )
+      return "optional native implementation";
     if (specifier.startsWith("@chartcoach/")) return "workspace dependency";
   }
 
-  if (zone.name === "docs" && specifier.startsWith("@chartcoach/site")) {
-    return "cross-app dependency";
-  }
-  if (zone.name === "site" && specifier.startsWith("@chartcoach/docs")) {
+  if (
+    ["docs", "site", "chat"].some(
+      (name) =>
+        name !== zone.name &&
+        (specifier === `@chartcoach/${name}` || specifier.startsWith(`@chartcoach/${name}/`)),
+    )
+  ) {
     return "cross-app dependency";
   }
   if (!specifier.startsWith(".") && !path.isAbsolute(specifier)) return undefined;
@@ -69,10 +96,85 @@ function importViolation(zone, file, specifier) {
   return isWithin(owner, target) ? undefined : "relative boundary escape";
 }
 
+function chatImportViolation(file, specifier) {
+  const source = path.relative(chatRoot, file).split(path.sep).join("/");
+  const browser =
+    /^(app|components|chat|shared|browser)\//.test(source) || source === "lib/catalog-client.ts";
+  if (
+    browser &&
+    (nodeBuiltins.has(specifier.replace(/^node:/, "")) ||
+      specifier.startsWith("node:") ||
+      [
+        "@chartcoach/catalog/node",
+        "@chartcoach/catalog/duckdb",
+        "@duckdb/node-api",
+        "@lancedb/lancedb",
+        "@huggingface/transformers",
+      ].some((name) => specifier === name || specifier.startsWith(`${name}/`)))
+  )
+    return "server dependency in browser code";
+  if (/^lib\/(catalog|retrieval)\//.test(source) && /^(eve|react|next)(\/|$)/.test(specifier))
+    return "framework dependency in catalog access";
+  if (!specifier.startsWith(".")) return;
+  const target = path
+    .relative(chatRoot, path.resolve(path.dirname(file), specifier))
+    .split(path.sep)
+    .join("/");
+  if (
+    browser &&
+    (target.startsWith("agent/") ||
+      (target.startsWith("lib/") && !/^lib\/catalog-client(?:\.ts)?$/.test(target)))
+  )
+    return "server implementation in browser code";
+  if (source.startsWith("chat/") && /^(app|components)\//.test(target))
+    return "rendering dependency in chat state";
+  if (source.startsWith("components/") && /^lib\/catalog-client(?:\.ts)?$/.test(target))
+    return "HTTP access in rendering code";
+  if (source.startsWith("shared/") && !target.startsWith("shared/"))
+    return "app implementation in shared contract";
+  if (/^lib\/(catalog|retrieval)\//.test(source) && /^(agent|app|components|chat)\//.test(target))
+    return "app orchestration in catalog access";
+  if (source.startsWith("lib/catalog/") && target.startsWith("lib/retrieval/"))
+    return "retrieval policy in catalog infrastructure";
+}
+
+void test("chat boundaries separate rendering, state, retrieval policy, and catalog infrastructure", () => {
+  const check = (file, specifier) => chatImportViolation(path.join(chatRoot, file), specifier);
+  assert.equal(
+    check("components/chat/message.tsx", "@duckdb/node-api"),
+    "server dependency in browser code",
+  );
+  assert.equal(
+    check("chat/runtime.ts", "../lib/catalog/open"),
+    "server implementation in browser code",
+  );
+  assert.equal(check("chat/runtime.ts", "../lib/async"), "server implementation in browser code");
+  assert.equal(
+    check("chat/runtime.ts", "../components/chat/composer"),
+    "rendering dependency in chat state",
+  );
+  assert.equal(
+    check("shared/review.ts", "../chat/evidence"),
+    "app implementation in shared contract",
+  );
+  assert.equal(check("lib/catalog/open.ts", "eve/tools"), "framework dependency in catalog access");
+  assert.equal(
+    check("lib/catalog/open.ts", "../retrieval/search"),
+    "retrieval policy in catalog infrastructure",
+  );
+  assert.equal(
+    check("lib/retrieval/search.ts", "../../agent/agent"),
+    "app orchestration in catalog access",
+  );
+  assert.equal(check("lib/retrieval/search.ts", "../catalog/scope"), undefined);
+  assert.equal(check("components/chat/message.tsx", "../../chat/evidence"), undefined);
+});
+
 async function sourceFiles(directory) {
   const files = [];
   for (const entry of await readdir(directory, { withFileTypes: true })) {
-    if ([".next", ".source", "dist", "node_modules", "out"].includes(entry.name)) continue;
+    if ([".eve", ".next", ".output", ".source", "dist", "node_modules", "out"].includes(entry.name))
+      continue;
     const target = path.join(directory, entry.name);
     if (entry.isDirectory()) {
       files.push(...(await sourceFiles(target)));

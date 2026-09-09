@@ -54,6 +54,8 @@ includes its reasoning, exceptions, and checks.
   design discussions. Follow the [agent guide](https://docs.chartcoach.dev/agents)
   or connect the [MCP server](https://docs.chartcoach.dev/mcp), which exposes
   catalog tools through the Model Context Protocol.
+  The [chat app](apps/chat) reviews uploaded charts with an Eve
+  agent, on-device search, and source-linked answers.
 - **In an application.** Read and cite entries through
   [Python](https://docs.chartcoach.dev/python),
   [TypeScript](https://docs.chartcoach.dev/javascript), or the

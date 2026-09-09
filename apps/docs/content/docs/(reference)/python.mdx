@@ -106,7 +106,7 @@ parameters, and storage options stay private.
 Pass `profile=NAME` to read that profile's verified `profile.json`. `ProfileInfo`
 reports the profile and document schema versions, embedding binding,
 dimensions, `distance_metric`, `python_requirements`, LanceDB version, and
-projection metadata. Import `CatalogInfo` and `ProfileInfo` from `chartcoach`
+projection metadata. Import `CatalogInfo`, `TableInfo`, `TableColumnInfo`, and `ProfileInfo` from `chartcoach`
 when application code needs these annotations. The index stays unopened and
 the embedding provider stays unconstructed.
 
@@ -178,9 +178,15 @@ Use the native connection for parameters, joins, aggregation, and exports.
 `connection.execute(statement, parameters).fetchall()` binds values separately
 from SQL. The CLI and MCP server provide bounded SQL results for their transports.
 
-Use `chartcoach.duckdb.register_catalog(connection, catalog)` to add the tables
-to an existing connection. `write_duckdb(catalog, output, overwrite=False)`
-writes a database file.
+Use `chartcoach.duckdb.register_catalog(connection, catalog, ids=None)` to create
+or replace the six tables in an existing connection. It returns the same
+caller-owned connection and preserves unrelated tables. Pass `ids=[...]` to
+register selected guideline entries and all their linked reference records.
+Duplicate IDs are accepted. Omit `ids` for the full catalog, or pass `ids=[]`
+for six empty typed tables. Unknown IDs and invalid references fail before
+replacing tables.
+
+`write_duckdb(catalog, output, overwrite=False)` writes a database file.
 
 ## Open an index as a LanceDB table
 

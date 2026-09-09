@@ -6,6 +6,7 @@ export {
   type GuidelineSection,
 } from "./catalog/model";
 export { type CatalogInfo, type DescribeOptions, type ProfileInfo } from "./catalog/description";
+export type { CatalogTables, TableColumnInfo, TableInfo, TableName } from "./catalog/tables";
 export { CatalogError, type CatalogErrorCode, type CatalogErrorOptions } from "./catalog/errors";
 export {
   parseCatalogManifest,
