@@ -19,7 +19,8 @@ deployment consumes an exact release and does not create catalog identity.
 `packages/catalog` publishes `@chartcoach/catalog` to npm. Both manifests must
 contain the same version.
 
-Set the proposed tag and compare it with both manifests:
+Set `RELEASE_TAG` to the proposed stable version and check both package identities
+and versions:
 
 ```bash
 ./scripts/release.sh check-version "$RELEASE_TAG"
@@ -31,13 +32,58 @@ Run the repository checks before creating the tag:
 make check
 ```
 
-A matching `X.Y.Z` or `vX.Y.Z` tag starts
-`.github/workflows/publish.yml`. The workflow requires an existing successful
-main CI run for that commit, builds both packages, publishes them through
-trusted publishing, and updates the GitHub release notes.
+A matching `X.Y.Z` or `vX.Y.Z` tag starts `.github/workflows/publish.yml`.
+Merge the release commit and wait for its successful main CI run before pushing
+the tag. The publish workflow checks that exact commit's CI result.
 
-When package contents change, inspect the wheel, source distribution, and npm
-tarball through their published entry points before announcing the release.
+The workflow builds the Python wheel and source distribution and the npm
+tarball once. It verifies the built wheel in an isolated environment and the
+tarball through Node.js, TypeScript, Chromium, and native LanceDB consumers.
+The Node.js consumer runs at the SDK's declared minimum version. Browser checks
+exercise the production bundle and its WebAssembly assets.
+
+Both publishers download those verified artifacts. A final job compares each
+registry's metadata and downloadable bytes with the build before creating the
+GitHub release notes. CI runs the same distribution checks on pull requests.
+
+### Registry setup
+
+[PyPI trusted publishing](https://docs.pypi.org/trusted-publishers/) and
+[npm trusted publishing](https://docs.npmjs.com/trusted-publishers/) exchange
+GitHub Actions identity tokens for short-lived publication credentials.
+Configure each package's publisher for this repository and `publish.yml`.
+The workflow's publishing jobs request `id-token: write` and use no GitHub
+environment. If environment protection is required, configure the same
+environment in the workflow and both registry publishers.
+
+Confirm publisher settings before tagging. npm generates provenance for public
+repositories. Repository visibility and trusted-publisher authorization are
+separate settings.
+
+### Recover a partial publication
+
+PyPI and npm publish independently. If a job fails, rerun the failed jobs from
+the same workflow run so they reuse the retained `release-packages` artifact.
+The artifact is retained for 30 days. Keep the original tag and build intact.
+
+The npm job skips a version whose registry integrity matches the verified
+tarball. A different digest fails publication. uv accepts identical Python
+files that have already been uploaded. Registry verification and release notes
+resume after both publishers succeed. Verification retries pending registry
+files and transient network failures up to six times, five seconds apart.
+Digest conflicts fail immediately.
+
+To inspect retained artifacts locally:
+
+```bash
+gh run download "$RUN_ID" --name release-packages --dir ./release-packages
+python3 scripts/release_registry.py check ./release-packages --allow-missing
+```
+
+`--allow-missing` permits files awaiting publication while rejecting digest
+conflicts. Run the command without that flag to require every published file
+and verify its downloaded bytes. If an artifact has expired or a digest differs,
+stop and recover the original build before attempting another upload.
 
 ## Publish catalog data
 

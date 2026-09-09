@@ -8,41 +8,32 @@ usage() {
   cat <<'EOF'
 Usage: ./scripts/release.sh check-version <release-tag>
 
-Checks that a GitHub release tag matches the package versions. Tags may
-include a leading "v".
+Checks package identities and matching stable X.Y.Z versions. Tags may
+include a leading "v". Does not change files or publish packages.
 EOF
-}
-
-python_package_version() {
-  uv version --short --package chartcoach
-}
-
-npm_package_version() {
-  node -p "require('./packages/catalog/package.json').version"
 }
 
 check_version() {
   local release_tag="${1:-}"
-  if [[ -z "$release_tag" ]]; then
+  if [[ "$#" != 1 || ! "$release_tag" =~ ^v?(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
     usage
     exit 1
   fi
 
-  local python_version
-  python_version="$(python_package_version)"
-  local npm_version
-  npm_version="$(npm_package_version)"
-
-  local actual="${release_tag#v}"
-  if [[ "$python_version" != "$npm_version" ]]; then
-    printf 'Python package version %s does not match npm package version %s\n' "$python_version" "$npm_version" >&2
-    exit 1
-  fi
-
-  if [[ "$actual" != "$python_version" ]]; then
-    printf 'Package version %s does not match release tag %s\n' "$python_version" "$release_tag" >&2
-    exit 1
-  fi
+  uv version --package chartcoach --output-format json | node -e '
+    const python = JSON.parse(require("node:fs").readFileSync(0, "utf8"));
+    const npm = require("./packages/catalog/package.json");
+    const tag = process.argv[1];
+    if (python.package_name !== "chartcoach" || npm.name !== "@chartcoach/catalog") {
+      console.error("Expected chartcoach and @chartcoach/catalog package identities");
+      process.exitCode = 1;
+    } else if (python.version !== npm.version) {
+      console.error(`Python package version ${python.version} does not match npm package version ${npm.version}`);
+      process.exitCode = 1;
+    } else if (tag.replace(/^v/, "") !== python.version) {
+      console.error(`Package version ${python.version} does not match release tag ${tag}`);
+      process.exitCode = 1;
+    }' "$release_tag"
 }
 
 case "${1:-}" in

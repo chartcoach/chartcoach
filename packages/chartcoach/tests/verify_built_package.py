@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import configparser
+import email
 import json
 import os
 import subprocess
@@ -9,14 +10,9 @@ import sys
 import tarfile
 import tempfile
 import zipfile
-from importlib.metadata import version
 from pathlib import Path
 
 _REPOSITORY = Path(__file__).parents[3]
-_VERSION = version("chartcoach")
-_DISTRIBUTION = f"chartcoach-{_VERSION}"
-_WHEEL = _REPOSITORY / "dist" / f"{_DISTRIBUTION}-py3-none-any.whl"
-_SDIST = _REPOSITORY / "dist" / f"{_DISTRIBUTION}.tar.gz"
 _FIXTURE_RELEASE = _REPOSITORY / "fixtures" / "catalog-release"
 _SKILL_NAMES = ("core", "discuss", "visfeedback", "visrec", "contribute")
 _PLUGIN_FILES = tuple(
@@ -35,21 +31,42 @@ def main() -> None:
         description="Verify built ChartCoach distributions."
     )
     parser.add_argument(
+        "--dist-dir",
+        type=Path,
+        default=_REPOSITORY / "dist",
+        help="Directory containing the wheel and source distribution to verify.",
+    )
+    parser.add_argument(
         "--minimum-dependencies",
         action="store_true",
         help="Install the lowest compatible direct dependencies and run the full tests.",
     )
     options = parser.parse_args()
-    _verify_wheel()
-    _verify_sdist()
-    _verify_installed_wheel(minimum_dependencies=options.minimum_dependencies)
-    print(f"Verified {_WHEEL.name} and {_SDIST.name}")
+    wheels = list(options.dist_dir.resolve().glob("chartcoach-*-py3-none-any.whl"))
+    if len(wheels) != 1:
+        parser.error("Expected exactly one ChartCoach wheel in --dist-dir")
+    wheel = wheels[0]
+    distribution = wheel.name.removesuffix("-py3-none-any.whl")
+    sdist = wheel.with_name(f"{distribution}.tar.gz")
+    distributions = {
+        path
+        for path in options.dist_dir.resolve().iterdir()
+        if path.name.endswith((".whl", ".tar.gz"))
+    }
+    if distributions != {wheel, sdist}:
+        parser.error(
+            "Expected exactly one ChartCoach wheel and matching source distribution"
+        )
+    _verify_wheel(wheel, distribution)
+    _verify_sdist(sdist, distribution)
+    _verify_installed_wheel(wheel, minimum_dependencies=options.minimum_dependencies)
+    print(f"Verified {wheel.name} and {sdist.name}")
 
 
-def _verify_wheel() -> None:
-    plugin_root = f"{_DISTRIBUTION}.agent-plugin"
-    metadata_root = f"{_DISTRIBUTION}.dist-info"
-    with zipfile.ZipFile(_WHEEL) as archive:
+def _verify_wheel(wheel: Path, distribution: str) -> None:
+    plugin_root = f"{distribution}.agent-plugin"
+    metadata_root = f"{distribution}.dist-info"
+    with zipfile.ZipFile(wheel) as archive:
         names = set(archive.namelist())
         plugin_files = {
             name.removeprefix(f"{plugin_root}/")
@@ -59,6 +76,9 @@ def _verify_wheel() -> None:
         assert plugin_files == set(_PLUGIN_FILES)
         assert "chartcoach/agent.py" in names
         assert "chartcoach/curation.py" in names
+        metadata = email.message_from_bytes(archive.read(f"{metadata_root}/METADATA"))
+        assert metadata["Name"] == "chartcoach"
+        assert metadata["Version"] == distribution.removeprefix("chartcoach-")
 
         marker = json.loads(
             archive.read(f"{metadata_root}/agent_plugins.json").decode("utf-8")
@@ -74,21 +94,26 @@ def _verify_wheel() -> None:
         }
 
 
-def _verify_sdist() -> None:
-    plugin_root = f"{_DISTRIBUTION}/.agent-plugin"
-    with tarfile.open(_SDIST, mode="r:gz") as archive:
+def _verify_sdist(sdist: Path, distribution: str) -> None:
+    plugin_root = f"{distribution}/.agent-plugin"
+    with tarfile.open(sdist, mode="r:gz") as archive:
         names = {member.name for member in archive.getmembers() if member.isfile()}
+        metadata_file = archive.extractfile(f"{distribution}/PKG-INFO")
+        assert metadata_file is not None
+        metadata = email.message_from_bytes(metadata_file.read())
+        assert metadata["Name"] == "chartcoach"
+        assert metadata["Version"] == distribution.removeprefix("chartcoach-")
     plugin_files = {
         name.removeprefix(f"{plugin_root}/")
         for name in names
         if name.startswith(f"{plugin_root}/")
     }
     assert plugin_files == set(_PLUGIN_FILES)
-    assert f"{_DISTRIBUTION}/src/chartcoach/agent.py" in names
-    assert f"{_DISTRIBUTION}/src/chartcoach/curation.py" in names
+    assert f"{distribution}/src/chartcoach/agent.py" in names
+    assert f"{distribution}/src/chartcoach/curation.py" in names
 
 
-def _verify_installed_wheel(*, minimum_dependencies: bool = False) -> None:
+def _verify_installed_wheel(wheel: Path, *, minimum_dependencies: bool = False) -> None:
     with tempfile.TemporaryDirectory(prefix="chartcoach-package-") as directory:
         root = Path(directory)
         environment = root / "venv"
@@ -119,7 +144,7 @@ def _verify_installed_wheel(*, minimum_dependencies: bool = False) -> None:
             "install",
             "--python",
             str(python),
-            str(_WHEEL),
+            str(wheel),
             *requirements,
         ]
         subprocess.run(
