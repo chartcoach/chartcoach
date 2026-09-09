@@ -1,0 +1,59 @@
+apps/docs/lib/shared.ts
+  s_b2fc299f4eea16::t_37ebf58128e9c6 17
+package.json
+  s_b2fc299f4eea16::t_84c67988283520 11
+  s_b2fc299f4eea16::t_ae4dd80cb6375b 8
+  s_b2fc299f4eea16::t_ba03d744599703 13,20
+packages/catalog/src/catalog/json.ts
+  s_b2fc299f4eea16::t_eb9a83b0264364 1
+apps/site/src/lib/guidelines-pagination.ts
+  s_b2fc299f4eea16::t_37ebf58128e9c6 5
+apps/site/src/lib/routes.ts
+  s_b2fc299f4eea16::t_37ebf58128e9c6 45
+CONTRIBUTING.md
+  s_b2fc299f4eea16::t_3616c84868e31b 90-96
+apps/site/src/og/schema.ts
+  s_b2fc299f4eea16::t_37ebf58128e9c6 10,81
+knip.jsonc
+  s_b2fc299f4eea16::t_37ebf58128e9c6 1-6,8,12
+tools/oxlint/anti-slop/shared/value-reference.ts
+  s_b2fc299f4eea16::t_37ebf58128e9c6 80
+tools/oxlint/anti-slop/shared/dictionary-types.ts
+  s_b2fc299f4eea16::t_37ebf58128e9c6 28
+apps/docs/components/brand-title.tsx
+  s_b2fc299f4eea16::t_37ebf58128e9c6 8
+apps/site/src/integrations/og-images.ts
+  s_b2fc299f4eea16::t_502bcb08c303a2 45,51,62-65
+tools/oxlint/anti-slop/shared/type-environment.ts
+  s_b2fc299f4eea16::t_37ebf58128e9c6 61
+packages/catalog/src/catalog/manifest.ts
+  s_b2fc299f4eea16::t_eb9a83b0264364 5
+apps/site/src/config/site.ts
+  s_b2fc299f4eea16::t_37ebf58128e9c6 8
+AGENTS.md
+  s_b2fc299f4eea16::t_3616c84868e31b 121
+packages/catalog/src/catalog/parquet.ts
+  s_b2fc299f4eea16::t_eb9a83b0264364 25,30-31
+apps/docs/package.json
+  s_b2fc299f4eea16::t_84c67988283520 12-13
+packages/catalog/src/catalog/wire.ts
+  s_b2fc299f4eea16::t_eb9a83b0264364 5,29,36
+packages/catalog/src/catalog/references.ts
+  s_b2fc299f4eea16::t_eb9a83b0264364 10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "b327d16c49b3ba856d539352784d6226a80eacbc",
+  "prompts": {},
+  "sessions": {
+    "s_b2fc299f4eea16": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a07701-a536-7f73-bfd5-6731d2663cd9",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Péter Ferenc Gyarmati <dev.petergy@gmail.com>"
+    }
+  }
+}
