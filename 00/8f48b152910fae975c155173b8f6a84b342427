@@ -1,0 +1,21 @@
+packages/chartcoach/tests/test_release_workflow.py
+  s_b2fc299f4eea16::t_4009071ad78e17 183-185,190,198
+scripts/release_registry.py
+  s_b2fc299f4eea16::t_5431f8fec717ba 26,44-50
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "008f48b152910fae975c155173b8f6a84b342427",
+  "prompts": {},
+  "sessions": {
+    "s_b2fc299f4eea16": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a07701-a536-7f73-bfd5-6731d2663cd9",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Péter Ferenc Gyarmati <dev.petergy@gmail.com>"
+    }
+  }
+}
