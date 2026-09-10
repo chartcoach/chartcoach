@@ -1,11 +1,12 @@
 import { openCatalog, indexPath } from "@chartcoach/catalog/node";
 import type { Catalog } from "@chartcoach/catalog";
+import { env } from "../env";
 
 let catalog: ReturnType<typeof openCatalog> | undefined;
 const indexes = new WeakMap<Catalog, Map<string, ReturnType<typeof openIndex>>>();
 
 export function getCatalog() {
-  return (catalog ??= openCatalog(process.env.CATALOG_SOURCE).catch((error) => {
+  return (catalog ??= openCatalog(env.CATALOG_SOURCE).catch((error) => {
     catalog = undefined;
     throw error;
   }));

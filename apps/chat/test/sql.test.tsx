@@ -1,10 +1,5 @@
-import { afterAll, beforeAll, expect, it, vi } from "vite-plus/test";
+import { expect, it } from "vite-plus/test";
 import { describeCatalog, queryCatalog } from "../lib/retrieval/sql";
-
-beforeAll(() => {
-  vi.stubEnv("CATALOG_SOURCE", new URL("../../../fixtures/catalog-release/", import.meta.url).href);
-});
-afterAll(() => vi.unstubAllEnvs());
 
 it("discovers the loaded catalog schema and vocabulary", async () => {
   const info = await describeCatalog();

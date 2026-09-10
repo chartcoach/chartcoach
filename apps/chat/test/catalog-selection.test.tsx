@@ -23,7 +23,6 @@ const request = (header: string) =>
   });
 
 beforeAll(async () => {
-  vi.stubEnv("CATALOG_SOURCE", new URL("../../../fixtures/catalog-release/", import.meta.url).href);
   vi.stubEnv("EVE_DEV", "1");
   catalogId = (await getCatalogMetadata()).catalogId;
 });
@@ -39,6 +38,7 @@ it("validates the submitted query during authentication and stores its immutable
     JSON.parse(String(auth.attributes["chartcoach.selection"])),
   );
   expect(resolved).toEqual({ catalogId, ids: ["axis-labels", "bar-labels"] });
+  expect(auth.attributes["chartcoach.predicate"]).toBe(query.sql);
   await expect(
     withCatalogScope({ selection: resolved }, async (scope) => [...scope.ids]),
   ).resolves.toEqual(["axis-labels", "bar-labels"]);

@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import { withEve } from "eve/next";
+import "./lib/env";
 
 const config: NextConfig = {
   agentRules: false,

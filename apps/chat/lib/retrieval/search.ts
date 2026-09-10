@@ -5,6 +5,7 @@ import { withCatalogScope, type ScopeOptions } from "../catalog/scope";
 import { waitFor } from "../async";
 import { embedQuery } from "./embedding";
 import { guidelineCards } from "./cards";
+import { env } from "../env";
 
 type SearchMethod = "vector" | "keyword" | "hybrid";
 
@@ -12,7 +13,7 @@ export function searchGuidelines(query: string, method: SearchMethod, options: S
   const { signal } = options;
   return withCatalogScope(options, async (scope) => {
     if (scope.ids.size === 0) return { method, query, matches: [] };
-    const profile = process.env.CATALOG_PROFILE ?? "minilm-l6-v2-cpu";
+    const profile = env.CATALOG_PROFILE;
     const { table, info } = await waitFor(getIndex(scope.catalog, profile), signal);
     const searchConfig = {
       profile,

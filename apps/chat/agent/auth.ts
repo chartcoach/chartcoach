@@ -24,12 +24,17 @@ export const reviewRouteAuth = catalogRouteAuth.map(
       )
         return caller;
       try {
-        const selection = await resolveCatalogSelection(await decodeSelection(header), {
+        const query = await decodeSelection(header);
+        const selection = await resolveCatalogSelection(query, {
           signal: request.signal,
         });
         return {
           ...caller,
-          attributes: { ...caller.attributes, "chartcoach.selection": JSON.stringify(selection) },
+          attributes: {
+            ...caller.attributes,
+            "chartcoach.selection": JSON.stringify(selection),
+            "chartcoach.predicate": query.sql,
+          },
         };
       } catch (error) {
         throw new ForbiddenError({

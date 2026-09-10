@@ -12,7 +12,6 @@ import describeCatalog from "../agent/tools/describe_catalog";
 let selection: ResolvedSelection;
 
 beforeAll(async () => {
-  vi.stubEnv("CATALOG_SOURCE", new URL("../../../fixtures/catalog-release/", import.meta.url).href);
   selection = {
     catalogId: (await getCatalogMetadata()).catalogId,
     ids: [],

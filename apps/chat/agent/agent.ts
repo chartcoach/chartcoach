@@ -1,16 +1,18 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import { defineAgent } from "eve";
 import { reviewSchema } from "../shared/review";
+import { env } from "../lib/env";
 
 const openai = createOpenAI({
-  baseURL: process.env.OPENAI_BASE,
-  apiKey: process.env.OPENAI_API_KEY,
+  baseURL: env.OPENAI_BASE,
+  apiKey: env.OPENAI_API_KEY,
 });
 
 export default defineAgent({
-  model: openai.chat(process.env.OPENAI_MODEL ?? "gpt-5.6-luna"),
+  model: openai.chat(env.OPENAI_MODEL),
   modelContextWindowTokens: 128_000,
   defaultTools: false,
+  experimental: { instrumentationProviders: true },
   outputSchema: reviewSchema,
   build: {
     externalDependencies: [

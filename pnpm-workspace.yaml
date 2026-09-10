@@ -36,6 +36,22 @@ catalog:
   "@duckdb/duckdb-wasm": 1.33.1-dev57.0
   "@uwdata/mosaic-core": 0.31.0
   "@uwdata/mosaic-sql": 0.31.0
+  "@langfuse/otel": 5.11.0
+  "@opentelemetry/api": 1.9.1
+  "@opentelemetry/sdk-trace-base": 2.11.0
+  "@t3-oss/env-nextjs": 0.13.11
+  "@ai-sdk/openai": 4.0.60
+  "@huggingface/transformers": 4.2.0
+  "@lancedb/lancedb": 0.38.0
+  ai: 7.0.93
+  concurrently: 10.0.5
+  env-paths: 3.0.0
+  eve: 0.52.2
+  just-bash: 3.4.2
+  next: 16.3.4
+  streamdown: 2.6.0
+  zod: 4.5.4
+  nitro: 3.0.260903-beta
 
 minimumReleaseAge: 2880
 minimumReleaseAgeExclude:

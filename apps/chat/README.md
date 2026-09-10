@@ -38,6 +38,74 @@ model and credentials for another provider. These settings stay on the server.
 Your question, uploaded image, and retrieved guidance go to the configured LLM.
 Query embeddings are computed locally.
 
+Server code reads typed settings from [`lib/env.ts`](lib/env.ts).
+[t3-env](https://env.t3.gg/docs/nextjs) validates them during Next.js startup/build
+and Eve loading. Empty optional values become unset. Invalid settings report
+their names, keeping credential values out of validation errors.
+Builds and catalog operations work with provider credentials unset. Configure
+`OPENAI_API_KEY` before making model calls. Restart both servers after changing
+`.env.local`.
+
+## Trace reviews
+
+[Langfuse](https://langfuse.com/integrations/frameworks/eve) records the agent's
+model calls, tools, timing, token usage, and cost. Set these server-side values in
+`.env.local`, then restart the app:
+
+```dotenv
+LANGFUSE_PUBLIC_KEY=pk-lf-...
+LANGFUSE_SECRET_KEY=sk-lf-...
+LANGFUSE_BASE_URL=https://cloud.langfuse.com
+```
+
+Use your project's region or self-hosted URL. When `.env.local` exists in the app
+directory, it supplies the complete Langfuse connection and takes precedence over
+inherited credentials. Omitted local keys disable tracing, and a partial local pair
+fails validation. Deployments with no local file use their server environment.
+
+Find **Chart review** in Langfuse. Each conversation keeps its Eve session ID and
+trace identity across follow-ups, with separate turn, model, and tool branches.
+Model observations include token totals and cached-token usage. Langfuse calculates
+cost when it recognizes the model. Observations include the authenticated principal
+when available, catalog identity, and selected guideline count. Authentication
+attributes and the selected ID list stay out of telemetry metadata.
+
+The initiating session captures catalog provenance for its model, tool, and image
+observations:
+
+| Field                | Meaning                                                            |
+| -------------------- | ------------------------------------------------------------------ |
+| `catalogId`          | Catalog content identity                                           |
+| `catalogReleaseId`   | Immutable release digest, when opened from a release               |
+| `catalogPredicate`   | Full SQL selection submitted by the browser                        |
+| `catalogSelectionId` | SHA-256 of the catalog identity and sorted, resolved guideline IDs |
+| `guidelineCount`     | Number of guidelines available to the agent                        |
+
+Direct clients that choose the full catalog record its full-table selection.
+Retrieval continues against the frozen guideline IDs, with the original SQL kept
+for inspection. Follow-ups retain the initiating release and selection.
+
+Eve owns the OpenTelemetry pipeline through its experimental
+`instrumentationProviders` setting in `agent/agent.ts` and the declarations under
+`agent/instrumentation/`. It flushes buffered observations after execution steps,
+including cancellation, and shuts down the exporter with the server. The exporter
+keeps agent/model/tool spans and filters workflow and HTTP plumbing.
+
+Content follows Eve's channel-audience policy. Local development captures prompts,
+tool arguments/results, and responses. Hosted unknown/private channels export
+metadata rather than conversation content. Treat the Langfuse project as a
+destination for conversation data when content capture is enabled.
+
+Each turn that uses a chart also records a **Chart image** observation in the same
+Langfuse session. Langfuse uploads the original image, up to the app's 3 MiB limit,
+and places a media reference in that observation. The image has its own trace with
+turn metadata. Native model/tool traces keep Eve's 32 KiB content-attribute cap.
+Retries within a running process reuse the turn's image observation. A server
+restart can produce another observation, while Langfuse reuses the content-addressed media.
+
+`LANGFUSE_TRACING_ENVIRONMENT` overrides the Vercel or Node environment label.
+`LANGFUSE_RELEASE` identifies a deployment. Credentials remain server-side.
+
 ## Review a chart
 
 Drop a PNG, JPEG, or WebP image up to 3 MiB anywhere in the app, or choose
