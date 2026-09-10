@@ -1,6 +1,5 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import { defineAgent } from "eve";
-import { reviewSchema } from "../shared/review";
 import { env } from "../lib/env";
 
 const openai = createOpenAI({
@@ -13,7 +12,6 @@ export default defineAgent({
   modelContextWindowTokens: 128_000,
   defaultTools: false,
   experimental: { instrumentationProviders: true },
-  outputSchema: reviewSchema,
   build: {
     externalDependencies: [
       "@chartcoach/catalog",

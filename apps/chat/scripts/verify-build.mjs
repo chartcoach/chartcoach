@@ -1,20 +1,50 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
-import { cp, mkdtemp, rm } from "node:fs/promises";
+import { cp, mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { parseSkill } from "../agent/skill-source.ts";
 
 const directory = await mkdtemp(join(tmpdir(), "chartcoach-eve-output-"));
 let child;
 let timer;
 try {
   await cp(new URL("../.output/", import.meta.url), directory, { recursive: true });
+  const manifest = JSON.parse(
+    await readFile(join(directory, ".eve/compile/compiled-agent-manifest.json"), "utf8"),
+  );
+  const core = parseSkill(
+    await readFile(new URL("../../../skills/core/SKILL.md", import.meta.url), "utf8"),
+  );
+  assert.ok(
+    manifest.instructions.some(
+      (entry) => entry.role === "system" && entry.content.includes(core.markdown),
+    ),
+    "Built system instructions contain the canonical core skill",
+  );
+  for (const name of ["discuss", "visfeedback", "visrec"]) {
+    const compiled = manifest.skills.find((entry) => entry.name === name);
+    const canonical = parseSkill(
+      await readFile(new URL(`../../../skills/${name}/SKILL.md`, import.meta.url), "utf8"),
+    );
+    assert.equal(compiled?.markdown, canonical.markdown, `${name} instructions match their source`);
+    assert.equal(
+      compiled?.description,
+      canonical.description,
+      `${name} description matches its source`,
+    );
+  }
+  assert.ok(manifest.tools.some((entry) => entry.name === "load_skill"));
+  assert.ok(manifest.tools.some((entry) => entry.name === "present_answer"));
+
   child = spawn(process.execPath, [join(directory, "server/index.mjs")], {
     cwd: directory,
     env: {
       ...process.env,
       NODE_ENV: "production",
+      EVE_DEV: "0",
+      VERCEL_ENV: "production",
       NITRO_HOST: "127.0.0.1",
       NITRO_PORT: "0",
     },
@@ -51,7 +81,9 @@ try {
     signal: AbortSignal.timeout(5000),
   });
   assert.equal(artifact.status, 401);
-  console.log("Verified relocated Eve server health and production authentication.");
+  console.log(
+    "Verified relocated Eve server health, production authentication, and canonical skills.",
+  );
 } finally {
   clearTimeout(timer);
   if (child?.pid && child.exitCode === null && child.signalCode === null) {

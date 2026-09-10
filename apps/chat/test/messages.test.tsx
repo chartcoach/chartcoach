@@ -3,39 +3,40 @@ import type { EveMessage } from "eve/react";
 import { expect, it } from "vite-plus/test";
 import { Transcript } from "./transcript";
 
-it("groups completed tool calls behind one collapsed review activity control", () => {
+it("groups completed tool calls behind one collapsed activity control", () => {
   const html = renderToStaticMarkup(
     <Transcript
       messages={[
         {
           id: "completed",
           role: "assistant",
-          metadata: {
-            status: "complete",
-            result: {
-              status: "needs_context",
-              feedback: [],
-              question: "What is the chart's intended comparison?",
+          metadata: { status: "complete" },
+          parts: ["labels", "axis"].flatMap((query) => [
+            {
+              type: "reasoning" as const,
+              text: "Private provider reasoning",
             },
-          },
-          parts: ["labels", "axis"].map((query) => ({
-            type: "dynamic-tool" as const,
-            toolCallId: query,
-            toolName: "search_guidelines",
-            state: "output-available" as const,
-            input: { query, method: "keyword" },
-            output: { method: "keyword", matches: [] },
-          })),
+            {
+              type: "dynamic-tool" as const,
+              toolCallId: query,
+              toolName: "search_guidelines",
+              state: "output-available" as const,
+              input: { query, method: "keyword" },
+              output: { method: "keyword", matches: [] },
+            },
+          ]),
         },
       ]}
       attachments={new Map()}
     />,
   );
-  expect(html.match(/Review activity/g)).toHaveLength(1);
+  expect(html.match(/>Activity</g)).toHaveLength(1);
   expect(html).toContain("2 actions");
   expect(html).toMatch(/<button[^>]*aria-expanded="false"/);
   expect(html).toContain('inert=""');
   expect(html).toContain("Search matches (0)");
+  expect(html.match(/Search guidelines/g)).toHaveLength(2);
+  expect(html).not.toContain("Private provider reasoning");
 });
 
 it("shows the active read action while partial results remain in progress", () => {
@@ -206,7 +207,7 @@ it.each([
   expect(html).not.toContain("Embedding model");
 });
 
-it("displays assistant feedback through its structured result", () => {
+it("withholds unverified assistant prose", () => {
   const html = renderToStaticMarkup(
     <Transcript
       messages={[
@@ -389,13 +390,22 @@ it("keeps a completed response intact when a later message cannot be sent", () =
       metadata: {
         turnId: "turn",
         status: "complete",
-        result: {
-          status: "needs_context",
-          feedback: [],
-          question: "Where will this chart be displayed?",
-        },
       },
-      parts: [{ type: "text", text: "Use direct labels.", state: "done" }],
+      parts: [
+        {
+          type: "dynamic-tool",
+          toolCallId: "present-question",
+          toolName: "present_answer",
+          state: "output-available",
+          input: {},
+          output: {
+            workflow: "visfeedback",
+            status: "needs_context",
+            points: [],
+            question: "Where will this chart be displayed?",
+          },
+        },
+      ],
     },
     {
       id: "follow-up",

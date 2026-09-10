@@ -8,6 +8,9 @@ import readGuidelines from "../agent/tools/read_guidelines";
 import searchGuidelines from "../agent/tools/search_guidelines";
 import queryCatalog from "../agent/tools/query_catalog";
 import describeCatalog from "../agent/tools/describe_catalog";
+import presentAnswer from "../agent/tools/present_answer";
+import { readGuidelineIds } from "../agent/evidence-state";
+import type { Answer } from "../shared/answer";
 
 let selection: ResolvedSelection;
 
@@ -65,6 +68,51 @@ it("rejects reads outside the initiating review filters even when a later caller
   await expect(
     readGuidelines.execute({ ids: ["axis-labels"] }, context("read_guidelines")),
   ).rejects.toThrow("outside this review's catalog filters");
+});
+
+it("lets the agent repair an unread citation by reading and presenting eligible guidance", async () => {
+  let readIds: string[] = [];
+  const read = vi.spyOn(readGuidelineIds, "get").mockImplementation(() => readIds);
+  const update = vi.spyOn(readGuidelineIds, "update").mockImplementation((change) => {
+    readIds = change(readIds);
+  });
+  const previousSelection = selection;
+  selection = { ...selection, ids: ["axis-labels"] };
+  const answer: Answer = {
+    workflow: "visrec",
+    status: "answer",
+    points: [
+      {
+        primary_guideline_id: "invented-guideline",
+        supporting_guideline_ids: [],
+        assessment: null,
+        context: "Readers need to identify the units on the chart's axes.",
+        recommendation: "Label the axes with their variables and units.",
+      },
+    ],
+    question: null,
+  };
+  try {
+    expect(() => presentAnswer.execute(answer, context("present_answer"))).toThrow(
+      "invented-guideline",
+    );
+    await expect(
+      readGuidelines.execute({ ids: ["invented-guideline"] }, context("read_guidelines")),
+    ).rejects.toThrow();
+    expect(() => presentAnswer.execute(answer, context("present_answer"))).toThrow(
+      "invented-guideline",
+    );
+    await readGuidelines.execute({ ids: ["axis-labels"] }, context("read_guidelines"));
+    const corrected: Answer = {
+      ...answer,
+      points: [{ ...answer.points[0], primary_guideline_id: "axis-labels" }],
+    };
+    expect(presentAnswer.execute(corrected, context("present_answer"))).toEqual(corrected);
+  } finally {
+    selection = previousSelection;
+    read.mockRestore();
+    update.mockRestore();
+  }
 });
 
 it.each(["vector", "keyword", "hybrid"] as const)(

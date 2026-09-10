@@ -23,6 +23,7 @@ import { colors, media, emptyThreadScope } from "../ui/tokens.stylex";
 import { ui } from "../ui/ui";
 import { LoadingMark } from "../ui/loading-mark";
 import { CatalogFiltersPanel } from "../catalog/filters";
+import { Starters } from "./starters";
 
 const styles = stylex.create({
   skip: {
@@ -67,9 +68,9 @@ const styles = stylex.create({
   },
   main: { flexGrow: 1, minHeight: 0, display: "flex", flexDirection: "column", minWidth: 0 },
   empty: {
-    justifyContent: { default: "center", [media.short]: "flex-start" },
+    justifyContent: "safe center",
     overflowY: "auto",
-    paddingBottom: { default: "min(12vh, 100px)", [media.short]: 0 },
+    paddingBottom: 0,
   },
   workspace: {
     display: "grid",
@@ -92,7 +93,8 @@ const styles = stylex.create({
     gridRow: { default: "2", [media.desktop]: "1" },
     gridColumn: { default: null, [media.desktop]: "1" },
   },
-  emptyThread: { justifyContent: "center" },
+  emptyThread: { justifyContent: "flex-start" },
+  emptyWorkspace: { flexGrow: 0, flexShrink: 0, gridTemplateRows: "auto", minHeight: "auto" },
   welcome: { maxWidth: 672, marginInline: "auto" },
   title: {
     maxWidth: 600,
@@ -123,6 +125,9 @@ function ChatLayout({
   catalog,
   onFiltersChange,
   onCatalogReload,
+  mode,
+  setMode,
+  uploadExample,
 }: ReturnType<typeof useChat>) {
   const hasAttachment = useAuiState((state) => state.composer.attachments.length > 0);
   const empty = conversation.messages.length === 0;
@@ -201,20 +206,26 @@ function ChatLayout({
         {...stylex.props(styles.main, empty && styles.empty, emptyThreadScope)}
         data-empty={empty}
       >
-        <h1 {...stylex.props(ui.srOnly)}>Chart review</h1>
-        <ThreadPrimitive.Root {...stylex.props(styles.workspace, !empty && styles.withEvidence)}>
+        <h1 {...stylex.props(ui.srOnly)}>ChartCoach conversation</h1>
+        <ThreadPrimitive.Root
+          {...stylex.props(
+            styles.workspace,
+            empty && styles.emptyWorkspace,
+            !empty && styles.withEvidence,
+          )}
+        >
           <div {...stylex.props(styles.thread, empty && styles.emptyThread)}>
             <Conversation>
               {empty ? (
                 <section {...stylex.props(styles.welcome)}>
                   <h2 {...stylex.props(styles.title)}>
-                    Make your chart{" "}
-                    <span {...stylex.props(styles.accent)}>easier to understand.</span>
+                    Find a clearer way <span {...stylex.props(styles.accent)}>to show it.</span>
                   </h2>
                   <p {...stylex.props(styles.intro)}>
-                    Drop a chart anywhere or describe what you’re making. Get suggestions grounded
-                    in visualization research, with sources you can explore.
+                    Review a chart, plan a design, or explore a tradeoff. Start with your question
+                    or try an example, with guideline sources behind the advice.
                   </p>
+                  <Starters disabled={disabled} onImage={uploadExample} onWorkflow={setMode} />
                 </section>
               ) : (
                 <div {...stylex.props(styles.messages)}>
@@ -244,6 +255,8 @@ function ChatLayout({
               ) : null}
             </Conversation>
             <Composer
+              mode={mode}
+              onModeChange={setMode}
               onUpload={(files) => void upload(files)}
               messageInput={messageInput}
               busy={busy}

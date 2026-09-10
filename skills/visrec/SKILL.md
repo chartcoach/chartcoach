@@ -38,20 +38,22 @@ guidance for the brief.
 
 ## Check the records
 
-Read and cite selected records together:
-
-```sh
-chartcoach catalog read <first-id> <second-id> \
-  --source-detail minimal \
-  --format markdown
-chartcoach catalog cite <first-id> <second-id> --format markdown
-```
+Read and cite selected records together using the host's tools or the access
+recipes in `core`.
 
 Discard a record when its chart family, task, audience, data type, or
 interaction state differs from the brief. Check its applicable situations and
 exceptions, including what its quantities or intervals represent. A matching
 title or retrieval score is a candidate for inspection, not proof that the
 recommendation fits.
+
+Separate the initial design from alternatives that solve a specific problem.
+Use the brief's stated facts to support the initial choice. Field names and
+category counts do not establish overlap, large scale differences, outliers, or
+other patterns in the values. Keep recommendations for those conditions as
+explicit contingencies until data or a rendered chart establishes them.
+Preserve the reader task: comparing shapes over time and comparing values at
+the same time are different requirements and can favor different layouts.
 
 ## Write the recommendation
 
@@ -69,3 +71,9 @@ Keep library-specific implementation advice separate from statements supported
 by the catalog record. Identify sources with `cite` and inspect a publication
 before attributing a specific claim to it. When the catalog supports part of a
 design, distinguish that guidance from your additional reasoning.
+
+Lead with the recommended chart or encoding and explain which fact in the brief
+supports it. Include an alternative when a named constraint changes the choice.
+A design brief can support a recommendation before any chart exists. Assess
+compliance with guidelines when the task asks to inspect an existing chart,
+following `visfeedback`.

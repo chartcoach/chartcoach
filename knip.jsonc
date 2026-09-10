@@ -16,7 +16,12 @@
       "ignoreBinaries": ["uv"],
     },
     "apps/chat": {
-      "entry": ["agent/tools/*.ts", "agent/instrumentation/*.ts", "evals/**/*.ts"],
+      "entry": [
+        "agent/tools/*.ts",
+        "agent/skills/*.ts",
+        "agent/instrumentation/*.ts",
+        "evals/**/*.ts",
+      ],
       "babel": true,
     },
   },

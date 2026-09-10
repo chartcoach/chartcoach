@@ -1,17 +1,19 @@
 import type { EveDynamicToolPart } from "eve/react";
 import {
   BookOpen,
+  ChartNoAxesCombined,
   ChevronRight,
   Combine,
   Database,
   Search,
+  MessagesSquare,
   TableProperties,
   TextSearch,
   Waypoints,
   Wrench,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import type { z } from "zod";
+import { z } from "zod";
 import {
   parseTool,
   describeOutput,
@@ -23,6 +25,28 @@ import * as stylex from "@stylexjs/stylex";
 import { disclosureScope } from "../ui/tokens.stylex";
 import { styles } from "./tool-activity.styles";
 import { ui } from "../ui/ui";
+import { modes, workflowSchema } from "../../shared/workflow";
+
+const skillLabels = {
+  visfeedback: { label: "Reviewing chart", icon: ChartNoAxesCombined },
+  visrec: { label: "Planning a chart", icon: ChartNoAxesCombined },
+  discuss: { label: "Comparing choices", icon: MessagesSquare },
+};
+const skillInput = z.object({ skill: workflowSchema });
+
+export function skillActivity(part: EveDynamicToolPart) {
+  if (part.toolName !== "load_skill") return undefined;
+  const workflow = skillInput.safeParse(part.input);
+  if (!workflow.success)
+    return {
+      label: "Loading guidance",
+      icon: BookOpen,
+      title: "Guidance",
+      description: "Preparing instructions for this request.",
+    };
+  const mode = modes[workflow.data.skill];
+  return { ...skillLabels[workflow.data.skill], title: mode.label, description: mode.description };
+}
 
 const searchMethods = {
   vector: { label: "Vector search", icon: Waypoints },
@@ -339,6 +363,7 @@ export function ToolActivity({
   const status = toolStatus(part, stopped, failed);
   const complete = status === "complete";
   const toolFailed = status === "Failed";
+  const skill = skillActivity(part);
   const {
     query,
     sql,
@@ -356,8 +381,8 @@ export function ToolActivity({
   const Icon =
     part.toolName === "search_guidelines" && method
       ? searchMethods[method].icon
-      : (kind?.icon ?? Wrench);
-  const label = kind?.label ?? part.toolName;
+      : (skill?.icon ?? kind?.icon ?? Wrench);
+  const label = skill?.label ?? kind?.label ?? part.toolName;
 
   return (
     <details {...stylex.props(disclosureScope, styles.root)}>
@@ -371,10 +396,15 @@ export function ToolActivity({
         <ChevronRight {...stylex.props(ui.chevron, styles.chevron)} size={14} aria-hidden="true" />
       </summary>
       <div {...stylex.props(styles.details)}>
-        {!read && part.toolName !== "describe_catalog" ? (
+        {skill ? (
+          <>
+            <h3 {...stylex.props(styles.heading)}>{skill.title}</h3>
+            <p {...stylex.props(styles.paragraph)}>{skill.description}</p>
+          </>
+        ) : !read && part.toolName !== "describe_catalog" ? (
           <ToolInput query={query} sql={sql} ids={ids} raw={part.input} />
         ) : null}
-        {complete ? (
+        {complete && !skill ? (
           <ToolResults
             search={search}
             read={read}

@@ -3,7 +3,7 @@ import Image from "next/image";
 import { useState } from "react";
 import type { GuidelinePreview } from "../../chat/tool-output";
 import * as stylex from "@stylexjs/stylex";
-import { colors } from "../ui/tokens.stylex";
+import { colors, media } from "../ui/tokens.stylex";
 import { ui } from "../ui/ui";
 
 const styles = stylex.create({
@@ -55,10 +55,17 @@ const styles = stylex.create({
     fontSize: 12,
     color: colors.muted,
   },
+  compactFooter: { display: { default: "none", [media.desktop]: "flex" } },
   arrow: { marginLeft: "auto", color: colors.accentText },
 });
 
-export function GuidelineCard({ guideline }: { guideline: GuidelinePreview }) {
+export function GuidelineCard({
+  guideline,
+  compact = false,
+}: {
+  guideline: GuidelinePreview;
+  compact?: boolean;
+}) {
   const [imageFailed, setImageFailed] = useState(false);
   return (
     <a
@@ -85,7 +92,7 @@ export function GuidelineCard({ guideline }: { guideline: GuidelinePreview }) {
           />
         )}
       </span>
-      <span {...stylex.props(styles.footer)}>
+      <span {...stylex.props(styles.footer, compact && styles.compactFooter)}>
         <span>Read guideline</span>
         <ArrowUpRight {...stylex.props(ui.icon, styles.arrow)} size={16} aria-hidden="true" />
       </span>

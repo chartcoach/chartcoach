@@ -1,12 +1,9 @@
-import {
-  ChainOfThoughtByIndicesProvider,
-  ChainOfThoughtPrimitive,
-  useAuiState,
-} from "@assistant-ui/react";
+import { MessagePrimitive, groupPartByType } from "@assistant-ui/react";
+import type { EveDynamicToolPart } from "eve/react";
 import { ChevronRight } from "lucide-react";
-import { useId } from "react";
+import { useId, useState } from "react";
 import type { MessageView } from "../../chat/evidence";
-import { ToolActivity } from "./tool-activity";
+import { ToolActivity, skillActivity } from "./tool-activity";
 import { Collapse } from "../ui/collapse";
 import * as stylex from "@stylexjs/stylex";
 import { colors, media } from "../ui/tokens.stylex";
@@ -20,32 +17,46 @@ const runningLabels = new Map([
   ["query_catalog", "Querying the catalog"],
 ]);
 
-function ActivityDisclosure({ view }: { view: MessageView }) {
+const groupActivity = groupPartByType({ "tool-call": ["group-activity"] });
+
+export function Activity({ view }: { view: MessageView }) {
   const id = useId();
-  const collapsed = useAuiState((state) => state.chainOfThought.collapsed);
-  const tools = view.message.parts.filter((part) => part.type === "dynamic-tool");
+  const [open, setOpen] = useState(false);
+  const tools = view.message.parts.filter(
+    (part): part is EveDynamicToolPart =>
+      part.type === "dynamic-tool" && part.toolName !== "present_answer",
+  );
+  const presentation = view.message.parts.findLast(
+    (part) => part.type === "dynamic-tool" && part.toolName === "present_answer",
+  );
   const active = tools.findLast(
     (part) =>
       part.state !== "output-error" &&
       part.state !== "output-denied" &&
       (part.state !== "output-available" || part.partial),
   );
-  const running = !view.complete && !view.failed && !view.stopped;
+  const running =
+    !view.complete && !view.failed && !view.stopped && (!view.answer || view.drafting);
   const label = running
-    ? active
-      ? (runningLabels.get(active.toolName) ?? "Working")
-      : "Preparing feedback"
-    : "Review activity";
+    ? presentation?.type === "dynamic-tool" && presentation.state === "output-error"
+      ? "Refining the answer"
+      : presentation?.type === "dynamic-tool" &&
+          (presentation.state === "input-streaming" || presentation.state === "input-available")
+        ? "Writing the answer"
+        : active
+          ? (skillActivity(active)?.label ?? runningLabels.get(active.toolName) ?? "Working")
+          : "Preparing a response"
+    : "Activity";
   const byId = new Map(tools.map((part) => [part.toolCallId, part]));
+  if (!tools.length) return null;
   return (
-    <ChainOfThoughtPrimitive.Root
-      {...stylex.props(styles.root)}
-      data-state={collapsed ? "closed" : "open"}
-    >
-      <ChainOfThoughtPrimitive.AccordionTrigger
+    <div {...stylex.props(styles.root)} data-state={open ? "open" : "closed"}>
+      <button
+        type="button"
         {...stylex.props(ui.button, ui.focus, styles.summary)}
-        aria-expanded={!collapsed}
+        aria-expanded={open}
         aria-controls={id}
+        onClick={() => setOpen((current) => !current)}
       >
         {running ? <LoadingMark /> : null}
         <span>{label}</span>
@@ -54,23 +65,24 @@ function ActivityDisclosure({ view }: { view: MessageView }) {
         </span>
         <ChevronRight
           size={14}
-          {...stylex.props(ui.chevron, styles.chevron, !collapsed && styles.open)}
+          {...stylex.props(ui.chevron, styles.chevron, open && styles.open)}
           aria-hidden="true"
         />
-      </ChainOfThoughtPrimitive.AccordionTrigger>
-      <Collapse id={id} open={!collapsed}>
+      </button>
+      <Collapse id={id} open={open}>
         <div {...stylex.props(styles.body)}>
-          <ChainOfThoughtPrimitive.Parts>
-            {({ part }) => {
+          <MessagePrimitive.GroupedParts groupBy={groupActivity} indicator="never">
+            {({ part, children }) => {
+              if (part.type === "group-activity") return children;
               const original = part.type === "tool-call" ? byId.get(part.toolCallId) : undefined;
               return original ? (
                 <ToolActivity part={original} stopped={view.stopped} failed={view.failed} />
               ) : null;
             }}
-          </ChainOfThoughtPrimitive.Parts>
+          </MessagePrimitive.GroupedParts>
         </div>
       </Collapse>
-    </ChainOfThoughtPrimitive.Root>
+    </div>
   );
 }
 
@@ -105,15 +117,3 @@ const styles = stylex.create({
     backgroundColor: colors.surface,
   },
 });
-
-export function ReviewActivity({ view }: { view: MessageView }) {
-  const parts = useAuiState((state) => state.message.parts);
-  const startIndex = parts.findIndex((part) => part.type === "tool-call");
-  const endIndex = parts.findLastIndex((part) => part.type === "tool-call");
-  if (startIndex < 0) return null;
-  return (
-    <ChainOfThoughtByIndicesProvider startIndex={startIndex} endIndex={endIndex}>
-      <ActivityDisclosure view={view} />
-    </ChainOfThoughtByIndicesProvider>
-  );
-}

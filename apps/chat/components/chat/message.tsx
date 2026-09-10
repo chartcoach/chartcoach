@@ -1,5 +1,5 @@
-import { Review } from "./review";
-import { ReviewActivity } from "./review-activity";
+import { Answer } from "./answer";
+import { Activity } from "./activity";
 import type { ChartAttachment } from "../../chat/attachment";
 import type { MessageView } from "../../chat/evidence";
 import * as stylex from "@stylexjs/stylex";
@@ -13,11 +13,11 @@ export function Message({
   view: MessageView;
   attachments: ReadonlyMap<string, ChartAttachment>;
 }) {
-  const { message, guidelines, review, complete, stopped, failed } = view;
+  const { message, guidelines, answer, drafting, complete, stopped, failed } = view;
   return (
     <article {...stylex.props(styles.message, message.role === "user" && styles.user)}>
-      <h2 {...stylex.props(styles.author)}>{message.role === "user" ? "You" : "Review"}</h2>
-      {message.role === "assistant" ? <ReviewActivity view={view} /> : null}
+      <h2 {...stylex.props(styles.author)}>{message.role === "user" ? "You" : "ChartCoach"}</h2>
+      {message.role === "assistant" ? <Activity view={view} /> : null}
       {message.parts.map((part, index) => {
         const key = `${message.id}:${index.toString()}`;
         if (part.type === "text") {
@@ -40,8 +40,10 @@ export function Message({
         }
         return null;
       })}
-      {complete ? <Review review={review} guidelines={guidelines} /> : null}
-      {failed ? (
+      {answer || complete ? (
+        <Answer answer={answer} guidelines={guidelines} streaming={drafting} />
+      ) : null}
+      {failed && !answer ? (
         <p {...stylex.props(ui.error)}>
           {message.role === "assistant" ? "Response interrupted." : "Message failed."} You can edit
           and send your message again.

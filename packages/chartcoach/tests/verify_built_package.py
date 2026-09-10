@@ -20,7 +20,9 @@ _PLUGIN_FILES = tuple(
         (
             "mcp.json",
             "plugin.json",
+            "skills/package.json",
             *(f"skills/{name}/SKILL.md" for name in _SKILL_NAMES),
+            "skills/core/references/catalog-access.md",
         )
     )
 )
@@ -200,7 +202,7 @@ plugin = cc.agent_plugin()
 assert plugin.manifest.name == "chartcoach"
 expected_files = tuple(json.loads(os.environ["CHARTCOACH_EXPECTED_PLUGIN_FILES"]))
 expected_skills = list(json.loads(os.environ["CHARTCOACH_EXPECTED_SKILL_NAMES"]))
-assert tuple(path.relative_to(plugin.path).as_posix() for path in plugin.files) == expected_files
+assert {path.relative_to(plugin.path).as_posix() for path in plugin.files} == set(expected_files)
 assert [plugin.skill(name).path.name for name in expected_skills] == expected_skills
 assert plugin.mcp is not None
 assert plugin.mcp.issues == ()

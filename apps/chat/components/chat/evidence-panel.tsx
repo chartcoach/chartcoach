@@ -23,10 +23,13 @@ const styles = stylex.create({
     borderLeftStyle: "solid",
     borderLeftColor: colors.border,
     backgroundColor: colors.background,
-    position: { default: "static", [media.shortNarrow]: "relative" },
+    position: { default: "relative", [media.desktop]: "static" },
   },
   emptyPanel: { display: { default: null, [media.narrow]: "none" } },
   header: {
+    display: { default: "flex", [media.desktop]: "block" },
+    alignItems: "center",
+    gap: 12,
     paddingInline: { default: 18, [media.desktop]: 28 },
     paddingTop: { default: 0, [media.desktop]: 28 },
     paddingBottom: 0,
@@ -62,6 +65,14 @@ const styles = stylex.create({
     fontSize: 13,
     textAlign: "left",
   },
+  primaryToggle: { width: "auto", marginLeft: "auto", gap: 8 },
+  mobilePrimaryTitle: {
+    display: { default: "block", [media.desktop]: "none" },
+    margin: 0,
+    fontSize: 12,
+    fontWeight: 500,
+    color: colors.muted,
+  },
   progress: {
     marginLeft: "auto",
     fontSize: 12,
@@ -75,7 +86,7 @@ const styles = stylex.create({
     paddingTop: 0,
     paddingInline: { default: 18, [media.desktop]: 28 },
     paddingBottom: { default: 16, [media.desktop]: 28 },
-    overflowY: "auto",
+    overflowY: { default: "auto", [media.desktop]: "visible" },
     overflowX: "hidden",
     maxHeight: {
       default: "min(42dvh, max(0px, calc(100dvh - 460px)))",
@@ -85,17 +96,51 @@ const styles = stylex.create({
     scrollbarWidth: "thin",
     scrollbarColor: `${colors.scrollThumb} transparent`,
     overscrollBehaviorY: "contain",
-    flex: { default: null, [media.desktop]: 1 },
-    position: { default: "static", [media.shortNarrow]: "absolute" },
-    top: { default: "auto", [media.shortNarrow]: "100%" },
-    left: { default: "auto", [media.shortNarrow]: 0 },
-    right: { default: "auto", [media.shortNarrow]: 0 },
-    zIndex: { default: "auto", [media.shortNarrow]: 5 },
-    backgroundColor: { default: "transparent", [media.shortNarrow]: colors.surface },
-    borderBottomWidth: { default: 0, [media.shortNarrow]: 1 },
+    position: { default: "absolute", [media.desktop]: "static" },
+    top: { default: "100%", [media.desktop]: "auto" },
+    left: { default: 0, [media.desktop]: "auto" },
+    right: { default: 0, [media.desktop]: "auto" },
+    zIndex: { default: 5, [media.desktop]: "auto" },
+    backgroundColor: { default: colors.surface, [media.desktop]: "transparent" },
+    borderBottomWidth: { default: 1, [media.desktop]: 0 },
     borderBottomStyle: "solid",
     borderBottomColor: colors.border,
-    boxShadow: { default: "none", [media.shortNarrow]: "0 8px 16px #00000012" },
+    boxShadow: { default: "0 8px 16px #00000012", [media.desktop]: "none" },
+  },
+  body: {
+    minHeight: 0,
+    minWidth: 0,
+    flex: { default: null, [media.desktop]: 1 },
+    overflowY: { default: "visible", [media.desktop]: "auto" },
+    scrollbarWidth: "thin",
+    scrollbarColor: `${colors.scrollThumb} transparent`,
+    overscrollBehaviorY: "contain",
+  },
+  primaryTitle: {
+    display: { default: "none", [media.desktop]: "block" },
+    marginTop: { default: 0, [media.desktop]: 22 },
+    marginBottom: 8,
+    marginInline: { default: 18, [media.desktop]: 28 },
+    fontSize: 12,
+    fontWeight: 500,
+    color: colors.muted,
+  },
+  primaryCards: {
+    display: "grid",
+    gridAutoFlow: { default: "column", [media.desktop]: "row" },
+    gridAutoColumns: {
+      default: 200,
+      "@media (max-width: 719px) and (max-height: 700px)": 160,
+      [media.desktop]: "auto",
+    },
+    gridTemplateColumns: { default: "none", [media.desktop]: "minmax(0, 1fr)" },
+    gap: 12,
+    paddingInline: { default: 18, [media.desktop]: 28 },
+    paddingBottom: { default: 12, [media.desktop]: 0 },
+    overflowX: { default: "auto", [media.desktop]: "visible" },
+    scrollbarWidth: "thin",
+    scrollbarColor: `${colors.scrollThumb} transparent`,
+    overscrollBehaviorX: "contain",
   },
   contentClosed: { display: { default: "none", [media.desktop]: "block" } },
   empty: { fontSize: 13, color: colors.muted, marginBlock: 20, marginInline: 0 },
@@ -268,17 +313,31 @@ export function EvidencePanel({
       <header {...stylex.props(styles.header)}>
         <h2 {...stylex.props(styles.title)}>Guidelines</h2>
         <p {...stylex.props(styles.overview)}>
-          {busy ? progress : primary.length ? "Selected for this review" : "From this search"}
+          {busy ? progress : primary.length ? "Used in this answer" : "From this search"}
         </p>
+        {primary.length ? (
+          <h2 {...stylex.props(styles.mobilePrimaryTitle)}>
+            Primary <span {...stylex.props(styles.count)}>{primary.length}</span>
+          </h2>
+        ) : null}
         <button
-          {...stylex.props(ui.button, ui.focus, styles.toggle)}
+          {...stylex.props(
+            ui.button,
+            ui.focus,
+            styles.toggle,
+            primary.length > 0 && styles.primaryToggle,
+          )}
           ref={toggle}
           type="button"
           aria-expanded={open}
           aria-controls={id}
+          aria-label={primary.length ? "More guidelines" : undefined}
           onClick={() => setOpen(!open)}
         >
-          Guidelines <span {...stylex.props(styles.progress)}>{progress}</span>
+          {primary.length ? "More" : "Guidelines"}
+          <span {...stylex.props(styles.progress)}>
+            {primary.length ? supporting.length + candidates.length : progress}
+          </span>
           <ChevronDown
             {...stylex.props(ui.chevron, open && styles.chevronOpen)}
             size={16}
@@ -286,32 +345,42 @@ export function EvidencePanel({
           />
         </button>
       </header>
-      <div {...stylex.props(styles.content, !open && styles.contentClosed)} id={id}>
-        {!items.length ? (
-          <p {...stylex.props(styles.empty)}>
-            {busy ? "Searching the catalog…" : "No guidelines retrieved."}
-          </p>
+      <div {...stylex.props(styles.body)}>
+        {primary.length ? (
+          <section aria-label="Primary guidelines">
+            <h3 {...stylex.props(styles.primaryTitle)}>
+              Primary <span {...stylex.props(styles.count)}>{primary.length}</span>
+            </h3>
+            <div {...stylex.props(styles.primaryCards)}>
+              {primary.map(({ guideline }) => (
+                <GuidelineCard key={guideline.id} guideline={guideline} compact />
+              ))}
+            </div>
+          </section>
         ) : null}
-        <Accordion.Root type="single" collapsible value={selected} onValueChange={setSelected}>
-          {primary.length ? (
-            <section aria-label="Primary guidelines">
-              <h3 {...stylex.props(styles.sectionTitle)}>
-                Primary <span {...stylex.props(styles.count)}>{primary.length}</span>
-              </h3>
-              <GuidelineRows items={primary} selected={selected} />
-            </section>
+        <div {...stylex.props(styles.content, !open && styles.contentClosed)} id={id}>
+          {!items.length ? (
+            <p {...stylex.props(styles.empty)}>
+              {busy ? "Searching the catalog…" : "No guidelines retrieved."}
+            </p>
           ) : null}
-          <EvidenceGroup title="Supporting" items={supporting} selected={selected} />
-          {busy && !primary.length ? (
-            <section aria-label="Search results">
-              <h3 {...stylex.props(styles.sectionTitle)}>Search results</h3>
-              <GuidelineRows items={candidates.slice(0, 3)} selected={selected} />
-              <EvidenceGroup title="More results" items={candidates.slice(3)} selected={selected} />
-            </section>
-          ) : (
-            <EvidenceGroup title="Explored" items={candidates} selected={selected} />
-          )}
-        </Accordion.Root>
+          <Accordion.Root type="single" collapsible value={selected} onValueChange={setSelected}>
+            <EvidenceGroup title="Supporting" items={supporting} selected={selected} />
+            {busy && !primary.length ? (
+              <section aria-label="Search results">
+                <h3 {...stylex.props(styles.sectionTitle)}>Search results</h3>
+                <GuidelineRows items={candidates.slice(0, 3)} selected={selected} />
+                <EvidenceGroup
+                  title="More results"
+                  items={candidates.slice(3)}
+                  selected={selected}
+                />
+              </section>
+            ) : (
+              <EvidenceGroup title="Explored" items={candidates} selected={selected} />
+            )}
+          </Accordion.Root>
+        </div>
       </div>
     </aside>
   );

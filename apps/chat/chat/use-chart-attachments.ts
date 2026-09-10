@@ -1,4 +1,4 @@
-import { useRef, useState, type RefObject } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import type { AssistantRuntime, AttachmentAdapter } from "@assistant-ui/react";
 import { readAttachment } from "./attachment";
 
@@ -9,11 +9,13 @@ export function useChartAttachments(
 ) {
   const [reading, setReading] = useState(false);
   const uploading = useRef(false);
+  const exampleRequest = useRef<AbortController>(undefined);
+  useEffect(() => () => exampleRequest.current?.abort(), []);
   const messageInput = useRef<HTMLTextAreaElement>(null);
   const adapter: AttachmentAdapter = {
     accept: "image/png,image/jpeg,image/webp",
     async add({ file }) {
-      if (blocked || uploading.current)
+      if (blocked || uploading.current || exampleRequest.current)
         throw new Error("Wait for the current task to finish before attaching a chart.");
       uploading.current = true;
       setReading(true);
@@ -54,7 +56,7 @@ export function useChartAttachments(
     async remove() {},
   };
   async function upload(files: File[]) {
-    if (blocked || uploading.current) {
+    if (blocked || uploading.current || exampleRequest.current) {
       onError("Wait for the current task to finish before attaching a chart.");
       return;
     }
@@ -71,5 +73,33 @@ export function useChartAttachments(
     }
   }
 
-  return { adapter, reading, messageInput, upload };
+  async function uploadExample(path: string) {
+    if (blocked || uploading.current || exampleRequest.current) return false;
+    const controller = new AbortController();
+    exampleRequest.current = controller;
+    setReading(true);
+    onError(undefined);
+    try {
+      const response = await fetch(path, {
+        signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15_000)]),
+      });
+      if (!response.ok) throw new Error("Could not load the example chart. Try again.");
+      const blob = await response.blob();
+      controller.signal.throwIfAborted();
+      exampleRequest.current = undefined;
+      await runtimeRef.current!.thread.composer.addAttachment(
+        new File([blob], path.split("/").at(-1)!, { type: "image/png" }),
+      );
+      return true;
+    } catch {
+      if (!controller.signal.aborted)
+        onError("Could not load the example chart. Try again or upload your own.");
+      return false;
+    } finally {
+      exampleRequest.current = undefined;
+      setReading(false);
+    }
+  }
+
+  return { adapter, reading, messageInput, upload, uploadExample };
 }

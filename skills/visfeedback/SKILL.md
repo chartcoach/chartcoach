@@ -41,14 +41,8 @@ observed facts and keep uncertain interpretations explicit.
 
 ## Check each record
 
-Read selected records together before citing them:
-
-```sh
-chartcoach catalog read <first-id> <second-id> \
-  --source-detail minimal \
-  --format markdown
-chartcoach catalog cite <first-id> <second-id> --format markdown
-```
+Read selected records together before citing them, using the host's tools or
+the access recipes in `core`.
 
 For each record, decide whether it:
 
@@ -68,6 +62,36 @@ When evidence is missing, state which conclusion cannot be made and the next
 inspection needed. Continue with the feedback supported by the available
 evidence.
 
+## Assess the requirement
+
+Identify each guideline's testable requirement from its description, advice,
+and checks. Preserve its conditions and placement. A related good feature is
+not a substitute for satisfying that requirement. Omit a guideline when the
+situation it addresses is absent.
+
+- `respected`: An observed or explicitly stated feature satisfies the actual
+  requirement. Explain the feature and recommend retaining it.
+- `violated`: An observed or explicitly stated feature conflicts with the
+  requirement and its conditions apply. State the mismatch and supported change.
+- `uncertain`: Evidence cannot establish compliance. Name the missing detail
+  and the specific check needed.
+
+A missing or cropped feature is not evidence of a violation. The absence of a
+recommended feature alone cannot establish a violation of a conditional rule.
+Apply the conditions to strengths as strictly as to problems. Before calling a
+rule respected or violated, state which fact establishes its required reader
+task, available space, or reading context. A compatible-looking arrangement
+cannot establish an unstated task. When that condition is unknown, omit the
+point if it adds no decision, or mark it uncertain and ask what would establish
+applicability. Do not fill the answer with conditional rules presented as
+confirmed strengths.
+
+Before answering, compare the requirement, observation, assessment, and action.
+If the action adds a required feature, the existing chart cannot be respected
+for that requirement. Use violated when the absence is observable and the rule
+applies, or uncertain when evidence is insufficient. Keep the requirement as
+qualified in the entry rather than strengthening it into a stricter rule.
+
 ## Write the feedback
 
 For each point, connect:
@@ -79,3 +103,8 @@ suggested change or decision to preserve the design
   -> tradeoff or missing evidence
   -> source citation
 ```
+
+Group overlapping rules into one design decision. Prioritize consequential
+changes, then relevant strengths and unresolved checks. Consider strengths and
+problems on their evidence. Avoid inventing either to balance the answer.
+Keep each action within the primary and supporting entries' actual guidance.

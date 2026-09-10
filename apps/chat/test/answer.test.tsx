@@ -1,5 +1,5 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import type { EveMessage } from "eve/react";
+import type { EveDynamicToolPart, EveMessage } from "eve/react";
 import { expect, it } from "vite-plus/test";
 import { Transcript } from "./transcript";
 
@@ -33,22 +33,40 @@ const read: EveMessage = {
   ],
 };
 const feedback = {
-  status: "feedback",
-  feedback: [
+  workflow: "visfeedback",
+  status: "answer",
+  points: [
     {
       primary_guideline_id: "direct-labels",
       supporting_guideline_ids: [],
       assessment: "violated",
-      observation: "The legend is far from the lines.",
+      context: "The legend is far from the lines.",
       recommendation: "Place each series name beside its line.",
     },
   ],
   question: null,
 };
 function answer(
-  metadata: EveMessage["metadata"] = { status: "complete", result: feedback },
+  output: Extract<EveDynamicToolPart, { state: "output-available" }>["output"] = feedback,
+  metadata: EveMessage["metadata"] = { status: "complete" },
+  parts: EveMessage["parts"] = [],
 ): EveMessage {
-  return { id: "answer", role: "assistant", metadata, parts: [] };
+  return {
+    id: "answer",
+    role: "assistant",
+    metadata: { status: "complete", ...metadata },
+    parts: [
+      ...parts,
+      {
+        type: "dynamic-tool",
+        toolCallId: "present",
+        toolName: "present_answer",
+        state: "output-available",
+        input: output,
+        output,
+      },
+    ],
+  };
 }
 function render(messages: EveMessage[]) {
   return renderToStaticMarkup(
@@ -56,11 +74,45 @@ function render(messages: EveMessage[]) {
   );
 }
 
-it("renders an action with a verified citation and its observation on demand", () => {
-  const html = render([{ ...answer(), parts: read.parts }]);
+it("offers another evidence check when a completed turn has no presentation", () => {
+  const html = render([
+    { id: "empty", role: "assistant", metadata: { status: "complete" }, parts: [] },
+  ]);
+  expect(html).toContain("The answer needs another evidence check.");
+  expect(html).toContain("Try again");
+});
+
+it.each([
+  { workflow: "discuss", label: "Your question" },
+  { workflow: "visrec", label: "Your brief" },
+])("renders grounded $workflow advice with its decision context", ({ workflow, label }) => {
+  const html = render([
+    read,
+    answer(
+      {
+        ...feedback,
+        workflow,
+        points: [{ ...feedback.points[0], assessment: null }],
+      },
+      { status: "complete" },
+    ),
+  ]);
+  expect(html).toContain("Place each series name beside its line.");
+  expect(html).toContain(label);
+  expect(html).toContain('aria-label="Primary: Label series directly"');
+  expect(html).not.toContain(">Improve</h3>");
+});
+
+it("rejects chart assessments attached to a design recommendation", () => {
+  const html = render([read, answer({ ...feedback, workflow: "visrec" }, { status: "complete" })]);
+  expect(html).toContain("The answer needs another evidence check.");
+});
+
+it("renders an action with a verified citation and its context on demand", () => {
+  const html = render([answer(feedback, {}, read.parts)]);
   expect(html).toContain("The legend is far from the lines.");
   expect(html).toMatch(
-    /<dt[^>]*>Guideline requires<\/dt><dd[^>]*>Place the name by its series\.<\/dd>/,
+    /<dt[^>]*>Guideline guidance<\/dt><dd[^>]*>Place the name by its series\.<\/dd>/,
   );
   expect(html).toContain("Place each series name beside its line.");
   expect(html).toContain("Label series directly");
@@ -109,9 +161,9 @@ const searchPart: EveMessage["parts"][number] = {
 };
 
 it("shows the primary guideline before a collapsed group of other retrieved candidates", () => {
-  const html = render([{ ...answer(), parts: [searchPart, ...read.parts] }]);
-  expect(html).not.toContain("<img ");
-  expect(html).toContain('aria-label="Preview Label series directly"');
+  const html = render([answer(feedback, {}, [searchPart, ...read.parts])]);
+  expect(html.match(/<img\b/g)).toHaveLength(1);
+  expect(html).toMatch(/<a[^>]*aria-label="Label series directly"/);
   expect(html.indexOf('aria-label="Primary guidelines"')).toBeGreaterThan(
     html.indexOf("Place each series name beside its line."),
   );
@@ -119,8 +171,8 @@ it("shows the primary guideline before a collapsed group of other retrieved cand
 });
 
 it("shows a retry notice when a response cites an unread search match", () => {
-  const html = render([{ ...answer(), parts: [searchPart] }]);
-  expect(html).toContain("The review could not be verified");
+  const html = render([answer(feedback, {}, [searchPart])]);
+  expect(html).toContain("The answer needs another evidence check.");
   expect(html).not.toContain("Place each series name beside its line.");
   expect(html).not.toContain("<img ");
   expect(html).not.toContain('aria-label="Primary guidelines"');
@@ -150,16 +202,14 @@ function additionalRead(ids: string[]): EveMessage["parts"][number] {
 
 it("distinguishes explicit supporting evidence from other search candidates", () => {
   const html = render([
-    {
-      ...answer({
-        status: "complete",
-        result: {
-          ...feedback,
-          feedback: [{ ...feedback.feedback[0], supporting_guideline_ids: ["readability"] }],
-        },
-      }),
-      parts: [searchPart, ...read.parts, additionalRead(["readability"])],
-    },
+    answer(
+      {
+        ...feedback,
+        points: [{ ...feedback.points[0], supporting_guideline_ids: ["readability"] }],
+      },
+      { status: "complete" },
+      [searchPart, ...read.parts, additionalRead(["readability"])],
+    ),
   ]);
   expect(html).toContain('aria-label="Primary: Label series directly"');
   expect(html).toContain('aria-label="Supporting: Guidance for readability"');
@@ -168,36 +218,36 @@ it("distinguishes explicit supporting evidence from other search candidates", ()
   expect(html).not.toMatch(/<details[^>]* open[=> ]/);
   expect(html).toMatch(/<details[^>]*><summary[^>]*>Why this applies/);
   expect(html).toMatch(
-    /<dt[^>]*>Guideline requires<\/dt><dd[^>]*>Place the name by its series\.<\/dd>/,
+    /<dt[^>]*>Guideline guidance<\/dt><dd[^>]*>Place the name by its series\.<\/dd>/,
   );
 });
 
 it("communicates respected, violated, and uncertain findings with distinct next actions", () => {
   const result = {
     ...feedback,
-    feedback: [
-      { ...feedback.feedback[0], assessment: "violated" },
+    points: [
+      { ...feedback.points[0], assessment: "violated" },
       {
         primary_guideline_id: "contrast",
         supporting_guideline_ids: [],
         assessment: "respected",
-        observation: "Labels contrast clearly with the background.",
+        context: "Labels contrast clearly with the background.",
         recommendation: "Keep this contrast.",
       },
       {
         primary_guideline_id: "ordering",
         supporting_guideline_ids: [],
         assessment: "uncertain",
-        observation: "The intended category order is unclear.",
+        context: "The intended category order is unclear.",
         recommendation: "Check whether category order has domain meaning.",
       },
     ],
   };
   const html = render([
-    {
-      ...answer({ status: "complete", result }),
-      parts: [...read.parts, additionalRead(["contrast", "ordering"])],
-    },
+    answer(result, { status: "complete" }, [
+      ...read.parts,
+      additionalRead(["contrast", "ordering"]),
+    ]),
   ]);
   expect(html).toContain("Improve");
   expect(html).toContain("Working well");
@@ -214,48 +264,47 @@ it.each([
 ])("rejects $reason", ({ supporting }) => {
   const result = {
     ...feedback,
-    feedback: [{ ...feedback.feedback[0], supporting_guideline_ids: supporting }],
+    points: [{ ...feedback.points[0], supporting_guideline_ids: supporting }],
   };
   const html = render([
-    {
-      ...answer({ status: "complete", result }),
-      parts: [searchPart, ...read.parts, additionalRead(["readability"])],
-    },
+    answer(result, { status: "complete" }, [
+      searchPart,
+      ...read.parts,
+      additionalRead(["readability"]),
+    ]),
   ]);
-  expect(html).toContain("The review could not be verified");
+  expect(html).toContain("The answer needs another evidence check.");
   expect(html).not.toContain("Place each series name beside its line.");
 });
 
 it("allows a read supporting guideline to support multiple findings", () => {
   const result = {
     ...feedback,
-    feedback: [
-      { ...feedback.feedback[0], supporting_guideline_ids: ["readability"] },
+    points: [
+      { ...feedback.points[0], supporting_guideline_ids: ["readability"] },
       {
-        ...feedback.feedback[0],
+        ...feedback.points[0],
         primary_guideline_id: "contrast",
         supporting_guideline_ids: ["readability"],
       },
     ],
   };
   const html = render([
-    {
-      ...answer({ status: "complete", result }),
-      parts: [...read.parts, additionalRead(["readability", "contrast"])],
-    },
+    answer(result, { status: "complete" }, [
+      ...read.parts,
+      additionalRead(["readability", "contrast"]),
+    ]),
   ]);
-  expect(html).not.toContain("The review could not be verified");
+  expect(html).not.toContain("The answer needs another evidence check.");
   expect(html.match(/aria-label="Supporting: Guidance for readability"/g)).toHaveLength(2);
 });
 
 it("uses verified SQL matches for previews and treats arbitrary SQL cells as data", () => {
   const html = render([
-    {
-      ...answer({
-        status: "complete",
-        result: { status: "no_match", feedback: [], question: null },
-      }),
-      parts: [
+    answer(
+      { workflow: "visfeedback", status: "no_match", points: [], question: null },
+      { status: "complete" },
+      [
         {
           type: "dynamic-tool",
           toolCallId: "sql",
@@ -283,7 +332,7 @@ it("uses verified SQL matches for previews and treats arbitrary SQL cells as dat
           },
         },
       ],
-    },
+    ),
   ]);
   expect(html).toContain("I could not find an applicable guideline");
   expect(html).not.toContain("Place each series name beside its line.");
@@ -294,19 +343,19 @@ it("uses verified SQL matches for previews and treats arbitrary SQL cells as dat
 it("renders recommendation emphasis while keeping authored links and images inert", () => {
   const html = render([
     read,
-    answer({
-      status: "complete",
-      result: {
+    answer(
+      {
         ...feedback,
-        feedback: [
+        points: [
           {
-            ...feedback.feedback[0],
+            ...feedback.points[0],
             recommendation:
               "Use **direct labels**. [Reference](https://example.com/track) ![image](https://example.com/image.png) <iframe src='https://example.com/frame'></iframe>",
           },
         ],
       },
-    }),
+      { status: "complete" },
+    ),
   ]);
   expect(html).toContain("direct labels");
   expect(html).not.toContain("**direct labels**");
@@ -315,16 +364,16 @@ it("renders recommendation emphasis while keeping authored links and images iner
   expect(html).not.toContain("<iframe");
 });
 
-it("does not display a completed result from a cancelled turn", () => {
+it("keeps an accepted answer visible when its turn is cancelled", () => {
   const html = renderToStaticMarkup(
     <Transcript
-      messages={[read, answer({ status: "complete", turnId: "cancelled", result: feedback })]}
+      messages={[read, answer(feedback, { status: "complete", turnId: "cancelled" })]}
       attachments={new Map()}
       stoppedTurnIds={new Set(["cancelled"])}
     />,
   );
   expect(html).toContain("Response stopped.");
-  expect(html).not.toContain("Place each series name beside its line.");
+  expect(html).toContain("Place each series name beside its line.");
 });
 
 it("requires a successful read result before accepting a citation", () => {
@@ -344,13 +393,13 @@ it("requires a successful read result before accepting a citation", () => {
     },
     answer(),
   ]);
-  expect(html).toContain("The review could not be verified");
+  expect(html).toContain("The answer needs another evidence check.");
   expect(html).not.toContain("Place each series name beside its line.");
 });
 
 it("blocks a review until all cited guidelines have been read", () => {
   const html = render([answer(), read]);
-  expect(html).toContain("The review could not be verified");
+  expect(html).toContain("The answer needs another evidence check.");
   expect(html).not.toContain("Place each series name beside its line.");
 });
 
@@ -361,40 +410,40 @@ it("waits for the final read result before accepting a citation", () => {
       : part,
   );
   const html = render([{ ...read, parts }, answer()]);
-  expect(html).toContain("The review could not be verified");
+  expect(html).toContain("The answer needs another evidence check.");
   expect(html).not.toContain("Place each series name beside its line.");
 });
 
 it.each([
-  { reason: "missing result", result: undefined },
+  { reason: "malformed output", result: null },
   {
     reason: "unknown guideline",
     result: {
       ...feedback,
-      feedback: [
-        ...feedback.feedback,
-        { ...feedback.feedback[0], primary_guideline_id: "unknown" },
-      ],
+      points: [...feedback.points, { ...feedback.points[0], primary_guideline_id: "unknown" }],
     },
   },
   {
     reason: "duplicate guideline",
-    result: { ...feedback, feedback: [...feedback.feedback, ...feedback.feedback] },
+    result: { ...feedback, points: [...feedback.points, ...feedback.points] },
   },
-  { reason: "empty feedback", result: { ...feedback, feedback: [] } },
+  { reason: "empty feedback", result: { ...feedback, points: [] } },
   { reason: "feedback with question", result: { ...feedback, question: "What is your goal?" } },
-  { reason: "fallback with feedback", result: { ...feedback, status: "no_match" } },
+  {
+    reason: "fallback with feedback",
+    result: { ...feedback, workflow: "visfeedback", status: "no_match" },
+  },
   {
     reason: "missing context question",
-    result: { status: "needs_context", feedback: [], question: null },
+    result: { workflow: "visfeedback", status: "needs_context", points: [], question: null },
   },
   {
     reason: "malformed item",
-    result: { ...feedback, feedback: [{ primary_guideline_id: "direct-labels" }] },
+    result: { ...feedback, points: [{ primary_guideline_id: "direct-labels" }] },
   },
 ])("fails closed for $reason", ({ result }) => {
-  const html = render([read, { ...answer(), metadata: { status: "complete", result } }]);
-  expect(html).toContain("The review could not be verified");
+  const html = render([read, answer(result, { status: "complete" })]);
+  expect(html).toContain("The answer needs another evidence check.");
   expect(html).not.toContain("Place each series name beside its line.");
 });
 
@@ -430,7 +479,7 @@ it.each([
     },
     answer(),
   ]);
-  expect(html).toContain("The review could not be verified");
+  expect(html).toContain("The answer needs another evidence check.");
   expect(html).not.toContain("Place each series name beside its line.");
 });
 
@@ -464,43 +513,52 @@ it.each([
         },
       ],
     },
-    answer({
-      status: "complete",
-      result: { ...feedback, feedback: [{ ...feedback.feedback[0], primary_guideline_id: id }] },
-    }),
+    answer(
+      { ...feedback, points: [{ ...feedback.points[0], primary_guideline_id: id }] },
+      { status: "complete" },
+    ),
   ]);
   if (accepted) {
     expect(html).toContain("Place each series name beside its line.");
     expect(html).toContain(`href="https://chartcoach.dev/guidelines/${encodeURIComponent(id)}"`);
   } else {
-    expect(html).toContain("The review could not be verified");
+    expect(html).toContain("The answer needs another evidence check.");
     expect(html).not.toContain("Place each series name beside its line.");
   }
 });
 
 it.each(["streaming", "failed", "submitted"] as const)(
-  "waits for successful completion before displaying a %s review",
+  "keeps an accepted answer visible during %s orchestration",
   (status) => {
-    const message = answer({ result: feedback, status });
+    const message = answer(feedback, { status });
     const html = render([read, message]);
-    expect(html).not.toContain("Place each series name beside its line.");
+    expect(html).toContain("Place each series name beside its line.");
   },
 );
 
 it.each([
   {
+    workflow: "visfeedback",
     status: "needs_context",
     question: "What should the reader compare?",
     expected: "What should the reader compare?",
   },
-  { status: "no_match", question: null, expected: "I could not find an applicable guideline" },
   {
+    workflow: "visfeedback",
+    status: "no_match",
+    question: null,
+    expected: "I could not find an applicable guideline",
+  },
+  {
+    workflow: "visfeedback",
     status: "out_of_scope",
     question: null,
-    expected: "I can review chart design using the Guideline Catalog",
+    expected: "I can review a chart, recommend a design, or discuss visualization choices",
   },
 ])("renders the $status response", ({ status, question, expected }) => {
-  const html = render([answer({ status: "complete", result: { status, feedback: [], question } })]);
+  const html = render([
+    answer({ workflow: "visfeedback", status, points: [], question }, { status: "complete" }),
+  ]);
   expect(html).toContain(expected);
   expect(html).not.toContain("<img");
 });

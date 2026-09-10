@@ -1,7 +1,7 @@
 # ChartCoach chat
 
-Upload a chart, ask a question, and receive guideline-grounded feedback with visual
-citations. [Next.js](https://nextjs.org/) hosts the interface,
+Review a chart, recommend a design, or discuss a visualization choice with
+guideline-backed advice and visual citations. [Next.js](https://nextjs.org/) hosts the interface,
 [assistant-ui](https://www.assistant-ui.com/docs) supplies the chat primitives,
 and [Eve](https://eve.dev/docs/guides/frontend/nextjs) runs the agent on the same
 origin. [Streamdown](https://streamdown.ai/) formats the recommendations.
@@ -63,7 +63,7 @@ directory, it supplies the complete Langfuse connection and takes precedence ove
 inherited credentials. Omitted local keys disable tracing, and a partial local pair
 fails validation. Deployments with no local file use their server environment.
 
-Find **Chart review** in Langfuse. Each conversation keeps its Eve session ID and
+Find **ChartCoach conversation** in Langfuse. Each conversation keeps its Eve session ID and
 trace identity across follow-ups, with separate turn, model, and tool branches.
 Model observations include token totals and cached-token usage. Langfuse calculates
 cost when it recognizes the model. Observations include the authenticated principal
@@ -80,6 +80,7 @@ observations:
 | `catalogPredicate`   | Full SQL selection submitted by the browser                        |
 | `catalogSelectionId` | SHA-256 of the catalog identity and sorted, resolved guideline IDs |
 | `guidelineCount`     | Number of guidelines available to the agent                        |
+| `workflowPreference` | Auto or the workflow requested for the current turn                |
 
 Direct clients that choose the full catalog record its full-table selection.
 Retrieval continues against the frozen guideline IDs, with the original SQL kept
@@ -106,6 +107,33 @@ restart can produce another observation, while Langfuse reuses the content-addre
 `LANGFUSE_TRACING_ENVIRONMENT` overrides the Vercel or Node environment label.
 `LANGFUSE_RELEASE` identifies a deployment. Credentials remain server-side.
 
+## Choose how to work
+
+Leave the composer on **Auto** to let the agent choose a workflow from your
+question. Choose **Review**, **Recommend**, or **Discuss** when you want to steer
+the next turn. You can change that preference during a conversation while keeping
+its knowledge selection fixed.
+
+The three starter cards provide illustrative chart images and a data brief.
+Choosing one attaches its image and fills an editable prompt. Review the draft,
+then send it through the regular composer.
+
+The agent always receives the canonical [core skill](../../skills/core/SKILL.md).
+It uses Eve's native `load_skill` tool to load [visfeedback](../../skills/visfeedback/SKILL.md),
+[visrec](../../skills/visrec/SKILL.md), or [discuss](../../skills/discuss/SKILL.md)
+for the current request. These files own the retrieval, applicability, and
+evidence policies. `agent/instructions.ts` binds them to the app's tools and
+structured answer format.
+
+The private `@chartcoach/skills` workspace package exposes the canonical files
+to Eve's compiler. Builds embed the instructions and verify them against their
+source files before checking relocated server startup.
+
+Discussion and design recommendations explain the question or brief alongside
+their citations. Chart reviews additionally classify each point as **Working well**,
+**Improve**, or **Check**. Every recommendation must cite guidelines read in the
+conversation.
+
 ## Review a chart
 
 Drop a PNG, JPEG, or WebP image up to 3 MiB anywhere in the app, or choose
@@ -123,25 +151,26 @@ qualification or corroboration, and must also have been read. Citation links sho
 the guideline titles. Expand **Why this applies** to compare the chart observation
 with the authored requirement and inspect supporting citations.
 
-The guideline panel shows search matches as they arrive, marks entries when read,
-and identifies primary and supporting guidance when the review is verified.
-Primary guidelines follow the order of the findings. Supporting guidance and
-other explored entries are expandable. Select a title to inspect its
-[Open Graph](https://ogp.me/) image preview, with one preview open at a time. The panel sits
-beside the conversation on desktop. On narrow screens, expand **Guidelines** to
-inspect it.
+The guideline panel shows search matches as they arrive and marks entries when read.
+Primary guidelines appear directly as [Open Graph](https://ogp.me/) image cards,
+in answer order. Desktop places them beside the conversation. Narrow screens use
+a visible horizontal strip. Supporting and other explored entries stay expandable.
 You can ask follow-up questions about the same
 image, stop a response, or start a new chat.
 
-Expand **Review activity**, then a search or read action, to inspect its query,
-search method, matched guidelines, and sources. Vector-search details include
+Expand **Activity**, then a skill, search, or read action, to inspect its purpose,
+search method, matched guidelines, and sources. The display groups tool calls
+through assistant-ui's `MessagePrimitive.GroupedParts`. Vector-search details include
 the embedding model and index profile.
 
 Each new turn anchors to its question. Scroll to read the feedback or inspect
 earlier messages.
 
-Tool activity streams as the agent works. The completed review appears after its
-structure and guideline IDs are checked against entries read in the conversation.
+The answer streams through Eve's authored `present_answer` tool. The interface
+shows growing draft points once their citation IDs match successful reads.
+The tool checks the complete answer against durable read history before accepting
+it. Invalid references or structure produce actionable errors for the agent to
+repair and resubmit. Accepted answers remain visible while the turn finishes.
 The agent checks applicability before assigning an assessment, asks for missing
 context, reports when guidance does not apply, and
 declines unrelated requests. The UI keeps a citation link visible if its preview
@@ -266,21 +295,12 @@ The CSS entrypoint contains browser resets and the shared brand palette.
 
 Next.js uses StyleX's Babel and PostCSS plugins to compile styles and serve the
 stylesheet. Tests use its bundler plugin to exercise compiled components.
-Keep guideline verification in `chat/evidence.ts` and the shared review contract.
-The runtime's `onNew` callback requests Eve's structured output for each message.
-The underlying send operation accepts text and image parts:
-
-```ts
-import { reviewSchema } from "../shared/review";
-
-await agent.send(
-  [
-    { type: "text", text: prompt },
-    { type: "file", data: imageDataUrl, mediaType: file.type, filename: file.name },
-  ],
-  { outputSchema: reviewSchema },
-);
-```
+The [chat runtime](chat/use-chat-runtime.ts) sends text and image parts through
+Eve and consumes its native action stream. [present_answer](agent/tools/present_answer.ts)
+validates the [shared answer contract](shared/answer.ts) against successful
+guideline reads stored in Eve's durable session state. The client projects its
+streamed input with the AI SDK's partial JSON parser and uses the accepted tool
+result as the completed answer.
 
 LanceDB searches the directory returned by `indexPath()`. Document `parent_id`
 values identify entries to read and cite through the catalog API.

@@ -12,6 +12,7 @@ import type {
 import { z } from "zod";
 import { parseSelection } from "./selection-context";
 import { createHash } from "node:crypto";
+import { modeSchema } from "../shared/workflow";
 
 export const catalogTraceSchema = z.object({
   catalogId: z.string().optional(),
@@ -19,6 +20,7 @@ export const catalogTraceSchema = z.object({
   catalogReleaseId: z.string().optional(),
   catalogPredicate: z.string().optional(),
   catalogSelectionId: z.string().optional(),
+  workflowPreference: modeSchema.optional(),
 });
 
 export class LangfuseProcessor extends LangfuseSpanProcessor {
@@ -70,7 +72,7 @@ export class LangfuseProcessor extends LangfuseSpanProcessor {
     }
     span.setAttributes(context);
     if (attributes["langfuse.trace.name"] === undefined) {
-      span.setAttribute("langfuse.trace.name", "Chart review");
+      span.setAttribute("langfuse.trace.name", "ChartCoach conversation");
     }
     super.onStart(span, parentContext);
   }
@@ -131,6 +133,10 @@ export function traceContext({
   const value = principal?.attributes["chartcoach.selection"];
   const selection = value === undefined ? undefined : parseSelection(value);
   const context: Record<string, string | number> = {};
+  const mode = modeSchema.safeParse(
+    session.auth.current?.attributes["chartcoach.mode"] ?? principal?.attributes["chartcoach.mode"],
+  );
+  if (mode.success) context.workflowPreference = mode.data;
   if (principal) context.userId = principal.principalId;
   if (selection) {
     context.catalogId = selection.catalogId;

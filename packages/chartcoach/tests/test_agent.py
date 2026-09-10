@@ -15,6 +15,8 @@ _SKILL_NAMES = ("core", "discuss", "visfeedback", "visrec", "contribute")
 _PLUGIN_FILES = {
     "mcp.json",
     "plugin.json",
+    "skills/package.json",
+    "skills/core/references/catalog-access.md",
     *{f"skills/{name}/SKILL.md" for name in _SKILL_NAMES},
 }
 

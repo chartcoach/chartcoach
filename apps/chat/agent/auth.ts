@@ -7,6 +7,7 @@ import {
 } from "eve/channels/auth";
 import { decodeSelection } from "./selection-context";
 import { resolveCatalogSelection } from "../lib/catalog/selection";
+import { modeSchema } from "../shared/workflow";
 
 export const catalogRouteAuth = [vercelOidc(), localDev(), placeholderAuth()];
 
@@ -14,7 +15,18 @@ export const catalogRouteAuth = [vercelOidc(), localDev(), placeholderAuth()];
 export const reviewRouteAuth = catalogRouteAuth.map(
   (authenticate): AuthFn<Request> =>
     async (request) => {
-      const caller = await authenticate(request);
+      const principal = await authenticate(request);
+      if (!principal) return principal;
+      const mode = modeSchema.safeParse(request.headers.get("x-chartcoach-mode") ?? "auto");
+      if (!mode.success)
+        throw new ForbiddenError({
+          code: "invalid_mode",
+          message: "Choose Auto, Review, Recommend, or Discuss.",
+        });
+      const caller = {
+        ...principal,
+        attributes: { ...principal.attributes, "chartcoach.mode": mode.data },
+      };
       const header = request.headers.get("x-chartcoach-selection");
       if (
         !caller ||

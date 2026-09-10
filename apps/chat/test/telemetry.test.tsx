@@ -72,7 +72,7 @@ it("exports session-scoped model and tool trees while omitting orchestration spa
       const tool = session.find((span) => span.name === "execute_tool read_guidelines")!;
       expect(tool.parentSpanContext?.spanId).toBe(model.spanContext().spanId);
       expect(model.attributes).toMatchObject({
-        "langfuse.trace.name": "Chart review",
+        "langfuse.trace.name": "ChartCoach conversation",
         "user.id": "reviewer",
         "gen_ai.usage.input_tokens": 20,
         "gen_ai.usage.output_tokens": 5,
@@ -127,4 +127,20 @@ it("projects catalog identity and principal identity without exporting authentic
   expect(
     traceContext({ ...input, session: { ...session, auth: { current: null, initiator: null } } }),
   ).toEqual({});
+  expect(
+    traceContext({
+      ...input,
+      session: {
+        ...session,
+        auth: {
+          ...session.auth,
+          current: { ...session.auth.initiator!, attributes: { "chartcoach.mode": "discuss" } },
+        },
+      },
+    }),
+  ).toMatchObject({
+    workflowPreference: "discuss",
+    catalogId: "a".repeat(64),
+    catalogReleaseId: "b".repeat(64),
+  });
 });

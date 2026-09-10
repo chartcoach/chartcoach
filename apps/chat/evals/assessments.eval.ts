@@ -1,7 +1,7 @@
 import { defineEval } from "eve/evals";
 import { satisfies } from "eve/evals/expect";
-import { reviewSchema, type Review } from "../shared/review";
-import { assertGrounding } from "./assert-grounding";
+import type { Answer } from "../shared/answer";
+import { assertGrounding, presentedAnswer } from "./assert-grounding";
 
 export default defineEval({
   async test(t) {
@@ -18,11 +18,11 @@ export default defineEval({
       },
     ] as const;
     for (const scenario of cases) {
-      const turn = await t.newSession().send(scenario.prompt, { outputSchema: reviewSchema });
-      const review = assertGrounding(t, turn, scenario.prompt);
+      const turn = await t.newSession().send(scenario.prompt);
+      const answer = assertGrounding(t, turn, scenario.prompt);
       t.check(
-        review.feedback,
-        satisfies<Review["feedback"]>(
+        answer.points,
+        satisfies<Answer["points"]>(
           (items) => items.length === 1 && items[0].assessment === scenario.assessment,
           `classifies the baseline as ${scenario.assessment}`,
         ),
@@ -32,20 +32,16 @@ export default defineEval({
       .newSession()
       .send(
         "The screenshot of my bar chart is cropped so the axis baseline and scale labels are not visible. I do not know their values. Can you determine whether it violates the zero-baseline guideline?",
-        { outputSchema: reviewSchema },
       );
-    uncertain.succeeded();
-    uncertain.noFailedActions();
-    uncertain.outputMatches(reviewSchema);
-    const review = reviewSchema.parse(uncertain.data);
+    const answer = presentedAnswer(t, uncertain);
     t.check(
-      review,
-      satisfies<Review>(
+      answer,
+      satisfies<Answer>(
         (value) =>
           value.status === "needs_context" ||
-          (value.status === "feedback" &&
-            value.feedback.length > 0 &&
-            value.feedback.every((item) => item.assessment === "uncertain")),
+          (value.status === "answer" &&
+            value.points.length > 0 &&
+            value.points.every((item) => item.assessment === "uncertain")),
         "does not infer a violation from missing evidence",
       ),
     );

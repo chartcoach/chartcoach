@@ -19,6 +19,8 @@ function NativeComposer({ running }: { running: boolean }) {
   return (
     <AssistantRuntimeProvider runtime={runtime}>
       <Composer
+        mode="auto"
+        onModeChange={() => {}}
         onUpload={() => {}}
         messageInput={input}
         busy={running}

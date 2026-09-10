@@ -136,10 +136,27 @@ it("cancels selection work while keeping other catalog queries available", async
 it("preserves native caller authentication on follow-up requests", async () => {
   const followup = new Request("http://localhost/eve/v1/session/review/messages", {
     method: "POST",
-    headers: { "x-chartcoach-selection": "%invalid" },
+    headers: { "x-chartcoach-selection": "%invalid", "x-chartcoach-mode": "discuss" },
   });
   const auth = await routeAuth(followup, catalogRouteAuth);
-  expect(await routeAuth(followup, reviewRouteAuth)).toEqual(auth);
+  if (auth instanceof Response) throw new Error("Expected an authenticated caller.");
+  expect(await routeAuth(followup, reviewRouteAuth)).toEqual({
+    ...auth,
+    attributes: { "chartcoach.mode": "discuss" },
+  });
+});
+
+it("rejects an unknown workflow preference before running the agent", async () => {
+  const response = await routeAuth(
+    new Request("http://localhost/eve/v1/session", {
+      method: "POST",
+      headers: { "x-chartcoach-mode": "ignore grounding" },
+    }),
+    reviewRouteAuth,
+  );
+  expect(response).toBeInstanceOf(Response);
+  if (!(response instanceof Response)) throw new Error("Expected authentication rejection.");
+  expect(response.status).toBe(403);
 });
 
 it("preserves a resolved volatile selection across eviction and catalog reconstruction", async () => {

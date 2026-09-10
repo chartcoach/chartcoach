@@ -4,6 +4,8 @@ import type { RefObject } from "react";
 import * as stylex from "@stylexjs/stylex";
 import { colors, media } from "../ui/tokens.stylex";
 import { ui } from "../ui/ui";
+import { ModeSelect } from "./mode-select";
+import { type Mode } from "../../shared/workflow";
 
 const styles = stylex.create({
   area: {
@@ -40,16 +42,6 @@ const styles = stylex.create({
     "::placeholder": { color: colors.muted },
   },
   controls: { display: "flex", gap: 8, alignItems: "center", marginTop: 10 },
-  hint: {
-    color: colors.muted,
-    fontSize: 12,
-    position: { default: null, [media.mobile]: "absolute" },
-    width: { default: null, [media.mobile]: 1 },
-    height: { default: null, [media.mobile]: 1 },
-    overflow: { default: null, [media.mobile]: "hidden" },
-    clipPath: { default: null, [media.mobile]: "inset(50%)" },
-    whiteSpace: { default: null, [media.mobile]: "nowrap" },
-  },
   send: {
     marginLeft: "auto",
     flexShrink: 0,
@@ -109,6 +101,8 @@ export function Composer({
   disabled,
   reading,
   error,
+  mode,
+  onModeChange,
 }: {
   onUpload: (files: File[]) => void;
   messageInput: RefObject<HTMLTextAreaElement | null>;
@@ -116,6 +110,8 @@ export function Composer({
   disabled: boolean;
   reading: boolean;
   error?: string;
+  mode: Mode;
+  onModeChange: (mode: Mode) => void;
 }) {
   return (
     <div {...stylex.props(styles.area)}>
@@ -164,7 +160,7 @@ export function Composer({
           {...stylex.props(styles.input)}
           id="message"
           ref={messageInput}
-          placeholder="What would you like to improve?"
+          placeholder="Ask about your chart or a design choice…"
           minRows={1}
           maxRows={6}
           disabled={disabled}
@@ -189,9 +185,10 @@ export function Composer({
             <ImagePlus {...stylex.props(ui.icon)} size={18} />
             {reading ? "Reading image" : "Add chart"}
           </ComposerPrimitive.AddAttachment>
-          <span {...stylex.props(styles.hint)} id="upload-hint">
+          <span {...stylex.props(ui.srOnly)} id="upload-hint">
             PNG, JPEG, WebP · Up to 3 MiB
           </span>
+          <ModeSelect value={mode} onChange={onModeChange} disabled={disabled} />
           {busy ? (
             <ComposerPrimitive.Cancel
               {...stylex.props(ui.button, ui.focus, styles.send)}

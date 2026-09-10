@@ -24,6 +24,7 @@
     "@assistant-ui/react": "catalog:",
     "@chartcoach/brand": "workspace:*",
     "@chartcoach/catalog": "workspace:*",
+    "@chartcoach/skills": "workspace:*",
     "@duckdb/duckdb-wasm": "catalog:",
     "@duckdb/node-api": "catalog:",
     "@huggingface/transformers": "catalog:",
@@ -46,6 +47,7 @@
     "react": "catalog:",
     "react-dom": "catalog:",
     "streamdown": "catalog:",
+    "yaml": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

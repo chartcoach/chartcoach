@@ -2,6 +2,30 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { expect, it, vi } from "vite-plus/test";
 import { ToolActivity } from "../components/chat/tool-activity";
 
+it.each([
+  ["visfeedback", "Reviewing chart", "Assess an existing chart"],
+  ["visrec", "Planning a chart", "Plan a chart from a brief"],
+  ["discuss", "Comparing choices", "Explore a choice or tradeoff"],
+])("describes the %s skill as an inspectable task", (skill, label, description) => {
+  const html = renderToStaticMarkup(
+    <ToolActivity
+      part={{
+        type: "dynamic-tool",
+        toolCallId: "skill",
+        toolName: "load_skill",
+        state: "output-available",
+        input: { skill },
+        output: "Full agent instructions are model context, not the activity result.",
+      }}
+      stopped={false}
+      failed={false}
+    />,
+  );
+  expect(html).toContain(label);
+  expect(html).toContain(description);
+  expect(html).not.toContain("Full agent instructions");
+});
+
 it("renders SQL text, numbers, nested JSON, and null distinctly", () => {
   const html = renderToStaticMarkup(
     <ToolActivity

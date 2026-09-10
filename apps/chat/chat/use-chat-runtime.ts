@@ -4,21 +4,27 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useEveAgent } from "eve/react";
 import { convertEveMessage, getEveMessageContent } from "@assistant-ui/eve";
 import { useExternalStoreRuntime, type AssistantRuntime } from "@assistant-ui/react";
-import { reviewSchema } from "../shared/review";
 import type { ChartAttachment } from "./attachment";
 import { useChartAttachments } from "./use-chart-attachments";
 import { deriveConversation, type MessageView } from "./evidence";
 import type { CatalogFilterSelection } from "./use-catalog-filters";
 import { encodeCatalogSelection } from "../lib/catalog-client";
+import { type Mode } from "../shared/workflow";
+import { starters } from "../shared/starters";
+import { useAnswerDraft } from "./use-answer-draft";
 
 const statusLabels: Readonly<Partial<Record<ReturnType<typeof useEveAgent>["status"], string>>> = {
-  submitted: "Starting your review",
-  streaming: "Reviewing your chart",
+  submitted: "Starting your conversation",
+  streaming: "Finding grounded advice",
   resuming: "Reconnecting to your conversation",
   error: "Response interrupted. You can send your message again.",
 };
 
+type ChatHeaders = { "x-chartcoach-mode": Mode; "x-chartcoach-selection"?: string };
+
 export function useChatRuntime(selection: CatalogFilterSelection | undefined) {
+  const [mode, setMode] = useState<Mode>("auto");
+  const modeRef = useRef<Mode>(mode);
   const [attachments, setAttachments] = useState(new Map<string, ChartAttachment>());
   const sentChart = useRef<ChartAttachment>(undefined);
   const [error, setError] = useState<string>();
@@ -32,10 +38,11 @@ export function useChatRuntime(selection: CatalogFilterSelection | undefined) {
   const [preparing, setPreparing] = useState(false);
   useLayoutEffect(() => {
     selectionRef.current = selection;
-  }, [selection]);
+    modeRef.current = mode;
+  }, [selection, mode]);
   const agent = useEveAgent({
     headers: () => {
-      const headers: Record<string, string> = {};
+      const headers: ChatHeaders = { "x-chartcoach-mode": modeRef.current };
       if (!hasSession.current && selectionHeader.current)
         headers["x-chartcoach-selection"] = selectionHeader.current;
       return headers;
@@ -58,15 +65,17 @@ export function useChatRuntime(selection: CatalogFilterSelection | undefined) {
     },
   });
   const busy = preparing || agent.status === "submitted" || agent.status === "streaming";
-  const { adapter, reading, messageInput, upload } = useChartAttachments(
+  const { adapter, reading, messageInput, upload, uploadExample } = useChartAttachments(
     runtimeRef,
     busy || agent.status === "resuming",
     setError,
   );
   const disabled = busy || reading || agent.status === "resuming";
+  const draft = useAnswerDraft(agent.data.messages);
   const conversation = useMemo(
     () =>
       deriveConversation(agent.data.messages, {
+        draft,
         stoppedTurnIds: new Set(
           agent.events.flatMap((event) =>
             event.type === "turn.cancelled" ? [event.data.turnId] : [],
@@ -80,7 +89,7 @@ export function useChatRuntime(selection: CatalogFilterSelection | undefined) {
         ]),
         interrupted: agent.status === "error",
       }),
-    [agent.data.messages, agent.events, agent.status, interruptedTurns],
+    [agent.data.messages, agent.events, agent.status, interruptedTurns, draft],
   );
   const statusText =
     (preparing ? "Preparing your catalog selection" : statusLabels[agent.status]) ??
@@ -91,6 +100,11 @@ export function useChatRuntime(selection: CatalogFilterSelection | undefined) {
         : "");
 
   const runtime = useExternalStoreRuntime<MessageView>({
+    suggestions: starters.map(({ prompt, title, description }) => ({
+      prompt,
+      title,
+      label: description,
+    })),
     messages: conversation.messages,
     isRunning: busy,
     isDisabled: reading || agent.status === "resuming",
@@ -132,14 +146,15 @@ export function useChatRuntime(selection: CatalogFilterSelection | undefined) {
         : [
             {
               type: "text" as const,
-              text: "Review this chart and suggest improvements with guideline citations.",
+              text: "Help me with this image using the selected workflow and cite the relevant guidelines.",
             },
           ];
       try {
         const current = selectionRef.current;
-        if (!current) throw new Error("Wait for the catalog to load before starting a review.");
+        if (!current)
+          throw new Error("Wait for the catalog to load before starting a conversation.");
         if (current.matchedGuidelines === 0)
-          throw new Error("Broaden your knowledge selection before starting a review.");
+          throw new Error("Broaden your knowledge selection before starting a conversation.");
         if (!hasSession.current) {
           setPreparing(true);
           selectionHeader.current = await encodeCatalogSelection(
@@ -149,9 +164,7 @@ export function useChatRuntime(selection: CatalogFilterSelection | undefined) {
         }
         controller.signal.throwIfAborted();
         setPreparing(false);
-        await agent.send(getEveMessageContent({ ...message, content }), {
-          outputSchema: reviewSchema,
-        });
+        await agent.send(getEveMessageContent({ ...message, content }));
         if (sendError.current) throw sendError.current;
         if (chart) sentChart.current = chart;
       } catch (cause) {
@@ -211,7 +224,7 @@ export function useChatRuntime(selection: CatalogFilterSelection | undefined) {
     messageInput.current?.focus();
   }
   async function restartKeepingChart() {
-    if (disabled) throw new Error("Wait for this review to finish before changing its knowledge.");
+    if (disabled) throw new Error("Wait for this answer to finish before changing its knowledge.");
     const composer = runtime.thread.composer;
     const draft = composer.getState();
     const chart = sentChart.current;
@@ -235,6 +248,8 @@ export function useChatRuntime(selection: CatalogFilterSelection | undefined) {
     }
   }
   return {
+    mode,
+    setMode,
     runtime,
     conversation,
     attachments,
@@ -243,6 +258,7 @@ export function useChatRuntime(selection: CatalogFilterSelection | undefined) {
     reading,
     error: error ?? agent.error?.message,
     upload,
+    uploadExample,
     newChat,
     restartKeepingChart,
     statusText,

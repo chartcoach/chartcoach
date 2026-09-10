@@ -1,6 +1,7 @@
 import { ChevronRight } from "lucide-react";
+import { ThreadPrimitive } from "@assistant-ui/react";
 import { type Components, Streamdown } from "streamdown";
-import { type Review as ReviewData } from "../../shared/review";
+import { type Answer as AnswerData } from "../../shared/answer";
 import type { GuidelinePreview, ReadGuideline } from "../../chat/tool-output";
 import * as stylex from "@stylexjs/stylex";
 import { colors, media, motion, disclosureScope } from "../ui/tokens.stylex";
@@ -9,7 +10,7 @@ import { ui } from "../ui/ui";
 const DETAILS_ANIMATION =
   "@supports (interpolate-size: allow-keywords) and selector(::details-content)";
 const styles = stylex.create({
-  feedback: {
+  points: {
     listStyle: "none",
     padding: 0,
     marginTop: 20,
@@ -200,25 +201,31 @@ function Citation({
 }
 
 function Findings({
-  feedback,
+  points,
+  workflow,
+  streaming,
   guidelines,
 }: {
-  feedback: ReviewData["feedback"];
+  points: AnswerData["points"];
+  workflow: AnswerData["workflow"];
+  streaming: boolean;
   guidelines: ReadonlyMap<string, ReadGuideline>;
 }) {
   return (
-    <ol {...stylex.props(styles.feedback)} aria-label="Guideline-backed feedback">
-      {feedback.map((item) => {
+    <ol {...stylex.props(styles.points)} aria-label="Guideline-backed advice" aria-busy={streaming}>
+      {points.map((item) => {
         const primary = guidelines.get(item.primary_guideline_id)!;
         return (
           <li {...stylex.props(styles.finding)} key={item.primary_guideline_id}>
-            <h3 {...stylex.props(styles.assessment, styles[item.assessment])}>
-              {assessments[item.assessment]}
-            </h3>
+            {item.assessment ? (
+              <h3 {...stylex.props(styles.assessment, styles[item.assessment])}>
+                {assessments[item.assessment]}
+              </h3>
+            ) : null}
             <div {...stylex.props(styles.action)}>
               <Streamdown
                 {...stylex.props(styles.markdown)}
-                mode="static"
+                mode={streaming ? "streaming" : "static"}
                 allowedElements={recommendationElements}
                 components={recommendationComponents}
                 skipHtml
@@ -241,9 +248,15 @@ function Findings({
                 />
               </summary>
               <dl {...stylex.props(styles.detail)}>
-                <dt {...stylex.props(styles.term)}>In your chart</dt>
-                <dd {...stylex.props(styles.description)}>{item.observation}</dd>
-                <dt {...stylex.props(styles.term)}>Guideline requires</dt>
+                <dt {...stylex.props(styles.term)}>
+                  {workflow === "visfeedback"
+                    ? "In your chart"
+                    : workflow === "visrec"
+                      ? "Your brief"
+                      : "Your question"}
+                </dt>
+                <dd {...stylex.props(styles.description)}>{item.context}</dd>
+                <dt {...stylex.props(styles.term)}>Guideline guidance</dt>
                 <dd {...stylex.props(styles.description)}>{primary.description}</dd>
               </dl>
               {item.supporting_guideline_ids.length ? (
@@ -261,34 +274,50 @@ function Findings({
   );
 }
 
-export function Review({
-  review,
+export function Answer({
+  answer,
   guidelines,
+  streaming = false,
 }: {
-  review: ReviewData | undefined;
+  answer: AnswerData | undefined;
   guidelines: ReadonlyMap<string, ReadGuideline>;
+  streaming?: boolean;
 }) {
-  if (!review)
+  if (!answer)
     return (
-      <p {...stylex.props(styles.notice)}>
-        The review could not be verified against the guidelines read. Please try again.
-      </p>
+      <div {...stylex.props(styles.notice)}>
+        <p>The answer needs another evidence check.</p>
+        <ThreadPrimitive.Suggestion
+          prompt="Please finish the answer, reading any missing guideline evidence and correcting the reported validation issues before presenting it."
+          send
+          {...stylex.props(ui.button, ui.quietButton, ui.focus)}
+        >
+          Try again
+        </ThreadPrimitive.Suggestion>
+      </div>
     );
-  if (review.status === "needs_context")
-    return <p {...stylex.props(styles.notice)}>{review.question}</p>;
-  if (review.status === "no_match")
+  if (answer.status === "needs_context")
+    return <p {...stylex.props(styles.notice)}>{answer.question}</p>;
+  if (answer.status === "no_match")
     return (
       <p {...stylex.props(styles.notice)}>
         I could not find an applicable guideline for this request. Share more chart context or ask
         about a specific design choice.
       </p>
     );
-  if (review.status === "out_of_scope")
+  if (answer.status === "out_of_scope")
     return (
       <p {...stylex.props(styles.notice)}>
-        I can review chart design using the Guideline Catalog. Share a chart or a visualization
-        question.
+        I can review a chart, recommend a design, or discuss visualization choices using the
+        Guideline Catalog.
       </p>
     );
-  return <Findings feedback={review.feedback} guidelines={guidelines} />;
+  return (
+    <Findings
+      points={answer.points}
+      workflow={answer.workflow}
+      guidelines={guidelines}
+      streaming={streaming}
+    />
+  );
 }

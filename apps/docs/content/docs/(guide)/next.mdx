@@ -104,14 +104,25 @@ a recommendation fits the chart.
 agent tools. [assistant-ui](https://www.assistant-ui.com/docs) supplies the chat
 controls and message presentation.
 
+The composer defaults to **Auto**: Eve loads the ChartCoach workflow skill that
+fits the question. A person can also choose **Review**, **Recommend**, or
+**Discuss** for the next turn. The core skill stays in the agent's instructions,
+and the workflow skill supplies the evidence and applicability checks. Starter
+cards attach an example image and an editable prompt to make the first question
+concrete.
+
 The agent compares what it observes in the chart with the guidelines it has
 read. Each finding includes an action, a primary guideline, and any supporting
-guidelines. The app validates those IDs against successful reads before
-presenting the review.
+guidelines. Eve streams the proposed answer through the app's `present_answer`
+tool. Its server-side check validates the IDs against successful reads and
+returns repair instructions when needed. The interface shows the answer growing
+as it arrives, then retains the accepted result.
 
-That structured result drives three feedback states: **Working well**,
-**Improve**, and **Check**. Guideline titles link back to the evidence, while the
-guideline panel shows retrieved entries as the review progresses. The catalog
+Chart-review results use three feedback states: **Working well**,
+**Improve**, and **Check**. Discussions and design recommendations connect the
+advice to the question or brief. Guideline titles link back to the evidence, while the
+guideline panel shows retrieved entries as the review progresses, with primary
+guideline images visible directly. The catalog
 supplies the content and citations. The app decides how to display them.
 
 Questions, chart images, and retrieved guidance go to the configured language

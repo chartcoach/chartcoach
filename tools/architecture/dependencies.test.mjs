@@ -20,10 +20,11 @@ const workspaceContracts = [
   },
   { path: "packages/brand/package.json", internal: [] },
   { path: "packages/catalog/package.json", internal: [] },
+  { path: "skills/package.json", internal: [] },
   { path: "tools/release/package.json", internal: ["@chartcoach/catalog"] },
   {
     path: "apps/chat/package.json",
-    internal: ["@chartcoach/brand", "@chartcoach/catalog"],
+    internal: ["@chartcoach/brand", "@chartcoach/catalog", "@chartcoach/skills"],
   },
 ];
 
