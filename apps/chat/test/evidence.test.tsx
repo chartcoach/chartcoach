@@ -230,6 +230,11 @@ it.each([
     message: { ...answer, metadata: { ...answer.metadata, status: "failed" as const } },
     options: {},
   },
+  {
+    lifecycle: "submitted",
+    message: { ...answer, metadata: { ...answer.metadata, status: "submitted" as const } },
+    options: {},
+  },
 ])("keeps accepted evidence through $lifecycle orchestration", ({ message, options }) => {
   const conversation = deriveConversation([user, search, read, message], options);
   expect(conversation.evidence.map((item) => item.stage)).toEqual(["primary", "supporting"]);

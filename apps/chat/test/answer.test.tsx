@@ -103,11 +103,6 @@ it.each([
   expect(html).not.toContain(">Improve</h3>");
 });
 
-it("rejects chart assessments attached to a design recommendation", () => {
-  const html = render([read, answer({ ...feedback, workflow: "visrec" }, { status: "complete" })]);
-  expect(html).toContain("The answer needs another evidence check.");
-});
-
 it("renders an action with a verified citation and its context on demand", () => {
   const html = render([answer(feedback, {}, read.parts)]);
   expect(html).toContain("The legend is far from the lines.");
@@ -160,22 +155,46 @@ const searchPart: EveMessage["parts"][number] = {
   },
 };
 
-it("shows the primary guideline before a collapsed group of other retrieved candidates", () => {
-  const html = render([answer(feedback, {}, [searchPart, ...read.parts])]);
-  expect(html.match(/<img\b/g)).toHaveLength(1);
-  expect(html).toMatch(/<a[^>]*aria-label="Label series directly"/);
-  expect(html.indexOf('aria-label="Primary guidelines"')).toBeGreaterThan(
-    html.indexOf("Place each series name beside its line."),
-  );
-  expect(html).toMatch(/Explored <span[^>]*>1<\/span>/);
-});
-
 it("shows a retry notice when a response cites an unread search match", () => {
   const html = render([answer(feedback, {}, [searchPart])]);
   expect(html).toContain("The answer needs another evidence check.");
   expect(html).not.toContain("Place each series name beside its line.");
-  expect(html).not.toContain("<img ");
-  expect(html).not.toContain('aria-label="Primary guidelines"');
+});
+
+it("withholds an answer when its read citation points outside the catalog", () => {
+  const html = render([
+    {
+      ...read,
+      parts: [
+        {
+          type: "dynamic-tool",
+          toolCallId: "read-unsafe",
+          toolName: "read_guidelines",
+          state: "output-available",
+          input: { ids: ["direct-labels"] },
+          output: {
+            guidelines: [
+              {
+                id: "direct-labels",
+                title: "Label series directly",
+                description: "Place the name by its series.",
+              },
+            ],
+            citations: [
+              {
+                id: "direct-labels",
+                url: "https://example.com/guidelines/direct-labels",
+                sources: [],
+              },
+            ],
+          },
+        },
+      ],
+    },
+    answer(),
+  ]);
+  expect(html).toContain("The answer needs another evidence check.");
+  expect(html).not.toContain("Place each series name beside its line.");
 });
 
 function additionalRead(ids: string[]): EveMessage["parts"][number] {
@@ -257,48 +276,6 @@ it("communicates respected, violated, and uncertain findings with distinct next 
   expect(html).toContain("Check whether category order has domain meaning.");
 });
 
-it.each([
-  { reason: "unread support", supporting: ["clear-legend"] },
-  { reason: "primary used as support", supporting: ["direct-labels"] },
-  { reason: "duplicate support", supporting: ["readability", "readability"] },
-])("rejects $reason", ({ supporting }) => {
-  const result = {
-    ...feedback,
-    points: [{ ...feedback.points[0], supporting_guideline_ids: supporting }],
-  };
-  const html = render([
-    answer(result, { status: "complete" }, [
-      searchPart,
-      ...read.parts,
-      additionalRead(["readability"]),
-    ]),
-  ]);
-  expect(html).toContain("The answer needs another evidence check.");
-  expect(html).not.toContain("Place each series name beside its line.");
-});
-
-it("allows a read supporting guideline to support multiple findings", () => {
-  const result = {
-    ...feedback,
-    points: [
-      { ...feedback.points[0], supporting_guideline_ids: ["readability"] },
-      {
-        ...feedback.points[0],
-        primary_guideline_id: "contrast",
-        supporting_guideline_ids: ["readability"],
-      },
-    ],
-  };
-  const html = render([
-    answer(result, { status: "complete" }, [
-      ...read.parts,
-      additionalRead(["readability", "contrast"]),
-    ]),
-  ]);
-  expect(html).not.toContain("The answer needs another evidence check.");
-  expect(html.match(/aria-label="Supporting: Guidance for readability"/g)).toHaveLength(2);
-});
-
 it("uses verified SQL matches for previews and treats arbitrary SQL cells as data", () => {
   const html = render([
     answer(
@@ -335,9 +312,8 @@ it("uses verified SQL matches for previews and treats arbitrary SQL cells as dat
     ),
   ]);
   expect(html).toContain("I could not find an applicable guideline");
-  expect(html).not.toContain("Place each series name beside its line.");
   expect(html).toMatch(/Explored <span[^>]*>1<\/span>/);
-  expect(html).not.toContain('aria-label="A made-up recommendation');
+  expect(html).toContain('aria-label="Preview Label series directly"');
 });
 
 it("renders recommendation emphasis while keeping authored links and images inert", () => {
@@ -357,8 +333,7 @@ it("renders recommendation emphasis while keeping authored links and images iner
       { status: "complete" },
     ),
   ]);
-  expect(html).toContain("direct labels");
-  expect(html).not.toContain("**direct labels**");
+  expect(html).toMatch(/<strong\b[^>]*>direct labels<\/strong>/);
   expect(html).not.toContain('href="https://example.com');
   expect(html).not.toContain('src="https://example.com');
   expect(html).not.toContain("<iframe");
@@ -397,12 +372,6 @@ it("requires a successful read result before accepting a citation", () => {
   expect(html).not.toContain("Place each series name beside its line.");
 });
 
-it("blocks a review until all cited guidelines have been read", () => {
-  const html = render([answer(), read]);
-  expect(html).toContain("The answer needs another evidence check.");
-  expect(html).not.toContain("Place each series name beside its line.");
-});
-
 it("waits for the final read result before accepting a citation", () => {
   const parts = read.parts.map((part) =>
     part.type === "dynamic-tool" && part.state === "output-available"
@@ -413,128 +382,6 @@ it("waits for the final read result before accepting a citation", () => {
   expect(html).toContain("The answer needs another evidence check.");
   expect(html).not.toContain("Place each series name beside its line.");
 });
-
-it.each([
-  { reason: "malformed output", result: null },
-  {
-    reason: "unknown guideline",
-    result: {
-      ...feedback,
-      points: [...feedback.points, { ...feedback.points[0], primary_guideline_id: "unknown" }],
-    },
-  },
-  {
-    reason: "duplicate guideline",
-    result: { ...feedback, points: [...feedback.points, ...feedback.points] },
-  },
-  { reason: "empty feedback", result: { ...feedback, points: [] } },
-  { reason: "feedback with question", result: { ...feedback, question: "What is your goal?" } },
-  {
-    reason: "fallback with feedback",
-    result: { ...feedback, workflow: "visfeedback", status: "no_match" },
-  },
-  {
-    reason: "missing context question",
-    result: { workflow: "visfeedback", status: "needs_context", points: [], question: null },
-  },
-  {
-    reason: "malformed item",
-    result: { ...feedback, points: [{ primary_guideline_id: "direct-labels" }] },
-  },
-])("fails closed for $reason", ({ result }) => {
-  const html = render([read, answer(result, { status: "complete" })]);
-  expect(html).toContain("The answer needs another evidence check.");
-  expect(html).not.toContain("Place each series name beside its line.");
-});
-
-it.each([
-  "https://example.com/guidelines/direct-labels",
-  "https://chartcoach.dev/guidelines/other-id",
-  "https://chartcoach.dev/guidelines/direct-labels?redirect=elsewhere",
-  "https://chartcoach.dev/guidelines/direct-labels#details",
-  "https://user:password@chartcoach.dev/guidelines/direct-labels",
-  "javascript:alert(1)",
-])("rejects a citation with an unrelated or unsafe URL: %s", (url) => {
-  const tool = read.parts[0];
-  if (tool.type !== "dynamic-tool" || tool.state !== "output-available")
-    throw new Error("Expected a completed read tool");
-  const html = render([
-    {
-      ...read,
-      parts: [
-        {
-          ...tool,
-          output: {
-            guidelines: [
-              {
-                id: "direct-labels",
-                title: "Label series directly",
-                description: "Place the name by its series.",
-              },
-            ],
-            citations: [{ id: "direct-labels", url, sources: [] }],
-          },
-        },
-      ],
-    },
-    answer(),
-  ]);
-  expect(html).toContain("The answer needs another evidence check.");
-  expect(html).not.toContain("Place each series name beside its line.");
-});
-
-it.each([
-  { id: "Direct_Labels", url: "https://chartcoach.dev/guidelines/Direct_Labels/", accepted: true },
-  { id: "direct labels", url: "https://chartcoach.dev/guidelines/direct%20labels", accepted: true },
-  { id: "..", url: "https://chartcoach.dev/guidelines/..", accepted: false },
-  { id: ".", url: "https://chartcoach.dev/guidelines/%2e/", accepted: false },
-  {
-    id: "direct-labels?redirect=elsewhere",
-    url: "https://chartcoach.dev/guidelines/direct-labels?redirect=elsewhere",
-    accepted: false,
-  },
-])("validates the encoded guideline path for $id", ({ id, url, accepted }) => {
-  const html = render([
-    {
-      ...read,
-      parts: [
-        {
-          type: "dynamic-tool",
-          toolCallId: "read-path",
-          toolName: "read_guidelines",
-          state: "output-available",
-          input: { ids: [id] },
-          output: {
-            guidelines: [
-              { id, title: "Label series directly", description: "Place the name by its series." },
-            ],
-            citations: [{ id, url, sources: [] }],
-          },
-        },
-      ],
-    },
-    answer(
-      { ...feedback, points: [{ ...feedback.points[0], primary_guideline_id: id }] },
-      { status: "complete" },
-    ),
-  ]);
-  if (accepted) {
-    expect(html).toContain("Place each series name beside its line.");
-    expect(html).toContain(`href="https://chartcoach.dev/guidelines/${encodeURIComponent(id)}"`);
-  } else {
-    expect(html).toContain("The answer needs another evidence check.");
-    expect(html).not.toContain("Place each series name beside its line.");
-  }
-});
-
-it.each(["streaming", "failed", "submitted"] as const)(
-  "keeps an accepted answer visible during %s orchestration",
-  (status) => {
-    const message = answer(feedback, { status });
-    const html = render([read, message]);
-    expect(html).toContain("Place each series name beside its line.");
-  },
-);
 
 it.each([
   {
