@@ -1,16 +1,19 @@
 ---
 title: Getting started
-description: Read one guideline and print the citation for its source.
+description: Read one guideline and cite its sources in Python, TypeScript, or the CLI.
 icon: ScanSearch
 ---
 
-This example opens the public catalog, reads a guideline about direct
-labels, and retrieves its citations. It needs network access on the first run.
+Open the public Guideline Catalog, read a recommendation about direct labels,
+and cite its sources. Choose your interface in the tabs. That choice carries
+through the examples and other guides.
 
-## Set up Python
+## Install
 
-Use [uv](https://docs.astral.sh/uv/), the Python environment manager, to create
-an environment and install chartcoach. In a POSIX shell:
+<Tabs groupId="catalog-interface" items={["Python", "TypeScript", "CLI"]} persist>
+<Tab value="Python" id="install-python">
+
+Use [uv](https://docs.astral.sh/uv/), a Python environment manager. In a POSIX shell:
 
 ```bash
 uv venv
@@ -18,12 +21,44 @@ source .venv/bin/activate
 uv pip install chartcoach
 ```
 
-Keep this environment active for the Python and CLI examples in these docs.
-For Node.js setup, see [JavaScript and TypeScript](/javascript#install).
+Keep this environment active for the Python examples.
+
+</Tab>
+<Tab value="TypeScript">
+
+Use [Node.js](https://nodejs.org/en/learn/getting-started/introduction-to-nodejs)
+22.19 or later and its npm package manager:
+
+```bash
+npm install @chartcoach/catalog
+```
+
+The examples run as `.mts` files with Node's built-in TypeScript support.
+The Node entry point provides persistent caching. For a browser application,
+see [Build a web app](/next).
+
+</Tab>
+<Tab value="CLI">
+
+Install the command-line interface with
+[uv](https://docs.astral.sh/uv/), which manages its Python environment:
+
+```bash
+uv tool install chartcoach
+```
+
+</Tab>
+</Tabs>
 
 ## Read a guideline
 
-Save this as `read-guideline.py`:
+Opening the public catalog needs network access on the first run. Downloaded
+release files are verified and cached locally.
+
+<Tabs groupId="catalog-interface" items={["Python", "TypeScript", "CLI"]} persist>
+<Tab value="Python">
+
+Save as `read-guideline.py`:
 
 ```python title="read-guideline.py"
 from chartcoach import open_catalog
@@ -34,27 +69,61 @@ record = catalog.read(ids=[guideline_id])[0]
 print(record["title"])
 ```
 
-Run it:
-
 ```bash
 python read-guideline.py
 ```
 
-Expected output:
+</Tab>
+<Tab value="TypeScript">
 
-```text
-Directly label colored series instead of relying on a color key
+Save as `read-guideline.mts`:
+
+```ts title="read-guideline.mts"
+import { openCatalog } from "@chartcoach/catalog/node";
+
+const catalog = await openCatalog();
+const guidelineId = "directly-label-series-instead-of-using-a-color-key";
+const record = catalog.read({ ids: [guidelineId] })[0]!;
+console.log(record.title);
 ```
 
-`record` contains the guideline's labels, ordered sections, and parsed source
-details. `open_catalog()` opens the currently selected public release,
-verifies downloaded files, and keeps them in your user cache.
+```bash
+node read-guideline.mts
+```
+
+</Tab>
+<Tab value="CLI">
+
+```bash
+chartcoach catalog read \
+  directly-label-series-instead-of-using-a-color-key \
+  --format markdown
+```
+
+</Tab>
+</Tabs>
+
+The guideline's title is **Directly label colored series instead of relying on
+a color key**. Python and TypeScript return a record with labels, ordered
+sections, and parsed source details. The CLI renders that record as Markdown.
 
 ## Read the advice and cite its source
 
-Add these lines to the same file and run it again:
+Read the recommendation's context before applying it. Each interface can select
+the advice section and retrieve both the guideline link and source citations.
 
-```python
+<Tabs groupId="catalog-interface" items={["Python", "TypeScript", "CLI"]} persist>
+<Tab value="Python">
+
+Save as `cite-guideline.py`:
+
+```python title="cite-guideline.py"
+from chartcoach import open_catalog
+
+catalog = open_catalog()
+guideline_id = "directly-label-series-instead-of-using-a-color-key"
+record = catalog.read(ids=[guideline_id])[0]
+
 for section in record["sections"]:
     if section["role"] == "advice":
         print(section["content"])
@@ -65,6 +134,53 @@ for source in citation["sources"]:
     print(source["citation"])
 ```
 
-The output contains the advice, a link to the guideline, and its source
-citation. Use [Find guidelines](/querying) to choose records for your own task,
-or [Open and cache catalogs](/catalogs) to use another catalog.
+```bash
+python cite-guideline.py
+```
+
+</Tab>
+<Tab value="TypeScript">
+
+Save as `cite-guideline.mts`:
+
+```ts title="cite-guideline.mts"
+import { openCatalog } from "@chartcoach/catalog/node";
+
+const catalog = await openCatalog();
+const guidelineId = "directly-label-series-instead-of-using-a-color-key";
+const record = catalog.read({ ids: [guidelineId] })[0]!;
+
+for (const section of record.sections) {
+  if (section.role === "advice") console.log(section.content);
+}
+
+const citation = catalog.cite({ ids: [guidelineId] })[0]!;
+console.log(citation.guideline_citation);
+for (const source of citation.sources) console.log(source.citation);
+```
+
+```bash
+node cite-guideline.mts
+```
+
+</Tab>
+<Tab value="CLI">
+
+```bash
+chartcoach catalog read \
+  directly-label-series-instead-of-using-a-color-key \
+  --role advice --format markdown
+
+chartcoach catalog cite \
+  directly-label-series-instead-of-using-a-color-key \
+  --format markdown
+```
+
+Use an exact release with `--source` when multiple commands must retain the
+same catalog contents.
+
+</Tab>
+</Tabs>
+
+Use [Find guidelines](/querying) to choose evidence for your own task, or
+[Open and cache catalogs](/catalogs) to work with another catalog.

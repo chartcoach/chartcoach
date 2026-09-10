@@ -1,88 +1,285 @@
 ---
 title: Find guidelines
-description: Find candidates, read the relevant sections, and cite the evidence you use.
+description: Find candidates, read their context, and cite the evidence in Python, TypeScript, or the CLI.
 icon: Search
 ---
 
-Start with what you know about the chart:
+Choose a retrieval path from what you know about the chart. Each path returns
+candidate guideline IDs. Read the selected guidelines before using their advice.
 
-| What you know                                       | Use                                    |
-| --------------------------------------------------- | -------------------------------------- |
-| An exact label, term, or short phrase               | `catalog list`                         |
-| A relationship between labels, sections, or sources | `catalog sql`                          |
-| A topic to search within guideline text             | `catalog search` with an index profile |
+| What you know                                            | Retrieval path                                  |
+| -------------------------------------------------------- | ----------------------------------------------- |
+| An exact label or short phrase                           | Filter entry metadata.                          |
+| A term in section text or a relationship between sources | Query catalog tables with SQL.                  |
+| Several words to match in guideline text                 | Search a full-text index.                       |
+| A design problem described in your own words             | Search vectors with a matching embedding model. |
 
-Install the CLI with [uv](https://docs.astral.sh/uv/):
+## Open the catalog
 
-```bash
-uv tool install chartcoach
+Complete [Getting started](/getting-started#install) for your interface.
+Run each Python example as its own `.py` script and each TypeScript example as
+its own `.mts` script with Node.js.
+
+<Tabs groupId="catalog-interface" items={["Python", "TypeScript", "CLI"]} persist>
+<Tab value="Python">
+
+```python
+from chartcoach import open_catalog
+
+catalog = open_catalog()
+print(catalog.describe())
 ```
 
-Commands use the public catalog by default. For another catalog, set
-`CHARTCOACH_SOURCE` to its descriptor location or pass `--source`. Use an exact
-release when a sequence of commands must keep the same catalog contents.
+</Tab>
+<Tab value="TypeScript">
+
+```ts
+import { openCatalog } from "@chartcoach/catalog/node";
+
+const catalog = await openCatalog();
+console.log(await catalog.describe());
+```
+
+</Tab>
+<Tab value="CLI">
+
+```bash
+chartcoach catalog describe
+```
+
+Each command opens the public catalog by default. Set `CHARTCOACH_SOURCE` to
+an exact release descriptor when a sequence of commands must keep the same
+catalog contents.
+
+</Tab>
+</Tabs>
+
+The description includes table schemas, vocabulary, and available index profiles.
+For another source, follow [Open and cache catalogs](/catalogs).
 
 ## Filter candidates
 
 Find recommendations about labels that also address quality:
+
+<Tabs groupId="catalog-interface" items={["Python", "TypeScript", "CLI"]} persist>
+<Tab value="Python">
+
+```python
+from chartcoach import open_catalog
+
+catalog = open_catalog()
+candidates = catalog.query(
+    labels=["purpose:refine"],
+    label_prefixes=["quality:"],
+    contains="label",
+    limit=10,
+)
+print(candidates)
+```
+
+</Tab>
+<Tab value="TypeScript">
+
+```ts
+import { openCatalog } from "@chartcoach/catalog/node";
+
+const catalog = await openCatalog();
+const candidates = catalog.query({
+  labels: ["purpose:refine"],
+  labelPrefixes: ["quality:"],
+  contains: "label",
+  limit: 10,
+});
+console.table(candidates);
+```
+
+</Tab>
+<Tab value="CLI">
 
 ```bash
 chartcoach catalog list \
   --label purpose:refine \
   --label-prefix quality: \
   --contains label \
-  --limit 10 \
-  --format table
+  --limit 10 --format table
 ```
 
-Every filter must match. `--contains` matches one contiguous substring in the
-ID, title, or description. Matching ignores case and treats whitespace,
-hyphens, and underscores as equivalent separators. Search `labels` and
-`overlap` separately when those concepts need not appear together.
+</Tab>
+</Tabs>
 
-The result includes candidate IDs, which you pass to `read` and `cite`.
-Inspect `catalog labels` before using unfamiliar exact labels.
+Every filter must match. `contains` matches one contiguous phrase in the ID,
+title, or description. Matching ignores case and treats whitespace, hyphens,
+and underscores as equivalent separators. Inspect the catalog vocabulary before
+choosing unfamiliar labels.
 
-In Python, use `catalog.query(labels=[...], contains="label", limit=10)`.
-In JavaScript, use `catalog.query({ labels: [...], contains: "label", limit: 10 })`.
-
-If nothing matches, shorten the phrase or relax exact filters. Section text
-can match even when the entry's title and description do not. Search it with
-SQL, or use full-text search when the release has an index profile. An empty
-query result alone does not establish that the catalog has no relevant guidance.
+If nothing matches, shorten the phrase or relax filters. Search `labels` and
+`overlap` separately when those concepts need not appear together. Section text
+can match even when a title or description does not.
 
 ## Query section text and relationships with SQL
 
-Inspect the tables and columns before writing a query:
+[DuckDB](https://duckdb.org/docs/) queries the catalog's related tables. This
+query finds the word “label” in section text and returns up to ten guideline
+IDs and titles in ID order. It works with unindexed catalogs too.
 
-```bash
-chartcoach catalog schema guidelines sections
+<Tabs groupId="catalog-interface" items={["Python", "TypeScript", "CLI"]} persist>
+<Tab value="Python">
+
+```python
+from chartcoach import open_catalog
+
+catalog = open_catalog()
+with catalog.duckdb() as connection:
+    rows = connection.sql("""
+        SELECT DISTINCT g.id, g.title
+        FROM guidelines g
+        JOIN sections s ON s.guideline_id = g.id
+        WHERE s.content ILIKE '%label%'
+        ORDER BY g.id
+        LIMIT 10
+    """).fetchall()
+    print(rows)
 ```
 
-Find a term in section text, including catalogs with no index profile:
+Reuse a connection for related queries. The context manager closes it when
+the block finishes.
+
+</Tab>
+<Tab value="TypeScript">
+
+Install the native [DuckDB Node client](https://duckdb.org/docs/stable/clients/node_neo/overview):
+
+```bash
+npm install @duckdb/node-api
+```
+
+```ts
+import { DuckDBInstance } from "@duckdb/node-api";
+import { registerCatalog } from "@chartcoach/catalog/duckdb";
+import { openCatalog } from "@chartcoach/catalog/node";
+
+const catalog = await openCatalog();
+const db = await DuckDBInstance.create(":memory:");
+const connection = await db.connect();
+try {
+  await registerCatalog(connection, catalog);
+  const result = await connection.runAndReadAll(`
+    SELECT DISTINCT g.id, g.title
+    FROM guidelines g
+    JOIN sections s ON s.guideline_id = g.id
+    WHERE s.content ILIKE '%label%'
+    ORDER BY g.id
+    LIMIT 10
+  `);
+  console.log(result.getRowsJson());
+} finally {
+  connection.closeSync();
+  db.closeSync();
+}
+```
+
+Register tables once per connection, then reuse them for related queries.
+For client-side SQL, use the [browser worker adapter](/javascript#query-in-a-browser-worker).
+
+</Tab>
+<Tab value="CLI">
 
 ```bash
 chartcoach catalog sql "
-  select distinct g.id, g.title
-  from guidelines g
-  join sections s on s.guideline_id = g.id
-  where s.content ilike '%label%'
-  order by g.id
+  SELECT DISTINCT g.id, g.title
+  FROM guidelines g
+  JOIN sections s ON s.guideline_id = g.id
+  WHERE s.content ILIKE '%label%'
+  ORDER BY g.id
+  LIMIT 10
 " --limit 10 --format table
 ```
 
-Use [native DuckDB in Python](/python#compose-duckdb-queries) for application
-queries, parameters, and exports. The CLI accepts one read-only `SELECT` and
-bounds its output.
+The CLI accepts one read-only `SELECT`, disables external access, and bounds
+its output. Python and TypeScript expose caller-owned native connections.
+
+</Tab>
+</Tabs>
+
+Use the same table relationships for source authors, publication years, labels,
+and section roles. [Catalog data](/catalog#catalog-tables) describes the tables.
 
 ## Search guideline text
 
-An index profile contains searchable documents and their embedding binding.
-Set `CATALOG_SOURCE` to a release with profiles, run `catalog describe` for
-their names, and set `PROFILE` to the one you want:
+An index profile contains search documents derived from the guidelines. Set
+`CATALOG_SOURCE` to an [indexed release descriptor](/catalogs#open-a-remote-release)
+and `PROFILE` to one of its profile names. Each example opens that release
+before searching. A release with an empty `profiles` list needs an index built
+before it can support this search.
+
+Full-text search matches words in the stored text index and needs no embedding
+credentials. These examples retrieve five document hits with
+[LanceDB](https://lancedb.com/docs/search/), the index's database engine:
+
+<Tabs groupId="catalog-interface" items={["Python", "TypeScript", "CLI"]} persist>
+<Tab value="Python">
+
+Install the index capability in your active environment:
 
 ```bash
-uvx --from "chartcoach[index]" chartcoach catalog describe --source "$CATALOG_SOURCE"
+uv pip install "chartcoach[index]"
+```
+
+```python
+import os
+from chartcoach import open_catalog
+
+catalog = open_catalog(os.environ["CATALOG_SOURCE"])
+table = catalog.index(os.environ["PROFILE"])
+hits = table.search(
+    "direct labels", query_type="fts", fts_columns="text"
+).select(["id", "parent_id", "role"]).limit(5).to_list()
+print(hits)
+```
+
+</Tab>
+<Tab value="TypeScript">
+
+Install LanceDB's Node client:
+
+```bash
+npm install @lancedb/lancedb
+```
+
+```ts
+import { connect } from "@lancedb/lancedb";
+import { openCatalog, indexPath } from "@chartcoach/catalog/node";
+
+const source = process.env.CATALOG_SOURCE;
+const profile = process.env.PROFILE;
+if (!source || !profile) {
+  throw new Error("Set CATALOG_SOURCE and PROFILE for an indexed release.");
+}
+
+const catalog = await openCatalog(source);
+const index = await connect(await indexPath(catalog, profile));
+const table = await index.openTable("documents");
+try {
+  await table.checkout(await table.version());
+  const hits = await table
+    .query()
+    .fullTextSearch("direct labels")
+    .select(["id", "parent_id", "role"])
+    .limit(5)
+    .toArray();
+  console.log(hits);
+} finally {
+  table.close();
+  index.close();
+}
+```
+
+</Tab>
+<Tab value="CLI">
+
+```bash
+: "${CATALOG_SOURCE:?Set CATALOG_SOURCE to an indexed release descriptor}"
+: "${PROFILE:?Set PROFILE to a profile in that release}"
 
 uvx --from "chartcoach[index]" chartcoach catalog search \
   --source "$CATALOG_SOURCE" \
@@ -92,43 +289,109 @@ uvx --from "chartcoach[index]" chartcoach catalog search \
   "direct labels"
 ```
 
-Full-text search (`fts`) uses the stored text index and keeps embedding
-providers idle. Use it for several concepts such as `labels overlap`.
-`vector` and `hybrid` embed the query through the profile's LanceDB binding.
-Install its reported
-`python_requirements` and supply any required credentials before using those
-modes. See [CLI search](/cli#search-an-index) for configuration.
+The response groups document hits by guideline. Compare `documents_considered`,
+`match_count`, and `documents_truncated` when checking coverage.
 
-To search a specific section, add `--where "role = 'section.advice'"`.
-Python applications can use [the native LanceDB table](/python#search-and-read-matching-guidelines)
-for filtering, reranking, and batch queries.
+</Tab>
+</Tabs>
 
-The limit counts search documents before deduplication into guideline matches.
-Compare `documents_considered`, `match_count`, and `documents_truncated` when
-checking coverage. An additional `--where "role = 'overview'"` search can
-broaden candidates when many hits share a parent. Read complete entries to
-recover their section context and exceptions.
+The first search downloads and verifies the index, then caches its extracted
+files. The shared read-only extraction requires POSIX permissions. On Windows,
+use a caller-owned extraction directory through the
+[Python](/python#open-an-index-as-a-lancedb-table) or
+[Node](/javascript#indexpathcatalog-profile-options) API.
 
-`score_kind` is `distance` for vector search, where lower values rank first,
-and `relevance` for full-text and hybrid search, where higher values rank first.
-Scores describe retrieval within that query, mode, and profile. They do not
-measure whether a recommendation applies to the user's chart.
+Each hit's `parent_id` identifies the guideline to read. Several hits can share
+one parent, so five documents may yield fewer than five guidelines. Deduplicate
+parent IDs in ranked order. A query restricted to `role = 'overview'` can
+broaden candidates, while `role = 'section.advice'` targets advice sections.
+
+### Search by meaning
+
+Vector search compares a query embedding with stored vectors. Hybrid search
+combines that similarity with full-text matches. The query model, vector
+dimensions, and distance metric must match the selected profile.
+
+<Tabs groupId="catalog-interface" items={["Python", "TypeScript", "CLI"]} persist>
+<Tab value="Python">
+
+The native table accepts `query_type="vector"` or `query_type="hybrid"`.
+Text queries use the profile's stored LanceDB embedding binding. Install its
+reported `python_requirements` and configure its credentials.
+See [Search and read matching guidelines](/python#search-and-read-matching-guidelines).
+
+</Tab>
+<Tab value="TypeScript">
+
+Generate a matching query vector in your application and pass it to
+`table.vectorSearch(vector)`. A stored Python binding does not register a
+JavaScript embedding provider. See [Query an index with LanceDB](/javascript#query-an-index-with-lancedb)
+for the native API and [Build a web app](/next#search-and-read-on-the-server)
+for the chat app's local embedding model.
+
+</Tab>
+<Tab value="CLI">
+
+Use `--mode vector` or `--mode hybrid`. Install the profile's reported
+`python_requirements` and supply any required registry variables through
+`--embedding-vars`. See [Search an index](/cli#search-an-index).
+
+</Tab>
+</Tabs>
+
+Retrieval scores rank results within one query, mode, and profile. They do not
+measure whether a guideline applies to the chart.
 
 ## Read and cite selected guidance
 
-Pass selected IDs together to read and cite. For example:
+This example opens the public catalog, reads one complete guideline, and
+retrieves its guideline link and formatted source citations. For your own
+search results, use their catalog source and replace the example ID with
+selected candidate IDs.
+
+<Tabs groupId="catalog-interface" items={["Python", "TypeScript", "CLI"]} persist>
+<Tab value="Python">
+
+```python
+from chartcoach import open_catalog
+
+catalog = open_catalog()
+ids = ["directly-label-series-instead-of-using-a-color-key"]
+records = catalog.read(ids=ids)
+citations = catalog.cite(ids=ids)
+print(records)
+print(citations)
+```
+
+</Tab>
+<Tab value="TypeScript">
+
+```ts
+import { openCatalog } from "@chartcoach/catalog/node";
+
+const catalog = await openCatalog();
+const ids = ["directly-label-series-instead-of-using-a-color-key"];
+const records = catalog.read({ ids });
+const citations = catalog.cite({ ids });
+console.log(records);
+console.log(citations);
+```
+
+</Tab>
+<Tab value="CLI">
 
 ```bash
 GUIDELINE_ID="directly-label-series-instead-of-using-a-color-key"
-RELATED_ID="place-labels-and-annotations-next-to-marks"
-chartcoach catalog read "$GUIDELINE_ID" "$RELATED_ID" --format markdown
-chartcoach catalog cite "$GUIDELINE_ID" "$RELATED_ID" --format markdown
+chartcoach catalog read "$GUIDELINE_ID" --format markdown
+chartcoach catalog cite "$GUIDELINE_ID" --format markdown
 ```
 
-Read the advice, applicable situations, and exceptions before applying it.
-`cite` returns the guideline link and formatted source citations. When a search
-used a custom catalog, pass that same `--source` to both commands.
+Keep the same `CHARTCOACH_SOURCE` or `--source` used during search.
 
-Inspect the publication before attributing a specific claim to it. A returned
-citation identifies an attached source, while the record's context and the
-chart evidence determine whether its guidance fits the task.
+</Tab>
+</Tabs>
+
+Batch selected IDs in one read and one citation call. Read the advice,
+applicable situations, and exceptions before applying a recommendation.
+A citation identifies an attached source. Inspect the publication before
+attributing a specific claim to it.
