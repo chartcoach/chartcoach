@@ -1,0 +1,19 @@
+apps/chat/components/ui/loading-mark.tsx
+  s_b2fc299f4eea16::t_aeb60b63221438 4-11,23-25,28-35,37,46-57
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "440e9f5218c8e65a1a2ac64c270211652dcc2a9d",
+  "prompts": {},
+  "sessions": {
+    "s_b2fc299f4eea16": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a07701-a536-7f73-bfd5-6731d2663cd9",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Péter Ferenc Gyarmati <dev.petergy@gmail.com>"
+    }
+  }
+}
