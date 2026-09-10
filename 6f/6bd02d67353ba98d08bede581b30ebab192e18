@@ -1,0 +1,250 @@
+apps/chat/agent/channels/eve.ts
+  s_b2fc299f4eea16::t_952cbd2de4622c 7,15-22,28,41
+apps/docs/content/docs/(guide)/next.mdx
+  s_b2fc299f4eea16::t_84bd59e5d2f2a6 107-113,121-123
+  s_b2fc299f4eea16::t_266485b1c1d275 116-119,124-125
+apps/chat/evals/retrieval-methods.eval.ts
+  s_b2fc299f4eea16::t_a5d1a42939b325 9
+apps/chat/agent/tools/load_skill.ts
+  s_b2fc299f4eea16::t_1dfbcb6f2a2a8b 1
+apps/chat/evals/catalog-sql.eval.ts
+  s_b2fc299f4eea16::t_a5d1a42939b325 8
+apps/chat/evals/chart-advice.eval.ts
+  s_b2fc299f4eea16::t_a5d1a42939b325 8
+apps/chat/components/chat/guideline-card.tsx
+  s_b2fc299f4eea16::t_335047cb93ba16 62-68
+  s_b2fc299f4eea16::t_b399bbc5208f60 6,58,95
+apps/chat/test/tool-results.test.tsx
+  s_b2fc299f4eea16::t_6d178eede690a2 5-28
+skills/visrec/SKILL.md
+  s_b2fc299f4eea16::t_3328051556c008 50-57
+  s_b2fc299f4eea16::t_3832ba9d9fa7e1 41-42,74-79
+apps/chat/components/chat/answer.tsx
+  s_b2fc299f4eea16::t_2825bd5baebd9b 4,13,209,258,277-278,282,286,299-301,308
+  s_b2fc299f4eea16::t_11ed2773a510aa 2,206,211,228,280,284,288-289,297
+  s_b2fc299f4eea16::t_9b7f0b36261567 290-296,315-322
+  s_b2fc299f4eea16::t_3ebd509587d969 215
+  s_b2fc299f4eea16::t_952cbd2de4622c 204-205,210,216,220-224,251-257,259,311-312
+knip.jsonc
+  s_b2fc299f4eea16::t_531dc4a4938161 19-22,24
+apps/chat/chat/evidence.ts
+  s_b2fc299f4eea16::t_9b7f0b36261567 46,48-51,55,57,109-119,127-131,149-157
+  s_b2fc299f4eea16::t_a9eb3b0cd7c904 1,121-122,133
+  s_b2fc299f4eea16::t_11ed2773a510aa 9,18,27,42,44-45,52-54,58-59,108,120,134-135
+  s_b2fc299f4eea16::t_c0f1c27f54a599 26,137-138
+  s_b2fc299f4eea16::t_4775c5b4497629 140-141
+  s_b2fc299f4eea16::t_098b9052c4b881 2-6,8,37-38,40-41,43,47,56,123-126,132
+  s_b2fc299f4eea16::t_ccf72e41344f82 142-144
+skills/core/SKILL.md
+  s_b2fc299f4eea16::t_8d22e87a012f04 3,9-26,31-52,57-68,73-79
+  s_b2fc299f4eea16::t_384bd15131cf27 8
+  s_b2fc299f4eea16::t_0e088286e28eee 69-72
+  s_b2fc299f4eea16::t_3328051556c008 53-56
+apps/chat/agent/auth.ts
+  s_b2fc299f4eea16::t_4241fe4880a810 10,18-23,25-27,29
+apps/chat/agent/tools/read_guidelines.ts
+  s_b2fc299f4eea16::t_c05ed3858fd591 5,12,16-19
+skills/core/references/catalog-access.md
+  s_b2fc299f4eea16::t_60b8fc5adf3d2c 1-265
+apps/chat/evals/assessments.eval.ts
+  s_b2fc299f4eea16::t_a5d1a42939b325 3-4,21,36
+  s_b2fc299f4eea16::t_8fb025a7216ece 22,24-25,38-39,42-44
+apps/chat/README.md
+  s_b2fc299f4eea16::t_266485b1c1d275 154-157,169-173,298-303
+  s_b2fc299f4eea16::t_84bd59e5d2f2a6 3-4,66,83,110-136,161-163
+skills/discuss/SKILL.md
+  s_b2fc299f4eea16::t_3832ba9d9fa7e1 35-36,43,66-72
+  s_b2fc299f4eea16::t_0e088286e28eee 49-55
+apps/chat/components/chat/mode-select.tsx
+  s_b2fc299f4eea16::t_a23ab698e815dd 1-9,11-25,27-29,31-53
+apps/chat/chat/use-chart-attachments.ts
+  s_b2fc299f4eea16::t_af355b060a3621 1,12-13,18,59,76-82,86-93,95,97-104
+  s_b2fc299f4eea16::t_70585d5abe10ac 94
+  s_b2fc299f4eea16::t_4241fe4880a810 83,85
+  s_b2fc299f4eea16::t_f943d6c39ebb41 96
+apps/chat/evals/assert-grounding.ts
+  s_b2fc299f4eea16::t_a5d1a42939b325 17,19-21,23-25,27-32
+  s_b2fc299f4eea16::t_ec9fa8ab7f7e99 4,51-52,54-55,61,65,74
+  s_b2fc299f4eea16::t_6c0986ff5bb735 2,22,26
+  s_b2fc299f4eea16::t_87dc51680967c2 33
+apps/chat/components/chat/starters.tsx
+  s_b2fc299f4eea16::t_4241fe4880a810 4,8-10,12,15,21-23,25-30,32-33,39-42,44,48,58-61,64
+  s_b2fc299f4eea16::t_af355b060a3621 1-3,5-7,13-14,16-20,34-38,46-47,49-57,62-63,65-79,81-109,111-115
+apps/chat/shared/answer.ts
+  s_b2fc299f4eea16::t_5805ca41e4bcfd 30,34,36-39,41-45,48-49,60-61,67-71
+  s_b2fc299f4eea16::t_bdd40c25307358 31
+  s_b2fc299f4eea16::t_68cc2598213513 2,4-7,12-13,21,35,40
+  s_b2fc299f4eea16::t_6715fcf3fbc452 51
+  s_b2fc299f4eea16::t_098b9052c4b881 23-29
+  s_b2fc299f4eea16::t_9b7f0b36261567 32-33,46-47,50,52-59,63-66
+apps/chat/test/telemetry.test.tsx
+  s_b2fc299f4eea16::t_13e04bcae18488 130-137,141-145
+  s_b2fc299f4eea16::t_3a36d62e9f9842 75
+packages/chartcoach/tests/test_agent.py
+  s_b2fc299f4eea16::t_f943d6c39ebb41 18-19
+apps/chat/test/evidence-panel.test.tsx
+  s_b2fc299f4eea16::t_9e68a0beb6e439 1-37
+apps/chat/agent/evidence-state.ts
+  s_b2fc299f4eea16::t_c05ed3858fd591 1-3
+apps/chat/test/messages.test.tsx
+  s_b2fc299f4eea16::t_74bd99692316d5 14-17,19-27,38-39
+  s_b2fc299f4eea16::t_4f17f2a7e66bcc 6,33
+  s_b2fc299f4eea16::t_9f54c579dd0bf0 13,210,394-401,408
+  s_b2fc299f4eea16::t_87dc51680967c2 402-404
+apps/chat/evals/scope.eval.ts
+  s_b2fc299f4eea16::t_6c0986ff5bb735 3,11-13,16,20-22
+  s_b2fc299f4eea16::t_a5d1a42939b325 2,10,14-15,18-19
+  s_b2fc299f4eea16::t_2fd85a4d604988 8
+apps/chat/components/chat/tool-activity.tsx
+  s_b2fc299f4eea16::t_262cf001349100 4,9,28-34,36-38,40,49,366,384-385,399-404,407
+  s_b2fc299f4eea16::t_b175afa835160b 41-46
+  s_b2fc299f4eea16::t_e59387b974040e 16,35,39,47-48
+apps/chat/shared/workflow.ts
+  s_b2fc299f4eea16::t_68cc2598213513 1-13
+apps/chat/components/chat/evidence-panel.tsx
+  s_b2fc299f4eea16::t_52b2acbf1bef00 26,89,99-105,108-119,121-130,136-143,338-340,348-354,358-359,361,383
+  s_b2fc299f4eea16::t_7d9647f7277c9e 30-32,68-74,120,318-322,334,337
+  s_b2fc299f4eea16::t_d1b41adf7bc43e 316
+  s_b2fc299f4eea16::t_f35740da0f82ad 355,357,362-365,367-382
+  s_b2fc299f4eea16::t_0572b09c78d846 356
+  s_b2fc299f4eea16::t_335047cb93ba16 131-135
+  s_b2fc299f4eea16::t_9e0fb499a5fc18 324-329
+pnpm-workspace.yaml
+  s_b2fc299f4eea16::t_531dc4a4938161 5,56
+apps/chat/test/evidence.test.tsx
+  s_b2fc299f4eea16::t_d67b7671f86f43 216,305
+  s_b2fc299f4eea16::t_1d02ffe4413fc0 4,69
+  s_b2fc299f4eea16::t_1152575b786015 89,99-100,121-123,125-127,134,136-137,141-143,145-147,149-151
+  s_b2fc299f4eea16::t_c30608c7107ef8 124,148
+  s_b2fc299f4eea16::t_d1c879e56ab1fa 233-241,255-256,262-264,266-268,307-308,324,330-331,333-334,348
+  s_b2fc299f4eea16::t_32f5c282fe65a8 1
+  s_b2fc299f4eea16::t_d33851fa3c4097 70-72
+  s_b2fc299f4eea16::t_63be95b3cd0552 251,297
+  s_b2fc299f4eea16::t_b9de5abc916a7d 351-355,396
+  s_b2fc299f4eea16::t_51ccf91f5d5d8d 73-78,80-81,85,90-98,101-120,128-133,140,155-157
+  s_b2fc299f4eea16::t_7aa22d8dc37f46 356-395,397-399
+  s_b2fc299f4eea16::t_6fccbf63a644c0 9,57-58,60,65,159-161
+  s_b2fc299f4eea16::t_3fdf1049d73116 242-250,252-254,257-261,265,269-274,276-296,298-304,306,309-323,325-329,332,335-338,340-341,343-345,347
+apps/chat/chat/use-chat-runtime.ts
+  s_b2fc299f4eea16::t_de21f24cd3d165 14,74,78,92,154-155,167
+  s_b2fc299f4eea16::t_53a3429164b5e3 227
+  s_b2fc299f4eea16::t_4775c5b4497629 149,157
+  s_b2fc299f4eea16::t_bbca943db8dcf8 23-24,45
+  s_b2fc299f4eea16::t_a23ab698e815dd 12-13,17-18,26-27,41-42,103-105,107,251-252
+  s_b2fc299f4eea16::t_af355b060a3621 68,261
+apps/chat/evals/workflows.eval.ts
+  s_b2fc299f4eea16::t_63e5056f0f0a92 1-2,4-11,13-16,18-19,21-24,26,30-33
+  s_b2fc299f4eea16::t_a5d1a42939b325 3,20
+apps/chat/test/catalog-selection.test.tsx
+  s_b2fc299f4eea16::t_3a36d62e9f9842 143,146
+  s_b2fc299f4eea16::t_e91832ad92589d 142
+  s_b2fc299f4eea16::t_13e04bcae18488 139,144-145,147-154,156-159
+apps/chat/components/chat/activity.tsx
+  s_b2fc299f4eea16::t_705a323b076227 1,4,6,20-22,24,49,51,53-55,57,59,68,71-72,74-76,82,85
+  s_b2fc299f4eea16::t_5061f7028cd68e 2
+  s_b2fc299f4eea16::t_9b7f0b36261567 25-31,38-39,43-44,47-48
+  s_b2fc299f4eea16::t_3ebd509587d969 41-42,45-46
+apps/chat/agent/skills/visrec.ts
+  s_b2fc299f4eea16::t_1dfbcb6f2a2a8b 1,4
+  s_b2fc299f4eea16::t_c4f2b8c2312e82 2-3,5
+apps/chat/agent/skills/visfeedback.ts
+  s_b2fc299f4eea16::t_0509e1929a6d57 2
+  s_b2fc299f4eea16::t_c4f2b8c2312e82 3,5
+  s_b2fc299f4eea16::t_1dfbcb6f2a2a8b 1,4
+skills/package.json
+  s_b2fc299f4eea16::t_531dc4a4938161 1-4,7-11
+  s_b2fc299f4eea16::t_2f6417b11d5c0a 5-6
+apps/chat/test/filter-tools.test.tsx
+  s_b2fc299f4eea16::t_487908c20c2b07 11-13,73-95,99-101,105-109,111-115
+  s_b2fc299f4eea16::t_6c0986ff5bb735 96,98,102,104,110
+apps/chat/assets.d.ts
+  s_b2fc299f4eea16::t_c4f2b8c2312e82 1-4
+apps/chat/components/chat/message.tsx
+  s_b2fc299f4eea16::t_11ed2773a510aa 16,46
+  s_b2fc299f4eea16::t_9b7f0b36261567 43-45
+  s_b2fc299f4eea16::t_58f683378f312f 1,19
+  s_b2fc299f4eea16::t_705a323b076227 2,20
+apps/chat/agent/telemetry.ts
+  s_b2fc299f4eea16::t_4241fe4880a810 15,23,75,136,138-139
+apps/chat/package.json
+  s_b2fc299f4eea16::t_2f6417b11d5c0a 50
+  s_b2fc299f4eea16::t_531dc4a4938161 27
+apps/chat/components/chat/composer.tsx
+  s_b2fc299f4eea16::t_af355b060a3621 7-8,104-105,113-114,163,188,191
+tools/architecture/dependencies.test.mjs
+  s_b2fc299f4eea16::t_531dc4a4938161 23,27
+apps/chat/agent/tools/present_answer.ts
+  s_b2fc299f4eea16::t_bd91359e8fd977 2,11-13
+  s_b2fc299f4eea16::t_3ec12c935ebcc0 1,3-10,14-21
+apps/chat/chat/use-answer-draft.ts
+  s_b2fc299f4eea16::t_098b9052c4b881 4,9,26-28
+  s_b2fc299f4eea16::t_9b7f0b36261567 14-18,30-32,34-36
+  s_b2fc299f4eea16::t_11ed2773a510aa 1-3,5-8,10-13,19-25,29,33,37
+apps/chat/shared/starters.ts
+  s_b2fc299f4eea16::t_4241fe4880a810 4,12,20
+  s_b2fc299f4eea16::t_af355b060a3621 1-3,5-11,13-19,21-26
+apps/chat/test/answer.test.tsx
+  s_b2fc299f4eea16::t_705a323b076227 36-38,43,85-95,99-106,109-111,115,207-208,221,228-229,234,241,267,283-284,286,346-347,349,351,423,428,430,432-435,438,442,541,547-553,556,559,561
+  s_b2fc299f4eea16::t_c1af53668b430a 77,81-84
+  s_b2fc299f4eea16::t_3fdf1049d73116 78-80
+  s_b2fc299f4eea16::t_8715679235aa06 55-57,165-166,367,376,418,531,535
+  s_b2fc299f4eea16::t_32f5c282fe65a8 2,50
+  s_b2fc299f4eea16::t_05bf5835b5efd9 51-52,54,58-66,68-69,96,98,107-108,112,164,174-175,205-206,209-210,212,247-248,250,270-272,274,276,293-294,296,298,304-307,335,358,370,396,402,413,445-446,482,516-517,519,525,533,560
+apps/chat/evals/chart-image.eval.ts
+  s_b2fc299f4eea16::t_87dc51680967c2 14
+  s_b2fc299f4eea16::t_f4a21f42f2a528 23,26,28
+apps/chat/components/chat/chat.tsx
+  s_b2fc299f4eea16::t_af355b060a3621 26,128-130,209,225-226,258-259
+  s_b2fc299f4eea16::t_7215a5193e10df 71,73,96-97,210-213,215-216
+  s_b2fc299f4eea16::t_4241fe4880a810 228
+  s_b2fc299f4eea16::t_9b7f0b36261567 222
+apps/chat/agent/instructions.ts
+  s_b2fc299f4eea16::t_1dfbcb6f2a2a8b 1,4-5,7-36,39-44,46-50,56-57,61,66-70,73-76
+  s_b2fc299f4eea16::t_868ac12b15086b 37-38,45
+  s_b2fc299f4eea16::t_057fdd92d355d8 54-55
+  s_b2fc299f4eea16::t_c4f2b8c2312e82 2-3,6
+  s_b2fc299f4eea16::t_ccf72e41344f82 51-53
+  s_b2fc299f4eea16::t_3ec12c935ebcc0 71-72
+  s_b2fc299f4eea16::t_1e6a9978027710 62-65
+  s_b2fc299f4eea16::t_0e088286e28eee 58-60
+apps/chat/test/composer.test.tsx
+  s_b2fc299f4eea16::t_87dc51680967c2 22-23
+apps/chat/test/skills.test.tsx
+  s_b2fc299f4eea16::t_fcbfbdfc4abd34 1-6,8-10,13-25
+  s_b2fc299f4eea16::t_c4f2b8c2312e82 7,11-12
+apps/chat/agent/skills/discuss.ts
+  s_b2fc299f4eea16::t_1dfbcb6f2a2a8b 1,4
+  s_b2fc299f4eea16::t_c4f2b8c2312e82 2-3,5
+apps/chat/agent/skill-source.ts
+  s_b2fc299f4eea16::t_2f6417b11d5c0a 1,3,7,10-11
+  s_b2fc299f4eea16::t_b8ea7ed007550b 2,4-5,9
+  s_b2fc299f4eea16::t_c4f2b8c2312e82 6,8
+packages/chartcoach/tests/verify_built_package.py
+  s_b2fc299f4eea16::t_fcbfbdfc4abd34 25
+  s_b2fc299f4eea16::t_9d612041e49b88 205
+  s_b2fc299f4eea16::t_6fd7ef877e2e61 23
+skills/visfeedback/SKILL.md
+  s_b2fc299f4eea16::t_384bd15131cf27 110
+  s_b2fc299f4eea16::t_057fdd92d355d8 81-87
+  s_b2fc299f4eea16::t_3832ba9d9fa7e1 44-45,65-80,88-94,106-109
+apps/chat/scripts/verify-build.mjs
+  s_b2fc299f4eea16::t_cb5b011c0abb97 4,7,14-38,40,46-47
+  s_b2fc299f4eea16::t_bd91359e8fd977 39
+  s_b2fc299f4eea16::t_a2308a6fd05cf4 84-86
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "6f6bd02d67353ba98d08bede581b30ebab192e18",
+  "prompts": {},
+  "sessions": {
+    "s_b2fc299f4eea16": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a07701-a536-7f73-bfd5-6731d2663cd9",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Péter Ferenc Gyarmati <dev.petergy@gmail.com>"
+    }
+  }
+}
