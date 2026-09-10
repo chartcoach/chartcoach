@@ -1,6 +1,6 @@
 import { AttachmentPrimitive, ComposerPrimitive } from "@assistant-ui/react";
 import { ArrowUp, ImagePlus, Square, X } from "lucide-react";
-import type { RefObject } from "react";
+import type { ReactNode, RefObject } from "react";
 import * as stylex from "@stylexjs/stylex";
 import { colors, media } from "../ui/tokens.stylex";
 import { ui } from "../ui/ui";
@@ -41,8 +41,24 @@ const styles = stylex.create({
     WebkitTapHighlightColor: "transparent",
     "::placeholder": { color: colors.muted },
   },
-  controls: { display: "flex", gap: 8, alignItems: "center", marginTop: 10 },
+  controls: {
+    display: "grid",
+    gridTemplateColumns: {
+      default: "auto auto minmax(0, 1fr) auto",
+      "@media (max-width: 360px)": "auto minmax(0, 1fr) auto",
+    },
+    gridTemplateAreas: {
+      default: '"attachment mode model send"',
+      "@media (max-width: 360px)": '"attachment mode send" "model model model"',
+    },
+    gap: 8,
+    alignItems: "center",
+    marginTop: 10,
+  },
+  attachmentControl: { gridArea: "attachment", minWidth: { default: 128, [media.mobile]: 44 } },
+  attachmentLabel: { display: { default: "inline", [media.mobile]: "none" }, whiteSpace: "nowrap" },
   send: {
+    gridArea: "send",
     marginLeft: "auto",
     flexShrink: 0,
     borderWidth: 0,
@@ -101,8 +117,10 @@ export function Composer({
   disabled,
   reading,
   error,
+  onRecover,
   mode,
   onModeChange,
+  modelControl,
 }: {
   onUpload: (files: File[]) => void;
   messageInput: RefObject<HTMLTextAreaElement | null>;
@@ -110,8 +128,10 @@ export function Composer({
   disabled: boolean;
   reading: boolean;
   error?: string;
+  onRecover?: () => Promise<void>;
   mode: Mode;
   onModeChange: (mode: Mode) => void;
+  modelControl?: ReactNode;
 }) {
   return (
     <div {...stylex.props(styles.area)}>
@@ -142,7 +162,7 @@ export function Composer({
                   <AttachmentPrimitive.Name />
                 </span>
                 <AttachmentPrimitive.Remove
-                  {...stylex.props(ui.quietButton, ui.button, ui.focus, styles.remove)}
+                  {...stylex.props(ui.button, ui.quietButton, ui.focus, styles.remove)}
                   aria-label="Remove image"
                   disabled={disabled}
                   onClick={() => messageInput.current?.focus()}
@@ -178,17 +198,21 @@ export function Composer({
         />
         <div {...stylex.props(styles.controls)}>
           <ComposerPrimitive.AddAttachment
-            {...stylex.props(ui.quietButton, ui.button, ui.focus)}
+            {...stylex.props(ui.button, ui.quietButton, ui.focus, styles.attachmentControl)}
             multiple={false}
             disabled={disabled}
+            aria-label={reading ? "Reading image" : "Add chart"}
           >
             <ImagePlus {...stylex.props(ui.icon)} size={18} />
-            {reading ? "Reading image" : "Add chart"}
+            <span {...stylex.props(styles.attachmentLabel)}>
+              {reading ? "Reading image" : "Add chart"}
+            </span>
           </ComposerPrimitive.AddAttachment>
           <span {...stylex.props(ui.srOnly)} id="upload-hint">
             PNG, JPEG, WebP · Up to 3 MiB
           </span>
           <ModeSelect value={mode} onChange={onModeChange} disabled={disabled} />
+          {modelControl}
           {busy ? (
             <ComposerPrimitive.Cancel
               {...stylex.props(ui.button, ui.focus, styles.send)}
@@ -211,6 +235,21 @@ export function Composer({
         <p {...stylex.props(ui.error)} role="alert">
           {error}
         </p>
+      ) : null}
+      {onRecover ? (
+        <div>
+          <p {...stylex.props(ui.activity)}>
+            This conversation ended. Keep your chart and draft in a new chat.
+          </p>
+          <button
+            type="button"
+            {...stylex.props(ui.button, ui.outlineButton, ui.focus)}
+            disabled={disabled}
+            onClick={() => void onRecover()}
+          >
+            Continue in a new chat
+          </button>
+        </div>
       ) : null}
       <p {...stylex.props(styles.note)} id="message-privacy">
         Messages and images are sent to the configured AI provider.

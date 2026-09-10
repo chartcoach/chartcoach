@@ -2,6 +2,7 @@ import * as stylex from "@stylexjs/stylex";
 import { colors, media, motion } from "../ui/tokens.stylex";
 
 export const styles = stylex.create({
+  triggerLabel: { display: { default: "inline", [media.mobile]: "none" } },
   overlay: { position: "fixed", inset: 0, backgroundColor: "#00000045", zIndex: 30 },
   panel: {
     position: "fixed",

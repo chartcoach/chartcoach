@@ -3,7 +3,7 @@ import type { ToolContext } from "eve/tools";
 import { routeAuth } from "eve/channels/auth";
 import { catalogRouteAuth, reviewRouteAuth } from "../agent/auth";
 import { getCatalogMetadata } from "../lib/catalog/metadata";
-import type { ResolvedSelection } from "../lib/catalog/selection";
+import type { ResolvedSelection } from "../shared/resolved-selection";
 import readGuidelines from "../agent/tools/read_guidelines";
 import searchGuidelines from "../agent/tools/search_guidelines";
 import queryCatalog from "../agent/tools/query_catalog";

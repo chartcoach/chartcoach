@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
-import { spawn } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import { once } from "node:events";
 import { cp, mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { promisify } from "node:util";
 import { parseSkill } from "../agent/skill-source.ts";
 
 const directory = await mkdtemp(join(tmpdir(), "chartcoach-eve-output-"));
@@ -11,6 +12,23 @@ let child;
 let timer;
 try {
   await cp(new URL("../.output/", import.meta.url), directory, { recursive: true });
+  await promisify(execFile)(
+    process.execPath,
+    [
+      "--input-type=module",
+      "--eval",
+      `
+    import { SqliteClient } from "@effect/sql-sqlite-node";
+    import * as Effect from "effect/Effect";
+    const rows = await Effect.runPromise(Effect.gen(function* () {
+      const sql = yield* SqliteClient.SqliteClient;
+      return yield* sql.unsafe("SELECT 42 AS value");
+    }).pipe(Effect.provide(SqliteClient.layer({ filename: ":memory:" }))));
+    if (rows[0]?.value !== 42) throw new Error("SQLite query failed");
+  `,
+    ],
+    { cwd: join(directory, "server"), timeout: 10_000 },
+  );
   const manifest = JSON.parse(
     await readFile(join(directory, ".eve/compile/compiled-agent-manifest.json"), "utf8"),
   );
@@ -81,8 +99,13 @@ try {
     signal: AbortSignal.timeout(5000),
   });
   assert.equal(artifact.status, 401);
+  for (const path of ["eve/v1/preferences", "eve/v1/threads"]) {
+    const response = await fetch(new URL(path, url), { signal: AbortSignal.timeout(5000) });
+    assert.equal(response.status, 401);
+    await response.body?.cancel();
+  }
   console.log(
-    "Verified relocated Eve server health, production authentication, and canonical skills.",
+    "Verified relocated Eve server, SQLite runtime, production authentication, and canonical skills.",
   );
 } finally {
   clearTimeout(timer);

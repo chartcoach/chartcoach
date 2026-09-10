@@ -2,7 +2,7 @@ import type { ToolContext } from "eve/tools";
 import { gunzip } from "node:zlib";
 import { promisify } from "node:util";
 import { z } from "zod";
-import { resolvedSelectionSchema, type ResolvedSelection } from "../lib/catalog/selection";
+import { resolvedSelectionSchema, type ResolvedSelection } from "../shared/resolved-selection";
 import {
   catalogSelectionSchema,
   catalogSelectionHeaderSchema,

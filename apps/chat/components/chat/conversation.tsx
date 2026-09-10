@@ -8,7 +8,7 @@ const styles = stylex.create({
   shell: {
     position: "relative",
     flexGrow: { default: 1, [stylex.when.ancestor('[data-empty="true"]', emptyThreadScope)]: 0 },
-    flexShrink: { default: 1, [stylex.when.ancestor('[data-empty="true"]', emptyThreadScope)]: 0 },
+    flexShrink: 1,
     flexBasis: {
       default: "0%",
       [stylex.when.ancestor('[data-empty="true"]', emptyThreadScope)]: "auto",
@@ -18,14 +18,8 @@ const styles = stylex.create({
   viewport: {
     position: "relative",
     width: "100%",
-    height: {
-      default: "100%",
-      [stylex.when.ancestor('[data-empty="true"]', emptyThreadScope)]: "auto",
-    },
-    overflowY: {
-      default: "auto",
-      [stylex.when.ancestor('[data-empty="true"]', emptyThreadScope)]: "visible",
-    },
+    height: "100%",
+    overflowY: "auto",
     overscrollBehaviorY: "contain",
     scrollbarWidth: "thin",
     scrollbarGutter: { default: "stable both-edges", [media.mobile]: "auto" },

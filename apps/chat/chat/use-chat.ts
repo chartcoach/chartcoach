@@ -1,9 +1,10 @@
 import { useCatalogFilters, type CatalogFilterSelection } from "./use-catalog-filters";
 import { useChatRuntime } from "./use-chat-runtime";
+import type { useWorkspace } from "./use-workspace";
 
-export function useChat() {
-  const catalog = useCatalogFilters();
-  const state = useChatRuntime(catalog.selection);
+export function useChat(workspace: ReturnType<typeof useWorkspace>) {
+  const catalog = useCatalogFilters(workspace.active?.knowledge);
+  const state = useChatRuntime(catalog.selection, workspace);
   async function onFiltersChange(selection: CatalogFilterSelection) {
     if (
       catalog.selection &&
@@ -17,5 +18,5 @@ export function useChat() {
     await state.restartKeepingChart();
     catalog.reload();
   }
-  return { ...state, catalog, onFiltersChange, onCatalogReload };
+  return { ...state, catalog, onFiltersChange, onCatalogReload, workspace };
 }

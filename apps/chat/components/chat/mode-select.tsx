@@ -35,9 +35,16 @@ export function ModeSelect({
 }
 
 const styles = stylex.create({
-  root: { position: "relative", display: "inline-flex", flexShrink: 0 },
+  root: {
+    gridArea: "mode",
+    justifySelf: "start",
+    position: "relative",
+    display: "inline-flex",
+    flexShrink: 0,
+  },
   select: {
     appearance: "none",
+    fieldSizing: "content",
     minHeight: 44,
     paddingLeft: 10,
     paddingRight: 27,

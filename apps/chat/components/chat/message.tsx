@@ -44,9 +44,9 @@ export function Message({
         <Answer answer={answer} guidelines={guidelines} streaming={drafting} />
       ) : null}
       {failed && !answer ? (
-        <p {...stylex.props(ui.error)}>
-          {message.role === "assistant" ? "Response interrupted." : "Message failed."} You can edit
-          and send your message again.
+        <p {...stylex.props(ui.error)} role="alert">
+          {view.failureReason ??
+            `${message.role === "assistant" ? "Response interrupted." : "Message failed."} You can edit and send your message again.`}
         </p>
       ) : null}
       {message.role === "assistant" && stopped ? (

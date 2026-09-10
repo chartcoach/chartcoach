@@ -4,14 +4,21 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useEveAgent } from "eve/react";
 import { convertEveMessage, getEveMessageContent } from "@assistant-ui/eve";
 import { useExternalStoreRuntime, type AssistantRuntime } from "@assistant-ui/react";
-import type { ChartAttachment } from "./attachment";
+import { readAttachment, type ChartAttachment } from "./attachment";
 import { useChartAttachments } from "./use-chart-attachments";
 import { deriveConversation, type MessageView } from "./evidence";
 import type { CatalogFilterSelection } from "./use-catalog-filters";
-import { encodeCatalogSelection } from "../lib/catalog-client";
 import { type Mode } from "../shared/workflow";
 import { starters } from "../shared/starters";
 import { useAnswerDraft } from "./use-answer-draft";
+import type { useWorkspace } from "./use-workspace";
+import {
+  chartImageURL,
+  createThread,
+  loadChartImage,
+  saveChartImage,
+  updateThread,
+} from "../browser/workspace-client";
 
 const statusLabels: Readonly<Partial<Record<ReturnType<typeof useEveAgent>["status"], string>>> = {
   submitted: "Starting your conversation",
@@ -20,9 +27,19 @@ const statusLabels: Readonly<Partial<Record<ReturnType<typeof useEveAgent>["stat
   error: "Response interrupted. You can send your message again.",
 };
 
-type ChatHeaders = { "x-chartcoach-mode": Mode; "x-chartcoach-selection"?: string };
+type ChatHeaders = {
+  "x-chartcoach-mode": Mode;
+  "x-chartcoach-thread"?: string;
+  "x-chartcoach-connection"?: string;
+};
 
-export function useChatRuntime(selection: CatalogFilterSelection | undefined) {
+export function useChatRuntime(
+  selection: CatalogFilterSelection | undefined,
+  workspace: ReturnType<typeof useWorkspace>,
+) {
+  const [threadId, setThreadId] = useState(workspace.active?.id);
+  const threadRef = useRef(workspace.active?.id);
+  const connectionRef = useRef(workspace.connectionId);
   const [mode, setMode] = useState<Mode>("auto");
   const modeRef = useRef<Mode>(mode);
   const [attachments, setAttachments] = useState(new Map<string, ChartAttachment>());
@@ -32,30 +49,40 @@ export function useChatRuntime(selection: CatalogFilterSelection | undefined) {
   const sendError = useRef<Error>(undefined);
   const runtimeRef = useRef<AssistantRuntime>(undefined);
   const selectionRef = useRef(selection);
-  const selectionHeader = useRef<string>(undefined);
-  const hasSession = useRef(false);
+  const registeredSession = useRef(workspace.active?.sessionId);
   const pendingSend = useRef<AbortController>(undefined);
   const [preparing, setPreparing] = useState(false);
   useLayoutEffect(() => {
     selectionRef.current = selection;
     modeRef.current = mode;
-  }, [selection, mode]);
+    connectionRef.current = workspace.connectionId;
+  }, [selection, mode, workspace.connectionId]);
   const agent = useEveAgent({
+    // Eve's optimistic projection flattens images into literal [file: ...] text.
+    // Render accepted messages instead; the composer retains any failed draft.
+    optimistic: false,
+    initialSession: workspace.active?.sessionId
+      ? { sessionId: workspace.active.sessionId, streamIndex: 0 }
+      : undefined,
+    resume: !!workspace.active?.sessionId,
     headers: () => {
       const headers: ChatHeaders = { "x-chartcoach-mode": modeRef.current };
-      if (!hasSession.current && selectionHeader.current)
-        headers["x-chartcoach-selection"] = selectionHeader.current;
+      if (threadRef.current) headers["x-chartcoach-thread"] = threadRef.current;
+      if (connectionRef.current) headers["x-chartcoach-connection"] = connectionRef.current;
       return headers;
     },
     onSessionChange: (session) => {
-      hasSession.current = !!session?.sessionId;
-      if (hasSession.current) selectionHeader.current = undefined;
+      if (session?.sessionId && session.sessionId !== registeredSession.current) {
+        registeredSession.current = session.sessionId;
+        if (threadRef.current) workspace.rememberThread(threadRef.current);
+      }
     },
     onError: (error) => {
       sendError.current = error;
       setError(error.message);
     },
     onFinish: (snapshot) => {
+      if (threadRef.current) workspace.rememberThread(threadRef.current);
       if (snapshot.status !== "error") return;
       const message = snapshot.data.messages.findLast((item) => item.role === "assistant");
       const turnId = message?.metadata?.turnId;
@@ -65,31 +92,64 @@ export function useChatRuntime(selection: CatalogFilterSelection | undefined) {
     },
   });
   const busy = preparing || agent.status === "submitted" || agent.status === "streaming";
+  const needsNewSession =
+    agent.events.some(
+      (event) => event.type === "session.failed" || event.type === "session.completed",
+    ) ||
+    (agent.error && "code" in agent.error && agent.error.code === "session_not_active");
   const { adapter, reading, messageInput, upload, uploadExample } = useChartAttachments(
     runtimeRef,
     busy || agent.status === "resuming",
     setError,
   );
-  const disabled = busy || reading || agent.status === "resuming";
+  const disabled = busy || reading || agent.status === "resuming" || workspace.loading;
   const draft = useAnswerDraft(agent.data.messages);
   const conversation = useMemo(
     () =>
-      deriveConversation(agent.data.messages, {
-        draft,
-        stoppedTurnIds: new Set(
-          agent.events.flatMap((event) =>
-            event.type === "turn.cancelled" ? [event.data.turnId] : [],
-          ),
+      deriveConversation(
+        agent.data.messages.map((message) =>
+          threadId && message.role === "user"
+            ? {
+                ...message,
+                parts: message.parts.map((part) =>
+                  part.type === "file" && part.filename
+                    ? { ...part, url: chartImageURL(threadId, part.filename) }
+                    : part,
+                ),
+              }
+            : message,
         ),
-        failedTurnIds: new Set([
-          ...interruptedTurns,
-          ...agent.events.flatMap((event) =>
-            event.type === "turn.failed" ? [event.data.turnId] : [],
+        {
+          draft,
+          stoppedTurnIds: new Set(
+            agent.events.flatMap((event) =>
+              event.type === "turn.cancelled" ? [event.data.turnId] : [],
+            ),
           ),
-        ]),
-        interrupted: agent.status === "error",
-      }),
-    [agent.data.messages, agent.events, agent.status, interruptedTurns, draft],
+          failedTurnIds: new Set([
+            ...interruptedTurns,
+            ...agent.events.flatMap((event) =>
+              event.type === "turn.failed" ? [event.data.turnId] : [],
+            ),
+          ]),
+          failureReasons: new Map(
+            agent.events.flatMap((event) =>
+              event.type === "turn.failed" ? [[event.data.turnId, event.data.message]] : [],
+            ),
+          ),
+          interrupted: agent.status === "error",
+          error: agent.error?.message,
+        },
+      ),
+    [
+      agent.data.messages,
+      agent.events,
+      agent.status,
+      agent.error,
+      interruptedTurns,
+      draft,
+      threadId,
+    ],
   );
   const statusText =
     (preparing ? "Preparing your catalog selection" : statusLabels[agent.status]) ??
@@ -108,8 +168,38 @@ export function useChatRuntime(selection: CatalogFilterSelection | undefined) {
     messages: conversation.messages,
     isRunning: busy,
     isDisabled: reading || agent.status === "resuming",
-    isSendDisabled: !selection || selection.matchedGuidelines === 0,
-    adapters: { attachments: adapter },
+    isSendDisabled:
+      !!needsNewSession ||
+      !selection ||
+      selection.matchedGuidelines === 0 ||
+      !workspace.ready ||
+      !workspace.connection,
+    adapters: {
+      attachments: adapter,
+      threadList: {
+        threadId,
+        isLoading: !workspace.ready || workspace.loading,
+        threads: workspace.threads
+          .filter((thread) => !thread.archived)
+          .map((thread) => ({ id: thread.id, title: thread.title, status: "regular" as const })),
+        archivedThreads: workspace.threads
+          .filter((thread) => thread.archived)
+          .map((thread) => ({ id: thread.id, title: thread.title, status: "archived" as const })),
+        onSwitchToNewThread: newChat,
+        onSwitchToThread: async (id) => {
+          if (!disabled) await workspace.openThread(id);
+        },
+        onRename: async (id, title) => {
+          await editHistory(id, { title });
+        },
+        onArchive: async (id) => {
+          await editHistory(id, { archived: true });
+        },
+        onUnarchive: async (id) => {
+          await editHistory(id, { archived: false });
+        },
+      },
+    },
     convertMessage(view, index) {
       const converted = convertEveMessage(view.message, index, agent.data.messages, {
         isRunning: busy,
@@ -155,13 +245,25 @@ export function useChatRuntime(selection: CatalogFilterSelection | undefined) {
           throw new Error("Wait for the catalog to load before starting a conversation.");
         if (current.matchedGuidelines === 0)
           throw new Error("Broaden your knowledge selection before starting a conversation.");
-        if (!hasSession.current) {
+        const connectionId = connectionRef.current;
+        if (!connectionId) throw new Error("Choose a model connection before sending.");
+        if (!threadRef.current) {
           setPreparing(true);
-          selectionHeader.current = await encodeCatalogSelection(
-            current.selection,
+          const title =
+            content
+              .flatMap((part) => (part.type === "text" ? [part.text] : []))
+              .join(" ")
+              .trim()
+              .slice(0, 160) || "Chart discussion";
+          const thread = await createThread(
+            { title, connectionId, knowledge: current },
             controller.signal,
           );
+          threadRef.current = thread.id;
+          setThreadId(thread.id);
+          workspace.rememberThread(thread.id);
         }
+        if (chart) await saveChartImage(threadRef.current, chart, controller.signal);
         controller.signal.throwIfAborted();
         setPreparing(false);
         await agent.send(getEveMessageContent({ ...message, content }));
@@ -184,7 +286,6 @@ export function useChatRuntime(selection: CatalogFilterSelection | undefined) {
         }
         if (!controller.signal.aborted) throw cause;
       } finally {
-        selectionHeader.current = undefined;
         pendingSend.current = undefined;
         setPreparing(false);
       }
@@ -215,19 +316,42 @@ export function useChatRuntime(selection: CatalogFilterSelection | undefined) {
     await runtime.thread.composer.reset();
     runtime.thread.unstable_notifySessionReset();
     agent.reset();
-    selectionHeader.current = undefined;
-    hasSession.current = false;
+    registeredSession.current = undefined;
+    threadRef.current = undefined;
+    setThreadId(undefined);
+    history.replaceState(null, "", location.pathname);
     setAttachments(new Map());
     sentChart.current = undefined;
     setInterruptedTurns(new Set());
     setError(undefined);
     messageInput.current?.focus();
   }
+  async function editHistory(id: string, value: Parameters<typeof updateThread>[1]) {
+    try {
+      await updateThread(id, value);
+      await workspace.refreshThreads();
+    } catch {
+      setError("Could not update your history. Try again.");
+    }
+  }
   async function restartKeepingChart() {
     if (disabled) throw new Error("Wait for this answer to finish before changing its knowledge.");
     const composer = runtime.thread.composer;
     const draft = composer.getState();
-    const chart = sentChart.current;
+    let chart = sentChart.current;
+    if (!chart && !draft.attachments.length && threadRef.current) {
+      const file = conversation.messages
+        .flatMap(({ message }) => (message.role === "user" ? message.parts : []))
+        .findLast((part) => part.type === "file");
+      if (file?.type === "file" && file.filename) {
+        setPreparing(true);
+        try {
+          chart = await readAttachment(await loadChartImage(threadRef.current, file.filename));
+        } finally {
+          setPreparing(false);
+        }
+      }
+    }
     await newChat();
     composer.setText(draft.text);
     if (draft.attachments.length) {
@@ -247,6 +371,7 @@ export function useChatRuntime(selection: CatalogFilterSelection | undefined) {
       });
     }
   }
+  const currentError = error ?? agent.error?.message ?? workspace.error;
   return {
     mode,
     setMode,
@@ -256,7 +381,18 @@ export function useChatRuntime(selection: CatalogFilterSelection | undefined) {
     busy,
     disabled,
     reading,
-    error: error ?? agent.error?.message,
+    error: conversation.messages.at(-1)?.failureReason === currentError ? undefined : currentError,
+    recover: needsNewSession
+      ? async () => {
+          try {
+            await restartKeepingChart();
+          } catch (cause) {
+            setError(
+              cause instanceof Error ? cause.message : "Could not restore your chart. Try again.",
+            );
+          }
+        }
+      : undefined,
     upload,
     uploadExample,
     newChat,

@@ -126,10 +126,21 @@ guideline images visible directly. The catalog
 supplies the content and citations. The app decides how to display them.
 
 Questions, chart images, and retrieved guidance go to the configured language
-model. Provider credentials stay on the server. Optional
+model. The composer can use a saved Anthropic, OpenAI, Gemini, or OpenAI-compatible
+connection through [AI SDK](https://ai-sdk.dev/docs/introduction) adapters.
+Provider keys are encrypted on the app's server and scoped to the authenticated
+caller and browser. Custom API origins are allowlisted by the server operator.
+Optional
 [Langfuse tracing](https://github.com/chartcoach/chartcoach/tree/main/apps/chat#trace-reviews)
 records the conversation's catalog release and selection alongside model calls,
 tools, and image inputs.
+
+The history pane restores the same conversation and knowledge selection.
+[Effect](https://effect.website/docs/v3/runtime/) manages the app's SQLite services,
+resource cleanup, failures, and tracing. SQLite stores conversation metadata,
+connection settings, and chart previews. Eve owns the persisted transcript and
+replays it when a conversation is reopened. These are application concerns around
+the same catalog artifacts and SDK primitives used by the other interfaces.
 
 ## Reuse the pieces
 

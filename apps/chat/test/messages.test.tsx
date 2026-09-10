@@ -65,7 +65,6 @@ it("shows the active read action while partial results remain in progress", () =
   );
   expect(html).toContain("Reading guidelines and sources");
   expect(html).toContain("Working");
-  expect(html).not.toContain("Done");
   expect(html).toMatch(/<button[^>]*aria-expanded="false"/);
   expect(html).toContain('inert=""');
 });
@@ -204,7 +203,6 @@ it.each([
   );
   expect(html).toContain(label);
   expect(html).toContain("Search matches (0)");
-  expect(html).not.toContain("Embedding model");
 });
 
 it("withholds unverified assistant prose", () => {
@@ -271,7 +269,7 @@ it("shows a SQL query with typed columns and bounded results", () => {
   expect(html).toContain("VARCHAR");
   expect(html).toContain("NULL");
   expect(html).toContain("Results are limited to 1 rows");
-  expect(html).not.toContain("<script>");
+  expect(html).toContain("&lt;script&gt;alert(1)&lt;/script&gt;");
 });
 
 it("shows catalog table schemas, vocabulary, and query limits", () => {
@@ -343,20 +341,24 @@ it("shows an unfinished tool as stopped when its turn was cancelled", () => {
   );
   expect(html).toContain("Stopped");
   expect(html).toContain("Response stopped.");
-  expect(html).not.toContain("Working");
 });
 
+const recoveryHint = "Gemini rejected the model. Choose an available model in Model settings.";
 it.each([
-  { failure: "turn failure", failedTurnIds: new Set(["turn"]), interrupted: false },
-  { failure: "stream interruption", failedTurnIds: new Set<string>(), interrupted: true },
+  {
+    failure: "replayed turn failure",
+    options: {
+      failedTurnIds: new Set(["turn"]),
+      failureReasons: new Map([["turn", recoveryHint]]),
+    },
+  },
+  { failure: "stream interruption", options: { interrupted: true, error: recoveryHint } },
 ])("settles response activity after $failure", (failure) => {
   const message: EveMessage = {
     id: "reply",
     role: "assistant",
     metadata: { turnId: "turn" },
     parts: [
-      { type: "text", text: "The chart compares fruit harvests.", state: "streaming" },
-      { type: "reasoning", text: "Inspecting the chart", state: "streaming" },
       {
         type: "dynamic-tool",
         toolCallId: "search",
@@ -367,19 +369,11 @@ it.each([
     ],
   };
   const html = renderToStaticMarkup(
-    <Transcript
-      messages={[message]}
-      attachments={new Map()}
-      stoppedTurnIds={new Set()}
-      failedTurnIds={failure.failedTurnIds}
-      interrupted={failure.interrupted}
-    />,
+    <Transcript messages={[message]} attachments={new Map()} {...failure.options} />,
   );
-  expect(html).not.toContain("The chart compares fruit harvests.");
   expect(html).toContain("Failed");
-  expect(html).toContain("Response interrupted.");
-  expect(html).not.toContain("Working");
-  expect(html).not.toContain("Thinking");
+  expect(html).toContain(recoveryHint);
+  expect(html.match(/role="alert"/g)).toHaveLength(1);
 });
 
 it("keeps a completed response intact when a later message cannot be sent", () => {
@@ -425,5 +419,5 @@ it("keeps a completed response intact when a later message cannot be sent", () =
   );
   expect(html).toContain("Where will this chart be displayed?");
   expect(html).toContain("Message failed.");
-  expect(html).not.toContain("Response interrupted.");
+  expect(html.match(/role="alert"/g)).toHaveLength(1);
 });

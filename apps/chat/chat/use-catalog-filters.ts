@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   emptyCatalogFilters,
   type CatalogFilters,
@@ -13,9 +13,10 @@ export type CatalogFilterSelection = {
   matchedGuidelines: number;
 };
 
-export function useCatalogFilters() {
+export function useCatalogFilters(initialSelection?: CatalogFilterSelection) {
+  const savedSelection = useRef(initialSelection);
   const [metadata, setMetadata] = useState<CatalogMetadata>();
-  const [selection, setSelection] = useState<CatalogFilterSelection>();
+  const [selection, setSelection] = useState<CatalogFilterSelection | undefined>(initialSelection);
   const [error, setError] = useState<string>();
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
@@ -24,11 +25,23 @@ export function useCatalogFilters() {
       .then((catalog) => {
         if (controller.signal.aborted) return;
         setMetadata(catalog);
-        setSelection({
-          filters: emptyCatalogFilters(catalog.catalogId),
-          selection: { catalogId: catalog.catalogId, sql: "SELECT id FROM catalog_entries" },
-          matchedGuidelines: catalog.totalGuidelines,
-        });
+        if (
+          savedSelection.current &&
+          savedSelection.current.selection.catalogId !== catalog.catalogId
+        ) {
+          setSelection(undefined);
+          setError(
+            "This conversation uses another catalog. Reload knowledge to start a new conversation.",
+          );
+          return;
+        }
+        setSelection(
+          savedSelection.current ?? {
+            filters: emptyCatalogFilters(catalog.catalogId),
+            selection: { catalogId: catalog.catalogId, sql: "SELECT id FROM catalog_entries" },
+            matchedGuidelines: catalog.totalGuidelines,
+          },
+        );
         setError(undefined);
       })
       .catch((cause) => {
@@ -41,6 +54,7 @@ export function useCatalogFilters() {
   }, [attempt]);
 
   function reload() {
+    savedSelection.current = undefined;
     setMetadata(undefined);
     setSelection(undefined);
     setError(undefined);

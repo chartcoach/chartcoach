@@ -21,6 +21,7 @@ export const catalogTraceSchema = z.object({
   catalogPredicate: z.string().optional(),
   catalogSelectionId: z.string().optional(),
   workflowPreference: modeSchema.optional(),
+  modelConnectionId: z.string().optional(),
 });
 
 export class LangfuseProcessor extends LangfuseSpanProcessor {
@@ -31,7 +32,9 @@ export class LangfuseProcessor extends LangfuseSpanProcessor {
       ...options,
       shouldExportSpan: ({ otelSpan }) =>
         isDefaultExportSpan(otelSpan) ||
-        ["eve.agent", "eve", "gen_ai"].includes(otelSpan.instrumentationScope.name),
+        ["eve.agent", "eve", "gen_ai", "chartcoach.app"].includes(
+          otelSpan.instrumentationScope.name,
+        ),
     });
   }
 
@@ -41,6 +44,7 @@ export class LangfuseProcessor extends LangfuseSpanProcessor {
       .string()
       .safeParse(
         attributes["agent.session.id"] ??
+          attributes["langfuse.session.id"] ??
           attributes["gen_ai.conversation.id"] ??
           attributes["ai.settings.context.eve.session.id"],
       );
@@ -79,6 +83,10 @@ export class LangfuseProcessor extends LangfuseSpanProcessor {
 
   override onEnd(span: ReadableSpan): void {
     const attributes = { ...span.attributes };
+    if (span.instrumentationScope.name === "chartcoach.app")
+      attributes["langfuse.trace.name"] = attributes["langfuse.session.id"]
+        ? "ChartCoach conversation"
+        : "ChartCoach workspace";
     if (attributes["gen_ai.operation.name"] === "chat") {
       for (const direction of ["input", "output"]) {
         const value = z
@@ -137,6 +145,10 @@ export function traceContext({
     session.auth.current?.attributes["chartcoach.mode"] ?? principal?.attributes["chartcoach.mode"],
   );
   if (mode.success) context.workflowPreference = mode.data;
+  const connection = z
+    .string()
+    .safeParse(session.auth.current?.attributes["chartcoach.connection"]);
+  if (connection.success) context.modelConnectionId = connection.data;
   if (principal) context.userId = principal.principalId;
   if (selection) {
     context.catalogId = selection.catalogId;

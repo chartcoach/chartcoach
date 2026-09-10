@@ -4,7 +4,7 @@ import { getCatalog } from "./open";
 import { catalogData, type CatalogData } from "./metadata";
 import { materialize } from "./tables";
 import { waitFor } from "../async";
-import { resolvedSelectionSchema, type ResolvedSelection } from "./selection";
+import { resolvedSelectionSchema, type ResolvedSelection } from "../../shared/resolved-selection";
 
 const maxScopes = 8;
 const cache = new WeakMap<CatalogData, Map<string, CachedScope>>();

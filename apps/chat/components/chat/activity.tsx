@@ -89,6 +89,9 @@ export function Activity({ view }: { view: MessageView }) {
 const styles = stylex.create({
   root: { marginTop: 12, marginBottom: 22, marginInline: 0, fontSize: 13 },
   summary: {
+    maxWidth: "100%",
+    whiteSpace: "normal",
+    textAlign: "left",
     display: "inline-flex",
     alignItems: "center",
     gap: 8,

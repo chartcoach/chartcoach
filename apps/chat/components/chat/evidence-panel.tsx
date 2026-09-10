@@ -155,6 +155,7 @@ const styles = stylex.create({
   rowSeparated: { borderTopWidth: 1, borderTopStyle: "solid", borderTopColor: colors.border },
   rowHeader: { margin: 0 },
   trigger: {
+    whiteSpace: "normal",
     display: "flex",
     alignItems: "center",
     gap: 12,
@@ -173,7 +174,7 @@ const styles = stylex.create({
     fontWeight: 450,
     lineHeight: 1.5,
   },
-  rowTitle: { flex: 1, overflowWrap: "anywhere" },
+  rowTitle: { flex: 1, minWidth: 0, overflowWrap: "anywhere" },
   chevron: { marginLeft: "auto", color: colors.muted },
   chevronOpen: { transform: "rotate(180deg)" },
   preview: { paddingTop: 2, paddingBottom: 16, paddingInline: 0 },

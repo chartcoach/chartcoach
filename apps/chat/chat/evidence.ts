@@ -18,7 +18,9 @@ export interface ConversationOptions {
   draft?: AnswerDraft;
   stoppedTurnIds?: ReadonlySet<string>;
   failedTurnIds?: ReadonlySet<string>;
+  failureReasons?: ReadonlyMap<string, string>;
   interrupted?: boolean;
+  error?: string;
 }
 export interface MessageView {
   message: EveMessage;
@@ -28,6 +30,7 @@ export interface MessageView {
   complete: boolean;
   stopped: boolean;
   failed: boolean;
+  failureReason?: string;
 }
 export interface EvidenceItem {
   guideline: GuidelinePreview;
@@ -154,6 +157,10 @@ export function deriveConversation(
       complete,
       stopped,
       failed,
+      failureReason: failed
+        ? ((turnId ? options.failureReasons?.get(turnId) : undefined) ??
+          (message === messages.at(-1) ? options.error : undefined))
+        : undefined,
     });
   }
   const evidence: EvidenceItem[] = Array.from(

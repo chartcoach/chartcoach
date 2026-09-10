@@ -8,8 +8,28 @@ import {
 import { decodeSelection } from "./selection-context";
 import { resolveCatalogSelection } from "../lib/catalog/selection";
 import { modeSchema } from "../shared/workflow";
+import { Effect } from "effect";
+import { runApp } from "../lib/app/runtime";
+import { browserIdentity, ownerId } from "../lib/app/identity";
+import { getThread } from "../lib/app/threads";
+import { ownerSchema } from "../shared/preferences";
 
-export const catalogRouteAuth = [vercelOidc(), localDev(), placeholderAuth()];
+export const accessRouteAuth = [vercelOidc(), localDev(), placeholderAuth()];
+export const catalogRouteAuth = accessRouteAuth.map(
+  (authenticate): AuthFn<Request> =>
+    async (request) => {
+      const principal = await authenticate(request);
+      if (!principal || !request.headers.get("cookie")) return principal;
+      const browser = await runApp(browserIdentity(request), { signal: request.signal });
+      if (!browser) return principal;
+      const owner = ownerId(principal, browser.id);
+      return {
+        ...principal,
+        principalId: owner,
+        attributes: { ...principal.attributes, "chartcoach.owner": owner },
+      };
+    },
+);
 
 // Eve maps onMessage exceptions to HTTP 500, so reject invalid headers during its auth walk.
 export const reviewRouteAuth = catalogRouteAuth.map(
@@ -23,10 +43,38 @@ export const reviewRouteAuth = catalogRouteAuth.map(
           code: "invalid_mode",
           message: "Choose Auto, Review, Recommend, or Discuss.",
         });
-      const caller = {
+      const caller: typeof principal = {
         ...principal,
         attributes: { ...principal.attributes, "chartcoach.mode": mode.data },
       };
+      const threadId = request.headers.get("x-chartcoach-thread");
+      const connectionId = request.headers.get("x-chartcoach-connection");
+      if (threadId) {
+        const owner = ownerSchema.safeParse(caller.attributes["chartcoach.owner"]);
+        if (!owner.success)
+          throw new ForbiddenError({ message: "Open the conversation from your history." });
+        const saved = await runApp(getThread(owner.data, threadId).pipe(Effect.either), {
+          signal: request.signal,
+        });
+        if (saved._tag === "Left") throw new ForbiddenError({ message: "Conversation not found." });
+        const sessionId = new URL(request.url).pathname.match(/\/session\/([^/]+)/)?.[1];
+        if (sessionId && saved.right.detail.sessionId !== decodeURIComponent(sessionId))
+          throw new ForbiddenError({
+            code: "conversation_session_mismatch",
+            message:
+              "This conversation lost its session connection. Reload the page to reconnect; your saved messages and model key are unchanged.",
+          });
+        return {
+          ...caller,
+          attributes: {
+            ...caller.attributes,
+            "chartcoach.thread": threadId,
+            "chartcoach.connection": connectionId ?? saved.right.detail.connectionId,
+            "chartcoach.selection": JSON.stringify(saved.right.resolved),
+            "chartcoach.predicate": saved.right.detail.knowledge.selection.sql,
+          },
+        };
+      }
       const header = request.headers.get("x-chartcoach-selection");
       if (
         !caller ||

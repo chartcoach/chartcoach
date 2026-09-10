@@ -231,9 +231,10 @@ export function CatalogFiltersPanel(props: PanelProps) {
               : "Knowledge"
           }
         >
-          <BookOpen size={16} aria-hidden="true" /> Knowledge
+          <BookOpen {...stylex.props(ui.icon)} size={16} aria-hidden="true" />
+          <span {...stylex.props(styles.triggerLabel)}>Knowledge</span>
           {active > 0 ? (
-            <span {...stylex.props(styles.selectionCount)} aria-hidden="true">
+            <span {...stylex.props(styles.selectionCount, styles.triggerLabel)} aria-hidden="true">
               {props.matchedGuidelines.toLocaleString()}
             </span>
           ) : null}

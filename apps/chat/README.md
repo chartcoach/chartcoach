@@ -24,8 +24,13 @@ pnpm --dir apps/chat dev
 URL. `withEve()` starts the agent alongside Next.js and mounts its routes on that
 origin. The browser needs no separate agent URL.
 
-Eve and Next.js load `.env.local`. Configure your OpenAI-compatible chat endpoint
-and a vision-capable model it serves:
+Open **Model settings** in the composer to add an Anthropic, OpenAI, Gemini, or
+OpenAI-compatible connection. Enter your key, load the provider's model list or
+enter a model ID, then choose **Save and use**. Choose a model that supports
+images and tool calls. Set its published context limit under **Context window**.
+
+Eve and Next.js load `.env.local`. These optional settings provide a shared
+server connection to an OpenAI-compatible endpoint:
 
 ```dotenv
 OPENAI_BASE=http://localhost:8317/v1
@@ -42,9 +47,60 @@ Server code reads typed settings from [`lib/env.ts`](lib/env.ts).
 [t3-env](https://env.t3.gg/docs/nextjs) validates them during Next.js startup/build
 and Eve loading. Empty optional values become unset. Invalid settings report
 their names, keeping credential values out of validation errors.
-Builds and catalog operations work with provider credentials unset. Configure
-`OPENAI_API_KEY` before making model calls. Restart both servers after changing
-`.env.local`.
+Builds and catalog operations work with provider credentials unset. Add a
+connection in Model settings or configure `OPENAI_API_KEY` before making model
+calls. Restart both servers after changing `.env.local`.
+
+## Manage model connections
+
+The model control names the selected model. Saved connections can be selected,
+edited, or removed. Removing a connection keeps its conversations readable.
+Choose another connection to continue them. Changing providers or endpoints
+requires entering the key again.
+
+[AI SDK](https://ai-sdk.dev/docs/introduction) adapters handle each provider's
+request format. Eve resolves the provider inside its model-step lifecycle, so
+durable execution records contain connection IDs rather than credentials.
+Keys pass through this server to the selected provider. Use HTTPS for browser
+access and hosted APIs. Local HTTP endpoints can be used for development.
+
+Provider keys are encrypted with AES-256-GCM and bound to their owner. A signed,
+HttpOnly cookie combines with the authenticated caller to scope connections and
+history. Keep the cookie to retain access from that browser. The server operator
+can access stored credentials, so use a server you trust and restrict provider-key
+permissions and spending limits. Keys stay out of chat content and trace metadata.
+
+Custom endpoints must match an allowed origin. `OPENAI_BASE` adds its origin
+automatically. Add other trusted origins as a comma-separated list:
+
+```dotenv
+CHAT_MODEL_ORIGINS=https://api.example.com,https://models.example.com
+```
+
+The model form still needs the complete base URL, including a path such as `/v1`.
+Redirects are rejected. The allowlist protects the server from arbitrary outbound
+requests, so add origins you control or trust.
+
+## Reopen a conversation
+
+Open **Conversation history** to select, search, rename, archive, or restore a
+conversation. Reopening restores the chart images, guideline citations, and
+saved knowledge selection. Eve replays its persisted session events and follows
+an in-flight response after a page reload. A changed catalog requires a new
+knowledge selection before continuing with its records.
+
+[Effect](https://effect.website/docs/v3/runtime/) owns the app's scoped services,
+typed failures, request timeouts, and tracing. Its SQLite client supplies
+transactions, migrations, a prepared-statement cache, and write-ahead logging.
+SQLite stores connection settings, conversation metadata, knowledge selections,
+and uploaded image previews. Eve owns the transcript and agent state.
+
+`CHAT_DATA_DIR` overrides the platform-specific application-data directory for
+`chartcoach-chat`. It contains `chat.sqlite` and the owner-readable
+`credentials.key`. Preserve both together, plus Eve's `.eve/.workflow-data`
+directory and sandbox storage, across server restarts. Use a SQLite-consistent
+backup or stop the app before copying its database and key. Keep this data on a
+private persistent volume. Deleting the key makes saved provider keys unreadable.
 
 ## Trace reviews
 
@@ -81,6 +137,7 @@ observations:
 | `catalogSelectionId` | SHA-256 of the catalog identity and sorted, resolved guideline IDs |
 | `guidelineCount`     | Number of guidelines available to the agent                        |
 | `workflowPreference` | Auto or the workflow requested for the current turn                |
+| `modelConnectionId`  | Saved model connection selected for the current request            |
 
 Direct clients that choose the full catalog record its full-table selection.
 Retrieval continues against the frozen guideline IDs, with the original SQL kept

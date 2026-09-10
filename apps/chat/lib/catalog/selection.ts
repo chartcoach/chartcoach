@@ -6,15 +6,7 @@ import { waitFor } from "../async";
 import { catalogData } from "./metadata";
 import { getCatalog } from "./open";
 import { withSelect } from "./sql";
-
-export const resolvedSelectionSchema = z
-  .strictObject({
-    catalogId: z.string().regex(/^[a-f0-9]{64}$/),
-    ids: z.array(z.string()).readonly(),
-  })
-  .readonly();
-
-export type ResolvedSelection = z.infer<typeof resolvedSelectionSchema>;
+import { resolvedSelectionSchema, type ResolvedSelection } from "../../shared/resolved-selection";
 type SelectionOptions = { catalog?: Catalog; signal?: AbortSignal };
 
 export async function resolveCatalogSelection(

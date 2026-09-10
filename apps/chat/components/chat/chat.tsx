@@ -24,6 +24,9 @@ import { ui } from "../ui/ui";
 import { LoadingMark } from "../ui/loading-mark";
 import { CatalogFiltersPanel } from "../catalog/filters";
 import { Starters } from "./starters";
+import { useWorkspace } from "../../chat/use-workspace";
+import { ModelSettings } from "../settings/model-settings";
+import { HistoryPanel } from "./history";
 
 const styles = stylex.create({
   skip: {
@@ -51,6 +54,7 @@ const styles = stylex.create({
   headerControls: { display: "flex", alignItems: "center", gap: 8 },
   newChatLabel: { display: { default: "inline", [media.mobile]: "none" } },
   wordmark: {
+    flexShrink: 0,
     display: "inline-flex",
     alignItems: "center",
     textDecoration: "none",
@@ -69,7 +73,7 @@ const styles = stylex.create({
   main: { flexGrow: 1, minHeight: 0, display: "flex", flexDirection: "column", minWidth: 0 },
   empty: {
     justifyContent: "safe center",
-    overflowY: "auto",
+    overflowY: "hidden",
     paddingBottom: 0,
   },
   workspace: {
@@ -94,7 +98,13 @@ const styles = stylex.create({
     gridColumn: { default: null, [media.desktop]: "1" },
   },
   emptyThread: { justifyContent: "flex-start" },
-  emptyWorkspace: { flexGrow: 0, flexShrink: 0, gridTemplateRows: "auto", minHeight: "auto" },
+  emptyWorkspace: {
+    flexGrow: 0,
+    flexShrink: 1,
+    gridTemplateRows: "minmax(0, 1fr)",
+    minHeight: 0,
+    maxHeight: "100%",
+  },
   welcome: { maxWidth: 672, marginInline: "auto" },
   title: {
     maxWidth: 600,
@@ -118,6 +128,7 @@ function ChatLayout({
   disabled,
   reading,
   error,
+  recover,
   upload,
   newChat,
   statusText,
@@ -128,6 +139,7 @@ function ChatLayout({
   mode,
   setMode,
   uploadExample,
+  workspace,
 }: ReturnType<typeof useChat>) {
   const hasAttachment = useAuiState((state) => state.composer.attachments.length > 0);
   const empty = conversation.messages.length === 0;
@@ -170,6 +182,7 @@ function ChatLayout({
           />
         </a>
         <div {...stylex.props(styles.headerControls)}>
+          <HistoryPanel disabled={disabled} />
           {catalog.metadata && catalog.selection ? (
             <CatalogFiltersPanel
               key={catalog.metadata.catalogId}
@@ -182,7 +195,7 @@ function ChatLayout({
             />
           ) : (
             <button
-              {...stylex.props(ui.quietButton, ui.button, ui.focus)}
+              {...stylex.props(ui.button, ui.quietButton, ui.focus)}
               type="button"
               disabled={!catalog.error || disabled}
               onClick={onCatalogReload}
@@ -191,7 +204,7 @@ function ChatLayout({
             </button>
           )}
           <button
-            {...stylex.props(ui.quietButton, ui.button, ui.focus)}
+            {...stylex.props(ui.button, ui.quietButton, ui.focus)}
             type="button"
             onClick={newChat}
             disabled={disabled}
@@ -219,7 +232,7 @@ function ChatLayout({
               {empty ? (
                 <section {...stylex.props(styles.welcome)}>
                   <h2 {...stylex.props(styles.title)}>
-                    Find a clearer way <span {...stylex.props(styles.accent)}>to show it.</span>
+                    Design with <span {...stylex.props(styles.accent)}>guidance.</span>
                   </h2>
                   <p {...stylex.props(styles.intro)}>
                     Review a chart, plan a design, or explore a tradeoff. Start with your question
@@ -263,6 +276,10 @@ function ChatLayout({
               disabled={disabled}
               reading={reading}
               error={error ?? catalog.error}
+              onRecover={recover}
+              modelControl={
+                <ModelSettings workspace={workspace} disabled={disabled || !workspace.ready} />
+              }
             />
           </div>
           <EvidencePanel
@@ -278,7 +295,12 @@ function ChatLayout({
 }
 
 export function Chat() {
-  const state = useChat();
+  const workspace = useWorkspace();
+  return <ChatSession key={workspace.key} workspace={workspace} />;
+}
+
+function ChatSession({ workspace }: { workspace: ReturnType<typeof useWorkspace> }) {
+  const state = useChat(workspace);
   return (
     <AssistantRuntimeProvider runtime={state.runtime}>
       <ChatLayout {...state} />

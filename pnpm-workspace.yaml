@@ -42,12 +42,22 @@ catalog:
   "@opentelemetry/sdk-trace-base": 2.11.0
   "@t3-oss/env-nextjs": 0.13.11
   "@ai-sdk/openai": 4.0.60
+  "@ai-sdk/anthropic": 4.0.49
+  "@ai-sdk/google": 4.0.64
+  "@ai-sdk/openai-compatible": 3.0.44
+  "@lobehub/icons": 5.18.0
+  effect: 3.22.1
+  "@effect/sql": 0.52.1
+  "@effect/sql-sqlite-node": 0.53.0
+  "@effect/platform": 0.97.1
+  "@effect/experimental": 0.61.1
+  "@effect/opentelemetry": 0.64.0
   "@huggingface/transformers": 4.2.0
   "@lancedb/lancedb": 0.38.0
   ai: 7.0.93
   concurrently: 10.0.5
   env-paths: 3.0.0
-  eve: 0.52.2
+  eve: 0.53.0
   just-bash: 3.4.2
   next: 16.3.4
   streamdown: 2.6.0
@@ -58,6 +68,7 @@ catalog:
 minimumReleaseAge: 2880
 minimumReleaseAgeExclude:
   - "refkit-js"
+  - "eve@0.53.0"
 minimumReleaseAgeStrict: true
 verifyDepsBeforeRun: install
 blockExoticSubdeps: true
@@ -81,7 +92,12 @@ peerDependencyRules:
     vite: "*"
 
 allowBuilds:
+  "@parcel/watcher": false
+  better-sqlite3: true
   esbuild: true
+  msgpackr-extract: false
   onnxruntime-node: false
   protobufjs: false
   sharp: true
+patchedDependencies:
+  eve@0.53.0: patches/eve@0.53.0.patch
