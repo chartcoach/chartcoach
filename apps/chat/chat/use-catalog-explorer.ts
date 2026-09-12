@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { startTransition, useEffect, useState } from "react";
 import type { openBrowserCatalog } from "../browser/catalog";
 import type { ExplorerData } from "../browser/explorer";
 import {
@@ -8,6 +8,7 @@ import {
 } from "../shared/catalog-filters";
 
 type BrowserCatalog = Awaited<ReturnType<typeof openBrowserCatalog>>;
+
 type Explorer = { catalog: BrowserCatalog; metadata: CatalogMetadata };
 
 export function useCatalogExplorer(
@@ -44,6 +45,7 @@ export function useCatalogExplorer(
       )
       .then((opened) => {
         catalog = opened;
+
         if (controller.signal.aborted) opened.close();
         else setEngine({ catalog: opened, metadata });
       })
@@ -51,8 +53,10 @@ export function useCatalogExplorer(
         if (!controller.signal.aborted)
           setError(cause instanceof Error ? cause.message : "Could not load the browser catalog.");
       });
+
     return () => {
       controller.abort();
+
       if (catalog) catalog.close();
     };
   }, [metadata, attempt, activated]);
@@ -70,7 +74,7 @@ export function useCatalogExplorer(
           metadata,
           catalogFiltersSchema.parse(JSON.parse(key)),
           (result) => {
-            if (active) setData(result);
+            if (active) startTransition(() => setData((current) => (active ? result : current)));
           },
           (cause) => {
             if (active) setError(cause.message);
@@ -81,6 +85,7 @@ export function useCatalogExplorer(
         if (active)
           setError(cause instanceof Error ? cause.message : "Could not query the catalog.");
       });
+
     return () => {
       active = false;
       destroy?.();
@@ -88,6 +93,7 @@ export function useCatalogExplorer(
   }, [engine, metadata, key, enabled]);
 
   return {
+    coordinator: engine?.metadata === metadata ? engine.catalog.coordinator : undefined,
     data,
     pending: enabled && !!key && !error && (!engine || data?.key !== key),
     error,

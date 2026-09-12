@@ -3,11 +3,12 @@ import * as stylex from "@stylexjs/stylex";
 const DARK = "@media (prefers-color-scheme: dark)";
 
 export const colors = stylex.defineVars({
-  background: { default: "#fafafa", [DARK]: "#0a0a0a" },
-  foreground: { default: "#171717", [DARK]: "#ededed" },
-  surface: { default: "#ffffff", [DARK]: "#141414" },
-  border: { default: "#e5e5e5", [DARK]: "#333333" },
-  muted: { default: "#666666", [DARK]: "#a1a1a1" },
+  background: { default: "#ffffff", [DARK]: "#111113" },
+  foreground: { default: "#202023", [DARK]: "#ededee" },
+  surface: { default: "#ffffff", [DARK]: "#1b1b1e" },
+  navigation: { default: "#f6f6f7", [DARK]: "#171719" },
+  border: { default: "#e7e7ea", [DARK]: "#303035" },
+  muted: { default: "#686870", [DARK]: "#aaaab3" },
   accent: { default: "var(--brand-crimson)", [DARK]: "var(--brand-crimson-bright)" },
   accentText: {
     default: "color-mix(in srgb, var(--brand-crimson) 85%, #000)",
@@ -24,6 +25,9 @@ export const media = stylex.defineConsts({
   mobile: "@media (max-width: 520px)",
   narrow: "@media (max-width: 1099px)",
   desktop: "@media (min-width: 1100px), (min-width: 720px) and (max-height: 600px)",
+  chatWide: "@container chat (min-width: 960px)",
+  catalogWide: "@container chat (min-width: 760px)",
+  navigationDesktop: "@media (min-width: 1100px)",
   short: "@media (max-height: 620px)",
   shortNarrow: "@media (max-width: 719px) and (max-height: 600px)",
   hover: "@media (hover: hover) and (pointer: fine)",
@@ -37,5 +41,9 @@ export const motion = stylex.defineConsts({
 });
 
 export const motionScope = stylex.defineMarker();
+
 export const disclosureScope = stylex.defineMarker();
+
 export const emptyThreadScope = stylex.defineMarker();
+
+export const historyRowScope = stylex.defineMarker();

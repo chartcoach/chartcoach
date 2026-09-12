@@ -266,6 +266,9 @@ catalogs:
     unplugin:
       specifier: 2.3.11
       version: 2.3.11
+    virtua:
+      specifier: ^0.49.3
+      version: 0.49.3
     vite-plus:
       specifier: 0.3.0
       version: 0.3.0
@@ -433,6 +436,9 @@ importers:
       streamdown:
         specifier: 'catalog:'
         version: 2.6.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@7.2.0)
+      virtua:
+        specifier: 'catalog:'
+        version: 0.49.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       yaml:
         specifier: 'catalog:'
         version: 2.9.0
