@@ -4,7 +4,7 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { Headers, HttpClient, HttpClientRequest } from "@effect/platform";
 import { RequestInit as FetchHttpClientRequestInit } from "@effect/platform/FetchHttpClient";
-import { Effect, Redacted, Stream } from "effect";
+import { Effect, Match, Redacted, Stream } from "effect";
 import { z } from "zod";
 import type { ConnectionInput, ModelChoice } from "../../shared/preferences";
 import { providerNames } from "../../shared/preferences";
@@ -16,6 +16,7 @@ const endpoints = {
   openai: "https://api.openai.com/v1",
   google: "https://generativelanguage.googleapis.com/v1beta",
 };
+
 export function allowedModelOrigins() {
   return [
     ...new Set([
@@ -33,6 +34,7 @@ export function providerEndpoint(
 ) {
   if (input.provider !== "compatible") return endpoints[input.provider];
   const url = input.baseURL ? new URL(input.baseURL) : undefined;
+
   if (
     !url ||
     !["http:", "https:"].includes(url.protocol) ||
@@ -45,11 +47,13 @@ export function providerEndpoint(
       status: 400,
       message: "Enter an HTTP or HTTPS API base URL, including its version path.",
     });
+
   if (!allowedOrigins.includes(url.origin))
     throw new AppError({
       status: 400,
       message: "This API origin is not allowed. Add it to CHAT_MODEL_ORIGINS on the server.",
     });
+
   return url.href.replace(/\/$/, "");
 }
 
@@ -57,8 +61,10 @@ const directFetch =
   (connection: ConnectionInput): typeof fetch =>
   async (input, init) => {
     const response = await fetch(input, { ...init, redirect: "error" });
+
     if (response.ok) return response;
     await response.body?.cancel();
+
     const reason =
       response.status === 401 || response.status === 403
         ? "The provider rejected this key. Check its value and permissions in Model settings."
@@ -69,7 +75,9 @@ const directFetch =
             : response.status >= 500
               ? "The provider is temporarily unavailable. Try again, or select another model."
               : "The provider rejected the request. Check the key, model ID, image support, and context limit in Model settings.";
+
     const message = `${providerNames[connection.provider]} · ${connection.model} (HTTP ${response.status}): ${reason}`;
+
     // Keep the safe error parseable by every native adapter, including Gemini and Anthropic.
     return Response.json(
       {
@@ -79,6 +87,7 @@ const directFetch =
       { status: response.status },
     );
   };
+
 export function languageModel(
   input: ConnectionInput,
   key: Redacted.Redacted<string>,
@@ -87,6 +96,7 @@ export function languageModel(
   const baseURL = providerEndpoint(input, allowedOrigins);
   const apiKey = Redacted.value(key);
   const options = { baseURL, apiKey, fetch: directFetch(input) };
+
   switch (input.provider) {
     case "anthropic":
       return createAnthropic(options)(input.model);
@@ -100,11 +110,13 @@ export function languageModel(
 }
 
 const apiModel = z.object({ id: z.string(), display_name: z.string().optional() });
+
 const googleModel = z.object({
   name: z.string(),
   displayName: z.string().optional(),
   supportedGenerationMethods: z.array(z.string()).optional(),
 });
+
 export const listProviderModels = (input: ConnectionInput, key: Redacted.Redacted<string>) =>
   Effect.gen(function* () {
     const endpoint = yield* Effect.try({
@@ -114,24 +126,33 @@ export const listProviderModels = (input: ConnectionInput, key: Redacted.Redacte
           ? error
           : new AppError({ status: 400, message: "Check the API base URL." }),
     });
+
     const client = yield* HttpClient.HttpClient;
-    const headers =
-      input.provider === "anthropic"
-        ? { "x-api-key": Redacted.value(key), "anthropic-version": "2023-06-01" }
-        : input.provider === "google"
-          ? { "x-goog-api-key": Redacted.value(key) }
-          : { authorization: `Bearer ${Redacted.value(key)}` };
+
+    const headers = Match.value(input.provider).pipe(
+      Match.when("anthropic", () => ({
+        "x-api-key": Redacted.value(key),
+        "anthropic-version": "2023-06-01",
+      })),
+      Match.when("google", () => ({ "x-goog-api-key": Redacted.value(key) })),
+      Match.orElse(() => ({ authorization: `Bearer ${Redacted.value(key)}` })),
+    );
+
     const models = new Map<string, ModelChoice>();
     const cursors = new Set<string>();
     let cursor: string | undefined;
+
     do {
       const url = new URL(`${endpoint}/models`);
+
       if (cursor)
         url.searchParams.set(input.provider === "google" ? "pageToken" : "after_id", cursor);
       const request = HttpClientRequest.get(url.href).pipe(HttpClientRequest.setHeaders(headers));
+
       const response = yield* client
         .execute(request)
         .pipe(Effect.provideService(FetchHttpClientRequestInit, { redirect: "error" }));
+
       const body = yield* response.stream.pipe(
         Stream.runFoldEffect({ chunks: new Array<Uint8Array>(), size: 0 }, (body, chunk) => {
           if (body.size + chunk.length > 2 * 1024 * 1024)
@@ -143,24 +164,29 @@ export const listProviderModels = (input: ConnectionInput, key: Redacted.Redacte
             );
           body.chunks.push(chunk);
           body.size += chunk.length;
+
           return Effect.succeed(body);
         }),
       );
+
       const json: unknown = yield* Effect.try(() =>
         JSON.parse(Buffer.concat(body.chunks).toString("utf8")),
       );
+
       if (response.status < 200 || response.status >= 300)
         return yield* new AppError({
           status: 502,
           message:
             "The provider rejected model discovery. Check your key and its permissions, or enter a model ID directly.",
         });
+
       if (input.provider === "google") {
         const page = yield* Effect.try(() =>
           z
             .object({ models: z.array(googleModel), nextPageToken: z.string().optional() })
             .parse(json),
         );
+
         for (const model of page.models) {
           if (
             model.supportedGenerationMethods &&
@@ -170,6 +196,7 @@ export const listProviderModels = (input: ConnectionInput, key: Redacted.Redacte
           const id = model.name.replace(/^models\//, "");
           models.set(id, { id, name: model.displayName ?? id });
         }
+
         cursor = page.nextPageToken;
       } else {
         const page = yield* Effect.try(() =>
@@ -181,9 +208,11 @@ export const listProviderModels = (input: ConnectionInput, key: Redacted.Redacte
             })
             .parse(json),
         );
+
         for (const model of page.data)
           models.set(model.id, { id: model.id, name: model.display_name ?? model.id });
         cursor = page.has_more ? page.last_id : undefined;
+
         if (page.has_more && !cursor)
           return yield* new AppError({
             status: 502,
@@ -191,13 +220,16 @@ export const listProviderModels = (input: ConnectionInput, key: Redacted.Redacte
               "The provider returned incomplete model pagination. Enter a model ID directly.",
           });
       }
+
       if (cursor && (cursors.has(cursor) || cursors.size >= 20))
         return yield* new AppError({
           status: 502,
           message: "The model list is too large or repeated a page. Enter a model ID directly.",
         });
+
       if (cursor) cursors.add(cursor);
     } while (cursor);
+
     return [...models.values()].toSorted((a, b) => a.name.localeCompare(b.name));
   }).pipe(
     Effect.locallyWith(Headers.currentRedactedNames, (names) => [...names, "x-goog-api-key"]),

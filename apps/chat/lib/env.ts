@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { parseEnv } from "node:util";
 
 const optionalText = z.string().min(1).optional();
+
 const httpUrl = z.url({ protocol: /^https?$/ });
 
 function localEnvironment(): Record<string, string | undefined> | undefined {
@@ -17,6 +18,7 @@ function localEnvironment(): Record<string, string | undefined> | undefined {
 }
 
 const local = localEnvironment();
+
 // A local connection is one credential set, never a mix of local and inherited keys.
 const langfuse = local ?? process.env;
 
@@ -57,8 +59,8 @@ export const env = createEnv({
     EVE_NEXT_PRODUCTION_PORT: process.env.EVE_NEXT_PRODUCTION_PORT,
   },
   emptyStringAsUndefined: true,
-  createFinalSchema: (shape, isServer) =>
-    z.object(shape).superRefine((values, context) => {
+  createFinalSchema: (fields, isServer) =>
+    z.object(fields).superRefine((values, context) => {
       if (isServer && Boolean(values.LANGFUSE_PUBLIC_KEY) !== Boolean(values.LANGFUSE_SECRET_KEY)) {
         context.addIssue({
           code: "custom",

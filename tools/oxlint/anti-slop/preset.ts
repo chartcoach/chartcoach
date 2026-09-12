@@ -1,6 +1,7 @@
 import type { AntiSlopRuleName } from "./index.ts";
 
 import { antiSlopPluginRules } from "./index.ts";
+import { antiSlopEffectPluginRules, type AntiSlopEffectRuleName } from "./effect/index.ts";
 
 export const antiSlopIgnorePatterns = [
   ".agent/**",
@@ -23,3 +24,10 @@ export const antiSlopRules = Object.fromEntries(
     "error" as const,
   ]),
 ) as Readonly<Record<`anti-slop/${AntiSlopRuleName}`, "error">>;
+
+export const antiSlopEffectRules = Object.fromEntries(
+  (Object.keys(antiSlopEffectPluginRules) as AntiSlopEffectRuleName[]).map((name) => [
+    `anti-slop-effect/${name}`,
+    "error" as const,
+  ]),
+) as Readonly<Record<`anti-slop-effect/${AntiSlopEffectRuleName}`, "error">>;

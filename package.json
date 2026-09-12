@@ -6,7 +6,7 @@
   "scripts": {
     "build": "vp run -r build",
     "check": "vp check --no-error-on-unmatched-pattern .github .vscode apps development_docs fixtures/catalog-release/MANIFEST.md packages/brand packages/catalog packages/chartcoach/README.md packages/chartcoach/pyproject.toml mcp.json plugin.json skills tools/architecture AGENTS.md CONTRIBUTING.md README.md knip.jsonc package.json pnpm-workspace.yaml pyproject.toml tsconfig.json vite.config.ts",
-    "check:anti-slop": "node --test --test-concurrency=1 tools/oxlint/anti-slop/test/*.test.ts tools/oxlint/anti-slop/test/compatibility/*.test.ts && tsc -p tools/oxlint/anti-slop/tsconfig.json --noEmit",
+    "check:anti-slop": "node --test --test-concurrency=1 tools/oxlint/anti-slop/test/*.test.ts tools/oxlint/anti-slop/test/compatibility/*.test.ts tools/oxlint/anti-slop/test/effect/*.test.ts && tsc -p tools/oxlint/anti-slop/tsconfig.json --noEmit",
     "check:architecture": "node --test tools/architecture/*.test.mjs",
     "check:unused": "pnpm --filter @chartcoach/docs generate && knip --treat-config-hints-as-errors",
     "dev": "portless",

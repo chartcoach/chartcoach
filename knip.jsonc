@@ -1,5 +1,9 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
+  "ignoreIssues": {
+    // Preserve the vendored, generated declaration surface verbatim.
+    "tools/oxlint/anti-slop/vendor/eslint-stylistic/padding-line-options.d.ts": ["types"],
+  },
   "workspaces": {
     ".": {
       "project": [
