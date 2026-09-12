@@ -103,9 +103,6 @@ export function MatchedGuidelines({
         ) : null}
       </div>
       <footer {...stylex.props(styles.footer)}>
-        <span {...stylex.props(styles.range)} role="status" aria-busy={pending}>
-          {total.toLocaleString()} matching guidelines
-        </span>
         <span {...stylex.props(styles.range)}>
           {data && data.matches.length < total ? "Scroll to explore more" : ""}
         </span>

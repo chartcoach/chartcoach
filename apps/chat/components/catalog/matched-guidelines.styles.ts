@@ -93,7 +93,8 @@ export const styles = stylex.create({
   footer: {
     display: "flex",
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent: "flex-end",
+    minHeight: 26,
     flexWrap: "wrap",
     gap: 8,
     paddingTop: 6,
