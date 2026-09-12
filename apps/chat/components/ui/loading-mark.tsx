@@ -26,6 +26,7 @@ const styles = stylex.create({
     animationTimingFunction: "cubic-bezier(0.65, 0, 0.35, 1)",
     animationIterationCount: "infinite",
   },
+  paused: { animationPlayState: "paused" },
   spread: (index: number) => ({
     "--tile-spread": `${(index - 6.5) * (360 / 14 - 20)}deg`,
     animationName: { default: spread, [media.reducedMotion]: "none" },
@@ -38,13 +39,13 @@ const styles = stylex.create({
   accent: { fill: colors.accent },
 });
 
-export function LoadingMark() {
+export function LoadingMark({ active = true }: { active?: boolean }) {
   return (
     <svg {...stylex.props(styles.root)} viewBox="0 0 100 100" aria-hidden="true" focusable="false">
       {angles.map((angle, index) => (
         <g key={angle} transform={`rotate(${angle} 50 50)`}>
-          <g {...stylex.props(styles.motion, styles.spread(index))}>
-            <g {...stylex.props(styles.motion, styles.orbit(index))}>
+          <g {...stylex.props(styles.motion, styles.spread(index), !active && styles.paused)}>
+            <g {...stylex.props(styles.motion, styles.orbit(index), !active && styles.paused)}>
               <rect
                 {...stylex.props(styles.tile, angle <= 40 && styles.accent)}
                 x="47.9"

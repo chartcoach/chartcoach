@@ -8,6 +8,54 @@ const user: EveMessage = {
   role: "user",
   parts: [{ type: "text", text: "Answer my chart." }],
 };
+
+it("shows the successfully loaded workflow per turn and restores it from history", () => {
+  const pending: EveDynamicToolPart = {
+    type: "dynamic-tool",
+    toolCallId: "load",
+    toolName: "load_skill",
+    state: "input-available",
+    input: { skill: "visfeedback" },
+  };
+
+  const loaded: EveDynamicToolPart = {
+    ...pending,
+    state: "output-available",
+    output: "Loaded guidance",
+  };
+
+  const message = (part: EveDynamicToolPart): EveMessage => ({
+    id: part.toolCallId,
+    role: "assistant",
+    parts: [part],
+  });
+
+  for (const part of [
+    pending,
+    { ...loaded, partial: true },
+    { ...loaded, input: { skill: "unknown" } },
+    { ...pending, state: "output-error", errorText: "Unavailable" },
+  ] satisfies EveDynamicToolPart[]) {
+    expect(deriveConversation([user, message(part)]).messages.at(-1)?.workflow).toBeUndefined();
+  }
+
+  const transcript: EveMessage[] = [
+    user,
+    message(loaded),
+    { id: "search", role: "assistant", parts: [] },
+    { ...user, id: "followup" },
+    message({ ...loaded, toolCallId: "discuss", input: { skill: "discuss" } }),
+  ];
+
+  expect(deriveConversation(transcript).messages.map((view) => view.workflow)).toEqual([
+    undefined,
+    "visfeedback",
+    "visfeedback",
+    undefined,
+    "discuss",
+  ]);
+});
+
 const matches = [
   {
     id: "labels",
@@ -22,6 +70,7 @@ const matches = [
     url: "https://chartcoach.dev/guidelines/contrast",
   },
 ];
+
 const search: EveMessage = {
   id: "search",
   role: "assistant",
@@ -36,6 +85,7 @@ const search: EveMessage = {
     },
   ],
 };
+
 const read: EveMessage = {
   id: "read",
   role: "assistant",
@@ -53,6 +103,7 @@ const read: EveMessage = {
     },
   ],
 };
+
 const result = {
   workflow: "visfeedback",
   status: "answer",
@@ -67,6 +118,7 @@ const result = {
     },
   ],
 } satisfies Answer;
+
 function presentation(
   output: Extract<EveDynamicToolPart, { state: "output-available" }>["output"],
 ): EveMessage["parts"][number] {
@@ -79,6 +131,7 @@ function presentation(
     output,
   };
 }
+
 const answer: EveMessage = {
   id: "answer",
   role: "assistant",
@@ -96,6 +149,7 @@ it("keeps primary prominence when a guideline supports another decision", () => 
       url: "https://chartcoach.dev/guidelines/spacing",
     },
   ];
+
   const conversation = deriveConversation([
     {
       ...read,
@@ -139,6 +193,7 @@ it("keeps primary prominence when a guideline supports another decision", () => 
       ],
     },
   ]);
+
   expect(conversation.messages.at(-1)?.answer?.status).toBe("answer");
   expect(
     conversation.evidence.map((item) => ({ id: item.guideline.id, stage: item.stage })),
@@ -163,6 +218,7 @@ it("orders primary evidence by the findings rather than retrieval rank", () => {
       }),
     ],
   };
+
   const { evidence } = deriveConversation([user, search, read, review]);
   expect(
     evidence.filter((item) => item.stage === "primary").map((item) => item.guideline.id),
@@ -171,6 +227,7 @@ it("orders primary evidence by the findings rather than retrieval rank", () => {
 
 it("publishes matches as they arrive and promotes them after reads and a verified answer", () => {
   const matched = deriveConversation([user, search]);
+  expect(matched.evidence[0].guideline.description).toBe(matches[0].description);
   expect(matched.evidence.map((item) => [item.guideline.id, item.stage])).toEqual([
     ["labels", "matched"],
     ["contrast", "matched"],
@@ -202,6 +259,7 @@ it("retains earlier matches during a turn and resets the panel for a new request
       },
     ],
   };
+
   expect(
     deriveConversation([user, search, emptySearch]).evidence.map((item) => item.guideline.id),
   ).toEqual(["labels", "contrast"]);
@@ -258,6 +316,7 @@ it("streams complete grounded points before the presentation finishes", () => {
       },
     ],
   };
+
   const conversation = deriveConversation([read, message], {
     draft: {
       messageId: "draft",
@@ -265,6 +324,7 @@ it("streams complete grounded points before the presentation finishes", () => {
       value: { ...result, points: [result.points[0], { primary_guideline_id: "contrast" }] },
     },
   });
+
   expect(conversation.messages.at(-1)?.answer).toEqual(result);
   expect(conversation.messages.at(-1)?.drafting).toBe(true);
   expect(conversation.evidence.map((item) => item.stage)).toEqual(["primary", "supporting"]);
@@ -307,6 +367,7 @@ it.each([
     ],
     { draft },
   );
+
   expect(conversation.messages.at(-1)?.answer).toBeUndefined();
   expect(conversation.evidence.map((item) => item.stage)).toEqual(["read", "read"]);
 });
@@ -327,11 +388,14 @@ it("promotes a corrected presentation after an evidence error", () => {
       },
     ],
   };
+
   expect(deriveConversation([read, rejected]).messages.at(-1)?.answer).toBeUndefined();
+
   const repaired = deriveConversation([
     read,
     { ...rejected, parts: [...rejected.parts, presentation(result)] },
   ]);
+
   expect(repaired.messages.at(-1)?.answer).toEqual(result);
   expect(repaired.messages.at(-1)?.complete).toBe(false);
   expect(repaired.evidence.map((item) => item.stage)).toEqual(["primary", "supporting"]);
@@ -350,6 +414,7 @@ it("withholds an unverified presentation output", () => {
       ],
     },
   ]);
+
   expect(conversation.messages.at(-1)?.answer).toBeUndefined();
   expect(conversation.evidence.map((item) => item.stage)).toEqual(["read", "read"]);
 });
@@ -357,6 +422,7 @@ it("withholds an unverified presentation output", () => {
 it("keeps a draft within the three-point answer contract", () => {
   const ids = ["labels", "contrast", "spacing", "ordering"];
   const guidelines = ids.map((id) => ({ id, title: id, description: `Guidance for ${id}` }));
+
   const conversation = deriveConversation([
     {
       ...read,
@@ -399,6 +465,7 @@ it("keeps a draft within the three-point answer contract", () => {
       ],
     },
   ]);
+
   expect(
     conversation.messages.at(-1)?.answer?.points.map((point) => point.primary_guideline_id),
   ).toEqual(["labels", "contrast", "spacing"]);

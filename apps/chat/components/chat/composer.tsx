@@ -1,11 +1,10 @@
 import { AttachmentPrimitive, ComposerPrimitive } from "@assistant-ui/react";
-import { ArrowUp, ImagePlus, Square, X } from "lucide-react";
+import * as Match from "effect/Match";
+import { ArrowUp, ImagePlus, X } from "lucide-react";
 import type { ReactNode, RefObject } from "react";
 import * as stylex from "@stylexjs/stylex";
-import { colors, media } from "../ui/tokens.stylex";
+import { colors, media, motion } from "../ui/tokens.stylex";
 import { ui } from "../ui/ui";
-import { ModeSelect } from "./mode-select";
-import { type Mode } from "../../shared/workflow";
 
 const styles = stylex.create({
   area: {
@@ -20,10 +19,12 @@ const styles = stylex.create({
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderStyle: "solid",
-    borderColor: { default: colors.border, ":focus-within": colors.accent },
-    borderRadius: 8,
-    padding: 14,
+    borderColor: { default: colors.border, ":focus-within": colors.muted },
+    borderRadius: 16,
+    boxShadow: "0 2px 12px #00000006",
+    padding: 16,
   },
+  embedded: { width: "100%", paddingInline: 0, paddingTop: 24, paddingBottom: 0 },
   input: {
     display: "block",
     width: "100%",
@@ -33,7 +34,7 @@ const styles = stylex.create({
     color: "inherit",
     outlineStyle: "none",
     lineHeight: 1.6,
-    minHeight: { default: 78, [media.short]: 52 },
+    minHeight: { default: 64, [media.short]: 48 },
     maxHeight: 180,
     paddingBlock: 0,
     paddingInline: 2,
@@ -44,12 +45,10 @@ const styles = stylex.create({
   controls: {
     display: "grid",
     gridTemplateColumns: {
-      default: "auto auto minmax(0, 1fr) auto",
-      "@media (max-width: 360px)": "auto minmax(0, 1fr) auto",
+      default: "auto minmax(0, 1fr) auto",
     },
     gridTemplateAreas: {
-      default: '"attachment mode model send"',
-      "@media (max-width: 360px)": '"attachment mode send" "model model model"',
+      default: '"attachment model send"',
     },
     gap: 8,
     alignItems: "center",
@@ -62,20 +61,36 @@ const styles = stylex.create({
     marginLeft: "auto",
     flexShrink: 0,
     borderWidth: 0,
-    borderRadius: 6,
+    borderRadius: 22,
     width: 44,
     height: 44,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    color: "#fff",
-    backgroundColor: "var(--brand-crimson)",
+    color: { default: "#fff", ":disabled": colors.muted },
+    backgroundColor: { default: colors.accent, ":disabled": colors.navigation },
     opacity: {
       default: 1,
-      ":disabled": 0.45,
+      ":disabled": 1,
       ":hover:enabled": { default: null, [media.hover]: 0.8 },
     },
   },
+  stop: { backgroundColor: "transparent", padding: 4 },
+  stopFace: {
+    width: 36,
+    height: 36,
+    flexShrink: 0,
+    borderRadius: "50%",
+    display: "grid",
+    placeItems: "center",
+    backgroundColor: colors.foreground,
+    color: colors.background,
+    transform: { default: "scale(1)", ":active": "scale(0.94)" },
+    transitionProperty: "transform",
+    transitionDuration: { default: motion.control, [media.reducedMotion]: "0ms" },
+    transitionTimingFunction: motion.easeOut,
+  },
+  stopGlyph: { width: 12, height: 12, borderRadius: 2, backgroundColor: "currentColor" },
   attachment: {
     display: "flex",
     alignItems: "center",
@@ -118,9 +133,8 @@ export function Composer({
   reading,
   error,
   onRecover,
-  mode,
-  onModeChange,
   modelControl,
+  embedded = false,
 }: {
   onUpload: (files: File[]) => void;
   messageInput: RefObject<HTMLTextAreaElement | null>;
@@ -129,12 +143,11 @@ export function Composer({
   reading: boolean;
   error?: string;
   onRecover?: () => Promise<void>;
-  mode: Mode;
-  onModeChange: (mode: Mode) => void;
   modelControl?: ReactNode;
+  embedded?: boolean;
 }) {
   return (
-    <div {...stylex.props(styles.area)}>
+    <div {...stylex.props(styles.area, embedded && styles.embedded)}>
       <ComposerPrimitive.Root {...stylex.props(styles.root)} aria-label="Message composer">
         <ComposerPrimitive.Attachments>
           {({ attachment }) => {
@@ -143,12 +156,13 @@ export function Composer({
                 part.type === "image" ||
                 (part.type === "file" && part.mimeType.startsWith("image/")),
             );
-            const src =
-              content?.type === "image"
-                ? content.image
-                : content?.type === "file"
-                  ? content.data
-                  : undefined;
+
+            const src = Match.value(content).pipe(
+              Match.when({ type: "image" }, (part) => part.image),
+              Match.when({ type: "file" }, (part) => part.data),
+              Match.orElse(() => undefined),
+            );
+
             return (
               <AttachmentPrimitive.Root {...stylex.props(styles.attachment)}>
                 {src ? (
@@ -190,6 +204,7 @@ export function Composer({
           aria-describedby="upload-hint message-privacy"
           onPaste={(event) => {
             const files = Array.from(event.clipboardData.files);
+
             if (files.length) {
               event.preventDefault();
               onUpload(files);
@@ -211,14 +226,16 @@ export function Composer({
           <span {...stylex.props(ui.srOnly)} id="upload-hint">
             PNG, JPEG, WebP · Up to 3 MiB
           </span>
-          <ModeSelect value={mode} onChange={onModeChange} disabled={disabled} />
           {modelControl}
           {busy ? (
             <ComposerPrimitive.Cancel
-              {...stylex.props(ui.button, ui.focus, styles.send)}
+              {...stylex.props(ui.button, ui.focus, styles.send, styles.stop)}
               aria-label="Stop response"
+              title="Stop response"
             >
-              <Square {...stylex.props(ui.icon)} size={16} />
+              <span {...stylex.props(styles.stopFace)} aria-hidden="true">
+                <span {...stylex.props(styles.stopGlyph)} />
+              </span>
             </ComposerPrimitive.Cancel>
           ) : (
             <ComposerPrimitive.Send

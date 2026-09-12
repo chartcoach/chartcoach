@@ -1,7 +1,6 @@
 export const starters = [
   {
     title: "Review a comparison",
-    workflow: "visfeedback",
     description: "Check what the bars communicate",
     image: "/examples/bicycle-trips.png",
     prompt:
@@ -9,7 +8,6 @@ export const starters = [
   },
   {
     title: "Explore a tradeoff",
-    workflow: "discuss",
     description: "Labels, legends, and reading effort",
     image: "/examples/support-requests.png",
     prompt:
@@ -17,7 +15,6 @@ export const starters = [
   },
   {
     title: "Choose a chart",
-    workflow: "visrec",
     description: "Turn a data brief into a design",
     image: "/examples/visits-brief.png",
     prompt:

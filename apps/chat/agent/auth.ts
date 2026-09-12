@@ -7,22 +7,25 @@ import {
 } from "eve/channels/auth";
 import { decodeSelection } from "./selection-context";
 import { resolveCatalogSelection } from "../lib/catalog/selection";
-import { modeSchema } from "../shared/workflow";
-import { Effect } from "effect";
+import { Effect, Either } from "effect";
 import { runApp } from "../lib/app/runtime";
 import { browserIdentity, ownerId } from "../lib/app/identity";
 import { getThread } from "../lib/app/threads";
 import { ownerSchema } from "../shared/preferences";
 
 export const accessRouteAuth = [vercelOidc(), localDev(), placeholderAuth()];
+
 export const catalogRouteAuth = accessRouteAuth.map(
   (authenticate): AuthFn<Request> =>
     async (request) => {
       const principal = await authenticate(request);
+
       if (!principal || !request.headers.get("cookie")) return principal;
       const browser = await runApp(browserIdentity(request), { signal: request.signal });
+
       if (!browser) return principal;
       const owner = ownerId(principal, browser.id);
+
       return {
         ...principal,
         principalId: owner,
@@ -36,34 +39,32 @@ export const reviewRouteAuth = catalogRouteAuth.map(
   (authenticate): AuthFn<Request> =>
     async (request) => {
       const principal = await authenticate(request);
+
       if (!principal) return principal;
-      const mode = modeSchema.safeParse(request.headers.get("x-chartcoach-mode") ?? "auto");
-      if (!mode.success)
-        throw new ForbiddenError({
-          code: "invalid_mode",
-          message: "Choose Auto, Review, Recommend, or Discuss.",
-        });
-      const caller: typeof principal = {
-        ...principal,
-        attributes: { ...principal.attributes, "chartcoach.mode": mode.data },
-      };
+      const caller = principal;
       const threadId = request.headers.get("x-chartcoach-thread");
       const connectionId = request.headers.get("x-chartcoach-connection");
+
       if (threadId) {
         const owner = ownerSchema.safeParse(caller.attributes["chartcoach.owner"]);
+
         if (!owner.success)
           throw new ForbiddenError({ message: "Open the conversation from your history." });
+
         const saved = await runApp(getThread(owner.data, threadId).pipe(Effect.either), {
           signal: request.signal,
         });
-        if (saved._tag === "Left") throw new ForbiddenError({ message: "Conversation not found." });
+
+        if (Either.isLeft(saved)) throw new ForbiddenError({ message: "Conversation not found." });
         const sessionId = new URL(request.url).pathname.match(/\/session\/([^/]+)/)?.[1];
+
         if (sessionId && saved.right.detail.sessionId !== decodeURIComponent(sessionId))
           throw new ForbiddenError({
             code: "conversation_session_mismatch",
             message:
               "This conversation lost its session connection. Reload the page to reconnect; your saved messages and model key are unchanged.",
           });
+
         return {
           ...caller,
           attributes: {
@@ -75,7 +76,9 @@ export const reviewRouteAuth = catalogRouteAuth.map(
           },
         };
       }
+
       const header = request.headers.get("x-chartcoach-selection");
+
       if (
         !caller ||
         header === null ||
@@ -83,11 +86,14 @@ export const reviewRouteAuth = catalogRouteAuth.map(
         !new URL(request.url).pathname.endsWith("/session")
       )
         return caller;
+
       try {
         const query = await decodeSelection(header);
+
         const selection = await resolveCatalogSelection(query, {
           signal: request.signal,
         });
+
         return {
           ...caller,
           attributes: {
@@ -99,7 +105,7 @@ export const reviewRouteAuth = catalogRouteAuth.map(
       } catch (error) {
         throw new ForbiddenError({
           code: "invalid_catalog_selection",
-          message: error instanceof Error ? error.message : "Check your knowledge selection.",
+          message: error instanceof Error ? error.message : "Check your guideline selection.",
         });
       }
     },

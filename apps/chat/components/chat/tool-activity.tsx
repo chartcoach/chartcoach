@@ -25,27 +25,28 @@ import * as stylex from "@stylexjs/stylex";
 import { disclosureScope } from "../ui/tokens.stylex";
 import { styles } from "./tool-activity.styles";
 import { ui } from "../ui/ui";
-import { modes, workflowSchema } from "../../shared/workflow";
+import { workflows } from "../../shared/workflow";
 
 const skillLabels = {
   visfeedback: { label: "Reviewing chart", icon: ChartNoAxesCombined },
   visrec: { label: "Planning a chart", icon: ChartNoAxesCombined },
   discuss: { label: "Comparing choices", icon: MessagesSquare },
 };
-const skillInput = z.object({ skill: workflowSchema });
 
-export function skillActivity(part: EveDynamicToolPart) {
+function skillActivity(part: EveDynamicToolPart) {
   if (part.toolName !== "load_skill") return undefined;
-  const workflow = skillInput.safeParse(part.input);
-  if (!workflow.success)
+  const workflow = parseTool(part).workflow;
+
+  if (!workflow)
     return {
       label: "Loading guidance",
       icon: BookOpen,
       title: "Guidance",
       description: "Preparing instructions for this request.",
     };
-  const mode = modes[workflow.data.skill];
-  return { ...skillLabels[workflow.data.skill], title: mode.label, description: mode.description };
+  const mode = workflows[workflow];
+
+  return { ...skillLabels[workflow], title: mode.label, description: mode.description };
 }
 
 const searchMethods = {
@@ -53,6 +54,7 @@ const searchMethods = {
   keyword: { label: "Keyword search", icon: TextSearch },
   hybrid: { label: "Hybrid search", icon: Combine },
 };
+
 const toolKinds = new Map([
   ["search_guidelines", { label: "Search guidelines", icon: Search }],
   ["read_guidelines", { label: "Read guidelines and sources", icon: BookOpen }],
@@ -62,9 +64,40 @@ const toolKinds = new Map([
 
 function toolStatus(part: EveDynamicToolPart, stopped: boolean, failed: boolean) {
   if (part.state === "output-error" || part.state === "output-denied") return "Failed";
+
   if (part.state === "output-available" && !part.partial) return "complete";
+
   if (failed) return "Failed";
+
   return stopped ? "Stopped" : "Working";
+}
+
+export function toolPresentation(
+  part: EveDynamicToolPart,
+  guidelines?: ReadonlyMap<string, { title: string }>,
+) {
+  const parsed = parseTool(part);
+  const skill = skillActivity(part);
+  const method = parsed.search?.method ?? parsed.method;
+
+  const kind =
+    part.toolName === "search_guidelines" && method
+      ? searchMethods[method]
+      : toolKinds.get(part.toolName);
+
+  const context =
+    parsed.query ??
+    parsed.sql ??
+    parsed.read?.guidelines.map((item) => item.title).join(" · ") ??
+    parsed.ids?.map((id) => guidelines?.get(id)?.title ?? id).join(" · ");
+
+  return {
+    ...parsed,
+    skill,
+    context,
+    icon: skill?.icon ?? kind?.icon ?? Wrench,
+    label: skill?.label ?? kind?.label ?? part.toolName,
+  };
 }
 
 function ToolInput({
@@ -87,6 +120,7 @@ function ToolInput({
         </pre>
       </>
     );
+
   if (query !== undefined)
     return (
       <>
@@ -94,6 +128,7 @@ function ToolInput({
         <p {...stylex.props(styles.paragraph, styles.foreground)}>{query}</p>
       </>
     );
+
   if (ids)
     return (
       <>
@@ -105,6 +140,7 @@ function ToolInput({
         </ul>
       </>
     );
+
   return (
     <>
       <h3 {...stylex.props(styles.heading)}>Input</h3>
@@ -130,6 +166,7 @@ function SourceLink({
       : doi
         ? `https://doi.org/${encodeURIComponent(doi)}`
         : undefined;
+
   return href ? (
     <a
       {...stylex.props(ui.focus, styles.link)}
@@ -146,6 +183,7 @@ function SourceLink({
 
 function SearchResults({ search }: { search: z.infer<typeof searchOutput> }) {
   const { label, icon: MethodIcon } = searchMethods[search.method];
+
   return (
     <>
       <div {...stylex.props(styles.method)}>
@@ -211,6 +249,7 @@ function ToolResults({
   output: unknown;
 }) {
   if (search) return <SearchResults search={search} />;
+
   if (description)
     return (
       <>
@@ -257,6 +296,7 @@ function ToolResults({
         </dl>
       </>
     );
+
   if (sqlResult)
     return (
       <>
@@ -311,6 +351,7 @@ function ToolResults({
         ) : null}
       </>
     );
+
   if (read)
     return (
       <>
@@ -319,6 +360,7 @@ function ToolResults({
           {Array.from(new Map(read.guidelines.map((item) => [item.id, item])).values()).map(
             (item) => {
               const citation = read.citations.find((entry) => entry.id === item.id);
+
               return (
                 <li key={item.id}>
                   <p {...stylex.props(styles.paragraph, styles.resultTitle)}>
@@ -343,6 +385,7 @@ function ToolResults({
         </ul>
       </>
     );
+
   return (
     <>
       <h3 {...stylex.props(styles.heading)}>Result</h3>
@@ -363,7 +406,7 @@ export function ToolActivity({
   const status = toolStatus(part, stopped, failed);
   const complete = status === "complete";
   const toolFailed = status === "Failed";
-  const skill = skillActivity(part);
+
   const {
     query,
     sql,
@@ -372,17 +415,11 @@ export function ToolActivity({
     read,
     sqlResult,
     description,
-    method: inputMethod,
-  } = parseTool(part);
-  const context =
-    query ?? sql ?? read?.guidelines.map((item) => item.title).join(" · ") ?? ids?.join(" · ");
-  const kind = toolKinds.get(part.toolName);
-  const method = search?.method ?? inputMethod;
-  const Icon =
-    part.toolName === "search_guidelines" && method
-      ? searchMethods[method].icon
-      : (skill?.icon ?? kind?.icon ?? Wrench);
-  const label = skill?.label ?? kind?.label ?? part.toolName;
+    skill,
+    context,
+    icon: Icon,
+    label,
+  } = toolPresentation(part);
 
   return (
     <details {...stylex.props(disclosureScope, styles.root)}>

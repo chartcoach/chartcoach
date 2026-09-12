@@ -87,16 +87,20 @@ requests, so add origins you control or trust.
 
 ## Reopen a conversation
 
-Open **Conversation history** to select, search, rename, archive, or restore a
-conversation. Reopening restores the chart images, guideline citations, and
-saved knowledge selection. Eve replays its persisted session events and follows
+Use the left sidebar to start a chat or search previous conversations. Search and
+collapse controls sit beside the wordmark. Collapsing keeps a narrow rail with the
+brand mark, New chat, and Search. Select the mark to expand it again.
+On smaller screens the sidebar opens as a drawer.
+Each conversation's options menu offers rename, archive, or restore.
+Reopening restores the chart images, guideline citations, and
+saved guideline selection. Eve replays its persisted session events and follows
 an in-flight response after a page reload. A changed catalog requires a new
-knowledge selection before continuing with its records.
+guideline selection before continuing with its records.
 
 [Effect](https://effect.website/docs/v3/runtime/) owns the app's scoped services,
 typed failures, request timeouts, and tracing. Its SQLite client supplies
 transactions, migrations, a prepared-statement cache, and write-ahead logging.
-SQLite stores connection settings, conversation metadata, knowledge selections,
+SQLite stores connection settings, conversation metadata, guideline selections,
 and uploaded image previews. Eve owns the transcript and agent state.
 
 `CHAT_DATA_DIR` overrides the platform-specific application-data directory for
@@ -180,10 +184,10 @@ restart can produce another observation, while Langfuse reuses the content-addre
 
 ## Choose how to work
 
-Leave the composer on **Auto** to let the agent choose a workflow from your
-question. Choose **Review**, **Recommend**, or **Discuss** when you want to steer
-the next turn. You can change that preference during a conversation while keeping
-its knowledge selection fixed.
+Ask for feedback, a chart recommendation, or an explanation of a design choice.
+The agent chooses the workflow from your request. **Review**, **Recommend**, or
+**Discuss** appears beside ChartCoach when its skill is loaded for that response.
+Follow-up questions can activate a different workflow with the same guideline selection.
 
 The three starter cards provide illustrative chart images and a data brief.
 Choosing one attaches its image and fills an editable prompt. Review the draft,
@@ -223,9 +227,10 @@ the guideline titles. Expand **Why this applies** to compare the chart observati
 with the authored requirement and inspect supporting citations.
 
 The guideline panel shows search matches as they arrive and marks entries when read.
-Primary guidelines appear directly as [Open Graph](https://ogp.me/) image cards,
-in answer order. Desktop places them beside the conversation. Narrow screens use
-a visible horizontal strip. Supporting and other explored entries stay expandable.
+Primary guidelines appear as [Open Graph](https://ogp.me/) image cards in answer order.
+Desktop places them in a collapsible card beside the conversation. On narrow screens,
+open **Guidelines** above the conversation to inspect them in a bottom sheet.
+Supporting and explored entries stay expandable, with catalog descriptions and links.
 You can ask follow-up questions about the same
 image, stop a response, or start a new chat.
 
@@ -233,6 +238,10 @@ Expand **Activity**, then a skill, search, or read action, to inspect its purpos
 search method, matched guidelines, and sources. The display groups tool calls
 through assistant-ui's `MessagePrimitive.GroupedParts`. Vector-search details include
 the embedding model and index profile.
+
+The progress summary follows broad phases while individual calls remain available
+in Activity. Labels crossfade in a stable row. Reduced-motion preferences make
+these updates immediate.
 
 Each new turn anchors to its question. Scroll to read the feedback or inspect
 earlier messages.
@@ -261,22 +270,27 @@ are materialized once per loaded catalog and reused across queries.
 `CATALOG_SOURCE` and `CATALOG_PROFILE` select the release and index profile.
 Vector and hybrid search use its normalized `all-MiniLM-L6-v2` embeddings.
 
-## Choose your agent's knowledge
+## Choose your agent's guidelines
 
-Open **Knowledge** to choose the guidelines your agent can use for feedback.
+Open **Guidelines** in the sidebar to choose the guidelines your agent can use for feedback.
+The settings occupy the main workspace. **Back to chat** returns to your conversation
+and draft. Changes take effect when you choose **Use these guidelines**.
 Drag the year-range handles or enter exact years. Include or exclude
 authors and select source types. Blank fields keep the full range.
 
 [Mosaic](https://uwdata.github.io/mosaic/) coordinates the linked views using
 DuckDB-WASM in a browser worker. Facet counts reflect the other filters, so you
-can compare alternatives before applying a selection. Expand **Preview matching guidelines**
-to inspect candidate titles.
+can compare alternatives before applying a selection. Scroll **Matching guidelines**
+to explore the selection. The list fetches rows in batches, prefetches the next batch,
+and virtualizes rendered rows. Hover or focus a title for its visual preview, or open
+its link to read the guideline. Browsing preserves the full selection and facet counts.
+Query results commit as non-urgent updates, keeping range and author controls responsive.
 
 The first opening fetches verified Parquet and manifest bytes over authenticated
 HTTPS and loads DuckDB's worker and WASM assets from this app. DuckDB also loads
 its version-matched JSON extension from its configured extension repository.
 Catalog exploration requires a browser with WebAssembly exception handling.
-Draft filtering runs on your device. Closing and reopening the panel reuses the
+Draft filtering runs on your device. Leaving and reopening Guidelines reuses the
 loaded database. Reloading the catalog or leaving the page disposes the worker.
 
 Author, year, and source-type requirements must match the same linked source.
@@ -362,7 +376,31 @@ converters translate message payloads between the two libraries.
 Customize primitive markup and colocated `stylex.create` styles in
 `components/chat/`. `components/ui/tokens.stylex.ts` owns colors, breakpoints,
 and motion values. `components/ui/ui.ts` contains shared control and focus styles.
-The CSS entrypoint contains browser resets and the shared brand palette.
+The CSS entrypoints contain browser resets, the shared brand palette, and native
+view-transition selectors.
+
+Components render state and dispatch commands. Hooks own request lifecycles and
+interaction state. Root lint rules keep transport and server imports out of
+`components/`.
+
+| Responsibility                                                  | Owner                                                                                                                                       |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Eve and assistant-ui runtime composition                        | [use-chat-runtime.ts](chat/use-chat-runtime.ts)                                                                                             |
+| Thread preparation, identity headers, and persistence           | [use-thread-session.ts](chat/use-thread-session.ts)                                                                                         |
+| Transcript and evidence projection                              | [use-conversation.ts](chat/use-conversation.ts)                                                                                             |
+| Model connection mutations and form lifecycle                   | [use-model-settings.ts](chat/use-model-settings.ts), [use-connection-form.ts](chat/use-connection-form.ts)                                  |
+| File-drop listeners, source sheet, and virtual-list interaction | [use-file-drop.ts](chat/use-file-drop.ts), [use-evidence-panel.ts](chat/use-evidence-panel.ts), [use-match-list.ts](chat/use-match-list.ts) |
+
+React Activity preserves the conversation and Guidelines views. The Eve stream
+and browser catalog owner sit outside the hidden presentation subtrees, so switching
+views preserves the chart, draft, scroll position, and loaded DuckDB worker.
+Workspace navigation uses a short, type-scoped view transition. Streaming and
+background catalog queries retain their own update lifecycle. Reduced-motion
+preferences disable the transition animation.
+
+[Recommendation](components/chat/recommendation.tsx) owns Streamdown's element
+allowlist, inert authored links, streaming state, and StyleX typography. Provider
+icons import their individual SVG components. The connection editor loads on demand.
 
 Next.js uses StyleX's Babel and PostCSS plugins to compile styles and serve the
 stylesheet. Tests use its bundler plugin to exercise compiled components.

@@ -15,10 +15,10 @@ export type ExplorerData = {
   authors: { id: number; count: number }[];
   sourceTypes: { id: number; count: number }[];
   years: { from: number; to: number; count: number }[];
-  matches: { id: string; title: string }[];
 };
 
 type Rows = Record<string, string | number | bigint | null>[];
+
 const sourceRows = "FROM catalog_entries g LEFT JOIN guideline_sources s ON s.guideline_id = g.id";
 
 export function exploreCatalog(
@@ -40,18 +40,22 @@ export function exploreCatalog(
   const width = min !== null && max !== null ? Math.max(1, Math.ceil((max - min + 1) / 48)) : 1;
 
   function publish() {
-    if (!active || parts.size !== 5 || !selectionSql) return;
+    if (!active || parts.size !== 4 || !selectionSql) return;
     const authorCounts = new Map(parts.get("authors")!.map((row) => [row.name, Number(row.count)]));
     const typeCounts = new Map(parts.get("types")!.map((row) => [row.name, Number(row.count)]));
+
     const yearCounts = new Map(
       parts.get("years")!.map((row) => [Number(row.start), Number(row.count)]),
     );
+
     const years: ExplorerData["years"] = [];
+
     if (min !== null && max !== null) {
       for (let from = min; from <= max; from += width) {
         years.push({ from, to: Math.min(max, from + width - 1), count: yearCounts.get(from) ?? 0 });
       }
     }
+
     onData({
       key: JSON.stringify(filters),
       selection: { catalogId: metadata.catalogId, sql: selectionSql },
@@ -62,9 +66,6 @@ export function exploreCatalog(
         count: typeCounts.get(name) ?? 0,
       })),
       years,
-      matches: parts
-        .get("matches")!
-        .map((row) => ({ id: String(row.id), title: String(row.title) })),
     });
   }
 
@@ -85,34 +86,36 @@ export function exploreCatalog(
         if (active) onError(error);
       },
     });
+
     clients.push(result);
+
     return result;
   }
 
   client("count", (where) => {
     selectionSql = `SELECT DISTINCT g.id ${sourceRows} WHERE ${where}`;
+
     return `SELECT count(*)::INTEGER AS count FROM (${selectionSql}) selection`;
   });
-  client(
-    "matches",
-    (where) =>
-      `SELECT DISTINCT g.id, g.title ${sourceRows} WHERE ${where} ORDER BY g.title, g.id LIMIT 6`,
-  );
+
   const authors = client(
     "authors",
     (where) =>
       `SELECT names.name, count(DISTINCT g.id)::INTEGER AS count ${sourceRows}, UNNEST(s.authors) AS names(name) WHERE ${where} GROUP BY names.name`,
   );
+
   const types = client(
     "types",
     (where) =>
       `SELECT s.source_type AS name, count(DISTINCT g.id)::INTEGER AS count ${sourceRows} WHERE (${where}) AND s.source_type IS NOT NULL GROUP BY s.source_type`,
   );
+
   const years = client("years", (where) =>
     min === null
       ? "SELECT NULL::INTEGER AS start, 0::INTEGER AS count WHERE FALSE"
       : `SELECT (${min} + floor((try_cast(s.year AS INTEGER)::DOUBLE - ${min}) / ${width}) * ${width})::BIGINT AS start, count(DISTINCT g.id)::INTEGER AS count ${sourceRows} WHERE (${where}) AND try_cast(s.year AS INTEGER) IS NOT NULL GROUP BY start ORDER BY start`,
   );
+
   void (async () => {
     for (const [predicate, facet] of [
       [predicates.authors, authors],
@@ -132,12 +135,15 @@ export function exploreCatalog(
       // pending() awaits the current event, so settle each clause before publishing the next.
       await selection.pending("value");
     }
+
     if (active) for (const item of clients) item.enabled = true;
   })().catch((error) => {
     if (active) onError(error);
   });
+
   return () => {
     active = false;
+
     for (const item of clients) item.destroy();
     coordinator.clear({ cache: false });
   };

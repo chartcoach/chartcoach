@@ -1,6 +1,7 @@
 import { ChevronRight } from "lucide-react";
+import * as Match from "effect/Match";
 import { ThreadPrimitive } from "@assistant-ui/react";
-import { type Components, Streamdown } from "streamdown";
+import { Recommendation } from "./recommendation";
 import { type Answer as AnswerData } from "../../shared/answer";
 import type { GuidelinePreview, ReadGuideline } from "../../chat/tool-output";
 import * as stylex from "@stylexjs/stylex";
@@ -9,6 +10,7 @@ import { ui } from "../ui/ui";
 
 const DETAILS_ANIMATION =
   "@supports (interpolate-size: allow-keywords) and selector(::details-content)";
+
 const styles = stylex.create({
   points: {
     listStyle: "none",
@@ -123,57 +125,8 @@ const styles = stylex.create({
     color: colors.muted,
   },
   notice: { marginTop: 20, marginBottom: 0, marginInline: 0 },
-  markdown: { whiteSpace: "normal" },
-  paragraph: {
-    margin: 0,
-    display: { default: "block", [stylex.when.ancestor(":is(li)")]: "inline" },
-  },
-  strong: { fontWeight: 600 },
-  emphasis: { fontStyle: "italic" },
-  code: {
-    borderRadius: 4,
-    backgroundColor: colors.background,
-    paddingInline: 6,
-    paddingBlock: 2,
-    fontSize: 14,
-    lineHeight: "20px",
-  },
-  list: {
-    listStylePosition: "inside",
-    whiteSpace: "normal",
-    padding: 0,
-    paddingLeft: { default: 0, [stylex.when.ancestor(":is(li)")]: 24 },
-    marginTop: 0,
-    marginBottom: {
-      default: 0,
-      ":not(:last-child)": { default: 16, [stylex.when.ancestor(":is(li)")]: 0 },
-    },
-    marginInline: 0,
-  },
-  unordered: { listStyleType: "disc" },
-  ordered: { listStyleType: "decimal" },
-  listItem: { paddingBlock: 4 },
-  inline: { display: "inline" },
 });
 
-const recommendationElements = ["p", "strong", "em", "code", "ul", "ol", "li", "br", "a"];
-const recommendationComponents = {
-  p: ({ children }) => <p {...stylex.props(styles.paragraph)}>{children}</p>,
-  strong: ({ children }) => <strong {...stylex.props(styles.strong)}>{children}</strong>,
-  em: ({ children }) => <em {...stylex.props(styles.emphasis)}>{children}</em>,
-  code: ({ children }) => <code {...stylex.props(ui.mono, styles.code)}>{children}</code>,
-  ul: ({ children }) => <ul {...stylex.props(styles.list, styles.unordered)}>{children}</ul>,
-  ol: ({ children, start }) => (
-    <ol {...stylex.props(styles.list, styles.ordered)} start={start}>
-      {children}
-    </ol>
-  ),
-  li: ({ children }) => (
-    <li {...stylex.props(stylex.defaultMarker(), styles.listItem)}>{children}</li>
-  ),
-  br: () => <br />,
-  a: ({ children }) => <span {...stylex.props(styles.inline)}>{children}</span>,
-} satisfies Components;
 const assessments = {
   respected: "Working well",
   violated: "Improve",
@@ -211,29 +164,27 @@ function Findings({
   streaming: boolean;
   guidelines: ReadonlyMap<string, ReadGuideline>;
 }) {
+  const contextLabel = Match.value(workflow).pipe(
+    Match.when("visfeedback", () => "In your chart"),
+    Match.when("visrec", () => "Your brief"),
+    Match.when("discuss", () => "Your question"),
+    Match.exhaustive,
+  );
+
   return (
     <ol {...stylex.props(styles.points)} aria-label="Guideline-backed advice" aria-busy={streaming}>
       {points.map((item) => {
         const primary = guidelines.get(item.primary_guideline_id)!;
+
         return (
-          <li {...stylex.props(styles.finding)} key={item.primary_guideline_id}>
+          <li key={item.primary_guideline_id} {...stylex.props(styles.finding, ui.appear)}>
             {item.assessment ? (
               <h3 {...stylex.props(styles.assessment, styles[item.assessment])}>
                 {assessments[item.assessment]}
               </h3>
             ) : null}
             <div {...stylex.props(styles.action)}>
-              <Streamdown
-                {...stylex.props(styles.markdown)}
-                mode={streaming ? "streaming" : "static"}
-                allowedElements={recommendationElements}
-                components={recommendationComponents}
-                skipHtml
-                controls={false}
-                linkSafety={{ enabled: false }}
-              >
-                {item.recommendation}
-              </Streamdown>
+              <Recommendation content={item.recommendation} streaming={streaming} />
             </div>
             <div {...stylex.props(styles.citations)}>
               <Citation guideline={primary} />
@@ -248,13 +199,7 @@ function Findings({
                 />
               </summary>
               <dl {...stylex.props(styles.detail)}>
-                <dt {...stylex.props(styles.term)}>
-                  {workflow === "visfeedback"
-                    ? "In your chart"
-                    : workflow === "visrec"
-                      ? "Your brief"
-                      : "Your question"}
-                </dt>
+                <dt {...stylex.props(styles.term)}>{contextLabel}</dt>
                 <dd {...stylex.props(styles.description)}>{item.context}</dd>
                 <dt {...stylex.props(styles.term)}>Guideline guidance</dt>
                 <dd {...stylex.props(styles.description)}>{primary.description}</dd>
@@ -296,8 +241,10 @@ export function Answer({
         </ThreadPrimitive.Suggestion>
       </div>
     );
+
   if (answer.status === "needs_context")
     return <p {...stylex.props(styles.notice)}>{answer.question}</p>;
+
   if (answer.status === "no_match")
     return (
       <p {...stylex.props(styles.notice)}>
@@ -305,6 +252,7 @@ export function Answer({
         about a specific design choice.
       </p>
     );
+
   if (answer.status === "out_of_scope")
     return (
       <p {...stylex.props(styles.notice)}>
@@ -312,6 +260,7 @@ export function Answer({
         Guideline Catalog.
       </p>
     );
+
   return (
     <Findings
       points={answer.points}

@@ -32,27 +32,32 @@ export function AuthorFilters({
   const selected = new Set([...draft.includeAuthorIds, ...draft.excludeAuthorIds]);
   const retained = new Set([...selected, ...touched]);
   const lookup = new Map(counts?.map(({ id, count }) => [id, count]));
+
   const candidates = metadata.authors
     .filter((author) => author.name.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()))
     .sort((a, b) => b.guidelineCount - a.guidelineCount || a.name.localeCompare(b.name));
-  const visibleLimit = query.trim() ? 8 : 4;
+
+  const visibleLimit = 4;
   const suggestions = candidates.slice(0, visibleLimit);
+
   const visible = [
     ...suggestions,
     ...metadata.authors.filter(
       (author) => retained.has(author.id) && !suggestions.includes(author),
     ),
   ];
+
   const max = Math.max(1, ...Array.from(lookup.values()));
+
   return (
     <fieldset {...stylex.props(styles.section)}>
       <legend {...stylex.props(styles.legend)}>Authors</legend>
-      <p {...stylex.props(styles.note)}>
-        Include any selected author, or exclude every guideline citing them.
-      </p>
+      <p {...stylex.props(styles.note)}>Include or exclude an author.</p>
       <input
         {...stylex.props(ui.focus, styles.input)}
         type="search"
+        name="author"
+        autoComplete="off"
         aria-label="Find an author"
         placeholder={`Search ${metadata.authors.length.toLocaleString()} authors`}
         value={query}
@@ -61,7 +66,7 @@ export function AuthorFilters({
       {visible.map((author) => (
         <label key={author.id} {...stylex.props(styles.author)}>
           <span {...stylex.props(styles.facetLabel)}>
-            <span {...stylex.props(styles.name)}>
+            <span {...stylex.props(styles.name)} title={author.name}>
               {author.name}
               <span {...stylex.props(styles.count)}>
                 {lookup.get(author.id)?.toLocaleString() ?? (counts ? "0" : "…")}
@@ -119,10 +124,12 @@ export function YearFilters({
   disabled,
 }: FacetProps & { bins?: { from: number; to: number; count: number }[]; disabled?: boolean }) {
   const { min, max, undatedGuidelines } = metadata.years;
+
   if (min === null || max === null) return null;
   const from = draft.yearFrom ?? min;
   const to = draft.yearTo ?? max;
   const maxCount = Math.max(1, ...(bins?.map((bin) => bin.count) ?? []));
+
   return (
     <fieldset {...stylex.props(styles.section)}>
       <legend {...stylex.props(styles.legend)}>Publication year</legend>
@@ -141,7 +148,7 @@ export function YearFilters({
             <span
               {...stylex.props(
                 styles.histogramBar,
-                styles.barHeight(bin.count / maxCount),
+                styles.barScaleY(bin.count / maxCount),
                 bin.to < from || bin.from > to ? styles.dimmedBar : styles.selectedBar,
               )}
             />
@@ -192,6 +199,8 @@ export function YearFilters({
               {...stylex.props(ui.focus, styles.input)}
               type="number"
               inputMode="numeric"
+              name={field}
+              autoComplete="off"
               step={1}
               min={min}
               max={max}
@@ -226,6 +235,7 @@ export function SourceFilters({
 }: FacetProps & { counts?: Counts }) {
   const lookup = new Map(counts?.map(({ id, count }) => [id, count]));
   const max = Math.max(1, ...Array.from(lookup.values()));
+
   return (
     <fieldset {...stylex.props(styles.section)}>
       <legend {...stylex.props(styles.legend)}>Source type</legend>

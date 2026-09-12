@@ -1,5 +1,6 @@
 import type { EveDynamicToolPart } from "eve/react";
 import { z } from "zod";
+import { workflowSchema } from "../shared/workflow";
 
 const guideline = z.object({ id: z.string(), title: z.string(), description: z.string() });
 
@@ -48,6 +49,7 @@ export interface GuidelinePreview {
   id: string;
   title: string;
   url: string;
+  description?: string;
 }
 
 export interface ReadGuideline extends GuidelinePreview {
@@ -60,9 +62,11 @@ export function guidelinePreview(
   href?: string,
 ): GuidelinePreview | undefined {
   if (!id || !title.trim() || !href) return;
+
   try {
     const url = new URL(href);
     const pathname = `/guidelines/${encodeURIComponent(id)}`;
+
     if (
       url.origin !== "https://chartcoach.dev" ||
       url.username ||
@@ -72,6 +76,7 @@ export function guidelinePreview(
       (url.pathname !== pathname && url.pathname !== `${pathname}/`)
     )
       return;
+
     return { id, title, url: `${url.origin}${pathname}` };
   } catch {
     return;
@@ -97,13 +102,21 @@ export const readOutput = z.object({
 });
 
 const queryInput = z.object({ query: z.string() });
+
 const searchMethodInput = z.object({ method: z.enum(["vector", "keyword", "hybrid"]) });
+
 const readInput = z.object({ ids: z.array(z.string()) });
+
 const sqlInput = z.object({ sql: z.string() });
+
+const skillInput = z.object({ skill: workflowSchema });
 
 export function parseTool(part: EveDynamicToolPart) {
   const complete = part.state === "output-available" && !part.partial;
+
   return {
+    workflow:
+      part.toolName === "load_skill" ? skillInput.safeParse(part.input).data?.skill : undefined,
     method: searchMethodInput.safeParse(part.input).data?.method,
     description:
       complete && part.toolName === "describe_catalog"

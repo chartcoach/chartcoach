@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import type { EveDynamicToolPart, EveMessage } from "eve/react";
-import { expect, it } from "vite-plus/test";
+import { expect, it, vi } from "vite-plus/test";
 import { Transcript } from "./transcript";
 
 const read: EveMessage = {
@@ -32,6 +32,7 @@ const read: EveMessage = {
     },
   ],
 };
+
 const feedback = {
   workflow: "visfeedback",
   status: "answer",
@@ -46,6 +47,7 @@ const feedback = {
   ],
   question: null,
 };
+
 function answer(
   output: Extract<EveDynamicToolPart, { state: "output-available" }>["output"] = feedback,
   metadata: EveMessage["metadata"] = { status: "complete" },
@@ -68,6 +70,7 @@ function answer(
     ],
   };
 }
+
 function render(messages: EveMessage[]) {
   return renderToStaticMarkup(
     <Transcript messages={messages} attachments={new Map()} stoppedTurnIds={new Set()} />,
@@ -78,6 +81,7 @@ it("offers another evidence check when a completed turn has no presentation", ()
   const html = render([
     { id: "empty", role: "assistant", metadata: { status: "complete" }, parts: [] },
   ]);
+
   expect(html).toContain("The answer needs another evidence check.");
   expect(html).toContain("Try again");
 });
@@ -97,6 +101,7 @@ it.each([
       { status: "complete" },
     ),
   ]);
+
   expect(html).toContain("Place each series name beside its line.");
   expect(html).toContain(label);
   expect(html).toContain('aria-label="Primary: Label series directly"');
@@ -126,6 +131,7 @@ it("can cite a guideline read in an earlier turn", () => {
     },
     answer(),
   ]);
+
   expect(html).toContain("Place each series name beside its line.");
   expect(html).toContain('aria-label="Primary: Label series directly"');
 });
@@ -193,6 +199,7 @@ it("withholds an answer when its read citation points outside the catalog", () =
     },
     answer(),
   ]);
+
   expect(html).toContain("The answer needs another evidence check.");
   expect(html).not.toContain("Place each series name beside its line.");
 });
@@ -230,6 +237,7 @@ it("distinguishes explicit supporting evidence from other search candidates", ()
       [searchPart, ...read.parts, additionalRead(["readability"])],
     ),
   ]);
+
   expect(html).toContain('aria-label="Primary: Label series directly"');
   expect(html).toContain('aria-label="Supporting: Guidance for readability"');
   expect(html).toMatch(/Supporting <span[^>]*>1<\/span>/);
@@ -242,6 +250,8 @@ it("distinguishes explicit supporting evidence from other search candidates", ()
 });
 
 it("communicates respected, violated, and uncertain findings with distinct next actions", () => {
+  const errors = vi.spyOn(console, "error");
+
   const result = {
     ...feedback,
     points: [
@@ -262,18 +272,22 @@ it("communicates respected, violated, and uncertain findings with distinct next 
       },
     ],
   };
+
   const html = render([
     answer(result, { status: "complete" }, [
       ...read.parts,
       additionalRead(["contrast", "ordering"]),
     ]),
   ]);
+
   expect(html).toContain("Improve");
   expect(html).toContain("Working well");
   expect(html).toContain(">Check</h3>");
   expect(html).toContain("Place each series name beside its line.");
   expect(html).toContain("Keep this contrast.");
   expect(html).toContain("Check whether category order has domain meaning.");
+  expect(errors).not.toHaveBeenCalled();
+  errors.mockRestore();
 });
 
 it("uses verified SQL matches for previews and treats arbitrary SQL cells as data", () => {
@@ -311,9 +325,10 @@ it("uses verified SQL matches for previews and treats arbitrary SQL cells as dat
       ],
     ),
   ]);
+
   expect(html).toContain("I could not find an applicable guideline");
-  expect(html).toMatch(/Explored <span[^>]*>1<\/span>/);
-  expect(html).toContain('aria-label="Preview Label series directly"');
+  expect(html).toContain('aria-label="Search results"');
+  expect(html).toContain('aria-label="Read guideline: Label series directly"');
 });
 
 it("renders recommendation emphasis while keeping authored links and images inert", () => {
@@ -333,6 +348,7 @@ it("renders recommendation emphasis while keeping authored links and images iner
       { status: "complete" },
     ),
   ]);
+
   expect(html).toMatch(/<strong\b[^>]*>direct labels<\/strong>/);
   expect(html).not.toContain('href="https://example.com');
   expect(html).not.toContain('src="https://example.com');
@@ -347,6 +363,7 @@ it("keeps an accepted answer visible when its turn is cancelled", () => {
       stoppedTurnIds={new Set(["cancelled"])}
     />,
   );
+
   expect(html).toContain("Response stopped.");
   expect(html).toContain("Place each series name beside its line.");
 });
@@ -368,6 +385,7 @@ it("requires a successful read result before accepting a citation", () => {
     },
     answer(),
   ]);
+
   expect(html).toContain("The answer needs another evidence check.");
   expect(html).not.toContain("Place each series name beside its line.");
 });
@@ -378,6 +396,7 @@ it("waits for the final read result before accepting a citation", () => {
       ? { ...part, partial: true as const }
       : part,
   );
+
   const html = render([{ ...read, parts }, answer()]);
   expect(html).toContain("The answer needs another evidence check.");
   expect(html).not.toContain("Place each series name beside its line.");
@@ -406,6 +425,7 @@ it.each([
   const html = render([
     answer({ workflow: "visfeedback", status, points: [], question }, { status: "complete" }),
   ]);
+
   expect(html).toContain(expected);
   expect(html).not.toContain("<img");
 });

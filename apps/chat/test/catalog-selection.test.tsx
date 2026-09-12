@@ -13,10 +13,14 @@ import { queryCatalog } from "../lib/retrieval/sql";
 import type { CatalogSelection } from "../shared/catalog-selection";
 
 let catalogId: string;
+
 const caller = { authenticator: "test", principalType: "user", principalId: "reviewer" };
+
 const selection = (sql: string): CatalogSelection => ({ catalogId, sql });
+
 const encode = (value: Partial<CatalogSelection>) =>
   gzipSync(JSON.stringify(value)).toString("base64");
+
 const request = (header: string) =>
   new Request("http://localhost/eve/v1/session", {
     method: "POST",
@@ -27,17 +31,22 @@ beforeAll(async () => {
   vi.stubEnv("EVE_DEV", "1");
   catalogId = (await getCatalogMetadata()).catalogId;
 });
+
 afterAll(() => vi.unstubAllEnvs());
 
 it("validates the submitted query during authentication and stores its immutable selection", async () => {
   const query = selection(
     "SELECT id FROM catalog_entries WHERE id IN ('axis-labels', 'bar-labels') ORDER BY id",
   );
+
   const auth = await routeAuth(request(encode(query)), reviewRouteAuth);
+
   if (auth instanceof Response) throw new Error("Expected authenticated selection.");
+
   const resolved = resolvedSelectionSchema.parse(
     JSON.parse(String(auth.attributes["chartcoach.selection"])),
   );
+
   expect(resolved).toEqual({ catalogId, ids: ["axis-labels", "bar-labels"] });
   expect(auth.attributes["chartcoach.predicate"]).toBe(query.sql);
   await expect(
@@ -48,9 +57,11 @@ it("validates the submitted query during authentication and stores its immutable
 it("keeps empty selections empty through authentication and the scoped database", async () => {
   const query = selection("SELECT id FROM catalog_entries WHERE false");
   const auth = await routeAuth(request(encode(query)), reviewRouteAuth);
+
   if (auth instanceof Response) throw new Error("Expected authenticated selection.");
   await withCatalogScope({ selection: await resolveCatalogSelection(query) }, async (scope) => {
     const connection = await (await scope.database()).connect();
+
     try {
       expect(
         (
@@ -84,6 +95,7 @@ it.each([
 ])("rejects invalid selection queries before starting the agent: %s", async (sql) => {
   const response = await routeAuth(request(encode(selection(sql))), reviewRouteAuth);
   expect(response).toBeInstanceOf(Response);
+
   if (!(response instanceof Response)) throw new Error("Expected authentication rejection.");
   expect(response.status).toBe(403);
   expect(await response.json()).toMatchObject({ code: "invalid_catalog_selection" });
@@ -102,6 +114,7 @@ it.each([
 ])("rejects %s at the authenticated header boundary", async (_name, header) => {
   const response = await routeAuth(request(header), reviewRouteAuth);
   expect(response).toBeInstanceOf(Response);
+
   if (!(response instanceof Response)) throw new Error("Expected authentication rejection.");
   expect(response.status).toBe(403);
 });
@@ -111,6 +124,7 @@ it("rejects a selection from another catalog release", async () => {
     request(encode({ catalogId: "0".repeat(64), sql: "SELECT id FROM catalog_entries" })),
     reviewRouteAuth,
   );
+
   if (!(response instanceof Response)) throw new Error("Expected authentication rejection.");
   expect(response.status).toBe(403);
   expect(await response.json()).toMatchObject({
@@ -125,6 +139,7 @@ it("cancels selection work while keeping other catalog queries available", async
     ),
     { signal: AbortSignal.timeout(50) },
   );
+
   await expect(expensive).rejects.toMatchObject({ name: "TimeoutError" });
   await expect(
     withCatalogScope(
@@ -137,33 +152,20 @@ it("cancels selection work while keeping other catalog queries available", async
 it("preserves native caller authentication on follow-up requests", async () => {
   const followup = new Request("http://localhost/eve/v1/session/review/messages", {
     method: "POST",
-    headers: { "x-chartcoach-selection": "%invalid", "x-chartcoach-mode": "discuss" },
+    headers: { "x-chartcoach-selection": "%invalid" },
   });
-  const auth = await routeAuth(followup, catalogRouteAuth);
-  if (auth instanceof Response) throw new Error("Expected an authenticated caller.");
-  expect(await routeAuth(followup, reviewRouteAuth)).toEqual({
-    ...auth,
-    attributes: { "chartcoach.mode": "discuss" },
-  });
-});
 
-it("rejects an unknown workflow preference before running the agent", async () => {
-  const response = await routeAuth(
-    new Request("http://localhost/eve/v1/session", {
-      method: "POST",
-      headers: { "x-chartcoach-mode": "ignore grounding" },
-    }),
-    reviewRouteAuth,
-  );
-  expect(response).toBeInstanceOf(Response);
-  if (!(response instanceof Response)) throw new Error("Expected authentication rejection.");
-  expect(response.status).toBe(403);
+  const auth = await routeAuth(followup, catalogRouteAuth);
+
+  if (auth instanceof Response) throw new Error("Expected an authenticated caller.");
+  expect(await routeAuth(followup, reviewRouteAuth)).toEqual(auth);
 });
 
 it("preserves a resolved volatile selection across eviction and catalog reconstruction", async () => {
   const fixture = await getCatalog();
   const catalog = new Catalog(fixture.guidelines, fixture.manifest);
   const identity = (await getCatalogMetadata(catalog)).catalogId;
+
   const resolved = await resolveCatalogSelection(
     {
       catalogId: identity,
@@ -171,6 +173,7 @@ it("preserves a resolved volatile selection across eviction and catalog reconstr
     },
     { catalog },
   );
+
   expect(resolved.ids).toHaveLength(3);
   const saved = JSON.stringify(resolved);
   const rows = resolved.ids.map((id) => [id]);
@@ -179,12 +182,14 @@ it("preserves a resolved volatile selection across eviction and catalog reconstr
       .rows,
   ).toEqual(rows);
   const ids = catalog.guidelines.map(({ id }) => id);
+
   for (let mask = 0; mask < 10; mask++) {
     await queryCatalog("SELECT id FROM guidelines", {
       catalog,
       selection: { catalogId: identity, ids: ids.filter((_id, index) => mask & (1 << index)) },
     });
   }
+
   const restored = resolvedSelectionSchema.parse(JSON.parse(saved));
   expect(
     (await queryCatalog("SELECT id FROM guidelines ORDER BY id", { catalog, selection: restored }))

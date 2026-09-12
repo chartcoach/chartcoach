@@ -4,7 +4,6 @@ import { withCatalogScope } from "../../lib/catalog/scope";
 import { parseSelection } from "../selection-context";
 import { reviewRouteAuth } from "../auth";
 import { z } from "zod";
-import { modeSchema } from "../../shared/workflow";
 import { withThreadPersistence } from "../thread-channel";
 
 export default withThreadPersistence(
@@ -12,21 +11,24 @@ export default withThreadPersistence(
     auth: reviewRouteAuth,
     async onMessage(ctx) {
       const caller = defaultEveAuth(ctx);
+
       if (!caller)
         throw new ForbiddenError({ message: "Authenticate before starting a chart review." });
-      const mode = modeSchema.parse(ctx.eve.request.headers.get("x-chartcoach-mode") ?? "auto");
+
       const context = [
-        mode === "auto"
-          ? "Choose the workflow skill that fits this turn: visfeedback, visrec, or discuss."
-          : `The user prefers the ${mode} workflow for this turn. Load that skill and apply it to their request.`,
+        "Choose and load the workflow skill that fits this turn: visfeedback, visrec, or discuss.",
       ];
-      const auth = { ...caller, attributes: { ...caller.attributes, "chartcoach.mode": mode } };
+
+      const auth = caller;
+
       if (ctx.eve.sessionId !== undefined) return { auth, context };
       const header = ctx.eve.request.headers.get("x-chartcoach-selection");
       const hasSelection = header !== null || caller.attributes["chartcoach.thread"] !== undefined;
+
       const selection = hasSelection
         ? parseSelection(caller.attributes["chartcoach.selection"])
         : undefined;
+
       return withCatalogScope({ selection, signal: ctx.eve.request.signal }, async (scope) => {
         const attributes = {
           ...auth.attributes,
@@ -35,9 +37,11 @@ export default withThreadPersistence(
             ? "SELECT id FROM catalog_entries"
             : z.string().parse(caller.attributes["chartcoach.predicate"]),
         };
+
         if (scope.catalog.release) {
           Object.assign(attributes, { "chartcoach.release": scope.catalog.release.digest });
         }
+
         return {
           auth: { ...caller, attributes },
           context: [

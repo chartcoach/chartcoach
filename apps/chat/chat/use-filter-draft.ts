@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
 import {
   catalogFiltersSchema,
   type CatalogFilters,
@@ -29,6 +29,15 @@ export function useFilterDraft({
   const [draft, setDraft] = useState(value);
   const [applying, setApplying] = useState(false);
   const [applyError, setApplyError] = useState("");
+
+  const begin = useEffectEvent(() => {
+    setDraft(value);
+    setApplyError("");
+  });
+
+  useEffect(() => {
+    if (open) begin();
+  }, [open]);
   const parsed = catalogFiltersSchema.safeParse(draft);
   const explorer = useCatalogExplorer(metadata, parsed.success ? parsed.data : undefined, open);
   const key = parsed.success ? JSON.stringify(parsed.data) : "";
@@ -42,6 +51,7 @@ export function useFilterDraft({
     if (!parsed.success || !current || error || disabled || applying) return;
     setApplying(true);
     setApplyError("");
+
     try {
       await onApply({
         filters: parsed.data,
@@ -60,6 +70,7 @@ export function useFilterDraft({
     if (disabled || applying) return;
     setApplying(true);
     setApplyError("");
+
     try {
       await onReload();
       onClose();
@@ -84,9 +95,5 @@ export function useFilterDraft({
     reload,
     retry: explorer.retry,
     explorer,
-    begin: () => {
-      setDraft(value);
-      setApplyError("");
-    },
   };
 }

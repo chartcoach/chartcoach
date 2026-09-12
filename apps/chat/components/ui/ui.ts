@@ -1,7 +1,17 @@
 import * as stylex from "@stylexjs/stylex";
 import { colors, media, motion, motionScope } from "./tokens.stylex";
 
+const reveal = stylex.keyframes({
+  from: { opacity: 0, transform: "translateY(3px)" },
+  to: { opacity: 1, transform: "translateY(0)" },
+});
+
 export const ui = stylex.create({
+  appear: {
+    animationName: reveal,
+    animationDuration: { default: "220ms", [media.reducedMotion]: "0ms" },
+    animationTimingFunction: motion.easeOut,
+  },
   srOnly: {
     position: "absolute",
     width: 1,
@@ -16,10 +26,11 @@ export const ui = stylex.create({
   focus: {
     outlineWidth: { default: null, ":focus-visible": 2 },
     outlineStyle: { default: null, ":focus-visible": "solid" },
-    outlineColor: { default: null, ":focus-visible": colors.accent },
-    outlineOffset: { default: null, ":focus-visible": 4 },
+    outlineColor: { default: null, ":focus-visible": colors.muted },
+    outlineOffset: { default: null, ":focus-visible": 2 },
   },
   button: {
+    touchAction: "manipulation",
     appearance: "none",
     display: "inline-flex",
     alignItems: "center",
@@ -29,7 +40,7 @@ export const ui = stylex.create({
     minWidth: 44,
     padding: 8,
     borderWidth: 0,
-    borderRadius: 6,
+    borderRadius: 8,
     backgroundColor: "transparent",
     color: "inherit",
     fontSize: 14,

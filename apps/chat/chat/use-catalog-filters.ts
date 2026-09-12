@@ -25,16 +25,19 @@ export function useCatalogFilters(initialSelection?: CatalogFilterSelection) {
       .then((catalog) => {
         if (controller.signal.aborted) return;
         setMetadata(catalog);
+
         if (
           savedSelection.current &&
           savedSelection.current.selection.catalogId !== catalog.catalogId
         ) {
           setSelection(undefined);
           setError(
-            "This conversation uses another catalog. Reload knowledge to start a new conversation.",
+            "This conversation uses another catalog. Reload guidelines to start a new conversation.",
           );
+
           return;
         }
+
         setSelection(
           savedSelection.current ?? {
             filters: emptyCatalogFilters(catalog.catalogId),
@@ -50,6 +53,7 @@ export function useCatalogFilters(initialSelection?: CatalogFilterSelection) {
             cause instanceof Error ? cause.message : "Could not load the catalog. Try again.",
           );
       });
+
     return () => controller.abort();
   }, [attempt]);
 

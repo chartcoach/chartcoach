@@ -1,12 +1,13 @@
+// @vitest-environment jsdom
 import {
   AssistantRuntimeProvider,
   useExternalStoreRuntime,
   type ThreadMessage,
 } from "@assistant-ui/react";
 import { useRef } from "react";
-import { renderToStaticMarkup } from "react-dom/server";
 import { expect, it } from "vite-plus/test";
 import { Composer } from "../components/chat/composer";
+import { renderDocument } from "./render-document";
 
 function NativeComposer({ running }: { running: boolean }) {
   const runtime = useExternalStoreRuntime<ThreadMessage>({
@@ -15,12 +16,12 @@ function NativeComposer({ running }: { running: boolean }) {
     onNew: async () => {},
     onCancel: async () => {},
   });
+
   const input = useRef<HTMLTextAreaElement>(null);
+
   return (
     <AssistantRuntimeProvider runtime={runtime}>
       <Composer
-        mode="auto"
-        onModeChange={() => {}}
         onUpload={() => {}}
         messageInput={input}
         busy={running}
@@ -32,15 +33,29 @@ function NativeComposer({ running }: { running: boolean }) {
 }
 
 it("uses the native composer send gate for an empty draft", () => {
-  const html = renderToStaticMarkup(<NativeComposer running={false} />);
-  expect(html).toContain('aria-label="Message composer"');
-  expect(html).toMatch(/<button[^>]*aria-label="Send message"[^>]*disabled=""/);
-  expect(html).toContain('aria-describedby="upload-hint message-privacy"');
+  const page = renderDocument(<NativeComposer running={false} />);
+  const composer = page.querySelector('[aria-label="Message composer"]')!;
+  expect(
+    composer.querySelector<HTMLButtonElement>('button[aria-label="Send message"]')?.disabled,
+  ).toBe(true);
+  const input = composer.querySelector("textarea")!;
+  expect(input.disabled).toBe(false);
+
+  const descriptions = input
+    .getAttribute("aria-describedby")!
+    .split(/\s+/)
+    .map((id) => page.getElementById(id)?.textContent);
+
+  expect(descriptions).toEqual([
+    expect.stringContaining("PNG"),
+    expect.stringContaining("AI provider"),
+  ]);
 });
 
 it("exposes cancellation while the runtime is running", () => {
-  const html = renderToStaticMarkup(<NativeComposer running />);
-  expect(html).toContain('aria-label="Stop response"');
-  expect(html).not.toMatch(/<button[^>]*aria-label="Stop response"[^>]*disabled=""/);
-  expect(html).toMatch(/<textarea[^>]*disabled=""/);
+  const page = renderDocument(<NativeComposer running />);
+  expect(
+    page.querySelector<HTMLButtonElement>('button[aria-label="Stop response"]')?.disabled,
+  ).toBe(false);
+  expect(page.querySelector("textarea")?.disabled).toBe(true);
 });
