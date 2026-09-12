@@ -1,0 +1,62 @@
+apps/chat/package.json
+  s_b2fc299f4eea16::t_75add95afbae60 71
+apps/chat/test/client-interactions.test.tsx
+  s_b2fc299f4eea16::t_0c9f6152c2b7b5 37-39,48-56,63-65,69-75,81-97,102-104,117-119,124-128,131-135
+  s_b2fc299f4eea16::t_8567388c00d180 1-36,41-47,57-62,66-68,76-80,98-101,105-116,121-122,129-130,136-140
+apps/chat/components/settings/provider-icon.tsx
+  s_b2fc299f4eea16::t_e5b5329a82c3e0 1-3
+apps/chat/app/transitions.css
+  s_b2fc299f4eea16::t_4c745c2e65d0f3 13-16
+  s_b2fc299f4eea16::t_ae3423497c496c 1-12,18-20,23-24,27-28,33-34,39-48
+  s_b2fc299f4eea16::t_f64833c03f0960 17,21-22,25-26,29-32,35-38
+apps/chat/README.md
+  s_b2fc299f4eea16::t_646d6cecbcab5b 61-64
+apps/chat/app/layout.tsx
+  s_b2fc299f4eea16::t_1e83d83d5840fb 1,25-30
+  s_b2fc299f4eea16::t_ae3423497c496c 10
+apps/chat/components/settings/connection-form.tsx
+  s_b2fc299f4eea16::t_0c9f6152c2b7b5 58
+  s_b2fc299f4eea16::t_50375eefaf2cb3 1-22,39-41,43-57,59-72,74-89,91-113,115-130,136-151,153-189,191-200,202-220
+  s_b2fc299f4eea16::t_f41cc82e9f5715 23-37,42,73,90,114,131-135,152,190,201
+apps/chat/assets.d.ts
+  s_b2fc299f4eea16::t_c108f336f15608 1-2
+apps/chat/components/chat/dropzone.tsx
+  s_b2fc299f4eea16::t_818f2bce6002e4 2-3,51
+apps/chat/chat/use-file-drop.ts
+  s_b2fc299f4eea16::t_dc64a11e1f7798 1-68
+apps/chat/chat/use-model-settings.ts
+  s_b2fc299f4eea16::t_693a41e15c8d49 23-29,36-40,43-47,52-55,58-62,64-73,75-89
+  s_b2fc299f4eea16::t_d618f2bbd9765c 1-21,30-34,42,48-51,56-57,63,74,90-91
+apps/chat/chat/use-workspace.ts
+  s_b2fc299f4eea16::t_1e116876a9d8ec 86-92
+  s_b2fc299f4eea16::t_d618f2bbd9765c 21-23,26-27
+pnpm-lock.yaml
+  ai_agent 464-466
+apps/chat/components/settings/model-settings.tsx
+  s_b2fc299f4eea16::t_f41cc82e9f5715 4,16-25,46,65,68,78-80,83-89,93-100,106-108,122-126,130-133,141-143,145-146,149-151,154-160,167-173,177-181,183-198
+  s_b2fc299f4eea16::t_427a4617f98a8f 3,120
+  s_b2fc299f4eea16::t_766050d41af0c9 111-119
+  s_b2fc299f4eea16::t_4f3c82104ebf21 1-2,6,8-9,14,27,34-35,37,51,71-76,82,91-92,101-105,109-110,121,128-129,134-137,139,153,161-166,174-176,182,199-203
+apps/chat/chat/use-connection-form.ts
+  s_b2fc299f4eea16::t_acd73ce94e6806 3-9,12-15,18-21,50-56,67-70,74-75,84-88,93-97,110-124
+  s_b2fc299f4eea16::t_d618f2bbd9765c 1-2,10-11,16-17,22-49,57-66,72-73,76-82,90-92,98-108,125
+apps/chat/browser/workspace-client.ts
+  s_b2fc299f4eea16::t_d618f2bbd9765c 42-43
+  s_b2fc299f4eea16::t_eddd95e235d4b3 75
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "dd1955781e4bca1e961a05f9151b372ebc03365d",
+  "prompts": {},
+  "sessions": {
+    "s_b2fc299f4eea16": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a07701-a536-7f73-bfd5-6731d2663cd9",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Péter Ferenc Gyarmati <dev.petergy@gmail.com>"
+    }
+  }
+}
