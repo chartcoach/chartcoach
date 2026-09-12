@@ -16,6 +16,7 @@ interface ConnectionRow {
   context_window: number;
   secret: string;
 }
+
 function publicConnection(row: ConnectionRow): Connection {
   return {
     id: row.id,
@@ -27,7 +28,8 @@ function publicConnection(row: ConnectionRow): Connection {
     managed: false,
   };
 }
-function managedConnection(): Connection | undefined {
+
+export function managedConnection(): Connection | undefined {
   return env.OPENAI_API_KEY
     ? {
         id: "server",
@@ -39,27 +41,37 @@ function managedConnection(): Connection | undefined {
       }
     : undefined;
 }
+
 export const listConnections = (owner: string) =>
   Effect.gen(function* () {
     const sql = yield* SqlClient.SqlClient;
+
     const rows =
       yield* sql<ConnectionRow>`SELECT * FROM connections WHERE owner = ${owner} ORDER BY name`;
+
     const managed = managedConnection();
+
     return [...(managed ? [managed] : []), ...rows.map(publicConnection)];
   });
+
 export const resolveConnection = (owner: string, id: string) =>
   Effect.gen(function* () {
     const managed = managedConnection();
+
     if (id === "server" && managed && env.OPENAI_API_KEY)
       return { connection: managed, key: Redacted.make(env.OPENAI_API_KEY) };
     const sql = yield* SqlClient.SqlClient;
+
     const rows =
       yield* sql<ConnectionRow>`SELECT * FROM connections WHERE owner = ${owner} AND id = ${id}`;
+
     if (!rows[0])
       return yield* new AppError({ status: 404, message: "Choose an available model connection." });
     const secrets = yield* Secrets;
+
     return { connection: publicConnection(rows[0]), key: secrets.open(rows[0].secret, owner) };
   });
+
 export const saveConnection = (owner: string, input: ConnectionInput) =>
   Effect.gen(function* () {
     const endpoint = yield* Effect.try({
@@ -69,13 +81,16 @@ export const saveConnection = (owner: string, input: ConnectionInput) =>
           ? error
           : new AppError({ status: 400, message: "Check the API base URL." }),
     });
+
     const sql = yield* SqlClient.SqlClient;
     const secrets = yield* Secrets;
     const id = input.id ?? randomUUID();
     const previous = input.id ? yield* resolveConnection(owner, id) : undefined;
     const key = input.apiKey ? Redacted.make(input.apiKey) : previous?.key;
+
     if (!key)
       return yield* new AppError({ status: 400, message: "Enter an API key for this connection." });
+
     if (
       previous &&
       !input.apiKey &&
@@ -85,6 +100,7 @@ export const saveConnection = (owner: string, input: ConnectionInput) =>
         status: 400,
         message: "Enter the API key again when changing provider or endpoint.",
       });
+
     const row = {
       id,
       owner,
@@ -95,9 +111,12 @@ export const saveConnection = (owner: string, input: ConnectionInput) =>
       context_window: input.contextWindow,
       secret: secrets.seal(key, owner),
     };
+
     yield* sql`INSERT INTO connections ${sql.insert(row)} ON CONFLICT(id) DO UPDATE SET name=excluded.name, provider=excluded.provider, base_url=excluded.base_url, model=excluded.model, context_window=excluded.context_window, secret=excluded.secret WHERE connections.owner=excluded.owner`;
+
     return publicConnection(row);
   }).pipe(Effect.withSpan("connection.save"));
+
 export const deleteConnection = (owner: string, id: string) =>
   Effect.gen(function* () {
     const sql = yield* SqlClient.SqlClient;

@@ -129,15 +129,25 @@ attributes and the selected ID list stay out of telemetry metadata.
 The initiating session captures catalog provenance for its model, tool, and image
 observations:
 
-| Field                | Meaning                                                            |
-| -------------------- | ------------------------------------------------------------------ |
-| `catalogId`          | Catalog content identity                                           |
-| `catalogReleaseId`   | Immutable release digest, when opened from a release               |
-| `catalogPredicate`   | Full SQL selection submitted by the browser                        |
-| `catalogSelectionId` | SHA-256 of the catalog identity and sorted, resolved guideline IDs |
-| `guidelineCount`     | Number of guidelines available to the agent                        |
-| `workflowPreference` | Auto or the workflow requested for the current turn                |
-| `modelConnectionId`  | Saved model connection selected for the current request            |
+| Field                 | Meaning                                                            |
+| --------------------- | ------------------------------------------------------------------ |
+| `catalogId`           | Catalog content identity                                           |
+| `catalogReleaseId`    | Immutable release digest, when opened from a release               |
+| `catalogPredicate`    | Full SQL selection submitted by the browser                        |
+| `catalogSelectionId`  | SHA-256 of the catalog identity and sorted, resolved guideline IDs |
+| `guidelineCount`      | Number of guidelines available to the agent                        |
+| `modelConnectionId`   | Saved model connection selected for the current request            |
+| `modelConnectionName` | Display name of the resolved connection                            |
+| `modelProvider`       | Anthropic, OpenAI, Google, or OpenAI-compatible adapter            |
+| `modelName`           | Model ID selected for the model step                               |
+| `modelEndpointOrigin` | API scheme, host, and port                                         |
+| `modelContextWindow`  | Configured context limit in tokens                                 |
+| `modelManaged`        | Whether the connection uses the server's configured credentials    |
+
+Model resolution records these fields for each step. Generation and tool traces
+inherit the resolved model metadata alongside catalog provenance. API keys,
+authorization headers, and endpoint paths, query strings, and credentials are
+excluded from this metadata.
 
 Direct clients that choose the full catalog record its full-table selection.
 Retrieval continues against the frozen guideline IDs, with the original SQL kept
