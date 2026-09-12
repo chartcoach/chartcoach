@@ -13,15 +13,18 @@ const searchEntryPattern =
 export const guidelineSearchDocuments = {
   async load({ root }) {
     const catalog = await loadSiteCatalog(root);
+
     return Array.from(catalog, (guideline) =>
       createGuidelineSearchDocument(createGuidelineSearchModel(guideline)),
     );
   },
   fromPage({ html, pathname }) {
     const match = searchEntryPattern.exec(html);
+
     if (!match?.[1]) {
       throw new Error(`Missing structured guideline search entry for ${pathname}.`);
     }
+
     return createGuidelineSearchDocument(parseGuidelineSearchModel(match[1]), pathname);
   },
   path: (document) => document.path,

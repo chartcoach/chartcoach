@@ -28,20 +28,25 @@ import {
 } from "./catalog-testkit";
 
 const directories: string[] = [];
+
 afterEach(async () => {
   async function remove(path: string): Promise<void> {
     if ((await lstat(path)).isDirectory()) {
       await chmod(path, 0o700);
+
       for (const name of await readdir(path)) await remove(join(path, name));
     }
+
     await rm(path, { recursive: true, force: true });
   }
+
   await Promise.all(directories.splice(0).map(remove));
 });
 
 async function temporary(): Promise<string> {
   const directory = await mkdtemp(join(tmpdir(), "chartcoach-index-"));
   directories.push(directory);
+
   return directory;
 }
 
@@ -50,8 +55,10 @@ async function archive(files = ["documents.lance"], prefix?: string): Promise<Bu
   await mkdir(join(directory, "documents.lance"));
   await writeFile(join(directory, "documents.lance", "data"), "indexed documents");
   await writeFile(join(directory, "other.txt"), "other table");
+
   if (files.includes("documents.lance/symbolic"))
     await symlink("data", join(directory, "documents.lance", "symbolic"));
+
   if (files.includes("documents.lance/hard"))
     await link(
       join(directory, "documents.lance", "data"),
@@ -67,11 +74,13 @@ async function archive(files = ["documents.lance"], prefix?: string): Promise<Bu
     },
     files,
   );
+
   return gzipSync(await readFile(file));
 }
 
 async function catalogFor(bytes: Buffer, cacheDirectory: string) {
   const fixture = await fixtureRelease();
+
   const metadata = Buffer.from(
     JSON.stringify({
       ...profileFixture,
@@ -79,30 +88,37 @@ async function catalogFor(bytes: Buffer, cacheDirectory: string) {
       manifest_digest: fixture.release.artifacts["MANIFEST.md"]!.sha256,
     }),
   );
+
   const descriptor = (content: Buffer) => ({
     bytes: content.length,
     sha256: createHash("sha256").update(content).digest("hex"),
   });
+
   const artifacts = {
     ...fixture.release.artifacts,
     "profiles/test/profile.json": descriptor(metadata),
     "profiles/test/index.tar.gz": descriptor(bytes),
   };
+
   const release = { schema_version: 1 as const, artifacts, digest: releaseDigest(artifacts) };
   const url = releaseUrlFor(release.digest);
   const responses = releaseResponses({ ...fixture, release });
   responses.set(new URL("profiles/test/profile.json", url).toString(), responseBytes(metadata));
   responses.set(new URL("profiles/test/index.tar.gz", url).toString(), responseBytes(bytes));
   const requests: string[] = [];
+
   const catalog = await openCatalog(url, {
     cacheDirectory,
     fetch: async (input) => {
       requests.push(input.toString());
       const body = responses.get(input.toString());
+
       if (body === undefined) throw new Error("offline");
+
       return new Response(body);
     },
   });
+
   return { catalog, requests, responses, url };
 }
 
@@ -112,10 +128,12 @@ describe("Node index directories", () => {
     async () => {
       const cache = await temporary();
       const { catalog, requests, responses, url } = await catalogFor(await archive(), cache);
+
       const [first, second] = await Promise.all([
         indexPath(catalog, "test"),
         indexPath(catalog, "test"),
       ]);
+
       expect(second).toBe(first);
       expect(await readFile(join(first, "documents.lance", "data"), "utf8")).toBe(
         "indexed documents",
@@ -123,12 +141,14 @@ describe("Node index directories", () => {
       expect((await lstat(first)).mode & 0o222).toBe(0);
       expect((await lstat(join(first, "documents.lance", "data"))).mode & 0o222).toBe(0);
       responses.clear();
+
       const offline = await openCatalog(url, {
         cacheDirectory: cache,
         fetch: async () => {
           throw new Error("offline");
         },
       });
+
       expect(await indexPath(offline, "test")).toBe(first);
       expect(requests.filter((path) => path.endsWith("index.tar.gz"))).toHaveLength(1);
     },
@@ -210,9 +230,11 @@ describe("Node index directories", () => {
 
   it("drains padded archives and verifies the gzip trailer after tar entries end", async () => {
     const root = await temporary();
+
     const padded = gzipSync(
       Buffer.concat([gunzipSync(await archive()), Buffer.alloc(1024 * 1024)]),
     );
+
     const { catalog } = await catalogFor(padded, join(root, "cache"));
     const path = await indexPath(catalog, "test", { directory: join(root, "index") });
     expect(await readFile(join(path, "documents.lance", "data"), "utf8")).toBe("indexed documents");
@@ -233,15 +255,19 @@ describe("Node index directories", () => {
       const bytes = await archive();
       const { catalog, responses, url, requests } = await catalogFor(bytes, join(root, "cache"));
       let release = () => {};
+
       let started = () => {};
+
       const fetching = new Promise<void>((resolve) => {
         started = resolve;
       });
+
       responses.set(
         new URL("profiles/test/index.tar.gz", url).toString(),
         new ReadableStream<Uint8Array>({
           pull(controller) {
             started();
+
             return new Promise<void>((resolve) => {
               release = () => {
                 controller.enqueue(bytes);

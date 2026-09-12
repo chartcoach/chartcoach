@@ -12,15 +12,24 @@ import { build } from "vite-plus";
 import { parse, stringify } from "yaml";
 
 const here = dirname(fileURLToPath(import.meta.url));
+
 const root = resolve(here, "../..");
+
 const [archive, flag, executable, ...extra] = process.argv.slice(2);
+
 if (!archive || extra.length || (flag !== undefined && (flag !== "--node" || !executable)))
   throw new Error("Usage: verify:npm <tarball> [--node <node executable>]");
+
 const tarball = resolve(root, archive);
+
 const node = executable ?? process.execPath;
+
 const require = createRequire(import.meta.url);
+
 const directory = await mkdtemp(join(tmpdir(), "chartcoach-npm-"));
+
 let browser;
+
 let server;
 
 function run(command, args, extraEnv = {}) {
@@ -29,12 +38,14 @@ function run(command, args, extraEnv = {}) {
     env: { ...process.env, ...extraEnv },
     stdio: "inherit",
   });
+
   if (result.error) throw result.error;
   assert.equal(result.status, 0, `${command} ${args.join(" ")} failed`);
 }
 
 async function unlock(path) {
   await chmod(path, 0o700);
+
   for (const entry of await readdir(path, { withFileTypes: true })) {
     if (entry.isDirectory()) await unlock(join(path, entry.name));
   }
@@ -67,11 +78,13 @@ try {
     "The npm distribution must include the project license",
   );
   await cp(join(here, "node-consumer.mjs"), join(directory, "node-consumer.mjs"));
+
   const nativeModules = {
     LANCE_MODULE: pathToFileURL(require.resolve("@lancedb/lancedb")).href,
     DUCKDB_MODULE: pathToFileURL(require.resolve("@duckdb/node-api")).href,
     TAR_MODULE: pathToFileURL(require.resolve("tar")).href,
   };
+
   run(
     node,
     ["node-consumer.mjs", join(root, "fixtures/catalog-release"), join(directory, "current")],
@@ -123,6 +136,7 @@ try {
     join(directory, "public/tables.json"),
   );
   await mkdir(join(directory, "public/duckdb"), { recursive: true });
+
   for (const asset of ["duckdb-browser-eh.worker.js", "duckdb-eh.wasm"])
     await cp(join(wasmDirectory, asset), join(directory, "public/duckdb", asset));
   await build({
@@ -158,21 +172,26 @@ try {
     ],
   });
   const output = join(directory, "dist");
+
   const contentTypes = {
     ".html": "text/html",
     ".js": "text/javascript",
     ".wasm": "application/wasm",
     ".json": "application/json",
   };
+
   server = createServer(async (request, response) => {
     const path = resolve(
       output,
       `.${new URL(request.url, "http://localhost").pathname === "/" ? "/index.html" : new URL(request.url, "http://localhost").pathname}`,
     );
+
     if (!path.startsWith(`${output}${sep}`)) {
       response.writeHead(403).end();
+
       return;
     }
+
     try {
       const bytes = await readFile(path);
       response.writeHead(200, {
@@ -197,6 +216,7 @@ try {
   page.on("requestfailed", (request) => failures.push(request.url()));
   page.on("response", (response) => {
     if (response.url().endsWith(".wasm")) wasm.push(response.status());
+
     if (response.status() >= 400 && !response.url().endsWith("favicon.ico"))
       failures.push(response.url());
   });
@@ -204,23 +224,29 @@ try {
   await page.locator('body[data-verified="true"]').waitFor();
   assert.deepEqual(failures, []);
   await page.goto(`http://127.0.0.1:${server.address().port}/duckdb.html`);
+
   try {
     await page.locator('body[data-duckdb-verified="true"]').waitFor();
   } catch (error) {
     assert.deepEqual(failures, []);
     throw error;
   }
+
   assert.deepEqual(failures, []);
   assert.ok(wasm.length > 0 && wasm.every((status) => status === 200));
   console.log("Verified packed declarations, browser Parquet, RefKit and DuckDB-WASM registration");
+
   const installed = JSON.parse(
     await readFile(join(directory, "node_modules/@chartcoach/catalog/package.json"), "utf8"),
   );
+
   const minimum = {};
+
   for (const [name, range] of Object.entries(installed.dependencies)) {
     assert.match(range, /^>=\d+\.\d+\.\d+$/, `Expected a runtime lower bound for ${name}`);
     minimum[name] = range.slice(2);
   }
+
   const consumer = JSON.parse(await readFile(join(directory, "package.json"), "utf8"));
   consumer.dependencies = { ...consumer.dependencies, ...minimum };
   await writeFile(join(directory, "package.json"), JSON.stringify(consumer));
@@ -237,6 +263,7 @@ try {
   console.log("Verified minimum direct runtime dependencies");
 } finally {
   await browser?.close();
+
   if (server) await new Promise((done) => server.close(done));
   await unlock(directory);
   await rm(directory, { recursive: true, force: true });

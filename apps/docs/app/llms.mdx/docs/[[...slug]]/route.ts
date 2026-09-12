@@ -9,13 +9,16 @@ type MarkdownRouteContext = {
 };
 
 export const dynamicParams = false;
+
 export const revalidate = false;
 
 export async function GET(_request: Request, { params }: MarkdownRouteContext) {
   const { slug = [] } = await params;
+
   if (slug.at(-1) !== "content.md") notFound();
 
   const page = source.getPage(slug.slice(0, -1));
+
   if (!page) notFound();
 
   return new Response(await getLLMText(page), {

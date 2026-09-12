@@ -31,6 +31,7 @@ const workspaceContracts = [
 void test("workspace manifests preserve the web dependency graph", async () => {
   for (const contract of workspaceContracts) {
     const manifest = await readManifest(contract.path);
+
     const internal = dependencyFields
       .flatMap((field) => Object.keys(manifest[field] ?? {}))
       .filter((name) => name.startsWith("@chartcoach/"))
@@ -42,12 +43,15 @@ void test("workspace manifests preserve the web dependency graph", async () => {
 
 void test("catalog installation leaves native data engines caller-owned", async () => {
   const manifest = await readManifest("packages/catalog/package.json");
+
   const installed = {
     ...manifest.dependencies,
     ...manifest.optionalDependencies,
   };
+
   for (const name of ["@lancedb/lancedb", "@duckdb/node-api", "@duckdb/duckdb-wasm"]) {
     assert.equal(Object.hasOwn(installed, name), false);
+
     if (Object.hasOwn(manifest.peerDependencies ?? {}, name)) {
       assert.equal(manifest.peerDependenciesMeta?.[name]?.optional, true);
     }
@@ -56,5 +60,6 @@ void test("catalog installation leaves native data engines caller-owned", async 
 
 async function readManifest(path) {
   const url = new URL(`../../${path}`, import.meta.url);
+
   return JSON.parse(await readFile(url, "utf8"));
 }

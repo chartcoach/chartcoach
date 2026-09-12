@@ -25,6 +25,7 @@ import { emptyCatalogFilters } from "../shared/catalog-filters";
 it("persists encrypted connections and isolates their keys by owner", async () => {
   const directory = await mkdtemp(join(tmpdir(), "chartcoach-app-store-"));
   let runtime = createAppRuntime(directory);
+
   try {
     const saved = await runtime.runPromise(
       saveConnection("alice", {
@@ -35,6 +36,7 @@ it("persists encrypted connections and isolates their keys by owner", async () =
         apiKey: "test-secret-not-for-a-provider",
       }),
     );
+
     expect(saved).toMatchObject({
       provider: "openai",
       model: "vision-model",
@@ -76,12 +78,15 @@ it("restores a conversation's selection and image after reopening SQLite", async
   const directory = await mkdtemp(join(tmpdir(), "chartcoach-history-"));
   let runtime = createAppRuntime(directory);
   const catalogId = "a".repeat(64);
+
   const knowledge = {
     filters: emptyCatalogFilters(catalogId),
     selection: { catalogId, sql: "SELECT id FROM catalog_entries" },
     matchedGuidelines: 1,
   };
+
   const png = await readFile(new URL("../public/examples/bicycle-trips.png", import.meta.url));
+
   try {
     const thread = await runtime.runPromise(
       createThread(
@@ -90,6 +95,7 @@ it("restores a conversation's selection and image after reopening SQLite", async
         { catalogId, ids: ["axis-labels"] },
       ),
     );
+
     await runtime.runPromise(bindThread("alice", thread.id, "session-a", "server"));
     await expect(
       runtime.runPromise(bindThread("alice", thread.id, "session-b", "server")),
@@ -132,16 +138,20 @@ it("restores a conversation's selection and image after reopening SQLite", async
 it("uses a signed browser cookie and combines it with authenticated identity", async () => {
   const directory = await mkdtemp(join(tmpdir(), "chartcoach-identity-"));
   const runtime = createAppRuntime(directory);
+
   try {
     const identity = await runtime.runPromise(
       browserIdentity(new Request("https://chat.example/eve/v1/preferences"), true),
     );
+
     expect(identity?.cookie).toContain("HttpOnly; SameSite=Strict");
     expect(identity?.cookie).toContain("Secure");
     const cookie = identity!.cookie!.split(";")[0];
+
     const restored = await runtime.runPromise(
       browserIdentity(new Request("https://chat.example", { headers: { cookie } })),
     );
+
     expect(restored?.id).toBe(identity?.id);
     expect(
       await runtime.runPromise(

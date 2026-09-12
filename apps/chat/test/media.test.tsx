@@ -45,6 +45,7 @@ function modelCall(
 
 function setup(mediaUploadEnabled = false) {
   const exporter = new InMemorySpanExporter();
+
   const provider = new BasicTracerProvider({
     spanProcessors: [
       new LangfuseProcessor({
@@ -56,6 +57,7 @@ function setup(mediaUploadEnabled = false) {
       }),
     ],
   });
+
   return {
     exporter,
     provider,
@@ -71,22 +73,28 @@ it("uploads image bytes through Langfuse and exports the session-linked media re
     const request = new Request(input, init);
     requests.push(request.clone());
     const url = new URL(request.url);
+
     if (url.href === "https://langfuse.test/api/public/media" && request.method === "POST") {
       return Response.json({ mediaId, uploadUrl: "https://uploads.test/chart.png" });
     }
+
     if (url.href === "https://uploads.test/chart.png" && request.method === "PUT") {
       uploaded = new Uint8Array(await request.arrayBuffer());
+
       return new Response(null, { status: 200 });
     }
+
     if (
       url.href === `https://langfuse.test/api/public/media/${mediaId}` &&
       request.method === "PATCH"
     ) {
       return Response.json({});
     }
+
     throw new Error(`Unexpected media request: ${request.method} ${url.href}`);
   });
   const { exporter, provider, media } = setup(true);
+
   try {
     media.events["model.call.started"](modelCall());
     await provider.forceFlush();
@@ -114,6 +122,7 @@ it("uploads image bytes through Langfuse and exports the session-linked media re
 
 it("deduplicates retries within a turn and separates parallel sessions and follow-ups", async () => {
   const { exporter, provider, media } = setup();
+
   try {
     const first = modelCall();
     media.events["model.call.started"](first);
@@ -137,6 +146,7 @@ it("deduplicates retries within a turn and separates parallel sessions and follo
 
 it("keeps the full allowed image and skips oversized or policy-filtered input", async () => {
   const { exporter, provider, media } = setup();
+
   try {
     const maximum = Buffer.alloc(3 * 1024 * 1024, 7);
     media.events["model.call.started"](modelCall(maximum));

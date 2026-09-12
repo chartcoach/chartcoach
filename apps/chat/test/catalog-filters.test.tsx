@@ -20,6 +20,7 @@ const references = {
   cara: "@misc{cara, author={Clark, Cara}, title={Field notes}, year={2018}}",
   undated: "@misc{undated, author={Able, Alice}, title={Unpublished notes}}",
 };
+
 const catalog = new Catalog(
   [
     { id: "alice", references: [references.alice] },
@@ -39,7 +40,9 @@ const catalog = new Catalog(
     "# Catalog\n\n## Section Roles\n\n### advice\n\nChart advice.\n\n## Label Families\n\n### chart\n\nChart types such as `chart:line`.\n",
   ),
 );
+
 let defaults: CatalogFilters;
+
 let metadata: Awaited<ReturnType<typeof getCatalogMetadata>>;
 
 beforeAll(async () => {
@@ -51,6 +54,7 @@ async function select(filters: CatalogFilters) {
   const active = Object.values(sourcePredicates(filters, metadata)).filter(
     (part) => part !== undefined,
   );
+
   return resolveCatalogSelection(
     {
       catalogId: filters.catalogId,
@@ -120,10 +124,12 @@ it("preserves undated and sourceless guidelines until a positive constraint excl
 
 it("keeps every authored source and section of an eligible guideline", async () => {
   const filters = { ...defaults, includeAuthorIds: [2] };
+
   const result = await queryCatalog(
     "SELECT source_title FROM guideline_sources WHERE guideline_id = 'cross' ORDER BY source_title",
     { catalog, selection: await select(filters) },
   );
+
   expect(result.rows).toEqual([["Chart handbook"], ["Earlier advice"]]);
   await withCatalogScope({ catalog, selection: await select(filters) }, async (scope) => {
     assertCatalogIds(scope, ["cross"]);
@@ -176,13 +182,16 @@ it("reuses a canonical database while keeping concurrent filter selections isola
         expect(await second.database()).toBe(db);
       },
     );
+
     const [alice, bea] = await Promise.all([
       ids({ ...defaults, includeAuthorIds: [1], yearFrom: 2020 }),
       ids({ ...defaults, includeAuthorIds: [2] }),
     ]);
+
     expect(alice).toEqual(["alice", "mixed"]);
     expect(bea).toEqual(["bea", "cross"]);
     const connection = await db.connect();
+
     try {
       expect(
         (await connection.runAndReadAll("SELECT id FROM guidelines ORDER BY id")).getRowsJson(),
@@ -196,6 +205,7 @@ it("reuses a canonical database while keeping concurrent filter selections isola
 it("filters native vector, keyword, and hybrid candidates before their result limit", async () => {
   const directory = await mkdtemp(join(tmpdir(), "chartcoach-filter-search-"));
   const db = await connect(directory);
+
   try {
     const table = await db.createTable("documents", [
       ...Array.from({ length: 24 }, (_, index) => ({
@@ -205,23 +215,27 @@ it("filters native vector, keyword, and hybrid candidates before their result li
       })),
       { parent_id: "bea", text: "legend labels", vector: [1, 1] },
     ]);
+
     try {
       await table.createIndex("text", { config: Index.fts() });
       await withCatalogScope(
         { catalog, selection: await select({ ...defaults, includeAuthorIds: [2] }) },
         async (scope) => {
           const vector = table.vectorSearch([0, 0]).where(scope.lanceWhere!).limit(1);
+
           const keyword = table
             .query()
             .fullTextSearch("legend", { columns: ["text"] })
             .where(scope.lanceWhere!)
             .limit(1);
+
           const hybrid = table
             .vectorSearch([0, 0])
             .fullTextSearch("legend", { columns: ["text"] })
             .where(scope.lanceWhere!)
             .rerank(await rerankers.RRFReranker.create())
             .limit(1);
+
           for (const query of [vector, keyword, hybrid]) {
             const rows = z.array(z.object({ parent_id: z.string() })).parse(await query.toArray());
             expect(rows.map(({ parent_id }) => parent_id)).toEqual(["bea"]);

@@ -14,21 +14,30 @@ import { summarizeGuidelineReferences } from "@/og/references";
 
 export async function getStaticPaths() {
   const guidelines = await getCollection("guidelines");
+
   return guidelines.map((guideline) => ({
     params: { id: guideline.id },
   }));
 }
 
 const id = Astro.params.id;
+
 if (!id) throw new Error("Guideline entry ID is required.");
+
 const guideline = await getEntry("guidelines", id);
+
 if (!guideline) throw new Error(`Guideline not found: ${Astro.params.id}`);
 
 const editHref = catalogGuidelineMarkdownSourceHref(guideline.id);
+
 const searchEntryJson = serializeGuidelineSearchModel(guideline.data.search);
+
 const sectionRoles = guideline.data.sections.map((section) => section.role);
+
 const labels = guideline.data.labels.length > 0 ? guideline.data.labels : sectionRoles;
+
 const sourceCount = guideline.data.citations.length;
+
 const references = summarizeGuidelineReferences(guideline.data.record.references);
 ---
 

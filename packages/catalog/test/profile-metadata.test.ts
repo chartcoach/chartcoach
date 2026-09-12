@@ -52,6 +52,7 @@ describe("profile metadata", () => {
 
   it("rejects persisted authentication data", () => {
     const binding = fixture.embedding_functions[0];
+
     function parse(model: JsonObject) {
       return parseProfileMetadata({
         ...fixture,

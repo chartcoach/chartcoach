@@ -114,6 +114,7 @@ function AccessArtifact() {
   const [activeListingId, setActiveListingId] = useState<(typeof accessListings)[number]["id"]>(
     accessListings[0].id,
   );
+
   const groupId = useId();
 
   return (
@@ -125,6 +126,7 @@ function AccessArtifact() {
       >
         {accessListings.map((listing, index) => {
           const selected = activeListingId === listing.id;
+
           return (
             <button
               key={listing.id}
@@ -138,8 +140,10 @@ function AccessArtifact() {
               onClick={() => setActiveListingId(listing.id)}
               onKeyDown={(event) => {
                 const key = event.key;
+
                 if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(key)) return;
                 event.preventDefault();
+
                 const nextIndex =
                   key === "Home"
                     ? 0
@@ -147,6 +151,7 @@ function AccessArtifact() {
                       ? accessListings.length - 1
                       : (index + (key === "ArrowRight" ? 1 : -1) + accessListings.length) %
                         accessListings.length;
+
                 const next = accessListings[nextIndex];
                 setActiveListingId(next.id);
                 event.currentTarget.parentElement
@@ -163,6 +168,7 @@ function AccessArtifact() {
       <div className="grid min-w-0">
         {accessListings.map((listing) => {
           const selected = listing.id === activeListingId;
+
           return (
             <div
               key={listing.id}

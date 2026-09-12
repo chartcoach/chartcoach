@@ -6,8 +6,10 @@ import { expect, it } from "vite-plus/test";
 
 function loadEnv(values: Record<string, string> = {}, browser = false, local?: string) {
   const directory = mkdtempSync(join(tmpdir(), "chartcoach-env-"));
+
   try {
     if (local !== undefined) writeFileSync(join(directory, ".env.local"), local);
+
     return spawnSync(
       process.execPath,
       [
@@ -80,6 +82,7 @@ it("accepts provider overrides, a local catalog, and a complete tracing configur
     LANGFUSE_BASE_URL: "https://tracing.example.test",
     EVE_NEXT_PRODUCTION_PORT: "4274",
   });
+
   expect(result.status, result.stderr).toBe(0);
   expect(JSON.parse(result.stdout)).toEqual({
     model: "vision-model",
@@ -102,6 +105,7 @@ it.each([
   const result = loadEnv(values);
   expect(result.status).toBe(1);
   expect(result.stderr).toContain(field);
+
   for (const value of Object.values(values)) expect(result.stderr).not.toContain(value);
 });
 
@@ -122,6 +126,7 @@ it("takes the complete Langfuse connection from the local file", () => {
     false,
     "LANGFUSE_PUBLIC_KEY=local-public\nLANGFUSE_SECRET_KEY=local-secret\nLANGFUSE_BASE_URL=https://local.example.test\n",
   );
+
   expect(result.status, result.stderr).toBe(0);
   expect(JSON.parse(result.stdout)).toMatchObject({
     localKeys: true,
@@ -136,6 +141,7 @@ it("uses the default host when a local connection omits its URL", () => {
     false,
     "LANGFUSE_PUBLIC_KEY=local-public\nLANGFUSE_SECRET_KEY=local-secret\n",
   );
+
   expect(result.status, result.stderr).toBe(0);
   expect(JSON.parse(result.stdout)).toMatchObject({
     localKeys: true,
@@ -149,6 +155,7 @@ it("keeps tracing disabled when the local file omits credentials", () => {
     false,
     "OPENAI_MODEL=vision-model\n",
   );
+
   expect(result.status, result.stderr).toBe(0);
   expect(JSON.parse(result.stdout)).toMatchObject({ tracing: false });
 });
@@ -159,6 +166,7 @@ it("rejects a partial local key pair even when inherited keys are complete", () 
     false,
     "LANGFUSE_PUBLIC_KEY=local-public\n",
   );
+
   expect(result.status).toBe(1);
   expect(result.stderr).toContain("LANGFUSE_SECRET_KEY");
   expect(result.stderr).not.toContain("global-secret");

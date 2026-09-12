@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test"
 import { parseCatalogRelease, type JsonValue } from "@chartcoach/catalog";
 
 const releaseFixtureRoot = new URL("../../../fixtures/catalog-release/", import.meta.url);
+
 const artifactBaseUrl = "https://files.peter.gy/catalog/chartcoach";
 
 describe("site catalog location loading", () => {
@@ -84,6 +85,7 @@ describe("site catalog location loading", () => {
   it("verifies local release artifacts", async () => {
     const { loadSiteCatalog } = await catalogLocationModule();
     const directory = await mkdtemp(path.join(tmpdir(), "chartcoach-site-release-"));
+
     try {
       await cp(fileURLToPath(releaseFixtureRoot), directory, { recursive: true });
       await writeFile(path.join(directory, "entries.parquet"), "corrupt");
@@ -99,6 +101,7 @@ describe("site catalog location loading", () => {
   it("loads descriptor-free local bundles as catalog data", async () => {
     const { loadSiteCatalog } = await catalogLocationModule();
     const directory = await mkdtemp(path.join(tmpdir(), "chartcoach-site-bundle-"));
+
     try {
       await Promise.all([
         cp(
@@ -123,8 +126,10 @@ describe("site catalog location loading", () => {
   it("opens a local deployed root through its selected release", async () => {
     const { catalogLocationRecordPath, catalogLocationWatchFiles, loadSiteCatalog } =
       await catalogLocationModule();
+
     const fixture = await fixtureRelease();
     const directory = await mkdtemp(path.join(tmpdir(), "chartcoach-site-deployed-"));
+
     try {
       const releaseRoot = path.join(directory, "catalog", "releases", fixture.release.digest);
       await mkdir(path.dirname(releaseRoot), { recursive: true });
@@ -152,6 +157,7 @@ describe("site catalog location loading", () => {
     const { loadSiteCatalog } = await catalogLocationModule();
     const fixture = await fixtureRelease();
     const directory = await mkdtemp(path.join(tmpdir(), "chartcoach-site-ambiguous-"));
+
     try {
       const descriptor = JSON.stringify(fixture.release);
       await Promise.all([
@@ -201,6 +207,7 @@ describe("site catalog location loading", () => {
   it("loads an exact release URL without resolving it as a local path", async () => {
     const { catalogLocationWatchFiles, loadSiteCatalog, resolveCatalogLocation } =
       await catalogLocationModule();
+
     const fixture = await fixtureRelease();
     const releaseUrl = releaseUrlFor(fixture.release.digest);
     vi.stubGlobal("fetch", fetchFrom(releaseResponses(fixture)));
@@ -224,6 +231,7 @@ async function fixtureRelease() {
     readFile(new URL("entries.parquet", releaseFixtureRoot)),
     readJsonFixture("release.json"),
   ]);
+
   return {
     manifest,
     entries,
@@ -239,6 +247,7 @@ function releaseResponses(
   fixture: Awaited<ReturnType<typeof fixtureRelease>>,
 ): Map<string, BodyInit> {
   const releaseUrl = releaseUrlFor(fixture.release.digest);
+
   return new Map<string, BodyInit>([
     [`${artifactBaseUrl}/catalog.json`, JSON.stringify(fixture.release)],
     [releaseUrl, JSON.stringify(fixture.release)],
@@ -254,7 +263,9 @@ function responseBytes(bytes: Uint8Array): ArrayBuffer {
 function fetchFrom(responses: Map<string, BodyInit>) {
   return async (url: string | URL | Request) => {
     const body = responses.get(requestUrl(url));
+
     if (body === undefined) return new Response("not found", { status: 404 });
+
     return new Response(body);
   };
 }

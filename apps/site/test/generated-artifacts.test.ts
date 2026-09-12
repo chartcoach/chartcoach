@@ -12,8 +12,11 @@ import { GUIDELINE_SEARCH_SCHEMA } from "../src/lib/guideline-search-model";
 import { OG_BUILD_PROPS_META } from "../src/og/schema";
 
 const fixture = new URL("../../../fixtures/catalog-release/", import.meta.url);
+
 const siteRoot = new URL("../", import.meta.url);
+
 let outputDirectory: string;
+
 let outputFiles: string[];
 
 beforeAll(async () => {
@@ -47,9 +50,11 @@ describe("generated site artifacts", () => {
 
   it("indexes every generated guideline", async () => {
     const guidelineJsonFiles = outputFiles.filter((file) => /^guidelines\/[^/]+\.json$/.test(file));
+
     const raw = JSON.parse(
       await fs.readFile(path.join(outputDirectory, "assets/search-guidelines.json"), "utf8"),
     );
+
     const database = create({ schema: GUIDELINE_SEARCH_SCHEMA });
     load(database, raw);
 
@@ -66,12 +71,14 @@ describe("generated site artifacts", () => {
         expectedImages.add(`guidelines/${id}.json.png`);
         expectedImages.add(`guidelines/${id}.md.png`);
       }
+
       if (!file.endsWith(".html")) continue;
 
       const html = await fs.readFile(path.join(outputDirectory, file), "utf8");
       expect(html).not.toContain(OG_BUILD_PROPS_META);
       const image = /<meta property="og:image" content="([^"]+)"/.exec(html)?.[1];
       expect(image, file).toBeDefined();
+
       if (image) expectedImages.add(new URL(image).pathname.replace(/^\/+/, ""));
     }
 

@@ -96,11 +96,13 @@ describe("Catalog", () => {
       sections: guidelines[0]!.sections.map((section) => ({ ...section })),
       references: [...guidelines[0]!.references],
     };
+
     const mutableManifest = {
       markdown: manifest.markdown,
       sectionRoles: { ...manifest.sectionRoles },
       labelFamilies: { ...manifest.labelFamilies },
     };
+
     const catalog = new Catalog([input], mutableManifest);
     const record = catalog.require("axis-bars");
 

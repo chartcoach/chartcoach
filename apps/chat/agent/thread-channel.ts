@@ -17,17 +17,21 @@ export function withThreadPersistence(channel: Channel): Channel {
         !["/eve/v1/session", "/eve/v1/session/:sessionId"].includes(route.path)
       )
         return route;
+
       return {
         ...route,
         async handler(request, args) {
           if (!request.headers.has("x-chartcoach-thread")) return route.handler(request, args);
           const auth = await routeAuth(request, reviewRouteAuth);
+
           if (auth instanceof Response) return auth;
+
           const selection = modelSelectionSchema.safeParse({
             owner: auth.attributes["chartcoach.owner"],
             threadId: auth.attributes["chartcoach.thread"],
             connectionId: auth.attributes["chartcoach.connection"],
           });
+
           return appResponse(
             request,
             Effect.gen(function* () {
@@ -36,11 +40,14 @@ export function withThreadPersistence(channel: Channel): Channel {
                   status: 400,
                   message: "Choose an available model connection before sending.",
                 });
+
               const response = yield* Effect.promise(() =>
                 Promise.resolve(route.handler(request, args)),
               );
+
               if (!response.ok) return response;
               const sessionId = response.headers.get("x-eve-session-id") ?? args.params.sessionId;
+
               if (!sessionId)
                 return yield* new AppError({
                   status: 502,
@@ -48,6 +55,7 @@ export function withThreadPersistence(channel: Channel): Channel {
                 });
               const { owner, threadId, connectionId } = selection.data;
               yield* bindThread(owner, threadId, sessionId, connectionId);
+
               return response;
             }),
           );

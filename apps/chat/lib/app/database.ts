@@ -32,6 +32,7 @@ export function databaseLayer(filename: string) {
       Effect.as(SqliteClient.layer({ filename })),
     ),
   );
+
   const migrate = Layer.effectDiscard(
     Effect.gen(function* () {
       const sql = yield* SqlClient.SqlClient;
@@ -40,5 +41,6 @@ export function databaseLayer(filename: string) {
       yield* Migrator.make({})({ loader: Migrator.fromRecord({ "001_app": initialSchema }) });
     }),
   );
+
   return migrate.pipe(Layer.provideMerge(sqlite));
 }

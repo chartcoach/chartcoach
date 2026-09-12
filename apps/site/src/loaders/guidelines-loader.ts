@@ -24,7 +24,9 @@ export function guidelinesLoader({ location }: GuidelinesLoaderOptions = {}): Lo
       const catalogLocation = location
         ? resolveCatalogLocation(location, context.config.root)
         : resolveSiteCatalogLocation(context.config.root);
+
       const watchedFiles = catalogLocationWatchFiles(context.config.root, location);
+
       if (watchedFiles.length > 0) context.watcher?.add(watchedFiles);
 
       const catalog = await loadSiteCatalog(context.config.root, location);
@@ -37,14 +39,18 @@ export function guidelinesLoader({ location }: GuidelinesLoaderOptions = {}): Lo
           const references = [...guideline.references];
           const record = createGuidelineRecord(guideline);
           const referencesBib = references.length > 0 ? references.join("\n\n") : undefined;
+
           const citations = renderGuidelineCitations(
             [guideline.body, ...guideline.sections.map((section) => section.content)],
             references,
           );
+
           const renderedBody = citations.bodies[0];
+
           const sectionMarkdown = await Promise.all(
             citations.bodies.slice(1).map((body) => context.renderMarkdown(body)),
           );
+
           const sections = guideline.sections.map((section, index) => ({
             role: section.role,
             title: section.title,
@@ -70,6 +76,7 @@ export function guidelinesLoader({ location }: GuidelinesLoaderOptions = {}): Lo
             }),
             context.renderMarkdown(renderedBody),
           ]);
+
           const digest = context.generateDigest(`${renderedBody}\n\n${referencesBib ?? ""}`);
           const filePath = catalogLocationRecordPath(context.config.root, catalogLocation, id);
 

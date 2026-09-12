@@ -93,6 +93,7 @@ describe("catalog operations", () => {
     expect(catalog.query({ labelPrefixes: ["chart:", "task:"] }).map(({ id }) => id)).toEqual([
       "both",
     ]);
+
     for (const query of [
       () => catalog.query({ ids: ["missing"] }),
       () => catalog.query({ labels: ["chart:missing"] }),
@@ -103,6 +104,7 @@ describe("catalog operations", () => {
         throw new Error("query unexpectedly succeeded");
       } catch (error) {
         expect(error).toBeInstanceOf(CatalogError);
+
         if (error instanceof CatalogError) expect(error.code).toBe("lookup");
       }
     }
@@ -116,6 +118,7 @@ describe("catalog operations", () => {
       ],
       operationManifest(),
     );
+
     expect(
       equivalent
         .cite({ ids: ["first", "second"] })
@@ -129,6 +132,7 @@ describe("catalog operations", () => {
       ],
       operationManifest(),
     );
+
     expect(() => conflicting.cite({ ids: ["first"] })).toThrow(
       "Conflicting BibTeX definitions for reference id: shared2024",
     );
@@ -145,10 +149,12 @@ describe("catalog operations", () => {
 
   it("preserves BibTeX grouping and escapes through source reads and citations", () => {
     const expected = operations.protected_bibliography;
+
     const catalog = new Catalog(
       [guideline("protected", [], expected.reference)],
       operationManifest(),
     );
+
     const source = catalog.read({ ids: ["protected"], sourceDetail: "full" })[0]?.sources[0];
     expect(source?.source_title).toBe(expected.source_title);
     expect(source?.authors_text).toBe(expected.authors_text);
@@ -170,6 +176,7 @@ describe("catalog operations", () => {
   it("renders author names with CSL while retaining the authored source fields", () => {
     const reference =
       "@article{names, author={Doe, Jane and Roe, John}, title={A chart}, year={2024}}";
+
     const catalog = new Catalog([guideline("source", [], reference)], operationManifest());
 
     const source = catalog.read({ ids: ["source"], sourceDetail: "full" })[0]!.sources[0]!;
@@ -192,6 +199,7 @@ describe("catalog operations", () => {
       expect(source.url).toBe(expected.url);
       expect(source.doi).toBe(expected.doi);
     }
+
     expect(citation.citation).toBe(expected.citation);
     expect(full.references).toEqual([expected.reference]);
   });

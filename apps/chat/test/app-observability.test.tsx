@@ -18,6 +18,7 @@ it("exports Effect operations to the existing trace while redacting provider cre
   const directory = await mkdtemp(join(tmpdir(), "chartcoach-app-traces-"));
   const exported = new InMemorySpanExporter();
   const original = new InMemorySpanExporter();
+
   const provider = new BasicTracerProvider({
     spanProcessors: [
       new SimpleSpanProcessor(original),
@@ -29,6 +30,7 @@ it("exports Effect operations to the existing trace while redacting provider cre
       }),
     ],
   });
+
   const tracer = provider.getTracer("chartcoach.app");
   const runtime = createAppRuntime(directory, tracer);
   const parent = tracer.startSpan("test-request");
@@ -37,6 +39,7 @@ it("exports Effect operations to the existing trace while redacting provider cre
       models: [{ name: "models/vision", supportedGenerationMethods: ["generateContent"] }],
     }),
   );
+
   try {
     await runtime.runPromise(
       saveConnection("alice", {

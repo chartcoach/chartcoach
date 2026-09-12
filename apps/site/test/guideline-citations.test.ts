@@ -10,6 +10,7 @@ describe("guideline citations", () => {
       '@string{venue="Alpha"}@article{a,title={First},author={Doe, Jane},year={2020},journal=venue}',
       '@string{venue="Beta"}@article{b,title={Second},author={Doe, Jane},year={2020},journal=venue}',
     ];
+
     const result = renderGuidelineCitations(["[@a; @b]"], references);
     const dom = new JSDOM(result.bodies[0] + result.bibliographyHtml);
     expect(dom.window.document.getElementById("ref-a")?.textContent).toContain("Alpha");
@@ -32,6 +33,7 @@ describe("guideline citations", () => {
         "@article{b,title={Beta},author={Doe, Jane},year={2020},journal={Journal}}",
       ],
     );
+
     const dom = new JSDOM(result.bodies.join("\n") + result.bibliographyHtml);
     const document = dom.window.document;
     expect(result.citedKeys).toEqual(["a", "b"]);
@@ -39,10 +41,12 @@ describe("guideline citations", () => {
     expect(document.body.textContent).toContain("Reason (Doe, 2020a).");
     const links = [...document.querySelectorAll<HTMLAnchorElement>("a.citation")];
     expect(links.map((link) => link.dataset.citekey)).toEqual(["a", "b", "a"]);
+
     for (const link of links) {
       const target = document.getElementById(decodeURIComponent(link.hash.slice(1)));
       expect(target?.textContent).toBe(link.title);
     }
+
     expect(document.querySelectorAll(".csl-entry")).toHaveLength(2);
     dom.window.close();
   });
@@ -54,6 +58,7 @@ describe("guideline citations", () => {
         "@misc{web,title={<script>alert(1)</script>},author={Doe, Jane},year={2020},url={https://example.com/reference}}",
       ],
     );
+
     const dom = new JSDOM(result.bodies[0] + result.bibliographyHtml);
     const document = dom.window.document;
     expect(document.querySelector("script")).toBeNull();
@@ -86,6 +91,7 @@ describe("Open Graph reference summaries", () => {
       @article{c, title={Third}, year={2022}}
     `,
     ]);
+
     expect(summaries).toEqual([
       { title: "Charts and Nested Titles", meta: "Doe, 2020 · Journal of Charts" },
       { title: "Second", meta: "Roe, 2021 · Journal of Charts" },

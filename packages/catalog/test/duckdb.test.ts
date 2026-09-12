@@ -8,6 +8,7 @@ it("keeps catalog registration inside the caller's transaction", async () => {
   const catalog = await fixtureCatalog();
   const db = await DuckDBInstance.create(":memory:");
   const connection = await db.connect();
+
   try {
     await connection.run("CREATE TABLE guidelines AS SELECT 'retained' AS id");
     await connection.run("BEGIN TRANSACTION");
@@ -31,6 +32,7 @@ it("leaves the caller connection usable after a native table replacement error",
   const catalog = await fixtureCatalog();
   const db = await DuckDBInstance.create(":memory:");
   const connection = await db.connect();
+
   try {
     await connection.run("CREATE VIEW guidelines AS SELECT 'retained' AS id");
     await expect(registerCatalog(connection, catalog)).rejects.toThrow();
@@ -47,16 +49,19 @@ it("validates catalog inputs before replacing tables and preserves caller connec
   const catalog = await fixtureCatalog();
   const db = await DuckDBInstance.create(":memory:");
   const connection = await db.connect();
+
   try {
     await connection.run("CREATE TABLE guidelines AS SELECT 'retained' AS id");
     await connection.run("CREATE TABLE application_state AS SELECT 42 AS value");
     await expect(registerCatalog(connection, catalog, { ids: ["missing"] })).rejects.toMatchObject({
       code: "lookup",
     });
+
     const invalid = new Catalog(
       [{ ...catalog.guidelines[0]!, references: ["not a BibTeX entry"] }],
       catalog.manifest,
     );
+
     await expect(registerCatalog(connection, invalid)).rejects.toBeInstanceOf(CatalogError);
     expect((await connection.runAndReadAll("SELECT * FROM guidelines")).getRowsJson()).toEqual([
       ["retained"],

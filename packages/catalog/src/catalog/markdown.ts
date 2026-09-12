@@ -11,6 +11,7 @@ export function toMarkdown(
     description: guideline.description,
     labels: [...guideline.labels],
   };
+
   const frontmatterYaml = stringifyYaml(frontmatter, { sortMapEntries: false }).trim();
   const body = guideline.body.trim();
 

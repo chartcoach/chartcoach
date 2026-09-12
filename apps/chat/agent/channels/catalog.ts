@@ -8,20 +8,25 @@ export default defineChannel({
   routes: [
     GET("/eve/v1/catalog/:digest/:file", async (request) => {
       const auth = await routeAuth(request, catalogRouteAuth);
+
       if (auth instanceof Response) return auth;
       const parts = new URL(request.url).pathname.split("/");
       const file = parts.at(-1);
       const digest = parts.at(-2);
+
       if (!file || !["release.json", "entries.parquet", "MANIFEST.md"].includes(file))
         return new Response("Catalog file not found.", { status: 404 });
       const catalog = await getCatalog();
+
       if (!catalog.release || catalog.release.digest !== digest)
         return new Response("The catalog changed. Reload the catalog.", { status: 409 });
+
       if (file === "release.json")
         return Response.json(catalog.release, {
           headers: { "cache-control": "private, no-cache" },
         });
       const bytes = await catalog.artifact(file, { signal: request.signal });
+
       return new Response(Uint8Array.from(bytes), {
         headers: {
           "content-type":
@@ -34,7 +39,9 @@ export default defineChannel({
     }),
     GET("/eve/v1/catalog", async (request) => {
       const auth = await routeAuth(request, catalogRouteAuth);
+
       if (auth instanceof Response) return auth;
+
       return Response.json(await getCatalogMetadata(undefined, request.signal), {
         headers: { "cache-control": "no-store" },
       });

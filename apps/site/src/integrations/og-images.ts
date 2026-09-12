@@ -32,6 +32,7 @@ export type OgImagesOptions<Props extends object> = {
 };
 
 type FontOptions = NonNullable<Parameters<typeof satori>[1]["fonts"]>;
+
 type ReadPayloadResult<Props> = {
   found: boolean;
   html: string;
@@ -39,6 +40,7 @@ type ReadPayloadResult<Props> = {
 };
 
 const require = createRequire(import.meta.url);
+
 const fontFamilies = [
   {
     name: "Poppins",
@@ -73,13 +75,17 @@ function loadFonts(): FontOptions {
 
 async function listHtmlFiles(directory: string): Promise<string[]> {
   const entries = await fs.readdir(directory, { withFileTypes: true });
+
   const nested = await Promise.all(
     entries.map(async (entry) => {
       const entryPath = path.join(directory, entry.name);
+
       if (entry.isDirectory()) return listHtmlFiles(entryPath);
+
       return entry.isFile() && entry.name.endsWith(".html") ? [entryPath] : [];
     }),
   );
+
   return nested.flat();
 }
 
@@ -89,16 +95,20 @@ function readPayload<Props extends object>(
   parsePayload: OgImagesOptions<Props>["parsePayload"],
 ): ReadPayloadResult<Props> {
   const dom = new JSDOM(html);
+
   const marker = Array.from(dom.window.document.querySelectorAll("meta[name]")).find(
     (element) => element.getAttribute("name") === metaName,
   );
+
   if (!marker) {
     dom.window.close();
+
     return { found: false, html, payload: null };
   }
 
   const rawPayload = marker.getAttribute("content") ?? "{}";
   marker.remove();
+
   try {
     return {
       found: true,
@@ -129,6 +139,7 @@ async function mapLimit<T>(
 
 export function ogImages<Props extends object>(options: OgImagesOptions<Props>): AstroIntegration {
   const integrationName = options.name ?? "chartcoach:og-images";
+
   return {
     name: integrationName,
     hooks: {
@@ -140,13 +151,16 @@ export function ogImages<Props extends object>(options: OgImagesOptions<Props>):
         for (const htmlPath of await listHtmlFiles(distDirectory)) {
           const html = await fs.readFile(htmlPath, "utf8");
           const result = readPayload(html, options.metaName, options.parsePayload);
+
           if (!result.found) continue;
 
           await fs.writeFile(htmlPath, result.html, "utf8");
+
           if (!result.payload) {
             ogLogger.warn(`Invalid OG payload in ${path.relative(distDirectory, htmlPath)}`);
             continue;
           }
+
           jobs.push(result.payload, ...(result.payload.extraImages ?? []));
         }
 
@@ -157,9 +171,11 @@ export function ogImages<Props extends object>(options: OgImagesOptions<Props>):
             height: options.height,
             fonts,
           });
+
           const image = await renderAsync(svg, {
             fitTo: { mode: "width", value: options.width },
           });
+
           const outputPath = path.join(distDirectory, job.imagePathname.replace(/^\/+/, ""));
           await fs.mkdir(path.dirname(outputPath), { recursive: true });
           await fs.writeFile(outputPath, image.asPng());

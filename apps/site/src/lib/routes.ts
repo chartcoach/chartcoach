@@ -35,6 +35,7 @@ export function normalizePathname(pathname: string): string {
   if (!pathname || pathname === SITE_PATHS.home) return SITE_PATHS.home;
 
   const withLeadingSlash = pathname.startsWith("/") ? pathname : `/${pathname}`;
+
   return withLeadingSlash.endsWith("/") ? withLeadingSlash : `${withLeadingSlash}/`;
 }
 

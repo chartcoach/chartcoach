@@ -18,5 +18,6 @@ export function paginateGuidelines(
   pageSize = GUIDELINES_PER_PAGE,
 ) {
   const start = (page - 1) * pageSize;
+
   return guidelines.slice(start, start + pageSize);
 }

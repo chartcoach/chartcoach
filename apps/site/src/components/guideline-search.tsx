@@ -7,7 +7,9 @@ import type { IndexStatus, SearchResult, SearchStatus } from "@/components/use-g
 import type { KeyboardEvent, MouseEvent, RefObject } from "react";
 
 const EXCERPT_RADIUS = 92;
+
 const EXAMPLE_QUERIES = ["color vision deficiency", "tooltip values", "uncertainty"] as const;
+
 const RESULT_LABEL_LIMIT = 3;
 
 function classNames(...values: Array<string | false | null | undefined>) {
@@ -20,8 +22,11 @@ function iconClassName(active: boolean) {
 
 function normalizeResultHref(path: string) {
   const normalizedPath = `/${path.replace(/^\/+/, "")}`;
+
   if (!normalizedSearchBase) return normalizedPath;
+
   if (normalizedPath.startsWith(`${normalizedSearchBase}/`)) return normalizedPath;
+
   return `${normalizedSearchBase}${normalizedPath}`;
 }
 
@@ -43,6 +48,7 @@ function queryTerms(query: string) {
 
 function searchTextSources(result: SearchResult) {
   const document = result.document;
+
   return [
     document.description,
     ...document.sectionContent,
@@ -66,10 +72,14 @@ function createExcerpt(result: SearchResult, query: string) {
   if (!source) return "";
 
   const lowerSource = source.toLowerCase();
+
   const matchIndex = queryTerms(query).reduce<number | null>((bestIndex, term) => {
     const index = lowerSource.indexOf(term);
+
     if (index === -1) return bestIndex;
+
     if (bestIndex === null) return index;
+
     return Math.min(bestIndex, index);
   }, null);
 
@@ -79,16 +89,19 @@ function createExcerpt(result: SearchResult, query: string) {
   const end = Math.min(source.length, matchIndex + EXCERPT_RADIUS);
   const prefix = start > 0 ? "... " : "";
   const suffix = end < source.length ? " ..." : "";
+
   return `${prefix}${source.slice(start, end)}${suffix}`;
 }
 
 function matchingLabels(result: SearchResult, query: string) {
   const terms = queryTerms(query);
+
   if (terms.length === 0) return [];
 
   return result.document.labels
     .filter((label) => {
       const lowerLabel = label.toLowerCase();
+
       return terms.some((term) => lowerLabel.includes(term));
     })
     .slice(0, RESULT_LABEL_LIMIT);
@@ -100,6 +113,7 @@ function escapeRegExp(value: string) {
 
 function HighlightedText({ text, query }: { text: string; query: string }) {
   const terms = queryTerms(query);
+
   if (terms.length === 0) return <>{text}</>;
 
   const pattern = new RegExp(`(${terms.map(escapeRegExp).join("|")})`, "gi");
@@ -109,6 +123,7 @@ function HighlightedText({ text, query }: { text: string; query: string }) {
     <>
       {parts.map((part, index) => {
         const matched = terms.includes(part.toLowerCase());
+
         return matched ? (
           <mark key={`${part}-${index}`} className="rounded-sm bg-fg/10 px-[0.08em] text-fg">
             {part}
@@ -125,7 +140,9 @@ function useSearchShortcut(onOpen: () => void) {
   useEffect(() => {
     function handleShortcut(event: globalThis.KeyboardEvent) {
       if (event.defaultPrevented) return;
+
       if (event.key.toLowerCase() !== "k") return;
+
       if (!event.metaKey && !event.ctrlKey) return;
 
       event.preventDefault();
@@ -133,6 +150,7 @@ function useSearchShortcut(onOpen: () => void) {
     }
 
     window.addEventListener("keydown", handleShortcut);
+
     return () => window.removeEventListener("keydown", handleShortcut);
   }, [onOpen]);
 }
@@ -185,10 +203,14 @@ function SearchStatusText({
   let message = "Search guideline titles, slugs, labels, and section text.";
 
   if (indexStatus === "loading") message = "Loading search index...";
+
   if (indexStatus === "failed") message = "Search index failed to load.";
+
   if (indexStatus === "ready" && searchStatus === "searching") message = "Searching...";
+
   if (indexStatus === "ready" && searchStatus === "empty")
     message = `No guidelines found for "${query}".`;
+
   if (indexStatus === "ready" && searchStatus === "ready") {
     message = `${resultCount.toLocaleString()} result${resultCount === 1 ? "" : "s"} for "${query}".`;
   }
@@ -444,6 +466,7 @@ function SearchFooter({
 
 function resultLinks(dialog: HTMLDialogElement | null) {
   if (!dialog) return [];
+
   return Array.from(dialog.querySelectorAll<HTMLAnchorElement>("[data-search-result-link]"));
 }
 
@@ -465,6 +488,7 @@ export function GuidelineSearch() {
 
   useEffect(() => {
     document.addEventListener("astro:before-preparation", closeDialog);
+
     return () => document.removeEventListener("astro:before-preparation", closeDialog);
   }, [closeDialog]);
 
@@ -473,6 +497,7 @@ export function GuidelineSearch() {
       dialogCleanupRef.current?.();
       dialogCleanupRef.current = null;
       dialogRef.current = node;
+
       if (!node) return;
 
       function handleClose() {
@@ -481,6 +506,7 @@ export function GuidelineSearch() {
 
       node.addEventListener("close", handleClose);
       dialogCleanupRef.current = () => node.removeEventListener("close", handleClose);
+
       if (!node.open) node.showModal();
       setTimeout(() => inputRef.current?.focus(), 0);
     },
@@ -489,6 +515,7 @@ export function GuidelineSearch() {
 
   function focusAdjacentResult(direction: 1 | -1) {
     const links = resultLinks(dialogRef.current);
+
     if (links.length === 0) return;
 
     const activeElement = document.activeElement;
@@ -498,6 +525,7 @@ export function GuidelineSearch() {
       const firstLink = links[0];
       firstLink?.focus();
       searchState.setActiveResultId(firstLink?.dataset.searchResultId ?? null);
+
       return;
     }
 
@@ -505,6 +533,7 @@ export function GuidelineSearch() {
       const lastLink = links.at(-1);
       lastLink?.focus();
       searchState.setActiveResultId(lastLink?.dataset.searchResultId ?? null);
+
       return;
     }
 
@@ -523,18 +552,21 @@ export function GuidelineSearch() {
   function handleSearchKeyDown(event: KeyboardEvent<HTMLInputElement | HTMLAnchorElement>) {
     if (event.key === "Escape") {
       closeDialog();
+
       return;
     }
 
     if (event.key === "ArrowDown") {
       event.preventDefault();
       focusAdjacentResult(1);
+
       return;
     }
 
     if (event.key === "ArrowUp") {
       event.preventDefault();
       focusAdjacentResult(-1);
+
       return;
     }
 
@@ -546,6 +578,7 @@ export function GuidelineSearch() {
 
   function handleResultClick(event: MouseEvent<HTMLAnchorElement>) {
     if (event.defaultPrevented || event.button !== 0) return;
+
     if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return;
     closeDialog();
   }

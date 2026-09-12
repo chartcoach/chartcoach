@@ -26,11 +26,13 @@ function classNames(...values: Array<string | false | null | undefined>) {
 
 function isActiveHref(href: string, pathname: string) {
   if (isExternalHttpHref(href)) return false;
+
   return normalizePathname(pathname) === normalizePathname(href);
 }
 
 function subscribePathname(onChange: () => void) {
   window.addEventListener("popstate", onChange);
+
   return () => window.removeEventListener("popstate", onChange);
 }
 
@@ -44,11 +46,13 @@ function getServerPathnameSnapshot() {
 
 export function SiteMobileMenu({ links, githubHref }: SiteMobileMenuProps) {
   const [open, setOpen] = useState(false);
+
   const pathname = useSyncExternalStore(
     subscribePathname,
     getPathnameSnapshot,
     getServerPathnameSnapshot,
   );
+
   const menuId = useId();
 
   useEffect(() => {
@@ -57,6 +61,7 @@ export function SiteMobileMenu({ links, githubHref }: SiteMobileMenuProps) {
     }
 
     document.addEventListener("keydown", handleEscape);
+
     return () => document.removeEventListener("keydown", handleEscape);
   }, []);
 
@@ -65,13 +70,16 @@ export function SiteMobileMenu({ links, githubHref }: SiteMobileMenuProps) {
     const previousOverflow = document.body.style.overflow;
     const desktop = window.matchMedia("(min-width: 640px)");
     const close = () => setOpen(false);
+
     const closeOnDesktop = () => {
       if (desktop.matches) close();
     };
+
     closeOnDesktop();
     desktop.addEventListener("change", closeOnDesktop);
     document.addEventListener("astro:before-preparation", close);
     document.body.style.overflow = "hidden";
+
     return () => {
       desktop.removeEventListener("change", closeOnDesktop);
       document.removeEventListener("astro:before-preparation", close);
@@ -128,6 +136,7 @@ export function SiteMobileMenu({ links, githubHref }: SiteMobileMenuProps) {
                   {links.map((link) => {
                     const external = isExternalHttpHref(link.href);
                     const active = isActiveHref(link.href, pathname);
+
                     return (
                       <li key={link.href}>
                         <a

@@ -20,6 +20,7 @@ beforeAll(async () => {
     ids: [],
   };
 });
+
 afterAll(() => vi.unstubAllEnvs());
 
 function context(toolName: string): ToolContext {
@@ -29,6 +30,7 @@ function context(toolName: string): ToolContext {
     principalType: "user",
     attributes: { "chartcoach.selection": JSON.stringify(selection) },
   };
+
   return {
     abortSignal: new AbortController().signal,
     session: {
@@ -73,11 +75,14 @@ it("rejects reads outside the initiating review filters even when a later caller
 it("lets the agent repair an unread citation by reading and presenting eligible guidance", async () => {
   let readIds: string[] = [];
   const read = vi.spyOn(readGuidelineIds, "get").mockImplementation(() => readIds);
+
   const update = vi.spyOn(readGuidelineIds, "update").mockImplementation((change) => {
     readIds = change(readIds);
   });
+
   const previousSelection = selection;
   selection = { ...selection, ids: ["axis-labels"] };
+
   const answer: Answer = {
     workflow: "visrec",
     status: "answer",
@@ -92,6 +97,7 @@ it("lets the agent repair an unread citation by reading and presenting eligible 
     ],
     question: null,
   };
+
   try {
     expect(() => presentAnswer.execute(answer, context("present_answer"))).toThrow(
       "invented-guideline",
@@ -103,10 +109,12 @@ it("lets the agent repair an unread citation by reading and presenting eligible 
       "invented-guideline",
     );
     await readGuidelines.execute({ ids: ["axis-labels"] }, context("read_guidelines"));
+
     const corrected: Answer = {
       ...answer,
       points: [{ ...answer.points[0], primary_guideline_id: "axis-labels" }],
     };
+
     expect(presentAnswer.execute(corrected, context("present_answer"))).toEqual(corrected);
   } finally {
     selection = previousSelection;
@@ -129,11 +137,14 @@ it("scopes native SQL rows and verifies projected candidate IDs against the same
     { sql: "SELECT count(*)::INTEGER AS count FROM main.guidelines", limit: 20 },
     context("query_catalog"),
   );
+
   expect(count).toMatchObject({ rows: [[0]], matches: [] });
+
   const literal = await queryCatalog.execute(
     { sql: "SELECT 'axis-labels' AS id", limit: 20 },
     context("query_catalog"),
   );
+
   expect(literal).toMatchObject({ rows: [["axis-labels"]], matches: [] });
 });
 
@@ -153,6 +164,7 @@ it("describes the physically scoped SQL tables", async () => {
 
 it("rejects malformed selection headers through native route authentication", async () => {
   vi.stubEnv("EVE_DEV", "1");
+
   const response = await routeAuth(
     new Request("http://localhost/eve/v1/session", {
       method: "POST",
@@ -160,7 +172,9 @@ it("rejects malformed selection headers through native route authentication", as
     }),
     reviewRouteAuth,
   );
+
   expect(response).toBeInstanceOf(Response);
+
   if (!(response instanceof Response)) throw new Error("Expected authentication rejection.");
   expect(response.status).toBe(403);
   expect(await response.json()).toMatchObject({ code: "invalid_catalog_selection" });
@@ -170,9 +184,11 @@ it("preserves fail-closed production authentication for catalog and review route
   vi.stubEnv("EVE_DEV", "");
   vi.stubEnv("VERCEL", "");
   vi.stubEnv("NODE_ENV", "production");
+
   for (const policy of [catalogRouteAuth, reviewRouteAuth]) {
     const response = await routeAuth(new Request("http://localhost/eve/v1/catalog"), policy);
     expect(response).toBeInstanceOf(Response);
+
     if (!(response instanceof Response)) throw new Error("Expected authentication rejection.");
     expect(response.status).toBe(401);
   }

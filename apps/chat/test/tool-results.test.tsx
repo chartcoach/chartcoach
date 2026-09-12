@@ -21,6 +21,7 @@ it.each([
       failed={false}
     />,
   );
+
   expect(html).toContain(label);
   expect(html).toContain(description);
   expect(html).not.toContain("Full agent instructions");
@@ -53,6 +54,7 @@ it("renders SQL text, numbers, nested JSON, and null distinctly", () => {
       failed={false}
     />,
   );
+
   expect(html).toMatch(/<td\b[^>]*>labels<\/td>/);
   expect(html).toMatch(/<td\b[^>]*>3<\/td>/);
   expect(html).toContain("{&quot;author&quot;:&quot;Ada&quot;}");
@@ -104,6 +106,7 @@ it.each([
   },
 ])("renders $name with stable child identity", ({ tool, input, output, expected }) => {
   const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+
   try {
     const html = renderToStaticMarkup(
       <ToolActivity
@@ -119,7 +122,9 @@ it.each([
         failed={false}
       />,
     );
+
     expect(html).toContain(expected);
+
     if (tool === "query_catalog") expect(html.match(/<td\b[^>]*>labels<\/td>/g)).toHaveLength(4);
     expect(errors).not.toHaveBeenCalled();
   } finally {

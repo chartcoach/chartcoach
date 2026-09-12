@@ -15,8 +15,10 @@ export async function registerCatalog(
     // DuckDB-WASM copies string parameters onto its fixed-size Emscripten stack.
     // File buffers carry catalog payloads through heap memory instead.
     await connection.bindings.registerFileBuffer(file, new TextEncoder().encode(rows));
+
     try {
       const statement = await connection.prepare(sql);
+
       try {
         await statement.query(file);
       } finally {
@@ -26,5 +28,6 @@ export async function registerCatalog(
       await connection.bindings.dropFile(file);
     }
   }
+
   return connection;
 }

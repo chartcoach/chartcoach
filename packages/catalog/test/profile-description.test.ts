@@ -30,10 +30,12 @@ describe("published profile description", () => {
     const fetch = countingFetch(responses, requests);
 
     const catalog = await openCatalog(catalogUrl, { fetch });
+
     const changedSelection = releaseWithArtifact(profiled.release, "selection-marker", {
       sha256: "f".repeat(64),
       bytes: 1,
     });
+
     responses.set(catalogUrl, JSON.stringify(changedSelection));
 
     expect((await catalog.describe()).profiles).toEqual([profileName]);
@@ -61,6 +63,7 @@ describe("published profile description", () => {
     const fixture = await fixtureRelease();
     const profiled = profileRelease(fixture);
     const responses = releaseResponses(profiled);
+
     const catalog = await openCatalog(releaseUrlFor(profiled.release.digest), {
       fetch: fetchFrom(responses),
     });
@@ -84,23 +87,31 @@ describe("published profile description", () => {
     const url = profileUrl(profiled.release.digest);
     let profileRequests = 0;
     let startRequest = () => {};
+
     const started = new Promise<void>((resolve) => {
       startRequest = () => resolve();
     });
+
     const fetch: FetchLike = async (input, init) => {
       if (input.toString() !== url) return fetchFrom(responses)(input, init);
       profileRequests += 1;
+
       if (profileRequests > 1) return new Response(profiled.profile);
       startRequest();
+
       return new Promise<Response>((_resolve, reject) => {
         const signal = init?.signal;
+
         if (signal?.aborted) {
           reject(signal.reason);
+
           return;
         }
+
         signal?.addEventListener("abort", () => reject(signal.reason), { once: true });
       });
     };
+
     const catalog = await openCatalog(releaseUrlFor(profiled.release.digest), { fetch });
     const controller = new AbortController();
     const cancelled = catalog.describe({ profile: profileName, signal: controller.signal });
@@ -124,6 +135,7 @@ describe("published profile description", () => {
     const profiled = profileRelease(fixture, profileMetadata(fixture, { [field]: "0".repeat(64) }));
     const responses = releaseResponses(profiled);
     responses.set(profileUrl(profiled.release.digest), profiled.profile);
+
     const catalog = await openCatalog(releaseUrlFor(profiled.release.digest), {
       fetch: fetchFrom(responses),
     });
@@ -133,12 +145,15 @@ describe("published profile description", () => {
 
   it("rejects projection metadata that disagrees with the release inventory", async () => {
     const fixture = await fixtureRelease();
+
     const profiled = profileRelease(
       fixture,
       profileMetadata(fixture, { projection: { algorithm: "linear", options: {} } }),
     );
+
     const responses = releaseResponses(profiled);
     responses.set(profileUrl(profiled.release.digest), profiled.profile);
+
     const catalog = await openCatalog(releaseUrlFor(profiled.release.digest), {
       fetch: fetchFrom(responses),
     });
@@ -154,6 +169,7 @@ describe("published profile description", () => {
     const release = releaseWithArtifact(profiled.release, profilePath(), { bytes: 65_537 });
     const responses = releaseResponses({ ...profiled, release });
     const requests = new Map<string, number>();
+
     const catalog = await openCatalog(releaseUrlFor(release.digest), {
       fetch: countingFetch(responses, requests),
     });
@@ -165,6 +181,7 @@ describe("published profile description", () => {
 
 function profileRelease(fixture: CatalogFixture, metadata = profileMetadata(fixture)) {
   const profile = new TextEncoder().encode(JSON.stringify(metadata));
+
   const artifacts = {
     ...fixture.release.artifacts,
     [profilePath()]: {
@@ -176,6 +193,7 @@ function profileRelease(fixture: CatalogFixture, metadata = profileMetadata(fixt
       bytes: 1,
     },
   };
+
   return {
     ...fixture,
     profile,

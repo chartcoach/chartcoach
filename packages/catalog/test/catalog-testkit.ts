@@ -19,10 +19,15 @@ export const releaseFixtureRoot = path.join(
   "fixtures",
   "catalog-release",
 );
+
 export const entriesParquetPath = path.join(releaseFixtureRoot, "entries.parquet");
+
 export const manifestPath = path.join(releaseFixtureRoot, "MANIFEST.md");
+
 export const releaseFixtureUrl = pathToFileURL(path.join(releaseFixtureRoot, "release.json"));
+
 export const artifactBaseUrl = "https://files.peter.gy/catalog/chartcoach";
+
 export const catalogUrl = `${artifactBaseUrl}/catalog.json`;
 
 export type CatalogFixture = Readonly<{
@@ -37,6 +42,7 @@ export async function fixtureRelease(): Promise<CatalogFixture> {
     readFile(entriesParquetPath),
     readReleaseRecord(),
   ]);
+
   return {
     manifest,
     entries,
@@ -46,6 +52,7 @@ export async function fixtureRelease(): Promise<CatalogFixture> {
 
 export async function fixtureCatalog() {
   const fixture = await fixtureRelease();
+
   return loadCatalog({
     entries: fixture.entries,
     manifest: Buffer.from(fixture.manifest),
@@ -57,6 +64,7 @@ export async function fixtureCatalog() {
 export function catalogResponses(fixture: CatalogFixture): Map<string, BodyInit> {
   const responses = releaseResponses(fixture);
   responses.set(catalogUrl, JSON.stringify(fixture.release));
+
   return responses;
 }
 
@@ -65,6 +73,7 @@ export function releaseResponses(
   digest = fixture.release.digest,
 ): Map<string, BodyInit> {
   const releaseUrl = releaseUrlFor(digest);
+
   return new Map<string, BodyInit>([
     [releaseUrl, JSON.stringify(fixture.release)],
     [new URL("MANIFEST.md", releaseUrl).toString(), fixture.manifest],
@@ -89,6 +98,7 @@ export function releaseWithArtifact(
     ...release.artifacts,
     [path]: { ...release.artifacts[path]!, ...update },
   };
+
   return {
     schema_version: 1,
     artifacts,
@@ -105,6 +115,7 @@ export function releaseDigest(artifacts: CatalogRelease["artifacts"]): string {
         { bytes: artifact.bytes, sha256: artifact.sha256 },
       ]),
   );
+
   return createHash("sha256")
     .update(JSON.stringify({ artifacts: canonicalArtifacts, schema_version: 1 }))
     .digest("hex");
@@ -113,7 +124,9 @@ export function releaseDigest(artifacts: CatalogRelease["artifacts"]): string {
 export function fetchFrom(responses: Map<string, BodyInit>): FetchLike {
   return async (input) => {
     const body = responses.get(input.toString());
+
     if (body === undefined) return new Response("not found", { status: 404 });
+
     return new Response(body);
   };
 }
@@ -123,9 +136,11 @@ export function countingFetch(
   requests: Map<string, number>,
 ): FetchLike {
   const fetch = fetchFrom(responses);
+
   return async (input, init) => {
     const url = input.toString();
     requests.set(url, (requests.get(url) ?? 0) + 1);
+
     return fetch(input, init);
   };
 }

@@ -15,6 +15,7 @@ export function createAppRuntime(
   const tracing = OtelTracer.layerWithoutOtelTracer.pipe(
     Layer.provide(Layer.succeed(OtelTracer.OtelTracer, tracer)),
   );
+
   return ManagedRuntime.make(
     Layer.mergeAll(
       databaseLayer(join(directory, "chat.sqlite")),
@@ -26,6 +27,7 @@ export function createAppRuntime(
 }
 
 let runtime: ReturnType<typeof createAppRuntime> | undefined;
+
 export function runApp<A, E>(
   effect: Effect.Effect<
     A,
@@ -36,6 +38,7 @@ export function runApp<A, E>(
 ) {
   runtime ??= createAppRuntime(env.CHAT_DATA_DIR ?? envPaths("chartcoach-chat").data);
   const parent = trace.getSpan(context.active())?.spanContext();
+
   return runtime.runPromise(
     parent ? effect.pipe(OtelTracer.withSpanContext(parent)) : effect,
     options,

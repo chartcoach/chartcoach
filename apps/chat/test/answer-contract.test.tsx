@@ -8,12 +8,14 @@ const point = {
   context: "The legend is far from the lines.",
   recommendation: "Place each series name beside its line.",
 } satisfies Answer["points"][number];
+
 const answer = {
   workflow: "visfeedback",
   status: "answer",
   points: [point],
   question: null,
 } satisfies Answer;
+
 const readIds = new Set(["labels", "contrast", "readability"]);
 
 it.each([
@@ -56,5 +58,6 @@ it("allows a read supporting guideline to support multiple distinct findings", (
       { ...point, primary_guideline_id: "contrast", supporting_guideline_ids: ["readability"] },
     ],
   };
+
   expect(validateAnswer(value, readIds)).toEqual(value);
 });

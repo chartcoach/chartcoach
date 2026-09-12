@@ -37,6 +37,7 @@ it("rejects keys containing header control characters before provider access", a
       apiKey: "private\nkey",
     }),
   });
+
   await expect(Effect.runPromise(readJson(request, connectionInputSchema))).rejects.toThrow(
     "Check the submitted fields",
   );
@@ -49,6 +50,7 @@ it("bounds credential request bytes before parsing and keeps bad input private",
       headers: { "content-type": "application/json" },
       body,
     });
+
   await expect(
     Effect.runPromise(
       readJson(
@@ -58,9 +60,11 @@ it("bounds credential request bytes before parsing and keeps bad input private",
       ),
     ),
   ).rejects.toThrow("too large");
+
   const malformed = Effect.runPromise(
     readJson(request("sensitive-value"), z.object({ key: z.string() })),
   );
+
   await expect(malformed).rejects.toThrow("Check the submitted fields");
   await expect(malformed).rejects.not.toThrow("sensitive-value");
 });

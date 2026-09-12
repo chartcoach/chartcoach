@@ -4,7 +4,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { writeClipboard } from "@/components/clipboard";
 
 type CopyId = "markdown" | "bibtex";
+
 type CopyState = CopyId | "failed" | null;
+
 type CopyMessageState = Exclude<CopyState, null>;
 
 const COPY_STATE_MESSAGES = {

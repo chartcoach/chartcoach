@@ -30,14 +30,17 @@ it("joins guideline labels and parsed sources using native SQL", async () => {
     ORDER BY g.id`,
     { limit: 2 },
   );
+
   expect(result.rows).toEqual([
     ["axis-labels", ["Smith, Ada"], "2024", "Readable charts", null],
     ["bar-labels", ["Smith, Ada"], "2024", "Readable charts", null],
   ]);
   expect(result).toMatchObject({ method: "sql", row_count: 2, truncated: true, limit: 2 });
+
   const counts = await queryCatalog(
     "SELECT role, count(*) AS entries FROM sections GROUP BY role;",
   );
+
   expect(counts.rows).toEqual([["advice", "6"]]);
   expect(counts.columns).toEqual([
     { name: "role", type: "VARCHAR" },
@@ -50,6 +53,7 @@ it("keeps native nested and exact numeric values JSON serializable", async () =>
   const result = await queryCatalog(`SELECT DATE '2024-01-02' AS day,
     1234567890123456789::BIGINT AS exact, 1.23::DECIMAL(4,2) AS decimal,
     {'label': 'chart:line', 'values': [1, 2]} AS nested, NULL AS missing`);
+
   expect(result.rows).toEqual([
     ["2024-01-02", "1234567890123456789", "1.23", { label: "chart:line", values: [1, 2] }, null],
   ]);

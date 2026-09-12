@@ -22,6 +22,7 @@ export async function openBrowserCatalog(
   signal.throwIfAborted();
   const features = await getPlatformFeatures();
   signal.throwIfAborted();
+
   if (!features.wasmExceptions)
     throw new Error(
       "Catalog exploration needs WebAssembly exception handling. Update your browser and try again.",
@@ -32,9 +33,11 @@ export async function openBrowserCatalog(
   let coordinator: Coordinator | undefined;
   let closed = false;
   let ready = false;
+
   const close = () => {
     if (closed) return;
     closed = true;
+
     try {
       coordinator?.clear();
     } finally {
@@ -44,28 +47,36 @@ export async function openBrowserCatalog(
       worker.terminate();
     }
   };
+
   function failed(event: Event) {
     if (closed) return;
+
     const error = new Error("The local catalog worker stopped. Retry to reload it.", {
       cause: event instanceof ErrorEvent ? (event.error ?? event.message) : event,
     });
+
     close();
     interrupted.reject(error);
+
     if (ready) onFailure(error);
   }
+
   const abort = () => {
     close();
     interrupted.reject(signal.reason);
   };
+
   worker.addEventListener("error", failed);
   worker.addEventListener("messageerror", failed);
   signal.addEventListener("abort", abort, { once: true });
+
   try {
     const catalogPromise = stage("Loading catalog records", () =>
       openCatalog(new URL(`/eve/v1/catalog/${catalogId}/release.json`, location.origin), {
         signal,
       }),
     );
+
     const [catalog] = await Promise.race([
       Promise.all([
         catalogPromise,
@@ -73,6 +84,7 @@ export async function openBrowserCatalog(
       ]),
       interrupted.promise,
     ]);
+
     const connection = await Promise.race([db.connect(), interrupted.promise]);
     await Promise.race([
       (async () => {
@@ -97,6 +109,7 @@ export async function openBrowserCatalog(
       preagg: { enabled: false },
     });
     ready = true;
+
     return { coordinator, close };
   } catch (error) {
     close();

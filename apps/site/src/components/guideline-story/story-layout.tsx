@@ -30,6 +30,7 @@ export function StoryText({ step, index }: { step: StoryStep; index: number }) {
 
 export function ArtifactFrame({ step, children }: { step: StoryStep; children: ReactNode }) {
   const flush = ["markdown", "structured", "access", "embedding"].includes(step.artifact);
+
   return (
     <article className="story-artifact">
       <header className="story-artifact-header">

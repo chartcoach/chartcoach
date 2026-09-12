@@ -37,6 +37,7 @@ it("rejects an invalid saved connection instead of using the server's key", asyn
     ),
   ).rejects.toThrow("Choose an available model connection");
 });
+
 const settings = (provider: Provider): ConnectionInput => ({
   provider,
   name: "Test",
@@ -44,6 +45,7 @@ const settings = (provider: Provider): ConnectionInput => ({
   contextWindow: 32_000,
   baseURL: provider === "compatible" ? "https://compatible.example/v1" : undefined,
 });
+
 const responses = {
   anthropic: {
     id: "msg_1",
@@ -90,6 +92,7 @@ const responses = {
     usage: { prompt_tokens: 10, completion_tokens: 4, total_tokens: 14 },
   },
 };
+
 it.each([
   [
     "anthropic",
@@ -168,8 +171,10 @@ it.each([
     const requests: Request[] = [];
     vi.stubGlobal("fetch", async (input: RequestInfo | URL, init?: RequestInit) => {
       requests.push(new Request(input, init));
+
       return Response.json(responses[provider]);
     });
+
     const result = await generateText({
       model: languageModel(settings(provider), Redacted.make("provider-test-key"), [
         "https://compatible.example",
@@ -191,6 +196,7 @@ it.each([
         }),
       },
     });
+
     expect(result.text).toBe("Read the guidance.");
     expect(requests).toHaveLength(1);
     expect(requests[0].url).toBe(endpoint);
@@ -209,6 +215,7 @@ it("follows Gemini model pages and excludes embedding-only models", async () => 
   vi.stubGlobal("fetch", async (input: RequestInfo | URL) => {
     const url = new URL(new Request(input).url);
     urls.push(url.href);
+
     return Response.json(
       url.searchParams.has("pageToken")
         ? {
@@ -280,6 +287,7 @@ it.each(["google", "anthropic", "openai", "compatible"] as const)(
     vi.stubGlobal("fetch", async () =>
       Response.json({ error: { message: "Leaked provider-test-key" } }, { status: 401 }),
     );
+
     const result = generateText({
       model: languageModel(settings(provider), Redacted.make("provider-test-key"), [
         "https://compatible.example",
@@ -287,6 +295,7 @@ it.each(["google", "anthropic", "openai", "compatible"] as const)(
       prompt: "Hello",
       maxRetries: 0,
     });
+
     await expect(result).rejects.toThrow("Check its value and permissions");
     await expect(result).rejects.not.toThrow("provider-test-key");
     await expect(result).rejects.toThrow("vision-model (HTTP 401)");

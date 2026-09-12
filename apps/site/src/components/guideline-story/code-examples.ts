@@ -30,6 +30,7 @@ export const jsonLines: readonly CodeLine[] = JSON.stringify(
   .split("\n")
   .map((source) => {
     const parts = source.split(/("(?:[^"\\]|\\.)*")/g);
+
     return parts.map((part, index) =>
       t(
         part,

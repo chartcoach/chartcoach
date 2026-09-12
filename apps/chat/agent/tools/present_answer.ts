@@ -9,7 +9,9 @@ export default defineTool({
   outputSchema: answerSchema,
   execute(answer) {
     const issues = answerIssues(answer, new Set(readGuidelineIds.get()));
+
     if (issues.length) throw new Error(issues.join("\n"));
+
     return answer;
   },
   toModelOutput() {

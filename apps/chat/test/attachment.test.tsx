@@ -10,5 +10,6 @@ it("rejects images above the model-visible attachment bound before decoding", as
   const file = new File([new Uint8Array(3 * 1024 * 1024 + 1)], "chart.png", {
     type: "image/png",
   });
+
   await expect(readAttachment(file)).rejects.toThrow("Choose an image of 3 MiB or smaller.");
 });

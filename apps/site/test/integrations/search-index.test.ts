@@ -9,11 +9,13 @@ import { searchIndex } from "../../src/integrations/search-index";
 import { createTestLogger } from "../astro";
 
 type Document = { path: string; title: string };
+
 type TestResponse = {
   statusCode: number;
   setHeader(name: string, value: string): void;
   end(value: string): void;
 };
+
 type TestMiddleware = (
   request: { url?: string },
   response: TestResponse,
@@ -31,6 +33,7 @@ afterEach(() => {
 function temporaryDirectory() {
   const directory = mkdtempSync(path.join(os.tmpdir(), "chartcoach-search-index-"));
   temporaryDirectories.push(directory);
+
   return directory;
 }
 
@@ -74,6 +77,7 @@ describe("searchIndex", () => {
     const raw = JSON.parse(
       readFileSync(path.join(output, "assets", "search-guidelines.json"), "utf8"),
     );
+
     const db = create({ schema: { path: "string", title: "string" } });
     load(db, raw);
     expect(count(db)).toBe(1);
@@ -86,17 +90,21 @@ describe("searchIndex", () => {
   it("serves and invalidates the development database when a source changes", async () => {
     const root = pathToFileURL(`${temporaryDirectory()}/`);
     const watchFile = path.join(temporaryDirectory(), "entries.parquet");
+
     const loadDocuments = vi
       .fn<() => readonly Document[]>()
       .mockReturnValue([{ path: "/guidelines/axes/", title: "Use full axes" }]);
+
     const search = integration({
       load: loadDocuments,
       watchFiles: () => [watchFile],
     });
+
     const configDone = search.hooks["astro:config:done"];
     const serverSetup = search.hooks["astro:server:setup"];
     const changeListeners: Array<(path: string) => void> = [];
     let middleware: TestMiddleware | undefined;
+
     const server = {
       watcher: {
         add: vi.fn(),
@@ -118,6 +126,7 @@ describe("searchIndex", () => {
 
     async function request() {
       let body = "";
+
       const response = {
         statusCode: 0,
         setHeader: vi.fn(),
@@ -125,7 +134,9 @@ describe("searchIndex", () => {
           body = value;
         }),
       };
+
       await middleware?.({ url: "/assets/search-guidelines.json" }, response, vi.fn());
+
       return { body, response };
     }
 

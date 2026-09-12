@@ -13,9 +13,11 @@ export default defineTool({
       selection: sessionSelection(ctx.session),
       signal: ctx.abortSignal,
     });
+
     readGuidelineIds.update((previous) => [
       ...new Set([...previous, ...result.guidelines.map((guideline) => guideline.id)]),
     ]);
+
     return result;
   },
 });

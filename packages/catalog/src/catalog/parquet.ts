@@ -28,11 +28,14 @@ type AsyncBuffer = {
 };
 
 type ParquetBytes = ArrayBuffer | ArrayBufferView;
+
 type CatalogBytes = ParquetBytes | AsyncBuffer;
+
 export type LoadCatalogDataInput = {
   entries: CatalogBytes;
   manifestText: string;
 };
+
 export type LoadCatalogInput = {
   entries: ParquetBytes;
   manifest: ParquetBytes;
@@ -48,6 +51,7 @@ function normalizeParquetBytes(bytes: ParquetBytes): ArrayBuffer {
   // TypedArray/DataView may be a view into a larger ArrayBuffer (or SharedArrayBuffer).
   // Copy to a standalone ArrayBuffer covering exactly the view range.
   const u8 = new Uint8Array(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+
   return u8.slice().buffer;
 }
 
@@ -83,6 +87,7 @@ export async function loadCatalogWithProfileLoader(
     ),
   ]);
   let manifestText: string;
+
   try {
     manifestText = new TextDecoder("utf-8", { fatal: true }).decode(
       normalizeParquetBytes(input.manifest),
@@ -90,6 +95,7 @@ export async function loadCatalogWithProfileLoader(
   } catch {
     throw new CatalogError("Catalog manifest must contain valid UTF-8.");
   }
+
   return parseCatalogData(
     { entries: input.entries, manifestText },
     {
@@ -104,9 +110,12 @@ export async function loadCatalogWithProfileLoader(
 function suppliedArtifacts(input: LoadCatalogInput): CatalogReleaseContext["artifactLoader"] {
   const entries = new Uint8Array(normalizeParquetBytes(input.entries)).slice();
   const manifest = new Uint8Array(normalizeParquetBytes(input.manifest)).slice();
+
   return async (path, signal) => {
     signal?.throwIfAborted();
+
     if (path === "entries.parquet") return entries.slice();
+
     if (path === "MANIFEST.md") return manifest.slice();
     throw new CatalogError(`Artifact bytes were not supplied: ${path}`, {
       code: "unavailable_capability",
@@ -120,6 +129,7 @@ function assertCoreArtifactSize(
   receivedBytes: number,
 ): void {
   const recordedBytes = releaseArtifact(release, path).bytes;
+
   if (recordedBytes > MAX_CORE_ARTIFACT_BYTES || receivedBytes > MAX_CORE_ARTIFACT_BYTES) {
     throw new CatalogError(`Catalog artifact exceeds size limit: ${path}`);
   }
@@ -134,6 +144,7 @@ async function parseCatalogData(
   releaseContext?: CatalogReleaseContext,
 ): Promise<Catalog> {
   const manifest = parseCatalogManifest(input.manifestText);
+
   const normalizedFile = isParquetBytes(input.entries)
     ? normalizeParquetBytes(input.entries)
     : input.entries;
@@ -148,5 +159,6 @@ async function parseCatalogData(
   );
 
   const catalog = new Catalog(guidelines, manifest);
+
   return releaseContext ? catalogWithRelease(catalog, releaseContext) : catalog;
 }

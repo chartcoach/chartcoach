@@ -23,6 +23,7 @@ describe("catalog manifest validation", () => {
 
   it("rejects catalog entries whose vocabulary is absent from the manifest", async () => {
     const entries = await readFile(entriesPath);
+
     const manifestText = `# Catalog
 
 ## Section Roles

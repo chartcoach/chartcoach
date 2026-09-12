@@ -16,6 +16,7 @@ export async function getStaticPaths() {
 
   return Array.from({ length: Math.max(0, totalPages - 1) }, (_, index) => {
     const page = index + 2;
+
     return {
       params: { page: String(page) },
       props: { page },
@@ -24,10 +25,15 @@ export async function getStaticPaths() {
 }
 
 const allGuidelines = sortGuidelines(await getCollection("guidelines"));
+
 const currentPage = Number(Astro.props.page);
+
 const totalPages = getGuidelinePageCount(allGuidelines.length);
+
 const guidelines = paginateGuidelines(allGuidelines, currentPage);
+
 const guidelineRoles = collectGuidelineRoles(allGuidelines);
+
 const description =
   "Browse chartcoach guideline pages for chart guidance, source links, and machine-readable Markdown and JSON.";
 ---

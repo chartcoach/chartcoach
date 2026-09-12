@@ -14,6 +14,7 @@ import { loadSiteCatalog } from "./catalog-location";
 export async function chartcoachLlmPages({ root }: LlmPageSourceContext): Promise<LlmPageSource[]> {
   const catalog = await loadSiteCatalog(root);
   const guidelines = Array.from(catalog).sort((a, b) => a.title.localeCompare(b.title));
+
   const guidelinePages = guidelines.map((guideline): LlmPageSource => {
     const referencesBib = guideline.references.length > 0 ? guideline.references.join("\n\n") : "";
 

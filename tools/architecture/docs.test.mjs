@@ -17,6 +17,7 @@ async function checkNavigation(directory) {
     content.map((entry) => entry.name.replace(/\.mdx$/, "")).sort(),
     directory.pathname,
   );
+
   for (const entry of content) {
     if (entry.isDirectory()) await checkNavigation(new URL(`${entry.name}/`, directory));
   }

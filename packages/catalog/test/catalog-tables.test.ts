@@ -6,6 +6,7 @@ import { fixtureCatalog } from "./catalog-testkit";
 describe("catalog tables", () => {
   it("projects guideline records, sections, and parsed labels", async () => {
     const fixture = await fixtureCatalog();
+
     const catalog = new Catalog(
       [
         {
@@ -60,6 +61,7 @@ describe("catalog tables", () => {
 
   it("deduplicates source definitions and edges with deterministic authored BibTeX", async () => {
     const fixture = await fixtureCatalog();
+
     const records = ["second", "first"].map((id, index) => ({
       ...fixture.guidelines[0]!,
       id,
@@ -68,6 +70,7 @@ describe("catalog tables", () => {
         operations.bibliography.equivalent[index]!,
       ],
     }));
+
     const catalog = new Catalog(records, fixture.manifest);
     const references = catalog.table("references");
 
@@ -143,6 +146,7 @@ describe("catalog tables", () => {
       { name: "guideline_references", rows: 0 },
       { name: "guideline_sources", rows: 0 },
     ]);
+
     for (const table of info.tables) expect(catalog.table(table.name)).toEqual([]);
     expect(info.tables[0]?.columns).toEqual([
       { name: "id", type: "String" },
@@ -155,6 +159,7 @@ describe("catalog tables", () => {
         type: "List(Struct({'role': String, 'title': String, 'content': String}))",
       },
     ]);
+
     for (const name of ["missing", "constructor"]) {
       // @ts-expect-error Plain JavaScript callers can supply unknown table names.
       expect(() => catalog.table(name)).toThrow(

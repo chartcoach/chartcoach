@@ -13,5 +13,6 @@ export async function registerCatalog(
   for (const { sql, rows } of registrationPlan(catalog, options, "parameter")) {
     await connection.run(sql, [rows]);
   }
+
   return connection;
 }

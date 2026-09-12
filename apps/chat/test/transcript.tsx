@@ -21,18 +21,21 @@ export function Transcript({
   attachments: ReadonlyMap<string, ChartAttachment>;
 }) {
   const conversation = deriveConversation(messages, options);
+
   const runtime = useExternalStoreRuntime<MessageView>({
     messages: conversation.messages,
     convertMessage: (view, index) =>
       convertEveMessage(view.message, index, messages, { isRunning: false }),
     onNew: async () => {},
   });
+
   return (
     <AssistantRuntimeProvider runtime={runtime}>
       <ThreadPrimitive.Viewport>
         <ThreadPrimitive.Messages>
           {({ message }) => {
             const view = getExternalStoreMessages<MessageView>(message)[0];
+
             return view ? (
               <MessagePrimitive.Root>
                 <Message view={view} attachments={attachments} />

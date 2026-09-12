@@ -8,6 +8,7 @@ export const catalogSelectionSchema = z.strictObject({
 export type CatalogSelection = z.infer<typeof catalogSelectionSchema>;
 
 export const maxSelectionBytes = 64_000;
+
 export const maxSelectionHeaderLength = 8_000;
 
 export const catalogSelectionHeaderSchema = z

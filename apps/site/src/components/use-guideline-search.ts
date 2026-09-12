@@ -11,6 +11,7 @@ import {
 } from "@/lib/guideline-search-model";
 
 export type IndexStatus = "idle" | "loading" | "ready" | "failed";
+
 export type SearchStatus = "idle" | "searching" | "ready" | "empty";
 
 export type SearchResult = {
@@ -20,9 +21,13 @@ export type SearchResult = {
 };
 
 const RESULT_LIMIT = 8;
+
 const INDEX_REQUEST_TIMEOUT_MS = 30_000;
+
 const baseUrl = import.meta.env.BASE_URL;
+
 export const normalizedSearchBase = baseUrl.replace(/\/$/, "");
+
 const dbUrl = `${normalizedSearchBase}/assets/search-guidelines.json`;
 
 function createSearchDatabase() {
@@ -39,11 +44,13 @@ async function loadSearchDatabase() {
 
   try {
     const response = await fetch(dbUrl, { signal: controller.signal });
+
     if (!response.ok) throw new Error(`Search index request failed: ${response.status}`);
 
     const rawData: RawData = JSON.parse(await response.text());
     const db = createSearchDatabase();
     load(db, rawData);
+
     return db;
   } finally {
     clearTimeout(timeout);
@@ -52,6 +59,7 @@ async function loadSearchDatabase() {
 
 function getSearchDatabase() {
   databasePromise ??= loadSearchDatabase();
+
   return databasePromise;
 }
 
@@ -130,6 +138,7 @@ const useGuidelineSearchStore = createZustandStore<GuidelineSearchStore>((set) =
   setQuery: (query) =>
     set((state) => {
       const trimmedQuery = query.trim();
+
       return {
         query,
         searchStatus: trimmedQuery ? "searching" : "idle",
@@ -180,6 +189,7 @@ export function useGuidelineSearch() {
         searchStatus: state.searchStatus,
       })),
     );
+
   const {
     closeSearch,
     markIndexFailed,
@@ -207,6 +217,7 @@ export function useGuidelineSearch() {
       setQuery: state.setQuery,
     })),
   );
+
   const trimmedQuery = query.trim();
 
   const activeResult = useMemo(
@@ -247,6 +258,7 @@ export function useGuidelineSearch() {
       })
       .catch(() => {
         resetSearchDatabase();
+
         if (!cancelled) {
           startTransition(() => {
             markSearchFailed();

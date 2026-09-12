@@ -7,6 +7,7 @@ export function summarizeGuidelineReferences(references: readonly string[]): OgR
   return references
     .flatMap((bibtex) => {
       const library = Library.parseBibtex(bibtex, { recovery: "report" });
+
       return library
         .values()
         .filter((reference) => reference.title)

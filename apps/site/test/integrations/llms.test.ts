@@ -90,6 +90,7 @@ describe("llms", () => {
 
   it("supports custom output paths and disabling generated files", async () => {
     const { dist, root } = await createBuild();
+
     const integration = llms({
       name: "example:llms",
       site: "https://example.com/",
@@ -128,6 +129,7 @@ async function createBuild() {
   const root = pathToFileURL(`${path.join(directory, "site")}/`);
   const dist = path.join(directory, "dist");
   await fs.mkdir(dist, { recursive: true });
+
   return { dist, root };
 }
 

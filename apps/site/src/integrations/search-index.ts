@@ -5,9 +5,13 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 type BuildDoneOptions = HookParameters<"astro:build:done">;
+
 type ServerSetupOptions = HookParameters<"astro:server:setup">;
+
 type AstroPage = BuildDoneOptions["pages"][number];
+
 type MaybePromise<T> = T | PromiseLike<T>;
+
 type SearchMiddleware = (
   request: { url?: string },
   response: {
@@ -17,6 +21,7 @@ type SearchMiddleware = (
   },
   next: () => void,
 ) => Promise<void>;
+
 type SearchDevServer = {
   watcher: {
     add(paths: string[]): void;
@@ -26,13 +31,16 @@ type SearchDevServer = {
     use(handler: SearchMiddleware): void;
   };
 };
+
 type SearchConfigDoneOptions = {
   config: { root: URL };
 };
+
 type SearchServerSetupOptions = {
   server: SearchDevServer;
   logger: ServerSetupOptions["logger"];
 };
+
 type SearchBuildDoneOptions = {
   pages: AstroPage[];
   dir: URL;
@@ -65,6 +73,7 @@ function pagePath(pathname: string) {
 function generatedHtmlPath(dir: URL, pathname: string) {
   const cleanPathname = pathname.replace(/^\/+/, "").replace(/\/+$/, "");
   const relativePath = cleanPathname ? `${cleanPathname}/index.html` : "index.html";
+
   return fileURLToPath(new URL(relativePath, dir));
 }
 
@@ -91,9 +100,11 @@ async function loadPageDocuments<Document extends object>(
 
   for (const page of pages) {
     const pathname = pagePath(page.pathname);
+
     if (!config.include(pathname)) continue;
 
     const filePath = generatedHtmlPath(dir, page.pathname);
+
     if (!existsSync(filePath)) {
       logger.warn(`Skipping missing search index source: ${filePath}`);
       continue;
@@ -113,6 +124,7 @@ async function loadPageDocuments<Document extends object>(
 function requestedDatabase(requestUrl: string | undefined, names: string[]) {
   if (!requestUrl) return undefined;
   const pathname = new URL(requestUrl, "http://localhost").pathname;
+
   return names.find((name) => pathname.endsWith(`/assets/search-${name}.json`));
 }
 
@@ -129,6 +141,7 @@ export function searchIndex<Document extends object>(options: SearchIndexOptions
     if (!root) throw new Error("Astro config root is unavailable.");
 
     const cached = devDatabases.get(name);
+
     if (cached) return cached;
 
     const serialized = Promise.resolve(options.documents.load({ root }))
@@ -142,6 +155,7 @@ export function searchIndex<Document extends object>(options: SearchIndexOptions
           .info(
             `Prepared ${name} dev search DB with ${documents.length.toLocaleString()} entries.`,
           );
+
         return json;
       })
       .catch((cause: unknown) => {
@@ -150,6 +164,7 @@ export function searchIndex<Document extends object>(options: SearchIndexOptions
       });
 
     devDatabases.set(name, serialized);
+
     return serialized;
   }
 
@@ -162,6 +177,7 @@ export function searchIndex<Document extends object>(options: SearchIndexOptions
       "astro:server:setup": ({ server, logger }: SearchServerSetupOptions) => {
         if (root && options.documents.watchFiles) {
           const watchedFiles = [...options.documents.watchFiles({ root })];
+
           if (watchedFiles.length > 0) {
             server.watcher.add(watchedFiles);
             server.watcher.on("change", (changedPath) => {
@@ -173,8 +189,10 @@ export function searchIndex<Document extends object>(options: SearchIndexOptions
         server.middlewares.use(async (request, response, next) => {
           const name = requestedDatabase(request.url, Object.keys(options.databases));
           const config = name ? options.databases[name] : undefined;
+
           if (!name || !config) {
             next();
+
             return;
           }
 
@@ -196,6 +214,7 @@ export function searchIndex<Document extends object>(options: SearchIndexOptions
       "astro:build:done": async ({ pages, dir, logger }: SearchBuildDoneOptions) => {
         const searchLogger = logger.fork(integrationName);
         const assetsDir = fileURLToPath(new URL("assets/", dir));
+
         if (!existsSync(assetsDir)) mkdirSync(assetsDir, { recursive: true });
 
         await Promise.all(
@@ -207,6 +226,7 @@ export function searchIndex<Document extends object>(options: SearchIndexOptions
               options.documents,
               searchLogger,
             );
+
             const outputPath = path.join(assetsDir, `search-${name}.json`);
             writeFileSync(outputPath, await serializeDatabase(config, documents), "utf8");
             searchLogger.info(

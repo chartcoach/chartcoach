@@ -2,17 +2,22 @@ import { Moon, Sun } from "lucide-react";
 import { useEffect, useSyncExternalStore } from "react";
 
 const STORAGE_KEY = "chartcoach-theme";
+
 const THEME_CHANGE_EVENT = "chartcoach-theme-change";
 
 type Theme = "light" | "dark";
+
 type ThemeSnapshot = Theme | null;
+
 type ThemeToggleProps = {
   variant?: "icon" | "menu";
 };
 
 function getPreferredTheme(): Theme {
   const stored = localStorage.getItem(STORAGE_KEY);
+
   if (stored === "light" || stored === "dark") return stored;
+
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
@@ -23,6 +28,7 @@ function applyTheme(theme: Theme) {
 
 function getThemeSnapshot(): ThemeSnapshot {
   if (globalThis.window === undefined) return null;
+
   return getPreferredTheme();
 }
 

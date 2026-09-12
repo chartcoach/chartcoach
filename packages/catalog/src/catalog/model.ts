@@ -44,6 +44,7 @@ export type CatalogReleaseContext = Readonly<{
 }>;
 
 const releaseByCatalog = new WeakMap<Catalog, CatalogReleaseContext>();
+
 const descriptionByCatalog = new WeakMap<Catalog, DescriptionContext>();
 
 export type ArtifactOptions = Readonly<{ signal?: AbortSignal }>;
@@ -58,12 +59,15 @@ export class Catalog implements Iterable<Guideline> {
     const records = Array.from(guidelines, copyGuideline);
     const ownedManifest = copyCatalogManifest(manifest);
     const byId = new Map<string, Guideline>();
+
     for (const guideline of records) {
       if (byId.has(guideline.id)) {
         throw new CatalogError(`Catalog contains duplicate guideline entry ID: ${guideline.id}.`);
       }
+
       byId.set(guideline.id, guideline);
     }
+
     validateManifestCoverage(records, ownedManifest);
 
     this.guidelines = Object.freeze(records);
@@ -86,17 +90,20 @@ export class Catalog implements Iterable<Guideline> {
 
   async artifact(path: string, options: ArtifactOptions = {}): Promise<Uint8Array> {
     const context = releaseByCatalog.get(this);
+
     if (!context) {
       throw new CatalogError("Artifact access requires a catalog release.", {
         code: "unavailable_capability",
       });
     }
+
     if (!Object.hasOwn(context.release.artifacts, path)) {
       throw new CatalogError(`Unknown release artifact: ${path}`, {
         code: "lookup",
         details: { path, available: Object.keys(context.release.artifacts) },
       });
     }
+
     return context.artifactLoader(path, options.signal);
   }
 
@@ -106,6 +113,7 @@ export class Catalog implements Iterable<Guideline> {
 
   require(id: string): Guideline {
     const guideline = this.get(id);
+
     if (!guideline) {
       throw new CatalogError(`Unknown guideline entry ID: ${id}`, {
         code: "lookup",
@@ -113,6 +121,7 @@ export class Catalog implements Iterable<Guideline> {
         hints: ["Call `catalog.query()` to inspect guideline entry IDs."],
       });
     }
+
     return guideline;
   }
 
@@ -178,6 +187,7 @@ export function catalogWithRelease(catalog: Catalog, context: CatalogReleaseCont
       profileCache: new Map(),
     }),
   );
+
   return catalog;
 }
 
@@ -193,16 +203,23 @@ function emptyDescriptionContext(): DescriptionContext {
 export function isGuidelineInput(value: JsonValue): value is GuidelineInput {
   if (!isJsonObject(value)) return false;
   const { description, id, labels, references, sections, title } = value;
+
   if (!isJsonString(id) || id.length === 0) return false;
+
   if (!isJsonString(title) || !isJsonString(description)) return false;
+
   if (!isStringArray(labels) || !isStringArray(references)) return false;
+
   if (!Array.isArray(sections) || sections.length === 0 || !sections.every(isGuidelineSection)) {
     return false;
   }
+
   const dangling = sections.flatMap((section, index) =>
     section.role === "__dangling__" ? [index] : [],
   );
+
   if (dangling.length > 0 && (dangling.length !== 1 || dangling[0] !== 0)) return false;
+
   try {
     return labels.every((label) => normalizeLabel(label) === label);
   } catch {
@@ -214,6 +231,7 @@ function copyGuideline(value: JsonValue): Guideline {
   if (!isGuidelineInput(value)) {
     throw new CatalogError("Invalid guideline record.");
   }
+
   const sections = Object.freeze(
     value.sections.map((section) =>
       Object.freeze({
@@ -223,6 +241,7 @@ function copyGuideline(value: JsonValue): Guideline {
       }),
     ),
   );
+
   return Object.freeze({
     id: value.id,
     title: value.title,
@@ -237,6 +256,7 @@ function copyGuideline(value: JsonValue): Guideline {
 function isGuidelineSection(value: JsonValue): value is GuidelineSection {
   if (!isJsonObject(value)) return false;
   const { content, role, title } = value;
+
   return (
     isJsonString(role) &&
     role.length > 0 &&
@@ -257,6 +277,7 @@ function bodyFromSections(sections: readonly GuidelineSection[]): string {
   return sections
     .map((section) => {
       if (section.role === "__dangling__") return section.content;
+
       return `## ${section.title} <!-- role: ${section.role} -->\n\n${section.content}`;
     })
     .join("\n\n");

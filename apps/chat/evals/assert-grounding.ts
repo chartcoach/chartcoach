@@ -16,37 +16,45 @@ const readResult = z.object({
 
 export function presentedAnswer(t: EveEvalContext, turn: EveEvalTurn) {
   turn.succeeded();
+
   const accepted = turn.toolCalls.filter(
     (call) => call.name === "present_answer" && call.status === "completed",
   );
+
   t.check(accepted.length, equals(1));
   t.check(
     turn.toolCalls.filter((call) => call.name !== "present_answer" && call.status === "failed")
       .length,
     equals(0),
   );
+
   return answerSchema.parse(accepted[0]?.output);
 }
 
 export function assertGrounding(t: EveEvalContext, turn: EveEvalTurn, context: string) {
   const answer = presentedAnswer(t, turn);
   turn.calledTool("load_skill");
+
   const retrievals = turn.toolCalls.filter(
     (call) =>
       call.status === "completed" &&
       (call.name === "search_guidelines" || call.name === "query_catalog"),
   );
+
   t.check(
     retrievals.length,
     satisfies<number>((count) => count >= 1 && count <= 3, "uses a bounded retrieval path"),
   );
   turn.calledTool("read_guidelines");
+
   const guidelines = new Map(
     turn.toolCalls.flatMap((call) => {
       if (call.name !== "read_guidelines" || call.status !== "completed") return [];
+
       return readResult.parse(call.output).guidelines.map((item) => [item.id, item] as const);
     }),
   );
+
   t.check(
     answer,
     satisfies<Answer>(
@@ -71,5 +79,6 @@ export function assertGrounding(t: EveEvalContext, turn: EveEvalTurn, context: s
       },
     )
     .gate(1);
+
   return answer;
 }

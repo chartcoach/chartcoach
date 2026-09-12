@@ -28,6 +28,7 @@ import {
 } from "./catalog-testkit";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 const invalidRowsPath = path.join(
   __dirname,
   "..",
@@ -66,6 +67,7 @@ describe("catalog loading", () => {
     const manifestText = await readFile(manifestPath, "utf8");
 
     const typedArrayCatalog = await loadCatalogData({ entries, manifestText });
+
     const asyncBufferCatalog = await loadCatalogData({
       entries: {
         byteLength: entries.byteLength,
@@ -96,6 +98,7 @@ describe("catalog loading", () => {
 describe("catalog release loading", () => {
   it("verifies caller-provided release bytes", async () => {
     const fixture = await fixtureRelease();
+
     const catalog = await loadCatalog({
       entries: fixture.entries,
       manifest: Buffer.from(fixture.manifest),
@@ -111,6 +114,7 @@ describe("catalog release loading", () => {
 
   it("bounds caller-provided release artifacts", async () => {
     const fixture = await fixtureRelease();
+
     const release = releaseWithArtifact(fixture.release, "entries.parquet", {
       bytes: 64 * 1024 * 1024 + 1,
     });
@@ -157,9 +161,11 @@ describe("catalog release loading", () => {
 
   it("opens an exact release below a custom URL prefix", async () => {
     const fixture = await fixtureRelease();
+
     const releaseUrl =
       `https://catalog.example.test/team/artifacts/catalog/releases/` +
       `${fixture.release.digest}/release.json`;
+
     const responses = new Map<string, BodyInit>([
       [releaseUrl, JSON.stringify(fixture.release)],
       [new URL("MANIFEST.md", releaseUrl).toString(), fixture.manifest],
@@ -187,6 +193,7 @@ describe("catalog release loading", () => {
 
   it("rejects profile metadata without its index archive", async () => {
     const fixture = await fixtureRelease();
+
     const artifacts = {
       ...fixture.release.artifacts,
       "profiles/minilm-normalized/profile.json": {
@@ -194,6 +201,7 @@ describe("catalog release loading", () => {
         bytes: 1,
       },
     };
+
     const release = {
       schema_version: 1 as const,
       artifacts,
@@ -220,9 +228,12 @@ describe("catalog release loading", () => {
 
   it("composes a caller abort signal with catalog requests", async () => {
     const controller = new AbortController();
+
     const fetch: FetchLike = async (_input, init) => {
       controller.abort();
+
       if (init?.signal?.aborted) throw new DOMException("Aborted", "AbortError");
+
       return new Response();
     };
 
@@ -249,10 +260,12 @@ describe("catalog release loading", () => {
   it("rejects a manifest that is not valid UTF-8", async () => {
     const fixture = await fixtureRelease();
     const manifest = new Uint8Array([0xc3, 0x28]);
+
     const release = releaseWithArtifact(fixture.release, "MANIFEST.md", {
       bytes: manifest.byteLength,
       sha256: createHash("sha256").update(manifest).digest("hex"),
     });
+
     const releaseUrl = releaseUrlFor(release.digest);
     const responses = releaseResponses({ ...fixture, release });
     responses.set(new URL("MANIFEST.md", releaseUrl).toString(), manifest);
@@ -274,9 +287,11 @@ describe("catalog release loading", () => {
 
   it("keeps request failures independent of release URL credentials", async () => {
     const digest = "a".repeat(64);
+
     const releaseUrl =
       `https://catalog-user:catalog-password@artifacts.example.test/catalog/releases/` +
       `${digest}/release.json?signed=token#fragment`;
+
     const fetch = async () => {
       throw new Error(`Failed to fetch ${releaseUrl}`);
     };
@@ -288,9 +303,11 @@ describe("catalog release loading", () => {
 
   it("exposes a sanitized exact release URL", async () => {
     const fixture = await fixtureRelease();
+
     const releaseUrl =
       `https://catalog-user:catalog-password@artifacts.example.test/catalog/releases/` +
       `${fixture.release.digest}/release.json?signed=token#fragment`;
+
     const responses = new Map<string, BodyInit>([
       [releaseUrl, JSON.stringify(fixture.release)],
       [new URL("MANIFEST.md", releaseUrl).toString(), fixture.manifest],
@@ -307,6 +324,7 @@ describe("catalog release loading", () => {
   it("cancels unsuccessful response bodies", async () => {
     const digest = "a".repeat(64);
     let cancelled = false;
+
     const fetch: FetchLike = async () =>
       new Response(
         new ReadableStream({
@@ -341,6 +359,7 @@ describe("release records", () => {
         artifacts: { ...artifacts, "thumbnails/overview.png": opaque },
       }).artifacts["thumbnails/overview.png"],
     ).toEqual(opaque);
+
     for (const path of ["MANIFEST.md", "entries.parquet"]) {
       const { [path]: _, ...missing } = artifacts;
       expect(() =>

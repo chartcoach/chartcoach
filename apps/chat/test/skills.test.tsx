@@ -18,6 +18,7 @@ describe("canonical agent skills", () => {
         new URL(`../../../skills/${name}/SKILL.md`, import.meta.url),
         "utf8",
       );
+
       expect(canonical).toContain(`description: ${definition.description}`);
       expect(canonical.slice(canonical.indexOf("\n---", 4) + 4).trim()).toBe(definition.markdown);
     }

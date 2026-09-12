@@ -15,9 +15,11 @@ const decompress = promisify(gunzip);
 export async function decodeSelection(value: string): Promise<CatalogSelection> {
   const header = catalogSelectionHeaderSchema.parse(value);
   const bytes = Buffer.from(header, "base64");
+
   if (bytes.toString("base64") !== header)
     throw new Error("The catalog selection header is not canonical base64.");
   const json = await decompress(bytes, { maxOutputLength: maxSelectionBytes });
+
   return catalogSelectionSchema.parse(
     JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(json)),
   );

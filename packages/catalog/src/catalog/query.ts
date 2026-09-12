@@ -24,10 +24,12 @@ export function queryCatalog(
   if (Object.prototype.toString.call(options) !== "[object Object]") {
     throw new CatalogError("Query options must be an object.");
   }
+
   const ids = stringArray(options.ids, "ids");
   const labels = stringArray(options.labels, "labels");
   const labelPrefixes = stringArray(options.labelPrefixes, "labelPrefixes");
   const limit = options.limit ?? 50;
+
   if (!Number.isSafeInteger(limit) || limit < 1) {
     throw new CatalogError("Query limit must be at least 1.");
   }
@@ -36,12 +38,15 @@ export function queryCatalog(
   validateLabelPrefixes(catalog, labelPrefixes);
   const selected = ids.length > 0 ? ids.map((id) => catalog.require(id)) : [...catalog.guidelines];
   let contains: string | undefined;
+
   if (options.contains !== undefined) {
     if (!isJsonString(options.contains)) {
       throw new CatalogError("Query contains must be a string.");
     }
+
     if (options.contains.length > 0) {
       contains = normalizeSearchText(options.contains);
+
       if (!contains) {
         throw new CatalogError(
           "contains must not consist only of whitespace, hyphens, or underscores.",
@@ -72,6 +77,7 @@ export function queryCatalog(
 function validateLabels(catalog: Catalog, labels: readonly string[]): void {
   const available = new Set(catalog.labels());
   const missing = Array.from(new Set(labels.filter((label) => !available.has(label)))).sort();
+
   if (missing.length === 0) return;
   throw new CatalogError(`Unknown label(s): ${missing.join(", ")}`, {
     code: "lookup",
@@ -82,9 +88,11 @@ function validateLabels(catalog: Catalog, labels: readonly string[]): void {
 
 function validateLabelPrefixes(catalog: Catalog, prefixes: readonly string[]): void {
   const available = catalog.labels();
+
   const missing = Array.from(
     new Set(prefixes.filter((prefix) => !available.some((label) => label.startsWith(prefix)))),
   ).sort();
+
   if (missing.length === 0) return;
   throw new CatalogError(`No labels match prefix(es): ${missing.join(", ")}`, {
     code: "lookup",
@@ -95,9 +103,11 @@ function validateLabelPrefixes(catalog: Catalog, prefixes: readonly string[]): v
 
 function stringArray(value: readonly string[] | undefined, name: string): readonly string[] {
   if (value === undefined) return Object.freeze([]);
+
   if (!Array.isArray(value) || !value.every(isJsonString)) {
     throw new CatalogError(`${name} must be an array of strings.`);
   }
+
   return value;
 }
 

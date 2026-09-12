@@ -63,30 +63,36 @@ export async function describeCatalog(
   if (Object.prototype.toString.call(options) !== "[object Object]") {
     throw new CatalogError("Description options must be an object.");
   }
+
   const identity = await catalogIdentity(catalog);
   const selected = selectProfile(context.profiles, options.profile);
   let profile: ProfileInfo | null = null;
+
   if (selected) {
     options.signal?.throwIfAborted();
     const metadata = await loadProfile(context, selected, options.signal);
+
     if (metadata.entries_digest !== identity.entriesDigest) {
       throw new CatalogError("Profile entries digest does not match the catalog entries.", {
         code: "incompatible_profile",
         details: { profile: selected.name },
       });
     }
+
     if (metadata.manifest_digest !== identity.manifestDigest) {
       throw new CatalogError("Profile manifest digest does not match MANIFEST.md.", {
         code: "incompatible_profile",
         details: { profile: selected.name },
       });
     }
+
     if ((metadata.projection === null) !== (selected.projection === null)) {
       throw new CatalogError("Profile projection metadata does not match the release inventory.", {
         code: "incompatible_profile",
         details: { profile: selected.name },
       });
     }
+
     context.profileCache.set(selected.name, metadata);
     profile = profileInfo(selected.name, metadata);
   }
@@ -106,13 +112,17 @@ export async function describeCatalog(
 
 async function catalogIdentity(catalog: Catalog): Promise<CatalogIdentity> {
   const cached = identityCache.get(catalog);
+
   if (cached) return cached;
+
   const [entriesDigest, catalogManifestDigest] = await Promise.all([
     catalogEntriesDigest(catalog.guidelines),
     manifestDigest(catalog.manifest.markdown),
   ]);
+
   const identity = Object.freeze({ entriesDigest, manifestDigest: catalogManifestDigest });
   identityCache.set(catalog, identity);
+
   return identity;
 }
 
@@ -121,8 +131,10 @@ function selectProfile(
   name: string | undefined,
 ): ReleaseProfile | undefined {
   if (name === undefined) return undefined;
+
   if (!name) throw new CatalogError("Profile must be a non-empty string.");
   const profile = profiles.find((item) => item.name === name);
+
   if (profile) return profile;
   throw new CatalogError(`Unknown profile: ${name}`, {
     code: "lookup",
@@ -139,7 +151,9 @@ async function loadProfile(
   signal?: AbortSignal,
 ): Promise<ProfileMetadata> {
   const cached = context.profileCache.get(profile.name);
+
   if (cached) return cached;
+
   if (!context.profileLoader) {
     throw new CatalogError("Profile metadata loading is unavailable for caller-provided bytes.", {
       code: "unavailable_capability",
@@ -147,6 +161,7 @@ async function loadProfile(
       hints: ["Use openCatalog with an HTTP or HTTPS release URL."],
     });
   }
+
   return context.profileLoader(profile, signal);
 }
 

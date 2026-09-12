@@ -10,6 +10,7 @@ it("transmits the exact Unicode selection as a compressed ASCII header", async (
     catalogId,
     sql: "SELECT DISTINCT g.id FROM catalog_entries g WHERE g.title = 'Bárbara’s 測定'",
   };
+
   const header = await encodeCatalogSelection(selection);
   expect(JSON.parse(gunzipSync(Buffer.from(header, "base64")).toString("utf8"))).toEqual(selection);
   expect(header).toMatch(/^[A-Za-z0-9+/]+={0,2}$/);

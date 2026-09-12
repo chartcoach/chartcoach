@@ -4,14 +4,18 @@ import { DuckDBInstance } from "@duckdb/node-api";
 
 export async function describeTables(db: DuckDBInstance, tables: readonly TableInfo[]) {
   const connection = await db.connect();
+
   try {
     const scoped: TableInfo[] = [];
+
     for (const table of tables) {
       const result = await connection.runAndReadAll(
         `SELECT count(*)::INTEGER FROM "${table.name}"`,
       );
+
       scoped.push({ ...table, rows: Number(result.getRowsJson()[0]![0]) });
     }
+
     return scoped;
   } finally {
     connection.closeSync();
@@ -29,11 +33,14 @@ export async function materialize(catalog: Catalog, ids?: readonly string[]) {
     autoload_known_extensions: "false",
     allow_persistent_secrets: "false",
   });
+
   const connection = await db.connect().catch((error) => {
     db.closeSync();
     throw error;
   });
+
   let complete = false;
+
   try {
     await registerCatalog(connection, catalog, { ids });
     await connection.run(
@@ -41,9 +48,11 @@ export async function materialize(catalog: Catalog, ids?: readonly string[]) {
     );
     await connection.run("SET lock_configuration = true");
     complete = true;
+
     return db;
   } finally {
     connection.closeSync();
+
     if (!complete) db.closeSync();
   }
 }

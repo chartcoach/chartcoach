@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 const facetIds = z.array(z.number().int().positive()).max(100);
+
 const catalogIdSchema = z.string().regex(/^[a-f0-9]{64}$/);
 
 export const catalogFiltersSchema = z

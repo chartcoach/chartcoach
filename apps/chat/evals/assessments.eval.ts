@@ -17,6 +17,7 @@ export default defineEval({
           "My bar chart must communicate absolute magnitudes at a glance. It compares values 91, 93, and 95, but its value axis starts at 90, so displayed bar lengths are 1, 3, and 5. Assess this baseline choice using the catalog and give one finding.",
       },
     ] as const;
+
     for (const scenario of cases) {
       const turn = await t.newSession().send(scenario.prompt);
       const answer = assertGrounding(t, turn, scenario.prompt);
@@ -28,11 +29,13 @@ export default defineEval({
         ),
       );
     }
+
     const uncertain = await t
       .newSession()
       .send(
         "The screenshot of my bar chart is cropped so the axis baseline and scale labels are not visible. I do not know their values. Can you determine whether it violates the zero-baseline guideline?",
       );
+
     const answer = presentedAnswer(t, uncertain);
     t.check(
       answer,

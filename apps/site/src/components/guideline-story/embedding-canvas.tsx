@@ -97,15 +97,18 @@ export function EmbeddingCanvas() {
 
   useEffect(() => {
     const canvas = canvasRef.current;
+
     if (!canvas) return;
 
     const context = canvas.getContext("2d");
+
     if (!context) return;
 
     const draw = () => {
       resizeCanvas(canvas, context);
       drawEmbedding(context, canvas, hoveredRole);
     };
+
     const observer = new ResizeObserver(draw);
     const themeObserver = new MutationObserver(draw);
     observer.observe(canvas);
@@ -123,12 +126,14 @@ export function EmbeddingCanvas() {
 
   function handlePointerMove(event: React.PointerEvent<HTMLCanvasElement>) {
     const canvas = canvasRef.current;
+
     if (!canvas) return;
 
     const hit = findHoveredSection(canvas, event);
     canvas.style.cursor = hit ? "pointer" : "default";
     setHover((current) => {
       if (!hit) return current ? null : current;
+
       if (
         current?.point.role === hit.point.role &&
         current.left === hit.left &&
@@ -136,12 +141,14 @@ export function EmbeddingCanvas() {
       ) {
         return current;
       }
+
       return hit;
     });
   }
 
   function handlePointerLeave() {
     const canvas = canvasRef.current;
+
     if (canvas) canvas.style.cursor = "default";
     setHover(null);
   }
@@ -418,9 +425,11 @@ function findHoveredSection(
   const bounds = getPlotBounds(rect.width, rect.height);
 
   let best: { point: SectionPoint; distance: number; projected: Point2D } | null = null;
+
   for (const point of sectionPoints) {
     const projected = projectPoint(point, bounds);
     const distance = Math.hypot(projected.x - x, projected.y - y);
+
     if (distance <= 17 && (!best || distance < best.distance)) {
       best = { point, distance, projected };
     }
@@ -496,10 +505,12 @@ function withAlpha(color: string, alpha: number) {
             .map((value) => value + value)
             .join("")
         : color.slice(1);
+
     const value = Number.parseInt(hex, 16);
     const red = (value >> 16) & 255;
     const green = (value >> 8) & 255;
     const blue = value & 255;
+
     return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
   }
 

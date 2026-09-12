@@ -6,8 +6,11 @@ import mbzuaiLogo from "@/assets/logos/mbzuai.svg?raw";
 import universityViennaLogo from "@/assets/logos/university-vienna.svg?raw";
 
 type SvgIconName = "github" | "eth-zurich" | "carnegie-mellon" | "university-vienna" | "mbzuai";
+
 type SvgIconTone = "mono" | "color";
+
 type LogoIconName = SvgIconName;
+
 type BrandColor = {
   light: string;
   dark: string;
@@ -56,12 +59,19 @@ const brandColors = {
 } satisfies Record<LogoIconName, BrandColor>;
 
 const { name, tone = "mono", title } = Astro.props;
+
 const className = Astro.props.class;
+
 const classes = ["svg-icon", className].filter(Boolean).join(" ");
+
 const hidden = title ? undefined : "true";
+
 const logo = logoMarkup[name];
+
 const colors: BrandColor = brandColors[name];
+
 const colorMode = tone === "color";
+
 const style = colors
   ? [
       `--svg-icon-primary:${colorMode ? "var(--svg-icon-brand-primary)" : "currentColor"}`,

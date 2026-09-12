@@ -134,17 +134,22 @@ export function catalogTable<Name extends TableName>(
       hints: ["Call catalog.describe() to inspect catalog tables."],
     });
   }
+
   let tables = tablesByCatalog.get(catalog);
+
   if (!tables) {
     tables = new Map();
     tablesByCatalog.set(catalog, tables);
   }
+
   let rows = tables.get(name);
+
   if (!rows) {
     rows = tableBuilders[name](catalog);
     Object.freeze(rows);
     tables.set(name, rows);
   }
+
   // SAFETY: Each cached value comes from the builder indexed by the same validated table name.
   return rows as CatalogTables[Name];
 }
@@ -177,6 +182,7 @@ const tableBuilders: { [Name in TableName]: (catalog: Catalog) => CatalogTables[
       .flatMap((guideline) =>
         [...new Set(guideline.labels)].map((label) => {
           const parsed = parseLabel(label);
+
           return Object.freeze({
             guideline_id: guideline.id,
             label,
@@ -220,8 +226,10 @@ const tableBuilders: { [Name in TableName]: (catalog: Catalog) => CatalogTables[
     const references = new Map(
       catalog.table("references").map((reference) => [reference.id, reference]),
     );
+
     return catalog.table("guideline_references").map(({ guideline_id, reference_id }) => {
       const reference = references.get(reference_id)!;
+
       return Object.freeze({
         guideline_id,
         reference_id,

@@ -11,22 +11,29 @@ import { writeClipboard } from "@/components/clipboard";
 const INSTALL_COMMAND = "npx skills add chartcoach/skills";
 
 type CopyState = "idle" | "copied" | "failed";
+
 type IconProps = SVGProps<SVGSVGElement>;
+
 type UseCase = {
   id: string;
   label: string;
   instruction: string;
 };
+
 type ShellLineProps = {
   line: string;
 };
+
 type MenuChevronProps = {
   open: boolean;
 };
+
 type MenuPlacement = "above" | "below";
+
 type AgentStyle = CSSProperties & {
   "--agent-color": string;
 };
+
 type AgentIcon =
   | {
       kind: "component";
@@ -37,6 +44,7 @@ type AgentIcon =
       display: "image" | "mask";
       src: string;
     };
+
 type Agent = {
   id: string;
   label: string;
@@ -139,9 +147,13 @@ const AGENTS = [
 ] as const satisfies readonly Agent[];
 
 const AGENT_MENU_ITEM_HEIGHT = 40;
+
 const AGENT_MENU_CHROME_HEIGHT = 10;
+
 const AGENT_MENU_GAP = 8;
+
 const AGENT_MENU_VIEWPORT_PADDING = 12;
+
 const AGENT_MENU_HEIGHT = AGENTS.length * AGENT_MENU_ITEM_HEIGHT + AGENT_MENU_CHROME_HEIGHT;
 
 const USE_CASES = [
@@ -173,6 +185,7 @@ const USE_CASES = [
 ] as const satisfies readonly UseCase[];
 
 type AgentId = (typeof AGENTS)[number]["id"];
+
 type UseCaseId = (typeof USE_CASES)[number]["id"];
 
 function AgentLogo({ agent, className }: { agent: (typeof AGENTS)[number]; className: string }) {
@@ -208,16 +221,19 @@ function AgentLogo({ agent, className }: { agent: (typeof AGENTS)[number]; class
 
   const Icon = agent.icon.Component;
   const style = { color: agent.color } satisfies CSSProperties;
+
   return <Icon className={className} data-agent-icon={agent.id} style={style} />;
 }
 
 function ShellLine({ line }: ShellLineProps) {
   const match = line.match(/^(\S+)(\s+)(.*)$/);
+
   if (!match) return <span className="text-code-fg">{line}</span>;
 
   const [, command, spacing, rest] = match;
   const quoteStarts = [rest.indexOf("'"), rest.indexOf('"')].filter((index) => index >= 0);
   const quotedTextStart = quoteStarts.length > 0 ? Math.min(...quoteStarts) : -1;
+
   if (quotedTextStart === -1) {
     return (
       <>
@@ -259,8 +275,10 @@ function useMenuDisclosure() {
   const triggerRef = useRef<HTMLButtonElement | null>(null);
 
   const close = useCallback(() => setOpen(false), []);
+
   const updatePlacement = useCallback(() => {
     const trigger = triggerRef.current;
+
     if (!trigger) return;
 
     const rect = trigger.getBoundingClientRect();
@@ -269,6 +287,7 @@ function useMenuDisclosure() {
     const needsAbove = spaceBelow < AGENT_MENU_HEIGHT + AGENT_MENU_GAP && spaceAbove > spaceBelow;
     setPlacement(needsAbove ? "above" : "below");
   }, []);
+
   const updatePlacementRef = useRef(updatePlacement);
 
   useEffect(() => {
@@ -278,6 +297,7 @@ function useMenuDisclosure() {
   const toggle = useCallback(() => {
     setOpen((current) => {
       if (!current) updatePlacement();
+
       return !current;
     });
   }, [updatePlacement]);
@@ -287,7 +307,9 @@ function useMenuDisclosure() {
 
     function handlePointerDown(event: PointerEvent) {
       const target = event.target;
+
       if (!(target instanceof Node)) return;
+
       if (!menuRef.current?.contains(target)) close();
     }
 
@@ -324,8 +346,10 @@ export function InstallCopy() {
   const agentMenuId = useId();
   const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const agentMenu = useMenuDisclosure();
+
   const agentMenuPlacementClass =
     agentMenu.placement === "above" ? "bottom-[calc(100%+0.45rem)]" : "top-[calc(100%+0.45rem)]";
+
   const activeAgent = AGENTS.find((agent) => agent.id === activeAgentId) ?? AGENTS[1];
   const activeUseCase = USE_CASES.find((useCase) => useCase.id === activeUseCaseId) ?? USE_CASES[0];
   const agentCommand = activeAgent.command(activeUseCase.instruction);
@@ -398,6 +422,7 @@ export function InstallCopy() {
               >
                 {AGENTS.map((agent) => {
                   const selected = activeAgentId === agent.id;
+
                   return (
                     <button
                       key={agent.id}
@@ -433,6 +458,7 @@ export function InstallCopy() {
           >
             {USE_CASES.map((useCase, index) => {
               const selected = activeUseCaseId === useCase.id;
+
               return (
                 <button
                   key={useCase.id}

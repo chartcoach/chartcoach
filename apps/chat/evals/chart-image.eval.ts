@@ -8,6 +8,7 @@ export default defineEval({
   async test(t) {
     const image = resolve("evals/fixtures/chart.png");
     const data = (await readFile(image)).toString("base64");
+
     const turn = await t.send([
       {
         type: "text",
@@ -20,11 +21,13 @@ export default defineEval({
         filename: "chart.png",
       },
     ]);
+
     const answer = assertGrounding(
       t,
       turn,
       "The user supplied a chart image and asked for applicable guideline feedback. Image observations have separate fixture checks. Judge whether each stated context and action meet the cited guideline's conditions, taking the context as given for this grounding check.",
     );
+
     const observations = answer.points.map((item) => item.context).join(" ");
     t.check(
       observations,

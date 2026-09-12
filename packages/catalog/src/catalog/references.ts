@@ -5,6 +5,7 @@ import { isJsonString, type JsonObject } from "./json";
 import type { Catalog } from "./model";
 
 await init();
+
 const citationStyle = Style.load("apa");
 
 const DEFAULT_GUIDELINE_URL_TEMPLATE = "https://chartcoach.dev/guidelines/{id}";
@@ -91,9 +92,11 @@ export function sourceRecords(
 ): readonly (MinimalSourceRecord | FullSourceRecord)[] {
   const index = referenceIndex(catalog);
   const ids = index.idsByGuideline.get(guidelineId) ?? [];
+
   return Object.freeze(
     ids.map((id) => {
       const reference = index.byId.get(id)!;
+
       return detail === "minimal" ? minimalSource(reference) : fullSource(guidelineId, reference);
     }),
   );
@@ -103,27 +106,34 @@ export function citationRecords(catalog: Catalog, options: CiteOptions): readonl
   if (Object.prototype.toString.call(options) !== "[object Object]") {
     throw new CatalogError("Citation options must be an object.");
   }
+
   if (!Array.isArray(options.ids) || !options.ids.every(isJsonString)) {
     throw new CatalogError("ids must be an array of strings.");
   }
+
   const urlTemplate = options.urlTemplate ?? DEFAULT_GUIDELINE_URL_TEMPLATE;
+
   if (!isJsonString(urlTemplate) || !urlTemplate.includes("{id}")) {
     throw new CatalogError("Guideline URL template must include `{id}`.", {
       hints: [`Use a template such as \`${DEFAULT_GUIDELINE_URL_TEMPLATE}\`.`],
     });
   }
+
   if (options.ids.length === 0) return Object.freeze([]);
 
   const index = referenceIndex(catalog);
+
   return Object.freeze(
     options.ids.map((id) => {
       const guideline = catalog.require(id);
       const url = urlTemplate.replace("{id}", id);
+
       const sources = Object.freeze(
         (index.idsByGuideline.get(id) ?? []).map((referenceId) =>
           citationSource(index.byId.get(referenceId)!),
         ),
       );
+
       return Object.freeze({
         id,
         title: guideline.title,
@@ -137,20 +147,26 @@ export function citationRecords(catalog: Catalog, options: CiteOptions): readonl
 
 export function referenceIndex(catalog: Catalog): ReferenceIndex {
   const cached = indexes.get(catalog);
+
   if (cached) return cached;
 
   const byId = new Map<string, ParsedReference>();
   const parsed = new Map<string, ParsedReference>();
   const idsByGuideline = new Map<string, readonly string[]>();
+
   for (const guideline of catalog.guidelines) {
     const ids = new Set<string>();
+
     for (const bibtex of guideline.references) {
       let reference = parsed.get(bibtex);
+
       if (!reference) {
         reference = parseReference(bibtex);
         parsed.set(bibtex, reference);
       }
+
       const previous = byId.get(reference.id);
+
       if (previous && previous.fingerprint !== reference.fingerprint) {
         throw new CatalogError(
           `Conflicting BibTeX definitions for reference id: ${reference.id}.`,
@@ -159,16 +175,20 @@ export function referenceIndex(catalog: Catalog): ReferenceIndex {
           },
         );
       }
+
       byId.set(
         reference.id,
         previous && compareUnicode(previous.bibtex, reference.bibtex) <= 0 ? previous : reference,
       );
       ids.add(reference.id);
     }
+
     idsByGuideline.set(guideline.id, Object.freeze([...ids].sort(compareUnicode)));
   }
+
   const created = Object.freeze({ byId, idsByGuideline });
   indexes.set(catalog, created);
+
   return created;
 }
 
@@ -177,12 +197,15 @@ function parseReference(bibtex: string): ParsedReference {
     return parsedReference(bibtex);
   } catch (error) {
     if (error instanceof CatalogError) throw error;
+
     const details: JsonObject = {
       exception_type: error instanceof Error ? error.name : "Error",
     };
+
     if (error instanceof ParseError) {
       details.diagnostics = error.diagnostics.map((diagnostic) => ({ ...diagnostic }));
     }
+
     throw new CatalogError("BibTeX reference could not be parsed.", {
       details,
     });
@@ -192,12 +215,15 @@ function parseReference(bibtex: string): ParsedReference {
 function parsedReference(bibtex: string): ParsedReference {
   const document = BibDocument.parse(bibtex);
   const entries = document.resolve();
+
   if (entries.length !== 1) {
     throw new CatalogError(`Expected one BibTeX entry, found ${entries.length}.`);
   }
+
   const entry = entries[0]!;
   const properties = entry.fields;
   const authorsText = textOrNull(properties.author);
+
   const authors = Object.freeze(
     authorsText === null
       ? []
@@ -206,6 +232,7 @@ function parsedReference(bibtex: string): ParsedReference {
           .map((author) => author.trim())
           .filter(Boolean),
   );
+
   return Object.freeze({
     id: entry.key,
     bibtex,
@@ -275,9 +302,11 @@ function citationSource(reference: ParsedReference): CitationSource {
     doi: reference.doi,
     url: reference.url,
   };
+
   const locators = [source.doi ? doiUrl(source.doi) : null, source.url].filter(
     (value): value is string => value !== null && !reference.citation.includes(value),
   );
+
   return Object.freeze({
     ...source,
     citation: [reference.citation, ...new Set(locators)].join(" "),
@@ -287,15 +316,18 @@ function citationSource(reference: ParsedReference): CitationSource {
 function textOrNull(value: string | undefined): string | null {
   if (value === undefined) return null;
   const text = value.trim();
+
   return text || null;
 }
 
 function referenceUrl(properties: Readonly<Record<string, string>>): string | null {
   const explicit = textOrNull(properties.url);
   const value = explicit ?? textOrNull(properties.howpublished);
+
   if (value === null) return null;
   const wrapped = /^\\url\{([^{}]*)\}$/.exec(value);
   const candidate = wrapped?.[1] ?? value;
+
   return /^https?:\/\/[^\s{}\\/?#]+[^\s{}\\]*$/i.test(candidate) ? candidate : explicit;
 }
 
