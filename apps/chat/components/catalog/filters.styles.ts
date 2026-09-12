@@ -93,16 +93,6 @@ export const styles = stylex.create({
     paddingBlock: 8,
     fontSize: 16,
   },
-  author: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
-    minHeight: 44,
-    borderBottomWidth: 1,
-    borderBottomStyle: "solid",
-    borderBottomColor: colors.border,
-  },
   name: {
     fontSize: 13,
     lineHeight: 1.5,

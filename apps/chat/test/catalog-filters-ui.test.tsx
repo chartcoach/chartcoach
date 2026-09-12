@@ -1,9 +1,8 @@
 // @vitest-environment jsdom
-import { act } from "react";
-import { createRoot } from "react-dom/client";
-import { expect, it, vi } from "vite-plus/test";
+import { expect, it } from "vite-plus/test";
 import { GuidelinesPage } from "../components/catalog/filters";
-import { AuthorFilters, SourceFilters, YearFilters } from "../components/catalog/facets";
+import { SourceFilters, YearFilters } from "../components/catalog/facets";
+import { AuthorFilters } from "../components/catalog/author-filters";
 import { emptyCatalogFilters, type CatalogMetadata } from "../shared/catalog-filters";
 import { renderDocument } from "./render-document";
 
@@ -73,70 +72,18 @@ it("renders linked source counts and preserves a zero-match selected type", () =
   expect(source.labels?.[0]?.textContent).toMatch(/^article\s*0$/);
 });
 
-it("preserves focused author controls as linked counts and selections change", async () => {
-  const authors = [
-    { id: 1, name: "Ada", guidelineCount: 12 },
-    { id: 2, name: "Bea", guidelineCount: 8 },
-    { id: 3, name: "Cy", guidelineCount: 7 },
-    { id: 4, name: "Dee", guidelineCount: 6 },
-    { id: 5, name: "Eli", guidelineCount: 4 },
-  ];
+it("summarizes eligible authors and retains selection counts", () => {
+  const page = renderDocument(
+    <AuthorFilters
+      metadata={metadata}
+      draft={{ ...emptyCatalogFilters(metadata.catalogId), excludeAuthorIds: [1] }}
+      counts={[]}
+      onChange={() => {}}
+    />,
+  );
 
-  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
-  const container = document.createElement("div");
-  document.body.append(container);
-  const root = createRoot(container);
-  const onChange = vi.fn();
-  const draft = { ...emptyCatalogFilters(metadata.catalogId), includeAuthorIds: [2] };
-
-  try {
-    await act(async () =>
-      root.render(
-        <AuthorFilters metadata={{ ...metadata, authors }} draft={draft} onChange={onChange} />,
-      ),
-    );
-    const controls = Array.from(container.querySelectorAll("select"));
-    expect(controls.map((control) => control.getAttribute("aria-label"))).toEqual([
-      "Filter author Ada",
-      "Filter author Bea",
-      "Filter author Cy",
-      "Filter author Dee",
-    ]);
-    const bea = controls[1]!;
-    bea.focus();
-    expect(bea.value).toBe("include");
-
-    await act(async () => {
-      bea.value = "exclude";
-      bea.dispatchEvent(new Event("change", { bubbles: true }));
-    });
-    const excluded = { ...draft, includeAuthorIds: [], excludeAuthorIds: [2] };
-    expect(onChange).toHaveBeenCalledExactlyOnceWith(excluded);
-
-    await act(async () =>
-      root.render(
-        <AuthorFilters
-          metadata={{ ...metadata, authors }}
-          draft={excluded}
-          counts={[
-            { id: 5, count: 4 },
-            { id: 2, count: 3 },
-          ]}
-          onChange={onChange}
-        />,
-      ),
-    );
-    const updated = Array.from(container.querySelectorAll("select"));
-    updated.forEach((control, index) => expect(control).toBe(controls[index]));
-    expect(updated).toHaveLength(4);
-    expect(document.activeElement).toBe(bea);
-    expect(bea.value).toBe("exclude");
-    expect(bea.labels?.[0]?.textContent).toContain("Bea3");
-  } finally {
-    await act(async () => root.unmount());
-    container.remove();
-    vi.unstubAllGlobals();
-  }
+  expect(page.querySelector("button")?.textContent).toBe("Browse authors0");
+  expect(page.querySelector('[role="status"]')?.textContent).toBe("0 included · 1 excluded");
 });
 
 it("exposes the catalog year range through keyboard sliders and exact numeric inputs", () => {

@@ -10,7 +10,8 @@ import {
 import { useFilterDraft } from "../../chat/use-filter-draft";
 import type { CatalogFilterSelection } from "../../chat/use-catalog-filters";
 import { ui } from "../ui/ui";
-import { AuthorFilters, SourceFilters, YearFilters } from "./facets";
+import { SourceFilters, YearFilters } from "./facets";
+import { AuthorFilters } from "./author-filters";
 import { styles } from "./filters.styles";
 import { MatchedGuidelines } from "./matched-guidelines";
 
@@ -61,7 +62,12 @@ function FilterDraft({
           <legend {...stylex.props(ui.srOnly)}>Guideline selection</legend>
           <YearFilters {...facets} bins={explorer.data?.years} disabled={disabled || applying} />
           {metadata.authors.length ? (
-            <AuthorFilters {...facets} counts={explorer.data?.authors} />
+            <AuthorFilters
+              {...facets}
+              counts={explorer.data?.authors}
+              pending={explorer.pending}
+              disabled={disabled || applying}
+            />
           ) : null}
           {metadata.sourceTypes.length ? (
             <SourceFilters {...facets} counts={explorer.data?.sourceTypes} />

@@ -139,6 +139,15 @@ it("crossfilters source facets while counting and previewing the complete select
   expect(await catalogMatches(coordinator, incompatible.selection, 0)).toEqual([]);
 });
 
+it("reduces the eligible author pool as publication years change", async () => {
+  const ada = data.metadata.authors.find(({ name }) => name === "O'Neil, Ada")!.id;
+  const bea = data.metadata.authors.find(({ name }) => name === "Baker, Bea")!.id;
+  const earlier = await explore({ yearFrom: 2019, yearTo: 2021 });
+  expect(earlier.authors.flatMap(({ id, count }) => (count > 0 ? [id] : []))).toEqual([ada]);
+  const later = await explore({ yearFrom: 2024, yearTo: 2025 });
+  expect(later.authors.flatMap(({ id, count }) => (count > 0 ? [id] : []))).toEqual([bea]);
+});
+
 it("applies author exclusions to every facet and retains sourceless matches", async () => {
   expect((await explore()).matchedGuidelines).toBe(3);
   const ada = data.metadata.authors.find(({ name }) => name === "O'Neil, Ada")!.id;

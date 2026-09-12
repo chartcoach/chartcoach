@@ -1,6 +1,5 @@
 import * as stylex from "@stylexjs/stylex";
 import { Slider } from "radix-ui";
-import { useState } from "react";
 import type { CatalogFilters, CatalogMetadata } from "../../shared/catalog-filters";
 import { ui } from "../ui/ui";
 import { styles } from "./filters.styles";
@@ -18,101 +17,6 @@ function CountBar({ count, max }: { count: number | undefined; max: number }) {
     <span {...stylex.props(styles.barTrack)} aria-hidden="true">
       <span {...stylex.props(styles.barFill, styles.barScale((count ?? 0) / Math.max(1, max)))} />
     </span>
-  );
-}
-
-export function AuthorFilters({
-  metadata,
-  draft,
-  onChange,
-  counts,
-}: FacetProps & { counts?: Counts }) {
-  const [query, setQuery] = useState("");
-  const [touched, setTouched] = useState<number[]>([]);
-  const selected = new Set([...draft.includeAuthorIds, ...draft.excludeAuthorIds]);
-  const retained = new Set([...selected, ...touched]);
-  const lookup = new Map(counts?.map(({ id, count }) => [id, count]));
-
-  const candidates = metadata.authors
-    .filter((author) => author.name.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()))
-    .sort((a, b) => b.guidelineCount - a.guidelineCount || a.name.localeCompare(b.name));
-
-  const visibleLimit = 4;
-  const suggestions = candidates.slice(0, visibleLimit);
-
-  const visible = [
-    ...suggestions,
-    ...metadata.authors.filter(
-      (author) => retained.has(author.id) && !suggestions.includes(author),
-    ),
-  ];
-
-  const max = Math.max(1, ...Array.from(lookup.values()));
-
-  return (
-    <fieldset {...stylex.props(styles.section)}>
-      <legend {...stylex.props(styles.legend)}>Authors</legend>
-      <p {...stylex.props(styles.note)}>Include or exclude an author.</p>
-      <input
-        {...stylex.props(ui.focus, styles.input)}
-        type="search"
-        name="author"
-        autoComplete="off"
-        aria-label="Find an author"
-        placeholder={`Search ${metadata.authors.length.toLocaleString()} authors`}
-        value={query}
-        onChange={(event) => setQuery(event.target.value)}
-      />
-      {visible.map((author) => (
-        <label key={author.id} {...stylex.props(styles.author)}>
-          <span {...stylex.props(styles.facetLabel)}>
-            <span {...stylex.props(styles.name)} title={author.name}>
-              {author.name}
-              <span {...stylex.props(styles.count)}>
-                {lookup.get(author.id)?.toLocaleString() ?? (counts ? "0" : "…")}
-              </span>
-            </span>
-            <CountBar count={lookup.get(author.id)} max={max} />
-          </span>
-          <select
-            {...stylex.props(ui.focus, styles.select, selected.has(author.id) && styles.selected)}
-            aria-label={`Filter author ${author.name}`}
-            value={
-              draft.excludeAuthorIds.includes(author.id)
-                ? "exclude"
-                : draft.includeAuthorIds.includes(author.id)
-                  ? "include"
-                  : "any"
-            }
-            onChange={(event) => {
-              setTouched((ids) => (ids.includes(author.id) ? ids : [...ids, author.id]));
-              onChange({
-                ...draft,
-                includeAuthorIds: [
-                  ...draft.includeAuthorIds.filter((id) => id !== author.id),
-                  ...(event.target.value === "include" ? [author.id] : []),
-                ],
-                excludeAuthorIds: [
-                  ...draft.excludeAuthorIds.filter((id) => id !== author.id),
-                  ...(event.target.value === "exclude" ? [author.id] : []),
-                ],
-              });
-            }}
-          >
-            <option value="any">Any</option>
-            <option value="include">Include</option>
-            <option value="exclude">Exclude</option>
-          </select>
-        </label>
-      ))}
-      {candidates.length > visibleLimit || !candidates.length ? (
-        <p {...stylex.props(styles.description)}>
-          {candidates.length > visibleLimit
-            ? `${candidates.length - visibleLimit} more authors. Refine your search.`
-            : "No further authors match your search."}
-        </p>
-      ) : null}
-    </fieldset>
   );
 }
 

@@ -278,6 +278,12 @@ and draft. Changes take effect when you choose **Use these guidelines**.
 Drag the year-range handles or enter exact years. Include or exclude
 authors and select source types. Blank fields keep the full range.
 
+Choose **Browse authors** to browse by matching-guideline count or search by name.
+Bars compare counts across the current author pool, with the largest counts first.
+Available authors follow the selected publication years and source types.
+Selected authors stay editable when their matching count reaches zero. Use
+**Selected** in the picker to review them, and choose **Any** to clear an author.
+
 [Mosaic](https://uwdata.github.io/mosaic/) coordinates the linked views using
 DuckDB-WASM in a browser worker. Facet counts reflect the other filters, so you
 can compare alternatives before applying a selection. Scroll **Matching guidelines**
