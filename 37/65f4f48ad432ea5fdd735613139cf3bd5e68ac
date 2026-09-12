@@ -1,0 +1,47 @@
+apps/chat/components/catalog/author-filters.styles.ts
+  s_b2fc299f4eea16::t_22f8ebff921850 1-4,52,85-88,103-105,123
+  s_b2fc299f4eea16::t_77bd7c402819fe 5-51,53-84,89-102,106-122
+apps/chat/test/author-picker.test.tsx
+  s_b2fc299f4eea16::t_77bd7c402819fe 8,60,62-66,78
+  s_b2fc299f4eea16::t_4c9c3e76bc5a2a 10-11,17-19,26-32,34-36,50-59,92-95
+  s_b2fc299f4eea16::t_dd72358cd37746 1-7,9,12-16,20,22-25,33,38-43,45-49,61,79-91,96-107
+  s_b2fc299f4eea16::t_e300ca1167777e 21,37,44
+  s_b2fc299f4eea16::t_4a36d84518faff 67-77
+apps/chat/components/catalog/author-filters.tsx
+  s_b2fc299f4eea16::t_22f8ebff921850 1-11,20-34,39,43-45,56,64-68,80-81,98-99,110,118-119,137,151-158,168,172-175,183-186
+  s_b2fc299f4eea16::t_4a36d84518faff 129-135,181-182
+  s_b2fc299f4eea16::t_77bd7c402819fe 12-19,35-38,40-42,46-55,57-63,69-79,82-97,100-109,111-117,120-128,136,138-150,159-167,169-171,176-180
+apps/chat/chat/use-author-picker.ts
+  s_b2fc299f4eea16::t_22f8ebff921850 1-4,7-30,32-66,68-79,81-83,85-93
+  s_b2fc299f4eea16::t_cefc28e663c4a6 5-6
+  s_b2fc299f4eea16::t_77bd7c402819fe 31,67
+apps/chat/components/catalog/filters.tsx
+  s_b2fc299f4eea16::t_944bbbdd9190e5 13-14
+  ai_agent 65-70
+apps/chat/test/catalog-explorer.test.tsx
+  s_b2fc299f4eea16::t_dd72358cd37746 142-145,147,149-150
+  s_b2fc299f4eea16::t_4c9c3e76bc5a2a 146,148
+apps/chat/test/catalog-filters-ui.test.tsx
+  s_b2fc299f4eea16::t_944bbbdd9190e5 4-5
+  s_b2fc299f4eea16::t_bb144d7590e9c1 2,75-76,83,85-86
+  s_b2fc299f4eea16::t_4c9c3e76bc5a2a 77-82
+apps/chat/README.md
+  s_b2fc299f4eea16::t_77bd7c402819fe 281-282
+  s_b2fc299f4eea16::t_20202c03157421 283-286
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "3765f4f48ad432ea5fdd735613139cf3bd5e68ac",
+  "prompts": {},
+  "sessions": {
+    "s_b2fc299f4eea16": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a07701-a536-7f73-bfd5-6731d2663cd9",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Péter Ferenc Gyarmati <dev.petergy@gmail.com>"
+    }
+  }
+}
