@@ -6,12 +6,17 @@ import { fileURLToPath } from "node:url";
 import TurndownService from "turndown";
 
 type BuildDoneOptions = HookParameters<"astro:build:done">;
+
 type ServerSetupOptions = HookParameters<"astro:server:setup">;
+
 type AstroPage = BuildDoneOptions["pages"][number];
+
 type MaybePromise<T> = T | Promise<T>;
+
 type LlmConfigDoneOptions = {
   config: { root: URL };
 };
+
 type LlmBuildDoneOptions = {
   pages: AstroPage[];
   dir: URL;
@@ -66,13 +71,17 @@ export type LlmsIntegrationOptions = {
 };
 
 const LLM_FILE_KINDS = ["index", "small", "full"] as const;
+
 const DEFAULT_FILE_PATHNAMES = {
   index: "/llms.txt",
   small: "/llms-small.txt",
   full: "/llms-full.txt",
 } satisfies Record<LlmFileKind, string>;
+
 const PAGE_SEPARATOR = "\n\n---\n\n";
+
 const defaultRemoveSelectors = ["script", "style", "header", "footer"];
+
 const jsdomVirtualConsole = new VirtualConsole();
 
 function createTurndown() {
@@ -86,14 +95,18 @@ function createTurndown() {
 function normalizePagePathname(pathname: string) {
   const clean = pathname.trim() || "/";
   const withLeadingSlash = clean.startsWith("/") ? clean : `/${clean}`;
+
   if (withLeadingSlash === "/") return "/";
+
   if (path.extname(withLeadingSlash)) return withLeadingSlash;
+
   return withLeadingSlash.replace(/\/?$/, "/");
 }
 
 function normalizeFilePathname(pathname: string) {
   const clean = pathname.trim();
   const withLeadingSlash = clean.startsWith("/") ? clean : `/${clean}`;
+
   return withLeadingSlash.replace(/\/+$/, "");
 }
 
@@ -115,7 +128,9 @@ function relativeFilePathname(pathname: string) {
 
 function defaultMarkdownPathname(pathname: string) {
   const normalized = normalizePagePathname(pathname);
+
   if (normalized === "/") return "/index.md";
+
   return `/${normalized.replace(/^\/+/, "").replace(/\/+$/, "")}.md`;
 }
 
@@ -123,6 +138,7 @@ function pageHtmlOutputPath(distDir: string, pathname: string) {
   const normalized = normalizePagePathname(pathname);
   const cleanPathname = normalized.replace(/^\/+/, "").replace(/\/+$/, "");
   const relativePath = cleanPathname ? `${cleanPathname}/index.html` : "index.html";
+
   return path.join(distDir, relativePath);
 }
 
@@ -148,6 +164,7 @@ function sourceMarkdownPathname(
   if (options.output?.pageMarkdown && options.output.pageMarkdown.pathname) {
     return normalizeFilePathname(options.output.pageMarkdown.pathname(entry, source));
   }
+
   return source.markdownPathname ?? defaultMarkdownPathname(source.pathname);
 }
 
@@ -158,17 +175,22 @@ function shouldWritePageMarkdown(
 ) {
   if (source.writeMarkdown !== undefined) return source.writeMarkdown;
   const pageMarkdown = options.output?.pageMarkdown;
+
   if (pageMarkdown === false) return false;
+
   if (pageMarkdown?.include) return pageMarkdown.include(entry, source);
+
   return true;
 }
 
 function llmFilePathnames(options: LlmsIntegrationOptions) {
   const files = options.output?.files ?? {};
-  return LLM_FILE_KINDS.map((kind) => {
+
+  return LLM_FILE_KINDS.flatMap((kind) => {
     const pathname = files[kind] ?? DEFAULT_FILE_PATHNAMES[kind];
-    return pathname === false ? null : ([kind, normalizeFilePathname(pathname)] as const);
-  }).filter((value): value is readonly [LlmFileKind, string] => Boolean(value));
+
+    return pathname === false ? [] : [[kind, normalizeFilePathname(pathname)] as const];
+  });
 }
 
 async function resolveSources(
@@ -204,9 +226,11 @@ function extractEntryFromHtml(
   const document = dom.window.document;
   const selector = options.content?.selector ?? "main";
   const content = document.querySelector(selector);
+
   if (!content) return null;
 
   const removeSelectors = options.content?.removeSelectors ?? defaultRemoveSelectors;
+
   if (removeSelectors.length > 0) {
     content.querySelectorAll(removeSelectors.join(", ")).forEach((node) => {
       node.remove();
@@ -214,16 +238,20 @@ function extractEntryFromHtml(
   }
 
   const titleSelector = options.content?.titleSelector ?? "h1";
+
   const title =
     source.title ??
     content.querySelector(titleSelector)?.textContent?.trim() ??
     document.querySelector("title")?.textContent?.trim() ??
     source.pathname;
+
   const description =
     source.description ??
     document.querySelector('meta[name="description"]')?.getAttribute("content")?.trim() ??
     undefined;
+
   const markdown = turndown.turndown(content.innerHTML).trim();
+
   const entry = {
     pathname: source.pathname,
     title,
@@ -252,6 +280,7 @@ async function entryFromSource(
       markdown: source.markdown.trim(),
       markdownPathname: source.markdownPathname ?? defaultMarkdownPathname(source.pathname),
     };
+
     return {
       ...entry,
       markdownPathname: sourceMarkdownPathname(entry, source, options),
@@ -287,9 +316,11 @@ function buildIndex(entries: readonly LlmPageEntry[], options: LlmsIntegrationOp
     "",
     ...entries.map((entry) => {
       const suffix = entry.description ? `: ${entry.description}` : "";
+
       return `- [${entry.title}](${relativeFilePathname(entry.markdownPathname)})${suffix}`;
     }),
   ];
+
   return `${lines.join("\n").trim()}\n`;
 }
 
@@ -322,6 +353,7 @@ function buildFull(entries: readonly LlmPageEntry[], options: LlmsIntegrationOpt
         entry.description ? `> ${entry.description}` : "",
         entry.markdown,
       ];
+
       return parts.filter(Boolean).join("\n\n");
     })
     .join(PAGE_SEPARATOR);
@@ -355,9 +387,11 @@ async function writePageMarkdown(
 
 function devOrigin(server: ServerSetupOptions["server"]) {
   const localUrl = server.resolvedUrls?.local[0];
+
   if (localUrl) return localUrl;
 
   const port = server.config.server.port ?? 4321;
+
   return `http://localhost:${port}/`;
 }
 
@@ -394,12 +428,16 @@ export function llms(options: LlmsIntegrationOptions) {
         server.middlewares.use((request, response, next) => {
           const rootUrl = root;
           const pathname = requestPathname(request.url);
+
           const llmFile = llmFilePathnames(options).find(
             ([, filePathname]) => filePathname === pathname,
           );
+
           const wantsMarkdown = pathname.endsWith(".md");
+
           if (!rootUrl || (!llmFile && !wantsMarkdown)) {
             next();
+
             return;
           }
 
@@ -409,13 +447,16 @@ export function llms(options: LlmsIntegrationOptions) {
 
           void (async () => {
             const sources = await resolveSources(options, { root: rootUrl });
+
             const entries = await buildEntries(sources, turndown, options, async (pagePathname) => {
               const response = await fetch(new URL(pagePathname.replace(/^\//, ""), origin));
+
               if (!response.ok) {
                 throw new Error(
                   `Failed to render '${pagePathname}' for LLM output: ${response.status} ${response.statusText}`,
                 );
               }
+
               return response.text();
             });
 
@@ -424,13 +465,16 @@ export function llms(options: LlmsIntegrationOptions) {
               response.statusCode = 200;
               response.setHeader("Content-Type", "text/plain; charset=utf-8");
               response.end(buildLlmFile(kind, entries, options));
+
               return;
             }
 
             const entry = entries.find((candidate) => candidate.markdownPathname === pathname);
             const source = sources.find((candidate) => candidate.pathname === entry?.pathname);
+
             if (!entry || !source || !shouldWritePageMarkdown(entry, source, options)) {
               next();
+
               return;
             }
 
@@ -453,9 +497,11 @@ export function llms(options: LlmsIntegrationOptions) {
         const llmLogger = logger.fork(integrationName);
         const sources = await resolveSources(options, { pages, root });
         const turndown = createTurndown();
+
         const entries = await buildEntries(sources, turndown, options, async (pathname) =>
           fs.readFile(pageHtmlOutputPath(distDir, pathname), "utf-8"),
         );
+
         const sourceByPathname = new Map(sources.map((source) => [source.pathname, source]));
 
         await Promise.all([
@@ -468,8 +514,10 @@ export function llms(options: LlmsIntegrationOptions) {
           ),
           ...entries.map((entry) => {
             const source = sourceByPathname.get(entry.pathname);
+
             if (!source || !shouldWritePageMarkdown(entry, source, options))
               return Promise.resolve();
+
             return writePageMarkdown(distDir, entry, options);
           }),
         ]);
