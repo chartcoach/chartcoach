@@ -1,4 +1,6 @@
-import { Anthropic, OpenAI, Gemini } from "@lobehub/icons";
+import Anthropic from "@lobehub/icons/es/Anthropic/components/Mono.js";
+import OpenAI from "@lobehub/icons/es/OpenAI/components/Mono.js";
+import Gemini from "@lobehub/icons/es/Gemini/components/Mono.js";
 import { Plug } from "lucide-react";
 import * as stylex from "@stylexjs/stylex";
 import { ui } from "../ui/ui";

@@ -1,0 +1,48 @@
+::view-transition {
+  pointer-events: none;
+}
+
+::view-transition-old(root) {
+  display: none;
+}
+
+::view-transition-new(root) {
+  animation: none;
+}
+
+::view-transition-group(root) {
+  animation: none;
+}
+
+::view-transition-group(.content-crossfade) {
+  animation-duration: 180ms;
+}
+
+::view-transition-old(.content-crossfade) {
+  animation: 140ms ease-out both content-fade-out;
+}
+
+::view-transition-new(.content-crossfade) {
+  animation: 180ms ease-out both content-fade-in;
+}
+
+@keyframes content-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes content-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
+}

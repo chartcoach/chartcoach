@@ -461,6 +461,9 @@ importers:
       autoprefixer:
         specifier: 'catalog:'
         version: 10.5.5(postcss@8.5.28)
+      jsdom:
+        specifier: 'catalog:'
+        version: 30.0.1
       nitro:
         specifier: 'catalog:'
         version: 3.0.260903-beta

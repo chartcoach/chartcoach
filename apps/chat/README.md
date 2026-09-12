@@ -58,6 +58,10 @@ edited, or removed. Removing a connection keeps its conversations readable.
 Choose another connection to continue them. Changing providers or endpoints
 requires entering the key again.
 
+Removing a connection asks for confirmation before deleting its saved key.
+Form validation focuses the field that needs attention. Changing providers or
+credentials cancels outstanding model discovery.
+
 [AI SDK](https://ai-sdk.dev/docs/introduction) adapters handle each provider's
 request format. Eve resolves the provider inside its model-step lifecycle, so
 durable execution records contain connection IDs rather than credentials.

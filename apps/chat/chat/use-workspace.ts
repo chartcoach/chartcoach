@@ -13,16 +13,23 @@ export function useWorkspace() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>();
   const opening = useRef<AbortController>(undefined);
+
   async function refreshThreads() {
     setThreads(await loadThreads());
   }
-  async function refreshConnections() {
-    const preferences = await loadPreferences();
+
+  async function refreshConnections(signal?: AbortSignal) {
+    const preferences = await loadPreferences(signal);
+    signal?.throwIfAborted();
     setConnections(preferences.connections);
     setAllowedOrigins(preferences.allowedOrigins);
+
+    return preferences;
   }
+
   function selectConnection(id: string | undefined) {
     setConnectionId(id);
+
     try {
       if (id) localStorage.setItem("chartcoach.connection", id);
       else localStorage.removeItem("chartcoach.connection");
@@ -30,13 +37,16 @@ export function useWorkspace() {
       /* Storage can be disabled by the browser. */
     }
   }
+
   const openThread = useCallback(async (id: string) => {
     opening.current?.abort();
     const controller = new AbortController();
     opening.current = controller;
     setLoading(true);
+
     try {
       const thread = await loadThread(id, controller.signal);
+
       if (controller.signal.aborted) return;
       setActive(thread);
       setKey(`${id}:${crypto.randomUUID()}`);
@@ -50,29 +60,36 @@ export function useWorkspace() {
       if (!controller.signal.aborted) setLoading(false);
     }
   }, []);
+
   useEffect(() => {
     const controller = new AbortController();
     void (async () => {
       try {
         const preferences = await loadPreferences(controller.signal);
+
         if (controller.signal.aborted) return;
         setConnections(preferences.connections);
         setAllowedOrigins(preferences.allowedOrigins);
         let remembered: string | null = null;
+
         try {
           remembered = localStorage.getItem("chartcoach.connection");
         } catch {
           /* Browser storage is optional. */
         }
+
         setConnectionId(
           preferences.connections.find((item) => item.id === remembered)?.id ??
             preferences.connections[0]?.id,
         );
-        const savedThreads = await loadThreads(controller.signal);
-        if (controller.signal.aborted) return;
-        setThreads(savedThreads);
         const id = new URLSearchParams(location.search).get("thread");
-        if (id) await openThread(id);
+        // Preferences establishes the owner cookie before either protected read starts.
+        await Promise.all([
+          loadThreads(controller.signal).then((savedThreads) => {
+            if (!controller.signal.aborted) setThreads(savedThreads);
+          }),
+          id ? openThread(id) : undefined,
+        ]);
       } catch (cause) {
         if (!controller.signal.aborted)
           setError(cause instanceof Error ? cause.message : "Could not load your workspace.");
@@ -80,17 +97,20 @@ export function useWorkspace() {
         if (!controller.signal.aborted) setReady(true);
       }
     })();
+
     return () => {
       controller.abort();
       opening.current?.abort();
     };
   }, [openThread]);
+
   function rememberThread(id: string) {
     history.replaceState(null, "", `?thread=${encodeURIComponent(id)}`);
     void refreshThreads().catch(() =>
       setError("History could not refresh. Your conversation is saved."),
     );
   }
+
   return {
     connections,
     connectionId,
