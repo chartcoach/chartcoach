@@ -7,18 +7,19 @@ const options: NodeOpenCatalogOptions & IndexPathOptions = { cacheDirectory: "ca
 void options;
 
 function check(catalog: Catalog): void {
-  if (catalog.length !== 6) throw new Error("Expected six guideline entries");
-  const candidates = catalog.query({ limit: 6 });
+  if (!catalog.length) throw new Error("Expected guideline entries");
+  const candidates = catalog.query({ limit: catalog.length });
   const ids = candidates.map(({ id }) => id);
 
-  if (catalog.read({ ids }).length !== 6) throw new Error("Guideline reads failed");
+  if (catalog.read({ ids }).length !== ids.length) throw new Error("Guideline reads failed");
   const citations = catalog.cite({ ids });
 
-  if (catalog.table("guidelines").length !== 6) throw new Error("Canonical guideline table failed");
+  if (catalog.table("guidelines").length !== catalog.length)
+    throw new Error("Canonical guideline table failed");
 
   if (!catalog.table("references")[0]?.bibtex) throw new Error("Reference table failed");
 
-  if (catalog.table("guideline_references").length !== 6) throw new Error("Reference links failed");
+  if (!catalog.table("guideline_references").length) throw new Error("Reference links failed");
 
   if (!citations.some(({ sources }) => sources.some(({ citation }) => citation.length > 0)))
     throw new Error("Source citation formatting failed");

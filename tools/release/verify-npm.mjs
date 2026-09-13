@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { chmod, cp, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
-import { builtinModules, createRequire } from "node:module";
+import { builtinModules, createRequire, findPackageJSON } from "node:module";
+import { parseArgs } from "node:util";
 import { tmpdir } from "node:os";
 import { dirname, extname, join, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -10,19 +11,28 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { chromium } from "playwright";
 import { build } from "vite-plus";
 import { parse, stringify } from "yaml";
+import { minVersion } from "semver";
 
 const here = dirname(fileURLToPath(import.meta.url));
 
 const root = resolve(here, "../..");
 
-const [archive, flag, executable, ...extra] = process.argv.slice(2);
+const { positionals, values } = parseArgs({
+  allowPositionals: true,
+  options: {
+    node: { type: "string" },
+    "minimum-dependencies": { type: "boolean", default: false },
+  },
+});
 
-if (!archive || extra.length || (flag !== undefined && (flag !== "--node" || !executable)))
-  throw new Error("Usage: verify:npm <tarball> [--node <node executable>]");
+const [archive] = positionals;
+
+if (!archive || positionals.length !== 1)
+  throw new Error("Usage: verify:npm <tarball> [--node <executable>] [--minimum-dependencies]");
 
 const tarball = resolve(root, archive);
 
-const node = executable ?? process.execPath;
+const node = values.node ?? process.execPath;
 
 const require = createRequire(import.meta.url);
 
@@ -35,7 +45,7 @@ let server;
 function run(command, args, extraEnv = {}) {
   const result = spawnSync(command, args, {
     cwd: directory,
-    env: { ...process.env, ...extraEnv },
+    env: { ...process.env, NODE_PATH: "", NODE_OPTIONS: "", ...extraEnv },
     stdio: "inherit",
   });
 
@@ -83,6 +93,9 @@ try {
     LANCE_MODULE: pathToFileURL(require.resolve("@lancedb/lancedb")).href,
     DUCKDB_MODULE: pathToFileURL(require.resolve("@duckdb/node-api")).href,
     TAR_MODULE: pathToFileURL(require.resolve("tar")).href,
+    LANCE_VERSION: JSON.parse(
+      await readFile(findPackageJSON("@lancedb/lancedb", import.meta.url), "utf8"),
+    ).version,
   };
 
   run(
@@ -236,31 +249,32 @@ try {
   assert.ok(wasm.length > 0 && wasm.every((status) => status === 200));
   console.log("Verified packed declarations, browser Parquet, RefKit and DuckDB-WASM registration");
 
-  const installed = JSON.parse(
-    await readFile(join(directory, "node_modules/@chartcoach/catalog/package.json"), "utf8"),
-  );
+  if (values["minimum-dependencies"]) {
+    const installed = JSON.parse(
+      await readFile(join(directory, "node_modules/@chartcoach/catalog/package.json"), "utf8"),
+    );
 
-  const minimum = {};
+    const minimum = {};
 
-  for (const [name, range] of Object.entries(installed.dependencies)) {
-    assert.match(range, /^>=\d+\.\d+\.\d+$/, `Expected a runtime lower bound for ${name}`);
-    minimum[name] = range.slice(2);
+    for (const [name, range] of Object.entries(installed.dependencies)) {
+      minimum[name] = minVersion(range).version;
+    }
+
+    const consumer = JSON.parse(await readFile(join(directory, "package.json"), "utf8"));
+    consumer.dependencies = { ...consumer.dependencies, ...minimum };
+    await writeFile(join(directory, "package.json"), JSON.stringify(consumer));
+    const minimumPolicy = parse(await readFile(join(directory, "pnpm-workspace.yaml"), "utf8"));
+    minimumPolicy.overrides = minimum;
+    await writeFile(join(directory, "pnpm-workspace.yaml"), stringify(minimumPolicy));
+    run("pnpm", ["install", "--ignore-scripts", "--no-frozen-lockfile"]);
+    run(node, [require.resolve("typescript/bin/tsc"), "-p", "tsconfig.json"]);
+    run(
+      node,
+      ["node-consumer.mjs", join(root, "fixtures/catalog-release"), join(directory, "minimum")],
+      nativeModules,
+    );
+    console.log("Verified minimum direct runtime dependencies");
   }
-
-  const consumer = JSON.parse(await readFile(join(directory, "package.json"), "utf8"));
-  consumer.dependencies = { ...consumer.dependencies, ...minimum };
-  await writeFile(join(directory, "package.json"), JSON.stringify(consumer));
-  const minimumPolicy = parse(await readFile(join(directory, "pnpm-workspace.yaml"), "utf8"));
-  minimumPolicy.overrides = minimum;
-  await writeFile(join(directory, "pnpm-workspace.yaml"), stringify(minimumPolicy));
-  run("pnpm", ["install", "--ignore-scripts", "--no-frozen-lockfile"]);
-  run(node, [require.resolve("typescript/bin/tsc"), "-p", "tsconfig.json"]);
-  run(
-    node,
-    ["node-consumer.mjs", join(root, "fixtures/catalog-release"), join(directory, "minimum")],
-    nativeModules,
-  );
-  console.log("Verified minimum direct runtime dependencies");
 } finally {
   await browser?.close();
 

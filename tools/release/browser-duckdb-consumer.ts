@@ -28,7 +28,7 @@ async function checkBrowserDuckDB(release: Catalog): Promise<void> {
     try {
       if ((await registerCatalog(connection, release)) !== connection)
         throw new Error("Registration must return the caller connection");
-      equal((await rows(connection, "guidelines")).length, 6, "Release guidelines");
+      equal((await rows(connection, "guidelines")).length, release.length, "Release guidelines");
       const entries = await release.artifact("entries.parquet");
       await db.registerFileBuffer("entries.parquet", entries);
 
@@ -36,7 +36,7 @@ async function checkBrowserDuckDB(release: Catalog): Promise<void> {
         "SELECT count(*)::INTEGER AS count FROM 'entries.parquet'",
       );
 
-      equal(raw.get(0)?.count, 6, "Verified Parquet queries");
+      equal(raw.get(0)?.count, release.length, "Verified Parquet queries");
 
       const fixture = await (await fetch("/tables.json")).json();
       const catalog = new Catalog(fixture.guidelines, parseCatalogManifest(fixture.manifest));

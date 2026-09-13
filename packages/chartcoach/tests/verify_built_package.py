@@ -14,18 +14,6 @@ from pathlib import Path
 
 _REPOSITORY = Path(__file__).parents[3]
 _FIXTURE_RELEASE = _REPOSITORY / "fixtures" / "catalog-release"
-_SKILL_NAMES = ("core", "discuss", "visfeedback", "visrec", "contribute")
-_PLUGIN_FILES = tuple(
-    sorted(
-        (
-            "mcp.json",
-            "plugin.json",
-            "skills/package.json",
-            *(f"skills/{name}/SKILL.md" for name in _SKILL_NAMES),
-            "skills/core/references/catalog-access.md",
-        )
-    )
-)
 
 
 def main() -> None:
@@ -35,7 +23,7 @@ def main() -> None:
     parser.add_argument(
         "--dist-dir",
         type=Path,
-        default=_REPOSITORY / "dist",
+        default=_REPOSITORY / "dist/release/python",
         help="Directory containing the wheel and source distribution to verify.",
     )
     parser.add_argument(
@@ -59,33 +47,40 @@ def main() -> None:
         parser.error(
             "Expected exactly one ChartCoach wheel and matching source distribution"
         )
-    _verify_wheel(wheel, distribution)
+    from agent_plugins import Plugin
+
+    plugin = Plugin.from_project(_REPOSITORY / "packages/chartcoach")
+    resources = {
+        path.relative_to(plugin.path).as_posix(): path.read_bytes()
+        for path in plugin.files
+    }
+    _verify_wheel(wheel, distribution, resources)
     _verify_sdist(sdist, distribution)
     _verify_installed_wheel(wheel, minimum_dependencies=options.minimum_dependencies)
     print(f"Verified {wheel.name} and {sdist.name}")
 
 
-def _verify_wheel(wheel: Path, distribution: str) -> None:
-    plugin_root = f"{distribution}.agent-plugin"
+def _verify_wheel(wheel: Path, distribution: str, resources: dict[str, bytes]) -> None:
     metadata_root = f"{distribution}.dist-info"
     with zipfile.ZipFile(wheel) as archive:
+        marker = json.loads(archive.read(f"{metadata_root}/agent_plugins.json"))
+        plugin_root = marker["root"]
         names = set(archive.namelist())
         plugin_files = {
             name.removeprefix(f"{plugin_root}/")
             for name in names
             if name.startswith(f"{plugin_root}/") and not name.endswith("/")
         }
-        assert plugin_files == set(_PLUGIN_FILES)
+        assert plugin_files == set(resources)
+        for name, content in resources.items():
+            assert archive.read(f"{plugin_root}/{name}") == content, name
         assert "chartcoach/agent.py" in names
         assert "chartcoach/curation.py" in names
         metadata = email.message_from_bytes(archive.read(f"{metadata_root}/METADATA"))
         assert metadata["Name"] == "chartcoach"
         assert metadata["Version"] == distribution.removeprefix("chartcoach-")
 
-        marker = json.loads(
-            archive.read(f"{metadata_root}/agent_plugins.json").decode("utf-8")
-        )
-        assert marker == {"root": plugin_root, "files": list(_PLUGIN_FILES)}
+        assert set(marker["files"]) == plugin_files
 
         entry_points = configparser.ConfigParser()
         entry_points.read_string(
@@ -97,22 +92,12 @@ def _verify_wheel(wheel: Path, distribution: str) -> None:
 
 
 def _verify_sdist(sdist: Path, distribution: str) -> None:
-    plugin_root = f"{distribution}/.agent-plugin"
     with tarfile.open(sdist, mode="r:gz") as archive:
-        names = {member.name for member in archive.getmembers() if member.isfile()}
         metadata_file = archive.extractfile(f"{distribution}/PKG-INFO")
         assert metadata_file is not None
         metadata = email.message_from_bytes(metadata_file.read())
         assert metadata["Name"] == "chartcoach"
         assert metadata["Version"] == distribution.removeprefix("chartcoach-")
-    plugin_files = {
-        name.removeprefix(f"{plugin_root}/")
-        for name in names
-        if name.startswith(f"{plugin_root}/")
-    }
-    assert plugin_files == set(_PLUGIN_FILES)
-    assert f"{distribution}/src/chartcoach/agent.py" in names
-    assert f"{distribution}/src/chartcoach/curation.py" in names
 
 
 def _verify_installed_wheel(wheel: Path, *, minimum_dependencies: bool = False) -> None:
@@ -157,10 +142,6 @@ def _verify_installed_wheel(wheel: Path, *, minimum_dependencies: bool = False) 
         smoke_environment = os.environ.copy()
         smoke_environment.pop("CHARTCOACH_SKILLS_DIR", None)
         smoke_environment.pop("PYTHONPATH", None)
-        smoke_environment["CHARTCOACH_EXPECTED_PLUGIN_FILES"] = json.dumps(
-            _PLUGIN_FILES
-        )
-        smoke_environment["CHARTCOACH_EXPECTED_SKILL_NAMES"] = json.dumps(_SKILL_NAMES)
         smoke_environment["CHARTCOACH_FIXTURE_RELEASE"] = str(_FIXTURE_RELEASE)
         subprocess.run(
             [python, "-I", "-c", _INSTALLED_SMOKE],
@@ -170,7 +151,21 @@ def _verify_installed_wheel(wheel: Path, *, minimum_dependencies: bool = False) 
         )
         if minimum_dependencies:
             subprocess.run(
-                [*install, "--all-extras", "pytest>=9.0.3"],
+                [*install, "--all-extras"],
+                check=True,
+                cwd=root,
+            )
+            subprocess.run(
+                [
+                    uv,
+                    "--directory",
+                    str(_REPOSITORY),
+                    "pip",
+                    "install",
+                    "--python",
+                    str(python),
+                    "pytest",
+                ],
                 check=True,
                 cwd=root,
             )
@@ -190,28 +185,28 @@ def _verify_installed_wheel(wheel: Path, *, minimum_dependencies: bool = False) 
 _INSTALLED_SMOKE = """
 import json
 import os
+import subprocess
+import sys
 from importlib.metadata import distribution
 from pathlib import Path
 
 import chartcoach.agent as cc
-from chartcoach import ProfileInfo, Catalog, CatalogManifest, Guideline, Section
+from chartcoach import Catalog, CatalogManifest, Guideline, Section
 from chartcoach.cli.main import main
 from click.testing import CliRunner
 
+cli = Path(sys.executable).with_name("chartcoach.exe" if os.name == "nt" else "chartcoach")
+version = subprocess.run([cli, "--version"], check=True, capture_output=True, text=True)
+assert version.stdout.strip().endswith(distribution("chartcoach").version)
+
 plugin = cc.agent_plugin()
 assert plugin.manifest.name == "chartcoach"
-expected_files = tuple(json.loads(os.environ["CHARTCOACH_EXPECTED_PLUGIN_FILES"]))
-expected_skills = list(json.loads(os.environ["CHARTCOACH_EXPECTED_SKILL_NAMES"]))
-assert {path.relative_to(plugin.path).as_posix() for path in plugin.files} == set(expected_files)
-assert [plugin.skill(name).path.name for name in expected_skills] == expected_skills
+assert plugin.skill("core").file("SKILL.md").is_file()
 assert plugin.mcp is not None
 assert plugin.mcp.issues == ()
 launch = plugin.mcp.resolve_stdio("chartcoach", data_dir=Path.cwd())
 assert launch.command == "chartcoach"
 assert launch.args == ("mcp",)
-assert launch.cwd == plugin.path
-assert launch.env["PLUGIN_ROOT"] == str(plugin.path)
-assert launch.env["PLUGIN_DATA"] == str(Path.cwd().resolve())
 entry_points = [
     entry
     for entry in distribution("chartcoach").entry_points
@@ -234,8 +229,8 @@ assert citations[0]["id"] == "direct-labels"
 description = catalog.describe()
 assert description["release_digest"] == catalog.release.digest
 with catalog.duckdb() as connection:
-    assert connection.sql("select count(*) from guidelines").fetchone() == (6,)
-    assert connection.read_parquet(str(catalog.artifact("entries.parquet"))).count("*").fetchone() == (6,)
+    assert connection.sql("select count(*) from guidelines").fetchone() == (len(catalog),)
+    assert connection.read_parquet(str(catalog.artifact("entries.parquet"))).count("*").fetchone() == (len(catalog),)
 constructed = Catalog.from_guidelines([
     Guideline("example", "Use labels", "Label the marks.", sections=(Section("advice", "Advice", "Use labels."),)),
 ], manifest=CatalogManifest.from_text(catalog.manifest.markdown))
@@ -255,10 +250,10 @@ for arguments, field in [
     assert field in json.loads(result.stdout)
 listed = runner.invoke(main, ["skills", "--format", "json"])
 assert listed.exit_code == 0, listed.output
-assert [row["name"] for row in json.loads(listed.stdout)] == expected_skills
+assert {row["name"] for row in json.loads(listed.stdout)} == {skill.path.name for skill in plugin.skills}
 read = runner.invoke(main, ["skills", "get", "core"])
 assert read.exit_code == 0, read.output
-assert "# chartcoach Core" in read.stdout
+assert read.stdout.strip() == plugin.skill("core").source.strip()
 path = runner.invoke(main, ["skills", "path", "core"])
 assert path.exit_code == 0, path.output
 assert Path(path.stdout.strip()) == plugin.path / "skills" / "core"

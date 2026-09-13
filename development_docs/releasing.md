@@ -26,25 +26,22 @@ and versions:
 ./scripts/release.sh check-version "$RELEASE_TAG"
 ```
 
-Run the repository checks before creating the tag:
-
-```bash
-make check
-```
-
 A matching `X.Y.Z` or `vX.Y.Z` tag starts `.github/workflows/publish.yml`.
 Merge the release commit and wait for its successful main CI run before pushing
-the tag. The publish workflow checks that exact commit's CI result.
+the tag. Main CI builds and verifies the distributions, then retains them as
+`python-package` and `npm-package` artifacts for 30 days. For local checks before
+pushing the version change, run `make check`.
 
-The workflow builds the Python wheel and source distribution and the npm
-tarball once. It verifies the built wheel in an isolated environment and the
-tarball through Node.js, TypeScript, Chromium, and native LanceDB consumers.
-The Node.js consumer runs at the SDK's declared minimum version. Browser checks
-exercise the production bundle and its WebAssembly assets.
+CI verifies the wheel in an isolated environment and the npm tarball through
+Node.js, TypeScript, Chromium, DuckDB, and LanceDB consumers. The minimum Node.js
+version comes from the SDK's `engines.node`. Minimum direct dependency checks
+also run in CI. Package versions come from their manifests and built artifacts.
 
-Both publishers download those verified artifacts. A final job compares each
-registry's metadata and downloadable bytes with the build before creating the
-GitHub release notes. CI runs the same distribution checks on pull requests.
+Publishing downloads the artifacts from the successful main CI run for the exact
+tagged commit. It checks that both packages match the tag and rejects conflicting
+registry bytes. The publisher jobs reuse this retained `release-packages` bundle.
+A final job verifies registry metadata and downloadable bytes before creating
+the GitHub release notes. Publication does not rebuild or rerun consumer tests.
 
 ### Registry setup
 
@@ -70,10 +67,12 @@ The npm job skips a version whose registry integrity matches the verified
 tarball. A different digest fails publication. uv accepts identical Python
 files that have already been uploaded. Registry verification and release notes
 resume after both publishers succeed. Verification retries pending registry
-files and transient network failures up to six times, five seconds apart.
-Digest conflicts fail immediately.
+files and transient network failures for up to two minutes, five seconds apart.
+Missing download URLs are treated as propagation delays. Digest conflicts and
+authorization errors fail immediately. Local checks can set `--wait-seconds 0`
+to return immediately.
 
-If the build fails before publication and a workflow correction is needed, merge
+If preparation fails before publication and a workflow correction is needed, merge
 the correction and wait for main CI. Then dispatch the corrected workflow for
 the existing tag:
 
@@ -81,9 +80,11 @@ the existing tag:
 gh workflow run publish.yml --ref main -f tag="$RELEASE_TAG"
 ```
 
-The workflow checks out that tag, requires successful main CI for its commit,
-and retains the tag's package versions. The release tag stays unchanged.
-For partial publication, rerun the original failed jobs to reuse their artifacts.
+The workflow resolves the tag to its successful main CI run and promotes that
+run's packages. Its tooling comes from the workflow revision, so workflow fixes
+can recover publication while the release tag and package bytes stay unchanged.
+For partial publication, rerun the original failed jobs. They retain the original
+workflow revision and artifact bundle.
 
 To inspect retained artifacts locally:
 

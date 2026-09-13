@@ -29,16 +29,6 @@ jobs:
       - name: Set up pnpm
         uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
 
-      - name: Set up consumer Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: 22.19.0
-          package-manager-cache: false
-
-      - name: Locate consumer Node.js
-        id: consumer-node
-        run: echo "path=$(command -v node)" >> "$GITHUB_OUTPUT"
-
       - name: Set up Vite+
         uses: voidzero-dev/setup-vp@2dec1e33f4ab2c6d5bce1b0c4607961bb1a3f7a1 # v1
         with:
@@ -52,16 +42,48 @@ jobs:
       - name: Check JavaScript workspace
         run: vp run ready
 
+      - name: Read the SDK minimum Node.js version
+        id: node-version
+        run: |
+          echo "version=$(pnpm --filter @chartcoach/release --silent minimum-node)" >> "$GITHUB_OUTPUT"
+          echo "build_node=$(command -v node)" >> "$GITHUB_OUTPUT"
+
+      - name: Set up consumer Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ steps.node-version.outputs.version }}
+          package-manager-cache: false
+
+      - name: Locate consumer Node.js and restore the build runtime
+        id: consumer-node
+        env:
+          BUILD_NODE: ${{ steps.node-version.outputs.build_node }}
+        run: |
+          echo "path=$(command -v node)" >> "$GITHUB_OUTPUT"
+          dirname "$BUILD_NODE" >> "$GITHUB_PATH"
+
       - name: Install browser runtime
         run: pnpm --filter @chartcoach/release exec playwright install --with-deps chromium
 
       - name: Verify npm distribution
+        id: npm-dist
         env:
           CONSUMER_NODE: ${{ steps.consumer-node.outputs.path }}
         run: |
-          mkdir -p dist/release/npm
-          npm pack ./packages/catalog --ignore-scripts --pack-destination dist/release/npm
-          pnpm --filter @chartcoach/release verify:npm dist/release/npm/*.tgz --node "$CONSUMER_NODE"
+          directory="$(mktemp -d "$RUNNER_TEMP/chartcoach-npm.XXXXXX")"
+          npm pack ./packages/catalog --ignore-scripts --pack-destination "$directory"
+          pnpm --filter @chartcoach/release verify:npm "$directory"/*.tgz --node "$CONSUMER_NODE" --minimum-dependencies
+          echo "directory=$directory" >> "$GITHUB_OUTPUT"
+
+      - name: Retain verified npm distribution
+        if: github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-package
+          path: ${{ steps.npm-dist.outputs.directory }}/*.tgz
+          overwrite: true
+          retention-days: 30
+          if-no-files-found: error
 
   python-minimum:
     name: Python minimum dependencies
@@ -123,3 +145,15 @@ jobs:
       - name: Build Python package
         if: matrix.python-version == '3.12'
         run: make python-build
+
+      - name: Retain verified Python distributions
+        if: matrix.python-version == '3.12' && github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-package
+          overwrite: true
+          path: |
+            dist/release/python/*.whl
+            dist/release/python/*.tar.gz
+          retention-days: 30
+          if-no-files-found: error

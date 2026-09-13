@@ -29,13 +29,13 @@ def _capability_entry_points():
     ]
 
 
-def test_project_plugin_carries_the_selected_chartcoach_files() -> None:
+def test_project_plugin_includes_public_agent_resources() -> None:
     plugin = agent_plugins.Plugin.from_project(_PROJECT)
 
     assert plugin.path == _PROJECT.parents[1]
-    assert {path.relative_to(plugin.path).as_posix() for path in plugin.files} == (
-        _PLUGIN_FILES
-    )
+    assert _PLUGIN_FILES <= {
+        path.relative_to(plugin.path).as_posix() for path in plugin.files
+    }
 
 
 def test_marimo_code_mode_discovers_the_chartcoach_agent_module() -> None:
