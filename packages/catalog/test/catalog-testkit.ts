@@ -26,7 +26,7 @@ export const manifestPath = path.join(releaseFixtureRoot, "MANIFEST.md");
 
 export const releaseFixtureUrl = pathToFileURL(path.join(releaseFixtureRoot, "release.json"));
 
-export const artifactBaseUrl = "https://files.peter.gy/catalog/chartcoach";
+export const artifactBaseUrl = "https://artifacts.chartcoach.dev";
 
 export const catalogUrl = `${artifactBaseUrl}/catalog.json`;
 
