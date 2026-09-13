@@ -37,7 +37,12 @@ CI verifies the wheel in an isolated environment and the npm tarball through
 Node.js, TypeScript, Chromium, DuckDB, and LanceDB consumers. The minimum Node.js
 version comes from the SDK's `engines.node`. Minimum direct dependency checks
 also run in CI. The chat consumer installs with lifecycle scripts disabled and verifies
-the packed CLI through an authenticated browser conversation and a restart. Package versions come from their manifests and built artifacts.
+the packed CLI against both the shared fixture and a pinned full catalog release.
+It exercises browser catalog loading and retry, author/year/source filters,
+pagination, empty-scope recovery, chart and draft preservation, grounded chat,
+local citations, mobile layout, and restart persistence. These checks run before
+CI retains packages for publication. Package versions come from their manifests
+and built artifacts.
 
 Publishing downloads the artifacts from the successful main CI run for the exact
 tagged commit. It checks that all packages match the tag and rejects conflicting

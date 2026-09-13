@@ -13,6 +13,9 @@ export function useCatalogMatches(
   const [position, setPosition] = useState({ key: "", batch: 0 });
   const batch = position.key === selectionKey ? position.batch : 0;
 
+  // Forget the previous page when the scope changes, including when returning to it later.
+  if (position.key !== selectionKey) setPosition({ key: selectionKey, batch: 0 });
+
   const [data, setData] = useState<{
     key: string;
     batch: number;

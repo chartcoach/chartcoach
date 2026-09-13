@@ -75,7 +75,18 @@ jobs:
           pnpm --filter @chartcoach/release verify:npm "$directory"/*.tgz --node "$CONSUMER_NODE" --minimum-dependencies
           npm pack ./apps/chat/dist --ignore-scripts --pack-destination "$directory"
           pnpm --filter @chartcoach/release verify:chat "$directory"/chartcoach-[0-9]*.tgz "$directory"/chartcoach-catalog-*.tgz
+          pnpm --filter @chartcoach/release verify:chat "$directory"/chartcoach-[0-9]*.tgz "$directory"/chartcoach-catalog-*.tgz https://artifacts.chartcoach.dev/catalog/releases/075004be49cba8fd604d3e89ed1fb2dbd1b18eebcda40fa56f5f247cc9f8aa59/release.json
           echo "directory=$directory" >> "$GITHUB_OUTPUT"
+
+      - name: Retain chat browser screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: chat-browser
+          path: .context/chat-package-*.png
+          include-hidden-files: true
+          retention-days: 14
+          if-no-files-found: ignore
 
       - name: Retain verified npm distribution
         if: github.event_name == 'push'

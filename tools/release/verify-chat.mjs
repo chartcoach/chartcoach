@@ -8,12 +8,14 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
+import { verifyPicker } from "./verify-picker.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 
-const [chatArchive, catalogArchive] = process.argv.slice(2);
+const [chatArchive, catalogArchive, catalogLocation] = process.argv.slice(2);
 
-if (!chatArchive || !catalogArchive) throw new Error("Usage: verify:chat <chat.tgz> <catalog.tgz>");
+if (!chatArchive || !catalogArchive)
+  throw new Error("Usage: verify:chat <chat.tgz> <catalog.tgz> [catalog-location]");
 
 const directory =
   process.env.CHARTCOACH_TEST_DIRECTORY ?? (await mkdtemp(join(tmpdir(), "chartcoach-installed-")));
@@ -74,7 +76,7 @@ async function stop() {
 async function start(environmentOnly = false) {
   const flags = [
     "--catalog",
-    "./catalog",
+    catalogLocation ?? "./catalog",
     "--data-dir",
     "./data",
     "--cache-dir",
@@ -101,7 +103,7 @@ async function start(environmentOnly = false) {
 
   if (environmentOnly)
     Object.assign(environment, {
-      CHARTCOACH_CATALOG: "./catalog",
+      CHARTCOACH_CATALOG: catalogLocation ?? "./catalog",
       CHARTCOACH_DATA_DIR: "./data",
       CHARTCOACH_CACHE_DIR: "./cache",
       CHARTCOACH_PORT: "0",
@@ -172,7 +174,7 @@ try {
     new URL(`file://${directory}/node_modules/@chartcoach/catalog/dist/node.js`)
   );
 
-  const catalog = await openCatalog(join(directory, "catalog"));
+  const catalog = await openCatalog(catalogLocation ?? join(directory, "catalog"));
   const id = [...catalog][0].id;
   const title = [...catalog][0].title;
   model = createServer(async (request, response) => {
@@ -250,7 +252,7 @@ try {
       "chartcoach",
       "doctor",
       "--catalog",
-      "./catalog",
+      catalogLocation ?? "./catalog",
       "--cache-dir",
       "./cache",
       "--json",
@@ -267,9 +269,9 @@ try {
     httpCredentials: { username: "chartcoach", password: "package-test-password" },
   });
 
-  page = await context.newPage();
   const errors = [];
-  page.on("pageerror", (error) => errors.push(error.message));
+  context.on("page", (opened) => opened.on("pageerror", (error) => errors.push(error.message)));
+  page = await context.newPage();
   await page.goto(url);
   const choosing = page.waitForEvent("filechooser");
   await page.getByRole("button", { name: "Add chart", exact: true }).click();
@@ -279,6 +281,21 @@ try {
     .getByRole("textbox", { name: /message|ask|chart/i })
     .first()
     .fill("Discuss clear labels in a comparison.");
+
+  const selected = await verifyPicker(
+    page,
+    catalog,
+    join(root, ".context/chat-package-picker.png"),
+  );
+
+  assert.equal(
+    await page
+      .getByRole("textbox", { name: /message|ask|chart/i })
+      .first()
+      .inputValue(),
+    "Discuss clear labels in a comparison.",
+  );
+  await page.getByRole("button", { name: "Remove image", exact: true }).waitFor();
   await page.getByRole("button", { name: /send/i }).click();
   await page
     .getByText("Use clear labels for the comparison.", { exact: true })
@@ -302,8 +319,15 @@ try {
     fullPage: true,
     animations: "disabled",
   });
-  assert.equal(errors.length, 0, errors.join("\n"));
   assert.ok(calls.length >= 3);
+  assert.ok(
+    calls.some((call) =>
+      JSON.stringify(call.messages).includes(
+        `This review is restricted to ${selected.length} eligible guidelines`,
+      ),
+    ),
+    "The server applies the browser's selected scope to the model turn",
+  );
   const citationPage = await context.newPage();
   await citationPage.goto(new URL(`/guideline?id=${encodeURIComponent(id)}`, url).href);
   await citationPage.getByRole("heading", { name: title, exact: true }).waitFor();
@@ -316,6 +340,16 @@ try {
   const cookies = await context.cookies();
   const threadQuery = new URL(page.url()).search;
   assert.match(threadQuery, /thread=/);
+
+  const saved = await page.evaluate(async () => {
+    const thread = new URL(location.href).searchParams.get("thread");
+
+    return (await fetch(`/eve/v1/threads/${thread}`)).json();
+  });
+
+  assert.equal(saved.knowledge.matchedGuidelines, selected.length);
+  assert.equal(saved.knowledge.selection.catalogId, catalog.release.digest);
+  assert.equal(saved.knowledge.filters.sourceTypeIds.length, 1);
   await stop();
   url = await start(true);
   // Cookies are host-scoped, so port allocation preserves the signed browser owner.
@@ -333,8 +367,22 @@ try {
     .getByText("Use clear labels for the comparison.", { exact: true })
     .nth(1)
     .waitFor({ timeout: 90_000 });
+  await page.getByRole("button", { name: "Open sidebar", exact: true }).click();
+  await page.getByRole("button", { name: "Guidelines", exact: true }).click();
+  await page
+    .locator('footer [role="status"][aria-busy="false"]')
+    .filter({ hasText: `${selected.length.toLocaleString()} guidelines selected` })
+    .waitFor();
+  await page
+    .getByRole("list", { name: "Matched guideline results" })
+    .getByRole("link")
+    .first()
+    .waitFor();
+  assert.equal(await page.getByRole("checkbox", { checked: true }).count(), 1);
+  assert.equal(errors.length, 0, errors.join("\n"));
+  assert.ok(selected.includes(id));
   console.log(
-    "Verified file-free npx startup through flags and environment, authenticated UI, native catalog loading, chart upload, grounded answer, local citations, narrow layout, and restart persistence.",
+    "Verified file-free npx startup through flags and environment, authenticated UI, native catalog loading, browser picker filtering and scope, chart upload, grounded answer, local citations, narrow layout, and restart persistence.",
   );
 } catch (error) {
   if (page) {
