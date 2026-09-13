@@ -1,6 +1,6 @@
 {
   "name": "chartcoach",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Run ChartCoach locally: visualization advice grounded in a source-traced guideline catalog.",
   "license": "Apache-2.0",
   "repository": {
