@@ -1,0 +1,11 @@
+development_docs/releasing.md
+  ai_agent 55-57
+.github/workflows/publish.yml
+  ai_agent 92
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "e7ecd0252b2f24f8202bb5486a8bafbac5fdfc7e",
+  "prompts": {}
+}
