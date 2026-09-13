@@ -23,12 +23,13 @@ check_version() {
   uv version --package chartcoach --output-format json | node -e '
     const python = JSON.parse(require("node:fs").readFileSync(0, "utf8"));
     const npm = require("./packages/catalog/package.json");
+    const chat = require("./apps/chat/package.json");
     const tag = process.argv[1];
-    if (python.package_name !== "chartcoach" || npm.name !== "@chartcoach/catalog") {
-      console.error("Expected chartcoach and @chartcoach/catalog package identities");
+    if (python.package_name !== "chartcoach" || npm.name !== "@chartcoach/catalog" || chat.name !== "chartcoach") {
+      console.error("Expected the ChartCoach Python, catalog, and chat package identities");
       process.exitCode = 1;
-    } else if (python.version !== npm.version) {
-      console.error(`Python package version ${python.version} does not match npm package version ${npm.version}`);
+    } else if (python.version !== npm.version || python.version !== chat.version) {
+      console.error(`Software versions must match: Python ${python.version}, catalog ${npm.version}, chat ${chat.version}`);
       process.exitCode = 1;
     } else if (tag.replace(/^v/, "") !== python.version) {
       console.error(`Package version ${python.version} does not match release tag ${tag}`);

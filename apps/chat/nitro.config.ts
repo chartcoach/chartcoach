@@ -2,6 +2,7 @@ import { defineNitroConfig } from "nitro/config";
 import { fileURLToPath } from "node:url";
 
 export default defineNitroConfig({
+  entry: fileURLToPath(new URL("./runtime/worker.ts", import.meta.url)),
   // The workspace link resolves outside node_modules during Nitro externalization.
   traceDeps: ["@chartcoach/catalog/node", "@chartcoach/catalog/duckdb"].map((specifier) =>
     fileURLToPath(import.meta.resolve(specifier)),

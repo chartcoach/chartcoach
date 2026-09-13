@@ -1,14 +1,15 @@
 import { defineChannel, GET, POST } from "eve/channels";
 import { routeAuth } from "eve/channels/auth";
-import { Effect, Redacted } from "effect";
+import { Effect } from "effect";
 import { z } from "zod";
 import { accessRouteAuth, catalogRouteAuth } from "../auth";
 import { browserIdentity, ownerId } from "../../lib/app/identity";
 import { appResponse, checkOrigin, jsonResponse, readJson } from "../../lib/app/http";
 import { AppError } from "../../lib/app/errors";
-import { allowedModelOrigins, listProviderModels, providerEndpoint } from "../../lib/app/providers";
+import { allowedModelOrigins, listProviderModels } from "../../lib/app/providers";
 import {
   deleteConnection,
+  prepareConnection,
   listConnections,
   resolveConnection,
   saveConnection,
@@ -109,34 +110,9 @@ export default defineChannel({
         Effect.gen(function* () {
           const identity = yield* owner(request);
           const input = yield* readJson(request, connectionInputSchema);
-          const saved = input.id ? yield* resolveConnection(identity, input.id) : undefined;
+          const { connection, key } = yield* prepareConnection(identity, input);
 
-          const endpoint = yield* Effect.try({
-            try: () => providerEndpoint(input),
-            catch: (error) =>
-              error instanceof AppError
-                ? error
-                : new AppError({ status: 400, message: "Check the API base URL." }),
-          });
-
-          if (
-            saved &&
-            !input.apiKey &&
-            (input.provider !== saved.connection.provider || endpoint !== saved.connection.baseURL)
-          )
-            return yield* new AppError({
-              status: 400,
-              message: "Enter the key again for this provider or endpoint.",
-            });
-          const key = input.apiKey ? Redacted.make(input.apiKey) : saved?.key;
-
-          if (!key)
-            return yield* new AppError({
-              status: 400,
-              message: "Enter an API key to list models.",
-            });
-
-          return jsonResponse(yield* listProviderModels(input, key));
+          return jsonResponse(yield* listProviderModels(connection, key));
         }),
       ),
     ),

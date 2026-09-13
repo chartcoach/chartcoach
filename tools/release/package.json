@@ -5,7 +5,8 @@
   "scripts": {
     "check": "vp check",
     "minimum-node": "node minimum-node.mjs",
-    "verify:npm": "node verify-npm.mjs"
+    "verify:npm": "node verify-npm.mjs",
+    "verify:chat": "node verify-chat.mjs"
   },
   "devDependencies": {
     "@chartcoach/catalog": "workspace:*",

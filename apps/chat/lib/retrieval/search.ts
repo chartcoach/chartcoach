@@ -6,7 +6,7 @@ import { withCatalogScope, type ScopeOptions } from "../catalog/scope";
 import { waitFor } from "../async";
 import { embedQuery } from "./embedding";
 import { guidelineCards } from "./cards";
-import { env } from "../env";
+import { settings } from "../../runtime/settings";
 
 type SearchMethod = "vector" | "keyword" | "hybrid";
 
@@ -15,7 +15,7 @@ export function searchGuidelines(query: string, method: SearchMethod, options: S
 
   return withCatalogScope(options, async (scope) => {
     if (scope.ids.size === 0) return { method, query, matches: [] };
-    const profile = env.CATALOG_PROFILE;
+    const profile = settings.catalog.profile;
     const { table, info } = await waitFor(getIndex(scope.catalog, profile), signal);
 
     const searchConfig = {

@@ -1,3 +1,4 @@
+import { localGuidelineURL } from "../../shared/guideline-page";
 import * as stylex from "@stylexjs/stylex";
 import { ArrowUpRight } from "lucide-react";
 import { HoverCard } from "radix-ui";
@@ -60,7 +61,7 @@ export function MatchedGuidelines({
                   <HoverCard.Trigger asChild>
                     <a
                       {...stylex.props(ui.focus, styles.link)}
-                      href={guideline.url}
+                      href={localGuidelineURL(guideline.id)}
                       target="_blank"
                       rel="noopener noreferrer"
                       aria-label={`Read guideline: ${match.title} (opens in a new tab)`}

@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { loadModels } from "../browser/workspace-client";
+import { providerNames, type Provider } from "../shared/model";
 import {
   connectionInputSchema,
-  providerNames,
   type ConnectionInput,
   type ModelChoice,
-  type Provider,
 } from "../shared/preferences";
 
 export const emptyConnection = (provider: Provider): ConnectionInput => ({
@@ -46,11 +45,11 @@ export function useConnectionForm(
   }
 
   function setField<K extends keyof ConnectionInput>(field: K, value: ConnectionInput[K]) {
-    if (field === "baseURL" || field === "apiKey") resetDiscovery();
+    if (field === "baseURL" || field === "apiKey" || field === "auth") resetDiscovery();
     setDraft((current) => {
       const next = { ...current, [field]: value };
 
-      if (field === "baseURL") next.apiKey = "";
+      if (field === "baseURL" || (field === "auth" && value === "none")) next.apiKey = "";
 
       return next;
     });

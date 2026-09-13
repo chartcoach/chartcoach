@@ -1,5 +1,6 @@
 import {
   ForbiddenError,
+  httpBasic,
   localDev,
   placeholderAuth,
   vercelOidc,
@@ -13,7 +14,13 @@ import { browserIdentity, ownerId } from "../lib/app/identity";
 import { getThread } from "../lib/app/threads";
 import { ownerSchema } from "../shared/preferences";
 
-export const accessRouteAuth = [vercelOidc(), localDev(), placeholderAuth()];
+const runtimeAuth: AuthFn<Request> = (request) => {
+  const password = process.env.CHARTCOACH_RUNTIME_TOKEN;
+
+  return password ? httpBasic({ username: "chartcoach", password })(request) : undefined;
+};
+
+export const accessRouteAuth = [runtimeAuth, vercelOidc(), localDev(), placeholderAuth()];
 
 export const catalogRouteAuth = accessRouteAuth.map(
   (authenticate): AuthFn<Request> =>

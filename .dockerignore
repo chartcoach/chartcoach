@@ -1,0 +1,16 @@
+.git
+.github/secrets
+.context
+**/node_modules
+**/.eve
+**/.output
+**/.next
+**/out
+**/dist
+**/.env*
+**/*.tsbuildinfo
+.venv
+.cache
+nogit
+**/__pycache__
+**/.pytest_cache

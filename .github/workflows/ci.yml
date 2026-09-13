@@ -73,6 +73,8 @@ jobs:
           directory="$(mktemp -d "$RUNNER_TEMP/chartcoach-npm.XXXXXX")"
           npm pack ./packages/catalog --ignore-scripts --pack-destination "$directory"
           pnpm --filter @chartcoach/release verify:npm "$directory"/*.tgz --node "$CONSUMER_NODE" --minimum-dependencies
+          npm pack ./apps/chat/dist --ignore-scripts --pack-destination "$directory"
+          pnpm --filter @chartcoach/release verify:chat "$directory"/chartcoach-[0-9]*.tgz "$directory"/chartcoach-catalog-*.tgz
           echo "directory=$directory" >> "$GITHUB_OUTPUT"
 
       - name: Retain verified npm distribution

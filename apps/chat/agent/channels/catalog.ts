@@ -6,6 +6,29 @@ import { catalogRouteAuth } from "../auth";
 
 export default defineChannel({
   routes: [
+    GET("/eve/v1/guidelines/:id", async (request) => {
+      const auth = await routeAuth(request, catalogRouteAuth);
+
+      if (auth instanceof Response) return auth;
+      const id = decodeURIComponent(new URL(request.url).pathname.split("/").at(-1)!);
+      const catalog = await getCatalog();
+      const guideline = catalog.get(id);
+
+      if (!guideline)
+        return Response.json(
+          { error: "This guideline is not in the selected catalog." },
+          { status: 404 },
+        );
+
+      return Response.json(
+        {
+          ...guideline,
+          sources: catalog.cite({ ids: [id] })[0]!.sources,
+          release: catalog.release?.digest ?? null,
+        },
+        { headers: { "cache-control": "no-store" } },
+      );
+    }),
     GET("/eve/v1/catalog/:digest/:file", async (request) => {
       const auth = await routeAuth(request, catalogRouteAuth);
 

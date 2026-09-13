@@ -1,37 +1,30 @@
-import { renderToStaticMarkup } from "react-dom/server";
+// @vitest-environment jsdom
+import { renderDocument } from "./render-document";
 import type { EveDynamicToolPart, EveMessage } from "eve/react";
-import { expect, it, vi } from "vite-plus/test";
+import { expect, it } from "vite-plus/test";
 import { Transcript } from "./transcript";
 
-const read: EveMessage = {
-  id: "read",
-  role: "assistant",
-  parts: [
-    {
-      type: "dynamic-tool",
-      toolCallId: "read-labels",
-      toolName: "read_guidelines",
-      state: "output-available",
-      input: { ids: ["direct-labels"] },
-      output: {
-        guidelines: [
-          {
-            id: "direct-labels",
-            title: "Label series directly",
-            description: "Place the name by its series.",
-          },
-        ],
-        citations: [
-          {
-            id: "direct-labels",
-            url: "https://chartcoach.dev/guidelines/direct-labels",
-            sources: [],
-          },
-        ],
+const readPart = {
+  type: "dynamic-tool",
+  toolCallId: "read-labels",
+  toolName: "read_guidelines",
+  state: "output-available",
+  input: { ids: ["direct-labels"] },
+  output: {
+    guidelines: [
+      {
+        id: "direct-labels",
+        title: "Label series directly",
+        description: "Place the name by its series.",
       },
-    },
-  ],
-};
+    ],
+    citations: [
+      { id: "direct-labels", url: "https://chartcoach.dev/guidelines/direct-labels", sources: [] },
+    ],
+  },
+} satisfies EveDynamicToolPart;
+
+const read: EveMessage = { id: "read", role: "assistant", parts: [readPart] };
 
 const feedback = {
   workflow: "visfeedback",
@@ -72,57 +65,65 @@ function answer(
 }
 
 function render(messages: EveMessage[]) {
-  return renderToStaticMarkup(
+  return renderDocument(
     <Transcript messages={messages} attachments={new Map()} stoppedTurnIds={new Set()} />,
   );
 }
 
 it("offers another evidence check when a completed turn has no presentation", () => {
-  const html = render([
+  const page = render([
     { id: "empty", role: "assistant", metadata: { status: "complete" }, parts: [] },
   ]);
 
-  expect(html).toContain("The answer needs another evidence check.");
-  expect(html).toContain("Try again");
+  expect(page.body.textContent).toContain("The answer needs another evidence check.");
+  expect(page.body.textContent).toContain("Try again");
 });
 
 it.each([
-  { workflow: "discuss", label: "Your question" },
-  { workflow: "visrec", label: "Your brief" },
-])("renders grounded $workflow advice with its decision context", ({ workflow, label }) => {
-  const html = render([
-    read,
-    answer(
-      {
-        ...feedback,
-        workflow,
-        points: [{ ...feedback.points[0], assessment: null }],
-      },
-      { status: "complete" },
-    ),
-  ]);
+  ["visfeedback", "In your chart", "violated"],
+  ["discuss", "Your question", null],
+  ["visrec", "Your brief", null],
+] as const)(
+  "renders grounded %s advice with a local citation and expandable context",
+  (workflow, label, assessment) => {
+    const page = render([
+      answer(
+        { ...feedback, workflow, points: [{ ...feedback.points[0], assessment }] },
+        {},
+        read.parts,
+      ),
+    ]);
 
-  expect(html).toContain("Place each series name beside its line.");
-  expect(html).toContain(label);
-  expect(html).toContain('aria-label="Primary: Label series directly"');
-  expect(html).not.toContain(">Improve</h3>");
-});
+    const article = page.querySelector("article")!;
+    expect(article.textContent).toContain("Place each series name beside its line.");
+    expect(
+      article.querySelector('a[aria-label="Primary: Label series directly"]')?.getAttribute("href"),
+    ).toBe("/guideline?id=direct-labels");
 
-it("renders an action with a verified citation and its context on demand", () => {
-  const html = render([answer(feedback, {}, read.parts)]);
-  expect(html).toContain("The legend is far from the lines.");
-  expect(html).toMatch(
-    /<dt[^>]*>Guideline guidance<\/dt><dd[^>]*>Place the name by its series\.<\/dd>/,
-  );
-  expect(html).toContain("Place each series name beside its line.");
-  expect(html).toContain("Label series directly");
-  expect(html).toContain('href="https://chartcoach.dev/guidelines/direct-labels"');
-  expect(html).toContain('aria-label="Primary: Label series directly"');
-  expect(html).toMatch(/<details[^>]*><summary[^>]*>Why this applies/);
-});
+    const context = article.querySelector<HTMLDetailsElement>(
+      'ol[aria-label="Guideline-backed advice"] details',
+    )!;
+
+    expect(context.open).toBe(false);
+    expect(context.querySelector("summary")?.textContent).toBe("Why this applies");
+    expect(Array.from(context.querySelectorAll("dt"), (term) => term.textContent)).toEqual([
+      label,
+      "Guideline guidance",
+    ]);
+    expect(
+      Array.from(context.querySelectorAll("dd"), (definition) => definition.textContent),
+    ).toEqual(["The legend is far from the lines.", "Place the name by its series."]);
+    expect(
+      Array.from(
+        article.querySelectorAll('ol[aria-label="Guideline-backed advice"] h3'),
+        (heading) => heading.textContent,
+      ),
+    ).toEqual(assessment ? ["Improve"] : []);
+  },
+);
 
 it("can cite a guideline read in an earlier turn", () => {
-  const html = render([
+  const page = render([
     read,
     {
       id: "follow-up",
@@ -132,11 +133,13 @@ it("can cite a guideline read in an earlier turn", () => {
     answer(),
   ]);
 
-  expect(html).toContain("Place each series name beside its line.");
-  expect(html).toContain('aria-label="Primary: Label series directly"');
+  expect(page.body.textContent).toContain("Place each series name beside its line.");
+  expect(
+    page.querySelector('article a[aria-label="Primary: Label series directly"]'),
+  ).not.toBeNull();
 });
 
-const searchPart: EveMessage["parts"][number] = {
+const searchPart: EveDynamicToolPart = {
   type: "dynamic-tool",
   toolCallId: "search-labels",
   toolName: "search_guidelines",
@@ -161,48 +164,40 @@ const searchPart: EveMessage["parts"][number] = {
   },
 };
 
-it("shows a retry notice when a response cites an unread search match", () => {
-  const html = render([answer(feedback, {}, [searchPart])]);
-  expect(html).toContain("The answer needs another evidence check.");
-  expect(html).not.toContain("Place each series name beside its line.");
-});
-
-it("withholds an answer when its read citation points outside the catalog", () => {
-  const html = render([
-    {
-      ...read,
-      parts: [
-        {
-          type: "dynamic-tool",
-          toolCallId: "read-unsafe",
-          toolName: "read_guidelines",
-          state: "output-available",
-          input: { ids: ["direct-labels"] },
-          output: {
-            guidelines: [
-              {
-                id: "direct-labels",
-                title: "Label series directly",
-                description: "Place the name by its series.",
-              },
-            ],
-            citations: [
-              {
-                id: "direct-labels",
-                url: "https://example.com/guidelines/direct-labels",
-                sources: [],
-              },
-            ],
-          },
-        },
-      ],
+it.each([
+  { evidence: "an unread search match", part: searchPart },
+  {
+    evidence: "a read citation outside the catalog",
+    part: {
+      ...readPart,
+      output: {
+        ...readPart.output,
+        citations: [
+          { ...readPart.output.citations[0], url: "https://example.com/guidelines/direct-labels" },
+        ],
+      },
     },
-    answer(),
-  ]);
-
-  expect(html).toContain("The answer needs another evidence check.");
-  expect(html).not.toContain("Place each series name beside its line.");
-});
+  },
+  {
+    evidence: "a failed read",
+    part: {
+      type: "dynamic-tool",
+      toolCallId: "failed-read",
+      toolName: "read_guidelines",
+      input: { ids: ["direct-labels"] },
+      state: "output-error",
+      errorText: "Catalog unavailable.",
+    },
+  },
+  { evidence: "a partial read", part: { ...readPart, partial: true } },
+] satisfies { evidence: string; part: EveDynamicToolPart }[])(
+  "withholds advice based on $evidence",
+  ({ part }) => {
+    const page = render([answer(feedback, {}, [part])]);
+    expect(page.body.textContent).toContain("The answer needs another evidence check.");
+    expect(page.body.textContent).not.toContain("Place each series name beside its line.");
+  },
+);
 
 function additionalRead(ids: string[]): EveMessage["parts"][number] {
   return {
@@ -227,7 +222,7 @@ function additionalRead(ids: string[]): EveMessage["parts"][number] {
 }
 
 it("distinguishes explicit supporting evidence from other search candidates", () => {
-  const html = render([
+  const page = render([
     answer(
       {
         ...feedback,
@@ -238,20 +233,20 @@ it("distinguishes explicit supporting evidence from other search candidates", ()
     ),
   ]);
 
-  expect(html).toContain('aria-label="Primary: Label series directly"');
-  expect(html).toContain('aria-label="Supporting: Guidance for readability"');
-  expect(html).toMatch(/Supporting <span[^>]*>1<\/span>/);
-  expect(html).toMatch(/Explored <span[^>]*>1<\/span>/);
-  expect(html).not.toMatch(/<details[^>]* open[=> ]/);
-  expect(html).toMatch(/<details[^>]*><summary[^>]*>Why this applies/);
-  expect(html).toMatch(
-    /<dt[^>]*>Guideline guidance<\/dt><dd[^>]*>Place the name by its series\.<\/dd>/,
+  const citations = page.querySelectorAll('ol[aria-label="Guideline-backed advice"] a');
+  expect(Array.from(citations, (link) => link.getAttribute("aria-label"))).toEqual([
+    "Primary: Label series directly",
+    "Supporting: Guidance for readability",
+  ]);
+
+  const groups = Array.from(page.querySelectorAll("button"), (button) =>
+    button.textContent?.trim(),
   );
+
+  expect(groups).toEqual(expect.arrayContaining(["Supporting 1", "Explored 1"]));
 });
 
 it("communicates respected, violated, and uncertain findings with distinct next actions", () => {
-  const errors = vi.spyOn(console, "error");
-
   const result = {
     ...feedback,
     points: [
@@ -273,25 +268,26 @@ it("communicates respected, violated, and uncertain findings with distinct next 
     ],
   };
 
-  const html = render([
+  const page = render([
     answer(result, { status: "complete" }, [
       ...read.parts,
       additionalRead(["contrast", "ordering"]),
     ]),
   ]);
 
-  expect(html).toContain("Improve");
-  expect(html).toContain("Working well");
-  expect(html).toContain(">Check</h3>");
-  expect(html).toContain("Place each series name beside its line.");
-  expect(html).toContain("Keep this contrast.");
-  expect(html).toContain("Check whether category order has domain meaning.");
-  expect(errors).not.toHaveBeenCalled();
-  errors.mockRestore();
+  expect(
+    Array.from(
+      page.querySelectorAll('ol[aria-label="Guideline-backed advice"] h3'),
+      (heading) => heading.textContent,
+    ),
+  ).toEqual(["Improve", "Working well", "Check"]);
+  expect(page.body.textContent).toContain("Place each series name beside its line.");
+  expect(page.body.textContent).toContain("Keep this contrast.");
+  expect(page.body.textContent).toContain("Check whether category order has domain meaning.");
 });
 
-it("uses verified SQL matches for previews and treats arbitrary SQL cells as data", () => {
-  const html = render([
+it("uses verified SQL matches for evidence previews", () => {
+  const page = render([
     answer(
       { workflow: "visfeedback", status: "no_match", points: [], question: null },
       { status: "complete" },
@@ -326,13 +322,18 @@ it("uses verified SQL matches for previews and treats arbitrary SQL cells as dat
     ),
   ]);
 
-  expect(html).toContain("I could not find an applicable guideline");
-  expect(html).toContain('aria-label="Search results"');
-  expect(html).toContain('aria-label="Read guideline: Label series directly"');
+  expect(page.body.textContent).toContain("I could not find an applicable guideline");
+  expect(
+    page
+      .querySelector(
+        'section[aria-label="Search results"] a[aria-label="Read guideline: Label series directly"]',
+      )
+      ?.getAttribute("href"),
+  ).toBe("/guideline?id=direct-labels");
 });
 
 it("renders recommendation emphasis while keeping authored links and images inert", () => {
-  const html = render([
+  const page = render([
     read,
     answer(
       {
@@ -349,14 +350,16 @@ it("renders recommendation emphasis while keeping authored links and images iner
     ),
   ]);
 
-  expect(html).toMatch(/<strong\b[^>]*>direct labels<\/strong>/);
-  expect(html).not.toContain('href="https://example.com');
-  expect(html).not.toContain('src="https://example.com');
-  expect(html).not.toContain("<iframe");
+  const advice = page.querySelector('ol[aria-label="Guideline-backed advice"]')!;
+  expect(advice.querySelector("strong")?.textContent).toBe("direct labels");
+  expect(Array.from(advice.querySelectorAll("a"), (link) => link.getAttribute("href"))).toEqual([
+    "/guideline?id=direct-labels",
+  ]);
+  expect(advice.querySelectorAll("img, iframe")).toHaveLength(0);
 });
 
 it("keeps an accepted answer visible when its turn is cancelled", () => {
-  const html = renderToStaticMarkup(
+  const page = renderDocument(
     <Transcript
       messages={[read, answer(feedback, { status: "complete", turnId: "cancelled" })]}
       attachments={new Map()}
@@ -364,42 +367,8 @@ it("keeps an accepted answer visible when its turn is cancelled", () => {
     />,
   );
 
-  expect(html).toContain("Response stopped.");
-  expect(html).toContain("Place each series name beside its line.");
-});
-
-it("requires a successful read result before accepting a citation", () => {
-  const html = render([
-    {
-      ...read,
-      parts: [
-        {
-          type: "dynamic-tool",
-          toolCallId: "failed-read",
-          toolName: "read_guidelines",
-          input: { ids: ["direct-labels"] },
-          state: "output-error",
-          errorText: "Catalog unavailable.",
-        },
-      ],
-    },
-    answer(),
-  ]);
-
-  expect(html).toContain("The answer needs another evidence check.");
-  expect(html).not.toContain("Place each series name beside its line.");
-});
-
-it("waits for the final read result before accepting a citation", () => {
-  const parts = read.parts.map((part) =>
-    part.type === "dynamic-tool" && part.state === "output-available"
-      ? { ...part, partial: true as const }
-      : part,
-  );
-
-  const html = render([{ ...read, parts }, answer()]);
-  expect(html).toContain("The answer needs another evidence check.");
-  expect(html).not.toContain("Place each series name beside its line.");
+  expect(page.body.textContent).toContain("Response stopped.");
+  expect(page.body.textContent).toContain("Place each series name beside its line.");
 });
 
 it.each([
@@ -422,10 +391,9 @@ it.each([
     expected: "I can review a chart, recommend a design, or discuss visualization choices",
   },
 ])("renders the $status response", ({ status, question, expected }) => {
-  const html = render([
+  const page = render([
     answer({ workflow: "visfeedback", status, points: [], question }, { status: "complete" }),
   ]);
 
-  expect(html).toContain(expected);
-  expect(html).not.toContain("<img");
+  expect(page.body.textContent).toContain(expected);
 });

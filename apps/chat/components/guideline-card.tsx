@@ -1,6 +1,5 @@
+import { localGuidelineURL } from "../shared/guideline-page";
 import { ArrowUpRight } from "lucide-react";
-import Image from "next/image";
-import { useState } from "react";
 import type { GuidelinePreview } from "../chat/tool-output";
 import * as stylex from "@stylexjs/stylex";
 import { colors } from "./ui/tokens.stylex";
@@ -33,7 +32,6 @@ const styles = stylex.create({
     backgroundColor: colors.background,
     color: colors.muted,
   },
-  image: { width: "100%", height: "100%", objectFit: "contain", display: "block" },
   fallback: {
     position: "absolute",
     inset: 0,
@@ -63,34 +61,18 @@ const styles = stylex.create({
 });
 
 export function GuidelineCard({ guideline }: { guideline: GuidelinePreview }) {
-  const [imageState, setImageState] = useState<"loading" | "loaded" | "failed">("loading");
-
   return (
     <a
       {...stylex.props(ui.focus, styles.card)}
-      href={guideline.url}
+      href={localGuidelineURL(guideline.id)}
       target="_blank"
       rel="noopener noreferrer"
       aria-label={guideline.title}
     >
       <span {...stylex.props(styles.preview)} aria-hidden="true">
-        {imageState !== "loaded" ? (
-          <span {...stylex.props(styles.fallback)}>
-            <span>{guideline.title}</span>
-          </span>
-        ) : null}
-        {imageState !== "failed" ? (
-          <Image
-            {...stylex.props(styles.image)}
-            src={`${guideline.url}/og.png`}
-            alt=""
-            fill
-            sizes="(max-width: 720px) 92vw, 440px"
-            quality={90}
-            onLoad={() => setImageState("loaded")}
-            onError={() => setImageState("failed")}
-          />
-        ) : null}
+        <span {...stylex.props(styles.fallback)}>
+          <span>{guideline.title}</span>
+        </span>
       </span>
       <span {...stylex.props(styles.footer)}>
         <span>Read guideline</span>

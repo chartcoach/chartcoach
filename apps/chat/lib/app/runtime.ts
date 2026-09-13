@@ -3,10 +3,9 @@ import { FetchHttpClient } from "@effect/platform";
 import * as OtelTracer from "@effect/opentelemetry/Tracer";
 import { context, trace, type Tracer } from "@opentelemetry/api";
 import { join } from "node:path";
-import envPaths from "env-paths";
 import { databaseLayer } from "./database";
 import { Secrets } from "./secrets";
-import { env } from "../env";
+import { settings } from "../../runtime/settings";
 
 export function createAppRuntime(
   directory: string,
@@ -36,7 +35,7 @@ export function runApp<A, E>(
   >,
   options?: { signal?: AbortSignal },
 ) {
-  runtime ??= createAppRuntime(env.CHAT_DATA_DIR ?? envPaths("chartcoach-chat").data);
+  runtime ??= createAppRuntime(settings.storage.dataDir);
   const parent = trace.getSpan(context.active())?.spanContext();
 
   return runtime.runPromise(

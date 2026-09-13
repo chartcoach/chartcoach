@@ -1,0 +1,98 @@
+---
+title: Chat locally
+description: Run the ChartCoach chat app on your computer or server.
+icon: MessagesSquare
+---
+
+Start ChartCoach with Node.js 24 or later:
+
+```bash
+npx chartcoach
+```
+
+Choose **Model settings** to connect a provider and select a model that supports
+images and tool calls. Upload a chart or ask about a visualization choice.
+Guideline citations open locally with their sources. Conversations and encrypted
+connections persist across restarts.
+
+The default URL is `http://127.0.0.1:4273`. Press Ctrl+C to stop the server.
+Use `--no-open` to keep the browser closed and `--port` to choose another port.
+
+## Select a catalog
+
+```bash
+npx chartcoach chat --catalog ./my-catalog-release
+```
+
+Supply a release directory, an immutable `release.json` URL, or a `catalog.json`
+selection URL. The default official selection resolves to one verified release
+at startup. Changing the catalog requires restarting and selecting guidelines
+for a new conversation.
+
+## Use a local model
+
+Configure the connection directly with flags:
+
+```bash
+npx chartcoach --provider compatible --base-url http://127.0.0.1:1234/v1 \
+  --model my-vision-model --model-auth none
+```
+
+Replace `my-vision-model` with a model served by your endpoint. The same settings
+can come entirely from the environment:
+
+```bash
+export CHARTCOACH_PROVIDER=compatible
+export CHARTCOACH_BASE_URL=http://127.0.0.1:1234/v1
+export CHARTCOACH_MODEL=my-vision-model
+export CHARTCOACH_MODEL_AUTH=none
+npx chartcoach
+```
+
+For OpenAI, set `OPENAI_API_KEY` and run `npx chartcoach --model my-vision-model`.
+Use `--provider anthropic` with `ANTHROPIC_API_KEY`, or `--provider google` with
+`GEMINI_API_KEY`. `--api-key-env` selects another credential variable.
+
+Questions, images, and retrieved guidance go to the chosen model endpoint. Query
+embeddings run locally. Browser-entered keys are encrypted in the data directory.
+
+Configuration files are optional. `--config ./chartcoach.json` loads saved settings.
+Flags override environment variables, which override the selected JSON file.
+T3 Env validates environment values and identifies invalid variables without
+printing secrets. `--data-dir` chooses persistent storage.
+
+## Share a server
+
+```bash
+export CHARTCOACH_PASSWORD='choose-a-long-private-password'
+npx chartcoach chat --host 0.0.0.0 --no-open \
+  --public-url https://chat.example.org
+```
+
+Terminate HTTPS at a reverse proxy that preserves the public Host header and
+streams responses to port 4273. Sign in as `chartcoach` with the configured
+password. Each browser has its own history and model connections. The server
+operator can access stored credentials.
+
+For containers, the repository includes `infra/Dockerfile` and `infra/compose.yml`:
+
+```bash
+export CHARTCOACH_PASSWORD='choose-a-long-private-password'
+docker compose -f infra/compose.yml up --build -d
+```
+
+Compose publishes `127.0.0.1:4273` and retains data in named volumes. Set
+`CHARTCOACH_PUBLIC_URL` when accessing it through an HTTPS proxy. Model endpoints
+must be reachable from inside the container.
+
+The [chat README](https://github.com/chartcoach/chartcoach/blob/main/apps/chat/README.md)
+lists all configuration fields, environment variables, storage paths, and deployment options.
+
+## Diagnose startup
+
+```bash
+npx chartcoach doctor --json
+```
+
+The report includes software and catalog identity, model availability, storage
+locations, and native DuckDB loading. Credentials are excluded.

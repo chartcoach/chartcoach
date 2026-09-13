@@ -38,7 +38,15 @@ export function databaseLayer(filename: string) {
       const sql = yield* SqlClient.SqlClient;
       yield* sql`PRAGMA foreign_keys = ON`;
       yield* sql`PRAGMA busy_timeout = 5000`;
-      yield* Migrator.make({})({ loader: Migrator.fromRecord({ "001_app": initialSchema }) });
+      yield* Migrator.make({})({
+        loader: Migrator.fromRecord({
+          "001_app": initialSchema,
+          "002_connection_auth": Effect.gen(function* () {
+            const sql = yield* SqlClient.SqlClient;
+            yield* sql`ALTER TABLE connections ADD COLUMN auth TEXT NOT NULL DEFAULT 'api-key'`;
+          }),
+        }),
+      });
     }),
   );
 

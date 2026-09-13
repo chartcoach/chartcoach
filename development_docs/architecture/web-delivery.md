@@ -64,9 +64,31 @@ packages when their API or instructions change.
 
 ## Chat app
 
-`apps/chat` runs a Next.js interface and an Eve agent on one origin. The browser
+`apps/chat` publishes the `chartcoach` npm application. Next.js exports its interface as static assets. The CLI supervises an Eve worker and serves the interface and authenticated agent requests on one public origin. The browser
 sends chart images and questions to Eve and receives structured reviews and tool
 events. Shared schemas define filter selections and review evidence.
+
+`runtime/schema.ts` owns the configuration schema. `runtime/environment.ts` derives
+typed T3 Env validation from it, and `runtime/config.ts` applies precedence. The launcher
+validates it before starting a worker, resolves the selected catalog release, and
+passes one resolved configuration to the worker. `runtime/start.ts` owns the data
+directory lock and the worker and gateway resources. `runtime/worker.ts` owns the
+Nitro listener, storage readiness, and shutdown hooks. It reports its ready URL
+over IPC. Eve's working directory
+is the configured data directory, so its workflows and sandbox files persist beside
+the app database and credential key.
+
+`runtime/gateway.ts` serves static assets and forwards `/eve/` requests to the
+private worker using a per-process credential. The public listener validates Host
+and Origin headers. Network listeners require HTTP Basic authentication. Workflow
+callbacks remain on the worker's loopback origin. The gateway replaces forwarded
+headers with its configured public origin.
+
+The pinned Eve dependency has two focused patches: preserving image bytes in
+instrumentation and keeping live stream events ordered during disk catch-up.
+`apps/chat/test/workflow-stream.test.mjs` exercises the latter against Eve's actual
+vendored reader, including replay from a saved cursor. Keep these checks when
+upgrading Eve and remove a patch only when the upstream version passes them.
 
 The app separates rendering, browser computation, and server catalog access:
 
@@ -109,6 +131,8 @@ through the browser-facing origin.
 | `apps/docs/.next`       | Next.js build                     |
 | `apps/docs/out`         | Static docs export                |
 | `apps/chat/.next`       | Next.js build                     |
+| `apps/chat/out`         | Static chat interface             |
+| `apps/chat/dist`        | Installable npm application       |
 | `apps/chat/.output`     | Eve production build              |
 | `packages/catalog/dist` | JavaScript package build          |
 
@@ -123,3 +147,19 @@ directory. Do not edit generated output directly.
 | Site output or search      | `pnpm --dir apps/site test` and inspect `apps/site/dist`     |
 | Docs content or navigation | `pnpm --dir apps/docs build` plus browser links and search   |
 | Shared web import          | `pnpm check:architecture`                                    |
+
+## Chat distribution
+
+`apps/chat/scripts/package.mjs` assembles compiled Eve code and the static UI into
+`apps/chat/dist`. It excludes traced `node_modules` and resolves exact runtime
+versions for the distribution manifest. The pinned Eve build tooling supplies a
+sandbox plan containing its compiled template keys and skill seeds. The worker
+provisions that plan through the public just-bash backend before readiness. This
+keeps template state in the data directory and compiler dependencies in the build. npm installs native dependencies for the
+consumer platform. The source workspace keeps the compiler, frontend dependencies,
+and private brand and skill packages.
+
+`infra/Dockerfile` builds and installs the same npm tarballs. `infra/compose.yml` persists `/data`
+and `/cache`. `tools/release/verify-chat.mjs` installs both tarballs outside the
+workspace and checks the CLI, authenticated browser, a streamed grounded answer,
+and conversation persistence after restart.
