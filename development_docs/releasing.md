@@ -52,9 +52,9 @@ artifacts through `infra/Dockerfile`'s `packages` build context for Linux amd64 
 [npm trusted publishing](https://docs.npmjs.com/trusted-publishers/) exchange
 GitHub Actions identity tokens for short-lived publication credentials.
 Configure each package's publisher for this repository and `publish.yml`.
-The publishing jobs request `id-token: write`. The npm publishing job uses
-the GitHub environment `npm`; configure that environment name on npmjs.com.
-The PyPI publishing job uses no GitHub environment. Any environment protection
+The publishing jobs request `id-token: write`. Python publishing uses the GitHub
+environment `pypi`; both npm packages publish through `npm`. Configure the matching
+environment name in each registry's trusted publisher. Any environment protection
 rules must permit the release tag.
 
 Confirm publisher settings before tagging. npm generates provenance for public
