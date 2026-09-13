@@ -142,7 +142,7 @@ jobs:
     name: Verify published packages
     needs: [publish-pypi, publish-npm]
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - name: Checkout release tooling
         uses: actions/checkout@v7
@@ -152,7 +152,7 @@ jobs:
           name: release-packages
           path: dist/release
       - name: Verify registry metadata and artifact bytes
-        run: python3 scripts/release_registry.py check dist/release --tag "$RELEASE_TAG"
+        run: python3 scripts/release_registry.py check dist/release --tag "$RELEASE_TAG" --wait-seconds 600
 
   publish-container:
     name: Publish container image

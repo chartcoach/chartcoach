@@ -72,10 +72,11 @@ package independently. It skips a version whose registry integrity matches the v
 tarball. A different digest fails publication. uv accepts identical Python
 files that have already been uploaded. Registry verification and release notes
 resume after all packages publish successfully. Verification retries pending registry
-files and transient network failures for up to two minutes, five seconds apart.
-Missing download URLs are treated as propagation delays. Digest conflicts and
-authorization errors fail immediately. Local checks can set `--wait-seconds 0`
-to return immediately.
+files and transient network failures for up to ten minutes, five seconds apart,
+including packages npm has accepted but is still processing. Missing download
+URLs are treated as propagation delays. Digest conflicts and authorization errors
+fail immediately. Local checks default to two minutes and can set
+`--wait-seconds 0` to return immediately.
 
 If preparation fails before publication and a workflow correction is needed, merge
 the correction and wait for main CI. Then dispatch the corrected workflow for
