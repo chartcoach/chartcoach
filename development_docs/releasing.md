@@ -44,7 +44,7 @@ tagged commit. It checks that all packages match the tag and rejects conflicting
 registry bytes. The publisher jobs reuse this retained `release-packages` bundle.
 A final job verifies registry metadata and downloadable bytes before publishing the versioned `ghcr.io/chartcoach/chartcoach` container image and
 creating the GitHub release notes. Container builds consume the retained npm
-artifacts through `infra/Dockerfile`'s `packages` build context for Linux amd64 and arm64. The release then pulls the image from GHCR and checks native dependencies, health, and authenticated UI/API access before creating release notes. Publication does not rebuild or rerun consumer tests.
+artifacts through `infra/Dockerfile`'s `packages` build context for Linux amd64 and arm64. A separate job pulls the public image from GHCR without registry credentials and checks native dependencies, health, and authenticated UI/API access before creating release notes. Retrying that check does not rebuild the image. Publication does not rebuild or rerun consumer tests.
 
 ### Registry setup
 
@@ -56,6 +56,9 @@ The publishing jobs request `id-token: write`. Python publishing uses the GitHub
 environment `pypi`; both npm packages publish through `npm`. Configure the matching
 environment name in each registry's trusted publisher. Any environment protection
 rules must permit the release tag.
+
+After the first container push, set the GHCR package visibility to **Public**.
+The container verification job deliberately pulls without registry credentials.
 
 Confirm publisher settings before tagging. npm generates provenance for public
 repositories. Repository visibility and trusted-publisher authorization are
