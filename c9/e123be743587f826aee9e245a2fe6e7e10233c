@@ -1,0 +1,23 @@
+apps/chat/README.md
+  s_a0a850c16fe72b::t_74d4fe037d4b6c 101-121,221-245
+apps/chat/test/providers.test.tsx
+  s_a0a850c16fe72b::t_74d4fe037d4b6c 10,14-46
+apps/chat/runtime/schema.ts
+  ai_agent 40-53
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "c9e123be743587f826aee9e245a2fe6e7e10233c",
+  "prompts": {},
+  "sessions": {
+    "s_a0a850c16fe72b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a09a98-a62a-72f3-9516-845ac6bb7326",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Péter Ferenc Gyarmati <dev.petergy@gmail.com>"
+    }
+  }
+}
