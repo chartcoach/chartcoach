@@ -1,0 +1,622 @@
+diff --git a/dist/src/ast/pivot.js b/dist/src/ast/pivot.js
+index 3b689835e62bfa113712eb070cb408424d2ea5d5..9fc4a255e753553be382c9ee4b643a0b62cc09bc 100644
+--- a/dist/src/ast/pivot.js
++++ b/dist/src/ast/pivot.js
+@@ -1,11 +1,5 @@
+-import { PIVOT_QUERY } from '../constants.js';
+-import { asLiteral, asNode, maybeTableRef } from '../util/ast.js';
+-import { nodeList } from '../util/function.js';
+-import { unquote } from '../util/string.js';
+-import { isArray, isParamLike, isString } from '../util/type-check.js';
+-import { isNode } from './node.js';
+-import { Query, isQuery } from './query.js';
+-import { SelectClauseNode } from './select.js';
++import { PivotQuery } from './query.js';
++export { PivotQuery } from './query.js';
+ /**
+  * Check if a value is a pivot query.
+  * @param value The value to check.
+@@ -13,127 +7,3 @@ import { SelectClauseNode } from './select.js';
+ export function isPivotQuery(value) {
+     return value instanceof PivotQuery;
+ }
+-export class PivotQuery extends Query {
+-    /** The relation to pivot. */
+-    source;
+-    /** The expressions whose values determine pivot output columns. */
+-    _on = [];
+-    /** The literal values that constrain and order pivot output columns. */
+-    _in = [];
+-    /** The aggregate expressions used to populate pivot output cells. */
+-    _using = [];
+-    /** The expressions that define pivot row groups. */
+-    _groupby = [];
+-    /**
+-     * Instantiate a new pivot query.
+-     * @param source The source relation to pivot.
+-     */
+-    constructor(source) {
+-        super(PIVOT_QUERY);
+-        this.source = maybeTableRef(source);
+-    }
+-    /**
+-     * Add a pointer to the query for which this query is a CTE.
+-     * @param query The query for which this query is a CTE.
+-     */
+-    setCteFor(query) {
+-        super.setCteFor(query);
+-        if (isQuery(this.source)) {
+-            this.source.setCteFor(query);
+-        }
+-    }
+-    /**
+-     * Return a list of subqueries.
+-     */
+-    get subqueries() {
+-        return isQuery(this.source) ? [this.source] : [];
+-    }
+-    /**
+-     * Add ON expressions.
+-     * @param expr Expressions to add.
+-     */
+-    on(...expr) {
+-        this._on = this._on.concat(nodeList(expr));
+-        return this;
+-    }
+-    /**
+-     * Add IN values to constrain and order pivot output columns.
+-     * @param expr Values to add.
+-     */
+-    in(...expr) {
+-        const list = expr.flat().map(asLiteral);
+-        if (list.length === 0) {
+-            throw new Error('PivotQuery.in requires at least one value.');
+-        }
+-        this._in = this._in.concat(list);
+-        return this;
+-    }
+-    /**
+-     * Add USING expressions.
+-     * @param expr Aggregate cell expressions to add.
+-     */
+-    using(...expr) {
+-        const list = [];
+-        const add = (v, as) => {
+-            if (v != null) {
+-                list.push(new SelectClauseNode(asNode(v), as ? unquote(as) : ''));
+-            }
+-        };
+-        const visit = (e) => {
+-            if (e == null)
+-                return;
+-            else if (isString(e)
+-                || isNode(e)
+-                || isParamLike(e)
+-                || e instanceof Date
+-                || typeof e !== 'object') {
+-                add(e);
+-            }
+-            else {
+-                for (const alias in e)
+-                    add(e[alias], alias);
+-            }
+-        };
+-        expr.forEach(e => isArray(e) ? e.forEach(visit) : visit(e));
+-        if (list.length === 0) {
+-            throw new Error('PivotQuery.using requires at least one expression.');
+-        }
+-        this._using = this._using.concat(list);
+-        return this;
+-    }
+-    /**
+-     * Add GROUP BY expressions.
+-     * @param expr Expressions to add.
+-     */
+-    groupby(...expr) {
+-        this._groupby = this._groupby.concat(nodeList(expr));
+-        return this;
+-    }
+-    /**
+-     * Set GROUP BY expressions, replacing any prior expressions.
+-     * @param expr Expressions to add.
+-     */
+-    setGroupby(...expr) {
+-        this._groupby = [];
+-        return this.groupby(...expr);
+-    }
+-    /**
+-     * Clone this pivot query.
+-     */
+-    clone() {
+-        const { source, ...rest } = this;
+-        // @ts-expect-error creates pivot query
+-        return Object.assign(new PivotQuery(source), rest, {
+-            _with: this._with.slice(),
+-            _on: this._on.slice(),
+-            _in: this._in.slice(),
+-            _using: this._using.slice(),
+-            _groupby: this._groupby.slice(),
+-            _orderby: this._orderby.slice(),
+-            _limitPerc: this._limitPerc,
+-            _limit: this._limit,
+-            _offset: this._offset
+-        });
+-    }
+-}
+-//# sourceMappingURL=pivot.js.map
+\ No newline at end of file
+diff --git a/dist/src/ast/query.js b/dist/src/ast/query.js
+index 8fd24d0f2837bbda25ee6b8b3727a919df68a572..29716919752f24f3b89cec998fc83db95f61eaef 100644
+--- a/dist/src/ast/query.js
++++ b/dist/src/ast/query.js
+@@ -1,9 +1,8 @@
+-import { PivotQuery } from './pivot.js';
+-import { CREATE_QUERY, CREATE_SCHEMA_QUERY, DESCRIBE_QUERY, SELECT_QUERY, SET_OPERATION } from '../constants.js';
+-import { asNode, asTableRef, asVerbatim, maybeTableRef } from '../util/ast.js';
++import { PIVOT_QUERY, CREATE_QUERY, CREATE_SCHEMA_QUERY, DESCRIBE_QUERY, SELECT_QUERY, SET_OPERATION } from '../constants.js';
++import { asLiteral, asNode, asTableRef, asVerbatim, maybeTableRef } from '../util/ast.js';
+ import { exprList, nodeList } from '../util/function.js';
+ import { unquote } from '../util/string.js';
+-import { isArray, isString } from '../util/type-check.js';
++import { isArray, isParamLike, isString } from '../util/type-check.js';
+ import { isColumnRef } from './column-ref.js';
+ import { FromClauseNode, FromNode } from './from.js';
+ import { ExprNode, SQLNode, isNode } from './node.js';
+@@ -663,4 +662,127 @@ class WithClause {
+         return Query.exceptAll(...queries).with(...this._with);
+     }
+ }
+-//# sourceMappingURL=query.js.map
+\ No newline at end of file
++
++export class PivotQuery extends Query {
++    /** The relation to pivot. */
++    source;
++    /** The expressions whose values determine pivot output columns. */
++    _on = [];
++    /** The literal values that constrain and order pivot output columns. */
++    _in = [];
++    /** The aggregate expressions used to populate pivot output cells. */
++    _using = [];
++    /** The expressions that define pivot row groups. */
++    _groupby = [];
++    /**
++     * Instantiate a new pivot query.
++     * @param source The source relation to pivot.
++     */
++    constructor(source) {
++        super(PIVOT_QUERY);
++        this.source = maybeTableRef(source);
++    }
++    /**
++     * Add a pointer to the query for which this query is a CTE.
++     * @param query The query for which this query is a CTE.
++     */
++    setCteFor(query) {
++        super.setCteFor(query);
++        if (isQuery(this.source)) {
++            this.source.setCteFor(query);
++        }
++    }
++    /**
++     * Return a list of subqueries.
++     */
++    get subqueries() {
++        return isQuery(this.source) ? [this.source] : [];
++    }
++    /**
++     * Add ON expressions.
++     * @param expr Expressions to add.
++     */
++    on(...expr) {
++        this._on = this._on.concat(nodeList(expr));
++        return this;
++    }
++    /**
++     * Add IN values to constrain and order pivot output columns.
++     * @param expr Values to add.
++     */
++    in(...expr) {
++        const list = expr.flat().map(asLiteral);
++        if (list.length === 0) {
++            throw new Error('PivotQuery.in requires at least one value.');
++        }
++        this._in = this._in.concat(list);
++        return this;
++    }
++    /**
++     * Add USING expressions.
++     * @param expr Aggregate cell expressions to add.
++     */
++    using(...expr) {
++        const list = [];
++        const add = (v, as) => {
++            if (v != null) {
++                list.push(new SelectClauseNode(asNode(v), as ? unquote(as) : ''));
++            }
++        };
++        const visit = (e) => {
++            if (e == null)
++                return;
++            else if (isString(e)
++                || isNode(e)
++                || isParamLike(e)
++                || e instanceof Date
++                || typeof e !== 'object') {
++                add(e);
++            }
++            else {
++                for (const alias in e)
++                    add(e[alias], alias);
++            }
++        };
++        expr.forEach(e => isArray(e) ? e.forEach(visit) : visit(e));
++        if (list.length === 0) {
++            throw new Error('PivotQuery.using requires at least one expression.');
++        }
++        this._using = this._using.concat(list);
++        return this;
++    }
++    /**
++     * Add GROUP BY expressions.
++     * @param expr Expressions to add.
++     */
++    groupby(...expr) {
++        this._groupby = this._groupby.concat(nodeList(expr));
++        return this;
++    }
++    /**
++     * Set GROUP BY expressions, replacing any prior expressions.
++     * @param expr Expressions to add.
++     */
++    setGroupby(...expr) {
++        this._groupby = [];
++        return this.groupby(...expr);
++    }
++    /**
++     * Clone this pivot query.
++     */
++    clone() {
++        const { source, ...rest } = this;
++        // @ts-expect-error creates pivot query
++        return Object.assign(new PivotQuery(source), rest, {
++            _with: this._with.slice(),
++            _on: this._on.slice(),
++            _in: this._in.slice(),
++            _using: this._using.slice(),
++            _groupby: this._groupby.slice(),
++            _orderby: this._orderby.slice(),
++            _limitPerc: this._limitPerc,
++            _limit: this._limit,
++            _offset: this._offset
++        });
++    }
++}
+diff --git a/src/ast/pivot.ts b/src/ast/pivot.ts
+index f8fde17e3e1807792555477b2acbc447c4ca05d6..5d8ec12d3c0d8d3d2d74a267fce9930e26d3f8fc 100644
+--- a/src/ast/pivot.ts
++++ b/src/ast/pivot.ts
+@@ -1,15 +1,5 @@
+-import type { GroupByExpr, PivotInExpr, PivotOnExpr, PivotUsingEntry, PivotUsingExpr } from '../types.js';
+-import { PIVOT_QUERY } from '../constants.js';
+-import { asLiteral, asNode, maybeTableRef } from '../util/ast.js';
+-import { nodeList } from '../util/function.js';
+-import { unquote } from '../util/string.js';
+-import { isArray, isParamLike, isString } from '../util/type-check.js';
+-import { ExprNode, SQLNode, isNode } from './node.js';
+-import { Query, isQuery } from './query.js';
+-import { SelectClauseNode } from './select.js';
+-
+-export type PivotSource = string | string[] | SQLNode;
+-
++import { PivotQuery } from './query.js';
++export { PivotQuery, type PivotSource } from './query.js';
+ /**
+  * Check if a value is a pivot query.
+  * @param value The value to check.
+@@ -18,137 +8,3 @@ export function isPivotQuery(value: unknown): value is PivotQuery {
+   return value instanceof PivotQuery;
+ }
+ 
+-export class PivotQuery extends Query {
+-  /** The relation to pivot. */
+-  readonly source: SQLNode;
+-  /** The expressions whose values determine pivot output columns. */
+-  _on: ExprNode[] = [];
+-  /** The literal values that constrain and order pivot output columns. */
+-  _in: ExprNode[] = [];
+-  /** The aggregate expressions used to populate pivot output cells. */
+-  _using: SelectClauseNode[] = [];
+-  /** The expressions that define pivot row groups. */
+-  _groupby: ExprNode[] = [];
+-
+-  /**
+-   * Instantiate a new pivot query.
+-   * @param source The source relation to pivot.
+-   */
+-  constructor(source: PivotSource) {
+-    super(PIVOT_QUERY);
+-    this.source = maybeTableRef(source);
+-  }
+-
+-  /**
+-   * Add a pointer to the query for which this query is a CTE.
+-   * @param query The query for which this query is a CTE.
+-   */
+-  setCteFor(query: Query | null): void {
+-    super.setCteFor(query);
+-    if (isQuery(this.source)) {
+-      this.source.setCteFor(query);
+-    }
+-  }
+-
+-  /**
+-   * Return a list of subqueries.
+-   */
+-  get subqueries(): Query[] {
+-    return isQuery(this.source) ? [this.source] : [];
+-  }
+-
+-  /**
+-   * Add ON expressions.
+-   * @param expr Expressions to add.
+-   */
+-  on(...expr: PivotOnExpr[]): this {
+-    this._on = this._on.concat(nodeList(expr));
+-    return this;
+-  }
+-
+-  /**
+-   * Add IN values to constrain and order pivot output columns.
+-   * @param expr Values to add.
+-   */
+-  in(...expr: [PivotInExpr, ...PivotInExpr[]]): this {
+-    const list = expr.flat().map(asLiteral);
+-    if (list.length === 0) {
+-      throw new Error('PivotQuery.in requires at least one value.');
+-    }
+-    this._in = this._in.concat(list);
+-    return this;
+-  }
+-
+-  /**
+-   * Add USING expressions.
+-   * @param expr Aggregate cell expressions to add.
+-   */
+-  using(...expr: [PivotUsingExpr, ...PivotUsingExpr[]]): this {
+-    const list: SelectClauseNode[] = [];
+-
+-    const add = (v: unknown, as?: string) => {
+-      if (v != null) {
+-        list.push(new SelectClauseNode(asNode(v), as ? unquote(as)! : ''));
+-      }
+-    };
+-
+-    const visit = (e: PivotUsingEntry) => {
+-      if (e == null) return;
+-      else if (
+-        isString(e)
+-        || isNode(e)
+-        || isParamLike(e)
+-        || e instanceof Date
+-        || typeof e !== 'object'
+-      ) {
+-        add(e);
+-      } else {
+-        for (const alias in e) add(e[alias], alias);
+-      }
+-    };
+-
+-    expr.forEach(e => isArray(e) ? e.forEach(visit) : visit(e));
+-    if (list.length === 0) {
+-      throw new Error('PivotQuery.using requires at least one expression.');
+-    }
+-    this._using = this._using.concat(list);
+-    return this;
+-  }
+-
+-  /**
+-   * Add GROUP BY expressions.
+-   * @param expr Expressions to add.
+-   */
+-  groupby(...expr: GroupByExpr[]): this {
+-    this._groupby = this._groupby.concat(nodeList(expr));
+-    return this;
+-  }
+-
+-  /**
+-   * Set GROUP BY expressions, replacing any prior expressions.
+-   * @param expr Expressions to add.
+-   */
+-  setGroupby(...expr: GroupByExpr[]): this {
+-    this._groupby = [];
+-    return this.groupby(...expr);
+-  }
+-
+-  /**
+-   * Clone this pivot query.
+-   */
+-  clone(): this {
+-    const { source, ...rest } = this;
+-    // @ts-expect-error creates pivot query
+-    return Object.assign(new PivotQuery(source), rest, {
+-      _with: this._with.slice(),
+-      _on: this._on.slice(),
+-      _in: this._in.slice(),
+-      _using: this._using.slice(),
+-      _groupby: this._groupby.slice(),
+-      _orderby: this._orderby.slice(),
+-      _limitPerc: this._limitPerc,
+-      _limit: this._limit,
+-      _offset: this._offset
+-    });
+-  }
+-}
+diff --git a/src/ast/query.ts b/src/ast/query.ts
+index fb68540664f746a485c0902ce02a8db9fe45f0e8..ba35b7d0150ca5cd112951d0c670edb99c4fbb3f 100644
+--- a/src/ast/query.ts
++++ b/src/ast/query.ts
+@@ -1,11 +1,10 @@
+-import type { FilterExpr, FromExpr, GroupByExpr, MaybeArray, OrderByExpr, SelectExpr, WithExpr } from '../types.js';
+-import { PivotQuery, type PivotSource } from './pivot.js';
++import type { FilterExpr, FromExpr, PivotInExpr, PivotOnExpr, PivotUsingEntry, PivotUsingExpr, GroupByExpr, MaybeArray, OrderByExpr, SelectExpr, WithExpr } from '../types.js';
+ import type { SampleMethod } from './sample.js';
+-import { CREATE_QUERY, CREATE_SCHEMA_QUERY, DESCRIBE_QUERY, SELECT_QUERY, SET_OPERATION } from '../constants.js';
+-import { asNode, asTableRef, asVerbatim, maybeTableRef } from '../util/ast.js';
++import { PIVOT_QUERY, CREATE_QUERY, CREATE_SCHEMA_QUERY, DESCRIBE_QUERY, SELECT_QUERY, SET_OPERATION } from '../constants.js';
++import { asLiteral, asNode, asTableRef, asVerbatim, maybeTableRef } from '../util/ast.js';
+ import { exprList, nodeList } from '../util/function.js';
+ import { unquote } from '../util/string.js';
+-import { isArray, isString } from '../util/type-check.js';
++import { isArray, isParamLike, isString } from '../util/type-check.js';
+ import { isColumnRef } from './column-ref.js';
+ import { FromClauseNode, FromNode } from './from.js';
+ import { ExprNode, SQLNode, isNode } from './node.js';
+@@ -16,6 +15,8 @@ import { VerbatimNode } from './verbatim.js';
+ import { WindowClauseNode, type WindowDefNode } from './window.js';
+ import { WithClauseNode } from './with.js';
+ 
++export type PivotSource = string | string[] | SQLNode;
++
+ /**
+  * Check if a value is a selection query or set operation.
+  * @param value The value to check.
+@@ -743,3 +744,138 @@ class WithClause {
+     return Query.exceptAll(...queries).with(...this._with);
+   }
+ }
++
++export class PivotQuery extends Query {
++  /** The relation to pivot. */
++  readonly source: SQLNode;
++  /** The expressions whose values determine pivot output columns. */
++  _on: ExprNode[] = [];
++  /** The literal values that constrain and order pivot output columns. */
++  _in: ExprNode[] = [];
++  /** The aggregate expressions used to populate pivot output cells. */
++  _using: SelectClauseNode[] = [];
++  /** The expressions that define pivot row groups. */
++  _groupby: ExprNode[] = [];
++
++  /**
++   * Instantiate a new pivot query.
++   * @param source The source relation to pivot.
++   */
++  constructor(source: PivotSource) {
++    super(PIVOT_QUERY);
++    this.source = maybeTableRef(source);
++  }
++
++  /**
++   * Add a pointer to the query for which this query is a CTE.
++   * @param query The query for which this query is a CTE.
++   */
++  setCteFor(query: Query | null): void {
++    super.setCteFor(query);
++    if (isQuery(this.source)) {
++      this.source.setCteFor(query);
++    }
++  }
++
++  /**
++   * Return a list of subqueries.
++   */
++  get subqueries(): Query[] {
++    return isQuery(this.source) ? [this.source] : [];
++  }
++
++  /**
++   * Add ON expressions.
++   * @param expr Expressions to add.
++   */
++  on(...expr: PivotOnExpr[]): this {
++    this._on = this._on.concat(nodeList(expr));
++    return this;
++  }
++
++  /**
++   * Add IN values to constrain and order pivot output columns.
++   * @param expr Values to add.
++   */
++  in(...expr: [PivotInExpr, ...PivotInExpr[]]): this {
++    const list = expr.flat().map(asLiteral);
++    if (list.length === 0) {
++      throw new Error('PivotQuery.in requires at least one value.');
++    }
++    this._in = this._in.concat(list);
++    return this;
++  }
++
++  /**
++   * Add USING expressions.
++   * @param expr Aggregate cell expressions to add.
++   */
++  using(...expr: [PivotUsingExpr, ...PivotUsingExpr[]]): this {
++    const list: SelectClauseNode[] = [];
++
++    const add = (v: unknown, as?: string) => {
++      if (v != null) {
++        list.push(new SelectClauseNode(asNode(v), as ? unquote(as)! : ''));
++      }
++    };
++
++    const visit = (e: PivotUsingEntry) => {
++      if (e == null) return;
++      else if (
++        isString(e)
++        || isNode(e)
++        || isParamLike(e)
++        || e instanceof Date
++        || typeof e !== 'object'
++      ) {
++        add(e);
++      } else {
++        for (const alias in e) add(e[alias], alias);
++      }
++    };
++
++    expr.forEach(e => isArray(e) ? e.forEach(visit) : visit(e));
++    if (list.length === 0) {
++      throw new Error('PivotQuery.using requires at least one expression.');
++    }
++    this._using = this._using.concat(list);
++    return this;
++  }
++
++  /**
++   * Add GROUP BY expressions.
++   * @param expr Expressions to add.
++   */
++  groupby(...expr: GroupByExpr[]): this {
++    this._groupby = this._groupby.concat(nodeList(expr));
++    return this;
++  }
++
++  /**
++   * Set GROUP BY expressions, replacing any prior expressions.
++   * @param expr Expressions to add.
++   */
++  setGroupby(...expr: GroupByExpr[]): this {
++    this._groupby = [];
++    return this.groupby(...expr);
++  }
++
++  /**
++   * Clone this pivot query.
++   */
++  clone(): this {
++    const { source, ...rest } = this;
++    // @ts-expect-error creates pivot query
++    return Object.assign(new PivotQuery(source), rest, {
++      _with: this._with.slice(),
++      _on: this._on.slice(),
++      _in: this._in.slice(),
++      _using: this._using.slice(),
++      _groupby: this._groupby.slice(),
++      _orderby: this._orderby.slice(),
++      _limitPerc: this._limitPerc,
++      _limit: this._limit,
++      _offset: this._offset
++    });
++  }
++}

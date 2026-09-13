@@ -98,4 +98,6 @@ allowBuilds:
   protobufjs: false
   sharp: true
 patchedDependencies:
+  # Keep PivotQuery with its Query base to remove their runtime initialization cycle.
+  "@uwdata/mosaic-sql@0.31.0": patches/@uwdata__mosaic-sql@0.31.0.patch
   eve@0.53.0: patches/eve@0.53.0.patch
