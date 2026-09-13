@@ -188,6 +188,14 @@ jobs:
           docker buildx build --file infra/Dockerfile --build-context packages=./dist/release/npm \
             --platform linux/amd64,linux/arm64 --tag "$IMAGE:$version" --push .
 
+  verify-container:
+    name: Verify public container image
+    needs: publish-container
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout catalog fixture
+        uses: actions/checkout@v7
       - name: Verify published container startup
         env:
           IMAGE: ghcr.io/${{ github.repository }}
@@ -202,7 +210,7 @@ jobs:
             --mount "type=bind,source=$PWD/fixtures/catalog-release,target=/catalog,readonly" \
             --env CHARTCOACH_CATALOG=/catalog --env CHARTCOACH_PASSWORD "$image"
           trap 'docker logs chartcoach-release-check; docker rm --force chartcoach-release-check' EXIT
-          curl --fail --silent --show-error --retry 30 --retry-delay 2 --retry-connrefused \
+          curl --fail --silent --show-error --retry 30 --retry-delay 2 --retry-all-errors \
             http://127.0.0.1:4273/healthz
           test "$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:4273/)" = 401
           curl --fail --silent --show-error --user "chartcoach:$CHARTCOACH_PASSWORD" \
@@ -212,7 +220,7 @@ jobs:
 
   release-notes:
     name: Update release notes
-    needs: [verify-publication, publish-container]
+    needs: [verify-publication, verify-container]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
