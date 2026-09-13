@@ -47,6 +47,13 @@ const styles = stylex.create({
     lineHeight: 1.4,
     color: colors.foreground,
   },
+  image: {
+    position: "relative",
+    display: "block",
+    width: "100%",
+    height: "auto",
+    backgroundColor: colors.background,
+  },
   footer: {
     display: "flex",
     alignItems: "center",
@@ -73,6 +80,20 @@ export function GuidelineCard({ guideline }: { guideline: GuidelinePreview }) {
         <span {...stylex.props(styles.fallback)}>
           <span>{guideline.title}</span>
         </span>
+        <img
+          key={guideline.id}
+          {...stylex.props(styles.image)}
+          src={`https://chartcoach.dev/guidelines/${encodeURIComponent(guideline.id)}/og.png`}
+          alt=""
+          width={1200}
+          height={630}
+          loading="lazy"
+          decoding="async"
+          referrerPolicy="no-referrer"
+          onError={(event) => {
+            event.currentTarget.style.display = "none";
+          }}
+        />
       </span>
       <span {...stylex.props(styles.footer)}>
         <span>Read guideline</span>

@@ -397,7 +397,9 @@ repair and resubmit. Accepted answers remain visible while the turn finishes.
 The agent checks applicability before assigning an assessment, asks for missing
 context, reports when guidance does not apply, and
 declines unrelated requests. The UI keeps a citation link visible if its preview
-image cannot load. Guideline cards and their source pages render from the local catalog.
+image cannot load. Guideline cards load preview images from
+`https://chartcoach.dev/guidelines/{id}/og.png`. Titles and linked guideline pages
+use the selected local catalog, including when a preview image is unavailable.
 
 A new attachment replaces the selected chart and preserves your message draft.
 Images stay in the draft until you send the message.
