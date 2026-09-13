@@ -55,8 +55,8 @@ export function useModelSettings(workspace: ReturnType<typeof useWorkspace>) {
       }
     },
     add: () => setDraft(emptyConnection("openai")),
-    edit: ({ id, provider, name, model, baseURL, contextWindow }: Connection) =>
-      setDraft({ id, provider, name, model, baseURL, contextWindow }),
+    edit: ({ id, provider, name, model, baseURL, contextWindow, auth }: Connection) =>
+      setDraft({ id, provider, name, model, baseURL, contextWindow, auth }),
     cancelEdit: () => (workspace.connections.length ? setDraft(undefined) : close()),
     select: (id: string) => {
       workspace.selectConnection(id);

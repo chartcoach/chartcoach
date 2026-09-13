@@ -1,4 +1,4 @@
-import envPaths from "env-paths";
+import { settings } from "../../runtime/settings";
 import { join } from "node:path";
 import type { ProfileInfo } from "@chartcoach/catalog";
 
@@ -49,7 +49,7 @@ async function openEmbedding() {
   const embed = await pipeline("feature-extraction", "Xenova/all-MiniLM-L6-v2", {
     dtype: "fp32",
     device: "cpu",
-    cache_dir: join(envPaths("chartcoach", { suffix: "" }).cache, "models"),
+    cache_dir: join(settings.storage.cacheDir, "models"),
   });
 
   return { embed, mean_pooling };

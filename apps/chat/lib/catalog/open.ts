@@ -1,13 +1,15 @@
 import { openCatalog, indexPath } from "@chartcoach/catalog/node";
 import type { Catalog } from "@chartcoach/catalog";
-import { env } from "../env";
+import { settings } from "../../runtime/settings";
 
 let catalog: ReturnType<typeof openCatalog> | undefined;
 
 const indexes = new WeakMap<Catalog, Map<string, ReturnType<typeof openIndex>>>();
 
 export function getCatalog() {
-  return (catalog ??= openCatalog(env.CATALOG_SOURCE).catch((error) => {
+  return (catalog ??= openCatalog(settings.catalog.source, {
+    cacheDirectory: settings.storage.cacheDir,
+  }).catch((error) => {
     catalog = undefined;
     throw error;
   }));

@@ -1,17 +1,11 @@
-import { createOpenAI } from "@ai-sdk/openai";
 import { defineAgent, defineDynamic } from "eve";
-import { env } from "../lib/env";
+
 import { Effect } from "effect";
 import { runApp } from "../lib/app/runtime";
-import { managedConnection, resolveConnection } from "../lib/app/connections";
+import { resolveConnection } from "../lib/app/connections";
 import { modelMetadata } from "../lib/app/model-metadata";
 import { languageModel } from "../lib/app/providers";
 import { modelSelectionSchema } from "../shared/preferences";
-
-const openai = createOpenAI({
-  baseURL: env.OPENAI_BASE,
-  apiKey: env.OPENAI_API_KEY,
-});
 
 export default defineAgent({
   model: defineDynamic({
@@ -25,10 +19,8 @@ export default defineAgent({
           connectionId: attributes?.["chartcoach.connection"],
         });
 
-        if (!selection.success) {
-          if (attributes?.["chartcoach.thread"] !== undefined)
-            throw new Error("Choose an available model connection before continuing.");
-        }
+        if (!selection.success && attributes?.["chartcoach.thread"] !== undefined)
+          throw new Error("Choose an available model connection before continuing.");
 
         const spanAttributes = {
           "langfuse.session.id": ctx.session.id,
@@ -41,19 +33,11 @@ export default defineAgent({
           Effect.gen(function* () {
             const resolved = selection.success
               ? yield* resolveConnection(selection.data.owner, selection.data.connectionId)
-              : undefined;
+              : yield* resolveConnection("direct", "server");
 
-            const connection = resolved?.connection ?? managedConnection();
+            const connection = resolved.connection;
 
-            if (!connection)
-              throw new Error("Choose an available model connection before continuing.");
-
-            const metadata = modelMetadata(
-              connection,
-              connection.managed
-                ? (env.OPENAI_BASE ?? "https://api.openai.com")
-                : connection.baseURL,
-            );
+            const metadata = modelMetadata(connection, connection.baseURL);
 
             yield* Effect.annotateCurrentSpan(
               "langfuse.observation.metadata",
@@ -61,10 +45,7 @@ export default defineAgent({
             );
 
             return {
-              model:
-                resolved && !connection.managed
-                  ? languageModel(connection, resolved.key)
-                  : openai.chat(env.OPENAI_MODEL),
+              model: languageModel(connection, resolved.key),
               modelContextWindowTokens: connection.contextWindow,
             };
           }).pipe(

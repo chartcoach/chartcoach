@@ -1,21 +1,15 @@
 import type { NextConfig } from "next";
 import { withEve } from "eve/next";
-import "./lib/env";
+import { PHASE_DEVELOPMENT_SERVER } from "next/constants";
 
 const config: NextConfig = {
   agentRules: false,
   devIndicators: false,
-  images: {
-    qualities: [90],
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "chartcoach.dev",
-        pathname: "/guidelines/*/og.png",
-        search: "",
-      },
-    ],
-  },
+  images: { unoptimized: true },
 };
 
-export default withEve(config);
+export default function nextConfig(phase: string) {
+  return phase === PHASE_DEVELOPMENT_SERVER
+    ? withEve(config)
+    : { ...config, output: "export" as const };
+}

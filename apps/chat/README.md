@@ -12,44 +12,192 @@ over the catalog. Query embeddings run on your CPU.
 
 ## Run locally
 
-Use Node.js 24 or later on macOS or Linux. From the repository root:
+Install Node.js 24 or later on macOS or Linux, then run:
 
 ```bash
-pnpm install --frozen-lockfile
-cp apps/chat/.env.example apps/chat/.env.local
-pnpm --dir apps/chat dev
+npx chartcoach
 ```
 
-[Portless](https://github.com/vercel-labs/portless) prints the app's local HTTPS
-URL. `withEve()` starts the agent alongside Next.js and mounts its routes on that
-origin. The browser needs no separate agent URL.
+ChartCoach opens its local URL in an interactive terminal. Choose **Model settings**
+to connect Anthropic, OpenAI, Gemini, or an OpenAI-compatible endpoint. Choose a
+model that supports images and tool calls. Conversations and encrypted connections
+persist across restarts and package upgrades. Press Ctrl+C to stop the server.
 
-Open **Model settings** in the composer to add an Anthropic, OpenAI, Gemini, or
-OpenAI-compatible connection. Enter your key, load the provider's model list or
-enter a model ID, then choose **Save and use**. Choose a model that supports
-images and tool calls. Set its published context limit under **Context window**.
-
-Eve and Next.js load `.env.local`. These optional settings provide a shared
-server connection to an OpenAI-compatible endpoint:
-
-```dotenv
-OPENAI_BASE=http://localhost:8317/v1
-OPENAI_API_KEY=sk-
-OPENAI_MODEL=gpt-5.6-luna
+```bash
+npx chartcoach chat --no-open --port 8080
+npx chartcoach chat --catalog ./my-catalog-release
+npx chartcoach doctor --json
 ```
 
-The supplied settings expect that local endpoint to be running. Replace the
-model and credentials for another provider. These settings stay on the server.
-Your question, uploaded image, and retrieved guidance go to the configured LLM.
-Query embeddings are computed locally.
+The default listener is `127.0.0.1:4273`. A busy port produces an error. Use `--port 0`
+to allocate an available port. One running process owns each data directory.
+The launcher resolves the official catalog selection to an immutable release at
+startup. That release stays fixed until the server restarts.
 
-Server code reads typed settings from [`lib/env.ts`](lib/env.ts).
-[t3-env](https://env.t3.gg/docs/nextjs) validates them during Next.js startup/build
-and Eve loading. Empty optional values become unset. Invalid settings report
-their names, keeping credential values out of validation errors.
-Builds and catalog operations work with provider credentials unset. Add a
-connection in Model settings or configure `OPENAI_API_KEY` before making model
-calls. Restart both servers after changing `.env.local`.
+Your question, uploaded image, and retrieved guidance go to the selected model
+provider. Query embeddings run locally. The first vector search downloads model
+weights. A local model endpoint keeps inference on your machine too.
+
+## Configure a connection
+
+The browser manages personal model connections. To supply a default connection
+from the terminal, set its key and model:
+
+```bash
+export OPENAI_API_KEY='your-provider-key'
+npx chartcoach --provider openai --model my-vision-model
+```
+
+For a local OpenAI-compatible server:
+
+```bash
+npx chartcoach --provider compatible --base-url http://127.0.0.1:1234/v1 \
+  --model my-vision-model --model-auth none
+```
+
+Replace `my-vision-model` with an available model that supports images and tool calls.
+Every setting also has an environment variable. An environment-only launch is:
+
+```bash
+export CHARTCOACH_PROVIDER=compatible
+export CHARTCOACH_BASE_URL=http://127.0.0.1:1234/v1
+export CHARTCOACH_MODEL=my-vision-model
+export CHARTCOACH_MODEL_AUTH=none
+npx chartcoach
+```
+
+`--api-key-env` selects a custom credential variable. The provider defaults are
+`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, and `GEMINI_API_KEY`.
+Compatible providers use `OPENAI_API_KEY` unless `--model-auth none` is selected.
+Keys stay out of command arguments.
+
+A configured model appears as **Server connection**. Use `--context-window` for
+its token limit, which defaults to 128000. Omitting the model leaves setup to each
+browser. `--model-origin` allows additional custom endpoints in browser settings.
+
+Configuration files are optional. If you prefer to save settings, pass
+`--config ./chartcoach.json` with a file such as:
+
+```json
+{
+  "model": {
+    "provider": "compatible",
+    "baseURL": "http://127.0.0.1:1234/v1",
+    "model": "my-vision-model",
+    "auth": "none"
+  }
+}
+```
+
+Configuration precedence is command flags, environment variables, then the selected
+JSON file. `--config` or `CHARTCOACH_CONFIG` selects a file. Otherwise ChartCoach
+reads `config.json` in the platform's user configuration directory for `chartcoach`.
+Relative file paths resolve beside that file. Paths passed through flags or the
+environment resolve from your working directory. Invocation overrides are not saved.
+Unknown configuration fields fail validation. T3 Env validates environment values
+and names invalid variables in its errors. Missing credentials identify the
+variable to set. Secret values are excluded from validation messages.
+
+| Optional JSON setting | Environment variable         | Default                               |
+| --------------------- | ---------------------------- | ------------------------------------- |
+| `catalog.source`      | `CHARTCOACH_CATALOG`         | Official `catalog.json`               |
+| `catalog.profile`     | `CHARTCOACH_CATALOG_PROFILE` | `minilm-l6-v2-cpu`                    |
+| `model.provider`      | `CHARTCOACH_PROVIDER`        | `openai`                              |
+| `model.model`         | `CHARTCOACH_MODEL`           | Browser setup                         |
+| `model.baseURL`       | `CHARTCOACH_BASE_URL`        | Provider endpoint                     |
+| `model.auth`          | `CHARTCOACH_MODEL_AUTH`      | `api-key`                             |
+| `model.apiKeyEnv`     | `CHARTCOACH_API_KEY_ENV`     | Provider variable                     |
+| `model.contextWindow` | `CHARTCOACH_CONTEXT_WINDOW`  | `128000`                              |
+| `server.host`         | `CHARTCOACH_HOST`            | `127.0.0.1`                           |
+| `server.port`         | `CHARTCOACH_PORT`            | `4273`                                |
+| `server.open`         | `CHARTCOACH_OPEN`            | Interactive browser opening           |
+| `server.publicURL`    | `CHARTCOACH_PUBLIC_URL`      | Local HTTP origin                     |
+| `server.username`     | `CHARTCOACH_USERNAME`        | `chartcoach`                          |
+| `server.passwordEnv`  | `CHARTCOACH_PASSWORD_ENV`    | `CHARTCOACH_PASSWORD`                 |
+| `server.passwordFile` | `CHARTCOACH_PASSWORD_FILE`   | Unset                                 |
+| `storage.dataDir`     | `CHARTCOACH_DATA_DIR`        | Platform app-data directory           |
+| `storage.cacheDir`    | `CHARTCOACH_CACHE_DIR`       | Platform cache directory              |
+| `modelOrigins`        | `CHARTCOACH_MODEL_ORIGINS`   | Empty array / comma-separated origins |
+| `tracing`             | `CHARTCOACH_TRACING`         | `false`                               |
+
+`catalog.source` accepts a release directory, a `release.json` URL, or a mutable
+`catalog.json` selection URL. Catalog identities are digests, independent of the
+npm software version. Custom index profiles must use normalized all-MiniLM-L6-v2
+embeddings for vector and hybrid search.
+
+`doctor` verifies catalog access and loads DuckDB, SQLite, LanceDB, and the embedding runtime. `--json` emits a diagnostic
+object on stdout. Startup messages and errors use stderr. `--verbose` includes worker diagnostics, which may contain conversation details. Exit status is 0 for
+success, 2 for configuration or argument errors, and 1 for runtime failures.
+
+If your npm configuration disables install scripts, SQLite needs its native binding
+installed explicitly. Install with `npm install --ignore-scripts=false chartcoach`
+and run `npx chartcoach doctor` from that directory.
+
+On Linux x64, use `ONNXRUNTIME_NODE_INSTALL=skip npx chartcoach` to skip the
+embedding dependency’s unused CUDA download. CPU inference still works.
+The Docker image sets this automatically.
+
+## Run on a server
+
+Configure a password before listening on a network interface:
+
+```bash
+export CHARTCOACH_PASSWORD='choose-a-long-private-password'
+npx chartcoach chat --host 0.0.0.0 --no-open \
+  --public-url https://chat.example.org
+```
+
+Configure your HTTPS reverse proxy to preserve the public `Host` header and stream
+responses without buffering. Forward requests to port 4273. Sign in with username
+`chartcoach` and the configured password. `--public-url` must match the browser's
+origin. For a local SSH tunnel, omit it and use the printed local URL.
+
+The shared password grants access to the server. Each browser retains separate
+connections and conversation history through its signed cookie. This is a personal
+or small-group deployment. The operator can access stored credentials and any
+configured server model is shared with everyone who can sign in.
+
+For secret mounts, set `CHARTCOACH_PASSWORD_FILE` to a readable file. The file takes
+precedence over the password environment variable. Keep TLS termination and process
+restarts in your deployment platform. The worker's workflow callbacks stay on its
+private loopback listener. `/healthz` reports readiness for health checks.
+
+## Docker Compose
+
+From a repository checkout:
+
+```bash
+export CHARTCOACH_PASSWORD='choose-a-long-private-password'
+docker compose -f infra/compose.yml up --build -d
+```
+
+Open `http://127.0.0.1:4273`. The service binds the host port to loopback and stores
+conversations and cache in named volumes. Set `CHARTCOACH_PUBLIC_URL` when using an
+HTTPS reverse proxy. Provider connections can be configured in each browser. Compose also forwards
+the catalog, model, provider-key, and tracing environment variables, so the
+environment-only setup works for containers too.
+
+To mount a configuration file, add a read-only volume and `CHARTCOACH_CONFIG`:
+
+```yaml
+services:
+  chartcoach:
+    environment:
+      CHARTCOACH_CONFIG: /config/chartcoach.json
+    volumes:
+      - ../chartcoach.json:/config/chartcoach.json:ro
+```
+
+Model base URLs resolve from inside the container. Use a Compose service name for
+another model container. `127.0.0.1` addresses ChartCoach's own container.
+
+For a published image, set `CHARTCOACH_IMAGE` to a versioned image reference and
+run `docker compose -f infra/compose.yml up -d --no-build --pull always`. The release
+workflow publishes `ghcr.io/chartcoach/chartcoach:<version>`.
+
+Build an image with `docker build -f infra/Dockerfile -t chartcoach:local .`. The image runs as a
+non-root user and uses the same npm distribution and CLI. Preserve `/data` across
+replacements and mount `/cache` to retain downloaded artifacts.
 
 ## Manage model connections
 
@@ -74,11 +222,11 @@ history. Keep the cookie to retain access from that browser. The server operator
 can access stored credentials, so use a server you trust and restrict provider-key
 permissions and spending limits. Keys stay out of chat content and trace metadata.
 
-Custom endpoints must match an allowed origin. `OPENAI_BASE` adds its origin
+Custom endpoints must match an allowed origin. `model.baseURL` adds its origin
 automatically. Add other trusted origins as a comma-separated list:
 
 ```dotenv
-CHAT_MODEL_ORIGINS=https://api.example.com,https://models.example.com
+CHARTCOACH_MODEL_ORIGINS=https://api.example.com,https://models.example.com
 ```
 
 The model form still needs the complete base URL, including a path such as `/v1`.
@@ -103,20 +251,19 @@ transactions, migrations, a prepared-statement cache, and write-ahead logging.
 SQLite stores connection settings, conversation metadata, guideline selections,
 and uploaded image previews. Eve owns the transcript and agent state.
 
-`CHAT_DATA_DIR` overrides the platform-specific application-data directory for
+`CHARTCOACH_DATA_DIR` overrides the platform-specific application-data directory for
 `chartcoach-chat`. It contains `chat.sqlite` and the owner-readable
-`credentials.key`. Preserve both together, plus Eve's `.eve/.workflow-data`
-directory and sandbox storage, across server restarts. Use a SQLite-consistent
+`credentials.key`. The same data directory contains Eve's `.eve/.workflow-data` and sandbox storage. Preserve the whole directory across server restarts. Use a SQLite-consistent
 backup or stop the app before copying its database and key. Keep this data on a
 private persistent volume. Deleting the key makes saved provider keys unreadable.
 
 ## Trace reviews
 
 [Langfuse](https://langfuse.com/integrations/frameworks/eve) records the agent's
-model calls, tools, timing, token usage, and cost. Set these server-side values in
-`.env.local`, then restart the app:
+model calls, tools, timing, token usage, and cost. Enable `tracing` and set these server-side environment values, then restart the app:
 
 ```dotenv
+CHARTCOACH_TRACING=true
 LANGFUSE_PUBLIC_KEY=pk-lf-...
 LANGFUSE_SECRET_KEY=sk-lf-...
 LANGFUSE_BASE_URL=https://cloud.langfuse.com
@@ -202,7 +349,7 @@ structured answer format.
 
 The private `@chartcoach/skills` workspace package exposes the canonical files
 to Eve's compiler. Builds embed the instructions and verify them against their
-source files before checking relocated server startup.
+source files. The release check exercises the installed npm package.
 
 Discussion and design recommendations explain the question or brief alongside
 their citations. Chart reviews additionally classify each point as **Working well**,
@@ -227,7 +374,7 @@ the guideline titles. Expand **Why this applies** to compare the chart observati
 with the authored requirement and inspect supporting citations.
 
 The guideline panel shows search matches as they arrive and marks entries when read.
-Primary guidelines appear as [Open Graph](https://ogp.me/) image cards in answer order.
+Primary guidelines appear as local cards in answer order.
 Desktop places them in a collapsible card beside the conversation. On narrow screens,
 open **Guidelines** above the conversation to inspect them in a bottom sheet.
 Supporting and explored entries stay expandable, with catalog descriptions and links.
@@ -254,7 +401,7 @@ repair and resubmit. Accepted answers remain visible while the turn finishes.
 The agent checks applicability before assigning an assessment, asks for missing
 context, reports when guidance does not apply, and
 declines unrelated requests. The UI keeps a citation link visible if its preview
-image cannot load. Card images load through Next.js from `chartcoach.dev`.
+image cannot load. Guideline cards and their source pages render from the local catalog.
 
 A new attachment replaces the selected chart and preserves your message draft.
 Images stay in the draft until you send the message.
@@ -267,7 +414,7 @@ The first indexed search downloads the index. Vector and hybrid queries also
 download about 86 MiB of model weights. Both persist in the platform's per-user
 `chartcoach` cache. Later calls reuse the catalog, table, and model. SQL tables
 are materialized once per loaded catalog and reused across queries.
-`CATALOG_SOURCE` and `CATALOG_PROFILE` select the release and index profile.
+`CHARTCOACH_CATALOG` and `CHARTCOACH_CATALOG_PROFILE` select the release and index profile.
 Vector and hybrid search use its normalized `all-MiniLM-L6-v2` embeddings.
 
 ## Choose your agent's guidelines
@@ -422,7 +569,8 @@ values identify entries to read and cite through the catalog API.
 
 ## Validate
 
-With the app running, use its printed URL:
+With the development app running and `CHARTCOACH_MODEL` and its provider credentials
+configured, use its printed URL:
 
 ```bash
 pnpm --dir apps/chat eval --url "$APP_URL"
@@ -438,25 +586,25 @@ traces are stored under `.eve/evals/`.
 For an agent-only check, `pnpm --dir apps/chat eval` starts an ephemeral
 Eve server. Repository checks use Oxlint, formatting, TypeScript, and Eve discovery.
 
-## Build
+## Develop and build
+
+From the repository root:
+
+```bash
+pnpm install --frozen-lockfile
+pnpm --dir apps/chat dev
+```
+
+Portless starts the Next.js development interface and Eve on the same origin.
+Production exports the interface to static assets and compiles Eve's Node server.
 
 ```bash
 pnpm --dir apps/chat build
 pnpm --dir apps/chat start
+npm pack ./apps/chat/dist --ignore-scripts
 ```
 
-The build compiles Eve and Next.js. It also boots a relocated copy of the agent
-output to verify native assets and production authentication. `nitro.config.ts`
-keeps tracing inside the workspace and preserves package-relative assets.
-Build on the deployment's operating system and architecture because the output
-includes native binaries.
-
-`start` runs both servers and stops the other if either exits. `PORT` selects the
-Next.js port. Eve uses port 4274 by default. To change it, set
-`EVE_NEXT_PRODUCTION_PORT` to the same value during both build and start so the
-compiled proxy route reaches the agent.
-
-Configure [Eve route authentication](https://eve.dev/docs/guides/auth-and-route-protection)
-before exposing the production app. Its agent routes reject unauthenticated
-requests by default. Keep writable persistent cache and workflow storage for a
-long-running deployment.
+The build verifies the canonical skills and
+assembles `dist/` with the CLI, static UI, and compiled worker. Native dependencies
+are installed by npm on the consumer's platform. `dist/package.json` contains exact
+runtime dependency versions and the executable entry point.

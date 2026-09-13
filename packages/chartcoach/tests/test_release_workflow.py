@@ -27,11 +27,15 @@ _PYPI = f"https://pypi.org/pypi/chartcoach/{_VERSION}/json"
 def release_files(tmp_path: Path) -> Path:
     (tmp_path / "npm").mkdir()
     (tmp_path / "python").mkdir()
-    data = json.dumps({"name": "@chartcoach/catalog", "version": _VERSION}).encode()
-    with tarfile.open(tmp_path / "npm" / "catalog.tgz", "w:gz") as archive:
-        entry = tarfile.TarInfo("package/package.json")
-        entry.size = len(data)
-        archive.addfile(entry, io.BytesIO(data))
+    for name, filename in [
+        ("@chartcoach/catalog", "catalog.tgz"),
+        ("chartcoach", "chat.tgz"),
+    ]:
+        data = json.dumps({"name": name, "version": _VERSION}).encode()
+        with tarfile.open(tmp_path / "npm" / filename, "w:gz") as archive:
+            entry = tarfile.TarInfo("package/package.json")
+            entry.size = len(data)
+            archive.addfile(entry, io.BytesIO(data))
     (tmp_path / "python" / f"chartcoach-{_VERSION}-py3-none-any.whl").write_bytes(
         b"wheel"
     )
@@ -67,19 +71,26 @@ def _run(monkeypatch: pytest.MonkeyPatch, *arguments: str | Path) -> None:
 
 
 def _publish(registry: dict[str, bytes | int], release: Path) -> None:
-    tarball = (release / "npm" / "catalog.tgz").read_bytes()
-    registry["https://registry.npmjs.org/catalog.tgz"] = tarball
-    registry[_NPM] = json.dumps(
-        {
-            "name": "@chartcoach/catalog",
-            "version": _VERSION,
-            "dist": {
-                "integrity": "sha512-"
-                + base64.b64encode(hashlib.sha512(tarball).digest()).decode(),
-                "tarball": "https://registry.npmjs.org/catalog.tgz",
-            },
-        }
-    ).encode()
+    for name, filename in [
+        ("@chartcoach/catalog", "catalog.tgz"),
+        ("chartcoach", "chat.tgz"),
+    ]:
+        tarball = (release / "npm" / filename).read_bytes()
+        url = f"https://registry.npmjs.org/{filename}"
+        registry[url] = tarball
+        registry[
+            f"https://registry.npmjs.org/{name.replace('/', '%2F')}/{_VERSION}"
+        ] = json.dumps(
+            {
+                "name": name,
+                "version": _VERSION,
+                "dist": {
+                    "integrity": "sha512-"
+                    + base64.b64encode(hashlib.sha512(tarball).digest()).decode(),
+                    "tarball": url,
+                },
+            }
+        ).encode()
     python_files = []
     for path in (release / "python").iterdir():
         data = path.read_bytes()
@@ -147,19 +158,29 @@ def test_release_preflight_rejects_conflicting_published_bytes(
     assert "differs from the verified" in capsys.readouterr().err
 
 
+@pytest.mark.parametrize(
+    ("missing_url", "registry_name", "wait_seconds"),
+    [
+        (_PYPI, "PyPI", 7),
+        (f"https://registry.npmjs.org/chartcoach/{_VERSION}", "npm", 0),
+    ],
+)
 def test_partial_publication_is_recoverable_but_cannot_pass_final_verification(
     release_files: Path,
     registry: dict[str, bytes | int],
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
+    missing_url: str,
+    registry_name: str,
+    wait_seconds: int,
 ) -> None:
     _publish(registry, release_files)
-    del registry[_PYPI]
+    del registry[missing_url]
     _run(monkeypatch, "check", release_files, "--allow-missing")
     with pytest.raises(SystemExit, match="1"):
-        _run(monkeypatch, "check", release_files, "--wait-seconds", "7")
-    assert "PyPI has not published" in capsys.readouterr().err
-    assert time.monotonic() == 7
+        _run(monkeypatch, "check", release_files, "--wait-seconds", str(wait_seconds))
+    assert f"{registry_name} has not published" in capsys.readouterr().err
+    assert time.monotonic() == wait_seconds
 
 
 def test_final_verification_checks_downloaded_bytes(
@@ -186,7 +207,7 @@ def test_release_rejects_distribution_files_outside_the_verified_set(
     with pytest.raises(SystemExit, match="1"):
         _run(monkeypatch, "check", release_files, "--allow-missing")
     assert (
-        "exactly one npm tarball, wheel, and source distribution"
+        "two npm tarballs, one wheel, and one source distribution"
         in capsys.readouterr().err
     )
 

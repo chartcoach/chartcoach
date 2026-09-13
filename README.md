@@ -25,6 +25,18 @@ chartcoach helps people and agents create and review charts using source-linked
 guidance. Its Guideline Catalog brings together recommendations, their reasoning,
 when they apply, and checks for putting them into practice.
 
+## Chat locally
+
+With Node.js 24 or later:
+
+```bash
+npx chartcoach
+```
+
+Connect a model in the browser to review a chart or discuss a design choice.
+Conversations and provider connections persist locally. See the [chat guide](apps/chat/README.md)
+for catalog selection, model configuration, VPS hosting, and Docker Compose.
+
 ## Try a guideline
 
 With [uv](https://docs.astral.sh/uv/), the Python package manager, installed:

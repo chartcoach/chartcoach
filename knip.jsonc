@@ -21,6 +21,7 @@
     },
     "apps/chat": {
       "entry": [
+        "cli/index.ts",
         "agent/tools/*.ts",
         "agent/skills/*.ts",
         "agent/instrumentation/*.ts",

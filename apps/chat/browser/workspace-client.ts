@@ -1,3 +1,4 @@
+import { guidelinePageSchema } from "../shared/guideline-page";
 import { z } from "zod";
 import {
   connectionSchema,
@@ -78,3 +79,6 @@ export async function loadChartImage(id: string, filename: string) {
 
   return new File([blob], filename, { type: blob.type });
 }
+
+export const loadGuidelinePage = (id: string, signal?: AbortSignal) =>
+  request(`guidelines/${encodeURIComponent(id)}`, guidelinePageSchema, undefined, signal);

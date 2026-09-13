@@ -58,23 +58,30 @@ def _verify_download(url: str, expected: str, algorithm: str) -> None:
         )
 
 
-def npm_artifact(
-    tarball: Path, *, expected_version: str | None = None
-) -> tuple[str, str] | None:
+def npm_manifest(tarball: Path) -> dict[str, Any]:
     with tarfile.open(tarball, "r:gz") as archive:
         manifest_file = archive.extractfile("package/package.json")
         if manifest_file is None:
             raise ValueError("npm tarball is missing package/package.json")
-        manifest = json.load(manifest_file)
+        return json.load(manifest_file)
+
+
+def npm_artifact(
+    tarball: Path, *, expected_version: str | None = None
+) -> tuple[str, str] | None:
+    manifest = npm_manifest(tarball)
     version = manifest["version"]
-    if manifest["name"] != "@chartcoach/catalog" or not re.fullmatch(
-        r"(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)", version
-    ):
-        raise ValueError("Expected @chartcoach/catalog with a stable X.Y.Z version")
+    if manifest["name"] not in {
+        "@chartcoach/catalog",
+        "chartcoach",
+    } or not re.fullmatch(r"(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)", version):
+        raise ValueError(
+            "Expected a ChartCoach npm package with a stable X.Y.Z version"
+        )
     if expected_version is not None and version != expected_version:
         raise ValueError("Python and npm artifact versions differ")
     published = _read_json(
-        f"https://registry.npmjs.org/@chartcoach%2Fcatalog/{version}"
+        f"https://registry.npmjs.org/{manifest['name'].replace('/', '%2F')}/{version}"
     )
     if published is None:
         return None
@@ -93,14 +100,19 @@ def npm_artifact(
 
 def release_files(
     directory: Path, *, tag: str | None = None
-) -> tuple[Path, Path, Path]:
+) -> tuple[list[Path], Path, Path]:
     tarballs = list((directory / "npm").glob("*.tgz"))
     wheels = list((directory / "python").glob("chartcoach-*-py3-none-any.whl"))
-    if len(tarballs) != 1 or len(wheels) != 1:
-        raise ValueError("Expected exactly one npm tarball and one ChartCoach wheel")
+    if len(tarballs) != 2 or len(wheels) != 1:
+        raise ValueError("Expected two npm tarballs and one ChartCoach wheel")
     version = (
         wheels[0].name.removeprefix("chartcoach-").removesuffix("-py3-none-any.whl")
     )
+    manifests = [npm_manifest(path) for path in tarballs]
+    if {item["name"] for item in manifests} != {"@chartcoach/catalog", "chartcoach"}:
+        raise ValueError("Expected chartcoach and @chartcoach/catalog npm packages")
+    if any(item["version"] != version for item in manifests):
+        raise ValueError("Python and npm artifact versions differ")
     sdist = wheels[0].with_name(f"chartcoach-{version}.tar.gz")
     if not sdist.is_file():
         raise ValueError(f"Missing source distribution: {sdist}")
@@ -110,23 +122,23 @@ def release_files(
         for path in (directory / folder).iterdir()
         if path.name.endswith((".whl", ".tar.gz", ".tgz"))
     }
-    if distributions != {tarballs[0], wheels[0], sdist}:
+    if distributions != {*tarballs, wheels[0], sdist}:
         raise ValueError(
-            "Release must contain exactly one npm tarball, wheel, and source distribution"
+            "Release must contain two npm tarballs, one wheel, and one source distribution"
         )
     if tag is not None and tag.removeprefix("v") != version:
         raise ValueError(
             f"Release tag {tag!r} does not match artifact version {version}"
         )
-    return tarballs[0], wheels[0], sdist
+    return tarballs, wheels[0], sdist
 
 
 def check_release(
     directory: Path, *, allow_missing: bool = False, tag: str | None = None
 ) -> None:
-    tarball, wheel, sdist = release_files(directory, tag=tag)
+    tarballs, wheel, sdist = release_files(directory, tag=tag)
     version = wheel.name.removeprefix("chartcoach-").removesuffix("-py3-none-any.whl")
-    npm = npm_artifact(tarball, expected_version=version)
+    npm = [npm_artifact(path, expected_version=version) for path in tarballs]
     published = _read_json(f"https://pypi.org/pypi/chartcoach/{version}/json")
     files = {item["filename"]: item for item in published["urls"]} if published else {}
     for path in (wheel, sdist):
@@ -140,11 +152,12 @@ def check_release(
             raise ValueError(
                 f"PyPI {path.name} differs from the verified build. Stop publication."
             )
-    if npm is None and not allow_missing:
+    if any(item is None for item in npm) and not allow_missing:
         raise PendingPublication("npm has not published the verified tarball")
     if not allow_missing:
-        assert npm is not None
-        _verify_download(npm[0], npm[1], "sha512")
+        for artifact in npm:
+            assert artifact is not None
+            _verify_download(artifact[0], artifact[1], "sha512")
         for path in (wheel, sdist):
             _verify_download(files[path.name]["url"], _digest(path, "sha256"), "sha256")
 

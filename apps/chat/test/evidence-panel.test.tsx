@@ -3,7 +3,7 @@ import { expect, it } from "vite-plus/test";
 import { EvidencePanel } from "../components/chat/evidence-panel";
 import { renderDocument } from "./render-document";
 
-it("shows primary guideline images before opening the remaining evidence", () => {
+it("shows primary guideline cards before opening the remaining evidence", () => {
   const page = renderDocument(
     <EvidencePanel
       items={[
@@ -29,8 +29,8 @@ it("shows primary guideline images before opening the remaining evidence", () =>
 
   const primary = page.querySelector('section[aria-label="Primary guidelines"]')!;
   const card = primary.querySelector<HTMLAnchorElement>('a[aria-label="Label series directly"]')!;
-  expect(card.href).toBe("https://chartcoach.dev/guidelines/labels");
-  expect(card.querySelectorAll("img")).toHaveLength(1);
+  expect(card.getAttribute("href")).toBe("/guideline?id=labels");
+  expect(card.textContent).toContain("Label series directly");
   expect(card.closest("[inert]")).toBeNull();
   expect(
     page
@@ -49,7 +49,7 @@ it("shows primary guideline images before opening the remaining evidence", () =>
     'a[aria-label="Read guideline: Keep labels legible"]',
   )!;
 
-  expect(source.href).toBe("https://chartcoach.dev/guidelines/contrast");
+  expect(source.getAttribute("href")).toBe("/guideline?id=contrast");
   expect(source.closest("[inert]")).not.toBeNull();
 });
 
@@ -74,7 +74,7 @@ it("shows live candidates with catalog descriptions without presenting them as p
   expect(page.querySelector('[role="status"]')?.textContent).toBe("1 found · 0 read");
   const result = page.querySelector<HTMLAnchorElement>('section[aria-label="Search results"] a')!;
   expect(result.textContent).toContain("Place each name beside its series.");
-  expect(result.href).toBe("https://chartcoach.dev/guidelines/labels");
+  expect(result.getAttribute("href")).toBe("/guideline?id=labels");
   expect(result.closest("[inert]")).toBeNull();
 });
 

@@ -4,7 +4,7 @@ import Gemini from "@lobehub/icons/es/Gemini/components/Mono.js";
 import { Plug } from "lucide-react";
 import * as stylex from "@stylexjs/stylex";
 import { ui } from "../ui/ui";
-import type { Provider } from "../../shared/preferences";
+import type { Provider } from "../../shared/model";
 
 export function ProviderIcon({ provider, size = 20 }: { provider: Provider; size?: number }) {
   switch (provider) {

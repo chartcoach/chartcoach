@@ -7,8 +7,8 @@ import { RequestInit as FetchHttpClientRequestInit } from "@effect/platform/Fetc
 import { Effect, Match, Redacted, Stream } from "effect";
 import { z } from "zod";
 import type { ConnectionInput, ModelChoice } from "../../shared/preferences";
-import { providerNames } from "../../shared/preferences";
-import { env } from "../env";
+import { providerNames, apiBaseURL } from "../../shared/model";
+import { settings } from "../../runtime/settings";
 import { AppError } from "./errors";
 
 const endpoints = {
@@ -20,10 +20,8 @@ const endpoints = {
 export function allowedModelOrigins() {
   return [
     ...new Set([
-      ...env.CHAT_MODEL_ORIGINS.split(",")
-        .map((value) => value.trim())
-        .filter(Boolean),
-      ...(env.OPENAI_BASE ? [new URL(env.OPENAI_BASE).origin] : []),
+      ...settings.modelOrigins,
+      ...(settings.model.baseURL ? [new URL(settings.model.baseURL).origin] : []),
     ]),
   ];
 }
@@ -33,25 +31,19 @@ export function providerEndpoint(
   allowedOrigins: readonly string[] = allowedModelOrigins(),
 ) {
   if (input.provider !== "compatible") return endpoints[input.provider];
-  const url = input.baseURL ? new URL(input.baseURL) : undefined;
+  const parsed = apiBaseURL.safeParse(input.baseURL);
 
-  if (
-    !url ||
-    !["http:", "https:"].includes(url.protocol) ||
-    url.username ||
-    url.password ||
-    url.search ||
-    url.hash
-  )
+  if (!parsed.success)
     throw new AppError({
       status: 400,
       message: "Enter an HTTP or HTTPS API base URL, including its version path.",
     });
+  const url = new URL(parsed.data);
 
   if (!allowedOrigins.includes(url.origin))
     throw new AppError({
       status: 400,
-      message: "This API origin is not allowed. Add it to CHAT_MODEL_ORIGINS on the server.",
+      message: "This API origin is not allowed. Add it to CHARTCOACH_MODEL_ORIGINS on the server.",
     });
 
   return url.href.replace(/\/$/, "");
@@ -94,7 +86,7 @@ export function languageModel(
   allowedOrigins?: readonly string[],
 ) {
   const baseURL = providerEndpoint(input, allowedOrigins);
-  const apiKey = Redacted.value(key);
+  const apiKey = input.auth === "none" ? undefined : Redacted.value(key);
   const options = { baseURL, apiKey, fetch: directFetch(input) };
 
   switch (input.provider) {
@@ -129,14 +121,17 @@ export const listProviderModels = (input: ConnectionInput, key: Redacted.Redacte
 
     const client = yield* HttpClient.HttpClient;
 
-    const headers = Match.value(input.provider).pipe(
-      Match.when("anthropic", () => ({
-        "x-api-key": Redacted.value(key),
-        "anthropic-version": "2023-06-01",
-      })),
-      Match.when("google", () => ({ "x-goog-api-key": Redacted.value(key) })),
-      Match.orElse(() => ({ authorization: `Bearer ${Redacted.value(key)}` })),
-    );
+    const headers =
+      input.auth === "none"
+        ? {}
+        : Match.value(input.provider).pipe(
+            Match.when("anthropic", () => ({
+              "x-api-key": Redacted.value(key),
+              "anthropic-version": "2023-06-01",
+            })),
+            Match.when("google", () => ({ "x-goog-api-key": Redacted.value(key) })),
+            Match.orElse(() => ({ authorization: `Bearer ${Redacted.value(key)}` })),
+          );
 
     const models = new Map<string, ModelChoice>();
     const cursors = new Set<string>();

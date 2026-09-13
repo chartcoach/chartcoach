@@ -283,7 +283,7 @@ it.each([
 
   expect(html).toContain("Use horizontal bars");
   expect(html).toContain("Give long labels room.");
-  expect(html).toContain('href="https://chartcoach.dev/guidelines/horizontal-bars"');
+  expect(html).toContain('href="/guideline?id=horizontal-bars"');
   expect(html).toContain(`href="${href}"`);
   expect(html).toContain("Example Author (2020). Chart labels.");
 });

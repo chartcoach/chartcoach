@@ -16,10 +16,11 @@ deployment consumes an exact release and does not create catalog identity.
 ## Publish the packages
 
 `packages/chartcoach` publishes `chartcoach` to PyPI.
-`packages/catalog` publishes `@chartcoach/catalog` to npm. Both manifests must
+`packages/catalog` publishes `@chartcoach/catalog` to npm. `apps/chat` assembles the
+`chartcoach` npm application in `apps/chat/dist`. All three software manifests must
 contain the same version.
 
-Set `RELEASE_TAG` to the proposed stable version and check both package identities
+Set `RELEASE_TAG` to the proposed stable version and check all package identities
 and versions:
 
 ```bash
@@ -35,13 +36,15 @@ pushing the version change, run `make check`.
 CI verifies the wheel in an isolated environment and the npm tarball through
 Node.js, TypeScript, Chromium, DuckDB, and LanceDB consumers. The minimum Node.js
 version comes from the SDK's `engines.node`. Minimum direct dependency checks
-also run in CI. Package versions come from their manifests and built artifacts.
+also run in CI. The chat consumer installs its own native dependencies and verifies
+the packed CLI through an authenticated browser conversation and a restart. Package versions come from their manifests and built artifacts.
 
 Publishing downloads the artifacts from the successful main CI run for the exact
-tagged commit. It checks that both packages match the tag and rejects conflicting
+tagged commit. It checks that all packages match the tag and rejects conflicting
 registry bytes. The publisher jobs reuse this retained `release-packages` bundle.
-A final job verifies registry metadata and downloadable bytes before creating
-the GitHub release notes. Publication does not rebuild or rerun consumer tests.
+A final job verifies registry metadata and downloadable bytes before publishing the versioned `ghcr.io/chartcoach/chartcoach` container image and
+creating the GitHub release notes. Container builds consume the retained npm
+artifacts through `infra/Dockerfile`'s `packages` build context for Linux amd64 and arm64. Publication does not rebuild or rerun consumer tests.
 
 ### Registry setup
 
@@ -63,10 +66,11 @@ PyPI and npm publish independently. If a job fails, rerun the failed jobs from
 the same workflow run so they reuse the retained `release-packages` artifact.
 The artifact is retained for 30 days. Keep the original tag and build intact.
 
-The npm job skips a version whose registry integrity matches the verified
+The npm job publishes the catalog SDK before the chat application and checks each
+package independently. It skips a version whose registry integrity matches the verified
 tarball. A different digest fails publication. uv accepts identical Python
 files that have already been uploaded. Registry verification and release notes
-resume after both publishers succeed. Verification retries pending registry
+resume after all packages publish successfully. Verification retries pending registry
 files and transient network failures for up to two minutes, five seconds apart.
 Missing download URLs are treated as propagation delays. Digest conflicts and
 authorization errors fail immediately. Local checks can set `--wait-seconds 0`

@@ -4,7 +4,8 @@ import { z } from "zod";
 import { Effect, Redacted } from "effect";
 import { FetchHttpClient } from "@effect/platform";
 import { languageModel, listProviderModels, providerEndpoint } from "../lib/app/providers";
-import type { ConnectionInput, Provider } from "../shared/preferences";
+import type { Provider } from "../shared/model";
+import type { ConnectionInput } from "../shared/preferences";
 import agent from "../agent/agent";
 
 afterEach(() => vi.unstubAllGlobals());

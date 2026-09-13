@@ -6,6 +6,7 @@ import { defineChannel, POST, type RouteHandlerArgs } from "eve/channels";
 import { routeAuth } from "eve/channels/auth";
 import { browserIdentity } from "../lib/app/identity";
 import { createThread, getThread } from "../lib/app/threads";
+import { connectionSchema, type ConnectionInput } from "../shared/preferences";
 import { emptyCatalogFilters } from "../shared/catalog-filters";
 
 let app: typeof import("../lib/app/runtime");
@@ -34,8 +35,9 @@ const routeContext: RouteHandlerArgs = {
 
 beforeAll(async () => {
   vi.stubEnv("EVE_DEV", "1");
+  vi.stubEnv("CHARTCOACH_MODEL_ORIGINS", "https://compatible.example,https://another.example");
   directory = await mkdtemp(join(tmpdir(), "chartcoach-thread-route-"));
-  vi.stubEnv("CHAT_DATA_DIR", directory);
+  vi.stubEnv("CHARTCOACH_DATA_DIR", directory);
   app = await import("../lib/app/runtime");
   ({ catalogRouteAuth, reviewRouteAuth } = await import("../agent/auth"));
   ({ withThreadPersistence } = await import("../agent/thread-channel"));
@@ -153,4 +155,68 @@ it("does not bind rejected sessions or dispatch for another browser", async () =
   expect((await send("")).status).toBe(403);
   const other = await app.runApp(browserIdentity(new Request("http://localhost"), true));
   expect((await send(other!.cookie!.split(";")[0])).status).toBe(403);
+});
+
+it("discovers and saves models under the same credential and owner policy", async () => {
+  const { default: preferences } = await import("../agent/channels/preferences");
+  const identity = await app.runApp(browserIdentity(new Request("http://localhost"), true));
+  const other = await app.runApp(browserIdentity(new Request("http://localhost"), true));
+  const cookie = identity!.cookie!.split(";")[0];
+
+  const post = (path: string, input: ConnectionInput, browser = cookie) => {
+    const route = preferences.routes.find(
+      (route) => route.method === "POST" && route.path === path,
+    );
+
+    if (!route || route.method !== "POST") throw new Error(`Missing POST ${path}`);
+
+    return route.handler(
+      new Request(`http://localhost${path}`, {
+        method: "POST",
+        headers: { cookie: browser, "content-type": "application/json" },
+        body: JSON.stringify(input),
+      }),
+      routeContext,
+    );
+  };
+
+  vi.stubGlobal("fetch", async (input: RequestInfo | URL, init?: RequestInit) => {
+    const request = new Request(input, init);
+    expect(request.url).toBe("https://another.example/v1/models");
+    expect(request.headers.get("authorization")).toBeNull();
+
+    return Response.json({ data: [{ id: "vision" }] });
+  });
+
+  try {
+    const input: ConnectionInput = {
+      provider: "compatible",
+      name: "Local model",
+      baseURL: "https://compatible.example/v1",
+      model: "vision",
+      contextWindow: 32000,
+      auth: "none",
+    };
+
+    const saved = connectionSchema.parse(await (await post("/eve/v1/connections", input)).json());
+    const moved = { ...input, id: saved.id, baseURL: "https://another.example/v1" };
+    expect(await (await post("/eve/v1/connections/models", moved)).json()).toEqual([
+      { id: "vision", name: "vision" },
+    ]);
+    expect(await (await post("/eve/v1/connections", moved)).json()).toMatchObject({
+      id: saved.id,
+      baseURL: moved.baseURL,
+    });
+
+    for (const path of ["/eve/v1/connections", "/eve/v1/connections/models"]) {
+      const missingKey = await post(path, { ...moved, auth: "api-key" });
+      expect(missingKey.status).toBe(400);
+      expect(await missingKey.json()).toMatchObject({
+        error: expect.stringContaining("Enter an API key"),
+      });
+      expect((await post(path, moved, other!.cookie!.split(";")[0])).status).toBe(404);
+    }
+  } finally {
+    vi.unstubAllGlobals();
+  }
 });
