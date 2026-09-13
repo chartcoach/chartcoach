@@ -1,0 +1,25 @@
+packages/catalog/src/catalog/artifacts.ts
+  s_b2fc299f4eea16::t_a272f41fe79c9e 5
+packages/chartcoach/src/chartcoach/_constants.py
+  s_b2fc299f4eea16::t_a272f41fe79c9e 5
+packages/catalog/test/catalog-testkit.ts
+  s_b2fc299f4eea16::t_a272f41fe79c9e 29
+apps/site/test/catalog-location.test.ts
+  s_b2fc299f4eea16::t_a272f41fe79c9e 11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "116a2a6c1fc874b8ad9828f7354a605e0ded5b51",
+  "prompts": {},
+  "sessions": {
+    "s_b2fc299f4eea16": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a07701-a536-7f73-bfd5-6731d2663cd9",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Péter Ferenc Gyarmati <dev.petergy@gmail.com>"
+    }
+  }
+}
