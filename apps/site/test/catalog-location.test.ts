@@ -8,7 +8,7 @@ import { parseCatalogRelease, type JsonValue } from "@chartcoach/catalog";
 
 const releaseFixtureRoot = new URL("../../../fixtures/catalog-release/", import.meta.url);
 
-const artifactBaseUrl = "https://files.peter.gy/catalog/chartcoach";
+const artifactBaseUrl = "https://artifacts.chartcoach.dev";
 
 describe("site catalog location loading", () => {
   beforeEach(() => {

@@ -2,7 +2,7 @@ import { CatalogError } from "./errors";
 import { canonicalJson, compareUnicode, sha256Bytes } from "./identity";
 import { isJsonNumber, isJsonObject, isJsonString, type JsonObject, type JsonValue } from "./json";
 
-const CATALOG_ARTIFACT_BASE_URL = "https://files.peter.gy/catalog/chartcoach/";
+const CATALOG_ARTIFACT_BASE_URL = "https://artifacts.chartcoach.dev/";
 
 const RELEASE_SCHEMA_VERSION = 1;
 

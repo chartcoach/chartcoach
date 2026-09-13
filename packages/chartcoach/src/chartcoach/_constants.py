@@ -2,7 +2,7 @@ from __future__ import annotations
 
 CATALOG_SOURCE_ENV = "CHARTCOACH_SOURCE"
 INDEX_PROFILE_ENV = "CHARTCOACH_INDEX_PROFILE"
-CATALOG_ARTIFACT_BASE_URL = "https://files.peter.gy/catalog/chartcoach"
+CATALOG_ARTIFACT_BASE_URL = "https://artifacts.chartcoach.dev"
 CATALOG_SELECTION_PATH = "catalog.json"
 DEFAULT_GUIDELINE_URL_TEMPLATE = "https://chartcoach.dev/guidelines/{id}"
 DEFAULT_INDEX_TOP_K = 10
