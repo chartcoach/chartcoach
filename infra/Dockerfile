@@ -24,12 +24,11 @@ FROM node:24-bookworm-slim AS runtime
 LABEL org.opencontainers.image.source="https://github.com/chartcoach/chartcoach" \
     org.opencontainers.image.licenses="Apache-2.0"
 ENV NODE_ENV=production \
-    ONNXRUNTIME_NODE_INSTALL=skip \
     CHARTCOACH_DATA_DIR=/data \
     CHARTCOACH_CACHE_DIR=/cache
 WORKDIR /opt/chartcoach
 COPY --from=packages / /packages
-RUN --mount=type=cache,target=/root/.npm npm install --ignore-scripts=false --omit=dev /packages/*.tgz \
+RUN --mount=type=cache,target=/root/.npm npm install --ignore-scripts --omit=dev /packages/*.tgz \
     && rm -rf /packages \
     && mkdir /data /cache \
     && chown node:node /data /cache

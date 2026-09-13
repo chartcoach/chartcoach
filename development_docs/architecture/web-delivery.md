@@ -76,7 +76,7 @@ directory lock and the worker and gateway resources. `runtime/worker.ts` owns th
 Nitro listener, storage readiness, and shutdown hooks. It reports its ready URL
 over IPC. Eve's working directory
 is the configured data directory, so its workflows and sandbox files persist beside
-the app database and credential key.
+the app database and credential key. `lib/app/sqlite.ts` connects Node’s built-in SQLite engine to Effect SQL, so storage needs no install-time native binding.
 
 `runtime/gateway.ts` serves static assets and forwards `/eve/` requests to the
 private worker using a per-process credential. The public listener validates Host

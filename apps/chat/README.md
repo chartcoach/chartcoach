@@ -129,13 +129,9 @@ embeddings for vector and hybrid search.
 object on stdout. Startup messages and errors use stderr. `--verbose` includes worker diagnostics, which may contain conversation details. Exit status is 0 for
 success, 2 for configuration or argument errors, and 1 for runtime failures.
 
-If your npm configuration disables install scripts, SQLite needs its native binding
-installed explicitly. Install with `npm install --ignore-scripts=false chartcoach`
-and run `npx chartcoach doctor` from that directory.
-
-On Linux x64, use `ONNXRUNTIME_NODE_INSTALL=skip npx chartcoach` to skip the
-embedding dependency’s unused CUDA download. CPU inference still works.
-The Docker image sets this automatically.
+SQLite uses Node's built-in engine. The package works with npm install scripts
+disabled; no SQLite binding needs to be downloaded or compiled. The Docker image
+also installs with scripts disabled.
 
 ## Run on a server
 

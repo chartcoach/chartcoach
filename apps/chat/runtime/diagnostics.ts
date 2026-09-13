@@ -22,18 +22,15 @@ export async function diagnose(config: Config, version: string) {
     db.closeSync();
   }
 
-  const { SqliteClient } = await import("@effect/sql-sqlite-node");
+  const { sqliteLayer } = await import("../lib/app/sqlite");
+  const { SqlClient } = await import("@effect/sql");
   const { Effect } = await import("effect");
   await Effect.runPromise(
     Effect.gen(function* () {
-      const sql = yield* SqliteClient.SqliteClient;
+      const sql = yield* SqlClient.SqlClient;
       yield* sql.unsafe("SELECT 1");
-    }).pipe(Effect.provide(SqliteClient.layer({ filename: ":memory:" }))),
-  ).catch(() => {
-    throw new Error(
-      "SQLite could not load. If npm disables install scripts, install with npm install --ignore-scripts=false chartcoach so its SQLite binding can be installed.",
-    );
-  });
+    }).pipe(Effect.provide(sqliteLayer(":memory:"))),
+  );
   await Promise.all([import("@lancedb/lancedb"), import("@huggingface/transformers")]);
 
   return {

@@ -36,7 +36,7 @@ pushing the version change, run `make check`.
 CI verifies the wheel in an isolated environment and the npm tarball through
 Node.js, TypeScript, Chromium, DuckDB, and LanceDB consumers. The minimum Node.js
 version comes from the SDK's `engines.node`. Minimum direct dependency checks
-also run in CI. The chat consumer installs its own native dependencies and verifies
+also run in CI. The chat consumer installs with lifecycle scripts disabled and verifies
 the packed CLI through an authenticated browser conversation and a restart. Package versions come from their manifests and built artifacts.
 
 Publishing downloads the artifacts from the successful main CI run for the exact

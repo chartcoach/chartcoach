@@ -36,7 +36,7 @@ function run(command, args) {
   const result = spawnSync(command, args, {
     cwd: directory,
     encoding: "utf8",
-    env: { ...process.env, NODE_PATH: "", NODE_OPTIONS: "", ONNXRUNTIME_NODE_INSTALL: "skip" },
+    env: { ...process.env, NODE_PATH: "", NODE_OPTIONS: "" },
   });
 
   assert.equal(result.status, 0, result.stderr || result.stdout);
@@ -153,7 +153,7 @@ try {
   );
   run("npm", [
     "install",
-    "--ignore-scripts=false",
+    "--ignore-scripts",
     "--no-audit",
     "--no-fund",
     resolve(root, chatArchive),

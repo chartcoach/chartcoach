@@ -66,7 +66,6 @@ export default defineAgent({
       "@lancedb/lancedb",
       "@huggingface/transformers",
       "@duckdb/node-api",
-      "@effect/sql-sqlite-node",
     ],
   },
 });
