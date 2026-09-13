@@ -1,0 +1,32 @@
+tools/release/verify-picker.mjs
+  s_a0a850c16fe72b::t_3d6d70190c6815 1-68,73,75-120,122-159,161,165-166
+  s_a0a850c16fe72b::t_bd4a5d7d675612 72
+apps/chat/chat/use-catalog-matches.ts
+  s_a0a850c16fe72b::t_45ef25161ef1e3 16-18
+tools/release/verify-chat.mjs
+  s_a0a850c16fe72b::t_3d6d70190c6815 11,15,17-18,79,106,177,255,273-274,284-298,323-330,343-352,370-383,385
+pnpm-lock.yaml
+  ai_agent 286,449,11680,11682
+development_docs/releasing.md
+  ai_agent 40-45
+.github/workflows/ci.yml
+  s_a0a850c16fe72b::t_356c260f79f18c 81-90
+uv.lock
+  ai_agent 157
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "1d56a604b1f837bc20232beb4d0567a6c8b0e7f3",
+  "prompts": {},
+  "sessions": {
+    "s_a0a850c16fe72b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a09a98-a62a-72f3-9516-845ac6bb7326",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Péter Ferenc Gyarmati <dev.petergy@gmail.com>"
+    }
+  }
+}
