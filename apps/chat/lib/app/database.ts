@@ -1,5 +1,5 @@
 import { SqlClient, Migrator } from "@effect/sql";
-import { SqliteClient } from "@effect/sql-sqlite-node";
+import { sqliteLayer } from "./sqlite";
 import { Effect, Layer } from "effect";
 import { mkdir } from "node:fs/promises";
 import { dirname } from "node:path";
@@ -29,7 +29,7 @@ const initialSchema = Effect.gen(function* () {
 export function databaseLayer(filename: string) {
   const sqlite = Layer.unwrapEffect(
     Effect.promise(() => mkdir(dirname(filename), { recursive: true, mode: 0o700 })).pipe(
-      Effect.as(SqliteClient.layer({ filename })),
+      Effect.as(sqliteLayer(filename)),
     ),
   );
 
