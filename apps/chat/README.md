@@ -98,27 +98,27 @@ Unknown configuration fields fail validation. T3 Env validates environment value
 and names invalid variables in its errors. Missing credentials identify the
 variable to set. Secret values are excluded from validation messages.
 
-| Optional JSON setting | Environment variable         | Default                               |
-| --------------------- | ---------------------------- | ------------------------------------- |
-| `catalog.source`      | `CHARTCOACH_CATALOG`         | Official `catalog.json`               |
-| `catalog.profile`     | `CHARTCOACH_CATALOG_PROFILE` | `minilm-l6-v2-cpu`                    |
-| `model.provider`      | `CHARTCOACH_PROVIDER`        | `openai`                              |
-| `model.model`         | `CHARTCOACH_MODEL`           | Browser setup                         |
-| `model.baseURL`       | `CHARTCOACH_BASE_URL`        | Provider endpoint                     |
-| `model.auth`          | `CHARTCOACH_MODEL_AUTH`      | `api-key`                             |
-| `model.apiKeyEnv`     | `CHARTCOACH_API_KEY_ENV`     | Provider variable                     |
-| `model.contextWindow` | `CHARTCOACH_CONTEXT_WINDOW`  | `128000`                              |
-| `server.host`         | `CHARTCOACH_HOST`            | `127.0.0.1`                           |
-| `server.port`         | `CHARTCOACH_PORT`            | `4273`                                |
-| `server.open`         | `CHARTCOACH_OPEN`            | Interactive browser opening           |
-| `server.publicURL`    | `CHARTCOACH_PUBLIC_URL`      | Local HTTP origin                     |
-| `server.username`     | `CHARTCOACH_USERNAME`        | `chartcoach`                          |
-| `server.passwordEnv`  | `CHARTCOACH_PASSWORD_ENV`    | `CHARTCOACH_PASSWORD`                 |
-| `server.passwordFile` | `CHARTCOACH_PASSWORD_FILE`   | Unset                                 |
-| `storage.dataDir`     | `CHARTCOACH_DATA_DIR`        | Platform app-data directory           |
-| `storage.cacheDir`    | `CHARTCOACH_CACHE_DIR`       | Platform cache directory              |
-| `modelOrigins`        | `CHARTCOACH_MODEL_ORIGINS`   | Empty array / comma-separated origins |
-| `tracing`             | `CHARTCOACH_TRACING`         | `false`                               |
+| Optional JSON setting | Environment variable         | Default                         |
+| --------------------- | ---------------------------- | ------------------------------- |
+| `catalog.source`      | `CHARTCOACH_CATALOG`         | Official `catalog.json`         |
+| `catalog.profile`     | `CHARTCOACH_CATALOG_PROFILE` | `minilm-l6-v2-cpu`              |
+| `model.provider`      | `CHARTCOACH_PROVIDER`        | `openai`                        |
+| `model.model`         | `CHARTCOACH_MODEL`           | Browser setup                   |
+| `model.baseURL`       | `CHARTCOACH_BASE_URL`        | Provider endpoint               |
+| `model.auth`          | `CHARTCOACH_MODEL_AUTH`      | `api-key`                       |
+| `model.apiKeyEnv`     | `CHARTCOACH_API_KEY_ENV`     | Provider variable               |
+| `model.contextWindow` | `CHARTCOACH_CONTEXT_WINDOW`  | `128000`                        |
+| `server.host`         | `CHARTCOACH_HOST`            | `127.0.0.1`                     |
+| `server.port`         | `CHARTCOACH_PORT`            | `4273`                          |
+| `server.open`         | `CHARTCOACH_OPEN`            | Interactive browser opening     |
+| `server.publicURL`    | `CHARTCOACH_PUBLIC_URL`      | Local HTTP origin               |
+| `server.username`     | `CHARTCOACH_USERNAME`        | `chartcoach`                    |
+| `server.passwordEnv`  | `CHARTCOACH_PASSWORD_ENV`    | `CHARTCOACH_PASSWORD`           |
+| `server.passwordFile` | `CHARTCOACH_PASSWORD_FILE`   | Unset                           |
+| `storage.dataDir`     | `CHARTCOACH_DATA_DIR`        | Platform app-data directory     |
+| `storage.cacheDir`    | `CHARTCOACH_CACHE_DIR`       | Platform cache directory        |
+| `modelOrigins`        | `CHARTCOACH_MODEL_ORIGINS`   | Common hosted providers (below) |
+| `tracing`             | `CHARTCOACH_TRACING`         | `false`                         |
 
 `catalog.source` accepts a release directory, a `release.json` URL, or a mutable
 `catalog.json` selection URL. Catalog identities are digests, independent of the
@@ -218,8 +218,31 @@ history. Keep the cookie to retain access from that browser. The server operator
 can access stored credentials, so use a server you trust and restrict provider-key
 permissions and spending limits. Keys stay out of chat content and trace metadata.
 
-Custom endpoints must match an allowed origin. `model.baseURL` adds its origin
-automatically. Add other trusted origins as a comma-separated list:
+These hosted origins are allowed by default for OpenAI-compatible connections.
+Choose **OpenAI compatible** in Model settings and enter the provider's base URL and key:
+
+| Provider          | API base URL                                              |
+| ----------------- | --------------------------------------------------------- |
+| OpenRouter        | `https://openrouter.ai/api/v1`                            |
+| xAI / Grok        | `https://api.x.ai/v1`                                     |
+| Google Gemini     | `https://generativelanguage.googleapis.com/v1beta/openai` |
+| Together AI       | `https://api.together.ai/v1`                              |
+| Fireworks AI      | `https://api.fireworks.ai/inference/v1`                   |
+| Groq              | `https://api.groq.com/openai/v1`                          |
+| Hugging Face      | `https://router.huggingface.co/v1`                        |
+| Mistral AI        | `https://api.mistral.ai/v1`                               |
+| NVIDIA NIM        | `https://integrate.api.nvidia.com/v1`                     |
+| Vercel AI Gateway | `https://ai-gateway.vercel.sh/v1`                         |
+
+Choose a model that supports images and tool calls. The native OpenAI, Anthropic,
+and Gemini connections remain available separately.
+
+An explicit comma-separated `CHARTCOACH_MODEL_ORIGINS` list replaces these defaults.
+An unset or empty variable uses `modelOrigins` from the optional config file, or
+the default list. `--model-origin` takes precedence over both.
+`modelOrigins: []` disables the default list.
+`model.baseURL` (or `--base-url`) always adds its own origin, including local
+servers such as Ollama and LM Studio. Allow other trusted endpoints explicitly:
 
 ```dotenv
 CHARTCOACH_MODEL_ORIGINS=https://api.example.com,https://models.example.com

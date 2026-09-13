@@ -7,8 +7,43 @@ import { languageModel, listProviderModels, providerEndpoint } from "../lib/app/
 import type { Provider } from "../shared/model";
 import type { ConnectionInput } from "../shared/preferences";
 import agent from "../agent/agent";
+import { loadConfig } from "../runtime/config";
 
 afterEach(() => vi.unstubAllGlobals());
+
+it("defaults to hosted model origins and lets explicit settings replace them", () => {
+  const base = { userConfig: "/missing/config.json", environment: {} };
+  const defaults = loadConfig(base).modelOrigins;
+
+  expect(
+    providerEndpoint({ provider: "compatible", baseURL: "https://openrouter.ai/api/v1" }, defaults),
+  ).toBe("https://openrouter.ai/api/v1");
+  expect(
+    loadConfig({ ...base, environment: { CHARTCOACH_MODEL_ORIGINS: "" } }).modelOrigins,
+  ).toEqual(defaults);
+  expect(() =>
+    providerEndpoint({ provider: "compatible", baseURL: "http://localhost:11434/v1" }, defaults),
+  ).toThrow("not allowed");
+  expect(() =>
+    providerEndpoint(
+      { provider: "compatible", baseURL: "https://openrouter.ai.example.com/v1" },
+      defaults,
+    ),
+  ).toThrow("not allowed");
+
+  const custom = loadConfig({
+    ...base,
+    environment: {
+      CHARTCOACH_MODEL_ORIGINS: " https://models.example.com/v1,https://models.example.com ",
+    },
+  }).modelOrigins;
+
+  expect(custom).toEqual(["https://models.example.com"]);
+  expect(() =>
+    providerEndpoint({ provider: "compatible", baseURL: "https://openrouter.ai/api/v1" }, custom),
+  ).toThrow("not allowed");
+  expect(loadConfig({ ...base, overrides: { modelOrigins: [] } }).modelOrigins).toEqual([]);
+});
 
 it("rejects an invalid saved connection instead of using the server's key", async () => {
   const resolve = agent.model.events["step.started"]!;

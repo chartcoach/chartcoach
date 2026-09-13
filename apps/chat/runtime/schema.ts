@@ -37,7 +37,20 @@ export const configSchema = z.strictObject({
       cacheDir: text.default(envPaths("chartcoach", { suffix: "" }).cache),
     })
     .prefault({}),
-  modelOrigins: z.array(apiBaseURL).default([]),
+  modelOrigins: z
+    .array(apiBaseURL)
+    .default([
+      "https://openrouter.ai",
+      "https://api.x.ai",
+      "https://generativelanguage.googleapis.com",
+      "https://api.together.ai",
+      "https://api.fireworks.ai",
+      "https://api.groq.com",
+      "https://router.huggingface.co",
+      "https://api.mistral.ai",
+      "https://integrate.api.nvidia.com",
+      "https://ai-gateway.vercel.sh",
+    ]),
   tracing: z.boolean().default(false),
 });
 
