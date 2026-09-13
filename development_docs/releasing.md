@@ -73,6 +73,18 @@ resume after both publishers succeed. Verification retries pending registry
 files and transient network failures up to six times, five seconds apart.
 Digest conflicts fail immediately.
 
+If the build fails before publication and a workflow correction is needed, merge
+the correction and wait for main CI. Then dispatch the corrected workflow for
+the existing tag:
+
+```bash
+gh workflow run publish.yml --ref main -f tag="$RELEASE_TAG"
+```
+
+The workflow checks out that tag, requires successful main CI for its commit,
+and retains the tag's package versions. The release tag stays unchanged.
+For partial publication, rerun the original failed jobs to reuse their artifacts.
+
 To inspect retained artifacts locally:
 
 ```bash
