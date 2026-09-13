@@ -23,6 +23,21 @@
       "types": "./dist/index.d.ts",
       "source": "./src/index.ts",
       "default": "./dist/index.js"
+    },
+    "./duckdb": {
+      "types": "./dist/duckdb.d.ts",
+      "source": "./src/duckdb.ts",
+      "default": "./dist/duckdb.js"
+    },
+    "./duckdb-wasm": {
+      "types": "./dist/duckdb-wasm.d.ts",
+      "source": "./src/duckdb-wasm.ts",
+      "default": "./dist/duckdb-wasm.js"
+    },
+    "./node": {
+      "types": "./dist/node.d.ts",
+      "source": "./src/node.ts",
+      "default": "./dist/node.js"
     }
   },
   "publishConfig": {
@@ -32,18 +47,35 @@
     "build": "vp pack",
     "check": "vp check",
     "prepack": "vp run build",
-    "test": "vp test",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "hyparquet": "^1.27.1",
-    "hyparquet-compressors": "^1.1.1",
-    "yaml": "^2.9.0"
+    "hyparquet": ">=1.29.2",
+    "hyparquet-compressors": ">=1.1.1",
+    "refkit-js": ">=0.3.0",
+    "tar": ">=7.5.22",
+    "yaml": ">=2.9.0"
   },
   "devDependencies": {
+    "@duckdb/duckdb-wasm": "catalog:",
+    "@duckdb/node-api": "catalog:",
     "@types/node": "catalog:",
     "typescript": "catalog:",
-    "vite": "catalog:",
     "vite-plus": "catalog:"
+  },
+  "peerDependencies": {
+    "@duckdb/duckdb-wasm": ">=1.33.1-dev57.0",
+    "@duckdb/node-api": ">=1.5.5-r.4"
+  },
+  "peerDependenciesMeta": {
+    "@duckdb/duckdb-wasm": {
+      "optional": true
+    },
+    "@duckdb/node-api": {
+      "optional": true
+    }
+  },
+  "engines": {
+    "node": ">=22.19.0"
   }
 }

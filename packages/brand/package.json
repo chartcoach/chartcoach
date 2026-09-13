@@ -7,6 +7,7 @@
   "exports": {
     "./fonts.css": "./fonts.css",
     "./tokens.css": "./tokens.css",
+    "./palette.css": "./palette.css",
     "./logo.css": "./logo.css",
     "./assets/brand/*": "./assets/brand/*"
   },

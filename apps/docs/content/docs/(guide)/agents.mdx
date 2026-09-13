@@ -1,57 +1,55 @@
 ---
-title: Use chartcoach from a code-mode agent
-description: Inspect the packaged Agent Plugin and call source-traced catalog operations from Python.
+title: Use with agents
+description: Open one Guideline Catalog and retain source evidence through selection, reading, and citation.
 icon: Bot
 ---
 
-chartcoach follows the open
-[Agent Plugins specification](https://agent-plugins.org/). An Agent Plugin is a
-package directory that exposes Agent Skills and Model Context Protocol (MCP)
-servers through fixed, portable locations. Installing chartcoach carries those
-components beside the Python library at the same version.
+Use the Python API when your agent can run code. Use the
+[Model Context Protocol (MCP) server](/mcp) when its client expects tools.
+Both let the agent find candidates, read the guidance, and cite the sources it
+uses.
 
-## Call chartcoach from code mode
+For a browser interface backed by the same catalog, follow
+[Build a web app](/next). The chat app connects interactive guideline selection
+to server-side search, guideline reading, and cited feedback.
 
-Install chartcoach in the Python environment used by the agent:
+## Call the Catalog API
 
 ```bash
 uv add chartcoach
 ```
 
-A code-mode agent can inspect the module workflow, search for candidates, read
-the selected record, and retain its source citations:
-
 ```python
 import chartcoach.agent as cc
 
 help(cc)
-tools = cc.Tools.open()
-catalog = tools.catalog
-candidates = cc.query_entries(
-    catalog,
-    contains="direct labels",
-    limit=5,
-    include_body=False,
-).to_dicts()
+catalog = cc.open_catalog()
+description = catalog.describe()
+candidates = catalog.query(contains="labels", limit=5).to_dicts()
 
-guideline_id = candidates[0]["id"]
-record = cc.retrieve_entry_records(
-    catalog,
-    ids=[guideline_id],
-    source_detail="full",
-)[0]
-citations = cc.citation_records(catalog, ids=[guideline_id])
+selected_ids = [row["id"] for row in candidates[:3]]
+records = catalog.read(ids=selected_ids, source_detail="minimal")
+citations = catalog.cite(ids=selected_ids)
 ```
 
-`Tools.open()` binds SQL and optional indexed search to the same catalog
-release. `query_entries()` returns candidate rows. `retrieve_entry_records()`
-returns the full guideline, and `citation_records()` retains its public link
-and source citations.
+`catalog.query()` keeps candidate rows compact. `catalog.read()` returns the
+complete selected sections. Pass `source_detail="full"` when the task needs
+every parsed source field and the entry's BibTeX references.
 
-## Inspect the Agent Plugin
+`contains` matches a contiguous phrase in the ID, title, or description. For
+zero matches, shorten the phrase or follow [Find guidelines](/querying) to
+search section text or an available index. Batch selected IDs through `read`
+and `cite`. Project native LanceDB hits before printing them, then read the
+parent guidelines for evidence.
 
-`cc.agent_plugin()` returns the installed `agent_plugins.Plugin`. Its skills
-and MCP configuration match the installed chartcoach version:
+Use one catalog object for a task. Its reads, SQL, descriptions, and lazy index
+loads retain the release selected during `open_catalog()`.
+
+## Inspect packaged agent resources
+
+chartcoach follows the open
+[Agent Plugins specification](https://agent-plugins.org/). The installed
+distribution carries five skills and its MCP server declaration.
 
 ```python
 plugin = cc.agent_plugin()
@@ -65,88 +63,55 @@ if plugin.mcp is not None:
     print(plugin.mcp.servers)
 ```
 
-The Python package contains five focused Agent Skills:
+| Skill         | Task                                        |
+| ------------- | ------------------------------------------- |
+| `core`        | Select, read, and cite guideline evidence   |
+| `discuss`     | Compare visualization choices and tradeoffs |
+| `visfeedback` | Review a rendered chart or screenshot       |
+| `visrec`      | Recommend a chart from a design brief       |
+| `contribute`  | Draft a catalog issue for human review      |
 
-| Skill         | Task                                                             |
-| ------------- | ---------------------------------------------------------------- |
-| `core`        | Choose a catalog, find records, read them, and format citations  |
-| `discuss`     | Compare visualization choices and explain tradeoffs              |
-| `visfeedback` | Review a rendered chart or screenshot                            |
-| `visrec`      | Recommend a chart from the data, task, audience, and constraints |
-| `contribute`  | Draft a catalog issue for human review                           |
+Load `core` plus the skill for the task. `core` owns query semantics,
+zero-result recovery, compact output, and citation. The workflow skills connect
+the retrieved evidence to the chart, design brief, or decision. Inspect
+vocabulary and schemas when a query needs them, then reuse that discovery.
 
-`cc.agent_skills()` returns them in chartcoach workflow order.
-
-[marimo](https://docs.marimo.io/) is one environment for code-mode agents. It
-discovers `chartcoach.agent` through the installed `marimo.agent.capability`
-entry point. Other agents can import the same module or inspect the standard
-Agent Plugin directory through their own client integration.
+[marimo](https://docs.marimo.io/) discovers `chartcoach.agent` through the
+installed `marimo.agent.capability` entry point. Other hosts can import the
+same module or inspect the Agent Plugin directory.
 
 ## Use the terminal workflow
 
-Agents that operate through a terminal can read the same packaged instructions
-through the CLI. This workflow assumes `uv` and the Codex CLI are available:
-
 ```bash
-uv tool install \
-  "chartcoach @ https://files.peter.gy/packages/python/chartcoach/0.2.0/892f120cb377/chartcoach-0.2.0-py3-none-any.whl"
-chartcoach --version
+uv tool install chartcoach
 chartcoach skills get core --full > chartcoach-core.md
 ```
 
-`chartcoach-core.md` contains the catalog workflow and its command reference.
-
-### Find a guideline
-
-Set the catalog once, then search its IDs, titles, and descriptions for
-`direct labels`:
+Discover, read, and cite from the public catalog:
 
 ```bash
-CATALOG_SOURCE="https://files.peter.gy/packages/python/chartcoach/0.2.0/docs-catalog/c0f6dbec3dd31b07763b46fd458733db0b8b50c5793cf9447458119287129420/release.json"
-
+chartcoach catalog describe
 chartcoach catalog list \
-  --source "$CATALOG_SOURCE" \
   --contains "direct labels" \
-  --limit 5 \
-  --format json
-```
+  --limit 5
 
-The result includes this ID:
-
-```bash
 GUIDELINE_ID="directly-label-series-instead-of-using-a-color-key"
-```
-
-### Read and cite it
-
-Candidate results contain summaries. Read the selected record for its full
-advice, reasons, limits, checks, fixes, and source information:
-
-```bash
 chartcoach catalog read "$GUIDELINE_ID" \
-  --source "$CATALOG_SOURCE" \
-  --source-detail full \
+  --source-detail minimal \
   --format markdown
-
 chartcoach catalog cite "$GUIDELINE_ID" \
-  --source "$CATALOG_SOURCE" \
   --format markdown
 ```
 
-The first command provides the text an agent should evaluate against the
-current chart. The second provides the public guideline link and formatted
-source citations.
+Set `CHARTCOACH_SOURCE` to an exact release location when multiple commands
+must use the same catalog contents.
 
-### Ask the agent
+Candidate search output is a preview. Apply a recommendation after reading the
+selected record's applicable situations and exceptions. Check its chart
+family, reader task, audience, data type, and interaction state.
 
-Save the chart as `chart.png`, then give the image and instructions to the
-agent:
-
-```bash
-codex -i chart.png \
-  'Read chartcoach-core.md, then review the attached chart for labels and accessibility.'
-```
-
-A sound answer connects each suggested change to a visible fact about the
-chart, the applicable guideline section, any tradeoff or uncertainty, and the
-source citation.
+For a chart review, distinguish observed facts from inferred or unreadable
+details before searching. A matching guideline cannot confirm an uncertain
+reading of the chart. State the missing evidence when a conclusion requires
+another view, the data, or an interaction test. `cite` identifies attached
+sources. Inspect a publication before attributing a specific claim to it.

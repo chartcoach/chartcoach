@@ -26,11 +26,13 @@ function classNames(...values: Array<string | false | null | undefined>) {
 
 function isActiveHref(href: string, pathname: string) {
   if (isExternalHttpHref(href)) return false;
+
   return normalizePathname(pathname) === normalizePathname(href);
 }
 
 function subscribePathname(onChange: () => void) {
   window.addEventListener("popstate", onChange);
+
   return () => window.removeEventListener("popstate", onChange);
 }
 
@@ -44,11 +46,13 @@ function getServerPathnameSnapshot() {
 
 export function SiteMobileMenu({ links, githubHref }: SiteMobileMenuProps) {
   const [open, setOpen] = useState(false);
+
   const pathname = useSyncExternalStore(
     subscribePathname,
     getPathnameSnapshot,
     getServerPathnameSnapshot,
   );
+
   const menuId = useId();
 
   useEffect(() => {
@@ -57,13 +61,29 @@ export function SiteMobileMenu({ links, githubHref }: SiteMobileMenuProps) {
     }
 
     document.addEventListener("keydown", handleEscape);
+
     return () => document.removeEventListener("keydown", handleEscape);
   }, []);
 
   useEffect(() => {
-    document.body.style.overflow = open ? "hidden" : "";
+    if (!open) return;
+    const previousOverflow = document.body.style.overflow;
+    const desktop = window.matchMedia("(min-width: 640px)");
+    const close = () => setOpen(false);
+
+    const closeOnDesktop = () => {
+      if (desktop.matches) close();
+    };
+
+    closeOnDesktop();
+    desktop.addEventListener("change", closeOnDesktop);
+    document.addEventListener("astro:before-preparation", close);
+    document.body.style.overflow = "hidden";
+
     return () => {
-      document.body.style.overflow = "";
+      desktop.removeEventListener("change", closeOnDesktop);
+      document.removeEventListener("astro:before-preparation", close);
+      document.body.style.overflow = previousOverflow;
     };
   }, [open]);
 
@@ -71,7 +91,7 @@ export function SiteMobileMenu({ links, githubHref }: SiteMobileMenuProps) {
     <>
       <button
         type="button"
-        className="relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-border text-fg transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/20 sm:hidden"
+        className="relative flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-md border border-border text-fg transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/20 sm:hidden"
         aria-label={open ? "Close menu" : "Open menu"}
         aria-expanded={open}
         aria-controls={open ? menuId : undefined}
@@ -116,6 +136,7 @@ export function SiteMobileMenu({ links, githubHref }: SiteMobileMenuProps) {
                   {links.map((link) => {
                     const external = isExternalHttpHref(link.href);
                     const active = isActiveHref(link.href, pathname);
+
                     return (
                       <li key={link.href}>
                         <a

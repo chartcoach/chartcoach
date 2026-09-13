@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "documents_version": 1,
+  "entries_digest": "1111111111111111111111111111111111111111111111111111111111111111",
+  "manifest_digest": "2222222222222222222222222222222222222222222222222222222222222222",
+  "embedding_functions": [
+    {
+      "name": "test-deterministic",
+      "model": {
+        "max_retries": 0
+      },
+      "source_column": "text",
+      "vector_column": "vector"
+    }
+  ],
+  "dimensions": 4,
+  "distance_metric": "cosine",
+  "python_requirements": {},
+  "lancedb_version": "0.38.0",
+  "projection": null
+}

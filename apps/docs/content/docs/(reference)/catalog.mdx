@@ -1,17 +1,18 @@
 ---
 title: Catalog data
-description: Inspect guideline records, supported catalog sources, and the files in a published release.
+description: Inspect guideline entries, catalog locations, and the files in a published release.
 icon: Database
 ---
 
-Each row in `entries.parquet` is one guideline record. The row stores its ID
-and summary, labels for filtering, ordered guidance sections, and BibTeX source
-entries.
+Each row in `entries.parquet` is one guideline entry. This
+[Parquet](https://parquet.apache.org/docs/) file stores tabular data for Python,
+JavaScript, and database readers. Entries contain labels, ordered sections,
+and [BibTeX](https://www.bibtex.org/) source records for citations.
 
-## Guideline record
+## Guideline entry record
 
-This excerpt uses exact values from the release in the live examples. It shows
-the first section and the complete source entry:
+This excerpt uses exact values from the quickstart's catalog. It shows
+the first section and complete reference:
 
 ```json
 {
@@ -54,16 +55,18 @@ Readers join `sections` in array order to produce the guideline body. A
 citation such as `[@muth_colorblindness_2020]` refers to the matching BibTeX
 key in `references`.
 
-## Catalog sources
+## Catalog locations
 
 chartcoach opens these directory and file layouts:
 
-| Source            | Files                                         | Behavior                                      |
-| ----------------- | --------------------------------------------- | --------------------------------------------- |
-| Authored folder   | `MANIFEST.md` and `entries/<id>/guideline.md` | Reads the Markdown source used for curation   |
-| Compiled bundle   | `MANIFEST.md` and `entries.parquet`           | Reads local catalog rows directly             |
-| Selected release  | `catalog.json` plus the files it selects      | Follows the current release selection         |
-| Published release | `release.json` plus the files it lists        | Verifies the listed files before reading them |
+| Location                | Files                                         | Behavior                                     |
+| ----------------------- | --------------------------------------------- | -------------------------------------------- |
+| Authored folder         | `MANIFEST.md` and `entries/<id>/guideline.md` | Reads the Markdown entries used for curation |
+| Compiled bundle         | `MANIFEST.md` and `entries.parquet`           | Reads local guideline entry rows directly    |
+| Local deployed root     | `catalog.json` and `catalog/releases/`        | Opens and verifies the selected release      |
+| Exact release directory | `release.json` plus the files it lists        | Verifies files as they are read              |
+| Remote selection        | A `catalog.json` URL                          | Follows the current release selection        |
+| Remote exact release    | A `release.json` URL                          | Keeps one release digest                     |
 
 `MANIFEST.md` lists the section roles and label families accepted by that
 catalog. Readers reject records that use a role or label family missing from
@@ -71,7 +74,7 @@ the manifest.
 
 ## `release.json`
 
-`release.json` lists each catalog and search-index file that readers may load.
+`release.json` lists each catalog and index file that readers may load.
 It records the byte count and SHA-256 hash that readers verify. Current readers
 accept `schema_version: 1`:
 
@@ -94,7 +97,7 @@ check that `digest` matches the `schema_version` and path-sorted `artifacts`
 entries. They then verify each required file's byte count and hash before
 parsing it.
 
-A release can also include a named search index:
+A release can also include a named index profile:
 
 ```text
 release/
@@ -102,37 +105,69 @@ release/
 ├── MANIFEST.md
 ├── entries.parquet
 └── profiles/
-    └── sentence-transformers/all-MiniLM-L6-v2/
-        ├── documents.parquet
-        └── index.tar.gz
+    └── minilm-normalized/
+        ├── profile.json
+        ├── index.tar.gz
+        ├── documents.parquet    # optional
+        └── projection.parquet   # optional
 ```
 
-The profile name identifies one vector space. Each `documents.parquet` row has
-`id`, `parent_id`, `role`, `labels`, `content_hash`, `text`, `vector`,
-`projection_x`, `projection_y`, and `neighbors`. The `neighbors` value contains
-row IDs and distances. `index.tar.gz` contains the matching LanceDB table named
-`documents`.
+A profile ID is a lowercase portable single-component name scoped to one
+release. The embedding binding, dimensions, distance metric, Python
+requirements, and projection metadata belong in `profile.json`.
+
+`index.tar.gz` contains the LanceDB table named `documents`, including
+document identities, text, labels, vectors, and embedding metadata.
+`profile.json` describes the index:
+
+| Field                                 | Meaning                                            |
+| ------------------------------------- | -------------------------------------------------- |
+| `schema_version`, `documents_version` | Metadata and document formats                      |
+| `entries_digest`, `manifest_digest`   | Catalog contents indexed by this profile           |
+| `embedding_functions`                 | LanceDB registry bindings from text to vectors     |
+| `dimensions`, `distance_metric`       | Vector size and retrieval distance                 |
+| `python_requirements`                 | Exact dependency versions recorded by the producer |
+| `lancedb_version`                     | Producer's LanceDB version                         |
+| `projection`                          | Projection algorithm and options, or `null`        |
+
+The metadata file is at most 64 KiB and has a closed schema. Registry variable
+references use `$var:name`. Values remain caller-owned. Every profile contains
+this file and `index.tar.gz`.
+
+`documents.parquet` is an optional portable export with `row_id`, `id`,
+`parent_id`, `role`, `labels`, `content_hash`, `text`, and `vector`. Validation
+compares it with the LanceDB table when present.
+
+`projection.parquet` is present when `profile.json.projection` contains
+projection metadata. It has `row_id`, `id`, `parent_id`, `role`,
+`projection_x`, `projection_y`, and `neighbors`. Neighbor IDs refer to the
+shared `row_id` mapping. Distances come from the original vector-space neighbor
+graph used by the projection algorithm. They are not distances between points
+in the rendered two-dimensional projection.
 
 ## `catalog.json`
 
 `catalog.json` contains the record for the currently selected public release.
 Selecting another release overwrites this file. Files under
-`catalog/releases/<digest>/` keep the bytes recorded by that digest.
+`catalog/releases/<digest>/` keep the bytes described by that digest.
 
 Readers fetch `catalog.json` on each open so they see the current selection.
 Files already verified for the selected digest can come from cache. A specific
 `release.json` keeps the same digest across calls.
 
-## Query tables
+When the directory immediately before `release.json` is a SHA-256 digest,
+readers also require that path segment to match the descriptor digest.
 
-Python and the CLI derive six tables from the guideline records:
+## Catalog tables
+
+Python and the CLI derive six tables from the guideline entry records:
 
 | Table                  | One row per                                        |
 | ---------------------- | -------------------------------------------------- |
-| `guidelines`           | Guideline                                          |
+| `guidelines`           | Guideline entry                                    |
 | `sections`             | Guideline section                                  |
 | `guideline_labels`     | Guideline-label pair                               |
-| `references`           | Parsed citation                                    |
+| `references`           | Parsed BibTeX reference                            |
 | `guideline_references` | Guideline-reference pair                           |
 | `guideline_sources`    | Guideline-reference pair with parsed source fields |
 

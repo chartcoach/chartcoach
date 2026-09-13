@@ -33,36 +33,18 @@ to start Next.js directly.
 Route-group directory names stay out of published URLs. For example,
 `(guide)/getting-started.mdx` publishes at `/getting-started`.
 
-## Maintain live examples
-
-| Concern                                             | File                                        |
-| --------------------------------------------------- | ------------------------------------------- |
-| Cell source, Python dependencies, and browser setup | The MDX page containing the example         |
-| Build-time marimo compilation                       | `apps/docs/source.config.ts`                |
-| Browser activation and JavaScript SDK registration  | `apps/docs/components/notebook-runtime.tsx` |
-| MDX component registration                          | `apps/docs/components/mdx.tsx`              |
-
-During a build, `python marimo` fences execute and place their initial output
-in the static page. In the browser, Pyodide activates those cells so readers
-can interact with them. The notebook runtime registers the workspace
-`@chartcoach/catalog` module before the JavaScript live cell connects.
-
-Keep dependency pins and browser setup beside the cell that uses them. After a
-live-example change, inspect the static output, activated output, interaction,
-and navigation between notebook pages.
-
 ## Validate
 
 ```bash
 pnpm --dir apps/docs check
 pnpm --dir apps/docs typecheck
-pnpm --dir apps/docs test
 pnpm --dir apps/docs build
 ```
 
 Inspect visible changes at desktop and narrow widths. Run `make check` before
-handoff. Live-example builds need network access to the pinned Python package
-and catalog files on `files.peter.gy`.
+handoff. Run changed code examples against the workspace packages before
+building. Check page links, search results, copy controls, and Markdown routes
+in the static export.
 
 ## Machine-readable routes
 

@@ -1,26 +1,25 @@
 from __future__ import annotations
 
 import pytest
-from chartcoach.catalog.paths import paths
+from chartcoach._catalog.paths import paths
 
 DIGEST = "8" * 64
 
 
 def test_catalog_paths_navigate_release_profiles() -> None:
     release = paths.release(DIGEST)
-    profile = release.profile("sentence-transformers/all-MiniLM-L6-v2")
+    profile = release.profile("minilm-normalized")
+    profile_root = f"catalog/releases/{DIGEST}/profiles/minilm-normalized"
 
     assert paths.selected() == "catalog.json"
     assert release.root() == f"catalog/releases/{DIGEST}"
     assert release.json() == f"catalog/releases/{DIGEST}/release.json"
     assert release.manifest() == f"catalog/releases/{DIGEST}/MANIFEST.md"
     assert release.entries() == f"catalog/releases/{DIGEST}/entries.parquet"
-    assert profile.documents().endswith(
-        "profiles/sentence-transformers/all-MiniLM-L6-v2/documents.parquet"
-    )
-    assert profile.index().endswith(
-        "profiles/sentence-transformers/all-MiniLM-L6-v2/index.tar.gz"
-    )
+    assert profile.metadata() == f"{profile_root}/profile.json"
+    assert profile.documents() == f"{profile_root}/documents.parquet"
+    assert profile.index() == f"{profile_root}/index.tar.gz"
+    assert profile.projection() == f"{profile_root}/projection.parquet"
 
 
 @pytest.mark.parametrize(
@@ -29,6 +28,7 @@ def test_catalog_paths_navigate_release_profiles() -> None:
         lambda: paths.release("invalid").json(),
         lambda: paths.release(DIGEST).artifact("../entries.parquet"),
         lambda: paths.release(DIGEST).profile("openai//model").index(),
+        lambda: paths.release(DIGEST).profile("OpenAI").index(),
     ],
 )
 def test_catalog_paths_reject_unsafe_values(call) -> None:

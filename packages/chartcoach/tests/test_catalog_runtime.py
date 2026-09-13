@@ -13,19 +13,26 @@ from threading import Thread
 from typing import Any
 
 import pytest
-from chartcoach import CatalogError, open_catalog
-from chartcoach.catalog.collection import Catalog
-from chartcoach.catalog.releases import CatalogRelease, ReleaseArtifact
-from chartcoach.catalog.releases.hashing import release_digest, sha256_file
-from chartcoach.catalog.runtime import transport as catalog_transport
+from catalog_testkit import deterministic_embedding
+from chartcoach import (
+    Catalog,
+    CatalogError,
+    CatalogRelease,
+    ReleaseArtifact,
+    open_catalog,
+)
+from chartcoach._catalog.releases.hashing import release_digest, sha256_file
+from chartcoach._catalog.runtime import transport as catalog_transport
+from chartcoach._catalog.runtime.release import ReleaseLocation
+from chartcoach.curation import EmbeddingProfile, build_release, write_bundle
 
 
-def test_open_catalog_accepts_the_local_source_matrix(
+def test_open_catalog_accepts_the_local_location_matrix(
     sample_catalog: Catalog,
     sample_workspace_path: Path,
     tmp_path: Path,
 ) -> None:
-    bundle = sample_catalog.write_bundle(tmp_path / "bundle")
+    bundle = write_bundle(sample_catalog, tmp_path / "bundle")
     release_root, release = _write_release(sample_catalog, tmp_path / "release")
     store = tmp_path / "store"
     _publish_local(release_root, release, store)
@@ -36,6 +43,7 @@ def test_open_catalog_accepts_the_local_source_matrix(
     local_release = open_catalog(release_root)
     exact = open_catalog(release_root / "release.json")
     selected = open_catalog(store / "catalog.json")
+    deployed = open_catalog(store)
 
     assert authored.release is None
     assert compiled.release is None
@@ -43,6 +51,10 @@ def test_open_catalog_accepts_the_local_source_matrix(
     assert local_release.release == release
     assert exact.release == release
     assert selected.release == release
+    assert deployed.release == release
+    assert deployed.describe()["resolved_location"] == str(
+        store / "catalog" / "releases" / release.digest / "release.json"
+    )
     assert {
         len(authored),
         len(compiled),
@@ -50,7 +62,43 @@ def test_open_catalog_accepts_the_local_source_matrix(
         len(local_release),
         len(exact),
         len(selected),
+        len(deployed),
     } == {len(sample_catalog)}
+
+
+def test_local_directory_rejects_selection_and_release_descriptors(
+    sample_catalog: Catalog,
+    tmp_path: Path,
+) -> None:
+    root, release = _write_release(sample_catalog, tmp_path / "catalog")
+    (root / "catalog.json").write_text(json.dumps(release.to_record()))
+
+    with pytest.raises(CatalogError, match="both catalog.json and release.json"):
+        open_catalog(root)
+
+
+def test_runtime_rejects_profile_metadata_without_an_index_archive(
+    sample_catalog: Catalog,
+    tmp_path: Path,
+) -> None:
+    root, release = _write_release(sample_catalog, tmp_path / "release")
+    artifacts = {
+        **release.artifacts,
+        "profiles/minilm-normalized/profile.json": ReleaseArtifact(
+            sha256="c" * 64,
+            bytes=1,
+        ),
+    }
+    changed = CatalogRelease(
+        digest=release_digest(artifacts),
+        artifacts=artifacts,
+    )
+    (root / "release.json").write_text(json.dumps(changed.to_record()))
+
+    with pytest.raises(CatalogError, match="missing index.tar.gz") as exc_info:
+        open_catalog(root)
+
+    assert exc_info.value.code == "incompatible_profile"
 
 
 def test_top_level_api_is_the_supported_catalog_contract() -> None:
@@ -59,20 +107,37 @@ def test_top_level_api_is_the_supported_catalog_contract() -> None:
     assert set(chartcoach.__all__) == {
         "Catalog",
         "CatalogError",
+        "CatalogInfo",
         "CatalogManifest",
         "CatalogRelease",
+        "CitationRecord",
+        "CitationSource",
+        "GuidelineEntryRecord",
+        "Guideline",
+        "Section",
+        "ManifestDefinition",
+        "ReleaseArtifact",
+        "MinimalSourceRecord",
+        "FullSourceRecord",
+        "ProfileInfo",
+        "SectionRecord",
+        "SourceDetail",
+        "TableColumnInfo",
+        "TableInfo",
         "__version__",
         "open_catalog",
-        "open_index",
     }
-    assert str(inspect.signature(chartcoach.open_catalog)) == (
-        "(source: 'str | PathLike[str] | None' = None, *, "
-        "storage_options: 'Mapping[str, object] | None' = None) -> 'Catalog'"
-    )
-    assert str(inspect.signature(chartcoach.open_index)) == (
-        "(source: 'str | PathLike[str] | None' = None, *, profile: 'str', "
-        "storage_options: 'Mapping[str, object] | None' = None) -> 'Table'"
-    )
+    open_parameters = inspect.signature(chartcoach.open_catalog).parameters
+    assert tuple(open_parameters) == ("location", "storage_options")
+    assert open_parameters["location"].default is None
+    assert open_parameters["storage_options"].kind is inspect.Parameter.KEYWORD_ONLY
+    assert open_parameters["storage_options"].default is None
+
+    catalog_parameters = inspect.signature(chartcoach.Catalog).parameters
+    assert tuple(catalog_parameters) == ("frame", "manifest")
+    assert catalog_parameters["frame"].default is inspect.Parameter.empty
+    assert catalog_parameters["manifest"].kind is inspect.Parameter.KEYWORD_ONLY
+    assert catalog_parameters["manifest"].default is inspect.Parameter.empty
 
 
 def test_http_errors_redact_credentials(
@@ -94,19 +159,86 @@ def test_http_errors_redact_credentials(
         )
 
     message = str(exc_info.value)
+    assert exc_info.value.code == "operation_failed"
     assert "https://example.test/catalog.json" in message
     assert "user:password" not in message
     assert "token=secret" not in message
     assert "#fragment" not in message
 
 
-def test_digest_shaped_source_is_an_ordinary_local_path(
+def test_http_configuration_errors_remain_invalid_input() -> None:
+    with pytest.raises(CatalogError) as exc_info:
+        list(
+            catalog_transport.remote_chunks(
+                "https://example.test/catalog.json",
+                transport="http",
+                storage_options={"timeout": -1},
+            )
+        )
+
+    assert exc_info.value.code == "invalid_input"
+
+
+def test_cloud_read_failure_has_safe_operational_guidance(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import obstore.store
+
+    class UnavailableStore:
+        def get(self, path: str) -> None:
+            raise OSError("upstream-private-diagnostic")
+
+    monkeypatch.setattr(
+        obstore.store, "from_url", lambda *_args, **_kwargs: UnavailableStore()
+    )
+
+    with pytest.raises(CatalogError) as exc_info:
+        list(
+            catalog_transport.remote_chunks(
+                "s3://example/catalog.json", transport="cloud", storage_options={}
+            )
+        )
+
+    assert exc_info.value.code == "operation_failed"
+    assert exc_info.value.details["operation"] == "read_cloud"
+    assert exc_info.value.hints
+    assert "upstream-private-diagnostic" not in str(exc_info.value)
+
+
+def test_catalog_description_redacts_exact_release_credentials(
+    sample_catalog: Catalog,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    release_root, release = _write_release(sample_catalog, tmp_path / "release")
+    location = ReleaseLocation(
+        release=release,
+        artifact_base=release_root,
+        descriptor=(
+            "https://user:password@example.test/catalog/releases/"
+            f"{release.digest}/release.json?token=secret#fragment"
+        ),
+        transport="local",
+        storage_options={},
+    )
+    monkeypatch.setattr(
+        "chartcoach._catalog.runtime.release_location", lambda *_: location
+    )
+
+    catalog = open_catalog("https://example.test/release.json")
+
+    assert catalog.describe()["resolved_location"] == (
+        f"https://example.test/catalog/releases/{release.digest}/release.json"
+    )
+
+
+def test_digest_shaped_location_is_an_ordinary_local_path(
     sample_catalog: Catalog,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     digest = "a" * 64
-    sample_catalog.write_bundle(tmp_path / digest)
+    write_bundle(sample_catalog, tmp_path / digest)
     monkeypatch.chdir(tmp_path)
 
     catalog = open_catalog(digest)
@@ -119,7 +251,7 @@ def test_local_directory_rejects_an_ambiguous_shape(
     sample_catalog: Catalog,
     tmp_path: Path,
 ) -> None:
-    root = sample_catalog.write_bundle(tmp_path / "catalog")
+    root = write_bundle(sample_catalog, tmp_path / "catalog")
     (root / "entries").mkdir()
 
     with pytest.raises(CatalogError, match="ambiguous"):
@@ -127,15 +259,31 @@ def test_local_directory_rejects_an_ambiguous_shape(
 
 
 @pytest.mark.parametrize(
-    ("source", "message"),
+    ("location", "message"),
     [
-        ("ftp://example.test/catalog.json", "Unsupported catalog source scheme"),
+        ("ftp://example.test/catalog.json", "Unsupported catalog location scheme"),
         ("https://example.test/catalog", "must name catalog.json or release.json"),
     ],
 )
-def test_remote_source_rejects_unsupported_shapes(source: str, message: str) -> None:
+def test_remote_location_rejects_unsupported_shapes(
+    location: str, message: str
+) -> None:
     with pytest.raises(CatalogError, match=message):
-        open_catalog(source)
+        open_catalog(location)
+
+
+def test_digest_addressed_release_rejects_another_self_consistent_digest(
+    sample_catalog: Catalog,
+    tmp_path: Path,
+) -> None:
+    release_root, _ = _write_release(sample_catalog, tmp_path / "release")
+    wrong = tmp_path / ("0" * 64)
+    release_root.rename(wrong)
+
+    with pytest.raises(CatalogError, match="digest-addressed location") as exc_info:
+        open_catalog(wrong / "release.json")
+
+    assert exc_info.value.code == "integrity"
 
 
 def test_http_catalog_and_release_descriptors_share_verified_artifacts(
@@ -147,11 +295,11 @@ def test_http_catalog_and_release_descriptors_share_verified_artifacts(
     store = tmp_path / "store"
     _publish_local(release_root, release, store)
     monkeypatch.setattr(
-        "chartcoach.catalog.runtime.cache._cache_root",
+        "chartcoach._catalog.runtime.cache._cache_root",
         lambda: tmp_path / "cache",
     )
 
-    with _serve(store) as (base_url, requests):
+    with _serve(store, required_user_agent="chartcoach") as (base_url, requests):
         selected_url = f"{base_url}/catalog.json"
         exact_url = f"{base_url}/catalog/releases/{release.digest}/release.json"
         selected = open_catalog(
@@ -162,28 +310,63 @@ def test_http_catalog_and_release_descriptors_share_verified_artifacts(
 
     assert selected.release == exact.release == release
     assert requests["/catalog.json"] == 1
-    assert requests[f"/catalog/releases/{release.digest}/release.json"] == 1
+    assert requests[f"/catalog/releases/{release.digest}/release.json"] == 0
     assert requests[f"/catalog/releases/{release.digest}/MANIFEST.md"] == 1
     assert requests[f"/catalog/releases/{release.digest}/entries.parquet"] == 1
 
 
-def test_http_catalog_identifies_chartcoach_to_the_server(
+@pytest.mark.curation
+@pytest.mark.search
+def test_opening_and_description_keep_profile_artifacts_lazy(
     sample_catalog: Catalog,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    release_root, release = _write_release(sample_catalog, tmp_path / "release")
+    profile = "test-lazy"
+    release_root = tmp_path / "release"
+    release = build_release(
+        sample_catalog,
+        release_root,
+        profiles={
+            profile: EmbeddingProfile(
+                deterministic_embedding("chartcoach-lazy-profile")
+            )
+        },
+    )
     store = tmp_path / "store"
     _publish_local(release_root, release, store)
     monkeypatch.setattr(
-        "chartcoach.catalog.runtime.cache._cache_root",
-        lambda: tmp_path / "cache",
+        "chartcoach._catalog.runtime.cache._cache_root", lambda: tmp_path / "cache"
     )
 
-    with _serve(store, required_user_agent="chartcoach") as (base_url, _requests):
-        catalog = open_catalog(f"{base_url}/catalog.json")
+    with _serve(store, required_header=("X-Profile-Test", "bound")) as (
+        base_url,
+        requests,
+    ):
+        catalog = open_catalog(
+            f"{base_url}/catalog.json",
+            storage_options={"headers": {"X-Profile-Test": "bound"}},
+        )
+        assert catalog.describe()["profiles"] == [profile]
+        selected_profile = catalog.describe(profile=profile)["profile"]
+        assert selected_profile is not None
+        assert set(selected_profile) == {
+            "name",
+            "profile_schema_version",
+            "documents_version",
+            "embedding_functions",
+            "dimensions",
+            "distance_metric",
+            "python_requirements",
+            "lancedb_version",
+            "projection",
+        }
+        assert selected_profile["distance_metric"] == "cosine"
 
-    assert catalog.release == release
+    base = f"/catalog/releases/{release.digest}/profiles/{profile}"
+    assert requests[f"{base}/profile.json"] == 1
+    assert requests[f"{base}/documents.parquet"] == 0
+    assert requests[f"{base}/index.tar.gz"] == 0
 
 
 def test_selected_descriptor_refreshes_while_artifact_cache_is_reused(
@@ -201,19 +384,19 @@ def test_selected_descriptor_refreshes_while_artifact_cache_is_reused(
     _publish_local(first_root, first, store)
     _publish_local(second_root, second, store, select=False)
     monkeypatch.setattr(
-        "chartcoach.catalog.runtime.cache._cache_root",
+        "chartcoach._catalog.runtime.cache._cache_root",
         lambda: tmp_path / "cache",
     )
 
     with _serve(store) as (base_url, requests):
-        source = f"{base_url}/catalog.json"
-        first_catalog = open_catalog(source)
+        location = f"{base_url}/catalog.json"
+        first_catalog = open_catalog(location)
         (store / "catalog.json").write_text(
             json.dumps(second.to_record()),
             encoding="utf-8",
         )
-        second_catalog = open_catalog(source)
-        repeated = open_catalog(source)
+        second_catalog = open_catalog(location)
+        repeated = open_catalog(location)
 
     assert first_catalog.release == first
     assert second_catalog.release == repeated.release == second
@@ -233,7 +416,7 @@ def test_remote_artifact_integrity_is_checked_before_cache_commit(
     entries = store / "catalog" / "releases" / release.digest / "entries.parquet"
     entries.write_bytes(b"corrupt")
     cache = tmp_path / "cache"
-    monkeypatch.setattr("chartcoach.catalog.runtime.cache._cache_root", lambda: cache)
+    monkeypatch.setattr("chartcoach._catalog.runtime.cache._cache_root", lambda: cache)
 
     with (
         _serve(store) as (base_url, _requests),
@@ -244,6 +427,55 @@ def test_remote_artifact_integrity_is_checked_before_cache_commit(
     assert not (
         cache / "artifacts" / release.artifact("entries.parquet").sha256
     ).exists()
+
+
+def test_cached_release_reopens_offline_and_repairs_artifact_bytes(
+    sample_catalog: Catalog, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root, release = _write_release(sample_catalog, tmp_path / "release")
+    store = tmp_path / "store"
+    _publish_local(root, release, store)
+    monkeypatch.setattr(
+        "chartcoach._catalog.runtime.cache._cache_root", lambda: tmp_path / "cache"
+    )
+    with _serve(store) as (base, requests):
+        url = f"{base}/catalog/releases/{release.digest}/release.json"
+        first = open_catalog(url)
+        parquet = first.artifact("entries.parquet")
+        with first.duckdb() as connection:
+            assert connection.read_parquet(str(parquet)).count("*").fetchone() == (2,)
+        repeated = open_catalog(url)
+        assert repeated.release == release
+        parquet.write_bytes(b"x" * parquet.stat().st_size)
+        repaired = open_catalog(url)
+        local = repaired.cache()
+        assert requests[f"/catalog/releases/{release.digest}/release.json"] == 1
+        assert requests[f"/catalog/releases/{release.digest}/entries.parquet"] == 2
+    assert open_catalog(url).release == release
+    assert (
+        open_catalog(local).read(ids=["direct-labels"])[0]["title"]
+        == "Use direct labels"
+    )
+    assert first.cache() == local
+    with pytest.raises(CatalogError, match="Unknown release artifact"):
+        first.artifact("../secret")
+
+
+def test_cached_release_does_not_write_through_a_symlink(
+    sample_catalog: Catalog, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root, _ = _write_release(sample_catalog, tmp_path / "release")
+    cache = tmp_path / "cache"
+    monkeypatch.setattr("chartcoach._catalog.runtime.cache._cache_root", lambda: cache)
+    local = open_catalog(root).cache()
+    external = tmp_path / "external"
+    external.write_bytes(b"caller content")
+    target = local / "entries.parquet"
+    target.unlink()
+    target.symlink_to(external)
+    with pytest.raises(CatalogError, match="symlink"):
+        open_catalog(root).cache()
+    assert external.read_bytes() == b"caller content"
 
 
 def test_release_rejects_an_oversized_core_artifact(
@@ -270,7 +502,7 @@ def test_release_rejects_an_oversized_core_artifact(
         open_catalog(release_root)
 
 
-def test_cloud_transport_receives_a_copy_of_storage_options(
+def test_cloud_transport_forwards_storage_options_to_catalog_resources(
     sample_catalog: Catalog,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -286,7 +518,10 @@ def test_cloud_transport_receives_a_copy_of_storage_options(
             release_root / "entries.parquet"
         ).read_bytes(),
     }
-    seen: list[dict[str, object]] = []
+    expected_options: dict[str, object] = {
+        "region": "eu-central-1",
+        "skip_signature": True,
+    }
 
     class Store:
         def __init__(self, parent: str) -> None:
@@ -296,18 +531,15 @@ def test_cloud_transport_receives_a_copy_of_storage_options(
             yield objects[f"{self.parent}/{key}"]
 
     def from_url(parent: str, **options: object) -> Store:
-        seen.append(options)
+        assert options == expected_options
         return Store(parent)
 
     monkeypatch.setattr("obstore.store.from_url", from_url)
     monkeypatch.setattr(
-        "chartcoach.catalog.runtime.cache._cache_root",
+        "chartcoach._catalog.runtime.cache._cache_root",
         lambda: tmp_path / "cache",
     )
-    storage_options: dict[str, object] = {
-        "region": "eu-central-1",
-        "skip_signature": True,
-    }
+    storage_options = dict(expected_options)
 
     catalog = open_catalog(
         "s3://bucket/catalog.json",
@@ -315,12 +547,18 @@ def test_cloud_transport_receives_a_copy_of_storage_options(
     )
 
     assert catalog.release == release
-    assert storage_options == {
-        "region": "eu-central-1",
-        "skip_signature": True,
-    }
-    assert seen == [storage_options, storage_options, storage_options]
-    assert all(options is not storage_options for options in seen)
+    assert storage_options == expected_options
+    local = catalog.cache()
+    objects.clear()
+    exact = open_catalog(
+        f"s3://bucket/catalog/releases/{release.digest}/release.json",
+        storage_options=storage_options,
+    )
+    assert exact.release == release
+    assert (
+        open_catalog(local).read(ids=["direct-labels"])[0]["title"]
+        == "Use direct labels"
+    )
 
 
 def _write_release(
@@ -329,7 +567,7 @@ def _write_release(
     *,
     manifest_suffix: str = "",
 ) -> tuple[Path, CatalogRelease]:
-    catalog.write_bundle(root)
+    write_bundle(catalog, root)
     if manifest_suffix:
         manifest = root / "MANIFEST.md"
         manifest.write_text(
@@ -376,6 +614,7 @@ def _serve(
     root: Path,
     *,
     required_user_agent: str | None = None,
+    required_header: tuple[str, str] | None = None,
 ) -> Iterator[tuple[str, Counter[str]]]:
     requests: Counter[str] = Counter()
 
@@ -385,6 +624,12 @@ def _serve(
             if (
                 required_user_agent is not None
                 and self.headers.get("User-Agent") != required_user_agent
+            ):
+                self.send_error(403)
+                return
+            if (
+                required_header is not None
+                and self.headers.get(required_header[0]) != required_header[1]
             ):
                 self.send_error(403)
                 return

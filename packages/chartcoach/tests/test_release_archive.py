@@ -5,7 +5,7 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
-from chartcoach.catalog.releases.archive import extract_tar_archive
+from chartcoach._catalog.releases.archive import extract_tar_archive
 
 
 def test_extracts_regular_files(tmp_path: Path) -> None:

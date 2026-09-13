@@ -16,7 +16,6 @@
     "incremental": true,
     "paths": {
       "@/*": ["./*"],
-      "@chartcoach/catalog": ["../../packages/catalog/src/index.ts"],
       "collections/*": ["./.source/*"]
     },
     "plugins": [

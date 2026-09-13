@@ -68,10 +68,12 @@ function decodePathSegment(segment: string) {
 
 function createSlugSearchText(path: string) {
   const slug = path.split("/").filter(Boolean).at(-1);
+
   if (!slug) return "";
 
   const decodedSlug = decodePathSegment(slug);
   const readableSlug = decodedSlug.replace(/[-_]+/g, " ");
+
   return [...new Set([decodedSlug, readableSlug])].join(" ");
 }
 
@@ -83,6 +85,7 @@ const SCRIPT_JSON_ESCAPES = new Map([
 
 export function createGuidelineSearchModel(guideline: Guideline): GuidelineSearchModel {
   const record = createGuidelineRecord(guideline);
+
   return {
     ...record,
     description: record.description || undefined,
@@ -116,6 +119,7 @@ export function serializeGuidelineSearchModel(model: GuidelineSearchModel): stri
 
 export function parseGuidelineSearchModel(value: string): GuidelineSearchModel {
   const model = parseJson(value);
+
   if (
     !isJsonObject(model) ||
     !isJsonString(model.id) ||
@@ -127,6 +131,7 @@ export function parseGuidelineSearchModel(value: string): GuidelineSearchModel {
   ) {
     throw new Error("Guideline search entry is missing required fields.");
   }
+
   if (
     !Array.isArray(model.labels) ||
     !model.labels.every(isJsonString) ||

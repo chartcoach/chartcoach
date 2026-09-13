@@ -5,10 +5,9 @@ description: Recommend a visualization from the data, reader task, audience, and
 
 # chartcoach Visrec
 
-Use catalog records to recommend a visualization from a design brief. The
-`visfeedback` instructions cover an existing rendered chart. The `core`
-instructions must be read first. They set `CHARTCOACH_SOURCE` and inspect the
-current roles and labels before this workflow begins.
+Use guideline entry records to recommend a visualization from a design brief.
+Use `visfeedback` for an existing rendered chart. Read `core` for catalog
+selection, retrieval, and citation.
 
 ## Describe the brief
 
@@ -25,51 +24,36 @@ Ask for the data fields, reader task, or output when missing information could
 change the chart choice. Otherwise state the assumption beside the affected
 recommendation.
 
+Preserve the measured quantity, units, aggregation, and meaning of uncertainty
+when proposing a design. Distinguish facts supplied by the brief from
+assumptions that still need confirmation.
+
 ## Find records
 
-Search the task and each important constraint separately:
-
-```sh
-chartcoach catalog list \
-  --contains "<reader task>" \
-  --format json
-chartcoach catalog list \
-  --contains "<constraint>" \
-  --format json
-```
-
-Check the current labels and roles before passing them as exact filters:
-
-```sh
-chartcoach catalog labels --contains "<concept>" --format json
-chartcoach catalog roles --format json
-```
-
-If an indexed profile is available and ordinary filters leave too many
-matches, use full-text search:
-
-```sh
-chartcoach catalog find \
-  --profile <profile> \
-  --mode fts \
-  --limit 10 \
-  --format compact \
-  "<data> <task> <audience> <constraint>"
-```
+Follow `core` to search the reader task and each important constraint. Use
+short terms such as `comparison`, `uncertainty`, or `labels` separately with
+`contains`. Use full-text search for combined concepts when a profile is
+available. Recover from empty matches before deciding that the catalog lacks
+guidance for the brief.
 
 ## Check the records
 
-Read and cite every record used in the recommendation:
-
-```sh
-chartcoach catalog read <guideline-id> \
-  --source-detail full \
-  --format markdown
-chartcoach catalog cite <guideline-id> --format markdown
-```
+Read and cite selected records together using the host's tools or the access
+recipes in `core`.
 
 Discard a record when its chart family, task, audience, data type, or
-interaction state differs from the brief.
+interaction state differs from the brief. Check its applicable situations and
+exceptions, including what its quantities or intervals represent. A matching
+title or retrieval score is a candidate for inspection, not proof that the
+recommendation fits.
+
+Separate the initial design from alternatives that solve a specific problem.
+Use the brief's stated facts to support the initial choice. Field names and
+category counts do not establish overlap, large scale differences, outliers, or
+other patterns in the values. Keep recommendations for those conditions as
+explicit contingencies until data or a rendered chart establishes them.
+Preserve the reader task: comparing shapes over time and comparing values at
+the same time are different requirements and can favor different layouts.
 
 ## Write the recommendation
 
@@ -78,10 +62,18 @@ Connect each decision to the brief and catalog evidence:
 ```text
 recommended chart or encoding
   -> fact from the data, task, audience, or constraints
-  -> guideline ID, title, and applicable section
+  -> guideline entry ID, title, and applicable section
   -> tradeoff or remaining uncertainty
   -> source citation
 ```
 
 Keep library-specific implementation advice separate from statements supported
-by the catalog record.
+by the catalog record. Identify sources with `cite` and inspect a publication
+before attributing a specific claim to it. When the catalog supports part of a
+design, distinguish that guidance from your additional reasoning.
+
+Lead with the recommended chart or encoding and explain which fact in the brief
+supports it. Include an alternative when a named constraint changes the choice.
+A design brief can support a recommendation before any chart exists. Assess
+compliance with guidelines when the task asks to inspect an existing chart,
+following `visfeedback`.

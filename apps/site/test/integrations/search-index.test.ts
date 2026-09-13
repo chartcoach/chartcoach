@@ -1,4 +1,4 @@
-import { count, create, load } from "@orama/orama";
+import { count, create, load, search as query } from "zbsearch";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
@@ -9,11 +9,13 @@ import { searchIndex } from "../../src/integrations/search-index";
 import { createTestLogger } from "../astro";
 
 type Document = { path: string; title: string };
+
 type TestResponse = {
   statusCode: number;
   setHeader(name: string, value: string): void;
   end(value: string): void;
 };
+
 type TestMiddleware = (
   request: { url?: string },
   response: TestResponse,
@@ -31,6 +33,7 @@ afterEach(() => {
 function temporaryDirectory() {
   const directory = mkdtempSync(path.join(os.tmpdir(), "chartcoach-search-index-"));
   temporaryDirectories.push(directory);
+
   return directory;
 }
 
@@ -74,25 +77,34 @@ describe("searchIndex", () => {
     const raw = JSON.parse(
       readFileSync(path.join(output, "assets", "search-guidelines.json"), "utf8"),
     );
+
     const db = create({ schema: { path: "string", title: "string" } });
     load(db, raw);
     expect(count(db)).toBe(1);
+    const results = await query(db, { term: "axes" });
+    expect(results.hits.map((hit) => hit.document)).toEqual([
+      { path: "/guidelines/axes/", title: "Use full axes" },
+    ]);
   });
 
   it("serves and invalidates the development database when a source changes", async () => {
     const root = pathToFileURL(`${temporaryDirectory()}/`);
     const watchFile = path.join(temporaryDirectory(), "entries.parquet");
+
     const loadDocuments = vi
       .fn<() => readonly Document[]>()
       .mockReturnValue([{ path: "/guidelines/axes/", title: "Use full axes" }]);
+
     const search = integration({
       load: loadDocuments,
       watchFiles: () => [watchFile],
     });
+
     const configDone = search.hooks["astro:config:done"];
     const serverSetup = search.hooks["astro:server:setup"];
     const changeListeners: Array<(path: string) => void> = [];
     let middleware: TestMiddleware | undefined;
+
     const server = {
       watcher: {
         add: vi.fn(),
@@ -114,6 +126,7 @@ describe("searchIndex", () => {
 
     async function request() {
       let body = "";
+
       const response = {
         statusCode: 0,
         setHeader: vi.fn(),
@@ -121,7 +134,9 @@ describe("searchIndex", () => {
           body = value;
         }),
       };
+
       await middleware?.({ url: "/assets/search-guidelines.json" }, response, vi.fn());
+
       return { body, response };
     }
 

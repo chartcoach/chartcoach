@@ -6,7 +6,7 @@ from pathlib import Path
 import click
 from agent_plugins import AgentPluginError, Skill
 
-from chartcoach import skills as skill_service
+from chartcoach import _skills as skill_service
 
 from .common import CONTEXT_SETTINGS, emit_rows
 

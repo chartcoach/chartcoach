@@ -5,7 +5,6 @@ type CodeWindowProps = {
   title: string;
   language: string;
   lines: readonly CodeLine[];
-  wrap?: boolean;
 };
 
 export function CodeWindow(props: CodeWindowProps) {
@@ -21,7 +20,7 @@ export function DenseCodeWindow(props: CodeWindowProps) {
   return (
     <CodeWindowFrame
       {...props}
-      preClassName="px-4 pb-4 pt-12 text-[0.75rem] leading-[1.7] sm:px-5 sm:pb-5 sm:text-[0.8125rem]"
+      preClassName="px-4 pb-4 pt-12 text-[0.6875rem] leading-[1.7] min-[360px]:text-[0.75rem] sm:px-5 sm:pb-5 sm:text-[0.8125rem]"
     />
   );
 }
@@ -30,7 +29,6 @@ function CodeWindowFrame({
   title,
   language,
   lines,
-  wrap = false,
   preClassName,
 }: CodeWindowProps & {
   preClassName: string;
@@ -50,8 +48,8 @@ function CodeWindowFrame({
       </span>
       <pre
         className={[
-          "m-0 min-h-full overflow-x-auto whitespace-pre-wrap break-words bg-code-bg font-mono text-code-fg",
-          wrap ? "" : "md:whitespace-pre md:break-normal",
+          "m-0 overflow-visible bg-code-bg font-mono text-code-fg",
+          language === "json" ? "whitespace-pre" : "whitespace-pre-wrap [overflow-wrap:anywhere]",
           preClassName,
         ].join(" ")}
       >

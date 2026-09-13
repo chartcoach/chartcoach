@@ -22,6 +22,7 @@ afterEach(() => {
 function temporaryDirectory() {
   const directory = mkdtempSync(path.join(os.tmpdir(), "chartcoach-og-images-"));
   temporaryDirectories.push(directory);
+
   return directory;
 }
 
@@ -43,6 +44,7 @@ function integration(parsePayload: (value: JsonValue) => OgPayload<ImageProps> |
 
 function htmlWithPayload(payload: JsonValue) {
   const content = JSON.stringify(payload).replaceAll("&", "&amp;").replaceAll('"', "&quot;");
+
   return `<!doctype html><html><head><meta name="test:og-payload" content="${content}"></head><body>Page</body></html>`;
 }
 
@@ -66,16 +68,19 @@ describe("ogImages", () => {
     const pageDirectory = path.join(output, "guide");
     mkdirSync(pageDirectory);
     const htmlPath = path.join(pageDirectory, "index.html");
+
     const payload: OgPayload<ImageProps> = {
       imagePathname: "/assets/main.png",
       props: { color: "#ffffff" },
       extraImages: [{ imagePathname: "/assets/extra.png", props: { color: "#111111" } }],
     };
+
     writeFileSync(htmlPath, htmlWithPayload(payload));
 
     await runBuild(output, () => payload);
 
     expect(readFileSync(htmlPath, "utf8")).not.toContain("test:og-payload");
+
     for (const name of ["main.png", "extra.png"]) {
       expect([...readFileSync(path.join(output, "assets", name)).subarray(0, 8)]).toEqual([
         137, 80, 78, 71, 13, 10, 26, 10,

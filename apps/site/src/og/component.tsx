@@ -54,11 +54,13 @@ function clamp(value: number, min: number, max: number): number {
 function interpolate(value: number, from: number, to: number, start: number, end: number): number {
   if (from === to) return end;
   const progress = clamp((value - from) / (to - from), 0, 1);
+
   return start + (end - start) * progress;
 }
 
 function guidelineTitleSize(title: string): number {
   const length = title.length;
+
   if (length <= guidelineTitleBreakpoints.median) {
     return Math.round(
       interpolate(
@@ -87,6 +89,7 @@ function withAlpha(hex: string, alpha: number): string {
   const red = Number.parseInt(normalized.slice(0, 2), 16);
   const green = Number.parseInt(normalized.slice(2, 4), 16);
   const blue = Number.parseInt(normalized.slice(4, 6), 16);
+
   return `rgba(${red},${green},${blue},${alpha})`;
 }
 
@@ -141,6 +144,7 @@ function Wordmark({ fill, width }: { fill: string; width: number }) {
 
 function BrandLockup({ tone }: { tone: "dark" | "light" }) {
   const onDark = tone === "dark";
+
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
       <DashRing
@@ -178,6 +182,7 @@ function Badge({ children, tone }: { children?: ReactNode; tone: "dark" | "light
 
 function HomeHeadline({ title }: { title: string }) {
   const exactReferenceTitle = title.trim().toLowerCase() === "design knowledge agents can cite.";
+
   if (exactReferenceTitle) {
     return (
       <div style={{ display: "flex", flexDirection: "column" }}>
@@ -192,6 +197,7 @@ function HomeHeadline({ title }: { title: string }) {
   }
 
   const lines = wrapOgText(title, 26, 2);
+
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
       {lines.map((line, index) => (
@@ -309,6 +315,7 @@ function CatalogImage(props: OgImageProps) {
     props.roles.length > 0
       ? props.roles
       : ["advice", "reason", "context", "exceptions", "costs", "mistakes", "check", "fix"];
+
   const stat = props.stat ?? { value: "781", label: "guidelines, openly\nauthored and reviewed" };
   const labelLines = stat.label.split(/\n/);
 
@@ -432,7 +439,9 @@ function CatalogImage(props: OgImageProps) {
 
 function labelParts(label: string): LabelParts {
   const separator = label.indexOf(":");
+
   if (separator < 1) return { value: label };
+
   return {
     namespace: label.slice(0, separator),
     value: label.slice(separator + 1),
@@ -441,6 +450,7 @@ function labelParts(label: string): LabelParts {
 
 function LabelPill({ label }: { label: string }) {
   const parts = labelParts(label);
+
   return (
     <div
       style={{
@@ -468,15 +478,19 @@ function LabelPill({ label }: { label: string }) {
 function labelRows(labels: string[]): string[][] {
   const rows: string[][] = [[]];
   let currentWidth = 0;
+
   for (const label of labels) {
     const estimatedWidth = 28 + label.length * 8.3;
+
     if (rows.at(-1)?.length && currentWidth + estimatedWidth > 1040) {
       rows.push([]);
       currentWidth = 0;
     }
+
     rows.at(-1)?.push(label);
     currentWidth += estimatedWidth + 8;
   }
+
   return rows.slice(0, 2);
 }
 
@@ -537,6 +551,7 @@ function referenceRow(reference: OgReferenceSummary, index: number) {
 
 function GuidelineImage(props: OgImageProps) {
   const titleSize = guidelineTitleSize(props.title);
+
   const badge =
     props.badge ??
     (props.kind === "guideline-json"
@@ -544,6 +559,7 @@ function GuidelineImage(props: OgImageProps) {
       : props.kind === "guideline-md"
         ? "Markdown"
         : "Guideline");
+
   const rows = labelRows(props.labels);
 
   return (
@@ -649,6 +665,8 @@ function contentStyle(padding: CSSProperties["padding"]): CSSProperties {
 
 export default function OgImage(props: OgImageProps) {
   if (props.kind === "home" || props.kind === "page") return <HomeImage {...props} />;
+
   if (props.kind === "catalog") return <CatalogImage {...props} />;
+
   return <GuidelineImage {...props} />;
 }

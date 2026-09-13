@@ -2,18 +2,14 @@ import type { OgImageJob, OgPayload } from "../integrations/og-images";
 import { isJsonObject, isJsonString, type JsonValue } from "../lib/json";
 
 export const OG_IMAGE_WIDTH = 1200;
+
 export const OG_IMAGE_HEIGHT = 630;
+
 export const OG_BUILD_PROPS_META = "chartcoach:og-props";
 
-export type OgImageKind =
-  | "home"
-  | "catalog"
-  | "guideline"
-  | "guideline-json"
-  | "guideline-md"
-  | "page";
+type OgImageKind = "home" | "catalog" | "guideline" | "guideline-json" | "guideline-md" | "page";
 
-export type OgImageStat = {
+type OgImageStat = {
   value: string;
   label: string;
 };
@@ -62,19 +58,24 @@ export type OgBuildPayload = OgPayload<OgImageProps> & {
 
 function parseStringArray(value: JsonValue | undefined): string[] {
   if (!Array.isArray(value)) return [];
+
   return value.filter(isJsonString);
 }
 
 function parseStat(value: JsonValue | undefined): OgImageStat | undefined {
   if (!isJsonObject(value)) return undefined;
+
   if (!isJsonString(value.value) || !isJsonString(value.label)) return undefined;
+
   return { value: value.value, label: value.label };
 }
 
 function parseReferences(value: JsonValue | undefined): OgReferenceSummary[] {
   if (!Array.isArray(value)) return [];
+
   return value.filter(isJsonObject).flatMap((item) => {
     if (!isJsonString(item.title)) return [];
+
     return [
       {
         title: item.title,
@@ -84,9 +85,10 @@ function parseReferences(value: JsonValue | undefined): OgReferenceSummary[] {
   });
 }
 
-export function parseOgImageProps(value: JsonValue | undefined): OgImageProps | null {
+function parseOgImageProps(value: JsonValue | undefined): OgImageProps | null {
   if (!isJsonObject(value)) return null;
   const kind = value.kind;
+
   if (
     kind !== "home" &&
     kind !== "catalog" &&
@@ -97,6 +99,7 @@ export function parseOgImageProps(value: JsonValue | undefined): OgImageProps | 
   ) {
     return null;
   }
+
   if (
     !isJsonString(value.title) ||
     !isJsonString(value.description) ||
@@ -123,14 +126,18 @@ export function parseOgImageProps(value: JsonValue | undefined): OgImageProps | 
 export function parseOgBuildPayload(value: JsonValue): OgBuildPayload | null {
   if (!isJsonObject(value) || !isJsonString(value.imagePathname)) return null;
   const props = parseOgImageProps(value.props);
+
   if (!props) return null;
+
   const extraImages = Array.isArray(value.extraImages)
     ? value.extraImages.flatMap((item) => {
         if (!isJsonObject(item) || !isJsonString(item.imagePathname)) return [];
         const extraProps = parseOgImageProps(item.props);
+
         return extraProps ? [{ imagePathname: item.imagePathname, props: extraProps }] : [];
       })
     : [];
+
   return {
     imagePathname: value.imagePathname,
     props,

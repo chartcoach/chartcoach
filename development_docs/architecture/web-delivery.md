@@ -1,13 +1,15 @@
 # Web apps
 
-The public site and product docs are separate applications. Both import the
-shared brand package, and both can read the browser-safe catalog package.
+The public site, product docs, and chat are separate applications. They import
+the shared brand package. The site and chat also read the catalog package.
 
 ```text
 apps/site  -> @chartcoach/catalog
           -> @chartcoach/brand
 
-apps/docs  -> @chartcoach/catalog
+apps/docs  -> @chartcoach/brand
+
+apps/chat  -> @chartcoach/catalog/node
           -> @chartcoach/brand
 ```
 
@@ -16,17 +18,24 @@ The apps do not import each other. Vite+ rules and the tests under
 
 ## Public site
 
-`apps/site/src/config/catalog-source.ts` chooses the catalog read by Astro.
+`apps/site/src/config/catalog-location.ts` chooses the catalog read by Astro.
 
-| Context          | Catalog source                                                    |
+| Context          | Catalog location                                                  |
 | ---------------- | ----------------------------------------------------------------- |
 | Local default    | `fixtures/catalog-release`                                        |
-| Local override   | `CHARTCOACH_SITE_CATALOG_SOURCE`                                  |
+| Local override   | `CHARTCOACH_SITE_CATALOG`                                         |
 | Cloudflare Pages | Exact HTTPS `release.json` URL containing its 64-character digest |
 
 Cloudflare Pages fails when the variable is missing, empty, local, mutable, or
 uses HTTP. This prevents a deployment from quietly building the small test
 fixture or following a moving `catalog.json` selection.
+
+Local inputs use the same descriptor-backed package loader as remote inputs.
+A directory with `release.json` verifies the core files listed by that release.
+A deployed root with `catalog.json` resolves `catalog/releases/<digest>/` and
+retains the exact release location. A directory with `MANIFEST.md` and
+`entries.parquet` is a descriptor-free bundle. A directory containing both
+selection and exact release descriptors is rejected.
 
 The loaded catalog feeds:
 
@@ -48,28 +57,47 @@ lists pages in navigation order.
 The docs app also exports `/llms.txt`, `/llms-full.txt`, and one Markdown route
 per page.
 
-### Live examples
+Fumadocs derives navigation from `meta.json`, table-of-contents headings from
+MDX, and the static search index from the same source collection. Code examples
+render as highlighted, copyable blocks. Validate examples against the workspace
+packages when their API or instructions change.
 
-Live examples move through three observable stages:
+## Chat app
 
-1. During the docs build, `@marimo-team/mdx-marimo` executes each
-   `python marimo` fence and stores its initial output in the page.
-2. In the browser, Pyodide starts the Python cells and replaces the static
-   output with the active result.
-3. Client navigation stops the previous notebook and mounts the notebook on
-   the new page.
+`apps/chat` runs a Next.js interface and an Eve agent on one origin. The browser
+sends chart images and questions to Eve and receives structured reviews and tool
+events. Shared schemas define filter selections and review evidence.
 
-The JavaScript page needs one extra step. When the client bundle loads,
-`apps/docs/components/notebook-runtime.tsx` registers the current
-`@chartcoach/catalog` module on `globalThis.ChartCoachCatalog`. The
-`pyobservablejs` cell reads that module when its custom element connects.
+The app separates rendering, browser computation, and server catalog access:
 
-| Change                            | Verify                                                         |
-| --------------------------------- | -------------------------------------------------------------- |
-| Python cell                       | Source, static output, and active browser output               |
-| JavaScript cell                   | SDK registration, selector interaction, and generated Markdown |
-| Navigation between notebook pages | Previous notebook stops and new notebook activates             |
-| Narrow layout                     | Page and live output stay within the viewport                  |
+- `components/` renders the conversation, filters, and guideline previews.
+- `chat/` owns browser conversation state, attachments, and filter transitions.
+- `browser/` owns a DuckDB-WASM worker and Mosaic's linked query clients.
+- `lib/catalog/` loads verified catalog artifacts and owns native tables and filter scopes.
+
+`lib/retrieval/` applies the chat app's search, embedding, and bounded SQL policies
+to those scopes. `agent/` binds these operations to Eve's authenticated routes and
+tools. Each review uses its initiating filter selection for every retrieval path.
+The public catalog package continues to own artifact verification and persistent
+artifact caching.
+
+Browser filtering loads the release's verified core files through authenticated,
+digest-bound routes, then queries Parquet and canonical tables locally. Mosaic
+facet clients omit their own positive filter, while the
+result count and preview apply every filter. Worker assets are generated from
+the installed package by `scripts/prepare-duckdb.mjs` during dev/build setup.
+
+The count client captures a full `SELECT DISTINCT g.id` selection query. Applying
+filters retains it locally. The first Eve session request sends `{ catalogId, sql }`
+as gzip/base64 in `x-chartcoach-selection`. Follow-ups omit that header.
+Authentication bounds the encoded header and decompressed data, validates one
+read-only query, and requires known guideline IDs. The server freezes those IDs
+in the initiating session's private authentication state. Scope-cache eviction
+rebuilds tables from that fixed set, preserving the selection across queries.
+
+Run `pnpm --dir apps/chat dev` for the local app and agent. Run
+`pnpm --dir apps/chat eval --url "$APP_URL"` to exercise the configured model
+through the browser-facing origin.
 
 ## Generated directories
 
@@ -80,6 +108,8 @@ The JavaScript page needs one extra step. When the client bundle loads,
 | `apps/docs/.source`     | Fumadocs content generation       |
 | `apps/docs/.next`       | Next.js build                     |
 | `apps/docs/out`         | Static docs export                |
+| `apps/chat/.next`       | Next.js build                     |
+| `apps/chat/.output`     | Eve production build              |
 | `packages/catalog/dist` | JavaScript package build          |
 
 Edit the source files, then run the package that writes the generated
@@ -89,8 +119,7 @@ directory. Do not edit generated output directly.
 
 | Change                     | Command and inspection                                       |
 | -------------------------- | ------------------------------------------------------------ |
-| Site catalog input         | `pnpm --dir apps/site test` and `pnpm --dir apps/site build` |
+| Site catalog location      | `pnpm --dir apps/site test` and `pnpm --dir apps/site build` |
 | Site output or search      | `pnpm --dir apps/site test` and inspect `apps/site/dist`     |
 | Docs content or navigation | `pnpm --dir apps/docs build` plus browser links and search   |
-| Live notebook              | Docs build plus desktop and narrow browser interaction       |
 | Shared web import          | `pnpm check:architecture`                                    |

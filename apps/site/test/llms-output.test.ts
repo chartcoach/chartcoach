@@ -3,12 +3,14 @@ import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { chartcoachLlmPages } from "../src/config/llms";
+
 const fixture = new URL("../../../fixtures/catalog-release/", import.meta.url);
+
 const siteRoot = new URL("../", import.meta.url);
 
 describe("LLM artifacts", () => {
   beforeEach(() => {
-    vi.stubEnv("CHARTCOACH_SITE_CATALOG_SOURCE", fileURLToPath(fixture));
+    vi.stubEnv("CHARTCOACH_SITE_CATALOG", fileURLToPath(fixture));
   });
 
   afterEach(() => {

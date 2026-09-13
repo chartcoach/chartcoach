@@ -23,10 +23,22 @@ Import the theme variables and logo classes from the global stylesheet:
 shared colors, fonts, and content widths. `logo.css` switches paired light and
 dark images when the document has the `.dark` class.
 
+For component styles, load the brand palette as standard CSS variables:
+
+```css
+@import "@chartcoach/brand/palette.css";
+```
+
+`palette.css` defines `--brand-crimson`, `--brand-crimson-bright`, `--brand-dark`,
+`--brand-neutral`, and `--brand-paper`. `tokens.css` maps these values to
+[Tailwind](https://tailwindcss.com/) theme names for the site and docs.
+
 ## Import an image
 
-[`assets/brand`](assets/brand/) contains horizontal wordmarks, square logos,
-favicons, and the app icon.
+[`assets/brand`](assets/brand/) contains horizontal and vertical lockups, a
+square logo, favicons, and the app icon. The transparent vertical lockups in
+the root README use `chartcoach-vertical.svg` on light backgrounds and
+`chartcoach-vertical-white.svg` on dark backgrounds.
 
 In Astro, read the imported asset URL from `logo.src`:
 

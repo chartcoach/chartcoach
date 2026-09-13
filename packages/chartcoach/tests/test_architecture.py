@@ -4,8 +4,8 @@ import ast
 from collections.abc import Callable, Iterator
 from pathlib import Path
 
-_CATALOG_ROOT = Path(__file__).parents[1] / "src" / "chartcoach" / "catalog"
-_CATALOG_FACADES = frozenset({"chartcoach", "chartcoach.catalog"})
+_CATALOG_ROOT = Path(__file__).parents[1] / "src" / "chartcoach" / "_catalog"
+_CATALOG_FACADES = frozenset({"chartcoach", "chartcoach._catalog"})
 _RELATIVE_FACADES = frozenset({".", "..", "..."})
 
 
@@ -21,7 +21,12 @@ def test_catalog_read_path_does_not_import_curation() -> None:
         lambda target: (
             _is_facade_import(target)
             or target.startswith(
-                ("chartcoach.catalog.curation", ".curation", "..curation")
+                (
+                    "chartcoach.curation",
+                    "chartcoach._catalog.curation",
+                    ".curation",
+                    "..curation",
+                )
             )
         ),
     )
@@ -39,15 +44,11 @@ def test_curation_does_not_import_runtime_or_cache_owners() -> None:
             or target.startswith(
                 (
                     "chartcoach.open_catalog",
-                    "chartcoach.open_index",
-                    "chartcoach.catalog.open_catalog",
-                    "chartcoach.catalog.open_index",
-                    "chartcoach.catalog.runtime",
+                    "chartcoach._catalog.open_catalog",
+                    "chartcoach._catalog.runtime",
                     ".open_catalog",
-                    ".open_index",
                     ".runtime",
                     "..open_catalog",
-                    "..open_index",
                     "..runtime",
                 )
             )
@@ -59,7 +60,7 @@ def test_curation_does_not_import_runtime_or_cache_owners() -> None:
 
 def test_agent_interfaces_do_not_import_cli_adapters() -> None:
     package_root = _CATALOG_ROOT.parent
-    sources = [package_root / "agent.py", package_root / "skills.py"]
+    sources = [package_root / "agent.py", package_root / "_skills.py"]
 
     violations = _matching_imports(
         sources,
@@ -74,11 +75,11 @@ def test_import_targets_include_from_import_aliases() -> None:
         """
 from . import curation
 from .. import runtime
-from chartcoach.catalog import runtime as catalog_runtime
-from chartcoach.catalog.runtime import open_catalog
+from chartcoach._catalog import runtime as catalog_runtime
+from chartcoach._catalog.runtime import open_catalog
 from chartcoach import Catalog
-from chartcoach.catalog import CatalogRelease
-import chartcoach.catalog.curation
+from chartcoach._catalog import CatalogRelease
+import chartcoach.curation
 """
     )
 
@@ -87,15 +88,15 @@ import chartcoach.catalog.curation
         ".curation",
         "..",
         "..runtime",
-        "chartcoach.catalog",
-        "chartcoach.catalog.runtime",
-        "chartcoach.catalog.runtime",
-        "chartcoach.catalog.runtime.open_catalog",
+        "chartcoach._catalog",
+        "chartcoach._catalog.runtime",
+        "chartcoach._catalog.runtime",
+        "chartcoach._catalog.runtime.open_catalog",
         "chartcoach",
         "chartcoach.Catalog",
-        "chartcoach.catalog",
-        "chartcoach.catalog.CatalogRelease",
-        "chartcoach.catalog.curation",
+        "chartcoach._catalog",
+        "chartcoach._catalog.CatalogRelease",
+        "chartcoach.curation",
     ]
 
 

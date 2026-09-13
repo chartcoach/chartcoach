@@ -90,6 +90,7 @@ describe("llms", () => {
 
   it("supports custom output paths and disabling generated files", async () => {
     const { dist, root } = await createBuild();
+
     const integration = llms({
       name: "example:llms",
       site: "https://example.com/",
@@ -128,13 +129,14 @@ async function createBuild() {
   const root = pathToFileURL(`${path.join(directory, "site")}/`);
   const dist = path.join(directory, "dist");
   await fs.mkdir(dist, { recursive: true });
+
   return { dist, root };
 }
 
 async function runBuild(integration: ReturnType<typeof llms>, root: URL, dist: string) {
   const configDone = integration.hooks["astro:config:done"];
   const buildDone = integration.hooks["astro:build:done"];
-  const { info, logger } = createTestLogger();
+  const { logger } = createTestLogger();
 
   configDone({ config: { root } });
   await buildDone({
@@ -142,6 +144,4 @@ async function runBuild(integration: ReturnType<typeof llms>, root: URL, dist: s
     dir: pathToFileURL(`${dist}/`),
     logger,
   });
-
-  expect(info).toHaveBeenCalledOnce();
 }

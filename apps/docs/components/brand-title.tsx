@@ -5,7 +5,7 @@ import type { ComponentProps } from "react";
 
 import { appName, siteOrigin } from "@/lib/shared";
 
-export function BrandTitle() {
+function BrandTitle() {
   return (
     <span className="inline-flex min-w-0 items-center">
       <span className="chartcoach-brand-logo h-7 w-[6.97rem]" aria-hidden="true">

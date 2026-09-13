@@ -1,0 +1,11 @@
+{
+  "name": "@chartcoach/skills",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./*": "./*/SKILL.md"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

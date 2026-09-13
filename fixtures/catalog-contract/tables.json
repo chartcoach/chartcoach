@@ -1,0 +1,44 @@
+{
+  "manifest": "# Relational Catalog\n\n## Section Roles\n\n### advice\n\nActionable guidance.\n\n### evidence\n\nSource context.\n\n## Label Families\n\n### chart\n\nChart families such as `chart:bar`.\n\n### task\n\nReader tasks such as `task:compare:precise`.\n",
+  "guidelines": [
+    {
+      "id": "𐀀",
+      "title": "Nested sections",
+      "description": "Keep \"quoted\" content, tabs\tand a literal backslash \\ together.",
+      "labels": ["task:compare:precise", "chart:line", "chart:line"],
+      "sections": [
+        { "role": "__dangling__", "title": "", "content": "Opening context." },
+        {
+          "role": "advice",
+          "title": "Labels",
+          "content": "Use direct labels.\n\n### Exception\n\nPreserve context."
+        },
+        { "role": "evidence", "title": "Evidence", "content": "Compare linked sources." }
+      ],
+      "references": [
+        "@article{shared, title={Shared {DNA} source}, author={Doe, Jane and {Research Group}}, year={2024}, doi={10.1000/shared}, url={https://example.org/shared}}",
+        "@article{shared, title={Shared {DNA} source}, author={Doe, Jane and {Research Group}}, year={2024}, doi={10.1000/shared}, url={https://example.org/shared}}",
+        "@misc{web, title={Online notes}, howpublished={\\url{https://example.org/notes}}, year={forthcoming}}"
+      ]
+    },
+    {
+      "id": "\ue000",
+      "title": "Shared source",
+      "description": "Reuse a source across entries.",
+      "labels": ["chart:bar"],
+      "sections": [{ "role": "advice", "title": "Advice", "content": "Use an honest baseline." }],
+      "references": [
+        "@article{shared, author={Doe, Jane and {Research Group}}, doi={10.1000/shared}, title={Shared {DNA} source}, url={https://example.org/shared}, year={2024}}",
+        "@inproceedings{conference, author={O'Neil, Jane and {Research \"Group\"}}, title={A conference paper}, booktitle={Proceedings of Examples}, publisher={Example Press}, year={2020}}"
+      ]
+    },
+    {
+      "id": "sourceless",
+      "title": "Uncited guidance",
+      "description": "An entry can have no references or labels.",
+      "labels": [],
+      "sections": [{ "role": "advice", "title": "Advice", "content": "Inspect the chart." }],
+      "references": []
+    }
+  ]
+}

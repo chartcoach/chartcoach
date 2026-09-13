@@ -1,0 +1,160 @@
+---
+title: Build a web app
+description: Use one Guideline Catalog for browser exploration, agent search, and cited feedback.
+icon: AppWindow
+---
+
+The [ChartCoach chat app](https://github.com/chartcoach/chartcoach/tree/main/apps/chat)
+shows how the same Guideline Catalog used from Python and the terminal can power
+a web interface. A person chooses the agent's guidelines, shares a chart, and
+receives feedback linked to the guidelines behind it.
+
+Try one review: open **Guidelines**, choose a publication-year range, and apply
+the selection. Upload a chart and ask, “What should I improve?” The matching
+guidelines become the evidence available to that conversation.
+Follow the [chat app setup](https://github.com/chartcoach/chartcoach/tree/main/apps/chat#run-locally)
+to run it with your own image-capable model.
+
+## One catalog, two runtimes
+
+A catalog release contains guideline entries, their sources, and optional search
+indexes. Its records use [Parquet](https://parquet.apache.org/docs/), a tabular
+file format that database tools can read directly. The release also describes
+its files and their hashes so readers can verify the bytes they receive.
+
+The chat app opens that release in two places:
+
+| Runtime        | Reads                                             | Enables                                                                    |
+| -------------- | ------------------------------------------------- | -------------------------------------------------------------------------- |
+| Browser        | Guideline records and source metadata             | Explore the guidelines, compare counts, and preview a selection.           |
+| Node.js server | The same records, plus a search index when needed | Search within the selection, read complete guidance, and return citations. |
+
+`@chartcoach/catalog` supplies the browser reader.
+`@chartcoach/catalog/node` adds server-side file access and persistent caching.
+Both expose the same guideline IDs, records, and citation methods. The app uses
+those IDs to connect a filter match, a search result, and a cited recommendation.
+
+The browser receives verified artifacts through the app's authenticated routes.
+These routes keep it on the server's catalog, including when the original
+release is private. Public releases can also be opened directly over HTTPS
+when their host permits cross-origin requests. See [Open and cache catalogs](/catalogs)
+for release selection and caching, and [Catalog data](/catalog) for the files.
+
+## Let people choose the guidelines
+
+**Guidelines** is a view of the loaded catalog. Authors, publication years, and
+source types come from its source records. Changing the catalog changes the
+available choices.
+
+[DuckDB-WASM](https://duckdb.org/docs/stable/clients/wasm/overview) runs SQL in a
+browser worker, keeping query work off the interface's main thread.
+[Mosaic](https://uwdata.github.io/mosaic/) coordinates the filter queries so each
+view reflects the other selections. Choosing a year range updates the author
+counts, source counts, and matching-guideline preview together.
+
+The app loads the catalog once for that settings view and reuses the database while the
+person explores. It registers the verified Parquet bytes for direct SQL and
+uses `registerCatalog()` to create the catalog's related tables, including
+guidelines and sources. The browser setup, worker assets, and security-policy
+requirements are covered in [Query in a browser worker](/javascript#query-in-a-browser-worker).
+
+Applying a selection passes the catalog identity and Mosaic's SQL query to the
+server. The server checks the identity, executes the query in a restricted
+database, and freezes the resulting guideline IDs for the conversation.
+Follow-up questions keep that selection. Changing the selection starts a new
+conversation.
+
+This gives the selection a concrete effect: every agent search, SQL query, and
+guideline read is restricted to those IDs. Selected guidelines retain their
+complete source context.
+
+## Search and read on the server
+
+The server combines the catalog reader with native database clients.
+[LanceDB](https://lancedb.github.io/lancedb/js/) searches the index, while
+[DuckDB](https://duckdb.org/docs/stable/clients/node_neo/overview) queries the
+catalog tables. ChartCoach opens and verifies the artifacts. The database
+clients execute their own queries.
+
+| Question                                          | Retrieval path                                          |
+| ------------------------------------------------- | ------------------------------------------------------- |
+| Which guidance is related to this design problem? | Vector search compares meaning using a query embedding. |
+| Where does the catalog discuss a known term?      | Keyword search uses the full-text index.                |
+| Can I combine meaning and wording?                | Hybrid search combines vector and keyword results.      |
+| Which guidance has particular source metadata?    | SQL filters and joins the catalog tables.               |
+
+The app gets an extracted index directory from `indexPath()` and opens it with
+LanceDB. Its query embedding model runs on the server's CPU and matches the
+catalog's index profile. The index and model weights download on first use and
+persist in the local cache. Loaded tables and the model are reused across calls.
+
+For SQL, `registerCatalog()` creates the same named tables in native DuckDB that
+the browser uses. The app owns connection lifetime, selection enforcement, and
+query limits. Agent SQL runs with external access disabled.
+
+Search results identify candidates. The agent then calls `catalog.read()` to
+inspect the guidance and `catalog.cite()` to obtain its sources. That read step
+provides the applicability conditions and exceptions needed to decide whether
+a recommendation fits the chart.
+
+## Turn evidence into an interface
+
+[Next.js](https://nextjs.org/docs) hosts the web app and its server routes.
+[Eve](https://eve.dev/docs/guides/frontend/nextjs) runs the conversation and
+agent tools. [assistant-ui](https://www.assistant-ui.com/docs) supplies the chat
+controls and message presentation.
+
+The agent loads the ChartCoach workflow skill that fits each question. The response
+shows **Review**, **Recommend**, or **Discuss** once that skill is active.
+The core skill stays in the agent's instructions,
+and the workflow skill supplies the evidence and applicability checks. Starter
+cards attach an example image and an editable prompt to make the first question
+concrete.
+
+The agent compares what it observes in the chart with the guidelines it has
+read. Each finding includes an action, a primary guideline, and any supporting
+guidelines. Eve streams the proposed answer through the app's `present_answer`
+tool. Its server-side check validates the IDs against successful reads and
+returns repair instructions when needed. The interface shows the answer growing
+as it arrives, then retains the accepted result.
+
+Chart-review results use three feedback states: **Working well**,
+**Improve**, and **Check**. Discussions and design recommendations connect the
+advice to the question or brief. Guideline titles link back to the evidence, while the
+guideline panel shows retrieved entries as the review progresses. Primary guideline
+images appear beside the answer on desktop and in a **Guidelines** sheet on mobile. The catalog
+supplies the content and citations. The app decides how to display them.
+
+Questions, chart images, and retrieved guidance go to the configured language
+model. The composer can use a saved Anthropic, OpenAI, Gemini, or OpenAI-compatible
+connection through [AI SDK](https://ai-sdk.dev/docs/introduction) adapters.
+Provider keys are encrypted on the app's server and scoped to the authenticated
+caller and browser. Custom API origins are allowlisted by the server operator.
+Optional
+[Langfuse tracing](https://github.com/chartcoach/chartcoach/tree/main/apps/chat#trace-reviews)
+records the conversation's catalog release and selection alongside model calls,
+tools, and image inputs.
+
+The history pane restores the same conversation and guideline selection.
+[Effect](https://effect.website/docs/v3/runtime/) manages the app's SQLite services,
+resource cleanup, failures, and tracing. SQLite stores conversation metadata,
+connection settings, and chart previews. Eve owns the persisted transcript and
+replays it when a conversation is reopened. These are application concerns around
+the same catalog artifacts and SDK primitives used by the other interfaces.
+
+## Reuse the pieces
+
+Start with the part your application needs:
+
+- **Catalog browsing:** open records in the browser and render entries with
+  the [JavaScript API](/javascript).
+- **Linked exploration:** connect the [browser catalog setup](https://github.com/chartcoach/chartcoach/blob/main/apps/chat/browser/catalog.ts)
+  to filter controls through DuckDB-WASM and Mosaic.
+- **Agent retrieval:** use the [server retrieval services](https://github.com/chartcoach/chartcoach/tree/main/apps/chat/lib/retrieval)
+  for scoped searches, SQL, and complete guideline reads.
+
+These pieces share the catalog contract. Your application can choose its own
+interface and agent workflow while preserving guideline identity and sources.
+The [chat README](https://github.com/chartcoach/chartcoach/tree/main/apps/chat)
+contains model configuration, evaluations, deployment requirements, and the
+source-code map.

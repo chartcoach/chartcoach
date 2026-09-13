@@ -1,42 +1,30 @@
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
+from collections.abc import Callable
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
 from catalog_testkit import deterministic_embedding
-from chartcoach.catalog.collection import Catalog
-from chartcoach.catalog.curation import (
+from chartcoach import Catalog, CatalogRelease, ReleaseArtifact
+from chartcoach._catalog.curation.artifacts import _write_lancedb_archive
+from chartcoach._catalog.releases.archive import extract_tar_archive
+from chartcoach._catalog.releases.hashing import release_digest, sha256_file
+from chartcoach._catalog.releases.services import validate_runtime_release
+from chartcoach.curation import (
     EmbeddingProfile,
     build_release,
     validate_release,
 )
-from chartcoach.catalog.releases import CatalogRelease, ReleaseArtifact
-from chartcoach.catalog.releases.hashing import release_digest, sha256_file
-from chartcoach.catalog.releases.services import validate_runtime_release
 
 pytestmark = pytest.mark.curation
-_PROFILE = "test/deterministic"
+_PROFILE = "test-deterministic"
 _EMBEDDING = "chartcoach-validation-test"
-_CATALOG_RELEASE_FIXTURE = Path(__file__).parents[3] / "fixtures" / "catalog-release"
-
-
-def test_runtime_validation_accepts_the_shared_release_fixture() -> None:
-    release = validate_runtime_release(_CATALOG_RELEASE_FIXTURE)
-
-    assert set(release.artifacts) == {"MANIFEST.md", "entries.parquet"}
-
-
-def test_runtime_validation_loads_the_core_bundle(
-    sample_catalog: Catalog,
-    tmp_path: Path,
-) -> None:
-    root = tmp_path / "release"
-    release = build_release(sample_catalog, root)
-
-    assert validate_runtime_release(root) == release
 
 
 def test_runtime_validation_rejects_corrupt_artifacts(
@@ -62,6 +50,52 @@ def test_curation_validation_requires_complete_profiles(
     _write_release(root, artifacts)
 
     with pytest.raises(ValueError, match="missing index"):
+        validate_release(root)
+
+
+def test_profile_validation_requires_profile_metadata(
+    sample_catalog: Catalog,
+    tmp_path: Path,
+) -> None:
+    root, release = _profile_release(sample_catalog, tmp_path)
+    metadata_path = f"profiles/{_PROFILE}/profile.json"
+    artifacts = dict(release.artifacts)
+    artifacts.pop(metadata_path)
+    (root / metadata_path).unlink()
+    _write_release(root, artifacts)
+
+    with pytest.raises(ValueError, match="missing profile.json"):
+        validate_release(root)
+
+
+def test_profile_metadata_requires_its_projection_artifact(
+    sample_catalog: Catalog,
+    tmp_path: Path,
+) -> None:
+    root, release = _profile_release(sample_catalog, tmp_path)
+    projection_path = f"profiles/{_PROFILE}/projection.parquet"
+    artifacts = dict(release.artifacts)
+    artifacts.pop(projection_path)
+    (root / projection_path).unlink()
+    _write_release(root, artifacts)
+
+    with pytest.raises(ValueError, match="missing projection.parquet"):
+        validate_release(root)
+
+
+def test_projection_artifact_requires_profile_metadata(
+    sample_catalog: Catalog,
+    tmp_path: Path,
+) -> None:
+    root, _ = _profile_release(sample_catalog, tmp_path)
+    metadata_path = f"profiles/{_PROFILE}/profile.json"
+    path = root / metadata_path
+    metadata = json.loads(path.read_text())
+    metadata["projection"] = None
+    path.write_text(json.dumps(metadata))
+    _refresh_artifact(root, metadata_path)
+
+    with pytest.raises(ValueError, match="absent from profile.json"):
         validate_release(root)
 
 
@@ -94,7 +128,7 @@ def test_curation_validation_requires_complete_profiles(
                     "vector_column": "vector",
                 }
             ],
-            "sensitive LanceDB field",
+            "must use a registry variable",
         ),
     ],
 )
@@ -117,13 +151,57 @@ def test_curation_validation_rejects_unsafe_embedding_metadata(
         validate_release(root)
 
 
-def test_curation_validation_aligns_profile_and_index_row_identities(
+def test_release_validation_detects_changed_document_text_with_recomputed_hashes(
     sample_catalog: Catalog,
     tmp_path: Path,
 ) -> None:
     root, _ = _profile_release(sample_catalog, tmp_path)
     profile_path = f"profiles/{_PROFILE}/documents.parquet"
     path = root / profile_path
+    table = pq.read_table(path)
+    text = table["text"].to_pylist()
+    text[0] = "Changed source text"
+    table = table.set_column(
+        table.column_names.index("text"),
+        "text",
+        pa.array(text, type=table.schema.field("text").type),
+    )
+    pq.write_table(table, path)
+    _refresh_artifact(root, profile_path)
+
+    with pytest.raises(ValueError, match="document rows"):
+        validate_release(root)
+
+
+def test_release_validation_detects_changed_vectors_with_recomputed_hashes(
+    sample_catalog: Catalog,
+    tmp_path: Path,
+) -> None:
+    root, _ = _profile_release(sample_catalog, tmp_path)
+    profile_path = f"profiles/{_PROFILE}/documents.parquet"
+    path = root / profile_path
+    table = pq.read_table(path)
+    vectors = table["vector"].to_pylist()
+    vectors[0][0] += 1.0
+    table = table.set_column(
+        table.column_names.index("vector"),
+        "vector",
+        pa.array(vectors, type=table.schema.field("vector").type),
+    )
+    pq.write_table(table, path)
+    _refresh_artifact(root, profile_path)
+
+    with pytest.raises(ValueError, match="vectors do not match"):
+        validate_release(root)
+
+
+def test_release_validation_detects_changed_projection_identity(
+    sample_catalog: Catalog,
+    tmp_path: Path,
+) -> None:
+    root, _ = _profile_release(sample_catalog, tmp_path)
+    projection_path = f"profiles/{_PROFILE}/projection.parquet"
+    path = root / projection_path
     table = pq.read_table(path)
     ids = table["id"].to_pylist()
     ids[0] = "different"
@@ -133,9 +211,133 @@ def test_curation_validation_aligns_profile_and_index_row_identities(
         pa.array(ids, type=table.schema.field("id").type),
     )
     pq.write_table(table, path)
-    _refresh_artifact(root, profile_path)
+    _refresh_artifact(root, projection_path)
 
-    with pytest.raises(ValueError, match="row identities"):
+    with pytest.raises(ValueError, match="projection document identities"):
+        validate_release(root)
+
+
+@pytest.mark.parametrize(
+    ("field", "message"),
+    [
+        ("entries_digest", "entries digest"),
+        ("manifest_digest", "manifest digest"),
+    ],
+)
+def test_release_validation_links_profile_metadata_to_catalog_identity(
+    sample_catalog: Catalog,
+    tmp_path: Path,
+    field: str,
+    message: str,
+) -> None:
+    root, _ = _profile_release(sample_catalog, tmp_path)
+    metadata_path = f"profiles/{_PROFILE}/profile.json"
+    path = root / metadata_path
+    metadata = json.loads(path.read_text())
+    metadata[field] = "0" * 64
+    path.write_text(json.dumps(metadata))
+    _refresh_artifact(root, metadata_path)
+
+    with pytest.raises(ValueError, match=message):
+        validate_release(root)
+
+
+def test_release_validation_treats_the_producer_lancedb_version_as_provenance(
+    sample_catalog: Catalog,
+    tmp_path: Path,
+) -> None:
+    root, _ = _profile_release(sample_catalog, tmp_path)
+    metadata_path = f"profiles/{_PROFILE}/profile.json"
+    path = root / metadata_path
+    metadata = json.loads(path.read_text())
+    metadata["lancedb_version"] = "0.37.1"
+    path.write_text(json.dumps(metadata))
+    _refresh_artifact(root, metadata_path)
+
+    validate_release(root)
+
+
+def test_release_validation_is_independent_of_the_embedding_provider_environment(
+    sample_catalog: Catalog,
+    tmp_path: Path,
+) -> None:
+    from lancedb.embeddings import get_registry
+    from lancedb_embedding_fixture import SECRET_ALIAS, variable_embedding_definition
+
+    registry = get_registry()
+    registry.set_var("validation-provider-key", "producer-only-credential")
+    embedding = variable_embedding_definition().create(
+        api_key="$var:validation-provider-key", max_retries=0
+    )
+    root = tmp_path / "release"
+    build_release(
+        sample_catalog, root, profiles={_PROFILE: EmbeddingProfile(embedding)}
+    )
+    metadata_path = f"profiles/{_PROFILE}/profile.json"
+    path = root / metadata_path
+    metadata = json.loads(path.read_text())
+    metadata["python_requirements"] = {
+        "chartcoach-test-unavailable-provider": "123.0.0"
+    }
+    path.write_text(json.dumps(metadata))
+    _refresh_artifact(root, metadata_path)
+
+    script = f"""
+from lancedb.embeddings import get_registry
+from chartcoach.curation import validate_release
+try:
+    get_registry().get({SECRET_ALIAS!r})
+except KeyError:
+    pass
+else:
+    raise AssertionError("The fresh validator process has the producer alias registered")
+validate_release({str(root)!r})
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", script], capture_output=True, text=True, check=False
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "producer-only-credential" not in result.stdout + result.stderr
+
+
+def test_release_validation_detects_changed_lancedb_text_with_stable_ids(
+    sample_catalog: Catalog,
+    tmp_path: Path,
+) -> None:
+    root, _ = _profile_release(sample_catalog, tmp_path)
+
+    def change_text(table: pa.Table) -> pa.Table:
+        values = table["text"].to_pylist()
+        values[0] = "Changed LanceDB source text"
+        return table.set_column(
+            table.column_names.index("text"),
+            "text",
+            pa.array(values, type=table.schema.field("text").type),
+        )
+
+    _mutate_lancedb_table(root, change_text)
+
+    with pytest.raises(ValueError, match="LanceDB document rows"):
+        validate_release(root)
+
+
+def test_release_validation_detects_changed_lancedb_binding(
+    sample_catalog: Catalog,
+    tmp_path: Path,
+) -> None:
+    root, _ = _profile_release(sample_catalog, tmp_path)
+
+    def change_binding(table: pa.Table) -> pa.Table:
+        metadata = dict(table.schema.metadata or {})
+        binding = json.loads(metadata[b"embedding_functions"])
+        binding[0]["model"]["max_retries"] = 1
+        metadata[b"embedding_functions"] = json.dumps(binding).encode()
+        return table.replace_schema_metadata(metadata)
+
+    _mutate_lancedb_table(root, change_binding)
+
+    with pytest.raises(ValueError, match="embedding metadata"):
         validate_release(root)
 
 
@@ -148,6 +350,7 @@ def _profile_release(catalog: Catalog, tmp_path: Path) -> tuple[Path, CatalogRel
             _PROFILE: EmbeddingProfile(
                 embedding=deterministic_embedding(_EMBEDDING),
                 umap={"n_neighbors": 3},
+                export_documents=True,
             )
         },
     )
@@ -165,6 +368,26 @@ def _refresh_artifact(root: Path, artifact_path: str) -> None:
         bytes=path.stat().st_size,
     )
     _write_release(root, artifacts)
+
+
+def _mutate_lancedb_table(
+    root: Path,
+    transform: Callable[[pa.Table], pa.Table],
+) -> None:
+    artifact_path = f"profiles/{_PROFILE}/index.tar.gz"
+    archive = root / artifact_path
+    with TemporaryDirectory() as temporary:
+        database = Path(temporary) / "index"
+        extract_tar_archive(archive, database)
+        import lancedb
+
+        connection = lancedb.connect(database)
+        table = connection.open_table("documents")
+        changed = transform(table.to_arrow())
+        del table
+        connection.create_table("documents", data=changed, mode="overwrite")
+        _write_lancedb_archive(database, archive)
+    _refresh_artifact(root, artifact_path)
 
 
 def _write_release(root: Path, artifacts: dict[str, ReleaseArtifact]) -> None:

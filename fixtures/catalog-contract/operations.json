@@ -1,0 +1,278 @@
+{
+  "query_cases": [
+    {
+      "name": "normalized text",
+      "options": {
+        "contains": "Direct_Labels",
+        "limit": 5
+      },
+      "records": [
+        {
+          "id": "direct-labels",
+          "title": "direct-labels",
+          "description": "direct-labels description.",
+          "labels": ["chart:line", "goal:comparison"]
+        }
+      ]
+    },
+    {
+      "name": "requested id order",
+      "options": {
+        "ids": ["axis-labels", "direct-labels", "axis-labels"],
+        "limit": 5
+      },
+      "records": [
+        {
+          "id": "axis-labels",
+          "title": "axis-labels",
+          "description": "axis-labels description.",
+          "labels": ["chart:line", "goal:comparison"]
+        },
+        {
+          "id": "direct-labels",
+          "title": "direct-labels",
+          "description": "direct-labels description.",
+          "labels": ["chart:line", "goal:comparison"]
+        },
+        {
+          "id": "axis-labels",
+          "title": "axis-labels",
+          "description": "axis-labels description.",
+          "labels": ["chart:line", "goal:comparison"]
+        }
+      ]
+    }
+  ],
+  "read": {
+    "options": {
+      "ids": ["direct-labels"],
+      "sourceDetail": "minimal"
+    },
+    "records": [
+      {
+        "id": "direct-labels",
+        "title": "direct-labels",
+        "description": "direct-labels description.",
+        "labels": ["chart:line", "goal:comparison"],
+        "sections": [
+          {
+            "role": "advice",
+            "title": "Advice",
+            "content": "Place the label close to the mark it names [@smith2024]."
+          }
+        ],
+        "sources": [
+          {
+            "reference_id": "smith2024",
+            "authors_text": "Smith, Ada",
+            "year": "2024",
+            "source_title": "Readable charts",
+            "doi": null,
+            "url": null
+          }
+        ]
+      }
+    ]
+  },
+  "read_full": {
+    "options": {
+      "ids": ["direct-labels"],
+      "sourceDetail": "full"
+    },
+    "records": [
+      {
+        "id": "direct-labels",
+        "title": "direct-labels",
+        "description": "direct-labels description.",
+        "labels": ["chart:line", "goal:comparison"],
+        "sections": [
+          {
+            "role": "advice",
+            "title": "Advice",
+            "content": "Place the label close to the mark it names [@smith2024]."
+          }
+        ],
+        "sources": [
+          {
+            "guideline_id": "direct-labels",
+            "reference_id": "smith2024",
+            "source_type": "article",
+            "authors": ["Smith, Ada"],
+            "authors_text": "Smith, Ada",
+            "year": "2024",
+            "source_title": "Readable charts",
+            "journal": "Journal of Charts",
+            "booktitle": null,
+            "publisher": null,
+            "url": null,
+            "doi": null
+          }
+        ],
+        "references": [
+          "@article{smith2024,\n author = {Smith, Ada},\n journal = {Journal of Charts},\n title = {Readable charts},\n year = {2024}\n}"
+        ]
+      }
+    ]
+  },
+  "bibliography_render_recovery": {
+    "reference": "@article{source, title={Charts}, year={forthcoming}}",
+    "year": "forthcoming",
+    "citation": "Charts. (n.d.)."
+  },
+  "protected_bibliography": {
+    "reference": "@string{topic = {Visual {Data}}}\n@article{protected2024, author = {{Research Group}}, title = {A } # topic # { Guide \\& Examples}, year = 2024}",
+    "source_title": "A Visual {Data} Guide \\& Examples",
+    "authors_text": "{Research Group}",
+    "citation": "Research Group. (2024). A Visual Data Guide & Examples."
+  },
+  "bibliography_urls": [
+    {
+      "name": "published source with a wrapped locator",
+      "reference": "@misc{muth_colorblindness_2020,\n author = {Lisa Charlotte Muth},\n howpublished = {\\url{https://www.datawrapper.de/blog/colorblindness-part2}},\n note = {Datawrapper Blog. Accessed: 2025-11-17},\n title = {What to consider when visualizing data for colorblind readers},\n year = {2020}\n}",
+      "url": "https://www.datawrapper.de/blog/colorblindness-part2",
+      "doi": null,
+      "citation": "Muth, L. C. (2020,). What to consider when visualizing data for colorblind readers. https://www.datawrapper.de/blog/colorblindness-part2"
+    },
+    {
+      "name": "plain locator preserves its query and fragment",
+      "reference": "@misc{source, title={Source}, howpublished={https://example.test/paper?view=full&part=2#figure%203}}",
+      "url": "https://example.test/paper?view=full&part=2#figure%203",
+      "doi": null,
+      "citation": "Source. (n.d.). https://example.test/paper?view=full&part=2#figure%203"
+    },
+    {
+      "name": "explicit URL takes precedence and keeps DOI distinct",
+      "reference": "@article{source, title={Source}, url={https://example.test/primary}, howpublished={\\url{https://example.test/alternate}}, doi={10.0000/figures}}",
+      "url": "https://example.test/primary",
+      "doi": "10.0000/figures",
+      "citation": "Source. (n.d.). https://doi.org/10.0000/figures https://example.test/primary"
+    },
+    {
+      "name": "wrapped explicit URL takes precedence",
+      "reference": "@misc{source, title={Source}, url={\\url{https://example.test/primary}}, howpublished={https://example.test/alternate}}",
+      "url": "https://example.test/primary",
+      "doi": null,
+      "citation": "Source. (n.d.). https://example.test/primary"
+    },
+    {
+      "name": "empty explicit URL permits a source locator",
+      "reference": "@misc{source, title={Source}, url={ }, howpublished={\\url{http://example.test/paper}}}",
+      "url": "http://example.test/paper",
+      "doi": null,
+      "citation": "Source. (n.d.). http://example.test/paper"
+    },
+    {
+      "name": "explicit locator takes precedence across schemes",
+      "reference": "@misc{source, title={Source}, url={ftp://example.test/paper}, howpublished={https://example.test/alternate}}",
+      "url": "ftp://example.test/paper",
+      "doi": null,
+      "citation": "Source. (n.d.). Retrieved ftp://example.test/paper"
+    },
+    {
+      "name": "descriptive publication text is not a locator",
+      "reference": "@misc{source, title={Source}, howpublished={Available at \\url{https://example.test/paper}}}",
+      "url": null,
+      "doi": null,
+      "citation": "Source. (n.d.)."
+    },
+    {
+      "name": "multiple wrapped URLs remain ambiguous",
+      "reference": "@misc{source, title={Source}, howpublished={\\url{https://example.test/one} \\url{https://example.test/two}}}",
+      "url": null,
+      "doi": null,
+      "citation": "Source. (n.d.)."
+    },
+    {
+      "name": "source locator requires an HTTP authority",
+      "reference": "@misc{source, title={Source}, howpublished={\\url{https:///paper}}}",
+      "url": null,
+      "doi": null,
+      "citation": "Source. (n.d.)."
+    }
+  ],
+  "cite": {
+    "options": {
+      "ids": ["direct-labels"]
+    },
+    "records": [
+      {
+        "id": "direct-labels",
+        "title": "direct-labels",
+        "url": "https://chartcoach.dev/guidelines/direct-labels",
+        "guideline_citation": "[direct-labels](https://chartcoach.dev/guidelines/direct-labels) (`direct-labels`)",
+        "sources": [
+          {
+            "reference_id": "smith2024",
+            "source_type": "article",
+            "authors_text": "Smith, Ada",
+            "year": "2024",
+            "source_title": "Readable charts",
+            "journal": "Journal of Charts",
+            "booktitle": null,
+            "publisher": null,
+            "doi": null,
+            "url": null,
+            "citation": "Smith, A. (2024). Readable charts. Journal of Charts."
+          }
+        ]
+      }
+    ]
+  },
+  "description": {
+    "release_digest": "ecf5b98d8d3f24978caafdd4740312becdc6e944a6a9c70b36e2ab4c984dccc9",
+    "entries_digest": "90d5e861725b55096d1dbd11334afc16e83108272fd5777381fe2db921cd3c39",
+    "manifest_digest": "f6f9175bbef6849d6f053a8186fa314d485308b05e7d0b1ddcb385dbeb2a3726",
+    "section_roles": [
+      {
+        "name": "advice",
+        "description": "Actionable guidance for applying the guideline.",
+        "examples": []
+      }
+    ],
+    "label_families": [
+      {
+        "name": "chart",
+        "description": "Chart-family labels such as `chart:line`.",
+        "examples": ["chart:line"]
+      },
+      {
+        "name": "goal",
+        "description": "Task-goal labels such as `goal:comparison`.",
+        "examples": ["goal:comparison"]
+      }
+    ],
+    "profiles": [],
+    "profile": null
+  },
+  "bibliography": {
+    "equivalent": [
+      "@article{shared2024,\n author = {Smith, Ada},\n journal = {Journal of Charts},\n title = {Readable charts},\n year = {2024}\n}",
+      "@ARTICLE ( shared2024, title={Readable charts}, year=2024, journal={Journal of Charts}, author={Smith, Ada} )"
+    ],
+    "conflicting": [
+      "@article{shared2024,\n author = {Smith, Ada},\n journal = {Journal of Charts},\n title = {Readable charts},\n year = {2024}\n}",
+      "@article{shared2024,\n author = {Smith, Ada},\n journal = {Journal of Charts},\n title = {Different evidence},\n year = {2024}\n}"
+    ]
+  },
+  "identity": {
+    "records": [
+      {
+        "id": "-guideline",
+        "title": "Private-use guideline",
+        "description": "Code-point ordering witness.",
+        "labels": [],
+        "sections": [{ "role": "advice", "title": "Advice", "content": "Keep the first record." }],
+        "references": []
+      },
+      {
+        "id": "😀-guideline",
+        "title": "Supplementary guideline",
+        "description": "Supplementary-plane ordering witness.",
+        "labels": [],
+        "sections": [{ "role": "advice", "title": "Advice", "content": "Keep the second record." }],
+        "references": []
+      }
+    ],
+    "entries_digest": "6c19145b419001272eae555de0ed07e071dfbf18e365b1b4248cbacf694807d0"
+  }
+}

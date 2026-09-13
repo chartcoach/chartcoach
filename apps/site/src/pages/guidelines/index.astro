@@ -11,9 +11,13 @@ import {
 import { collectGuidelineRoles } from "@/lib/guideline-roles";
 
 const allGuidelines = sortGuidelines(await getCollection("guidelines"));
+
 const totalPages = getGuidelinePageCount(allGuidelines.length);
+
 const guidelines = paginateGuidelines(allGuidelines, 1);
+
 const guidelineRoles = collectGuidelineRoles(allGuidelines);
+
 const description =
   "Browse chartcoach guideline pages for chart guidance, source links, and machine-readable Markdown and JSON.";
 ---

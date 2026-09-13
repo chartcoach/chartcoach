@@ -90,69 +90,50 @@ const sectionPoints: readonly SectionPoint[] = guidelineRoleSections.map((sectio
 
 const catalogPoints = makeCatalogPoints();
 
-type EmbeddingCanvasProps = {
-  active: boolean;
-};
-
-export function EmbeddingCanvas({ active }: EmbeddingCanvasProps) {
+export function EmbeddingCanvas() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const startedAt = useRef<number | null>(null);
   const [hover, setHover] = useState<HoverState | null>(null);
   const hoveredRole = hover?.point.role ?? null;
 
   useEffect(() => {
     const canvas = canvasRef.current;
+
     if (!canvas) return;
 
     const context = canvas.getContext("2d");
+
     if (!context) return;
 
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    let animationFrame = 0;
-
-    const resize = () => resizeCanvas(canvas, context);
-
-    const observer = new ResizeObserver(() => {
-      resize();
-      drawEmbedding(context, canvas, 1, 0, hoveredRole);
-    });
-
-    resize();
-    observer.observe(canvas);
-
-    const render = (now: number) => {
-      if (!startedAt.current || !active) startedAt.current = now;
-      const elapsed = now - startedAt.current;
-      const progress = reduceMotion ? 1 : easeOutCubic(Math.min(elapsed / 900, 1));
-      drawEmbedding(
-        context,
-        canvas,
-        active ? progress : 1,
-        reduceMotion ? 0 : elapsed,
-        hoveredRole,
-      );
-
-      if (active || progress < 1) {
-        animationFrame = window.requestAnimationFrame(render);
-      }
+    const draw = () => {
+      resizeCanvas(canvas, context);
+      drawEmbedding(context, canvas, hoveredRole);
     };
 
-    animationFrame = window.requestAnimationFrame(render);
+    const observer = new ResizeObserver(draw);
+    const themeObserver = new MutationObserver(draw);
+    observer.observe(canvas);
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class", "style"],
+    });
+    draw();
 
     return () => {
       observer.disconnect();
-      if (animationFrame) window.cancelAnimationFrame(animationFrame);
+      themeObserver.disconnect();
     };
-  }, [active, hoveredRole]);
+  }, [hoveredRole]);
 
   function handlePointerMove(event: React.PointerEvent<HTMLCanvasElement>) {
     const canvas = canvasRef.current;
+
     if (!canvas) return;
 
     const hit = findHoveredSection(canvas, event);
     canvas.style.cursor = hit ? "pointer" : "default";
     setHover((current) => {
       if (!hit) return current ? null : current;
+
       if (
         current?.point.role === hit.point.role &&
         current.left === hit.left &&
@@ -160,12 +141,14 @@ export function EmbeddingCanvas({ active }: EmbeddingCanvasProps) {
       ) {
         return current;
       }
+
       return hit;
     });
   }
 
   function handlePointerLeave() {
     const canvas = canvasRef.current;
+
     if (canvas) canvas.style.cursor = "default";
     setHover(null);
   }
@@ -190,7 +173,7 @@ function EmbeddingPopover({ hover }: { hover: HoverState }) {
 
   return (
     <div
-      className="pointer-events-none absolute z-20 max-w-[15.5rem] rounded-lg border border-border bg-bg px-3.5 py-3 text-left shadow-[0_18px_44px_color-mix(in_srgb,var(--color-fg)_14%,transparent)]"
+      className="pointer-events-none absolute z-20 w-[15.5rem] max-w-[calc(100%-2rem)] rounded-lg border border-border bg-bg px-3.5 py-3 text-left shadow-[0_18px_44px_color-mix(in_srgb,var(--color-fg)_14%,transparent)]"
       style={{ left: hover.left, top: hover.top, transform }}
     >
       <div className="flex items-center gap-2">
@@ -263,8 +246,6 @@ function readCanvasColors(canvas: HTMLCanvasElement): CanvasColors {
 function drawEmbedding(
   context: CanvasRenderingContext2D,
   canvas: HTMLCanvasElement,
-  progress: number,
-  pulse: number,
   hoveredRole: GuidelineRole | null,
 ) {
   const width = canvas.clientWidth || 1;
@@ -278,8 +259,8 @@ function drawEmbedding(
   context.fillRect(0, 0, width, height);
 
   drawGrid(context, bounds, colors);
-  drawCatalogPoints(context, catalogPoints, bounds, progress);
-  drawSectionPoints(context, sectionPoints, bounds, colors, progress, pulse, hoveredRole, compact);
+  drawCatalogPoints(context, catalogPoints, bounds);
+  drawSectionPoints(context, sectionPoints, bounds, colors, hoveredRole, compact);
 }
 
 function drawGrid(context: CanvasRenderingContext2D, bounds: PlotBounds, colors: CanvasColors) {
@@ -310,15 +291,12 @@ function drawCatalogPoints(
   context: CanvasRenderingContext2D,
   points: readonly CatalogPoint[],
   bounds: PlotBounds,
-  progress: number,
 ) {
-  const fade = 0.3 + progress * 0.7;
-
   for (const point of points) {
     const projected = projectPoint(point, bounds);
     context.beginPath();
     context.arc(projected.x, projected.y, point.radius, 0, Math.PI * 2);
-    context.fillStyle = withAlpha(point.color, point.opacity * fade);
+    context.fillStyle = withAlpha(point.color, point.opacity);
     context.fill();
   }
 }
@@ -328,21 +306,18 @@ function drawSectionPoints(
   points: readonly SectionPoint[],
   bounds: PlotBounds,
   colors: CanvasColors,
-  progress: number,
-  pulse: number,
   hoveredRole: GuidelineRole | null,
   compact: boolean,
 ) {
-  for (const [index, point] of points.entries()) {
+  for (const point of points) {
     const projected = projectPoint(point, bounds);
-    const reveal = clamp((progress - index * 0.08) / 0.72, 0, 1);
     const hovered = point.role === hoveredRole;
-    const radius = (hovered ? 8.2 : 6.5) * reveal;
-    const halo = (hovered ? 20 : 15) + Math.sin(pulse / 520 + index) * 1.2;
+    const radius = hovered ? 8.2 : 6.5;
+    const halo = hovered ? 20 : 15;
 
     context.beginPath();
     context.arc(projected.x, projected.y, halo, 0, Math.PI * 2);
-    context.fillStyle = withAlpha(point.color, (hovered ? 0.16 : 0.08) * reveal);
+    context.fillStyle = withAlpha(point.color, hovered ? 0.16 : 0.08);
     context.fill();
 
     context.beginPath();
@@ -352,7 +327,7 @@ function drawSectionPoints(
 
     context.beginPath();
     context.arc(projected.x, projected.y, radius, 0, Math.PI * 2);
-    context.fillStyle = withAlpha(point.color, reveal);
+    context.fillStyle = point.color;
     context.fill();
 
     context.beginPath();
@@ -371,7 +346,7 @@ function drawSectionPoints(
         bounds,
         colors,
         point.color,
-        reveal,
+        1,
       );
     } else {
       drawText(context, point.role, projected.x + 14, projected.y + 5, colors.fg, {
@@ -450,9 +425,11 @@ function findHoveredSection(
   const bounds = getPlotBounds(rect.width, rect.height);
 
   let best: { point: SectionPoint; distance: number; projected: Point2D } | null = null;
+
   for (const point of sectionPoints) {
     const projected = projectPoint(point, bounds);
     const distance = Math.hypot(projected.x - x, projected.y - y);
+
     if (distance <= 17 && (!best || distance < best.distance)) {
       best = { point, distance, projected };
     }
@@ -514,10 +491,6 @@ function drawText(
   context.restore();
 }
 
-function easeOutCubic(value: number) {
-  return 1 - (1 - value) ** 3;
-}
-
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
 }
@@ -532,10 +505,12 @@ function withAlpha(color: string, alpha: number) {
             .map((value) => value + value)
             .join("")
         : color.slice(1);
+
     const value = Number.parseInt(hex, 16);
     const red = (value >> 16) & 255;
     const green = (value >> 8) & 255;
     const blue = value & 255;
+
     return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
   }
 

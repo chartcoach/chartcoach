@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 
 import pytest
-from chartcoach.catalog.collection import Catalog
+from chartcoach import Catalog
 from chartcoach.cli.main import main as chartcoach_cli
 from click.testing import CliRunner
 from helpers import assert_cli_error
@@ -103,7 +103,7 @@ def test_catalog_export_duckdb_writes_catalog_tables(
 
     assert result.exit_code == 0
     assert duckdb_path.exists()
-    assert "Wrote DuckDB catalog" in result.output
+    assert "Wrote DuckDB catalog" in result.stdout
 
     conn = duckdb.connect(duckdb_path, read_only=True)
     try:

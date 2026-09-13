@@ -24,6 +24,7 @@ export const dynamicParams = false;
 export default async function Page({ params }: DocsPageProps) {
   const { slug } = await params;
   const page = source.getPage(slug);
+
   if (!page) notFound();
 
   const MDX = page.data.body;
@@ -55,6 +56,7 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: DocsPageProps): Promise<Metadata> {
   const { slug } = await params;
   const page = source.getPage(slug);
+
   if (!page) notFound();
 
   return {

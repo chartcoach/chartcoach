@@ -55,6 +55,26 @@ Run a focused command while iterating:
 When a dependency changes, update the matching lockfile through `pnpm install`
 or `uv lock`.
 
+Published runtime dependencies use tested lower bounds. The lockfiles select
+exact versions for development and CI. Set a lower bound from the APIs and
+security fixes the package needs, and declare dependencies where they are
+imported. Keep application and build-tool requirements scoped to their owners.
+Review `pnpm update` edits to published package ranges separately from lockfile
+updates so a dependency refresh preserves the tested lower bounds.
+
+Run the Python consumer checks against the lowest compatible direct dependencies:
+
+```bash
+UV_PYTHON=3.10 make python-minimum
+```
+
+This builds the wheel, checks a minimum base installation, then installs every
+extra in the temporary environment and runs the package tests. Binary wheels
+are required for third-party dependencies.
+CI runs this check alongside the locked-version matrix. Exact embedding-profile
+requirements describe the environment that produced stored vectors and remain
+part of the catalog contract.
+
 ## Keep shared data aligned
 
 Python, JavaScript, the fixture, and both web apps read the same guideline and
@@ -66,6 +86,13 @@ packages through their public package names. Add tests at the API, command,
 file, or browser behavior that readers depend on.
 
 ## Validate
+
+Run `pnpm check:unused` to find unused JavaScript and TypeScript files, exports,
+and dependencies with [Knip](https://knip.dev/). The command generates the docs
+collections before analysis and also runs through `pnpm ready`. Framework
+plugins discover routes, build configuration, MDX, and tests. `knip.jsonc`
+defines the root tooling scope. Keep public SDK entry points declared in
+`package.json` exports and add precise entry patterns for code loaded by filename.
 
 Run the full repository check before handoff:
 

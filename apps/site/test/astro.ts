@@ -8,6 +8,7 @@ export function createTestLogger() {
   const debug = vi.fn<(message: string) => void>();
   const flush = vi.fn<() => void>();
   const close = vi.fn<() => void>();
+
   const options = {
     destination: { write: vi.fn() },
     level: "info",
@@ -35,6 +36,8 @@ export function requireIntegrationHook<Hook extends keyof AstroIntegration["hook
   name: Hook,
 ): NonNullable<AstroIntegration["hooks"][Hook]> {
   const hook = integration.hooks[name];
+
   if (!hook) throw new Error(`Missing ${name} hook.`);
+
   return hook;
 }

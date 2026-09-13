@@ -1,14 +1,15 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import click
 
-from chartcoach.constants import (
+from chartcoach._constants import (
     CATALOG_ARTIFACT_BASE_URL,
-    CATALOG_ENTRY_PATH,
+    CATALOG_SELECTION_PATH,
+    CATALOG_SOURCE_ENV,
     INDEX_PROFILE_ENV,
-    SOURCE_ENV,
 )
-from chartcoach.tools import format_error
 
 from .common import storage_errors
 
@@ -19,18 +20,10 @@ MCP_TRANSPORT_ENV = "CHARTCOACH_MCP_TRANSPORT"
 MCP_HOST_ENV = "CHARTCOACH_MCP_HOST"
 MCP_PORT_ENV = "CHARTCOACH_MCP_PORT"
 MCP_LOG_LEVEL_ENV = "CHARTCOACH_MCP_LOG_LEVEL"
-MCP_INDEX_EXTRA_HINTS = (
-    "For one-off runs, use `uvx --from 'chartcoach[mcp,index]@latest' chartcoach ...`.",
-    "From a checkout, use `uv run --package chartcoach --extra mcp --extra index chartcoach ...`.",
-)
 
 
 def _is_missing_optional_dependency(exc: ModuleNotFoundError) -> bool:
     return _has_missing_module(exc, ("mcp",))
-
-
-def _is_missing_search_dependency(exc: ModuleNotFoundError) -> bool:
-    return _has_missing_module(exc, ("lancedb",))
 
 
 def _has_missing_module(
@@ -58,17 +51,23 @@ def _has_missing_module(
 @click.option(
     "--source",
     "source_path",
-    envvar=SOURCE_ENV,
+    envvar=CATALOG_SOURCE_ENV,
     metavar="PATH_OR_URI",
     help=(
-        "Catalog folder, bundle, catalog.json, or release.json path or URI. "
-        f"Defaults to ${SOURCE_ENV}, then the official catalog."
+        "Catalog source: authored folder, bundle, deployed root, catalog.json, or "
+        "release.json path or URI. "
+        f"Defaults to ${CATALOG_SOURCE_ENV}, then the official catalog."
     ),
 )
 @click.option(
     "--profile",
     envvar=INDEX_PROFILE_ENV,
-    help="Embedding profile in the catalog release.",
+    help="Index profile in the catalog release.",
+)
+@click.option(
+    "--embedding-vars",
+    type=click.Path(path_type=Path, dir_okay=False),
+    help="JSON file mapping LanceDB registry variable names to string values.",
 )
 @click.option(
     "--transport",
@@ -104,6 +103,7 @@ def _has_missing_module(
 def mcp_command(
     source_path: str | None,
     profile: str | None,
+    embedding_vars: Path | None,
     transport: str,
     host: str,
     port: int,
@@ -114,6 +114,7 @@ def mcp_command(
     try:
         _run_server(
             profile=profile,
+            embedding_vars=embedding_vars,
             source_path=source_path,
             transport=transport,
             host=host,
@@ -125,13 +126,6 @@ def mcp_command(
             raise click.ClickException(
                 "The `chartcoach mcp` command requires the optional MCP dependencies. Install `chartcoach[mcp]` to use it."
             ) from exc
-        if _is_missing_search_dependency(exc):
-            raise click.ClickException(
-                format_error(
-                    "Indexed MCP search requires the optional LanceDB dependencies.",
-                    MCP_INDEX_EXTRA_HINTS,
-                )
-            ) from exc
         raise
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
@@ -140,6 +134,7 @@ def mcp_command(
 def _run_server(
     *,
     profile: str | None,
+    embedding_vars: Path | None,
     source_path: str | None,
     transport: str,
     host: str,
@@ -148,11 +143,12 @@ def _run_server(
 ) -> None:
     from chartcoach import mcp
 
-    default_source = f"{CATALOG_ARTIFACT_BASE_URL.rstrip('/')}/{CATALOG_ENTRY_PATH}"
+    default_source = f"{CATALOG_ARTIFACT_BASE_URL.rstrip('/')}/{CATALOG_SELECTION_PATH}"
     with storage_errors("MCP startup", source_path or default_source):
         mcp.main(
             profile=profile,
-            source=source_path,
+            embedding_vars=embedding_vars,
+            location=source_path,
             transport=transport.lower(),
             host=host,
             port=port,

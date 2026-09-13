@@ -1,0 +1,19 @@
+from __future__ import annotations
+
+CATALOG_SOURCE_ENV = "CHARTCOACH_SOURCE"
+INDEX_PROFILE_ENV = "CHARTCOACH_INDEX_PROFILE"
+CATALOG_ARTIFACT_BASE_URL = "https://files.peter.gy/catalog/chartcoach"
+CATALOG_SELECTION_PATH = "catalog.json"
+DEFAULT_GUIDELINE_URL_TEMPLATE = "https://chartcoach.dev/guidelines/{id}"
+DEFAULT_INDEX_TOP_K = 10
+LANCE_DOCUMENT_TABLE = "documents"
+
+__all__ = [
+    "CATALOG_ARTIFACT_BASE_URL",
+    "CATALOG_SELECTION_PATH",
+    "CATALOG_SOURCE_ENV",
+    "DEFAULT_GUIDELINE_URL_TEMPLATE",
+    "DEFAULT_INDEX_TOP_K",
+    "INDEX_PROFILE_ENV",
+    "LANCE_DOCUMENT_TABLE",
+]

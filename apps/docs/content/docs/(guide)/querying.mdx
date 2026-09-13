@@ -1,141 +1,397 @@
 ---
 title: Find guidelines
-description: Filter by labels or words, join catalog tables with SQL, and inspect a chosen record.
+description: Find candidates, read their context, and cite the evidence in Python, TypeScript, or the CLI.
 icon: Search
 ---
 
-chartcoach offers three ways to search a catalog:
+Choose a retrieval path from what you know about the chart. Each path returns
+candidate guideline IDs. Read the selected guidelines before using their advice.
 
-| What you know                          | Command        |
-| -------------------------------------- | -------------- |
-| A label or phrase                      | `catalog list` |
-| A relationship between tables          | `catalog sql`  |
-| An idea, but not the catalog's wording | `catalog find` |
+| What you know                                            | Retrieval path                                  |
+| -------------------------------------------------------- | ----------------------------------------------- |
+| An exact label or short phrase                           | Filter entry metadata.                          |
+| A term in section text or a relationship between sources | Query catalog tables with SQL.                  |
+| Several words to match in guideline text                 | Search a full-text index.                       |
+| A design problem described in your own words             | Search vectors with a matching embedding model. |
 
-After choosing an ID, `catalog read` returns the full guideline and `catalog
-cite` formats its sources.
+## Open the catalog
 
-Install the CLI and set the fixed three-record source used by the runnable
-examples:
+Complete [Getting started](/getting-started#install) for your interface.
+Run each Python example as its own `.py` script and each TypeScript example as
+its own `.mts` script with Node.js.
 
-```bash
-uv tool install \
-  "chartcoach @ https://files.peter.gy/packages/python/chartcoach/0.2.0/892f120cb377/chartcoach-0.2.0-py3-none-any.whl"
+<Tabs groupId="catalog-interface" items={["Python", "TypeScript", "CLI"]} persist>
+<Tab value="Python">
 
-CATALOG_SOURCE="https://files.peter.gy/packages/python/chartcoach/0.2.0/docs-catalog/c0f6dbec3dd31b07763b46fd458733db0b8b50c5793cf9447458119287129420/release.json"
+```python
+from chartcoach import open_catalog
+
+catalog = open_catalog()
+print(catalog.describe())
 ```
 
-## Match labels and words
+</Tab>
+<Tab value="TypeScript">
 
-This command requires the exact label `purpose:refine`, at least one label
-that starts with `quality:`, and the substring `label` in the guideline ID,
-title, or description:
+```ts
+import { openCatalog } from "@chartcoach/catalog/node";
+
+const catalog = await openCatalog();
+console.log(await catalog.describe());
+```
+
+</Tab>
+<Tab value="CLI">
+
+```bash
+chartcoach catalog describe
+```
+
+Each command opens the public catalog by default. Set `CHARTCOACH_SOURCE` to
+an exact release descriptor when a sequence of commands must keep the same
+catalog contents.
+
+</Tab>
+</Tabs>
+
+The description includes table schemas, vocabulary, and available index profiles.
+For another source, follow [Open and cache catalogs](/catalogs).
+
+## Filter candidates
+
+Find recommendations about labels that also address quality:
+
+<Tabs groupId="catalog-interface" items={["Python", "TypeScript", "CLI"]} persist>
+<Tab value="Python">
+
+```python
+from chartcoach import open_catalog
+
+catalog = open_catalog()
+candidates = catalog.query(
+    labels=["purpose:refine"],
+    label_prefixes=["quality:"],
+    contains="label",
+    limit=10,
+)
+print(candidates)
+```
+
+</Tab>
+<Tab value="TypeScript">
+
+```ts
+import { openCatalog } from "@chartcoach/catalog/node";
+
+const catalog = await openCatalog();
+const candidates = catalog.query({
+  labels: ["purpose:refine"],
+  labelPrefixes: ["quality:"],
+  contains: "label",
+  limit: 10,
+});
+console.table(candidates);
+```
+
+</Tab>
+<Tab value="CLI">
 
 ```bash
 chartcoach catalog list \
-  --source "$CATALOG_SOURCE" \
   --label purpose:refine \
   --label-prefix quality: \
-  --contains "label" \
-  --limit 10 \
-  --format json
+  --contains label \
+  --limit 10 --format table
 ```
 
-The result includes this guideline ID and title:
+</Tab>
+</Tabs>
 
-```json
-[
-  {
-    "id": "directly-label-series-instead-of-using-a-color-key",
-    "title": "Directly label colored series instead of relying on a color key"
-  }
-]
+Every filter must match. `contains` matches one contiguous phrase in the ID,
+title, or description. Matching ignores case and treats whitespace, hyphens,
+and underscores as equivalent separators. Inspect the catalog vocabulary before
+choosing unfamiliar labels.
+
+If nothing matches, shorten the phrase or relax filters. Search `labels` and
+`overlap` separately when those concepts need not appear together. Section text
+can match even when a title or description does not.
+
+## Query section text and relationships with SQL
+
+[DuckDB](https://duckdb.org/docs/) queries the catalog's related tables. This
+query finds the word “label” in section text and returns up to ten guideline
+IDs and titles in ID order. It works with unindexed catalogs too.
+
+<Tabs groupId="catalog-interface" items={["Python", "TypeScript", "CLI"]} persist>
+<Tab value="Python">
+
+```python
+from chartcoach import open_catalog
+
+catalog = open_catalog()
+with catalog.duckdb() as connection:
+    rows = connection.sql("""
+        SELECT DISTINCT g.id, g.title
+        FROM guidelines g
+        JOIN sections s ON s.guideline_id = g.id
+        WHERE s.content ILIKE '%label%'
+        ORDER BY g.id
+        LIMIT 10
+    """).fetchall()
+    print(rows)
 ```
 
-Run `chartcoach catalog labels --source "$CATALOG_SOURCE"` before using an
-exact label from an unfamiliar catalog.
+Reuse a connection for related queries. The context manager closes it when
+the block finishes.
 
-## Join catalog tables
+</Tab>
+<Tab value="TypeScript">
 
-Inspect the available tables and columns before writing SQL:
+Install the native [DuckDB Node client](https://duckdb.org/docs/stable/clients/node_neo/overview):
 
 ```bash
-chartcoach catalog schema --source "$CATALOG_SOURCE" --tables --row-counts
-chartcoach catalog schema \
-  --source "$CATALOG_SOURCE" \
-  guidelines guideline_labels
+npm install @duckdb/node-api
 ```
 
-The next query returns guidelines with both `purpose:refine` and any label in
-the `quality` family:
+```ts
+import { DuckDBInstance } from "@duckdb/node-api";
+import { registerCatalog } from "@chartcoach/catalog/duckdb";
+import { openCatalog } from "@chartcoach/catalog/node";
+
+const catalog = await openCatalog();
+const db = await DuckDBInstance.create(":memory:");
+const connection = await db.connect();
+try {
+  await registerCatalog(connection, catalog);
+  const result = await connection.runAndReadAll(`
+    SELECT DISTINCT g.id, g.title
+    FROM guidelines g
+    JOIN sections s ON s.guideline_id = g.id
+    WHERE s.content ILIKE '%label%'
+    ORDER BY g.id
+    LIMIT 10
+  `);
+  console.log(result.getRowsJson());
+} finally {
+  connection.closeSync();
+  db.closeSync();
+}
+```
+
+Register tables once per connection, then reuse them for related queries.
+For client-side SQL, use the [browser worker adapter](/javascript#query-in-a-browser-worker).
+
+</Tab>
+<Tab value="CLI">
 
 ```bash
 chartcoach catalog sql "
-  select distinct g.id, g.title
-  from guidelines g
-  join guideline_labels purpose
-    on purpose.guideline_id = g.id
-  join guideline_labels quality
-    on quality.guideline_id = g.id
-  where purpose.label = 'purpose:refine'
-    and quality.family = 'quality'
-  order by g.id
-  limit 20
-" --source "$CATALOG_SOURCE" --format json
+  SELECT DISTINCT g.id, g.title
+  FROM guidelines g
+  JOIN sections s ON s.guideline_id = g.id
+  WHERE s.content ILIKE '%label%'
+  ORDER BY g.id
+  LIMIT 10
+" --limit 10 --format table
 ```
 
-The JSON object contains `columns`, `rows`, `row_count`, `truncated`, the
-applied `limit`, and catalog digests. This query returns two rows. The CLI caps
-SQL results at 100 rows by default. Pass `--limit` to set another cap.
+The CLI accepts one read-only `SELECT`, disables external access, and bounds
+its output. Python and TypeScript expose caller-owned native connections.
 
-## Search within guideline sections
+</Tab>
+</Tabs>
 
-`catalog find` searches an index stored with a catalog release. A profile is
-the name of that index. A filter such as `role = 'section.mistakes'` restricts
-matches to the `mistakes` section of each guideline.
+Use the same table relationships for source authors, publication years, labels,
+and section roles. [Catalog data](/catalog#catalog-tables) describes the tables.
 
-The following template requires a release that publishes the named profile.
-Replace `<digest>` and the profile name with values from that release. The
-three-record demo release used earlier has no search index.
+## Search guideline text
+
+An index profile contains search documents derived from the guidelines. Set
+`CATALOG_SOURCE` to an [indexed release descriptor](/catalogs#open-a-remote-release)
+and `PROFILE` to one of its profile names. Each example opens that release
+before searching. A release with an empty `profiles` list needs an index built
+before it can support this search.
+
+Full-text search matches words in the stored text index and needs no embedding
+credentials. These examples retrieve five document hits with
+[LanceDB](https://lancedb.com/docs/search/), the index's database engine:
+
+<Tabs groupId="catalog-interface" items={["Python", "TypeScript", "CLI"]} persist>
+<Tab value="Python">
+
+Install the index capability in your active environment:
 
 ```bash
-PROFILE_RELEASE_URL="https://catalog.example.com/catalog/releases/<digest>/release.json"
-
-uvx --from \
-  "chartcoach[index] @ https://files.peter.gy/packages/python/chartcoach/0.2.0/892f120cb377/chartcoach-0.2.0-py3-none-any.whl" \
-  chartcoach catalog find \
-  --source "$PROFILE_RELEASE_URL" \
-  --profile sentence-transformers/all-MiniLM-L6-v2 \
-  --mode fts \
-  --where "role = 'section.mistakes'" \
-  --limit 5 \
-  --format json \
-  "legend makes the lines hard to identify"
+uv pip install "chartcoach[index]"
 ```
 
-Full-text search (`fts`) needs the query string alone. Vector and hybrid
-search also need a vector created with the profile's embedding model.
+```python
+import os
+from chartcoach import open_catalog
 
-## Read and cite the selected guideline
+catalog = open_catalog(os.environ["CATALOG_SOURCE"])
+table = catalog.index(os.environ["PROFILE"])
+hits = table.search(
+    "direct labels", query_type="fts", fts_columns="text"
+).select(["id", "parent_id", "role"]).limit(5).to_list()
+print(hits)
+```
 
-Candidate results contain summaries. Read the selected guideline before
-applying its recommendation, then format its link and source citations. The ID
-below comes from the runnable `catalog list` example. Read an indexed-search
-result from the same release that produced it.
+</Tab>
+<Tab value="TypeScript">
+
+Install LanceDB's Node client:
+
+```bash
+npm install @lancedb/lancedb
+```
+
+```ts
+import { connect } from "@lancedb/lancedb";
+import { openCatalog, indexPath } from "@chartcoach/catalog/node";
+
+const source = process.env.CATALOG_SOURCE;
+const profile = process.env.PROFILE;
+if (!source || !profile) {
+  throw new Error("Set CATALOG_SOURCE and PROFILE for an indexed release.");
+}
+
+const catalog = await openCatalog(source);
+const index = await connect(await indexPath(catalog, profile));
+const table = await index.openTable("documents");
+try {
+  await table.checkout(await table.version());
+  const hits = await table
+    .query()
+    .fullTextSearch("direct labels")
+    .select(["id", "parent_id", "role"])
+    .limit(5)
+    .toArray();
+  console.log(hits);
+} finally {
+  table.close();
+  index.close();
+}
+```
+
+</Tab>
+<Tab value="CLI">
+
+```bash
+: "${CATALOG_SOURCE:?Set CATALOG_SOURCE to an indexed release descriptor}"
+: "${PROFILE:?Set PROFILE to a profile in that release}"
+
+uvx --from "chartcoach[index]" chartcoach catalog search \
+  --source "$CATALOG_SOURCE" \
+  --profile "$PROFILE" \
+  --mode fts \
+  --limit 5 \
+  "direct labels"
+```
+
+The response groups document hits by guideline. Compare `documents_considered`,
+`match_count`, and `documents_truncated` when checking coverage.
+
+</Tab>
+</Tabs>
+
+The first search downloads and verifies the index, then caches its extracted
+files. The shared read-only extraction requires POSIX permissions. On Windows,
+use a caller-owned extraction directory through the
+[Python](/python#open-an-index-as-a-lancedb-table) or
+[Node](/javascript#indexpathcatalog-profile-options) API.
+
+Each hit's `parent_id` identifies the guideline to read. Several hits can share
+one parent, so five documents may yield fewer than five guidelines. Deduplicate
+parent IDs in ranked order. A query restricted to `role = 'overview'` can
+broaden candidates, while `role = 'section.advice'` targets advice sections.
+
+### Search by meaning
+
+Vector search compares a query embedding with stored vectors. Hybrid search
+combines that similarity with full-text matches. The query model, vector
+dimensions, and distance metric must match the selected profile.
+
+<Tabs groupId="catalog-interface" items={["Python", "TypeScript", "CLI"]} persist>
+<Tab value="Python">
+
+The native table accepts `query_type="vector"` or `query_type="hybrid"`.
+Text queries use the profile's stored LanceDB embedding binding. Install its
+reported `python_requirements` and configure its credentials.
+See [Search and read matching guidelines](/python#search-and-read-matching-guidelines).
+
+</Tab>
+<Tab value="TypeScript">
+
+Generate a matching query vector in your application and pass it to
+`table.vectorSearch(vector)`. A stored Python binding does not register a
+JavaScript embedding provider. See [Query an index with LanceDB](/javascript#query-an-index-with-lancedb)
+for the native API and [Build a web app](/next#search-and-read-on-the-server)
+for the chat app's local embedding model.
+
+</Tab>
+<Tab value="CLI">
+
+Use `--mode vector` or `--mode hybrid`. Install the profile's reported
+`python_requirements` and supply any required registry variables through
+`--embedding-vars`. See [Search an index](/cli#search-an-index).
+
+</Tab>
+</Tabs>
+
+Retrieval scores rank results within one query, mode, and profile. They do not
+measure whether a guideline applies to the chart.
+
+## Read and cite selected guidance
+
+This example opens the public catalog, reads one complete guideline, and
+retrieves its guideline link and formatted source citations. For your own
+search results, use their catalog source and replace the example ID with
+selected candidate IDs.
+
+<Tabs groupId="catalog-interface" items={["Python", "TypeScript", "CLI"]} persist>
+<Tab value="Python">
+
+```python
+from chartcoach import open_catalog
+
+catalog = open_catalog()
+ids = ["directly-label-series-instead-of-using-a-color-key"]
+records = catalog.read(ids=ids)
+citations = catalog.cite(ids=ids)
+print(records)
+print(citations)
+```
+
+</Tab>
+<Tab value="TypeScript">
+
+```ts
+import { openCatalog } from "@chartcoach/catalog/node";
+
+const catalog = await openCatalog();
+const ids = ["directly-label-series-instead-of-using-a-color-key"];
+const records = catalog.read({ ids });
+const citations = catalog.cite({ ids });
+console.log(records);
+console.log(citations);
+```
+
+</Tab>
+<Tab value="CLI">
 
 ```bash
 GUIDELINE_ID="directly-label-series-instead-of-using-a-color-key"
-
-chartcoach catalog read "$GUIDELINE_ID" \
-  --source "$CATALOG_SOURCE" \
-  --source-detail full \
-  --format markdown
-
-chartcoach catalog cite "$GUIDELINE_ID" \
-  --source "$CATALOG_SOURCE" \
-  --format markdown
+chartcoach catalog read "$GUIDELINE_ID" --format markdown
+chartcoach catalog cite "$GUIDELINE_ID" --format markdown
 ```
 
-The `read` output contains every section in the selected record, followed by
-its source list. The `cite` output contains the public guideline URL and
-formatted source citations.
+Keep the same `CHARTCOACH_SOURCE` or `--source` used during search.
+
+</Tab>
+</Tabs>
+
+Batch selected IDs in one read and one citation call. Read the advice,
+applicable situations, and exceptions before applying a recommendation.
+A citation identifies an attached source. Inspect the publication before
+attributing a specific claim to it.

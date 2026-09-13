@@ -9,25 +9,25 @@ Use the root commands to verify changes across package boundaries.
 
 ## Start from the product boundary
 
-| Product decision                                      | User result                                                         | Architectural owner                                    |
-| ----------------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------ |
-| One record format crosses every interface             | Python, JavaScript, CLI, MCP, site, and docs expose the same fields | Catalog models and the shared release fixture          |
-| Exact releases are content addressed                  | A digest resolves one verified artifact set                         | Release records, hashing, and runtime verification     |
-| Public selection is independent from package releases | Catalog promotion can move after artifact validation                | Curation selection service and release workflows       |
-| Runtime readers keep optional capabilities lazy       | The base package imports in Python and Pyodide                      | Python runtime composition and optional extras         |
-| Web apps consume package entry points                 | Site and docs behavior stays aligned with published SDKs            | JavaScript catalog package and app startup code        |
-| References stay attached to guidance                  | People and agents can inspect the source behind a recommendation    | Catalog records, Markdown rendering, and public routes |
+| Product decision                                      | User result                                                         | Architectural owner                                            |
+| ----------------------------------------------------- | ------------------------------------------------------------------- | -------------------------------------------------------------- |
+| One guideline entry record crosses every interface    | Python, JavaScript, CLI, MCP, site, and docs expose the same fields | Catalog models and the shared release fixture                  |
+| Exact releases are content addressed                  | A digest resolves one verified artifact set                         | Release records, hashing, and runtime verification             |
+| Public selection is independent from package releases | Catalog promotion can move after artifact validation                | Curation selection service and release workflows               |
+| Runtime readers keep optional capabilities lazy       | The base package imports in Python and Pyodide                      | Python runtime composition and optional extras                 |
+| Web apps consume package entry points                 | Site and docs behavior stays aligned with published SDKs            | JavaScript catalog package and app startup code                |
+| References stay attached to guidance                  | People and agents can inspect the source behind a recommendation    | Guideline entry records, Markdown rendering, and public routes |
 
 ## Know where the complexity belongs
 
-| Source of complexity                 | Contract it protects                                                    |
-| ------------------------------------ | ----------------------------------------------------------------------- |
-| Cross-language validation            | Python and JavaScript accept and reject the same wire records           |
-| Local, HTTP, and cloud catalog input | One source argument resolves to an authored catalog, bundle, or release |
-| Integrity checks and caching         | Bytes are verified before a cached artifact becomes visible             |
-| Optional embedding profiles          | Native LanceDB indexes stay tied to the release that owns their rows    |
-| Immutable publication                | Artifact writes complete before `release.json` commits the release      |
-| Generated web outputs                | Search, LLM pages, Open Graph images, and docs reflect one catalog      |
+| Source of complexity                 | Contract it protects                                               |
+| ------------------------------------ | ------------------------------------------------------------------ |
+| Cross-language validation            | Python and JavaScript accept and reject the same wire records      |
+| Local, HTTP, and cloud catalog input | One location resolves to an authored catalog, bundle, or release   |
+| Integrity checks and caching         | Bytes are verified before a cached artifact becomes visible        |
+| Optional index profiles              | LanceDB indexes stay tied to the release that owns their rows      |
+| Immutable publication                | Artifact writes complete before `release.json` commits the release |
+| Generated web outputs                | Search, LLM pages, Open Graph images, and docs reflect one catalog |
 
 Follow the complete maps in
 [Catalog files and records](development_docs/architecture/catalog-contract.md),
@@ -46,21 +46,22 @@ apps/docs  -> packages/catalog
           -> packages/brand
 ```
 
-`packages/catalog` is a browser-safe leaf. It imports no Node built-ins or
-chartcoach workspace package. The apps consume its public package entry point.
+`@chartcoach/catalog` is a browser-safe entry point. It imports no Node built-ins
+or chartcoach workspace package. `@chartcoach/catalog/node` owns Node filesystem
+loading and persistent caching. The apps consume the browser package entry point.
 They do not import each other. Root lint rules and
 `tools/architecture/dependencies.test.mjs` enforce this graph.
 
 The Python read path is:
 
 ```text
-public API -> runtime composition -> source and release resolution
+public API -> runtime composition -> location and release resolution
                                   -> local, HTTP, or cloud transport
                                   -> verified artifact cache
                                   -> catalog and index loaders
 ```
 
-`catalog/runtime/` owns read orchestration. `catalog/curation/` owns building,
+`_catalog/runtime/` owns read orchestration. `_catalog/curation/` owns building,
 validation, publication, and selection. Each depends on release models and the
 small shared object-store URI helpers. They do not import each other. Optional
 provider and index imports happen inside the capability that needs them.
@@ -69,17 +70,17 @@ provider and index imports happen inside the capability that needs them.
 
 | State                            | Owner                                       |
 | -------------------------------- | ------------------------------------------- |
-| Public `catalog.json` selection  | `catalog.curation.select_release`           |
-| Immutable release directory      | `catalog.curation.publish_release`          |
-| Content-addressed artifact cache | `catalog.runtime.cache`                     |
-| Extracted native index cache     | `catalog.runtime.cache`                     |
-| Site catalog source              | `apps/site/src/config/catalog-source.ts`    |
+| Public `catalog.json` selection  | `curation.select_release`                   |
+| Immutable release directory      | `curation.publish_release`                  |
+| Content-addressed artifact cache | `_catalog.runtime.cache`                    |
+| Extracted index cache            | `_catalog.runtime.cache`                    |
+| Site catalog location            | `apps/site/src/config/catalog-location.ts`  |
 | Docs notebook runtime            | `apps/docs/components/notebook-runtime.tsx` |
 | Docs-session JavaScript SDK      | `apps/docs/components/notebook-runtime.tsx` |
 | Generated site artifacts         | The integration that writes each artifact   |
 
 Every `catalog.json` write goes through the curation selection service.
-Release artifacts remain immutable after `release.json` is committed.
+Release artifacts are immutable after `release.json` is committed.
 
 ## Read sources of truth in order
 
@@ -87,7 +88,7 @@ Release artifacts remain immutable after `release.json` is committed.
    JavaScript, site, and contract tests.
 2. Python release and catalog models plus the JavaScript public package for
    executable wire behavior.
-3. `catalog/runtime/` and `catalog/curation/` for read and write lifecycles.
+3. `_catalog/runtime/` and `_catalog/curation/` for read and write lifecycles.
 4. Package manifests, Vite+ boundary rules, and architecture contract tests for
    dependency direction.
 5. `development_docs/` for contributor reasoning and `apps/docs/content/docs/`
@@ -117,6 +118,7 @@ Run commands from the repository root.
 | List repository targets | `make help`         |
 | Install workspaces      | `make install`      |
 | Check JavaScript        | `pnpm ready`        |
+| Find unused JavaScript  | `pnpm check:unused` |
 | Check Python            | `make python-check` |
 | Build product docs      | `make docs-build`   |
 | Build the public site   | `make site-build`   |
@@ -158,10 +160,10 @@ Change their owning source and rebuild the artifact.
 
 ## Route the task
 
-| Task                                      | Guide                                                                          |
-| ----------------------------------------- | ------------------------------------------------------------------------------ |
-| General contribution                      | [Contributing](CONTRIBUTING.md)                                                |
-| Catalog row, manifest, or release fields  | [Catalog files and records](development_docs/architecture/catalog-contract.md) |
-| Python source, transport, cache, or index | [Python catalog code](development_docs/architecture/runtime-and-curation.md)   |
-| Site, docs, or generated web output       | [Web apps](development_docs/architecture/web-delivery.md)                      |
-| Package release or catalog promotion      | [Releasing packages and catalog data](development_docs/releasing.md)           |
+| Task                                        | Guide                                                                          |
+| ------------------------------------------- | ------------------------------------------------------------------------------ |
+| General contribution                        | [Contributing](CONTRIBUTING.md)                                                |
+| Catalog row, manifest, or release fields    | [Catalog files and records](development_docs/architecture/catalog-contract.md) |
+| Python location, transport, cache, or index | [Python catalog code](development_docs/architecture/runtime-and-curation.md)   |
+| Site, docs, or generated web output         | [Web apps](development_docs/architecture/web-delivery.md)                      |
+| Package release or catalog promotion        | [Releasing packages and catalog data](development_docs/releasing.md)           |

@@ -1,71 +1,186 @@
 ---
 title: Getting started
-description: Open the Guideline Catalog as a dataframe, then inspect one complete record.
+description: Read one guideline and cite its sources in Python, TypeScript, or the CLI.
 icon: ScanSearch
 ---
 
-The Guideline Catalog stores visualization guidelines with their labels,
-sections, and source references. This live Python example opens a fixed catalog
-release, displays its records as a Polars dataframe, and renders the first
-record as JSON.
+Open the public Guideline Catalog, read a recommendation about direct labels,
+and cite its sources. Choose your interface in the tabs. That choice carries
+through the examples and other guides.
 
-<PythonNotebookRuntime />
+## Install
 
-```marimo-config
-requires-python = ">=3.12"
-dependencies = [
-  "chartcoach @ https://files.peter.gy/packages/python/chartcoach/0.2.0/892f120cb377/chartcoach-0.2.0-py3-none-any.whl",
-]
+<Tabs groupId="catalog-interface" items={["Python", "TypeScript", "CLI"]} persist>
+<Tab value="Python" id="install-python">
+
+Use [uv](https://docs.astral.sh/uv/), a Python environment manager. In a POSIX shell:
+
+```bash
+uv venv
+source .venv/bin/activate
+uv pip install chartcoach
 ```
 
-```python marimo output=false
-import sys
+Keep this environment active for the Python examples.
 
-if sys.platform == "emscripten":
-    import micropip
-    import pyodide_js
+</Tab>
+<Tab value="TypeScript">
 
-    await pyodide_js.loadPackage(["polars", "pyarrow"])
-    await micropip.install("platformdirs==4.11.3")
-    await micropip.install(
-        "https://files.peter.gy/packages/python/chartcoach/0.2.0/892f120cb377/chartcoach-0.2.0-py3-none-any.whl",
-        deps=False,
-    )
+Use [Node.js](https://nodejs.org/en/learn/getting-started/introduction-to-nodejs)
+22.19 or later and its npm package manager:
+
+```bash
+npm install @chartcoach/catalog
 ```
 
-## Open a catalog release
+The examples run as `.mts` files with Node's built-in TypeScript support.
+The Node entry point provides persistent caching. For a browser application,
+see [Build a web app](/next).
 
-The `release.json` URL identifies one exact set of files. `open_catalog`
-verifies those files before it returns the catalog.
+</Tab>
+<Tab value="CLI">
 
-```python marimo echo=true
+Install the command-line interface with
+[uv](https://docs.astral.sh/uv/), which manages its Python environment:
+
+```bash
+uv tool install chartcoach
+```
+
+</Tab>
+</Tabs>
+
+## Read a guideline
+
+Opening the public catalog needs network access on the first run. Downloaded
+release files are verified and cached locally.
+
+<Tabs groupId="catalog-interface" items={["Python", "TypeScript", "CLI"]} persist>
+<Tab value="Python">
+
+Save as `read-guideline.py`:
+
+```python title="read-guideline.py"
 from chartcoach import open_catalog
 
-catalog = open_catalog(
-    "https://files.peter.gy/packages/python/chartcoach/0.2.0/docs-catalog/c0f6dbec3dd31b07763b46fd458733db0b8b50c5793cf9447458119287129420/release.json"
-)
-df = catalog.to_frame()
-df
+catalog = open_catalog()
+guideline_id = "directly-label-series-instead-of-using-a-color-key"
+record = catalog.read(ids=[guideline_id])[0]
+print(record["title"])
 ```
 
-`df` contains one row per guideline. Its six columns hold the guideline ID,
-title, description, labels, sections, and source references.
-
-## Inspect the first guideline
-
-`named=True` returns a dictionary keyed by the dataframe column names.
-`mo.json` displays the nested labels, sections, and references as expandable
-JSON in a scrollable panel.
-
-```python marimo echo=true
-import marimo as mo
-
-row = df.row(0, named=True)
-mo.Html(
-    '<div tabindex="0" role="region" aria-label="Guideline JSON" '
-    f'style="max-height:32rem;overflow:auto">{mo.json(row).text}</div>'
-)
+```bash
+python read-guideline.py
 ```
 
-The dataframe gives a compact overview of the catalog. The dictionary shows
-all six fields stored in the selected dataframe row.
+</Tab>
+<Tab value="TypeScript">
+
+Save as `read-guideline.mts`:
+
+```ts title="read-guideline.mts"
+import { openCatalog } from "@chartcoach/catalog/node";
+
+const catalog = await openCatalog();
+const guidelineId = "directly-label-series-instead-of-using-a-color-key";
+const record = catalog.read({ ids: [guidelineId] })[0]!;
+console.log(record.title);
+```
+
+```bash
+node read-guideline.mts
+```
+
+</Tab>
+<Tab value="CLI">
+
+```bash
+chartcoach catalog read \
+  directly-label-series-instead-of-using-a-color-key \
+  --format markdown
+```
+
+</Tab>
+</Tabs>
+
+The guideline's title is **Directly label colored series instead of relying on
+a color key**. Python and TypeScript return a record with labels, ordered
+sections, and parsed source details. The CLI renders that record as Markdown.
+
+## Read the advice and cite its source
+
+Read the recommendation's context before applying it. Each interface can select
+the advice section and retrieve both the guideline link and source citations.
+
+<Tabs groupId="catalog-interface" items={["Python", "TypeScript", "CLI"]} persist>
+<Tab value="Python">
+
+Save as `cite-guideline.py`:
+
+```python title="cite-guideline.py"
+from chartcoach import open_catalog
+
+catalog = open_catalog()
+guideline_id = "directly-label-series-instead-of-using-a-color-key"
+record = catalog.read(ids=[guideline_id])[0]
+
+for section in record["sections"]:
+    if section["role"] == "advice":
+        print(section["content"])
+
+citation = catalog.cite(ids=[guideline_id])[0]
+print(citation["guideline_citation"])
+for source in citation["sources"]:
+    print(source["citation"])
+```
+
+```bash
+python cite-guideline.py
+```
+
+</Tab>
+<Tab value="TypeScript">
+
+Save as `cite-guideline.mts`:
+
+```ts title="cite-guideline.mts"
+import { openCatalog } from "@chartcoach/catalog/node";
+
+const catalog = await openCatalog();
+const guidelineId = "directly-label-series-instead-of-using-a-color-key";
+const record = catalog.read({ ids: [guidelineId] })[0]!;
+
+for (const section of record.sections) {
+  if (section.role === "advice") console.log(section.content);
+}
+
+const citation = catalog.cite({ ids: [guidelineId] })[0]!;
+console.log(citation.guideline_citation);
+for (const source of citation.sources) console.log(source.citation);
+```
+
+```bash
+node cite-guideline.mts
+```
+
+</Tab>
+<Tab value="CLI">
+
+```bash
+chartcoach catalog read \
+  directly-label-series-instead-of-using-a-color-key \
+  --role advice --format markdown
+
+chartcoach catalog cite \
+  directly-label-series-instead-of-using-a-color-key \
+  --format markdown
+```
+
+Use an exact release with `--source` when multiple commands must retain the
+same catalog contents.
+
+</Tab>
+</Tabs>
+
+Use [Find guidelines](/querying) to choose evidence for your own task, or
+[Open and cache catalogs](/catalogs) to work with another catalog.

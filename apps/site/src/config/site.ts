@@ -5,16 +5,24 @@ import { fileURLToPath } from "node:url";
 import type { AstroIntegration, AstroUserConfig } from "astro";
 import tailwindcss from "@tailwindcss/vite";
 
-export const monorepoRoot = fileURLToPath(new URL("../../../..", import.meta.url));
+const monorepoRoot = fileURLToPath(new URL("../../../..", import.meta.url));
+
 const siteSourceRoot = fileURLToPath(new URL("..", import.meta.url));
+
 const repoEnvPath = join(monorepoRoot, ".env");
 
 const LOCAL_SITE_URL = "http://localhost:4321/";
+
 const SITE_URL_ENV = "CHARTCOACH_SITE_URL";
+
 const CF_PAGES_ENV = "CF_PAGES";
+
 const CF_PAGES_BRANCH_ENV = "CF_PAGES_BRANCH";
+
 const CF_PAGES_URL_ENV = "CF_PAGES_URL";
+
 const PORTLESS_URL_ENV = "PORTLESS_URL";
+
 const PRODUCTION_BRANCH = "main";
 
 export type SiteUrlSource = "env" | "cloudflare" | "portless" | "local";
@@ -26,13 +34,16 @@ export type SiteRuntimeConfig = {
 };
 
 type EnvMap = Record<string, string | undefined>;
+
 type SiteRuntimeOptions = {
   env?: EnvMap;
 };
+
 type SiteUrlResolution = {
   url: string;
   source: SiteUrlSource;
 };
+
 type SiteViteConfig = NonNullable<AstroUserConfig["vite"]>;
 
 let repoEnvLoaded = false;
@@ -41,12 +52,14 @@ export function loadRepoEnvFile(envPath = repoEnvPath) {
   if (envPath === repoEnvPath && repoEnvLoaded) return;
 
   if (existsSync(envPath)) process.loadEnvFile(envPath);
+
   if (envPath === repoEnvPath) repoEnvLoaded = true;
 }
 
 function getEnv(options: SiteRuntimeOptions = {}) {
   if (options.env) return options.env;
   loadRepoEnvFile();
+
   return process.env;
 }
 
@@ -60,6 +73,7 @@ function isCloudflarePreview(env: EnvMap) {
 
 function resolveConfiguredUrl(env: EnvMap): SiteUrlResolution {
   const value = env[SITE_URL_ENV];
+
   if (value) {
     return {
       url: normalizeUrl(value),
@@ -68,6 +82,7 @@ function resolveConfiguredUrl(env: EnvMap): SiteUrlResolution {
   }
 
   const cloudflareUrl = env[CF_PAGES_URL_ENV];
+
   if (cloudflareUrl) {
     return {
       url: normalizeUrl(cloudflareUrl),
@@ -76,6 +91,7 @@ function resolveConfiguredUrl(env: EnvMap): SiteUrlResolution {
   }
 
   const portlessUrl = env[PORTLESS_URL_ENV];
+
   if (portlessUrl) {
     return {
       url: normalizeUrl(portlessUrl),

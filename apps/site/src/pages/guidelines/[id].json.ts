@@ -12,6 +12,7 @@ export const prerender = true;
 
 export async function getStaticPaths() {
   const guidelines = await getCollection("guidelines");
+
   return guidelines.map((guideline) => ({
     params: { id: guideline.id },
     props: { guideline },

@@ -23,27 +23,24 @@ classifiers = [
   "Typing :: Typed",
 ]
 dependencies = [
-  "agent-plugins==0.2.0",
-  "bibtexparser>=1.1",
-  "click>=8",
-  "duckdb>=1.1",
+  "agent-plugins>=0.2",
+  "refkit>=0.3.0",
+  "polars-refkit>=0.3.0",
+  "click>=8.3.3",
+  "duckdb>=1.5.5",
   "platformdirs>=4",
   "polars>=1.39.0",
   "pyyaml>=6",
   "tabulate>=0.10.0",
+  "typing-extensions>=4.6.0",
 ]
 
 [project.optional-dependencies]
-index = ["lancedb>=0.34"]
+index = ["lancedb>=0.38.0", "pyarrow>=23.0.1"]
 cloud = ["obstore>=0.11.0"]
-mcp = ["mcp[cli]>=2.0"]
-curation = [
-  "lancedb>=0.34",
-  "obspec>=0.1.0",
-  "obstore>=0.11.0",
-  "pyarrow>=18",
-  "umap-learn>=0.5.12",
-]
+mcp = ["mcp>=2.0", "pydantic>=2.12"]
+curation = ["chartcoach[index,cloud]", "numpy>=1.24", "obspec>=0.1.0"]
+projection = ["numpy>=1.24", "umap-learn>=0.5.12"]
 
 [project.scripts]
 chartcoach = "chartcoach.cli.main:main"
@@ -56,7 +53,7 @@ Repository = "https://github.com/chartcoach/chartcoach"
 Issues = "https://github.com/chartcoach/chartcoach/issues"
 
 [dependency-groups]
-dev = ["pytest>=9", "ruff>=0.16", "ty>=0.0.11"]
+dev = ["pytest>=9.0.3", "ruff>=0.16", "ty>=0.0.11"]
 
 [tool.pytest.ini_options]
 filterwarnings = ["error"]
@@ -70,5 +67,5 @@ markers = [
 root = "../.."
 
 [build-system]
-requires = ["agent-plugins==0.2.0", "uv_build>=0.12.0,<0.13"]
+requires = ["agent-plugins>=0.2", "uv_build>=0.12.0,<0.13"]
 build-backend = "agent_plugins.build.uv_build"

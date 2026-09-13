@@ -38,7 +38,7 @@ export default defineConfig({
       site: siteUrl,
       title: "chartcoach",
       description:
-        "chartcoach turns visualization design knowledge into guideline entries with source references for chart agents.",
+        "chartcoach publishes visualization guideline entries with references for chart agents.",
       loadPages: chartcoachLlmPages,
     }),
     searchIndex({

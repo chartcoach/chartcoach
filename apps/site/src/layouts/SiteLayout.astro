@@ -24,21 +24,28 @@ interface Props {
 }
 
 const title = Astro.props.title ?? "chartcoach";
+
 const description =
   Astro.props.description ??
   "chartcoach helps chart agents review charts with guidance they can inspect and cite.";
+
 const ogInput = Astro.props.og ?? {};
+
 const pageTitle = title === "chartcoach" ? "chartcoach" : `${title} | chartcoach`;
+
 const canonical = Astro.site
   ? new URL(Astro.url.pathname, Astro.site).toString()
   : undefined;
+
 const ogImage = Astro.site ? ogImageUrl(Astro.site, Astro.url.pathname) : undefined;
+
 const ogProps = buildOgImageProps({
   kind: "page",
   title,
   description,
   ...ogInput,
 });
+
 const ogPayload = buildOgPayload({
   imagePathname: ogImagePathname(Astro.url.pathname),
   props: ogProps,
@@ -46,6 +53,7 @@ const ogPayload = buildOgPayload({
   title,
   description,
 });
+
 const { isPreviewDeployment } = getSiteRuntimeConfig();
 ---
 
@@ -85,9 +93,11 @@ const { isPreviewDeployment } = getSiteRuntimeConfig();
         const stored = localStorage.getItem(storageKey);
         const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
         const isDark = stored ? stored === "dark" : prefersDark;
+
         const platform =
           navigator.userAgentData?.platform ??
           navigator.userAgent;
+
         const isApple = /mac|iphone|ipad|ipod/i.test(platform);
         root.classList.toggle("dark", isDark);
         root.classList.toggle("os-apple", isApple);

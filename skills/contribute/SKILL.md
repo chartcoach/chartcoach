@@ -8,26 +8,30 @@ description: Draft a chartcoach catalog issue when searches expose missing or mi
 Draft a catalog issue when searches reveal a missing topic, unclear wording,
 weak labels, duplicate records, or unsupported source claims. Keep the draft
 local until a human approves issue creation. Read `core` first so
-`CHARTCOACH_SOURCE` is set before running searches and reading referenced
-guidelines.
+searches, reads, and citations use the same catalog and its retrieval contract.
 
 ## Confirm the catalog problem
 
 Record:
 
-| Field       | Evidence                                                                |
-| ----------- | ----------------------------------------------------------------------- |
-| User task   | The critique, recommendation, discussion, or search question            |
-| Searches    | Words, labels, roles, SQL, and indexed searches tried                   |
-| Result      | Missing, partial, surprising, duplicate, or weakly sourced record       |
-| Diagnosis   | How record wording, labels, relationships, or sources caused the result |
-| Related IDs | Records that partially match, conflict, duplicate, or need revision     |
+| Field             | Evidence                                                                |
+| ----------------- | ----------------------------------------------------------------------- |
+| User task         | The critique, recommendation, discussion, or search question            |
+| Searches          | Words, labels, roles, SQL, and indexed searches tried                   |
+| Result            | Missing, partial, surprising, duplicate, or weakly sourced record       |
+| Diagnosis         | How record wording, labels, relationships, or sources caused the result |
+| Related entry IDs | Records that partially match, conflict, duplicate, or need revision     |
 
-Read and cite every named record:
+For an empty search, follow `core` to shorten phrases, relax filters, and
+inspect section text or an available index. Distinguish a query mismatch from
+missing guidance. Read context and exceptions before treating a related record
+as a false match.
+
+Read and cite the named records together:
 
 ```sh
-chartcoach catalog read <guideline-id> --source-detail full
-chartcoach catalog cite <guideline-id>
+chartcoach catalog read <first-id> <second-id> --source-detail minimal
+chartcoach catalog cite <first-id> <second-id>
 ```
 
 Report crashes, installation errors, cache errors, and storage errors at
@@ -63,7 +67,7 @@ action.
 
 ## Related guidelines
 
-- `<guideline-id>`: `<title>`
+- `<guideline-entry-id>`: `<title>`
   - Relevant section:
   - Exact-read command:
   - Citation:
@@ -76,7 +80,7 @@ action.
 ## Before publication
 
 - [ ] Remove private user data and local paths.
-- [ ] Check every guideline ID with `catalog read`.
+- [ ] Check every guideline entry ID with `catalog read`.
 - [ ] Identify the cited sources with `catalog cite`, then inspect those sources
       before judging whether a claim is supported.
 - [ ] Name anything the catalog maintainer still needs to verify.

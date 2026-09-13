@@ -35,6 +35,7 @@ export function normalizePathname(pathname: string): string {
   if (!pathname || pathname === SITE_PATHS.home) return SITE_PATHS.home;
 
   const withLeadingSlash = pathname.startsWith("/") ? pathname : `/${pathname}`;
+
   return withLeadingSlash.endsWith("/") ? withLeadingSlash : `${withLeadingSlash}/`;
 }
 
@@ -42,7 +43,7 @@ export function guidelinePath(guidelineId: string): string {
   return `/guidelines/${pathSegment(guidelineId)}/`;
 }
 
-export function guidelineJsonPath(guidelineId: string): string {
+function guidelineJsonPath(guidelineId: string): string {
   return `/guidelines/${pathSegment(guidelineId)}.json`;
 }
 

@@ -1,0 +1,7 @@
+.env.local
+!.env.example
+.eve/
+.output/
+.next/
+next-env.d.ts
+/public/duckdb/

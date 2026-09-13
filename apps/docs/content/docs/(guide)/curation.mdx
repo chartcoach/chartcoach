@@ -4,7 +4,8 @@ description: Author a guideline, build a release, publish its files, and select 
 icon: Hammer
 ---
 
-Catalog work moves through four visible states:
+Create a guideline in Markdown, build its catalog files, and publish a verified
+release. Add an index profile when readers need full-text or semantic search.
 
 ```text
 guideline.md files
@@ -13,28 +14,21 @@ guideline.md files
   -> catalog.json selecting the public release
 ```
 
-`catalog build` creates `entries.parquet` from the authored Markdown files.
-`build_release` adds `release.json`, which records the byte count and SHA-256
-hash of every release file. The final selection command copies that release
-record to `catalog.json`.
-
 ## Install the curation tools
 
-This guide assumes `uv`, Python 3.10 through 3.14, and a POSIX shell.
+In the [Python environment](/getting-started#install-python), install the build
+and projection capabilities:
 
 ```bash
-uv venv
-source .venv/bin/activate
-uv pip install \
-  "chartcoach[curation] @ https://files.peter.gy/packages/python/chartcoach/0.2.0/892f120cb377/chartcoach-0.2.0-py3-none-any.whl"
+uv pip install "chartcoach[curation,projection]"
 ```
 
 ## Author a guideline
 
-Create `catalog-source/` with a manifest and one guideline:
+Create `authored-catalog/` with a manifest and one guideline entry:
 
 ```text
-catalog-source/
+authored-catalog/
 ├── MANIFEST.md
 └── entries/
     └── direct-labels/
@@ -85,12 +79,12 @@ section.
 Validate the authored files, write the two-file catalog, and read the result:
 
 ```bash
-chartcoach catalog validate --source ./catalog-source
+chartcoach catalog validate --source ./authored-catalog
 chartcoach catalog build \
-  --source ./catalog-source \
+  --source ./authored-catalog \
   --out ./dist/catalog
 
-chartcoach catalog overview --source ./dist/catalog
+chartcoach catalog describe --source ./dist/catalog
 chartcoach catalog read --source ./dist/catalog direct-labels
 ```
 
@@ -107,7 +101,7 @@ printed here identifies that exact set of files:
 from pathlib import Path
 
 from chartcoach import open_catalog
-from chartcoach.catalog.curation import build_release
+from chartcoach.curation import build_release
 
 release = build_release(
     open_catalog("dist/catalog"),
@@ -120,23 +114,32 @@ print(release.digest)
 `dist/release` must also be new. The directory now contains `MANIFEST.md`,
 `entries.parquet`, and `release.json`.
 
-### Add a search index
+### Add an index profile
 
-Search indexes are optional. Each named profile stores searchable document
-rows and a matching LanceDB index with the release. Building this example can
-download the embedding model when it is not already cached.
+Choose how to supply the vectors:
+
+| Input                                    | Build option                                         |
+| ---------------------------------------- | ---------------------------------------------------- |
+| A native LanceDB embedding function      | `EmbeddingProfile`                                   |
+| A completed LanceDB table with vectors   | [IndexProfile](#package-vectors-from-native-lancedb) |
+| A profile from an existing local release | [ProfileReuse](#reuse-an-existing-index-profile)     |
+
+The following CPU model runs locally after its first download. It uses
+[Sentence Transformers](https://sbert.net/), a library for turning text into
+vectors. Install it in the active environment:
 
 ```bash
-uv pip install sentence-transformers==5.6.1
+uv pip install sentence-transformers
 ```
 
 ```python
 from pathlib import Path
 
+from importlib.metadata import version
 from lancedb.embeddings import get_registry
 
 from chartcoach import open_catalog
-from chartcoach.catalog.curation import EmbeddingProfile, build_release
+from chartcoach.curation import EmbeddingProfile, build_release
 
 embedding = get_registry().get("sentence-transformers").create(
     name="all-MiniLM-L6-v2",
@@ -149,8 +152,11 @@ release = build_release(
     open_catalog("dist/catalog"),
     Path("dist/release-indexed"),
     profiles={
-        "sentence-transformers/all-MiniLM-L6-v2": EmbeddingProfile(
+        "minilm-normalized": EmbeddingProfile(
             embedding=embedding,
+            distance_metric="cosine",
+            python_requirements={"sentence-transformers": version("sentence-transformers")},
+            export_documents=True,
             umap={
                 "n_neighbors": 15,
                 "min_dist": 0.1,
@@ -162,27 +168,157 @@ release = build_release(
 )
 ```
 
-For this profile, `build_release` writes `documents.parquet`, containing text,
-vectors, projection coordinates, and neighbor lists, plus `index.tar.gz`,
-containing the LanceDB table.
+This build writes `profile.json`, `index.tar.gz`, the requested portable
+`documents.parquet` export, and `projection.parquet`. The document export holds
+text, labels, hashes, and vectors. The projection export holds identity,
+coordinates, and the original vector-space neighbor graph.
+
+`export_documents=False`, the default, keeps the LanceDB table as the document
+and vector representation. `umap=None`, the default, skips
+[UMAP](https://umap-learn.readthedocs.io/) and omits `projection.parquet`. A
+mapping, including `{}`, requests projection and requires
+`chartcoach[projection]`. `EmbeddingProfile.distance_metric` controls index
+retrieval distance. `umap["metric"]` controls the projection neighbor graph.
+Every `python_requirements` value is an exact installed distribution version.
+`build_release` rejects a missing or different producer version.
+
+### Reuse an existing index profile
+
+`ProfileReuse` copies a verified index archive and can derive a new projection
+or portable document export from its stored vectors. It compares the complete
+indexed documents with the target catalog, including text, labels, IDs, and
+row mapping. Manifest prose can change while those documents stay identical.
+The new profile records the target catalog's entries and manifest digests.
+`release` names an exact local release directory or its
+`release.json` file.
+
+```python
+from chartcoach import open_catalog
+from chartcoach.curation import ProfileReuse, build_release
+
+release = build_release(
+    open_catalog("dist/catalog"),
+    "dist/release-reprojected",
+    profiles={
+        "minilm-reprojected": ProfileReuse(
+            release="dist/release-indexed",
+            profile="minilm-normalized",
+            umap={"n_neighbors": 30, "random_state": 42},
+        )
+    },
+)
+```
+
+The copied `index.tar.gz` retains its embedding binding and producer LanceDB
+version. The new release digest covers the new profile ID and projection bytes.
+This build reads stored vectors while the embedding provider stays unconstructed.
+Publication validation checks the stored binding, vectors, native indexes,
+and derived rows. Semantic search requires the profile's provider setup.
+
+## Package vectors from native LanceDB
+
+`catalog.documents()` returns a Polars frame with `row_id`, `id`, `parent_id`,
+`role`, `labels`, `content_hash`, and `text`. Use these rows with native LanceDB
+ingestion, batching, and checkpointing. Keep the complete canonical rows and
+add a fixed-size float32 `vector` column with the table's embedding binding.
+
+`IndexProfile` accepts the resulting native table. It materializes rows and
+vectors into a self-contained release table and creates its full-text index.
+Use `configure(table)` to build additional indexes through LanceDB. This
+snippet assumes an open `catalog`, a completed `table`, and a
+`python_requirements` mapping of query dependencies to exact versions:
+
+```python
+from lancedb.index import BTree, LabelList
+from chartcoach.curation import IndexProfile, build_release
+
+def configure(table):
+    table.create_index("parent_id", config=BTree())
+    table.create_index("labels", config=LabelList())
+
+release = build_release(
+    catalog,
+    "dist/release-from-vectors",
+    profiles={
+        "local": IndexProfile(
+            index=table,
+            distance_metric="cosine",
+            python_requirements=python_requirements,
+            configure=configure,
+            export_documents=True,
+        ),
+    },
+)
+```
+
+The source table remains unchanged. Packaging reads its vectors and metadata while the provider stays
+unconstructed. String columns are normalized to Arrow types accepted by
+LanceDB scalar indexes. Complete ingestion before passing the table.
+
+`EmbeddingProfile` accepts the same `configure` callback after embedding.
+The callback receives the table that will be published. Keep its canonical
+document rows and embedding binding intact. A vector index's distance metric
+must match the profile. `ProfileReuse` preserves the existing archive and its
+native index configuration exactly.
+
+Release building checks every reused or precomputed input before starting new
+embedding work. Caller-owned tables remain available if a later build fails.
+
+### Bind an OpenAI-compatible client
+
+Use [LanceDB's embedding registry](https://docs.lancedb.com/embedding) for query
+bindings. Endpoint, model, dimensions, credentials, and preprocessing belong
+to the caller's configuration. Given an open `catalog`, a native LanceDB
+`connection`, precomputed `vectors`, and your `model`, `dimensions`, `base_url`,
+and `api_key` settings, attach registry metadata before ingestion:
+
+```python
+import pyarrow as pa
+from lancedb.embeddings import EmbeddingFunctionConfig, get_registry
+
+registry = get_registry()
+registry.set_var("embedding-key", api_key)
+binding = registry.get("openai").create(
+    name=model,
+    dim=dimensions,
+    base_url=base_url,
+    api_key="$var:embedding-key",
+)
+metadata = registry.get_table_metadata([
+    EmbeddingFunctionConfig(
+        source_column="text", vector_column="vector", function=binding,
+    ),
+])
+rows = catalog.documents().to_arrow().append_column(
+    "vector", pa.array(vectors, type=pa.list_(pa.float32(), dimensions)),
+)
+table = connection.create_table(
+    "documents", data=rows.replace_schema_metadata(metadata),
+)
+```
+
+`vectors` contains one vector per canonical document in row order. Compute
+them with the model's SDK or native embedding function, applying its batching,
+token limits, and document preprocessing. Query preprocessing must match the
+model's retrieval contract. Pass the table to `IndexProfile` and record the
+query client's exact package requirements. Complete vectors let native
+ingestion preserve the binding without reconstructing its provider.
 
 ## Publish the release
 
-The publish and select commands below write to remote object storage. They are
-intended for maintainers with store credentials, write permission, `jq`, and
-a public HTTPS base URL for the same storage. Their dry runs and the validation
-command do not write remote state.
+Publication requires object-store write credentials and
+[jq](https://jqlang.org/), a command-line JSON reader. Set `CATALOG_STORE` to
+your destination URI and `PUBLIC_BASE` to the public HTTPS location serving
+that storage. The publish command uploads release files. Selection changes
+which release readers see. Use their dry runs before writing remote state.
 
-Set those deployment-specific values first:
+Choose the local release directory:
 
 ```bash
-CATALOG_STORE="s3://your-bucket/chartcoach"
-PUBLIC_BASE="https://catalog.example.com/chartcoach"
 RELEASE_DIRECTORY="dist/release"
 ```
 
-Set `RELEASE_DIRECTORY="dist/release-indexed"` when publishing the optional
-indexed release built above.
+Set `RELEASE_DIRECTORY="dist/release-indexed"` to publish the indexed release.
 
 Validate the release and capture its digest:
 
@@ -207,16 +343,45 @@ chartcoach catalog release publish \
 ```
 
 Publication writes the release files under
-`catalog/releases/$RELEASE_DIGEST/` and writes `release.json` last. Verify the
-published catalog through its public URL:
+`catalog/releases/$RELEASE_DIGEST/` and writes `release.json` last. Repeating
+publication verifies the committed objects before returning success.
+
+Validate the published candidate from fresh storage bytes:
+
+```bash
+chartcoach catalog release validate \
+  --store "$CATALOG_STORE" \
+  --digest "$RELEASE_DIGEST"
+```
+
+This downloads every listed artifact into temporary files and checks hashes,
+catalog records, document derivation, stored vectors, native indexes, and
+exports. Validation uses the stored vectors and does not require embedding
+providers or their credentials.
+
+Check the public reader endpoint separately:
 
 ```bash
 RELEASE_URL="$PUBLIC_BASE/catalog/releases/$RELEASE_DIGEST/release.json"
-chartcoach catalog overview --source "$RELEASE_URL"
+chartcoach catalog describe --source "$RELEASE_URL"
 ```
 
-The overview command verifies the byte count and SHA-256 hash of
+The describe command verifies the byte count and SHA-256 hash of
 `MANIFEST.md` and `entries.parquet` before reading them.
+
+For an indexed release, inspect every profile and perform explicit FTS before
+selection:
+
+```bash
+chartcoach catalog describe \
+  --source "$RELEASE_URL" \
+  --profile minilm-normalized
+chartcoach catalog search \
+  --source "$RELEASE_URL" \
+  --profile minilm-normalized \
+  --mode fts \
+  "direct labels"
+```
 
 ## Select the public release
 
@@ -233,7 +398,17 @@ chartcoach catalog release select \
   --store "$CATALOG_STORE"
 ```
 
-The final command reads the published `release.json`, verifies its digest, and
-writes that record to `$PUBLIC_BASE/catalog.json`. Readers of that URL will see
-the newly selected release. Calls and commands that omit `source` continue to
-read the official `files.peter.gy` catalog selection.
+Selection validates the candidate's fresh published bytes before writing its
+release record to `catalog.json`. The dry run performs the same validation.
+
+Confirm the stored selection and its matching published descriptor:
+
+```bash
+chartcoach catalog release validate \
+  --store "$CATALOG_STORE" \
+  --expect-digest "$RELEASE_DIGEST"
+```
+
+`--expect-digest` fails if a different release is selected. Python calls that
+omit `location` and commands that omit `--source` read the official catalog
+selection.

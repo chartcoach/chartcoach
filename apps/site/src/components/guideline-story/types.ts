@@ -1,6 +1,6 @@
 export type StoryArtifactId =
   | "markdown"
-  | "source"
+  | "references"
   | "structured"
   | "embedding"
   | "access"
@@ -12,7 +12,6 @@ export type StoryStep = {
   title: string;
   body: string;
   surface: {
-    intent: string;
     form: string;
     detail: string;
   };

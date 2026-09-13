@@ -1,8 +1,17 @@
 # Releasing packages and catalog data
 
-Python and JavaScript packages use version tags such as `v0.2.0`. Catalog data
+Python and JavaScript packages use matching version tags. Catalog data
 uses a SHA-256 digest computed from the files in one release. Either can change
 without changing the other.
+
+| Lifecycle                | Identity                                  |
+| ------------------------ | ----------------------------------------- |
+| Guideline entries        | Entries digest plus manifest digest       |
+| Compiled catalog release | SHA-256 digest over its artifact envelope |
+| Python and npm software  | Coordinated package version               |
+
+Public selection points `catalog.json` at an already published release. Site
+deployment consumes an exact release and does not create catalog identity.
 
 ## Publish the packages
 
@@ -10,10 +19,10 @@ without changing the other.
 `packages/catalog` publishes `@chartcoach/catalog` to npm. Both manifests must
 contain the same version.
 
-Set the proposed tag and compare it with both manifests:
+Set `RELEASE_TAG` to the proposed stable version and check both package identities
+and versions:
 
 ```bash
-RELEASE_TAG="v0.2.0"
 ./scripts/release.sh check-version "$RELEASE_TAG"
 ```
 
@@ -23,13 +32,58 @@ Run the repository checks before creating the tag:
 make check
 ```
 
-A matching `X.Y.Z` or `vX.Y.Z` tag starts
-`.github/workflows/publish.yml`. The workflow requires an existing successful
-main CI run for that commit, builds both packages, publishes them through
-trusted publishing, and updates the GitHub release notes.
+A matching `X.Y.Z` or `vX.Y.Z` tag starts `.github/workflows/publish.yml`.
+Merge the release commit and wait for its successful main CI run before pushing
+the tag. The publish workflow checks that exact commit's CI result.
 
-When package contents change, inspect the wheel, source distribution, and npm
-tarball through their published entry points before announcing the release.
+The workflow builds the Python wheel and source distribution and the npm
+tarball once. It verifies the built wheel in an isolated environment and the
+tarball through Node.js, TypeScript, Chromium, and native LanceDB consumers.
+The Node.js consumer runs at the SDK's declared minimum version. Browser checks
+exercise the production bundle and its WebAssembly assets.
+
+Both publishers download those verified artifacts. A final job compares each
+registry's metadata and downloadable bytes with the build before creating the
+GitHub release notes. CI runs the same distribution checks on pull requests.
+
+### Registry setup
+
+[PyPI trusted publishing](https://docs.pypi.org/trusted-publishers/) and
+[npm trusted publishing](https://docs.npmjs.com/trusted-publishers/) exchange
+GitHub Actions identity tokens for short-lived publication credentials.
+Configure each package's publisher for this repository and `publish.yml`.
+The workflow's publishing jobs request `id-token: write` and use no GitHub
+environment. If environment protection is required, configure the same
+environment in the workflow and both registry publishers.
+
+Confirm publisher settings before tagging. npm generates provenance for public
+repositories. Repository visibility and trusted-publisher authorization are
+separate settings.
+
+### Recover a partial publication
+
+PyPI and npm publish independently. If a job fails, rerun the failed jobs from
+the same workflow run so they reuse the retained `release-packages` artifact.
+The artifact is retained for 30 days. Keep the original tag and build intact.
+
+The npm job skips a version whose registry integrity matches the verified
+tarball. A different digest fails publication. uv accepts identical Python
+files that have already been uploaded. Registry verification and release notes
+resume after both publishers succeed. Verification retries pending registry
+files and transient network failures up to six times, five seconds apart.
+Digest conflicts fail immediately.
+
+To inspect retained artifacts locally:
+
+```bash
+gh run download "$RUN_ID" --name release-packages --dir ./release-packages
+python3 scripts/release_registry.py check ./release-packages --allow-missing
+```
+
+`--allow-missing` permits files awaiting publication while rejecting digest
+conflicts. Run the command without that flag to require every published file
+and verify its downloaded bytes. If an artifact has expired or a digest differs,
+stop and recover the original build before attempting another upload.
 
 ## Publish catalog data
 
@@ -42,7 +96,7 @@ authored Markdown
   -> remote catalog/releases/<digest>/
 ```
 
-`./catalog-source` in the build command is a caller-provided authored catalog.
+`./authored-catalog` in the build command is a caller-provided authored catalog.
 The commands also require `jq`. Both `dist/catalog` and `dist/release` must be
 absent before the build begins.
 
@@ -51,7 +105,7 @@ Build the compiled catalog, then build a local release:
 ```bash
 uv run --locked --package chartcoach --extra curation \
   chartcoach catalog build \
-  --source ./catalog-source \
+  --source ./authored-catalog \
   --out ./dist/catalog
 ```
 
@@ -60,7 +114,7 @@ uv run --locked --package chartcoach --extra curation python - <<'PY'
 from pathlib import Path
 
 from chartcoach import open_catalog
-from chartcoach.catalog.curation import build_release
+from chartcoach.curation import build_release
 
 release = build_release(
     open_catalog("dist/catalog"),
@@ -80,12 +134,20 @@ RELEASE_DIGEST="$(
 )"
 ```
 
-Set the remote store and the HTTPS base URL that serves the same files:
+Set `CATALOG_STORE` to the destination object-store URI and `PUBLIC_BASE` to
+the HTTPS base URL serving the same files.
 
-```bash
-CATALOG_STORE="s3://your-bucket/chartcoach"
-PUBLIC_BASE="https://catalog.example.com/chartcoach"
-```
+Configure the serving layer before promotion:
+
+| Resource                        | Serving contract                                              |
+| ------------------------------- | ------------------------------------------------------------- |
+| `catalog/releases/<digest>/...` | Immutable caching and stable retention                        |
+| `catalog.json`                  | Revalidation-friendly caching and an ETag where available     |
+| Browser-readable artifacts      | Cross-origin `GET` and `HEAD` access from the product origins |
+
+Discovery reads descriptors rather than listing storage prefixes. Release
+artifacts stay relative to their release directory and contain no deployment
+paths or credentials.
 
 Preview the remote paths, then publish the release:
 
@@ -100,16 +162,51 @@ uv run --locked --package chartcoach --extra curation \
   --store "$CATALOG_STORE"
 ```
 
-Publication uploads the listed files and writes `release.json` last. Verify
-the required files through their public URL and build the site against that
-exact release:
+Publication uploads the listed files and writes `release.json` last. Repeating
+publication verifies the committed objects before returning success.
+
+Validate the candidate from fresh object-store bytes:
+
+```bash
+uv run --locked --package chartcoach --extra curation \
+  chartcoach catalog release validate \
+  --store "$CATALOG_STORE" \
+  --digest "$RELEASE_DIGEST"
+```
+
+Published validation downloads every listed artifact into temporary files. It
+checks hashes, catalog records, document derivation, stored vectors, native
+indexes, and exports. Embedding providers and their credentials are not needed
+for these checks.
+
+Verify the reader endpoint and build the site against that exact release:
 
 ```bash
 RELEASE_URL="$PUBLIC_BASE/catalog/releases/$RELEASE_DIGEST/release.json"
 uv run --locked --package chartcoach \
-  chartcoach catalog overview --source "$RELEASE_URL"
-CHARTCOACH_SITE_CATALOG_SOURCE="$RELEASE_URL" pnpm --dir apps/site build
+  chartcoach catalog describe --source "$RELEASE_URL"
+CHARTCOACH_SITE_CATALOG="$RELEASE_URL" pnpm --dir apps/site build
 ```
+
+For every profile listed by `catalog describe`, inspect its metadata and run
+provider-free FTS through the public release before selection:
+
+```bash
+PROFILE="minilm-normalized"
+uv run --locked --package chartcoach --extra index \
+  chartcoach catalog describe \
+  --source "$RELEASE_URL" \
+  --profile "$PROFILE"
+uv run --locked --package chartcoach --extra index \
+  chartcoach catalog search \
+  --source "$RELEASE_URL" \
+  --profile "$PROFILE" \
+  --mode fts \
+  "direct labels"
+```
+
+Provider-backed vector or hybrid smoke checks are explicit release actions.
+Run them with the declared Python requirements and authorized credentials.
 
 Preview the public selection, then update `catalog.json`:
 
@@ -124,14 +221,22 @@ uv run --locked --package chartcoach --extra curation \
   --store "$CATALOG_STORE"
 ```
 
-The final command changes the release read from `$PUBLIC_BASE/catalog.json`.
-The files under the digest path remain unchanged. Confirm the selection
-through the public URL:
+Selection validates the candidate's fresh published bytes before writing
+`catalog.json`. Its dry run performs the same validation. The files under the
+digest path remain unchanged.
+
+Confirm that the stored selection matches the intended digest and its
+published descriptor, then check the public reader endpoint:
 
 ```bash
+uv run --locked --package chartcoach --extra curation \
+  chartcoach catalog release validate \
+  --store "$CATALOG_STORE" \
+  --expect-digest "$RELEASE_DIGEST"
+
 uv run --locked --package chartcoach \
-  chartcoach catalog overview --source "$PUBLIC_BASE/catalog.json"
+  chartcoach catalog describe --source "$PUBLIC_BASE/catalog.json"
 ```
 
-Calls and commands that omit `source` continue to read the official
-`files.peter.gy` catalog selection.
+Python calls that omit `location` and commands that omit `--source` read the
+official catalog selection.

@@ -4,9 +4,7 @@ import json
 from pathlib import Path
 from typing import cast
 
-from chartcoach import CatalogManifest
-from chartcoach.catalog.collection import Catalog
-from chartcoach.catalog.entries import Guideline, Section
+from chartcoach import Catalog, CatalogManifest, Guideline, Section
 from chartcoach.cli.main import main as chartcoach_cli
 from click.testing import CliRunner
 
@@ -62,7 +60,9 @@ def citation_catalog_path(tmp_path: Path, manifest: CatalogManifest) -> Path:
         manifest=manifest,
     )
     source_path = tmp_path / "citation-catalog"
-    catalog.write_bundle(source_path)
+    from chartcoach.curation import write_bundle
+
+    write_bundle(catalog, source_path)
     return source_path
 
 
@@ -83,8 +83,9 @@ def test_catalog_read_emits_entry_sections_and_sources(
         ],
     )
 
-    rows = json.loads(result.stdout)
-    assert rows == [
+    payload = json.loads(result.stdout)
+    assert len(payload["entries_digest"]) == 64
+    assert payload["records"] == [
         {
             "id": "direct-labels",
             "title": "Use direct labels",
@@ -125,7 +126,9 @@ def test_catalog_cite_json_includes_structured_source_citations(
     )
 
     assert result.exit_code == 0, result.output
-    payload = cast(list[dict[str, object]], json.loads(result.output))
+    response = json.loads(result.output)
+    payload = cast(list[dict[str, object]], response["records"])
+    assert len(response["manifest_digest"]) == 64
     assert payload[0]["url"] == "https://example.test/g/direct-labels/"
     assert payload[0]["guideline_citation"] == (
         "[Use direct labels](https://example.test/g/direct-labels/) (`direct-labels`)"
@@ -143,7 +146,7 @@ def test_catalog_cite_json_includes_structured_source_citations(
         "doi": None,
         "url": "https://example.test/labels",
         "citation": (
-            "Lee, Bea (2022). Interactive labels. VIS Proceedings. "
+            "Lee, B. (2022,). Interactive labels. VIS Proceedings. "
             "https://example.test/labels"
         ),
     }

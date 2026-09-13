@@ -1,0 +1,209 @@
+---
+title: Open and cache catalogs
+description: Choose a catalog source in Python, TypeScript, or the CLI and reuse verified files.
+icon: FolderOpen
+---
+
+Use a `catalog.json` location to follow a catalog's current selection. Use an
+exact `release.json` location when a task must keep the same contents.
+Opening either resolves one release for its records, citations, and index files.
+
+Complete [Getting started](/getting-started#install) for your interface.
+The TypeScript examples use the Node.js reader for file access and persistent
+caching. Browser applications use the [browser reader](/javascript#open-and-read-a-catalog).
+
+## Open local files
+
+For a compiled catalog at `./dist/catalog`:
+
+<Tabs groupId="catalog-interface" items={["Python", "TypeScript", "CLI"]} persist>
+<Tab value="Python">
+
+```python
+from chartcoach import open_catalog
+
+catalog = open_catalog("./dist/catalog")
+print(catalog.describe()["entries_digest"])
+```
+
+</Tab>
+<Tab value="TypeScript">
+
+```ts
+import { openCatalog } from "@chartcoach/catalog/node";
+
+const catalog = await openCatalog("./dist/catalog");
+console.log((await catalog.describe()).entries_digest);
+```
+
+</Tab>
+<Tab value="CLI">
+
+```bash
+chartcoach catalog describe --source ./dist/catalog
+```
+
+The response includes `entries_digest` alongside the catalog's other metadata.
+
+</Tab>
+</Tabs>
+
+Python, Node.js, and the CLI open these shared layouts:
+
+| Input           | Required files                                  |
+| --------------- | ----------------------------------------------- |
+| Compiled bundle | `MANIFEST.md` and `entries.parquet`             |
+| Exact release   | `release.json` and its listed files             |
+| Deployed root   | `catalog.json` and `catalog/releases/<digest>/` |
+
+Python and the CLI also open authored folders containing `MANIFEST.md` and
+`entries/<id>/guideline.md`. [Curate and publish](/curation) builds bundles and
+releases from those authored files.
+
+## Open a remote release
+
+Set `CATALOG_SOURCE` to your deployment's full HTTP or HTTPS descriptor URL.
+Run the example for your interface:
+
+<Tabs groupId="catalog-interface" items={["Python", "TypeScript", "CLI"]} persist>
+<Tab value="Python">
+
+```python
+import os
+from chartcoach import open_catalog
+
+catalog = open_catalog(os.environ["CATALOG_SOURCE"])
+print(catalog.describe()["release_digest"])
+```
+
+</Tab>
+<Tab value="TypeScript">
+
+```ts
+import { openCatalog } from "@chartcoach/catalog/node";
+
+const source = process.env.CATALOG_SOURCE;
+if (!source) throw new Error("Set CATALOG_SOURCE to a catalog descriptor URL.");
+
+const catalog = await openCatalog(source);
+console.log((await catalog.describe()).release_digest);
+```
+
+</Tab>
+<Tab value="CLI">
+
+```bash
+chartcoach catalog describe --source "$CATALOG_SOURCE"
+```
+
+To reuse that source across commands:
+
+```bash
+export CHARTCOACH_SOURCE="$CATALOG_SOURCE"
+chartcoach catalog describe
+```
+
+An explicit `--source` overrides `CHARTCOACH_SOURCE`.
+
+</Tab>
+</Tabs>
+
+Opening a release downloads and verifies the manifest and guideline records.
+Profile metadata and indexes download when requested. The description reports
+the resolved release digest, so you can check which catalog each interface uses.
+
+## Reuse files across runs
+
+Python and Node.js share the platform's per-user `chartcoach` artifact-cache
+layout. The CLI uses the Python reader's cache. Cached files are checked against
+their release descriptor before reuse.
+
+Reopening a digest-addressed release reuses its cached descriptor and core
+files, including offline. Opening `catalog.json` refreshes the selection.
+Keep a catalog object open for a task when its queries must retain one release.
+
+For direct file access, Python's `catalog.artifact("entries.parquet")` and
+Node's `artifactPath(catalog, "entries.parquet")` return verified local paths.
+Pass those paths to DuckDB, Polars, or another Parquet reader.
+The release inventory lists which optional files are available.
+
+Python's `catalog.cache()` downloads every release artifact and returns a
+local release directory. This includes every profile's index and optional
+exports, which can be large. See [Use verified files and reopen offline](/python#use-verified-files-and-reopen-offline)
+for that workflow, and [Node.js files and cache](/javascript#nodejs-files-and-cache)
+for server-side cache configuration.
+
+## Connect private object storage
+
+Set `CATALOG_SOURCE` to your bucket's descriptor URI and configure read
+credentials through the storage client.
+
+<Tabs groupId="catalog-interface" items={["Python", "TypeScript", "CLI"]} persist>
+<Tab value="Python">
+
+Install cloud-storage support in the active environment:
+
+```bash
+uv pip install "chartcoach[cloud]"
+```
+
+```python
+import os
+from chartcoach import open_catalog
+
+catalog = open_catalog(
+    os.environ["CATALOG_SOURCE"],
+    storage_options={"region": "eu-central-1"},
+)
+```
+
+[obstore](https://developmentseed.org/obstore/latest/), the object-storage
+client, handles S3, GCS, and Azure credentials. For an S3-compatible service,
+pass its `endpoint` in `storage_options`. Keep secrets in the client's
+credential environment or your secret manager.
+
+</Tab>
+<Tab value="TypeScript">
+
+Supply a custom `fetch` using your application's storage client and credential
+providers. ChartCoach verifies the returned bytes independently of transport.
+Follow [Open S3 with an existing storage client](/javascript#open-s3-with-an-existing-storage-client)
+for a complete AWS SDK example.
+
+</Tab>
+<Tab value="CLI">
+
+```bash
+uvx --from "chartcoach[cloud]" chartcoach catalog describe \
+  --source "$CATALOG_SOURCE"
+```
+
+The Python storage client reads its credential and endpoint environment.
+For application-owned storage options, use the Python API.
+
+</Tab>
+</Tabs>
+
+## Open the same artifacts in a browser
+
+The browser reader fetches release files over HTTPS and returns verified bytes
+through `catalog.artifact()`. Public hosts must allow cross-origin requests.
+For private storage, use authenticated application routes or a signed-URL flow
+that keeps storage credentials off the client.
+
+Supply an `ArtifactCache` to persist bytes beyond the loaded catalog's lifetime.
+The [web app guide](/next) shows the same records powering browser-side filtering
+and server-side search. See [Use release files with native tools](/javascript#use-release-files-with-native-tools)
+for the cache interface.
+
+## If opening fails
+
+| Failure                                       | Check                                                                 |
+| --------------------------------------------- | --------------------------------------------------------------------- |
+| Location cannot be read                       | Descriptor path, network access, and storage credentials.             |
+| Integrity mismatch                            | The descriptor and artifacts must belong to one complete release.     |
+| Cloud capability missing in Python or the CLI | Install the `cloud` extra in that environment.                        |
+| Requested profile is absent                   | Inspect the catalog description's `profiles` before opening an index. |
+
+Readers reject mismatched bytes. Rebuild and publish a new release when catalog
+contents change.

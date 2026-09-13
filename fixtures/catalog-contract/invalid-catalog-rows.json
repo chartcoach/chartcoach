@@ -1,0 +1,63 @@
+{
+  "row": {
+    "id": "invalid-row",
+    "title": "Invalid row",
+    "description": "A catalog row used to exercise the shared wire contract.",
+    "labels": ["chart:line"],
+    "sections": [
+      {
+        "role": "advice",
+        "title": "Advice",
+        "content": "Place labels near marks."
+      }
+    ],
+    "references": []
+  },
+  "cases": [
+    {
+      "name": "empty id",
+      "patch": { "id": "" }
+    },
+    {
+      "name": "numeric title",
+      "patch": { "title": 42 }
+    },
+    {
+      "name": "empty sections",
+      "patch": { "sections": [] }
+    },
+    {
+      "name": "padded label",
+      "patch": { "labels": [" chart:line "] }
+    },
+    {
+      "name": "padded section role",
+      "patch": {
+        "sections": [
+          {
+            "role": " advice ",
+            "title": "Advice",
+            "content": "Place labels near marks."
+          }
+        ]
+      }
+    },
+    {
+      "name": "late dangling section",
+      "patch": {
+        "sections": [
+          {
+            "role": "advice",
+            "title": "Advice",
+            "content": "Place labels near marks."
+          },
+          {
+            "role": "__dangling__",
+            "title": "",
+            "content": "Late preamble."
+          }
+        ]
+      }
+    }
+  ]
+}
