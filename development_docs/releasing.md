@@ -44,7 +44,7 @@ tagged commit. It checks that all packages match the tag and rejects conflicting
 registry bytes. The publisher jobs reuse this retained `release-packages` bundle.
 A final job verifies registry metadata and downloadable bytes before publishing the versioned `ghcr.io/chartcoach/chartcoach` container image and
 creating the GitHub release notes. Container builds consume the retained npm
-artifacts through `infra/Dockerfile`'s `packages` build context for Linux amd64 and arm64. Publication does not rebuild or rerun consumer tests.
+artifacts through `infra/Dockerfile`'s `packages` build context for Linux amd64 and arm64. The release then pulls the image from GHCR and checks native dependencies, health, and authenticated UI/API access before creating release notes. Publication does not rebuild or rerun consumer tests.
 
 ### Registry setup
 
