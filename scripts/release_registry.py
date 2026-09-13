@@ -47,6 +47,10 @@ def _verify_download(url: str, expected: str, algorithm: str) -> None:
                 digest.update(chunk)
     except urllib.error.HTTPError as error:
         error.close()
+        if error.code == 404:
+            raise PendingPublication(
+                f"Registry artifact is not available yet: {url}"
+            ) from error
         raise
     if digest.hexdigest() != expected:
         raise ValueError(
@@ -54,9 +58,9 @@ def _verify_download(url: str, expected: str, algorithm: str) -> None:
         )
 
 
-def npm_state(
-    tarball: Path, *, download: bool = False, expected_version: str | None = None
-) -> bool:
+def npm_artifact(
+    tarball: Path, *, expected_version: str | None = None
+) -> tuple[str, str] | None:
     with tarfile.open(tarball, "r:gz") as archive:
         manifest_file = archive.extractfile("package/package.json")
         if manifest_file is None:
@@ -73,7 +77,7 @@ def npm_state(
         f"https://registry.npmjs.org/@chartcoach%2Fcatalog/{version}"
     )
     if published is None:
-        return False
+        return None
     expected = _digest(tarball, "sha512")
     integrity = "sha512-" + base64.b64encode(bytes.fromhex(expected)).decode("ascii")
     if (
@@ -84,12 +88,12 @@ def npm_state(
         raise ValueError(
             f"npm {version} differs from the verified tarball. Stop publication."
         )
-    if download:
-        _verify_download(published["dist"]["tarball"], expected, "sha512")
-    return True
+    return published["dist"]["tarball"], expected
 
 
-def check_release(directory: Path, *, allow_missing: bool = False) -> None:
+def release_files(
+    directory: Path, *, tag: str | None = None
+) -> tuple[Path, Path, Path]:
     tarballs = list((directory / "npm").glob("*.tgz"))
     wheels = list((directory / "python").glob("chartcoach-*-py3-none-any.whl"))
     if len(tarballs) != 1 or len(wheels) != 1:
@@ -100,18 +104,32 @@ def check_release(directory: Path, *, allow_missing: bool = False) -> None:
     sdist = wheels[0].with_name(f"chartcoach-{version}.tar.gz")
     if not sdist.is_file():
         raise ValueError(f"Missing source distribution: {sdist}")
-    if set((directory / "npm").iterdir()) != {tarballs[0]} or set(
-        (directory / "python").iterdir()
-    ) != {wheels[0], sdist}:
+    distributions = {
+        path
+        for folder in ("npm", "python")
+        for path in (directory / folder).iterdir()
+        if path.name.endswith((".whl", ".tar.gz", ".tgz"))
+    }
+    if distributions != {tarballs[0], wheels[0], sdist}:
         raise ValueError(
             "Release must contain exactly one npm tarball, wheel, and source distribution"
         )
-    npm_present = npm_state(
-        tarballs[0], download=not allow_missing, expected_version=version
-    )
+    if tag is not None and tag.removeprefix("v") != version:
+        raise ValueError(
+            f"Release tag {tag!r} does not match artifact version {version}"
+        )
+    return tarballs[0], wheels[0], sdist
+
+
+def check_release(
+    directory: Path, *, allow_missing: bool = False, tag: str | None = None
+) -> None:
+    tarball, wheel, sdist = release_files(directory, tag=tag)
+    version = wheel.name.removeprefix("chartcoach-").removesuffix("-py3-none-any.whl")
+    npm = npm_artifact(tarball, expected_version=version)
     published = _read_json(f"https://pypi.org/pypi/chartcoach/{version}/json")
     files = {item["filename"]: item for item in published["urls"]} if published else {}
-    for path in (wheels[0], sdist):
+    for path in (wheel, sdist):
         artifact = files.get(path.name)
         if artifact is None:
             if allow_missing:
@@ -122,10 +140,13 @@ def check_release(directory: Path, *, allow_missing: bool = False) -> None:
             raise ValueError(
                 f"PyPI {path.name} differs from the verified build. Stop publication."
             )
-        if not allow_missing:
-            _verify_download(artifact["url"], expected, "sha256")
-    if not npm_present and not allow_missing:
+    if npm is None and not allow_missing:
         raise PendingPublication("npm has not published the verified tarball")
+    if not allow_missing:
+        assert npm is not None
+        _verify_download(npm[0], npm[1], "sha512")
+        for path in (wheel, sdist):
+            _verify_download(files[path.name]["url"], _digest(path, "sha256"), "sha256")
 
 
 def _retryable(error: BaseException) -> bool:
@@ -150,28 +171,42 @@ def main() -> None:
         "check", help="Verify both registry artifacts against a release build."
     )
     check.add_argument("directory", type=Path)
+    check.add_argument("--tag", help="Require the artifacts to match this release tag.")
+    check.add_argument(
+        "--wait-seconds",
+        type=int,
+        default=120,
+        help="Retry pending registry files and transient errors for this many seconds (default: 120).",
+    )
     check.add_argument(
         "--allow-missing",
         action="store_true",
         help="Permit versions and files awaiting publication.",
     )
     options = parser.parse_args()
+    if options.command == "check" and options.wait_seconds < 0:
+        parser.error("--wait-seconds must be nonnegative")
     try:
         if options.command == "npm-state":
-            print("published" if npm_state(options.tarball) else "publish")
+            print("published" if npm_artifact(options.tarball) else "publish")
         else:
-            attempts = 1 if options.allow_missing else 6
-            for attempt in range(attempts):
+            deadline = time.monotonic() + (
+                0 if options.allow_missing else options.wait_seconds
+            )
+            while True:
                 try:
                     check_release(
-                        options.directory, allow_missing=options.allow_missing
+                        options.directory,
+                        allow_missing=options.allow_missing,
+                        tag=options.tag,
                     )
                     break
                 except (OSError, ValueError) as error:
-                    if not _retryable(error) or attempt == attempts - 1:
+                    remaining = deadline - time.monotonic()
+                    if not _retryable(error) or remaining <= 0:
                         raise
                     print(f"Waiting for registry publication: {error}", file=sys.stderr)
-                    time.sleep(5)
+                    time.sleep(min(5, remaining))
     except (OSError, ValueError, KeyError, tarfile.TarError) as error:
         parser.exit(1, f"Release registry check failed: {error}\n")
 

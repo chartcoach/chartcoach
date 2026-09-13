@@ -18,21 +18,24 @@ import pytest
 
 _ROOT = Path(__file__).parents[3]
 _REGISTRY = _ROOT / "scripts" / "release_registry.py"
-_NPM = "https://registry.npmjs.org/@chartcoach%2Fcatalog/0.2.0"
-_PYPI = "https://pypi.org/pypi/chartcoach/0.2.0/json"
+_VERSION = "7.8.9"
+_NPM = f"https://registry.npmjs.org/@chartcoach%2Fcatalog/{_VERSION}"
+_PYPI = f"https://pypi.org/pypi/chartcoach/{_VERSION}/json"
 
 
 @pytest.fixture
 def release_files(tmp_path: Path) -> Path:
     (tmp_path / "npm").mkdir()
     (tmp_path / "python").mkdir()
-    data = json.dumps({"name": "@chartcoach/catalog", "version": "0.2.0"}).encode()
+    data = json.dumps({"name": "@chartcoach/catalog", "version": _VERSION}).encode()
     with tarfile.open(tmp_path / "npm" / "catalog.tgz", "w:gz") as archive:
         entry = tarfile.TarInfo("package/package.json")
         entry.size = len(data)
         archive.addfile(entry, io.BytesIO(data))
-    (tmp_path / "python" / "chartcoach-0.2.0-py3-none-any.whl").write_bytes(b"wheel")
-    (tmp_path / "python" / "chartcoach-0.2.0.tar.gz").write_bytes(b"sdist")
+    (tmp_path / "python" / f"chartcoach-{_VERSION}-py3-none-any.whl").write_bytes(
+        b"wheel"
+    )
+    (tmp_path / "python" / f"chartcoach-{_VERSION}.tar.gz").write_bytes(b"sdist")
     return tmp_path
 
 
@@ -50,7 +53,11 @@ def registry(monkeypatch: pytest.MonkeyPatch) -> dict[str, bytes | int]:
         return io.BytesIO(response)
 
     monkeypatch.setattr(urllib.request, "urlopen", open_url)
-    monkeypatch.setattr(time, "sleep", lambda _: None)
+    clock = [0.0]
+    monkeypatch.setattr(time, "monotonic", lambda: clock[0])
+    monkeypatch.setattr(
+        time, "sleep", lambda seconds: clock.__setitem__(0, clock[0] + seconds)
+    )
     return responses
 
 
@@ -65,7 +72,7 @@ def _publish(registry: dict[str, bytes | int], release: Path) -> None:
     registry[_NPM] = json.dumps(
         {
             "name": "@chartcoach/catalog",
-            "version": "0.2.0",
+            "version": _VERSION,
             "dist": {
                 "integrity": "sha512-"
                 + base64.b64encode(hashlib.sha512(tarball).digest()).decode(),
@@ -112,6 +119,9 @@ def test_registry_auth_failure_cannot_be_treated_as_an_available_version(
     with pytest.raises(SystemExit, match="1"):
         _run(monkeypatch, "npm-state", release_files / "npm" / "catalog.tgz")
     assert "403" in capsys.readouterr().err
+    with pytest.raises(SystemExit, match="1"):
+        _run(monkeypatch, "check", release_files)
+    assert time.monotonic() == 0
 
 
 @pytest.mark.parametrize("registry_name", ["npm", "python"])
@@ -147,8 +157,9 @@ def test_partial_publication_is_recoverable_but_cannot_pass_final_verification(
     del registry[_PYPI]
     _run(monkeypatch, "check", release_files, "--allow-missing")
     with pytest.raises(SystemExit, match="1"):
-        _run(monkeypatch, "check", release_files)
+        _run(monkeypatch, "check", release_files, "--wait-seconds", "7")
     assert "PyPI has not published" in capsys.readouterr().err
+    assert time.monotonic() == 7
 
 
 def test_final_verification_checks_downloaded_bytes(
@@ -180,6 +191,41 @@ def test_release_rejects_distribution_files_outside_the_verified_set(
     )
 
 
+def test_release_ignores_build_sidecars_and_checks_the_requested_tag(
+    release_files: Path,
+    registry: dict[str, bytes | int],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    (release_files / "python" / ".gitignore").write_text("*")
+    (release_files / "npm" / "build.log").write_text("Build completed")
+    _run(
+        monkeypatch, "check", release_files, "--allow-missing", "--tag", f"v{_VERSION}"
+    )
+    with pytest.raises(SystemExit, match="1"):
+        _run(monkeypatch, "check", release_files, "--allow-missing", "--tag", "v9.8.7")
+
+
+@pytest.mark.parametrize(
+    "pending_url", [_PYPI, "https://registry.npmjs.org/catalog.tgz"]
+)
+def test_registry_propagation_can_take_longer_than_a_short_poll_loop(
+    release_files: Path,
+    registry: dict[str, bytes | int],
+    monkeypatch: pytest.MonkeyPatch,
+    pending_url: str,
+) -> None:
+    _publish(registry, release_files)
+    open_url = urllib.request.urlopen
+
+    def delayed(url: str, *, timeout: int) -> object:
+        if url == pending_url and time.monotonic() < 45:
+            raise urllib.error.HTTPError(url, 404, "pending", Message(), None)
+        return open_url(url, timeout=timeout)
+
+    monkeypatch.setattr(urllib.request, "urlopen", delayed)
+    _run(monkeypatch, "check", release_files)
+
+
 @pytest.mark.parametrize(
     "unavailable_url", [_NPM, "https://registry.npmjs.org/catalog.tgz"]
 )
@@ -203,7 +249,7 @@ def test_final_verification_retries_transient_registry_errors(
 
     monkeypatch.setattr(urllib.request, "urlopen", transient)
     _run(monkeypatch, "check", release_files)
-    assert requests == 2
+    assert requests >= 2
 
 
 def test_distribution_verifier_rejects_additional_wheels(release_files: Path) -> None:

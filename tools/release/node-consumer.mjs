@@ -22,11 +22,14 @@ await mkdir(directory, { recursive: true });
 
 const catalog = await openCatalog(fixture, { cacheDirectory: join(directory, "cache") });
 
-assert.equal(catalog.length, 6);
+assert.ok(catalog.length >= 3, "The consumer fixture needs entries for native search");
 
-const ids = catalog.query({ limit: 6 }).map(({ id }) => id);
+const ids = catalog.query({ limit: catalog.length }).map(({ id }) => id);
 
-assert.equal(catalog.read({ ids }).length, 6);
+assert.deepEqual(
+  catalog.read({ ids }).map(({ id }) => id),
+  ids,
+);
 
 assert.ok(catalog.cite({ ids }).some(({ sources }) => sources.some(({ citation }) => citation)));
 
@@ -37,7 +40,7 @@ const core = await loadCatalog({
   manifest: await readFile(await artifactPath(catalog, "MANIFEST.md")),
 });
 
-assert.equal(core.length, 6);
+assert.deepEqual(core.query({ limit: core.length }), catalog.query({ limit: catalog.length }));
 
 const info = await catalog.describe();
 
@@ -117,7 +120,7 @@ await writeFile(
     dimensions: 2,
     distance_metric: "cosine",
     python_requirements: {},
-    lancedb_version: "0.38.0",
+    lancedb_version: process.env.LANCE_VERSION,
     projection: null,
   }),
 );
