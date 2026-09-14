@@ -33,6 +33,9 @@ With Node.js 24 or later:
 npx chartcoach
 ```
 
+With Bun 1.4.2+, use `bunx --bun chartcoach`. With Deno 2.9.6+, use
+`deno x -A chartcoach`.
+
 Connect a model in the browser to review a chart or discuss a design choice.
 Conversations and provider connections persist locally. See the [chat guide](apps/chat/README.md)
 for catalog selection, model configuration, VPS hosting, and Docker Compose.

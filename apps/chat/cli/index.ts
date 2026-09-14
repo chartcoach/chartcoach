@@ -7,6 +7,8 @@ import { fileURLToPath } from "node:url";
 import { readFile } from "node:fs/promises";
 import { ConfigurationError, loadConfig } from "../runtime/config";
 import { startChat } from "../runtime/start";
+import { chalkStderr } from "chalk";
+import { renderLoading, renderReady, renderStopped, renderStopping } from "./output";
 
 const distribution = fileURLToPath(new URL("../", import.meta.url));
 
@@ -84,7 +86,7 @@ function configuration(values: SettingsOptions, explicitOpen: boolean) {
 
 const program = new Command()
   .name("chartcoach")
-  .description("Run ChartCoach locally with source-traced visualization guidance.")
+  .description("Run ChartCoach locally for source-traced visualization design guidance.")
   .version(version)
   .showHelpAfterError()
   .showSuggestionAfterError()
@@ -95,11 +97,19 @@ options(program.command("chat", { isDefault: true }).description("Start the chat
   .action(async (_options, command) => {
     const config = configuration(command.opts(), command.getOptionValueSource("open") === "cli");
     const controller = new AbortController();
-    const stop = () => controller.abort();
+
+    const stop = () => {
+      if (controller.signal.aborted) return;
+      process.stderr.write(renderStopping());
+      controller.abort();
+    };
+
     process.on("SIGINT", stop);
     process.on("SIGTERM", stop);
 
     try {
+      process.stderr.write(renderLoading());
+
       await using app = await startChat(config, {
         distribution,
         signal: controller.signal,
@@ -107,9 +117,22 @@ options(program.command("chat", { isDefault: true }).description("Start the chat
         log: (message) => process.stderr.write(`${message}\n`),
       });
 
+      process.stderr.write(
+        renderReady({
+          url: app.url,
+          catalog: app.catalog,
+          model: config.model.model,
+          dataDir: config.storage.dataDir,
+        }),
+      );
+
       if (config.server.open && process.stdout.isTTY) {
         const { default: open } = await import("open");
-        await open(app.url).catch(() => process.stderr.write(`Open ${app.url} in your browser.\n`));
+        await open(app.url).catch(() =>
+          process.stderr.write(
+            `${chalkStderr.yellow("!")} Open ${chalkStderr.cyan.underline(app.url)} in your browser.\n`,
+          ),
+        );
       }
 
       await app.wait();
@@ -119,6 +142,8 @@ options(program.command("chat", { isDefault: true }).description("Start the chat
       process.off("SIGINT", stop);
       process.off("SIGTERM", stop);
     }
+
+    if (controller.signal.aborted) process.stderr.write(renderStopped());
   });
 
 options(program.command("doctor").description("Check configuration, catalog, and native runtime"))
@@ -149,7 +174,7 @@ try {
     process.exitCode = error.exitCode === 0 ? 0 : 2;
   } else {
     process.stderr.write(
-      `chartcoach: ${error instanceof Error ? error.message : "The operation failed."}\n`,
+      `${chalkStderr.red("✗")} ${chalkStderr.bold("chartcoach:")} ${error instanceof Error ? error.message : "The operation failed."}\n`,
     );
     process.exitCode = error instanceof ConfigurationError ? 2 : 1;
   }

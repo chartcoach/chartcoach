@@ -41,7 +41,11 @@ export const ModelSettings = memo(function ModelSettings({
         aria-label="Model settings"
       >
         {workspace.connection ? (
-          <ProviderIcon provider={workspace.connection.provider} size={16} />
+          <ProviderIcon
+            provider={workspace.connection.provider}
+            baseURL={workspace.connection.baseURL}
+            size={16}
+          />
         ) : (
           <KeyRound size={16} aria-hidden="true" />
         )}
@@ -79,7 +83,7 @@ export const ModelSettings = memo(function ModelSettings({
                       disabled={state.pending}
                       onClick={() => state.select(connection.id)}
                     >
-                      <ProviderIcon provider={connection.provider} />
+                      <ProviderIcon provider={connection.provider} baseURL={connection.baseURL} />
                       <span {...stylex.props(styles.savedText)}>
                         {connection.name}
                         <span {...stylex.props(styles.modelName)}>{connection.model}</span>

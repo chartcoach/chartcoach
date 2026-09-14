@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
-import envPaths from "env-paths";
+import { platformDirectories } from "@chartcoach/catalog/node/paths";
 import { apiKeySchema } from "../shared/model.ts";
 
 import { configSchema, type Config, type ConfigInput } from "./schema.ts";
@@ -85,7 +85,7 @@ export function loadConfig({
   cwd = process.cwd(),
   overrides = {},
   configFile = environment.CHARTCOACH_CONFIG,
-  userConfig = resolve(envPaths("chartcoach", { suffix: "" }).config, "config.json"),
+  userConfig = resolve(platformDirectories().config, "chat", "config.json"),
 }: ConfigOptions = {}): Config {
   if (environment.CHARTCOACH_RUNTIME_CONFIG) {
     try {

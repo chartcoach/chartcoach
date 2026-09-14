@@ -1,7 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import { createReadStream } from "node:fs";
 import { mkdir, open, rename, stat, unlink, writeFile } from "node:fs/promises";
-import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { Readable } from "node:stream";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -16,6 +15,7 @@ import {
   type OpenCatalogOptions,
 } from "./catalog/open";
 import type { ArtifactOptions, Catalog } from "./catalog/model";
+import { platformDirectories } from "./node/paths";
 
 type NodeContext = { cacheDirectory: string; fetch: FetchLike };
 
@@ -45,7 +45,7 @@ export async function indexPath(
   return extractIndex({
     archive: () => artifactPath(catalog, path, options),
     digest: artifact.sha256,
-    cacheDirectory: contexts.get(catalog)?.cacheDirectory ?? defaultCacheDirectory(),
+    cacheDirectory: contexts.get(catalog)?.cacheDirectory ?? platformDirectories().cache,
     directory: options.directory,
     signal: options.signal,
   });
@@ -55,7 +55,7 @@ export async function openCatalog(
   location?: string | URL,
   options: NodeOpenCatalogOptions = {},
 ): Promise<Catalog> {
-  const cacheDirectory = options.cacheDirectory ?? defaultCacheDirectory();
+  const cacheDirectory = options.cacheDirectory ?? platformDirectories().cache;
   const fetch = options.fetch ?? globalThis.fetch;
   const uri = location === undefined ? undefined : locationUrl(location);
 
@@ -157,7 +157,7 @@ export async function artifactPath(
   const context = contexts.get(catalog);
 
   const target = join(
-    context?.cacheDirectory ?? defaultCacheDirectory(),
+    context?.cacheDirectory ?? platformDirectories().cache,
     "artifacts",
     artifact.sha256,
   );
@@ -272,19 +272,6 @@ function locationUrl(location: string | URL): URL {
   return /^[a-z][a-z0-9+.-]*:\/\//i.test(location)
     ? new URL(location)
     : pathToFileURL(resolve(location));
-}
-
-function defaultCacheDirectory(): string {
-  if (process.platform === "darwin") return join(homedir(), "Library", "Caches", "chartcoach");
-
-  if (process.platform === "win32")
-    return join(
-      process.env.LOCALAPPDATA ?? join(homedir(), "AppData", "Local"),
-      "chartcoach",
-      "Cache",
-    );
-
-  return join(process.env.XDG_CACHE_HOME ?? join(homedir(), ".cache"), "chartcoach");
 }
 
 async function existingFile(path: string): Promise<boolean> {

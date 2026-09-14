@@ -30,6 +30,7 @@ export type Connection = z.infer<typeof connectionSchema>;
 export const preferencesSchema = z.object({
   connections: z.array(connectionSchema),
   allowedOrigins: z.array(z.string()),
+  tracing: z.boolean(),
 });
 
 export const modelSchema = z.object({ id: z.string(), name: z.string() });

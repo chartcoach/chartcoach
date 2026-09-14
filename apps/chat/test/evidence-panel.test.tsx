@@ -30,6 +30,9 @@ it("shows primary guideline cards before opening the remaining evidence", () => 
   const primary = page.querySelector('section[aria-label="Primary guidelines"]')!;
   const card = primary.querySelector<HTMLAnchorElement>('a[aria-label="Label series directly"]')!;
   expect(card.getAttribute("href")).toBe("/guideline?id=labels");
+  expect(card.querySelector("img")?.getAttribute("src")).toBe(
+    "https://chartcoach.dev/guidelines/labels/og.png",
+  );
   expect(card.textContent).toContain("Label series directly");
   expect(card.closest("[inert]")).toBeNull();
   expect(

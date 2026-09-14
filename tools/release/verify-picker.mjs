@@ -56,7 +56,15 @@ export async function verifyPicker(page, catalog, screenshot) {
 
   async function chooseAuthor(choice) {
     await page.getByRole("button", { name: /Browse authors/ }).click();
-    await page.getByRole("searchbox", { name: "Find an author" }).fill(author);
+    const search = page.getByRole("searchbox", { name: "Find an author" });
+
+    await search.waitFor();
+    assert.equal(await search.evaluate((element) => document.activeElement === element), true);
+    assert.equal(
+      await search.evaluate((element) => getComputedStyle(element.parentElement).outlineWidth),
+      "2px",
+    );
+    await search.fill(author);
     await page
       .getByRole("combobox", { name: `Filter author ${author}`, exact: true })
       .selectOption(choice);
@@ -65,12 +73,26 @@ export async function verifyPicker(page, catalog, screenshot) {
 
   const parquet = "**/eve/v1/catalog/*/entries.parquet";
   await page.route(parquet, (route) => route.abort());
-  await page.getByRole("button", { name: "Guidelines", exact: true }).click();
+  const guidelines = page.getByRole("button", { name: "Guidelines", exact: true });
+
+  await guidelines.click();
+  await guidelines.locator(':scope[aria-current="page"]').waitFor();
+  assert.equal(await page.locator("[aria-current]").count(), 1);
+  assert.equal(await guidelines.getAttribute("aria-current"), "page");
   await page.getByRole("button", { name: "Retry", exact: true }).waitFor();
   await page.unroute(parquet);
   await page.getByRole("button", { name: "Retry", exact: true }).click();
   await page.getByRole("button", { name: "Retry", exact: true }).waitFor({ state: "hidden" });
   await selection(all);
+  await page.getByRole("button", { name: "Close sidebar", exact: true }).click();
+  await page.getByRole("navigation", { name: "Conversation shortcuts" }).waitFor();
+  assert.equal(await page.locator("[aria-current]:visible").count(), 1);
+  assert.equal(await guidelines.getAttribute("aria-current"), "page");
+  await page.getByRole("button", { name: "Open sidebar", exact: true }).click();
+  await page.getByRole("button", { name: "How filters work", exact: true }).click();
+  await page.getByRole("heading", { name: "How filters work", exact: true }).waitFor();
+  await page.getByText("Guidelines can cite more than one source.", { exact: false }).waitFor();
+  await page.getByRole("button", { name: "How filters work", exact: true }).click();
   await apply.locator(":scope:disabled").waitFor();
   await page.screenshot({ path: screenshot, fullPage: true, animations: "disabled" });
 
@@ -80,6 +102,88 @@ export async function verifyPicker(page, catalog, screenshot) {
       element.scrollTop = element.scrollHeight;
     });
     await results.locator('[aria-posinset="101"]').waitFor();
+    await selection(all);
+  }
+
+  const fromInput = page.getByRole("spinbutton", { name: "From", exact: true });
+  const toInput = page.getByRole("spinbutton", { name: "Through", exact: true });
+  const firstYear = Number(await fromInput.getAttribute("min"));
+  const lastYear = Number(await toInput.getAttribute("max"));
+
+  if (lastYear - firstYear >= 10) {
+    const start = firstYear + 2;
+    const end = lastYear - 4;
+    const shift = 2;
+    await fromInput.fill(String(start));
+    await toInput.fill(String(end));
+    await selection(
+      ids(sources.filter((row) => Number(row.year) >= start && Number(row.year) <= end)),
+    );
+    const range = page.locator('[title="Drag to move the selected year range"]');
+    const bounds = await range.boundingBox();
+
+    const trackWidth = await range.evaluate(
+      (element) => element.parentElement?.getBoundingClientRect().width,
+    );
+
+    assert.ok(bounds && trackWidth);
+    await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(
+      bounds.x + bounds.width / 2 + (trackWidth * shift) / (lastYear - firstYear),
+      bounds.y + bounds.height / 2,
+      { steps: 4 },
+    );
+    await page.mouse.up();
+    await page.waitForFunction(
+      ([from, to]) =>
+        document.querySelector('[name="yearFrom"]')?.value === String(from) &&
+        document.querySelector('[name="yearTo"]')?.value === String(to),
+      [start + shift, end + shift],
+    );
+    await selection(
+      ids(
+        sources.filter(
+          (row) => Number(row.year) >= start + shift && Number(row.year) <= end + shift,
+        ),
+      ),
+    );
+    // Drag against each edge without stretching the interval, then use the keyboard thumb.
+    const span = end - start;
+
+    for (const direction of [-1, 1]) {
+      const current = await range.boundingBox();
+
+      assert.ok(current);
+      await page.mouse.move(current.x + current.width / 2, current.y + current.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(current.x + current.width / 2 + direction * trackWidth, current.y, {
+        steps: 5,
+      });
+      await page.mouse.up();
+      const expectedFrom = direction < 0 ? firstYear : lastYear - span;
+      const expectedTo = expectedFrom + span;
+      await selection(
+        ids(
+          sources.filter(
+            (row) => Number(row.year) >= expectedFrom && Number(row.year) <= expectedTo,
+          ),
+        ),
+      );
+      assert.equal(Number((await fromInput.inputValue()) || firstYear), expectedFrom);
+      assert.equal(Number((await toInput.inputValue()) || lastYear), expectedTo);
+    }
+
+    await page.getByRole("slider", { name: "Earliest publication year" }).focus();
+    await page.keyboard.press("ArrowRight");
+    await selection(
+      ids(
+        sources.filter(
+          (row) => Number(row.year) >= lastYear - span + 1 && Number(row.year) <= lastYear,
+        ),
+      ),
+    );
+    await reset.click();
     await selection(all);
   }
 
@@ -123,8 +227,7 @@ export async function verifyPicker(page, catalog, screenshot) {
   await selection(all);
 
   // An empty scope must prevent chat submission, then recover by selecting all.
-  const lastYear = Math.max(...sources.map((row) => Number(row.year)).filter(Number.isFinite));
-  await page.getByRole("spinbutton", { name: "From", exact: true }).fill(String(lastYear + 1));
+  await fromInput.fill(String(lastYear + 1));
   await selection([]);
   await apply.click();
   await apply.waitFor({ state: "hidden" });

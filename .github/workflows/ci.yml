@@ -65,6 +65,16 @@ jobs:
       - name: Install browser runtime
         run: pnpm --filter @chartcoach/release exec playwright install --with-deps chromium
 
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: 1.4.2
+
+      - name: Set up Deno
+        uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2
+        with:
+          deno-version: 2.9.6
+
       - name: Verify npm distribution
         id: npm-dist
         env:
@@ -77,6 +87,14 @@ jobs:
           pnpm --filter @chartcoach/release verify:chat "$directory"/chartcoach-[0-9]*.tgz "$directory"/chartcoach-catalog-*.tgz
           pnpm --filter @chartcoach/release verify:chat "$directory"/chartcoach-[0-9]*.tgz "$directory"/chartcoach-catalog-*.tgz https://artifacts.chartcoach.dev/catalog/releases/075004be49cba8fd604d3e89ed1fb2dbd1b18eebcda40fa56f5f247cc9f8aa59/release.json
           echo "directory=$directory" >> "$GITHUB_OUTPUT"
+
+      - name: Verify Bun and Deno chat consumers
+        env:
+          PACKAGE_DIRECTORY: ${{ steps.npm-dist.outputs.directory }}
+        run: |
+          for runner in bunx bun deno; do
+            pnpm --filter @chartcoach/release verify:chat "$PACKAGE_DIRECTORY"/chartcoach-[0-9]*.tgz "$PACKAGE_DIRECTORY"/chartcoach-catalog-*.tgz --runner "$runner"
+          done
 
       - name: Retain chat browser screenshots
         if: always()

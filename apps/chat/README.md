@@ -18,10 +18,29 @@ Install Node.js 24 or later on macOS or Linux, then run:
 npx chartcoach
 ```
 
+Or use Bun 1.4.2 or later, or Deno 2.9.6 or later:
+
+```bash
+bunx --bun chartcoach
+deno x -A chartcoach
+```
+
+`bunx chartcoach` uses Node.js. `--bun` runs the app with Bun itself.
+Deno's `-A` grants the permissions needed for local storage, native catalog engines,
+network access, and the worker process. The same flags and environment variables
+work with each runner.
+
+If a runner reports that it cannot find an executable, check the version it selected.
+Release-age policies can temporarily select the old `0.0.0` name reservation,
+which has no CLI. Request an exact released version to surface the age-policy
+error, then wait until that release is eligible or adjust your runner's policy.
+
 ChartCoach opens its local URL in an interactive terminal. Choose **Model settings**
 to connect Anthropic, OpenAI, Gemini, or an OpenAI-compatible endpoint. Choose a
 model that supports images and tool calls. Conversations and encrypted connections
 persist across restarts and package upgrades. Press Ctrl+C to stop the server.
+Startup output uses color in supported terminals and stays plain when redirected
+or when `NO_COLOR` is set.
 
 ```bash
 npx chartcoach chat --no-open --port 8080
@@ -91,34 +110,34 @@ Configuration files are optional. If you prefer to save settings, pass
 
 Configuration precedence is command flags, environment variables, then the selected
 JSON file. `--config` or `CHARTCOACH_CONFIG` selects a file. Otherwise ChartCoach
-reads `config.json` in the platform's user configuration directory for `chartcoach`.
+reads `chat/config.json` in the platform's user configuration directory for `chartcoach`.
 Relative file paths resolve beside that file. Paths passed through flags or the
 environment resolve from your working directory. Invocation overrides are not saved.
 Unknown configuration fields fail validation. T3 Env validates environment values
 and names invalid variables in its errors. Missing credentials identify the
 variable to set. Secret values are excluded from validation messages.
 
-| Optional JSON setting | Environment variable         | Default                               |
-| --------------------- | ---------------------------- | ------------------------------------- |
-| `catalog.source`      | `CHARTCOACH_CATALOG`         | Official `catalog.json`               |
-| `catalog.profile`     | `CHARTCOACH_CATALOG_PROFILE` | `minilm-l6-v2-cpu`                    |
-| `model.provider`      | `CHARTCOACH_PROVIDER`        | `openai`                              |
-| `model.model`         | `CHARTCOACH_MODEL`           | Browser setup                         |
-| `model.baseURL`       | `CHARTCOACH_BASE_URL`        | Provider endpoint                     |
-| `model.auth`          | `CHARTCOACH_MODEL_AUTH`      | `api-key`                             |
-| `model.apiKeyEnv`     | `CHARTCOACH_API_KEY_ENV`     | Provider variable                     |
-| `model.contextWindow` | `CHARTCOACH_CONTEXT_WINDOW`  | `128000`                              |
-| `server.host`         | `CHARTCOACH_HOST`            | `127.0.0.1`                           |
-| `server.port`         | `CHARTCOACH_PORT`            | `4273`                                |
-| `server.open`         | `CHARTCOACH_OPEN`            | Interactive browser opening           |
-| `server.publicURL`    | `CHARTCOACH_PUBLIC_URL`      | Local HTTP origin                     |
-| `server.username`     | `CHARTCOACH_USERNAME`        | `chartcoach`                          |
-| `server.passwordEnv`  | `CHARTCOACH_PASSWORD_ENV`    | `CHARTCOACH_PASSWORD`                 |
-| `server.passwordFile` | `CHARTCOACH_PASSWORD_FILE`   | Unset                                 |
-| `storage.dataDir`     | `CHARTCOACH_DATA_DIR`        | Platform app-data directory           |
-| `storage.cacheDir`    | `CHARTCOACH_CACHE_DIR`       | Platform cache directory              |
-| `modelOrigins`        | `CHARTCOACH_MODEL_ORIGINS`   | Empty array / comma-separated origins |
-| `tracing`             | `CHARTCOACH_TRACING`         | `false`                               |
+| Optional JSON setting | Environment variable         | Default                         |
+| --------------------- | ---------------------------- | ------------------------------- |
+| `catalog.source`      | `CHARTCOACH_CATALOG`         | Official `catalog.json`         |
+| `catalog.profile`     | `CHARTCOACH_CATALOG_PROFILE` | `minilm-l6-v2-cpu`              |
+| `model.provider`      | `CHARTCOACH_PROVIDER`        | `openai`                        |
+| `model.model`         | `CHARTCOACH_MODEL`           | Browser setup                   |
+| `model.baseURL`       | `CHARTCOACH_BASE_URL`        | Provider endpoint               |
+| `model.auth`          | `CHARTCOACH_MODEL_AUTH`      | `api-key`                       |
+| `model.apiKeyEnv`     | `CHARTCOACH_API_KEY_ENV`     | Provider variable               |
+| `model.contextWindow` | `CHARTCOACH_CONTEXT_WINDOW`  | `128000`                        |
+| `server.host`         | `CHARTCOACH_HOST`            | `127.0.0.1`                     |
+| `server.port`         | `CHARTCOACH_PORT`            | `4273`                          |
+| `server.open`         | `CHARTCOACH_OPEN`            | Interactive browser opening     |
+| `server.publicURL`    | `CHARTCOACH_PUBLIC_URL`      | Local HTTP origin               |
+| `server.username`     | `CHARTCOACH_USERNAME`        | `chartcoach`                    |
+| `server.passwordEnv`  | `CHARTCOACH_PASSWORD_ENV`    | `CHARTCOACH_PASSWORD`           |
+| `server.passwordFile` | `CHARTCOACH_PASSWORD_FILE`   | Unset                           |
+| `storage.dataDir`     | `CHARTCOACH_DATA_DIR`        | Platform app-data directory     |
+| `storage.cacheDir`    | `CHARTCOACH_CACHE_DIR`       | Platform cache directory        |
+| `modelOrigins`        | `CHARTCOACH_MODEL_ORIGINS`   | Common hosted providers (below) |
+| `tracing`             | `CHARTCOACH_TRACING`         | `false`                         |
 
 `catalog.source` accepts a release directory, a `release.json` URL, or a mutable
 `catalog.json` selection URL. Catalog identities are digests, independent of the
@@ -129,7 +148,7 @@ embeddings for vector and hybrid search.
 object on stdout. Startup messages and errors use stderr. `--verbose` includes worker diagnostics, which may contain conversation details. Exit status is 0 for
 success, 2 for configuration or argument errors, and 1 for runtime failures.
 
-SQLite uses Node's built-in engine. The package works with npm install scripts
+SQLite uses the runtime's `node:sqlite` implementation. The package works with npm install scripts
 disabled; no SQLite binding needs to be downloaded or compiled. The Docker image
 also installs with scripts disabled.
 
@@ -218,8 +237,33 @@ history. Keep the cookie to retain access from that browser. The server operator
 can access stored credentials, so use a server you trust and restrict provider-key
 permissions and spending limits. Keys stay out of chat content and trace metadata.
 
-Custom endpoints must match an allowed origin. `model.baseURL` adds its origin
-automatically. Add other trusted origins as a comma-separated list:
+These hosted origins are allowed by default for OpenAI-compatible connections.
+Choose **OpenAI compatible** in Model settings, then select a provider preset to
+fill its API base URL. [LobeHub icons](https://lobehub.com/icons) identify providers
+in the menu and saved connections.
+
+| Provider          | API base URL                                              |
+| ----------------- | --------------------------------------------------------- |
+| OpenRouter        | `https://openrouter.ai/api/v1`                            |
+| xAI / Grok        | `https://api.x.ai/v1`                                     |
+| Google Gemini     | `https://generativelanguage.googleapis.com/v1beta/openai` |
+| Together AI       | `https://api.together.ai/v1`                              |
+| Fireworks AI      | `https://api.fireworks.ai/inference/v1`                   |
+| Groq              | `https://api.groq.com/openai/v1`                          |
+| Hugging Face      | `https://router.huggingface.co/v1`                        |
+| Mistral AI        | `https://api.mistral.ai/v1`                               |
+| NVIDIA NIM        | `https://integrate.api.nvidia.com/v1`                     |
+| Vercel AI Gateway | `https://ai-gateway.vercel.sh/v1`                         |
+
+Choose a model that supports images and tool calls. The native OpenAI, Anthropic,
+and Gemini connections remain available separately.
+
+An explicit comma-separated `CHARTCOACH_MODEL_ORIGINS` list replaces these defaults.
+An unset or empty variable uses `modelOrigins` from the optional config file, or
+the default list. `--model-origin` takes precedence over both.
+`modelOrigins: []` disables the default list.
+`model.baseURL` (or `--base-url`) always adds its own origin, including local
+servers such as Ollama and LM Studio. Allow other trusted endpoints explicitly:
 
 ```dotenv
 CHARTCOACH_MODEL_ORIGINS=https://api.example.com,https://models.example.com
@@ -247,8 +291,22 @@ transactions, migrations, a prepared-statement cache, and write-ahead logging.
 SQLite stores connection settings, conversation metadata, guideline selections,
 and uploaded image previews. Eve owns the transcript and agent state.
 
-`CHARTCOACH_DATA_DIR` overrides the platform-specific application-data directory for
-`chartcoach-chat`. It contains `chat.sqlite` and the owner-readable
+Chat state lives in the `chat` subdirectory of the native `chartcoach` data root.
+The Node SDK and chat app use the same directory resolver, matching Python's
+`platformdirs` conventions (`appauthor=False`, non-roaming).
+
+| Platform | Chat state                                      | Shared catalog and model cache    | Optional chat configuration                                 |
+| -------- | ----------------------------------------------- | --------------------------------- | ----------------------------------------------------------- |
+| macOS    | `~/Library/Application Support/chartcoach/chat` | `~/Library/Caches/chartcoach`     | `~/Library/Application Support/chartcoach/chat/config.json` |
+| Linux    | `~/.local/share/chartcoach/chat`                | `~/.cache/chartcoach`             | `~/.config/chartcoach/chat/config.json`                     |
+| Windows  | `%LOCALAPPDATA%\chartcoach\chat`                | `%LOCALAPPDATA%\chartcoach\Cache` | `%LOCALAPPDATA%\chartcoach\chat\config.json`                |
+
+Linux respects `XDG_DATA_HOME`, `XDG_CACHE_HOME`, and `XDG_CONFIG_HOME`.
+`CHARTCOACH_DATA_DIR` and `CHARTCOACH_CACHE_DIR` (or `--data-dir` and `--cache-dir`)
+override the full directory paths. Container mounts remain `/data` and `/cache`.
+Configuration files are optional. `--config` selects a file explicitly.
+
+The chat data directory contains `chat.sqlite` and the owner-readable
 `credentials.key`. The same data directory contains Eve's `.eve/.workflow-data` and sandbox storage. Preserve the whole directory across server restarts. Use a SQLite-consistent
 backup or stop the app before copying its database and key. Keep this data on a
 private persistent volume. Deleting the key makes saved provider keys unreadable.
@@ -264,6 +322,10 @@ LANGFUSE_PUBLIC_KEY=pk-lf-...
 LANGFUSE_SECRET_KEY=sk-lf-...
 LANGFUSE_BASE_URL=https://cloud.langfuse.com
 ```
+
+When tracing is enabled and both keys are present, the landing page tells users
+that conversation traces may include messages, images, and responses. The notice
+links to self-hosting instructions for running ChartCoach with tracing disabled.
 
 Use your project's region or self-hosted URL. When `.env.local` exists in the app
 directory, it supplies the complete Langfuse connection and takes precedence over
@@ -397,7 +459,9 @@ repair and resubmit. Accepted answers remain visible while the turn finishes.
 The agent checks applicability before assigning an assessment, asks for missing
 context, reports when guidance does not apply, and
 declines unrelated requests. The UI keeps a citation link visible if its preview
-image cannot load. Guideline cards and their source pages render from the local catalog.
+image cannot load. Guideline cards load preview images from
+`https://chartcoach.dev/guidelines/{id}/og.png`. Titles and linked guideline pages
+use the selected local catalog, including when a preview image is unavailable.
 
 A new attachment replaces the selected chart and preserves your message draft.
 Images stay in the draft until you send the message.
@@ -418,8 +482,9 @@ Vector and hybrid search use its normalized `all-MiniLM-L6-v2` embeddings.
 Open **Guidelines** in the sidebar to choose the guidelines your agent can use for feedback.
 The settings occupy the main workspace. **Back to chat** returns to your conversation
 and draft. Changes take effect when you choose **Use these guidelines**.
-Drag the year-range handles or enter exact years. Include or exclude
-authors and select source types. Blank fields keep the full range.
+Drag the selected year range to move it, adjust either handle, or enter exact
+years. Include or exclude authors and select source types. Blank fields keep
+the full range.
 
 Choose **Browse authors** to browse by matching-guideline count or search by name.
 Bars compare counts across the current author pool, with the largest counts first.

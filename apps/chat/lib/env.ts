@@ -60,3 +60,5 @@ export const env = createEnv({
     );
   },
 });
+
+export const langfuseTracingEnabled = Boolean(env.LANGFUSE_PUBLIC_KEY && env.LANGFUSE_SECRET_KEY);

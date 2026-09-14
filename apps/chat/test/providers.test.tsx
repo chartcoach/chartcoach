@@ -4,11 +4,45 @@ import { z } from "zod";
 import { Effect, Redacted } from "effect";
 import { FetchHttpClient } from "@effect/platform";
 import { languageModel, listProviderModels, providerEndpoint } from "../lib/app/providers";
-import type { Provider } from "../shared/model";
+import { compatibleProviderPresets, type Provider } from "../shared/model";
 import type { ConnectionInput } from "../shared/preferences";
 import agent from "../agent/agent";
+import { loadConfig } from "../runtime/config";
 
 afterEach(() => vi.unstubAllGlobals());
+
+it("defaults to hosted model origins and lets explicit settings replace them", () => {
+  const base = { userConfig: "/missing/config.json", environment: {} };
+  const defaults = loadConfig(base).modelOrigins;
+
+  for (const { baseURL } of compatibleProviderPresets)
+    expect(providerEndpoint({ provider: "compatible", baseURL }, defaults)).toBe(baseURL);
+  expect(
+    loadConfig({ ...base, environment: { CHARTCOACH_MODEL_ORIGINS: "" } }).modelOrigins,
+  ).toEqual(defaults);
+  expect(() =>
+    providerEndpoint({ provider: "compatible", baseURL: "http://localhost:11434/v1" }, defaults),
+  ).toThrow("not allowed");
+  expect(() =>
+    providerEndpoint(
+      { provider: "compatible", baseURL: "https://openrouter.ai.example.com/v1" },
+      defaults,
+    ),
+  ).toThrow("not allowed");
+
+  const custom = loadConfig({
+    ...base,
+    environment: {
+      CHARTCOACH_MODEL_ORIGINS: " https://models.example.com/v1,https://models.example.com ",
+    },
+  }).modelOrigins;
+
+  expect(custom).toEqual(["https://models.example.com"]);
+  expect(() =>
+    providerEndpoint({ provider: "compatible", baseURL: "https://openrouter.ai/api/v1" }, custom),
+  ).toThrow("not allowed");
+  expect(loadConfig({ ...base, overrides: { modelOrigins: [] } }).modelOrigins).toEqual([]);
+});
 
 it("rejects an invalid saved connection instead of using the server's key", async () => {
   const resolve = agent.model.events["step.started"]!;

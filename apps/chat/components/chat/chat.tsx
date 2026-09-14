@@ -59,6 +59,7 @@ function ChatLayout({
       error={error ?? catalog.error}
       onRecover={recover}
       modelControl={<ModelSettings workspace={workspace} disabled={disabled || !workspace.ready} />}
+      tracing={workspace.tracing}
     />
   );
 

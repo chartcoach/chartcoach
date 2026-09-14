@@ -49,19 +49,17 @@ export function HistoryPanel({
               searchInput={navigation.searchInput}
               searchVisible={navigation.searchOpen}
               onSearchClose={navigation.closeSearch}
+              chatActive={navigation.view === "chat"}
               guidelines={<GuidelinesLink navigation={navigation} count={guidelineCount} />}
             />
           ) : navigation.desktop ? (
             <nav {...stylex.props(styles.rail)} aria-label="Conversation shortcuts">
-              <ThreadListPrimitive.New
-                {...stylex.props(ui.button, ui.quietButton, ui.focus)}
+              <NewChatButton
+                compact
                 disabled={disabled}
-                aria-label="New chat"
-                title="New chat"
-                onClick={navigation.closeOnSelect}
-              >
-                <SquarePen size={18} />
-              </ThreadListPrimitive.New>
+                selected={navigation.view === "chat"}
+                onOpen={navigation.closeOnSelect}
+              />
               <button
                 {...stylex.props(ui.button, ui.quietButton, ui.focus)}
                 type="button"
@@ -106,6 +104,7 @@ export function HistoryPanel({
               onOpen={navigation.closeOnSelect}
               searchInput={navigation.searchInput}
               searchVisible
+              chatActive={navigation.view === "chat"}
               guidelines={<GuidelinesLink navigation={navigation} count={guidelineCount} />}
             />
           </Dialog.Content>
@@ -159,6 +158,7 @@ function HistoryList({
   searchInput,
   searchVisible,
   onSearchClose,
+  chatActive,
   guidelines,
 }: {
   disabled: boolean;
@@ -166,6 +166,7 @@ function HistoryList({
   searchInput: RefObject<HTMLInputElement | null>;
   searchVisible: boolean;
   onSearchClose?: () => void;
+  chatActive: boolean;
   guidelines: ReactNode;
 }) {
   const [search, setSearch] = useState("");
@@ -187,13 +188,7 @@ function HistoryList({
   return (
     <ThreadListPrimitive.Root {...stylex.props(styles.list)}>
       <div {...stylex.props(styles.controls)}>
-        <ThreadListPrimitive.New
-          {...stylex.props(ui.button, ui.focus, styles.newThread)}
-          disabled={disabled}
-          onClick={onOpen}
-        >
-          <SquarePen size={17} aria-hidden="true" /> New chat
-        </ThreadListPrimitive.New>
+        <NewChatButton disabled={disabled} selected={chatActive} onOpen={onOpen} />
         {guidelines}
         {searchVisible ? (
           <label {...stylex.props(styles.search)}>
@@ -251,31 +246,73 @@ function HistoryList({
           </p>
         ) : null}
         <ThreadListPrimitive.Items archived={archived}>
-          {() => <HistoryItem query={query} disabled={disabled} onOpen={onOpen} />}
+          {() => (
+            <HistoryItem
+              query={query}
+              disabled={disabled}
+              chatActive={chatActive}
+              onOpen={onOpen}
+            />
+          )}
         </ThreadListPrimitive.Items>
       </div>
-      <p {...stylex.props(styles.footer)}>Saved for this browser</p>
     </ThreadListPrimitive.Root>
+  );
+}
+
+function NewChatButton({
+  disabled,
+  selected,
+  onOpen,
+  compact = false,
+}: {
+  disabled: boolean;
+  selected: boolean;
+  onOpen: () => void;
+  compact?: boolean;
+}) {
+  const active = useAuiState((state) => state.threads.newThreadId === state.threads.mainThreadId);
+
+  return (
+    <ThreadListPrimitive.New
+      {...stylex.props(ui.button, ui.focus, styles.newThread, compact && styles.guidelinesCompact)}
+      aria-label="New chat"
+      title={compact ? "New chat" : undefined}
+      disabled={disabled}
+      data-active={selected && active ? "true" : undefined}
+      aria-current={selected && active ? "page" : undefined}
+      onClick={onOpen}
+    >
+      <SquarePen size={17} aria-hidden="true" />
+      {compact ? null : "New chat"}
+    </ThreadListPrimitive.New>
   );
 }
 
 function HistoryItem({
   query,
   disabled,
+  chatActive,
   onOpen,
 }: {
   query: string;
   disabled: boolean;
+  chatActive: boolean;
   onOpen: () => void;
 }) {
   const title = useAuiState((state) => state.threadListItem.title ?? "New chat");
   const archived = useAuiState((state) => state.threadListItem.status === "archived");
+  const active = useAuiState((state) => state.threads.mainThreadId === state.threadListItem.id);
   const [editing, setEditing] = useState(false);
 
   if (!title.toLowerCase().includes(query)) return null;
 
   return (
-    <ThreadListItemPrimitive.Root {...stylex.props(styles.item, historyRowScope)}>
+    <ThreadListItemPrimitive.Root
+      {...stylex.props(styles.item, historyRowScope)}
+      data-active={chatActive && active ? "true" : undefined}
+      aria-current={chatActive && active ? "page" : undefined}
+    >
       {editing ? (
         <RenameConversation title={title} onDone={() => setEditing(false)} />
       ) : (

@@ -1,6 +1,13 @@
-import envPaths from "env-paths";
+import { platformDirectories } from "@chartcoach/catalog/node/paths";
+import { join } from "node:path";
 import { z } from "zod";
-import { apiBaseURL, modelFields, modelAuth, providerSchema } from "../shared/model.ts";
+import {
+  apiBaseURL,
+  compatibleProviderPresets,
+  modelFields,
+  modelAuth,
+  providerSchema,
+} from "../shared/model.ts";
 
 const text = z.string().trim().min(1);
 
@@ -33,11 +40,13 @@ export const configSchema = z.strictObject({
     .prefault({}),
   storage: z
     .strictObject({
-      dataDir: text.default(envPaths("chartcoach-chat").data),
-      cacheDir: text.default(envPaths("chartcoach", { suffix: "" }).cache),
+      dataDir: text.default(join(platformDirectories().data, "chat")),
+      cacheDir: text.default(platformDirectories().cache),
     })
     .prefault({}),
-  modelOrigins: z.array(apiBaseURL).default([]),
+  modelOrigins: z
+    .array(apiBaseURL)
+    .default([...new Set(compatibleProviderPresets.map(({ baseURL }) => new URL(baseURL).origin))]),
   tracing: z.boolean().default(false),
 });
 

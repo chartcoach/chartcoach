@@ -9,7 +9,15 @@ import { expect, it } from "vite-plus/test";
 import { Composer } from "../components/chat/composer";
 import { renderDocument } from "./render-document";
 
-function NativeComposer({ running }: { running: boolean }) {
+function NativeComposer({
+  running,
+  tracing = false,
+  embedded = false,
+}: {
+  running: boolean;
+  tracing?: boolean;
+  embedded?: boolean;
+}) {
   const runtime = useExternalStoreRuntime<ThreadMessage>({
     messages: [],
     isRunning: running,
@@ -27,6 +35,8 @@ function NativeComposer({ running }: { running: boolean }) {
         busy={running}
         disabled={running}
         reading={false}
+        tracing={tracing}
+        embedded={embedded}
       />
     </AssistantRuntimeProvider>
   );
@@ -58,4 +68,22 @@ it("exposes cancellation while the runtime is running", () => {
     page.querySelector<HTMLButtonElement>('button[aria-label="Stop response"]')?.disabled,
   ).toBe(false);
   expect(page.querySelector("textarea")?.disabled).toBe(true);
+});
+
+it("discloses functional conversation tracing on the landing composer", () => {
+  const traced = renderDocument(<NativeComposer running={false} tracing embedded />);
+  const notice = traced.getElementById("message-privacy")!;
+  const link = notice.querySelector<HTMLAnchorElement>("a")!;
+
+  expect(notice.textContent).toContain(
+    "Conversation tracing is enabled to improve ChartCoach and may include messages, images, and responses.",
+  );
+  expect(link.textContent).toBe("self-hosting ChartCoach with tracing disabled");
+  expect(link.href).toBe("https://docs.chartcoach.dev/");
+  expect(renderDocument(<NativeComposer running={false} tracing />).body.textContent).not.toContain(
+    "Conversation tracing is enabled",
+  );
+  expect(
+    renderDocument(<NativeComposer running={false} embedded />).body.textContent,
+  ).not.toContain("Conversation tracing is enabled");
 });

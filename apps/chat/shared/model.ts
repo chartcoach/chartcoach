@@ -26,6 +26,45 @@ export const apiKeySchema = z
 
 export const modelAuth = z.enum(["api-key", "none"]);
 
+export const compatibleProviderPresets = [
+  { id: "openrouter", name: "OpenRouter", baseURL: "https://openrouter.ai/api/v1" },
+  { id: "xai", name: "xAI / Grok", baseURL: "https://api.x.ai/v1" },
+  {
+    id: "gemini",
+    name: "Google Gemini",
+    baseURL: "https://generativelanguage.googleapis.com/v1beta/openai",
+  },
+  { id: "togetherai", name: "Together AI", baseURL: "https://api.together.ai/v1" },
+  {
+    id: "fireworksai",
+    name: "Fireworks AI",
+    baseURL: "https://api.fireworks.ai/inference/v1",
+  },
+  { id: "groq", name: "Groq", baseURL: "https://api.groq.com/openai/v1" },
+  {
+    id: "huggingface",
+    name: "Hugging Face",
+    baseURL: "https://router.huggingface.co/v1",
+  },
+  { id: "mistral", name: "Mistral AI", baseURL: "https://api.mistral.ai/v1" },
+  { id: "nvidia", name: "NVIDIA NIM", baseURL: "https://integrate.api.nvidia.com/v1" },
+  {
+    id: "vercelaigateway",
+    name: "Vercel AI Gateway",
+    baseURL: "https://ai-gateway.vercel.sh/v1",
+  },
+] as const;
+
+export type CompatibleProviderId = (typeof compatibleProviderPresets)[number]["id"];
+
+export function compatibleProviderPreset(baseURL: string | undefined) {
+  if (!baseURL) return;
+
+  const normalized = baseURL.replace(/\/$/, "");
+
+  return compatibleProviderPresets.find((preset) => preset.baseURL === normalized);
+}
+
 export const modelFields = {
   provider: providerSchema,
   baseURL: apiBaseURL.optional(),

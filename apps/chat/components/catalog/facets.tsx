@@ -1,8 +1,8 @@
 import * as stylex from "@stylexjs/stylex";
-import { Slider } from "radix-ui";
 import type { CatalogFilters, CatalogMetadata } from "../../shared/catalog-filters";
 import { ui } from "../ui/ui";
 import { styles } from "./filters.styles";
+import { YearRange } from "./year-range";
 
 type FacetProps = {
   metadata: CatalogMetadata;
@@ -34,10 +34,17 @@ export function YearFilters({
   const to = draft.yearTo ?? max;
   const maxCount = Math.max(1, ...(bins?.map((bin) => bin.count) ?? []));
 
+  const updateRange = (start: number, end: number) =>
+    onChange({
+      ...draft,
+      yearFrom: start === min ? null : start,
+      yearTo: end === max ? null : end,
+    });
+
   return (
     <fieldset {...stylex.props(styles.section)}>
       <legend {...stylex.props(styles.legend)}>Publication year</legend>
-      <p {...stylex.props(styles.note)}>Drag the range handles or enter exact years.</p>
+      <p {...stylex.props(styles.note)}>Drag the range or its handles, or enter exact years.</p>
       <div
         {...stylex.props(styles.histogram)}
         role="img"
@@ -60,36 +67,14 @@ export function YearFilters({
         ))}
       </div>
       {min < max ? (
-        <Slider.Root
-          {...stylex.props(styles.slider)}
+        <YearRange
           min={min}
           max={max}
-          step={1}
           disabled={disabled}
-          minStepsBetweenThumbs={0}
-          value={[Math.max(min, Math.min(max, from)), Math.max(min, Math.min(max, to))].sort(
-            (a, b) => a - b,
-          )}
-          onValueChange={([start, end]) =>
-            onChange({
-              ...draft,
-              yearFrom: start === min ? null : start!,
-              yearTo: end === max ? null : end!,
-            })
-          }
-        >
-          <Slider.Track {...stylex.props(styles.sliderTrack)}>
-            <Slider.Range {...stylex.props(styles.sliderRange)} />
-          </Slider.Track>
-          <Slider.Thumb
-            {...stylex.props(ui.focus, styles.sliderThumb)}
-            aria-label="Earliest publication year"
-          />
-          <Slider.Thumb
-            {...stylex.props(ui.focus, styles.sliderThumb)}
-            aria-label="Latest publication year"
-          />
-        </Slider.Root>
+          from={from}
+          to={to}
+          onChange={updateRange}
+        />
       ) : null}
       <div {...stylex.props(styles.axis)} aria-hidden="true">
         <span>{min}</span>

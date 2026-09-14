@@ -75,7 +75,7 @@ export function AuthorFilters({
                 placeholder="Search authors…"
                 value={picker.query}
                 onChange={(event) => picker.setQuery(event.target.value)}
-                {...stylex.props(ui.focus, styles.input)}
+                {...stylex.props(styles.input)}
               />
             </div>
             <div {...stylex.props(styles.toolbar)}>
