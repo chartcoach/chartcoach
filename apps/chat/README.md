@@ -93,7 +93,7 @@ Configuration files are optional. If you prefer to save settings, pass
 
 Configuration precedence is command flags, environment variables, then the selected
 JSON file. `--config` or `CHARTCOACH_CONFIG` selects a file. Otherwise ChartCoach
-reads `config.json` in the platform's user configuration directory for `chartcoach`.
+reads `chat/config.json` in the platform's user configuration directory for `chartcoach`.
 Relative file paths resolve beside that file. Paths passed through flags or the
 environment resolve from your working directory. Invocation overrides are not saved.
 Unknown configuration fields fail validation. T3 Env validates environment values
@@ -274,8 +274,22 @@ transactions, migrations, a prepared-statement cache, and write-ahead logging.
 SQLite stores connection settings, conversation metadata, guideline selections,
 and uploaded image previews. Eve owns the transcript and agent state.
 
-`CHARTCOACH_DATA_DIR` overrides the platform-specific application-data directory for
-`chartcoach-chat`. It contains `chat.sqlite` and the owner-readable
+Chat state lives in the `chat` subdirectory of the native `chartcoach` data root.
+The Node SDK and chat app use the same directory resolver, matching Python's
+`platformdirs` conventions (`appauthor=False`, non-roaming).
+
+| Platform | Chat state                                      | Shared catalog and model cache    | Optional chat configuration                                 |
+| -------- | ----------------------------------------------- | --------------------------------- | ----------------------------------------------------------- |
+| macOS    | `~/Library/Application Support/chartcoach/chat` | `~/Library/Caches/chartcoach`     | `~/Library/Application Support/chartcoach/chat/config.json` |
+| Linux    | `~/.local/share/chartcoach/chat`                | `~/.cache/chartcoach`             | `~/.config/chartcoach/chat/config.json`                     |
+| Windows  | `%LOCALAPPDATA%\chartcoach\chat`                | `%LOCALAPPDATA%\chartcoach\Cache` | `%LOCALAPPDATA%\chartcoach\chat\config.json`                |
+
+Linux respects `XDG_DATA_HOME`, `XDG_CACHE_HOME`, and `XDG_CONFIG_HOME`.
+`CHARTCOACH_DATA_DIR` and `CHARTCOACH_CACHE_DIR` (or `--data-dir` and `--cache-dir`)
+override the full directory paths. Container mounts remain `/data` and `/cache`.
+Configuration files are optional. `--config` selects a file explicitly.
+
+The chat data directory contains `chat.sqlite` and the owner-readable
 `credentials.key`. The same data directory contains Eve's `.eve/.workflow-data` and sandbox storage. Preserve the whole directory across server restarts. Use a SQLite-consistent
 backup or stop the app before copying its database and key. Keep this data on a
 private persistent volume. Deleting the key makes saved provider keys unreadable.
@@ -451,8 +465,9 @@ Vector and hybrid search use its normalized `all-MiniLM-L6-v2` embeddings.
 Open **Guidelines** in the sidebar to choose the guidelines your agent can use for feedback.
 The settings occupy the main workspace. **Back to chat** returns to your conversation
 and draft. Changes take effect when you choose **Use these guidelines**.
-Drag the year-range handles or enter exact years. Include or exclude
-authors and select source types. Blank fields keep the full range.
+Drag the selected year range to move it, adjust either handle, or enter exact
+years. Include or exclude authors and select source types. Blank fields keep
+the full range.
 
 Choose **Browse authors** to browse by matching-guideline count or search by name.
 Bars compare counts across the current author pool, with the largest counts first.

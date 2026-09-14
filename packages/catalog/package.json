@@ -19,6 +19,11 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
+    "./node/paths": {
+      "types": "./dist/node/paths.d.ts",
+      "source": "./src/node/paths.ts",
+      "default": "./dist/node/paths.js"
+    },
     ".": {
       "types": "./dist/index.d.ts",
       "source": "./src/index.ts",

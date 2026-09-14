@@ -277,6 +277,14 @@ The Node entry point accepts local bundles, release directories, deployed
 roots, descriptor paths, and remote descriptor URLs. It caches verified bytes
 in the per-user platform cache directory, sharing the `chartcoach` cache layout
 with Python. `cacheDirectory` overrides that location.
+
+`platformDirectories()` from `@chartcoach/catalog/node/paths` returns the per-user
+`data`, `config`, and `cache` roots. It follows Python's
+`PlatformDirs("chartcoach", appauthor=False)` defaults, including Linux XDG
+overrides and non-roaming Windows directories. This lightweight Node entry point
+can resolve paths before loading a catalog. The chat app stores its state under
+`data/chat` and shares the catalog cache root.
+
 `artifactPath(catalog, path, { signal? })` streams a missing artifact to disk and
 returns a verified local path for native DuckDB, Arrow, or other file readers.
 It verifies an existing file before reuse. Each artifact is capped at 1 GiB,

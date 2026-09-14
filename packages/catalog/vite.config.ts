@@ -13,7 +13,13 @@ export default defineConfig({
   },
   pack: {
     dts: true,
-    entry: ["src/index.ts", "src/node.ts", "src/duckdb.ts", "src/duckdb-wasm.ts"],
+    entry: [
+      "src/index.ts",
+      "src/node.ts",
+      "src/node/paths.ts",
+      "src/duckdb.ts",
+      "src/duckdb-wasm.ts",
+    ],
     format: ["esm"],
     platform: "neutral",
     deps: { neverBundle: [/^node:/] },

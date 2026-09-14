@@ -3,6 +3,14 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, it } from "vite-plus/test";
 import { loadConfig, modelKey, validateStartup } from "../runtime/config";
+import { platformDirectories } from "@chartcoach/catalog/node/paths";
+
+it("keeps durable chat data under the application root and shares its native cache", () => {
+  const paths = platformDirectories();
+  const config = loadConfig({ environment: {}, userConfig: "/missing/config.json" });
+
+  expect(config.storage).toEqual({ dataDir: join(paths.data, "chat"), cacheDir: paths.cache });
+});
 
 it("resolves file paths and applies environment and invocation overrides", () => {
   const directory = mkdtempSync(join(tmpdir(), "chartcoach-config-"));

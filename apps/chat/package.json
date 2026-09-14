@@ -45,7 +45,6 @@
     "chalk": "catalog:",
     "commander": "15.0.0",
     "effect": "catalog:",
-    "env-paths": "catalog:",
     "eve": "catalog:",
     "http-proxy-3": "2.0.1",
     "just-bash": "catalog:",

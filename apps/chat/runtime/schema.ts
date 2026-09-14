@@ -1,4 +1,5 @@
-import envPaths from "env-paths";
+import { platformDirectories } from "@chartcoach/catalog/node/paths";
+import { join } from "node:path";
 import { z } from "zod";
 import {
   apiBaseURL,
@@ -39,8 +40,8 @@ export const configSchema = z.strictObject({
     .prefault({}),
   storage: z
     .strictObject({
-      dataDir: text.default(envPaths("chartcoach-chat").data),
-      cacheDir: text.default(envPaths("chartcoach", { suffix: "" }).cache),
+      dataDir: text.default(join(platformDirectories().data, "chat")),
+      cacheDir: text.default(platformDirectories().cache),
     })
     .prefault({}),
   modelOrigins: z
