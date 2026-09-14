@@ -26,7 +26,6 @@ export async function startChat(
 ) {
   const password = validateStartup(config);
   signal.throwIfAborted();
-  log("Loading catalog…");
   const { openCatalog } = await import("@chartcoach/catalog/node");
 
   const catalog = await openCatalog(config.catalog.source, {
@@ -152,14 +151,11 @@ export async function startChat(
   });
 
   lifetime.throwIfAborted();
-  log(
-    `ChartCoach is running at ${url}\n\nCatalog   ${catalog.length} guidelines · ${catalog.release.digest}\nModel     ${config.model.model ?? "Choose a connection in the browser"}\nData      ${config.storage.dataDir}\n\nPress Ctrl+C to stop.`,
-  );
-
   const running = resources.move();
 
   return {
     url,
+    catalog: { guidelines: catalog.length, digest: catalog.release.digest },
     [Symbol.asyncDispose]: () => running.disposeAsync(),
     async wait() {
       if (!lifetime.aborted) await once(lifetime, "abort");

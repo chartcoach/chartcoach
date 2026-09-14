@@ -132,7 +132,7 @@ async function start(environmentOnly = false) {
     const inspect = (chunk) => {
       output = (output + chunk.toString()).slice(-8192);
       runtimeOutput = (runtimeOutput + chunk.toString()).slice(-16000);
-      const url = output.match(/ChartCoach is running at (http:\/\/[^\s]+)/)?.[1];
+      const url = output.match(/➜\s+(http:\/\/[^\s]+)/)?.[1];
 
       if (url) {
         clearTimeout(timer);
@@ -263,6 +263,8 @@ try {
   assert.equal(diagnostic.ok, true);
   assert.equal(diagnostic.catalog.guidelines, catalog.length);
   let url = await start();
+  assert.match(runtimeOutput, /✓ ChartCoach is ready/);
+  assert.equal(runtimeOutput.includes("\u001B["), false, "Redirected CLI output contains no color");
   assert.equal((await fetch(url)).status, 401);
   browser = await chromium.launch({ headless: true });
 

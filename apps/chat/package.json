@@ -42,6 +42,7 @@
     "@lancedb/lancedb": "catalog:",
     "@opentelemetry/api": "catalog:",
     "@t3-oss/env-core": "catalog:",
+    "chalk": "catalog:",
     "commander": "15.0.0",
     "effect": "catalog:",
     "env-paths": "catalog:",

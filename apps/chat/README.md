@@ -22,6 +22,8 @@ ChartCoach opens its local URL in an interactive terminal. Choose **Model settin
 to connect Anthropic, OpenAI, Gemini, or an OpenAI-compatible endpoint. Choose a
 model that supports images and tool calls. Conversations and encrypted connections
 persist across restarts and package upgrades. Press Ctrl+C to stop the server.
+Startup output uses color in supported terminals and stays plain when redirected
+or when `NO_COLOR` is set.
 
 ```bash
 npx chartcoach chat --no-open --port 8080
