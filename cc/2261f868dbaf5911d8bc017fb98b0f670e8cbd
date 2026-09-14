@@ -1,0 +1,49 @@
+packages/catalog/src/node/paths.ts
+  s_a0a850c16fe72b::t_748f82cc9c10fb 1-28
+apps/chat/runtime/config.ts
+  s_a0a850c16fe72b::t_748f82cc9c10fb 3
+  s_a0a850c16fe72b::t_eee880c6c38138 88
+packages/catalog/package.json
+  s_a0a850c16fe72b::t_39c331c8fb9c05 26
+  s_a0a850c16fe72b::t_748f82cc9c10fb 22,24
+  s_a0a850c16fe72b::t_1eb695cc94b5ed 23,25
+apps/chat/README.md
+  s_a0a850c16fe72b::t_fb406fda83bf59 277-280,286-292
+  s_a0a850c16fe72b::t_bc67d3bc8f3376 96
+  s_a0a850c16fe72b::t_ac22be3c61e577 468-470
+  s_a0a850c16fe72b::t_d4a8704d10bd2f 281-285
+packages/catalog/test/paths.test.ts
+  s_a0a850c16fe72b::t_ca1c0c1a1b4268 3,5-6,14-16,23-25
+  s_a0a850c16fe72b::t_748f82cc9c10fb 2
+  s_a0a850c16fe72b::t_fb406fda83bf59 1,4,7-13,17-22,26-33,35-49
+apps/chat/runtime/schema.ts
+  s_a0a850c16fe72b::t_eee880c6c38138 2,43-44
+  s_a0a850c16fe72b::t_748f82cc9c10fb 1
+apps/chat/test/runtime-config.test.tsx
+  s_a0a850c16fe72b::t_fb406fda83bf59 7-13
+  s_a0a850c16fe72b::t_748f82cc9c10fb 6
+packages/catalog/README.md
+  s_a0a850c16fe72b::t_748f82cc9c10fb 281
+  s_a0a850c16fe72b::t_bc67d3bc8f3376 280,282-287
+packages/catalog/src/node.ts
+  s_a0a850c16fe72b::t_748f82cc9c10fb 18
+  s_a0a850c16fe72b::t_817a75a7371187 48,58,160
+packages/catalog/vite.config.ts
+  ai_agent 16-22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "cc2261f868dbaf5911d8bc017fb98b0f670e8cbd",
+  "prompts": {},
+  "sessions": {
+    "s_a0a850c16fe72b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a09a98-a62a-72f3-9516-845ac6bb7326",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Péter Ferenc Gyarmati <dev.petergy@gmail.com>"
+    }
+  }
+}
