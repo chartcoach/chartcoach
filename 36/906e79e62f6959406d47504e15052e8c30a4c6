@@ -1,0 +1,51 @@
+apps/chat/components/settings/styles.ts
+  s_a0a850c16fe72b::t_cbe6237ec72ae0 130-131
+  s_a0a850c16fe72b::t_39fdfd902cf7df 98-113,115-129,132-148
+  s_a0a850c16fe72b::t_f801bb1efc4a68 114
+  s_a0a850c16fe72b::t_4a6ed2745147f0 149-154
+apps/chat/chat/use-connection-form.ts
+  s_a0a850c16fe72b::t_81dc28cbe18d23 52,55-56
+  s_a0a850c16fe72b::t_f5304edcc0c940 4-8,53-54,57-66,141-142
+apps/chat/components/settings/compatible-provider-select.tsx
+  s_a0a850c16fe72b::t_b11400b7d3f1f4 1-95
+apps/chat/runtime/schema.ts
+  s_a0a850c16fe72b::t_16ed194eee0a78 48
+  s_a0a850c16fe72b::t_f5304edcc0c940 3-9
+apps/chat/shared/model.ts
+  s_a0a850c16fe72b::t_f5304edcc0c940 29-67
+apps/chat/test/providers.test.tsx
+  s_a0a850c16fe72b::t_d93512d5e8574a 7,18-19
+apps/chat/components/settings/connection-credentials.tsx
+  s_a0a850c16fe72b::t_996eb5c9a05389 63-75
+  s_a0a850c16fe72b::t_249c8c0f35ca27 7,16,20-41,43,45-62,77
+apps/chat/components/settings/model-settings.tsx
+  s_a0a850c16fe72b::t_f5304edcc0c940 44-48,86
+apps/chat/README.md
+  s_a0a850c16fe72b::t_832e632d0c0052 223-224
+  s_a0a850c16fe72b::t_98487565477746 222
+apps/chat/components/settings/provider-icon.tsx
+  s_a0a850c16fe72b::t_f5304edcc0c940 4-12,16-29,31-63,72-75
+apps/chat/components/settings/connection-form.tsx
+  s_a0a850c16fe72b::t_b11400b7d3f1f4 8,68-70
+tools/release/verify-chat.mjs
+  s_a0a850c16fe72b::t_98487565477746 12,277
+tools/release/verify-model-settings.mjs
+  s_a0a850c16fe72b::t_98487565477746 1-25,27,37-39
+  s_a0a850c16fe72b::t_ccef2563cf2052 26,28-36
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "36906e79e62f6959406d47504e15052e8c30a4c6",
+  "prompts": {},
+  "sessions": {
+    "s_a0a850c16fe72b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a09a98-a62a-72f3-9516-845ac6bb7326",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Péter Ferenc Gyarmati <dev.petergy@gmail.com>"
+    }
+  }
+}
