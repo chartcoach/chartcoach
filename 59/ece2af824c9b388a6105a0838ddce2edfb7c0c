@@ -1,0 +1,31 @@
+apps/docs/content/docs/(guide)/chat.mdx
+  s_a0a850c16fe72b::t_9bddd44743ae9b 13-23,110-114
+README.md
+  s_a0a850c16fe72b::t_9bddd44743ae9b 36-38
+.github/workflows/ci.yml
+  s_a0a850c16fe72b::t_9bddd44743ae9b 68-77,91-97
+apps/chat/README.md
+  s_a0a850c16fe72b::t_9bddd44743ae9b 21-37,151
+development_docs/releasing.md
+  s_a0a850c16fe72b::t_9bddd44743ae9b 41-43
+tools/release/verify-chat.mjs
+  s_a0a850c16fe72b::t_e0b6a44c458b1d 460
+  s_a0a850c16fe72b::t_56a96e5244c9ab 10,17-20,22,24-27,38,43,190,196,276-277
+  s_a0a850c16fe72b::t_d2b1f4156265d8 21,23,28-37,39-42,46-48,146-151,330,340,346-348,350,363,386,393,473-474,476
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "59ece2af824c9b388a6105a0838ddce2edfb7c0c",
+  "prompts": {},
+  "sessions": {
+    "s_a0a850c16fe72b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a09a98-a62a-72f3-9516-845ac6bb7326",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Péter Ferenc Gyarmati <dev.petergy@gmail.com>"
+    }
+  }
+}
