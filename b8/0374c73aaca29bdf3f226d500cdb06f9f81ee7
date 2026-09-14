@@ -1,0 +1,60 @@
+tools/release/verify-chat.mjs
+  s_a0a850c16fe72b::t_9511fb598effd5 283-286
+  s_a0a850c16fe72b::t_1af98cb9cfed07 269-272
+  s_a0a850c16fe72b::t_423f6693e46c73 282
+apps/chat/components/settings/connection-credentials.tsx
+  s_a0a850c16fe72b::t_f4f5a355746055 50
+apps/chat/components/catalog/filters.tsx
+  s_a0a850c16fe72b::t_f4f5a355746055 200,210,212-214
+  s_a0a850c16fe72b::t_3619304b78f472 189-196
+apps/chat/components/catalog/year-range.tsx
+  s_a0a850c16fe72b::t_5ecc235702f87d 58,82
+  s_a0a850c16fe72b::t_5e492dd229333e 22-25,46
+  s_a0a850c16fe72b::t_29993dc4dbd04e 26,48-57,59-81,83-99,101,104
+  s_a0a850c16fe72b::t_baf4fa11c0dec5 1-21,27-45,47,100,102-103,105-118
+apps/chat/components/catalog/facets.tsx
+  s_a0a850c16fe72b::t_baf4fa11c0dec5 5,70,74-77
+  s_a0a850c16fe72b::t_52d185e4bf168b 37-43,47
+apps/chat/components/catalog/author-filters.tsx
+  s_a0a850c16fe72b::t_f4f5a355746055 78
+apps/chat/components/catalog/filters.styles.ts
+  s_a0a850c16fe72b::t_52d185e4bf168b 165-167
+tools/release/verify-model-settings.mjs
+  s_a0a850c16fe72b::t_423f6693e46c73 39-40,44
+  s_a0a850c16fe72b::t_9511fb598effd5 41-43
+apps/chat/test/history.test.tsx
+  s_a0a850c16fe72b::t_7fd7f0227482a2 10-18,49,78-83
+apps/chat/components/chat/history.tsx
+  s_a0a850c16fe72b::t_4ea2fbaefc79ed 194,275
+  s_a0a850c16fe72b::t_3c95af156bd572 303
+  s_a0a850c16fe72b::t_44cdc374beee19 266-274,276-286
+  s_a0a850c16fe72b::t_1138cb13378d37 52,110,164,172,252-259,293,298,309-313
+apps/chat/components/settings/styles.ts
+  s_a0a850c16fe72b::t_f4f5a355746055 92
+tools/release/verify-picker.mjs
+  s_a0a850c16fe72b::t_cc73d4a7e3f746 103-106,112-113,190
+  s_a0a850c16fe72b::t_9511fb598effd5 89,119
+  s_a0a850c16fe72b::t_53327cd0cb086f 107-111,114-118,120-149
+  s_a0a850c16fe72b::t_423f6693e46c73 59-67,80,87-88,90
+  s_a0a850c16fe72b::t_a511b7a87c25c7 76-79,81
+apps/chat/components/chat/history.styles.ts
+  s_a0a850c16fe72b::t_1138cb13378d37 70-74
+apps/chat/components/catalog/author-filters.styles.ts
+  s_a0a850c16fe72b::t_f4f5a355746055 64-67,78
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "b80374c73aaca29bdf3f226d500cdb06f9f81ee7",
+  "prompts": {},
+  "sessions": {
+    "s_a0a850c16fe72b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a09a98-a62a-72f3-9516-845ac6bb7326",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Péter Ferenc Gyarmati <dev.petergy@gmail.com>"
+    }
+  }
+}
