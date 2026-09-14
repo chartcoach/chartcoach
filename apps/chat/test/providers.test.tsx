@@ -4,7 +4,7 @@ import { z } from "zod";
 import { Effect, Redacted } from "effect";
 import { FetchHttpClient } from "@effect/platform";
 import { languageModel, listProviderModels, providerEndpoint } from "../lib/app/providers";
-import type { Provider } from "../shared/model";
+import { compatibleProviderPresets, type Provider } from "../shared/model";
 import type { ConnectionInput } from "../shared/preferences";
 import agent from "../agent/agent";
 import { loadConfig } from "../runtime/config";
@@ -15,9 +15,8 @@ it("defaults to hosted model origins and lets explicit settings replace them", (
   const base = { userConfig: "/missing/config.json", environment: {} };
   const defaults = loadConfig(base).modelOrigins;
 
-  expect(
-    providerEndpoint({ provider: "compatible", baseURL: "https://openrouter.ai/api/v1" }, defaults),
-  ).toBe("https://openrouter.ai/api/v1");
+  for (const { baseURL } of compatibleProviderPresets)
+    expect(providerEndpoint({ provider: "compatible", baseURL }, defaults)).toBe(baseURL);
   expect(
     loadConfig({ ...base, environment: { CHARTCOACH_MODEL_ORIGINS: "" } }).modelOrigins,
   ).toEqual(defaults);

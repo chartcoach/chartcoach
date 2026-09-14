@@ -219,7 +219,9 @@ can access stored credentials, so use a server you trust and restrict provider-k
 permissions and spending limits. Keys stay out of chat content and trace metadata.
 
 These hosted origins are allowed by default for OpenAI-compatible connections.
-Choose **OpenAI compatible** in Model settings and enter the provider's base URL and key:
+Choose **OpenAI compatible** in Model settings, then select a provider preset to
+fill its API base URL. [LobeHub icons](https://lobehub.com/icons) identify providers
+in the menu and saved connections.
 
 | Provider          | API base URL                                              |
 | ----------------- | --------------------------------------------------------- |

@@ -1,6 +1,12 @@
 import envPaths from "env-paths";
 import { z } from "zod";
-import { apiBaseURL, modelFields, modelAuth, providerSchema } from "../shared/model.ts";
+import {
+  apiBaseURL,
+  compatibleProviderPresets,
+  modelFields,
+  modelAuth,
+  providerSchema,
+} from "../shared/model.ts";
 
 const text = z.string().trim().min(1);
 
@@ -39,18 +45,7 @@ export const configSchema = z.strictObject({
     .prefault({}),
   modelOrigins: z
     .array(apiBaseURL)
-    .default([
-      "https://openrouter.ai",
-      "https://api.x.ai",
-      "https://generativelanguage.googleapis.com",
-      "https://api.together.ai",
-      "https://api.fireworks.ai",
-      "https://api.groq.com",
-      "https://router.huggingface.co",
-      "https://api.mistral.ai",
-      "https://integrate.api.nvidia.com",
-      "https://ai-gateway.vercel.sh",
-    ]),
+    .default([...new Set(compatibleProviderPresets.map(({ baseURL }) => new URL(baseURL).origin))]),
   tracing: z.boolean().default(false),
 });
 

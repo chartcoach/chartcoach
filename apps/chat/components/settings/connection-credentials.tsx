@@ -4,6 +4,62 @@ import type { useConnectionForm } from "../../chat/use-connection-form";
 import { styles } from "./styles";
 import { ui } from "../ui/ui";
 
+function CompatibleCredentials({
+  form,
+  id,
+  origins,
+}: {
+  form: ReturnType<typeof useConnectionForm>;
+  id: string;
+  origins: string[];
+}) {
+  const { draft, invalidField, setField } = form;
+
+  return (
+    <>
+      <label {...stylex.props(styles.field)}>
+        <span {...stylex.props(styles.label)}>API base URL</span>
+        <input
+          {...stylex.props(styles.input, ui.focus)}
+          type="url"
+          name="baseURL"
+          autoComplete="off"
+          spellCheck={false}
+          aria-invalid={invalidField === "baseURL"}
+          aria-describedby={invalidField === "baseURL" ? `${id}-error` : undefined}
+          aria-label="API base URL"
+          value={draft.baseURL ?? ""}
+          onChange={(event) => setField("baseURL", event.target.value)}
+          placeholder="https://your-provider.example/v1"
+          required
+        />
+        {origins.length ? (
+          <details {...stylex.props(styles.originDetails)}>
+            <summary>View {origins.length.toLocaleString()} allowed origins</summary>
+            <span {...stylex.props(styles.hint)}>{origins.join(", ")}</span>
+          </details>
+        ) : (
+          <span {...stylex.props(styles.hint)}>
+            Configure CHARTCOACH_MODEL_ORIGINS on the server.
+          </span>
+        )}
+      </label>
+      <label {...stylex.props(styles.field)}>
+        <span {...stylex.props(styles.label)}>Authentication</span>
+        <select
+          {...stylex.props(styles.input, ui.focus)}
+          aria-label="Authentication"
+          value={draft.auth ?? "api-key"}
+          onChange={(event) => setField("auth", event.target.value === "none" ? "none" : "api-key")}
+        >
+          <option value="api-key">API key</option>
+          <option value="none">No authentication (local endpoint)</option>
+        </select>
+      </label>
+    </>
+  );
+}
+
 export function ConnectionCredentials({
   form,
   id,
@@ -18,45 +74,7 @@ export function ConnectionCredentials({
   return (
     <>
       {draft.provider === "compatible" ? (
-        <label {...stylex.props(styles.field)}>
-          <span {...stylex.props(styles.label)}>API base URL</span>
-          <input
-            {...stylex.props(styles.input, ui.focus)}
-            type="url"
-            name="baseURL"
-            autoComplete="off"
-            spellCheck={false}
-            aria-invalid={invalidField === "baseURL"}
-            aria-describedby={invalidField === "baseURL" ? `${id}-error` : undefined}
-            aria-label="API base URL"
-            value={draft.baseURL ?? ""}
-            onChange={(event) => setField("baseURL", event.target.value)}
-            placeholder="https://your-provider.example/v1"
-            required
-          />
-          <span {...stylex.props(styles.hint)}>
-            Allowed origins:{" "}
-            {origins.length
-              ? origins.join(", ")
-              : "configure CHARTCOACH_MODEL_ORIGINS on the server"}
-          </span>
-        </label>
-      ) : null}
-      {draft.provider === "compatible" ? (
-        <label {...stylex.props(styles.field)}>
-          <span {...stylex.props(styles.label)}>Authentication</span>
-          <select
-            {...stylex.props(styles.input, ui.focus)}
-            aria-label="Authentication"
-            value={draft.auth ?? "api-key"}
-            onChange={(event) =>
-              setField("auth", event.target.value === "none" ? "none" : "api-key")
-            }
-          >
-            <option value="api-key">API key</option>
-            <option value="none">No authentication (local endpoint)</option>
-          </select>
-        </label>
+        <CompatibleCredentials form={form} id={id} origins={origins} />
       ) : null}
       <div {...stylex.props(styles.field)}>
         <label {...stylex.props(styles.label)} htmlFor={`${id}-key`}>

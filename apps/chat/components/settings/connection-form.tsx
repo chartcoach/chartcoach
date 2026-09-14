@@ -5,6 +5,7 @@ import { providerNames, providerSchema } from "../../shared/model";
 import { type ConnectionInput } from "../../shared/preferences";
 import { useConnectionForm } from "../../chat/use-connection-form";
 import { ProviderIcon } from "./provider-icon";
+import { CompatibleProviderSelect } from "./compatible-provider-select";
 import { styles } from "./styles";
 import { ui } from "../ui/ui";
 
@@ -64,6 +65,9 @@ export function ConnectionForm({
             </button>
           ))}
         </div>
+        {draft.provider === "compatible" ? (
+          <CompatibleProviderSelect form={form} id={id} origins={origins} />
+        ) : null}
         <label {...stylex.props(styles.field)}>
           <span {...stylex.props(styles.label)}>Connection name</span>
           <input

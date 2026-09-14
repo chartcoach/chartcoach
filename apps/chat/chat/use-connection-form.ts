@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { loadModels } from "../browser/workspace-client";
-import { providerNames, type Provider } from "../shared/model";
+import {
+  compatibleProviderPreset,
+  compatibleProviderPresets,
+  providerNames,
+  type Provider,
+} from "../shared/model";
 import {
   connectionInputSchema,
   type ConnectionInput,
@@ -41,6 +46,21 @@ export function useConnectionForm(
     const next = { ...emptyConnection(provider), id: initial.id };
     setDraft(next);
     setContextWindow(String(next.contextWindow));
+    setReveal(false);
+  }
+
+  function changeCompatibleProvider(id: string) {
+    resetDiscovery();
+    const preset = compatibleProviderPresets.find((candidate) => candidate.id === id);
+
+    if (!preset && id !== "custom") return;
+
+    setDraft((current) => ({
+      ...current,
+      name: preset?.name ?? providerNames.compatible,
+      baseURL: preset?.baseURL,
+      apiKey: "",
+    }));
     setReveal(false);
   }
 
@@ -118,6 +138,8 @@ export function useConnectionForm(
     invalidField,
     setField,
     changeProvider,
+    changeCompatibleProvider,
+    compatibleProvider: compatibleProviderPreset(draft.baseURL),
     discover,
     submit,
   };

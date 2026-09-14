@@ -9,6 +9,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 import { verifyPicker } from "./verify-picker.mjs";
+import { verifyModelSettings } from "./verify-model-settings.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 
@@ -273,6 +274,7 @@ try {
   context.on("page", (opened) => opened.on("pageerror", (error) => errors.push(error.message)));
   page = await context.newPage();
   await page.goto(url);
+  await verifyModelSettings(page, join(root, ".context/chat-package-model-settings.png"));
   const choosing = page.waitForEvent("filechooser");
   await page.getByRole("button", { name: "Add chart", exact: true }).click();
   await (await choosing).setFiles(join(root, "apps/chat/public/examples/bicycle-trips.png"));
