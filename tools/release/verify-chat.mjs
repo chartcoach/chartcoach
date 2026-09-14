@@ -274,6 +274,41 @@ try {
   context.on("page", (opened) => opened.on("pageerror", (error) => errors.push(error.message)));
   page = await context.newPage();
   await page.goto(url);
+  await page.getByRole("button", { name: "Close sidebar", exact: true }).click();
+  const mark = page.getByRole("button", { name: "Open sidebar", exact: true });
+
+  const markSize = await mark.locator("span").evaluate((element) => ({
+    clientWidth: element.clientWidth,
+    scrollWidth: element.scrollWidth,
+  }));
+
+  assert.deepEqual(markSize, { clientWidth: 32, scrollWidth: 32 });
+  assert.equal(await mark.locator("img").count(), 2);
+  assert.equal(
+    await mark
+      .locator("img")
+      .evaluateAll((images) =>
+        images.some((image) => image.getAttribute("src")?.includes("chartcoach-horizontal")),
+      ),
+    false,
+  );
+  await page.screenshot({
+    path: join(root, ".context/chat-package-sidebar-collapsed.png"),
+    fullPage: true,
+    animations: "disabled",
+  });
+  await page.emulateMedia({ colorScheme: "dark" });
+  const darkMark = mark.locator("img:visible");
+
+  assert.equal(await darkMark.count(), 1);
+  assert.match(await darkMark.getAttribute("src"), /chartcoach-mark-white/);
+  await page.screenshot({
+    path: join(root, ".context/chat-package-sidebar-collapsed-dark.png"),
+    fullPage: true,
+    animations: "disabled",
+  });
+  await page.emulateMedia({ colorScheme: "light" });
+  await mark.click();
   await verifyModelSettings(page, join(root, ".context/chat-package-model-settings.png"), modelURL);
   const choosing = page.waitForEvent("filechooser");
   await page.getByRole("button", { name: "Add chart", exact: true }).click();
