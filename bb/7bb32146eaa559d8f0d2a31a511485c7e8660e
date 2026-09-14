@@ -1,0 +1,11 @@
+apps/chat/cli/index.ts
+  ai_agent 11,100-106,145-146
+apps/chat/cli/output.ts
+  ai_agent 16-23
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "bb7bb32146eaa559d8f0d2a31a511485c7e8660e",
+  "prompts": {}
+}
