@@ -7,7 +7,15 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { expect, it } from "vite-plus/test";
 import { HistoryPanel } from "../components/chat/history";
 
-function Navigation({ disabled, collapsed = false }: { disabled: boolean; collapsed?: boolean }) {
+function Navigation({
+  disabled,
+  collapsed = false,
+  view = "chat",
+}: {
+  disabled: boolean;
+  collapsed?: boolean;
+  view?: "chat" | "guidelines";
+}) {
   const runtime = useExternalStoreRuntime<ThreadMessage>({
     messages: [],
     onNew: async () => {},
@@ -38,7 +46,7 @@ function Navigation({ disabled, collapsed = false }: { disabled: boolean; collap
           openSearch: () => {},
           searchOpen: true,
           closeSearch: () => {},
-          view: "chat",
+          view,
           showGuidelines: () => {},
           showChat: () => {},
         }}
@@ -66,4 +74,11 @@ it("keeps new chat and search in the collapsed conversation rail", () => {
   expect(html).toContain('aria-label="New chat"');
   expect(html).toContain('aria-label="Search conversations"');
   expect(html).toContain('aria-label="Guidelines"');
+});
+
+it("gives selected semantics only to the active workspace destination", () => {
+  const html = renderToStaticMarkup(<Navigation disabled={false} view="guidelines" />);
+
+  expect(html.match(/aria-current=/g)).toHaveLength(1);
+  expect(html).toContain('aria-label="Guidelines" aria-current="page"');
 });

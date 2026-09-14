@@ -89,6 +89,7 @@ export const styles = stylex.create({
     color: colors.foreground,
     fontSize: { default: 14, [media.mobile]: 16 },
   },
+  compactSelect: { width: "min(100%, 360px)" },
   inputRow: {
     display: "grid",
     gridTemplateColumns: "minmax(0, 1fr) auto",

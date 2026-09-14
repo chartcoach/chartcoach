@@ -266,7 +266,10 @@ try {
   assert.match(runtimeOutput, /✓ ChartCoach is ready/);
   assert.equal(runtimeOutput.includes("\u001B["), false, "Redirected CLI output contains no color");
   assert.equal((await fetch(url)).status, 401);
-  browser = await chromium.launch({ headless: true });
+  browser = await chromium.launch({
+    headless: true,
+    executablePath: process.env.PLAYWRIGHT_EXECUTABLE_PATH,
+  });
 
   const context = await browser.newContext({
     httpCredentials: { username: "chartcoach", password: "package-test-password" },
@@ -276,6 +279,11 @@ try {
   context.on("page", (opened) => opened.on("pageerror", (error) => errors.push(error.message)));
   page = await context.newPage();
   await page.goto(url);
+  assert.equal(await page.getByText("Saved for this browser", { exact: true }).count(), 0);
+  assert.equal(
+    await page.getByText("Conversation tracing is enabled", { exact: false }).count(),
+    0,
+  );
   await page.getByRole("button", { name: "Close sidebar", exact: true }).click();
   const mark = page.getByRole("button", { name: "Open sidebar", exact: true });
 

@@ -162,6 +162,9 @@ export const styles = stylex.create({
     backgroundColor: colors.accentText,
     height: "100%",
     borderRadius: 2,
+    cursor: { default: "grab", ":active": "grabbing" },
+    touchAction: "none",
+    "::after": { content: '""', position: "absolute", insetBlock: -12, insetInline: 0 },
   },
   sliderThumb: {
     display: "block",

@@ -47,7 +47,7 @@ function CompatibleCredentials({
       <label {...stylex.props(styles.field)}>
         <span {...stylex.props(styles.label)}>Authentication</span>
         <select
-          {...stylex.props(styles.input, ui.focus)}
+          {...stylex.props(styles.input, styles.compactSelect, ui.focus)}
           aria-label="Authentication"
           value={draft.auth ?? "api-key"}
           onChange={(event) => setField("auth", event.target.value === "none" ? "none" : "api-key")}

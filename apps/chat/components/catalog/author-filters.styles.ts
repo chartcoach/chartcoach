@@ -61,6 +61,10 @@ export const styles = stylex.create({
     borderColor: colors.border,
     borderRadius: 6,
     flexShrink: 0,
+    outlineWidth: { default: 0, ":focus-within": 2 },
+    outlineStyle: "solid",
+    outlineColor: { default: "transparent", ":focus-within": colors.muted },
+    outlineOffset: 2,
   },
   input: {
     minWidth: 0,
@@ -71,6 +75,7 @@ export const styles = stylex.create({
     backgroundColor: "transparent",
     color: colors.foreground,
     fontSize: 16,
+    outlineStyle: "none",
   },
   toolbar: {
     display: "flex",

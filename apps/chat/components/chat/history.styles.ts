@@ -67,7 +67,11 @@ export const styles = stylex.create({
     color: colors.foreground,
     fontWeight: 500,
     paddingInline: 12,
-    backgroundColor: { default: colors.surface, ":hover:enabled": colors.border },
+    backgroundColor: {
+      default: "transparent",
+      ":hover:enabled": colors.border,
+      ":is([data-active])": colors.surface,
+    },
   },
   guidelines: {
     width: "100%",
@@ -203,12 +207,4 @@ export const styles = stylex.create({
     backgroundColor: { default: "transparent", ":is([data-highlighted])": colors.navigation },
   },
   rename: { display: "flex", alignItems: "center", minWidth: 0, width: "100%" },
-  footer: {
-    flexShrink: 0,
-    padding: 20,
-    paddingBottom: "max(20px, env(safe-area-inset-bottom))",
-    margin: 0,
-    color: colors.muted,
-    fontSize: 11,
-  },
 });

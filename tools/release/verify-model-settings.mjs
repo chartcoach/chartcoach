@@ -36,7 +36,12 @@ export async function verifyModelSettings(page, screenshot, customBaseURL) {
   );
   await page.getByRole("textbox", { name: "API base URL", exact: true }).fill(customBaseURL);
   await page.getByRole("combobox", { name: "Model", exact: true }).fill("package-test-model");
-  await page.getByRole("combobox", { name: "Authentication", exact: true }).selectOption("none");
+  const authentication = page.getByRole("combobox", { name: "Authentication", exact: true });
+
+  assert.ok(
+    (await authentication.evaluate((element) => element.getBoundingClientRect().width)) <= 360,
+  );
+  await authentication.selectOption("none");
   assert.match(await provider.innerText(), /Custom endpoint/);
   await page.getByRole("button", { name: "Save and use", exact: true }).click();
   await page.getByRole("dialog").waitFor({ state: "hidden" });
