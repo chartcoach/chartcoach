@@ -1,6 +1,6 @@
 {
   "name": "@chartcoach/catalog",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "JavaScript models and artifact parsers for the chartcoach visualization guideline catalog.",
   "bugs": {
     "url": "https://github.com/chartcoach/chartcoach/issues"
