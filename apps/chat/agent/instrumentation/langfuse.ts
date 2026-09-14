@@ -1,9 +1,9 @@
 import { disableInstrumentation } from "eve/instrumentation";
 import { otelIntegration } from "eve/instrumentation/otel";
 import { LangfuseProcessor, traceContext } from "../telemetry";
-import { env } from "../../lib/env";
+import { env, langfuseTracingEnabled } from "../../lib/env";
 
-export default env.LANGFUSE_PUBLIC_KEY && env.LANGFUSE_SECRET_KEY
+export default langfuseTracingEnabled
   ? otelIntegration({
       spanProcessors: [
         new LangfuseProcessor({

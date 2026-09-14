@@ -6,6 +6,7 @@ export function useWorkspace() {
   const [connections, setConnections] = useState<Connection[]>([]);
   const [connectionId, setConnectionId] = useState<string>();
   const [allowedOrigins, setAllowedOrigins] = useState<string[]>([]);
+  const [tracing, setTracing] = useState(false);
   const [threads, setThreads] = useState<SavedThread[]>([]);
   const [active, setActive] = useState<ThreadDetail>();
   const [key, setKey] = useState("new");
@@ -23,6 +24,7 @@ export function useWorkspace() {
     signal?.throwIfAborted();
     setConnections(preferences.connections);
     setAllowedOrigins(preferences.allowedOrigins);
+    setTracing(preferences.tracing);
 
     return preferences;
   }
@@ -70,6 +72,7 @@ export function useWorkspace() {
         if (controller.signal.aborted) return;
         setConnections(preferences.connections);
         setAllowedOrigins(preferences.allowedOrigins);
+        setTracing(preferences.tracing);
         let remembered: string | null = null;
 
         try {
@@ -117,6 +120,7 @@ export function useWorkspace() {
     connection: connections.find((item) => item.id === connectionId),
     selectConnection,
     allowedOrigins,
+    tracing,
     threads,
     active,
     key,

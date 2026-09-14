@@ -25,6 +25,7 @@ import {
 } from "../../lib/app/threads";
 import { connectionInputSchema, threadInputSchema, ownerSchema } from "../../shared/preferences";
 import { resolveCatalogSelection } from "../../lib/catalog/selection";
+import { langfuseTracingEnabled } from "../../lib/env";
 
 const owner = (request: Request) =>
   Effect.gen(function* () {
@@ -87,7 +88,11 @@ export default defineChannel({
           const connections = yield* listConnections(ownerId(auth, browser.id));
 
           return jsonResponse(
-            { connections, allowedOrigins: allowedModelOrigins() },
+            {
+              connections,
+              allowedOrigins: allowedModelOrigins(),
+              tracing: langfuseTracingEnabled,
+            },
             browser.cookie,
           );
         }),

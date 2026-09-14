@@ -292,6 +292,10 @@ LANGFUSE_SECRET_KEY=sk-lf-...
 LANGFUSE_BASE_URL=https://cloud.langfuse.com
 ```
 
+When tracing is enabled and both keys are present, the landing page tells users
+that conversation traces may include messages, images, and responses. The notice
+links to self-hosting instructions for running ChartCoach with tracing disabled.
+
 Use your project's region or self-hosted URL. When `.env.local` exists in the app
 directory, it supplies the complete Langfuse connection and takes precedence over
 inherited credentials. Omitted local keys disable tracing, and a partial local pair

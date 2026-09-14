@@ -26,8 +26,9 @@ function loadEnv({
         `
     ${browser ? "globalThis.window = {};" : ""}
     try {
-      const { env } = await import(${JSON.stringify(new URL("../lib/env.ts", import.meta.url).href)});
+      const { env, langfuseTracingEnabled } = await import(${JSON.stringify(new URL("../lib/env.ts", import.meta.url).href)});
       console.log(JSON.stringify({
+        enabled: langfuseTracingEnabled,
         publicKey: env.LANGFUSE_PUBLIC_KEY ?? null,
         secretKey: env.LANGFUSE_SECRET_KEY ?? null,
         baseURL: env.LANGFUSE_BASE_URL,
@@ -72,12 +73,18 @@ it.each([
   {
     source: "disabled tracing despite inherited credentials",
     environment: { ...inherited, CHARTCOACH_TRACING: "false" },
-    expected: { publicKey: null, secretKey: null, baseURL: "https://cloud.langfuse.com" },
+    expected: {
+      enabled: false,
+      publicKey: null,
+      secretKey: null,
+      baseURL: "https://cloud.langfuse.com",
+    },
   },
   {
     source: "the inherited connection when no local file exists",
     environment: inherited,
     expected: {
+      enabled: true,
       publicKey: "global-public",
       secretKey: "global-secret",
       baseURL: "https://global.example.test",
@@ -88,6 +95,7 @@ it.each([
     environment: inherited,
     local: localKeys + "LANGFUSE_BASE_URL=https://local.example.test\n",
     expected: {
+      enabled: true,
       publicKey: "local-public",
       secretKey: "local-secret",
       baseURL: "https://local.example.test",
@@ -98,6 +106,7 @@ it.each([
     environment: inherited,
     local: localKeys,
     expected: {
+      enabled: true,
       publicKey: "local-public",
       secretKey: "local-secret",
       baseURL: "https://cloud.langfuse.com",
@@ -107,7 +116,12 @@ it.each([
     source: "no connection when the local file omits credentials",
     environment: inherited,
     local: "CHARTCOACH_MODEL=vision-model\n",
-    expected: { publicKey: null, secretKey: null, baseURL: "https://cloud.langfuse.com" },
+    expected: {
+      enabled: false,
+      publicKey: null,
+      secretKey: null,
+      baseURL: "https://cloud.langfuse.com",
+    },
   },
 ])("uses $source", ({ expected, ...options }) => {
   const result = loadEnv(options);

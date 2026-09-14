@@ -1,6 +1,6 @@
 import { AttachmentPrimitive, ComposerPrimitive } from "@assistant-ui/react";
 import * as Match from "effect/Match";
-import { ArrowUp, ImagePlus, X } from "lucide-react";
+import { ArrowUp, ImagePlus, Info, X } from "lucide-react";
 import type { ReactNode, RefObject } from "react";
 import * as stylex from "@stylexjs/stylex";
 import { colors, media, motion } from "../ui/tokens.stylex";
@@ -117,11 +117,33 @@ const styles = stylex.create({
   },
   remove: { marginLeft: "auto", flexShrink: 0 },
   note: {
+    display: "grid",
+    gap: 4,
     textAlign: "center",
     color: colors.muted,
     fontSize: 12,
     lineHeight: 1.5,
     marginTop: { default: 12, [media.mobile]: 9 },
+  },
+  noteLine: { margin: 0 },
+  tracingNotice: {
+    display: "flex",
+    alignItems: "flex-start",
+    gap: 8,
+    width: "min(100%, 680px)",
+    marginBlock: 2,
+    marginInline: "auto",
+    paddingBlock: 9,
+    paddingInline: 11,
+    borderRadius: 8,
+    backgroundColor: colors.navigation,
+    textAlign: "left",
+  },
+  tracingIcon: { flexShrink: 0, marginTop: 2 },
+  tracingLink: {
+    color: colors.accentText,
+    fontWeight: 500,
+    textUnderlineOffset: 2,
   },
 });
 
@@ -134,6 +156,7 @@ export function Composer({
   error,
   onRecover,
   modelControl,
+  tracing = false,
   embedded = false,
 }: {
   onUpload: (files: File[]) => void;
@@ -144,6 +167,7 @@ export function Composer({
   error?: string;
   onRecover?: () => Promise<void>;
   modelControl?: ReactNode;
+  tracing?: boolean;
   embedded?: boolean;
 }) {
   return (
@@ -268,9 +292,29 @@ export function Composer({
           </button>
         </div>
       ) : null}
-      <p {...stylex.props(styles.note)} id="message-privacy">
-        Messages and images are sent to the configured AI provider.
-      </p>
+      <div {...stylex.props(styles.note)} id="message-privacy">
+        <p {...stylex.props(styles.noteLine)}>
+          Messages and images are sent to the configured AI provider.
+        </p>
+        {embedded && tracing ? (
+          <p {...stylex.props(styles.tracingNotice)}>
+            <Info {...stylex.props(styles.tracingIcon)} size={14} aria-hidden="true" />
+            <span>
+              Conversation tracing is enabled to improve ChartCoach and may include messages,
+              images, and responses. You can opt out by{" "}
+              <a
+                {...stylex.props(styles.tracingLink, ui.focus)}
+                href="https://docs.chartcoach.dev/"
+                target="_blank"
+                rel="noreferrer"
+              >
+                self-hosting ChartCoach with tracing disabled
+              </a>
+              .
+            </span>
+          </p>
+        ) : null}
+      </div>
     </div>
   );
 }
