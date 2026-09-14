@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 
-export async function verifyModelSettings(page, screenshot) {
+export async function verifyModelSettings(page, screenshot, customBaseURL) {
   await page.getByRole("button", { name: "Model settings", exact: true }).click();
   await page.getByRole("button", { name: "Add a connection", exact: true }).click();
   await page.getByRole("button", { name: "OpenAI compatible", exact: true }).click();
@@ -34,6 +34,10 @@ export async function verifyModelSettings(page, screenshot) {
     await page.getByRole("textbox", { name: "API base URL", exact: true }).inputValue(),
     "",
   );
-  await page.getByRole("button", { name: "Cancel", exact: true }).click();
-  await page.getByRole("button", { name: "Close model settings", exact: true }).click();
+  await page.getByRole("textbox", { name: "API base URL", exact: true }).fill(customBaseURL);
+  await page.getByRole("combobox", { name: "Model", exact: true }).fill("package-test-model");
+  await page.getByRole("combobox", { name: "Authentication", exact: true }).selectOption("none");
+  assert.match(await provider.innerText(), /Custom endpoint/);
+  await page.getByRole("button", { name: "Save and use", exact: true }).click();
+  await page.getByRole("dialog").waitFor({ state: "hidden" });
 }
