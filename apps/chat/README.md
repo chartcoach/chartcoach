@@ -18,6 +18,23 @@ Install Node.js 24 or later on macOS or Linux, then run:
 npx chartcoach
 ```
 
+Or use Bun 1.4.2 or later, or Deno 2.9.6 or later:
+
+```bash
+bunx --bun chartcoach
+deno x -A chartcoach
+```
+
+`bunx chartcoach` uses Node.js. `--bun` runs the app with Bun itself.
+Deno's `-A` grants the permissions needed for local storage, native catalog engines,
+network access, and the worker process. The same flags and environment variables
+work with each runner.
+
+If a runner reports that it cannot find an executable, check the version it selected.
+Release-age policies can temporarily select the old `0.0.0` name reservation,
+which has no CLI. Request an exact released version to surface the age-policy
+error, then wait until that release is eligible or adjust your runner's policy.
+
 ChartCoach opens its local URL in an interactive terminal. Choose **Model settings**
 to connect Anthropic, OpenAI, Gemini, or an OpenAI-compatible endpoint. Choose a
 model that supports images and tool calls. Conversations and encrypted connections
@@ -131,7 +148,7 @@ embeddings for vector and hybrid search.
 object on stdout. Startup messages and errors use stderr. `--verbose` includes worker diagnostics, which may contain conversation details. Exit status is 0 for
 success, 2 for configuration or argument errors, and 1 for runtime failures.
 
-SQLite uses Node's built-in engine. The package works with npm install scripts
+SQLite uses the runtime's `node:sqlite` implementation. The package works with npm install scripts
 disabled; no SQLite binding needs to be downloaded or compiled. The Docker image
 also installs with scripts disabled.
 

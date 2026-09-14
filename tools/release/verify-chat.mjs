@@ -7,16 +7,45 @@ import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { parseArgs } from "node:util";
 import { chromium } from "playwright";
 import { verifyPicker } from "./verify-picker.mjs";
 import { verifyModelSettings } from "./verify-model-settings.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 
-const [chatArchive, catalogArchive, catalogLocation] = process.argv.slice(2);
+const { positionals, values } = parseArgs({
+  allowPositionals: true,
+  options: { runner: { type: "string", default: "npx" } },
+});
+
+const [chatArchive, catalogArchive, catalogLocation] = positionals;
+
+const runners = {
+  npx: ["npx", "--no-install", "chartcoach"],
+  bunx: ["bunx", "--no-install", "chartcoach"],
+  bun: ["bunx", "--bun", "--no-install", "chartcoach"],
+  deno: [
+    "deno",
+    "x",
+    "--no-lock",
+    "--node-modules-dir=manual",
+    "--ignore-scripts",
+    "--no-prompt",
+    "-A",
+    "chartcoach",
+  ],
+};
+
+if (!Object.hasOwn(runners, values.runner))
+  throw new Error("Choose --runner npx, bunx, bun, or deno.");
+
+const [runner, ...runnerArgs] = runners[values.runner];
 
 if (!chatArchive || !catalogArchive)
-  throw new Error("Usage: verify:chat <chat.tgz> <catalog.tgz> [catalog-location]");
+  throw new Error(
+    "Usage: verify:chat <chat.tgz> <catalog.tgz> [catalog-location] [--runner npx|bunx|bun|deno]",
+  );
 
 const directory =
   process.env.CHARTCOACH_TEST_DIRECTORY ?? (await mkdtemp(join(tmpdir(), "chartcoach-installed-")));
@@ -114,16 +143,12 @@ async function start(environmentOnly = false) {
       CHARTCOACH_MODEL_AUTH: "none",
       CHARTCOACH_OPEN: "false",
     });
-  child = spawn(
-    "npx",
-    ["--no-install", "chartcoach", ...(environmentOnly ? [] : flags), "--verbose"],
-    {
-      cwd: directory,
-      detached: true,
-      stdio: ["ignore", "pipe", "pipe"],
-      env: environment,
-    },
-  );
+  child = spawn(runner, [...runnerArgs, ...(environmentOnly ? [] : flags), "--verbose"], {
+    cwd: directory,
+    detached: true,
+    stdio: ["ignore", "pipe", "pipe"],
+    env: environment,
+  });
   let output = "";
 
   return new Promise((resolve, reject) => {
@@ -162,13 +187,13 @@ try {
     resolve(root, chatArchive),
     resolve(root, catalogArchive),
   ]);
-  assert.match(run("npx", ["--no-install", "chartcoach", "--help"]), /Start the chat app/);
+  assert.match(run(runner, [...runnerArgs, "--help"]), /Start the chat app/);
 
   const version = JSON.parse(
     await readFile(join(directory, "node_modules/chartcoach/package.json"), "utf8"),
   ).version;
 
-  assert.equal(run("npx", ["--no-install", "chartcoach", "--version"]).trim(), version);
+  assert.equal(run(runner, [...runnerArgs, "--version"]).trim(), version);
   await cp(join(root, "fixtures/catalog-release"), join(directory, "catalog"), { recursive: true });
 
   const { openCatalog } = await import(
@@ -248,9 +273,8 @@ try {
   modelURL = `http://127.0.0.1:${modelPort}/v1`;
 
   const diagnostic = JSON.parse(
-    run("npx", [
-      "--no-install",
-      "chartcoach",
+    run(runner, [
+      ...runnerArgs,
       "doctor",
       "--catalog",
       catalogLocation ?? "./catalog",
@@ -303,7 +327,7 @@ try {
     false,
   );
   await page.screenshot({
-    path: join(root, ".context/chat-package-sidebar-collapsed.png"),
+    path: join(root, `.context/chat-package-${values.runner}-sidebar-collapsed.png`),
     fullPage: true,
     animations: "disabled",
   });
@@ -313,13 +337,17 @@ try {
   assert.equal(await darkMark.count(), 1);
   assert.match(await darkMark.getAttribute("src"), /chartcoach-mark-white/);
   await page.screenshot({
-    path: join(root, ".context/chat-package-sidebar-collapsed-dark.png"),
+    path: join(root, `.context/chat-package-${values.runner}-sidebar-collapsed-dark.png`),
     fullPage: true,
     animations: "disabled",
   });
   await page.emulateMedia({ colorScheme: "light" });
   await mark.click();
-  await verifyModelSettings(page, join(root, ".context/chat-package-model-settings.png"), modelURL);
+  await verifyModelSettings(
+    page,
+    join(root, `.context/chat-package-${values.runner}-model-settings.png`),
+    modelURL,
+  );
   const choosing = page.waitForEvent("filechooser");
   await page.getByRole("button", { name: "Add chart", exact: true }).click();
   await (await choosing).setFiles(join(root, "apps/chat/public/examples/bicycle-trips.png"));
@@ -332,7 +360,7 @@ try {
   const selected = await verifyPicker(
     page,
     catalog,
-    join(root, ".context/chat-package-picker.png"),
+    join(root, `.context/chat-package-${values.runner}-picker.png`),
   );
 
   assert.equal(
@@ -355,14 +383,14 @@ try {
   await page.getByText("1 primary · 1 found", { exact: true }).waitFor();
   await page.getByText("Response complete.", { exact: true }).waitFor({ state: "attached" });
   await page.screenshot({
-    path: join(root, ".context/chat-package-desktop.png"),
+    path: join(root, `.context/chat-package-${values.runner}-desktop.png`),
     fullPage: true,
     animations: "disabled",
   });
   await page.setViewportSize({ width: 390, height: 844 });
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
   await page.screenshot({
-    path: join(root, ".context/chat-package-mobile.png"),
+    path: join(root, `.context/chat-package-${values.runner}-mobile.png`),
     fullPage: true,
     animations: "disabled",
   });
@@ -429,7 +457,7 @@ try {
   assert.equal(errors.length, 0, errors.join("\n"));
   assert.ok(selected.includes(id));
   console.log(
-    "Verified file-free npx startup through flags and environment, authenticated UI, native catalog loading, browser picker filtering and scope, chart upload, grounded answer, local citations, narrow layout, and restart persistence.",
+    `Verified ${values.runner} startup through flags and environment, authenticated UI, native catalog loading, browser picker filtering and scope, chart upload, grounded answer, local citations, narrow layout, and restart persistence.`,
   );
 } catch (error) {
   if (page) {
@@ -442,7 +470,10 @@ try {
       ).slice(-6000),
     );
     await page
-      .screenshot({ path: join(root, ".context/chat-package-failure.png"), fullPage: true })
+      .screenshot({
+        path: join(root, `.context/chat-package-${values.runner}-failure.png`),
+        fullPage: true,
+      })
       .catch(() => {});
   }
 

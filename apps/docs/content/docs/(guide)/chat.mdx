@@ -10,6 +10,17 @@ Start ChartCoach with Node.js 24 or later:
 npx chartcoach
 ```
 
+Alternatively, use Bun 1.4.2+ or Deno 2.9.6+:
+
+```bash
+bunx --bun chartcoach
+deno x -A chartcoach
+```
+
+`bunx chartcoach` uses Node.js. Add `--bun` to run with Bun itself. Deno's `-A`
+grants access to storage, native catalog engines, the network, and worker processes.
+All three runners accept the same ChartCoach flags and environment variables.
+
 Choose **Model settings** to connect a provider and select a model that supports
 images and tool calls. Upload a chart or ask about a visualization choice.
 Guideline citations open locally with their sources. Conversations and encrypted
@@ -96,3 +107,8 @@ npx chartcoach doctor --json
 
 The report includes software and catalog identity, model availability, storage
 locations, and native DuckDB loading. Credentials are excluded.
+
+If Bun or Deno cannot find an executable, check which package version it selected.
+A release-age policy can temporarily select the `0.0.0` name reservation, which
+has no CLI. Pin an exact released version to see the age-policy error, then wait
+until it is eligible or adjust your runner's policy.

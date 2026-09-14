@@ -38,6 +38,9 @@ Node.js, TypeScript, Chromium, DuckDB, and LanceDB consumers. The minimum Node.j
 version comes from the SDK's `engines.node`. Minimum direct dependency checks
 also run in CI. The chat consumer installs with lifecycle scripts disabled and verifies
 the packed CLI against both the shared fixture and a pinned full catalog release.
+The same consumer check runs through `bunx`, native Bun, and native Deno against
+the shared fixture. Use `verify:chat --runner npx|bunx|bun|deno` to select a runner
+when checking local tarballs.
 It exercises browser catalog loading and retry, author/year/source filters,
 pagination, empty-scope recovery, chart and draft preservation, grounded chat,
 local citations, mobile layout, and restart persistence. These checks run before
