@@ -8,7 +8,7 @@ import { readFile } from "node:fs/promises";
 import { ConfigurationError, loadConfig } from "../runtime/config";
 import { startChat } from "../runtime/start";
 import { chalkStderr } from "chalk";
-import { renderLoading, renderReady } from "./output";
+import { renderLoading, renderReady, renderStopped, renderStopping } from "./output";
 
 const distribution = fileURLToPath(new URL("../", import.meta.url));
 
@@ -97,7 +97,13 @@ options(program.command("chat", { isDefault: true }).description("Start the chat
   .action(async (_options, command) => {
     const config = configuration(command.opts(), command.getOptionValueSource("open") === "cli");
     const controller = new AbortController();
-    const stop = () => controller.abort();
+
+    const stop = () => {
+      if (controller.signal.aborted) return;
+      process.stderr.write(renderStopping());
+      controller.abort();
+    };
+
     process.on("SIGINT", stop);
     process.on("SIGTERM", stop);
 
@@ -136,6 +142,8 @@ options(program.command("chat", { isDefault: true }).description("Start the chat
       process.off("SIGINT", stop);
       process.off("SIGTERM", stop);
     }
+
+    if (controller.signal.aborted) process.stderr.write(renderStopped());
   });
 
 options(program.command("doctor").description("Check configuration, catalog, and native runtime"))

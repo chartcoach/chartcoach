@@ -13,6 +13,14 @@ export function renderLoading(chalk: ChalkInstance = chalkStderr) {
   return `${chalk.hex(accent)("◌")} ${chalk.dim("Loading catalog…")}\n`;
 }
 
+export function renderStopping(chalk: ChalkInstance = chalkStderr) {
+  return `\n${chalk.yellow("◌")} Stopping ChartCoach…\n`;
+}
+
+export function renderStopped(chalk: ChalkInstance = chalkStderr) {
+  return `${chalk.green("✓")} ChartCoach stopped.\n`;
+}
+
 export function renderReady(
   { url, catalog, model, dataDir }: StartupDetails,
   chalk: ChalkInstance = chalkStderr,
