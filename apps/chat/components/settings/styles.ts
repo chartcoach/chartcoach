@@ -89,7 +89,15 @@ export const styles = stylex.create({
     color: colors.foreground,
     fontSize: { default: 14, [media.mobile]: 16 },
   },
-  compactSelect: { width: "min(100%, 360px)" },
+  compactSelect: { position: "relative", display: "block", width: "min(100%, 360px)" },
+  nativeSelect: { appearance: "none", paddingRight: 40 },
+  selectChevron: {
+    position: "absolute",
+    right: 12,
+    top: "50%",
+    transform: "translateY(-50%)",
+    pointerEvents: "none",
+  },
   inputRow: {
     display: "grid",
     gridTemplateColumns: "minmax(0, 1fr) auto",

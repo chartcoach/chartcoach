@@ -54,15 +54,12 @@ export function HistoryPanel({
             />
           ) : navigation.desktop ? (
             <nav {...stylex.props(styles.rail)} aria-label="Conversation shortcuts">
-              <ThreadListPrimitive.New
-                {...stylex.props(ui.button, ui.quietButton, ui.focus)}
+              <NewChatButton
+                compact
                 disabled={disabled}
-                aria-label="New chat"
-                title="New chat"
-                onClick={navigation.closeOnSelect}
-              >
-                <SquarePen size={18} />
-              </ThreadListPrimitive.New>
+                selected={navigation.view === "chat"}
+                onOpen={navigation.closeOnSelect}
+              />
               <button
                 {...stylex.props(ui.button, ui.quietButton, ui.focus)}
                 type="button"
@@ -267,22 +264,27 @@ function NewChatButton({
   disabled,
   selected,
   onOpen,
+  compact = false,
 }: {
   disabled: boolean;
   selected: boolean;
   onOpen: () => void;
+  compact?: boolean;
 }) {
   const active = useAuiState((state) => state.threads.newThreadId === state.threads.mainThreadId);
 
   return (
     <ThreadListPrimitive.New
-      {...stylex.props(ui.button, ui.focus, styles.newThread)}
+      {...stylex.props(ui.button, ui.focus, styles.newThread, compact && styles.guidelinesCompact)}
+      aria-label="New chat"
+      title={compact ? "New chat" : undefined}
       disabled={disabled}
       data-active={selected && active ? "true" : undefined}
       aria-current={selected && active ? "page" : undefined}
       onClick={onOpen}
     >
-      <SquarePen size={17} aria-hidden="true" /> New chat
+      <SquarePen size={17} aria-hidden="true" />
+      {compact ? null : "New chat"}
     </ThreadListPrimitive.New>
   );
 }

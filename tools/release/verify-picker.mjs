@@ -84,6 +84,11 @@ export async function verifyPicker(page, catalog, screenshot) {
   await page.getByRole("button", { name: "Retry", exact: true }).click();
   await page.getByRole("button", { name: "Retry", exact: true }).waitFor({ state: "hidden" });
   await selection(all);
+  await page.getByRole("button", { name: "Close sidebar", exact: true }).click();
+  await page.getByRole("navigation", { name: "Conversation shortcuts" }).waitFor();
+  assert.equal(await page.locator("[aria-current]:visible").count(), 1);
+  assert.equal(await guidelines.getAttribute("aria-current"), "page");
+  await page.getByRole("button", { name: "Open sidebar", exact: true }).click();
   await page.getByRole("button", { name: "How filters work", exact: true }).click();
   await page.getByRole("heading", { name: "How filters work", exact: true }).waitFor();
   await page.getByText("Guidelines can cite more than one source.", { exact: false }).waitFor();
@@ -140,6 +145,41 @@ export async function verifyPicker(page, catalog, screenshot) {
       ids(
         sources.filter(
           (row) => Number(row.year) >= start + shift && Number(row.year) <= end + shift,
+        ),
+      ),
+    );
+    // Drag against each edge without stretching the interval, then use the keyboard thumb.
+    const span = end - start;
+
+    for (const direction of [-1, 1]) {
+      const current = await range.boundingBox();
+
+      assert.ok(current);
+      await page.mouse.move(current.x + current.width / 2, current.y + current.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(current.x + current.width / 2 + direction * trackWidth, current.y, {
+        steps: 5,
+      });
+      await page.mouse.up();
+      const expectedFrom = direction < 0 ? firstYear : lastYear - span;
+      const expectedTo = expectedFrom + span;
+      await selection(
+        ids(
+          sources.filter(
+            (row) => Number(row.year) >= expectedFrom && Number(row.year) <= expectedTo,
+          ),
+        ),
+      );
+      assert.equal(Number((await fromInput.inputValue()) || firstYear), expectedFrom);
+      assert.equal(Number((await toInput.inputValue()) || lastYear), expectedTo);
+    }
+
+    await page.getByRole("slider", { name: "Earliest publication year" }).focus();
+    await page.keyboard.press("ArrowRight");
+    await selection(
+      ids(
+        sources.filter(
+          (row) => Number(row.year) >= lastYear - span + 1 && Number(row.year) <= lastYear,
         ),
       ),
     );

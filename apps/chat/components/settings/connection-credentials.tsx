@@ -1,4 +1,4 @@
-import { Eye, EyeOff } from "lucide-react";
+import { ChevronDown, Eye, EyeOff } from "lucide-react";
 import * as stylex from "@stylexjs/stylex";
 import type { useConnectionForm } from "../../chat/use-connection-form";
 import { styles } from "./styles";
@@ -46,15 +46,20 @@ function CompatibleCredentials({
       </label>
       <label {...stylex.props(styles.field)}>
         <span {...stylex.props(styles.label)}>Authentication</span>
-        <select
-          {...stylex.props(styles.input, styles.compactSelect, ui.focus)}
-          aria-label="Authentication"
-          value={draft.auth ?? "api-key"}
-          onChange={(event) => setField("auth", event.target.value === "none" ? "none" : "api-key")}
-        >
-          <option value="api-key">API key</option>
-          <option value="none">No authentication (local endpoint)</option>
-        </select>
+        <span {...stylex.props(styles.compactSelect)}>
+          <select
+            {...stylex.props(styles.input, styles.nativeSelect, ui.focus)}
+            aria-label="Authentication"
+            value={draft.auth ?? "api-key"}
+            onChange={(event) =>
+              setField("auth", event.target.value === "none" ? "none" : "api-key")
+            }
+          >
+            <option value="api-key">API key</option>
+            <option value="none">No authentication (local endpoint)</option>
+          </select>
+          <ChevronDown size={16} aria-hidden="true" {...stylex.props(styles.selectChevron)} />
+        </span>
       </label>
     </>
   );

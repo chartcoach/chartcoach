@@ -76,8 +76,10 @@ it("keeps new chat and search in the collapsed conversation rail", () => {
   expect(html).toContain('aria-label="Guidelines"');
 });
 
-it("gives selected semantics only to the active workspace destination", () => {
-  const html = renderToStaticMarkup(<Navigation disabled={false} view="guidelines" />);
+it.each([false, true])("selects Guidelines alone with collapsed=%s", (collapsed) => {
+  const html = renderToStaticMarkup(
+    <Navigation disabled={false} collapsed={collapsed} view="guidelines" />,
+  );
 
   expect(html.match(/aria-current=/g)).toHaveLength(1);
   expect(html).toContain('aria-label="Guidelines" aria-current="page"');

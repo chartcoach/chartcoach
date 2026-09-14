@@ -41,6 +41,19 @@ export async function verifyModelSettings(page, screenshot, customBaseURL) {
   assert.ok(
     (await authentication.evaluate((element) => element.getBoundingClientRect().width)) <= 360,
   );
+
+  const arrow = await authentication.evaluate((element) => {
+    const control = element.getBoundingClientRect();
+    const icon = element.parentElement.querySelector("svg").getBoundingClientRect();
+
+    return {
+      inset: control.right - icon.right,
+      center: (control.top + control.bottom - icon.top - icon.bottom) / 2,
+    };
+  });
+
+  assert.equal(arrow.inset, 12);
+  assert.equal(arrow.center, 0);
   await authentication.selectOption("none");
   assert.match(await provider.innerText(), /Custom endpoint/);
   await page.getByRole("button", { name: "Save and use", exact: true }).click();

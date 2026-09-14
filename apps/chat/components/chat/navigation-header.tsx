@@ -117,6 +117,8 @@ export function NavigationHeader({
               disabled={disabled}
               aria-label="New chat"
               title="New chat"
+              aria-current={undefined}
+              data-active={undefined}
               onClick={navigation.closeOnSelect}
             >
               <SquarePen size={18} />
