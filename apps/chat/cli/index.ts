@@ -86,7 +86,7 @@ function configuration(values: SettingsOptions, explicitOpen: boolean) {
 
 const program = new Command()
   .name("chartcoach")
-  .description("Run ChartCoach locally with source-traced visualization guidance.")
+  .description("Run ChartCoach locally for source-traced visualization design guidance.")
   .version(version)
   .showHelpAfterError()
   .showSuggestionAfterError()
