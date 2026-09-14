@@ -1,0 +1,31 @@
+packages/catalog/package.json
+  s_ca4bd075f991a6::t_07abf43dc3c911 3
+packages/brand/package.json
+  s_ca4bd075f991a6::t_07abf43dc3c911 3
+packages/chartcoach/pyproject.toml
+  s_ca4bd075f991a6::t_07abf43dc3c911 3
+apps/docs/package.json
+  s_ca4bd075f991a6::t_07abf43dc3c911 3
+apps/chat/package.json
+  s_ca4bd075f991a6::t_07abf43dc3c911 3
+package.json
+  s_ca4bd075f991a6::t_07abf43dc3c911 3
+apps/site/package.json
+  s_ca4bd075f991a6::t_07abf43dc3c911 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "8e4f45f5d7c1d47d840e742ee57c650158980d37",
+  "prompts": {},
+  "sessions": {
+    "s_ca4bd075f991a6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a09f45-a7f1-75f2-94cc-1a9de7d25e38",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Péter Ferenc Gyarmati <dev.petergy@gmail.com>"
+    }
+  }
+}
