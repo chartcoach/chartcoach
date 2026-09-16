@@ -590,8 +590,8 @@ importers:
         specifier: 'catalog:'
         version: 19.2.8(react@19.2.8)
       refkit-js:
-        specifier: 0.3.0
-        version: 0.3.0
+        specifier: 0.4.0
+        version: 0.4.0
       sanitize-html:
         specifier: ^2.17.7
         version: 2.17.7
@@ -660,8 +660,8 @@ importers:
         specifier: '>=1.1.1'
         version: 1.1.1
       refkit-js:
-        specifier: '>=0.3.0'
-        version: 0.3.0
+        specifier: '>=0.4.0'
+        version: 0.4.0
       tar:
         specifier: '>=7.5.22'
         version: 7.5.22
@@ -7193,8 +7193,8 @@ packages:
   recma-stringify@1.0.0:
     resolution: {integrity: sha512-cjwII1MdIIVloKvC9ErQ+OgAtwHBmcZ0Bg4ciz78FtbT8In39aAYbaA7zvxQ61xVMSPE8WxhLwLbhif4Js2C+g==}
 
-  refkit-js@0.3.0:
-    resolution: {integrity: sha512-3jjlJHuU9wbUyRap6pxrz3C6A40ivVXX+l56BL+Shg7RGMJZ/a8+jhiXVmyaufjoiFtelh5Wrfjn334OM8JL0w==}
+  refkit-js@0.4.0:
+    resolution: {integrity: sha512-KKhwNUnMSmzmiWJ40cGAGYjIdMgfIwyugwdi6Y+hZ53kbk7dg7aDFFvE7A95zR+eBFyzUKn1bPc3R/vNHnwYqw==}
     engines: {node: '>=22.19.0'}
 
   reflect-metadata@0.2.2:
@@ -15046,7 +15046,7 @@ snapshots:
       unified: 11.0.5
       vfile: 6.0.3
 
-  refkit-js@0.3.0: {}
+  refkit-js@0.4.0: {}
 
   reflect-metadata@0.2.2: {}
 

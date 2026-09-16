@@ -90,20 +90,34 @@ def test_authored_bibliography_retains_unicode_and_macro_context() -> None:
     )
 
 
+@pytest.mark.parametrize(("reference_count", "workers"), [(1, 1), (40, 1), (40, 4)])
 def test_catalog_citations_are_cached_and_preserve_raw_source(
-    sample_manifest: CatalogManifest, monkeypatch: pytest.MonkeyPatch
+    sample_manifest: CatalogManifest,
+    monkeypatch: pytest.MonkeyPatch,
+    reference_count: int,
+    workers: int,
 ) -> None:
-    import polars_refkit
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Lock
+
+    import polars as pl
+    import refkit
 
     calls = 0
-    original = polars_refkit.full_bibliography
+    lock = Lock()
+    original = refkit.Document
 
     def render(*args, **kwargs):
         nonlocal calls
-        calls += 1
+        with lock:
+            calls += 1
         return original(*args, **kwargs)
 
-    monkeypatch.setattr(polars_refkit, "full_bibliography", render)
+    monkeypatch.setattr(pl, "thread_pool_size", lambda: workers)
+    monkeypatch.setattr(refkit, "Document", render)
+    sources = tuple(
+        BIBTEX.replace("smith2024", f"smith{i:03}") for i in range(reference_count)
+    )
     catalog = Catalog.from_guidelines(
         [
             Guideline(
@@ -113,24 +127,29 @@ def test_catalog_citations_are_cached_and_preserve_raw_source(
                 sections=(
                     Section(role="advice", title="Advice", content="Read sources."),
                 ),
-                references=(BIBTEX,),
+                references=sources,
             )
             for guideline_id in ("first", "second")
         ],
         manifest=sample_manifest,
     )
 
-    first = catalog.cite(ids=["first"])
+    with ThreadPoolExecutor(max_workers=4) as readers:
+        results = list(readers.map(lambda _: catalog.cite(ids=["first"]), range(4)))
+    assert all(result == results[0] for result in results)
+    first = results[0]
     first[0]["sources"][0]["citation"] = "Changed by caller"
     second = catalog.cite(ids=["second", "first"])
 
-    assert calls == 1
-    assert catalog.table("references").height == 1
-    assert catalog.table("references").item(0, "bibtex") == BIBTEX
-    assert [row["sources"][0]["citation"] for row in second] == [
-        "Smith, A. (2024). Readable charts. Journal of Charts.",
-        "Smith, A. (2024). Readable charts. Journal of Charts.",
-    ]
+    assert calls == reference_count
+    assert catalog.table("references").get_column("bibtex").to_list() == list(sources)
+    for row in second:
+        assert [source["reference_id"] for source in row["sources"]] == [
+            f"smith{i:03}" for i in range(reference_count)
+        ]
+        assert [source["citation"] for source in row["sources"]] == [
+            "Smith, A. (2024). Readable charts. Journal of Charts."
+        ] * reference_count
 
 
 def test_catalog_rejects_ambiguous_reference_fields(
@@ -155,3 +174,33 @@ def test_catalog_rejects_ambiguous_reference_fields(
         catalog.read(ids=["source"], source_detail="full")
     diagnostics = cast(list[dict[str, object]], error.value.details["diagnostics"])
     assert diagnostics[0]["code"] == "duplicate_field"
+
+
+def test_failed_citation_render_can_be_retried(
+    sample_catalog: Catalog, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import polars as pl
+    import refkit
+
+    sources = [BIBTEX.replace("smith2024", f"smith{i:03}") for i in range(40)]
+    catalog = Catalog(
+        sample_catalog.to_frame().with_columns(pl.lit(sources).alias("references")),
+        manifest=sample_catalog.manifest,
+    )
+    original = refkit.Document
+
+    def render(library, *args, **kwargs):
+        if "smith020" in library:
+            raise refkit.RefkitError("Rendering failed")
+        return original(library, *args, **kwargs)
+
+    monkeypatch.setattr(pl, "thread_pool_size", lambda: 4)
+    monkeypatch.setattr(refkit, "Document", render)
+    with pytest.raises(
+        CatalogError, match="Could not render BibTeX reference"
+    ) as error:
+        catalog.cite(ids=["direct-labels"])
+    assert error.value.details == {"reference_id": "smith020"}
+
+    monkeypatch.setattr(refkit, "Document", original)
+    assert len(catalog.cite(ids=["direct-labels"])[0]["sources"]) == len(sources)

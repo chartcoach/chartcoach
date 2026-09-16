@@ -3,7 +3,7 @@ members = ["packages/chartcoach"]
 
 [tool.uv]
 exclude-newer = "2 days"
-exclude-newer-package = { agent-plugins = "2026-09-07T16:53:00Z", refkit = false, polars-refkit = false }
+exclude-newer-package = { agent-plugins = "2026-09-07T16:53:00Z", refkit = false }
 
 [tool.ruff.lint]
 pydocstyle = { convention = "numpy" }

@@ -14,7 +14,6 @@ exclude-newer-span = "P2D"
 
 [options.exclude-newer-package]
 agent-plugins = "2026-09-07T16:53:00Z"
-polars-refkit = false
 refkit = false
 
 [manifest]
@@ -162,7 +161,6 @@ dependencies = [
     { name = "duckdb" },
     { name = "platformdirs" },
     { name = "polars" },
-    { name = "polars-refkit" },
     { name = "pyyaml" },
     { name = "refkit" },
     { name = "tabulate" },
@@ -218,11 +216,10 @@ requires-dist = [
     { name = "obstore", marker = "extra == 'cloud'", specifier = ">=0.11.0" },
     { name = "platformdirs", specifier = ">=4" },
     { name = "polars", specifier = ">=1.39.0" },
-    { name = "polars-refkit", specifier = ">=0.3.0" },
     { name = "pyarrow", marker = "extra == 'index'", specifier = ">=23.0.1" },
     { name = "pydantic", marker = "extra == 'mcp'", specifier = ">=2.12" },
     { name = "pyyaml", specifier = ">=6" },
-    { name = "refkit", specifier = ">=0.3.0" },
+    { name = "refkit", specifier = ">=0.4.0" },
     { name = "tabulate", specifier = ">=0.10.0" },
     { name = "typing-extensions", specifier = ">=4.6.0" },
     { name = "umap-learn", marker = "extra == 'projection'", specifier = ">=0.5.12" },
@@ -998,22 +995,6 @@ wheels = [
 ]
 
 [[package]]
-name = "polars-refkit"
-version = "0.3.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "agent-plugins" },
-    { name = "polars" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/64/13/0eacf677380d266e994aacf65a862dda7ed198dcfd350f87d8e0ad6c2369/polars_refkit-0.3.0.tar.gz", hash = "sha256:3fc06fe61066f2b8de8011c4ca64dcfd7c8924bc7a490e6a12a671519975e1f7", size = 97230, upload-time = "2026-09-09T07:17:22.159Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/38/56/4692d0c3a9c55081ed7a25cd03308619b6da1fefaf342564cc12089bc4ed/polars_refkit-0.3.0-cp310-abi3-macosx_11_0_arm64.whl", hash = "sha256:24101efdf820fecb9887d23fcafc1608230aaaffeb1de90e771a2a7bbed9b48d", size = 5248999, upload-time = "2026-09-09T07:17:16.526Z" },
-    { url = "https://files.pythonhosted.org/packages/f2/6e/a16f8d9e19a19b85ed71b49fb83eae57b9d798e6e0587f6e0fcbbae373b9/polars_refkit-0.3.0-cp310-abi3-manylinux_2_34_x86_64.whl", hash = "sha256:9ca891ea7790d9046d4f7f0466d8850785b5b40fa4babe88acd6b851069abba5", size = 6139111, upload-time = "2026-09-09T07:17:18.009Z" },
-    { url = "https://files.pythonhosted.org/packages/8b/2b/ada5ab5e6564cd26e4083c0ba8cab503248509ac287aa5c349ac32a615a9/polars_refkit-0.3.0-cp310-abi3-pyemscripten_2026_0_wasm32.whl", hash = "sha256:8f404d04d6fbdd31d9d3edcb796c453d3c73c44d77ac4937589e99f3b3caf4f1", size = 3774052, upload-time = "2026-09-09T07:17:19.34Z" },
-    { url = "https://files.pythonhosted.org/packages/44/88/bba465ff21028632c61d347c81ac97598b4e3ae4b8ba4a597635a16388e7/polars_refkit-0.3.0-cp310-abi3-win_amd64.whl", hash = "sha256:8df0f68cb951774cb729155078f16af81afead3825f4ce0a04e87b1c6caaa553", size = 6118063, upload-time = "2026-09-09T07:17:20.72Z" },
-]
-
-[[package]]
 name = "polars-runtime-32"
 version = "1.44.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1406,17 +1387,17 @@ wheels = [
 
 [[package]]
 name = "refkit"
-version = "0.3.0"
+version = "0.4.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "agent-plugins" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/48/e4/355e09b37b3c3a8fb7ecc26ce2acfc1ed02c0cb4b57389163da3f1b22be1/refkit-0.3.0.tar.gz", hash = "sha256:26dab2b60513bcb2d3a3028154a5fcbd9ab88f5f7542f98ddd3ad44c7998539d", size = 95813, upload-time = "2026-09-09T07:07:11.463Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/75/1d/8a48382761d99eee410e2327b55ba130db32ac582fbb6f83c352ce91c623/refkit-0.4.0.tar.gz", hash = "sha256:edffd632d530cb66d19485ebaf0db89fb44d889a1b284513f05b150b2767359d", size = 172543, upload-time = "2026-09-16T02:10:57.92Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/82/0f/f4397845b523ce239e1230e2953bd25bc568a039226b687885aa5c75f972/refkit-0.3.0-cp310-abi3-macosx_11_0_arm64.whl", hash = "sha256:857eb7d2de841dc9718652fc7e2d9fd4418f45cfb662e54348d712d5dd5d13fe", size = 2613571, upload-time = "2026-09-09T07:07:05.744Z" },
-    { url = "https://files.pythonhosted.org/packages/53/25/90ef6d68246af88a27952332ca0e735e3cc619ff26eea59a383869bdd583/refkit-0.3.0-cp310-abi3-manylinux_2_34_x86_64.whl", hash = "sha256:57ef68fb7f88c657a417370459b1a35b8dc69a887c8db1e9ea1570229819ebbb", size = 2784028, upload-time = "2026-09-09T07:07:07.311Z" },
-    { url = "https://files.pythonhosted.org/packages/c4/c9/b5a507863a3c2158327f5ff74ca0f58635a6b925259c87caded924da0d14/refkit-0.3.0-cp310-abi3-pyemscripten_2026_0_wasm32.whl", hash = "sha256:be069cc62925529df571c4329f8d62ad7f1139879f8b3f0345d0f7dcf3622bac", size = 1992655, upload-time = "2026-09-09T07:07:08.52Z" },
-    { url = "https://files.pythonhosted.org/packages/78/5d/68a2107b8b0c3b07bed7bca2dd2f6f7f5a9c1394a17d4074c9c72008fccb/refkit-0.3.0-cp310-abi3-win_amd64.whl", hash = "sha256:6d6b5b1f71bcd65eb56b5000428a9c4a8aa8a9b1d60f7eb235346895d1d018e7", size = 2798900, upload-time = "2026-09-09T07:07:09.886Z" },
+    { url = "https://files.pythonhosted.org/packages/00/05/581c9d8db4724f9c3a28b6db281ac74472ff9b0066933094deb3a2facb76/refkit-0.4.0-cp310-abi3-macosx_11_0_arm64.whl", hash = "sha256:03ad347a74c716ee86750be25a190fee1e770291e19c5133454c6cbc19b80cc2", size = 3160040, upload-time = "2026-09-16T02:10:51.915Z" },
+    { url = "https://files.pythonhosted.org/packages/b6/bb/d7bff959a2f5cacd08d3dee8b0de818ca769a5e64070cfff249f41534063/refkit-0.4.0-cp310-abi3-manylinux_2_34_x86_64.whl", hash = "sha256:4a0441100034b538dea7e99e741030f8575bd6e336b0215353e85a5a6a5e8a3d", size = 3406540, upload-time = "2026-09-16T02:10:53.392Z" },
+    { url = "https://files.pythonhosted.org/packages/64/86/b02ea05fa0c36a5085a9f26b48c8c3b0a201e593a0d29e72801deeed5854/refkit-0.4.0-cp310-abi3-pyemscripten_2026_0_wasm32.whl", hash = "sha256:ba10c6d5514c4999c70f4e4a930fbbc4b645fed197e6e76260ed8c33f70bf510", size = 2410774, upload-time = "2026-09-16T02:10:55.29Z" },
+    { url = "https://files.pythonhosted.org/packages/19/4d/5435ede667a74fe7152c32b0c608a248229a7278edfe294852d151736359/refkit-0.4.0-cp310-abi3-win_amd64.whl", hash = "sha256:1435686f7a8003bd30296ea2855cdbf6ed88e9580866e129cdd4cbd5a646b481", size = 3448608, upload-time = "2026-09-16T02:10:56.62Z" },
 ]
 
 [[package]]

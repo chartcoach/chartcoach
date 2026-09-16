@@ -28,7 +28,7 @@
     "lucide-react": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "refkit-js": "0.3.0",
+    "refkit-js": "0.4.0",
     "sanitize-html": "^2.17.7",
     "satori": "^0.29.1",
     "turndown": "^7.2.4",

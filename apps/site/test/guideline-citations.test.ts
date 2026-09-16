@@ -11,8 +11,9 @@ describe("guideline citations", () => {
       '@string{venue="Beta"}@article{b,title={Second},author={Doe, Jane},year={2020},journal=venue}',
     ];
 
-    const result = renderGuidelineCitations(["[@a; @b]"], references);
+    const result = renderGuidelineCitations(["[@a; @b]"], [...references, references[0]]);
     const dom = new JSDOM(result.bodies[0] + result.bibliographyHtml);
+    expect(dom.window.document.querySelectorAll(".csl-entry")).toHaveLength(2);
     expect(dom.window.document.getElementById("ref-a")?.textContent).toContain("Alpha");
     expect(dom.window.document.getElementById("ref-b")?.textContent).toContain("Beta");
     expect(
@@ -51,6 +52,24 @@ describe("guideline citations", () => {
     dom.window.close();
   });
 
+  it("preserves protected text and organizational authors in the shared bibliography", () => {
+    const result = renderGuidelineCitations(
+      ["Evidence [@protected2024]."],
+      [
+        String.raw`@string{topic = {Visual {Data}}}
+@article{protected2024, author = {{Research Group}}, title = {A } # topic # { Guide \& Examples}, year = 2024}`,
+      ],
+    );
+
+    const dom = new JSDOM(result.bodies[0] + result.bibliographyHtml);
+    const document = dom.window.document;
+    expect(document.querySelector("a.citation")?.textContent).toBe("Research Group, 2024");
+    expect(document.getElementById("ref-protected2024")?.textContent).toBe(
+      "Research Group. (2024). A Visual Data Guide & Examples.",
+    );
+    dom.window.close();
+  });
+
   it("renders source links safely and reports unknown citation keys", () => {
     const result = renderGuidelineCitations(
       ["[@web; @missing]"],
@@ -82,6 +101,19 @@ describe("guideline citations", () => {
 });
 
 describe("Open Graph reference summaries", () => {
+  it("renders structured titles as text and skips untitled sources", () => {
+    expect(
+      summarizeGuidelineReferences([
+        "@misc{untitled,year={2020}}",
+        String.raw`@article{a,title={{NASA} \& Charts},journal={{IEEE} Review},year={2024}}`,
+        "@book{b,title={Standalone},author={{Research Group}},year={2025}}",
+      ]),
+    ).toEqual([
+      { title: "NASA & Charts", meta: "“NASA & Charts,” 2024 · IEEE Review" },
+      { title: "Standalone", meta: "Research Group, 2025" },
+    ]);
+  });
+
   it("resolves bibliography macros and names for the two displayed sources", () => {
     const summaries = summarizeGuidelineReferences([
       `
