@@ -1,0 +1,38 @@
+apps/site/test/guideline-citations.test.ts
+  s_c06b2cdf198c78::t_e6670742cd7dee 14,16
+  s_c06b2cdf198c78::t_d74695a66ca0ef 55-72,104-111,113-116
+packages/chartcoach/src/chartcoach/_catalog/references.py
+  s_c06b2cdf198c78::t_f4145aae0bbe1a 217
+pnpm-lock.yaml
+  ai_agent 593-594,663-664,7196-7197,15049
+development_docs/architecture/web-delivery.md
+  s_c06b2cdf198c78::t_d74695a66ca0ef 51-56
+development_docs/architecture/runtime-and-curation.md
+  s_c06b2cdf198c78::t_45cda9e9822edc 69-71,75
+  s_c06b2cdf198c78::t_427f793ee98d3f 72-74
+apps/site/src/lib/guideline-citations.ts
+  s_c06b2cdf198c78::t_e6670742cd7dee 8,71-82
+  s_c06b2cdf198c78::t_012f2ab0d2baf4 83
+uv.lock
+  ai_agent 222,1390,1395,1397-1400
+packages/chartcoach/tests/test_bibliography.py
+  s_c06b2cdf198c78::t_4649a2c3134d96 177-198,202-206
+  s_c06b2cdf198c78::t_9489072b016a50 199-201
+  s_c06b2cdf198c78::t_6f4a28838b318c 93,95-98,100-104,107-108,112-113,116-120,130,137-140,144-152
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "f098441b7dbf942d37065c98fcfc30eaf70f4fa6",
+  "prompts": {},
+  "sessions": {
+    "s_c06b2cdf198c78": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0a8bc-1762-74e3-9d0c-9c62758c33b7",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Péter Ferenc Gyarmati <dev.petergy@gmail.com>"
+    }
+  }
+}
