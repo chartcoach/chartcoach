@@ -24,8 +24,7 @@ classifiers = [
 ]
 dependencies = [
   "agent-plugins>=0.2",
-  "refkit>=0.3.0",
-  "polars-refkit>=0.3.0",
+  "refkit>=0.4.0",
   "click>=8.3.3",
   "duckdb>=1.5.5",
   "platformdirs>=4",

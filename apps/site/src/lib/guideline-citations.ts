@@ -1,11 +1,11 @@
 import {
-  BibDocument,
   Citation,
   CitationGroup,
   Document,
   Library,
   Style,
   tidyBibtex,
+  type Entry,
   type RenderedNode,
 } from "refkit-js";
 import sanitizeHtml from "sanitize-html";
@@ -68,19 +68,19 @@ function inlineHtml(node: RenderedNode, hover: Map<string, string>): string {
 }
 
 export function renderGuidelineCitations(bodies: readonly string[], references: readonly string[]) {
-  // Each stored reference owns its macro scope. Assemble literal fields for shared citation state.
-  const entries = references.flatMap((source) => BibDocument.parse(source).resolve());
+  // Parse each reference in its own macro scope before sharing citation state.
+  const entries = new Map<string, Entry>();
 
-  const bibliography = entries
-    .map(
-      (entry) =>
-        `@${entry.entryType}{${entry.key},\n${Object.entries(entry.fields)
-          .map(([name, value]) => `${name} = {${value}}`)
-          .join(",\n")}\n}`,
-    )
-    .join("\n\n");
+  for (const source of references) {
+    const parsed = Library.parseBibtex(tidyBibtex(source).bibtex, { recovery: "report" });
 
-  const library = Library.parseBibtex(tidyBibtex(bibliography).bibtex, { recovery: "report" });
+    for (const entry of parsed) {
+      if (!entries.has(entry.key)) entries.set(entry.key, entry);
+    }
+  }
+
+  const library = Library.fromRecords(entries.values());
+
   const citedKeys = new Set<string>();
   const groups: { keys: string[]; id: string }[] = [];
   const citations: Citation[] = [];

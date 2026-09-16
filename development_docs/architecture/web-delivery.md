@@ -48,6 +48,12 @@ The loaded catalog feeds:
 Each Astro loader or integration writes its own generated files. The build
 output lives in `apps/site/dist`.
 
+RefKit formats source citations. The site parses each stored BibTeX reference
+in its own macro scope, combines the structured records into one library, and
+renders the guideline's citations together for consistent disambiguation.
+Open Graph summaries flatten structured title chunks to display text. Authored
+BibTeX remains in the catalog's reference records.
+
 ## Product docs
 
 Task guides live under `apps/docs/content/docs/(guide)`. API and file reference

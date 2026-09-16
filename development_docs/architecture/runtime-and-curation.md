@@ -66,6 +66,13 @@ release descriptor or profile loader.
 | `cache`    | Injected complete release materializer     |
 | `index`    | Injected runtime loader                    |
 
+Reference tables retain the authored BibTeX and resolved source fields. RefKit
+renders each distinct reference with the APA style, and the catalog caches the
+result for subsequent reads and citations. Polars holds the derived tables.
+At 32 distinct sources, rendering uses up to eight threads within Polars'
+configured thread limit. Smaller catalogs and single-thread runtimes render
+sequentially. Each source keeps its own citation context.
+
 The CLI and MCP adapters parse and bound transport input. Their SQL and search
 services in `_catalog/sql.py` and `_catalog/search.py` own bounded transport
 records. Native Python composition uses the returned DuckDB connection or

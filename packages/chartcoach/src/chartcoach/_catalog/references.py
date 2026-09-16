@@ -3,11 +3,11 @@ from __future__ import annotations
 import dataclasses as dc
 import re
 from collections.abc import Mapping, Sequence
+from functools import partial
 from types import MappingProxyType
 from typing import TYPE_CHECKING, cast
 
 import polars as pl
-import polars_refkit
 import refkit
 from typing_extensions import TypedDict
 
@@ -181,35 +181,17 @@ def build_reference_tables(catalog_df: pl.DataFrame) -> ReferenceTables:
     ]
 
     references = pl.DataFrame(reference_rows, schema=REFERENCES_SCHEMA).sort("id")
-    rendered = references.select(
-        "id",
-        "doi",
-        "url",
-        polars_refkit.full_bibliography(
-            polars_refkit.tidy_bibtex(pl.col("bibtex")),
-            style="apa",
-            locale="en-US",
-            recovery="report",
-        ).alias("citation"),
-    )
-    citations = {}
-    for reference_id, doi, url, citation in rendered.iter_rows():
-        if citation is None:
-            raise CatalogValidationError(
-                f"Could not render BibTeX reference: {reference_id}.",
-                details={"reference_id": reference_id},
-            )
-        doi_url = (
-            "https://doi.org/"
-            + doi.removeprefix("https://doi.org/").removeprefix("http://doi.org/")
-            if doi
-            else None
-        )
-        # CSL styles can omit a publication URL when a DOI is present.
-        for locator in (doi_url, url):
-            if locator and locator not in citation:
-                citation = f"{citation} {locator}"
-        citations[reference_id] = citation
+    render = partial(_render_reference_citation, refkit.Style.load("apa"))
+    rows = references.select("id", "doi", "url", "bibtex").iter_rows()
+    workers = min(8, pl.thread_pool_size())
+    if references.height < 32 or workers == 1:
+        citations = dict(map(render, rows))
+    else:
+        # RefKit releases the GIL while rendering. Small catalogs avoid pool startup.
+        from concurrent.futures import ThreadPoolExecutor
+
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            citations = dict(pool.map(render, rows))
 
     return ReferenceTables(
         references=references,
@@ -220,6 +202,36 @@ def build_reference_tables(catalog_df: pl.DataFrame) -> ReferenceTables:
         ),
         citations=MappingProxyType(citations),
     )
+
+
+def _render_reference_citation(
+    style: refkit.Style,
+    reference: tuple[str, str | None, str | None, str],
+) -> tuple[str, str]:
+    reference_id, doi, url, bibtex = reference
+    try:
+        library = refkit.Library.parse_bibtex(
+            refkit.tidy_bibtex(bibtex).bibtex, recovery="report"
+        )
+        citation = (
+            refkit.Document(library, style, locale="en-US").full_bibliography().text
+        )
+    except refkit.RefkitError as exc:
+        raise CatalogValidationError(
+            f"Could not render BibTeX reference: {reference_id}.",
+            details={"reference_id": reference_id},
+        ) from exc
+    doi_url = (
+        "https://doi.org/"
+        + doi.removeprefix("https://doi.org/").removeprefix("http://doi.org/")
+        if doi
+        else None
+    )
+    # CSL styles can omit a publication URL when a DOI is present.
+    for locator in (doi_url, url):
+        if locator and locator not in citation:
+            citation = f"{citation} {locator}"
+    return reference_id, citation
 
 
 def build_guideline_sources_df(
