@@ -1,14 +1,15 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { chmod, cp, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
-import { createServer } from "node:http";
+import { createServer, type Server } from "node:http";
 import { builtinModules, createRequire, findPackageJSON } from "node:module";
 import { parseArgs } from "node:util";
+import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import { dirname, extname, join, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-import { chromium } from "playwright";
+import { chromium, type Browser } from "playwright";
 import { build } from "vite-plus";
 import { parse, stringify } from "yaml";
 import { minVersion } from "semver";
@@ -38,11 +39,11 @@ const require = createRequire(import.meta.url);
 
 const directory = await mkdtemp(join(tmpdir(), "chartcoach-npm-"));
 
-let browser;
+let browser: Browser | undefined;
 
-let server;
+let server: Server | undefined;
 
-function run(command, args, extraEnv = {}) {
+function run(command: string, args: string[], extraEnv: NodeJS.ProcessEnv = {}) {
   const result = spawnSync(command, args, {
     cwd: directory,
     env: { ...process.env, NODE_PATH: "", NODE_OPTIONS: "", ...extraEnv },
@@ -53,7 +54,7 @@ function run(command, args, extraEnv = {}) {
   assert.equal(result.status, 0, `${command} ${args.join(" ")} failed`);
 }
 
-async function unlock(path) {
+async function unlock(path: string): Promise<void> {
   await chmod(path, 0o700);
 
   for (const entry of await readdir(path, { withFileTypes: true })) {
@@ -87,20 +88,21 @@ try {
     await readFile(join(root, "LICENSE"), "utf8"),
     "The npm distribution must include the project license",
   );
-  await cp(join(here, "node-consumer.mjs"), join(directory, "node-consumer.mjs"));
+  await cp(join(here, "node-consumer.ts"), join(directory, "node-consumer.ts"));
+
+  const lanceManifest = findPackageJSON("@lancedb/lancedb", import.meta.url);
+  assert.ok(lanceManifest);
 
   const nativeModules = {
     LANCE_MODULE: pathToFileURL(require.resolve("@lancedb/lancedb")).href,
     DUCKDB_MODULE: pathToFileURL(require.resolve("@duckdb/node-api")).href,
     TAR_MODULE: pathToFileURL(require.resolve("tar")).href,
-    LANCE_VERSION: JSON.parse(
-      await readFile(findPackageJSON("@lancedb/lancedb", import.meta.url), "utf8"),
-    ).version,
+    LANCE_VERSION: JSON.parse(await readFile(lanceManifest, "utf8")).version,
   };
 
   run(
     node,
-    ["node-consumer.mjs", join(root, "fixtures/catalog-release"), join(directory, "current")],
+    ["node-consumer.ts", join(root, "fixtures/catalog-release"), join(directory, "current")],
     nativeModules,
   );
   await cp(join(here, "browser-consumer.ts"), join(directory, "browser-consumer.ts"));
@@ -186,17 +188,17 @@ try {
   });
   const output = join(directory, "dist");
 
-  const contentTypes = {
-    ".html": "text/html",
-    ".js": "text/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-  };
+  const contentTypes = new Map([
+    [".html", "text/html"],
+    [".js", "text/javascript"],
+    [".wasm", "application/wasm"],
+    [".json", "application/json"],
+  ]);
 
   server = createServer(async (request, response) => {
     const path = resolve(
       output,
-      `.${new URL(request.url, "http://localhost").pathname === "/" ? "/index.html" : new URL(request.url, "http://localhost").pathname}`,
+      `.${new URL(request.url ?? "/", "http://localhost").pathname === "/" ? "/index.html" : new URL(request.url ?? "/", "http://localhost").pathname}`,
     );
 
     if (!path.startsWith(`${output}${sep}`)) {
@@ -208,7 +210,7 @@ try {
     try {
       const bytes = await readFile(path);
       response.writeHead(200, {
-        "Content-Type": contentTypes[extname(path)] ?? "application/octet-stream",
+        "Content-Type": contentTypes.get(extname(path)) ?? "application/octet-stream",
         "Content-Security-Policy":
           "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'" +
           (path.endsWith("duckdb.html") || path.startsWith(join(output, "duckdb"))
@@ -220,11 +222,14 @@ try {
       response.writeHead(404).end();
     }
   });
-  await new Promise((done) => server.listen(0, "127.0.0.1", done));
+  const serving = server;
+  await new Promise<void>((done) => serving.listen(0, "127.0.0.1", done));
+  // SAFETY: the listening server binds a numeric TCP port, which yields AddressInfo.
+  const address = server.address() as AddressInfo;
   browser = await chromium.launch({ headless: true });
   const page = await browser.newPage();
-  const failures = [];
-  const wasm = [];
+  const failures: string[] = [];
+  const wasm: number[] = [];
   page.on("pageerror", (error) => failures.push(error.message));
   page.on("requestfailed", (request) => failures.push(request.url()));
   page.on("response", (response) => {
@@ -233,10 +238,10 @@ try {
     if (response.status() >= 400 && !response.url().endsWith("favicon.ico"))
       failures.push(response.url());
   });
-  await page.goto(`http://127.0.0.1:${server.address().port}`);
+  await page.goto(`http://127.0.0.1:${address.port}`);
   await page.locator('body[data-verified="true"]').waitFor();
   assert.deepEqual(failures, []);
-  await page.goto(`http://127.0.0.1:${server.address().port}/duckdb.html`);
+  await page.goto(`http://127.0.0.1:${address.port}/duckdb.html`);
 
   try {
     await page.locator('body[data-duckdb-verified="true"]').waitFor();
@@ -254,10 +259,13 @@ try {
       await readFile(join(directory, "node_modules/@chartcoach/catalog/package.json"), "utf8"),
     );
 
-    const minimum = {};
+    const minimum: Record<string, string> = {};
 
-    for (const [name, range] of Object.entries(installed.dependencies)) {
-      minimum[name] = minVersion(range).version;
+    // SAFETY: npm dependency maps contain version ranges keyed by package name.
+    for (const [name, range] of Object.entries(installed.dependencies as Record<string, string>)) {
+      const version = minVersion(range);
+      assert.ok(version, `Invalid dependency range: ${name} ${range}`);
+      minimum[name] = version.version;
     }
 
     const consumer = JSON.parse(await readFile(join(directory, "package.json"), "utf8"));
@@ -270,7 +278,7 @@ try {
     run(node, [require.resolve("typescript/bin/tsc"), "-p", "tsconfig.json"]);
     run(
       node,
-      ["node-consumer.mjs", join(root, "fixtures/catalog-release"), join(directory, "minimum")],
+      ["node-consumer.ts", join(root, "fixtures/catalog-release"), join(directory, "minimum")],
       nativeModules,
     );
     console.log("Verified minimum direct runtime dependencies");
@@ -278,7 +286,11 @@ try {
 } finally {
   await browser?.close();
 
-  if (server) await new Promise((done) => server.close(done));
+  if (server) {
+    const activeServer = server;
+    await new Promise<void>((done) => activeServer.close(() => done()));
+  }
+
   await unlock(directory);
   await rm(directory, { recursive: true, force: true });
 }

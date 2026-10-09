@@ -39,7 +39,7 @@ jobs:
         id: select
         env:
           FILTERS: ${{ toJSON(steps.filter.outputs) }}
-        run: node .github/ci/select.mjs
+        run: node tools/ci/select.ts
   quality:
     name: JavaScript quality
     needs: changes
@@ -60,10 +60,11 @@ jobs:
           scope: quality
       - name: Check formatting and lint
         run: vp run check
-      - name: Check architecture and CI selection
+      - name: Check architecture and CI tooling
         run: |-
-          vp run check:architecture
-          pnpm --filter @chartcoach/release test:ci
+          vp run --filter @chartcoach/architecture --filter @chartcoach/ci typecheck
+          vp run --filter @chartcoach/architecture --filter @chartcoach/ci check
+          vp run --filter @chartcoach/architecture --filter @chartcoach/ci test
       - name: Check unused code
         run: vp run check:unused
       - name: Test lint rules
@@ -312,4 +313,4 @@ jobs:
       - name: Check required results
         env:
           NEEDS: ${{ toJSON(needs) }}
-        run: node .github/ci/gate.mjs
+        run: node tools/ci/gate.ts

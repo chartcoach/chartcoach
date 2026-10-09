@@ -50,7 +50,15 @@ Run a focused command while iterating:
 | Product docs             | `pnpm --dir apps/docs test`                                                                                      |
 | Python catalog loading   | `uv run --locked --package chartcoach pytest packages/chartcoach/tests/test_catalog_runtime.py`                  |
 | Python release building  | `uv run --locked --package chartcoach --extra curation pytest packages/chartcoach/tests/test_release_builder.py` |
+| CI selection and gate    | `pnpm --filter @chartcoach/ci test`                                                                              |
 | Import and package rules | `pnpm check:architecture`                                                                                        |
+
+Tooling packages in `tools/ci`, `tools/architecture`, and `tools/release` own
+their TypeScript scripts, dependencies, typechecks, and lint checks.
+[Node.js runs TypeScript directly](https://nodejs.org/api/typescript.html),
+so a script runs as `node tools/release/minimum-node.ts`. Tooling uses Node
+module resolution and erasable TypeScript syntax. `pnpm ready` checks every
+workspace package.
 
 When a dependency changes, update the matching lockfile through `pnpm install`
 or `uv lock`.

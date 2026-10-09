@@ -1,16 +1,17 @@
 import assert from "node:assert/strict";
-import { spawn, spawnSync } from "node:child_process";
+import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 import { once } from "node:events";
 import { setTimeout as delay } from "node:timers/promises";
 import { cp, mkdtemp, readFile, rm, writeFile, stat } from "node:fs/promises";
-import { createServer } from "node:http";
+import { createServer, type Server } from "node:http";
+import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { parseArgs } from "node:util";
-import { chromium } from "playwright";
-import { verifyPicker } from "./verify-picker.mjs";
-import { verifyModelSettings } from "./verify-model-settings.mjs";
+import { chromium, type Browser, type Page } from "playwright";
+import { verifyPicker } from "./verify-picker.ts";
+import { verifyModelSettings } from "./verify-model-settings.ts";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 
@@ -35,12 +36,13 @@ const runners = {
     "-A",
     "chartcoach",
   ],
-};
+} as const;
 
-if (!Object.hasOwn(runners, values.runner))
+if (!values.runner || !Object.hasOwn(runners, values.runner))
   throw new Error("Choose --runner npx, bunx, bun, or deno.");
 
-const [runner, ...runnerArgs] = runners[values.runner];
+// SAFETY: the own-key check restricts the runner to this command table.
+const [runner, ...runnerArgs] = runners[values.runner as keyof typeof runners];
 
 if (!chatArchive || !catalogArchive)
   throw new Error(
@@ -50,21 +52,23 @@ if (!chatArchive || !catalogArchive)
 const directory =
   process.env.CHARTCOACH_TEST_DIRECTORY ?? (await mkdtemp(join(tmpdir(), "chartcoach-installed-")));
 
-let child;
+let child: ChildProcess | undefined;
 
 let runtimeOutput = "";
 
-let browser;
+let browser: Browser | undefined;
 
-let page;
+let page: Page | undefined;
 
-let model;
+let model: Server | undefined;
 
-let modelURL;
+let modelURL = "";
 
-const calls = [];
+type CompletionRequest = { messages: { role: string }[] };
 
-function run(command, args) {
+const calls: CompletionRequest[] = [];
+
+function run(command: string, args: readonly string[]) {
   const result = spawnSync(command, args, {
     cwd: directory,
     encoding: "utf8",
@@ -79,8 +83,10 @@ function run(command, args) {
 async function stop() {
   if (child && child.exitCode === null && child.signalCode === null) {
     const exited = once(child, "exit");
-    process.kill(-child.pid, "SIGTERM");
-    const force = setTimeout(() => process.kill(-child.pid, "SIGKILL"), 10_000);
+    const pid = child.pid;
+    assert.ok(pid);
+    process.kill(-pid, "SIGTERM");
+    const force = setTimeout(() => process.kill(-pid, "SIGKILL"), 10_000);
 
     try {
       await exited;
@@ -103,7 +109,7 @@ async function stop() {
   }
 }
 
-async function start(environmentOnly = false) {
+async function start(environmentOnly = false): Promise<string> {
   const flags = [
     "--catalog",
     catalogLocation ?? "./catalog",
@@ -143,18 +149,21 @@ async function start(environmentOnly = false) {
       CHARTCOACH_MODEL_AUTH: "none",
       CHARTCOACH_OPEN: "false",
     });
-  child = spawn(runner, [...runnerArgs, ...(environmentOnly ? [] : flags), "--verbose"], {
+
+  const launched = spawn(runner, [...runnerArgs, ...(environmentOnly ? [] : flags), "--verbose"], {
     cwd: directory,
     detached: true,
     stdio: ["ignore", "pipe", "pipe"],
     env: environment,
   });
+
+  child = launched;
   let output = "";
 
-  return new Promise((resolve, reject) => {
+  return new Promise<string>((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error(`Startup timed out: ${output}`)), 75_000);
 
-    const inspect = (chunk) => {
+    const inspect = (chunk: Buffer) => {
       output = (output + chunk.toString()).slice(-8192);
       runtimeOutput = (runtimeOutput + chunk.toString()).slice(-16000);
       const url = output.match(/➜\s+(http:\/\/[^\s]+)/)?.[1];
@@ -165,9 +174,9 @@ async function start(environmentOnly = false) {
       }
     };
 
-    child.stderr.on("data", inspect);
-    child.stdout.on("data", inspect);
-    child.once("exit", (code) => {
+    launched.stderr.on("data", inspect);
+    launched.stdout.on("data", inspect);
+    launched.once("exit", (code) => {
       clearTimeout(timer);
       reject(new Error(`CLI exited (${code}): ${output}`));
     });
@@ -196,13 +205,15 @@ try {
   assert.equal(run(runner, [...runnerArgs, "--version"]).trim(), version);
   await cp(join(root, "fixtures/catalog-release"), join(directory, "catalog"), { recursive: true });
 
-  const { openCatalog } = await import(
-    new URL(`file://${directory}/node_modules/@chartcoach/catalog/dist/node.js`)
-  );
+  // SAFETY: the URL identifies the Node entry of the SDK installed from the verified tarball.
+  const { openCatalog } = (await import(
+    pathToFileURL(join(directory, "node_modules/@chartcoach/catalog/dist/node.js")).href
+  )) as typeof import("@chartcoach/catalog/node");
 
   const catalog = await openCatalog(catalogLocation ?? join(directory, "catalog"));
-  const id = [...catalog][0].id;
-  const title = [...catalog][0].title;
+  const first = [...catalog][0];
+  assert.ok(first && catalog.release);
+  const { id, title } = first;
   model = createServer(async (request, response) => {
     let body = "";
 
@@ -214,7 +225,7 @@ try {
       return;
     }
 
-    const input = JSON.parse(body);
+    const input: CompletionRequest = JSON.parse(body);
     assert.equal(
       request.headers.authorization,
       undefined,
@@ -267,8 +278,11 @@ try {
     );
     response.end("data: [DONE]\n\n");
   });
-  await new Promise((resolve) => model.listen(0, "127.0.0.1", resolve));
-  const modelPort = model.address().port;
+  const modelServer = model;
+  await new Promise<void>((resolve) => modelServer.listen(0, "127.0.0.1", resolve));
+  // SAFETY: the listening server binds a numeric TCP port, which yields AddressInfo.
+  const address = model.address() as AddressInfo;
+  const modelPort = address.port;
 
   modelURL = `http://127.0.0.1:${modelPort}/v1`;
 
@@ -299,7 +313,7 @@ try {
     httpCredentials: { username: "chartcoach", password: "package-test-password" },
   });
 
-  const errors = [];
+  const errors: string[] = [];
   context.on("page", (opened) => opened.on("pageerror", (error) => errors.push(error.message)));
   page = await context.newPage();
   await page.goto(url);
@@ -335,7 +349,7 @@ try {
   const darkMark = mark.locator("img:visible");
 
   assert.equal(await darkMark.count(), 1);
-  assert.match(await darkMark.getAttribute("src"), /chartcoach-mark-white/);
+  assert.match((await darkMark.getAttribute("src")) ?? "", /chartcoach-mark-white/);
   await page.screenshot({
     path: join(root, `.context/chat-package-${values.runner}-sidebar-collapsed-dark.png`),
     fullPage: true,
@@ -481,14 +495,22 @@ try {
   console.error(runtimeOutput);
   throw error;
 } finally {
-  await browser?.close();
-  await stop();
-
-  if (model) {
-    model.closeAllConnections();
-    await new Promise((resolve) => model.close(resolve));
+  try {
+    await browser?.close();
+  } finally {
+    try {
+      await stop();
+    } finally {
+      try {
+        if (model) {
+          model.closeAllConnections();
+          const modelServer = model;
+          await new Promise<void>((resolve) => modelServer.close(() => resolve()));
+        }
+      } finally {
+        if (process.env.CHARTCOACH_KEEP_TEST_DATA) console.log(`Consumer: ${directory}`);
+        else await rm(directory, { recursive: true, force: true });
+      }
+    }
   }
-
-  if (process.env.CHARTCOACH_KEEP_TEST_DATA) console.log(`Consumer: ${directory}`);
-  else await rm(directory, { recursive: true, force: true });
 }

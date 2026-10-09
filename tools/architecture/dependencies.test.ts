@@ -7,7 +7,7 @@ const dependencyFields = [
   "devDependencies",
   "peerDependencies",
   "optionalDependencies",
-];
+] as const;
 
 const workspaceContracts = [
   {
@@ -21,6 +21,8 @@ const workspaceContracts = [
   { path: "packages/brand/package.json", internal: [] },
   { path: "packages/catalog/package.json", internal: [] },
   { path: "skills/package.json", internal: [] },
+  { path: "tools/architecture/package.json", internal: [] },
+  { path: "tools/ci/package.json", internal: [] },
   { path: "tools/release/package.json", internal: ["@chartcoach/catalog"] },
   {
     path: "apps/chat/package.json",
@@ -58,8 +60,15 @@ void test("catalog installation leaves native data engines caller-owned", async 
   }
 });
 
-async function readManifest(path) {
+async function readManifest(path: string) {
   const url = new URL(`../../${path}`, import.meta.url);
 
-  return JSON.parse(await readFile(url, "utf8"));
+  // SAFETY: repository package manifests use npm dependency maps of names to version strings.
+  return JSON.parse(await readFile(url, "utf8")) as {
+    dependencies?: Record<string, string>;
+    devDependencies?: Record<string, string>;
+    peerDependencies?: Record<string, string>;
+    optionalDependencies?: Record<string, string>;
+    peerDependenciesMeta?: Record<string, { optional?: boolean }>;
+  };
 }

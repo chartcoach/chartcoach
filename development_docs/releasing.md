@@ -36,9 +36,10 @@ pushing the version change, run `make check`.
 Pull requests select Python checks and JavaScript packages through
 `.github/filters.yml`. Shared catalog fixtures select both language contracts.
 The JavaScript workspace builds the npm tarballs once, then Node.js, Bun, and
-Deno consumer jobs verify those same artifacts in parallel. Formatting,
-architecture, unused-code checks, and lint-rule tests run in a separate quality
-job. The `CI gate` requires each selected job to succeed and accepts skipped
+Deno consumer jobs verify those same artifacts in parallel. Package jobs run
+typed linting after their generated types are ready. Formatting, repository
+linting, architecture, unused-code checks, and lint-rule tests run in a separate
+quality job. The `CI gate` requires each selected job to succeed and accepts skipped
 jobs when their inputs are unchanged.
 
 Main CI runs every check and retains a complete artifact set for the exact

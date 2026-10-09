@@ -1,5 +1,6 @@
 ci: &ci
   - .github/**
+  - tools/ci/**
   - Makefile
 
 javascript: &javascript
@@ -9,6 +10,7 @@ javascript: &javascript
   - pnpm-workspace.yaml
   - patches/**
   - tsconfig.json
+  - tools/tsconfig.json
   - vite.config.ts
   - knip.jsonc
   - tools/oxlint/**

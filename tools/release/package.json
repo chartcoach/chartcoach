@@ -4,17 +4,20 @@
   "type": "module",
   "scripts": {
     "check": "vp check",
-    "minimum-node": "node minimum-node.mjs",
-    "test:ci": "node --test ci.test.mjs",
-    "verify:npm": "node verify-npm.mjs",
-    "verify:chat": "node verify-chat.mjs"
+    "minimum-node": "node minimum-node.ts",
+    "verify:npm": "node verify-npm.ts",
+    "verify:chat": "node verify-chat.ts",
+    "typecheck": "tsc --noEmit",
+    "pretypecheck": "vp run @chartcoach/catalog#build",
+    "precheck": "vp run @chartcoach/catalog#build"
   },
   "devDependencies": {
     "@chartcoach/catalog": "workspace:*",
     "@duckdb/duckdb-wasm": "catalog:",
     "@duckdb/node-api": "catalog:",
     "@lancedb/lancedb": "catalog:",
-    "picomatch": "catalog:",
+    "@types/node": "catalog:",
+    "@types/semver": "catalog:",
     "playwright": "1.63.0",
     "semver": "7.8.5",
     "tar": "7.5.22",

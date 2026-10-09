@@ -1,9 +1,19 @@
-const needs = JSON.parse(process.env.NEEDS);
+const input = process.env.NEEDS;
 
-const selection = needs.changes.outputs;
+if (!input) throw new Error("Missing job results");
+
+// SAFETY: the workflow passes GitHub job results and their string-valued outputs.
+const needs = JSON.parse(input) as Record<
+  string,
+  { result?: string; outputs?: Record<string, string> }
+>;
+
+const selection = needs.changes?.outputs;
+
+if (!selection) throw new Error("Missing check selection");
 
 for (const name of ["quality", "javascript", "npm", "python"]) {
-  if (!["true", "false"].includes(selection[name])) {
+  if (selection[name] !== "true" && selection[name] !== "false") {
     throw new Error(`Missing or invalid check selection: ${name}`);
   }
 }

@@ -11,15 +11,23 @@ import picomatch from "picomatch";
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
 
-const filters = parse(readFileSync(join(root, ".github/filters.yml"), "utf8"));
+type Pattern = string | Pattern[];
 
-function selection(paths, event = "pull_request") {
+const filters: Record<string, Pattern[]> = parse(
+  readFileSync(join(root, ".github/filters.yml"), "utf8"),
+);
+
+function flatten(pattern: Pattern): string[] {
+  return Array.isArray(pattern) ? pattern.flatMap(flatten) : [pattern];
+}
+
+function selection(paths: string[], event = "pull_request") {
   const matched = Object.fromEntries(
     Object.entries(filters).map(([name, patterns]) => [
       name,
       String(
         paths.some((path) =>
-          patterns.flat(Infinity).some((pattern) => picomatch(pattern, { dot: true })(path)),
+          patterns.flatMap(flatten).some((pattern) => picomatch(pattern, { dot: true })(path)),
         ),
       ),
     ]),
@@ -29,7 +37,7 @@ function selection(paths, event = "pull_request") {
   const output = join(directory, "output");
 
   try {
-    const result = spawnSync(process.execPath, [join(root, ".github/ci/select.mjs")], {
+    const result = spawnSync(process.execPath, [join(root, "tools/ci/select.ts")], {
       encoding: "utf8",
       env: {
         ...process.env,
@@ -56,7 +64,7 @@ function selection(paths, event = "pull_request") {
   }
 }
 
-test("site changes select the site workspace and quality checks", () => {
+void test("site changes select the site workspace and quality checks", () => {
   assert.deepEqual(selection(["apps/site/src/pages/index.astro"]), {
     quality: true,
     anti_slop: false,
@@ -67,19 +75,19 @@ test("site changes select the site workspace and quality checks", () => {
   });
 });
 
-test("docs changes select the docs workspace", () => {
+void test("docs changes select the docs workspace", () => {
   assert.deepEqual(selection(["apps/docs/content/docs/index.mdx"]).packages, ["@chartcoach/docs"]);
   assert.equal(selection(["apps/docs/content/docs/index.mdx"]).python, false);
   assert.equal(selection(["apps/docs/content/docs/index.mdx"]).npm, false);
 });
 
-test("hidden package inputs select their owning checks", () => {
+void test("hidden package inputs select their owning checks", () => {
   assert.deepEqual(selection(["apps/docs/.node-version"]).packages, ["@chartcoach/docs"]);
   assert.deepEqual(selection(["apps/site/.gitignore"]).packages, ["@chartcoach/site"]);
   assert.equal(selection(["packages/catalog/.npmignore"]).npm, true);
 });
 
-test("Python tests select Python checks", () => {
+void test("Python tests select Python checks", () => {
   assert.deepEqual(selection(["packages/chartcoach/tests/test_catalog_runtime.py"]), {
     quality: false,
     anti_slop: false,
@@ -90,14 +98,14 @@ test("Python tests select Python checks", () => {
   });
 });
 
-test("Python implementation changes also verify JavaScript table parity", () => {
+void test("Python implementation changes also verify JavaScript table parity", () => {
   const result = selection(["packages/chartcoach/src/chartcoach/_catalog/models.py"]);
   assert.equal(result.python, true);
   assert.equal(result.npm, false);
   assert.deepEqual(result.packages, ["@chartcoach/catalog"]);
 });
 
-test("shared catalog fixtures select both languages and their consumers", () => {
+void test("shared catalog fixtures select both languages and their consumers", () => {
   const result = selection(["fixtures/catalog-release/entries.parquet"]);
   assert.equal(result.python, true);
   assert.equal(result.npm, true);
@@ -109,7 +117,7 @@ test("shared catalog fixtures select both languages and their consumers", () => 
   ]);
 });
 
-test("brand changes rebuild the web apps and verify the packed chat", () => {
+void test("brand changes rebuild the web apps and verify the packed chat", () => {
   assert.deepEqual(selection(["packages/brand/tokens.css"]).packages, [
     "@chartcoach/catalog",
     "@chartcoach/site",
@@ -119,11 +127,11 @@ test("brand changes rebuild the web apps and verify the packed chat", () => {
   ]);
 });
 
-test("chat, skills, and consumer tooling changes verify packed applications", () => {
+void test("chat, skills, and consumer tooling changes verify packed applications", () => {
   for (const path of [
     "apps/chat/cli/index.ts",
     "skills/chartcoach/SKILL.md",
-    "tools/release/verify-chat.mjs",
+    "tools/release/verify-chat.ts",
     "infra/Dockerfile",
   ]) {
     const result = selection([path]);
@@ -132,7 +140,7 @@ test("chat, skills, and consumer tooling changes verify packed applications", ()
   }
 });
 
-test("repository prose runs quality checks", () => {
+void test("repository prose runs quality checks", () => {
   assert.deepEqual(selection(["README.md"]), {
     quality: true,
     anti_slop: false,
@@ -143,8 +151,13 @@ test("repository prose runs quality checks", () => {
   });
 });
 
-test("CI controls select the complete validation graph", () => {
-  for (const path of [".github/filters.yml", ".github/actions/setup-js/action.yml", "Makefile"]) {
+void test("CI controls select the complete validation graph", () => {
+  for (const path of [
+    ".github/filters.yml",
+    ".github/actions/setup-js/action.yml",
+    "tools/ci/select.ts",
+    "Makefile",
+  ]) {
     const result = selection([path]);
     assert.equal(result.python, true, path);
     assert.equal(result.npm, true, path);
@@ -160,7 +173,7 @@ test("CI controls select the complete validation graph", () => {
   }
 });
 
-test("main pushes select complete checks and release artifacts even for prose changes", () => {
+void test("main pushes select complete checks and release artifacts even for prose changes", () => {
   const result = selection(["README.md"], "push");
   assert.equal(result.python, true);
   assert.equal(result.npm, true);
@@ -174,8 +187,8 @@ test("main pushes select complete checks and release artifacts even for prose ch
   ]);
 });
 
-test("selection rejects incomplete PR classification", () => {
-  const result = spawnSync(process.execPath, [join(root, ".github/ci/select.mjs")], {
+void test("selection rejects incomplete PR classification", () => {
+  const result = spawnSync(process.execPath, [join(root, "tools/ci/select.ts")], {
     encoding: "utf8",
     env: { ...process.env, GITHUB_EVENT_NAME: "pull_request", FILTERS: "{}" },
   });
@@ -204,24 +217,24 @@ function gate(overrides = {}, selected = {}) {
     ...overrides,
   };
 
-  return spawnSync(process.execPath, [join(root, ".github/ci/gate.mjs")], {
+  return spawnSync(process.execPath, [join(root, "tools/ci/gate.ts")], {
     encoding: "utf8",
     env: { ...process.env, NEEDS: JSON.stringify(needs) },
   });
 }
 
-test("the gate accepts skipped checks for unchanged inputs", () => {
+void test("the gate accepts skipped checks for unchanged inputs", () => {
   assert.equal(gate().status, 0);
 });
 
-test("the gate requires selected jobs to succeed", () => {
+void test("the gate requires selected jobs to succeed", () => {
   for (const [job, flag] of [
     ["quality", "quality"],
     ["javascript", "javascript"],
     ["npm-consumers", "npm"],
     ["python", "python"],
     ["python-minimum", "python"],
-  ]) {
+  ] as const) {
     for (const result of ["failure", "cancelled", "skipped"]) {
       const check = gate(
         {
@@ -238,12 +251,12 @@ test("the gate requires selected jobs to succeed", () => {
   }
 });
 
-test("the gate rejects failed classification and unexpected job failures", () => {
+void test("the gate rejects failed classification and unexpected job failures", () => {
   assert.notEqual(gate({ changes: { result: "failure", outputs: {} } }).status, 0);
   assert.notEqual(gate({ quality: { result: "failure" } }).status, 0);
 });
 
-test("the gate rejects incomplete check selection", () => {
+void test("the gate rejects incomplete check selection", () => {
   const result = gate({ changes: { result: "success", outputs: {} } });
 
   assert.notEqual(result.status, 0);

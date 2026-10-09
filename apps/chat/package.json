@@ -19,17 +19,17 @@
     "access": "public"
   },
   "scripts": {
-    "predev": "node scripts/prepare-duckdb.mjs && vp run @chartcoach/catalog#build",
+    "predev": "node scripts/prepare-duckdb.ts && vp run @chartcoach/catalog#build",
     "dev": "portless",
     "dev:app": "next dev --hostname 127.0.0.1",
-    "prebuild": "node scripts/prepare-duckdb.mjs && vp run @chartcoach/catalog#build",
-    "build": "pnpm build:eve && next build && vp pack && node scripts/package.mjs",
-    "build:eve": "eve build && node scripts/verify-skills.mjs",
+    "prebuild": "node scripts/prepare-duckdb.ts && vp run @chartcoach/catalog#build",
+    "build": "pnpm build:eve && next build && vp pack && node scripts/package.ts",
+    "build:eve": "eve build && node scripts/verify-skills.ts",
     "start": "node dist/cli/index.mjs chat --no-open",
     "check": "vp check && eve info",
     "pretypecheck": "vp run @chartcoach/catalog#build",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "vp test && node --test test/*.test.mjs",
+    "test": "vp test && node --test test/*.test.ts",
     "eval": "eve eval --strict"
   },
   "dependencies": {

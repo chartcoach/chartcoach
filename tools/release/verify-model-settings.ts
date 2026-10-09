@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
+import type { Page } from "playwright";
 
-export async function verifyModelSettings(page, screenshot, customBaseURL) {
+export async function verifyModelSettings(page: Page, screenshot: string, customBaseURL: string) {
   await page.getByRole("button", { name: "Model settings", exact: true }).click();
   await page.getByRole("button", { name: "Add a connection", exact: true }).click();
   await page.getByRole("button", { name: "OpenAI compatible", exact: true }).click();
@@ -44,7 +45,10 @@ export async function verifyModelSettings(page, screenshot, customBaseURL) {
 
   const arrow = await authentication.evaluate((element) => {
     const control = element.getBoundingClientRect();
-    const icon = element.parentElement.querySelector("svg").getBoundingClientRect();
+    const iconElement = element.parentElement?.querySelector("svg");
+
+    if (!iconElement) throw new Error("Authentication control must have an arrow");
+    const icon = iconElement.getBoundingClientRect();
 
     return {
       inset: control.right - icon.right,
