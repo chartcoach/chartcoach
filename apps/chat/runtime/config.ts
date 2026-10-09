@@ -128,14 +128,13 @@ export function loadConfig({
       username: e.CHARTCOACH_USERNAME,
       passwordEnv: e.CHARTCOACH_PASSWORD_ENV,
       passwordFile: e.CHARTCOACH_PASSWORD_FILE,
+      embedOrigins: list(e.CHARTCOACH_EMBED_ORIGINS),
     },
     storage: {
       dataDir: e.CHARTCOACH_DATA_DIR,
       cacheDir: e.CHARTCOACH_CACHE_DIR,
     },
-    modelOrigins: e.CHARTCOACH_MODEL_ORIGINS?.split(",")
-      .map((value) => value.trim())
-      .filter(Boolean),
+    modelOrigins: list(e.CHARTCOACH_MODEL_ORIGINS),
     tracing: e.CHARTCOACH_TRACING,
   };
 
@@ -159,8 +158,18 @@ export function loadConfig({
       "--public-url or CHARTCOACH_PUBLIC_URL must be an origin, without a path.",
     );
   result.modelOrigins = [...new Set(result.modelOrigins.map((value) => new URL(value).origin))];
+  result.server.embedOrigins = result.server.embedOrigins.includes("*")
+    ? ["*"]
+    : [...new Set(result.server.embedOrigins.map((value) => new URL(value).origin))];
 
   return result;
+}
+
+function list(value: string | undefined) {
+  return value
+    ?.split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
 }
 
 const providerKeyNames = {
@@ -197,6 +206,19 @@ function serverPassword(config: Config, environment: Environment = process.env) 
   }
 }
 
+export function embedKey(environment: Environment = process.env) {
+  const value = environment.CHARTCOACH_EMBED_KEY;
+
+  if (!value) return undefined;
+
+  if (!/^[\x21-\x7e]{16,}$/.test(value))
+    throw new ConfigurationError(
+      "Invalid CHARTCOACH_EMBED_KEY. Use at least 16 printable characters without spaces.",
+    );
+
+  return value;
+}
+
 function isLocalHost(host: string) {
   return host === "127.0.0.1" || host === "::1";
 }
@@ -215,6 +237,19 @@ export function validateStartup(config: Config, environment: Environment = proce
     throw new ConfigurationError(
       "Network listening requires a password. Set CHARTCOACH_PASSWORD or pass --password-file.",
     );
+
+  // Embedded frames keep the browser cookie only when it is SameSite=None, which requires Secure.
+  if (
+    config.server.embedOrigins.length > 0 &&
+    publicAccess &&
+    new URL(config.server.publicURL!).protocol !== "https:"
+  )
+    throw new ConfigurationError(
+      "Embedding requires an HTTPS --public-url or CHARTCOACH_PUBLIC_URL.",
+    );
+
+  if (embedKey(environment) && config.server.embedOrigins.length === 0)
+    throw new ConfigurationError("CHARTCOACH_EMBED_KEY requires CHARTCOACH_EMBED_ORIGINS.");
 
   if (config.model.model && config.model.auth !== "none" && !modelKey(config, environment))
     throw new ConfigurationError(

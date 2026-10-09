@@ -114,3 +114,42 @@ it("starts from defaults and typed environment settings when no configuration fi
   expect(() => validateStartup(config, {})).toThrow("GEMINI_API_KEY");
   expect(() => validateStartup(config, { GEMINI_API_KEY: "private-key" })).not.toThrow();
 });
+
+it("reads embedding origins and requires secure cookies and a matching key", () => {
+  const config = loadConfig({
+    environment: {
+      CHARTCOACH_EMBED_ORIGINS: "https://slides.example/deck/, http://localhost:2731",
+    },
+    userConfig: "/missing/config.json",
+  });
+
+  expect(config.server.embedOrigins).toEqual(["https://slides.example", "http://localhost:2731"]);
+  expect(
+    loadConfig({
+      environment: { CHARTCOACH_EMBED_ORIGINS: "https://slides.example,*" },
+      userConfig: "/missing/config.json",
+    }).server.embedOrigins,
+  ).toEqual(["*"]);
+  expect(() =>
+    loadConfig({
+      environment: { CHARTCOACH_EMBED_ORIGINS: "slides.example" },
+      userConfig: "/missing/config.json",
+    }),
+  ).toThrow("Invalid configuration: server.embedOrigins");
+
+  const secrets = { CHARTCOACH_PASSWORD: "private" };
+  expect(() => validateStartup(config, secrets)).not.toThrow();
+  config.server.publicURL = "http://chat.example.org";
+  expect(() => validateStartup(config, secrets)).toThrow("Embedding requires an HTTPS");
+  config.server.publicURL = "https://chat.example.org";
+  expect(() =>
+    validateStartup(config, { ...secrets, CHARTCOACH_EMBED_KEY: "private-embed-key-0123" }),
+  ).not.toThrow();
+  expect(() => validateStartup(config, { ...secrets, CHARTCOACH_EMBED_KEY: "short" })).toThrow(
+    "Invalid CHARTCOACH_EMBED_KEY",
+  );
+  config.server.embedOrigins = [];
+  expect(() =>
+    validateStartup(config, { ...secrets, CHARTCOACH_EMBED_KEY: "private-embed-key-0123" }),
+  ).toThrow("requires CHARTCOACH_EMBED_ORIGINS");
+});

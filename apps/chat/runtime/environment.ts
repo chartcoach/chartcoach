@@ -31,6 +31,7 @@ export function readEnvironment(environment: Record<string, string | undefined>)
       CHARTCOACH_USERNAME: server.username.unwrap().optional(),
       CHARTCOACH_PASSWORD_ENV: text,
       CHARTCOACH_PASSWORD_FILE: text,
+      CHARTCOACH_EMBED_ORIGINS: text,
       CHARTCOACH_DATA_DIR: text,
       CHARTCOACH_CACHE_DIR: text,
       CHARTCOACH_MODEL_ORIGINS: text,

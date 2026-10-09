@@ -4,12 +4,13 @@ import { join } from "node:path";
 import { afterAll, beforeAll, expect, it, vi } from "vite-plus/test";
 import { defineChannel, POST, type RouteHandlerArgs } from "eve/channels";
 import { routeAuth } from "eve/channels/auth";
-import { browserIdentity } from "../lib/app/identity";
 import { createThread, getThread } from "../lib/app/threads";
 import { connectionSchema, type ConnectionInput } from "../shared/preferences";
 import { emptyCatalogFilters } from "../shared/catalog-filters";
 
 let app: typeof import("../lib/app/runtime");
+
+let browserIdentity: typeof import("../lib/app/identity").browserIdentity;
 
 let catalogRouteAuth: typeof import("../agent/auth").catalogRouteAuth;
 
@@ -39,6 +40,7 @@ beforeAll(async () => {
   directory = await mkdtemp(join(tmpdir(), "chartcoach-thread-route-"));
   vi.stubEnv("CHARTCOACH_DATA_DIR", directory);
   app = await import("../lib/app/runtime");
+  ({ browserIdentity } = await import("../lib/app/identity"));
   ({ catalogRouteAuth, reviewRouteAuth } = await import("../agent/auth"));
   ({ withThreadPersistence } = await import("../agent/thread-channel"));
 });

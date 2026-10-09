@@ -96,6 +96,10 @@ Compose publishes `127.0.0.1:4273` and retains data in named volumes. Set
 `CHARTCOACH_PUBLIC_URL` when accessing it through an HTTPS proxy. Model endpoints
 must be reachable from inside the container.
 
+To show ChartCoach in an iframe on another page, such as a slide deck, list that page's
+origin in `CHARTCOACH_EMBED_ORIGINS`. A password-protected server opens in a frame with
+`CHARTCOACH_EMBED_KEY`. The chat README covers sandboxed hosts and the cookie scope.
+
 The [chat README](https://github.com/chartcoach/chartcoach/blob/main/apps/chat/README.md)
 lists all configuration fields, environment variables, storage paths, and deployment options.
 

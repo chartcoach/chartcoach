@@ -1,8 +1,13 @@
 import { createHash, randomUUID } from "node:crypto";
 import { Effect } from "effect";
+import { settings } from "../../runtime/settings";
 import { Secrets } from "./secrets";
 
 const cookieName = "chartcoach_browser";
+
+// Embedded frames are cross-site, so their cookie must be SameSite=None and Secure.
+// Partitioning keeps a separate identity for each embedding site.
+const embedded = settings.server.embedOrigins.length > 0;
 
 export const browserIdentity = (request: Request, create = false) =>
   Effect.gen(function* () {
@@ -24,12 +29,13 @@ export const browserIdentity = (request: Request, create = false) =>
     const next = randomUUID();
 
     const secure =
+      embedded ||
       new URL(request.url).protocol === "https:" ||
       request.headers.get("x-forwarded-proto") === "https";
 
     return {
       id: next,
-      cookie: `${cookieName}=${next}.${secrets.sign(next)}; Path=/; HttpOnly; SameSite=Strict; Max-Age=31536000${secure ? "; Secure" : ""}`,
+      cookie: `${cookieName}=${next}.${secrets.sign(next)}; Path=/; HttpOnly; SameSite=${embedded ? "None" : "Strict"}; Max-Age=31536000${secure ? "; Secure" : ""}${embedded ? "; Partitioned" : ""}`,
     };
   });
 

@@ -13,6 +13,8 @@ async function stage<T>(name: string, operation: () => Promise<T>): Promise<T> {
   }
 }
 
+const asset = (name: string) => new URL(`/duckdb/${name}`, location.href).href;
+
 export async function openBrowserCatalog(
   catalogId: string,
   signal: AbortSignal,
@@ -27,7 +29,17 @@ export async function openBrowserCatalog(
     throw new Error(
       "Catalog exploration needs WebAssembly exception handling. Update your browser and try again.",
     );
-  const worker = new Worker("/duckdb/duckdb-browser-eh.worker.js");
+
+  // A frame with an opaque origin cannot start a worker from a server URL. A blob
+  // worker inherits the page's origin and imports the script by its absolute URL.
+  const script = URL.createObjectURL(
+    new Blob([`importScripts(${JSON.stringify(asset("duckdb-browser-eh.worker.js"))});`], {
+      type: "text/javascript",
+    }),
+  );
+
+  const worker = new Worker(script);
+  URL.revokeObjectURL(script);
   const db = new AsyncDuckDB(new VoidLogger(), worker);
   const interrupted = Promise.withResolvers<never>();
   let coordinator: Coordinator | undefined;
@@ -80,7 +92,7 @@ export async function openBrowserCatalog(
     const [catalog] = await Promise.race([
       Promise.all([
         catalogPromise,
-        stage("Starting DuckDB", () => db.instantiate("/duckdb/duckdb-eh.wasm")),
+        stage("Starting DuckDB", () => db.instantiate(asset("duckdb-eh.wasm"))),
       ]),
       interrupted.promise,
     ]);
