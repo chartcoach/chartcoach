@@ -83,6 +83,9 @@ includes its reasoning, exceptions, and checks.
   [Author guidelines and publish catalogs](https://docs.chartcoach.dev/curation),
   with optional search indexes.
 
-chartcoach is alpha software.
+chartcoach is alpha software. Matching Python, catalog SDK, and chat builds from
+validated `main` commits are available on the [rolling preview release](https://github.com/chartcoach/chartcoach/releases/tag/preview).
+See [rolling previews](development_docs/releasing.md#rolling-previews) for installation,
+provenance, retention, and recovery.
 
 [Contributing](CONTRIBUTING.md) · [Apache-2.0](LICENSE)

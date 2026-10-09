@@ -7,7 +7,7 @@ PNPM ?= pnpm
 PYTHON := $(UV) run --locked --package chartcoach
 PYTHON_ALL := $(PYTHON) --all-extras
 PYTHON_PATH := packages/chartcoach
-RELEASE_SCRIPT := scripts/release_registry.py
+RELEASE_SCRIPT := scripts/release_registry.py scripts/preview_release.py
 
 .PHONY: help install check python-check python-format python-lint python-typecheck python-test python-dist python-build python-minimum docs-build site-build
 

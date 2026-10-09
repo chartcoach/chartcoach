@@ -76,6 +76,15 @@ for (const name of Object.keys(source.dependencies)) {
   if (name !== "eve") dependencies[name] = await installedVersion(name);
 }
 
+// Preview SDKs live on GitHub rather than npm. Keep a standalone chat install
+// tied to the same build, including when no SDK override is supplied.
+if (/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)-dev\.[1-9]\d*$/.test(source.version)) {
+  if (dependencies["@chartcoach/catalog"] !== source.version)
+    throw new Error("Preview chat and catalog versions must match.");
+  dependencies["@chartcoach/catalog"] =
+    `https://github.com/chartcoach/chartcoach/releases/download/preview/chartcoach-catalog-${source.version}.tgz`;
+}
+
 await writeFile(
   join(output, "package.json"),
   JSON.stringify(

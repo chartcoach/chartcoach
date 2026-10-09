@@ -194,7 +194,15 @@ async function start(environmentOnly = false): Promise<string> {
 try {
   await writeFile(
     join(directory, "package.json"),
-    '{"name":"chartcoach-consumer","private":true,"type":"module"}',
+    JSON.stringify({
+      name: "chartcoach-consumer",
+      private: true,
+      type: "module",
+      dependencies: { "@chartcoach/catalog": `file:${resolve(root, catalogArchive)}` },
+      // Preview URLs become available only after verification. Test the retained
+      // SDK bytes here; release preparation checks the shipped dependency URL.
+      overrides: { "@chartcoach/catalog": "$@chartcoach/catalog" },
+    }),
   );
   run("npm", [
     "install",

@@ -99,7 +99,7 @@ def npm_artifact(
 
 
 def release_files(
-    directory: Path, *, tag: str | None = None
+    directory: Path, *, tag: str | None = None, preview: bool = False
 ) -> tuple[list[Path], Path, Path]:
     tarballs = list((directory / "npm").glob("*.tgz"))
     wheels = list((directory / "python").glob("chartcoach-*-py3-none-any.whl"))
@@ -108,11 +108,25 @@ def release_files(
     version = (
         wheels[0].name.removeprefix("chartcoach-").removesuffix("-py3-none-any.whl")
     )
+    pattern = r"(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)"
+    if preview:
+        pattern += r"\.dev[1-9]\d*"
+    if re.fullmatch(pattern, version) is None:
+        raise ValueError("Expected a stable X.Y.Z or preview X.Y.Z.devN version")
+    npm_version = version.replace(".dev", "-dev.")
     manifests = [npm_manifest(path) for path in tarballs]
     if {item["name"] for item in manifests} != {"@chartcoach/catalog", "chartcoach"}:
         raise ValueError("Expected chartcoach and @chartcoach/catalog npm packages")
-    if any(item["version"] != version for item in manifests):
+    if any(item["version"] != npm_version for item in manifests):
         raise ValueError("Python and npm artifact versions differ")
+    if preview:
+        chat = next(item for item in manifests if item["name"] == "chartcoach")
+        expected_sdk = (
+            "https://github.com/chartcoach/chartcoach/releases/download/preview/"
+            f"chartcoach-catalog-{npm_version}.tgz"
+        )
+        if chat.get("dependencies", {}).get("@chartcoach/catalog") != expected_sdk:
+            raise ValueError("Preview chat must depend on its matching SDK asset URL")
     sdist = wheels[0].with_name(f"chartcoach-{version}.tar.gz")
     if not sdist.is_file():
         raise ValueError(f"Missing source distribution: {sdist}")
