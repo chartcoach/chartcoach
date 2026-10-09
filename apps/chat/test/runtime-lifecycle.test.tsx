@@ -1,11 +1,11 @@
 import { mkdtemp, mkdir, writeFile, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { expect, it } from "vite-plus/test";
+import { expect, it, vi } from "vite-plus/test";
 import { loadConfig } from "../runtime/config";
 import { startChat } from "../runtime/start";
 
-it("releases the worker and workspace on scope exit and startup failure", async () => {
+it("recovers a recent abandoned lock and releases the worker and workspace", async () => {
   const directory = await mkdtemp(join(tmpdir(), "chartcoach-lifecycle-"));
   await mkdir(join(directory, "server"));
   await mkdir(join(directory, "public"));
@@ -33,14 +33,33 @@ it("releases the worker and workspace on scope exit and startup failure", async 
     },
   });
 
-  const options = { distribution: directory, signal: new AbortController().signal };
+  const log = vi.fn();
+  const options = { distribution: directory, signal: new AbortController().signal, log };
 
   try {
+    // An ungraceful exit can leave a lock that has not reached its stale threshold.
+    await mkdir(config.storage.dataDir, { recursive: true });
+    await mkdir(join(config.storage.dataDir, ".lock"));
     let pid: number;
     {
       await using app = await startChat(config, options);
       expect(await (await fetch(app.url)).text()).toBe("ChartCoach");
+      expect(log).toHaveBeenCalledTimes(1);
       pid = Number(await readFile(join(config.storage.dataDir, "worker.pid"), "utf8"));
+
+      const controller = new AbortController();
+      const waiting = Promise.withResolvers<void>();
+
+      const stopped = startChat(config, {
+        ...options,
+        signal: controller.signal,
+        log: () => waiting.resolve(),
+      });
+
+      await Promise.race([waiting.promise, stopped]);
+      controller.abort();
+      await expect(stopped).rejects.toBe(controller.signal.reason);
+      expect(await (await fetch(app.url)).text()).toBe("ChartCoach");
       await expect(startChat(config, options)).rejects.toThrow("already in use");
     }
 
@@ -53,4 +72,4 @@ it("releases the worker and workspace on scope exit and startup failure", async 
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
-}, 20_000);
+}, 35_000);

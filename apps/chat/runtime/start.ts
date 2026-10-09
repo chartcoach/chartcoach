@@ -5,6 +5,7 @@ import { once } from "node:events";
 import { join } from "node:path";
 import { z } from "zod";
 import { createInterface } from "node:readline";
+import { setTimeout as delay } from "node:timers/promises";
 import lockfile from "proper-lockfile";
 import { createGateway } from "./gateway";
 import { embedKey, validateStartup, modelKey, embeddingKey } from "./config";
@@ -47,21 +48,18 @@ export async function startChat(
 
   await using resources = new AsyncDisposableStack();
 
-  const release = await lockfile
-    .lock(config.storage.dataDir, {
-      lockfilePath: join(config.storage.dataDir, ".lock"),
-      onCompromised: () =>
-        controller.abort(new Error("The workspace lock was lost. Restart ChartCoach.")),
-    })
-    .catch((error) => {
-      if (error instanceof Error && "code" in error && error.code === "ELOCKED")
-        throw new Error(
-          "This data directory is already in use. Stop the other ChartCoach process or choose --data-dir.",
-        );
-      throw error;
-    });
+  const release = await lockWorkspace(
+    config.storage.dataDir,
+    lifetime,
+    () => controller.abort(new Error("The workspace lock was lost. Restart ChartCoach.")),
+    log,
+  ).catch((error) => {
+    lifetime.throwIfAborted();
+    throw error;
+  });
 
   resources.defer(release);
+  lifetime.throwIfAborted();
 
   const token = randomBytes(32).toString("hex");
 
@@ -167,6 +165,36 @@ export async function startChat(
       if (!signal.aborted) throw lifetime.reason;
     },
   };
+}
+
+async function lockWorkspace(
+  directory: string,
+  signal: AbortSignal,
+  onCompromised: () => void,
+  log: (message: string) => void,
+) {
+  // Cover the lock's 10-second stale threshold and filesystem timestamp rounding.
+  for (let attempt = 0; ; attempt++) {
+    signal.throwIfAborted();
+
+    try {
+      return await lockfile.lock(directory, {
+        lockfilePath: join(directory, ".lock"),
+        onCompromised,
+      });
+    } catch (error) {
+      if (!(error instanceof Error && "code" in error && error.code === "ELOCKED")) throw error;
+
+      if (attempt === 12)
+        throw new Error(
+          "This data directory is already in use. Stop the other ChartCoach process or choose --data-dir.",
+        );
+
+      if (attempt === 0) log("Waiting for the previous ChartCoach session to release its data…");
+    }
+
+    await delay(1000, undefined, { signal });
+  }
 }
 
 async function workerURL(child: ChildProcess, signal: AbortSignal) {

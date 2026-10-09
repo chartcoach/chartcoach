@@ -50,6 +50,7 @@ npx chartcoach doctor --json
 
 The default listener is `127.0.0.1:4273`. A busy port produces an error. Use `--port 0`
 to allocate an available port. One running process owns each data directory.
+After an interrupted shutdown, startup waits briefly for a leftover lock to expire.
 The launcher resolves the official catalog selection to an immutable release at
 startup. That release stays fixed until the server restarts.
 
