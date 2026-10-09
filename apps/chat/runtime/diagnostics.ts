@@ -31,7 +31,10 @@ export async function diagnose(config: Config, version: string) {
       yield* sql.unsafe("SELECT 1");
     }).pipe(Effect.provide(sqliteLayer(":memory:"))),
   );
-  await Promise.all([import("@lancedb/lancedb"), import("@huggingface/transformers")]);
+  await Promise.all([
+    import("@lancedb/lancedb"),
+    config.embedding ? import("@ai-sdk/openai-compatible") : import("@huggingface/transformers"),
+  ]);
 
   return {
     ok: true,
@@ -51,6 +54,13 @@ export async function diagnose(config: Config, version: string) {
       configured: Boolean(config.model.model),
       credentialAvailable: config.model.auth === "none" || Boolean(modelKey(config)),
     },
+    embedding: config.embedding
+      ? {
+          model: config.embedding.model,
+          baseURL: config.embedding.baseURL,
+          dimensions: config.embedding.dimensions,
+        }
+      : { local: true },
     runtime: { duckdb: true, sqlite: true, lancedb: true, embeddings: true },
   };
 }

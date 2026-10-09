@@ -8,7 +8,7 @@ const model = settings.model.model;
 
 const key = modelKey(settings);
 
-if (!model) throw new Error("Set CHARTCOACH_MODEL to run evaluations.");
+if (!model) throw new Error("Set CHARTCOACH_TEXT_MODEL to run evaluations.");
 
 if (key === undefined) throw new Error("Set the configured provider's API key to run evaluations.");
 

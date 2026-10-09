@@ -6,6 +6,7 @@ import { configSchema } from "../runtime/schema";
 import { fileURLToPath } from "node:url";
 import { readFile } from "node:fs/promises";
 import { ConfigurationError, loadConfig } from "../runtime/config";
+import { loadEnvironmentFile } from "../runtime/dotenv";
 import { startChat } from "../runtime/start";
 import { chalkStderr } from "chalk";
 import { renderLoading, renderReady, renderStopped, renderStopping } from "./output";
@@ -25,6 +26,7 @@ function integer(value: string) {
 function options(command: Command) {
   return command
     .option("--config <file>", "read a JSON configuration file")
+    .option("--env-file <file>", "load dotenv settings (default: .env in the working directory)")
     .option(
       "--catalog <location>",
       "catalog release directory, release.json URL, or catalog.json URL",
@@ -60,6 +62,8 @@ function options(command: Command) {
 type SettingsOptions = ReturnType<ReturnType<typeof options>["opts"]>;
 
 function configuration(values: SettingsOptions, explicitOpen: boolean) {
+  loadEnvironmentFile(values.envFile);
+
   return loadConfig({
     configFile: values.config,
     overrides: {

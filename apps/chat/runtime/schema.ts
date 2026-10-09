@@ -27,6 +27,14 @@ export const configSchema = z.strictObject({
       apiKeyEnv: text.optional(),
     })
     .prefault({}),
+  embedding: z
+    .strictObject({
+      model: text,
+      baseURL: apiBaseURL,
+      dimensions: z.number().int().positive(),
+      apiKeyEnv: text.default("CHARTCOACH_EMBEDDING_API_KEY"),
+    })
+    .optional(),
   server: z
     .strictObject({
       host: z.enum(["127.0.0.1", "0.0.0.0", "::1", "::"]).default("127.0.0.1"),
@@ -53,4 +61,8 @@ export const configSchema = z.strictObject({
 
 export type Config = z.infer<typeof configSchema>;
 
-export type ConfigInput = z.input<typeof configSchema>;
+type SchemaInput = z.input<typeof configSchema>;
+
+export type ConfigInput = Omit<SchemaInput, "embedding"> & {
+  embedding?: Partial<NonNullable<SchemaInput["embedding"]>>;
+};

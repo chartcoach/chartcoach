@@ -137,18 +137,26 @@ async function start(environmentOnly = false): Promise<string> {
     CHARTCOACH_PASSWORD: "package-test-password",
   };
 
-  if (environmentOnly)
-    Object.assign(environment, {
+  if (environmentOnly) {
+    const settings = {
       CHARTCOACH_CATALOG: catalogLocation ?? "./catalog",
       CHARTCOACH_DATA_DIR: "./data",
       CHARTCOACH_CACHE_DIR: "./cache",
       CHARTCOACH_PORT: "0",
-      CHARTCOACH_PROVIDER: "compatible",
-      CHARTCOACH_BASE_URL: modelURL,
-      CHARTCOACH_MODEL: "package-test-model",
-      CHARTCOACH_MODEL_AUTH: "none",
+      CHARTCOACH_TEXT_PROVIDER: "compatible",
+      CHARTCOACH_TEXT_BASE_URL: modelURL,
+      CHARTCOACH_TEXT_MODEL: "package-test-model",
+      CHARTCOACH_TEXT_AUTH: "none",
       CHARTCOACH_OPEN: "false",
-    });
+    };
+
+    await writeFile(
+      join(directory, ".env"),
+      Object.entries(settings)
+        .map(([name, value]) => `${name}=${JSON.stringify(value)}`)
+        .join("\n") + "\n",
+    );
+  }
 
   const launched = spawn(runner, [...runnerArgs, ...(environmentOnly ? [] : flags), "--verbose"], {
     cwd: directory,
@@ -300,6 +308,39 @@ try {
 
   assert.equal(diagnostic.ok, true);
   assert.equal(diagnostic.catalog.guidelines, catalog.length);
+
+  const remoteEnvironment = join(directory, "remote.env");
+  await writeFile(
+    remoteEnvironment,
+    "CHARTCOACH_EMBEDDING_MODEL=consumer-embedding-model\n" +
+      "CHARTCOACH_EMBEDDING_BASE_URL=https://vectors.example/v1\n" +
+      "CHARTCOACH_EMBEDDING_DIMENSIONS=4\n" +
+      "CHARTCOACH_EMBEDDING_API_KEY_ENV=VECTOR_TOKEN\n" +
+      "VECTOR_TOKEN=consumer-private-embedding-key\n",
+  );
+
+  const remoteReport = run(runner, [
+    ...runnerArgs,
+    "doctor",
+    "--env-file",
+    remoteEnvironment,
+    "--catalog",
+    catalogLocation ?? "./catalog",
+    "--cache-dir",
+    "./cache",
+    "--json",
+  ]);
+
+  const remoteDiagnostic = JSON.parse(remoteReport);
+
+  assert.equal(remoteDiagnostic.ok, true);
+  assert.deepEqual(remoteDiagnostic.embedding, {
+    model: "consumer-embedding-model",
+    baseURL: "https://vectors.example/v1",
+    dimensions: 4,
+  });
+  assert.equal(remoteReport.includes("consumer-private-embedding-key"), false);
+
   let url = await start();
   assert.match(runtimeOutput, /✓ ChartCoach is ready/);
   assert.equal(runtimeOutput.includes("\u001B["), false, "Redirected CLI output contains no color");

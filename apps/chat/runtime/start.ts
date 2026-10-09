@@ -7,7 +7,7 @@ import { z } from "zod";
 import { createInterface } from "node:readline";
 import lockfile from "proper-lockfile";
 import { createGateway } from "./gateway";
-import { embedKey, validateStartup, modelKey } from "./config";
+import { embedKey, validateStartup, modelKey, embeddingKey } from "./config";
 import type { Config } from "./schema";
 
 export async function startChat(
@@ -70,6 +70,7 @@ export async function startChat(
     password,
     key,
     config.model.model ? modelKey(config) : undefined,
+    embeddingKey(config),
     process.env.LANGFUSE_SECRET_KEY,
   ].filter((value): value is string => Boolean(value));
 

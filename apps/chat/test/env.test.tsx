@@ -115,7 +115,7 @@ it.each([
   {
     source: "no connection when the local file omits credentials",
     environment: inherited,
-    local: "CHARTCOACH_MODEL=vision-model\n",
+    local: "CHARTCOACH_TEXT_MODEL=vision-model\n",
     expected: {
       enabled: false,
       publicKey: null,

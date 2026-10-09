@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { platformDirectories } from "@chartcoach/catalog/node/paths";
+import type { z } from "zod";
 import { apiKeySchema } from "../shared/model.ts";
 
 import { configSchema, type Config, type ConfigInput } from "./schema.ts";
@@ -9,6 +10,10 @@ import { readEnvironment } from "./environment.ts";
 export type Environment = Record<string, string | undefined>;
 
 export class ConfigurationError extends Error {}
+
+const fileSchema = configSchema.extend({
+  embedding: configSchema.shape.embedding.unwrap().partial().optional(),
+});
 
 function readConfigFile(path: string, optional = false): ConfigInput {
   let contents: string;
@@ -23,14 +28,21 @@ function readConfigFile(path: string, optional = false): ConfigInput {
   }
 
   try {
-    return resolvePaths(parseConfig(JSON.parse(contents)), dirname(path));
+    const result = fileSchema.safeParse(JSON.parse(contents));
+
+    if (!result.success) throw invalidConfiguration(result.error);
+
+    return resolvePaths(result.data, dirname(path));
   } catch (error) {
     if (error instanceof ConfigurationError) throw error;
     throw new ConfigurationError(`Invalid JSON in ${path}.`);
   }
 }
 
-function resolvePaths(config: Config, base: string) {
+function resolvePaths<T extends Pick<Config, "catalog" | "server" | "storage">>(
+  config: T,
+  base: string,
+) {
   config.storage.dataDir = resolve(base, config.storage.dataDir);
   config.storage.cacheDir = resolve(base, config.storage.cacheDir);
 
@@ -43,13 +55,16 @@ function resolvePaths(config: Config, base: string) {
   return config;
 }
 
+function invalidConfiguration(error: z.ZodError) {
+  return new ConfigurationError(
+    `Invalid configuration: ${error.issues.map((issue) => issue.path.join(".") || "root").join(", ")}. Run chartcoach chat --help for flags and defaults.`,
+  );
+}
+
 function parseConfig(value: ConfigInput): Config {
   const result = configSchema.safeParse(value);
 
-  if (!result.success)
-    throw new ConfigurationError(
-      `Invalid configuration: ${result.error.issues.map((issue) => issue.path.join(".") || "root").join(", ")}. Run chartcoach chat --help for flags and defaults.`,
-    );
+  if (!result.success) throw invalidConfiguration(result.error);
 
   return result.data;
 }
@@ -67,6 +82,9 @@ function merge(base: ConfigInput, extra: ConfigInput): ConfigInput {
     ...defined(extra),
     catalog: { ...base.catalog, ...defined(extra.catalog ?? {}) },
     model: { ...base.model, ...defined(extra.model ?? {}) },
+    embedding: extra.embedding
+      ? { ...base.embedding, ...defined(extra.embedding) }
+      : base.embedding,
     server: { ...base.server, ...defined(extra.server ?? {}) },
     storage: { ...base.storage, ...defined(extra.storage ?? {}) },
   };
@@ -113,13 +131,25 @@ export function loadConfig({
       profile: e.CHARTCOACH_CATALOG_PROFILE,
     },
     model: {
-      provider: e.CHARTCOACH_PROVIDER,
-      model: e.CHARTCOACH_MODEL,
-      baseURL: e.CHARTCOACH_BASE_URL,
-      apiKeyEnv: e.CHARTCOACH_API_KEY_ENV,
-      auth: e.CHARTCOACH_MODEL_AUTH,
-      contextWindow: e.CHARTCOACH_CONTEXT_WINDOW,
+      provider: e.CHARTCOACH_TEXT_PROVIDER,
+      model: e.CHARTCOACH_TEXT_MODEL,
+      baseURL: e.CHARTCOACH_TEXT_BASE_URL,
+      apiKeyEnv: e.CHARTCOACH_TEXT_API_KEY_ENV,
+      auth: e.CHARTCOACH_TEXT_AUTH,
+      contextWindow: e.CHARTCOACH_TEXT_CONTEXT_WINDOW,
     },
+    embedding:
+      e.CHARTCOACH_EMBEDDING_MODEL ||
+      e.CHARTCOACH_EMBEDDING_BASE_URL ||
+      e.CHARTCOACH_EMBEDDING_DIMENSIONS ||
+      e.CHARTCOACH_EMBEDDING_API_KEY_ENV
+        ? {
+            model: e.CHARTCOACH_EMBEDDING_MODEL,
+            baseURL: e.CHARTCOACH_EMBEDDING_BASE_URL,
+            dimensions: e.CHARTCOACH_EMBEDDING_DIMENSIONS,
+            apiKeyEnv: e.CHARTCOACH_EMBEDDING_API_KEY_ENV,
+          }
+        : undefined,
     server: {
       host: e.CHARTCOACH_HOST,
       port: e.CHARTCOACH_PORT,
@@ -150,7 +180,7 @@ export function loadConfig({
 
   if (result.model.model && result.model.provider === "compatible" && !result.model.baseURL)
     throw new ConfigurationError(
-      "Set --base-url or CHARTCOACH_BASE_URL for an OpenAI-compatible connection.",
+      "Set --base-url or CHARTCOACH_TEXT_BASE_URL for an OpenAI-compatible connection.",
     );
 
   if (result.server.publicURL && new URL(result.server.publicURL).pathname !== "/")
@@ -172,19 +202,24 @@ function list(value: string | undefined) {
     .filter(Boolean);
 }
 
-const providerKeyNames = {
-  openai: "OPENAI_API_KEY",
-  anthropic: "ANTHROPIC_API_KEY",
-  google: "GEMINI_API_KEY",
-  compatible: "OPENAI_API_KEY",
-};
-
 export function modelKey(config: Config, environment: Environment = process.env) {
   if (config.model.auth === "none") return "";
-  const name = config.model.apiKeyEnv ?? providerKeyNames[config.model.provider];
+  const name = config.model.apiKeyEnv ?? "CHARTCOACH_TEXT_API_KEY";
 
-  const value = environment[name];
+  return connectionKey(name, environment[name]);
+}
 
+export function embeddingKey(
+  config: Pick<Config, "embedding">,
+  environment: Environment = process.env,
+) {
+  if (!config.embedding) return undefined;
+  const name = config.embedding.apiKeyEnv;
+
+  return connectionKey(name, environment[name]);
+}
+
+function connectionKey(name: string, value: string | undefined) {
   if (!value) return undefined;
   const key = apiKeySchema.safeParse(value);
 
@@ -253,7 +288,12 @@ export function validateStartup(config: Config, environment: Environment = proce
 
   if (config.model.model && config.model.auth !== "none" && !modelKey(config, environment))
     throw new ConfigurationError(
-      `Set ${config.model.apiKeyEnv ?? providerKeyNames[config.model.provider]} for the configured model, or omit the model and connect in the browser.`,
+      `Set ${config.model.apiKeyEnv ?? "CHARTCOACH_TEXT_API_KEY"} for the configured model, or omit the model and connect in the browser.`,
+    );
+
+  if (config.embedding && !embeddingKey(config, environment))
+    throw new ConfigurationError(
+      `Set ${config.embedding.apiKeyEnv} for the configured embedding connection.`,
     );
 
   return password;
