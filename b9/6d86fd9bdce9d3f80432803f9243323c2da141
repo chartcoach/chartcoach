@@ -1,0 +1,32 @@
+apps/chat/runtime/schema.ts
+  s_b917e068d9700b::t_0e7cd2f111daa3 39
+apps/chat/browser/catalog.ts
+  s_b917e068d9700b::t_0c51f7dd4fc73d 95
+  s_b917e068d9700b::t_404dc2511e707f 16-17
+  s_b917e068d9700b::t_3dec7f8cd3a6b1 33-42
+apps/chat/browser/opaque-origin.ts
+  s_b917e068d9700b::t_e2337c5a21c095 1-15
+apps/chat/runtime/environment.ts
+  s_b917e068d9700b::t_f0b3014bb66dae 34
+apps/chat/runtime/config.ts
+  s_b917e068d9700b::t_7eafbba7c61cda 131,137
+  s_b917e068d9700b::t_d5510b4e6d3c0a 241-253
+  s_b917e068d9700b::t_ac54e9dc55d85e 209-221
+  s_b917e068d9700b::t_d81308c8cd00d1 161-163,168-172
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "b96d86fd9bdce9d3f80432803f9243323c2da141",
+  "prompts": {},
+  "sessions": {
+    "s_b917e068d9700b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "91113b9c-eb86-4f8f-897a-546bf647aec4",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Péter Ferenc Gyarmati <dev.petergy@gmail.com>"
+    }
+  }
+}
