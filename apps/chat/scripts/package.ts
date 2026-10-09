@@ -82,7 +82,7 @@ if (/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)-dev\.[1-9]\d*$/.test(source.versi
   if (dependencies["@chartcoach/catalog"] !== source.version)
     throw new Error("Preview chat and catalog versions must match.");
   dependencies["@chartcoach/catalog"] =
-    `https://github.com/chartcoach/chartcoach/releases/download/preview-builds/chartcoach-catalog-${source.version}.tgz`;
+    `https://github.com/chartcoach/chartcoach/releases/download/previews/chartcoach-catalog-${source.version}.tgz`;
 }
 
 await writeFile(

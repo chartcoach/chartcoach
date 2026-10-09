@@ -12,7 +12,7 @@ from typing import Any
 
 from release_registry import release_files
 
-_TAG = "preview-builds"
+_TAG = "previews"
 _PREDICATE_TYPE = "https://github.com/chartcoach/chartcoach/blob/main/development_docs/releasing.md#preview-provenance-v1"
 _VERSION = re.compile(r"(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)\.dev([1-9]\d*)")
 
@@ -267,7 +267,7 @@ def publish(directory: Path, commit: str, version: str) -> None:
         items = assets()
         uploaded = available(items)
         versions = discovered_versions(items)
-        # An interrupted newer upload must not suppress notes or evict a
+        # An interrupted newer upload must not evict a
         # completed publication. This build joins completed builds provisionally;
         # its marker is committed only after all publication work succeeds.
         builds = [
@@ -305,12 +305,6 @@ def publish(directory: Path, commit: str, version: str) -> None:
             )
         else:
             source_record += " This provenance record is unsigned; GitHub artifact attestations require a public repository or Enterprise Cloud."
-        if builds[0] == version:
-            notes = root / "notes.md"
-            notes.write_text(
-                f"Packages built from `main` after exact-commit CI passes. Latest: `{version}` from [{commit[:7]}](https://github.com/{repository}/commit/{commit}).\n\n{install}\n\nKeeps the newest 30 completed builds. Use PyPI and npm for stable releases. The preview tag stays on its original commit; versioned assets identify each build.\n\n{source_record}\n"
-            )
-            gh("release", "edit", _TAG, "--notes-file", str(notes))
         if version not in stale:
             pulls = json.loads(gh("api", f"repos/{repository}/commits/{commit}/pulls"))
             pull = next(
@@ -336,7 +330,7 @@ def publish(directory: Path, commit: str, version: str) -> None:
                 ):
                     body = root / "comment.md"
                     body.write_text(
-                        f"{announcement_marker}\nchartcoach `{version}` from this PR is available as a [preview build](https://github.com/{repository}/releases/tag/{_TAG}):\n\n{install}\n"
+                        f"{announcement_marker}\nchartcoach `{version}` from [{commit[:7]}](https://github.com/{repository}/commit/{commit}) is available as a [preview build](https://github.com/{repository}/releases/tag/{_TAG}):\n\n{install}\n\n{source_record}\n"
                     )
                     gh("pr", "comment", str(pull), "--body-file", str(body))
         # Announce before pruning; commit the checksum marker only on completion.
