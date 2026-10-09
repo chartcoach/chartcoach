@@ -1,0 +1,54 @@
+---
+import { ArrowRight } from "lucide-react";
+
+const loopSteps = [
+  {
+    label: "Human",
+    title: "Chart request",
+    body: "A person asks an agent to review, recommend, evaluate, or explain a chart decision.",
+  },
+  {
+    label: "Agent",
+    title: "Guideline retrieval",
+    body: "The agent searches the Guideline Catalog by label, section role, reference, and semantic match.",
+  },
+  {
+    label: "Answer",
+    title: "Grounded response",
+    body: "The answer cites the guideline entries it used and names the guidance applied to the chart.",
+  },
+  {
+    label: "Community",
+    title: "Public contribution",
+    body: "When guidance is missing, weak, or contested, the agent drafts a catalog issue after receiving confirmation so the community can review the proposed guideline entry.",
+  },
+] as const;
+---
+
+<section class="home-loop" aria-labelledby="workflow-title">
+  <h2 id="workflow-title" class="home-eyebrow">
+    Agent workflow
+  </h2>
+  <ol class="home-workflow-grid">
+    {loopSteps.map((step, index) => (
+      <li class="home-loop-card">
+        <div class="home-loop-card-header">
+          <span class="home-loop-card-index">{index + 1}</span>
+          <span class="home-eyebrow">{step.label}</span>
+        </div>
+        <h3 class="home-loop-card-title">{step.title}</h3>
+        <p class="home-loop-card-copy">{step.body}</p>
+        {index < loopSteps.length - 1 && (
+          <span
+            aria-hidden="true"
+            class="pointer-events-none absolute right-0 top-1/2 z-10 hidden -translate-y-1/2 translate-x-[calc(50%+1px)] lg:flex"
+          >
+            <span class="flex h-7 w-7 items-center justify-center rounded-full border border-border bg-bg text-muted">
+              <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.5} />
+            </span>
+          </span>
+        )}
+      </li>
+    ))}
+  </ol>
+</section>

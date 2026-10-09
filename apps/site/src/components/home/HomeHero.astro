@@ -1,0 +1,22 @@
+---
+import { InstallCopy } from "@/components/install-copy";
+import HomeWorkflow from "./HomeWorkflow.astro";
+---
+
+<section class="home-hero" aria-labelledby="home-title">
+  <div class="grid-glow" aria-hidden="true"></div>
+  <div class="site-container home-hero-content">
+    <p class="home-eyebrow home-hero-kicker">Experimental</p>
+    <h1 id="home-title" class="home-hero-title">
+      Visualization guidelines agents can inspect and cite
+    </h1>
+    <p class="home-hero-copy">
+      chartcoach helps agents retrieve, inspect, cite, apply, and improve
+      visualization guidelines. Each guideline links to its sources, so agents
+      can explain where guidance comes from when reviewing charts, recommending
+      encodings, and evaluating trade-offs.
+    </p>
+    <InstallCopy client:load />
+    <HomeWorkflow />
+  </div>
+</section>

@@ -5,15 +5,12 @@ import { steps } from "./guideline-story/story-steps";
 export function GuidelineStory() {
   return (
     <section id="guideline-story" className="guideline-story" aria-labelledby="story-title">
-      <div className="mx-auto w-[min(100%-3rem,var(--container-content))]">
+      <div className="site-container">
         <div className="story-intro">
           <div>
-            <p className="m-0 font-mono text-xs font-semibold uppercase tracking-[0.14em] text-muted">
-              Representation
-            </p>
+            <p className="home-eyebrow">Representation</p>
             <h2 id="story-title" className="story-title">
-              <span className="whitespace-nowrap">Human-readable,</span>{" "}
-              <span className="whitespace-nowrap">agent-actionable</span> visualization guidelines
+              Human-readable, agent-actionable visualization guidelines
             </h2>
           </div>
           <p className="m-0 max-w-[54rem] text-pretty text-base leading-relaxed text-muted sm:text-lg">
