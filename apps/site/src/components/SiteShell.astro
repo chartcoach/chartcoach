@@ -49,51 +49,66 @@ const fitViewport = Astro.props.fitViewport ?? false;
     fitViewport ? "h-svh overflow-hidden" : "min-h-screen",
   ]}
 >
-  <header
-    class="sticky top-0 z-50 flex min-h-16 items-center justify-between gap-2 bg-bg/90 px-3 py-2 backdrop-blur-sm sm:gap-3 sm:px-4"
-    transition:persist="site-header"
-  >
-    <a href={SITE_PATHS.home} class="inline-flex h-9 shrink-0 items-center no-underline" aria-label="chartcoach home">
-      <BrandLogo class="h-7 w-[6.97rem] sm:h-8 sm:w-[7.96rem]" />
-    </a>
-    <nav class="flex min-w-0 flex-1 items-center justify-end gap-2 text-sm text-muted sm:gap-3 lg:text-[0.9375rem]" aria-label="Primary">
-      {
-        primaryLinks.map((link) => (
-            <a
-              href={link.href}
-              target={isExternalHttpHref(link.href) ? "_blank" : undefined}
-              rel={isExternalHttpHref(link.href) ? "noreferrer" : undefined}
-            class="hidden h-8 items-center rounded-md px-1.5 no-underline transition-colors hover:text-accent sm:inline-flex"
+  <header class="sticky top-0 z-50 bg-bg" transition:persist="site-header">
+    <div class="site-container flex min-h-16 items-center justify-between gap-2 py-2 sm:gap-3">
+      <a
+        href={SITE_PATHS.home}
+        class="inline-flex h-9 shrink-0 items-center no-underline"
+        aria-label="chartcoach home"
+      >
+        <BrandLogo class="h-7 w-[6.97rem] sm:h-8 sm:w-[7.96rem]" />
+      </a>
+      <nav
+        class="flex min-w-0 flex-1 items-center justify-end gap-2 text-sm text-muted sm:gap-3 lg:text-[0.9375rem]"
+        aria-label="Primary"
+      >
+        {primaryLinks.map((link) => (
+          <a
+            href={link.href}
+            target={isExternalHttpHref(link.href) ? "_blank" : undefined}
+            rel={isExternalHttpHref(link.href) ? "noreferrer" : undefined}
+            class="hidden h-11 items-center rounded-md px-1.5 no-underline transition-colors hover:text-accent md:inline-flex"
           >
             {link.label}
           </a>
-        ))
-      }
-      <GuidelineSearch client:load />
-      <a
-        href={EXTERNAL_HREFS.catalogRepository}
-        target="_blank"
-        rel="noreferrer"
-        class="hidden h-8 w-8 items-center justify-center rounded-md no-underline transition-colors hover:bg-accent-muted hover:text-accent sm:inline-flex"
-        aria-label="chartcoach catalog repository on GitHub"
-      >
-        <SvgIcon name="github" class="h-[1.125rem] w-[1.125rem] shrink-0" />
-      </a>
-      <div class="hidden sm:block">
-        <ThemeToggle client:load />
-      </div>
-      <SiteMobileMenu links={primaryLinks} githubHref={EXTERNAL_HREFS.catalogRepository} client:load />
-    </nav>
+        ))}
+        <GuidelineSearch client:load />
+        <a
+          href={EXTERNAL_HREFS.catalogRepository}
+          target="_blank"
+          rel="noreferrer"
+          class="hidden h-11 w-11 shrink-0 items-center justify-center rounded-md no-underline transition-colors hover:bg-accent-muted hover:text-accent md:inline-flex"
+          aria-label="chartcoach catalog repository on GitHub"
+        >
+          <SvgIcon name="github" class="h-[1.125rem] w-[1.125rem] shrink-0" />
+        </a>
+        <div class="hidden md:block">
+          <ThemeToggle client:load />
+        </div>
+        <SiteMobileMenu
+          links={primaryLinks}
+          githubHref={EXTERNAL_HREFS.catalogRepository}
+          client:load
+        />
+      </nav>
+    </div>
   </header>
 
   <main class="flex min-h-0 flex-1 flex-col" transition:animate="fade">
     <slot />
   </main>
 
-  <footer class="relative z-10 border-t border-border bg-surface-muted/35" transition:persist="site-footer">
-    <div class="mx-auto flex w-[min(100%-3rem,var(--container-content))] flex-col gap-8 py-10 sm:py-12 md:flex-row md:items-end md:justify-between">
+  <footer
+    class="relative z-10 border-t border-border bg-surface-muted/35"
+    transition:persist="site-footer"
+  >
+    <div class="site-container flex flex-col gap-8 py-10 sm:py-12 md:flex-row md:items-end md:justify-between">
       <div class="flex max-w-[32rem] flex-col items-start gap-5">
-        <a href={SITE_PATHS.home} class="inline-flex rounded-lg no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/20" aria-label="chartcoach home">
+        <a
+          href={SITE_PATHS.home}
+          class="inline-flex rounded-lg no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/20"
+          aria-label="chartcoach home"
+        >
           <BrandLogo class="h-10 w-[9.95rem] sm:h-11 sm:w-[10.95rem]" />
         </a>
         <div class="grid gap-2">
@@ -106,22 +121,27 @@ const fitViewport = Astro.props.fitViewport ?? false;
         </div>
       </div>
       <div class="flex flex-col gap-4 md:items-end">
-        <nav class="flex flex-wrap items-center gap-x-2 gap-y-2 text-[0.9375rem] font-medium text-muted" aria-label="Footer">
-          {
-            footerLinks.map((link, index) => (
-              <>
-                {index > 0 && <span aria-hidden="true" class="text-border">·</span>}
-                  <a
-                    href={link.href}
-                    target={isExternalHttpHref(link.href) ? "_blank" : undefined}
-                    rel={isExternalHttpHref(link.href) ? "noreferrer" : undefined}
-                  class="rounded-sm text-muted no-underline transition-colors hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/20"
-                >
-                  {link.label}
-                </a>
-              </>
-            ))
-          }
+        <nav
+          class="flex flex-wrap items-center gap-x-2 gap-y-2 text-[0.9375rem] font-medium text-muted"
+          aria-label="Footer"
+        >
+          {footerLinks.map((link, index) => (
+            <>
+              {index > 0 && (
+                <span aria-hidden="true" class="text-border">
+                  ·
+                </span>
+              )}
+              <a
+                href={link.href}
+                target={isExternalHttpHref(link.href) ? "_blank" : undefined}
+                rel={isExternalHttpHref(link.href) ? "noreferrer" : undefined}
+                class="inline-flex min-h-11 items-center rounded-sm text-muted no-underline transition-colors hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/20"
+              >
+                {link.label}
+              </a>
+            </>
+          ))}
         </nav>
         <p class="m-0 text-[0.8125rem] leading-5 text-muted">
           {new Date().getFullYear()} chartcoach

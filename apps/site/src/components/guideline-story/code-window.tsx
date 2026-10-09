@@ -11,7 +11,7 @@ export function CodeWindow(props: CodeWindowProps) {
   return (
     <CodeWindowFrame
       {...props}
-      preClassName="px-5 pb-5 pt-14 text-[0.8125rem] leading-[1.7] sm:px-6 sm:pb-6 sm:text-[0.875rem]"
+      preClassName="px-5 py-5 text-[0.8125rem] leading-[1.7] sm:px-6 sm:pb-6 sm:text-[0.875rem]"
     />
   );
 }
@@ -20,7 +20,7 @@ export function DenseCodeWindow(props: CodeWindowProps) {
   return (
     <CodeWindowFrame
       {...props}
-      preClassName="px-4 pb-4 pt-12 text-[0.6875rem] leading-[1.7] min-[360px]:text-[0.75rem] sm:px-5 sm:pb-5 sm:text-[0.8125rem]"
+      preClassName="px-4 py-4 text-[0.75rem] leading-[1.7] sm:px-5 sm:pb-5 sm:text-[0.8125rem]"
     />
   );
 }
@@ -40,15 +40,18 @@ function CodeWindowFrame({
       className="relative min-w-0 overflow-hidden bg-code-bg"
       aria-label={`${title} ${language} code example`}
     >
-      <span className="absolute left-5 top-4 z-10 min-w-0 max-w-[calc(100%-8rem)] break-words font-mono text-[0.6875rem] leading-none text-muted sm:left-6">
-        {title}
-      </span>
-      <span className="absolute right-4 top-3.5 z-10 rounded-full border border-border bg-bg/82 px-2.5 py-1 font-mono text-[0.625rem] font-semibold uppercase leading-none tracking-[0.12em] text-muted shadow-[0_1px_2px_color-mix(in_srgb,var(--color-fg)_5%,transparent)] sm:right-5">
-        {languageLabel}
-      </span>
+      <div className="flex flex-wrap items-center justify-between gap-3 px-4 pt-4 sm:px-5">
+        <span className="min-w-0 break-words font-mono text-xs text-muted">{title}</span>
+        <span className="rounded-full border border-border bg-bg px-2.5 py-1 font-mono text-xs text-muted">
+          {languageLabel}
+        </span>
+      </div>
       <pre
+        tabIndex={0}
+        role="region"
+        aria-label={`${title} code`}
         className={[
-          "m-0 overflow-visible bg-code-bg font-mono text-code-fg",
+          "m-0 overflow-x-auto bg-code-bg font-mono text-code-fg focus-visible:outline-2 focus-visible:outline-offset-[-2px]",
           language === "json" ? "whitespace-pre" : "whitespace-pre-wrap [overflow-wrap:anywhere]",
           preClassName,
         ].join(" ")}

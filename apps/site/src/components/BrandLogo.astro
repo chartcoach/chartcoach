@@ -12,6 +12,8 @@ const className = Astro.props.class;
 <span class:list={["chartcoach-brand-logo", className]} aria-hidden="true">
   <img
     src={logo.src}
+    width={logo.width}
+    height={logo.height}
     alt=""
     class="chartcoach-brand-logo__image chartcoach-brand-logo__image--light"
     loading="eager"
@@ -19,6 +21,8 @@ const className = Astro.props.class;
   />
   <img
     src={logoWhite.src}
+    width={logoWhite.width}
+    height={logoWhite.height}
     alt=""
     class="chartcoach-brand-logo__image chartcoach-brand-logo__image--dark"
     loading="eager"
