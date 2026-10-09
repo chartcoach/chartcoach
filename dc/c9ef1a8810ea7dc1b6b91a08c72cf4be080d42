@@ -1,0 +1,21 @@
+packages/catalog/vite.config.ts
+  s_b1a2f3fcaa3f39::t_b23c86f66db9b2 36-37
+.github/workflows/ci.yml
+  s_b1a2f3fcaa3f39::t_b23c86f66db9b2 95
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "dcc9ef1a8810ea7dc1b6b91a08c72cf4be080d42",
+  "prompts": {},
+  "sessions": {
+    "s_b1a2f3fcaa3f39": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11f73-a451-7310-8d59-e442178886e9",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Péter Ferenc Gyarmati <dev.petergy@gmail.com>"
+    }
+  }
+}
