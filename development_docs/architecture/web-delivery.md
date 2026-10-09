@@ -11,6 +11,7 @@ apps/docs  -> @chartcoach/brand
 
 apps/chat  -> @chartcoach/catalog/node
           -> @chartcoach/brand
+          -> @chartcoach/skills
 ```
 
 The apps do not import each other. Vite+ rules and the tests under

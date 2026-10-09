@@ -2,7 +2,7 @@
 
 chartcoach publishes source-traced visualization guidance through one Guideline
 Catalog contract. The repository contains the catalog readers, curation tools,
-CLI, MCP server, public catalog site, and product documentation.
+CLI, MCP server, chat app, public catalog site, and product documentation.
 
 Read the nearest package README and behavior tests before editing a package.
 Use the root commands to verify changes across package boundaries.
@@ -42,13 +42,17 @@ The web package graph is:
 apps/site  -> packages/catalog
           -> packages/brand
 
-apps/docs  -> packages/catalog
+apps/docs  -> packages/brand
+
+apps/chat  -> packages/catalog/node
           -> packages/brand
+          -> skills
 ```
 
 `@chartcoach/catalog` is a browser-safe entry point. It imports no Node built-ins
 or chartcoach workspace package. `@chartcoach/catalog/node` owns Node filesystem
-loading and persistent caching. The apps consume the browser package entry point.
+loading and persistent caching. The site consumes the browser package entry point; chat server code uses the
+Node entry point.
 They do not import each other. Root lint rules and
 `tools/architecture/dependencies.test.ts` enforce this graph.
 
@@ -68,16 +72,17 @@ provider and index imports happen inside the capability that needs them.
 
 ## Keep one mutable owner
 
-| State                            | Owner                                       |
-| -------------------------------- | ------------------------------------------- |
-| Public `catalog.json` selection  | `curation.select_release`                   |
-| Immutable release directory      | `curation.publish_release`                  |
-| Content-addressed artifact cache | `_catalog.runtime.cache`                    |
-| Extracted index cache            | `_catalog.runtime.cache`                    |
-| Site catalog location            | `apps/site/src/config/catalog-location.ts`  |
-| Docs notebook runtime            | `apps/docs/components/notebook-runtime.tsx` |
-| Docs-session JavaScript SDK      | `apps/docs/components/notebook-runtime.tsx` |
-| Generated site artifacts         | The integration that writes each artifact   |
+| State                            | Owner                                      |
+| -------------------------------- | ------------------------------------------ |
+| Public `catalog.json` selection  | `curation.select_release`                  |
+| Immutable release directory      | `curation.publish_release`                 |
+| Content-addressed artifact cache | `_catalog.runtime.cache`                   |
+| Extracted index cache            | `_catalog.runtime.cache`                   |
+| Site catalog location            | `apps/site/src/config/catalog-location.ts` |
+| MCP launch settings              | `_mcp.config.MCPConfig`                    |
+| MCP credentials and function     | One tool registration’s search context     |
+| Chat launch settings             | `apps/chat/runtime/schema.ts`              |
+| Generated site artifacts         | The integration that writes each artifact  |
 
 Every `catalog.json` write goes through the curation selection service.
 Release artifacts are immutable after `release.json` is committed.
@@ -99,7 +104,9 @@ Release artifacts are immutable after `release.json` is committed.
 | Path                       | Owns                                                                         |
 | -------------------------- | ---------------------------------------------------------------------------- |
 | `apps/site`                | Public catalog pages, search, LLM output, and Open Graph images              |
-| `apps/docs`                | Product documentation and live Python and JavaScript examples                |
+| `apps/docs`                | Static product documentation and SDK examples                                |
+| `apps/chat`                | Packaged chat app, authenticated gateway, Eve worker, and catalog retrieval  |
+| `skills`                   | Agent workflow resources consumed by chat and packaged Python                |
 | `packages/brand`           | Reviewed assets, font imports, and CSS tokens                                |
 | `packages/catalog`         | Browser-safe catalog models, release verification, and Parquet loading       |
 | `packages/chartcoach`      | Python API, runtime readers, curation, CLI, MCP, Polars, DuckDB, and LanceDB |
@@ -113,17 +120,17 @@ same release fixture.
 
 Run commands from the repository root.
 
-| Task                    | Command             |
-| ----------------------- | ------------------- |
-| List repository targets | `make help`         |
-| Install workspaces      | `make install`      |
-| Check JavaScript        | `pnpm ready`        |
-| Find unused JavaScript  | `pnpm check:unused` |
-| Check Python            | `make python-check` |
-| Build product docs      | `make docs-build`   |
-| Build the public site   | `make site-build`   |
-| Check the repository    | `make check`        |
-| Start both web apps     | `pnpm dev`          |
+| Task                     | Command             |
+| ------------------------ | ------------------- |
+| List repository targets  | `make help`         |
+| Install workspaces       | `make install`      |
+| Check JavaScript         | `pnpm ready`        |
+| Find unused JavaScript   | `pnpm check:unused` |
+| Check Python             | `make python-check` |
+| Build product docs       | `make docs-build`   |
+| Build the public site    | `make site-build`   |
+| Check the repository     | `make check`        |
+| Start all three web apps | `pnpm dev`          |
 
 Use `pnpm --dir <path> <script>` for a focused web loop. Use
 `uv run --locked --package chartcoach ...` for a focused Python command. Run
@@ -151,6 +158,10 @@ Build tools own these paths:
 - `apps/docs/.next/`
 - `apps/docs/.source/`
 - `apps/docs/out/`
+- `apps/chat/.next/`
+- `apps/chat/out/`
+- `apps/chat/dist/`
+- `apps/chat/.output/`
 - `apps/site/.astro/`
 - `apps/site/dist/`
 - `packages/catalog/dist/`
