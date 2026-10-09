@@ -13,7 +13,7 @@ from chartcoach import Catalog, CatalogError, open_catalog
 from chartcoach._catalog.search import catalog_search
 from chartcoach.cli.main import main as chartcoach_cli
 from chartcoach.curation import EmbeddingProfile, build_release
-from chartcoach.mcp import _build_server, _register_tools
+from chartcoach.mcp import create_server
 from click.testing import CliRunner
 from lancedb.embeddings import get_registry
 from lancedb.query import (
@@ -161,8 +161,7 @@ def test_mcp_search_recovers_from_filter_and_provider_failures(
         raise RuntimeError(marker)
 
     async def exercise() -> None:
-        server = _build_server(log_level="INFO")
-        _register_tools(server, catalog=indexed_catalog, profile=_PROFILE)
+        server = create_server(indexed_catalog, profile=_PROFILE)
         invalid = await server.call_tool(
             "search", {"text": "direct labels", "where": "category = 'line'"}
         )

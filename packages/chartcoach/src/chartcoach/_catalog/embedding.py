@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from pathlib import Path
 
 from .errors import CatalogCapabilityError, CatalogValidationError
@@ -8,10 +9,15 @@ from .errors import CatalogCapabilityError, CatalogValidationError
 _MAX_VARIABLE_FILE_BYTES = 65_536
 
 
-def apply_embedding_variables(path: Path | str) -> None:
-    """Load caller-owned LanceDB registry variables from a JSON file."""
+def apply_embedding_variables(variables: Path | str | Mapping[str, str]) -> None:
+    """Set caller-owned LanceDB registry variables, without selecting a model."""
 
-    variables = _read_embedding_variables(Path(path))
+    values = (
+        read_embedding_variables(variables)
+        if isinstance(variables, Path | str)
+        else dict(variables)
+    )
+    _validate_variables(values)
     try:
         from lancedb.embeddings import get_registry
     except ModuleNotFoundError as exc:
@@ -20,11 +26,13 @@ def apply_embedding_variables(path: Path | str) -> None:
             hints=["Install chartcoach[index]."],
         ) from exc
     registry = get_registry()
-    for name, value in variables.items():
+    for name, value in values.items():
         registry.set_var(name, value)
 
 
-def _read_embedding_variables(path: Path) -> dict[str, str]:
+def read_embedding_variables(path: Path | str) -> dict[str, str]:
+    """Read a bounded variable file without importing LanceDB."""
+    path = Path(path)
     try:
         size = path.stat().st_size
     except OSError as exc:
@@ -39,15 +47,25 @@ def _read_embedding_variables(path: Path) -> dict[str, str]:
     try:
         with path.open("rb") as source:
             data = source.read(_MAX_VARIABLE_FILE_BYTES + 1)
-        if len(data) > _MAX_VARIABLE_FILE_BYTES:
-            raise CatalogValidationError(
-                "Embedding variable file exceeds the 64 KiB limit."
-            )
-        value = json.loads(data.decode("utf-8"))
-    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+    except OSError as exc:
         raise CatalogValidationError(
             "Embedding variable file must be a UTF-8 JSON object."
         ) from exc
+    if len(data) > _MAX_VARIABLE_FILE_BYTES:
+        raise CatalogValidationError(
+            "Embedding variable file exceeds the 64 KiB limit."
+        )
+    try:
+        value = json.loads(data.decode("utf-8"))
+    except (ValueError, RecursionError) as exc:
+        raise CatalogValidationError(
+            "Embedding variable file must be a UTF-8 JSON object."
+        ) from exc
+    _validate_variables(value)
+    return value
+
+
+def _validate_variables(value: object) -> None:
     if not isinstance(value, dict) or not all(
         isinstance(name, str) and name and ":" not in name and isinstance(item, str)
         for name, item in value.items()
@@ -55,7 +73,6 @@ def _read_embedding_variables(path: Path) -> dict[str, str]:
         raise CatalogValidationError(
             "Embedding variable file must map names to string values."
         )
-    return value
 
 
-__all__ = ["apply_embedding_variables"]
+__all__ = ["apply_embedding_variables", "read_embedding_variables"]

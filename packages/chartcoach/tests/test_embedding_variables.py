@@ -85,19 +85,22 @@ def test_mcp_embedding_variable_file_activates_semantic_search(
     variables.write_text(json.dumps({_VARIABLE: secret}))
     script = f"""
 import asyncio
-from pathlib import Path
 from lancedb_embedding_fixture import variable_embedding_definition
 variable_embedding_definition()
 from chartcoach import open_catalog
-from chartcoach.mcp import MCPServer, _register_tools
+from chartcoach.mcp import create_server, load_config
 from mcp.types import CallToolResult
 async def run():
-    server = MCPServer("test")
-    _register_tools(
-        server,
-        catalog=open_catalog({str(release)!r}),
-        profile={_PROFILE!r},
-        embedding_vars=Path({str(variables)!r}),
+    config = load_config(environment={{
+        "CHARTCOACH_SOURCE": {str(release)!r},
+        "CHARTCOACH_INDEX_PROFILE": {_PROFILE!r},
+        "CHARTCOACH_EMBEDDING_VARS": {str(variables)!r},
+    }})
+    server = create_server(
+        open_catalog(config.source),
+        profile=config.profile,
+        embedding_variables=config.embedding_variables,
+        embedding_environment=config.embedding_environment,
     )
     result = await server.call_tool("search", {{"text": "direct labels", "mode": "vector"}})
     assert isinstance(result, CallToolResult)
@@ -124,11 +127,10 @@ import asyncio
 from lancedb_embedding_fixture import variable_embedding_definition
 variable_embedding_definition()
 from chartcoach import open_catalog
-from chartcoach.mcp import MCPServer, _register_tools
+from chartcoach.mcp import create_server
 from mcp.types import CallToolResult
 async def run():
-    server = MCPServer("test")
-    _register_tools(server, catalog=open_catalog({str(release)!r}), profile={_PROFILE!r})
+    server = create_server(open_catalog({str(release)!r}), profile={_PROFILE!r})
     failed = await server.call_tool("search", {{"text": "direct labels", "mode": "vector"}})
     assert isinstance(failed, CallToolResult)
     assert failed.is_error is True

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from importlib.metadata import PackageNotFoundError, version
+from threading import Lock
 from typing import TYPE_CHECKING, Any, Literal, cast
 
 from typing_extensions import TypedDict
@@ -20,9 +21,46 @@ from .profiles import ProfileMetadata, validate_embedding_model
 
 if TYPE_CHECKING:
     from lancedb import Table
+    from lancedb.embeddings import EmbeddingFunction
     from lancedb.query import LanceEmptyQueryBuilder
 
     from .model import Catalog
+
+
+class SearchEmbeddings:
+    """One reader's lazy native function, with credentials kept out of the registry."""
+
+    def __init__(self, variables: Mapping[str, str]) -> None:
+        self.variables = dict(variables)
+        self._function: EmbeddingFunction | None = None
+        self._lock = Lock()
+
+    def get(self, metadata: ProfileMetadata, *, profile: str) -> EmbeddingFunction:
+        with self._lock:
+            if self._function is None:
+                definition = _validate_semantic_environment(
+                    metadata, profile=profile, variables=self.variables
+                )
+                model = {
+                    key: self.variables[value.removeprefix("$var:")]
+                    if isinstance(value, str) and value.startswith("$var:")
+                    else value
+                    for key, value in metadata.embedding_functions[0].model.items()
+                }
+                try:
+                    # The portable model was validated above. Instantiate the native
+                    # Pydantic function directly: .create() resolves a global registry.
+                    # This query-only instance is never serialized into release bytes.
+                    self._function = definition(**cast(Any, model))
+                except Exception as exc:
+                    raise CatalogEmbeddingError(
+                        f"Could not initialize the embedding function for profile {profile!r}.",
+                        details={
+                            "profile": profile,
+                            "operation": "initialize_embedding",
+                        },
+                    ) from exc
+            return self._function
 
 
 class GuidelineMatch(TypedDict):
@@ -68,6 +106,7 @@ def catalog_search(
     mode: Literal["fts", "vector", "hybrid"] = "fts",
     limit: int = 10,
     where: str | None = None,
+    embedding_context: SearchEmbeddings | None = None,
 ) -> SearchResult:
     """Search one index profile and return compact guideline matches."""
 
@@ -83,12 +122,12 @@ def catalog_search(
         )
 
     metadata = catalog._profile_metadata(profile)
-    if mode != "fts":
+    if mode != "fts" and embedding_context is None:
         _validate_semantic_environment(metadata, profile=profile)
     table = catalog._search_table(profile)
     if where is not None:
         _validate_filter(table, where, profile=profile)
-    if mode != "fts":
+    if mode != "fts" and embedding_context is None:
         try:
             # LanceDB caches the constructed functions on this native table.
             _ = table.embedding_functions
@@ -104,12 +143,35 @@ def catalog_search(
             ) from exc
 
     try:
-        query = table.search(
-            text,
-            query_type=mode,
-            fts_columns="text",
-            vector_column_name="vector",
-        )
+        if mode != "fts" and embedding_context is not None:
+            function = embedding_context.get(metadata, profile=profile)
+            vector = function.compute_query_embeddings_with_retry(text)[0]
+            if vector is None:
+                raise ValueError("The provider returned no query embedding.")
+            if mode == "hybrid":
+                query = (
+                    cast(
+                        Any,
+                        table.search(
+                            query_type="hybrid",
+                            fts_columns="text",
+                            vector_column_name="vector",
+                        ),
+                    )
+                    .vector(vector)
+                    .text(text)
+                )
+            else:
+                query = table.search(
+                    vector, query_type="vector", vector_column_name="vector"
+                )
+        else:
+            query = table.search(
+                text,
+                query_type=mode,
+                fts_columns="text",
+                vector_column_name="vector",
+            )
         if where:
             query = query.where(where)
         if mode != "fts":
@@ -239,7 +301,12 @@ def _validate_filter(table: Table, where: str, *, profile: str) -> None:
         ) from exc
 
 
-def _validate_semantic_environment(metadata: ProfileMetadata, *, profile: str) -> None:
+def _validate_semantic_environment(
+    metadata: ProfileMetadata,
+    *,
+    profile: str,
+    variables: Mapping[str, str] | None = None,
+) -> type[EmbeddingFunction]:
     binding = metadata.embedding_functions[0]
     try:
         from lancedb.embeddings import get_registry
@@ -250,6 +317,10 @@ def _validate_semantic_environment(metadata: ProfileMetadata, *, profile: str) -
             hints=["Install chartcoach[index]."],
         ) from exc
     try:
+        if binding.name == "chartcoach-openai-compatible":
+            # This package owns the alias; other aliases remain caller-registered.
+            import chartcoach.embeddings  # noqa: F401
+
         definition = get_registry().get(binding.name)
     except KeyError as exc:
         raise CatalogCapabilityError(
@@ -290,7 +361,10 @@ def _validate_semantic_environment(metadata: ProfileMetadata, *, profile: str) -
         if isinstance(value, str) and value.startswith("$var:"):
             name = value.removeprefix("$var:")
             try:
-                get_registry().get_var(name)
+                if variables is None:
+                    get_registry().get_var(name)
+                else:
+                    variables[name]
             except KeyError:
                 missing_variables.append(name)
     if missing_variables:
@@ -301,9 +375,10 @@ def _validate_semantic_environment(metadata: ProfileMetadata, *, profile: str) -
             details={"profile": profile, "variables": sorted(set(missing_variables))},
             hints=[
                 "Set the listed names with the LanceDB registry's set_var(name, value).",
-                "CLI and MCP accept --embedding-vars PATH. Start a new MCP server after updating its variable file.",
+                "MCP reads these names from the environment; CLI and MCP also accept --embedding-vars PATH. Restart after changing credentials.",
             ],
         )
+    return definition
 
 
 def _excerpt(text: str) -> tuple[str, bool]:

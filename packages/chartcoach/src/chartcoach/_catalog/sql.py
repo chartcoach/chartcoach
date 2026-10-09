@@ -4,11 +4,13 @@ import math
 from collections.abc import Mapping
 from datetime import date, datetime, time
 from decimal import Decimal
+from threading import TIMEOUT_MAX, Event, Thread
+from time import monotonic
 from typing import TYPE_CHECKING
 
 from typing_extensions import TypedDict
 
-from .errors import CatalogValidationError
+from .errors import CatalogOperationError, CatalogValidationError
 from .identity import catalog_identity
 
 if TYPE_CHECKING:
@@ -35,7 +37,13 @@ class SqlResult(TypedDict):
     release_digest: str | None
 
 
-def catalog_sql(catalog: Catalog, statement: str, *, limit: int = 100) -> SqlResult:
+def catalog_sql(
+    catalog: Catalog,
+    statement: str,
+    *,
+    limit: int = 100,
+    timeout: float | None = None,
+) -> SqlResult:
     """Run one read-only query with external access disabled."""
 
     import duckdb
@@ -43,18 +51,66 @@ def catalog_sql(catalog: Catalog, statement: str, *, limit: int = 100) -> SqlRes
     if isinstance(limit, bool) or not isinstance(limit, int) or limit < 1:
         raise CatalogValidationError("SQL query limit must be at least 1.")
     _validate_select_query(statement)
-    connection = catalog.duckdb(config={"enable_external_access": False})
+    if timeout is not None and (
+        isinstance(timeout, bool) or not math.isfinite(timeout) or timeout <= 0
+    ):
+        raise CatalogValidationError("SQL timeout must be a positive finite number.")
+    # Bounded discovery queries benefit from a single DuckDB worker, especially
+    # when several MCP requests each own an isolated connection.
+    connection = catalog.duckdb(config={"enable_external_access": False, "threads": 1})
+    timed_out = False
+    done = Event()
+    deadline = monotonic() + timeout if timeout is not None else None
+
+    def monitor_deadline() -> None:
+        nonlocal timed_out
+        assert deadline is not None
+        while not done.is_set():
+            remaining = deadline - monotonic()
+            if remaining > 0:
+                done.wait(min(remaining, TIMEOUT_MAX))
+            else:
+                timed_out = True
+                # DuckDB clears an idle interrupt at the start of execution.
+                # Repeat until teardown so expiry racing the next phase is bounded.
+                connection.interrupt()
+                done.wait(0.01)
+
+    def check_deadline() -> None:
+        if deadline is not None and (timed_out or monotonic() >= deadline):
+            raise deadline_error()
+
+    def deadline_error() -> CatalogOperationError:
+        return CatalogOperationError(
+            "SQL query exceeded its execution deadline.",
+            details={"timeout_seconds": timeout},
+            hints=["Narrow the query and try again."],
+        )
+
+    monitor = (
+        Thread(target=monitor_deadline, daemon=True) if deadline is not None else None
+    )
     try:
+        if monitor is not None:
+            monitor.start()
         try:
+            check_deadline()
             relation = connection.sql(statement).limit(limit + 1)
             description = relation.description
+            check_deadline()
             query_rows = relation.fetchall()
+            check_deadline()
         except duckdb.Error as exc:
+            if timed_out:
+                raise deadline_error() from exc
             raise CatalogValidationError(
                 str(exc),
                 hints=["Query the catalog tables with one read-only SELECT statement."],
             ) from exc
     finally:
+        done.set()
+        if monitor is not None and monitor.ident is not None:
+            monitor.join()
         connection.close()
 
     columns = tuple(item[0] for item in description)

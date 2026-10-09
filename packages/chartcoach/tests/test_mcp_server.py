@@ -139,8 +139,7 @@ def test_mcp_exposes_bounded_discovery_read_cite_and_search(
         )
         catalog = open_catalog(release_root)
         assert catalog.release is not None
-        server = mcp_server._build_server(log_level="INFO")
-        mcp_server._register_tools(server, catalog=catalog, profile=profile)
+        server = mcp_server.create_server(catalog, profile=profile)
 
         assert server.instructions is not None
         assert "Call describe first" in server.instructions
