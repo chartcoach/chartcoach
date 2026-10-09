@@ -1,0 +1,88 @@
+ci: &ci
+  - .github/**
+  - tools/ci/**
+  - Makefile
+
+javascript: &javascript
+  - *ci
+  - package.json
+  - pnpm-lock.yaml
+  - pnpm-workspace.yaml
+  - patches/**
+  - tsconfig.json
+  - tools/tsconfig.json
+  - vite.config.ts
+  - knip.jsonc
+  - tools/oxlint/**
+
+catalog_inputs: &catalog_inputs
+  - *javascript
+  - packages/catalog/**
+  - fixtures/catalog-contract/**
+  - fixtures/catalog-release/**
+  - LICENSE
+
+python:
+  - *ci
+  - pyproject.toml
+  - uv.lock
+  - packages/chartcoach/**
+  - scripts/**
+  - fixtures/catalog-contract/**
+  - fixtures/catalog-release/**
+  - LICENSE
+
+catalog:
+  - *catalog_inputs
+  - pyproject.toml
+  - uv.lock
+  - packages/chartcoach/pyproject.toml
+  - packages/chartcoach/src/**
+  - packages/chartcoach/tests/catalog_tables_contract.py
+
+site:
+  - *catalog_inputs
+  - packages/brand/**
+  - apps/site/**
+
+docs:
+  - *javascript
+  - packages/brand/**
+  - apps/docs/**
+
+chat:
+  - *catalog_inputs
+  - packages/brand/**
+  - apps/chat/**
+  - skills/**
+  - tools/release/**
+  - infra/**
+
+npm:
+  - *catalog_inputs
+  - packages/brand/**
+  - apps/chat/**
+  - skills/**
+  - tools/release/**
+  - infra/**
+
+quality:
+  - *javascript
+  - .vscode/**
+  - apps/**
+  - development_docs/**
+  - fixtures/catalog-release/MANIFEST.md
+  - packages/brand/**
+  - packages/catalog/**
+  - packages/chartcoach/README.md
+  - packages/chartcoach/pyproject.toml
+  - skills/**
+  - tools/architecture/**
+  - tools/release/**
+  - "*.md"
+  - mcp.json
+  - plugin.json
+  - pyproject.toml
+
+anti_slop:
+  - *javascript

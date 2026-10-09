@@ -1,0 +1,21 @@
+name: Set up JavaScript workspace
+description: Install the locked Vite+ and pnpm workspace.
+inputs:
+  consumers:
+    description: Install the release consumer tooling and its dependencies.
+    default: "false"
+runs:
+  using: composite
+  steps:
+    - name: Set up Vite+
+      uses: voidzero-dev/setup-vp@3754dd7dbdb32bd8f6d28b6043de13ad3a75f21f # v1.21.1
+      with:
+        version-file: package.json
+        node-version-file: package.json
+        sfw: true
+        cache: true
+        run-install: |
+          - args: ['--frozen-lockfile', '--filter', '${{ inputs.consumers == 'true' && '@chartcoach/release...' || '*' }}']
+    - name: Enable pnpm
+      shell: bash
+      run: corepack enable pnpm

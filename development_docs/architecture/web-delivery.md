@@ -92,7 +92,7 @@ headers with its configured public origin.
 
 The pinned Eve dependency has two focused patches: preserving image bytes in
 instrumentation and keeping live stream events ordered during disk catch-up.
-`apps/chat/test/workflow-stream.test.mjs` exercises the latter against Eve's actual
+`apps/chat/test/workflow-stream.test.ts` exercises the latter against Eve's actual
 vendored reader, including replay from a saved cursor. Keep these checks when
 upgrading Eve and remove a patch only when the upstream version passes them.
 
@@ -113,7 +113,7 @@ Browser filtering loads the release's verified core files through authenticated,
 digest-bound routes, then queries Parquet and canonical tables locally. Mosaic
 facet clients omit their own positive filter, while the
 result count and preview apply every filter. Worker assets are generated from
-the installed package by `scripts/prepare-duckdb.mjs` during dev/build setup.
+the installed package by `scripts/prepare-duckdb.ts` during dev/build setup.
 
 The count client captures a full `SELECT DISTINCT g.id` selection query. Applying
 filters retains it locally. The first Eve session request sends `{ catalogId, sql }`
@@ -156,7 +156,7 @@ directory. Do not edit generated output directly.
 
 ## Chat distribution
 
-`apps/chat/scripts/package.mjs` assembles compiled Eve code and the static UI into
+`apps/chat/scripts/package.ts` assembles compiled Eve code and the static UI into
 `apps/chat/dist`. It excludes traced `node_modules` and resolves exact runtime
 versions for the distribution manifest. The pinned Eve build tooling supplies a
 sandbox plan containing its compiled template keys and skill seeds. The worker
@@ -166,6 +166,6 @@ consumer platform. The source workspace keeps the compiler, frontend dependencie
 and private brand and skill packages.
 
 `infra/Dockerfile` builds and installs the same npm tarballs. `infra/compose.yml` persists `/data`
-and `/cache`. `tools/release/verify-chat.mjs` installs both tarballs outside the
+and `/cache`. `tools/release/verify-chat.ts` installs both tarballs outside the
 workspace and checks the CLI, authenticated browser, a streamed grounded answer,
 and conversation persistence after restart.

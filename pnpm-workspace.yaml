@@ -1,6 +1,8 @@
 packages:
   - "apps/*"
   - "packages/*"
+  - "tools/architecture"
+  - "tools/ci"
   - "tools/release"
   - "skills"
 
@@ -63,6 +65,9 @@ catalog:
   zod: 4.5.4
   nitro: 3.0.260903-beta
   yaml: 2.9.0
+  picomatch: 2.3.2
+  "@types/picomatch": 4.0.3
+  "@types/semver": 7.8.0
 
 minimumReleaseAge: 2880
 minimumReleaseAgeExclude:

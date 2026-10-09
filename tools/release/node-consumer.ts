@@ -10,6 +10,8 @@ import { registerCatalog } from "@chartcoach/catalog/duckdb";
 
 const [fixture, directory] = process.argv.slice(2);
 
+assert.ok(fixture && directory, "Pass a catalog fixture and consumer directory");
+
 const require = createRequire(import.meta.url);
 
 assert.throws(() => require.resolve("@lancedb/lancedb"), { code: "MODULE_NOT_FOUND" });
@@ -25,6 +27,12 @@ const catalog = await openCatalog(fixture, { cacheDirectory: join(directory, "ca
 assert.ok(catalog.length >= 3, "The consumer fixture needs entries for native search");
 
 const ids = catalog.query({ limit: catalog.length }).map(({ id }) => id);
+
+const [firstId, secondId, thirdId] = ids;
+
+assert.ok(firstId && secondId && thirdId);
+
+assert.ok(catalog.releaseUrl);
 
 assert.deepEqual(
   catalog.read({ ids }).map(({ id }) => id),
@@ -48,16 +56,21 @@ assert.equal(info.tables.length, 6);
 
 assert.equal(catalog.table("references").length, 1);
 
-const { DuckDBInstance } = await import(process.env.DUCKDB_MODULE);
+assert.ok(process.env.DUCKDB_MODULE && process.env.LANCE_MODULE && process.env.TAR_MODULE);
+
+// SAFETY: verify:npm resolves this URL from its installed DuckDB package.
+const { DuckDBInstance } = (await import(
+  process.env.DUCKDB_MODULE
+)) as typeof import("@duckdb/node-api");
 
 const database = await DuckDBInstance.create(":memory:");
 
 const sql = await database.connect();
 
 try {
-  assert.equal(await registerCatalog(sql, catalog, { ids: [ids[0]] }), sql);
+  assert.equal(await registerCatalog(sql, catalog, { ids: [firstId] }), sql);
   const result = await sql.runAndReadAll("SELECT id FROM guidelines");
-  assert.deepEqual(result.getRowsJson(), [[ids[0]]]);
+  assert.deepEqual(result.getRowsJson(), [[firstId]]);
   const references = await sql.runAndReadAll('SELECT count(*)::INTEGER FROM "references"');
   assert.deepEqual(references.getRowsJson(), [[1]]);
 } finally {
@@ -66,18 +79,22 @@ try {
 }
 
 // The application supplies its native SDK independently of the catalog installation.
-const lance = await import(process.env.LANCE_MODULE);
+// SAFETY: verify:npm resolves this URL from its installed LanceDB package.
+const lance = (await import(process.env.LANCE_MODULE)) as typeof import("@lancedb/lancedb");
 
-const { default: tar } = await import(process.env.TAR_MODULE);
+// SAFETY: verify:npm resolves tar's CommonJS entry, whose exports appear under default.
+const { default: tar } = (await import(process.env.TAR_MODULE)) as {
+  default: typeof import("tar");
+};
 
 const source = join(directory, "index-source");
 
 const connection = await lance.connect(source);
 
 const rows = [
-  { parent_id: ids[0], text: "direct labels", vector: [1, 0] },
-  { parent_id: ids[1], text: "color contrast", vector: [0, 1] },
-  { parent_id: ids[2], text: "size", vector: [0.5, 0.5] },
+  { parent_id: firstId, text: "direct labels", vector: [1, 0] },
+  { parent_id: secondId, text: "color contrast", vector: [0, 1] },
+  { parent_id: thirdId, text: "size", vector: [0.5, 0.5] },
 ].map((row, row_id) => ({
   ...row,
   row_id,
@@ -125,7 +142,7 @@ await writeFile(
   }),
 );
 
-const artifacts = {};
+const artifacts: Record<string, { bytes: number; sha256: string }> = {};
 
 for (const path of [
   "MANIFEST.md",
@@ -162,11 +179,11 @@ const documents = await db.openTable("documents");
 
 await documents.checkout(await documents.version());
 
-assert.equal((await documents.vectorSearch([1, 0]).limit(1).toArray())[0].parent_id, ids[0]);
+assert.equal((await documents.vectorSearch([1, 0]).limit(1).toArray())[0]?.parent_id, firstId);
 
 assert.equal(
-  (await documents.query().fullTextSearch("contrast").limit(1).toArray())[0].parent_id,
-  ids[1],
+  (await documents.query().fullTextSearch("contrast").limit(1).toArray())[0]?.parent_id,
+  secondId,
 );
 
 documents.close();

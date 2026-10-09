@@ -1,13 +1,15 @@
 import assert from "node:assert/strict";
+import type { Page } from "playwright";
+import type { Catalog } from "@chartcoach/catalog";
 
-/** Exercise the production picker against records from the installed SDK. */
-export async function verifyPicker(page, catalog, screenshot) {
+export async function verifyPicker(page: Page, catalog: Catalog, screenshot: string) {
   const sources = catalog.table("guideline_sources");
-  const ids = (rows) => [...new Set(rows.map((row) => row.guideline_id))];
+  const ids = (rows: typeof sources) => [...new Set(rows.map((row) => row.guideline_id))];
   const all = [...catalog].map((row) => row.id);
   const first = sources.find((row) => row.guideline_id === all[0]);
   assert.ok(first?.authors.length && first.source_type && first.year);
-  const author = first.authors[0];
+  const author = first.authors[0] ?? "";
+  assert.ok(author);
   const type = first.source_type;
   const year = Number(first.year);
   const results = page.getByRole("list", { name: "Matched guideline results" });
@@ -15,7 +17,7 @@ export async function verifyPicker(page, catalog, screenshot) {
   const reset = page.getByRole("button", { name: "Select all", exact: true });
   const summary = page.locator('footer [role="status"]');
 
-  async function selection(expected) {
+  async function selection(expected: string[]) {
     await page.waitForFunction(
       (count) => {
         const status = document.querySelector('footer [role="status"]');
@@ -38,12 +40,15 @@ export async function verifyPicker(page, catalog, screenshot) {
       await links.first().waitFor();
 
       const rendered = await links.evaluateAll((nodes) =>
-        nodes.map((node) => new URL(node.href).searchParams.get("id")),
+        nodes.map((node) =>
+          new URL(node.getAttribute("href") ?? "", location.href).searchParams.get("id"),
+        ),
       );
 
       assert.ok(rendered.length > 0);
 
-      for (const id of rendered) assert.ok(expected.includes(id), `Unexpected guideline: ${id}`);
+      for (const id of rendered)
+        assert.ok(id && expected.includes(id), `Unexpected guideline: ${id}`);
       assert.equal(
         await results.getByRole("listitem").first().getAttribute("aria-setsize"),
         String(expected.length),
@@ -54,14 +59,16 @@ export async function verifyPicker(page, catalog, screenshot) {
     }
   }
 
-  async function chooseAuthor(choice) {
+  async function chooseAuthor(choice: string) {
     await page.getByRole("button", { name: /Browse authors/ }).click();
     const search = page.getByRole("searchbox", { name: "Find an author" });
 
     await search.waitFor();
     assert.equal(await search.evaluate((element) => document.activeElement === element), true);
     assert.equal(
-      await search.evaluate((element) => getComputedStyle(element.parentElement).outlineWidth),
+      await search.evaluate(
+        (element) => getComputedStyle(element.parentElement ?? element).outlineWidth,
+      ),
       "2px",
     );
     await search.fill(author);
@@ -137,8 +144,8 @@ export async function verifyPicker(page, catalog, screenshot) {
     await page.mouse.up();
     await page.waitForFunction(
       ([from, to]) =>
-        document.querySelector('[name="yearFrom"]')?.value === String(from) &&
-        document.querySelector('[name="yearTo"]')?.value === String(to),
+        document.querySelector<HTMLInputElement>('[name="yearFrom"]')?.value === String(from) &&
+        document.querySelector<HTMLInputElement>('[name="yearTo"]')?.value === String(to),
       [start + shift, end + shift],
     );
     await selection(
@@ -189,10 +196,13 @@ export async function verifyPicker(page, catalog, screenshot) {
 
   const popup = page.waitForEvent("popup");
   const link = results.getByRole("link").first();
-  const target = new URL(await link.getAttribute("href"), page.url()).searchParams.get("id");
+  const href = await link.getAttribute("href");
+  assert.ok(href);
+  const target = new URL(href, page.url()).searchParams.get("id");
+  assert.ok(target);
   await link.click();
   const detail = await popup;
-  await detail.getByRole("heading", { name: catalog.get(target).title, exact: true }).waitFor();
+  await detail.getByRole("heading", { name: catalog.require(target).title, exact: true }).waitFor();
   await detail.close();
 
   await chooseAuthor("include");

@@ -13,7 +13,7 @@
       "vitest": { "entry": ["tools/**/*.{test,spec}.{ts,mjs}"] },
     },
     "tools/release": {
-      "entry": ["node-consumer.mjs", "browser-consumer.ts", "browser-duckdb-consumer.ts"],
+      "entry": ["node-consumer.ts", "browser-consumer.ts", "browser-duckdb-consumer.ts"],
     },
     "packages/catalog": {
       // Cross-language contract tests invoke the repository's Python toolchain.

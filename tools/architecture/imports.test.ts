@@ -25,7 +25,7 @@ const sourceExtensions = new Set([".astro", ".js", ".jsx", ".mjs", ".ts", ".tsx"
 const nodeBuiltins = new Set(builtinModules.flatMap((name) => [name, name.replace(/^node:/, "")]));
 
 void test("source imports preserve the web dependency graph", async () => {
-  const violations = [];
+  const violations: string[] = [];
 
   for (const zone of sourceZones) {
     for (const file of await sourceFiles(zone.root)) {
@@ -56,7 +56,7 @@ void test("the browser catalog rejects both Node builtin spellings", () => {
   assert.equal(importViolation(zone, file, "node:fs"), "Node builtin");
 });
 
-function importViolation(zone, file, specifier) {
+function importViolation(zone: (typeof sourceZones)[number], file: string, specifier: string) {
   if (zone.name === "chat") {
     const reason = chatImportViolation(file, specifier);
 
@@ -116,7 +116,7 @@ function importViolation(zone, file, specifier) {
   return isWithin(owner, target) ? undefined : "relative boundary escape";
 }
 
-function chatImportViolation(file, specifier) {
+function chatImportViolation(file: string, specifier: string) {
   const source = path.relative(chatRoot, file).split(path.sep).join("/");
 
   const browser =
@@ -170,7 +170,9 @@ function chatImportViolation(file, specifier) {
 }
 
 void test("chat boundaries separate rendering, state, retrieval policy, and catalog infrastructure", () => {
-  const check = (file, specifier) => chatImportViolation(path.join(chatRoot, file), specifier);
+  const check = (file: string, specifier: string) =>
+    chatImportViolation(path.join(chatRoot, file), specifier);
+
   assert.equal(
     check("components/chat/message.tsx", "@duckdb/node-api"),
     "server dependency in browser code",
@@ -201,7 +203,7 @@ void test("chat boundaries separate rendering, state, retrieval policy, and cata
   assert.equal(check("components/chat/message.tsx", "../../chat/evidence"), undefined);
 });
 
-async function sourceFiles(directory) {
+async function sourceFiles(directory: string): Promise<string[]> {
   const files = [];
 
   for (const entry of await readdir(directory, { withFileTypes: true })) {
@@ -219,7 +221,7 @@ async function sourceFiles(directory) {
   return files;
 }
 
-function isWithin(root, target) {
+function isWithin(root: string, target: string) {
   const relative = path.relative(root, target);
 
   return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));

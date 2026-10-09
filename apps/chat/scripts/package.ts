@@ -1,3 +1,5 @@
+import type { SandboxBackend, SandboxBackendPrewarmInput } from "eve/sandbox";
+
 import { cp, mkdir, readFile, readdir, rm, writeFile, chmod } from "node:fs/promises";
 import { findPackageJSON } from "node:module";
 import { join, resolve } from "node:path";
@@ -9,7 +11,7 @@ const output = join(root, "dist");
 
 const source = JSON.parse(await readFile(join(root, "package.json"), "utf8"));
 
-async function installedVersion(name) {
+async function installedVersion(name: string): Promise<string> {
   const path = findPackageJSON(name, import.meta.url);
 
   if (!path) throw new Error(`Cannot locate ${name}'s package manifest.`);
@@ -17,12 +19,23 @@ async function installedVersion(name) {
   return JSON.parse(await readFile(path, "utf8")).version;
 }
 
-// Capture Eve's compiled template keys and skill seeds while its build tooling is available.
-const { prewarmBuiltAppSandboxes } = await import(
-  new URL("./execution/sandbox/prewarm.js", import.meta.resolve("eve"))
-);
+// SAFETY: the installed Eve prewarm module accepts its public sandbox backend contracts.
+const { prewarmBuiltAppSandboxes } = (await import(
+  new URL("./execution/sandbox/prewarm.js", import.meta.resolve("eve")).href
+)) as {
+  prewarmBuiltAppSandboxes(
+    this: void,
+    input: {
+      appRoot: string;
+      dispatch(input: {
+        backend: SandboxBackend;
+        input: SandboxBackendPrewarmInput;
+      }): Promise<{ reused: boolean }>;
+    },
+  ): Promise<void>;
+};
 
-const sandboxPlan = [];
+const sandboxPlan: { templateKey: string; seedFiles: { path: string; content: string }[] }[] = [];
 
 await prewarmBuiltAppSandboxes({
   appRoot: root,
@@ -56,7 +69,7 @@ await rm(join(output, "server/package.json"), { force: true });
 
 await cp(join(root, "out"), join(output, "public"), { recursive: true });
 
-const dependencies = {};
+const dependencies: Record<string, string> = {};
 
 // Eve discovers source projects through dependencies. The compiled worker embeds its runtime.
 for (const name of Object.keys(source.dependencies)) {
@@ -92,7 +105,7 @@ await writeFile(join(output, "sandbox.json"), JSON.stringify(sandboxPlan) + "\n"
 
 await chmod(join(output, "cli/index.mjs"), 0o755);
 
-async function inspect(directory) {
+async function inspect(directory: string): Promise<void> {
   for (const entry of await readdir(directory, { withFileTypes: true })) {
     const path = join(directory, entry.name);
 

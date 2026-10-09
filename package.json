@@ -3,14 +3,15 @@
   "version": "0.3.3",
   "private": true,
   "license": "Apache-2.0",
+  "type": "module",
   "scripts": {
     "build": "vp run -r build",
-    "check": "vp check --no-error-on-unmatched-pattern .github .vscode apps development_docs fixtures/catalog-release/MANIFEST.md packages/brand packages/catalog packages/chartcoach/README.md packages/chartcoach/pyproject.toml mcp.json plugin.json skills tools/architecture AGENTS.md CONTRIBUTING.md README.md knip.jsonc package.json pnpm-workspace.yaml pyproject.toml tsconfig.json vite.config.ts",
+    "check": "vp fmt --check --no-error-on-unmatched-pattern .github .vscode apps development_docs fixtures/catalog-release/MANIFEST.md packages/brand packages/catalog packages/chartcoach/README.md packages/chartcoach/pyproject.toml mcp.json plugin.json skills tools/architecture AGENTS.md CONTRIBUTING.md README.md knip.jsonc package.json pnpm-workspace.yaml pyproject.toml tsconfig.json vite.config.ts && vp lint .github .vscode packages/brand skills vite.config.ts",
     "check:anti-slop": "node --test --test-concurrency=1 tools/oxlint/anti-slop/test/*.test.ts tools/oxlint/anti-slop/test/compatibility/*.test.ts tools/oxlint/anti-slop/test/effect/*.test.ts && tsc -p tools/oxlint/anti-slop/tsconfig.json --noEmit",
-    "check:architecture": "node --test tools/architecture/*.test.mjs",
+    "check:architecture": "pnpm --filter @chartcoach/architecture test",
     "check:unused": "pnpm --filter @chartcoach/docs generate && knip --treat-config-hints-as-errors",
     "dev": "portless",
-    "ready": "pnpm check:architecture && pnpm check:anti-slop && vp run typecheck && pnpm check:unused && vp run check && vp run test && vp run build",
+    "ready": "pnpm --filter @chartcoach/ci test && pnpm check:architecture && pnpm check:anti-slop && vp run typecheck && pnpm check:unused && vp run -r check && vp run test && vp run build",
     "test": "vp run -r test",
     "typecheck": "vp run -r typecheck"
   },

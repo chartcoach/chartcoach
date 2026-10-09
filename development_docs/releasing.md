@@ -33,6 +33,24 @@ the tag. Main CI builds and verifies the distributions, then retains them as
 `python-package` and `npm-package` artifacts for 30 days. For local checks before
 pushing the version change, run `make check`.
 
+Pull requests select Python checks and JavaScript packages through
+`.github/filters.yml`. Shared catalog fixtures select both language contracts.
+The JavaScript workspace builds the npm tarballs once, then Node.js, Bun, and
+Deno consumer jobs verify those same artifacts in parallel. Package jobs run
+typed linting after their generated types are ready. Formatting, repository
+linting, architecture, unused-code checks, and lint-rule tests run in a separate
+quality job. The `CI gate` requires each selected job to succeed and accepts skipped
+jobs when their inputs are unchanged.
+
+Main CI runs every check and retains a complete artifact set for the exact
+commit that a release tag will identify. Main runs finish independently while
+new pushes replace earlier checks on the same pull request.
+[Vite Task caching](https://viteplus.dev/guide/github-actions-cache) restores
+task results after dependency installation. Successful main jobs save separate
+quality and workspace caches. Vite Task fingerprints determine which results
+can be replayed. uv caches the locked Python dependencies, including the minimum
+dependency job. Container publication caches BuildKit layers through GitHub Actions.
+
 CI verifies the wheel in an isolated environment and the npm tarball through
 Node.js, TypeScript, Chromium, DuckDB, and LanceDB consumers. The minimum Node.js
 version comes from the SDK's `engines.node`. Minimum direct dependency checks
@@ -43,9 +61,9 @@ the shared fixture. Use `verify:chat --runner npx|bunx|bun|deno` to select a run
 when checking local tarballs.
 It exercises browser catalog loading and retry, author/year/source filters,
 pagination, empty-scope recovery, chart and draft preservation, grounded chat,
-local citations, mobile layout, and restart persistence. These checks run before
-CI retains packages for publication. Package versions come from their manifests
-and built artifacts.
+local citations, mobile layout, and restart persistence. All consumer jobs must
+succeed before packages become eligible for publication. Package versions come
+from their manifests and built artifacts.
 
 Publishing downloads the artifacts from the successful main CI run for the exact
 tagged commit. It checks that all packages match the tag and rejects conflicting

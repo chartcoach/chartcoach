@@ -50,7 +50,7 @@ apps/docs  -> packages/catalog
 or chartcoach workspace package. `@chartcoach/catalog/node` owns Node filesystem
 loading and persistent caching. The apps consume the browser package entry point.
 They do not import each other. Root lint rules and
-`tools/architecture/dependencies.test.mjs` enforce this graph.
+`tools/architecture/dependencies.test.ts` enforce this graph.
 
 The Python read path is:
 

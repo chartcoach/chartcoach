@@ -1,0 +1,15 @@
+{
+  "name": "@chartcoach/architecture",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "vp check",
+    "test": "node --test *.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vite-plus": "catalog:"
+  }
+}
