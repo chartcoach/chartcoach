@@ -431,7 +431,6 @@ jobs:
           name: preview-packages
           path: dist/release
       - name: Attest verified preview artifacts
-        if: github.event.repository.private == false || vars.PREVIEW_ATTESTATIONS == 'true'
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           predicate-type: https://github.com/chartcoach/chartcoach/blob/main/development_docs/releasing.md#preview-provenance-v1
@@ -443,7 +442,6 @@ jobs:
             dist/release/python/*.tar.gz
             dist/release/npm/*.tgz
       - name: Verify stored preview attestation
-        if: github.event.repository.private == false || vars.PREVIEW_ATTESTATIONS == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           COMMIT: ${{ needs.resolve-preview.outputs.commit }}
@@ -486,6 +484,4 @@ jobs:
           GH_REPO: ${{ github.repository }}
           COMMIT: ${{ needs.resolve-preview.outputs.commit }}
           VERSION: ${{ needs.resolve-preview.outputs.version }}
-          PRIVATE_REPOSITORY: ${{ github.event.repository.private }}
-          PREVIEW_ATTESTED: ${{ github.event.repository.private == false || vars.PREVIEW_ATTESTATIONS == 'true' }}
         run: python3 scripts/preview_release.py publish --commit "$COMMIT" --version "$VERSION"

@@ -156,7 +156,7 @@ stamped build. The catalog SDK and chat tarballs pass Node.js, Bun, and Deno
 consumer checks before attestation and upload. Preview chat packages depend on
 the exact matching SDK tarball URL, so installing chat alone resolves its SDK.
 
-For a public repository, merged-PR announcements include exact URLs for:
+Merged-PR announcements include exact URLs for:
 
 ```bash
 uv pip install "chartcoach @ https://github.com/chartcoach/chartcoach/releases/download/previews/chartcoach-X.Y.Z.devN-py3-none-any.whl"
@@ -169,31 +169,6 @@ retained checksum asset's filename. For the Python CLI,
 use `uv tool install --force "chartcoach @ <wheel-url>"`. To run the MCP server,
 install `chartcoach[mcp] @ <wheel-url>`. These previews are distributed through
 GitHub rather than PyPI or npm. Use the registries for stable versions.
-
-This repository currently distributes previews privately. Authenticate with
-`gh auth login` using an account with repository access, then use the authenticated
-download and local installation commands in its merged-PR announcement. For example, in
-a fresh directory with Node.js 24+, npm, and uv installed:
-
-```bash
-gh release download previews -R chartcoach/chartcoach \
-  --pattern 'chartcoach-X.Y.Z.devN-py3-none-any.whl' \
-  --pattern 'chartcoach-catalog-X.Y.Z-dev.N.tgz' \
-  --pattern 'chartcoach-X.Y.Z-dev.N.tgz'
-uv tool install --force ./chartcoach-X.Y.Z.devN-py3-none-any.whl
-npm init --yes
-npm install --ignore-scripts ./chartcoach-catalog-X.Y.Z-dev.N.tgz
-npm pkg set 'overrides.@chartcoach/catalog=$@chartcoach/catalog'
-npm install --ignore-scripts ./chartcoach-X.Y.Z-dev.N.tgz
-npx --no-install chartcoach
-```
-
-Replace the example versions with a retained build's exact version. The npm
-override binds chat to the downloaded SDK, since direct private GitHub URLs
-cannot authenticate npm through the GitHub CLI. The same override verifies
-retained preview packages before their URLs become available. Public repositories
-can install chat directly from its tarball URL. Private release assets require
-repository access even when the site and stable registry packages are public.
 
 Uploads are immutable: retries compare existing bytes and reject conflicts.
 Empty starter assets left by failed uploads are removed before retrying. A
@@ -257,15 +232,10 @@ packaged commit, and `resolvedDependencies` records both source and signing
 workflow revisions. The record is generated in the build job and reused across
 publication retries, including its original run attempt.
 
-GitHub Free supports artifact attestations for public repositories. Private
-repositories require Enterprise Cloud; chartcoach's private Free repository
-publishes unsigned provenance records and checksums. These record source identity
-and bytes but do not provide cryptographic verification. Public repositories
-automatically attest every distribution, provenance record, and checksum manifest.
-For a private repository with Enterprise Cloud, set the repository variable
-`PREVIEW_ATTESTATIONS=true` to enable signing. See
-[GitHub's availability requirements](https://docs.github.com/en/actions/how-tos/secure-your-work/use-artifact-attestations/use-artifact-attestations).
-When signing is enabled, verify a downloaded artifact with:
+The publisher creates a [GitHub artifact attestation](https://docs.github.com/en/actions/how-tos/secure-your-work/use-artifact-attestations/use-artifact-attestations)
+for every distribution, provenance record, and checksum manifest. Each signed
+record binds artifact bytes to the publication workflow and packaged source.
+Verify a downloaded artifact with:
 
 ```bash
 gh attestation download chartcoach-X.Y.Z.devN-py3-none-any.whl -R chartcoach/chartcoach
@@ -279,10 +249,9 @@ Replace `BUNDLE_FILE` with the `.jsonl` filename printed by the download.
 GitHub restricts custom build types under the standard SLSA predicate.
 Download without a predicate filter;
 bundle verification enforces the predicate type, signer, and artifact digest.
-The signed publication path downloads the persisted attestation with five
+The publisher downloads the persisted attestation with five
 attempts, two seconds apart, then verifies it once and checks the packaged source
-commit before uploading release assets. The private unsigned path skips signing
-and this read-back check.
+commit before uploading release assets.
 
 ### Recover publication
 
