@@ -13,6 +13,7 @@ from typing import Any
 from release_registry import release_files
 
 _TAG = "preview-builds"
+_PREDICATE_TYPE = "https://github.com/chartcoach/chartcoach/blob/main/development_docs/releasing.md#preview-provenance-v1"
 _VERSION = re.compile(r"(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)\.dev([1-9]\d*)")
 
 
@@ -115,7 +116,7 @@ def provenance(commit: str, output: Path) -> None:
     repository = f"{env['GITHUB_SERVER_URL']}/{env['GITHUB_REPOSITORY']}"
     predicate = {
         "buildDefinition": {
-            "buildType": "https://github.com/chartcoach/chartcoach/blob/main/development_docs/releasing.md#preview-provenance-v1",
+            "buildType": _PREDICATE_TYPE,
             "externalParameters": {
                 "checkoutCommit": commit,
                 "workflow": {
@@ -293,7 +294,15 @@ def publish(directory: Path, commit: str, version: str) -> None:
             "and resolved dependencies record the workflow revision."
         )
         if os.environ.get("PREVIEW_ATTESTED") == "true":
-            source_record += f" Verify signed provenance with `gh attestation verify {wheel} -R {repository}`."
+            source_record += (
+                " Download the attestation, then verify its bundle with the expected predicate type and signing workflow. "
+                "Replace `BUNDLE_FILE` with the `.jsonl` filename printed by the download command:\n\n"
+                f"```console\ngh attestation download {wheel} -R {repository}\n"
+                f"gh attestation verify {wheel} -R {repository} \\\n"
+                "  --bundle BUNDLE_FILE \\\n"
+                f'  --predicate-type "{_PREDICATE_TYPE}" \\\n'
+                f'  --signer-workflow "{repository}/.github/workflows/publish.yml"\n```'
+            )
         else:
             source_record += " This provenance record is unsigned; GitHub artifact attestations require a public repository or Enterprise Cloud."
         if builds[0] == version:

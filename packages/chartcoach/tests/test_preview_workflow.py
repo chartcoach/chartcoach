@@ -4,6 +4,7 @@ import hashlib
 import importlib.util
 import io
 import json
+import os
 import subprocess
 import tarfile
 from pathlib import Path
@@ -16,6 +17,7 @@ import yaml
 _ROOT = Path(__file__).parents[3]
 _VERSION = "0.3.4.dev7"
 _COMMIT = "a" * 40
+_PREDICATE_TYPE = "https://github.com/chartcoach/chartcoach/blob/main/development_docs/releasing.md#preview-provenance-v1"
 
 
 @pytest.fixture
@@ -420,6 +422,7 @@ def test_provenance_distinguishes_signing_and_source_commits(
     preview.provenance(_COMMIT, output)
     data = json.loads(output.read_text())
     definition = data["buildDefinition"]
+    assert definition["buildType"] == _PREDICATE_TYPE
     assert definition["externalParameters"]["checkoutCommit"] == _COMMIT
     assert {
         item["digest"]["gitCommit"] for item in definition["resolvedDependencies"]
@@ -456,12 +459,19 @@ def test_workflow_gates_source_and_attests_the_exact_artifact_set(
         "github.event.repository.private == false || vars.PREVIEW_ATTESTATIONS == 'true'"
     )
     assert "environment" not in jobs["publish-preview"]
+    assert attest["with"]["predicate-type"] == _PREDICATE_TYPE
     assert attest["with"]["predicate-path"].endswith("-provenance.json")
     assert jobs["publish-preview"]["concurrency"] == {
         "group": "publish-preview-release",
         "cancel-in-progress": "false",
         "queue": "max",
     }
+    steps = jobs["publish-preview"]["steps"]
+    read_back = next(
+        s for s in steps if s["name"] == "Verify stored preview attestation"
+    )
+    assert read_back["if"] == attest["if"]
+    assert steps.index(attest) < steps.index(read_back) < len(steps) - 1
     files = [
         f"dist/release/python/chartcoach-{_VERSION}-py3-none-any.whl",
         f"dist/release/python/chartcoach-{_VERSION}.tar.gz",
@@ -546,3 +556,118 @@ def test_provenance_bytes_are_reused_across_publication_attempts(
     preview.publish(distribution, _COMMIT, _VERSION)
     assert github.files[preview.provenance_name(_VERSION)] == original
     assert "gh attestation verify" in github.notes
+    assert "gh attestation download" in github.notes
+    assert "--bundle BUNDLE_FILE" in github.notes
+    assert f'--predicate-type "{_PREDICATE_TYPE}"' in github.notes
+    assert (
+        '--signer-workflow "chartcoach/chartcoach/.github/workflows/publish.yml"'
+        in github.notes
+    )
+
+
+@pytest.mark.parametrize(
+    ("failures", "download_state", "source", "valid_signature", "attempts", "success"),
+    [
+        (0, "error", _COMMIT, True, 1, True),
+        (2, "error", _COMMIT, True, 3, True),
+        (5, "error", _COMMIT, True, 5, False),
+        (2, "missing", _COMMIT, True, 3, True),
+        (5, "missing", _COMMIT, True, 5, False),
+        (2, "empty", _COMMIT, True, 3, True),
+        (5, "empty", _COMMIT, True, 5, False),
+        (0, "error", "b" * 40, True, 1, False),
+        (0, "error", _COMMIT, False, 1, False),
+    ],
+)
+def test_stored_attestation_checks_source_and_bounds_visibility_retries(
+    tmp_path: Path,
+    failures: int,
+    download_state: str,
+    source: str,
+    valid_signature: bool,
+    attempts: int,
+    success: bool,
+) -> None:
+    workflow = yaml.load(
+        (_ROOT / ".github/workflows/publish.yml").read_text(), Loader=yaml.BaseLoader
+    )
+    step = next(
+        s
+        for s in workflow["jobs"]["publish-preview"]["steps"]
+        if s["name"] == "Verify stored preview attestation"
+    )
+    wheel_dir = tmp_path / "dist/release/python"
+    wheel_dir.mkdir(parents=True)
+    wheel = f"chartcoach-{_VERSION}-py3-none-any.whl"
+    (wheel_dir / wheel).write_bytes(b"wheel")
+    bundle = f"sha256:{hashlib.sha256(b'wheel').hexdigest()}.jsonl"
+    (wheel_dir / bundle).write_bytes(b"stale bundle must be replaced")
+    verified = json.dumps(
+        [
+            {
+                "verificationResult": {
+                    "statement": {
+                        "predicate": {
+                            "buildDefinition": {
+                                "externalParameters": {"checkoutCommit": source}
+                            }
+                        }
+                    }
+                }
+            }
+        ]
+    )
+    # Stub only GitHub's network/cryptographic boundary; execute the actual shell
+    # step, digest naming, retry control flow, and source check.
+    stub = f'''
+downloads=0
+sleep() {{ :; }}
+gh() {{
+    printf '%s\\n' "$*" >> "$RUNNER_TEMP/calls"
+    if [ "$2" = download ]; then
+        downloads=$((downloads + 1))
+        if [ "$downloads" -le {failures} ]; then
+            if [ "{download_state}" = empty ]; then
+                : > '{bundle}'
+            fi
+            [ "{download_state}" != error ]
+        else
+            printf 'fresh bundle\\n' > '{bundle}'
+        fi
+    else
+        [ "{str(valid_signature).lower()}" = true ] || return 1
+        printf '%s\\n' '{verified}'
+    fi
+}}
+'''
+    result = subprocess.run(
+        ["bash", "-eu", "-o", "pipefail", "-c", stub + step["run"]],
+        cwd=tmp_path,
+        env={
+            "PATH": os.environ["PATH"],
+            "RUNNER_TEMP": str(tmp_path),
+            "GITHUB_REPOSITORY": "chartcoach/chartcoach",
+            "COMMIT": _COMMIT,
+            "VERSION": _VERSION,
+        },
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert (result.returncode == 0) is success, result.stderr
+    calls = (tmp_path / "calls").read_text().splitlines()
+    downloads = [c for c in calls if c.startswith("attestation download")]
+    verifications = [c for c in calls if c.startswith("attestation verify")]
+    assert len(downloads) == attempts
+    assert all("--predicate-type" not in c for c in downloads)
+    assert len(verifications) == (0 if failures == 5 else 1)
+    if verifications:
+        assert (
+            f"--bundle sha256:{hashlib.sha256(b'wheel').hexdigest()}.jsonl"
+            in verifications[0]
+        )
+        assert f"--predicate-type {_PREDICATE_TYPE}" in verifications[0]
+        assert (
+            "--signer-workflow chartcoach/chartcoach/.github/workflows/publish.yml"
+            in verifications[0]
+        )

@@ -236,7 +236,9 @@ URL, release validator, tests, and installation docs together.
 ### Preview provenance v1
 
 Each build retains an immutable `chartcoach-X.Y.Z.devN-provenance.json` record
-using the `https://slsa.dev/provenance/v1` predicate. Its checksum is included
+using chartcoach's custom predicate type
+`https://github.com/chartcoach/chartcoach/blob/main/development_docs/releasing.md#preview-provenance-v1`.
+Its checksum is included
 alongside the four distributions in the completion manifest.
 `workflow_run` can use a newer workflow revision than its validated source.
 The `buildDefinition.externalParameters.checkoutCommit` field records the
@@ -255,8 +257,21 @@ For a private repository with Enterprise Cloud, set the repository variable
 When signing is enabled, verify a downloaded artifact with:
 
 ```bash
-gh attestation verify chartcoach-X.Y.Z.devN-py3-none-any.whl -R chartcoach/chartcoach
+gh attestation download chartcoach-X.Y.Z.devN-py3-none-any.whl -R chartcoach/chartcoach
+gh attestation verify chartcoach-X.Y.Z.devN-py3-none-any.whl -R chartcoach/chartcoach \
+  --bundle BUNDLE_FILE \
+  --predicate-type "https://github.com/chartcoach/chartcoach/blob/main/development_docs/releasing.md#preview-provenance-v1" \
+  --signer-workflow "chartcoach/chartcoach/.github/workflows/publish.yml"
 ```
+
+Replace `BUNDLE_FILE` with the `.jsonl` filename printed by the download.
+GitHub restricts custom build types under the standard SLSA predicate.
+Download without a predicate filter;
+bundle verification enforces the predicate type, signer, and artifact digest.
+The signed publication path downloads the persisted attestation with five
+attempts, two seconds apart, then verifies it once and checks the packaged source
+commit before uploading release assets. The private unsigned path skips signing
+and this read-back check.
 
 ### Recover publication
 
