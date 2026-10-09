@@ -1,0 +1,78 @@
+tools/architecture/package.json
+  s_b1a2f3fcaa3f39::t_4e06ed4a3fda84 1-15
+tools/architecture/imports.test.ts
+  s_b1a2f3fcaa3f39::t_ad3986dacfcbcd 28,59,119,173-175,206,224
+tools/ci/gate.ts
+  s_b1a2f3fcaa3f39::t_ad3986dacfcbcd 1,3-7,9-13,16
+apps/chat/test/workflow-stream.test.ts
+  s_b1a2f3fcaa3f39::t_bffbd2f422753c 10,12,15-16,18-23,42-48
+tools/release/verify-npm.ts
+  s_b1a2f3fcaa3f39::t_bffbd2f422753c 4,7,12,42,44,46,57,93-94,100,201,231-232,241,244,262,264-268,289-292
+  s_b1a2f3fcaa3f39::t_81f4aa745143b6 225-226
+  s_b1a2f3fcaa3f39::t_4e06ed4a3fda84 91-92,105,281
+development_docs/architecture/web-delivery.md
+  s_b1a2f3fcaa3f39::t_4e06ed4a3fda84 95,116,159,169
+pnpm-lock.yaml
+  ai_agent 191-193,200-202,699-731,746,748-751,4293-4295,4316-4318,11687-11688,11711
+tools/architecture/docs.test.ts
+  s_b1a2f3fcaa3f39::t_ad3986dacfcbcd 11,13-15,17
+tools/ci/tsconfig.json
+  s_b1a2f3fcaa3f39::t_4e06ed4a3fda84 1-4
+tools/release/minimum-node.ts
+  s_b1a2f3fcaa3f39::t_ad3986dacfcbcd 8-12
+tools/architecture/tsconfig.json
+  s_b1a2f3fcaa3f39::t_4e06ed4a3fda84 1-4
+.github/workflows/ci.yml
+  s_b1a2f3fcaa3f39::t_4e06ed4a3fda84 42,63,65-67,316
+tools/ci/select.ts
+  s_b1a2f3fcaa3f39::t_ad3986dacfcbcd 3-8,14,20,24,46-49,51
+tools/release/verify-model-settings.ts
+  s_b1a2f3fcaa3f39::t_ad3986dacfcbcd 2,4,48-51
+tools/architecture/dependencies.test.ts
+  s_b1a2f3fcaa3f39::t_ad3986dacfcbcd 10,24-25,63,66-73
+apps/chat/scripts/verify-skills.ts
+  s_b1a2f3fcaa3f39::t_bffbd2f422753c 11-15
+development_docs/releasing.md
+  s_b1a2f3fcaa3f39::t_d9662836c475ae 39-42
+tools/release/verify-chat.ts
+  s_b1a2f3fcaa3f39::t_4e06ed4a3fda84 13-14,70
+  s_b1a2f3fcaa3f39::t_81f4aa745143b6 2,6-7,10,12,39,41,44-45,55,59,61,63,65,67,69,71,86-89,112,152-153,159-160,163,166,177-179,210,214,216,281-282,285,316,352
+  s_b1a2f3fcaa3f39::t_291bdf56306fa0 498-514
+tools/tsconfig.json
+  s_b1a2f3fcaa3f39::t_4e06ed4a3fda84 1-7,10-12
+apps/chat/package.json
+  s_b1a2f3fcaa3f39::t_4e06ed4a3fda84 22,25-27,32
+tools/release/node-consumer.ts
+  s_b1a2f3fcaa3f39::t_bffbd2f422753c 13-14,31-36,59,63,71,73,95-97,145,182,185-186
+  s_b1a2f3fcaa3f39::t_291bdf56306fa0 85-88
+tools/ci/ci.test.ts
+  s_b1a2f3fcaa3f39::t_ad3986dacfcbcd 24
+  s_b1a2f3fcaa3f39::t_bffbd2f422753c 237
+  s_b1a2f3fcaa3f39::t_4e06ed4a3fda84 40,67,78,84,90,101,108,120,130,134,143,154-157,160,176,190-191,220,226,230,254,259
+package.json
+  s_b1a2f3fcaa3f39::t_4e06ed4a3fda84 9,11,14
+tools/release/tsconfig.json
+  s_b1a2f3fcaa3f39::t_4e06ed4a3fda84 1-4
+apps/chat/scripts/package.ts
+  s_b1a2f3fcaa3f39::t_bffbd2f422753c 1-2,14,24,26-31,33,35-36,38,72,108
+tools/ci/package.json
+  s_b1a2f3fcaa3f39::t_4e06ed4a3fda84 1-15,17-18
+tools/release/verify-picker.ts
+  s_b1a2f3fcaa3f39::t_ad3986dacfcbcd 2-3,5,7,12,20,43,45,50-51,62,69,71,147-148
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "d744aef8f282bc9e82445fa3acc153729e7b27bb",
+  "prompts": {},
+  "sessions": {
+    "s_b1a2f3fcaa3f39": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11f73-a451-7310-8d59-e442178886e9",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Péter Ferenc Gyarmati <dev.petergy@gmail.com>"
+    }
+  }
+}
