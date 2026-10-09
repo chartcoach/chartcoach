@@ -1,5 +1,14 @@
 {
   "title": "Guides",
   "defaultOpen": true,
-  "pages": ["getting-started", "chat", "catalogs", "querying", "agents", "next", "curation"]
+  "pages": [
+    "getting-started",
+    "chat",
+    "model-connections",
+    "catalogs",
+    "querying",
+    "agents",
+    "next",
+    "curation"
+  ]
 }

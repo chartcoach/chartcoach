@@ -91,6 +91,32 @@ path available with the base dependencies. Temporary registrations are released
 after materialization. Mutating or closing a connection leaves the catalog and
 other connections unchanged.
 
+## MCP composition
+
+`chartcoach.mcp` is the public composition surface. `_mcp/config.py` owns the
+validated launch schema and environment mapping. `_mcp/tools.py` registers the
+bounded catalog tools on any native MCP SDK server. `_mcp/models.py` owns their
+transport schemas, and `_mcp/http.py` owns ASGI lifespan, readiness, bearer auth,
+and explicit SDK Host/Origin checks. The CLI loads dotenv before resolving
+configuration, then hands one `MCPConfig` to `run`.
+
+A tool registration snapshots variables declared by its release-owned profile.
+Its `SearchEmbeddings` context validates requirements and the portable model,
+then constructs one native LanceDB function on the first semantic request.
+Credentials stay on that instance. Vector and hybrid builders receive its query
+vector explicitly, so shared table caches and the global registry cannot bind
+a different server’s credentials. FTS and metadata never initialize the provider.
+`chartcoach.embeddings` owns the optional OpenAI-compatible alias; all other
+aliases remain caller-registered native LanceDB classes. Profile model identity
+stays immutable; dotenv supplies credentials at serving time and model settings
+at authoring time.
+
+SQL requests use isolated DuckDB connections, disabled external access, and a
+configurable execution deadline. Synchronous tools use SDK worker threads.
+The ASGI app owns the SDK lifespan; a parent app that mounts it must enter that
+lifespan explicitly. The standalone launcher opens one catalog per process and
+serves the resulting app. It imposes no container or web application dependency.
+
 ## Verified artifact cache
 
 `Catalog.artifact(path)` resolves one release inventory entry to a verified
@@ -139,10 +165,11 @@ checks the entries and manifest digests.
 metadata and vector dimensions with `profile.json`. It never reads
 `table.embedding_functions` during opening or FTS.
 
-The CLI and MCP vector and hybrid search service validates the registered LanceDB class,
-model fields, portable variable policy, and exact Python requirements before
-passing text to LanceDB. LanceDB reconstructs the persisted function and calls
-its query embedding method. FTS uses explicit `query_type="fts"` and keeps that
+Vector and hybrid search validate the registered LanceDB class, model fields,
+portable variable policy, and exact Python requirements. The CLI passes text to
+LanceDB, which reconstructs the persisted function through its registry. MCP
+uses its server-owned function to compute a query vector and passes that vector
+to LanceDB’s native vector or hybrid builder. FTS uses explicit `query_type="fts"` and keeps that
 provider path idle.
 
 Profile production creates the full-text index. Vector queries scan stored
@@ -157,13 +184,14 @@ document/vector export. `projection.parquet` is required exactly when
 
 ## Capability tiers
 
-| Extra        | Enables                                                |
-| ------------ | ------------------------------------------------------ |
-| `cloud`      | S3, GCS, and Azure locations through Obstore           |
-| `index`      | LanceDB tables and index search                        |
-| `mcp`        | Model Context Protocol transport                       |
-| `curation`   | Profile builds, validation, publication, and selection |
-| `projection` | UMAP projection during profile production              |
+| Extra              | Enables                                                          |
+| ------------------ | ---------------------------------------------------------------- |
+| `cloud`            | S3, GCS, and Azure locations through Obstore                     |
+| `index`            | LanceDB tables and index search                                  |
+| `embedding-openai` | Native LanceDB adapter for OpenAI-compatible embedding providers |
+| `mcp`              | Model Context Protocol transport and dotenv launch configuration |
+| `curation`         | Profile builds, validation, publication, and selection           |
+| `projection`       | UMAP projection during profile production                        |
 
 The base package includes DuckDB, Polars, and `typing-extensions`.
 Optional imports stay inside the features that use them.

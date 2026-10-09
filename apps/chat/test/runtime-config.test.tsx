@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, it } from "vite-plus/test";
-import { loadConfig, modelKey, validateStartup } from "../runtime/config";
+import { loadConfig, modelKey, embeddingKey, validateStartup } from "../runtime/config";
 import { platformDirectories } from "@chartcoach/catalog/node/paths";
 
 it("keeps durable chat data under the application root and shares its native cache", () => {
@@ -30,7 +30,7 @@ it("resolves file paths and applies environment and invocation overrides", () =>
     const config = loadConfig({
       cwd: "/",
       configFile: file,
-      environment: { CHARTCOACH_MODEL: "environment-model", CHARTCOACH_PORT: "5001" },
+      environment: { CHARTCOACH_TEXT_MODEL: "environment-model", CHARTCOACH_PORT: "5001" },
       overrides: { server: { port: 5002 } },
     });
 
@@ -103,16 +103,110 @@ it("starts from defaults and typed environment settings when no configuration fi
     environment: {
       CHARTCOACH_PORT: "0",
       CHARTCOACH_OPEN: "false",
-      CHARTCOACH_PROVIDER: "google",
-      CHARTCOACH_MODEL: "vision-model",
+      CHARTCOACH_TEXT_PROVIDER: "google",
+      CHARTCOACH_TEXT_MODEL: "vision-model",
     },
     userConfig: "/missing/config.json",
   });
 
   expect(config.server).toMatchObject({ host: "127.0.0.1", port: 0, open: false });
   expect(config.model).toMatchObject({ provider: "google", model: "vision-model" });
-  expect(() => validateStartup(config, {})).toThrow("GEMINI_API_KEY");
-  expect(() => validateStartup(config, { GEMINI_API_KEY: "private-key" })).not.toThrow();
+  expect(() => validateStartup(config, {})).toThrow("CHARTCOACH_TEXT_API_KEY");
+  expect(() => validateStartup(config, { CHARTCOACH_TEXT_API_KEY: "private-key" })).not.toThrow();
+});
+
+it("keeps injected environment immutable while validating empty settings", () => {
+  const environment = Object.freeze({ CHARTCOACH_TEXT_MODEL: "", CHARTCOACH_TEXT_API_KEY: "" });
+  const config = loadConfig({ environment, userConfig: "/missing/config.json" });
+
+  expect(config.model.model).toBeUndefined();
+  expect(environment).toEqual({ CHARTCOACH_TEXT_MODEL: "", CHARTCOACH_TEXT_API_KEY: "" });
+});
+
+it("keeps text and embedding endpoints, models, and credentials independent", () => {
+  const environment = {
+    CHARTCOACH_TEXT_PROVIDER: "compatible",
+    CHARTCOACH_TEXT_MODEL: "text-model",
+    CHARTCOACH_TEXT_BASE_URL: "https://text.example/v1",
+    CHARTCOACH_TEXT_API_KEY: "text-secret",
+    CHARTCOACH_EMBEDDING_MODEL: "embedding-model",
+    CHARTCOACH_EMBEDDING_BASE_URL: "https://vectors.example/v1",
+    CHARTCOACH_EMBEDDING_DIMENSIONS: "4",
+    CHARTCOACH_EMBEDDING_API_KEY: "embedding-secret",
+  };
+
+  const config = loadConfig({ environment, userConfig: "/missing/config.json" });
+  expect(config.model).toMatchObject({
+    model: "text-model",
+    baseURL: environment.CHARTCOACH_TEXT_BASE_URL,
+  });
+  expect(config.embedding).toMatchObject({
+    model: "embedding-model",
+    dimensions: 4,
+    baseURL: environment.CHARTCOACH_EMBEDDING_BASE_URL,
+  });
+  expect(modelKey(config, environment)).toBe("text-secret");
+  expect(embeddingKey(config, environment)).toBe("embedding-secret");
+  expect(() => validateStartup(config, environment)).not.toThrow();
+  expect(JSON.stringify(config)).not.toContain("secret");
+});
+
+it("resolves custom credential variable names without falling back to another connection", () => {
+  const config = loadConfig({
+    environment: {
+      CHARTCOACH_TEXT_MODEL: "text-model",
+      CHARTCOACH_TEXT_API_KEY_ENV: "TEXT_TOKEN",
+      CHARTCOACH_EMBEDDING_MODEL: "embedding-model",
+      CHARTCOACH_EMBEDDING_BASE_URL: "https://vectors.example/v1",
+      CHARTCOACH_EMBEDDING_DIMENSIONS: "4",
+      CHARTCOACH_EMBEDDING_API_KEY_ENV: "VECTOR_TOKEN",
+    },
+    userConfig: "/missing/config.json",
+  });
+
+  expect(modelKey(config, { TEXT_TOKEN: "text-private" })).toBe("text-private");
+  expect(embeddingKey(config, { VECTOR_TOKEN: "vector-private" })).toBe("vector-private");
+  expect(modelKey(config, { CHARTCOACH_TEXT_API_KEY: "wrong" })).toBeUndefined();
+  expect(() => embeddingKey(config, { VECTOR_TOKEN: "invalid secret" })).toThrow(
+    "Invalid VECTOR_TOKEN",
+  );
+});
+
+it("rejects incomplete embedding connections and reports canonical environment names", () => {
+  const base = { userConfig: "/missing/config.json" };
+  expect(() =>
+    loadConfig({ ...base, environment: { CHARTCOACH_EMBEDDING_MODEL: "model" } }),
+  ).toThrow("embedding");
+  expect(() =>
+    loadConfig({ ...base, environment: { CHARTCOACH_TEXT_BASE_URL: "invalid-url" } }),
+  ).toThrow("CHARTCOACH_TEXT_BASE_URL");
+});
+
+it("composes a partial file embedding connection with environment and invocation settings", () => {
+  const directory = mkdtempSync(join(tmpdir(), "chartcoach-config-"));
+  const file = join(directory, "config.json");
+  writeFileSync(
+    file,
+    JSON.stringify({ embedding: { model: "file-model", baseURL: "https://vectors.example/v1" } }),
+  );
+
+  try {
+    const config = loadConfig({
+      configFile: file,
+      environment: { CHARTCOACH_EMBEDDING_DIMENSIONS: "4" },
+      overrides: { embedding: { model: "invocation-model" } },
+    });
+
+    expect(config.embedding).toEqual({
+      model: "invocation-model",
+      baseURL: "https://vectors.example/v1",
+      dimensions: 4,
+      apiKeyEnv: "CHARTCOACH_EMBEDDING_API_KEY",
+    });
+    expect(() => loadConfig({ configFile: file, environment: {} })).toThrow("embedding.dimensions");
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
 });
 
 it("reads embedding origins and requires secure cookies and a matching key", () => {

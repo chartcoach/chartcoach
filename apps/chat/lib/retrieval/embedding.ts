@@ -1,56 +1,116 @@
-import { settings } from "../../runtime/settings";
-import { join } from "node:path";
 import type { ProfileInfo } from "@chartcoach/catalog";
+import type { Config } from "../../runtime/schema";
+import { embeddingKey, type Environment } from "../../runtime/config";
+import { apiBaseURL } from "../../shared/model";
+import { openLocalEmbedding } from "./local-embedding";
 
-let embedding: ReturnType<typeof openEmbedding> | undefined;
+type Embedding = NonNullable<Config["embedding"]>;
 
-export async function embedQuery(text: string, info: ProfileInfo) {
-  validateProfile(info);
+type QueryEmbedding = (text: string, signal?: AbortSignal) => Promise<number[]>;
 
-  const { embed, mean_pooling } = await (embedding ??= openEmbedding().catch((error) => {
-    embedding = undefined;
-    throw error;
-  }));
+type QueryEmbedder = (text: string, info: ProfileInfo, signal?: AbortSignal) => Promise<number[]>;
 
-  const inputs = embed.tokenizer(text, {
-    padding: true,
-    truncation: true,
-    max_length: 256,
-  });
+export function createQueryEmbedder(
+  config: Pick<Config, "embedding" | "storage">,
+  environment: Environment = process.env,
+): QueryEmbedder {
+  const connection = config.embedding ? { ...config.embedding } : undefined;
+  const variables = connection ? { [connection.apiKeyEnv]: environment[connection.apiKeyEnv] } : {};
 
-  // Preserve MiniLM's final separator when Transformers.js truncates to 256 tokens.
-  const separator = embed.tokenizer.sep_token_id;
+  const open = connection
+    ? () => openCompatibleEmbedding(connection, variables)
+    : () => openLocalEmbedding(config.storage.cacheDir);
 
-  if (separator === undefined) throw new Error("MiniLM tokenizer has no separator token.");
-  inputs.input_ids.data[inputs.input_ids.data.length - 1] = BigInt(separator);
-  const output = await embed.model(inputs);
-  const vector = mean_pooling(output.last_hidden_state, inputs.attention_mask).normalize(2, -1);
+  let pending: Promise<QueryEmbedding> | undefined;
 
-  return Array.from(vector.data, Number);
+  return async (text, info, signal) => {
+    signal?.throwIfAborted();
+    validateEmbeddingProfile(info, connection);
+
+    const embed = await (pending ??= open().catch((error) => {
+      pending = undefined;
+      throw error;
+    }));
+
+    return embed(text, signal);
+  };
 }
 
-function validateProfile(info: ProfileInfo) {
+function validateEmbeddingProfile(info: ProfileInfo, connection: Config["embedding"]) {
   const binding = info.embedding_functions[0];
 
-  if (
+  if (connection) {
+    // Native OpenAI profiles serialize a null base_url for the SDK's standard endpoint.
+    const endpoint = apiBaseURL.safeParse(
+      binding.model.base_url ??
+        (binding.name === "openai" ? "https://api.openai.com/v1" : undefined),
+    );
+
+    if (
+      !["openai", "chartcoach-openai-compatible"].includes(binding.name) ||
+      binding.model.name !== connection.model ||
+      info.dimensions !== connection.dimensions ||
+      binding.model.use_azure === true ||
+      !endpoint.success ||
+      new URL(endpoint.data).href.replace(/\/$/, "") !==
+        new URL(connection.baseURL).href.replace(/\/$/, "")
+    )
+      throw new Error(
+        "Embedding connection must match the selected catalog profile's model, dimensions, and base URL. Build/select a matching profile.",
+      );
+  } else if (
     info.dimensions !== 384 ||
     info.distance_metric !== "cosine" ||
-    binding?.name !== "sentence-transformers" ||
+    binding.name !== "sentence-transformers" ||
     binding.model.name !== "all-MiniLM-L6-v2" ||
     binding.model.normalize !== true
-  ) {
-    throw new Error("Choose the normalized all-MiniLM-L6-v2 catalog profile.");
-  }
+  )
+    throw new Error(
+      "Configure CHARTCOACH_EMBEDDING_* for this profile, or choose the normalized all-MiniLM-L6-v2 profile.",
+    );
 }
 
-async function openEmbedding() {
-  const { pipeline, mean_pooling } = await import("@huggingface/transformers");
+async function openCompatibleEmbedding(
+  connection: Embedding,
+  environment: Environment,
+): Promise<QueryEmbedding> {
+  const key = embeddingKey({ embedding: connection }, environment);
 
-  const embed = await pipeline("feature-extraction", "Xenova/all-MiniLM-L6-v2", {
-    dtype: "fp32",
-    device: "cpu",
-    cache_dir: join(settings.storage.cacheDir, "models"),
-  });
+  if (!key) throw new Error(`Set ${connection.apiKeyEnv} for the configured embedding connection.`);
 
-  return { embed, mean_pooling };
+  const [{ createOpenAICompatible }, { embed }] = await Promise.all([
+    import("@ai-sdk/openai-compatible"),
+    import("ai"),
+  ]);
+
+  const model = createOpenAICompatible({
+    name: "chartcoach",
+    baseURL: connection.baseURL,
+    apiKey: key,
+  }).embeddingModel(connection.model);
+
+  return async (text, signal) => {
+    try {
+      const { embedding } = await embed({
+        model,
+        value: text,
+        providerOptions:
+          connection.model === "text-embedding-ada-002"
+            ? undefined
+            : { chartcoach: { dimensions: connection.dimensions } },
+        abortSignal: AbortSignal.any([...(signal ? [signal] : []), AbortSignal.timeout(30_000)]),
+        maxRetries: 2,
+      });
+
+      if (embedding.length !== connection.dimensions || !embedding.every(Number.isFinite))
+        throw new Error("Invalid embedding vector.");
+
+      return embedding;
+    } catch {
+      signal?.throwIfAborted();
+      throw new Error(
+        "Embedding request failed. Check the configured endpoint, model, credentials, and dimensions.",
+      );
+    }
+  };
 }

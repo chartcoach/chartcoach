@@ -1,0 +1,129 @@
+---
+title: Configure models
+description: Connect independent text and embedding models through provider-neutral settings.
+icon: Settings
+---
+
+Text generation and catalog embeddings have separate connections. Each has its
+own model ID, API base URL, and credential. Any OpenAI-compatible service can
+supply either connection; using the same provider for both is a deployment choice.
+The chat app also supports native Anthropic, OpenAI, and Gemini text connections.
+
+## Environment settings
+
+Both launchers read `.env` in their working directory. `--env-file PATH` or
+`CHARTCOACH_ENV_FILE` selects another file. Existing process environment wins over
+dotenv, and command flags win over both. The Python composition API and chat
+`loadConfig` do not load dotenv files or mutate environment implicitly.
+
+| Variable                           | Purpose                                                                    |
+| ---------------------------------- | -------------------------------------------------------------------------- |
+| `CHARTCOACH_TEXT_PROVIDER`         | Chat text/vision adapter: `compatible`, `openai`, `anthropic`, or `google` |
+| `CHARTCOACH_TEXT_MODEL`            | Text model that supports images and tool calls                             |
+| `CHARTCOACH_TEXT_BASE_URL`         | OpenAI-compatible text API base URL                                        |
+| `CHARTCOACH_TEXT_API_KEY`          | Private text provider credential                                           |
+| `CHARTCOACH_TEXT_API_KEY_ENV`      | Read the text key from another environment variable                        |
+| `CHARTCOACH_TEXT_AUTH`             | `api-key`, or `none` for a keyless compatible text endpoint                |
+| `CHARTCOACH_TEXT_CONTEXT_WINDOW`   | Text model context limit                                                   |
+| `CHARTCOACH_EMBEDDING_MODEL`       | Embedding model ID                                                         |
+| `CHARTCOACH_EMBEDDING_BASE_URL`    | OpenAI-compatible embedding API base URL                                   |
+| `CHARTCOACH_EMBEDDING_DIMENSIONS`  | Vector dimensions produced by the model                                    |
+| `CHARTCOACH_EMBEDDING_API_KEY`     | Private embedding provider credential                                      |
+| `CHARTCOACH_EMBEDDING_API_KEY_ENV` | Read the embedding key from another environment variable                   |
+
+For example, fill `.env` with the values available from your providers:
+
+```dotenv
+CHARTCOACH_TEXT_PROVIDER=compatible
+CHARTCOACH_TEXT_MODEL=your-vision-model
+CHARTCOACH_TEXT_BASE_URL=https://text-provider.example/v1
+CHARTCOACH_TEXT_API_KEY=your-private-text-key
+
+CHARTCOACH_EMBEDDING_MODEL=your-embedding-model
+CHARTCOACH_EMBEDDING_BASE_URL=https://embedding-provider.example/v1
+CHARTCOACH_EMBEDDING_DIMENSIONS=1536
+CHARTCOACH_EMBEDDING_API_KEY=your-private-embedding-key
+```
+
+These are illustrative values. Choose the embedding dimension supported by your
+model. Keep private keys out of committed files. Selectors accept a variable name,
+not a key: for example `CHARTCOACH_EMBEDDING_API_KEY_ENV=VECTOR_TOKEN` reads
+`VECTOR_TOKEN`. An explicit selector never falls back to another connection's key.
+For a keyless embedding endpoint, use a placeholder key accepted by that endpoint.
+
+## Keep embedding identity with the catalog
+
+Stored vectors belong to a release-owned profile. Its model, dimension, endpoint,
+and native provider binding describe how those vectors were built. Changing a
+model environment setting cannot make old vectors compatible with a different
+model: build and select a new profile when changing identity.
+
+Chat uses the supported local normalized MiniLM profile when no remote embedding
+connection is configured. Remote query embeddings use the configured compatible
+connection and must match the selected profile's model, dimension, and endpoint.
+Keyword search makes no embedding requests. Text model settings do not influence
+retrieval embeddings.
+
+MCP reconstructs the selected profile's native LanceDB function. The model,
+dimension, and endpoint come from that profile, while credentials resolve at
+startup. `CHARTCOACH_EMBEDDING_*` identity settings below are profile-authoring
+inputs for Python, rather than overrides of existing vectors. Other LanceDB
+providers retain their native registry aliases and declared credential variables.
+
+## Build a compatible embedding profile
+
+Install the native adapter and curation tools:
+
+```bash
+uv pip install "chartcoach[curation,embedding-openai,mcp]"
+```
+
+The native LanceDB workflow resolves the private key in memory and persists a
+variable reference. Build a profile from the embedding settings in `.env`:
+
+```python
+import os
+from importlib.metadata import version
+from dotenv import load_dotenv
+from lancedb.embeddings import get_registry
+from chartcoach import open_catalog
+from chartcoach.curation import EmbeddingProfile, build_release
+from chartcoach.embeddings import OpenAICompatibleEmbeddings
+
+load_dotenv(".env", override=False)
+key_name = os.environ.get(
+    "CHARTCOACH_EMBEDDING_API_KEY_ENV", "CHARTCOACH_EMBEDDING_API_KEY"
+)
+get_registry().set_var("CHARTCOACH_EMBEDDING_API_KEY", os.environ[key_name])
+embedding = OpenAICompatibleEmbeddings.create(
+    name=os.environ["CHARTCOACH_EMBEDDING_MODEL"],
+    dim=int(os.environ["CHARTCOACH_EMBEDDING_DIMENSIONS"]),
+    base_url=os.environ["CHARTCOACH_EMBEDDING_BASE_URL"],
+    api_key="$var:CHARTCOACH_EMBEDDING_API_KEY",
+)
+build_release(
+    open_catalog("./guidelines"),
+    "./release",
+    profiles={"compatible": EmbeddingProfile(
+        embedding,
+        python_requirements={"openai": version("openai")},
+    )},
+)
+```
+
+The authoring process uses LanceDB's registry. Each composed MCP server resolves
+its own credential snapshot and lazy function without writing the global registry.
+A private `CHARTCOACH_EMBEDDING_VARS` JSON file can supply profile variables and
+wins over environment values. Only profile-declared variables are consumed.
+
+Serve `./release` with MCP's `CHARTCOACH_SOURCE` and
+`CHARTCOACH_INDEX_PROFILE=compatible`. Install `chartcoach[mcp,embedding-openai]`
+and pin the profile's recorded provider dependencies using uvx `--with` options.
+The default credential reference stays `$var:CHARTCOACH_EMBEDDING_API_KEY` even
+when a deployment supplies the key through a custom selector.
+
+Chat selects the same release with `CHARTCOACH_CATALOG=./release` and
+`CHARTCOACH_CATALOG_PROFILE=compatible`; configure its embedding settings to match
+that profile. The text connection can point to a different provider or model.
+See [MCP deployment](/mcp#deploy-with-uvx), [chat deployment](/chat#share-a-server),
+and [LanceDB embedding functions](https://docs.lancedb.com/).

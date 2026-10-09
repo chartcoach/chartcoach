@@ -76,6 +76,9 @@ def _verify_wheel(wheel: Path, distribution: str, resources: dict[str, bytes]) -
             assert archive.read(f"{plugin_root}/{name}") == content, name
         assert "chartcoach/agent.py" in names
         assert "chartcoach/curation.py" in names
+        assert "chartcoach/_mcp/config.py" in names
+        assert "chartcoach/_mcp/http.py" in names
+        assert "chartcoach/embeddings.py" in names
         metadata = email.message_from_bytes(archive.read(f"{metadata_root}/METADATA"))
         assert metadata["Name"] == "chartcoach"
         assert metadata["Version"] == distribution.removeprefix("chartcoach-")
@@ -148,6 +151,26 @@ def _verify_installed_wheel(wheel: Path, *, minimum_dependencies: bool = False) 
             check=True,
             cwd=root,
             env=smoke_environment,
+        )
+        subprocess.run(
+            [*install[: install.index(str(wheel))], f"{wheel}[mcp]"],
+            check=True,
+            cwd=root,
+        )
+        subprocess.run(
+            [
+                python,
+                "-I",
+                str(_REPOSITORY / "packages/chartcoach/tests/mcp_http_smoke.py"),
+                "--wheel",
+                str(wheel),
+                "--source",
+                str(_FIXTURE_RELEASE),
+            ],
+            check=True,
+            cwd=root,
+            env=smoke_environment,
+            timeout=240,
         )
         if minimum_dependencies:
             subprocess.run(

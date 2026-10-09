@@ -11,6 +11,8 @@ const boolean = z
 
 const model = configSchema.shape.model.unwrap().shape;
 
+const embedding = configSchema.shape.embedding.unwrap().shape;
+
 const server = configSchema.shape.server.unwrap().shape;
 
 export function readEnvironment(environment: Record<string, string | undefined>) {
@@ -18,12 +20,19 @@ export function readEnvironment(environment: Record<string, string | undefined>)
     server: {
       CHARTCOACH_CATALOG: text,
       CHARTCOACH_CATALOG_PROFILE: text,
-      CHARTCOACH_PROVIDER: model.provider.unwrap().optional(),
-      CHARTCOACH_MODEL: text,
-      CHARTCOACH_BASE_URL: model.baseURL,
-      CHARTCOACH_MODEL_AUTH: model.auth.unwrap().optional(),
-      CHARTCOACH_API_KEY_ENV: text,
-      CHARTCOACH_CONTEXT_WINDOW: z.coerce.number().pipe(model.contextWindow.unwrap()).optional(),
+      CHARTCOACH_TEXT_PROVIDER: model.provider.unwrap().optional(),
+      CHARTCOACH_TEXT_MODEL: text,
+      CHARTCOACH_TEXT_BASE_URL: model.baseURL,
+      CHARTCOACH_TEXT_AUTH: model.auth.unwrap().optional(),
+      CHARTCOACH_TEXT_API_KEY_ENV: text,
+      CHARTCOACH_TEXT_CONTEXT_WINDOW: z.coerce
+        .number()
+        .pipe(model.contextWindow.unwrap())
+        .optional(),
+      CHARTCOACH_EMBEDDING_MODEL: text,
+      CHARTCOACH_EMBEDDING_BASE_URL: embedding.baseURL.optional(),
+      CHARTCOACH_EMBEDDING_DIMENSIONS: z.coerce.number().pipe(embedding.dimensions).optional(),
+      CHARTCOACH_EMBEDDING_API_KEY_ENV: text,
       CHARTCOACH_HOST: server.host.unwrap().optional(),
       CHARTCOACH_PORT: z.coerce.number().pipe(server.port.unwrap()).optional(),
       CHARTCOACH_OPEN: boolean,

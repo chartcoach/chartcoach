@@ -4,11 +4,13 @@ import * as Match from "effect/Match";
 import { getIndex } from "../catalog/open";
 import { withCatalogScope, type ScopeOptions } from "../catalog/scope";
 import { waitFor } from "../async";
-import { embedQuery } from "./embedding";
+import { createQueryEmbedder } from "./embedding";
 import { guidelineCards } from "./cards";
 import { settings } from "../../runtime/settings";
 
 type SearchMethod = "vector" | "keyword" | "hybrid";
+
+const embedQuery = createQueryEmbedder(settings);
 
 export function searchGuidelines(query: string, method: SearchMethod, options: ScopeOptions) {
   const { signal } = options;
@@ -32,7 +34,7 @@ export function searchGuidelines(query: string, method: SearchMethod, options: S
       request = table.query().fullTextSearch(query, { columns: ["text"] });
     } else {
       const vectorRequest = table
-        .vectorSearch(await waitFor(embedQuery(query, info), signal))
+        .vectorSearch(await waitFor(embedQuery(query, info, signal), signal))
         .distanceType(searchConfig.metric);
 
       if (method === "hybrid") {

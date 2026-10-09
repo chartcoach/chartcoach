@@ -33,6 +33,7 @@
     "eval": "eve eval --strict"
   },
   "dependencies": {
+    "@ai-sdk/openai-compatible": "catalog:",
     "@chartcoach/catalog": "workspace:*",
     "@duckdb/node-api": "catalog:",
     "@effect/experimental": "catalog:",
@@ -42,6 +43,7 @@
     "@lancedb/lancedb": "catalog:",
     "@opentelemetry/api": "catalog:",
     "@t3-oss/env-core": "catalog:",
+    "ai": "catalog:",
     "chalk": "catalog:",
     "commander": "15.0.0",
     "effect": "catalog:",
@@ -57,7 +59,6 @@
     "@ai-sdk/anthropic": "catalog:",
     "@ai-sdk/google": "catalog:",
     "@ai-sdk/openai": "catalog:",
-    "@ai-sdk/openai-compatible": "catalog:",
     "@assistant-ui/eve": "catalog:",
     "@assistant-ui/react": "catalog:",
     "@chartcoach/brand": "workspace:*",
@@ -78,7 +79,6 @@
     "@types/react-dom": "catalog:",
     "@uwdata/mosaic-core": "catalog:",
     "@uwdata/mosaic-sql": "catalog:",
-    "ai": "catalog:",
     "autoprefixer": "catalog:",
     "jsdom": "catalog:",
     "lucide-react": "catalog:",

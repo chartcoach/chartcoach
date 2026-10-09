@@ -53,22 +53,27 @@ Replace `my-vision-model` with a model served by your endpoint. The same setting
 can come entirely from the environment:
 
 ```bash
-export CHARTCOACH_PROVIDER=compatible
-export CHARTCOACH_BASE_URL=http://127.0.0.1:1234/v1
-export CHARTCOACH_MODEL=my-vision-model
-export CHARTCOACH_MODEL_AUTH=none
+export CHARTCOACH_TEXT_PROVIDER=compatible
+export CHARTCOACH_TEXT_BASE_URL=http://127.0.0.1:1234/v1
+export CHARTCOACH_TEXT_MODEL=my-vision-model
+export CHARTCOACH_TEXT_AUTH=none
 npx chartcoach
 ```
 
-For OpenAI, set `OPENAI_API_KEY` and run `npx chartcoach --model my-vision-model`.
-Use `--provider anthropic` with `ANTHROPIC_API_KEY`, or `--provider google` with
-`GEMINI_API_KEY`. `--api-key-env` selects another credential variable.
+Set `CHARTCOACH_TEXT_API_KEY` for an authenticated text connection. Native OpenAI,
+Anthropic, and Gemini adapters use the same dedicated key setting. `--api-key-env`
+or `CHARTCOACH_TEXT_API_KEY_ENV` selects another credential variable.
+
+The [model connection guide](/model-connections) owns the complete shared text and
+embedding settings and profile-build workflow. Both launchers load `.env` from
+their working directory, or an explicit `--env-file`.
 
 Questions, images, and retrieved guidance go to the chosen model endpoint. Query
-embeddings run locally. Browser-entered keys are encrypted in the data directory.
+embeddings run locally by default; a configured compatible embedding connection
+uses its own endpoint and must match the selected catalog profile. Browser-entered keys are encrypted in the data directory.
 
 Configuration files are optional. `--config ./chartcoach.json` loads saved settings.
-Flags override environment variables, which override the selected JSON file.
+Flags override process environment, which overrides dotenv and the selected JSON file.
 T3 Env validates environment values and identifies invalid variables without
 printing secrets. `--data-dir` chooses persistent storage.
 

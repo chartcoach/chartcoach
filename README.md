@@ -38,7 +38,9 @@ With Bun 1.4.2+, use `bunx --bun chartcoach`. With Deno 2.9.6+, use
 
 Connect a model in the browser to review a chart or discuss a design choice.
 Conversations and provider connections persist locally. See the [chat guide](apps/chat/README.md)
-for catalog selection, model configuration, VPS hosting, and Docker Compose.
+for catalog selection, VPS hosting, and Docker Compose.
+The [model connection guide](https://docs.chartcoach.dev/model-connections) covers
+independent text and embedding models, credentials, and endpoints.
 
 ## Try a guideline
 

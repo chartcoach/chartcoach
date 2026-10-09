@@ -27,7 +27,7 @@ process. Small fixes can go directly to a pull request.
 
 ## Develop
 
-Start both web apps with:
+Start all three web apps with:
 
 ```bash
 pnpm dev
@@ -36,22 +36,24 @@ pnpm dev
 [Portless](https://github.com/vercel-labs/portless) assigns each app an
 available local port and prints its local URL. With the default proxy settings,
 the primary checkout uses `https://chartcoach.localhost` and
-`https://docs.chartcoach.localhost`. Linked
+`https://docs.chartcoach.localhost`, and `https://chat.chartcoach.localhost`. Linked
 [Git worktrees](https://git-scm.com/docs/git-worktree) receive a subdomain
-derived from the branch name, which lets several worktrees run both apps
+derived from the branch name, which lets several worktrees run the apps
 concurrently.
 
 Run a focused command while iterating:
 
-| Area                     | Command                                                                                                          |
-| ------------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| JavaScript catalog       | `pnpm --dir packages/catalog test`                                                                               |
-| Public site              | `pnpm --dir apps/site test`                                                                                      |
-| Product docs             | `pnpm --dir apps/docs test`                                                                                      |
-| Python catalog loading   | `uv run --locked --package chartcoach pytest packages/chartcoach/tests/test_catalog_runtime.py`                  |
-| Python release building  | `uv run --locked --package chartcoach --extra curation pytest packages/chartcoach/tests/test_release_builder.py` |
-| CI selection and gate    | `pnpm --filter @chartcoach/ci test`                                                                              |
-| Import and package rules | `pnpm check:architecture`                                                                                        |
+| Area                     | Command                                                                                                                                                                                         |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| JavaScript catalog       | `pnpm --dir packages/catalog test`                                                                                                                                                              |
+| Public site              | `pnpm --dir apps/site test`                                                                                                                                                                     |
+| Product docs             | `pnpm --dir apps/docs test`                                                                                                                                                                     |
+| Python catalog loading   | `uv run --locked --package chartcoach pytest packages/chartcoach/tests/test_catalog_runtime.py`                                                                                                 |
+| Python release building  | `uv run --locked --package chartcoach --extra curation pytest packages/chartcoach/tests/test_release_builder.py`                                                                                |
+| Python MCP composition   | `uv run --locked --package chartcoach --all-extras pytest packages/chartcoach/tests/test_mcp_config.py packages/chartcoach/tests/test_mcp_http.py packages/chartcoach/tests/test_embeddings.py` |
+| Chat app                 | `pnpm --dir apps/chat test`                                                                                                                                                                     |
+| CI selection and gate    | `pnpm --filter @chartcoach/ci test`                                                                                                                                                             |
+| Import and package rules | `pnpm check:architecture`                                                                                                                                                                       |
 
 Tooling packages in `tools/ci`, `tools/architecture`, and `tools/release` own
 their TypeScript scripts, dependencies, typechecks, and lint checks.
@@ -76,16 +78,20 @@ Run the Python consumer checks against the lowest compatible direct dependencies
 UV_PYTHON=3.10 make python-minimum
 ```
 
-This builds the wheel, checks a minimum base installation, then installs every
+This builds the wheel, checks a minimum base installation, checks uvx MCP consumers through HTTP and stdio, then installs every
 extra in the temporary environment and runs the package tests. Binary wheels
 are required for third-party dependencies.
 CI runs this check alongside the locked-version matrix. Exact embedding-profile
 requirements describe the environment that produced stored vectors and remain
 part of the catalog contract.
 
+The normal `make python-build` gate also verifies the built wheel in an isolated
+environment, launches it via `uvx`, and exercises dotenv, readiness, bearer auth,
+and MCP requests through HTTP and stdio. It never needs an external model API.
+
 ## Keep shared data aligned
 
-Python, JavaScript, the fixture, and both web apps read the same guideline and
+Python, JavaScript, the fixture, site, and chat read the same guideline and
 release fields. Update the producer, readers, fixture, and public docs together
 when those fields change.
 

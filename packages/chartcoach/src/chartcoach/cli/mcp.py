@@ -1,159 +1,121 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import get_args
 
 import click
 
-from chartcoach._constants import (
-    CATALOG_ARTIFACT_BASE_URL,
-    CATALOG_SELECTION_PATH,
-    CATALOG_SOURCE_ENV,
-    INDEX_PROFILE_ENV,
-)
+from chartcoach._constants import CATALOG_ARTIFACT_BASE_URL, CATALOG_SELECTION_PATH
+from chartcoach._mcp import settings
 
 from .common import storage_errors
-
-CONTEXT_SETTINGS = {"help_option_names": ["-h", "--help"]}
-TRANSPORT_CHOICES = ("stdio", "sse", "streamable-http")
-LOG_LEVEL_CHOICES = ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL")
-MCP_TRANSPORT_ENV = "CHARTCOACH_MCP_TRANSPORT"
-MCP_HOST_ENV = "CHARTCOACH_MCP_HOST"
-MCP_PORT_ENV = "CHARTCOACH_MCP_PORT"
-MCP_LOG_LEVEL_ENV = "CHARTCOACH_MCP_LOG_LEVEL"
-
-
-def _is_missing_optional_dependency(exc: ModuleNotFoundError) -> bool:
-    return _has_missing_module(exc, ("mcp",))
-
-
-def _has_missing_module(
-    exc: ModuleNotFoundError,
-    module_names: tuple[str, ...],
-) -> bool:
-    current: BaseException | None = exc
-    while current is not None:
-        if isinstance(current, ModuleNotFoundError):
-            name = current.name
-            if name is not None and any(
-                name == module or name.startswith(f"{module}.")
-                for module in module_names
-            ):
-                return True
-        current = current.__cause__
-    return False
+from .environment import load_env_file
 
 
 @click.command(
     "mcp",
-    context_settings=CONTEXT_SETTINGS,
-    help="Start the chartcoach MCP server.",
+    context_settings={"help_option_names": ["-h", "--help"]},
+    help="Start the chartcoach MCP server. Options override environment variables and .env.",
+)
+@click.option(
+    "--env-file",
+    type=click.Path(path_type=Path, dir_okay=False),
+    envvar="CHARTCOACH_ENV_FILE",
+    is_eager=True,
+    expose_value=False,
+    callback=load_env_file,
+    help="Load this UTF-8 dotenv file. Defaults to .env in the working directory. Existing environment values win.",
 )
 @click.option(
     "--source",
-    "source_path",
-    envvar=CATALOG_SOURCE_ENV,
     metavar="PATH_OR_URI",
-    help=(
-        "Catalog source: authored folder, bundle, deployed root, catalog.json, or "
-        "release.json path or URI. "
-        f"Defaults to ${CATALOG_SOURCE_ENV}, then the official catalog."
-    ),
+    help=f"Catalog location ({settings.ENVIRONMENT_FIELDS['source']}). Defaults to the official catalog.",
 )
 @click.option(
     "--profile",
-    envvar=INDEX_PROFILE_ENV,
-    help="Index profile in the catalog release.",
+    help=f"Release-owned index profile ({settings.ENVIRONMENT_FIELDS['profile']}).",
 )
 @click.option(
     "--embedding-vars",
     type=click.Path(path_type=Path, dir_okay=False),
-    help="JSON file mapping LanceDB registry variable names to string values.",
+    help=f"JSON registry variable file ({settings.ENVIRONMENT_FIELDS['embedding_vars']}). Values override the environment.",
 )
 @click.option(
     "--transport",
-    type=click.Choice(TRANSPORT_CHOICES, case_sensitive=False),
-    envvar=MCP_TRANSPORT_ENV,
-    default="stdio",
-    show_default=True,
-    help="MCP transport.",
+    type=click.Choice(get_args(settings.Transport), case_sensitive=False),
+    help=f"Transport ({settings.ENVIRONMENT_FIELDS['transport']}). Default: {settings.DEFAULT_TRANSPORT}.",
 )
 @click.option(
     "--host",
-    envvar=MCP_HOST_ENV,
-    default="127.0.0.1",
-    show_default=True,
-    help="Host for sse and streamable-http transports.",
+    help=f"HTTP listener ({settings.ENVIRONMENT_FIELDS['host']}). Default: {settings.DEFAULT_HOST}.",
 )
 @click.option(
     "--port",
     type=click.IntRange(1, 65535),
-    envvar=MCP_PORT_ENV,
-    default=8000,
-    show_default=True,
-    help="Port for sse and streamable-http transports.",
+    help=f"HTTP port ({settings.ENVIRONMENT_FIELDS['port']}). Default: {settings.DEFAULT_PORT}.",
 )
 @click.option(
     "--log-level",
-    type=click.Choice(LOG_LEVEL_CHOICES, case_sensitive=False),
-    envvar=MCP_LOG_LEVEL_ENV,
-    default="INFO",
-    show_default=True,
-    help="Logging level.",
+    type=click.Choice(get_args(settings.Level), case_sensitive=False),
+    help=f"Log level ({settings.ENVIRONMENT_FIELDS['log_level']}). Default: {settings.DEFAULT_LOG_LEVEL}.",
 )
-def mcp_command(
-    source_path: str | None,
-    profile: str | None,
-    embedding_vars: Path | None,
-    transport: str,
-    host: str,
-    port: int,
-    log_level: str,
-) -> None:
-    """Start the chartcoach MCP server."""
+@click.option(
+    "--public-url",
+    help=f"Public HTTP origin ({settings.ENVIRONMENT_FIELDS['public_url']}); adds its host and origin to the allowlists.",
+)
+@click.option(
+    "--path",
+    help=f"Streamable HTTP endpoint ({settings.ENVIRONMENT_FIELDS['path']}). Default: {settings.DEFAULT_PATH}.",
+)
+@click.option(
+    "--allowed-host",
+    "allowed_hosts",
+    multiple=True,
+    help=f"Additional allowed Host value; overrides {settings.ENVIRONMENT_FIELDS['allowed_hosts']} when supplied.",
+)
+@click.option(
+    "--allowed-origin",
+    "allowed_origins",
+    multiple=True,
+    help=f"Additional browser origin; overrides {settings.ENVIRONMENT_FIELDS['allowed_origins']} when supplied.",
+)
+@click.option(
+    "--stateless/--stateful",
+    default=None,
+    help=f"HTTP session policy ({settings.ENVIRONMENT_FIELDS['stateless']}). Default: {'stateless' if settings.DEFAULT_STATELESS else 'stateful'}.",
+)
+@click.option(
+    "--json-response/--stream-response",
+    default=None,
+    help=f"HTTP response format ({settings.ENVIRONMENT_FIELDS['json_response']}). Default: {'JSON' if settings.DEFAULT_JSON_RESPONSE else 'stream'}.",
+)
+@click.option(
+    "--sql-timeout",
+    type=click.FloatRange(min=0, min_open=True),
+    help=f"SQL execution deadline in seconds ({settings.ENVIRONMENT_FIELDS['sql_timeout']}). Default: {settings.DEFAULT_SQL_TIMEOUT:g}.",
+)
+def mcp_command(**options: object) -> None:
+    from chartcoach._catalog.errors import CatalogError
 
     try:
-        _run_server(
-            profile=profile,
-            embedding_vars=embedding_vars,
-            source_path=source_path,
-            transport=transport,
-            host=host,
-            port=port,
-            log_level=log_level,
+        from chartcoach.mcp import load_config, run
+    except ModuleNotFoundError as exc:
+        raise click.ClickException(
+            "chartcoach MCP server requires optional dependencies. Install chartcoach[mcp]."
+        ) from exc
+    try:
+        for name in ("allowed_hosts", "allowed_origins"):
+            options[name] = options[name] or None
+        config = load_config(overrides=options)
+        target = (
+            str(config.source)
+            if config.source is not None
+            else f"{CATALOG_ARTIFACT_BASE_URL}/{CATALOG_SELECTION_PATH}"
         )
-    except ModuleNotFoundError as exc:  # pragma: no cover - depends on install extras
-        if _is_missing_optional_dependency(exc):
-            raise click.ClickException(
-                "The `chartcoach mcp` command requires the optional MCP dependencies. Install `chartcoach[mcp]` to use it."
-            ) from exc
-        raise
-    except ValueError as exc:
+        with storage_errors("read", target):
+            run(config)
+    except (CatalogError, OSError, ValueError) as exc:
         raise click.ClickException(str(exc)) from exc
-
-
-def _run_server(
-    *,
-    profile: str | None,
-    embedding_vars: Path | None,
-    source_path: str | None,
-    transport: str,
-    host: str,
-    port: int,
-    log_level: str,
-) -> None:
-    from chartcoach import mcp
-
-    default_source = f"{CATALOG_ARTIFACT_BASE_URL.rstrip('/')}/{CATALOG_SELECTION_PATH}"
-    with storage_errors("MCP startup", source_path or default_source):
-        mcp.main(
-            profile=profile,
-            embedding_vars=embedding_vars,
-            location=source_path,
-            transport=transport.lower(),
-            host=host,
-            port=port,
-            log_level=log_level.upper(),
-        )
 
 
 __all__ = ["mcp_command"]

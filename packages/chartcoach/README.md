@@ -155,6 +155,41 @@ module workflow with `help(cc)`.
 discovers `chartcoach.agent` through the installed `marimo.agent.capability`
 entry point.
 
+## Compose or deploy MCP
+
+```bash
+uvx --from "chartcoach[mcp]" chartcoach mcp
+```
+
+The CLI loads `.env` in its working directory, or the file selected by
+`--env-file`. Options override process environment; process environment overrides
+dotenv. For HTTP hosting set `CHARTCOACH_MCP_TRANSPORT=streamable-http`,
+`CHARTCOACH_MCP_HOST=0.0.0.0`, and
+`CHARTCOACH_MCP_PUBLIC_URL=https://mcp.chartcoach.dev`. Set
+`CHARTCOACH_MCP_TOKEN` for bearer authentication. The MCP endpoint defaults to
+`/mcp`, with unauthenticated readiness at `/healthz`.
+See [.env.example](.env.example) for deployment settings.
+
+`chartcoach.mcp` exports `MCPConfig`, `load_config`, `register_tools`,
+`create_server`, `create_app`, and `run`. Bind your own `Catalog`, extend an SDK
+server, or mount the ASGI app with its lifespan. The Python factories do not
+load dotenv or mutate the process environment.
+
+Select a release-owned profile with `CHARTCOACH_INDEX_PROFILE`. Its `$var:name`
+credentials resolve from environment variables or a private
+`CHARTCOACH_EMBEDDING_VARS` JSON file. Each server retains its own lazy native
+embedding function; FTS stays independent of providers. Install
+`chartcoach[mcp,embedding-openai]` for the native
+`chartcoach.embeddings.OpenAICompatibleEmbeddings` adapter, which accepts
+arbitrary model IDs and explicit dimensions for OpenRouter or another
+OpenAI-compatible endpoint. Build a new release profile when changing the model,
+dimensions, or endpoint; runtime credentials cannot change stored vector identity.
+The [MCP guide](https://docs.chartcoach.dev/mcp) covers composition and hosting.
+The [model connection guide](https://docs.chartcoach.dev/model-connections) owns the
+shared provider-neutral environment settings and profile-build example.
+`CHARTCOACH_EMBEDDING_API_KEY` is separate from the chat text credential;
+`CHARTCOACH_EMBEDDING_API_KEY_ENV` selects another credential variable.
+
 ## Documentation
 
 | Page                                                       | Details                                             |

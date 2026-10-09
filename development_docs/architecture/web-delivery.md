@@ -11,6 +11,7 @@ apps/docs  -> @chartcoach/brand
 
 apps/chat  -> @chartcoach/catalog/node
           -> @chartcoach/brand
+          -> @chartcoach/skills
 ```
 
 The apps do not import each other. Vite+ rules and the tests under
@@ -169,3 +170,16 @@ and private brand and skill packages.
 and `/cache`. `tools/release/verify-chat.ts` installs both tarballs outside the
 workspace and checks the CLI, authenticated browser, a streamed grounded answer,
 and conversation persistence after restart.
+
+## Model connections
+
+`apps/chat/runtime/schema.ts` owns validated settings; `runtime/environment.ts`
+validates environment input against that schema. The CLI loads dotenv explicitly
+before composition. Text and embedding credentials use independent selectors and
+are absent from the serialized worker configuration. `lib/retrieval/embedding.ts`
+checks release identity before opening one lazy query embedder; the local driver
+lives in `local-embedding.ts`, and the remote driver uses the existing AI SDK
+OpenAI-compatible adapter. Search passes its cancellation signal to the remote provider.
+The [model connection guide](<../../apps/docs/content/docs/(guide)/model-connections.mdx>)
+owns the shared environment contract and authoring workflow; other docs link to it
+instead of copying provider URLs or defaults.

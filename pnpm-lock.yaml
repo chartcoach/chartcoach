@@ -326,6 +326,9 @@ importers:
 
   apps/chat:
     dependencies:
+      '@ai-sdk/openai-compatible':
+        specifier: 'catalog:'
+        version: 3.0.44(zod@4.5.4)
       '@chartcoach/catalog':
         specifier: workspace:*
         version: link:../../packages/catalog
@@ -353,6 +356,9 @@ importers:
       '@t3-oss/env-core':
         specifier: 'catalog:'
         version: 0.13.11(typescript@6.0.3)(zod@4.5.4)
+      ai:
+        specifier: 'catalog:'
+        version: 7.0.93(zod@4.5.4)
       chalk:
         specifier: 'catalog:'
         version: 6.0.0
@@ -393,9 +399,6 @@ importers:
       '@ai-sdk/openai':
         specifier: 'catalog:'
         version: 4.0.60(zod@4.5.4)
-      '@ai-sdk/openai-compatible':
-        specifier: 'catalog:'
-        version: 3.0.44(zod@4.5.4)
       '@assistant-ui/eve':
         specifier: 'catalog:'
         version: 0.0.16(@assistant-ui/tap@0.9.16(@types/react@19.2.18)(react@19.2.8))(@types/react@19.2.18)(assistant-cloud@0.1.43)(eve@0.53.0(patch_hash=c11a9e19d183a87648b2652d95b5384dfc630f3e5fa160eda9e5aea42a9cc529)(@opentelemetry/api@1.9.1)(ai@7.0.93(zod@4.5.4))(just-bash@3.4.2(supports-color@7.2.0)))(react@19.2.8)
@@ -456,9 +459,6 @@ importers:
       '@uwdata/mosaic-sql':
         specifier: 'catalog:'
         version: 0.31.0(patch_hash=ebfd89804a36e44c2f4c1d564402bdf4823f561ce62a9cead66987a56ca9c8b2)
-      ai:
-        specifier: 'catalog:'
-        version: 7.0.93(zod@4.5.4)
       autoprefixer:
         specifier: 'catalog:'
         version: 10.5.5(postcss@8.5.28)
