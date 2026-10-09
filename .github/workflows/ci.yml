@@ -92,6 +92,7 @@ jobs:
         if: contains(fromJSON(needs.changes.outputs.packages), '@chartcoach/catalog')
         with:
           enable-cache: true
+          ignore-nothing-to-cache: true
           cache-dependency-glob: uv.lock
           python-version: "3.12"
       - name: Set up JavaScript workspace

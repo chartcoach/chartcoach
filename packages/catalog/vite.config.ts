@@ -33,6 +33,8 @@ export default defineConfig({
     tasks: {
       test: {
         command: "vp test",
+        env: ["UV_PYTHON"],
+        untrackedEnv: ["UV_CACHE_DIR", "UV_PYTHON_INSTALL_DIR"],
         // Python source changes invalidate the cross-language contract check.
         input: [
           { auto: true },
