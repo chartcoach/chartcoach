@@ -133,6 +133,119 @@ conflicts. Run the command without that flag to require every published file
 and verify its downloaded bytes. If an artifact has expired or a digest differs,
 stop and recover the original build before attempting another upload.
 
+## Rolling previews
+
+After the latest push-event `CI` workflow succeeds for an exact `main` commit,
+`publish.yml` builds matching Python, catalog SDK, and chat previews on the rolling
+[`preview` GitHub prerelease](https://github.com/chartcoach/chartcoach/releases/tag/preview).
+PR runs, forks, failed runs, and cancelled runs cannot publish. CI already builds
+and checks the site and docs, so chartcoach requires only that workflow. Stable
+registry publication and container publication continue to use retained main CI
+artifacts for a matching release tag.
+
+The highest reachable stable `X.Y.Z` or `vX.Y.Z` tag preceding the source commit
+supplies the base. The next patch version and commit count since that tag produce
+Python `X.Y.(Z+1).devN` and npm `X.Y.(Z+1)-dev.N`. Suffixed and unrelated tags are
+excluded. Tagging the source commit later cannot change its preview identity.
+Full Git history and release tags are required to resolve a version.
+
+Only the build checkout is stamped. The Python lockfile is refreshed for that
+version; source versions and repository lockfiles stay on the stable development
+version. Python wheel/source verification and isolated CLI/MCP checks run on the
+stamped build. The catalog SDK and chat tarballs pass Node.js, Bun, and Deno
+consumer checks before attestation and upload. Preview chat packages depend on
+the exact matching SDK tarball URL, so installing chat alone resolves its SDK.
+
+For a public repository, release notes and merged-PR announcements include exact URLs for:
+
+```bash
+uv pip install "chartcoach @ https://github.com/chartcoach/chartcoach/releases/download/preview/chartcoach-X.Y.Z.devN-py3-none-any.whl"
+pnpm add "https://github.com/chartcoach/chartcoach/releases/download/preview/chartcoach-catalog-X.Y.Z-dev.N.tgz"
+npx --yes https://github.com/chartcoach/chartcoach/releases/download/preview/chartcoach-X.Y.Z-dev.N.tgz
+```
+
+Replace the example versions with those in the release notes. For the Python CLI,
+use `uv tool install --force "chartcoach @ <wheel-url>"`. To run the MCP server,
+install `chartcoach[mcp] @ <wheel-url>`. These previews are distributed through
+GitHub rather than PyPI or npm. Use the registries for stable versions.
+
+This repository currently distributes previews privately. Authenticate with
+`gh auth login` using an account with repository access, then use the authenticated
+download and local installation commands in its release notes. For example, in
+a fresh directory with Node.js 24+, npm, and uv installed:
+
+```bash
+gh release download preview -R chartcoach/chartcoach \
+  --pattern 'chartcoach-X.Y.Z.devN-py3-none-any.whl' \
+  --pattern 'chartcoach-catalog-X.Y.Z-dev.N.tgz' \
+  --pattern 'chartcoach-X.Y.Z-dev.N.tgz'
+uv tool install --force ./chartcoach-X.Y.Z.devN-py3-none-any.whl
+npm init --yes
+npm install --ignore-scripts ./chartcoach-catalog-X.Y.Z-dev.N.tgz
+npm pkg set 'overrides.@chartcoach/catalog=$@chartcoach/catalog'
+npm install --ignore-scripts ./chartcoach-X.Y.Z-dev.N.tgz
+npx --no-install chartcoach
+```
+
+Replace the example versions with a retained build's exact version. The npm
+override binds chat to the downloaded SDK, since direct private GitHub URLs
+cannot authenticate npm through the GitHub CLI. The same override verifies
+retained preview packages before their URLs become available. Public repositories
+can install chat directly from its tarball URL. Private release assets require
+repository access even when the site and stable registry packages are public.
+
+Uploads are immutable: retries compare existing bytes and reject conflicts.
+Empty starter assets left by failed uploads are removed before retrying. A
+versioned `chartcoach-X.Y.Z.devN-SHA256SUMS` completion marker is uploaded last,
+after release notes, a deduplicated merged-PR announcement, and retention.
+Publication jobs serialize mutations of the shared release. Out-of-order builds
+cannot replace newer release notes. The newest 30 completed publications remain;
+older complete or interrupted builds are pruned as whole sets. Older builds that
+finish outside that window are pruned without announcing unavailable URLs.
+The `preview` tag stays on the first build's commit; it is not a moving source
+pointer. Pin the versioned asset URLs for downstream CI while within retention.
+
+### Preview provenance v1
+
+Each build retains an immutable `chartcoach-X.Y.Z.devN-provenance.json` record
+using the `https://slsa.dev/provenance/v1` predicate. Its checksum is included
+alongside the four distributions in the completion manifest.
+`workflow_run` can use a newer workflow revision than its validated source.
+The `buildDefinition.externalParameters.checkoutCommit` field records the
+packaged commit, and `resolvedDependencies` records both source and signing
+workflow revisions. The record is generated in the build job and reused across
+publication retries, including its original run attempt.
+
+GitHub Free supports artifact attestations for public repositories. Private
+repositories require Enterprise Cloud; chartcoach's private Free repository
+publishes unsigned provenance records and checksums. These record source identity
+and bytes but do not provide cryptographic verification. Public repositories
+automatically attest every distribution, provenance record, and checksum manifest.
+For a private repository with Enterprise Cloud, set the repository variable
+`PREVIEW_ATTESTATIONS=true` to enable signing. See
+[GitHub's availability requirements](https://docs.github.com/en/actions/how-tos/secure-your-work/use-artifact-attestations/use-artifact-attestations).
+When signing is enabled, verify a downloaded artifact with:
+
+```bash
+gh attestation verify chartcoach-X.Y.Z.devN-py3-none-any.whl -R chartcoach/chartcoach
+```
+
+### Recover publication
+
+| First failed job                  | Response                                                                                                                                                                  |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Stable `prepare`                  | Wait for main CI for the exact tag, or correct the workflow and dispatch for the same immutable tag as described above.                                                   |
+| Stable registry or container jobs | Rerun failed jobs using the retained `release-packages` bundle; inspect conflicts before retrying.                                                                        |
+| `resolve-preview`                 | Resolve GitHub API access or missing history/tags, then rerun. The latest exact-commit main CI must succeed.                                                              |
+| `build-preview`                   | Fix source/build inputs in a new main commit and let CI trigger a new preview.                                                                                            |
+| `verify-preview`                  | Inspect the consumer failure; rerun transient failures or fix package behavior in a new main commit.                                                                      |
+| `publish-preview`                 | Rerun failed jobs on the same run to reuse its 30-day `preview-packages` artifact. Notes, announcement, and retention failures resume without overwriting uploaded bytes. |
+
+Rerunning all jobs after partial publication rebuilds packages and can produce
+byte conflicts; rerun failed jobs instead. When the checksum marker is present,
+resolution skips a completed preview. Expired artifacts or conflicting bytes
+require recovering the original build before any further upload.
+
 ## Publish catalog data
 
 The catalog passes through three local states before publication:
