@@ -45,7 +45,7 @@ def build(directory: Path, version: str, *, sdk: str | None = None) -> Path:
         if name == "chartcoach":
             manifest["dependencies"] = {
                 "@chartcoach/catalog": sdk
-                or f"https://github.com/chartcoach/chartcoach/releases/download/preview/chartcoach-catalog-{npm_version}.tgz"
+                or f"https://github.com/chartcoach/chartcoach/releases/download/preview-builds/chartcoach-catalog-{npm_version}.tgz"
             }
         content = json.dumps(manifest).encode()
         with tarfile.open(directory / "npm" / filename, "w:gz") as archive:
@@ -69,7 +69,9 @@ def distribution(tmp_path: Path) -> Path:
 
 class GitHub:
     def __init__(self) -> None:
-        self.exists = False
+        self.exists = True
+        self.immutable = False
+        self.draft = False
         self.files: dict[str, bytes] = {}
         self.starters: set[str] = set()
         self.notes = ""
@@ -84,16 +86,28 @@ class GitHub:
         if args[0] == "api":
             endpoint = args[-1]
             if endpoint.endswith("/releases"):
-                return json.dumps([[{"tag_name": "preview"}] if self.exists else []])
+                return json.dumps(
+                    [
+                        [
+                            {
+                                "tag_name": "preview-builds",
+                                "immutable": self.immutable,
+                                "draft": self.draft,
+                            }
+                        ]
+                        if self.exists
+                        else []
+                    ]
+                )
             if endpoint.endswith("/pulls"):
                 return json.dumps(
                     [{"number": 42, "merged_at": "date", "base": {"ref": "main"}}]
                 )
             if endpoint.endswith("/comments"):
                 return json.dumps([[], self.comments])
-        if args[:2] == ("release", "create"):
-            self.exists = True
-        elif args[:2] == ("release", "view"):
+        if args[0] == "release":
+            assert args[2] == "preview-builds"
+        if args[:2] == ("release", "view"):
             return json.dumps(
                 {
                     "assets": [
@@ -222,7 +236,7 @@ def test_publication_is_immutable_and_idempotent(
     assert len(github.comments) == 1
     assert _COMMIT in github.notes
     assert (
-        "npx --yes https://github.com/chartcoach/chartcoach/releases/download/preview/chartcoach-0.3.4-dev.7.tgz"
+        "npx --yes https://github.com/chartcoach/chartcoach/releases/download/preview-builds/chartcoach-0.3.4-dev.7.tgz"
         in github.notes
     )
     preview.publish(distribution, _COMMIT, _VERSION)
@@ -341,11 +355,51 @@ def test_resolution_skips_only_completed_builds(
 def test_api_failure_never_creates_a_release(
     preview: ModuleType, distribution: Path, github: GitHub
 ) -> None:
+    github.exists = False
     github.fail = "api"
     with pytest.raises(subprocess.CalledProcessError):
         preview.publish(distribution, _COMMIT, _VERSION)
     assert not github.exists
     assert not github.uploads
+
+
+@pytest.mark.parametrize("operation", ["resolve", "publish"])
+@pytest.mark.parametrize("state", ["missing", "immutable", "draft", "unknown"])
+def test_unusable_channel_fails_before_build_or_publication(
+    preview: ModuleType,
+    distribution: Path,
+    github: GitHub,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    operation: str,
+    state: str,
+) -> None:
+    github.exists = state != "missing"
+    github.immutable = state == "immutable"
+    github.draft = state == "draft"
+    real = preview.gh
+
+    def fake(*args: str) -> str:
+        if args[:2] == ("run", "list"):
+            return json.dumps([{"status": "completed", "conclusion": "success"}])
+        if state == "unknown" and args[-1].endswith("/releases"):
+            return json.dumps([[{"tag_name": "preview-builds", "draft": False}]])
+        return real(*args)
+
+    monkeypatch.setattr(preview, "gh", fake)
+    monkeypatch.setattr(preview, "preview_version", lambda commit: _VERSION)
+    output = tmp_path / "output"
+    monkeypatch.setenv("GITHUB_OUTPUT", str(output))
+    with pytest.raises(ValueError, match="published, mutable release"):
+        if operation == "resolve":
+            preview.resolve(_COMMIT)
+        else:
+            preview.publish(distribution, _COMMIT, _VERSION)
+    assert not output.exists()
+    assert not github.uploads
+    assert not github.deleted
+    assert not github.notes
+    assert not github.comments
 
 
 def test_provenance_distinguishes_signing_and_source_commits(
@@ -462,7 +516,7 @@ def test_private_publication_uses_authenticated_downloads_and_unsigned_provenanc
     monkeypatch.setenv("PRIVATE_REPOSITORY", "true")
     monkeypatch.setenv("PREVIEW_ATTESTED", "false")
     preview.publish(distribution, _COMMIT, _VERSION)
-    assert "gh release download preview -R chartcoach/chartcoach" in github.notes
+    assert "gh release download preview-builds -R chartcoach/chartcoach" in github.notes
     assert (
         "npm pkg set 'overrides.@chartcoach/catalog=$@chartcoach/catalog'"
         in github.notes
