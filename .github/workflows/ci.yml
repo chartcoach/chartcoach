@@ -271,7 +271,7 @@ jobs:
       - name: Check Python typecheck
         if: ${{ matrix.python-version == '3.12' }}
         run: make python-typecheck
-      - name: Check Python build
+      - name: Verify Python distributions and uvx MCP consumers
         if: ${{ matrix.python-version == '3.12' }}
         run: make python-build
       - name: Retain verified Python distributions
