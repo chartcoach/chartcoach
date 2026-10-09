@@ -77,7 +77,9 @@ def test_python_validation_errors_hide_credentials() -> None:
 
 
 @pytest.mark.parametrize(
-    "contents", ["[" * 32000 + "0" + "]" * 32000, '{"key": ' + "1" * 5000 + "}"]
+    "contents",
+    ["[" * 32000 + "0" + "]" * 32000, '{"key": ' + "1" * 5000 + "}"],
+    ids=["deep-list", "integer-limit"],
 )
 def test_nested_variable_json_returns_a_cli_diagnostic(
     tmp_path: Path, contents: str
@@ -86,7 +88,27 @@ def test_nested_variable_json_returns_a_cli_diagnostic(
     file.write_text(contents)
     result = CliRunner().invoke(main, ["mcp", "--embedding-vars", str(file)])
     assert result.exit_code == 1
+    # Python 3.14 can decode deeply nested arrays; either decoding or schema
+    # validation must reject these inputs with a catalog diagnostic.
+    assert "Error: Embedding variable file must " in result.output
+
+
+@pytest.mark.parametrize("error", [ValueError, RecursionError])
+def test_variable_json_decoder_errors_return_a_redacted_cli_diagnostic(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, error: type[Exception]
+) -> None:
+    secret = "private-credential"
+    file = tmp_path / "variables.json"
+    file.write_text('{"provider-key": "' + secret + '"}')
+
+    def fail_decode(_: str) -> object:
+        raise error(secret)
+
+    monkeypatch.setattr("chartcoach._catalog.embedding.json.loads", fail_decode)
+    result = CliRunner().invoke(main, ["mcp", "--embedding-vars", str(file)])
+    assert result.exit_code == 1
     assert "Embedding variable file must be a UTF-8 JSON object" in result.output
+    assert secret not in result.output
 
 
 @pytest.mark.parametrize(
