@@ -134,6 +134,7 @@ variable to set. Secret values are excluded from validation messages.
 | `server.username`     | `CHARTCOACH_USERNAME`        | `chartcoach`                    |
 | `server.passwordEnv`  | `CHARTCOACH_PASSWORD_ENV`    | `CHARTCOACH_PASSWORD`           |
 | `server.passwordFile` | `CHARTCOACH_PASSWORD_FILE`   | Unset                           |
+| `server.embedOrigins` | `CHARTCOACH_EMBED_ORIGINS`   | Framing denied                  |
 | `storage.dataDir`     | `CHARTCOACH_DATA_DIR`        | Platform app-data directory     |
 | `storage.cacheDir`    | `CHARTCOACH_CACHE_DIR`       | Platform cache directory        |
 | `modelOrigins`        | `CHARTCOACH_MODEL_ORIGINS`   | Common hosted providers (below) |
@@ -177,6 +178,52 @@ precedence over the password environment variable. Keep TLS termination and proc
 restarts in your deployment platform. The worker's workflow callbacks stay on its
 private loopback listener. `/healthz` reports readiness for health checks.
 
+## Embed in another page
+
+List the origins of the pages that show ChartCoach in an iframe:
+
+```bash
+export CHARTCOACH_EMBED_ORIGINS=https://slides.example.org
+npx chartcoach chat --host 0.0.0.0 --no-open --public-url https://chat.example.org
+```
+
+Listed origins receive a `frame-ancestors` policy and credentialed CORS responses.
+`--embed-origin` and `server.embedOrigins` set the same list. Without a list, the
+server denies framing.
+
+Some hosts, such as notebook and slide tools that isolate authored content, render
+embeds inside an [iframe sandbox](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/iframe#sandbox)
+without `allow-same-origin`. ChartCoach then runs with an opaque origin, and browsers
+match no listed origin against that frame. Use `*` for these hosts:
+
+```bash
+export CHARTCOACH_EMBED_ORIGINS='*'
+```
+
+`*` lets any website frame ChartCoach and call its API from the visitor's browser.
+
+With embedding enabled, the browser cookie is `SameSite=None; Secure; Partitioned`.
+Each embedding site keeps its own conversations and connections, separate from direct
+visits. Embedding needs an HTTPS `--public-url`, or a loopback address for local use.
+
+An embedded frame cannot show the password prompt. To open a password-protected server
+in a frame, set an embed key of at least 16 characters and add it to the frame URL:
+
+```bash
+export CHARTCOACH_EMBED_KEY="$(openssl rand -hex 24)"
+```
+
+```html
+<iframe src="https://chat.example.org/?embed_key=YOUR_KEY" allow="clipboard-write"></iframe>
+```
+
+The server exchanges a valid key for a partitioned access cookie and redirects to the
+same page without the key. Anyone with the frame URL can use the server and its
+configured model, so keep the URL as private as the password. Change the key to revoke
+access. With `*`, the versioned build files under `/_next/static/` and `/duckdb/` load
+without sign-in, because sandboxed frames request fonts and the DuckDB engine without
+cookies.
+
 ## Docker Compose
 
 From a repository checkout:
@@ -189,7 +236,7 @@ docker compose -f infra/compose.yml up --build -d
 Open `http://127.0.0.1:4273`. The service binds the host port to loopback and stores
 conversations and cache in named volumes. Set `CHARTCOACH_PUBLIC_URL` when using an
 HTTPS reverse proxy. Provider connections can be configured in each browser. Compose also forwards
-the catalog, model, provider-key, and tracing environment variables, so the
+the catalog, model, provider-key, embedding, and tracing environment variables, so the
 environment-only setup works for containers too.
 
 To mount a configuration file, add a read-only volume and `CHARTCOACH_CONFIG`:

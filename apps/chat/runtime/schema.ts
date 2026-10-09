@@ -36,6 +36,7 @@ export const configSchema = z.strictObject({
       username: text.regex(/^[^:]+$/).default("chartcoach"),
       passwordEnv: text.default("CHARTCOACH_PASSWORD"),
       passwordFile: text.optional(),
+      embedOrigins: z.array(z.union([z.literal("*"), apiBaseURL])).default([]),
     })
     .prefault({}),
   storage: z

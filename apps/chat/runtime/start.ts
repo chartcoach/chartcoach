@@ -7,7 +7,7 @@ import { z } from "zod";
 import { createInterface } from "node:readline";
 import lockfile from "proper-lockfile";
 import { createGateway } from "./gateway";
-import { validateStartup, modelKey } from "./config";
+import { embedKey, validateStartup, modelKey } from "./config";
 import type { Config } from "./schema";
 
 export async function startChat(
@@ -25,6 +25,7 @@ export async function startChat(
   },
 ) {
   const password = validateStartup(config);
+  const key = embedKey();
   signal.throwIfAborted();
   const { openCatalog } = await import("@chartcoach/catalog/node");
 
@@ -67,6 +68,7 @@ export async function startChat(
   const secrets = [
     token,
     password,
+    key,
     config.model.model ? modelKey(config) : undefined,
     process.env.LANGFUSE_SECRET_KEY,
   ].filter((value): value is string => Boolean(value));
@@ -138,6 +140,7 @@ export async function startChat(
     agentURL,
     token,
     password,
+    embedKey: key,
   });
 
   resources.defer(() => gateway.close());

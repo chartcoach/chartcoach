@@ -1,3 +1,4 @@
+import "./opaque-origin";
 import { guidelinePageSchema } from "../shared/guideline-page";
 import { z } from "zod";
 import {

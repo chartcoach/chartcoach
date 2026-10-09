@@ -50,6 +50,10 @@ function options(command: Command) {
     )
     .option("--port <number>", "public port, or 0 for an available port (default: 4273)", integer)
     .option("--public-url <origin>", "external origin when using a reverse proxy")
+    .option(
+      "--embed-origin <origin...>",
+      "allow pages at these origins, or * for any page, to embed the app",
+    )
     .option("--no-open", "print the URL without opening a browser", undefined);
 }
 
@@ -78,6 +82,7 @@ function configuration(values: SettingsOptions, explicitOpen: boolean) {
         username: values.username,
         passwordEnv: values.passwordEnv,
         passwordFile: values.passwordFile,
+        embedOrigins: values.embedOrigin,
       },
       storage: { dataDir: values.dataDir, cacheDir: values.cacheDir },
     },
