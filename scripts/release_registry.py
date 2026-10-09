@@ -122,7 +122,7 @@ def release_files(
     if preview:
         chat = next(item for item in manifests if item["name"] == "chartcoach")
         expected_sdk = (
-            "https://github.com/chartcoach/chartcoach/releases/download/preview-builds/"
+            "https://github.com/chartcoach/chartcoach/releases/download/previews/"
             f"chartcoach-catalog-{npm_version}.tgz"
         )
         if chat.get("dependencies", {}).get("@chartcoach/catalog") != expected_sdk:

@@ -47,7 +47,7 @@ def build(directory: Path, version: str, *, sdk: str | None = None) -> Path:
         if name == "chartcoach":
             manifest["dependencies"] = {
                 "@chartcoach/catalog": sdk
-                or f"https://github.com/chartcoach/chartcoach/releases/download/preview-builds/chartcoach-catalog-{npm_version}.tgz"
+                or f"https://github.com/chartcoach/chartcoach/releases/download/previews/chartcoach-catalog-{npm_version}.tgz"
             }
         content = json.dumps(manifest).encode()
         with tarfile.open(directory / "npm" / filename, "w:gz") as archive:
@@ -92,7 +92,7 @@ class GitHub:
                     [
                         [
                             {
-                                "tag_name": "preview-builds",
+                                "tag_name": "previews",
                                 "immutable": self.immutable,
                                 "draft": self.draft,
                             }
@@ -108,7 +108,7 @@ class GitHub:
             if endpoint.endswith("/comments"):
                 return json.dumps([[], self.comments])
         if args[0] == "release":
-            assert args[2] == "preview-builds"
+            assert args[2] == "previews"
         if args[:2] == ("release", "view"):
             return json.dumps(
                 {
@@ -125,6 +125,8 @@ class GitHub:
                 }
             )
         elif args[:2] == ("release", "upload"):
+            if self.immutable:
+                raise subprocess.CalledProcessError(1, args)
             path = Path(args[3])
             assert path.name not in self.files
             self.files[path.name] = path.read_bytes()
@@ -132,6 +134,9 @@ class GitHub:
         elif args[:2] == ("release", "download"):
             (Path(args[-1]) / args[4]).write_bytes(self.files[args[4]])
         elif args[:2] == ("release", "edit"):
+            # Live GitHub seals a mutable published release on a metadata edit
+            # when repository immutability has been enabled again.
+            self.immutable = True
             self.notes = Path(args[-1]).read_text()
         elif args[:2] == ("release", "delete-asset"):
             name = args[3]
@@ -236,10 +241,12 @@ def test_publication_is_immutable_and_idempotent(
         preview.marker_name(_VERSION),
     ]
     assert len(github.comments) == 1
-    assert _COMMIT in github.notes
+    assert _COMMIT in github.comments[0]["body"]
+    assert github.notes == ""
+    assert github.immutable is False
     assert (
-        "npx --yes https://github.com/chartcoach/chartcoach/releases/download/preview-builds/chartcoach-0.3.4-dev.7.tgz"
-        in github.notes
+        "npx --yes https://github.com/chartcoach/chartcoach/releases/download/previews/chartcoach-0.3.4-dev.7.tgz"
+        in github.comments[0]["body"]
     )
     preview.publish(distribution, _COMMIT, _VERSION)
     assert len(github.uploads) == 6
@@ -249,7 +256,7 @@ def test_publication_is_immutable_and_idempotent(
         preview.publish(distribution, _COMMIT, _VERSION)
 
 
-@pytest.mark.parametrize("failure", ["upload", "edit", "comment", "delete-asset"])
+@pytest.mark.parametrize("failure", ["upload", "comment", "delete-asset"])
 def test_partial_publication_resumes_before_completion_marker(
     preview: ModuleType, distribution: Path, github: GitHub, failure: str
 ) -> None:
@@ -281,7 +288,7 @@ def test_starter_upload_is_removed_before_retry(
     assert not github.starters
 
 
-def test_old_completion_never_moves_notes_or_announces_pruned_urls(
+def test_old_completion_preserves_static_notes_and_prunes_unavailable_urls(
     preview: ModuleType, distribution: Path, github: GitHub
 ) -> None:
     github.notes = "newer build notes"
@@ -385,7 +392,7 @@ def test_unusable_channel_fails_before_build_or_publication(
         if args[:2] == ("run", "list"):
             return json.dumps([{"status": "completed", "conclusion": "success"}])
         if state == "unknown" and args[-1].endswith("/releases"):
-            return json.dumps([[{"tag_name": "preview-builds", "draft": False}]])
+            return json.dumps([[{"tag_name": "previews", "draft": False}]])
         return real(*args)
 
     monkeypatch.setattr(preview, "gh", fake)
@@ -497,7 +504,7 @@ def test_workflow_gates_source_and_attests_the_exact_artifact_set(
         assert matched == set(files)
 
 
-def test_interrupted_newer_upload_does_not_suppress_notes_or_evict_completed_builds(
+def test_interrupted_newer_upload_does_not_suppress_announcements_or_evict_completed_builds(
     preview: ModuleType, distribution: Path, github: GitHub
 ) -> None:
     for n in range(1, 31):
@@ -507,14 +514,30 @@ def test_interrupted_newer_upload_does_not_suppress_notes_or_evict_completed_bui
         ]:
             github.files[name] = b"completed"
     for name in preview.artifact_names("0.3.4.dev8"):
-        github.files[name] = b"interrupted before notes"
+        github.files[name] = b"interrupted before completion"
     github.notes = "old release notes"
     preview.publish(distribution, _COMMIT, _VERSION)
-    assert f"Latest: `{_VERSION}`" in github.notes
+    assert _VERSION in github.comments[0]["body"]
+    assert github.notes == "old release notes"
+    assert github.immutable is False
     assert preview.marker_name(_VERSION) in github.files
     assert len([name for name in github.files if name.endswith("-SHA256SUMS")]) == 30
     assert preview.marker_name("0.3.3.dev2") in github.files
     assert preview.marker_name("0.3.3.dev1") not in github.files
+
+
+def test_consecutive_builds_keep_release_metadata_static_and_assets_writable(
+    preview: ModuleType, distribution: Path, github: GitHub, tmp_path: Path
+) -> None:
+    github.notes = "Static rolling preview instructions"
+    preview.publish(distribution, _COMMIT, _VERSION)
+    preview.publish(build(tmp_path / "next", "0.3.4.dev8"), "b" * 40, "0.3.4.dev8")
+    assert github.notes == "Static rolling preview instructions"
+    assert github.immutable is False
+    assert len(github.uploads) == 12
+    assert len(github.comments) == 2
+    assert preview.marker_name(_VERSION) in github.files
+    assert preview.marker_name("0.3.4.dev8") in github.files
 
 
 def test_private_publication_uses_authenticated_downloads_and_unsigned_provenance(
@@ -526,14 +549,17 @@ def test_private_publication_uses_authenticated_downloads_and_unsigned_provenanc
     monkeypatch.setenv("PRIVATE_REPOSITORY", "true")
     monkeypatch.setenv("PREVIEW_ATTESTED", "false")
     preview.publish(distribution, _COMMIT, _VERSION)
-    assert "gh release download preview-builds -R chartcoach/chartcoach" in github.notes
+    assert (
+        "gh release download previews -R chartcoach/chartcoach"
+        in github.comments[0]["body"]
+    )
     assert (
         "npm pkg set 'overrides.@chartcoach/catalog=$@chartcoach/catalog'"
-        in github.notes
+        in github.comments[0]["body"]
     )
-    assert "npx --no-install chartcoach" in github.notes
-    assert "This provenance record is unsigned" in github.notes
-    assert "gh attestation verify" not in github.notes
+    assert "npx --no-install chartcoach" in github.comments[0]["body"]
+    assert "This provenance record is unsigned" in github.comments[0]["body"]
+    assert "gh attestation verify" not in github.comments[0]["body"]
     assert preview.provenance_name(_VERSION) in github.files
     assert "gh release download" in github.comments[0]["body"]
     preview.publish(distribution, _COMMIT, _VERSION)
@@ -555,13 +581,13 @@ def test_provenance_bytes_are_reused_across_publication_attempts(
     github.fail = None
     preview.publish(distribution, _COMMIT, _VERSION)
     assert github.files[preview.provenance_name(_VERSION)] == original
-    assert "gh attestation verify" in github.notes
-    assert "gh attestation download" in github.notes
-    assert "--bundle BUNDLE_FILE" in github.notes
-    assert f'--predicate-type "{_PREDICATE_TYPE}"' in github.notes
+    assert "gh attestation verify" in github.comments[0]["body"]
+    assert "gh attestation download" in github.comments[0]["body"]
+    assert "--bundle BUNDLE_FILE" in github.comments[0]["body"]
+    assert f'--predicate-type "{_PREDICATE_TYPE}"' in github.comments[0]["body"]
     assert (
         '--signer-workflow "chartcoach/chartcoach/.github/workflows/publish.yml"'
-        in github.notes
+        in github.comments[0]["body"]
     )
 
 
