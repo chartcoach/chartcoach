@@ -5,6 +5,7 @@
   "scripts": {
     "check": "vp check",
     "minimum-node": "node minimum-node.mjs",
+    "test:ci": "node --test ci.test.mjs",
     "verify:npm": "node verify-npm.mjs",
     "verify:chat": "node verify-chat.mjs"
   },
@@ -13,6 +14,7 @@
     "@duckdb/duckdb-wasm": "catalog:",
     "@duckdb/node-api": "catalog:",
     "@lancedb/lancedb": "catalog:",
+    "picomatch": "catalog:",
     "playwright": "1.63.0",
     "semver": "7.8.5",
     "tar": "7.5.22",

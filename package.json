@@ -10,7 +10,7 @@
     "check:architecture": "node --test tools/architecture/*.test.mjs",
     "check:unused": "pnpm --filter @chartcoach/docs generate && knip --treat-config-hints-as-errors",
     "dev": "portless",
-    "ready": "pnpm check:architecture && pnpm check:anti-slop && vp run typecheck && pnpm check:unused && vp run check && vp run test && vp run build",
+    "ready": "pnpm --filter @chartcoach/release test:ci && pnpm check:architecture && pnpm check:anti-slop && vp run typecheck && pnpm check:unused && vp run check && vp run test && vp run build",
     "test": "vp run -r test",
     "typecheck": "vp run -r typecheck"
   },

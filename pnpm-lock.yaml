@@ -239,6 +239,9 @@ catalogs:
     oxlint-tsgolint:
       specifier: 7.0.2001
       version: 7.0.2001
+    picomatch:
+      specifier: 2.3.2
+      version: 2.3.2
     radix-ui:
       specifier: 1.6.7
       version: 1.6.7
@@ -701,6 +704,9 @@ importers:
       '@lancedb/lancedb':
         specifier: 'catalog:'
         version: 0.38.0(@types/node@26.4.1)(apache-arrow@18.1.0)
+      picomatch:
+        specifier: 'catalog:'
+        version: 2.3.2
       playwright:
         specifier: 1.63.0
         version: 1.63.0
