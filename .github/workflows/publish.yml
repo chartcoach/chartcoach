@@ -1,11 +1,15 @@
 name: Publish
-run-name: Publish ${{ inputs.tag || github.ref_name }}
+run-name: Publish ${{ github.event.workflow_run.head_sha || inputs.tag || github.ref_name }}
 
 on:
   push:
     tags:
       - "[0-9]*.[0-9]*.[0-9]*"
       - "v[0-9]*.[0-9]*.[0-9]*"
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
     inputs:
       tag:
@@ -21,11 +25,13 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ inputs.tag || github.ref_name }}
+  group: ${{ github.workflow }}-${{ github.event.workflow_run.head_sha || inputs.tag || github.ref_name }}
   cancel-in-progress: false
+  queue: max
 
 jobs:
   prepare:
+    if: github.event_name != 'workflow_run'
     name: Prepare verified CI artifacts
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -242,3 +248,206 @@ jobs:
           if ! gh release view "$RELEASE_TAG" --json tagName; then
             gh release create "$RELEASE_TAG" --verify-tag --generate-notes
           fi
+
+  resolve-preview:
+    name: Resolve preview publication
+    if: >-
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      commit: ${{ steps.identity.outputs.commit }}
+      version: ${{ steps.identity.outputs.version }}
+      publish: ${{ steps.identity.outputs.publish }}
+    steps:
+      - name: Checkout publication tooling
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Resolve exact source and preview identity
+        id: identity
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          COMMIT: ${{ github.event.workflow_run.head_sha }}
+        run: python3 scripts/preview_release.py resolve --commit "$COMMIT"
+
+  build-preview:
+    name: Build and verify preview packages
+    needs: resolve-preview
+    if: needs.resolve-preview.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout validated source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.resolve-preview.outputs.commit }}
+          persist-credentials: false
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      - name: Set up JavaScript workspace
+        uses: ./.github/actions/setup-js
+      - name: Stamp matching preview versions
+        env:
+          VERSION: ${{ needs.resolve-preview.outputs.version }}
+        run: |
+          python3 scripts/preview_release.py stamp --version "$VERSION"
+          uv lock
+      - name: Build and verify Python preview
+        run: make python-build
+      - name: Build npm previews
+        run: |
+          pnpm --dir apps/chat build
+          mkdir -p dist/release/npm
+          npm pack ./packages/catalog --ignore-scripts --pack-destination dist/release/npm
+          npm pack ./apps/chat/dist --ignore-scripts --pack-destination dist/release/npm
+      - name: Record immutable preview source provenance
+        env:
+          COMMIT: ${{ needs.resolve-preview.outputs.commit }}
+          VERSION: ${{ needs.resolve-preview.outputs.version }}
+        run: python3 scripts/preview_release.py provenance --commit "$COMMIT" --output "dist/release/chartcoach-$VERSION-provenance.json"
+      - name: Check coordinated preview artifacts and write checksums
+        env:
+          VERSION: ${{ needs.resolve-preview.outputs.version }}
+        run: python3 scripts/preview_release.py checksum --version "$VERSION"
+      - name: Retain verified preview inputs
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: preview-packages
+          path: |
+            dist/release/*SHA256SUMS
+            dist/release/*-provenance.json
+            dist/release/python/*.whl
+            dist/release/python/*.tar.gz
+            dist/release/npm/*.tgz
+          retention-days: 30
+          if-no-files-found: error
+
+  verify-preview:
+    name: Verify preview consumers ${{ matrix.runtime }}
+    needs: build-preview
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        runtime: [node, bun, deno]
+    steps:
+      - name: Checkout consumer tooling
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up JavaScript workspace
+        uses: ./.github/actions/setup-js
+        with:
+          consumers: "true"
+      - name: Download preview inputs
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: preview-packages
+          path: dist/release
+      - name: Install browser runtime
+        run: pnpm --filter @chartcoach/release exec playwright install --with-deps chromium
+      - name: Read SDK minimum Node.js version
+        if: matrix.runtime == 'node'
+        id: node-version
+        run: |
+          echo "version=$(pnpm --filter @chartcoach/release --silent minimum-node)" >> "$GITHUB_OUTPUT"
+          echo "build_node=$(command -v node)" >> "$GITHUB_OUTPUT"
+      - name: Set up consumer Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: matrix.runtime == 'node'
+        with:
+          node-version: ${{ steps.node-version.outputs.version }}
+          package-manager-cache: false
+      - name: Locate consumer Node.js and restore build runtime
+        if: matrix.runtime == 'node'
+        id: consumer-node
+        env:
+          BUILD_NODE: ${{ steps.node-version.outputs.build_node }}
+        run: |
+          echo "path=$(command -v node)" >> "$GITHUB_OUTPUT"
+          dirname "$BUILD_NODE" >> "$GITHUB_PATH"
+      - name: Verify catalog SDK and Node.js chat consumers
+        if: matrix.runtime == 'node'
+        env:
+          CONSUMER_NODE: ${{ steps.consumer-node.outputs.path }}
+        run: |
+          pnpm --filter @chartcoach/release verify:npm "$PWD"/dist/release/npm/chartcoach-catalog-*.tgz --node "$CONSUMER_NODE" --minimum-dependencies
+          pnpm --filter @chartcoach/release verify:chat "$PWD"/dist/release/npm/chartcoach-[0-9]*.tgz "$PWD"/dist/release/npm/chartcoach-catalog-*.tgz
+          pnpm --filter @chartcoach/release verify:chat "$PWD"/dist/release/npm/chartcoach-[0-9]*.tgz "$PWD"/dist/release/npm/chartcoach-catalog-*.tgz https://artifacts.chartcoach.dev/catalog/releases/075004be49cba8fd604d3e89ed1fb2dbd1b18eebcda40fa56f5f247cc9f8aa59/release.json
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.4.2
+        if: matrix.runtime == 'bun'
+      - name: Verify Bun chat consumers
+        if: matrix.runtime == 'bun'
+        run: |
+          for runner in bunx bun; do
+            pnpm --filter @chartcoach/release verify:chat "$PWD"/dist/release/npm/chartcoach-[0-9]*.tgz "$PWD"/dist/release/npm/chartcoach-catalog-*.tgz --runner "$runner"
+          done
+      - name: Set up Deno
+        uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2.0.5
+        with:
+          deno-version: 2.9.6
+        if: matrix.runtime == 'deno'
+      - name: Verify Deno chat consumer
+        if: matrix.runtime == 'deno'
+        run: pnpm --filter @chartcoach/release verify:chat "$PWD"/dist/release/npm/chartcoach-[0-9]*.tgz "$PWD"/dist/release/npm/chartcoach-catalog-*.tgz --runner deno
+
+  publish-preview:
+    name: Publish rolling preview
+    needs: [resolve-preview, verify-preview]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: publish-preview-release
+      cancel-in-progress: false
+      queue: max
+    permissions:
+      contents: write
+      pull-requests: write
+      attestations: write
+      id-token: write
+    steps:
+      - name: Checkout publication tooling
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Download verified preview inputs
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: preview-packages
+          path: dist/release
+      - name: Attest verified preview artifacts
+        if: github.event.repository.private == false || vars.PREVIEW_ATTESTATIONS == 'true'
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          predicate-type: https://slsa.dev/provenance/v1
+          predicate-path: dist/release/chartcoach-${{ needs.resolve-preview.outputs.version }}-provenance.json
+          subject-path: |
+            dist/release/*SHA256SUMS
+            dist/release/*-provenance.json
+            dist/release/python/*.whl
+            dist/release/python/*.tar.gz
+            dist/release/npm/*.tgz
+      - name: Publish immutable assets, announce, and retain newest builds
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          COMMIT: ${{ needs.resolve-preview.outputs.commit }}
+          VERSION: ${{ needs.resolve-preview.outputs.version }}
+          PRIVATE_REPOSITORY: ${{ github.event.repository.private }}
+          PREVIEW_ATTESTED: ${{ github.event.repository.private == false || vars.PREVIEW_ATTESTATIONS == 'true' }}
+        run: python3 scripts/preview_release.py publish --commit "$COMMIT" --version "$VERSION"

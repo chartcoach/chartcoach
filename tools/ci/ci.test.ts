@@ -262,3 +262,19 @@ void test("the gate rejects incomplete check selection", () => {
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /Missing or invalid check selection/);
 });
+
+void test("every publication script selects its Python tests and npm consumers", () => {
+  for (const path of [
+    "scripts/release.sh",
+    "scripts/release_registry.py",
+    "scripts/preview_release.py",
+  ]) {
+    const result = selection([path]);
+    assert.equal(result.python, true, path);
+    assert.equal(result.npm, true, path);
+    assert.equal(result.quality, true, path);
+    assert.ok(result.packages.includes("@chartcoach/catalog"), path);
+    assert.ok(result.packages.includes("chartcoach"), path);
+    assert.ok(result.packages.includes("@chartcoach/release"), path);
+  }
+});

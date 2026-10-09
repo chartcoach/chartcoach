@@ -2,6 +2,9 @@ ci: &ci
   - .github/**
   - tools/ci/**
   - Makefile
+  - scripts/release.sh
+  - scripts/release_registry.py
+  - scripts/preview_release.py
 
 javascript: &javascript
   - *ci
