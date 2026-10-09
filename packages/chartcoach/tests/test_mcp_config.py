@@ -27,7 +27,7 @@ def test_environment_overrides_and_configuration_redaction(tmp_path: Path) -> No
             "CHARTCOACH_MCP_STATELESS": "false",
             "CHARTCOACH_MCP_SQL_TIMEOUT": "2.5",
             "CHARTCOACH_EMBEDDING_VARS": str(variables),
-            "OPENROUTER_API_KEY": "provider-secret",
+            "CHARTCOACH_EMBEDDING_API_KEY": "provider-secret",
         },
         overrides={"port": 8001},
     )
@@ -39,7 +39,10 @@ def test_environment_overrides_and_configuration_redaction(tmp_path: Path) -> No
     assert config.sql_timeout == 2.5
     assert config.embedding_variables == {"provider-key": "file-secret"}
     assert config.embedding_environment is not None
-    assert config.embedding_environment["OPENROUTER_API_KEY"] == "provider-secret"
+    assert (
+        config.embedding_environment["CHARTCOACH_EMBEDDING_API_KEY"]
+        == "provider-secret"
+    )
     assert config.token is not None
     for rendered in (repr(config), config.model_dump_json()):
         assert "secret" not in rendered
@@ -139,13 +142,17 @@ def test_dotenv_is_loaded_before_options_with_process_and_flag_precedence(
 
     captured: list[MCPConfig] = []
     monkeypatch.setattr(mcp, "run", captured.append)
-    for name in ("CHARTCOACH_MCP_HOST", "CHARTCOACH_SOURCE", "OPENROUTER_API_KEY"):
+    for name in (
+        "CHARTCOACH_MCP_HOST",
+        "CHARTCOACH_SOURCE",
+        "CHARTCOACH_EMBEDDING_API_KEY",
+    ):
         monkeypatch.delenv(name, raising=False)
     monkeypatch.setenv("CHARTCOACH_MCP_PORT", "8001")
     monkeypatch.chdir(tmp_path)
     (tmp_path / ".env").write_text(
         "CHARTCOACH_MCP_HOST=0.0.0.0\nCHARTCOACH_MCP_PORT=9000\n"
-        "CHARTCOACH_SOURCE=./catalog\nOPENROUTER_API_KEY='dotenv-secret'\n"
+        "CHARTCOACH_SOURCE=./catalog\nCHARTCOACH_EMBEDDING_API_KEY='dotenv-secret'\n"
     )
     result = CliRunner().invoke(main, ["mcp", "--port", "8002"])
     assert result.exit_code == 0, result.output
@@ -154,7 +161,7 @@ def test_dotenv_is_loaded_before_options_with_process_and_flag_precedence(
     assert captured[-1].source == "./catalog"
     environment = captured[-1].embedding_environment
     assert environment is not None
-    assert environment["OPENROUTER_API_KEY"] == "dotenv-secret"
+    assert environment["CHARTCOACH_EMBEDDING_API_KEY"] == "dotenv-secret"
     assert os.environ["CHARTCOACH_MCP_PORT"] == "8001"
     assert "dotenv-secret" not in result.output
 
@@ -199,7 +206,11 @@ def test_direct_config_resolves_variable_file_once(tmp_path: Path) -> None:
 
 def test_explicit_embedding_environment_overrides_process_snapshot() -> None:
     config = load_config(
-        environment={"OPENROUTER_API_KEY": "outer-secret"},
-        overrides={"embedding_environment": {"OPENROUTER_API_KEY": "explicit-secret"}},
+        environment={"CHARTCOACH_EMBEDDING_API_KEY": "outer-secret"},
+        overrides={
+            "embedding_environment": {"CHARTCOACH_EMBEDDING_API_KEY": "explicit-secret"}
+        },
     )
-    assert config.embedding_environment == {"OPENROUTER_API_KEY": "explicit-secret"}
+    assert config.embedding_environment == {
+        "CHARTCOACH_EMBEDDING_API_KEY": "explicit-secret"
+    }

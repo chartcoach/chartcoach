@@ -10,6 +10,7 @@ from mcp.types import CallToolResult, TextContent, ToolAnnotations
 from pydantic import BaseModel
 
 from chartcoach._catalog import Catalog, SourceDetail
+from chartcoach._catalog.embedding import embedding_environment as resolve_environment
 from chartcoach._catalog.errors import CatalogError, CatalogResponseTooLargeError
 from chartcoach._catalog.identity import catalog_identity
 from chartcoach._catalog.search import SearchEmbeddings, catalog_search
@@ -35,6 +36,7 @@ from .models import (
     SqlCallResult,
     SqlToolResult,
 )
+from .settings import DEFAULT_SQL_TIMEOUT
 
 MAX_STRUCTURED_RESPONSE_BYTES = 65_536
 
@@ -67,7 +69,7 @@ def register_tools(
     profile: str | None = None,
     embedding_variables: Mapping[str, str] | None = None,
     embedding_environment: Mapping[str, str] | None = None,
-    sql_timeout: float = 5.0,
+    sql_timeout: float = DEFAULT_SQL_TIMEOUT,
 ) -> None:
     """Attach catalog tools to a caller-configured MCP SDK server."""
     settings = MCPConfig(
@@ -77,16 +79,12 @@ def register_tools(
     )
     variables: dict[str, str] = {}
     if profile:
-        info = catalog.describe(profile=profile)["profile"]
-        assert info is not None
-        environment = (
+        metadata = catalog._profile_metadata(profile)
+        environment = resolve_environment(
             os.environ if embedding_environment is None else embedding_environment
         )
-        for binding in info["embedding_functions"]:
-            model = binding["model"]
-            if not isinstance(model, Mapping):
-                continue
-            for value in model.values():
+        for binding in metadata.embedding_functions:
+            for value in binding.model.values():
                 if isinstance(value, str) and value.startswith("$var:"):
                     name = value.removeprefix("$var:")
                     if environment.get(name):

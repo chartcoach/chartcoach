@@ -62,7 +62,7 @@ def test_native_compatible_embedding_profile_uses_environment_credentials(
     endpoint = ThreadingHTTPServer(("127.0.0.1", 0), Endpoint)
     thread = Thread(target=endpoint.serve_forever, daemon=True)
     thread.start()
-    variable = "CHARTCOACH_TEST_EMBEDDING_KEY"
+    variable = "CHARTCOACH_EMBEDDING_API_KEY"
     registry = get_registry()
     registry.set_var(variable, "producer-secret")
     try:
@@ -96,7 +96,11 @@ def test_native_compatible_embedding_profile_uses_environment_credentials(
             server = create_server(
                 catalog,
                 profile="compatible",
-                embedding_environment={variable: "deployment-secret"},
+                embedding_environment={
+                    "CHARTCOACH_EMBEDDING_API_KEY_ENV": "VECTOR_TOKEN",
+                    "VECTOR_TOKEN": "deployment-secret",
+                    variable: "wrong-default-secret",
+                },
             )
             described = await server.call_tool("describe", {"profile": "compatible"})
             assert isinstance(described, CallToolResult)
@@ -126,6 +130,23 @@ def test_native_compatible_embedding_profile_uses_environment_credentials(
                 isinstance(result, CallToolResult) and not result.is_error
                 for result in parallel
             )
+            missing = create_server(
+                catalog,
+                profile="compatible",
+                embedding_environment={
+                    "CHARTCOACH_EMBEDDING_API_KEY_ENV": "MISSING_VECTOR_TOKEN",
+                    variable: "wrong-default-secret",
+                },
+            )
+            failed = await missing.call_tool(
+                "search", {"text": "direct labels", "mode": "vector"}
+            )
+            assert isinstance(failed, CallToolResult)
+            assert failed.is_error is True
+            assert (
+                failed.structured_content["error"]["code"] == "unavailable_capability"
+            )
+            assert "wrong-default-secret" not in failed.model_dump_json()
 
         asyncio.run(exercise())
         assert len(requests) == 4

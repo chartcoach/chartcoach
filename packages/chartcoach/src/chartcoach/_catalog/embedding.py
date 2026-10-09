@@ -9,15 +9,21 @@ from .errors import CatalogCapabilityError, CatalogValidationError
 _MAX_VARIABLE_FILE_BYTES = 65_536
 
 
-def apply_embedding_variables(variables: Path | str | Mapping[str, str]) -> None:
+def embedding_environment(environment: Mapping[str, str]) -> dict[str, str]:
+    """Snapshot provider variables, respecting the dedicated key selector."""
+    values = dict(environment)
+    name = environment.get("CHARTCOACH_EMBEDDING_API_KEY_ENV")
+    if name:
+        values.pop("CHARTCOACH_EMBEDDING_API_KEY", None)
+        if environment.get(name):
+            values["CHARTCOACH_EMBEDDING_API_KEY"] = environment[name]
+    return values
+
+
+def apply_embedding_variables(path: Path | str) -> None:
     """Set caller-owned LanceDB registry variables, without selecting a model."""
 
-    values = (
-        read_embedding_variables(variables)
-        if isinstance(variables, Path | str)
-        else dict(variables)
-    )
-    _validate_variables(values)
+    values = read_embedding_variables(path)
     try:
         from lancedb.embeddings import get_registry
     except ModuleNotFoundError as exc:

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Mapping
-from pathlib import Path
 
 try:
     from mcp.server import MCPServer
@@ -18,6 +17,7 @@ except ModuleNotFoundError as exc:  # pragma: no cover - depends on install extr
 from ._catalog import Catalog, open_catalog
 from ._mcp.config import MCPConfig, load_config
 from ._mcp.http import create_app
+from ._mcp.settings import DEFAULT_LOG_LEVEL, DEFAULT_SQL_TIMEOUT
 from ._mcp.tools import register_tools
 
 
@@ -27,8 +27,8 @@ def create_server(
     profile: str | None = None,
     embedding_variables: Mapping[str, str] | None = None,
     embedding_environment: Mapping[str, str] | None = None,
-    sql_timeout: float = 5.0,
-    log_level: str = "INFO",
+    sql_timeout: float = DEFAULT_SQL_TIMEOUT,
+    log_level: str = DEFAULT_LOG_LEVEL,
 ) -> MCPServer:
     """Bind a caller-owned catalog and native LanceDB profile to a new server.
 
@@ -93,38 +93,11 @@ def run(config: MCPConfig) -> None:
         )
 
 
-def main(
-    *,
-    location: str | Path | None = None,
-    profile: str | None = None,
-    embedding_vars: Path | None = None,
-    transport: str | None = None,
-    host: str | None = None,
-    port: int | None = None,
-    log_level: str | None = None,
-) -> None:
-    """Compatibility launcher; compose with create_server/create_app or run(config)."""
-    run(
-        load_config(
-            overrides={
-                "source": location,
-                "profile": profile,
-                "embedding_vars": embedding_vars,
-                "transport": transport,
-                "host": host,
-                "port": port,
-                "log_level": log_level,
-            }
-        )
-    )
-
-
 __all__ = [
     "MCPConfig",
     "create_app",
     "create_server",
     "load_config",
-    "main",
     "register_tools",
     "run",
 ]

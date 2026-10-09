@@ -4,7 +4,6 @@ import os
 from collections.abc import Mapping
 from ipaddress import IPv6Address
 from pathlib import Path
-from typing import Literal
 from urllib.parse import urlsplit
 
 from pydantic import (
@@ -20,8 +19,7 @@ from pydantic import (
 from chartcoach._catalog.embedding import read_embedding_variables
 from chartcoach._catalog.errors import CatalogError
 
-Transport = Literal["stdio", "sse", "streamable-http"]
-Level = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+from . import settings
 
 LOCAL_HOSTS = (
     "127.0.0.1",
@@ -40,25 +38,6 @@ LOCAL_ORIGINS = (
     "http://[::1]:*",
 )
 
-# CLI, environment loading, and Python composition use this one schema.
-ENVIRONMENT_FIELDS = {
-    "source": "CHARTCOACH_SOURCE",
-    "profile": "CHARTCOACH_INDEX_PROFILE",
-    "embedding_vars": "CHARTCOACH_EMBEDDING_VARS",
-    "transport": "CHARTCOACH_MCP_TRANSPORT",
-    "host": "CHARTCOACH_MCP_HOST",
-    "port": "CHARTCOACH_MCP_PORT",
-    "log_level": "CHARTCOACH_MCP_LOG_LEVEL",
-    "public_url": "CHARTCOACH_MCP_PUBLIC_URL",
-    "path": "CHARTCOACH_MCP_PATH",
-    "allowed_hosts": "CHARTCOACH_MCP_ALLOWED_HOSTS",
-    "allowed_origins": "CHARTCOACH_MCP_ALLOWED_ORIGINS",
-    "token": "CHARTCOACH_MCP_TOKEN",
-    "stateless": "CHARTCOACH_MCP_STATELESS",
-    "json_response": "CHARTCOACH_MCP_JSON_RESPONSE",
-    "sql_timeout": "CHARTCOACH_MCP_SQL_TIMEOUT",
-}
-
 
 class MCPConfig(BaseModel):
     """Validated launch settings. Credentials are excluded from dumps and repr."""
@@ -68,18 +47,20 @@ class MCPConfig(BaseModel):
     source: str | Path | None = None
     profile: str | None = None
     embedding_vars: Path | None = None
-    transport: Transport = "stdio"
-    host: str = "127.0.0.1"
-    port: int = Field(default=8000, ge=1, le=65535)
-    log_level: Level = "INFO"
+    transport: settings.Transport = settings.DEFAULT_TRANSPORT
+    host: str = settings.DEFAULT_HOST
+    port: int = Field(default=settings.DEFAULT_PORT, ge=1, le=65535)
+    log_level: settings.Level = settings.DEFAULT_LOG_LEVEL
     public_url: str | None = None
-    path: str = "/mcp"
+    path: str = settings.DEFAULT_PATH
     allowed_hosts: tuple[str, ...] = LOCAL_HOSTS
     allowed_origins: tuple[str, ...] = LOCAL_ORIGINS
     token: SecretStr | None = Field(default=None, repr=False, exclude=True)
-    stateless: bool = True
-    json_response: bool = True
-    sql_timeout: float = Field(default=5.0, gt=0, allow_inf_nan=False)
+    stateless: bool = settings.DEFAULT_STATELESS
+    json_response: bool = settings.DEFAULT_JSON_RESPONSE
+    sql_timeout: float = Field(
+        default=settings.DEFAULT_SQL_TIMEOUT, gt=0, allow_inf_nan=False
+    )
     embedding_variables: dict[str, str] = Field(
         default_factory=dict, repr=False, exclude=True, validate_default=True
     )
@@ -197,7 +178,7 @@ def load_config(
     """
     env = dict(os.environ if environment is None else environment)
     values: dict[str, object] = {}
-    for field, name in ENVIRONMENT_FIELDS.items():
+    for field, name in settings.ENVIRONMENT_FIELDS.items():
         value = env.get(name)
         if value:
             values[field] = (
@@ -219,7 +200,9 @@ def load_config(
                 raise cause from None
         names = sorted(
             {
-                ENVIRONMENT_FIELDS.get(str(error["loc"][0]), str(error["loc"][0]))
+                settings.ENVIRONMENT_FIELDS.get(
+                    str(error["loc"][0]), str(error["loc"][0])
+                )
                 if error["loc"]
                 else "MCPConfig"
                 for error in errors

@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import get_args
 
 import click
 
 from chartcoach._constants import CATALOG_ARTIFACT_BASE_URL, CATALOG_SELECTION_PATH
+from chartcoach._mcp import settings
 
 from .common import storage_errors
 from .environment import load_env_file
@@ -27,84 +29,72 @@ from .environment import load_env_file
 @click.option(
     "--source",
     metavar="PATH_OR_URI",
-    help="Catalog location (CHARTCOACH_SOURCE). Defaults to the official catalog.",
+    help=f"Catalog location ({settings.ENVIRONMENT_FIELDS['source']}). Defaults to the official catalog.",
 )
 @click.option(
-    "--profile", help="Release-owned index profile (CHARTCOACH_INDEX_PROFILE)."
+    "--profile",
+    help=f"Release-owned index profile ({settings.ENVIRONMENT_FIELDS['profile']}).",
 )
 @click.option(
     "--embedding-vars",
     type=click.Path(path_type=Path, dir_okay=False),
-    help="JSON registry variable file (CHARTCOACH_EMBEDDING_VARS). Values override the environment.",
+    help=f"JSON registry variable file ({settings.ENVIRONMENT_FIELDS['embedding_vars']}). Values override the environment.",
 )
 @click.option(
     "--transport",
-    type=click.Choice(["stdio", "sse", "streamable-http"], case_sensitive=False),
-    help="Transport (CHARTCOACH_MCP_TRANSPORT). Default: stdio.",
+    type=click.Choice(get_args(settings.Transport), case_sensitive=False),
+    help=f"Transport ({settings.ENVIRONMENT_FIELDS['transport']}). Default: {settings.DEFAULT_TRANSPORT}.",
 )
-@click.option("--host", help="HTTP listener (CHARTCOACH_MCP_HOST). Default: 127.0.0.1.")
+@click.option(
+    "--host",
+    help=f"HTTP listener ({settings.ENVIRONMENT_FIELDS['host']}). Default: {settings.DEFAULT_HOST}.",
+)
 @click.option(
     "--port",
     type=click.IntRange(1, 65535),
-    help="HTTP port (CHARTCOACH_MCP_PORT). Default: 8000.",
+    help=f"HTTP port ({settings.ENVIRONMENT_FIELDS['port']}). Default: {settings.DEFAULT_PORT}.",
 )
 @click.option(
     "--log-level",
-    type=click.Choice(
-        ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], case_sensitive=False
-    ),
-    help="Log level (CHARTCOACH_MCP_LOG_LEVEL). Default: INFO.",
+    type=click.Choice(get_args(settings.Level), case_sensitive=False),
+    help=f"Log level ({settings.ENVIRONMENT_FIELDS['log_level']}). Default: {settings.DEFAULT_LOG_LEVEL}.",
 )
 @click.option(
     "--public-url",
-    help="Public HTTP origin (CHARTCOACH_MCP_PUBLIC_URL); adds its host and origin to the allowlists.",
+    help=f"Public HTTP origin ({settings.ENVIRONMENT_FIELDS['public_url']}); adds its host and origin to the allowlists.",
 )
 @click.option(
-    "--path", help="Streamable HTTP endpoint (CHARTCOACH_MCP_PATH). Default: /mcp."
+    "--path",
+    help=f"Streamable HTTP endpoint ({settings.ENVIRONMENT_FIELDS['path']}). Default: {settings.DEFAULT_PATH}.",
 )
 @click.option(
     "--allowed-host",
     "allowed_hosts",
     multiple=True,
-    help="Additional allowed Host value; overrides CHARTCOACH_MCP_ALLOWED_HOSTS when supplied.",
+    help=f"Additional allowed Host value; overrides {settings.ENVIRONMENT_FIELDS['allowed_hosts']} when supplied.",
 )
 @click.option(
     "--allowed-origin",
     "allowed_origins",
     multiple=True,
-    help="Additional browser origin; overrides CHARTCOACH_MCP_ALLOWED_ORIGINS when supplied.",
+    help=f"Additional browser origin; overrides {settings.ENVIRONMENT_FIELDS['allowed_origins']} when supplied.",
 )
 @click.option(
     "--stateless/--stateful",
     default=None,
-    help="Legacy HTTP session policy (CHARTCOACH_MCP_STATELESS). Default: stateless.",
+    help=f"HTTP session policy ({settings.ENVIRONMENT_FIELDS['stateless']}). Default: {'stateless' if settings.DEFAULT_STATELESS else 'stateful'}.",
 )
 @click.option(
     "--json-response/--stream-response",
     default=None,
-    help="HTTP response format (CHARTCOACH_MCP_JSON_RESPONSE). Default: JSON.",
+    help=f"HTTP response format ({settings.ENVIRONMENT_FIELDS['json_response']}). Default: {'JSON' if settings.DEFAULT_JSON_RESPONSE else 'stream'}.",
 )
 @click.option(
     "--sql-timeout",
     type=click.FloatRange(min=0, min_open=True),
-    help="SQL execution deadline in seconds (CHARTCOACH_MCP_SQL_TIMEOUT). Default: 5.",
+    help=f"SQL execution deadline in seconds ({settings.ENVIRONMENT_FIELDS['sql_timeout']}). Default: {settings.DEFAULT_SQL_TIMEOUT:g}.",
 )
-def mcp_command(
-    source: str | None,
-    profile: str | None,
-    embedding_vars: Path | None,
-    transport: str | None,
-    host: str | None,
-    port: int | None,
-    log_level: str | None,
-    public_url: str | None,
-    path: str | None,
-    allowed_hosts: tuple[str, ...],
-    allowed_origins: tuple[str, ...],
-    stateless: bool | None,
-    json_response: bool | None,
-    sql_timeout: float | None,
-) -> None:
+def mcp_command(**options: object) -> None:
     from chartcoach._catalog.errors import CatalogError
 
     try:
@@ -114,24 +104,9 @@ def mcp_command(
             "chartcoach MCP server requires optional dependencies. Install chartcoach[mcp]."
         ) from exc
     try:
-        config = load_config(
-            overrides={
-                "source": source,
-                "profile": profile,
-                "embedding_vars": embedding_vars,
-                "transport": transport,
-                "host": host,
-                "port": port,
-                "log_level": log_level,
-                "public_url": public_url,
-                "path": path,
-                "allowed_hosts": allowed_hosts or None,
-                "allowed_origins": allowed_origins or None,
-                "stateless": stateless,
-                "json_response": json_response,
-                "sql_timeout": sql_timeout,
-            }
-        )
+        for name in ("allowed_hosts", "allowed_origins"):
+            options[name] = options[name] or None
+        config = load_config(overrides=options)
         target = (
             str(config.source)
             if config.source is not None
