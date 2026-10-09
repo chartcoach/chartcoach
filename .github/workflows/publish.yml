@@ -434,7 +434,7 @@ jobs:
         if: github.event.repository.private == false || vars.PREVIEW_ATTESTATIONS == 'true'
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
-          predicate-type: https://slsa.dev/provenance/v1
+          predicate-type: https://github.com/chartcoach/chartcoach/blob/main/development_docs/releasing.md#preview-provenance-v1
           predicate-path: dist/release/chartcoach-${{ needs.resolve-preview.outputs.version }}-provenance.json
           subject-path: |
             dist/release/*SHA256SUMS
@@ -442,6 +442,44 @@ jobs:
             dist/release/python/*.whl
             dist/release/python/*.tar.gz
             dist/release/npm/*.tgz
+      - name: Verify stored preview attestation
+        if: github.event.repository.private == false || vars.PREVIEW_ATTESTATIONS == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          COMMIT: ${{ needs.resolve-preview.outputs.commit }}
+          VERSION: ${{ needs.resolve-preview.outputs.version }}
+        run: |
+          cd dist/release/python
+          wheel="chartcoach-${VERSION}-py3-none-any.whl"
+          digest="$(sha256sum "$wheel")"
+          bundle="sha256:${digest%% *}.jsonl"
+          for attempt in 1 2 3 4 5; do
+            rm -f "$bundle"
+            if gh attestation download "$wheel" -R "$GITHUB_REPOSITORY" && [ -s "$bundle" ]; then
+              break
+            fi
+            if [ "$attempt" = 5 ]; then
+              exit 1
+            fi
+            printf 'Attestation bundle unavailable on attempt %s; retrying in 2s\n' "$attempt" >&2
+            sleep 2
+          done
+          gh attestation verify "$wheel" -R "$GITHUB_REPOSITORY" \
+            --bundle "$bundle" \
+            --predicate-type "https://github.com/chartcoach/chartcoach/blob/main/development_docs/releasing.md#preview-provenance-v1" \
+            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/publish.yml" \
+            --format=json > "$RUNNER_TEMP/preview-provenance-verified.json"
+          python3 - "$COMMIT" "$RUNNER_TEMP/preview-provenance-verified.json" <<'PY'
+          import json
+          import sys
+          with open(sys.argv[2]) as handle:
+              results = json.load(handle)
+          if not any(
+              result["verificationResult"]["statement"]["predicate"]["buildDefinition"]["externalParameters"]["checkoutCommit"] == sys.argv[1]
+              for result in results
+          ):
+              sys.exit("Verified attestation does not identify the packaged source commit")
+          PY
       - name: Publish immutable assets, announce, and retain newest builds
         env:
           GH_TOKEN: ${{ github.token }}

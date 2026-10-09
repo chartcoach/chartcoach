@@ -12,6 +12,8 @@ from typing import Any
 
 from release_registry import release_files
 
+_TAG = "preview-builds"
+_PREDICATE_TYPE = "https://github.com/chartcoach/chartcoach/blob/main/development_docs/releasing.md#preview-provenance-v1"
 _VERSION = re.compile(r"(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)\.dev([1-9]\d*)")
 
 
@@ -114,7 +116,7 @@ def provenance(commit: str, output: Path) -> None:
     repository = f"{env['GITHUB_SERVER_URL']}/{env['GITHUB_REPOSITORY']}"
     predicate = {
         "buildDefinition": {
-            "buildType": "https://github.com/chartcoach/chartcoach/blob/main/development_docs/releasing.md#preview-provenance-v1",
+            "buildType": _PREDICATE_TYPE,
             "externalParameters": {
                 "checkoutCommit": commit,
                 "workflow": {
@@ -143,8 +145,29 @@ def provenance(commit: str, output: Path) -> None:
     output.write_text(json.dumps(predicate, indent=2) + "\n")
 
 
+def require_channel() -> None:
+    releases = json.loads(
+        gh("api", "--paginate", "--slurp", f"repos/{os.environ['GH_REPO']}/releases")
+    )
+    release = next(
+        (item for page in releases for item in page if item["tag_name"] == _TAG),
+        None,
+    )
+    if (
+        release is None
+        or release.get("immutable") is not False
+        or release.get("draft") is not False
+    ):
+        raise ValueError(
+            f"Rolling channel {_TAG!r} must be a published, mutable release. "
+            "An administrator must provision it as described in "
+            "development_docs/releasing.md#provision-the-preview-channel; "
+            "the publisher cannot disable repository release protection."
+        )
+
+
 def assets() -> list[dict[str, Any]]:
-    return json.loads(gh("release", "view", "preview", "--json", "assets"))["assets"]
+    return json.loads(gh("release", "view", _TAG, "--json", "assets"))["assets"]
 
 
 def available(items: list[dict[str, Any]]) -> set[str]:
@@ -178,15 +201,8 @@ def resolve(commit: str) -> None:
     if not runs or runs[0] != {"status": "completed", "conclusion": "success"}:
         raise ValueError("The latest main push CI must succeed for this exact commit")
     version = preview_version(commit)
-    # A 404 is the only absent-release state; auth and API failures must surface.
-    releases = json.loads(
-        gh("api", "--paginate", "--slurp", f"repos/{os.environ['GH_REPO']}/releases")
-    )
-    release = next(
-        (item for page in releases for item in page if item["tag_name"] == "preview"),
-        None,
-    )
-    complete = release is not None and marker_name(version) in available(assets())
+    require_channel()
+    complete = marker_name(version) in available(assets())
     with Path(os.environ["GITHUB_OUTPUT"]).open("a") as output:
         output.write(
             f"commit={commit}\nversion={version}\npublish={str(not complete).lower()}\n"
@@ -211,31 +227,14 @@ def discovered_versions(items: list[dict[str, Any]]) -> list[str]:
 
 def publish(directory: Path, commit: str, version: str) -> None:
     repository = os.environ["GH_REPO"]
-    downloads = f"https://github.com/{repository}/releases/download/preview"
+    downloads = f"https://github.com/{repository}/releases/download/{_TAG}"
     manifest = checksum(directory, version)
     paths = [
         directory / ("python" if name.endswith((".whl", ".tar.gz")) else "npm") / name
         for name in package_names(version)
     ]
     paths.append(directory / provenance_name(version))
-    # Listing releases distinguishes an absent release from a failed API request.
-    releases = json.loads(
-        gh("api", "--paginate", "--slurp", f"repos/{repository}/releases")
-    )
-    if not any(item["tag_name"] == "preview" for page in releases for item in page):
-        gh(
-            "release",
-            "create",
-            "preview",
-            "--prerelease",
-            "--latest=false",
-            "--target",
-            commit,
-            "--title",
-            "Preview builds",
-            "--notes",
-            "Packages built from main.",
-        )
+    require_channel()
     items = assets()
     uploaded = available(items)
     with tempfile.TemporaryDirectory() as temporary:
@@ -247,12 +246,12 @@ def publish(directory: Path, commit: str, version: str) -> None:
                 item["name"] == path.name and item["state"] == "starter"
                 for item in items
             ):
-                gh("release", "delete-asset", "preview", path.name, "--yes")
+                gh("release", "delete-asset", _TAG, path.name, "--yes")
             if path.name in uploaded:
                 gh(
                     "release",
                     "download",
-                    "preview",
+                    _TAG,
                     "--pattern",
                     path.name,
                     "--dir",
@@ -261,7 +260,7 @@ def publish(directory: Path, commit: str, version: str) -> None:
                 if (root / path.name).read_bytes() != path.read_bytes():
                     raise ValueError(f"Published preview bytes differ: {path.name}")
             else:
-                gh("release", "upload", "preview", str(path))
+                gh("release", "upload", _TAG, str(path))
 
         for path in paths:
             upload(path)
@@ -284,7 +283,7 @@ def publish(directory: Path, commit: str, version: str) -> None:
         if os.environ.get("PRIVATE_REPOSITORY") == "true":
             install = (
                 f"```console\nmkdir chartcoach-preview-{version}\ncd chartcoach-preview-{version}\n"
-                f"gh release download preview -R {repository} --pattern '{wheel}' --pattern '{catalog}' --pattern '{chat}'\n"
+                f"gh release download {_TAG} -R {repository} --pattern '{wheel}' --pattern '{catalog}' --pattern '{chat}'\n"
                 f"uv tool install --force ./{wheel}\nnpm init --yes\nnpm install --ignore-scripts ./{catalog}\n"
                 "npm pkg set 'overrides.@chartcoach/catalog=$@chartcoach/catalog'\n"
                 f"npm install --ignore-scripts ./{chat}\nnpx --no-install chartcoach\n```"
@@ -295,7 +294,15 @@ def publish(directory: Path, commit: str, version: str) -> None:
             "and resolved dependencies record the workflow revision."
         )
         if os.environ.get("PREVIEW_ATTESTED") == "true":
-            source_record += f" Verify signed provenance with `gh attestation verify {wheel} -R {repository}`."
+            source_record += (
+                " Download the attestation, then verify its bundle with the expected predicate type and signing workflow. "
+                "Replace `BUNDLE_FILE` with the `.jsonl` filename printed by the download command:\n\n"
+                f"```console\ngh attestation download {wheel} -R {repository}\n"
+                f"gh attestation verify {wheel} -R {repository} \\\n"
+                "  --bundle BUNDLE_FILE \\\n"
+                f'  --predicate-type "{_PREDICATE_TYPE}" \\\n'
+                f'  --signer-workflow "{repository}/.github/workflows/publish.yml"\n```'
+            )
         else:
             source_record += " This provenance record is unsigned; GitHub artifact attestations require a public repository or Enterprise Cloud."
         if builds[0] == version:
@@ -303,7 +310,7 @@ def publish(directory: Path, commit: str, version: str) -> None:
             notes.write_text(
                 f"Packages built from `main` after exact-commit CI passes. Latest: `{version}` from [{commit[:7]}](https://github.com/{repository}/commit/{commit}).\n\n{install}\n\nKeeps the newest 30 completed builds. Use PyPI and npm for stable releases. The preview tag stays on its original commit; versioned assets identify each build.\n\n{source_record}\n"
             )
-            gh("release", "edit", "preview", "--notes-file", str(notes))
+            gh("release", "edit", _TAG, "--notes-file", str(notes))
         if version not in stale:
             pulls = json.loads(gh("api", f"repos/{repository}/commits/{commit}/pulls"))
             pull = next(
@@ -329,14 +336,14 @@ def publish(directory: Path, commit: str, version: str) -> None:
                 ):
                     body = root / "comment.md"
                     body.write_text(
-                        f"{announcement_marker}\nchartcoach `{version}` from this PR is available as a [preview build](https://github.com/{repository}/releases/tag/preview):\n\n{install}\n"
+                        f"{announcement_marker}\nchartcoach `{version}` from this PR is available as a [preview build](https://github.com/{repository}/releases/tag/{_TAG}):\n\n{install}\n"
                     )
                     gh("pr", "comment", str(pull), "--body-file", str(body))
         # Announce before pruning; commit the checksum marker only on completion.
         for old in stale:
             for name in [*artifact_names(old), marker_name(old)]:
                 if any(item["name"] == name for item in items):
-                    gh("release", "delete-asset", "preview", name, "--yes")
+                    gh("release", "delete-asset", _TAG, name, "--yes")
         if version not in stale:
             upload(manifest)
 
