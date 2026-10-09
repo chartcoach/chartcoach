@@ -30,8 +30,6 @@ def preview(monkeypatch: pytest.MonkeyPatch) -> ModuleType:
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     monkeypatch.setenv("GH_REPO", "chartcoach/chartcoach")
-    monkeypatch.setenv("PRIVATE_REPOSITORY", "false")
-    monkeypatch.setenv("PREVIEW_ATTESTED", "false")
     return module
 
 
@@ -462,9 +460,7 @@ def test_workflow_gates_source_and_attests_the_exact_artifact_set(
         for step in jobs["publish-preview"]["steps"]
         if step["name"] == "Attest verified preview artifacts"
     )
-    assert attest["if"] == (
-        "github.event.repository.private == false || vars.PREVIEW_ATTESTATIONS == 'true'"
-    )
+    assert attest.get("if", "success()") == "success()"
     assert "environment" not in jobs["publish-preview"]
     assert attest["with"]["predicate-type"] == _PREDICATE_TYPE
     assert attest["with"]["predicate-path"].endswith("-provenance.json")
@@ -477,7 +473,7 @@ def test_workflow_gates_source_and_attests_the_exact_artifact_set(
     read_back = next(
         s for s in steps if s["name"] == "Verify stored preview attestation"
     )
-    assert read_back["if"] == attest["if"]
+    assert read_back.get("if", "success()") == "success()"
     assert steps.index(attest) < steps.index(read_back) < len(steps) - 1
     files = [
         f"dist/release/python/chartcoach-{_VERSION}-py3-none-any.whl",
@@ -540,30 +536,25 @@ def test_consecutive_builds_keep_release_metadata_static_and_assets_writable(
     assert preview.marker_name("0.3.4.dev8") in github.files
 
 
-def test_private_publication_uses_authenticated_downloads_and_unsigned_provenance(
+def test_publication_announces_direct_package_installation_urls(
     preview: ModuleType,
     distribution: Path,
     github: GitHub,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("PRIVATE_REPOSITORY", "true")
-    monkeypatch.setenv("PREVIEW_ATTESTED", "false")
     preview.publish(distribution, _COMMIT, _VERSION)
+    body = github.comments[0]["body"]
     assert (
-        "gh release download previews -R chartcoach/chartcoach"
-        in github.comments[0]["body"]
+        'uv pip install "chartcoach @ https://github.com/chartcoach/chartcoach/releases/download/previews/chartcoach-0.3.4.dev7-py3-none-any.whl"'
+        in body
     )
     assert (
-        "npm pkg set 'overrides.@chartcoach/catalog=$@chartcoach/catalog'"
-        in github.comments[0]["body"]
+        'pnpm add "https://github.com/chartcoach/chartcoach/releases/download/previews/chartcoach-catalog-0.3.4-dev.7.tgz"'
+        in body
     )
-    assert "npx --no-install chartcoach" in github.comments[0]["body"]
-    assert "This provenance record is unsigned" in github.comments[0]["body"]
-    assert "gh attestation verify" not in github.comments[0]["body"]
-    assert preview.provenance_name(_VERSION) in github.files
-    assert "gh release download" in github.comments[0]["body"]
-    preview.publish(distribution, _COMMIT, _VERSION)
-    assert len(github.comments) == 1
+    assert (
+        "npx --yes https://github.com/chartcoach/chartcoach/releases/download/previews/chartcoach-0.3.4-dev.7.tgz"
+        in body
+    )
 
 
 def test_provenance_bytes_are_reused_across_publication_attempts(
@@ -572,7 +563,6 @@ def test_provenance_bytes_are_reused_across_publication_attempts(
     github: GitHub,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("PREVIEW_ATTESTED", "true")
     github.fail = "comment"
     with pytest.raises(subprocess.CalledProcessError):
         preview.publish(distribution, _COMMIT, _VERSION)
@@ -581,6 +571,10 @@ def test_provenance_bytes_are_reused_across_publication_attempts(
     github.fail = None
     preview.publish(distribution, _COMMIT, _VERSION)
     assert github.files[preview.provenance_name(_VERSION)] == original
+    assert (
+        "gh release download previews -R chartcoach/chartcoach --pattern 'chartcoach-0.3.4.dev7-py3-none-any.whl'"
+        in github.comments[0]["body"]
+    )
     assert "gh attestation verify" in github.comments[0]["body"]
     assert "gh attestation download" in github.comments[0]["body"]
     assert "--bundle BUNDLE_FILE" in github.comments[0]["body"]

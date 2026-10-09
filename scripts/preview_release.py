@@ -280,31 +280,19 @@ def publish(directory: Path, commit: str, version: str) -> None:
         stale = versions[versions.index(cutoff) + 1 :] if cutoff else []
         wheel, _, catalog, chat = package_names(version)
         install = f'```console\nuv pip install "chartcoach @ {downloads}/{wheel}"\npnpm add "{downloads}/{catalog}"\nnpx --yes {downloads}/{chat}\n```'
-        if os.environ.get("PRIVATE_REPOSITORY") == "true":
-            install = (
-                f"```console\nmkdir chartcoach-preview-{version}\ncd chartcoach-preview-{version}\n"
-                f"gh release download {_TAG} -R {repository} --pattern '{wheel}' --pattern '{catalog}' --pattern '{chat}'\n"
-                f"uv tool install --force ./{wheel}\nnpm init --yes\nnpm install --ignore-scripts ./{catalog}\n"
-                "npm pkg set 'overrides.@chartcoach/catalog=$@chartcoach/catalog'\n"
-                f"npm install --ignore-scripts ./{chat}\nnpx --no-install chartcoach\n```"
-            )
         source_record = (
-            f"Source provenance is recorded in `{provenance_name(version)}`; "
+            f"Source provenance is recorded in `{provenance_name(version)}`. "
             "`buildDefinition.externalParameters.checkoutCommit` identifies the packaged source, "
             "and resolved dependencies record the workflow revision."
+            " Download the attestation, then verify its bundle with the expected predicate type and signing workflow. "
+            "Replace `BUNDLE_FILE` with the `.jsonl` filename printed by the download command:\n\n"
+            f"```console\ngh release download {_TAG} -R {repository} --pattern '{wheel}'\n"
+            f"gh attestation download {wheel} -R {repository}\n"
+            f"gh attestation verify {wheel} -R {repository} \\\n"
+            "  --bundle BUNDLE_FILE \\\n"
+            f'  --predicate-type "{_PREDICATE_TYPE}" \\\n'
+            f'  --signer-workflow "{repository}/.github/workflows/publish.yml"\n```'
         )
-        if os.environ.get("PREVIEW_ATTESTED") == "true":
-            source_record += (
-                " Download the attestation, then verify its bundle with the expected predicate type and signing workflow. "
-                "Replace `BUNDLE_FILE` with the `.jsonl` filename printed by the download command:\n\n"
-                f"```console\ngh attestation download {wheel} -R {repository}\n"
-                f"gh attestation verify {wheel} -R {repository} \\\n"
-                "  --bundle BUNDLE_FILE \\\n"
-                f'  --predicate-type "{_PREDICATE_TYPE}" \\\n'
-                f'  --signer-workflow "{repository}/.github/workflows/publish.yml"\n```'
-            )
-        else:
-            source_record += " This provenance record is unsigned; GitHub artifact attestations require a public repository or Enterprise Cloud."
         if version not in stale:
             pulls = json.loads(gh("api", f"repos/{repository}/commits/{commit}/pulls"))
             pull = next(
