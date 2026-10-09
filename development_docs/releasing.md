@@ -137,7 +137,7 @@ stop and recover the original build before attempting another upload.
 
 After the latest push-event `CI` workflow succeeds for an exact `main` commit,
 `publish.yml` builds matching Python, catalog SDK, and chat previews on the rolling
-[`preview` GitHub prerelease](https://github.com/chartcoach/chartcoach/releases/tag/preview).
+[`preview-builds` GitHub prerelease](https://github.com/chartcoach/chartcoach/releases/tag/preview-builds).
 PR runs, forks, failed runs, and cancelled runs cannot publish. CI already builds
 and checks the site and docs, so chartcoach requires only that workflow. Stable
 registry publication and container publication continue to use retained main CI
@@ -159,9 +159,9 @@ the exact matching SDK tarball URL, so installing chat alone resolves its SDK.
 For a public repository, release notes and merged-PR announcements include exact URLs for:
 
 ```bash
-uv pip install "chartcoach @ https://github.com/chartcoach/chartcoach/releases/download/preview/chartcoach-X.Y.Z.devN-py3-none-any.whl"
-pnpm add "https://github.com/chartcoach/chartcoach/releases/download/preview/chartcoach-catalog-X.Y.Z-dev.N.tgz"
-npx --yes https://github.com/chartcoach/chartcoach/releases/download/preview/chartcoach-X.Y.Z-dev.N.tgz
+uv pip install "chartcoach @ https://github.com/chartcoach/chartcoach/releases/download/preview-builds/chartcoach-X.Y.Z.devN-py3-none-any.whl"
+pnpm add "https://github.com/chartcoach/chartcoach/releases/download/preview-builds/chartcoach-catalog-X.Y.Z-dev.N.tgz"
+npx --yes https://github.com/chartcoach/chartcoach/releases/download/preview-builds/chartcoach-X.Y.Z-dev.N.tgz
 ```
 
 Replace the example versions with those in the release notes. For the Python CLI,
@@ -175,7 +175,7 @@ download and local installation commands in its release notes. For example, in
 a fresh directory with Node.js 24+, npm, and uv installed:
 
 ```bash
-gh release download preview -R chartcoach/chartcoach \
+gh release download preview-builds -R chartcoach/chartcoach \
   --pattern 'chartcoach-X.Y.Z.devN-py3-none-any.whl' \
   --pattern 'chartcoach-catalog-X.Y.Z-dev.N.tgz' \
   --pattern 'chartcoach-X.Y.Z-dev.N.tgz'
@@ -202,8 +202,36 @@ Publication jobs serialize mutations of the shared release. Out-of-order builds
 cannot replace newer release notes. The newest 30 completed publications remain;
 older complete or interrupted builds are pruned as whole sets. Older builds that
 finish outside that window are pruned without announcing unavailable URLs.
-The `preview` tag stays on the first build's commit; it is not a moving source
+The `preview-builds` tag stays on its initial commit; it is not a moving source
 pointer. Pin the versioned asset URLs for downstream CI while within retention.
+
+### Provision the preview channel
+
+The publisher requires an existing, published, mutable `preview-builds` release.
+It checks this before building and again before uploading. GitHub's immutable
+release setting remains enabled for stable releases. Rolling previews need a
+mutable release so later builds can add assets and retention can remove old ones;
+the publisher protects each retained build by comparing existing bytes.
+
+For initial setup, a repository administrator must:
+
+1. Confirm no other release will publish during this brief setup window.
+2. Temporarily disable repository release immutability in **Settings > General > Releases**.
+3. Create the `preview-builds` prerelease targeting the current `main` commit,
+   without marking it latest.
+4. Immediately restore release immutability, even if creation fails. Verify
+   `GET /repos/chartcoach/chartcoach/immutable-releases` reports `enabled: true`
+   and the new release reports `draft: false` and `immutable: false`.
+
+Previously published immutable releases retain their protection when the setting
+changes. The Actions token cannot change this administrator setting, and CI
+never attempts to disable it. See [GitHub's immutable release rules](https://docs.github.com/en/code-security/concepts/supply-chain-security/immutable-releases).
+
+The original empty `preview` release was locked by the first failed publication
+and points here in its notes. An immutable release cannot be unlocked; deleting
+it also prevents reuse of its tag name. If the rolling channel itself becomes
+immutable, provision a fresh tag and update the publisher, chat SDK dependency
+URL, release validator, tests, and installation docs together.
 
 ### Preview provenance v1
 
@@ -236,7 +264,7 @@ gh attestation verify chartcoach-X.Y.Z.devN-py3-none-any.whl -R chartcoach/chart
 | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Stable `prepare`                  | Wait for main CI for the exact tag, or correct the workflow and dispatch for the same immutable tag as described above.                                                   |
 | Stable registry or container jobs | Rerun failed jobs using the retained `release-packages` bundle; inspect conflicts before retrying.                                                                        |
-| `resolve-preview`                 | Resolve GitHub API access or missing history/tags, then rerun. The latest exact-commit main CI must succeed.                                                              |
+| `resolve-preview`                 | Resolve GitHub API access, missing history/tags, or an unprovisioned mutable channel, then rerun. The latest exact-commit main CI must succeed.                           |
 | `build-preview`                   | Fix source/build inputs in a new main commit and let CI trigger a new preview.                                                                                            |
 | `verify-preview`                  | Inspect the consumer failure; rerun transient failures or fix package behavior in a new main commit.                                                                      |
 | `publish-preview`                 | Rerun failed jobs on the same run to reuse its 30-day `preview-packages` artifact. Notes, announcement, and retention failures resume without overwriting uploaded bytes. |
