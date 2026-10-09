@@ -87,6 +87,12 @@ it("rejects misspelled config fields and invalid values without revealing them",
     expect(() =>
       loadConfig({ environment: { CHARTCOACH_PORT: "70000" }, userConfig: "/missing/config.json" }),
     ).toThrow("CHARTCOACH_PORT");
+    expect(() =>
+      loadConfig({
+        environment: { CHARTCOACH_MODEL_ORIGINS: "models.example" },
+        userConfig: "/missing/config.json",
+      }),
+    ).toThrow("Invalid configuration: modelOrigins");
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }

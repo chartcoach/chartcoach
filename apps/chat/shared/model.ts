@@ -12,6 +12,8 @@ export const providerNames: Record<Provider, string> = {
 };
 
 export const apiBaseURL = z.url({ protocol: /^https?$/ }).refine((value) => {
+  // Refinements also run after the URL check fails.
+  if (!URL.canParse(value)) return false;
   const url = new URL(value);
 
   return !url.username && !url.password && !url.search && !url.hash;
