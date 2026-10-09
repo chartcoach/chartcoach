@@ -1,0 +1,45 @@
+---
+import HomeAction from "./HomeAction.astro";
+import { ArrowRight, Mail } from "lucide-react";
+import { EXTERNAL_HREFS, SITE_PATHS } from "@/lib/routes";
+---
+
+<section
+  class="home-section home-get-started"
+  aria-labelledby="get-started-title"
+>
+  <div class="site-container flex flex-col items-center text-center">
+    <p class="home-eyebrow">Experimental</p>
+    <h2 id="get-started-title" class="home-section-title">
+      Actively developed
+    </h2>
+    <p class="home-section-copy">
+      chartcoach is a research prototype for chart agents, critique tools,
+      evaluation workflows, and visualization design systems. Browse the
+      Guideline Catalog, request missing guidance in GitHub, or contact the
+      research team about deployment and collaboration.
+    </p>
+    <div class="home-actions">
+      <HomeAction href={EXTERNAL_HREFS.docsGettingStarted} tone="primary">
+        Try chartcoach
+        <ArrowRight
+          className="h-3.5 w-3.5"
+          strokeWidth={1.5}
+          aria-hidden="true"
+        />
+      </HomeAction>
+      <HomeAction href={SITE_PATHS.guidelines}>
+        Browse the Guideline Catalog
+        <ArrowRight
+          className="h-3.5 w-3.5"
+          strokeWidth={1.5}
+          aria-hidden="true"
+        />
+      </HomeAction>
+      <HomeAction href={EXTERNAL_HREFS.contact}>
+        Get in touch
+        <Mail className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden="true" />
+      </HomeAction>
+    </div>
+  </div>
+</section>

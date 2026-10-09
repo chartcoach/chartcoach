@@ -1,0 +1,126 @@
+---
+import HomeAction from "./HomeAction.astro";
+import { ArrowRight } from "lucide-react";
+import SvgIcon from "@/components/SvgIcon.astro";
+import { EXTERNAL_HREFS } from "@/lib/routes";
+
+const institutions = [
+  {
+    icon: "eth-zurich",
+    label: "ETH Zürich",
+    href: "https://ethz.ch/en.html",
+  },
+  {
+    icon: "carnegie-mellon",
+    label: "Carnegie Mellon University",
+    href: "https://www.cmu.edu/",
+  },
+  {
+    icon: "university-vienna",
+    label: "University of Vienna",
+    href: "https://www.univie.ac.at/en/",
+  },
+  {
+    icon: "mbzuai",
+    label: "MBZUAI",
+    href: "https://mbzuai.ac.ae/",
+  },
+] as const;
+---
+
+<section id="research" aria-labelledby="research-title" class="home-section">
+  <div class="site-container">
+    <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+      <div>
+        <p class="home-eyebrow">Research</p>
+        <h2 id="research-title" class="home-section-title">
+          Backed by research
+        </h2>
+        <div class="home-section-copy grid gap-4">
+          <p class="m-0">
+            chartcoach is developed by researchers from ETH Zürich, Carnegie
+            Mellon University, the University of Vienna, and MBZUAI.
+          </p>
+          <p class="m-0">
+            The catalog draws on research and practical guidance for chart
+            design, accessibility, and data journalism. It builds on work such
+            as{" "}
+            <a
+              href="https://github.com/cmudig/draco2"
+              target="_blank"
+              rel="noreferrer"
+              class="font-medium text-fg underline decoration-border decoration-1 underline-offset-[0.18em] transition-colors hover:decoration-fg"
+            >
+              Draco
+            </a>
+            , which recommends and checks chart designs, and studies of{" "}
+            <a
+              href="https://talking-charts.vda.univie.ac.at/talkingcharts.html"
+              target="_blank"
+              rel="noreferrer"
+              class="font-medium text-fg underline decoration-border decoration-1 underline-offset-[0.18em] transition-colors hover:decoration-fg"
+            >
+              how people create and interpret charts
+            </a>
+            .
+          </p>
+          <p class="m-0">
+            Each guideline links to its sources so people can review the
+            evidence and agents can cite it.
+          </p>
+        </div>
+      </div>
+      <div class="flex lg:justify-end">
+        <HomeAction
+          href={EXTERNAL_HREFS.paper}
+          target="_blank"
+          rel="noreferrer"
+        >
+          Read the paper
+          <ArrowRight
+            className="h-3.5 w-3.5"
+            strokeWidth={1.5}
+            aria-hidden="true"
+          />
+        </HomeAction>
+      </div>
+    </div>
+    <ul
+      class="m-0 mt-12 grid list-none grid-cols-2 gap-px overflow-hidden rounded-2xl border border-border bg-border p-0 lg:grid-cols-4"
+      aria-label="Research institutions"
+    >
+      {institutions.map((institution) => (
+        <li class="bg-bg">
+          <a
+            href={institution.href}
+            target="_blank"
+            rel="noreferrer"
+            aria-label={institution.label}
+            class="research-logo-link flex h-24 items-center justify-center bg-bg px-4 no-underline transition-colors hover:bg-surface-muted sm:h-28"
+          >
+            <span
+              class:list={[
+                "research-logo-stack",
+                institution.icon === "carnegie-mellon"
+                  ? "research-logo-stack--square"
+                  : "",
+              ]}
+              aria-hidden="true"
+            >
+              <SvgIcon
+                name={institution.icon}
+                tone="mono"
+                class="svg-icon research-logo-icon research-logo-icon--mono"
+              />
+              <SvgIcon
+                name={institution.icon}
+                tone="color"
+                class="svg-icon research-logo-icon research-logo-icon--color"
+              />
+            </span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>

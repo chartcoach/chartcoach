@@ -88,7 +88,7 @@ export function ThemeToggle({ variant = "icon" }: ThemeToggleProps) {
             </span>
           </span>
         </span>
-        <span className="rounded-full border border-border bg-bg px-2.5 py-1 text-[0.6875rem] font-semibold uppercase leading-none tracking-[0.14em] text-muted transition-colors group-hover:text-fg">
+        <span className="rounded-full border border-border bg-bg px-2.5 py-1 text-xs font-semibold leading-none text-muted transition-colors group-hover:text-fg">
           Switch
         </span>
       </button>
@@ -99,7 +99,7 @@ export function ThemeToggle({ variant = "icon" }: ThemeToggleProps) {
     <button
       type="button"
       onClick={toggleTheme}
-      className="relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-md text-muted transition-colors hover:bg-surface-muted hover:text-fg"
+      className="relative flex h-11 w-11 cursor-pointer items-center justify-center rounded-md text-muted transition-colors hover:bg-surface-muted hover:text-fg"
       aria-label={label}
       title={label}
     >

@@ -1,0 +1,19 @@
+---
+interface Props {
+  href: string;
+  target?: "_blank";
+  rel?: string;
+  tone?: "primary" | "secondary";
+}
+
+const { href, target, rel, tone = "secondary" } = Astro.props;
+---
+
+<a
+  href={href}
+  target={target}
+  rel={rel}
+  class:list={["home-action", `home-action--${tone}`]}
+>
+  <slot />
+</a>

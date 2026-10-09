@@ -75,7 +75,7 @@ function ReferencesArtifact() {
           {["chart:bar", "task:compare", "quality:readability"].map((label) => (
             <span
               key={label}
-              className="rounded-full border border-border bg-surface-muted px-2.5 py-1 font-mono text-[0.6875rem] text-muted"
+              className="rounded-full border border-border bg-surface-muted px-2.5 py-1 font-mono text-xs text-muted"
             >
               {label}
             </span>
@@ -92,7 +92,7 @@ function ReferencesArtifact() {
       </div>
 
       <div className="pt-6">
-        <p className="m-0 font-mono text-[0.6875rem] font-semibold uppercase tracking-[0.14em] text-muted">
+        <p className="m-0 font-mono text-xs font-semibold uppercase tracking-[0.14em] text-muted">
           references
         </p>
         <p className="m-0 mt-2 text-[0.9375rem] font-semibold leading-snug text-fg">
@@ -192,10 +192,10 @@ function SkillsArtifact() {
   return (
     <div className="grid gap-5">
       <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
-        <p className="m-0 min-w-0 break-words font-mono text-[0.6875rem] font-semibold uppercase tracking-[0.14em] text-muted">
+        <p className="m-0 min-w-0 break-words font-mono text-xs font-semibold uppercase tracking-[0.14em] text-muted">
           chartcoach/skills
         </p>
-        <span className="rounded-full border border-border bg-surface-muted px-2.5 py-1 font-mono text-[0.625rem] font-semibold uppercase leading-none tracking-[0.12em] text-muted">
+        <span className="rounded-full border border-border bg-surface-muted px-2.5 py-1 font-mono text-xs font-semibold uppercase leading-none tracking-[0.12em] text-muted">
           skill run
         </span>
       </div>
@@ -224,12 +224,12 @@ function SkillsArtifact() {
           >
             <div className="flex items-start justify-between gap-3">
               <Icon className="h-4 w-4 text-muted" aria-hidden="true" />
-              <span className="font-mono text-[0.625rem] font-semibold uppercase leading-none tracking-[0.12em] text-muted">
+              <span className="font-mono text-xs font-semibold uppercase leading-none tracking-[0.12em] text-muted">
                 {String(index + 1).padStart(2, "0")}
               </span>
             </div>
             <div>
-              <p className="m-0 font-mono text-[0.625rem] font-semibold uppercase tracking-[0.14em] text-muted">
+              <p className="m-0 font-mono text-xs font-semibold uppercase tracking-[0.14em] text-muted">
                 {label}
               </p>
               <p className="m-0 mt-2 text-[1rem] font-semibold leading-snug text-fg">{value}</p>
@@ -256,7 +256,7 @@ function ImproveArtifact() {
         rel="noreferrer"
         aria-label="Open the chartcoach catalog repository on GitHub"
       >
-        <span className="block font-mono text-[0.6875rem] font-semibold uppercase tracking-[0.14em] text-muted">
+        <span className="block font-mono text-xs font-semibold uppercase tracking-[0.14em] text-muted">
           catalog repository
         </span>
         <span className="flex min-w-0 items-start justify-between gap-4">
@@ -286,7 +286,7 @@ function ImproveArtifact() {
       <div className="grid gap-4 sm:grid-cols-3">
         {improveSteps.map(([number, label, body]) => (
           <div key={label} className="grid gap-3">
-            <span className="font-mono text-[0.6875rem] font-semibold uppercase tracking-[0.14em] text-muted">
+            <span className="font-mono text-xs font-semibold uppercase tracking-[0.14em] text-muted">
               {number}
             </span>
             <h3 className="m-0 text-[1rem] font-semibold leading-snug text-fg">{label}</h3>
@@ -298,7 +298,7 @@ function ImproveArtifact() {
       <div className="rounded-lg border border-border bg-surface-muted/70 px-4 py-3.5 shadow-[0_1px_0_color-mix(in_srgb,var(--color-fg)_4%,transparent)]">
         <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start">
           <span
-            className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-[#1f883d] text-[#1f883d]"
+            className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-[#1f883d] text-[#176b2d] dark:text-[#56d364]"
             aria-hidden="true"
           >
             <span className="h-1.5 w-1.5 rounded-full bg-current" />
@@ -311,7 +311,7 @@ function ImproveArtifact() {
               opened in catalog repository
             </span>
           </span>
-          <span className="w-fit shrink-0 rounded-full border border-[#1f883d]/45 bg-[#1f883d]/10 px-2 py-0.5 font-mono text-[0.625rem] font-semibold uppercase tracking-[0.1em] text-[#1f883d]">
+          <span className="w-fit shrink-0 rounded-full border border-[#1f883d]/45 bg-[#1f883d]/10 px-2 py-0.5 font-mono text-xs font-semibold uppercase tracking-[0.1em] text-[#176b2d] dark:text-[#56d364]">
             review
           </span>
         </div>
@@ -331,7 +331,7 @@ function GuidelineSection({
 }) {
   return (
     <section className="grid min-w-0 gap-2">
-      <p className="m-0 font-mono text-[0.6875rem] font-semibold uppercase tracking-[0.14em] text-muted">
+      <p className="m-0 font-mono text-xs font-semibold uppercase tracking-[0.14em] text-muted">
         {role}
       </p>
       <div>
