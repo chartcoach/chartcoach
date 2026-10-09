@@ -1,0 +1,58 @@
+.github/ci/gate.mjs
+  s_b1a2f3fcaa3f39::t_8f07e7773c781f 5-10
+  s_b1a2f3fcaa3f39::t_1907da61f3dbcc 1-3,11-25
+tools/release/package.json
+  s_b1a2f3fcaa3f39::t_a7f1a4a12fc8d6 8
+  s_b1a2f3fcaa3f39::t_56de4d721d6292 17
+package.json
+  s_b1a2f3fcaa3f39::t_a7f1a4a12fc8d6 13
+development_docs/releasing.md
+  s_b1a2f3fcaa3f39::t_2802c9653c5c14 63-65
+  s_b1a2f3fcaa3f39::t_a7f1a4a12fc8d6 36-52
+.github/filters.yml
+  s_b1a2f3fcaa3f39::t_1907da61f3dbcc 1-79,81-86
+  s_b1a2f3fcaa3f39::t_1a5e4790964935 80
+.github/ci/select.mjs
+  s_b1a2f3fcaa3f39::t_a7f1a4a12fc8d6 7-13
+  s_b1a2f3fcaa3f39::t_1907da61f3dbcc 1-5,15-43
+.github/actions/setup-js/action.yml
+  s_b1a2f3fcaa3f39::t_1a5e4790964935 6
+  s_b1a2f3fcaa3f39::t_1907da61f3dbcc 1-5,7-16,19-21
+  s_b1a2f3fcaa3f39::t_5618bdb516717a 17-18
+tools/release/ci.test.mjs
+  s_b1a2f3fcaa3f39::t_1a5e4790964935 20,24,191-197
+  s_b1a2f3fcaa3f39::t_5abcd6192b1602 5,10,21-23,74-79
+  s_b1a2f3fcaa3f39::t_68773bd745e9a8 1-4,6-9,11-19,25-73,80-190,198-225,235-244
+  s_b1a2f3fcaa3f39::t_2802c9653c5c14 226,232-233
+  s_b1a2f3fcaa3f39::t_6b44da3320a9d2 227-231
+  s_b1a2f3fcaa3f39::t_8f07e7773c781f 245-251
+.github/actions/task-cache/action.yml
+  s_b1a2f3fcaa3f39::t_1907da61f3dbcc 1-21
+.github/workflows/publish.yml
+  s_b1a2f3fcaa3f39::t_4bdd7db531310d 34,60,68,79,100,102,120,122,128,148,150,167,169,174,176,178,205,237
+  s_b1a2f3fcaa3f39::t_a7f1a4a12fc8d6 183-185,187-196
+.github/workflows/ci.yml
+  s_b1a2f3fcaa3f39::t_4bdd7db531310d 6,10-11,13-27,43-49,80-81,83,133-135,138-144,225-226,228,244-245,247,295-298,305-306
+  s_b1a2f3fcaa3f39::t_1a5e4790964935 2,28-42,50-77,86-88,90,92-132,136-137,145-164,166,168,172,176,178,182,185-192,194,197-203,205,208-213,215,217,222,231-233,235,237-238,250-252,254,263-264,266-267,269-270,272-273,276,279,282,285-294,299-304,308-315
+  s_b1a2f3fcaa3f39::t_5abcd6192b1602 91
+pnpm-workspace.yaml
+  s_b1a2f3fcaa3f39::t_a53ff6b96e4c95 66
+pnpm-lock.yaml
+  ai_agent 242-244,707-709
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "41d8b5e0c9b6c3b7e21e2e0baea06870e0d9c40a",
+  "prompts": {},
+  "sessions": {
+    "s_b1a2f3fcaa3f39": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11f73-a451-7310-8d59-e442178886e9",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Péter Ferenc Gyarmati <dev.petergy@gmail.com>"
+    }
+  }
+}
