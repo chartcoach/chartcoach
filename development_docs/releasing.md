@@ -137,7 +137,7 @@ stop and recover the original build before attempting another upload.
 
 After the latest push-event `CI` workflow succeeds for an exact `main` commit,
 `publish.yml` builds matching Python, catalog SDK, and chat previews on the rolling
-[`preview-builds` GitHub prerelease](https://github.com/chartcoach/chartcoach/releases/tag/preview-builds).
+[`previews` GitHub prerelease](https://github.com/chartcoach/chartcoach/releases/tag/previews).
 PR runs, forks, failed runs, and cancelled runs cannot publish. CI already builds
 and checks the site and docs, so chartcoach requires only that workflow. Stable
 registry publication and container publication continue to use retained main CI
@@ -156,26 +156,27 @@ stamped build. The catalog SDK and chat tarballs pass Node.js, Bun, and Deno
 consumer checks before attestation and upload. Preview chat packages depend on
 the exact matching SDK tarball URL, so installing chat alone resolves its SDK.
 
-For a public repository, release notes and merged-PR announcements include exact URLs for:
+For a public repository, merged-PR announcements include exact URLs for:
 
 ```bash
-uv pip install "chartcoach @ https://github.com/chartcoach/chartcoach/releases/download/preview-builds/chartcoach-X.Y.Z.devN-py3-none-any.whl"
-pnpm add "https://github.com/chartcoach/chartcoach/releases/download/preview-builds/chartcoach-catalog-X.Y.Z-dev.N.tgz"
-npx --yes https://github.com/chartcoach/chartcoach/releases/download/preview-builds/chartcoach-X.Y.Z-dev.N.tgz
+uv pip install "chartcoach @ https://github.com/chartcoach/chartcoach/releases/download/previews/chartcoach-X.Y.Z.devN-py3-none-any.whl"
+pnpm add "https://github.com/chartcoach/chartcoach/releases/download/previews/chartcoach-catalog-X.Y.Z-dev.N.tgz"
+npx --yes https://github.com/chartcoach/chartcoach/releases/download/previews/chartcoach-X.Y.Z-dev.N.tgz
 ```
 
-Replace the example versions with those in the release notes. For the Python CLI,
+Replace the example versions with those in the merged-PR announcement or a
+retained checksum asset's filename. For the Python CLI,
 use `uv tool install --force "chartcoach @ <wheel-url>"`. To run the MCP server,
 install `chartcoach[mcp] @ <wheel-url>`. These previews are distributed through
 GitHub rather than PyPI or npm. Use the registries for stable versions.
 
 This repository currently distributes previews privately. Authenticate with
 `gh auth login` using an account with repository access, then use the authenticated
-download and local installation commands in its release notes. For example, in
+download and local installation commands in its merged-PR announcement. For example, in
 a fresh directory with Node.js 24+, npm, and uv installed:
 
 ```bash
-gh release download preview-builds -R chartcoach/chartcoach \
+gh release download previews -R chartcoach/chartcoach \
   --pattern 'chartcoach-X.Y.Z.devN-py3-none-any.whl' \
   --pattern 'chartcoach-catalog-X.Y.Z-dev.N.tgz' \
   --pattern 'chartcoach-X.Y.Z-dev.N.tgz'
@@ -197,17 +198,19 @@ repository access even when the site and stable registry packages are public.
 Uploads are immutable: retries compare existing bytes and reject conflicts.
 Empty starter assets left by failed uploads are removed before retrying. A
 versioned `chartcoach-X.Y.Z.devN-SHA256SUMS` completion marker is uploaded last,
-after release notes, a deduplicated merged-PR announcement, and retention.
-Publication jobs serialize mutations of the shared release. Out-of-order builds
-cannot replace newer release notes. The newest 30 completed publications remain;
+after a deduplicated merged-PR announcement and retention.
+Publication jobs serialize asset mutations of the shared release. Release notes
+stay static; each announcement records its build's commit, installation commands,
+and provenance status. Select a completed version from the versioned checksum
+assets. The newest 30 completed publications remain;
 older complete or interrupted builds are pruned as whole sets. Older builds that
 finish outside that window are pruned without announcing unavailable URLs.
-The `preview-builds` tag stays on its initial commit; it is not a moving source
+The `previews` tag stays on its initial commit; it is not a moving source
 pointer. Pin the versioned asset URLs for downstream CI while within retention.
 
 ### Provision the preview channel
 
-The publisher requires an existing, published, mutable `preview-builds` release.
+The publisher requires an existing, published, mutable `previews` release.
 It checks this before building and again before uploading. GitHub's immutable
 release setting remains enabled for stable releases. Rolling previews need a
 mutable release so later builds can add assets and retention can remove old ones;
@@ -217,8 +220,9 @@ For initial setup, a repository administrator must:
 
 1. Confirm no other release will publish during this brief setup window.
 2. Temporarily disable repository release immutability in **Settings > General > Releases**.
-3. Create the `preview-builds` prerelease targeting the current `main` commit,
-   without marking it latest.
+3. Create the `previews` prerelease targeting the current `main` commit,
+   without marking it latest. Set its title and static notes during creation;
+   describe the versioned assets, completion markers, and installation docs.
 4. Immediately restore release immutability, even if creation fails. Verify
    `GET /repos/chartcoach/chartcoach/immutable-releases` reports `enabled: true`
    and the new release reports `draft: false` and `immutable: false`.
@@ -227,11 +231,18 @@ Previously published immutable releases retain their protection when the setting
 changes. The Actions token cannot change this administrator setting, and CI
 never attempts to disable it. See [GitHub's immutable release rules](https://docs.github.com/en/code-security/concepts/supply-chain-security/immutable-releases).
 
-The original empty `preview` release was locked by the first failed publication
-and points here in its notes. An immutable release cannot be unlocked; deleting
-it also prevents reuse of its tag name. If the rolling channel itself becomes
-immutable, provision a fresh tag and update the publisher, chat SDK dependency
-URL, release validator, tests, and installation docs together.
+Never edit the rolling release's metadata while repository immutability is
+enabled. GitHub seals an existing mutable release when its notes are updated,
+including a body-only REST update. Uploading and deleting assets preserve
+mutability; the publisher performs only those release mutations.
+
+The earlier `preview` and `preview-builds` channels became immutable during
+failed publications and link here in their notes. The latter contains an
+incomplete build without its checksum completion marker. An immutable release
+cannot be unlocked; deleting it also prevents reuse of its tag name. If the
+rolling channel itself becomes immutable, provision a fresh tag and update the
+publisher, chat SDK dependency URL, release validator, tests, and installation
+docs together.
 
 ### Preview provenance v1
 
@@ -275,14 +286,14 @@ and this read-back check.
 
 ### Recover publication
 
-| First failed job                  | Response                                                                                                                                                                  |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Stable `prepare`                  | Wait for main CI for the exact tag, or correct the workflow and dispatch for the same immutable tag as described above.                                                   |
-| Stable registry or container jobs | Rerun failed jobs using the retained `release-packages` bundle; inspect conflicts before retrying.                                                                        |
-| `resolve-preview`                 | Resolve GitHub API access, missing history/tags, or an unprovisioned mutable channel, then rerun. The latest exact-commit main CI must succeed.                           |
-| `build-preview`                   | Fix source/build inputs in a new main commit and let CI trigger a new preview.                                                                                            |
-| `verify-preview`                  | Inspect the consumer failure; rerun transient failures or fix package behavior in a new main commit.                                                                      |
-| `publish-preview`                 | Rerun failed jobs on the same run to reuse its 30-day `preview-packages` artifact. Notes, announcement, and retention failures resume without overwriting uploaded bytes. |
+| First failed job                  | Response                                                                                                                                                          |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Stable `prepare`                  | Wait for main CI for the exact tag, or correct the workflow and dispatch for the same immutable tag as described above.                                           |
+| Stable registry or container jobs | Rerun failed jobs using the retained `release-packages` bundle; inspect conflicts before retrying.                                                                |
+| `resolve-preview`                 | Resolve GitHub API access, missing history/tags, or an unprovisioned mutable channel, then rerun. The latest exact-commit main CI must succeed.                   |
+| `build-preview`                   | Fix source/build inputs in a new main commit and let CI trigger a new preview.                                                                                    |
+| `verify-preview`                  | Inspect the consumer failure; rerun transient failures or fix package behavior in a new main commit.                                                              |
+| `publish-preview`                 | Rerun failed jobs on the same run to reuse its 30-day `preview-packages` artifact. Announcement and retention failures resume without overwriting uploaded bytes. |
 
 Rerunning all jobs after partial publication rebuilds packages and can produce
 byte conflicts; rerun failed jobs instead. When the checksum marker is present,
