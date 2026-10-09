@@ -184,8 +184,11 @@ embedding function; FTS stays independent of providers. Install
 arbitrary model IDs and explicit dimensions for OpenRouter or another
 OpenAI-compatible endpoint. Build a new release profile when changing the model,
 dimensions, or endpoint; runtime credentials cannot change stored vector identity.
-The [MCP guide](https://docs.chartcoach.dev/mcp) covers composition, hosting,
-and building a profile from environment settings.
+The [MCP guide](https://docs.chartcoach.dev/mcp) covers composition and hosting.
+The [model connection guide](https://docs.chartcoach.dev/model-connections) owns the
+shared provider-neutral environment settings and profile-build example.
+`CHARTCOACH_EMBEDDING_API_KEY` is separate from the chat text credential;
+`CHARTCOACH_EMBEDDING_API_KEY_ENV` selects another credential variable.
 
 ## Documentation
 

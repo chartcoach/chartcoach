@@ -8,7 +8,7 @@ origin. [Streamdown](https://streamdown.ai/) formats the recommendations.
 [StyleX](https://stylexjs.com/) compiles component styles into an atomic stylesheet.
 Vector, keyword, and hybrid search use native [LanceDB](https://lancedb.github.io/lancedb/js/)
 queries. [DuckDB](https://duckdb.org/docs/stable/clients/node_neo/overview) runs SQL
-over the catalog. Query embeddings run on your CPU.
+over the catalog. Query embeddings run locally by default, or through a separately configured OpenAI-compatible endpoint.
 
 ## Run locally
 
@@ -54,8 +54,7 @@ The launcher resolves the official catalog selection to an immutable release at
 startup. That release stays fixed until the server restarts.
 
 Your question, uploaded image, and retrieved guidance go to the selected model
-provider. Query embeddings run locally. The first vector search downloads model
-weights. A local model endpoint keeps inference on your machine too.
+provider. Local query embeddings download weights on the first vector search; a configured remote embedding connection sends retrieval queries to its own endpoint. A local model endpoint keeps inference on your machine too.
 
 ## Configure a connection
 
@@ -63,7 +62,7 @@ The browser manages personal model connections. To supply a default connection
 from the terminal, set its key and model:
 
 ```bash
-export OPENAI_API_KEY='your-provider-key'
+export CHARTCOACH_TEXT_API_KEY='your-provider-key'
 npx chartcoach --provider openai --model my-vision-model
 ```
 
@@ -78,20 +77,26 @@ Replace `my-vision-model` with an available model that supports images and tool 
 Every setting also has an environment variable. An environment-only launch is:
 
 ```bash
-export CHARTCOACH_PROVIDER=compatible
-export CHARTCOACH_BASE_URL=http://127.0.0.1:1234/v1
-export CHARTCOACH_MODEL=my-vision-model
-export CHARTCOACH_MODEL_AUTH=none
+export CHARTCOACH_TEXT_PROVIDER=compatible
+export CHARTCOACH_TEXT_BASE_URL=http://127.0.0.1:1234/v1
+export CHARTCOACH_TEXT_MODEL=my-vision-model
+export CHARTCOACH_TEXT_AUTH=none
 npx chartcoach
 ```
 
-`--api-key-env` selects a custom credential variable. The provider defaults are
-`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, and `GEMINI_API_KEY`.
-Compatible providers use `OPENAI_API_KEY` unless `--model-auth none` is selected.
-Keys stay out of command arguments.
+`CHARTCOACH_TEXT_API_KEY` supplies the text credential independently of the
+embedding key. `--api-key-env` or `CHARTCOACH_TEXT_API_KEY_ENV` selects another
+variable name. Keys stay out of command arguments.
+
+The [model connection guide](https://docs.chartcoach.dev/model-connections) owns
+the shared text/embedding environment contract and profile
+build example. Copy [.env.example](.env.example) to `.env` in the working directory,
+or select a file with `--env-file` or `CHARTCOACH_ENV_FILE`. Existing process values
+win over dotenv; flags win over both. The Python factories and `loadConfig` leave
+dotenv loading to their caller.
 
 A configured model appears as **Server connection**. Use `--context-window` for
-its token limit, which defaults to 128000. Omitting the model leaves setup to each
+its token limit; `chartcoach chat --help` lists defaults. Omitting the model leaves setup to each
 browser. `--model-origin` allows additional custom endpoints in browser settings.
 
 Configuration files are optional. If you prefer to save settings, pass
@@ -108,7 +113,7 @@ Configuration files are optional. If you prefer to save settings, pass
 }
 ```
 
-Configuration precedence is command flags, environment variables, then the selected
+Configuration precedence is command flags, process environment, dotenv, then the selected
 JSON file. `--config` or `CHARTCOACH_CONFIG` selects a file. Otherwise ChartCoach
 reads `chat/config.json` in the platform's user configuration directory for `chartcoach`.
 Relative file paths resolve beside that file. Paths passed through flags or the
@@ -117,33 +122,41 @@ Unknown configuration fields fail validation. T3 Env validates environment value
 and names invalid variables in its errors. Missing credentials identify the
 variable to set. Secret values are excluded from validation messages.
 
-| Optional JSON setting | Environment variable         | Default                         |
-| --------------------- | ---------------------------- | ------------------------------- |
-| `catalog.source`      | `CHARTCOACH_CATALOG`         | Official `catalog.json`         |
-| `catalog.profile`     | `CHARTCOACH_CATALOG_PROFILE` | `minilm-l6-v2-cpu`              |
-| `model.provider`      | `CHARTCOACH_PROVIDER`        | `openai`                        |
-| `model.model`         | `CHARTCOACH_MODEL`           | Browser setup                   |
-| `model.baseURL`       | `CHARTCOACH_BASE_URL`        | Provider endpoint               |
-| `model.auth`          | `CHARTCOACH_MODEL_AUTH`      | `api-key`                       |
-| `model.apiKeyEnv`     | `CHARTCOACH_API_KEY_ENV`     | Provider variable               |
-| `model.contextWindow` | `CHARTCOACH_CONTEXT_WINDOW`  | `128000`                        |
-| `server.host`         | `CHARTCOACH_HOST`            | `127.0.0.1`                     |
-| `server.port`         | `CHARTCOACH_PORT`            | `4273`                          |
-| `server.open`         | `CHARTCOACH_OPEN`            | Interactive browser opening     |
-| `server.publicURL`    | `CHARTCOACH_PUBLIC_URL`      | Local HTTP origin               |
-| `server.username`     | `CHARTCOACH_USERNAME`        | `chartcoach`                    |
-| `server.passwordEnv`  | `CHARTCOACH_PASSWORD_ENV`    | `CHARTCOACH_PASSWORD`           |
-| `server.passwordFile` | `CHARTCOACH_PASSWORD_FILE`   | Unset                           |
-| `server.embedOrigins` | `CHARTCOACH_EMBED_ORIGINS`   | Framing denied                  |
-| `storage.dataDir`     | `CHARTCOACH_DATA_DIR`        | Platform app-data directory     |
-| `storage.cacheDir`    | `CHARTCOACH_CACHE_DIR`       | Platform cache directory        |
-| `modelOrigins`        | `CHARTCOACH_MODEL_ORIGINS`   | Common hosted providers (below) |
-| `tracing`             | `CHARTCOACH_TRACING`         | `false`                         |
+Run `chartcoach chat --help` for CLI options and `doctor --json` to inspect
+the resolved connection without its credentials.
+
+| Optional JSON setting  | Environment variable               |
+| ---------------------- | ---------------------------------- |
+| `catalog.source`       | `CHARTCOACH_CATALOG`               |
+| `catalog.profile`      | `CHARTCOACH_CATALOG_PROFILE`       |
+| `model.provider`       | `CHARTCOACH_TEXT_PROVIDER`         |
+| `model.model`          | `CHARTCOACH_TEXT_MODEL`            |
+| `model.baseURL`        | `CHARTCOACH_TEXT_BASE_URL`         |
+| `model.auth`           | `CHARTCOACH_TEXT_AUTH`             |
+| `model.apiKeyEnv`      | `CHARTCOACH_TEXT_API_KEY_ENV`      |
+| `model.contextWindow`  | `CHARTCOACH_TEXT_CONTEXT_WINDOW`   |
+| `server.host`          | `CHARTCOACH_HOST`                  |
+| `server.port`          | `CHARTCOACH_PORT`                  |
+| `server.open`          | `CHARTCOACH_OPEN`                  |
+| `server.publicURL`     | `CHARTCOACH_PUBLIC_URL`            |
+| `server.username`      | `CHARTCOACH_USERNAME`              |
+| `server.passwordEnv`   | `CHARTCOACH_PASSWORD_ENV`          |
+| `server.passwordFile`  | `CHARTCOACH_PASSWORD_FILE`         |
+| `server.embedOrigins`  | `CHARTCOACH_EMBED_ORIGINS`         |
+| `storage.dataDir`      | `CHARTCOACH_DATA_DIR`              |
+| `storage.cacheDir`     | `CHARTCOACH_CACHE_DIR`             |
+| `modelOrigins`         | `CHARTCOACH_MODEL_ORIGINS`         |
+| `tracing`              | `CHARTCOACH_TRACING`               |
+| `embedding.model`      | `CHARTCOACH_EMBEDDING_MODEL`       |
+| `embedding.baseURL`    | `CHARTCOACH_EMBEDDING_BASE_URL`    |
+| `embedding.dimensions` | `CHARTCOACH_EMBEDDING_DIMENSIONS`  |
+| `embedding.apiKeyEnv`  | `CHARTCOACH_EMBEDDING_API_KEY_ENV` |
 
 `catalog.source` accepts a release directory, a `release.json` URL, or a mutable
 `catalog.json` selection URL. Catalog identities are digests, independent of the
-npm software version. Custom index profiles must use normalized all-MiniLM-L6-v2
-embeddings for vector and hybrid search.
+npm software version. Without a remote connection, vector and hybrid search use the supported normalized
+all-MiniLM-L6-v2 profile. A configured `embedding` connection must match the selected
+profile's model, dimensions, and endpoint. Keyword search needs no embedding request.
 
 `doctor` verifies catalog access and loads DuckDB, SQLite, LanceDB, and the embedding runtime. `--json` emits a diagnostic
 object on stdout. Startup messages and errors use stderr. `--verbose` includes worker diagnostics, which may contain conversation details. Exit status is 0 for
@@ -237,7 +250,9 @@ Open `http://127.0.0.1:4273`. The service binds the host port to loopback and st
 conversations and cache in named volumes. Set `CHARTCOACH_PUBLIC_URL` when using an
 HTTPS reverse proxy. Provider connections can be configured in each browser. Compose also forwards
 the catalog, model, provider-key, embedding, and tracing environment variables, so the
-environment-only setup works for containers too.
+environment-only setup works for containers too. If a credential selector names a custom variable,
+forward that variable through an additional `environment` entry or a Compose `env_file`;
+Compose's interpolation `.env` alone does not add arbitrary variables to a container.
 
 To mount a configuration file, add a read-only volume and `CHARTCOACH_CONFIG`:
 
@@ -289,18 +304,9 @@ Choose **OpenAI compatible** in Model settings, then select a provider preset to
 fill its API base URL. [LobeHub icons](https://lobehub.com/icons) identify providers
 in the menu and saved connections.
 
-| Provider          | API base URL                                              |
-| ----------------- | --------------------------------------------------------- |
-| OpenRouter        | `https://openrouter.ai/api/v1`                            |
-| xAI / Grok        | `https://api.x.ai/v1`                                     |
-| Google Gemini     | `https://generativelanguage.googleapis.com/v1beta/openai` |
-| Together AI       | `https://api.together.ai/v1`                              |
-| Fireworks AI      | `https://api.fireworks.ai/inference/v1`                   |
-| Groq              | `https://api.groq.com/openai/v1`                          |
-| Hugging Face      | `https://router.huggingface.co/v1`                        |
-| Mistral AI        | `https://api.mistral.ai/v1`                               |
-| NVIDIA NIM        | `https://integrate.api.nvidia.com/v1`                     |
-| Vercel AI Gateway | `https://ai-gateway.vercel.sh/v1`                         |
+Presets and their URLs have one owner in
+[`shared/model.ts`](https://github.com/chartcoach/chartcoach/blob/main/apps/chat/shared/model.ts). The UI uses that list directly; this guide
+avoids maintaining a second provider directory. Custom endpoints remain configurable.
 
 Choose a model that supports images and tool calls. The native OpenAI, Anthropic,
 and Gemini connections remain available separately.
@@ -517,12 +523,12 @@ Eve stages image bytes in its local just-bash sandbox and restores them for mode
 calls. The 3 MiB limit keeps the image within Eve's model-visible attachment
 bound. Local sessions and sandbox files persist under `.eve/`.
 
-The first indexed search downloads the index. Vector and hybrid queries also
-download about 86 MiB of model weights. Both persist in the platform's per-user
-`chartcoach` cache. Later calls reuse the catalog, table, and model. SQL tables
+The first indexed search downloads and caches the index. Local vector and hybrid
+queries also cache their model weights. Configured remote embeddings reuse their
+SDK model without downloading local weights. Later calls reuse the catalog and table. SQL tables
 are materialized once per loaded catalog and reused across queries.
 `CHARTCOACH_CATALOG` and `CHARTCOACH_CATALOG_PROFILE` select the release and index profile.
-Vector and hybrid search use its normalized `all-MiniLM-L6-v2` embeddings.
+The selected profile owns the vector identity; the configured query embedder must match it.
 
 ## Choose your agent's guidelines
 
@@ -677,7 +683,7 @@ values identify entries to read and cite through the catalog API.
 
 ## Validate
 
-With the development app running and `CHARTCOACH_MODEL` and its provider credentials
+With the development app running and `CHARTCOACH_TEXT_MODEL` and its provider credentials
 configured, use its printed URL:
 
 ```bash

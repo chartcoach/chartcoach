@@ -87,6 +87,11 @@ provider and index imports happen inside the capability that needs them.
 Every `catalog.json` write goes through the curation selection service.
 Release artifacts are immutable after `release.json` is committed.
 
+Text and embedding settings have independent owners in the chat runtime schema.
+The [model connection guide](<apps/docs/content/docs/(guide)/model-connections.mdx>)
+owns shared environment names and profile authoring. Provider presets live in
+`apps/chat/shared/model.ts`; docs link to that owner instead of copying URLs or defaults.
+
 ## Read sources of truth in order
 
 1. `fixtures/catalog-release` for the shared release consumed by Python,

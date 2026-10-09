@@ -115,7 +115,7 @@ filter-validation error lists those columns. Filters are planned before
 semantic embedding. For example, `role = 'overview'` searches entry overviews.
 
 Vector and hybrid search reconstruct the profile’s native LanceDB embedding
-function. Variables such as `$var:OPENROUTER_API_KEY` resolve from the startup
+function. Variables such as `$var:CHARTCOACH_EMBEDDING_API_KEY` resolve from the startup
 environment, including `.env`. Only names declared by the selected profile are
 read. A private JSON variable file overrides those environment values:
 
@@ -169,7 +169,6 @@ Install uv on the host, select a working directory, and copy the
 to `.env`. For a reverse proxy such as Coolify, configure:
 
 ```dotenv
-CHARTCOACH_SOURCE=https://chartcoach.dev/catalog.json
 CHARTCOACH_MCP_TRANSPORT=streamable-http
 CHARTCOACH_MCP_HOST=0.0.0.0
 CHARTCOACH_MCP_PORT=8000
@@ -213,23 +212,26 @@ schema defaults. Embedding JSON values override the corresponding environment
 values. Files and credentials are read once at startup; restart after changing
 them. Tokens are configured through the environment rather than command arguments.
 
-| Variable                         | Default                   | Controls                                  |
-| -------------------------------- | ------------------------- | ----------------------------------------- |
-| `CHARTCOACH_SOURCE`              | Official selected catalog | Catalog path or URI                       |
-| `CHARTCOACH_INDEX_PROFILE`       | None                      | Release-owned startup index profile       |
-| `CHARTCOACH_EMBEDDING_VARS`      | None                      | Private JSON registry-variable file       |
-| `CHARTCOACH_MCP_TRANSPORT`       | `stdio`                   | `stdio`, `sse`, or `streamable-http`      |
-| `CHARTCOACH_MCP_HOST`            | `127.0.0.1`               | HTTP listener address                     |
-| `CHARTCOACH_MCP_PORT`            | `8000`                    | HTTP listener port                        |
-| `CHARTCOACH_MCP_LOG_LEVEL`       | `INFO`                    | Server log level                          |
-| `CHARTCOACH_MCP_PUBLIC_URL`      | None                      | Public HTTP origin, without a path        |
-| `CHARTCOACH_MCP_PATH`            | `/mcp`                    | Streamable HTTP endpoint                  |
-| `CHARTCOACH_MCP_ALLOWED_HOSTS`   | Localhost and loopback    | Comma-separated Host allowlist            |
-| `CHARTCOACH_MCP_ALLOWED_ORIGINS` | Local HTTP origins        | Comma-separated Origin allowlist          |
-| `CHARTCOACH_MCP_TOKEN`           | None                      | Shared bearer token                       |
-| `CHARTCOACH_MCP_STATELESS`       | `true`                    | Legacy HTTP session policy                |
-| `CHARTCOACH_MCP_JSON_RESPONSE`   | `true`                    | JSON responses; `false` enables streaming |
-| `CHARTCOACH_MCP_SQL_TIMEOUT`     | `5`                       | SQL execution deadline, in seconds        |
+Use `chartcoach mcp --help` for option defaults. The launch schema is the
+source of truth for validation.
+
+| Variable                         | Controls                                  |
+| -------------------------------- | ----------------------------------------- |
+| `CHARTCOACH_SOURCE`              | Catalog path or URI                       |
+| `CHARTCOACH_INDEX_PROFILE`       | Release-owned startup index profile       |
+| `CHARTCOACH_EMBEDDING_VARS`      | Private JSON registry-variable file       |
+| `CHARTCOACH_MCP_TRANSPORT`       | `stdio`, `sse`, or `streamable-http`      |
+| `CHARTCOACH_MCP_HOST`            | HTTP listener address                     |
+| `CHARTCOACH_MCP_PORT`            | HTTP listener port                        |
+| `CHARTCOACH_MCP_LOG_LEVEL`       | Server log level                          |
+| `CHARTCOACH_MCP_PUBLIC_URL`      | Public HTTP origin, without a path        |
+| `CHARTCOACH_MCP_PATH`            | Streamable HTTP endpoint                  |
+| `CHARTCOACH_MCP_ALLOWED_HOSTS`   | Comma-separated Host allowlist            |
+| `CHARTCOACH_MCP_ALLOWED_ORIGINS` | Comma-separated Origin allowlist          |
+| `CHARTCOACH_MCP_TOKEN`           | Shared bearer token                       |
+| `CHARTCOACH_MCP_STATELESS`       | Legacy HTTP session policy                |
+| `CHARTCOACH_MCP_JSON_RESPONSE`   | JSON responses; `false` enables streaming |
+| `CHARTCOACH_MCP_SQL_TIMEOUT`     | SQL execution deadline, in seconds        |
 
 Repeated `--allowed-host` and `--allowed-origin` options replace the corresponding
 environment allowlist. The public URL is always added. Modern MCP uses per-request
@@ -273,68 +275,10 @@ parent lifespan. Keep synchronous catalog/provider work in the SDK’s worker
 threads. Importing the base chartcoach package never loads MCP, LanceDB, or a
 provider SDK.
 
-## Build an OpenRouter embedding profile
+## Configure embedding models
 
-The main chat model and catalog embedding model have separate owners. Configure
-the chat model in the chat app. The MCP server queries vectors produced by the
-selected release’s embedding profile. Model ID, dimensions, endpoint, and
-provider requirements belong to that profile; an environment change cannot
-silently reinterpret existing vectors. Build and publish a new profile to
-change them.
-
-LanceDB’s native embedding registry supports multiple providers and custom
-`EmbeddingFunction` classes. The optional
-`chartcoach.embeddings.OpenAICompatibleEmbeddings` adapter supports arbitrary
-OpenAI-compatible model IDs with explicit dimensions, including OpenRouter.
-It inherits LanceDB’s native source/query embedding, retry, and secret-variable
-behavior. Other providers keep their native registry aliases.
-
-Use environment settings while authoring a profile:
-
-```dotenv
-OPENROUTER_API_KEY=<private-key>
-CHARTCOACH_EMBEDDING_MODEL=openai/text-embedding-3-small
-CHARTCOACH_EMBEDDING_DIMENSIONS=1536
-CHARTCOACH_EMBEDDING_BASE_URL=https://openrouter.ai/api/v1
-```
-
-```bash
-uv pip install "chartcoach[curation,embedding-openai,mcp]"
-```
-
-```python
-import os
-from importlib.metadata import version
-from dotenv import load_dotenv
-from lancedb.embeddings import get_registry
-from chartcoach import open_catalog
-from chartcoach.curation import EmbeddingProfile, build_release
-from chartcoach.embeddings import OpenAICompatibleEmbeddings
-
-load_dotenv(".env", override=False)
-get_registry().set_var("OPENROUTER_API_KEY", os.environ["OPENROUTER_API_KEY"])
-embedding = OpenAICompatibleEmbeddings.create(
-    name=os.environ["CHARTCOACH_EMBEDDING_MODEL"],
-    dim=int(os.environ["CHARTCOACH_EMBEDDING_DIMENSIONS"]),
-    base_url=os.environ["CHARTCOACH_EMBEDDING_BASE_URL"],
-    api_key="$var:OPENROUTER_API_KEY",
-    max_retries=2,
-)
-build_release(
-    open_catalog("./guidelines"),
-    "./release",
-    profiles={"openrouter": EmbeddingProfile(
-        embedding,
-        python_requirements={"openai": version("openai")},
-    )},
-)
-```
-
-Serve the resulting release with `CHARTCOACH_SOURCE=./release`,
-`CHARTCOACH_INDEX_PROFILE=openrouter`, and `OPENROUTER_API_KEY` in the server’s
-`.env` or deployment environment. Run
-`uvx --with "openai==<profile-version>" --from "chartcoach[mcp,embedding-openai]" chartcoach mcp`.
-The server resolves the declared variable automatically; FTS needs no API key.
-Credentials remain `$var:OPENROUTER_API_KEY` in the published artifacts.
-See [LanceDB embedding functions](https://docs.lancedb.com/)
-and [OpenRouter embeddings](https://openrouter.ai/docs/api/api-reference/embeddings/create-embeddings).
+The [model connection guide](/model-connections) owns the shared text and embedding
+environment contract and profile-build workflow. It covers independent
+OpenAI-compatible endpoints, dedicated credentials, custom key variable names,
+and selecting the resulting profile in MCP and chat. Runtime model identity
+comes from the catalog profile; credentials stay deployment-owned.
