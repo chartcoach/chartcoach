@@ -415,6 +415,9 @@ jobs:
       group: publish-preview-release
       cancel-in-progress: false
       queue: max
+    environment:
+      name: preview
+      url: ${{ github.server_url }}/${{ github.repository }}/releases/tag/previews
     permissions:
       contents: write
       pull-requests: write

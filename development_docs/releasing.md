@@ -156,7 +156,10 @@ stamped build. The catalog SDK and chat tarballs pass Node.js, Bun, and Deno
 consumer checks before attestation and upload. Preview chat packages depend on
 the exact matching SDK tarball URL, so installing chat alone resolves its SDK.
 
-Merged-PR announcements include exact URLs for:
+The [`preview` environment](https://github.com/chartcoach/chartcoach/deployments/preview)
+records publication status and links to the rolling release. The Publish run
+summary and merged-PR comment contain matching installation and attestation
+verification instructions. Copy the exact versioned URLs from either:
 
 ```bash
 uv pip install "chartcoach @ https://github.com/chartcoach/chartcoach/releases/download/previews/chartcoach-X.Y.Z.devN-py3-none-any.whl"

@@ -30,6 +30,7 @@ def preview(monkeypatch: pytest.MonkeyPatch) -> ModuleType:
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     monkeypatch.setenv("GH_REPO", "chartcoach/chartcoach")
+    monkeypatch.delenv("GITHUB_STEP_SUMMARY", raising=False)
     return module
 
 
@@ -75,6 +76,7 @@ class GitHub:
         self.files: dict[str, bytes] = {}
         self.starters: set[str] = set()
         self.notes = ""
+        self.pull: int | None = 42
         self.comments: list[dict[str, str]] = []
         self.deleted: list[str] = []
         self.uploads: list[str] = []
@@ -101,7 +103,15 @@ class GitHub:
                 )
             if endpoint.endswith("/pulls"):
                 return json.dumps(
-                    [{"number": 42, "merged_at": "date", "base": {"ref": "main"}}]
+                    [
+                        {
+                            "number": self.pull,
+                            "merged_at": "date",
+                            "base": {"ref": "main"},
+                        }
+                    ]
+                    if self.pull is not None
+                    else []
                 )
             if endpoint.endswith("/comments"):
                 return json.dumps([[], self.comments])
@@ -254,25 +264,38 @@ def test_publication_is_immutable_and_idempotent(
         preview.publish(distribution, _COMMIT, _VERSION)
 
 
-@pytest.mark.parametrize("failure", ["upload", "comment", "delete-asset"])
+@pytest.mark.parametrize("failure", ["upload", "comment", "delete-asset", "completion"])
 def test_partial_publication_resumes_before_completion_marker(
-    preview: ModuleType, distribution: Path, github: GitHub, failure: str
+    preview: ModuleType,
+    distribution: Path,
+    github: GitHub,
+    failure: str,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
 ) -> None:
+    summary = tmp_path / "summary.md"
+    monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(summary))
     for n in range(1, 33):
         for name in [
             *preview.artifact_names(f"0.3.3.dev{n}"),
             preview.marker_name(f"0.3.3.dev{n}"),
         ]:
             github.files[name] = b"old bytes"
-    github.fail = failure
+    github.fail = (
+        str(distribution / preview.marker_name(_VERSION))
+        if failure == "completion"
+        else failure
+    )
     with pytest.raises(subprocess.CalledProcessError):
         preview.publish(distribution, _COMMIT, _VERSION)
     assert preview.marker_name(_VERSION) not in github.files
+    assert not summary.exists()
     github.fail = None
     preview.publish(distribution, _COMMIT, _VERSION)
     assert preview.marker_name(_VERSION) in github.files
     assert len(github.comments) == 1
     assert len(github.files) == 30 * 6
+    assert summary.read_text() == github.comments[0]["body"]
 
 
 def test_starter_upload_is_removed_before_retry(
@@ -287,8 +310,14 @@ def test_starter_upload_is_removed_before_retry(
 
 
 def test_old_completion_preserves_static_notes_and_prunes_unavailable_urls(
-    preview: ModuleType, distribution: Path, github: GitHub
+    preview: ModuleType,
+    distribution: Path,
+    github: GitHub,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
 ) -> None:
+    summary = tmp_path / "summary.md"
+    monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(summary))
     github.notes = "newer build notes"
     for n in range(8, 38):
         for name in [
@@ -304,6 +333,7 @@ def test_old_completion_preserves_static_notes_and_prunes_unavailable_urls(
     assert not set(preview.package_names(_VERSION)) & github.files.keys()
     assert orphan not in github.files
     assert len(github.files) == 30 * 6
+    assert not summary.exists()
 
 
 @pytest.mark.parametrize(
@@ -330,17 +360,23 @@ def test_resolution_rejects_every_non_success_state(
         preview.resolve(_COMMIT)
 
 
-@pytest.mark.parametrize("complete", [False, True])
-def test_resolution_skips_only_completed_builds(
+@pytest.mark.parametrize(
+    ("complete", "retained"), [(False, False), (True, True), (True, False)]
+)
+def test_resolution_reports_retained_completed_builds_and_skips_publication(
     preview: ModuleType,
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
     github: GitHub,
     complete: bool,
+    retained: bool,
 ) -> None:
     github.exists = True
     github.files[preview.package_names(_VERSION)[0]] = b"partial"
     if complete:
+        if retained:
+            for name in preview.artifact_names(_VERSION):
+                github.files[name] = b"complete"
         github.files[preview.marker_name(_VERSION)] = b"complete"
     real = preview.gh
     monkeypatch.setattr(
@@ -355,8 +391,21 @@ def test_resolution_skips_only_completed_builds(
     monkeypatch.setattr(preview, "preview_version", lambda commit: _VERSION)
     output = tmp_path / "output"
     monkeypatch.setenv("GITHUB_OUTPUT", str(output))
+    summary = tmp_path / "summary.md"
+    monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(summary))
     preview.resolve(_COMMIT)
     assert f"publish={str(not complete).lower()}" in output.read_text()
+    if complete and retained:
+        assert (
+            'pnpm add "https://github.com/chartcoach/chartcoach/releases/download/previews/chartcoach-catalog-0.3.4-dev.7.tgz"'
+            in summary.read_text()
+        )
+        assert (
+            "gh attestation verify chartcoach-0.3.4.dev7-py3-none-any.whl"
+            in summary.read_text()
+        )
+    else:
+        assert not summary.exists()
 
 
 def test_api_failure_never_creates_a_release(
@@ -461,7 +510,6 @@ def test_workflow_gates_source_and_attests_the_exact_artifact_set(
         if step["name"] == "Attest verified preview artifacts"
     )
     assert attest.get("if", "success()") == "success()"
-    assert "environment" not in jobs["publish-preview"]
     assert attest["with"]["predicate-type"] == _PREDICATE_TYPE
     assert attest["with"]["predicate-path"].endswith("-provenance.json")
     assert jobs["publish-preview"]["concurrency"] == {
@@ -498,6 +546,16 @@ def test_workflow_gates_source_and_attests_the_exact_artifact_set(
             for path in tmp_path.glob(pattern)
         }
         assert matched == set(files)
+
+
+def test_preview_deployment_links_to_published_channel() -> None:
+    workflow = yaml.load(
+        (_ROOT / ".github/workflows/publish.yml").read_text(), Loader=yaml.BaseLoader
+    )
+    assert workflow["jobs"]["publish-preview"]["environment"] == {
+        "name": "preview",
+        "url": "${{ github.server_url }}/${{ github.repository }}/releases/tag/previews",
+    }
 
 
 def test_interrupted_newer_upload_does_not_suppress_announcements_or_evict_completed_builds(
@@ -555,6 +613,49 @@ def test_publication_announces_direct_package_installation_urls(
         "npx --yes https://github.com/chartcoach/chartcoach/releases/download/previews/chartcoach-0.3.4-dev.7.tgz"
         in body
     )
+
+
+def test_publication_summary_repeats_installation_and_verification_on_retry(
+    preview: ModuleType,
+    distribution: Path,
+    github: GitHub,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    summary = tmp_path / "summary.md"
+    monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(summary))
+    preview.publish(distribution, _COMMIT, _VERSION)
+    assert summary.read_text() == github.comments[0]["body"]
+    assert (
+        "gh attestation verify chartcoach-0.3.4.dev7-py3-none-any.whl"
+        in summary.read_text()
+    )
+    summary.unlink()
+    preview.publish(distribution, _COMMIT, _VERSION)
+    assert len(github.comments) == 1
+    assert summary.read_text() == github.comments[0]["body"]
+
+
+def test_publication_summary_includes_builds_with_no_associated_pull_request(
+    preview: ModuleType,
+    distribution: Path,
+    github: GitHub,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    github.pull = None
+    summary = tmp_path / "summary.md"
+    monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(summary))
+    preview.publish(distribution, _COMMIT, _VERSION)
+    assert (
+        "[aaaaaaa](https://github.com/chartcoach/chartcoach/commit/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa)"
+        in summary.read_text()
+    )
+    assert (
+        'uv pip install "chartcoach @ https://github.com/chartcoach/chartcoach/releases/download/previews/chartcoach-0.3.4.dev7-py3-none-any.whl"'
+        in summary.read_text()
+    )
+    assert not github.comments
 
 
 def test_provenance_bytes_are_reused_across_publication_attempts(
