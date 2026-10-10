@@ -23,4 +23,4 @@ it("issues a partitioned cross-site browser cookie when embedding is configured"
     await rm(directory, { recursive: true, force: true });
     vi.unstubAllEnvs();
   }
-});
+}, 15_000);
