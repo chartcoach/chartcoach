@@ -4,9 +4,8 @@ import { source } from "@/lib/source";
 
 export const revalidate = false;
 
-export function GET() {
-  const body = llms(source)
-    .index()
+export async function GET() {
+  const body = (await llms(source).index())
     .replace(/^# Docs\b/, "# chartcoach")
     .replace(/\n- \*\*Separator\*\*\n/g, "\n")
     .replace(/\n{3,}/g, "\n\n")

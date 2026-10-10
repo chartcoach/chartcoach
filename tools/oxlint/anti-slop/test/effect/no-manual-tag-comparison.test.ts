@@ -1,5 +1,5 @@
 import "../rule-tester.ts";
-import { RuleTester } from "oxlint/plugins-dev";
+import { RuleTester } from "vite-plus/lint/plugins-dev";
 
 import { noManualTagComparisonRule } from "../../effect/rules/no-manual-tag-comparison.ts";
 

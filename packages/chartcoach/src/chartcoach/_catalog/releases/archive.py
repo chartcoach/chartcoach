@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import shutil
 import tarfile
-from collections.abc import Iterator
+from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path, PurePosixPath
 
@@ -39,8 +39,10 @@ def extract_tar_archive(archive_path: Path, target: Path) -> None:
 @contextmanager
 def _validated_tar_archive(
     archive_path: Path,
-) -> Iterator[
-    tuple[tarfile.TarFile, tuple[tuple[tarfile.TarInfo, PurePosixPath], ...]]
+) -> Generator[
+    tuple[tarfile.TarFile, tuple[tuple[tarfile.TarInfo, PurePosixPath], ...]],
+    None,
+    None,
 ]:
     with tarfile.open(archive_path, mode="r:gz") as archive:
         members: list[tuple[tarfile.TarInfo, PurePosixPath]] = []

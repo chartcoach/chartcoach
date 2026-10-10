@@ -4,7 +4,7 @@ import inspect
 import json
 import shutil
 from collections import Counter
-from collections.abc import Iterator
+from collections.abc import Generator
 from contextlib import contextmanager
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -527,7 +527,7 @@ def test_cloud_transport_forwards_storage_options_to_catalog_resources(
         def __init__(self, parent: str) -> None:
             self.parent = parent.rstrip("/")
 
-        def get(self, key: str) -> Iterator[bytes]:
+        def get(self, key: str) -> Generator[bytes]:
             yield objects[f"{self.parent}/{key}"]
 
     def from_url(parent: str, **options: object) -> Store:
@@ -615,7 +615,7 @@ def _serve(
     *,
     required_user_agent: str | None = None,
     required_header: tuple[str, str] | None = None,
-) -> Iterator[tuple[str, Counter[str]]]:
+) -> Generator[tuple[str, Counter[str]], None, None]:
     requests: Counter[str] = Counter()
 
     class Handler(SimpleHTTPRequestHandler):

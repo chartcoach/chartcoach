@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import hmac
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from urllib.parse import urlsplit
 
@@ -84,7 +84,7 @@ def create_app(server: MCPServer, *, config: MCPConfig | None = None) -> Starlet
     app.state.ready = False
 
     @asynccontextmanager
-    async def lifespan(application: Starlette) -> AsyncIterator[None]:
+    async def lifespan(application: Starlette) -> AsyncGenerator[None, None]:
         async with sdk_lifespan(application):
             application.state.ready = True
             try:

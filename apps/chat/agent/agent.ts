@@ -59,7 +59,6 @@ export default defineAgent({
     },
   }),
   defaultTools: false,
-  experimental: { instrumentationProviders: true },
   build: {
     externalDependencies: [
       "@chartcoach/catalog",

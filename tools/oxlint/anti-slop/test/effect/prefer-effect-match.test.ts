@@ -1,5 +1,5 @@
 import "../rule-tester.ts";
-import { RuleTester } from "oxlint/plugins-dev";
+import { RuleTester } from "vite-plus/lint/plugins-dev";
 
 import { preferEffectMatchRule } from "../../effect/rules/prefer-effect-match.ts";
 

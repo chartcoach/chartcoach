@@ -1,6 +1,6 @@
 import { fork, type ChildProcess } from "node:child_process";
 import { randomBytes } from "node:crypto";
-import { mkdir, mkdtemp } from "node:fs/promises";
+import { cp, mkdir, mkdtemp } from "node:fs/promises";
 import { once } from "node:events";
 import { join } from "node:path";
 import { z } from "zod";
@@ -70,6 +70,12 @@ export async function startChat(
 
   config = { ...config, storage: { ...config.storage, dataDir: workspace.directory } };
 
+  await cp(
+    join(distribution, "sandbox"),
+    join(config.storage.dataDir, ".eve/sandbox-cache/just-bash/templates"),
+    { recursive: true, force: false, errorOnExist: false },
+  );
+
   const token = randomBytes(32).toString("hex");
 
   const secrets = [
@@ -93,7 +99,6 @@ export async function startChat(
       VERCEL_ENV: "",
       CHARTCOACH_RUNTIME_CONFIG: JSON.stringify(config),
       CHARTCOACH_RUNTIME_TOKEN: token,
-      CHARTCOACH_SANDBOX_PLAN: join(distribution, "sandbox.json"),
       WORKFLOW_LOCAL_BASE_URL: "",
     },
   });

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Callable, Iterator, Mapping, Sequence
+from collections.abc import Callable, Generator, Mapping, Sequence
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, TypeVar, cast
 
@@ -100,7 +100,7 @@ def load_catalog(
 
 
 @contextmanager
-def storage_errors(operation: str, target: str) -> Iterator[None]:
+def storage_errors(operation: str, target: str) -> Generator[None, None, None]:
     """Render installed object-store backend failures as CLI errors."""
 
     try:

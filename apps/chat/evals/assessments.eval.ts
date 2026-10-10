@@ -19,7 +19,7 @@ export default defineEval({
     ] as const;
 
     for (const scenario of cases) {
-      const turn = await t.newSession().send(scenario.prompt);
+      const turn = await (await t.session()).send(scenario.prompt);
       const answer = assertGrounding(t, turn, scenario.prompt);
       t.check(
         answer.points,
@@ -30,11 +30,11 @@ export default defineEval({
       );
     }
 
-    const uncertain = await t
-      .newSession()
-      .send(
-        "The screenshot of my bar chart is cropped so the axis baseline and scale labels are not visible. I do not know their values. Can you determine whether it violates the zero-baseline guideline?",
-      );
+    const uncertain = await (
+      await t.session()
+    ).send(
+      "The screenshot of my bar chart is cropped so the axis baseline and scale labels are not visible. I do not know their values. Can you determine whether it violates the zero-baseline guideline?",
+    );
 
     const answer = presentedAnswer(t, uncertain);
     t.check(

@@ -7,6 +7,7 @@ import { startChat } from "../runtime/start";
 
 it("recovers abandoned locks, isolates parallel sessions, and releases their resources", async () => {
   const directory = await mkdtemp(join(tmpdir(), "chartcoach-lifecycle-"));
+  await mkdir(join(directory, "sandbox"));
   await mkdir(join(directory, "server"));
   await mkdir(join(directory, "public"));
   await writeFile(join(directory, "public/index.html"), "ChartCoach");

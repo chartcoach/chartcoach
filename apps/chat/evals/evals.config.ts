@@ -1,3 +1,4 @@
+import { Experimental_DecisionLanguageModel } from "@ai-sdk/provider-utils/experimental-decision";
 import { defineEvalConfig } from "eve/evals";
 import { Redacted } from "effect";
 import { settings } from "../runtime/settings";
@@ -16,6 +17,8 @@ export default defineEvalConfig({
   maxConcurrency: 1,
   timeoutMs: 180_000,
   judge: {
-    model: languageModel({ ...settings.model, model, name: "Evaluation" }, Redacted.make(key)),
+    model: new Experimental_DecisionLanguageModel({
+      model: languageModel({ ...settings.model, model, name: "Evaluation" }, Redacted.make(key)),
+    }),
   },
 });

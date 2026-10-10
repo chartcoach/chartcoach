@@ -452,8 +452,7 @@ Direct clients that choose the full catalog record its full-table selection.
 Retrieval continues against the frozen guideline IDs, with the original SQL kept
 for inspection. Follow-ups retain the initiating release and selection.
 
-Eve owns the OpenTelemetry pipeline through its experimental
-`instrumentationProviders` setting in `agent/agent.ts` and the declarations under
+Eve owns the OpenTelemetry pipeline through the declarations under
 `agent/instrumentation/`. It flushes buffered observations after execution steps,
 including cancellation, and shuts down the exporter with the server. The exporter
 keeps agent/model/tool spans and filters workflow and HTTP plumbing.

@@ -81,6 +81,46 @@ it("protects assets and streams authenticated requests through the same origin",
   }
 });
 
+it("closes an active event stream before releasing the gateway", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "chartcoach-gateway-stream-"));
+
+  const worker = createServer((_request, response) => {
+    response.writeHead(200, { "content-type": "text/event-stream" });
+    response.write("data: ready\n\n");
+  });
+
+  await new Promise<void>((resolve) => worker.listen(0, "127.0.0.1", resolve));
+  const address = z.object({ port: z.number() }).parse(worker.address());
+
+  const gateway = createGateway({
+    config: loadConfig({
+      environment: {},
+      userConfig: "/missing/config.json",
+      overrides: { server: { port: 0 } },
+    }),
+    assets: directory,
+    agentURL: `http://127.0.0.1:${address.port}`,
+    token: "private-worker-token",
+  });
+
+  try {
+    const url = await gateway.listen();
+    const response = await fetch(new URL("eve/v1/events", url));
+    const reader = response.body!.getReader();
+    expect(new TextDecoder().decode((await reader.read()).value)).toBe("data: ready\n\n");
+    reader.releaseLock();
+    await gateway.close();
+    expect(gateway.server.listening).toBe(false);
+    await expect(fetch(url)).rejects.toThrow();
+    await response.body?.cancel().catch(() => {});
+  } finally {
+    await gateway.close();
+    worker.closeAllConnections();
+    await new Promise<void>((resolve) => worker.close(() => resolve()));
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
 async function embeddedGateway(
   server: { embedOrigins: string[] },
   secrets: Pick<Parameters<typeof createGateway>[0], "password" | "embedKey"> = {},

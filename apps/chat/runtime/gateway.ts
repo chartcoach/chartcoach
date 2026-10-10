@@ -1,5 +1,6 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import { createServer, type IncomingMessage } from "node:http";
+import type { Socket } from "node:net";
 import { ProxyServer } from "http-proxy-3";
 import sirv from "sirv";
 import { z } from "zod";
@@ -100,6 +101,7 @@ export function createGateway({
   const files = sirv(assets, { etag: true, maxAge: 0, single: false });
   const embed = embedding(config.server.embedOrigins);
   const access = embedKey ? createHash("sha256").update(embedKey).digest("hex") : undefined;
+  const sockets = new Set<Socket>();
   let publicURL: URL;
 
   proxy.on("proxyRes", (proxyResponse, _request, response) => {
@@ -238,6 +240,11 @@ export function createGateway({
     });
   });
 
+  server.on("connection", (socket) => {
+    sockets.add(socket);
+    socket.once("close", () => sockets.delete(socket));
+  });
+
   return {
     server,
     async listen(port = config.server.port) {
@@ -266,6 +273,9 @@ export function createGateway({
       const closed = new Promise<void>((resolve) => server.close(() => resolve()));
       server.closeAllConnections();
       proxy.close();
+
+      // Bun can retain proxy event streams after closeAllConnections.
+      for (const socket of sockets) socket.destroy();
       await closed;
     },
   };

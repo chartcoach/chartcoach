@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { ROOT_CONTEXT, trace, type Tracer } from "@opentelemetry/api";
-import { defineInstrumentation } from "eve/instrumentation";
+import { defineInstrumentation, type ProviderDefinition } from "eve/instrumentation";
 import { z } from "zod";
 import { maxChartBytes } from "../shared/attachment";
 import { catalogTraceSchema } from "./telemetry";
@@ -24,7 +24,7 @@ export function mediaInstrumentation(tracer?: Tracer) {
     observed.delete(sessionId);
   };
 
-  return defineInstrumentation({
+  const definition = {
     tracePolicy: () => true,
     events: {
       "model.call.started"(event) {
@@ -96,7 +96,9 @@ export function mediaInstrumentation(tracer?: Tracer) {
     shutdown() {
       observed.clear();
     },
-  });
+  } satisfies ProviderDefinition;
+
+  return { ...defineInstrumentation(definition), ...definition };
 }
 
 function imageBytes(data: ImageData, mediaType: string): Buffer | undefined {

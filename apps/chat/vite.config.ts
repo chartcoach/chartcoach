@@ -11,6 +11,8 @@ export default defineConfig({
     target: "node24",
     dts: false,
     deps: {
+      // Preserve the package subpath resolution used by existing builds.
+      resolveDepSubpath: true,
       alwaysBundle: ["@commander-js/extra-typings"],
       onlyBundle: ["@commander-js/extra-typings"],
     },
