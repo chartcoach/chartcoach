@@ -5,7 +5,7 @@ import { expect, it, vi } from "vite-plus/test";
 import { loadConfig } from "../runtime/config";
 import { startChat } from "../runtime/start";
 
-it("recovers a recent abandoned lock and releases the worker and workspace", async () => {
+it("recovers abandoned locks, isolates parallel sessions, and releases their resources", async () => {
   const directory = await mkdtemp(join(tmpdir(), "chartcoach-lifecycle-"));
   await mkdir(join(directory, "server"));
   await mkdir(join(directory, "public"));
@@ -28,7 +28,7 @@ it("recovers a recent abandoned lock and releases the worker and workspace", asy
     userConfig: join(directory, "absent.json"),
     overrides: {
       catalog: { source: new URL("../../../fixtures/catalog-release", import.meta.url).href },
-      storage: { dataDir: join(directory, "data"), cacheDir: join(directory, "cache") },
+      storage: { dataDir: join(directory, "data's space"), cacheDir: join(directory, "cache") },
       server: { port: 0 },
     },
   });
@@ -43,6 +43,7 @@ it("recovers a recent abandoned lock and releases the worker and workspace", asy
     let pid: number;
     {
       await using app = await startChat(config, options);
+      expect(app.dataDir).toBe(config.storage.dataDir);
       expect(await (await fetch(app.url)).text()).toBe("ChartCoach");
       expect(log).toHaveBeenCalledTimes(1);
       pid = Number(await readFile(join(config.storage.dataDir, "worker.pid"), "utf8"));
@@ -60,7 +61,66 @@ it("recovers a recent abandoned lock and releases the worker and workspace", asy
       controller.abort();
       await expect(stopped).rejects.toBe(controller.signal.reason);
       expect(await (await fetch(app.url)).text()).toBe("ChartCoach");
-      await expect(startChat(config, options)).rejects.toThrow("already in use");
+
+      const busy = { ...config, server: { ...config.server, port: Number(new URL(app.url).port) } };
+      let session: string;
+      let sessionPID: number;
+      {
+        await using parallel = await startChat(busy, options);
+        session = parallel.dataDir;
+        expect(session).toMatch(`${join(config.storage.dataDir, "sessions", "session-")}`);
+        expect(parallel.url).not.toBe(app.url);
+        expect(await (await fetch(parallel.url)).text()).toBe("ChartCoach");
+        sessionPID = Number(await readFile(join(session, "worker.pid"), "utf8"));
+        expect(sessionPID).not.toBe(pid);
+        await writeFile(join(session, "saved.txt"), "independent session");
+        await expect(readFile(join(app.dataDir, "saved.txt"))).rejects.toThrow();
+      }
+
+      expect(() => process.kill(sessionPID!, 0)).toThrow();
+      {
+        await using resumed = await startChat(
+          { ...busy, storage: { ...config.storage, dataDir: session! } },
+          options,
+        );
+
+        expect(resumed.dataDir).toBe(session!);
+        expect(await readFile(join(resumed.dataDir, "saved.txt"), "utf8")).toBe(
+          "independent session",
+        );
+        expect(await (await fetch(resumed.url)).text()).toBe("ChartCoach");
+      }
+
+      expect(await (await fetch(app.url)).text()).toBe("ChartCoach");
+
+      // A fixed public URL must not silently route a second session to the first one.
+      const fixed = { ...busy, server: { ...busy.server, publicURL: app.url } };
+      const blocked = startChat(fixed, options);
+
+      await expect(blocked).rejects.toThrow("still locked");
+      await expect(blocked).rejects.toThrow(config.storage.dataDir);
+      await expect(blocked).rejects.toThrow("Ctrl+C");
+      await expect(blocked).rejects.toThrow(
+        process.platform === "win32" ? "Get-CimInstance Win32_Process" : "lsof -nP -a -d cwd '",
+      );
+
+      if (process.platform !== "win32")
+        await expect(blocked).rejects.toThrow("data'\"'\"'s space'");
+
+      await expect(blocked).rejects.toThrow(
+        process.platform === "win32" ? "Stop-Process -Id PID" : "kill -TERM PID",
+      );
+      await expect(blocked).rejects.toThrow("--data-dir <directory> --port 0");
+      await expect(blocked).rejects.toThrow("choose a distinct public URL");
+
+      await expect(
+        startChat(
+          { ...fixed, storage: { ...config.storage, dataDir: join(directory, "fixed") } },
+          options,
+        ),
+      ).rejects.toThrow(`Port ${busy.server.port} is in use`);
+      const failedPID = Number(await readFile(join(directory, "fixed", "worker.pid"), "utf8"));
+      expect(() => process.kill(failedPID, 0)).toThrow();
     }
 
     expect(() => process.kill(pid!, 0)).toThrow();
@@ -72,4 +132,4 @@ it("recovers a recent abandoned lock and releases the worker and workspace", asy
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
-}, 35_000);
+}, 50_000);

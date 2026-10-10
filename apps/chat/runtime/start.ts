@@ -1,6 +1,6 @@
 import { fork, type ChildProcess } from "node:child_process";
 import { randomBytes } from "node:crypto";
-import { mkdir } from "node:fs/promises";
+import { mkdir, mkdtemp } from "node:fs/promises";
 import { once } from "node:events";
 import { join } from "node:path";
 import { z } from "zod";
@@ -45,21 +45,30 @@ export async function startChat(
   await mkdir(config.storage.cacheDir, { recursive: true, mode: 0o700 });
   const controller = new AbortController();
   const lifetime = AbortSignal.any([signal, controller.signal]);
+  const local = ["127.0.0.1", "::1"].includes(config.server.host) && !config.server.publicURL;
 
   await using resources = new AsyncDisposableStack();
 
-  const release = await lockWorkspace(
+  const workspace = await lockWorkspace(
     config.storage.dataDir,
     lifetime,
     () => controller.abort(new Error("The workspace lock was lost. Restart ChartCoach.")),
     log,
+    local,
   ).catch((error) => {
     lifetime.throwIfAborted();
     throw error;
   });
 
-  resources.defer(release);
+  resources.defer(workspace.release);
   lifetime.throwIfAborted();
+
+  if (workspace.directory !== config.storage.dataDir)
+    log(
+      `Starting an independent session with separate conversations and connections.\nResume it later with --data-dir ${shellPath(workspace.directory)} --port 0.`,
+    );
+
+  config = { ...config, storage: { ...config.storage, dataDir: workspace.directory } };
 
   const token = randomBytes(32).toString("hex");
 
@@ -145,10 +154,18 @@ export async function startChat(
   resources.defer(() => gateway.close());
 
   const url = await gateway.listen().catch((error) => {
-    if (error instanceof Error && "code" in error && error.code === "EADDRINUSE")
+    if (error instanceof Error && "code" in error && error.code === "EADDRINUSE") {
+      if (local) {
+        log(`Port ${config.server.port} is in use; choosing an available port…`);
+
+        return gateway.listen(0);
+      }
+
       throw new Error(
         `Port ${config.server.port} is in use. Choose another --port, or use --port 0.`,
       );
+    }
+
     throw error;
   });
 
@@ -157,6 +174,7 @@ export async function startChat(
 
   return {
     url,
+    dataDir: config.storage.dataDir,
     catalog: { guidelines: catalog.length, digest: catalog.release.digest },
     [Symbol.asyncDispose]: () => running.disposeAsync(),
     async wait() {
@@ -172,29 +190,68 @@ async function lockWorkspace(
   signal: AbortSignal,
   onCompromised: () => void,
   log: (message: string) => void,
+  parallel: boolean,
 ) {
   // Cover the lock's 10-second stale threshold and filesystem timestamp rounding.
   for (let attempt = 0; ; attempt++) {
     signal.throwIfAborted();
 
     try {
-      return await lockfile.lock(directory, {
+      const release = await lockfile.lock(directory, {
         lockfilePath: join(directory, ".lock"),
         onCompromised,
       });
+
+      return { directory, release };
     } catch (error) {
       if (!(error instanceof Error && "code" in error && error.code === "ELOCKED")) throw error;
 
-      if (attempt === 12)
+      if (attempt === 12) {
+        if (parallel) {
+          const sessions = join(directory, "sessions");
+          await mkdir(sessions, { recursive: true, mode: 0o700 });
+          const session = await mkdtemp(join(sessions, "session-"));
+          signal.throwIfAborted();
+
+          const release = await lockfile.lock(session, {
+            lockfilePath: join(session, ".lock"),
+            onCompromised,
+          });
+
+          return { directory: session, release };
+        }
+
+        const windows = process.platform === "win32";
+
+        const find = windows
+          ? "Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*chartcoach*' } | Select-Object ProcessId, CommandLine"
+          : `lsof -nP -a -d cwd ${shellPath(directory)}`;
+
+        const stop = windows ? "Stop-Process -Id PID" : "kill -TERM PID";
+
         throw new Error(
-          "This data directory is already in use. Stop the other ChartCoach process or choose --data-dir.",
+          [
+            `The data directory is still locked:\n  ${directory}`,
+            `Press Ctrl+C in the other ChartCoach terminal, or find its background runtime${windows ? " in PowerShell" : ""}:`,
+            `  ${find}`,
+            ...(windows ? [] : ["Inspect the listed PID: ps -p PID -o command="]),
+            `Stop ChartCoach with ${stop}, replacing PID with its process ID, then retry.`,
+            "PID is a process ID, not a port number.",
+            "For a separate session, use --data-dir <directory> --port 0.",
+            "If --public-url is configured, choose a distinct public URL for that session.",
+          ].join("\n"),
         );
+      }
 
       if (attempt === 0) log("Waiting for the previous ChartCoach session to release its data…");
     }
 
     await delay(1000, undefined, { signal });
   }
+}
+
+function shellPath(directory: string) {
+  return `'${directory.replaceAll("'", process.platform === "win32" ? "''" : "'\"'\"'")}'`;
 }
 
 async function workerURL(child: ChildProcess, signal: AbortSignal) {
