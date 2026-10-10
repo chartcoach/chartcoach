@@ -202,11 +202,19 @@ def resolve(commit: str) -> None:
         raise ValueError("The latest main push CI must succeed for this exact commit")
     version = preview_version(commit)
     require_channel()
-    complete = marker_name(version) in available(assets())
+    uploaded = available(assets())
+    complete = marker_name(version) in uploaded
     with Path(os.environ["GITHUB_OUTPUT"]).open("a") as output:
         output.write(
             f"commit={commit}\nversion={version}\npublish={str(not complete).lower()}\n"
         )
+    if (
+        complete
+        and set(artifact_names(version)) <= uploaded
+        and (summary := os.environ.get("GITHUB_STEP_SUMMARY"))
+    ):
+        with Path(summary).open("a") as output:
+            output.write(announcement(os.environ["GH_REPO"], commit, version))
 
 
 def discovered_versions(items: list[dict[str, Any]]) -> list[str]:
@@ -225,9 +233,29 @@ def discovered_versions(items: list[dict[str, Any]]) -> list[str]:
     )
 
 
+def announcement(repository: str, commit: str, version: str) -> str:
+    downloads = f"https://github.com/{repository}/releases/download/{_TAG}"
+    wheel, _, catalog, chat = package_names(version)
+    install = f'```console\nuv pip install "chartcoach @ {downloads}/{wheel}"\npnpm add "{downloads}/{catalog}"\nnpx --yes {downloads}/{chat}\n```'
+    source_record = (
+        f"Source provenance is recorded in `{provenance_name(version)}`. "
+        "`buildDefinition.externalParameters.checkoutCommit` identifies the packaged source, "
+        "and resolved dependencies record the workflow revision."
+        " Download the attestation, then verify its bundle with the expected predicate type and signing workflow. "
+        "Replace `BUNDLE_FILE` with the `.jsonl` filename printed by the download command:\n\n"
+        f"```console\ngh release download {_TAG} -R {repository} --pattern '{wheel}'\n"
+        f"gh attestation download {wheel} -R {repository}\n"
+        f"gh attestation verify {wheel} -R {repository} \\\n"
+        "  --bundle BUNDLE_FILE \\\n"
+        f'  --predicate-type "{_PREDICATE_TYPE}" \\\n'
+        f'  --signer-workflow "{repository}/.github/workflows/publish.yml"\n```'
+    )
+    announcement_marker = f"<!-- chartcoach-preview:{version} -->"
+    return f"{announcement_marker}\nchartcoach `{version}` from [{commit[:7]}](https://github.com/{repository}/commit/{commit}) is available as a [preview build](https://github.com/{repository}/releases/tag/{_TAG}):\n\n{install}\n\n{source_record}\n"
+
+
 def publish(directory: Path, commit: str, version: str) -> None:
     repository = os.environ["GH_REPO"]
-    downloads = f"https://github.com/{repository}/releases/download/{_TAG}"
     manifest = checksum(directory, version)
     paths = [
         directory / ("python" if name.endswith((".whl", ".tar.gz")) else "npm") / name
@@ -278,21 +306,8 @@ def publish(directory: Path, commit: str, version: str) -> None:
         ]
         cutoff = builds[29] if len(builds) >= 30 else None
         stale = versions[versions.index(cutoff) + 1 :] if cutoff else []
-        wheel, _, catalog, chat = package_names(version)
-        install = f'```console\nuv pip install "chartcoach @ {downloads}/{wheel}"\npnpm add "{downloads}/{catalog}"\nnpx --yes {downloads}/{chat}\n```'
-        source_record = (
-            f"Source provenance is recorded in `{provenance_name(version)}`. "
-            "`buildDefinition.externalParameters.checkoutCommit` identifies the packaged source, "
-            "and resolved dependencies record the workflow revision."
-            " Download the attestation, then verify its bundle with the expected predicate type and signing workflow. "
-            "Replace `BUNDLE_FILE` with the `.jsonl` filename printed by the download command:\n\n"
-            f"```console\ngh release download {_TAG} -R {repository} --pattern '{wheel}'\n"
-            f"gh attestation download {wheel} -R {repository}\n"
-            f"gh attestation verify {wheel} -R {repository} \\\n"
-            "  --bundle BUNDLE_FILE \\\n"
-            f'  --predicate-type "{_PREDICATE_TYPE}" \\\n'
-            f'  --signer-workflow "{repository}/.github/workflows/publish.yml"\n```'
-        )
+        body_text = announcement(repository, commit, version)
+        announcement_marker = f"<!-- chartcoach-preview:{version} -->"
         if version not in stale:
             pulls = json.loads(gh("api", f"repos/{repository}/commits/{commit}/pulls"))
             pull = next(
@@ -312,14 +327,11 @@ def publish(directory: Path, commit: str, version: str) -> None:
                         f"repos/{repository}/issues/{pull}/comments",
                     )
                 )
-                announcement_marker = f"<!-- chartcoach-preview:{version} -->"
                 if not any(
                     announcement_marker in c["body"] for page in pages for c in page
                 ):
                     body = root / "comment.md"
-                    body.write_text(
-                        f"{announcement_marker}\nchartcoach `{version}` from [{commit[:7]}](https://github.com/{repository}/commit/{commit}) is available as a [preview build](https://github.com/{repository}/releases/tag/{_TAG}):\n\n{install}\n\n{source_record}\n"
-                    )
+                    body.write_text(body_text)
                     gh("pr", "comment", str(pull), "--body-file", str(body))
         # Announce before pruning; commit the checksum marker only on completion.
         for old in stale:
@@ -328,6 +340,9 @@ def publish(directory: Path, commit: str, version: str) -> None:
                     gh("release", "delete-asset", _TAG, name, "--yes")
         if version not in stale:
             upload(manifest)
+            if summary := os.environ.get("GITHUB_STEP_SUMMARY"):
+                with Path(summary).open("a") as output:
+                    output.write(body_text)
 
 
 def main() -> None:
