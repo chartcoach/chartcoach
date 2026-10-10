@@ -48,11 +48,43 @@ npx chartcoach chat --catalog ./my-catalog-release
 npx chartcoach doctor --json
 ```
 
-The default listener is `127.0.0.1:4273`. A busy port produces an error. Use `--port 0`
-to allocate an available port. One running process owns each data directory.
-After an interrupted shutdown, startup waits briefly for a leftover lock to expire.
+The default listener is `127.0.0.1:4273`. Local launches choose an available port
+when that port is busy. Use `--port 0` to request an available port immediately.
+After an interrupted shutdown, startup waits briefly for a leftover lock to expire
+and reopens the existing conversations. If the data directory remains occupied,
+another local launch starts an independent session under `sessions/session-*`
+inside that directory. Conversations, connections, and workflow files stay
+separate; the catalog cache is shared. Startup prints the actual URL and data path,
+plus a `--data-dir` command to reopen the independent session later.
+Network listeners and deployments with `--public-url` retain their configured
+directory and port; choose distinct settings to run those in parallel.
 The launcher resolves the official catalog selection to an immutable release at
 startup. That release stays fixed until the server restarts.
+
+If startup still reports that the data directory is locked, the error prints its
+path and commands to find and stop the background ChartCoach runtime. On macOS
+and Linux, run the printed `lsof` command, inspect the listed PID with
+`ps -p PID -o command=`, then stop ChartCoach with `kill -TERM PID` and retry.
+Replace `PID` with its process ID; `killport` expects a port number instead.
+In another ChartCoach terminal, Ctrl+C stops
+the session. Windows feedback supplies PowerShell commands.
+To run a separate session, choose another `--data-dir` and use `--port 0`.
+
+An npm `ETIMEDOUT` happens while fetching the package, before ChartCoach starts.
+Retry with cached package data preferred and more network retries:
+
+```bash
+npx --yes --prefer-offline --fetch-retries=5 chartcoach
+```
+
+For a preview, replace `chartcoach` with its release tarball URL. These
+[npm fetch settings](https://docs.npmjs.com/cli/v11/using-npm/config/#fetch-retries)
+also apply when installing once, then launching without `npx` fetching packages:
+
+```bash
+npm install --global --fetch-retries=5 chartcoach
+chartcoach
+```
 
 Your question, uploaded image, and retrieved guidance go to the selected model
 provider. Local query embeddings download weights on the first vector search; a configured remote embedding connection sends retrieval queries to its own endpoint. A local model endpoint keeps inference on your machine too.

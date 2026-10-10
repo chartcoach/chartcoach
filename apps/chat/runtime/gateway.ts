@@ -240,13 +240,21 @@ export function createGateway({
 
   return {
     server,
-    async listen() {
+    async listen(port = config.server.port) {
       await new Promise<void>((resolve, reject) => {
-        server.once("error", reject);
-        server.listen(config.server.port, config.server.host, () => {
-          server.off("error", reject);
+        const ready = () => {
+          server.off("error", failed);
           resolve();
-        });
+        };
+
+        const failed = (error: Error) => {
+          server.off("listening", ready);
+          reject(error);
+        };
+
+        server.once("error", failed);
+        server.once("listening", ready);
+        server.listen(port, config.server.host);
       });
       const address = z.object({ port: z.number() }).parse(server.address());
       const host = config.server.host.includes(":") ? "[::1]" : "127.0.0.1";

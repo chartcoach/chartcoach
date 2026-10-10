@@ -79,10 +79,14 @@ events. Shared schemas define filter selections and review evidence.
 typed T3 Env validation from it, and `runtime/config.ts` applies precedence. The launcher
 validates it before starting a worker, resolves the selected catalog release, and
 passes one resolved configuration to the worker. `runtime/start.ts` owns the data
-directory lock and the worker and gateway resources. `runtime/worker.ts` owns the
+directory lock, local session allocation, and the worker and gateway resources.
+It recovers abandoned locks before allocating an independent local session under
+the occupied directory's `sessions/` folder. Local listeners retry busy ports with
+an available port; fixed public URLs and network listeners retain their settings.
+`runtime/worker.ts` owns the
 Nitro listener, storage readiness, and shutdown hooks. It reports its ready URL
 over IPC. Eve's working directory
-is the configured data directory, so its workflows and sandbox files persist beside
+is the resolved session data directory, so its workflows and sandbox files persist beside
 the app database and credential key. `lib/app/sqlite.ts` connects Node’s built-in SQLite engine to Effect SQL, so storage needs no install-time native binding.
 
 `runtime/gateway.ts` serves static assets and forwards `/eve/` requests to the

@@ -131,7 +131,7 @@ options(program.command("chat", { isDefault: true }).description("Start the chat
           url: app.url,
           catalog: app.catalog,
           model: config.model.model,
-          dataDir: config.storage.dataDir,
+          dataDir: app.dataDir,
         }),
       );
 
