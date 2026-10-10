@@ -32,6 +32,10 @@ const routeContext: RouteHandlerArgs = {
   resolveSession: unsupportedSessionOperation,
   attachSession: unsupportedSessionOperation,
   waitUntil: unsupportedSessionOperation,
+  describe: unsupportedSessionOperation,
+  listSkillFiles: unsupportedSessionOperation,
+  readSkill: unsupportedSessionOperation,
+  invokeTool: unsupportedSessionOperation,
 };
 
 beforeAll(async () => {

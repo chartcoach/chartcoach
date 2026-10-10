@@ -95,10 +95,12 @@ and Origin headers. Network listeners require HTTP Basic authentication. Workflo
 callbacks remain on the worker's loopback origin. The gateway replaces forwarded
 headers with its configured public origin.
 
-The pinned Eve dependency has two focused patches: preserving image bytes in
-instrumentation and keeping live stream events ordered during disk catch-up.
-`apps/chat/test/workflow-stream.test.ts` exercises the latter against Eve's actual
-vendored reader, including replay from a saved cursor. Keep these checks when
+The pinned Eve dependency has focused patches to keep live stream events
+ordered during disk catch-up and migrate chart attachments from legacy sandbox
+state when upgrading saved conversations. Upstream instrumentation preserves image bytes.
+`apps/chat/test/workflow-stream.test.ts` exercises stream ordering against Eve's actual
+vendored reader, including replay from a saved cursor. `sandbox-upgrade.test.ts`
+checks legacy attachment migration and preservation of current skills. Keep these checks when
 upgrading Eve and remove a patch only when the upstream version passes them.
 
 The app separates rendering, browser computation, and server catalog access:
@@ -163,10 +165,11 @@ directory. Do not edit generated output directly.
 
 `apps/chat/scripts/package.ts` assembles compiled Eve code and the static UI into
 `apps/chat/dist`. It excludes traced `node_modules` and resolves exact runtime
-versions for the distribution manifest. The pinned Eve build tooling supplies a
-sandbox plan containing its compiled template keys and skill seeds. The worker
-provisions that plan through the public just-bash backend before readiness. This
-keeps template state in the data directory and compiler dependencies in the build. npm installs native dependencies for the
+versions for the distribution manifest. Eve prepares just-bash sandbox templates
+during the build. The Nitro integration copies those templates and replaces
+build-machine paths with paths relative to the application's data directory.
+The CLI installs the packaged templates before starting the worker. This keeps
+template state in the data directory and compiler dependencies in the build. npm installs native dependencies for the
 consumer platform. The source workspace keeps the compiler, frontend dependencies,
 and private brand and skill packages.
 

@@ -1,5 +1,3 @@
-import type { SandboxBackend, SandboxBackendPrewarmInput } from "eve/sandbox";
-
 import { cp, mkdir, readFile, readdir, rm, writeFile, chmod } from "node:fs/promises";
 import { findPackageJSON } from "node:module";
 import { join, resolve } from "node:path";
@@ -19,41 +17,6 @@ async function installedVersion(name: string): Promise<string> {
   return JSON.parse(await readFile(path, "utf8")).version;
 }
 
-// SAFETY: the installed Eve prewarm module accepts its public sandbox backend contracts.
-const { prewarmBuiltAppSandboxes } = (await import(
-  new URL("./execution/sandbox/prewarm.js", import.meta.resolve("eve")).href
-)) as {
-  prewarmBuiltAppSandboxes(
-    this: void,
-    input: {
-      appRoot: string;
-      dispatch(input: {
-        backend: SandboxBackend;
-        input: SandboxBackendPrewarmInput;
-      }): Promise<{ reused: boolean }>;
-    },
-  ): Promise<void>;
-};
-
-const sandboxPlan: { templateKey: string; seedFiles: { path: string; content: string }[] }[] = [];
-
-await prewarmBuiltAppSandboxes({
-  appRoot: root,
-  dispatch: async ({ backend, input }) => {
-    if (backend.name !== "just-bash" || input.bootstrap)
-      throw new Error("The packaged chat sandbox must use just-bash with compiled skill seeds.");
-    sandboxPlan.push({
-      templateKey: input.templateKey,
-      seedFiles: input.seedFiles.map((file) => ({
-        path: file.path,
-        content: Buffer.from(file.content).toString("base64"),
-      })),
-    });
-
-    return { reused: false };
-  },
-});
-
 await rm(output, { recursive: true, force: true });
 
 await mkdir(output, { recursive: true });
@@ -66,6 +29,8 @@ await cp(join(root, ".output/server"), join(output, "server"), {
 });
 
 await rm(join(output, "server/package.json"), { force: true });
+
+await cp(join(root, ".output/sandbox"), join(output, "sandbox"), { recursive: true });
 
 await cp(join(root, "out"), join(output, "public"), { recursive: true });
 
@@ -97,7 +62,7 @@ await writeFile(
       type: "module",
       engines: source.engines,
       bin: { chartcoach: "./cli/index.mjs" },
-      files: ["cli", "server", "public", "sandbox.json"],
+      files: ["cli", "server", "public", "sandbox"],
       dependencies,
       publishConfig: source.publishConfig,
     },
@@ -109,8 +74,6 @@ await writeFile(
 await cp(join(root, "README.md"), join(output, "README.md"));
 
 await cp(resolve(root, "../../LICENSE"), join(output, "LICENSE"));
-
-await writeFile(join(output, "sandbox.json"), JSON.stringify(sandboxPlan) + "\n");
 
 await chmod(join(output, "cli/index.mjs"), 0o755);
 

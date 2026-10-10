@@ -45,11 +45,16 @@ it("defaults to hosted model origins and lets explicit settings replace them", (
 });
 
 it("rejects an invalid saved connection instead of using the server's key", async () => {
+  // Eve returns a union of static and dynamic models; this test exercises its dynamic callback.
+  // eslint-disable-next-line anti-slop/no-runtime-typeof
+  if (typeof agent.model !== "object" || !("events" in agent.model))
+    throw new Error("Expected a dynamic model.");
   const resolve = agent.model.events["step.started"]!;
   await expect(
     resolve(
       {},
       {
+        model: null,
         session: {
           id: "session",
           auth: {

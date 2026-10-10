@@ -119,8 +119,8 @@ def _options(values: Mapping[str, object]) -> dict[str, object]:
         "min_dist": 0.1,
         "metric": "cosine",
         "random_state": 42,
+        **values,
     }
-    options.update(values)
     if isinstance(options["n_neighbors"], bool):
         raise TypeError("UMAP n_neighbors must be an integer.")
     try:
@@ -135,9 +135,10 @@ def _options(values: Mapping[str, object]) -> dict[str, object]:
         random_state = operator.index(cast(SupportsIndex, options["random_state"]))
     except TypeError as exc:
         raise TypeError("UMAP random_state must be an integer.") from exc
-    if not isinstance(options["metric"], str):
+    metric = values.get("metric", "cosine")
+    if not isinstance(metric, str):
         raise TypeError("UMAP metric must be a string.")
-    if not options["metric"]:
+    if not metric:
         raise ValueError("UMAP metric must be a non-empty string.")
     options["n_neighbors"] = n_neighbors
     options["random_state"] = random_state

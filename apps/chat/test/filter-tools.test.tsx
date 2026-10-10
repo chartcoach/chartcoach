@@ -49,13 +49,11 @@ function context(toolName: string): ToolContext {
         },
       },
     },
+    messages: [],
     toolName,
     callId: "call",
     async getSandbox() {
       throw new Error("Unexpected sandbox request.");
-    },
-    getSkill() {
-      throw new Error("Unexpected skill request.");
     },
     async getToken() {
       throw new Error("Unexpected token request.");

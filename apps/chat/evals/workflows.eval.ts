@@ -17,7 +17,7 @@ export default defineEval({
           "I have monthly revenue for four product lines over two years. Readers need to compare trends in a printed management report. Recommend a chart and encoding choices grounded in the catalog.",
       },
     ] as const) {
-      const turn = await t.newSession().send(scenario.prompt);
+      const turn = await (await t.session()).send(scenario.prompt);
       const answer = assertGrounding(t, turn, scenario.prompt);
       t.check(
         answer,

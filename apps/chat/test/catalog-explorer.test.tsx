@@ -1,5 +1,6 @@
 import { Catalog, parseCatalogManifest } from "@chartcoach/catalog";
 import { Coordinator, type Connector } from "@uwdata/mosaic-core";
+import { tableFromArrays, tableToIPC } from "@uwdata/flechette";
 import { afterAll, beforeAll, expect, it } from "vite-plus/test";
 import { exploreCatalog, type ExplorerData } from "../browser/explorer";
 import { catalogMatches } from "../browser/catalog-matches";
@@ -44,7 +45,7 @@ let delayed:
 
 beforeAll(async () => {
   data = await catalogData(catalog);
-  // SAFETY: These SQL consumers read toArray. Native DuckDB supplies its row values here.
+  // SAFETY: The test connector serves the Arrow query overload used by these consumers.
   coordinator = new Coordinator(
     {
       async query({ sql }: { sql: string }) {
@@ -53,14 +54,19 @@ beforeAll(async () => {
         const connection = await data.db.connect();
 
         try {
-          const rows = (await connection.runAndReadAll(sql)).getRowObjectsJson();
+          const result = await connection.runAndReadAll(sql);
+          const rows = result.getColumnsObjectJson();
 
           if (gate) {
             gate.started.resolve();
             await gate.release.promise;
           }
 
-          return { toArray: () => rows };
+          const bytes = tableToIPC(tableFromArrays(rows), {});
+
+          if (!bytes) throw new Error("Expected in-memory Arrow bytes.");
+
+          return bytes;
         } finally {
           connection.closeSync();
         }

@@ -1,5 +1,5 @@
 import "./rule-tester.ts";
-import { RuleTester } from "oxlint/plugins-dev";
+import { RuleTester } from "vite-plus/lint/plugins-dev";
 
 import { noArrayFilterMapRule } from "../rules/no-array-filter-map.ts";
 

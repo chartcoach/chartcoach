@@ -282,7 +282,9 @@ try {
     const delta = action
       ? {
           role: "assistant",
-          tool_calls: [{ index: 0, id: `call_${completed}`, type: "function", function: action }],
+          tool_calls: [
+            { index: 0, id: `call_${calls.length}`, type: "function", function: action },
+          ],
         }
       : { role: "assistant", content: "Done." };
 

@@ -22,7 +22,11 @@ export default defineConfig({
     ],
     format: ["esm"],
     platform: "neutral",
-    deps: { neverBundle: [/^node:/] },
+    deps: {
+      // Preserve the package subpath resolution used by existing builds.
+      resolveDepSubpath: true,
+      neverBundle: [/^node:/],
+    },
     target: "es2022",
   },
   test: {
@@ -33,17 +37,19 @@ export default defineConfig({
     tasks: {
       test: {
         command: "vp test",
-        env: ["UV_PYTHON"],
-        untrackedEnv: ["UV_CACHE_DIR", "UV_PYTHON_INSTALL_DIR"],
-        // Python source changes invalidate the cross-language contract check.
-        input: [
-          { auto: true },
-          { pattern: "packages/chartcoach/src/**", base: "workspace" },
-          { pattern: "packages/chartcoach/tests/catalog_tables_contract.py", base: "workspace" },
-          { pattern: "packages/chartcoach/pyproject.toml", base: "workspace" },
-          { pattern: "fixtures/catalog-contract/**", base: "workspace" },
-          { pattern: "uv.lock", base: "workspace" },
-        ],
+        cache: {
+          env: ["UV_PYTHON"],
+          untrackedEnv: ["UV_CACHE_DIR", "UV_PYTHON_INSTALL_DIR"],
+          // Python source changes invalidate the cross-language contract check.
+          input: [
+            { auto: true },
+            { pattern: "packages/chartcoach/src/**", base: "workspace" },
+            { pattern: "packages/chartcoach/tests/catalog_tables_contract.py", base: "workspace" },
+            { pattern: "packages/chartcoach/pyproject.toml", base: "workspace" },
+            { pattern: "fixtures/catalog-contract/**", base: "workspace" },
+            { pattern: "uv.lock", base: "workspace" },
+          ],
+        },
       },
     },
   },
