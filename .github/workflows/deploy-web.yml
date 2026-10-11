@@ -104,4 +104,4 @@ jobs:
           DEPLOYMENT_URL: ${{ steps.deployment.outputs.deployment-url }}
         run: |-
           curl --fail --silent --show-error --retry 5 --retry-all-errors "$DEPLOYMENT_URL" \
-            | rg -o 'href="https://github.com/chartcoach/chartcoach"'
+            | grep -F -o 'href="https://github.com/chartcoach/chartcoach"'
