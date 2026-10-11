@@ -2,7 +2,12 @@ import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { platformDirectories } from "@chartcoach/catalog/node/paths";
 import type { z } from "zod";
-import { apiKeySchema } from "../shared/model.ts";
+import {
+  apiBaseURL,
+  apiKeySchema,
+  compatibleProviderPresets,
+  providerSchema,
+} from "../shared/model.ts";
 
 import { configSchema, type Config, type ConfigInput } from "./schema.ts";
 import { readEnvironment } from "./environment.ts";
@@ -66,7 +71,16 @@ function parseConfig(value: ConfigInput): Config {
 
   if (!result.success) throw invalidConfiguration(result.error);
 
-  return result.data;
+  const preset = compatibleProviderPresets.find(({ id }) => id === result.data.model.provider);
+
+  return {
+    ...result.data,
+    model: {
+      ...result.data.model,
+      provider: preset ? "compatible" : providerSchema.parse(result.data.model.provider),
+      baseURL: result.data.model.baseURL ?? preset?.baseURL,
+    },
+  };
 }
 
 function defined<T extends object>(values: T): Partial<T> {
@@ -81,6 +95,7 @@ function merge(base: ConfigInput, extra: ConfigInput): ConfigInput {
     ...base,
     ...defined(extra),
     catalog: { ...base.catalog, ...defined(extra.catalog ?? {}) },
+    guidelines: { ...base.guidelines, ...defined(extra.guidelines ?? {}) },
     model: { ...base.model, ...defined(extra.model ?? {}) },
     embedding: extra.embedding
       ? { ...base.embedding, ...defined(extra.embedding) }
@@ -130,6 +145,10 @@ export function loadConfig({
       source: e.CHARTCOACH_CATALOG,
       profile: e.CHARTCOACH_CATALOG_PROFILE,
     },
+    guidelines: {
+      urlTemplate: e.CHARTCOACH_GUIDELINE_URL_TEMPLATE,
+      imageURLTemplate: e.CHARTCOACH_GUIDELINE_IMAGE_URL_TEMPLATE,
+    },
     model: {
       provider: e.CHARTCOACH_TEXT_PROVIDER,
       model: e.CHARTCOACH_TEXT_MODEL,
@@ -173,7 +192,9 @@ export function loadConfig({
   resolvePaths(result, cwd);
 
   if (result.model.auth === "none" && result.model.provider !== "compatible")
-    throw new ConfigurationError("--model-auth none requires --provider compatible.");
+    throw new ConfigurationError(
+      "CHARTCOACH_TEXT_AUTH=none requires an OpenAI-compatible connection.",
+    );
 
   if (result.model.baseURL && result.model.provider !== "compatible")
     throw new ConfigurationError("--base-url requires --provider compatible.");
@@ -260,6 +281,22 @@ function isLocalHost(host: string) {
 
 export function validateStartup(config: Config, environment: Environment = process.env) {
   const password = serverPassword(config, environment);
+
+  if (config.tracing) {
+    for (const name of ["LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY"])
+      if (!environment[name]?.trim())
+        throw new ConfigurationError(
+          `Tracing requires ${name}. Set both Langfuse keys in the launch environment.`,
+        );
+
+    if (
+      environment.LANGFUSE_BASE_URL &&
+      !apiBaseURL.safeParse(environment.LANGFUSE_BASE_URL).success
+    )
+      throw new ConfigurationError(
+        "Invalid LANGFUSE_BASE_URL. Use your Langfuse project's HTTP or HTTPS URL.",
+      );
+  }
 
   const publicHost = config.server.publicURL
     ? new URL(config.server.publicURL).hostname

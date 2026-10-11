@@ -57,6 +57,11 @@ export const compatibleProviderPresets = [
   },
 ] as const;
 
+export const launchProviderSchema = z.enum([
+  ...providerSchema.options,
+  ...compatibleProviderPresets.map(({ id }) => id),
+]);
+
 export type CompatibleProviderId = (typeof compatibleProviderPresets)[number]["id"];
 
 export function compatibleProviderPreset(baseURL: string | undefined) {

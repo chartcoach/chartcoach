@@ -6,6 +6,8 @@ import { getCatalog } from "./open";
 import { materialize } from "./tables";
 import { waitFor } from "../async";
 
+import { settings } from "../../runtime/settings";
+
 const cache = new WeakMap<Catalog, Promise<CatalogData>>();
 
 export type CatalogData = {
@@ -76,6 +78,7 @@ async function loadData(catalog: Catalog): Promise<CatalogData> {
 
     const metadata = catalogMetadataSchema.parse({
       catalogId,
+      guidelines: settings.guidelines,
       totalGuidelines: catalog.length,
       authors,
       sourceTypes,

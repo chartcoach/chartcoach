@@ -1,5 +1,5 @@
 import { modelKey, validateStartup } from "./config";
-import type { Config } from "./schema";
+import { langfuseBaseURL, type Config } from "./schema";
 
 export async function diagnose(config: Config, version: string) {
   validateStartup(config);
@@ -38,6 +38,13 @@ export async function diagnose(config: Config, version: string) {
 
   return {
     ok: true,
+    guidelines: config.guidelines,
+    tracing: {
+      enabled: config.tracing,
+      baseURL: config.tracing
+        ? langfuseBaseURL.parse(process.env.LANGFUSE_BASE_URL || undefined)
+        : undefined,
+    },
     version,
     node: process.version,
     storage: config.storage,

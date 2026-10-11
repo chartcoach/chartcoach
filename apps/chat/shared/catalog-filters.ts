@@ -1,3 +1,4 @@
+import { guidelineLinksSchema } from "./guideline-links";
 import { z } from "zod";
 
 const facetIds = z.array(z.number().int().positive()).max(100);
@@ -35,6 +36,7 @@ const facetSchema = z.object({
 
 export const catalogMetadataSchema = z.object({
   catalogId: catalogIdSchema,
+  guidelines: guidelineLinksSchema,
   totalGuidelines: z.number().int().nonnegative(),
   authors: z.array(facetSchema),
   sourceTypes: z.array(facetSchema),

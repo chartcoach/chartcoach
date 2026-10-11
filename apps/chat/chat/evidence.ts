@@ -1,3 +1,4 @@
+import type { GuidelineLinks } from "../shared/guideline-links";
 import type { EveMessage, EveDynamicToolPart } from "eve/react";
 import {
   answerSchema,
@@ -16,6 +17,7 @@ import {
 } from "./tool-output";
 
 export interface ConversationOptions {
+  guidelineLinks?: GuidelineLinks;
   draft?: AnswerDraft;
   stoppedTurnIds?: ReadonlySet<string>;
   failedTurnIds?: ReadonlySet<string>;
@@ -101,7 +103,7 @@ export function deriveConversation(
           const output = parsed.search ?? parsed.sqlResult;
 
           for (const match of output?.matches ?? []) {
-            const preview = guidelinePreview(match.id, match.title, match.url);
+            const preview = guidelinePreview(match.id, match.title, options.guidelineLinks);
 
             if (preview) retrieved.set(preview.id, { ...preview, description: match.description });
           }
@@ -111,8 +113,7 @@ export function deriveConversation(
         const read = parsed.read;
 
         for (const guideline of read?.guidelines ?? []) {
-          const citation = read?.citations.find((item) => item.id === guideline.id);
-          const preview = guidelinePreview(guideline.id, guideline.title, citation?.url);
+          const preview = guidelinePreview(guideline.id, guideline.title, options.guidelineLinks);
 
           if (!preview) continue;
           guidelines.set(preview.id, { ...preview, description: guideline.description });

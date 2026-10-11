@@ -93,6 +93,7 @@ export function useCatalogExplorer(
   }, [engine, metadata, key, enabled]);
 
   return {
+    guidelineLinks: metadata.guidelines,
     coordinator: engine?.metadata === metadata ? engine.catalog.coordinator : undefined,
     data,
     pending: enabled && !!key && !error && (!engine || data?.key !== key),

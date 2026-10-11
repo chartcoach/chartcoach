@@ -41,7 +41,10 @@ export async function verifyPicker(page: Page, catalog: Catalog, screenshot: str
 
       const rendered = await links.evaluateAll((nodes) =>
         nodes.map((node) =>
-          new URL(node.getAttribute("href") ?? "", location.href).searchParams.get("id"),
+          decodeURIComponent(
+            new URL(node.getAttribute("href") ?? "", location.href).pathname.split("/").at(-1) ??
+              "",
+          ),
         ),
       );
 
@@ -198,11 +201,13 @@ export async function verifyPicker(page: Page, catalog: Catalog, screenshot: str
   const link = results.getByRole("link").first();
   const href = await link.getAttribute("href");
   assert.ok(href);
-  const target = new URL(href, page.url()).searchParams.get("id");
+  const target = decodeURIComponent(new URL(href, page.url()).pathname.split("/").at(-1) ?? "");
   assert.ok(target);
   await link.click();
   const detail = await popup;
-  await detail.getByRole("heading", { name: catalog.require(target).title, exact: true }).waitFor();
+  assert.ok(catalog.require(target));
+  assert.equal(href, `https://guidelines.example/entries/${encodeURIComponent(target)}`);
+  await detail.waitForURL(href);
   await detail.close();
 
   await chooseAuthor("include");

@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, it } from "vite-plus/test";
@@ -7,17 +7,13 @@ import { expect, it } from "vite-plus/test";
 function loadEnv({
   environment,
   browser = false,
-  local,
 }: {
   environment: Record<string, string>;
   browser?: boolean;
-  local?: string;
 }) {
   const directory = mkdtempSync(join(tmpdir(), "chartcoach-env-"));
 
   try {
-    if (local !== undefined) writeFileSync(join(directory, ".env.local"), local);
-
     return spawnSync(
       process.execPath,
       [
@@ -67,8 +63,6 @@ const inherited = {
   LANGFUSE_BASE_URL: "https://global.example.test",
 };
 
-const localKeys = "LANGFUSE_PUBLIC_KEY=local-public\nLANGFUSE_SECRET_KEY=local-secret\n";
-
 it.each([
   {
     source: "disabled tracing despite inherited credentials",
@@ -90,39 +84,6 @@ it.each([
       baseURL: "https://global.example.test",
     },
   },
-  {
-    source: "the complete local connection",
-    environment: inherited,
-    local: localKeys + "LANGFUSE_BASE_URL=https://local.example.test\n",
-    expected: {
-      enabled: true,
-      publicKey: "local-public",
-      secretKey: "local-secret",
-      baseURL: "https://local.example.test",
-    },
-  },
-  {
-    source: "the default host when the local connection omits its URL",
-    environment: inherited,
-    local: localKeys,
-    expected: {
-      enabled: true,
-      publicKey: "local-public",
-      secretKey: "local-secret",
-      baseURL: "https://cloud.langfuse.com",
-    },
-  },
-  {
-    source: "no connection when the local file omits credentials",
-    environment: inherited,
-    local: "CHARTCOACH_TEXT_MODEL=vision-model\n",
-    expected: {
-      enabled: false,
-      publicKey: null,
-      secretKey: null,
-      baseURL: "https://cloud.langfuse.com",
-    },
-  },
 ])("uses $source", ({ expected, ...options }) => {
   const result = loadEnv(options);
   expect(result.status, result.stderr).toBe(0);
@@ -130,6 +91,8 @@ it.each([
 });
 
 it.each([
+  ["LANGFUSE_PUBLIC_KEY", {}],
+  ["LANGFUSE_PUBLIC_KEY", { LANGFUSE_PUBLIC_KEY: " ", LANGFUSE_SECRET_KEY: " " }],
   ["LANGFUSE_BASE_URL", { LANGFUSE_BASE_URL: "file:///private-path" }],
   ["LANGFUSE_SECRET_KEY", { LANGFUSE_PUBLIC_KEY: "private-public-key" }],
   ["LANGFUSE_PUBLIC_KEY", { LANGFUSE_SECRET_KEY: "private-secret-key" }],
@@ -138,19 +101,13 @@ it.each([
   expect(result.status).toBe(1);
   expect(result.stderr).toContain(field);
 
-  for (const value of Object.values(environment)) expect(result.stderr).not.toContain(value);
+  for (const value of Object.values(environment))
+    if (value.trim()) expect(result.stderr).not.toContain(value);
 });
 
 it("rejects access to server settings in a browser runtime", () => {
   const result = loadEnv({ environment: inherited, browser: true });
   expect(result.status).toBe(1);
   expect(result.stderr).toContain("server-side environment variable");
-  expect(result.stderr).not.toContain("global-secret");
-});
-
-it("rejects a partial local key pair even when inherited keys are complete", () => {
-  const result = loadEnv({ environment: inherited, local: "LANGFUSE_PUBLIC_KEY=local-public\n" });
-  expect(result.status).toBe(1);
-  expect(result.stderr).toContain("LANGFUSE_SECRET_KEY");
   expect(result.stderr).not.toContain("global-secret");
 });

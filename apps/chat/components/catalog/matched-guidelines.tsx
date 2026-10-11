@@ -1,4 +1,4 @@
-import { localGuidelineURL } from "../../shared/guideline-page";
+import { guidelineURLs } from "../../shared/guideline-links";
 import * as stylex from "@stylexjs/stylex";
 import { ArrowUpRight } from "lucide-react";
 import { HoverCard } from "radix-ui";
@@ -44,9 +44,13 @@ export function MatchedGuidelines({
           onScroll={scroll}
         >
           {(match, index) => {
+            const urls = guidelineURLs(match.id, explorer.guidelineLinks);
+
+            if (!urls) return <></>;
+
             const guideline = {
               ...match,
-              url: `https://chartcoach.dev/guidelines/${encodeURIComponent(match.id)}`,
+              ...urls,
             };
 
             return (
@@ -61,7 +65,7 @@ export function MatchedGuidelines({
                   <HoverCard.Trigger asChild>
                     <a
                       {...stylex.props(ui.focus, styles.link)}
-                      href={localGuidelineURL(guideline.id)}
+                      href={guideline.url}
                       target="_blank"
                       rel="noopener noreferrer"
                       aria-label={`Read guideline: ${match.title} (opens in a new tab)`}

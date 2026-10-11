@@ -1,4 +1,3 @@
-import { localGuidelineURL } from "../../shared/guideline-page";
 import { ChevronRight } from "lucide-react";
 import * as Match from "effect/Match";
 import { ThreadPrimitive } from "@assistant-ui/react";
@@ -144,7 +143,7 @@ function Citation({
   return (
     <a
       {...stylex.props(ui.focus, styles.citation)}
-      href={localGuidelineURL(guideline.id)}
+      href={guideline.url}
       target="_blank"
       rel="noopener noreferrer"
       aria-label={`${supporting ? "Supporting" : "Primary"}: ${guideline.title}`}

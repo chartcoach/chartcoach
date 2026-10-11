@@ -1,3 +1,4 @@
+import type { GuidelineLinks } from "../shared/guideline-links";
 import { useMemo } from "react";
 import type { EveMessage, useEveAgent } from "eve/react";
 import { chartImageURL } from "../browser/workspace-client";
@@ -10,6 +11,7 @@ export function useConversation(
   },
   threadId: string | undefined,
   interruptedTurns: ReadonlySet<string>,
+  guidelineLinks: GuidelineLinks,
 ) {
   const draft = useAnswerDraft(agent.data.messages);
 
@@ -29,6 +31,7 @@ export function useConversation(
             : message,
         ),
         {
+          guidelineLinks,
           draft,
           stoppedTurnIds: new Set(
             agent.events.flatMap((event) =>
@@ -57,6 +60,7 @@ export function useConversation(
       agent.error,
       interruptedTurns,
       draft,
+      guidelineLinks,
       threadId,
     ],
   );

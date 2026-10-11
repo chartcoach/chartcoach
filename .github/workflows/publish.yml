@@ -217,7 +217,8 @@ jobs:
           image="$IMAGE:${RELEASE_TAG#v}"
           docker run --rm --entrypoint node \
             --mount "type=bind,source=$PWD/fixtures/catalog-release,target=/catalog,readonly" \
-            "$image" /opt/chartcoach/node_modules/chartcoach/cli/index.mjs doctor --catalog /catalog --json
+            --env CHARTCOACH_CATALOG=/catalog \
+            "$image" /opt/chartcoach/node_modules/chartcoach/cli/index.mjs doctor --json
           docker run --detach --name chartcoach-release-check \
             --publish 127.0.0.1:4273:4273 \
             --mount "type=bind,source=$PWD/fixtures/catalog-release,target=/catalog,readonly" \

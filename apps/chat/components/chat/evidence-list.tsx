@@ -1,4 +1,3 @@
-import { localGuidelineURL } from "../../shared/guideline-page";
 import { ArrowUpRight, ChevronDown } from "lucide-react";
 import { Collapsible } from "radix-ui";
 import { useState } from "react";
@@ -17,7 +16,7 @@ function GuidelineRows({ items }: { items: readonly EvidenceItem[] }) {
         <li key={guideline.id}>
           <a
             {...stylex.props(ui.focus, styles.row)}
-            href={localGuidelineURL(guideline.id)}
+            href={guideline.url}
             target="_blank"
             rel="noopener noreferrer"
             aria-label={`Read guideline: ${guideline.title}`}

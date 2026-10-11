@@ -8,6 +8,7 @@ import { renderDocument } from "./render-document";
 
 const metadata: CatalogMetadata = {
   catalogId: "a".repeat(64),
+  guidelines: { urlTemplate: "https://chartcoach.dev/guidelines/{id}" },
   totalGuidelines: 24,
   authors: [{ id: 1, name: "Example Author", guidelineCount: 8 }],
   sourceTypes: [{ id: 1, name: "article", guidelineCount: 12 }],

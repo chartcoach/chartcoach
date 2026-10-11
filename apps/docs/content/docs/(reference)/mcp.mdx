@@ -207,7 +207,8 @@ separately at `chat.chartcoach.dev`; see the
 The CLI reads `.env` from its working directory, without scanning parent
 folders. `--env-file PATH` or `CHARTCOACH_ENV_FILE` selects another UTF-8 dotenv
 file. Relative catalog and variable paths resolve from the working directory.
-Precedence is command options, existing process environment, dotenv, then
+Precedence is command options, explicitly selected env files, inherited
+environment, automatic `.env` files, then
 schema defaults. Embedding JSON values override the corresponding environment
 values. Files and credentials are read once at startup; restart after changing
 them. Tokens are configured through the environment rather than command arguments.

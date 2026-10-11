@@ -84,7 +84,7 @@ it.each([
   ["discuss", "Your question", null],
   ["visrec", "Your brief", null],
 ] as const)(
-  "renders grounded %s advice with a local citation and expandable context",
+  "renders grounded %s advice with a public guideline citation and expandable context",
   (workflow, label, assessment) => {
     const page = render([
       answer(
@@ -98,7 +98,7 @@ it.each([
     expect(article.textContent).toContain("Place each series name beside its line.");
     expect(
       article.querySelector('a[aria-label="Primary: Label series directly"]')?.getAttribute("href"),
-    ).toBe("/guideline?id=direct-labels");
+    ).toBe("https://chartcoach.dev/guidelines/direct-labels");
 
     const context = article.querySelector<HTMLDetailsElement>(
       'ol[aria-label="Guideline-backed advice"] details',
@@ -167,18 +167,6 @@ const searchPart: EveDynamicToolPart = {
 it.each([
   { evidence: "an unread search match", part: searchPart },
   {
-    evidence: "a read citation outside the catalog",
-    part: {
-      ...readPart,
-      output: {
-        ...readPart.output,
-        citations: [
-          { ...readPart.output.citations[0], url: "https://example.com/guidelines/direct-labels" },
-        ],
-      },
-    },
-  },
-  {
     evidence: "a failed read",
     part: {
       type: "dynamic-tool",
@@ -198,6 +186,22 @@ it.each([
     expect(page.body.textContent).not.toContain("Place each series name beside its line.");
   },
 );
+
+it("links a successful read through deployment settings when stored tool URLs differ", () => {
+  const part = {
+    ...readPart,
+    output: {
+      ...readPart.output,
+      citations: [{ ...readPart.output.citations[0], url: "https://old.example/direct-labels" }],
+    },
+  };
+
+  const page = render([answer(feedback, {}, [part])]);
+  expect(page.body.textContent).toContain("Place each series name beside its line.");
+  expect(
+    page.querySelector('a[aria-label="Primary: Label series directly"]')?.getAttribute("href"),
+  ).toBe("https://chartcoach.dev/guidelines/direct-labels");
+});
 
 function additionalRead(ids: string[]): EveMessage["parts"][number] {
   return {
@@ -329,7 +333,7 @@ it("uses verified SQL matches for evidence previews", () => {
         'section[aria-label="Search results"] a[aria-label="Read guideline: Label series directly"]',
       )
       ?.getAttribute("href"),
-  ).toBe("/guideline?id=direct-labels");
+  ).toBe("https://chartcoach.dev/guidelines/direct-labels");
 });
 
 it("renders recommendation emphasis while keeping authored links and images inert", () => {
@@ -353,7 +357,7 @@ it("renders recommendation emphasis while keeping authored links and images iner
   const advice = page.querySelector('ol[aria-label="Guideline-backed advice"]')!;
   expect(advice.querySelector("strong")?.textContent).toBe("direct labels");
   expect(Array.from(advice.querySelectorAll("a"), (link) => link.getAttribute("href"))).toEqual([
-    "/guideline?id=direct-labels",
+    "https://chartcoach.dev/guidelines/direct-labels",
   ]);
   expect(advice.querySelectorAll("img, iframe")).toHaveLength(0);
 });

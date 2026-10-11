@@ -181,7 +181,9 @@ and conversation persistence after restart.
 ## Model connections
 
 `apps/chat/runtime/schema.ts` owns validated settings; `runtime/environment.ts`
-validates environment input against that schema. The CLI loads dotenv explicitly
+validates environment input against that schema. The shared guideline link schema
+resolves citation, evidence, and browser catalog destinations from deployment
+templates. Browser preferences and catalog metadata carry the same link settings. The CLI loads dotenv explicitly
 before composition. Text and embedding credentials use independent selectors and
 are absent from the serialized worker configuration. `lib/retrieval/embedding.ts`
 checks release identity before opening one lazy query embedder; the local driver

@@ -247,3 +247,80 @@ it("reads embedding origins and requires secure cookies and a matching key", () 
     validateStartup(config, { ...secrets, CHARTCOACH_EMBED_KEY: "private-embed-key-0123" }),
   ).toThrow("requires CHARTCOACH_EMBED_ORIGINS");
 });
+
+it("resolves a hosted text preset without requiring its protocol or endpoint", () => {
+  const config = loadConfig({
+    environment: {
+      CHARTCOACH_TEXT_PROVIDER: "openrouter",
+      CHARTCOACH_TEXT_MODEL: "openai/vision-model",
+    },
+    userConfig: "/missing/config.json",
+  });
+
+  expect(config.model).toMatchObject({
+    provider: "compatible",
+    baseURL: "https://openrouter.ai/api/v1",
+    model: "openai/vision-model",
+  });
+  expect(() => validateStartup(config, { CHARTCOACH_TEXT_API_KEY: "private-key" })).not.toThrow();
+});
+
+it("configures guideline destinations independently of the chat server", () => {
+  const config = loadConfig({
+    environment: {
+      CHARTCOACH_GUIDELINE_URL_TEMPLATE: "https://guidance.example/entries/{id}",
+      CHARTCOACH_GUIDELINE_IMAGE_URL_TEMPLATE: "https://images.example/{id}.png",
+    },
+    userConfig: "/missing/config.json",
+  });
+
+  expect(config.guidelines).toEqual({
+    urlTemplate: "https://guidance.example/entries/{id}",
+    imageURLTemplate: "https://images.example/{id}.png",
+  });
+  expect(config.server.host).toBe("127.0.0.1");
+});
+
+it.each([
+  "javascript:alert({id})",
+  "https://{id}.example/path",
+  "https://{id}.example",
+  "https://guidance.example/{id}/{id}",
+  "https://guidance.example/entries",
+  "https://guidance.example/{id}?",
+  "https://guidance.example/{id}#",
+  "https://guidance.example/{id}?redirect=elsewhere",
+])("rejects an invalid guideline URL template: %s", (urlTemplate) => {
+  expect(() =>
+    loadConfig({
+      environment: { CHARTCOACH_GUIDELINE_URL_TEMPLATE: urlTemplate },
+      userConfig: "/missing/config.json",
+    }),
+  ).toThrow("CHARTCOACH_GUIDELINE_URL_TEMPLATE");
+});
+
+it("requires a complete Langfuse connection before starting with tracing", () => {
+  const config = loadConfig({
+    environment: { CHARTCOACH_TRACING: "true" },
+    userConfig: "/missing/config.json",
+  });
+
+  expect(() => validateStartup(config, {})).toThrow("LANGFUSE_PUBLIC_KEY");
+  expect(() => validateStartup(config, { LANGFUSE_PUBLIC_KEY: "public" })).toThrow(
+    "LANGFUSE_SECRET_KEY",
+  );
+  expect(() =>
+    validateStartup(config, {
+      LANGFUSE_PUBLIC_KEY: "public",
+      LANGFUSE_SECRET_KEY: "secret",
+      LANGFUSE_BASE_URL: "file:///private",
+    }),
+  ).toThrow("LANGFUSE_BASE_URL");
+  expect(() =>
+    validateStartup(config, {
+      LANGFUSE_PUBLIC_KEY: "public",
+      LANGFUSE_SECRET_KEY: "secret",
+      LANGFUSE_BASE_URL: "https://tracing.example",
+    }),
+  ).not.toThrow();
+});

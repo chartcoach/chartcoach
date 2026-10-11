@@ -7,7 +7,9 @@ export function loadEnvironmentFile(path = process.env.CHARTCOACH_ENV_FILE) {
   try {
     const values = parseEnv(readFileSync(resolve(path ?? ".env"), "utf8"));
 
-    for (const [name, value] of Object.entries(values)) process.env[name] ??= value;
+    for (const [name, value] of Object.entries(values)) {
+      if (path || process.env[name] === undefined) process.env[name] = value;
+    }
   } catch (error) {
     if (!path && error instanceof Error && "code" in error && error.code === "ENOENT") return;
     throw new ConfigurationError(
