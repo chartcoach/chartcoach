@@ -48,6 +48,7 @@ function sitePages(guidelineCount: number): LlmPageSource[] {
         "",
         `- [Browse the Guideline Catalog](${SITE_PATHS.guidelines})`,
         `- [Read docs](${EXTERNAL_HREFS.docs})`,
+        `- [Source code on GitHub](${EXTERNAL_HREFS.repository})`,
         `- [Catalog repository](${EXTERNAL_HREFS.catalogRepository})`,
         `- [Agent skills](${EXTERNAL_HREFS.skillsRepository})`,
         "",
