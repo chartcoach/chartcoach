@@ -24,7 +24,7 @@ const footerLinks = [
   },
   {
     label: "GitHub",
-    href: EXTERNAL_HREFS.catalogRepository,
+    href: EXTERNAL_HREFS.repository,
   },
   {
     label: "Paper",
@@ -74,11 +74,11 @@ const fitViewport = Astro.props.fitViewport ?? false;
         ))}
         <GuidelineSearch client:load />
         <a
-          href={EXTERNAL_HREFS.catalogRepository}
+          href={EXTERNAL_HREFS.repository}
           target="_blank"
           rel="noreferrer"
           class="hidden h-11 w-11 shrink-0 items-center justify-center rounded-md no-underline transition-colors hover:bg-accent-muted hover:text-accent md:inline-flex"
-          aria-label="chartcoach catalog repository on GitHub"
+          aria-label="chartcoach source code on GitHub"
         >
           <SvgIcon name="github" class="h-[1.125rem] w-[1.125rem] shrink-0" />
         </a>
@@ -87,7 +87,7 @@ const fitViewport = Astro.props.fitViewport ?? false;
         </div>
         <SiteMobileMenu
           links={primaryLinks}
-          githubHref={EXTERNAL_HREFS.catalogRepository}
+          githubHref={EXTERNAL_HREFS.repository}
           client:load
         />
       </nav>

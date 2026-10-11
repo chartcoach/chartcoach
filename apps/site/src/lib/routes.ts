@@ -13,6 +13,7 @@ export const GUIDELINE_ROUTE_PATTERNS = {
 export const EXTERNAL_HREFS = {
   docs: "https://docs.chartcoach.dev/",
   docsGettingStarted: "https://docs.chartcoach.dev/getting-started",
+  repository: "https://github.com/chartcoach/chartcoach",
   catalogRepository: "https://github.com/chartcoach/catalog",
   skillsRepository: "https://github.com/chartcoach/skills",
   paper: "https://arxiv.org/abs/2512.20306",
