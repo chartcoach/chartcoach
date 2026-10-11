@@ -23,6 +23,7 @@
     "tar": "7.5.22",
     "typescript": "catalog:",
     "vite-plus": "catalog:",
-    "yaml": "catalog:"
+    "yaml": "catalog:",
+    "zod": "catalog:"
   }
 }

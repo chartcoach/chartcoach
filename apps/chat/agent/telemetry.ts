@@ -3,27 +3,14 @@ import {
   LangfuseSpanProcessor,
   type LangfuseSpanProcessorParams,
 } from "@langfuse/otel";
-import type { Context } from "@opentelemetry/api";
+import { SpanKind, type Attributes, type Context, type SpanContext } from "@opentelemetry/api";
 import type { ReadableSpan, Span } from "@opentelemetry/sdk-trace-base";
-import type {
-  InstrumentationRuntimeContext,
-  InstrumentationRuntimeContextInput,
-} from "eve/instrumentation";
+import { randomBytes } from "node:crypto";
 import { z } from "zod";
-import { parseSelection } from "./selection-context";
-import { createHash } from "node:crypto";
+import { TracePayloads, turnKey } from "./trace-payloads";
+import { modelTraceSchema } from "./model-trace-state";
 
-const modelTraceSchema = z.object({
-  modelConnectionId: z.string(),
-  modelConnectionName: z.string(),
-  modelProvider: z.string(),
-  modelName: z.string(),
-  modelEndpointOrigin: z.string().optional(),
-  modelContextWindow: z.number(),
-  modelManaged: z.boolean(),
-});
-
-export const catalogTraceSchema = z.object({
+const metadataTraceSchema = modelTraceSchema.partial().extend({
   catalogId: z.string().optional(),
   guidelineCount: z.number().optional(),
   catalogReleaseId: z.string().optional(),
@@ -32,221 +19,356 @@ export const catalogTraceSchema = z.object({
   modelConnectionId: z.string().optional(),
 });
 
-const encodedTraceMetadata = z
-  .string()
-  .transform((value, context) => {
-    try {
-      return JSON.parse(value);
-    } catch {
-      context.addIssue({ code: "custom", message: "Invalid trace metadata." });
+function exportSpan(span: ReadableSpan): boolean {
+  const scope = span.instrumentationScope.name;
 
-      return z.NEVER;
-    }
-  })
-  .pipe(catalogTraceSchema.extend(modelTraceSchema.partial().shape));
+  if (["chartcoach.app", "workflow", "@vercel/otel/fetch"].includes(scope)) return false;
+
+  return scope === "eve.agent" || scope === "chartcoach.compaction" || isDefaultExportSpan(span);
+}
 
 export class LangfuseProcessor extends LangfuseSpanProcessor {
-  private readonly contexts = new Map<string, Record<string, string>>();
+  readonly payloads = new TracePayloads();
+  private readonly contexts = new Map<string, Attributes>();
+  private readonly anchors = new Map<string, SpanContext>();
+  private readonly finishedTurns = new Map<string, { sessionId: string; turnId: string }>();
+  private readonly pending: ReadableSpan[] = [];
 
   constructor(options: LangfuseSpanProcessorParams = {}) {
-    super({
-      ...options,
-      shouldExportSpan: ({ otelSpan }) =>
-        isDefaultExportSpan(otelSpan) ||
-        ["eve.agent", "eve", "gen_ai", "chartcoach.app"].includes(
-          otelSpan.instrumentationScope.name,
-        ),
-    });
+    super({ ...options, shouldExportSpan: ({ otelSpan }) => exportSpan(otelSpan) });
   }
 
   override onStart(span: Span, parentContext: Context): void {
+    if (!exportSpan(span)) {
+      super.onStart(span, parentContext);
+
+      return;
+    }
+
     const attributes = span.attributes;
+    const runId = z.string().safeParse(attributes["agent.run.id"]);
+    const turnId = z.string().safeParse(attributes["agent.turn.id"]);
+
+    if (
+      span.instrumentationScope.name === "eve.agent" &&
+      span.name === "agent.step" &&
+      runId.success &&
+      turnId.success &&
+      span.parentSpanContext
+    )
+      this.anchors.set(turnKey(runId.data, turnId.data), span.parentSpanContext);
+    const context: Attributes = { ...this.contexts.get(span.spanContext().traceId) };
+
+    for (const key of ["agent.run.id", "agent.turn.id", "agent.step.index", "agent.step.attempt"]) {
+      if (attributes[key] !== undefined) context[key] = attributes[key];
+    }
 
     const sessionId = z
       .string()
       .safeParse(
-        attributes["agent.session.id"] ??
-          attributes["langfuse.session.id"] ??
-          attributes["gen_ai.conversation.id"] ??
-          attributes["ai.settings.context.eve.session.id"],
+        attributes["gen_ai.conversation.id"] ??
+          attributes["agent.session.id"] ??
+          attributes["langfuse.session.id"],
       );
 
-    const traceId = span.spanContext().traceId;
-    const context = { ...this.contexts.get(traceId) };
-
     if (sessionId.success) context["session.id"] = sessionId.data;
-    const userId = z.string().safeParse(attributes["ai.settings.context.userId"]);
+
+    const userId = z
+      .string()
+      .safeParse(
+        attributes["ai.settings.context.userId"] ??
+          attributes["agent.principal.current.id"] ??
+          attributes["agent.principal.initiator.id"],
+      );
 
     if (userId.success) context["user.id"] = userId.data;
 
-    const metadata = catalogTraceSchema.safeParse(
+    const metadata = metadataTraceSchema.safeParse(
       Object.fromEntries(
-        Object.keys(catalogTraceSchema.shape)
+        Object.keys(metadataTraceSchema.shape)
           .map((key) => [key, attributes[`ai.settings.context.${key}`]])
           .filter(([, value]) => value !== undefined),
       ),
     );
 
-    // Eve resolves models on a separate trace before opening the generation span.
-    const resolvedModel = encodedTraceMetadata.safeParse(
-      this.contexts.get(`model:${context["session.id"]}`)?.["langfuse.trace.metadata"],
-    );
+    if (metadata.success) {
+      // A newly resolved connection replaces every model field, including an
+      // optional endpoint that the preceding connection may have supplied.
+      if (metadata.data.modelConnectionId !== undefined)
+        for (const key of Object.keys(modelTraceSchema.shape))
+          delete context[`langfuse.observation.metadata.${key}`];
 
-    if (resolvedModel.success || (metadata.success && metadata.data.catalogId)) {
-      const previous = encodedTraceMetadata.safeParse(context["langfuse.trace.metadata"]);
-      context["langfuse.trace.metadata"] = JSON.stringify({
-        ...previous.data,
-        ...resolvedModel.data,
-        ...metadata.data,
-      });
+      for (const [key, value] of Object.entries(metadata.data))
+        context[`langfuse.observation.metadata.${key}`] = value;
     }
 
-    // Eve reconstructs non-recording parent contexts across durable steps.
-    // Keep a bounded identity cache for tool spans that carry just the trace ID.
-    if (Object.keys(context).length) {
-      this.remember(traceId, context);
-    }
-
+    context["langfuse.trace.name"] = "ChartCoach response";
+    context["langfuse.trace.tags"] = ["chartcoach", "chat"];
     span.setAttributes(context);
 
-    if (attributes["langfuse.trace.name"] === undefined) {
-      span.setAttribute("langfuse.trace.name", "ChartCoach conversation");
+    if (span.instrumentationScope.name !== "chartcoach.compaction") {
+      this.contexts.delete(span.spanContext().traceId);
+      this.contexts.set(span.spanContext().traceId, context);
+
+      if (this.contexts.size > 1024) {
+        const first = this.contexts.keys().next().value;
+
+        if (first !== undefined) this.contexts.delete(first);
+      }
     }
 
     super.onStart(span, parentContext);
   }
 
   override onEnd(span: ReadableSpan): void {
-    const attributes = { ...span.attributes };
+    if (
+      span.instrumentationScope.name === "eve.agent" &&
+      span.attributes["gen_ai.operation.name"] === "invoke_agent"
+    ) {
+      const run = z.string().safeParse(span.attributes["agent.run.id"]);
+      const turn = z.string().safeParse(span.attributes["agent.turn.id"]);
 
-    if (span.name === "chat.resolve_model" && span.instrumentationScope.name === "chartcoach.app") {
-      const metadata = encodedTraceMetadata
-        .pipe(modelTraceSchema)
-        .safeParse(attributes["langfuse.observation.metadata"]);
-
-      if (metadata.success) {
-        const traceId = span.spanContext().traceId;
-        const saved = this.contexts.get(traceId) ?? {};
-
-        const catalog = encodedTraceMetadata
-          .pipe(catalogTraceSchema)
-          .safeParse(saved["langfuse.trace.metadata"]);
-
-        attributes["langfuse.trace.metadata"] = JSON.stringify({
-          ...catalog.data,
-          ...metadata.data,
-        });
-        saved["langfuse.trace.metadata"] = String(attributes["langfuse.trace.metadata"]);
-        this.remember(traceId, saved);
-
-        const session = z
-          .string()
-          .safeParse(attributes["langfuse.session.id"] ?? attributes["session.id"]);
-
-        if (session.success)
-          this.remember(`model:${session.data}`, {
-            "session.id": session.data,
-            "langfuse.trace.metadata": JSON.stringify(metadata.data),
-          });
-      }
+      if (run.success && turn.success)
+        this.anchors.set(turnKey(run.data, turn.data), span.spanContext());
     }
 
-    if (span.instrumentationScope.name === "chartcoach.app")
-      attributes["langfuse.trace.name"] = attributes["langfuse.session.id"]
-        ? "ChartCoach conversation"
-        : "ChartCoach workspace";
+    if (!exportSpan(span)) {
+      super.onEnd(span);
 
-    if (attributes["gen_ai.operation.name"] === "chat") {
-      for (const direction of ["input", "output"]) {
-        const value = z
-          .number()
-          .nonnegative()
-          .safeParse(attributes[`agent.usage.${direction}_tokens`]);
+      return;
+    }
 
-        if (value.success && attributes[`gen_ai.usage.${direction}_tokens`] === undefined) {
-          attributes[`gen_ai.usage.${direction}_tokens`] = value.data;
+    // Eve ends native spans before publishing their full lifecycle payloads.
+    // Drain after the event batch so its local 32 KiB cap never truncates Langfuse content.
+    this.pending.push(copySpan(span));
+  }
+
+  private drain(shuttingDown = false): void {
+    const spans = this.pending.splice(0);
+    const maintenance = new Map<string, { anchor: SpanContext; spans: ReadableSpan[] }>();
+
+    for (const span of spans) {
+      const attributes = span.attributes;
+      const key = turnKey(String(attributes["agent.run.id"]), String(attributes["agent.turn.id"]));
+
+      if (
+        span.instrumentationScope.name !== "chartcoach.compaction" ||
+        this.anchors.has(key) ||
+        (!shuttingDown && !this.payloads.isTurnSettled(attributes))
+      )
+        continue;
+
+      let group = maintenance.get(key);
+
+      if (!group) {
+        group = {
+          anchor: { ...span.spanContext(), spanId: randomBytes(8).toString("hex") },
+          spans: [],
+        };
+        maintenance.set(key, group);
+      }
+
+      group.spans.push(span);
+    }
+
+    for (let span of spans) {
+      const attributes = span.attributes;
+      const compaction = span.instrumentationScope.name === "chartcoach.compaction";
+
+      if (compaction) {
+        const key = turnKey(
+          String(attributes["agent.run.id"]),
+          String(attributes["agent.turn.id"]),
+        );
+
+        const nativeAnchor = this.anchors.get(key);
+        const group = maintenance.get(key);
+        const anchor = nativeAnchor ?? group?.anchor;
+
+        if (!anchor) {
+          this.pending.push(span);
+          continue;
+        }
+
+        const original = span.spanContext();
+        Object.assign(attributes, { ...this.contexts.get(anchor.traceId), ...attributes });
+        span = {
+          ...span,
+          parentSpanContext: anchor,
+          spanContext: () => ({
+            ...original,
+            traceId: anchor.traceId,
+            traceFlags: anchor.traceFlags,
+          }),
+        };
+
+        if (group) {
+          attributes["langfuse.trace.name"] = "ChartCoach history compaction";
+          attributes["langfuse.trace.tags"] = ["chartcoach", "chat", "compaction"];
         }
       }
+
+      if (!compaction && !shuttingDown && !this.payloads.ready(attributes)) {
+        this.pending.push(span);
+        continue;
+      }
+
+      if (!compaction) this.payloads.enrich(attributes);
+      const operation = attributes["gen_ai.operation.name"];
+
+      if (operation === "chat") attributes["langfuse.observation.type"] = "generation";
+
+      if (operation === "invoke_agent") attributes["langfuse.observation.type"] = "agent";
+
+      // Eve constructs its turn root after the steps, beneath a synthetic context.
+      // Override the SDK's onStart inference with the actual native topology.
+      if (span.instrumentationScope.name === "eve.agent" || compaction)
+        attributes["langfuse.internal.is_app_root"] = operation === "invoke_agent";
+
+      for (const [key, value] of Object.entries(attributes))
+        if (
+          key.startsWith("langfuse.observation.metadata.") &&
+          !z.string().safeParse(value).success
+        )
+          attributes[key] = JSON.stringify(value);
+
+      if (operation === "execute_tool")
+        attributes["langfuse.observation.type"] = [
+          "search_guidelines",
+          "read_guidelines",
+          "query_catalog",
+        ].includes(String(attributes["gen_ai.tool.name"]))
+          ? "retriever"
+          : "tool";
+      let name = span.name;
+
+      if (operation === "chat") name = compaction ? "compact-history" : "generate-response";
+
+      if (operation === "invoke_agent") name = "respond-to-user";
+      super.onEnd({ ...span, name });
+
+      if (operation === "invoke_agent") {
+        this.contexts.delete(span.spanContext().traceId);
+        const sessionId = String(attributes["agent.run.id"]);
+        const turnId = String(attributes["agent.turn.id"]);
+        this.finishedTurns.set(turnKey(sessionId, turnId), { sessionId, turnId });
+      }
     }
 
-    super.onEnd({
-      name: span.name,
-      kind: span.kind,
-      spanContext: () => span.spanContext(),
-      parentSpanContext: span.parentSpanContext,
-      startTime: span.startTime,
-      endTime: span.endTime,
-      status: span.status,
-      attributes,
-      links: span.links,
-      events: span.events,
-      duration: span.duration,
-      ended: span.ended,
-      resource: span.resource,
-      instrumentationScope: span.instrumentationScope,
-      droppedAttributesCount: span.droppedAttributesCount,
-      droppedEventsCount: span.droppedEventsCount,
-      droppedLinksCount: span.droppedLinksCount,
-    });
+    // Manual compaction can generate several summaries while shrinking the
+    // retained window. Group every call beneath one maintenance root when the
+    // session parks; automatic compaction keeps its native turn root instead.
+    for (const [key, group] of maintenance) {
+      const root = maintenanceRoot(group.spans, group.anchor);
+      super.onEnd(root);
+      this.contexts.delete(group.anchor.traceId);
+      this.finishedTurns.set(key, {
+        sessionId: String(root.attributes["agent.run.id"]),
+        turnId: String(root.attributes["agent.turn.id"]),
+      });
+    }
+
+    for (const [key, { sessionId, turnId }] of this.finishedTurns) {
+      if (
+        this.pending.some(
+          (span) =>
+            span.attributes["agent.run.id"] === sessionId &&
+            span.attributes["agent.turn.id"] === turnId,
+        )
+      )
+        continue;
+      this.payloads.release(sessionId, turnId);
+      this.anchors.delete(key);
+      this.finishedTurns.delete(key);
+    }
   }
 
-  releaseSession(sessionId: string): void {
-    for (const [traceId, context] of this.contexts) {
-      if (context["session.id"] === sessionId) this.contexts.delete(traceId);
-    }
-  }
-
-  private remember(traceId: string, value: Record<string, string>): void {
-    this.contexts.delete(traceId);
-    this.contexts.set(traceId, value);
-
-    if (this.contexts.size > 1024) {
-      const oldest = this.contexts.keys().next().value;
-
-      if (oldest !== undefined) this.contexts.delete(oldest);
-    }
+  override async forceFlush(): Promise<void> {
+    this.drain();
+    await super.forceFlush();
   }
 
   override async shutdown(): Promise<void> {
+    this.drain(true);
+
     try {
       await super.shutdown();
     } finally {
       this.contexts.clear();
+      this.anchors.clear();
+      this.finishedTurns.clear();
+      this.payloads.clear();
     }
   }
 }
 
-export function traceContext({
-  session,
-}: InstrumentationRuntimeContextInput): InstrumentationRuntimeContext {
-  const principal = session.auth.initiator;
-  const value = principal?.attributes["chartcoach.selection"];
-  const selection = value === undefined ? undefined : parseSelection(value);
-  const context: Record<string, string | number> = {};
+function maintenanceRoot(spans: ReadableSpan[], anchor: SpanContext): ReadableSpan {
+  const first = spans[0]!;
+  const last = spans.at(-1)!;
 
-  const connection = z
-    .string()
-    .safeParse(session.auth.current?.attributes["chartcoach.connection"]);
+  const duration: [number, number] = [
+    last.endTime[0] - first.startTime[0],
+    last.endTime[1] - first.startTime[1],
+  ];
 
-  if (connection.success) context.modelConnectionId = connection.data;
-
-  if (principal) context.userId = principal.principalId;
-
-  if (selection) {
-    context.catalogId = selection.catalogId;
-    context.guidelineCount = selection.ids.length;
-    context.catalogSelectionId = createHash("sha256")
-      .update(
-        JSON.stringify({ catalogId: selection.catalogId, ids: [...new Set(selection.ids)].sort() }),
-      )
-      .digest("hex");
-    const release = z.string().safeParse(principal?.attributes["chartcoach.release"]);
-
-    if (release.success) context.catalogReleaseId = release.data;
-    const predicate = z.string().safeParse(principal?.attributes["chartcoach.predicate"]);
-
-    if (predicate.success) context.catalogPredicate = predicate.data;
+  if (duration[1] < 0) {
+    duration[0] -= 1;
+    duration[1] += 1_000_000_000;
   }
 
-  return context;
+  const attributes: Attributes = {
+    ...first.attributes,
+    "gen_ai.operation.name": "invoke_agent",
+    "langfuse.observation.type": "agent",
+    "langfuse.internal.is_app_root": true,
+    "langfuse.observation.output": last.attributes["langfuse.observation.output"],
+  };
+
+  // Generations own their provider usage and cost. A maintenance root only
+  // groups those calls and must not count the same tokens a second time.
+  for (const key of Object.keys(attributes))
+    if (
+      key.startsWith("gen_ai.usage.") ||
+      key.startsWith("ai.usage.") ||
+      key.startsWith("gen_ai.request.") ||
+      key.startsWith("gen_ai.response.") ||
+      key === "gen_ai.provider.name"
+    )
+      delete attributes[key];
+
+  return {
+    ...first,
+    name: "compact-session",
+    kind: SpanKind.INTERNAL,
+    parentSpanContext: undefined,
+    spanContext: () => anchor,
+    attributes,
+    endTime: last.endTime,
+    duration,
+    status: last.status,
+    links: [],
+    events: [],
+  };
+}
+
+function copySpan(span: ReadableSpan): ReadableSpan {
+  return {
+    name: span.name,
+    kind: span.kind,
+    spanContext: () => span.spanContext(),
+    parentSpanContext: span.parentSpanContext,
+    startTime: span.startTime,
+    endTime: span.endTime,
+    status: span.status,
+    attributes: { ...span.attributes },
+    links: span.links,
+    events: span.events,
+    duration: span.duration,
+    ended: span.ended,
+    resource: span.resource,
+    instrumentationScope: span.instrumentationScope,
+    droppedAttributesCount: span.droppedAttributesCount,
+    droppedEventsCount: span.droppedEventsCount,
+    droppedLinksCount: span.droppedLinksCount,
+  };
 }

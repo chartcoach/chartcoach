@@ -418,15 +418,22 @@ directory, it supplies the complete Langfuse connection and takes precedence ove
 inherited credentials. Omitted local keys disable tracing, and a partial local pair
 fails validation. Deployments with no local file use their server environment.
 
-Find **ChartCoach conversation** in Langfuse. Each conversation keeps its Eve session ID and
-trace identity across follow-ups, with separate turn, model, and tool branches.
+Find **ChartCoach response** in Langfuse. Each user turn has its own trace, and
+the Eve conversation ID groups follow-ups in one session. The **respond-to-user**
+agent observation contains the user message and chart as input and the displayed
+structured answer as output. **generate-response** observations capture each
+model invocation. Generations and the tools they request are siblings under their agent step.
+Long conversations also include **compact-history** generations with the summary
+prompt, response, and usage attached to their turn. Manual compaction between turns
+has its own **ChartCoach history compaction** trace in the same session, with its
+summary calls beneath a **compact-session** agent observation.
 Model observations include token totals and cached-token usage. Langfuse calculates
 cost when it recognizes the model. Observations include the authenticated principal
 when available, catalog identity, and selected guideline count. Authentication
 attributes and the selected ID list stay out of telemetry metadata.
 
-The initiating session captures catalog provenance for its model, tool, and image
-observations:
+The initiating session captures catalog provenance for its turn, generation, and
+tool observations. Charts are embedded in turn and generation inputs:
 
 | Field                 | Meaning                                                            |
 | --------------------- | ------------------------------------------------------------------ |
@@ -443,7 +450,7 @@ observations:
 | `modelContextWindow`  | Configured context limit in tokens                                 |
 | `modelManaged`        | Whether the connection uses the server's configured credentials    |
 
-Model resolution records these fields for each step. Generation and tool traces
+Model resolution records these fields for each step. Generation and tool observations
 inherit the resolved model metadata alongside catalog provenance. API keys,
 authorization headers, and endpoint paths, query strings, and credentials are
 excluded from this metadata.
@@ -455,19 +462,23 @@ for inspection. Follow-ups retain the initiating release and selection.
 Eve owns the OpenTelemetry pipeline through the declarations under
 `agent/instrumentation/`. It flushes buffered observations after execution steps,
 including cancellation, and shuts down the exporter with the server. The exporter
-keeps agent/model/tool spans and filters workflow and HTTP plumbing.
+keeps agent/model/tool spans and filters workflow, HTTP, workspace requests,
+and database plumbing. Model resolution enriches the agent trace without creating
+a separate empty trace. Search, SQL retrieval, and guideline reads are typed as
+retriever observations.
 
-Content follows Eve's channel-audience policy. Local development captures prompts,
-tool arguments/results, and responses. Hosted unknown/private channels export
-metadata rather than conversation content. Treat the Langfuse project as a
-destination for conversation data when content capture is enabled.
+Enabling tracing authorizes full conversation capture in local and hosted
+channels, including private channels. Generations include the complete system
+instructions, conversation history, reasoning, tool calls, and available tool
+definitions. Tool observations include their full arguments and results. Treat
+the Langfuse project as a destination for this conversation data.
 
-Each turn that uses a chart also records a **Chart image** observation in the same
-Langfuse session. Langfuse uploads the original image, up to the app's 3 MiB limit,
-and places a media reference in that observation. The image has its own trace with
-turn metadata. Native model/tool traces keep Eve's 32 KiB content-attribute cap.
-Retries within a running process reuse the turn's image observation. A server
-restart can produce another observation, while Langfuse reuses the content-addressed media.
+Chart images appear inline in the turn and generation inputs. Langfuse uploads
+the original bytes, up to the app's 3 MiB limit, and replaces them with media
+references. Its content-addressed media storage reuses the same image across
+model steps and follow-ups. The Langfuse destination receives full lifecycle
+payloads instead of Eve's capped local trace attributes, so long histories and
+guideline records remain available for inspection.
 
 `LANGFUSE_TRACING_ENVIRONMENT` overrides the Vercel or Node environment label.
 `LANGFUSE_RELEASE` identifies a deployment. Credentials remain server-side.
