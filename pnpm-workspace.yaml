@@ -75,6 +75,7 @@ catalog:
   playwright: 1.64.0
   srvx: 1.0.5
   zbsearch: 4.0.1
+  wrangler: 4.149.0
 
 minimumReleaseAge: 2880
 minimumReleaseAgeExclude:
@@ -108,5 +109,6 @@ allowBuilds:
   onnxruntime-node: false
   protobufjs: false
   sharp: true
+  workerd: true
 patchedDependencies:
   eve@0.74.0: patches/eve@0.74.0.patch
