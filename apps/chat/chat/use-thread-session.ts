@@ -19,7 +19,7 @@ export function useThreadSession(
   }, [selection, workspace.connectionId]);
 
   function remember() {
-    if (thread.current) workspace.rememberThread(thread.current);
+    if (thread.current) workspace.rememberThread();
   }
 
   return {
@@ -38,6 +38,7 @@ export function useThreadSession(
     onSessionChange: (session: { sessionId: string } | undefined) => {
       if (session?.sessionId && session.sessionId !== registeredSession.current) {
         registeredSession.current = session.sessionId;
+        workspace.attachSession(session.sessionId);
         remember();
       }
     },
@@ -54,11 +55,11 @@ export function useThreadSession(
       if (!connectionId) throw new Error("Choose a model connection before sending.");
 
       if (!thread.current) {
-        const created = await createThread({ title, connectionId, knowledge: selected }, signal);
+        const created = await createThread({ title, connectionId, guidelines: selected }, signal);
         signal.throwIfAborted();
         thread.current = created.id;
         setThreadId(created.id);
-        remember();
+        workspace.adoptThread(created);
       }
 
       if (chart) await saveChartImage(thread.current, chart, signal);
@@ -68,7 +69,7 @@ export function useThreadSession(
       thread.current = undefined;
       registeredSession.current = undefined;
       setThreadId(undefined);
-      history.replaceState(null, "", location.pathname);
+      workspace.clearThread();
     },
   };
 }

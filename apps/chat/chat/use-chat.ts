@@ -4,7 +4,7 @@ import type { useWorkspace } from "./use-workspace";
 import { useState } from "react";
 
 export function useChat(workspace: ReturnType<typeof useWorkspace>) {
-  const catalog = useCatalogFilters(workspace.active?.knowledge);
+  const catalog = useCatalogFilters(workspace.active?.guidelines);
   const state = useChatRuntime(catalog.selection, workspace);
   const [configuring, setConfiguring] = useState(false);
 

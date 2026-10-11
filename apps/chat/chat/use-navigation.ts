@@ -1,11 +1,7 @@
-import {
-  addTransitionType,
-  startTransition,
-  useEffect,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useRouter } from "next/navigation";
+import { guidelinesPath } from "../shared/routes";
+import type { useWorkspace } from "./use-workspace";
 
 const desktopQuery = "(min-width: 1100px)";
 
@@ -20,26 +16,19 @@ const getDesktop = () => window.matchMedia(desktopQuery).matches;
 
 const getServerDesktop = () => false;
 
-export function useNavigation() {
+export function useNavigation(workspace: ReturnType<typeof useWorkspace>) {
+  const router = useRouter();
   const desktop = useSyncExternalStore(subscribe, getDesktop, getServerDesktop);
   const [desktopOpen, setDesktopOpen] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [view, setView] = useState<"chat" | "guidelines">("chat");
+  const view = workspace.pathname.endsWith("/guidelines") ? "guidelines" : "chat";
   const searchInput = useRef<HTMLInputElement>(null);
   const focusSearch = useRef(false);
   useEffect(() => {
     if (desktop) setMobileOpen(false);
   }, [desktop]);
   const open = desktop ? desktopOpen : mobileOpen;
-
-  function showView(next: "chat" | "guidelines") {
-    if (view === next) return;
-    startTransition(() => {
-      addTransitionType("workspace-navigation");
-      setView(next);
-    });
-  }
 
   useEffect(() => {
     if (open && focusSearch.current) {
@@ -53,15 +42,15 @@ export function useNavigation() {
     desktopOpen,
     open,
     view,
-    showGuidelines: () => {
-      showView("guidelines");
-      setMobileOpen(false);
-    },
-    showChat: () => showView("chat"),
+    guidelinesHref: guidelinesPath(workspace.active?.id),
+    showChat: () =>
+      router.push(workspace.chatHref(), {
+        scroll: false,
+        transitionTypes: ["workspace-navigation"],
+      }),
     setOpen: desktop ? setDesktopOpen : setMobileOpen,
     closeOnSelect: () => {
       setMobileOpen(false);
-      showView("chat");
     },
     searchInput,
     searchOpen,

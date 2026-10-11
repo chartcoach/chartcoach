@@ -13,6 +13,7 @@ export const styles = stylex.create({
     transform: { default: "translateY(-160%)", ":focus": "translateY(0)" },
   },
   header: {
+    viewTransitionName: "workspace-header",
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",

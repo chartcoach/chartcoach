@@ -1,4 +1,4 @@
-import { mkdtemp, mkdir, writeFile, readFile, rm } from "node:fs/promises";
+import { mkdtemp, mkdir, writeFile, readFile, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, it, vi } from "vite-plus/test";
@@ -9,8 +9,6 @@ it("recovers abandoned locks, isolates parallel sessions, and releases their res
   const directory = await mkdtemp(join(tmpdir(), "chartcoach-lifecycle-"));
   await mkdir(join(directory, "sandbox"));
   await mkdir(join(directory, "server"));
-  await mkdir(join(directory, "public"));
-  await writeFile(join(directory, "public/index.html"), "ChartCoach");
   const entry = join(directory, "server/index.mjs");
 
   const worker = `
@@ -35,7 +33,21 @@ it("recovers abandoned locks, isolates parallel sessions, and releases their res
   });
 
   const log = vi.fn();
-  const options = { distribution: directory, signal: new AbortController().signal, log };
+
+  const options = {
+    distribution: directory,
+    signal: new AbortController().signal,
+    log,
+    prepareWeb: async () => ({
+      handle: async (
+        _request: import("node:http").IncomingMessage,
+        response: import("node:http").ServerResponse,
+      ) => {
+        response.end("ChartCoach");
+      },
+      close: async () => {},
+    }),
+  };
 
   try {
     // An ungraceful exit can leave a lock that has not reached its stale threshold.
@@ -128,6 +140,32 @@ it("recovers abandoned locks, isolates parallel sessions, and releases their res
     await writeFile(entry, 'process.stderr.write("startup failed\\n"); process.exit(1);');
     await expect(startChat(config, options)).rejects.toThrow("startup failed");
     await writeFile(entry, worker);
+    const startupController = new AbortController();
+    const preparing = Promise.withResolvers<void>();
+
+    const interrupted = startChat(config, {
+      ...options,
+      signal: startupController.signal,
+      prepareWeb: async (_directory, signal) => {
+        preparing.resolve();
+        await new Promise<void>((_resolve, reject) => {
+          signal.addEventListener("abort", () => reject(signal.reason), { once: true });
+        });
+
+        return options.prepareWeb();
+      },
+    });
+
+    await preparing.promise;
+
+    const interruptedPID = Number(
+      await readFile(join(config.storage.dataDir, "worker.pid"), "utf8"),
+    );
+
+    startupController.abort(new Error("cancel-startup"));
+    await expect(interrupted).rejects.toThrow("cancel-startup");
+    expect(() => process.kill(interruptedPID, 0)).toThrow();
+    await expect(stat(join(config.storage.dataDir, ".lock"))).rejects.toThrow();
     await using recovered = await startChat(config, options);
     expect(await (await fetch(recovered.url)).text()).toBe("ChartCoach");
   } finally {

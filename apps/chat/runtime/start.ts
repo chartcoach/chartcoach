@@ -10,6 +10,7 @@ import lockfile from "proper-lockfile";
 import { createGateway } from "./gateway";
 import { embedKey, validateStartup, modelKey, embeddingKey } from "./config";
 import type { Config } from "./schema";
+import { prepareWeb as prepareNext } from "./web";
 
 export async function startChat(
   config: Config,
@@ -18,11 +19,13 @@ export async function startChat(
     signal,
     log = () => {},
     verbose = false,
+    prepareWeb = prepareNext,
   }: {
     distribution: string;
     signal: AbortSignal;
     log?: (message: string) => void;
     verbose?: boolean;
+    prepareWeb?: typeof prepareNext;
   },
 ) {
   const password = validateStartup(config);
@@ -147,9 +150,17 @@ export async function startChat(
 
   const agentURL = await workerURL(child, AbortSignal.any([lifetime, AbortSignal.timeout(60_000)]));
 
+  const web = await prepareWeb(
+    join(distribution, "web"),
+    AbortSignal.any([lifetime, AbortSignal.timeout(60_000)]),
+  );
+
+  resources.defer(() => web.close());
+  lifetime.throwIfAborted();
+
   const gateway = createGateway({
     config,
-    assets: join(distribution, "public"),
+    handlePage: web.handle,
     agentURL,
     token,
     password,

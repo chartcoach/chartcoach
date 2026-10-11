@@ -16,7 +16,9 @@ import {
   SquarePen,
   X,
 } from "lucide-react";
-import { useEffect, useRef, useState, type RefObject, type ReactNode } from "react";
+import { useEffect, useRef, useState, ViewTransition, type RefObject, type ReactNode } from "react";
+import Link from "next/link";
+import { chatPath } from "../../shared/routes";
 import * as stylex from "@stylexjs/stylex";
 import type { useNavigation } from "../../chat/use-navigation";
 import { styles } from "./history.styles";
@@ -124,8 +126,10 @@ function GuidelinesLink({
   compact?: boolean;
 }) {
   return (
-    <button
-      type="button"
+    <Link
+      href={navigation.guidelinesHref}
+      scroll={false}
+      transitionTypes={["workspace-navigation"]}
       {...stylex.props(
         ui.button,
         ui.quietButton,
@@ -134,7 +138,7 @@ function GuidelinesLink({
         navigation.view === "guidelines" && styles.guidelinesActive,
         compact && styles.guidelinesCompact,
       )}
-      onClick={navigation.showGuidelines}
+      onNavigate={navigation.closeOnSelect}
       aria-label="Guidelines"
       aria-current={navigation.view === "guidelines" ? "page" : undefined}
       title={compact ? "Guidelines" : undefined}
@@ -148,7 +152,7 @@ function GuidelinesLink({
           ) : null}
         </>
       ) : null}
-    </button>
+    </Link>
   );
 }
 
@@ -271,21 +275,31 @@ function NewChatButton({
   onOpen: () => void;
   compact?: boolean;
 }) {
+  const aui = useAui();
   const active = useAuiState((state) => state.threads.newThreadId === state.threads.mainThreadId);
 
   return (
-    <ThreadListPrimitive.New
+    <Link
+      href="/"
+      scroll={false}
       {...stylex.props(ui.button, ui.focus, styles.newThread, compact && styles.guidelinesCompact)}
       aria-label="New chat"
       title={compact ? "New chat" : undefined}
-      disabled={disabled}
+      aria-disabled={disabled}
+      tabIndex={disabled ? -1 : undefined}
       data-active={selected && active ? "true" : undefined}
       aria-current={selected && active ? "page" : undefined}
-      onClick={onOpen}
+      onNavigate={(event) => {
+        event.preventDefault();
+
+        if (disabled) return;
+        onOpen();
+        aui.threads().switchToNewThread();
+      }}
     >
       <SquarePen size={17} aria-hidden="true" />
       {compact ? null : "New chat"}
-    </ThreadListPrimitive.New>
+    </Link>
   );
 }
 
@@ -303,69 +317,79 @@ function HistoryItem({
   const title = useAuiState((state) => state.threadListItem.title ?? "New chat");
   const archived = useAuiState((state) => state.threadListItem.status === "archived");
   const active = useAuiState((state) => state.threads.mainThreadId === state.threadListItem.id);
+  const id = useAuiState((state) => state.threadListItem.id);
   const [editing, setEditing] = useState(false);
 
   if (!title.toLowerCase().includes(query)) return null;
 
   return (
-    <ThreadListItemPrimitive.Root
-      {...stylex.props(styles.item, historyRowScope)}
-      data-active={chatActive && active ? "true" : undefined}
-      aria-current={chatActive && active ? "page" : undefined}
-    >
-      {editing ? (
-        <RenameConversation title={title} onDone={() => setEditing(false)} />
-      ) : (
-        <>
-          <ThreadListItemPrimitive.Trigger
-            {...stylex.props(styles.open, ui.focus)}
-            disabled={disabled}
-            onClick={onOpen}
-            title={title}
-          >
-            <ThreadListItemPrimitive.Title />
-          </ThreadListItemPrimitive.Trigger>
-          <ThreadListItemMorePrimitive.Root sharedFocusGroup>
-            <ThreadListItemMorePrimitive.Trigger
-              {...stylex.props(ui.button, ui.focus, styles.more)}
-              disabled={disabled}
-              aria-label={`Options for ${title}`}
+    <ViewTransition default="none" update="auto">
+      <ThreadListItemPrimitive.Root
+        {...stylex.props(styles.item, historyRowScope)}
+        data-active={chatActive && active ? "true" : undefined}
+        aria-current={chatActive && active ? "page" : undefined}
+      >
+        {editing ? (
+          <RenameConversation title={title} onDone={() => setEditing(false)} />
+        ) : (
+          <>
+            <Link
+              href={chatPath(id)}
+              scroll={false}
+              transitionTypes={["workspace-navigation"]}
+              {...stylex.props(styles.open, ui.focus)}
+              aria-disabled={disabled}
+              tabIndex={disabled ? -1 : undefined}
+              onNavigate={(event) => {
+                if (disabled) event.preventDefault();
+                else onOpen();
+              }}
+              title={title}
             >
-              <MoreHorizontal size={16} />
-            </ThreadListItemMorePrimitive.Trigger>
-            <ThreadListItemMorePrimitive.Content
-              {...stylex.props(styles.menu)}
-              side="bottom"
-              align="end"
-              sideOffset={4}
-            >
-              <ThreadListItemMorePrimitive.Item
-                {...stylex.props(styles.menuItem)}
-                onSelect={() => setEditing(true)}
+              <ThreadListItemPrimitive.Title />
+            </Link>
+            <ThreadListItemMorePrimitive.Root sharedFocusGroup>
+              <ThreadListItemMorePrimitive.Trigger
+                {...stylex.props(ui.button, ui.focus, styles.more)}
+                disabled={disabled}
+                aria-label={`Options for ${title}`}
               >
-                <Pencil size={15} />
-                Rename
-              </ThreadListItemMorePrimitive.Item>
-              {archived ? (
-                <ThreadListItemPrimitive.Unarchive asChild>
-                  <ThreadListItemMorePrimitive.Item {...stylex.props(styles.menuItem)}>
-                    <Archive size={15} />
-                    Restore
-                  </ThreadListItemMorePrimitive.Item>
-                </ThreadListItemPrimitive.Unarchive>
-              ) : (
-                <ThreadListItemPrimitive.Archive asChild>
-                  <ThreadListItemMorePrimitive.Item {...stylex.props(styles.menuItem)}>
-                    <Archive size={15} />
-                    Archive
-                  </ThreadListItemMorePrimitive.Item>
-                </ThreadListItemPrimitive.Archive>
-              )}
-            </ThreadListItemMorePrimitive.Content>
-          </ThreadListItemMorePrimitive.Root>
-        </>
-      )}
-    </ThreadListItemPrimitive.Root>
+                <MoreHorizontal size={16} />
+              </ThreadListItemMorePrimitive.Trigger>
+              <ThreadListItemMorePrimitive.Content
+                {...stylex.props(styles.menu)}
+                side="bottom"
+                align="end"
+                sideOffset={4}
+              >
+                <ThreadListItemMorePrimitive.Item
+                  {...stylex.props(styles.menuItem)}
+                  onSelect={() => setEditing(true)}
+                >
+                  <Pencil size={15} />
+                  Rename
+                </ThreadListItemMorePrimitive.Item>
+                {archived ? (
+                  <ThreadListItemPrimitive.Unarchive asChild>
+                    <ThreadListItemMorePrimitive.Item {...stylex.props(styles.menuItem)}>
+                      <Archive size={15} />
+                      Restore
+                    </ThreadListItemMorePrimitive.Item>
+                  </ThreadListItemPrimitive.Unarchive>
+                ) : (
+                  <ThreadListItemPrimitive.Archive asChild>
+                    <ThreadListItemMorePrimitive.Item {...stylex.props(styles.menuItem)}>
+                      <Archive size={15} />
+                      Archive
+                    </ThreadListItemMorePrimitive.Item>
+                  </ThreadListItemPrimitive.Archive>
+                )}
+              </ThreadListItemMorePrimitive.Content>
+            </ThreadListItemMorePrimitive.Root>
+          </>
+        )}
+      </ThreadListItemPrimitive.Root>
+    </ViewTransition>
   );
 }
 

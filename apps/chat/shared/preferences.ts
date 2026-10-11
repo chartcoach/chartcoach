@@ -1,14 +1,13 @@
 import { guidelineLinksSchema } from "./guideline-links";
 import { z } from "zod";
 import { modelFields, apiKeySchema } from "./model";
-import { catalogFiltersSchema } from "./catalog-filters";
-import { catalogSelectionSchema } from "./catalog-selection";
+import { threadIdSchema } from "./threads";
 
 export const ownerSchema = z.string().regex(/^[a-f0-9]{64}$/);
 
 export const modelSelectionSchema = z.object({
   owner: ownerSchema,
-  threadId: z.uuid(),
+  threadId: threadIdSchema,
   connectionId: z.string().min(1).max(80),
 });
 
@@ -38,30 +37,3 @@ export const preferencesSchema = z.object({
 export const modelSchema = z.object({ id: z.string(), name: z.string() });
 
 export type ModelChoice = z.infer<typeof modelSchema>;
-
-const savedSelectionSchema = z.object({
-  filters: catalogFiltersSchema,
-  selection: catalogSelectionSchema,
-  matchedGuidelines: z.number().int().nonnegative(),
-});
-
-export const threadInputSchema = z.strictObject({
-  title: z.string().trim().min(1).max(160),
-  connectionId: z.string().min(1).max(80),
-  knowledge: savedSelectionSchema,
-});
-
-export const threadSchema = z.object({
-  id: z.uuid(),
-  title: z.string(),
-  connectionId: z.string(),
-  sessionId: z.string().nullable(),
-  updatedAt: z.number(),
-  archived: z.boolean(),
-});
-
-export type SavedThread = z.infer<typeof threadSchema>;
-
-export const threadDetailSchema = threadSchema.extend({ knowledge: savedSelectionSchema });
-
-export type ThreadDetail = z.infer<typeof threadDetailSchema>;

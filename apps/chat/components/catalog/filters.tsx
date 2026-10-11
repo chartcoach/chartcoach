@@ -1,7 +1,7 @@
 import * as stylex from "@stylexjs/stylex";
 import { ArrowLeft, Info } from "lucide-react";
 import { Popover } from "radix-ui";
-import { Activity, useEffect, useId, useRef } from "react";
+import { useEffect, useId, useRef } from "react";
 import {
   emptyCatalogFilters,
   type CatalogFilters,
@@ -16,7 +16,6 @@ import { styles } from "./filters.styles";
 import { MatchedGuidelines } from "./matched-guidelines";
 
 type GuidelinesProps = {
-  open: boolean;
   onClose: () => void;
   metadata: CatalogMetadata;
   value: CatalogFilters;
@@ -169,57 +168,51 @@ function FilterDraft({
 }
 
 export function GuidelinesPage(props: GuidelinesProps) {
-  const state = useFilterDraft(props);
+  const state = useFilterDraft({ ...props, open: true });
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
-    if (props.open) heading.current?.focus({ preventScroll: true });
-  }, [props.open]);
+    heading.current?.focus({ preventScroll: true });
+  }, []);
 
   return (
-    <Activity mode={props.open ? "visible" : "hidden"}>
-      <main {...stylex.props(styles.page)} aria-label="Guidelines settings">
-        <header {...stylex.props(styles.header)}>
-          <div>
-            <h1 ref={heading} tabIndex={-1} {...stylex.props(styles.title)}>
-              Guidelines
-            </h1>
-            <p {...stylex.props(styles.description)}>Choose the guidelines your agent can use.</p>
-          </div>
-          <div {...stylex.props(styles.headerActions)}>
-            <button
-              type="button"
+    <main {...stylex.props(styles.page)} aria-label="Guidelines settings">
+      <header {...stylex.props(styles.header)}>
+        <div>
+          <h1 ref={heading} tabIndex={-1} {...stylex.props(styles.title)}>
+            Guidelines
+          </h1>
+          <p {...stylex.props(styles.description)}>Choose the guidelines your agent can use.</p>
+        </div>
+        <div {...stylex.props(styles.headerActions)}>
+          <button
+            type="button"
+            {...stylex.props(ui.button, ui.quietButton, ui.focus)}
+            disabled={state.applying}
+            onClick={props.onClose}
+          >
+            <ArrowLeft size={16} aria-hidden="true" /> Back to chat
+          </button>
+          <Popover.Root>
+            <Popover.Trigger
               {...stylex.props(ui.button, ui.quietButton, ui.focus)}
-              disabled={state.applying}
-              onClick={props.onClose}
+              aria-label="How filters work"
             >
-              <ArrowLeft size={16} aria-hidden="true" /> Back to chat
-            </button>
-            <Popover.Root>
-              <Popover.Trigger
-                {...stylex.props(ui.button, ui.quietButton, ui.focus)}
-                aria-label="How filters work"
-              >
-                <Info size={18} aria-hidden="true" />
-              </Popover.Trigger>
-              <Popover.Portal>
-                <Popover.Content
-                  {...stylex.props(styles.help)}
-                  sideOffset={8}
-                  collisionPadding={16}
-                >
-                  <h2 {...stylex.props(styles.legend)}>How filters work</h2>
-                  <p {...stylex.props(styles.description)}>
-                    Guidelines can cite more than one source. When you combine author, year, and
-                    source type, one source must match every choice. Excluding an author hides any
-                    guideline that cites them. Counts update as you filter.
-                  </p>
-                </Popover.Content>
-              </Popover.Portal>
-            </Popover.Root>
-          </div>
-        </header>
-        <FilterDraft metadata={props.metadata} disabled={props.disabled} state={state} />
-      </main>
-    </Activity>
+              <Info size={18} aria-hidden="true" />
+            </Popover.Trigger>
+            <Popover.Portal>
+              <Popover.Content {...stylex.props(styles.help)} sideOffset={8} collisionPadding={16}>
+                <h2 {...stylex.props(styles.legend)}>How filters work</h2>
+                <p {...stylex.props(styles.description)}>
+                  Guidelines can cite more than one source. When you combine author, year, and
+                  source type, one source must match every choice. Excluding an author hides any
+                  guideline that cites them. Counts update as you filter.
+                </p>
+              </Popover.Content>
+            </Popover.Portal>
+          </Popover.Root>
+        </div>
+      </header>
+      <FilterDraft metadata={props.metadata} disabled={props.disabled} state={state} />
+    </main>
   );
 }

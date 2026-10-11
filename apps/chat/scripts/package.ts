@@ -2,6 +2,8 @@ import { cp, mkdir, readFile, readdir, rm, writeFile, chmod } from "node:fs/prom
 import { findPackageJSON } from "node:module";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { PHASE_PRODUCTION_SERVER } from "next/constants.js";
+import nextConfig from "../next.config.ts";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 
@@ -32,7 +34,24 @@ await rm(join(output, "server/package.json"), { force: true });
 
 await cp(join(root, ".output/sandbox"), join(output, "sandbox"), { recursive: true });
 
-await cp(join(root, "out"), join(output, "public"), { recursive: true });
+await cp(join(root, ".next"), join(output, "web/.next"), {
+  recursive: true,
+  filter: (path) => !["cache", "dev", "diagnostics", "types"].includes(path.split(/[\\/]/).at(-1)!),
+});
+
+await cp(join(root, "public"), join(output, "web/public"), { recursive: true });
+
+// Next's compiled server chunks are CommonJS, independent of the CLI's ESM scope.
+await writeFile(join(output, "web/package.json"), JSON.stringify({ type: "commonjs" }) + "\n");
+
+// The custom server loads config from disk. Keep it local to the packaged app
+// so an installing project's Next configuration cannot affect this build.
+const config = nextConfig(PHASE_PRODUCTION_SERVER);
+
+await writeFile(
+  join(output, "web/next.config.js"),
+  `module.exports = ${JSON.stringify(config)};\nmodule.exports.turbopack = { ...module.exports.turbopack, root: __dirname };\n`,
+);
 
 const dependencies: Record<string, string> = {};
 
@@ -62,7 +81,7 @@ await writeFile(
       type: "module",
       engines: source.engines,
       bin: { chartcoach: "./cli/index.mjs" },
-      files: ["cli", "server", "public", "sandbox"],
+      files: ["cli", "server", "web", "sandbox"],
       dependencies,
       publishConfig: source.publishConfig,
     },

@@ -115,7 +115,7 @@ export function useChatRuntime(
     suggestions,
     messages: conversation.messages,
     isRunning: busy,
-    isDisabled: reading || agent.status === "resuming",
+    isDisabled: disabled,
     isSendDisabled:
       !!needsNewSession ||
       !selection ||
@@ -130,7 +130,7 @@ export function useChatRuntime(
         ...historyLists,
         onSwitchToNewThread: newChat,
         onSwitchToThread: async (id) => {
-          if (!disabled) await workspace.openThread(id);
+          if (!disabled) workspace.openThread(id);
         },
         onRename: async (id, title) => {
           await editHistory(id, { title });
@@ -264,6 +264,7 @@ export function useChatRuntime(
     sentChart.current = undefined;
     setInterruptedTurns(new Set());
     setError(undefined);
+    workspace.newChat();
     messageInput.current?.focus();
   }
 

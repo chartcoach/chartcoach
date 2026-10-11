@@ -79,7 +79,7 @@ it("restores a conversation's selection and image after reopening SQLite", async
   let runtime = createAppRuntime(directory);
   const catalogId = "a".repeat(64);
 
-  const knowledge = {
+  const guidelines = {
     filters: emptyCatalogFilters(catalogId),
     selection: { catalogId, sql: "SELECT id FROM catalog_entries" },
     matchedGuidelines: 1,
@@ -91,7 +91,7 @@ it("restores a conversation's selection and image after reopening SQLite", async
     const thread = await runtime.runPromise(
       createThread(
         "alice",
-        { title: "Bicycle comparison", connectionId: "server", knowledge },
+        { title: "Bicycle comparison", connectionId: "server", guidelines },
         { catalogId, ids: ["axis-labels"] },
       ),
     );
@@ -117,7 +117,7 @@ it("restores a conversation's selection and image after reopening SQLite", async
       title: "Revised title",
       sessionId: "session-a",
       archived: true,
-      knowledge,
+      guidelines,
     });
     expect(
       Buffer.from((await runtime.runPromise(getImage("alice", thread.id, "chart.png"))).bytes),
@@ -165,6 +165,58 @@ it("uses a signed browser cookie and combines it with authenticated identity", a
     expect(ownerId({ principalId: "alice", authenticator: "test" }, identity!.id)).not.toBe(
       ownerId({ principalId: "bob", authenticator: "test" }, identity!.id),
     );
+  } finally {
+    await runtime.dispose();
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+it("upgrades saved conversation records without losing their identity or guideline selection", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "chartcoach-thread-upgrade-"));
+  let runtime = createAppRuntime(directory);
+  const catalogId = "a".repeat(64);
+
+  const guidelines = {
+    filters: emptyCatalogFilters(catalogId),
+    selection: { catalogId, sql: "SELECT id FROM catalog_entries" },
+    matchedGuidelines: 1,
+  };
+
+  try {
+    const created = await runtime.runPromise(
+      createThread(
+        "alice",
+        { title: "Saved chart", connectionId: "server", guidelines },
+        { catalogId, ids: ["axis-labels"] },
+      ),
+    );
+
+    await runtime.runPromise(bindThread("alice", created.id, "persisted-session", "server"));
+    const saved = (await runtime.runPromise(getThread("alice", created.id))).detail;
+    expect(created.createdAt).toBe(created.updatedAt);
+    await runtime.dispose();
+    const { DatabaseSync } = await import("node:sqlite");
+    const db = new DatabaseSync(join(directory, "chat.sqlite"));
+
+    try {
+      // Recreate the persisted schema from the previous package release.
+      db.exec("ALTER TABLE threads RENAME COLUMN guidelines TO knowledge");
+      db.exec("ALTER TABLE threads DROP COLUMN created_at");
+      db.exec("DELETE FROM effect_sql_migrations WHERE migration_id = 3");
+    } finally {
+      db.close();
+    }
+
+    runtime = createAppRuntime(directory);
+    const restored = (await runtime.runPromise(getThread("alice", created.id))).detail;
+    expect(restored).toEqual({ ...saved, createdAt: saved.updatedAt });
+    expect(await runtime.runPromise(listThreads("alice"))).toEqual([
+      expect.objectContaining({
+        id: created.id,
+        createdAt: saved.updatedAt,
+        sessionId: "persisted-session",
+      }),
+    ]);
   } finally {
     await runtime.dispose();
     await rm(directory, { recursive: true, force: true });

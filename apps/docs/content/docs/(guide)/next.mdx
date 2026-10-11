@@ -135,7 +135,9 @@ Optional
 records the conversation's catalog release and selection alongside model calls,
 tools, and image inputs.
 
-The history pane restores the same conversation and guideline selection.
+The history pane links to `/chat/{threadId}`, which restores the same conversation
+and guideline selection. A shared App Router layout retains the workspace while
+navigating to the selector at `/guidelines` or `/chat/{threadId}/guidelines`.
 [Effect](https://effect.website/docs/v3/runtime/) manages the app's SQLite services,
 resource cleanup, failures, and tracing. SQLite stores conversation metadata,
 connection settings, and chart previews. Eve owns the persisted transcript and

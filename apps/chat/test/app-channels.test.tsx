@@ -74,7 +74,7 @@ async function setup() {
       {
         title: "Chart review",
         connectionId: "server",
-        knowledge: {
+        guidelines: {
           filters: emptyCatalogFilters(catalogId),
           selection: { catalogId, sql: "SELECT id FROM catalog_entries" },
           matchedGuidelines: 1,
@@ -225,4 +225,81 @@ it("discovers and saves models under the same credential and owner policy", asyn
   } finally {
     vi.unstubAllGlobals();
   }
+});
+
+it("admits one initial session per conversation across concurrent tabs", async () => {
+  const { owner, thread, headers } = await setup();
+  const started = Promise.withResolvers<void>();
+  const accept = Promise.withResolvers<Response>();
+  let calls = 0;
+
+  const native = POST("/eve/v1/session", async () => {
+    calls++;
+    started.resolve();
+
+    return accept.promise;
+  });
+
+  const route = withThreadPersistence(defineChannel({ routes: [native] })).routes[0];
+
+  if (route.method !== "POST") throw new Error("Expected POST");
+
+  const send = () =>
+    route.handler(
+      new Request("http://localhost/eve/v1/session", { method: "POST", headers }),
+      routeContext,
+    );
+
+  const first = send();
+  await started.promise;
+  expect((await send()).status).toBe(409);
+  accept.resolve(
+    Response.json({ ok: true }, { status: 202, headers: { "x-eve-session-id": "single-session" } }),
+  );
+  expect((await first).status).toBe(202);
+  expect((await send()).status).toBe(409);
+  expect(calls).toBe(1);
+  expect((await app.runApp(getThread(owner, thread.id))).detail.sessionId).toBe("single-session");
+});
+
+it("releases conversation admission after rejection and binds accepted sessions after disconnect", async () => {
+  const { owner, thread, headers } = await setup();
+  const started = Promise.withResolvers<void>();
+  const accept = Promise.withResolvers<Response>();
+  let calls = 0;
+
+  const native = POST("/eve/v1/session", async () => {
+    if (++calls === 1) return Response.json({ error: "Bad image" }, { status: 415 });
+    started.resolve();
+
+    return accept.promise;
+  });
+
+  const route = withThreadPersistence(defineChannel({ routes: [native] })).routes[0];
+
+  if (route.method !== "POST") throw new Error("Expected POST");
+  const controller = new AbortController();
+
+  const send = (signal?: AbortSignal) =>
+    route.handler(
+      new Request("http://localhost/eve/v1/session", { method: "POST", headers, signal }),
+      routeContext,
+    );
+
+  expect((await send()).status).toBe(415);
+  const retry = send(controller.signal).catch(() => undefined);
+  await started.promise;
+  controller.abort();
+  accept.resolve(
+    Response.json(
+      { ok: true },
+      { status: 202, headers: { "x-eve-session-id": "accepted-before-disconnect" } },
+    ),
+  );
+  await retry;
+  expect((await app.runApp(getThread(owner, thread.id))).detail.sessionId).toBe(
+    "accepted-before-disconnect",
+  );
+  expect((await send()).status).toBe(409);
+  expect(calls).toBe(2);
 });

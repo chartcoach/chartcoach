@@ -45,6 +45,12 @@ export function databaseLayer(filename: string) {
             const sql = yield* SqlClient.SqlClient;
             yield* sql`ALTER TABLE connections ADD COLUMN auth TEXT NOT NULL DEFAULT 'api-key'`;
           }),
+          "003_thread_lifecycle": Effect.gen(function* () {
+            const sql = yield* SqlClient.SqlClient;
+            yield* sql`ALTER TABLE threads RENAME COLUMN knowledge TO guidelines`;
+            yield* sql`ALTER TABLE threads ADD COLUMN created_at INTEGER NOT NULL DEFAULT 0`;
+            yield* sql`UPDATE threads SET created_at = updated_at`;
+          }),
         }),
       });
     }),

@@ -9,7 +9,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { parseArgs } from "node:util";
-import { chromium, type Browser, type Page } from "playwright";
+import { chromium, type Browser, type Page, type Route } from "playwright";
 import { tracingProbe } from "./tracing-probe.ts";
 import { verifyPicker } from "./verify-picker.ts";
 import { verifyModelSettings } from "./verify-model-settings.ts";
@@ -66,6 +66,8 @@ let browser: Browser | undefined;
 let page: Page | undefined;
 
 let model: Server | undefined;
+
+const browserErrors: string[] = [];
 
 let modelURL = "";
 
@@ -139,6 +141,8 @@ async function start(environmentOnly = false): Promise<string> {
     HOME: directory,
     NODE_PATH: "",
     CHARTCOACH_PASSWORD: "package-test-password",
+    CHARTCOACH_EMBED_ORIGINS: "*",
+    CHARTCOACH_EMBED_KEY: "package-test-embed-key",
     CHARTCOACH_CACHE_DIR: "./cache",
     CHARTCOACH_GUIDELINE_URL_TEMPLATE: "https://guidelines.example/entries/{id}",
   };
@@ -218,6 +222,11 @@ try {
     resolve(root, chatArchive),
     resolve(root, catalogArchive),
   ]);
+  // An installing Next app's configuration must not change ChartCoach's routes.
+  await writeFile(
+    join(directory, "next.config.mjs"),
+    'export default { basePath: "/host-app", output: "export", poweredByHeader: true };\n',
+  );
   assert.match(run(runner, [...runnerArgs, "--help"]), /Start the chat app/);
 
   const version = JSON.parse(
@@ -406,13 +415,19 @@ try {
     httpCredentials: { username: "chartcoach", password: "package-test-password" },
   });
 
-  const errors: string[] = [];
-  context.on("page", (opened) => opened.on("pageerror", (error) => errors.push(error.message)));
+  const errors = browserErrors;
+  context.on("page", (opened) => {
+    opened.on("pageerror", (error) => errors.push(error.message));
+  });
   await context.route("https://guidelines.example/**", (route) =>
     route.fulfill({ contentType: "text/html", body: "<p>Guideline destination</p>" }),
   );
   page = await context.newPage();
   await page.goto(url);
+  assert.equal(new URL(page.url()).pathname, "/");
+  assert.equal(new URL(page.url()).search, "");
+  const rootResponse = await context.request.get(url);
+  assert.equal(rootResponse.headers()["x-powered-by"], undefined);
   assert.equal(await page.getByText("Saved for this browser", { exact: true }).count(), 0);
   await page.getByText("Conversation tracing is enabled", { exact: false }).waitFor();
   await page.getByRole("button", { name: "Close sidebar", exact: true }).click();
@@ -516,7 +531,7 @@ try {
     "The server applies the browser's selected scope to the model turn",
   );
   const citationPage = await context.newPage();
-  await citationPage.goto(new URL(`/guideline?id=${encodeURIComponent(id)}`, url).href);
+  await citationPage.goto(new URL(`/guideline/${encodeURIComponent(id)}`, url).href);
   await citationPage.getByRole("heading", { name: title, exact: true }).waitFor();
   await citationPage.getByRole("heading", { name: "Sources", exact: true }).waitFor();
   await citationPage.close();
@@ -525,23 +540,22 @@ try {
     "The model receives the uploaded chart",
   );
   const cookies = await context.cookies();
-  const threadQuery = new URL(page.url()).search;
-  assert.match(threadQuery, /thread=/);
+  const threadPath = new URL(page.url()).pathname;
+  assert.match(threadPath, /^\/chat\/[a-f0-9-]{36}$/);
+  assert.equal(new URL(page.url()).search, "");
 
-  const saved = await page.evaluate(async () => {
-    const thread = new URL(location.href).searchParams.get("thread");
+  const saved = await page.evaluate(async (threadId) => {
+    return (await fetch(`/eve/v1/threads/${encodeURIComponent(threadId)}`)).json();
+  }, threadPath.split("/").at(-1)!);
 
-    return (await fetch(`/eve/v1/threads/${thread}`)).json();
-  });
-
-  assert.equal(saved.knowledge.matchedGuidelines, selected.length);
-  assert.equal(saved.knowledge.selection.catalogId, catalog.release.digest);
-  assert.equal(saved.knowledge.filters.sourceTypeIds.length, 1);
+  assert.equal(saved.guidelines.matchedGuidelines, selected.length);
+  assert.equal(saved.guidelines.selection.catalogId, catalog.release.digest);
+  assert.equal(saved.guidelines.filters.sourceTypeIds.length, 1);
   await stop();
   url = await start(true);
   // Cookies are host-scoped, so port allocation preserves the signed browser owner.
   await context.addCookies(cookies);
-  await page.goto(`${url}${threadQuery}`);
+  await page.goto(new URL(threadPath, url).href);
   await page
     .getByText("Use clear labels for the comparison.", { exact: true })
     .waitFor({ timeout: 30_000 });
@@ -549,13 +563,47 @@ try {
     .getByRole("textbox", { name: /message|ask|chart/i })
     .first()
     .fill("Explain the labels again.");
-  await page.getByRole("button", { name: /send/i }).click();
+  const resumedTurnURL = new URL(`/eve/v1/session/${saved.sessionId}`, url).href;
+  const releaseTurn = Promise.withResolvers<void>();
+
+  const holdTurn = async (route: Route) => {
+    if (route.request().method() === "POST") await releaseTurn.promise;
+    await route.continue();
+  };
+
+  await page.route(resumedTurnURL, holdTurn);
+
+  const resumedRequest = page.waitForRequest(
+    (request) => request.url() === resumedTurnURL && request.method() === "POST",
+  );
+
+  try {
+    await page.getByRole("button", { name: /send/i }).click();
+    await resumedRequest;
+    await page.getByRole("button", { name: "Open sidebar", exact: true }).click();
+
+    const currentHistory = page.getByRole("link", {
+      name: "Discuss clear labels in a comparison.",
+      exact: true,
+    });
+
+    assert.equal(await currentHistory.getAttribute("aria-disabled"), "true");
+    await currentHistory.click({ force: true });
+    await page.getByRole("dialog", { name: "Your conversations", exact: true }).waitFor();
+    assert.equal(new URL(page.url()).pathname, threadPath);
+    await page.getByRole("button", { name: "Close sidebar", exact: true }).click();
+  } finally {
+    releaseTurn.resolve();
+    await page.unrouteAll({ behavior: "wait" });
+  }
+
   await page
     .getByText("Use clear labels for the comparison.", { exact: true })
     .nth(1)
     .waitFor({ timeout: 90_000 });
+  await page.getByRole("button", { name: "Send message", exact: true }).waitFor();
   await page.getByRole("button", { name: "Open sidebar", exact: true }).click();
-  await page.getByRole("button", { name: "Guidelines", exact: true }).click();
+  await page.getByRole("link", { name: "Guidelines", exact: true }).click();
   await page
     .locator('footer [role="status"][aria-busy="false"]')
     .filter({ hasText: `${selected.length.toLocaleString()} guidelines selected` })
@@ -566,6 +614,149 @@ try {
     .first()
     .waitFor();
   assert.equal(await page.getByRole("checkbox", { checked: true }).count(), 1);
+  assert.equal(new URL(page.url()).pathname, `${threadPath}/guidelines`);
+  assert.equal(new URL(page.url()).search, "");
+  await page.reload();
+  await page
+    .locator('footer [role="status"][aria-busy="false"]')
+    .filter({ hasText: `${selected.length.toLocaleString()} guidelines selected` })
+    .waitFor();
+  await page.getByRole("button", { name: "Back to chat", exact: true }).click();
+  await page.waitForURL(new URL(threadPath, url).href);
+  await page.getByText("Use clear labels for the comparison.", { exact: true }).nth(1).waitFor();
+  await page.goBack();
+  await page.waitForURL(new URL(`${threadPath}/guidelines`, url).href);
+  await page.getByRole("heading", { name: "Guidelines", exact: true }).waitFor();
+  await page.goForward();
+  await page.waitForURL(new URL(threadPath, url).href);
+  await page.getByText("Use clear labels for the comparison.", { exact: true }).nth(1).waitFor();
+  await page.getByRole("button", { name: "Open sidebar", exact: true }).click();
+  const renamedTitle = "Readable comparison labels";
+  await page
+    .getByRole("button", { name: "Options for Discuss clear labels in a comparison.", exact: true })
+    .click();
+  await page.getByRole("menuitem", { name: "Rename", exact: true }).click();
+  await page.getByRole("textbox", { name: "Conversation title", exact: true }).fill(renamedTitle);
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await page.waitForFunction((title) => document.title === `${title} · ChartCoach`, renamedTitle);
+  const historyLink = page.getByRole("link", { name: renamedTitle, exact: true });
+  assert.equal(await historyLink.getAttribute("href"), threadPath);
+  await page.getByRole("link", { name: "New chat", exact: true }).click();
+  await page.waitForURL(new URL("/", url).href);
+  assert.equal(await page.locator("article > header > h2").count(), 0);
+  assert.equal(
+    await page
+      .getByRole("textbox", { name: /message|ask|chart/i })
+      .first()
+      .inputValue(),
+    "",
+  );
+  await page.getByRole("button", { name: "Open sidebar", exact: true }).click();
+  await page.getByRole("link", { name: renamedTitle, exact: true }).click();
+  await page.waitForURL(new URL(threadPath, url).href);
+  await page.getByText("Use clear labels for the comparison.", { exact: true }).nth(1).waitFor();
+  const draft = "Keep this draft while changing guidelines.";
+  await page
+    .getByRole("textbox", { name: /message|ask|chart/i })
+    .first()
+    .fill(draft);
+  await page.getByRole("button", { name: "Open sidebar", exact: true }).click();
+  await page.getByRole("link", { name: "Guidelines", exact: true }).click();
+  await page
+    .locator('footer [role="status"][aria-busy="false"]')
+    .filter({ hasText: `${selected.length.toLocaleString()} guidelines selected` })
+    .waitFor();
+  await page.getByRole("button", { name: "Select all", exact: true }).click();
+  await page.getByRole("button", { name: "Use these guidelines", exact: true }).click();
+  await page.waitForURL(new URL("/", url).href);
+  assert.equal(
+    await page
+      .getByRole("textbox", { name: /message|ask|chart/i })
+      .first()
+      .inputValue(),
+    draft,
+  );
+  await page.getByRole("button", { name: "Remove image", exact: true }).waitFor();
+
+  const unchangedScope = await page.evaluate(
+    async (id) => (await fetch(`/eve/v1/threads/${id}`)).json(),
+    saved.id,
+  );
+
+  assert.deepEqual(unchangedScope.guidelines, saved.guidelines);
+
+  const unknownPage = await context.newPage();
+  const invalid = await unknownPage.goto(new URL("/chat/invalid-id", url).href);
+  assert.equal(invalid?.status(), 404);
+  await unknownPage.goto(new URL("/chat/c3666202-50b1-449c-ac0c-9d458e936f92", url).href);
+  await unknownPage.getByRole("alert").filter({ hasText: "Conversation not found." }).waitFor();
+  assert.equal(await unknownPage.locator("article > header > h2").count(), 0);
+  await unknownPage.close();
+
+  const otherOwner = await browser.newContext({
+    httpCredentials: { username: "chartcoach", password: "package-test-password" },
+  });
+
+  const privatePage = await otherOwner.newPage();
+  privatePage.on("pageerror", (error) => errors.push(error.message));
+  await privatePage.goto(new URL(threadPath, url).href);
+  await privatePage.getByRole("alert").filter({ hasText: "Conversation not found." }).waitFor();
+
+  const privateRead = await privatePage.evaluate(
+    async (id) => (await fetch(`/eve/v1/threads/${id}`)).status,
+    saved.id,
+  );
+
+  assert.equal(privateRead, 404);
+  await otherOwner.close();
+
+  const embedURL = new URL(url);
+  embedURL.searchParams.set("embed_key", "package-test-embed-key");
+
+  const embedHost = createServer((_request, response) => {
+    response.setHeader("content-type", "text/html");
+    response.end(
+      `<iframe title="ChartCoach" sandbox="allow-scripts allow-forms" style="width:100%;height:900px" src="${embedURL.href}"></iframe>`,
+    );
+  });
+
+  await new Promise<void>((resolve) => embedHost.listen(0, "127.0.0.1", resolve));
+  // SAFETY: the listening server binds a numeric TCP port, which yields AddressInfo.
+  const hostAddress = embedHost.address() as AddressInfo;
+  const embeddedContext = await browser.newContext();
+
+  try {
+    const embeddedPage = await embeddedContext.newPage();
+    embeddedPage.on("pageerror", (error) => errors.push(error.message));
+    await embeddedPage.goto(`http://localhost:${hostAddress.port}`);
+    const embedded = embeddedPage.frameLocator('iframe[title="ChartCoach"]');
+    await embedded
+      .getByRole("textbox", { name: /message|ask|chart/i })
+      .first()
+      .fill("Keep my embedded draft.");
+    const chooseEmbeddedChart = embeddedPage.waitForEvent("filechooser");
+    await embedded.getByRole("button", { name: "Add chart", exact: true }).click();
+    await (
+      await chooseEmbeddedChart
+    ).setFiles(join(root, "apps/chat/public/examples/bicycle-trips.png"));
+    await embedded.getByRole("button", { name: "Remove image", exact: true }).waitFor();
+    await embedded.getByRole("link", { name: "Guidelines", exact: true }).click();
+    await embedded.getByRole("heading", { name: "Guidelines", exact: true }).waitFor();
+    await embedded.getByRole("button", { name: "Back to chat", exact: true }).click();
+    assert.equal(
+      await embedded
+        .getByRole("textbox", { name: /message|ask|chart/i })
+        .first()
+        .inputValue(),
+      "Keep my embedded draft.",
+    );
+    await embedded.getByRole("button", { name: "Remove image", exact: true }).waitFor();
+  } finally {
+    await embeddedContext.close();
+    embedHost.closeAllConnections();
+    await new Promise<void>((resolve) => embedHost.close(() => resolve()));
+  }
+
   assert.equal(errors.length, 0, errors.join("\n"));
   assert.ok(selected.includes(id));
   assert.ok(saved.sessionId);
@@ -608,6 +799,8 @@ try {
   );
 } catch (error) {
   if (page) {
+    console.error(`Browser URL: ${page.url()}`);
+    console.error(`Browser errors: ${browserErrors.join("\n")}`);
     console.error(
       (
         await page
@@ -620,6 +813,7 @@ try {
       .screenshot({
         path: join(root, `.context/chat-package-${values.runner}-failure.png`),
         fullPage: true,
+        timeout: 5000,
       })
       .catch(() => {});
   }

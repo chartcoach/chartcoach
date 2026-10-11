@@ -14,6 +14,18 @@
   animation: none;
 }
 
+::view-transition-group(workspace-header) {
+  animation: none;
+}
+
+::view-transition-old(workspace-header) {
+  display: none;
+}
+
+::view-transition-new(workspace-header) {
+  animation: none;
+}
+
 ::view-transition-group(.content-crossfade) {
   animation-duration: 180ms;
 }

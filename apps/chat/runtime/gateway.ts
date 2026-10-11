@@ -1,8 +1,7 @@
 import { createHash, timingSafeEqual } from "node:crypto";
-import { createServer, type IncomingMessage } from "node:http";
+import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import type { Socket } from "node:net";
 import { ProxyServer } from "http-proxy-3";
-import sirv from "sirv";
 import { z } from "zod";
 import type { Config } from "./schema";
 
@@ -84,21 +83,20 @@ function buildAsset(pathname: string) {
 
 export function createGateway({
   config,
-  assets,
+  handlePage,
   agentURL,
   token,
   password,
   embedKey,
 }: {
   config: Config;
-  assets: string;
+  handlePage: (request: IncomingMessage, response: ServerResponse) => Promise<void>;
   agentURL: string;
   token: string;
   password?: string;
   embedKey?: string;
 }) {
   const proxy = new ProxyServer({ target: agentURL, changeOrigin: false });
-  const files = sirv(assets, { etag: true, maxAge: 0, single: false });
   const embed = embedding(config.server.embedOrigins);
   const access = embedKey ? createHash("sha256").update(embedKey).digest("hex") : undefined;
   const sockets = new Set<Socket>();
@@ -134,10 +132,27 @@ export function createGateway({
       return;
     }
 
+    if (embed.enabled) {
+      // Next and proxied responses supply their own Vary fields. Preserve Origin
+      // for both direct and embedded requests so shared caches separate them.
+      const setHeader = response.setHeader.bind(response);
+      response.setHeader = (name, value) => {
+        if (name.toLowerCase() === "vary") {
+          const text = Array.isArray(value) ? value.join(", ") : String(value);
+          const fields = text.split(",").map((field) => field.trim().toLowerCase());
+
+          if (!fields.includes("*") && !fields.includes("origin")) value = `${text}, origin`;
+        }
+
+        return setHeader(name, value);
+      };
+
+      response.setHeader("vary", "origin");
+    }
+
     if (admitted) {
       response.setHeader("access-control-allow-origin", origin!);
       response.setHeader("access-control-allow-credentials", "true");
-      response.setHeader("vary", "origin");
 
       // Preflights never carry credentials, so they are answered before sign-in.
       if (request.method === "OPTIONS" && request.headers["access-control-request-method"]) {
@@ -234,9 +249,24 @@ export function createGateway({
       return;
     }
 
-    files(request, response, () => {
+    // Next owns page routing, RSC navigation, public files, and real 404 responses.
+    // Workflow callbacks are private even when Next receives an unknown path.
+    if (pathname.startsWith("/.well-known/workflow/")) {
       response.writeHead(404);
       response.end("Page not found.");
+
+      return;
+    }
+
+    void handlePage(request, response).catch(() => {
+      if (response.headersSent) {
+        response.destroy();
+
+        return;
+      }
+
+      response.writeHead(500, { "cache-control": "no-store" });
+      response.end("Could not open this page. Try again.");
     });
   });
 
