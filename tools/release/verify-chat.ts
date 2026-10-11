@@ -582,14 +582,18 @@ try {
     await resumedRequest;
     await page.getByRole("button", { name: "Open sidebar", exact: true }).click();
 
-    const currentHistory = page.getByRole("link", {
+    const historyDrawer = page.getByRole("dialog", { name: "Your conversations", exact: true });
+
+    const currentHistory = historyDrawer.getByRole("link", {
       name: "Discuss clear labels in a comparison.",
       exact: true,
     });
 
     assert.equal(await currentHistory.getAttribute("aria-disabled"), "true");
+    // Hover waits for the drawer to settle without requiring the disabled link to be enabled.
+    await currentHistory.hover();
     await currentHistory.click({ force: true });
-    await page.getByRole("dialog", { name: "Your conversations", exact: true }).waitFor();
+    await historyDrawer.waitFor();
     assert.equal(new URL(page.url()).pathname, threadPath);
     await page.getByRole("button", { name: "Close sidebar", exact: true }).click();
   } finally {
