@@ -1,0 +1,151 @@
+apps/chat/lib/retrieval/cards.ts
+  s_c9d6520c55cb03::t_5c59e582843290 1
+  s_c9d6520c55cb03::t_a1dc860db0951f 2,6,9-23,28
+packages/chartcoach/src/chartcoach/cli/environment.py
+  s_c9d6520c55cb03::t_a2f7b8e522098c 28
+apps/chat/chat/use-catalog-explorer.ts
+  s_c9d6520c55cb03::t_5c59e582843290 96
+development_docs/architecture/web-delivery.md
+  s_c9d6520c55cb03::t_6efcd05316e2dd 184-186
+apps/chat/cli/index.ts
+  s_c9d6520c55cb03::t_48c2c749dbe236 4,26,28-31,33-41,44-49,52-53,57-59,62,64,69-70,72-77,79-82,85-103,106,108,114,129,138-145,150-151,201-206,208,212
+apps/chat/runtime/diagnostics.ts
+  s_c9d6520c55cb03::t_3f65ddc3dae079 2,45
+  s_c9d6520c55cb03::t_48c2c749dbe236 41
+  s_c9d6520c55cb03::t_5c39a26ace4af7 42-44,46-47
+apps/chat/runtime/dotenv.ts
+  s_c9d6520c55cb03::t_48c2c749dbe236 10-12
+apps/chat/README.md
+  s_c9d6520c55cb03::t_5c39a26ace4af7 178-182,184-205
+  s_c9d6520c55cb03::t_f0b12e40536dd1 558,587-595
+  s_c9d6520c55cb03::t_eb367b8dae347c 585-586
+  s_c9d6520c55cb03::t_d4e7ee7ec34da9 102-116,136,142-143,146-148,164-165,173-175,183,275,387,429,454-457
+  s_c9d6520c55cb03::t_6efcd05316e2dd 207-209,211-224
+apps/docs/content/docs/(guide)/chat.mdx
+  s_c9d6520c55cb03::t_d4e7ee7ec34da9 26,32-70,103,114-115,157
+apps/chat/test/dotenv.test.tsx
+  s_c9d6520c55cb03::t_a2f7b8e522098c 10,38,49-62
+apps/chat/lib/env.ts
+  s_c9d6520c55cb03::t_e1d18200efaabb 32-36
+  s_c9d6520c55cb03::t_a1dc860db0951f 40
+  s_c9d6520c55cb03::t_d4e7ee7ec34da9 8
+  s_c9d6520c55cb03::t_48c2c749dbe236 27
+  s_c9d6520c55cb03::t_3f65ddc3dae079 16
+  s_c9d6520c55cb03::t_5c39a26ace4af7 26
+apps/chat/runtime/config.ts
+  s_c9d6520c55cb03::t_5c59e582843290 74,76-83,98,148-150
+  s_c9d6520c55cb03::t_48c2c749dbe236 285-287,299
+  s_c9d6520c55cb03::t_5c39a26ace4af7 5-10,75,195-197,288-298
+apps/chat/shared/catalog-filters.ts
+  s_c9d6520c55cb03::t_5c59e582843290 1,39
+infra/compose.yml
+  s_c9d6520c55cb03::t_d4e7ee7ec34da9 21-22,40-41
+apps/chat/shared/preferences.ts
+  s_c9d6520c55cb03::t_5c59e582843290 1,35
+apps/chat/agent/channels/preferences.ts
+  s_c9d6520c55cb03::t_48c2c749dbe236 1,96
+apps/chat/test/guideline-preview.test.tsx
+  s_c9d6520c55cb03::t_70cc2e0c31956d 5-10,18-19,28
+  s_c9d6520c55cb03::t_a2f7b8e522098c 14,20-26,29-33
+packages/chartcoach/tests/test_mcp_config.py
+  s_c9d6520c55cb03::t_a2f7b8e522098c 176
+apps/chat/test/catalog-filters-ui.test.tsx
+  s_c9d6520c55cb03::t_a2f7b8e522098c 11
+apps/chat/components/catalog/matched-guidelines.tsx
+  s_c9d6520c55cb03::t_48c2c749dbe236 47,53
+  s_c9d6520c55cb03::t_5c39a26ace4af7 48,50
+  s_c9d6520c55cb03::t_5c59e582843290 1
+  s_c9d6520c55cb03::t_eb367b8dae347c 68
+  s_c9d6520c55cb03::t_d4e7ee7ec34da9 49
+apps/chat/.env.example
+  s_c9d6520c55cb03::t_d4e7ee7ec34da9 1-2,4-11,14-32,36,39,41-47
+apps/chat/test/answer.test.tsx
+  s_c9d6520c55cb03::t_a1dc860db0951f 190-201,203-204
+  s_c9d6520c55cb03::t_eb367b8dae347c 87,101,336,360
+apps/chat/lib/retrieval/read.ts
+  s_c9d6520c55cb03::t_a1dc860db0951f 1-2,6,10
+apps/docs/content/docs/(reference)/mcp.mdx
+  s_c9d6520c55cb03::t_6efcd05316e2dd 210-211
+apps/chat/test/messages.test.tsx
+  s_c9d6520c55cb03::t_eb367b8dae347c 286
+apps/chat/components/chat/evidence-list.tsx
+  s_c9d6520c55cb03::t_eb367b8dae347c 19
+apps/chat/components/chat/answer.tsx
+  s_c9d6520c55cb03::t_eb367b8dae347c 146
+tools/release/verify-picker.ts
+  s_c9d6520c55cb03::t_70cc2e0c31956d 208
+  s_c9d6520c55cb03::t_f0b12e40536dd1 44-45,47,204,209-210
+apps/chat/test/runtime-config.test.tsx
+  s_c9d6520c55cb03::t_a2f7b8e522098c 250-254,256-257,264-271,273-274,280-283,294-296,299-304,306-309,311-315,318-322,325-326
+  s_c9d6520c55cb03::t_f0b12e40536dd1 284-289,293
+  s_c9d6520c55cb03::t_a1dc860db0951f 290-291
+packages/chartcoach/README.md
+  s_c9d6520c55cb03::t_6efcd05316e2dd 165-166
+.github/workflows/publish.yml
+  s_c9d6520c55cb03::t_a1dc860db0951f 220-221
+apps/chat/runtime/schema.ts
+  s_c9d6520c55cb03::t_5c59e582843290 9-10,13-14,26,30,68-72
+  s_c9d6520c55cb03::t_3f65ddc3dae079 15-16
+apps/chat/lib/catalog/metadata.ts
+  s_c9d6520c55cb03::t_5c59e582843290 9-10,81
+apps/chat/runtime/environment.ts
+  s_c9d6520c55cb03::t_5c39a26ace4af7 21-26
+apps/docs/content/docs/(guide)/model-connections.mdx
+  s_c9d6520c55cb03::t_d4e7ee7ec34da9 15-16,19-44
+tools/release/verify-chat.ts
+  s_c9d6520c55cb03::t_f0b12e40536dd1 136-137,307-315,317-320,328-330,335-337,377,379,454-457,459
+apps/chat/components/guideline-card.tsx
+  s_c9d6520c55cb03::t_eb367b8dae347c 73
+  s_c9d6520c55cb03::t_5c39a26ace4af7 82-97
+apps/chat/chat/evidence.ts
+  s_c9d6520c55cb03::t_5c59e582843290 1,20
+apps/chat/chat/use-chat-runtime.ts
+  s_c9d6520c55cb03::t_48c2c749dbe236 87-90,92
+apps/chat/test/env.test.tsx
+  s_c9d6520c55cb03::t_a1dc860db0951f 94
+  s_c9d6520c55cb03::t_a2f7b8e522098c 2
+apps/chat/chat/use-conversation.ts
+  s_c9d6520c55cb03::t_5c59e582843290 1,14,34,63
+apps/chat/test/author-picker.test.tsx
+  s_c9d6520c55cb03::t_a2f7b8e522098c 11
+apps/chat/test/guideline-links.test.tsx
+  s_c9d6520c55cb03::t_3f65ddc3dae079 29-41
+packages/chartcoach/src/chartcoach/cli/mcp.py
+  s_c9d6520c55cb03::t_a1dc860db0951f 27
+apps/chat/test/evidence-panel.test.tsx
+  s_c9d6520c55cb03::t_eb367b8dae347c 33,56,81
+  s_c9d6520c55cb03::t_f0b12e40536dd1 16
+apps/chat/shared/model.ts
+  s_c9d6520c55cb03::t_5c59e582843290 60-64
+apps/chat/test/evidence.test.tsx
+  s_c9d6520c55cb03::t_70cc2e0c31956d 473-487
+apps/chat/chat/use-workspace.ts
+  s_c9d6520c55cb03::t_5c59e582843290 1,10,30,128
+  s_c9d6520c55cb03::t_5c39a26ace4af7 79
+apps/chat/shared/guideline-links.ts
+  s_c9d6520c55cb03::t_a1dc860db0951f 6
+  s_c9d6520c55cb03::t_a2f7b8e522098c 19
+  s_c9d6520c55cb03::t_f0b12e40536dd1 18
+  s_c9d6520c55cb03::t_eb9d9097f99b7e 1-4,7,9-10,12-13,20-35,37-38,41-42
+  s_c9d6520c55cb03::t_5c39a26ace4af7 8,11,14-17,36,39-40
+apps/chat/chat/tool-output.ts
+  s_c9d6520c55cb03::t_70cc2e0c31956d 71,74
+  s_c9d6520c55cb03::t_5c59e582843290 10,58,69,72,76
+  s_c9d6520c55cb03::t_5c39a26ace4af7 5-9,73,75
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "ddb97b9efb91e9c701a4e5399eba963b512fe586",
+  "prompts": {},
+  "sessions": {
+    "s_c9d6520c55cb03": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12a84-e499-7cb3-9c29-dc2e94966c40",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Péter Ferenc Gyarmati <dev.petergy@gmail.com>"
+    }
+  }
+}
