@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { z } from "zod";
 import { Command, Option, CommanderError, InvalidArgumentError } from "@commander-js/extra-typings";
-import { providerSchema, modelAuth } from "../shared/model";
+import { launchProviderSchema, modelAuth } from "../shared/model";
 import { configSchema } from "../runtime/schema";
 import { fileURLToPath } from "node:url";
 import { readFile } from "node:fs/promises";
@@ -23,72 +23,110 @@ function integer(value: string) {
   return Number(value);
 }
 
-function options(command: Command) {
+function fileOptions(command: Command) {
   return command
-    .option("--config <file>", "read a JSON configuration file")
-    .option("--env-file <file>", "load dotenv settings (default: .env in the working directory)")
+    .optionsGroup("Configuration:")
+    .option("--config <file>", "JSON settings file (env: CHARTCOACH_CONFIG)")
+    .option(
+      "--env-file <file>",
+      "dotenv file overriding inherited values (env: CHARTCOACH_ENV_FILE)",
+    );
+}
+
+function chatOptions(command: Command) {
+  return fileOptions(command)
+    .optionsGroup("Model connection:")
+    .addOption(
+      new Option(
+        "--provider <name>",
+        "text adapter or hosted preset (env: CHARTCOACH_TEXT_PROVIDER, default: openai)",
+      ).choices(launchProviderSchema.options),
+    )
+    .option("--model <id>", "image and tool-capable model (env: CHARTCOACH_TEXT_MODEL)")
+    .option("--base-url <url>", "custom OpenAI-compatible endpoint (env: CHARTCOACH_TEXT_BASE_URL)")
+    .addOption(
+      new Option(
+        "--model-auth <mode>",
+        "authentication (env: CHARTCOACH_TEXT_AUTH, default: api-key)",
+      ).choices(modelAuth.options),
+    )
+    .optionsGroup("Catalog and storage:")
     .option(
       "--catalog <location>",
-      "catalog release directory, release.json URL, or catalog.json URL",
+      "catalog release or selection (env: CHARTCOACH_CATALOG, default: official catalog)",
     )
-    .option("--catalog-profile <name>", "catalog index profile")
-    .addOption(new Option("--provider <name>", "model provider").choices(providerSchema.options))
-    .option("--model <id>", "default model connection")
-    .option("--model-origin <origin...>", "allow custom model origins in browser settings")
-    .option("--base-url <url>", "OpenAI-compatible API base URL")
-    .option("--api-key-env <name>", "environment variable containing the provider key")
-    .addOption(new Option("--model-auth <mode>", "model authentication").choices(modelAuth.options))
-    .option("--context-window <tokens>", "model context limit", integer)
-    .option("--data-dir <directory>", "persistent conversations, credentials, and workflow state")
-    .option("--cache-dir <directory>", "downloaded catalog, indexes, and model weights")
-    .option("--username <name>", "server sign-in username (default: chartcoach)")
-    .option("--password-env <name>", "environment variable containing the server password")
-    .option("--password-file <file>", "read the server password from a secret mount")
-    .option("--tracing", "enable configured Langfuse tracing")
+    .option(
+      "--data-dir <directory>",
+      "conversations and encrypted credentials (env: CHARTCOACH_DATA_DIR)",
+    )
+    .optionsGroup("Server:")
     .addOption(
-      new Option("--host <address>", "listen address (default: 127.0.0.1)").choices(
+      new Option("--host <address>", "listener (env: CHARTCOACH_HOST, default: 127.0.0.1)").choices(
         configSchema.shape.server.unwrap().shape.host.unwrap().options,
       ),
     )
-    .option("--port <number>", "public port, or 0 for an available port (default: 4273)", integer)
-    .option("--public-url <origin>", "external origin when using a reverse proxy")
     .option(
-      "--embed-origin <origin...>",
-      "allow pages at these origins, or * for any page, to embed the app",
+      "--port <number>",
+      "listener port, 0 selects a free port (env: CHARTCOACH_PORT, default: 4273)",
+      integer,
     )
-    .option("--no-open", "print the URL without opening a browser", undefined);
+    .option("--public-url <origin>", "reverse proxy origin (env: CHARTCOACH_PUBLIC_URL)")
+    .option("--password-file <file>", "server password mount (env: CHARTCOACH_PASSWORD_FILE)")
+    .option(
+      "--no-open",
+      "print the URL without opening a browser (env: CHARTCOACH_OPEN)",
+      undefined,
+    )
+    .optionsGroup("Diagnostics:")
+    .option(
+      "--tracing",
+      "enable Langfuse with LANGFUSE_PUBLIC_KEY and LANGFUSE_SECRET_KEY (env: CHARTCOACH_TRACING)",
+    )
+    .option("--verbose", "print worker diagnostics")
+    .addHelpText(
+      "after",
+      `
+Examples:
+  chartcoach chat --env-file ./chat.env
+  chartcoach chat --provider openrouter --model <vision-model>
+  chartcoach chat --provider compatible --base-url http://127.0.0.1:1234/v1 --model <vision-model> --model-auth none
+
+Set CHARTCOACH_TEXT_API_KEY in your environment or env file.
+Hosted presets supply their API URL. "compatible" means a custom endpoint
+implementing the OpenAI Chat Completions protocol and requires --base-url.
+
+Settings: flags > explicit env file > inherited environment > default .env > JSON > defaults.
+With no file selection, .env is read from the working directory.
+Advanced settings (context limits, embeddings, guideline URL templates, allowed
+origins, cache, and tracing metadata): https://docs.chartcoach.dev/chat
+`,
+    );
 }
 
-type SettingsOptions = ReturnType<ReturnType<typeof options>["opts"]>;
+type SettingsOptions = Partial<ReturnType<ReturnType<typeof chatOptions>["opts"]>>;
 
-function configuration(values: SettingsOptions, explicitOpen: boolean) {
+function configuration(values: SettingsOptions, explicitOpen = false) {
   loadEnvironmentFile(values.envFile);
 
   return loadConfig({
     configFile: values.config,
     overrides: {
-      catalog: { source: values.catalog, profile: values.catalogProfile },
-      modelOrigins: values.modelOrigin,
+      catalog: { source: values.catalog },
       tracing: values.tracing,
       model: {
         provider: values.provider,
         model: values.model,
         baseURL: values.baseUrl,
-        apiKeyEnv: values.apiKeyEnv,
         auth: values.modelAuth,
-        contextWindow: values.contextWindow,
       },
       server: {
         host: values.host,
         port: values.port,
         publicURL: values.publicUrl,
         open: explicitOpen ? values.open : undefined,
-        username: values.username,
-        passwordEnv: values.passwordEnv,
         passwordFile: values.passwordFile,
-        embedOrigins: values.embedOrigin,
       },
-      storage: { dataDir: values.dataDir, cacheDir: values.cacheDir },
+      storage: { dataDir: values.dataDir },
     },
   });
 }
@@ -97,13 +135,20 @@ const program = new Command()
   .name("chartcoach")
   .description("Run ChartCoach locally for source-traced visualization design guidance.")
   .version(version)
+  .addHelpText(
+    "after",
+    `
+Start: chartcoach chat --env-file ./chat.env
+Check: chartcoach doctor --env-file ./chat.env --json
+Run chartcoach chat --help for launch settings and provider presets.
+`,
+  )
   .showHelpAfterError()
   .showSuggestionAfterError()
   .exitOverride();
 
-options(program.command("chat", { isDefault: true }).description("Start the chat app"))
-  .option("--verbose", "print worker diagnostics")
-  .action(async (_options, command) => {
+chatOptions(program.command("chat", { isDefault: true }).description("Start the chat app")).action(
+  async (_options, command) => {
     const config = configuration(command.opts(), command.getOptionValueSource("open") === "cli");
     const controller = new AbortController();
 
@@ -153,13 +198,18 @@ options(program.command("chat", { isDefault: true }).description("Start the chat
     }
 
     if (controller.signal.aborted) process.stderr.write(renderStopped());
-  });
+  },
+);
 
-options(program.command("doctor").description("Check configuration, catalog, and native runtime"))
+fileOptions(
+  program
+    .command("doctor")
+    .description("Check launch files, credentials, catalog, and native runtime"),
+)
   .option("--json", "print a JSON diagnostic report")
   .action(async (_options, command) => {
     try {
-      const config = configuration(command.opts(), command.getOptionValueSource("open") === "cli");
+      const config = configuration(command.opts());
       const { diagnose } = await import("../runtime/diagnostics");
       const report = await diagnose(config, version);
       process.stdout.write(

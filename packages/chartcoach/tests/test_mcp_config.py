@@ -173,7 +173,7 @@ def test_explicit_dotenv_file_and_missing_file(
 
     captured: list[MCPConfig] = []
     monkeypatch.setattr(mcp, "run", captured.append)
-    monkeypatch.delenv("CHARTCOACH_MCP_PATH", raising=False)
+    monkeypatch.setenv("CHARTCOACH_MCP_PATH", "/inherited/mcp")
     file = tmp_path / "deployment.env"
     file.write_text("CHARTCOACH_MCP_PATH=/catalog/mcp\n")
     result = CliRunner().invoke(main, ["mcp", "--env-file", str(file)])

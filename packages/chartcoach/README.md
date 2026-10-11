@@ -162,8 +162,8 @@ uvx --from "chartcoach[mcp]" chartcoach mcp
 ```
 
 The CLI loads `.env` in its working directory, or the file selected by
-`--env-file`. Options override process environment; process environment overrides
-dotenv. For HTTP hosting set `CHARTCOACH_MCP_TRANSPORT=streamable-http`,
+`--env-file`. Options override explicitly selected env files, inherited environment, automatic
+`.env` files, and defaults, in that order. For HTTP hosting set `CHARTCOACH_MCP_TRANSPORT=streamable-http`,
 `CHARTCOACH_MCP_HOST=0.0.0.0`, and
 `CHARTCOACH_MCP_PUBLIC_URL=https://mcp.chartcoach.dev`. Set
 `CHARTCOACH_MCP_TOKEN` for bearer authentication. The MCP endpoint defaults to

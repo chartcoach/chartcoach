@@ -6,8 +6,13 @@ import {
   compatibleProviderPresets,
   modelFields,
   modelAuth,
-  providerSchema,
+  launchProviderSchema,
+  type Provider,
 } from "../shared/model.ts";
+
+import { guidelineLinksSchema } from "../shared/guideline-links.ts";
+
+export const langfuseBaseURL = apiBaseURL.default("https://cloud.langfuse.com");
 
 const text = z.string().trim().min(1);
 
@@ -18,10 +23,11 @@ export const configSchema = z.strictObject({
       profile: text.default("minilm-l6-v2-cpu"),
     })
     .prefault({}),
+  guidelines: guidelineLinksSchema.prefault({}),
   model: z
     .strictObject({
       ...modelFields,
-      provider: providerSchema.default("openai"),
+      provider: launchProviderSchema.default("openai"),
       model: modelFields.model.optional(),
       auth: modelAuth.default("api-key"),
       apiKeyEnv: text.optional(),
@@ -59,7 +65,11 @@ export const configSchema = z.strictObject({
   tracing: z.boolean().default(false),
 });
 
-export type Config = z.infer<typeof configSchema>;
+type ParsedConfig = z.infer<typeof configSchema>;
+
+export type Config = Omit<ParsedConfig, "model"> & {
+  model: Omit<ParsedConfig["model"], "provider"> & { provider: Provider };
+};
 
 type SchemaInput = z.input<typeof configSchema>;
 

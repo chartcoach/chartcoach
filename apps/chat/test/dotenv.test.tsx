@@ -7,7 +7,7 @@ import { loadConfig, modelKey, embeddingKey } from "../runtime/config";
 
 afterEach(() => vi.unstubAllEnvs());
 
-it("loads dedicated text and embedding credentials while preserving process overrides", () => {
+it("loads explicit text and embedding settings before inherited values", () => {
   const directory = mkdtempSync(join(tmpdir(), "chartcoach-dotenv-"));
   const file = join(directory, ".env");
 
@@ -35,7 +35,7 @@ it("loads dedicated text and embedding credentials while preserving process over
   try {
     loadEnvironmentFile(file);
     const config = loadConfig({ userConfig: join(directory, "missing.json") });
-    expect(config.model.model).toBe("process-model");
+    expect(config.model.model).toBe("file-model");
     expect(modelKey(config)).toBe("text-private");
     expect(embeddingKey(config)).toBe("vector-private");
     expect(JSON.stringify(config)).not.toContain("private");
@@ -43,6 +43,23 @@ it("loads dedicated text and embedding credentials while preserving process over
       "Cannot read --env-file",
     );
   } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+it("preserves inherited settings when loading the automatic working-directory file", () => {
+  const directory = mkdtempSync(join(tmpdir(), "chartcoach-dotenv-"));
+  const cwd = process.cwd();
+  vi.stubEnv("CHARTCOACH_ENV_FILE", undefined);
+  vi.stubEnv("CHARTCOACH_TEXT_MODEL", "process-model");
+  writeFileSync(join(directory, ".env"), "CHARTCOACH_TEXT_MODEL=file-model\n");
+
+  try {
+    process.chdir(directory);
+    loadEnvironmentFile();
+    expect(process.env.CHARTCOACH_TEXT_MODEL).toBe("process-model");
+  } finally {
+    process.chdir(cwd);
     rmSync(directory, { recursive: true, force: true });
   }
 });

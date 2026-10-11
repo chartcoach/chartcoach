@@ -99,6 +99,21 @@ export CHARTCOACH_TEXT_API_KEY='your-provider-key'
 npx chartcoach --provider openai --model my-vision-model
 ```
 
+For [OpenRouter](https://openrouter.ai/docs/quickstart), a hosted service that routes
+model requests, put this connection in `.env`:
+
+```dotenv
+CHARTCOACH_TEXT_PROVIDER=openrouter
+CHARTCOACH_TEXT_MODEL=your-image-and-tool-capable-model
+CHARTCOACH_TEXT_API_KEY=your-private-openrouter-key
+```
+
+Then run `npx chartcoach chat --env-file ./.env`. A hosted preset supplies its API
+URL from [shared/model.ts](shared/model.ts). `compatible` selects a custom endpoint
+using the [OpenAI Chat Completions protocol](https://platform.openai.com/docs/api-reference/chat).
+It requires a base URL. `openai`, `anthropic`, and `google` select their native
+adapters. `--base-url` or `CHARTCOACH_TEXT_BASE_URL` can override a preset's URL.
+
 For a local OpenAI-compatible server:
 
 ```bash
@@ -118,19 +133,19 @@ npx chartcoach
 ```
 
 `CHARTCOACH_TEXT_API_KEY` supplies the text credential independently of the
-embedding key. `--api-key-env` or `CHARTCOACH_TEXT_API_KEY_ENV` selects another
+embedding key. `CHARTCOACH_TEXT_API_KEY_ENV` selects another
 variable name. Keys stay out of command arguments.
 
 The [model connection guide](https://docs.chartcoach.dev/model-connections) owns
 the shared text/embedding environment contract and profile
 build example. Copy [.env.example](.env.example) to `.env` in the working directory,
-or select a file with `--env-file` or `CHARTCOACH_ENV_FILE`. Existing process values
-win over dotenv; flags win over both. The Python factories and `loadConfig` leave
+or select a file with `--env-file` or `CHARTCOACH_ENV_FILE`. An explicitly selected file overrides inherited values. Automatic `.env` loading
+keeps inherited values. Flags take precedence over both. The Python factories and `loadConfig` leave
 dotenv loading to their caller.
 
-A configured model appears as **Server connection**. Use `--context-window` for
-its token limit; `chartcoach chat --help` lists defaults. Omitting the model leaves setup to each
-browser. `--model-origin` allows additional custom endpoints in browser settings.
+A configured model appears as **Server connection**. Set `CHARTCOACH_TEXT_CONTEXT_WINDOW` for
+its token limit (default: 128000 tokens). `chartcoach chat --help` lists defaults. Omitting the model leaves setup to each
+browser. `CHARTCOACH_MODEL_ORIGINS` allows additional custom endpoints in browser settings.
 
 Configuration files are optional. If you prefer to save settings, pass
 `--config ./chartcoach.json` with a file such as:
@@ -146,8 +161,8 @@ Configuration files are optional. If you prefer to save settings, pass
 }
 ```
 
-Configuration precedence is command flags, process environment, dotenv, then the selected
-JSON file. `--config` or `CHARTCOACH_CONFIG` selects a file. Otherwise ChartCoach
+Configuration precedence is flags, explicitly selected env file, inherited
+environment, automatic `.env`, selected JSON file, then defaults. `--config` or `CHARTCOACH_CONFIG` selects a file. Otherwise ChartCoach
 reads `chat/config.json` in the platform's user configuration directory for `chartcoach`.
 Relative file paths resolve beside that file. Paths passed through flags or the
 environment resolve from your working directory. Invocation overrides are not saved.
@@ -155,35 +170,58 @@ Unknown configuration fields fail validation. T3 Env validates environment value
 and names invalid variables in its errors. Missing credentials identify the
 variable to set. Secret values are excluded from validation messages.
 
-Run `chartcoach chat --help` for CLI options and `doctor --json` to inspect
+CLI help groups model, catalog, server, and diagnostic flags. Advanced settings
+use the env variables or JSON fields below. Run `chartcoach chat --help` for CLI
+options and `doctor --env-file ./chat.env --json` to inspect
 the resolved connection without its credentials.
 
-| Optional JSON setting  | Environment variable               |
-| ---------------------- | ---------------------------------- |
-| `catalog.source`       | `CHARTCOACH_CATALOG`               |
-| `catalog.profile`      | `CHARTCOACH_CATALOG_PROFILE`       |
-| `model.provider`       | `CHARTCOACH_TEXT_PROVIDER`         |
-| `model.model`          | `CHARTCOACH_TEXT_MODEL`            |
-| `model.baseURL`        | `CHARTCOACH_TEXT_BASE_URL`         |
-| `model.auth`           | `CHARTCOACH_TEXT_AUTH`             |
-| `model.apiKeyEnv`      | `CHARTCOACH_TEXT_API_KEY_ENV`      |
-| `model.contextWindow`  | `CHARTCOACH_TEXT_CONTEXT_WINDOW`   |
-| `server.host`          | `CHARTCOACH_HOST`                  |
-| `server.port`          | `CHARTCOACH_PORT`                  |
-| `server.open`          | `CHARTCOACH_OPEN`                  |
-| `server.publicURL`     | `CHARTCOACH_PUBLIC_URL`            |
-| `server.username`      | `CHARTCOACH_USERNAME`              |
-| `server.passwordEnv`   | `CHARTCOACH_PASSWORD_ENV`          |
-| `server.passwordFile`  | `CHARTCOACH_PASSWORD_FILE`         |
-| `server.embedOrigins`  | `CHARTCOACH_EMBED_ORIGINS`         |
-| `storage.dataDir`      | `CHARTCOACH_DATA_DIR`              |
-| `storage.cacheDir`     | `CHARTCOACH_CACHE_DIR`             |
-| `modelOrigins`         | `CHARTCOACH_MODEL_ORIGINS`         |
-| `tracing`              | `CHARTCOACH_TRACING`               |
-| `embedding.model`      | `CHARTCOACH_EMBEDDING_MODEL`       |
-| `embedding.baseURL`    | `CHARTCOACH_EMBEDDING_BASE_URL`    |
-| `embedding.dimensions` | `CHARTCOACH_EMBEDDING_DIMENSIONS`  |
-| `embedding.apiKeyEnv`  | `CHARTCOACH_EMBEDDING_API_KEY_ENV` |
+| Optional JSON setting         | Environment variable                      |
+| ----------------------------- | ----------------------------------------- |
+| `catalog.source`              | `CHARTCOACH_CATALOG`                      |
+| `catalog.profile`             | `CHARTCOACH_CATALOG_PROFILE`              |
+| `guidelines.urlTemplate`      | `CHARTCOACH_GUIDELINE_URL_TEMPLATE`       |
+| `guidelines.imageURLTemplate` | `CHARTCOACH_GUIDELINE_IMAGE_URL_TEMPLATE` |
+| `model.provider`              | `CHARTCOACH_TEXT_PROVIDER`                |
+| `model.model`                 | `CHARTCOACH_TEXT_MODEL`                   |
+| `model.baseURL`               | `CHARTCOACH_TEXT_BASE_URL`                |
+| `model.auth`                  | `CHARTCOACH_TEXT_AUTH`                    |
+| `model.apiKeyEnv`             | `CHARTCOACH_TEXT_API_KEY_ENV`             |
+| `model.contextWindow`         | `CHARTCOACH_TEXT_CONTEXT_WINDOW`          |
+| `server.host`                 | `CHARTCOACH_HOST`                         |
+| `server.port`                 | `CHARTCOACH_PORT`                         |
+| `server.open`                 | `CHARTCOACH_OPEN`                         |
+| `server.publicURL`            | `CHARTCOACH_PUBLIC_URL`                   |
+| `server.username`             | `CHARTCOACH_USERNAME`                     |
+| `server.passwordEnv`          | `CHARTCOACH_PASSWORD_ENV`                 |
+| `server.passwordFile`         | `CHARTCOACH_PASSWORD_FILE`                |
+| `server.embedOrigins`         | `CHARTCOACH_EMBED_ORIGINS`                |
+| `storage.dataDir`             | `CHARTCOACH_DATA_DIR`                     |
+| `storage.cacheDir`            | `CHARTCOACH_CACHE_DIR`                    |
+| `modelOrigins`                | `CHARTCOACH_MODEL_ORIGINS`                |
+| `tracing`                     | `CHARTCOACH_TRACING`                      |
+| `embedding.model`             | `CHARTCOACH_EMBEDDING_MODEL`              |
+| `embedding.baseURL`           | `CHARTCOACH_EMBEDDING_BASE_URL`           |
+| `embedding.dimensions`        | `CHARTCOACH_EMBEDDING_DIMENSIONS`         |
+| `embedding.apiKeyEnv`         | `CHARTCOACH_EMBEDDING_API_KEY_ENV`        |
+
+Deployment flags use the corresponding env settings or JSON fields:
+
+| Previous flag       | Environment setting              |
+| ------------------- | -------------------------------- |
+| `--catalog-profile` | `CHARTCOACH_CATALOG_PROFILE`     |
+| `--api-key-env`     | `CHARTCOACH_TEXT_API_KEY_ENV`    |
+| `--context-window`  | `CHARTCOACH_TEXT_CONTEXT_WINDOW` |
+| `--model-origin`    | `CHARTCOACH_MODEL_ORIGINS`       |
+| `--cache-dir`       | `CHARTCOACH_CACHE_DIR`           |
+| `--username`        | `CHARTCOACH_USERNAME`            |
+| `--password-env`    | `CHARTCOACH_PASSWORD_ENV`        |
+| `--embed-origin`    | `CHARTCOACH_EMBED_ORIGINS`       |
+
+Use `doctor --env-file ./chat.env` or `doctor --config ./chartcoach.json` to check
+the complete launch configuration. Put invocation settings in that file to check
+and launch with the same values. To select an existing `.env.local`, pass
+`--env-file ./.env.local`. Explicit file selection now takes precedence over
+inherited environment values. Set both Langfuse keys when tracing is enabled.
 
 `catalog.source` accepts a release directory, a `release.json` URL, or a mutable
 `catalog.json` selection URL. Catalog identities are digests, independent of the
@@ -234,7 +272,7 @@ npx chartcoach chat --host 0.0.0.0 --no-open --public-url https://chat.example.o
 ```
 
 Listed origins receive a `frame-ancestors` policy and credentialed CORS responses.
-`--embed-origin` and `server.embedOrigins` set the same list. Without a list, the
+`server.embedOrigins` sets the same list. Without a list, the
 server denies framing.
 
 Some hosts, such as notebook and slide tools that isolate authored content, render
@@ -346,7 +384,7 @@ and Gemini connections remain available separately.
 
 An explicit comma-separated `CHARTCOACH_MODEL_ORIGINS` list replaces these defaults.
 An unset or empty variable uses `modelOrigins` from the optional config file, or
-the default list. `--model-origin` takes precedence over both.
+the default list.
 `modelOrigins: []` disables the default list.
 `model.baseURL` (or `--base-url`) always adds its own origin, including local
 servers such as Ollama and LM Studio. Allow other trusted endpoints explicitly:
@@ -388,7 +426,7 @@ The Node SDK and chat app use the same directory resolver, matching Python's
 | Windows  | `%LOCALAPPDATA%\chartcoach\chat`                | `%LOCALAPPDATA%\chartcoach\Cache` | `%LOCALAPPDATA%\chartcoach\chat\config.json`                |
 
 Linux respects `XDG_DATA_HOME`, `XDG_CACHE_HOME`, and `XDG_CONFIG_HOME`.
-`CHARTCOACH_DATA_DIR` and `CHARTCOACH_CACHE_DIR` (or `--data-dir` and `--cache-dir`)
+`CHARTCOACH_DATA_DIR` (or `--data-dir`) and `CHARTCOACH_CACHE_DIR`
 override the full directory paths. Container mounts remain `/data` and `/cache`.
 Configuration files are optional. `--config` selects a file explicitly.
 
@@ -413,10 +451,10 @@ When tracing is enabled and both keys are present, the landing page tells users
 that conversation traces may include messages, images, and responses. The notice
 links to self-hosting instructions for running ChartCoach with tracing disabled.
 
-Use your project's region or self-hosted URL. When `.env.local` exists in the app
-directory, it supplies the complete Langfuse connection and takes precedence over
-inherited credentials. Omitted local keys disable tracing, and a partial local pair
-fails validation. Deployments with no local file use their server environment.
+Use your project's region or self-hosted URL. The launcher uses the same env file
+for models, server settings, and tracing. Enabling tracing requires both keys at
+startup. `doctor --env-file ./chat.env --json` reports the tracing host and enabled
+state, while keeping credentials private.
 
 Find **ChartCoach conversation** in Langfuse. Each conversation keeps its Eve session ID and
 trace identity across follow-ups, with separate turn, model, and tool branches.
@@ -517,7 +555,7 @@ the guideline titles. Expand **Why this applies** to compare the chart observati
 with the authored requirement and inspect supporting citations.
 
 The guideline panel shows search matches as they arrive and marks entries when read.
-Primary guidelines appear as local cards in answer order.
+Primary guidelines appear as cards in answer order.
 Desktop places them in a collapsible card beside the conversation. On narrow screens,
 open **Guidelines** above the conversation to inspect them in a bottom sheet.
 Supporting and explored entries stay expandable, with catalog descriptions and links.
@@ -544,9 +582,17 @@ repair and resubmit. Accepted answers remain visible while the turn finishes.
 The agent checks applicability before assigning an assessment, asks for missing
 context, reports when guidance does not apply, and
 declines unrelated requests. The UI keeps a citation link visible if its preview
-image cannot load. Guideline cards load preview images from
-`https://chartcoach.dev/guidelines/{id}/og.png`. Titles and linked guideline pages
-use the selected local catalog, including when a preview image is unavailable.
+image cannot load. Guideline titles come from the selected catalog. Citations,
+cards, evidence lists, and matching guidelines open public pages at
+`https://chartcoach.dev/guidelines/{id}` by default.
+
+`CHARTCOACH_GUIDELINE_URL_TEMPLATE` or `guidelines.urlTemplate` changes every
+guideline destination. Use an HTTP or HTTPS URL with one `{id}` in its path.
+IDs are URL-encoded. Credentials, queries, and fragments are rejected.
+Preview images use the guideline URL followed by `/og.png`.
+`CHARTCOACH_GUIDELINE_IMAGE_URL_TEMPLATE` or `guidelines.imageURLTemplate`
+selects a separate image location with the same placeholder contract.
+An unavailable image shows the guideline title.
 
 A new attachment replaces the selected chart and preserves your message draft.
 Images stay in the draft until you send the message.

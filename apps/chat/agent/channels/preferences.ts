@@ -1,3 +1,4 @@
+import { settings } from "../../runtime/settings";
 import { defineChannel, GET, POST } from "eve/channels";
 import { routeAuth } from "eve/channels/auth";
 import { Effect } from "effect";
@@ -92,6 +93,7 @@ export default defineChannel({
               connections,
               allowedOrigins: allowedModelOrigins(),
               tracing: langfuseTracingEnabled,
+              guidelines: settings.guidelines,
             },
             browser.cookie,
           );

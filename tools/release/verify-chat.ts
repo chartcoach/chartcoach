@@ -115,8 +115,6 @@ async function start(environmentOnly = false): Promise<string> {
     catalogLocation ?? "./catalog",
     "--data-dir",
     "./data",
-    "--cache-dir",
-    "./cache",
     "--port",
     "0",
     "--provider",
@@ -135,6 +133,8 @@ async function start(environmentOnly = false): Promise<string> {
     HOME: directory,
     NODE_PATH: "",
     CHARTCOACH_PASSWORD: "package-test-password",
+    CHARTCOACH_CACHE_DIR: "./cache",
+    CHARTCOACH_GUIDELINE_URL_TEMPLATE: "https://guidelines.example/entries/{id}",
   };
 
   if (environmentOnly) {
@@ -304,25 +304,37 @@ try {
 
   modelURL = `http://127.0.0.1:${modelPort}/v1`;
 
+  const launchEnvironment = join(directory, "launch.env");
+  await writeFile(
+    launchEnvironment,
+    [
+      `CHARTCOACH_CATALOG=${JSON.stringify(catalogLocation ?? "./catalog")}`,
+      "CHARTCOACH_CACHE_DIR=./cache",
+      "CHARTCOACH_TEXT_PROVIDER=openrouter",
+      "CHARTCOACH_TRACING=false",
+      "CHARTCOACH_GUIDELINE_URL_TEMPLATE=https://guidelines.example/entries/{id}",
+    ].join("\n"),
+  );
+  const help = run(runner, [...runnerArgs, "chat", "--help"]);
+  assert.match(help, /CHARTCOACH_TEXT_PROVIDER/);
+  assert.match(help, /openrouter/);
+
   const diagnostic = JSON.parse(
-    run(runner, [
-      ...runnerArgs,
-      "doctor",
-      "--catalog",
-      catalogLocation ?? "./catalog",
-      "--cache-dir",
-      "./cache",
-      "--json",
-    ]),
+    run(runner, [...runnerArgs, "doctor", "--env-file", launchEnvironment, "--json"]),
   );
 
   assert.equal(diagnostic.ok, true);
   assert.equal(diagnostic.catalog.guidelines, catalog.length);
+  assert.equal(diagnostic.model.baseURL, "https://openrouter.ai/api/v1");
+  assert.equal(diagnostic.guidelines.urlTemplate, "https://guidelines.example/entries/{id}");
+  assert.deepEqual(diagnostic.tracing, { enabled: false });
 
   const remoteEnvironment = join(directory, "remote.env");
   await writeFile(
     remoteEnvironment,
-    "CHARTCOACH_EMBEDDING_MODEL=consumer-embedding-model\n" +
+    (await readFile(launchEnvironment, "utf8")) +
+      "\n" +
+      "CHARTCOACH_EMBEDDING_MODEL=consumer-embedding-model\n" +
       "CHARTCOACH_EMBEDDING_BASE_URL=https://vectors.example/v1\n" +
       "CHARTCOACH_EMBEDDING_DIMENSIONS=4\n" +
       "CHARTCOACH_EMBEDDING_API_KEY_ENV=VECTOR_TOKEN\n" +
@@ -334,10 +346,6 @@ try {
     "doctor",
     "--env-file",
     remoteEnvironment,
-    "--catalog",
-    catalogLocation ?? "./catalog",
-    "--cache-dir",
-    "./cache",
     "--json",
   ]);
 
@@ -366,6 +374,9 @@ try {
 
   const errors: string[] = [];
   context.on("page", (opened) => opened.on("pageerror", (error) => errors.push(error.message)));
+  await context.route("https://guidelines.example/**", (route) =>
+    route.fulfill({ contentType: "text/html", body: "<p>Guideline destination</p>" }),
+  );
   page = await context.newPage();
   await page.goto(url);
   assert.equal(await page.getByText("Saved for this browser", { exact: true }).count(), 0);
@@ -440,7 +451,12 @@ try {
   await page
     .getByText("Use clear labels for the comparison.", { exact: true })
     .waitFor({ timeout: 90_000 });
-  await page.getByRole("link", { name: `Primary: ${title}`, exact: true }).waitFor();
+  const primaryCitation = page.getByRole("link", { name: `Primary: ${title}`, exact: true });
+  await primaryCitation.waitFor();
+  assert.equal(
+    await primaryCitation.getAttribute("href"),
+    `https://guidelines.example/entries/${encodeURIComponent(id)}`,
+  );
   assert.deepEqual(await page.locator("article > header > h2").allTextContents(), [
     "You",
     "ChartCoach",

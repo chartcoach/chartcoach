@@ -1,3 +1,4 @@
+import { guidelineLinksSchema } from "./guideline-links";
 import { z } from "zod";
 import { modelFields, apiKeySchema } from "./model";
 import { catalogFiltersSchema } from "./catalog-filters";
@@ -31,6 +32,7 @@ export const preferencesSchema = z.object({
   connections: z.array(connectionSchema),
   allowedOrigins: z.array(z.string()),
   tracing: z.boolean(),
+  guidelines: guidelineLinksSchema,
 });
 
 export const modelSchema = z.object({ id: z.string(), name: z.string() });

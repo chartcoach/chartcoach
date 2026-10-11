@@ -470,3 +470,18 @@ it("keeps a draft within the three-point answer contract", () => {
     conversation.messages.at(-1)?.answer?.points.map((point) => point.primary_guideline_id),
   ).toEqual(["labels", "contrast", "spacing"]);
 });
+
+it("uses current deployment links when restoring successful guideline reads from history", () => {
+  const conversation = deriveConversation([user, search, read], {
+    guidelineLinks: {
+      urlTemplate: "https://guidance.example/entries/{id}",
+      imageURLTemplate: "https://images.example/{id}.png",
+    },
+  });
+
+  expect(conversation.evidence[0]?.guideline).toMatchObject({
+    id: "labels",
+    url: "https://guidance.example/entries/labels",
+    imageURL: "https://images.example/labels.png",
+  });
+});

@@ -8,6 +8,7 @@ import { emptyCatalogFilters, type CatalogMetadata } from "../shared/catalog-fil
 it("ranks the linked author pool by count while keeping out-of-scope selections editable", async () => {
   const metadata: CatalogMetadata = {
     catalogId: "a".repeat(64),
+    guidelines: { urlTemplate: "https://chartcoach.dev/guidelines/{id}" },
     totalGuidelines: 8,
     authors: [
       { id: 3, name: "Cy", guidelineCount: 5 },

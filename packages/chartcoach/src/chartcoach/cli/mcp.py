@@ -24,7 +24,7 @@ from .environment import load_env_file
     is_eager=True,
     expose_value=False,
     callback=load_env_file,
-    help="Load this UTF-8 dotenv file. Defaults to .env in the working directory. Existing environment values win.",
+    help="Load this UTF-8 dotenv file, overriding inherited values. Automatic .env loading in the working directory keeps inherited values.",
 )
 @click.option(
     "--source",

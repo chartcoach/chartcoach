@@ -10,7 +10,3 @@ export const guidelinePageSchema = z.object({
   ),
   release: z.string().nullable(),
 });
-
-export function localGuidelineURL(id: string) {
-  return `/guideline?id=${encodeURIComponent(id)}`;
-}

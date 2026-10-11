@@ -83,7 +83,13 @@ export function useChatRuntime(
   );
 
   const disabled = busy || reading || agent.status === "resuming" || workspace.loading;
-  const conversation = useConversation(agent, thread.threadId, interruptedTurns);
+
+  const conversation = useConversation(
+    agent,
+    thread.threadId,
+    interruptedTurns,
+    workspace.guidelineLinks,
+  );
 
   const statusText =
     (preparing ? "Preparing your message" : statusLabels[agent.status]) ??

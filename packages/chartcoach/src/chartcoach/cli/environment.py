@@ -25,7 +25,7 @@ def load_env_file(
             "Install chartcoach[mcp] to load environment files."
         ) from exc
     try:
-        load_dotenv(path, override=False, encoding="utf-8")
+        load_dotenv(path, override=value is not None, encoding="utf-8")
     except (OSError, UnicodeError) as exc:
         raise click.BadParameter(
             "Environment file must be readable UTF-8.", param=parameter

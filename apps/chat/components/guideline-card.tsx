@@ -1,4 +1,3 @@
-import { localGuidelineURL } from "../shared/guideline-page";
 import { ArrowUpRight } from "lucide-react";
 import type { GuidelinePreview } from "../chat/tool-output";
 import * as stylex from "@stylexjs/stylex";
@@ -71,7 +70,7 @@ export function GuidelineCard({ guideline }: { guideline: GuidelinePreview }) {
   return (
     <a
       {...stylex.props(ui.focus, styles.card)}
-      href={localGuidelineURL(guideline.id)}
+      href={guideline.url}
       target="_blank"
       rel="noopener noreferrer"
       aria-label={guideline.title}
@@ -80,20 +79,22 @@ export function GuidelineCard({ guideline }: { guideline: GuidelinePreview }) {
         <span {...stylex.props(styles.fallback)}>
           <span>{guideline.title}</span>
         </span>
-        <img
-          key={guideline.id}
-          {...stylex.props(styles.image)}
-          src={`https://chartcoach.dev/guidelines/${encodeURIComponent(guideline.id)}/og.png`}
-          alt=""
-          width={1200}
-          height={630}
-          loading="lazy"
-          decoding="async"
-          referrerPolicy="no-referrer"
-          onError={(event) => {
-            event.currentTarget.style.display = "none";
-          }}
-        />
+        {guideline.imageURL ? (
+          <img
+            key={guideline.id}
+            {...stylex.props(styles.image)}
+            src={guideline.imageURL}
+            alt=""
+            width={1200}
+            height={630}
+            loading="lazy"
+            decoding="async"
+            referrerPolicy="no-referrer"
+            onError={(event) => {
+              event.currentTarget.style.display = "none";
+            }}
+          />
+        ) : null}
       </span>
       <span {...stylex.props(styles.footer)}>
         <span>Read guideline</span>

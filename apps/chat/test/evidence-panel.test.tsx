@@ -13,6 +13,7 @@ it("shows primary guideline cards before opening the remaining evidence", () => 
             id: "labels",
             title: "Label series directly",
             url: "https://chartcoach.dev/guidelines/labels",
+            imageURL: "https://chartcoach.dev/guidelines/labels/og.png",
           },
         },
         {
@@ -29,7 +30,7 @@ it("shows primary guideline cards before opening the remaining evidence", () => 
 
   const primary = page.querySelector('section[aria-label="Primary guidelines"]')!;
   const card = primary.querySelector<HTMLAnchorElement>('a[aria-label="Label series directly"]')!;
-  expect(card.getAttribute("href")).toBe("/guideline?id=labels");
+  expect(card.getAttribute("href")).toBe("https://chartcoach.dev/guidelines/labels");
   expect(card.querySelector("img")?.getAttribute("src")).toBe(
     "https://chartcoach.dev/guidelines/labels/og.png",
   );
@@ -52,7 +53,7 @@ it("shows primary guideline cards before opening the remaining evidence", () => 
     'a[aria-label="Read guideline: Keep labels legible"]',
   )!;
 
-  expect(source.getAttribute("href")).toBe("/guideline?id=contrast");
+  expect(source.getAttribute("href")).toBe("https://chartcoach.dev/guidelines/contrast");
   expect(source.closest("[inert]")).not.toBeNull();
 });
 
@@ -77,7 +78,7 @@ it("shows live candidates with catalog descriptions without presenting them as p
   expect(page.querySelector('[role="status"]')?.textContent).toBe("1 found · 0 read");
   const result = page.querySelector<HTMLAnchorElement>('section[aria-label="Search results"] a')!;
   expect(result.textContent).toContain("Place each name beside its series.");
-  expect(result.getAttribute("href")).toBe("/guideline?id=labels");
+  expect(result.getAttribute("href")).toBe("https://chartcoach.dev/guidelines/labels");
   expect(result.closest("[inert]")).toBeNull();
 });
 

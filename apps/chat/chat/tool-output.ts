@@ -2,6 +2,12 @@ import type { EveDynamicToolPart } from "eve/react";
 import { z } from "zod";
 import { workflowSchema } from "../shared/workflow";
 
+import {
+  defaultGuidelineLinks,
+  guidelineURLs,
+  type GuidelineLinks,
+} from "../shared/guideline-links";
+
 const guideline = z.object({ id: z.string(), title: z.string(), description: z.string() });
 
 export const searchOutput = z.object({
@@ -49,6 +55,7 @@ export interface GuidelinePreview {
   id: string;
   title: string;
   url: string;
+  imageURL?: string;
   description?: string;
 }
 
@@ -59,28 +66,14 @@ export interface ReadGuideline extends GuidelinePreview {
 export function guidelinePreview(
   id: string,
   title: string,
-  href?: string,
+  links: GuidelineLinks = defaultGuidelineLinks,
 ): GuidelinePreview | undefined {
-  if (!id || !title.trim() || !href) return;
+  if (!title.trim()) return;
+  const urls = guidelineURLs(id, links);
 
-  try {
-    const url = new URL(href);
-    const pathname = `/guidelines/${encodeURIComponent(id)}`;
+  if (!urls) return;
 
-    if (
-      url.origin !== "https://chartcoach.dev" ||
-      url.username ||
-      url.password ||
-      url.search ||
-      url.hash ||
-      (url.pathname !== pathname && url.pathname !== `${pathname}/`)
-    )
-      return;
-
-    return { id, title, url: `${url.origin}${pathname}` };
-  } catch {
-    return;
-  }
+  return { id, title, ...urls };
 }
 
 export const readOutput = z.object({

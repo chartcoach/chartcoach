@@ -18,6 +18,12 @@ const server = configSchema.shape.server.unwrap().shape;
 export function readEnvironment(environment: Record<string, string | undefined>) {
   return createEnv({
     server: {
+      CHARTCOACH_GUIDELINE_URL_TEMPLATE: configSchema.shape.guidelines
+        .unwrap()
+        .shape.urlTemplate.unwrap()
+        .optional(),
+      CHARTCOACH_GUIDELINE_IMAGE_URL_TEMPLATE:
+        configSchema.shape.guidelines.unwrap().shape.imageURLTemplate,
       CHARTCOACH_CATALOG: text,
       CHARTCOACH_CATALOG_PROFILE: text,
       CHARTCOACH_TEXT_PROVIDER: model.provider.unwrap().optional(),

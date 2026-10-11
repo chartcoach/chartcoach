@@ -23,11 +23,50 @@ All three runners accept the same ChartCoach flags and environment variables.
 
 Choose **Model settings** to connect a provider and select a model that supports
 images and tool calls. Upload a chart or ask about a visualization choice.
-Guideline citations open locally with their sources. Conversations and encrypted
+Guideline citations open their public pages with sources. Conversations and encrypted
 connections persist across restarts.
 
 The default URL is `http://127.0.0.1:4273`. Press Ctrl+C to stop the server.
 Use `--no-open` to keep the browser closed and `--port` to choose another port.
+
+## Launch from an env file
+
+[OpenRouter](https://openrouter.ai/docs/quickstart) routes requests to a chosen
+model provider. Create `chat.env` with a model that supports images and tool calls:
+
+```dotenv
+CHARTCOACH_TEXT_PROVIDER=openrouter
+CHARTCOACH_TEXT_MODEL=your-vision-model
+CHARTCOACH_TEXT_API_KEY=your-private-key
+CHARTCOACH_OPEN=false
+CHARTCOACH_GUIDELINE_URL_TEMPLATE=https://chartcoach.dev/guidelines/{id}
+
+CHARTCOACH_TRACING=true
+LANGFUSE_PUBLIC_KEY=your-public-project-key
+LANGFUSE_SECRET_KEY=your-secret-project-key
+LANGFUSE_BASE_URL=https://cloud.langfuse.com
+```
+
+Use your [Langfuse](https://langfuse.com/docs/observability/overview) project's host
+and keys to record model and tool traces. Traces can include messages and images.
+Keep this file private and outside version control. Set `CHARTCOACH_TRACING=false`
+when operating with tracing disabled.
+
+```bash
+npx chartcoach doctor --env-file ./chat.env --json
+npx chartcoach chat --env-file ./chat.env
+```
+
+The provider preset supplies OpenRouter's API endpoint. An explicitly selected
+file overrides inherited settings. The app starts at `http://127.0.0.1:4273`, and
+guideline links open `https://chartcoach.dev/guidelines/{id}`. Changing
+`CHARTCOACH_GUIDELINE_URL_TEMPLATE` changes citation, evidence, and catalog links.
+The template requires one URL-encoded `{id}` in its path. Preview images use
+`/og.png` below that URL, or `CHARTCOACH_GUIDELINE_IMAGE_URL_TEMPLATE` for a separate
+image location.
+
+For a GitHub preview, replace `chartcoach` after `npx --yes` with the release's
+`.tgz` download URL. The same `chat --env-file ./chat.env` arguments apply.
 
 ## Select a catalog
 
@@ -61,8 +100,7 @@ npx chartcoach
 ```
 
 Set `CHARTCOACH_TEXT_API_KEY` for an authenticated text connection. Native OpenAI,
-Anthropic, and Gemini adapters use the same dedicated key setting. `--api-key-env`
-or `CHARTCOACH_TEXT_API_KEY_ENV` selects another credential variable.
+Anthropic, and Gemini adapters use the same dedicated key setting. `CHARTCOACH_TEXT_API_KEY_ENV` selects another credential variable.
 
 The [model connection guide](/model-connections) owns the complete shared text and
 embedding settings and profile-build workflow. Both launchers load `.env` from
@@ -73,7 +111,8 @@ embeddings run locally by default; a configured compatible embedding connection
 uses its own endpoint and must match the selected catalog profile. Browser-entered keys are encrypted in the data directory.
 
 Configuration files are optional. `--config ./chartcoach.json` loads saved settings.
-Flags override process environment, which overrides dotenv and the selected JSON file.
+Flags override explicitly selected env files, inherited environment, automatic
+`.env` files, the selected JSON file, and defaults, in that order.
 T3 Env validates environment values and identifies invalid variables without
 printing secrets. `--data-dir` chooses persistent storage.
 
@@ -115,7 +154,7 @@ npx chartcoach doctor --json
 ```
 
 The report includes software and catalog identity, model availability, storage
-locations, and native DuckDB loading. Credentials are excluded.
+locations, guideline URL templates, tracing configuration, and native DuckDB loading. Credentials are excluded.
 
 If Bun or Deno cannot find an executable, check which package version it selected.
 A release-age policy can temporarily select the `0.0.0` name reservation, which

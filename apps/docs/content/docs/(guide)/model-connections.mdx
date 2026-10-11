@@ -12,24 +12,36 @@ The chat app also supports native Anthropic, OpenAI, and Gemini text connections
 ## Environment settings
 
 Both launchers read `.env` in their working directory. `--env-file PATH` or
-`CHARTCOACH_ENV_FILE` selects another file. Existing process environment wins over
-dotenv, and command flags win over both. The Python composition API and chat
+`CHARTCOACH_ENV_FILE` selects another file. An explicitly selected file wins over inherited environment values. Automatic
+`.env` loading keeps inherited values. Command flags win over both. The Python composition API and chat
 `loadConfig` do not load dotenv files or mutate environment implicitly.
 
-| Variable                           | Purpose                                                                    |
-| ---------------------------------- | -------------------------------------------------------------------------- |
-| `CHARTCOACH_TEXT_PROVIDER`         | Chat text/vision adapter: `compatible`, `openai`, `anthropic`, or `google` |
-| `CHARTCOACH_TEXT_MODEL`            | Text model that supports images and tool calls                             |
-| `CHARTCOACH_TEXT_BASE_URL`         | OpenAI-compatible text API base URL                                        |
-| `CHARTCOACH_TEXT_API_KEY`          | Private text provider credential                                           |
-| `CHARTCOACH_TEXT_API_KEY_ENV`      | Read the text key from another environment variable                        |
-| `CHARTCOACH_TEXT_AUTH`             | `api-key`, or `none` for a keyless compatible text endpoint                |
-| `CHARTCOACH_TEXT_CONTEXT_WINDOW`   | Text model context limit                                                   |
-| `CHARTCOACH_EMBEDDING_MODEL`       | Embedding model ID                                                         |
-| `CHARTCOACH_EMBEDDING_BASE_URL`    | OpenAI-compatible embedding API base URL                                   |
-| `CHARTCOACH_EMBEDDING_DIMENSIONS`  | Vector dimensions produced by the model                                    |
-| `CHARTCOACH_EMBEDDING_API_KEY`     | Private embedding provider credential                                      |
-| `CHARTCOACH_EMBEDDING_API_KEY_ENV` | Read the embedding key from another environment variable                   |
+| Variable                           | Purpose                                                     |
+| ---------------------------------- | ----------------------------------------------------------- |
+| `CHARTCOACH_TEXT_PROVIDER`         | Chat text/vision adapter or hosted preset, default `openai` |
+| `CHARTCOACH_TEXT_MODEL`            | Text model that supports images and tool calls              |
+| `CHARTCOACH_TEXT_BASE_URL`         | OpenAI-compatible text API base URL                         |
+| `CHARTCOACH_TEXT_API_KEY`          | Private text provider credential                            |
+| `CHARTCOACH_TEXT_API_KEY_ENV`      | Read the text key from another environment variable         |
+| `CHARTCOACH_TEXT_AUTH`             | `api-key`, or `none` for a keyless compatible text endpoint |
+| `CHARTCOACH_TEXT_CONTEXT_WINDOW`   | Text model context limit, default 128000 tokens             |
+| `CHARTCOACH_EMBEDDING_MODEL`       | Embedding model ID                                          |
+| `CHARTCOACH_EMBEDDING_BASE_URL`    | OpenAI-compatible embedding API base URL                    |
+| `CHARTCOACH_EMBEDDING_DIMENSIONS`  | Vector dimensions produced by the model                     |
+| `CHARTCOACH_EMBEDDING_API_KEY`     | Private embedding provider credential                       |
+| `CHARTCOACH_EMBEDDING_API_KEY_ENV` | Read the embedding key from another environment variable    |
+
+Chat accepts native `openai`, `anthropic`, and `google` adapters, or hosted preset
+IDs such as `openrouter`. Presets supply the base URL from
+[shared/model.ts](https://github.com/chartcoach/chartcoach/blob/main/apps/chat/shared/model.ts),
+the same list used by Model settings. `CHARTCOACH_TEXT_BASE_URL` overrides a preset
+endpoint. `compatible` means a custom service implementing the
+[OpenAI Chat Completions protocol](https://platform.openai.com/docs/api-reference/chat)
+and requires `CHARTCOACH_TEXT_BASE_URL`. This adapter uses `api-key` authentication
+by default. `CHARTCOACH_TEXT_AUTH=none` selects a keyless compatible endpoint.
+`CHARTCOACH_TEXT_API_KEY` is required when a model is configured with API key
+authentication. Omitting `CHARTCOACH_TEXT_MODEL` leaves connection setup to each
+browser.
 
 For example, fill `.env` with the values available from your providers:
 

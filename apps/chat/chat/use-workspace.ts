@@ -1,3 +1,4 @@
+import { defaultGuidelineLinks } from "../shared/guideline-links";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { loadPreferences, loadThread, loadThreads } from "../browser/workspace-client";
 import type { Connection, SavedThread, ThreadDetail } from "../shared/preferences";
@@ -6,6 +7,7 @@ export function useWorkspace() {
   const [connections, setConnections] = useState<Connection[]>([]);
   const [connectionId, setConnectionId] = useState<string>();
   const [allowedOrigins, setAllowedOrigins] = useState<string[]>([]);
+  const [guidelineLinks, setGuidelineLinks] = useState(defaultGuidelineLinks);
   const [tracing, setTracing] = useState(false);
   const [threads, setThreads] = useState<SavedThread[]>([]);
   const [active, setActive] = useState<ThreadDetail>();
@@ -25,6 +27,7 @@ export function useWorkspace() {
     setConnections(preferences.connections);
     setAllowedOrigins(preferences.allowedOrigins);
     setTracing(preferences.tracing);
+    setGuidelineLinks(preferences.guidelines);
 
     return preferences;
   }
@@ -73,6 +76,7 @@ export function useWorkspace() {
         setConnections(preferences.connections);
         setAllowedOrigins(preferences.allowedOrigins);
         setTracing(preferences.tracing);
+        setGuidelineLinks(preferences.guidelines);
         let remembered: string | null = null;
 
         try {
@@ -121,6 +125,7 @@ export function useWorkspace() {
     selectConnection,
     allowedOrigins,
     tracing,
+    guidelineLinks,
     threads,
     active,
     key,
