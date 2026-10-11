@@ -71,7 +71,7 @@ packages when their API or instructions change.
 
 ## Chat app
 
-`apps/chat` publishes the `chartcoach` npm application. Next.js exports its interface as static assets. The CLI supervises an Eve worker and serves the interface and authenticated agent requests on one public origin. The browser
+`apps/chat` publishes the `chartcoach` npm application. Next.js owns the App Router pages. The CLI prepares the packaged Next.js build, supervises an Eve worker, and serves pages and authenticated agent requests on one public origin. The browser
 sends chart images and questions to Eve and receives structured reviews and tool
 events. Shared schemas define filter selections and review evidence.
 
@@ -89,7 +89,9 @@ over IPC. Eve's working directory
 is the resolved session data directory, so its workflows and sandbox files persist beside
 the app database and credential key. `lib/app/sqlite.ts` connects Node’s built-in SQLite engine to Effect SQL, so storage needs no install-time native binding.
 
-`runtime/gateway.ts` serves static assets and forwards `/eve/` requests to the
+`runtime/web.ts` prepares Next.js from its built configuration.
+`runtime/gateway.ts` delegates pages, RSC requests, and public assets to Next.js
+and forwards `/eve/` requests to the
 private worker using a per-process credential. The public listener validates Host
 and Origin headers. Network listeners require HTTP Basic authentication. Workflow
 callbacks remain on the worker's loopback origin. The gateway replaces forwarded
@@ -102,6 +104,20 @@ state when upgrading saved conversations. Upstream instrumentation preserves ima
 vendored reader, including replay from a saved cursor. `sandbox-upgrade.test.ts`
 checks legacy attachment migration and preservation of current skills. Keep these checks when
 upgrading Eve and remove a patch only when the upstream version passes them.
+
+The `(workspace)` route group keeps the chat runtime and navigation in one
+persistent layout. `/` renders a new conversation, `/chat/[threadId]` loads an
+owner-scoped saved record, and `/guidelines` renders the Mosaic selector.
+`/chat/[threadId]/guidelines` restores a saved conversation's selection on direct
+entry. Local citation pages use `/guideline/[id]`. Next.js owns route resolution;
+no conversation state is encoded in query parameters.
+
+`shared/threads.ts` owns the conversation wire records. SQLite stores a stable
+UUID, title, model connection, creation and activity timestamps, archive state,
+immutable guideline selection, and one Eve session ID. Eve owns transcripts.
+The channel admits at most one initial session for a saved conversation and
+persists accepted sessions before returning their responses, including when the
+browser disconnects. Database migrations preserve records from earlier releases.
 
 The app separates rendering, browser computation, and server catalog access:
 
@@ -144,7 +160,6 @@ through the browser-facing origin.
 | `apps/docs/.next`       | Next.js build                     |
 | `apps/docs/out`         | Static docs export                |
 | `apps/chat/.next`       | Next.js build                     |
-| `apps/chat/out`         | Static chat interface             |
 | `apps/chat/dist`        | Installable npm application       |
 | `apps/chat/.output`     | Eve production build              |
 | `packages/catalog/dist` | JavaScript package build          |
@@ -163,7 +178,7 @@ directory. Do not edit generated output directly.
 
 ## Chat distribution
 
-`apps/chat/scripts/package.ts` assembles compiled Eve code and the static UI into
+`apps/chat/scripts/package.ts` assembles compiled Eve code and the Next.js build into
 `apps/chat/dist`. It excludes traced `node_modules` and resolves exact runtime
 versions for the distribution manifest. Eve prepares just-bash sandbox templates
 during the build. The Nitro integration copies those templates and replaces

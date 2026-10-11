@@ -21,10 +21,18 @@ function Navigation({
     onNew: async () => {},
     adapters: {
       threadList: {
-        threadId: "revenue",
+        threadId: "c3666202-50b1-449c-ac0c-9d458e936f92",
         threads: [
-          { id: "revenue", title: "Monthly revenue", status: "regular" },
-          { id: "labels", title: "Labels and legends", status: "regular" },
+          {
+            id: "c3666202-50b1-449c-ac0c-9d458e936f92",
+            title: "Monthly revenue",
+            status: "regular",
+          },
+          {
+            id: "c58db75e-d8ea-44d6-a2e7-7391a34697bd",
+            title: "Labels and legends",
+            status: "regular",
+          },
         ],
         onSwitchToNewThread: async () => {},
         onSwitchToThread: async () => {},
@@ -47,7 +55,7 @@ function Navigation({
           searchOpen: true,
           closeSearch: () => {},
           view,
-          showGuidelines: () => {},
+          guidelinesHref: "/guidelines",
           showChat: () => {},
         }}
       />
@@ -63,6 +71,17 @@ it.each([false, true])("keeps conversations readable with navigation disabled=%s
   expect(html).toContain('aria-label="Guidelines"');
   expect(html).toContain("Monthly revenue");
   expect(html).toContain("Labels and legends");
+  expect(html).toContain('href="/"');
+  expect(html).toContain('href="/guidelines"');
+
+  const conversation = html.match(
+    /<a[^>]*href="\/chat\/c3666202-50b1-449c-ac0c-9d458e936f92"[^>]*>/,
+  )?.[0];
+
+  expect(conversation).toBeDefined();
+  expect(conversation).toContain(`aria-disabled="${disabled}"`);
+  expect(conversation?.includes('tabindex="-1"')).toBe(disabled);
+  expect(html).toContain('href="/chat/c58db75e-d8ea-44d6-a2e7-7391a34697bd"');
   const options = html.match(/<button[^>]*aria-label="Options for Monthly revenue"[^>]*>/)?.[0];
   expect(options).toBeDefined();
   expect(options?.includes('disabled=""')).toBe(disabled);

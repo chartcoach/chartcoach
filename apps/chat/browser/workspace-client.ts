@@ -5,11 +5,14 @@ import {
   connectionSchema,
   modelSchema,
   preferencesSchema,
+  type ConnectionInput,
+} from "../shared/preferences";
+import {
   threadDetailSchema,
   threadSchema,
-  type ConnectionInput,
-  type ThreadDetail,
-} from "../shared/preferences";
+  type ThreadInput,
+  type ThreadUpdate,
+} from "../shared/threads";
 import type { ChartAttachment } from "../chat/attachment";
 
 async function request<T, B>(path: string, schema: z.ZodType<T>, body?: B, signal?: AbortSignal) {
@@ -53,12 +56,10 @@ export const loadThreads = (signal?: AbortSignal) =>
 export const loadThread = (id: string, signal?: AbortSignal) =>
   request(`threads/${encodeURIComponent(id)}`, threadDetailSchema, undefined, signal);
 
-export const createThread = (
-  value: { title: string; connectionId: string; knowledge: ThreadDetail["knowledge"] },
-  signal?: AbortSignal,
-) => request("threads", threadDetailSchema, value, signal);
+export const createThread = (value: ThreadInput, signal?: AbortSignal) =>
+  request("threads", threadDetailSchema, value, signal);
 
-export const updateThread = (id: string, value: { title?: string; archived?: boolean }) =>
+export const updateThread = (id: string, value: ThreadUpdate) =>
   request(`threads/${encodeURIComponent(id)}`, ok, value);
 
 export const saveChartImage = (id: string, value: ChartAttachment, signal?: AbortSignal) =>

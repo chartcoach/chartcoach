@@ -26,6 +26,13 @@ images and tool calls. Upload a chart or ask about a visualization choice.
 Guideline citations open their public pages with sources. Conversations and encrypted
 connections persist across restarts.
 
+The home page starts a new chat. Its first message saves the conversation at
+`/chat/{threadId}`. History links, browser back and forward, and refresh use that
+same address. Opening it requires the same browser's cookie and any configured server sign-in.
+**Guidelines** has its own page: `/guidelines` for a new chat, or
+`/chat/{threadId}/guidelines` for a saved conversation. Refreshing the latter
+restores that conversation's selection.
+
 The default URL is `http://127.0.0.1:4273`. Press Ctrl+C to stop the server.
 Use `--no-open` to keep the browser closed and `--port` to choose another port.
 

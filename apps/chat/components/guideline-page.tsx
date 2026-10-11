@@ -5,6 +5,7 @@ import { Streamdown } from "streamdown";
 import { useGuidelinePage } from "../chat/use-guideline-page";
 import { ui } from "./ui/ui";
 import { colors } from "./ui/tokens.stylex";
+import Link from "next/link";
 
 const styles = stylex.create({
   page: {
@@ -19,14 +20,14 @@ const styles = stylex.create({
   muted: { color: colors.muted, fontSize: 13 },
 });
 
-export function GuidelinePage() {
-  const { guideline, error } = useGuidelinePage();
+export function GuidelinePage({ id }: { id: string }) {
+  const { guideline, error } = useGuidelinePage(id);
 
   return (
     <main {...stylex.props(styles.page)}>
-      <a {...stylex.props(ui.focus)} href="/">
+      <Link {...stylex.props(ui.focus)} href="/">
         ChartCoach
-      </a>
+      </Link>
       {error ? (
         <p role="alert">{error}</p>
       ) : guideline ? (

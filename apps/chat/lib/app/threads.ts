@@ -2,7 +2,12 @@ import { SqlClient } from "@effect/sql";
 import { Effect } from "effect";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
-import { threadDetailSchema, type SavedThread, type ThreadDetail } from "../../shared/preferences";
+import {
+  threadDetailSchema,
+  type SavedThread,
+  type ThreadInput,
+  type ThreadUpdate,
+} from "../../shared/threads";
 import { resolvedSelectionSchema, type ResolvedSelection } from "../../shared/resolved-selection";
 import { AppError } from "./errors";
 
@@ -12,15 +17,16 @@ interface ThreadRow {
   title: string;
   connection_id: string;
   session_id: string | null;
-  knowledge: string;
+  guidelines: string;
   resolved_selection: string;
+  created_at: number;
   updated_at: number;
   archived: number;
 }
 
 type ThreadMetadataRow = Pick<
   ThreadRow,
-  "id" | "title" | "connection_id" | "session_id" | "updated_at" | "archived"
+  "id" | "title" | "connection_id" | "session_id" | "created_at" | "updated_at" | "archived"
 >;
 
 function threadMetadata(row: ThreadMetadataRow): SavedThread {
@@ -29,6 +35,7 @@ function threadMetadata(row: ThreadMetadataRow): SavedThread {
     title: row.title,
     connectionId: row.connection_id,
     sessionId: row.session_id,
+    createdAt: row.created_at,
     updatedAt: row.updated_at,
     archived: row.archived === 1,
   };
@@ -39,7 +46,7 @@ export const listThreads = (owner: string) =>
     const sql = yield* SqlClient.SqlClient;
 
     const rows =
-      yield* sql<ThreadMetadataRow>`SELECT id, title, connection_id, session_id, updated_at, archived FROM threads WHERE owner = ${owner} ORDER BY updated_at DESC`;
+      yield* sql<ThreadMetadataRow>`SELECT id, title, connection_id, session_id, created_at, updated_at, archived FROM threads WHERE owner = ${owner} ORDER BY updated_at DESC, id`;
 
     return rows.map(threadMetadata);
   });
@@ -55,21 +62,18 @@ export const getThread = (owner: string, id: string) =>
     return {
       detail: threadDetailSchema.parse({
         ...threadMetadata(row),
-        knowledge: JSON.parse(row.knowledge),
+        guidelines: JSON.parse(row.guidelines),
       }),
       resolved: resolvedSelectionSchema.parse(JSON.parse(row.resolved_selection)),
     };
   });
 
-export const createThread = (
-  owner: string,
-  input: { title: string; connectionId: string; knowledge: ThreadDetail["knowledge"] },
-  resolved: ResolvedSelection,
-) =>
+export const createThread = (owner: string, input: ThreadInput, resolved: ResolvedSelection) =>
   Effect.gen(function* () {
     const sql = yield* SqlClient.SqlClient;
     const id = randomUUID();
-    yield* sql`INSERT INTO threads ${sql.insert({ id, owner, title: input.title, connection_id: input.connectionId, knowledge: JSON.stringify({ ...input.knowledge, matchedGuidelines: resolved.ids.length }), resolved_selection: JSON.stringify(resolved), updated_at: Date.now() })}`;
+    const now = Date.now();
+    yield* sql`INSERT INTO threads ${sql.insert({ id, owner, title: input.title, connection_id: input.connectionId, guidelines: JSON.stringify({ ...input.guidelines, matchedGuidelines: resolved.ids.length }), resolved_selection: JSON.stringify(resolved), created_at: now, updated_at: now })}`;
 
     return (yield* getThread(owner, id)).detail;
   });
@@ -96,11 +100,7 @@ export const bindThread = (owner: string, id: string, sessionId: string, connect
       });
   });
 
-export const updateThread = (
-  owner: string,
-  id: string,
-  input: { title?: string; archived?: boolean },
-) =>
+export const updateThread = (owner: string, id: string, input: ThreadUpdate) =>
   Effect.gen(function* () {
     const sql = yield* SqlClient.SqlClient;
     yield* getThread(owner, id);

@@ -57,13 +57,18 @@ export const readJson = <T>(request: Request, schema: z.ZodType<T>, maxBytes = 6
         : new AppError({ status: 400, message: "Check the submitted fields." }),
   });
 
+interface AppResponseOptions {
+  signal?: AbortSignal;
+}
+
 export async function appResponse<E>(
   request: Request,
   effect: Parameters<typeof runApp<Response, E>>[0],
+  options: AppResponseOptions = { signal: request.signal },
 ) {
   const result = await runApp(
     Effect.exit(effect.pipe(Effect.timeout("30 seconds"), Effect.withSpan("chat.app.request"))),
-    { signal: request.signal },
+    options,
   );
 
   if (Exit.isSuccess(result)) return result.value;

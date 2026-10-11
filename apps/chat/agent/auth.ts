@@ -79,7 +79,7 @@ export const reviewRouteAuth = catalogRouteAuth.map(
             "chartcoach.thread": threadId,
             "chartcoach.connection": connectionId ?? saved.right.detail.connectionId,
             "chartcoach.selection": JSON.stringify(saved.right.resolved),
-            "chartcoach.predicate": saved.right.detail.knowledge.selection.sql,
+            "chartcoach.predicate": saved.right.detail.guidelines.selection.sql,
           },
         };
       }

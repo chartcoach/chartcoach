@@ -83,7 +83,7 @@ export async function verifyPicker(page: Page, catalog: Catalog, screenshot: str
 
   const parquet = "**/eve/v1/catalog/*/entries.parquet";
   await page.route(parquet, (route) => route.abort());
-  const guidelines = page.getByRole("button", { name: "Guidelines", exact: true });
+  const guidelines = page.getByRole("link", { name: "Guidelines", exact: true });
 
   await guidelines.click();
   await guidelines.locator(':scope[aria-current="page"]').waitFor();
@@ -252,7 +252,7 @@ export async function verifyPicker(page: Page, catalog: Catalog, screenshot: str
     })
     .waitFor();
   assert.equal(await page.getByRole("button", { name: /send/i }).isEnabled(), false);
-  await page.getByRole("button", { name: "Guidelines", exact: true }).click();
+  await page.getByRole("link", { name: "Guidelines", exact: true }).click();
   await selection([]);
   await reset.click();
   await selection(all);
@@ -272,7 +272,7 @@ export async function verifyPicker(page: Page, catalog: Catalog, screenshot: str
   await apply.click();
   await apply.waitFor({ state: "hidden" });
   await page.getByRole("button", { name: "Open sidebar", exact: true }).click();
-  await page.getByRole("button", { name: "Guidelines", exact: true }).click();
+  await page.getByRole("link", { name: "Guidelines", exact: true }).click();
   await selection(selected);
   assert.equal(await sourceType.isChecked(), true);
   await apply.locator(":scope:disabled").waitFor();

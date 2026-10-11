@@ -1,8 +1,8 @@
 "use client";
 
 import * as stylex from "@stylexjs/stylex";
-import { Activity } from "react";
-import { AssistantRuntimeProvider } from "@assistant-ui/react";
+import { createContext, use, type ReactNode } from "react";
+import { AssistantRuntimeProvider, useAuiState } from "@assistant-ui/react";
 import { Composer } from "./composer";
 import { Dropzone } from "./dropzone";
 import { ConversationPanel } from "./conversation-panel";
@@ -13,19 +13,27 @@ import { useModelContext } from "../../chat/use-model-context";
 import { useWorkspace } from "../../chat/use-workspace";
 import { useNavigation } from "../../chat/use-navigation";
 import { ModelSettings } from "../settings/model-settings";
-import { GuidelinesPage } from "../catalog/filters";
 import { HistoryPanel } from "./history";
 import { NavigationHeader } from "./navigation-header";
 import { ui } from "../ui/ui";
 import { styles } from "./chat.styles";
 
-function ChatLayout({
-  state,
-  navigation,
-}: {
+const ChatContext = createContext<{
   state: ReturnType<typeof useChat>;
   navigation: ReturnType<typeof useNavigation>;
-}) {
+} | null>(null);
+
+export function useChatWorkspace() {
+  const context = use(ChatContext);
+
+  if (!context) throw new Error("Chat pages require the workspace layout.");
+
+  return context;
+}
+
+export function ChatConversation() {
+  const { state, navigation } = useChatWorkspace();
+
   const {
     conversation,
     attachments,
@@ -37,34 +45,88 @@ function ChatLayout({
     statusText,
     messageInput,
     catalog,
-    onFiltersChange,
-    onCatalogReload,
     uploadExample,
     workspace,
   } = state;
 
-  useModelContext(workspace.connection?.model);
-
-  const { hasAttachment, heading, empty, showStatus, sentMessageId, dropDisabled, onUpload } =
-    useChatPresentation(state, navigation);
-
-  const composer = (
-    <Composer
-      embedded={empty}
-      onUpload={onUpload}
-      messageInput={messageInput}
-      busy={busy}
-      disabled={disabled}
-      reading={reading}
-      error={error ?? catalog.error}
-      onRecover={recover}
-      modelControl={<ModelSettings workspace={workspace} disabled={disabled || !workspace.ready} />}
-      tracing={workspace.tracing}
-    />
+  const { heading, empty, showStatus, sentMessageId, onUpload } = useChatPresentation(
+    state,
+    navigation,
   );
 
+  if (workspace.loading) return <WorkspacePending />;
+
   return (
-    <Dropzone disabled={dropDisabled} hasAttachment={hasAttachment} onFiles={onUpload}>
+    <WorkspaceView>
+      <ConversationPanel
+        heading={heading}
+        conversation={conversation}
+        attachments={attachments}
+        empty={empty}
+        showStatus={showStatus}
+        busy={busy}
+        disabled={disabled}
+        statusText={statusText}
+        sentMessageId={sentMessageId}
+        matchedGuidelines={catalog.selection?.matchedGuidelines}
+        uploadExample={uploadExample}
+        composer={
+          <Composer
+            embedded={empty}
+            onUpload={onUpload}
+            messageInput={messageInput}
+            busy={busy}
+            disabled={disabled}
+            reading={reading}
+            error={error ?? catalog.error}
+            onRecover={recover}
+            modelControl={
+              <ModelSettings workspace={workspace} disabled={disabled || !workspace.ready} />
+            }
+            tracing={workspace.tracing}
+          />
+        }
+      />
+    </WorkspaceView>
+  );
+}
+
+export function WorkspacePending() {
+  const { state } = useChatWorkspace();
+  const { workspace } = state;
+
+  return (
+    <WorkspaceView>
+      <main {...stylex.props(styles.settingsFallback)}>
+        <h1>{workspace.requestedId ? "Conversation" : "ChartCoach"}</h1>
+        <p role={workspace.threadError || workspace.error ? "alert" : "status"}>
+          {workspace.threadError ?? workspace.error ?? "Loading your workspace…"}
+        </p>
+        {workspace.threadError || workspace.error ? (
+          <button
+            {...stylex.props(ui.button, ui.outlineButton, ui.focus)}
+            onClick={workspace.retry}
+          >
+            Try again
+          </button>
+        ) : null}
+      </main>
+    </WorkspaceView>
+  );
+}
+
+function ChatLayout({ children }: { children: ReactNode }) {
+  const { state, navigation } = useChatWorkspace();
+  const { workspace, catalog, disabled } = state;
+  const hasAttachment = useAuiState((value) => value.composer.attachments.length > 0);
+  useModelContext(workspace.connection?.model);
+
+  return (
+    <Dropzone
+      disabled={disabled || navigation.view === "guidelines"}
+      hasAttachment={hasAttachment}
+      onFiles={(files) => void state.upload(files)}
+    >
       <a {...stylex.props(styles.skip, ui.focus)} href="#message">
         Skip to message
       </a>
@@ -79,86 +141,42 @@ function ChatLayout({
       <div {...stylex.props(styles.body)}>
         <HistoryPanel
           navigation={navigation}
-          disabled={disabled}
+          disabled={state.busy || state.reading || !workspace.ready}
           guidelineCount={catalog.selection?.matchedGuidelines}
         />
-        <WorkspaceView>
-          <div {...stylex.props(styles.canvas)}>
-            {catalog.metadata && catalog.selection ? (
-              <GuidelinesPage
-                key={catalog.metadata.catalogId}
-                open={navigation.view === "guidelines"}
-                onClose={navigation.showChat}
-                metadata={catalog.metadata}
-                value={catalog.selection.filters}
-                matchedGuidelines={catalog.selection.matchedGuidelines}
-                disabled={disabled}
-                onApply={onFiltersChange}
-                onReload={onCatalogReload}
-              />
-            ) : navigation.view === "guidelines" ? (
-              <main {...stylex.props(styles.settingsFallback)}>
-                <h1>Guidelines</h1>
-                <p role="status">{catalog.error ?? "Loading guidelines…"}</p>
-                {catalog.error ? (
-                  <button
-                    {...stylex.props(ui.button, ui.outlineButton, ui.focus)}
-                    disabled={disabled}
-                    onClick={onCatalogReload}
-                  >
-                    Reload catalog
-                  </button>
-                ) : null}
-                <button
-                  {...stylex.props(ui.button, ui.quietButton, ui.focus)}
-                  onClick={navigation.showChat}
-                >
-                  Back to chat
-                </button>
-              </main>
-            ) : null}
-            <Activity mode={navigation.view === "chat" ? "visible" : "hidden"}>
-              <ConversationPanel
-                heading={heading}
-                conversation={conversation}
-                attachments={attachments}
-                empty={empty}
-                showStatus={showStatus}
-                busy={busy}
-                disabled={disabled}
-                statusText={statusText}
-                sentMessageId={sentMessageId}
-                matchedGuidelines={catalog.selection?.matchedGuidelines}
-                uploadExample={uploadExample}
-                composer={composer}
-              />
-            </Activity>
-          </div>
-        </WorkspaceView>
+        <div {...stylex.props(styles.canvas)}>{children}</div>
       </div>
     </Dropzone>
   );
 }
 
-export function Chat() {
+export function ChatWorkspace({ children }: { children: ReactNode }) {
   const workspace = useWorkspace();
-  const navigation = useNavigation();
+  const navigation = useNavigation(workspace);
 
-  return <ChatSession key={workspace.key} workspace={workspace} navigation={navigation} />;
+  return (
+    <ChatSession key={workspace.key} workspace={workspace} navigation={navigation}>
+      {children}
+    </ChatSession>
+  );
 }
 
 function ChatSession({
   workspace,
   navigation,
+  children,
 }: {
   workspace: ReturnType<typeof useWorkspace>;
   navigation: ReturnType<typeof useNavigation>;
+  children: ReactNode;
 }) {
   const state = useChat(workspace);
 
   return (
-    <AssistantRuntimeProvider runtime={state.runtime}>
-      <ChatLayout state={state} navigation={navigation} />
-    </AssistantRuntimeProvider>
+    <ChatContext value={{ state, navigation }}>
+      <AssistantRuntimeProvider runtime={state.runtime}>
+        <ChatLayout>{children}</ChatLayout>
+      </AssistantRuntimeProvider>
+    </ChatContext>
   );
 }

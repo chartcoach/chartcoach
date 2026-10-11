@@ -24,7 +24,8 @@ import {
   getImage,
   imageInputSchema,
 } from "../../lib/app/threads";
-import { connectionInputSchema, threadInputSchema, ownerSchema } from "../../shared/preferences";
+import { connectionInputSchema, ownerSchema } from "../../shared/preferences";
+import { threadInputSchema, threadUpdateSchema } from "../../shared/threads";
 import { resolveCatalogSelection } from "../../lib/catalog/selection";
 import { langfuseTracingEnabled } from "../../lib/env";
 
@@ -152,7 +153,7 @@ export default defineChannel({
           yield* resolveConnection(identity, input.connectionId);
 
           const resolved = yield* Effect.tryPromise({
-            try: (signal) => resolveCatalogSelection(input.knowledge.selection, { signal }),
+            try: (signal) => resolveCatalogSelection(input.guidelines.selection, { signal }),
             catch: () =>
               new AppError({
                 status: 400,
@@ -184,13 +185,7 @@ export default defineChannel({
         Effect.gen(function* () {
           const identity = yield* owner(request);
 
-          const input = yield* readJson(
-            request,
-            z.strictObject({
-              title: z.string().trim().min(1).max(160).optional(),
-              archived: z.boolean().optional(),
-            }),
-          );
+          const input = yield* readJson(request, threadUpdateSchema);
 
           yield* updateThread(identity, pathId(request), input);
 

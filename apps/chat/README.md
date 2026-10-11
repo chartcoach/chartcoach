@@ -89,6 +89,19 @@ chartcoach
 Your question, uploaded image, and retrieved guidance go to the selected model
 provider. Local query embeddings download weights on the first vector search; a configured remote embedding connection sends retrieval queries to its own endpoint. A local model endpoint keeps inference on your machine too.
 
+## Navigate conversations
+
+`/` starts a new conversation. Sending its first message saves it at
+`/chat/{threadId}`. History links open the same address, and browser back,
+forward, and refresh restore the conversation from your browser's saved owner.
+Conversation URLs require that owner's cookie and any configured server sign-in.
+
+**Guidelines** opens `/guidelines` for a new chat and
+`/chat/{threadId}/guidelines` for a saved chat. Refreshing a saved chat's selector
+restores its guideline selection. Applying a different selection starts a new
+conversation and carries your chart and draft with you. Local guideline detail
+pages use `/guideline/{id}`.
+
 ## Configure a connection
 
 The browser manages personal model connections. To supply a default connection
@@ -747,9 +760,9 @@ interaction state. Root lint rules keep transport and server imports out of
 | Model connection mutations and form lifecycle                   | [use-model-settings.ts](chat/use-model-settings.ts), [use-connection-form.ts](chat/use-connection-form.ts)                                  |
 | File-drop listeners, source sheet, and virtual-list interaction | [use-file-drop.ts](chat/use-file-drop.ts), [use-evidence-panel.ts](chat/use-evidence-panel.ts), [use-match-list.ts](chat/use-match-list.ts) |
 
-React Activity preserves the conversation and Guidelines views. The Eve stream
-and browser catalog owner sit outside the hidden presentation subtrees, so switching
-views preserves the chart, draft, scroll position, and loaded DuckDB worker.
+The shared workspace layout owns the Eve stream, chart, composer draft, and applied
+guideline selection across conversation and selector routes. Each route owns its
+presentation lifecycle; the selector releases its DuckDB worker when it closes.
 Workspace navigation uses a short, type-scoped view transition. Streaming and
 background catalog queries retain their own update lifecycle. Reduced-motion
 preferences disable the transition animation.
@@ -799,7 +812,7 @@ pnpm --dir apps/chat dev
 ```
 
 Portless starts the Next.js development interface and Eve on the same origin.
-Production exports the interface to static assets and compiles Eve's Node server.
+Production builds the Next.js App Router and compiles Eve's Node server.
 
 ```bash
 pnpm --dir apps/chat build
@@ -808,6 +821,6 @@ npm pack ./apps/chat/dist --ignore-scripts
 ```
 
 The build verifies the canonical skills and
-assembles `dist/` with the CLI, static UI, and compiled worker. Native dependencies
+assembles `dist/` with the CLI, Next.js build, and compiled worker. Native dependencies
 are installed by npm on the consumer's platform. `dist/package.json` contains exact
 runtime dependency versions and the executable entry point.

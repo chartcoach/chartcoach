@@ -10,6 +10,10 @@ export function useChatPresentation(
   const hasAttachment = useAuiState((value) => value.composer.attachments.length > 0);
   const { messageInput, conversation, busy } = state;
   const heading = useRef<HTMLHeadingElement>(null);
+  const title = state.workspace.loading ? "Conversation" : state.workspace.active?.title;
+  useEffect(() => {
+    if (navigation.view === "chat") document.title = title ? `${title} · ChartCoach` : "ChartCoach";
+  }, [title, navigation.view]);
   useEffect(() => {
     if (navigation.view !== "chat") return;
 

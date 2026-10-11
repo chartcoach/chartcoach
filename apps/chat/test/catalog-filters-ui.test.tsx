@@ -19,7 +19,6 @@ const metadata: CatalogMetadata = {
 it("shows the guideline pool in the guidelines settings page", () => {
   const page = renderDocument(
     <GuidelinesPage
-      open
       onClose={() => {}}
       metadata={metadata}
       value={{ ...emptyCatalogFilters(metadata.catalogId), includeAuthorIds: [1], yearFrom: 2000 }}
@@ -42,7 +41,6 @@ it("shows the guideline pool in the guidelines settings page", () => {
 it("prevents changing guidelines while a review is running", () => {
   const page = renderDocument(
     <GuidelinesPage
-      open
       onClose={() => {}}
       metadata={metadata}
       value={emptyCatalogFilters(metadata.catalogId)}

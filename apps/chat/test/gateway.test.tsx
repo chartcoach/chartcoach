@@ -1,16 +1,22 @@
-import { createServer, get } from "node:http";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { createServer, get, type IncomingMessage, type ServerResponse } from "node:http";
 import { z } from "zod";
 import { expect, it } from "vite-plus/test";
 import { createGateway } from "../runtime/gateway";
 import { loadConfig } from "../runtime/config";
 
-it("protects assets and streams authenticated requests through the same origin", async () => {
-  const directory = await mkdtemp(join(tmpdir(), "chartcoach-gateway-"));
-  await writeFile(join(directory, "index.html"), "<h1>ChartCoach</h1>");
+const handlePage = async (request: IncomingMessage, response: ServerResponse) => {
+  const path = new URL(request.url!, "http://localhost").pathname;
 
+  if (path === "/duckdb/duckdb-eh.wasm") response.end("wasm");
+  else if (path === "/" || path.startsWith("/chat/") || path === "/guidelines")
+    response.end("<h1>ChartCoach</h1>");
+  else {
+    response.writeHead(404);
+    response.end("Page not found.");
+  }
+};
+
+it("protects assets and streams authenticated requests through the same origin", async () => {
   const worker = createServer((request, response) => {
     response.setHeader("content-type", "application/json");
     response.end(
@@ -33,7 +39,7 @@ it("protects assets and streams authenticated requests through the same origin",
 
   const gateway = createGateway({
     config,
-    assets: directory,
+    handlePage,
     agentURL: `http://127.0.0.1:${address.port}`,
     token: "private-worker-token",
     password: "private-password",
@@ -77,13 +83,10 @@ it("protects assets and streams authenticated requests through the same origin",
   } finally {
     await gateway.close();
     await new Promise<void>((resolve) => worker.close(() => resolve()));
-    await rm(directory, { recursive: true, force: true });
   }
 });
 
 it("closes an active event stream before releasing the gateway", async () => {
-  const directory = await mkdtemp(join(tmpdir(), "chartcoach-gateway-stream-"));
-
   const worker = createServer((_request, response) => {
     response.writeHead(200, { "content-type": "text/event-stream" });
     response.write("data: ready\n\n");
@@ -98,7 +101,7 @@ it("closes an active event stream before releasing the gateway", async () => {
       userConfig: "/missing/config.json",
       overrides: { server: { port: 0 } },
     }),
-    assets: directory,
+    handlePage,
     agentURL: `http://127.0.0.1:${address.port}`,
     token: "private-worker-token",
   });
@@ -117,7 +120,6 @@ it("closes an active event stream before releasing the gateway", async () => {
     await gateway.close();
     worker.closeAllConnections();
     await new Promise<void>((resolve) => worker.close(() => resolve()));
-    await rm(directory, { recursive: true, force: true });
   }
 });
 
@@ -125,11 +127,6 @@ async function embeddedGateway(
   server: { embedOrigins: string[] },
   secrets: Pick<Parameters<typeof createGateway>[0], "password" | "embedKey"> = {},
 ) {
-  const directory = await mkdtemp(join(tmpdir(), "chartcoach-gateway-"));
-  await writeFile(join(directory, "index.html"), "<h1>ChartCoach</h1>");
-  await mkdir(join(directory, "duckdb"));
-  await writeFile(join(directory, "duckdb", "duckdb-eh.wasm"), "wasm");
-
   const worker = createServer((request, response) => {
     response.setHeader("content-type", "application/json");
     response.setHeader("access-control-allow-origin", "*");
@@ -148,7 +145,7 @@ async function embeddedGateway(
       userConfig: "/missing/config.json",
       overrides: { server: { port: 0, ...server } },
     }),
-    assets: directory,
+    handlePage,
     agentURL: `http://127.0.0.1:${address.port}`,
     token: "private-worker-token",
     ...secrets,
@@ -159,7 +156,6 @@ async function embeddedGateway(
     async [Symbol.asyncDispose]() {
       await gateway.close();
       await new Promise<void>((resolve) => worker.close(() => resolve()));
-      await rm(directory, { recursive: true, force: true });
     },
   };
 }
@@ -232,13 +228,16 @@ it("opens a password-protected app in sandboxed frames with the embed key", asyn
     (await fetch(new URL("?embed_key=wrong-embed-key-0123", app.url), { headers: framed })).status,
   ).toBe(403);
 
-  const exchange = await fetch(new URL("?thread=t1&embed_key=private-embed-key-0123", app.url), {
-    headers: framed,
-    redirect: "manual",
-  });
+  const exchange = await fetch(
+    new URL("chat/72f8d8e1-340f-40ad-9891-84ef82204029?embed_key=private-embed-key-0123", app.url),
+    {
+      headers: framed,
+      redirect: "manual",
+    },
+  );
 
   expect(exchange.status).toBe(303);
-  expect(exchange.headers.get("location")).toBe("/?thread=t1");
+  expect(exchange.headers.get("location")).toBe("/chat/72f8d8e1-340f-40ad-9891-84ef82204029");
   const cookie = exchange.headers.get("set-cookie")!;
 
   expect(cookie).toContain("HttpOnly; SameSite=None; Secure; Partitioned");
@@ -265,4 +264,40 @@ it("opens a password-protected app in sandboxed frames with the embed key", asyn
 
   expect(engine.status).toBe(200);
   expect(engine.headers.get("access-control-allow-origin")).toBe("null");
+});
+
+it("preserves origin variation when the page renderer replaces Vary", async () => {
+  const gateway = createGateway({
+    config: loadConfig({
+      environment: {},
+      userConfig: "/missing/config.json",
+      overrides: {
+        server: { port: 0, embedOrigins: ["https://slides.example", "https://docs.example"] },
+      },
+    }),
+    handlePage: async (_request, response) => {
+      response.setHeader("vary", "rsc, Accept-Encoding");
+      response.writeHead(200, { vary: "rsc, next-router-state-tree, Accept-Encoding" });
+      response.end("ChartCoach");
+    },
+    agentURL: "http://127.0.0.1:1",
+    token: "private-worker-token",
+  });
+
+  try {
+    const url = await gateway.listen();
+
+    for (const origin of [undefined, "https://slides.example", "https://docs.example"]) {
+      const response = await fetch(url, { headers: origin ? { origin } : {} });
+      expect(response.headers.get("vary")?.toLowerCase().split(", ")).toEqual([
+        "rsc",
+        "next-router-state-tree",
+        "accept-encoding",
+        "origin",
+      ]);
+      expect(response.headers.get("access-control-allow-origin")).toBe(origin ?? null);
+    }
+  } finally {
+    await gateway.close();
+  }
 });

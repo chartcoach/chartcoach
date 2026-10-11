@@ -164,7 +164,6 @@ Build tools own these paths:
 - `apps/docs/.source/`
 - `apps/docs/out/`
 - `apps/chat/.next/`
-- `apps/chat/out/`
 - `apps/chat/dist/`
 - `apps/chat/.output/`
 - `apps/site/.astro/`
