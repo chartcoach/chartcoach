@@ -17,6 +17,21 @@ apps/chat  -> @chartcoach/catalog/node
 The apps do not import each other. Vite+ rules and the tests under
 `tools/architecture` enforce these paths.
 
+## Web deployments
+
+`.github/workflows/deploy-web.yml` builds and deploys both static apps to the
+existing Cloudflare Pages projects, `chartcoach-site` and `chartcoach-docs`.
+Changes to either app, shared web packages, or workspace build inputs deploy
+automatically after a merge to `main`. Same-repository pull requests publish
+`pr-<number>` previews; forks do not receive deployment credentials. Manual
+runs deploy only from `main`.
+
+The workflow uses the existing `CLOUDFLARE_API_TOKEN` repository secret and
+`CLOUDFLARE_ACCOUNT_ID` repository variable. The site reads the exact
+`CHARTCOACH_SITE_CATALOG` release URL from the Pages project's production build
+environment. Both deployments check that the rendered GitHub link points to
+`https://github.com/chartcoach/chartcoach`.
+
 ## Public site
 
 `apps/site/src/config/catalog-location.ts` chooses the catalog read by Astro.

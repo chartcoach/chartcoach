@@ -17,6 +17,34 @@ const filters: Record<string, Pattern[]> = parse(
   readFileSync(join(root, ".github/filters.yml"), "utf8"),
 );
 
+void test("web navigation and shared build changes deploy on main and preview on PRs", () => {
+  const workflow = parse(readFileSync(join(root, ".github/workflows/deploy-web.yml"), "utf8"));
+
+  assert.deepEqual(workflow.on.push.branches, ["main"]);
+  assert.ok("workflow_dispatch" in workflow.on);
+
+  for (const event of ["push", "pull_request"]) {
+    const matches = picomatch(workflow.on[event].paths, { dot: true });
+
+    for (const path of [
+      "apps/site/src/components/SiteShell.astro",
+      "apps/docs/lib/layout.shared.tsx",
+      "packages/brand/tokens.css",
+      "packages/catalog/src/index.ts",
+      ".github/actions/setup-js/action.yml",
+      ".github/workflows/deploy-web.yml",
+      "package.json",
+      "pnpm-lock.yaml",
+      "pnpm-workspace.yaml",
+      "vite.config.ts",
+    ]) {
+      assert.ok(matches(path), `${event}: ${path}`);
+    }
+
+    assert.equal(matches("apps/chat/chat/index.ts"), false);
+  }
+});
+
 function flatten(pattern: Pattern): string[] {
   return Array.isArray(pattern) ? pattern.flatMap(flatten) : [pattern];
 }

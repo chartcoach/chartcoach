@@ -20,7 +20,8 @@
     "knip": "catalog:",
     "portless": "^0.15.7",
     "typescript": "catalog:",
-    "vite-plus": "catalog:"
+    "vite-plus": "catalog:",
+    "wrangler": "catalog:"
   },
   "engines": {
     "node": ">=24.0.0"

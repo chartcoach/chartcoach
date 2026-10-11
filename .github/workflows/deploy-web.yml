@@ -1,0 +1,107 @@
+name: Deploy web
+"on":
+  push:
+    branches:
+      - main
+    paths: &web_paths
+      - .github/workflows/deploy-web.yml
+      - .github/actions/setup-js/**
+      - apps/site/**
+      - apps/docs/**
+      - packages/brand/**
+      - packages/catalog/**
+      - package.json
+      - pnpm-lock.yaml
+      - pnpm-workspace.yaml
+      - patches/**
+      - tsconfig.json
+      - vite.config.ts
+  pull_request:
+    paths: *web_paths
+  workflow_dispatch: null
+permissions:
+  contents: read
+concurrency:
+  group: deploy-web-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  deploy:
+    name: Deploy ${{ matrix.app }}
+    if: >-
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) ||
+      github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      deployments: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - app: site
+            project: chartcoach-site
+            directory: apps/site/dist
+            origin: https://chartcoach.dev
+          - app: docs
+            project: chartcoach-docs
+            directory: apps/docs/out
+            origin: https://docs.chartcoach.dev
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Resolve Cloudflare project and catalog
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          PROJECT: ${{ matrix.project }}
+          ORIGIN: ${{ matrix.origin }}
+          APP: ${{ matrix.app }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |-
+          curl --fail --silent --show-error \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/$PROJECT" \
+            -o "$RUNNER_TEMP/project.json"
+          jq -e '.success and .result.production_branch == "main"' "$RUNNER_TEMP/project.json"
+          branch="${PR_NUMBER:+pr-$PR_NUMBER}"
+          branch="${branch:-main}"
+          if [ "$branch" != main ]; then
+            ORIGIN="https://$branch.$PROJECT.pages.dev"
+          fi
+          {
+            echo "CF_PAGES=1"
+            echo "CF_PAGES_BRANCH=$branch"
+            echo "CF_PAGES_URL=$ORIGIN"
+            echo "CHARTCOACH_SITE_URL=$ORIGIN"
+            echo "CHARTCOACH_DOCS_URL=$ORIGIN"
+          } >> "$GITHUB_ENV"
+          if [ "$APP" = site ]; then
+            catalog=$(jq -er '.result.deployment_configs.production.env_vars.CHARTCOACH_SITE_CATALOG.value' "$RUNNER_TEMP/project.json")
+            echo "CHARTCOACH_SITE_CATALOG=$catalog" >> "$GITHUB_ENV"
+          fi
+      - name: Set up JavaScript workspace
+        uses: ./.github/actions/setup-js
+      - name: Build static app
+        run: pnpm --dir apps/${{ matrix.app }} build
+      - name: Verify Wrangler
+        run: pnpm exec wrangler --version
+      - name: Deploy to Cloudflare Pages
+        id: deployment
+        uses: cloudflare/wrangler-action@953926a2e2182532811c01a25e53647d93bf07c0 # v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          command: >-
+            pages deploy ${{ matrix.directory }} --project-name ${{ matrix.project }}
+            --branch ${{ env.CF_PAGES_BRANCH }}
+            --commit-hash ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Verify deployed repository link
+        env:
+          DEPLOYMENT_URL: ${{ steps.deployment.outputs.deployment-url }}
+        run: |-
+          curl --fail --silent --show-error --retry 5 --retry-all-errors "$DEPLOYMENT_URL" \
+            | grep -F -o 'href="https://github.com/chartcoach/chartcoach"'
