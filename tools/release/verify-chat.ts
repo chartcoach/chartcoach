@@ -10,6 +10,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { parseArgs } from "node:util";
 import { chromium, type Browser, type Page } from "playwright";
+import { tracingProbe } from "./tracing-probe.ts";
 import { verifyPicker } from "./verify-picker.ts";
 import { verifyModelSettings } from "./verify-model-settings.ts";
 
@@ -52,6 +53,10 @@ if (!chatArchive || !catalogArchive)
 const directory =
   process.env.CHARTCOACH_TEST_DIRECTORY ?? (await mkdtemp(join(tmpdir(), "chartcoach-installed-")));
 
+const tracing = await tracingProbe(
+  await readFile(join(root, "apps/chat/public/examples/bicycle-trips.png")),
+);
+
 let child: ChildProcess | undefined;
 
 let runtimeOutput = "";
@@ -64,7 +69,7 @@ let model: Server | undefined;
 
 let modelURL = "";
 
-type CompletionRequest = { messages: { role: string }[] };
+type CompletionRequest = { messages: { role: string }[]; stream?: boolean };
 
 const calls: CompletionRequest[] = [];
 
@@ -129,6 +134,7 @@ async function start(environmentOnly = false): Promise<string> {
   ];
 
   const environment = {
+    ...tracing.environment,
     PATH: process.env.PATH,
     HOME: directory,
     NODE_PATH: "",
@@ -248,6 +254,34 @@ try {
       "Keyless connections send no credential",
     );
     calls.push(input);
+
+    if (!input.stream) {
+      response.setHeader("content-type", "application/json");
+      response.end(
+        JSON.stringify({
+          id: `summary_${calls.length}`,
+          object: "chat.completion",
+          created: 0,
+          model: "package-test-model",
+          choices: [
+            {
+              index: 0,
+              message: { role: "assistant", content: "Retain the clear-label recommendation." },
+              finish_reason: "stop",
+            },
+          ],
+          usage: {
+            prompt_tokens: 1200,
+            completion_tokens: 40,
+            total_tokens: 1240,
+            prompt_tokens_details: { cached_tokens: 200 },
+          },
+        }),
+      );
+
+      return;
+    }
+
     const latestUser = input.messages.findLastIndex((message) => message.role === "user");
 
     const completed = input.messages
@@ -292,7 +326,7 @@ try {
       `data: ${JSON.stringify({ id: `completion_${calls.length}`, object: "chat.completion.chunk", created: 0, model: "package-test-model", choices: [{ index: 0, delta, finish_reason: null }] })}\n\n`,
     );
     response.write(
-      `data: ${JSON.stringify({ id: `completion_${calls.length}`, choices: [{ index: 0, delta: {}, finish_reason: action ? "tool_calls" : "stop" }] })}\n\n`,
+      `data: ${JSON.stringify({ id: `completion_${calls.length}`, choices: [{ index: 0, delta: {}, finish_reason: action ? "tool_calls" : "stop" }], usage: { prompt_tokens: 1200, completion_tokens: 40, total_tokens: 1240, prompt_tokens_details: { cached_tokens: 200 } } })}\n\n`,
     );
     response.end("data: [DONE]\n\n");
   });
@@ -380,10 +414,7 @@ try {
   page = await context.newPage();
   await page.goto(url);
   assert.equal(await page.getByText("Saved for this browser", { exact: true }).count(), 0);
-  assert.equal(
-    await page.getByText("Conversation tracing is enabled", { exact: false }).count(),
-    0,
-  );
+  await page.getByText("Conversation tracing is enabled", { exact: false }).waitFor();
   await page.getByRole("button", { name: "Close sidebar", exact: true }).click();
   const mark = page.getByRole("button", { name: "Open sidebar", exact: true });
 
@@ -537,6 +568,41 @@ try {
   assert.equal(await page.getByRole("checkbox", { checked: true }).count(), 1);
   assert.equal(errors.length, 0, errors.join("\n"));
   assert.ok(selected.includes(id));
+  assert.ok(saved.sessionId);
+  await page.evaluate(async (sessionId: string) => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30_000);
+
+    try {
+      const path = `/eve/v1/session/${encodeURIComponent(sessionId)}`;
+      const stream = await fetch(`${path}/stream?startIndex=-1`, { signal: controller.signal });
+
+      if (!stream.ok || !stream.body) throw new Error(`Compaction stream failed: ${stream.status}`);
+      const compact = await fetch(`${path}/compact`, { method: "POST", signal: controller.signal });
+      const result = await compact.json();
+
+      if (!compact.ok || result.status !== "accepted")
+        throw new Error(`Compaction request failed: ${compact.status} ${result.status}`);
+      const reader = stream.body.getReader();
+      const decoder = new TextDecoder();
+      let text = "";
+
+      for (;;) {
+        const { done, value } = await reader.read();
+
+        if (done) throw new Error("Compaction stream ended before completion.");
+        text = (text + decoder.decode(value, { stream: true })).slice(-16_000);
+        const completed = text.indexOf("compaction.completed");
+
+        if (completed >= 0 && text.slice(completed).includes("session.waiting")) return;
+      }
+    } finally {
+      clearTimeout(timeout);
+      controller.abort();
+    }
+  }, saved.sessionId);
+  await stop();
+  tracing.verify();
   console.log(
     `Verified ${values.runner} startup through flags and environment, authenticated UI, native catalog loading, browser picker filtering and scope, chart upload, grounded answer, local citations, narrow layout, and restart persistence.`,
   );
@@ -569,6 +635,8 @@ try {
       await stop();
     } finally {
       try {
+        await tracing.close();
+
         if (model) {
           model.closeAllConnections();
           const modelServer = model;

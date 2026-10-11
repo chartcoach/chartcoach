@@ -14,7 +14,7 @@ import { listProviderModels } from "../lib/app/providers";
 import { saveConnection } from "../lib/app/connections";
 import { LangfuseProcessor } from "../agent/telemetry";
 
-it("exports Effect operations to the existing trace while redacting provider credentials", async () => {
+it("keeps Effect operations in local telemetry while excluding them from Langfuse", async () => {
   const directory = await mkdtemp(join(tmpdir(), "chartcoach-app-traces-"));
   const exported = new InMemorySpanExporter();
   const original = new InMemorySpanExporter();
@@ -65,7 +65,7 @@ it("exports Effect operations to the existing trace while redacting provider cre
     const discovery = spans.find((span) => span.name === "provider.list_models");
     expect(discovery?.parentSpanContext?.spanId).toBe(parent.spanContext().spanId);
     expect(exported.getFinishedSpans().some((span) => span.name === "provider.list_models")).toBe(
-      true,
+      false,
     );
     expect(spans.some((span) => span.attributes["http.request.header.x-goog-api-key"])).toBe(true);
     expect(
