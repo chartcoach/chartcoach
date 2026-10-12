@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { maxChartBytes } from "../shared/attachment";
+import { chartMediaTypes, maxChartBytes } from "../shared/attachment";
 
 export interface ChartAttachment {
   data: string;
@@ -9,7 +9,7 @@ export interface ChartAttachment {
 }
 
 export async function readAttachment(file: File): Promise<ChartAttachment> {
-  if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
+  if (!chartMediaTypes.some((type) => type === file.type)) {
     throw new Error("Choose a PNG, JPEG, or WebP chart image.");
   }
 

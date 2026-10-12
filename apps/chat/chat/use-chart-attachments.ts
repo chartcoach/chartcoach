@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
 import type { AssistantRuntime, AttachmentAdapter } from "@assistant-ui/react";
 import { readAttachment } from "./attachment";
+import { chartMediaTypes } from "../shared/attachment";
 
 export function useChartAttachments(
   runtimeRef: RefObject<AssistantRuntime | undefined>,
@@ -12,9 +13,13 @@ export function useChartAttachments(
   const exampleRequest = useRef<AbortController>(undefined);
   useEffect(() => () => exampleRequest.current?.abort(), []);
   const messageInput = useRef<HTMLTextAreaElement>(null);
+  const [completedReads, setCompletedReads] = useState(0);
+  useEffect(() => {
+    if (!reading && completedReads > 0) messageInput.current?.focus();
+  }, [reading, completedReads]);
 
   const adapter: AttachmentAdapter = {
-    accept: "image/png,image/jpeg,image/webp",
+    accept: chartMediaTypes.join(","),
     async add({ file }) {
       if (blocked || uploading.current || exampleRequest.current)
         throw new Error("Wait for the current task to finish before attaching a chart.");
@@ -49,8 +54,8 @@ export function useChartAttachments(
         };
       } finally {
         uploading.current = false;
+        setCompletedReads((value) => value + 1);
         setReading(false);
-        messageInput.current?.focus();
       }
     },
     async send(attachment) {
@@ -70,6 +75,13 @@ export function useChartAttachments(
 
     if (files.length !== 1 || !files[0]) {
       onError("Choose one chart image at a time.");
+
+      return;
+    }
+
+    if (!chartMediaTypes.some((type) => type === files[0]!.type)) {
+      onError("Choose a PNG, JPEG, or WebP chart image.");
+      messageInput.current?.focus();
 
       return;
     }
