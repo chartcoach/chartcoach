@@ -153,6 +153,47 @@ asyncio.run(run())
     assert "producer-secret-value" not in result.stderr
 
 
+def test_documented_key_supplies_a_profile_credential_with_any_variable_name(
+    sample_catalog: Catalog,
+    tmp_path: Path,
+) -> None:
+    release = _variable_release(sample_catalog, tmp_path)
+    secret = "deployment-embedding-key"
+    script = f"""
+import asyncio
+from lancedb_embedding_fixture import variable_embedding_definition
+variable_embedding_definition()
+from chartcoach import open_catalog
+from chartcoach.cli.main import main
+from chartcoach.mcp import create_server
+from click.testing import CliRunner
+from mcp.types import CallToolResult
+async def run():
+    server = create_server(
+        open_catalog({str(release)!r}),
+        profile={_PROFILE!r},
+        embedding_environment={{"CHARTCOACH_EMBEDDING_API_KEY": {secret!r}}},
+    )
+    result = await server.call_tool("search", {{"text": "direct labels", "mode": "vector"}})
+    assert isinstance(result, CallToolResult)
+    assert result.is_error is False, result.structured_content
+    print("mcp", result.structured_content["score_kind"])
+asyncio.run(run())
+result = CliRunner().invoke(main, [
+    "catalog", "search", "--source", {str(release)!r},
+    "--profile", {_PROFILE!r}, "--mode", "vector", "direct labels",
+], env={{"CHARTCOACH_EMBEDDING_API_KEY": {secret!r}}})
+print("cli", result.exit_code, '"score_kind": "distance"' in result.output)
+"""
+
+    result = _run(script)
+
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.split("\n")[:2] == ["mcp distance", "cli 0 True"]
+    assert secret not in result.stdout
+    assert secret not in result.stderr
+
+
 def _variable_release(catalog: Catalog, tmp_path: Path) -> Path:
     definition = variable_embedding_definition()
     get_registry().set_var(_VARIABLE, "producer-secret-value")

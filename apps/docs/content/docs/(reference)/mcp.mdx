@@ -117,7 +117,10 @@ semantic embedding. For example, `role = 'overview'` searches entry overviews.
 Vector and hybrid search reconstruct the profile’s native LanceDB embedding
 function. Variables such as `$var:CHARTCOACH_EMBEDDING_API_KEY` resolve from the startup
 environment, including `.env`. Only names declared by the selected profile are
-read. A private JSON variable file overrides those environment values:
+read. A credential field, such as `api_key`, falls back to
+`CHARTCOACH_EMBEDDING_API_KEY` when the variable it names is unset, so one key
+serves any release. The profile's `python_requirements` must be installed, in any
+version. A private JSON variable file overrides the environment values:
 
 ```bash
 chartcoach mcp \
@@ -194,13 +197,34 @@ and origins can be explicitly listed. Origin validation is separate from CORS;
 add CORS middleware in a composed ASGI app if a browser client needs it.
 
 Install `chartcoach[mcp,index]` for full-text search, or
-`chartcoach[mcp,embedding-openai]` for OpenAI-compatible semantic search. Pin any
-provider versions required by the chosen profile with uvx `--with` options.
+`chartcoach[mcp,embedding-openai]` for OpenAI-compatible semantic search.
 Keep the catalog/cache on persistent storage (`XDG_CACHE_HOME` on Linux), and
 let your process manager restart the service. Each process resolves the catalog
 selection once; restart to pick up a promoted release. The chat app deploys
 separately at `chat.chartcoach.dev`; see the
 [chat deployment guide](https://github.com/chartcoach/chartcoach/blob/main/apps/chat/README.md).
+
+## Deploy with Docker
+
+`infra/mcp.Dockerfile` builds the server from the locked workspace with
+[uv](https://docs.astral.sh/uv/guides/integration/docker/), including OpenAI-compatible
+semantic search, and starts it on port 8000 over Streamable HTTP:
+
+```bash
+docker build -f infra/mcp.Dockerfile -t chartcoach-mcp .
+docker run -p 8000:8000 \
+  -e CHARTCOACH_MCP_PUBLIC_URL=https://mcp.chartcoach.dev \
+  -e CHARTCOACH_INDEX_PROFILE=openrouter-text-embedding-3-large \
+  -e CHARTCOACH_EMBEDDING_API_KEY \
+  -v chartcoach-cache:/cache \
+  chartcoach-mcp
+```
+
+The image runs as an unprivileged user, keeps the catalog cache in `/cache`, and
+checks `/healthz`. Other settings in [Configuration](#configuration) apply as
+environment variables. On Coolify, create an application from this repository with
+the Dockerfile build pack and `infra/mcp.Dockerfile`, expose port 8000, and mount
+a volume at `/cache`.
 
 ## Configuration
 

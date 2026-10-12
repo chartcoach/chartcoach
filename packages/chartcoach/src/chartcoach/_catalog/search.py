@@ -301,6 +301,14 @@ def _validate_filter(table: Table, where: str, *, profile: str) -> None:
         ) from exc
 
 
+def _installed(distribution: str) -> bool:
+    try:
+        version(distribution)
+    except PackageNotFoundError:
+        return False
+    return True
+
+
 def _validate_semantic_environment(
     metadata: ProfileMetadata,
     *,
@@ -336,24 +344,26 @@ def _validate_semantic_environment(
         allowed_fields=frozenset(definition.model_fields),
         sensitive_fields=frozenset(definition.sensitive_keys()),
     )
-    mismatches: dict[str, str] = {}
-    for distribution, expected in metadata.python_requirements.items():
-        try:
-            actual = version(distribution)
-        except PackageNotFoundError:
-            actual = "missing"
-        if actual != expected:
-            mismatches[distribution] = actual
-    if mismatches:
+    # Recorded versions describe the build environment. Queries need the
+    # packages installed, not that exact build: the model and its stored
+    # vectors fix the embedding, not the client release.
+    missing = sorted(
+        distribution
+        for distribution in metadata.python_requirements
+        if not _installed(distribution)
+    )
+    if missing:
         raise CatalogCapabilityError(
-            f"Profile {profile!r} requirements are unavailable or incompatible.",
+            f"Profile {profile!r} needs packages that are not installed: "
+            + ", ".join(missing)
+            + ".",
             details={
                 "profile": profile,
-                "expected": dict(metadata.python_requirements),
-                "actual": mismatches,
+                "missing": missing,
+                "recorded": dict(metadata.python_requirements),
             },
             hints=[
-                "Install the exact versions reported by catalog.describe(profile=...)."
+                "Install the listed packages, for example with chartcoach[embedding-openai]."
             ],
         )
     missing_variables: list[str] = []

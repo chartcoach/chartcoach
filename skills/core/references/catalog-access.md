@@ -122,8 +122,8 @@ records = catalog.read(ids=selected_ids)
 citations = catalog.cite(ids=selected_ids)
 ```
 
-Use `query_type="vector"` or `query_type="hybrid"` after installing the profile's
-`python_requirements` and registering its LanceDB embedding alias. LanceDB
+Use `query_type="vector"` or `query_type="hybrid"` after installing the packages
+in the profile's `python_requirements` and registering its LanceDB embedding alias. LanceDB
 reconstructs the persisted function and embeds the query text. A host sets
 referenced variables before the first semantic query:
 
