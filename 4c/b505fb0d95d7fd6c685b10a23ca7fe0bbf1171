@@ -1,0 +1,19 @@
+infra/mcp.Dockerfile
+  s_e6aec9dc2ada6e::t_38e701d7d723ae 1-5,7-26,28-49
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "4cb505fb0d95d7fd6c685b10a23ca7fe0bbf1171",
+  "prompts": {},
+  "sessions": {
+    "s_e6aec9dc2ada6e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "38ef1cf7-88f3-433b-9e2b-0937381b37dc",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Péter Ferenc Gyarmati <dev.petergy@gmail.com>"
+    }
+  }
+}
