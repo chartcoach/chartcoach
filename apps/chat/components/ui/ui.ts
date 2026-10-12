@@ -31,6 +31,11 @@ export const ui = stylex.create({
   },
   button: {
     touchAction: "manipulation",
+    userSelect: "none",
+    transform: {
+      default: "scale(1)",
+      ":active:not(:disabled):not([aria-disabled=true])": "scale(0.97)",
+    },
     appearance: "none",
     display: "inline-flex",
     alignItems: "center",

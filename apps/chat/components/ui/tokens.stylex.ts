@@ -31,6 +31,7 @@ export const media = stylex.defineConsts({
   short: "@media (max-height: 620px)",
   shortNarrow: "@media (max-width: 719px) and (max-height: 600px)",
   hover: "@media (hover: hover) and (pointer: fine)",
+  coarse: "@media (pointer: coarse)",
   reducedMotion: "@media (prefers-reduced-motion: reduce)",
 });
 

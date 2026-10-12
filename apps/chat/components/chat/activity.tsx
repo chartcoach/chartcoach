@@ -6,7 +6,7 @@ import type { MessageView } from "../../chat/evidence";
 import { ToolActivity, toolPresentation } from "./tool-activity";
 import { Collapse } from "../ui/collapse";
 import * as stylex from "@stylexjs/stylex";
-import { colors, media, motion } from "../ui/tokens.stylex";
+import { colors, media } from "../ui/tokens.stylex";
 import { ui } from "../ui/ui";
 import { ProgressLabel, ProgressMark } from "./progress";
 import { progressLabels, progressPhase } from "../../chat/progress";
@@ -115,9 +115,6 @@ const styles = stylex.create({
     alignItems: "center",
     alignContent: "center",
     gap: 8,
-    transitionProperty: "width, row-gap",
-    transitionDuration: { default: motion.disclosure, [media.reducedMotion]: "0ms" },
-    transitionTimingFunction: motion.easeOut,
     minHeight: 44,
     paddingBlock: 4,
     paddingInline: 0,
@@ -136,9 +133,6 @@ const styles = stylex.create({
     height: 20,
     minWidth: 0,
     overflow: "hidden",
-    transitionProperty: "height",
-    transitionDuration: { default: motion.disclosure, [media.reducedMotion]: "0ms" },
-    transitionTimingFunction: motion.easeOut,
   },
   settled: { height: 0 },
   action: { display: "flex", alignItems: "center", gap: 6, minWidth: 0, lineHeight: "20px" },

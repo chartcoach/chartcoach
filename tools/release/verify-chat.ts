@@ -439,25 +439,33 @@ try {
   }));
 
   assert.deepEqual(markSize, { clientWidth: 32, scrollWidth: 32 });
-  assert.equal(await mark.locator("img").count(), 2);
-  assert.equal(
-    await mark
-      .locator("img")
-      .evaluateAll((images) =>
-        images.some((image) => image.getAttribute("src")?.includes("chartcoach-horizontal")),
-      ),
-    false,
-  );
+  const brandMark = mark.locator("svg[aria-hidden=true]");
+
+  assert.equal(await brandMark.isVisible(), true);
+
+  const lightFill = await brandMark
+    .locator("rect")
+    .first()
+    .evaluate((rect) => getComputedStyle(rect).fill);
+
   await page.screenshot({
     path: join(root, `.context/chat-package-${values.runner}-sidebar-collapsed.png`),
     fullPage: true,
     animations: "disabled",
   });
   await page.emulateMedia({ colorScheme: "dark" });
-  const darkMark = mark.locator("img:visible");
+  assert.equal(await brandMark.isVisible(), true);
 
-  assert.equal(await darkMark.count(), 1);
-  assert.match((await darkMark.getAttribute("src")) ?? "", /chartcoach-mark-white/);
+  const darkFill = await brandMark
+    .locator("rect")
+    .first()
+    .evaluate((rect) => getComputedStyle(rect).fill);
+
+  assert.notEqual(
+    darkFill,
+    lightFill,
+    "The compact brand follows the color scheme without fetching another image",
+  );
   await page.screenshot({
     path: join(root, `.context/chat-package-${values.runner}-sidebar-collapsed-dark.png`),
     fullPage: true,
