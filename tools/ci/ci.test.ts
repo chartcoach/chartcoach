@@ -160,7 +160,7 @@ void test("chat, skills, and consumer tooling changes verify packed applications
     "apps/chat/cli/index.ts",
     "skills/chartcoach/SKILL.md",
     "tools/release/verify-chat.ts",
-    "infra/Dockerfile",
+    "infra/chat.Dockerfile",
   ]) {
     const result = selection([path]);
     assert.equal(result.npm, true, path);

@@ -1,3 +1,7 @@
+# The ChartCoach chat app, built from the workspace.
+#   docker build -f infra/chat.Dockerfile -t chartcoach-chat .
+#   docker run -p 4273:4273 -e CHARTCOACH_PASSWORD=... chartcoach-chat
+
 FROM node:24-bookworm-slim AS build
 WORKDIR /build
 RUN npm install --global pnpm@12.3.4

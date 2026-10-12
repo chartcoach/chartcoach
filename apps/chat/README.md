@@ -371,7 +371,7 @@ For a published image, set `CHARTCOACH_IMAGE` to a versioned image reference and
 run `docker compose -f infra/compose.yml up -d --no-build --pull always`. The release
 workflow publishes `ghcr.io/chartcoach/chartcoach:<version>`.
 
-Build an image with `docker build -f infra/Dockerfile -t chartcoach:local .`. The image runs as a
+Build an image with `docker build -f infra/chat.Dockerfile -t chartcoach:local .`. The image runs as a
 non-root user and uses the same npm distribution and CLI. Preserve `/data` across
 replacements and mount `/cache` to retain downloaded artifacts.
 
