@@ -20,8 +20,8 @@ export const styles = stylex.create({
     marginInline: "auto",
     flexWrap: "wrap",
     paddingTop: {
-      default: "max(12px, env(safe-area-inset-top))",
-      [media.short]: "max(8px, env(safe-area-inset-top))",
+      default: 12,
+      [media.short]: 8,
     },
     paddingBottom: { default: 12, [media.short]: 8 },
     paddingInline: { default: 28, [media.mobile]: 20 },

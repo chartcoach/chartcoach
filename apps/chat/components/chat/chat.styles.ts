@@ -17,7 +17,15 @@ export const styles = stylex.create({
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingBlock: {
+    paddingTop: {
+      default: "max(10px, env(safe-area-inset-top))",
+      [media.short]: "max(8px, env(safe-area-inset-top))",
+      [media.mobile]: {
+        default: "max(12px, env(safe-area-inset-top))",
+        [media.short]: "max(8px, env(safe-area-inset-top))",
+      },
+    },
+    paddingBottom: {
       default: 10,
       [media.short]: 8,
       [media.mobile]: { default: 12, [media.short]: 8 },

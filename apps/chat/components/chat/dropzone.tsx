@@ -6,7 +6,14 @@ import { colors } from "../ui/tokens.stylex";
 import { ui } from "../ui/ui";
 
 const styles = stylex.create({
-  shell: { height: "100dvh", minHeight: 320, display: "flex", flexDirection: "column" },
+  shell: {
+    height: "100dvh",
+    minHeight: 320,
+    display: "flex",
+    flexDirection: "column",
+    paddingLeft: "env(safe-area-inset-left)",
+    paddingRight: "env(safe-area-inset-right)",
+  },
   overlay: {
     position: "fixed",
     inset: 12,
