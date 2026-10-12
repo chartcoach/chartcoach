@@ -87,7 +87,7 @@ export const styles = stylex.create({
     borderRadius: 6,
     backgroundColor: colors.surface,
     color: colors.foreground,
-    fontSize: { default: 14, [media.mobile]: 16 },
+    fontSize: { default: 14, [media.mobile]: 16, [media.coarse]: 16 },
   },
   compactSelect: { position: "relative", display: "block", width: "min(100%, 360px)" },
   nativeSelect: { appearance: "none", paddingRight: 40 },

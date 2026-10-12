@@ -3,12 +3,11 @@ import { PanelLeft, Search, SquarePen } from "lucide-react";
 import Image from "next/image";
 import logo from "@chartcoach/brand/assets/brand/chartcoach-horizontal.svg";
 import logoWhite from "@chartcoach/brand/assets/brand/chartcoach-horizontal-white.svg";
-import mark from "@chartcoach/brand/assets/brand/favicon.svg";
-import markWhite from "@chartcoach/brand/assets/brand/chartcoach-mark-white.svg";
 import * as stylex from "@stylexjs/stylex";
 import type { useNavigation } from "../../chat/use-navigation";
 import { media } from "../ui/tokens.stylex";
 import { ui } from "../ui/ui";
+import { LoadingMark } from "../ui/loading-mark";
 
 export function NavigationHeader({
   navigation,
@@ -21,22 +20,7 @@ export function NavigationHeader({
 
   const brand = compact ? (
     <span {...stylex.props(styles.mark)}>
-      <Image
-        src={mark}
-        alt=""
-        width={32}
-        height={32}
-        unoptimized
-        {...stylex.props(styles.markLight)}
-      />
-      <Image
-        src={markWhite}
-        alt=""
-        width={32}
-        height={32}
-        unoptimized
-        {...stylex.props(styles.markDark)}
-      />
+      <LoadingMark active={false} />
     </span>
   ) : (
     <span {...stylex.props(styles.brand)}>
@@ -151,17 +135,7 @@ const styles = stylex.create({
     borderRadius: 4,
   },
   brand: { display: "block", flexShrink: 0, width: 128, height: 32 },
-  mark: { display: "block", flexShrink: 0, width: 32, height: 32 },
-  markLight: {
-    display: { default: "block", [media.dark]: "none" },
-    width: 32,
-    height: 32,
-  },
-  markDark: {
-    display: { default: "none", [media.dark]: "block" },
-    width: 32,
-    height: 32,
-  },
+  mark: { display: "grid", placeItems: "center", flexShrink: 0, width: 32, height: 32 },
   logoLight: {
     display: { default: "block", [media.dark]: "none" },
     width: 128,

@@ -27,7 +27,7 @@ export function GuidelineSelection() {
           onReload={onCatalogReload}
         />
       ) : (
-        <main {...stylex.props(styles.settingsFallback)}>
+        <main id="guidelines" tabIndex={-1} {...stylex.props(styles.settingsFallback)}>
           <h1>Guidelines</h1>
           <p role="status">{catalog.error ?? "Loading guidelines…"}</p>
           {catalog.error ? (

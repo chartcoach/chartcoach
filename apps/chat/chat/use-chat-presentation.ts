@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { useAuiState } from "@assistant-ui/react";
 import type { useChat } from "./use-chat";
 import type { useNavigation } from "./use-navigation";
+import { useChatFocus } from "./use-chat-focus";
 
 export function useChatPresentation(
   state: ReturnType<typeof useChat>,
@@ -14,16 +15,7 @@ export function useChatPresentation(
   useEffect(() => {
     if (navigation.view === "chat") document.title = title ? `${title} · ChartCoach` : "ChartCoach";
   }, [title, navigation.view]);
-  useEffect(() => {
-    if (navigation.view !== "chat") return;
-
-    const desktop = window.matchMedia(
-      "(min-width: 720px) and (hover: hover) and (pointer: fine)",
-    ).matches;
-
-    // A heading restores navigation focus without opening a mobile software keyboard.
-    (desktop ? messageInput.current : heading.current)?.focus({ preventScroll: true });
-  }, [navigation.view, messageInput]);
+  useChatFocus(navigation.view, state.workspace.loading, state.disabled, messageInput, heading);
   const latest = conversation.messages.at(-1);
 
   return {

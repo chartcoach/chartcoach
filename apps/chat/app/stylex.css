@@ -12,10 +12,12 @@
   html,
   body {
     height: 100%;
+    overscroll-behavior: none;
   }
   html {
     color-scheme: light dark;
     -webkit-font-smoothing: antialiased;
+    -webkit-text-size-adjust: 100%;
   }
   button,
   input,

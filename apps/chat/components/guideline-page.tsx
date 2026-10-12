@@ -11,7 +11,10 @@ const styles = stylex.create({
   page: {
     maxWidth: 800,
     marginInline: "auto",
-    padding: 24,
+    paddingTop: "max(24px, env(safe-area-inset-top))",
+    paddingBottom: "max(24px, env(safe-area-inset-bottom))",
+    paddingLeft: "max(24px, env(safe-area-inset-left))",
+    paddingRight: "max(24px, env(safe-area-inset-right))",
     lineHeight: 1.7,
     overflowWrap: "anywhere",
   },

@@ -1,5 +1,5 @@
 import { defaultGuidelineLinks } from "../shared/guideline-links";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import { loadPreferences, loadThread, loadThreads } from "../browser/workspace-client";
 import { chatPath } from "../shared/routes";
@@ -10,6 +10,10 @@ export function useWorkspace() {
   const router = useRouter();
   const pathname = usePathname();
   const { threadId: requestedId } = useParams<{ threadId?: string }>();
+  const routeId = useRef(requestedId);
+  useLayoutEffect(() => {
+    routeId.current = requestedId;
+  }, [requestedId]);
   const [connections, setConnections] = useState<Connection[]>([]);
   const [connectionId, setConnectionId] = useState<string>();
   const [allowedOrigins, setAllowedOrigins] = useState<string[]>([]);
@@ -24,6 +28,7 @@ export function useWorkspace() {
   const [threadError, setThreadError] = useState<string>();
   const [attempt, setAttempt] = useState(0);
   const [threadAttempt, setThreadAttempt] = useState(0);
+  const [pendingRoute, setPendingRoute] = useState<{ from?: string; to?: string }>();
 
   const historyRequest = useRef(0);
 
@@ -113,6 +118,14 @@ export function useWorkspace() {
 
     if (!ready) return;
 
+    // Keep the initiating chat visible until its saved/new URL commits.
+    if (pendingRoute) {
+      if (requestedId === pendingRoute.from && requestedId !== pendingRoute.to) return;
+      setPendingRoute(undefined);
+
+      return;
+    }
+
     if (!requestedId) {
       if (currentThread.current) {
         currentThread.current = undefined;
@@ -141,7 +154,7 @@ export function useWorkspace() {
       });
 
     return () => controller.abort();
-  }, [requestedId, ready, threadAttempt]);
+  }, [requestedId, ready, threadAttempt, pendingRoute]);
 
   const openThread = useCallback(
     (id: string) =>
@@ -156,6 +169,7 @@ export function useWorkspace() {
   }
 
   function adoptThread(thread: ThreadDetail) {
+    setPendingRoute({ from: routeId.current, to: thread.id });
     currentThread.current = thread;
     setActive(thread);
     // Keep the initiating runtime mounted while its first message is accepted.
@@ -175,7 +189,10 @@ export function useWorkspace() {
     }
   }
 
-  const loading = !ready || (requestedId ? active?.id !== requestedId : !!active);
+  const navigating =
+    pendingRoute && (requestedId === pendingRoute.from || requestedId === pendingRoute.to);
+
+  const loading = !ready || (!navigating && (requestedId ? active?.id !== requestedId : !!active));
 
   return {
     connections,
@@ -198,7 +215,10 @@ export function useWorkspace() {
     adoptThread,
     attachSession,
     clearThread,
-    newChat: () => router.push("/", { scroll: false, transitionTypes: ["workspace-navigation"] }),
+    newChat: () => {
+      setPendingRoute({ from: routeId.current });
+      router.push("/", { scroll: false });
+    },
     chatHref: () => (currentThread.current ? chatPath(currentThread.current.id) : "/"),
     retry: () => {
       if (!ready) setAttempt((value) => value + 1);

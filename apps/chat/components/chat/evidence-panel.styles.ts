@@ -96,6 +96,8 @@ export const styles = stylex.create({
     animationDuration: { default: "200ms", [media.reducedMotion]: "0ms" },
   },
   sheet: {
+    paddingLeft: "env(safe-area-inset-left)",
+    paddingRight: "env(safe-area-inset-right)",
     position: "fixed",
     bottom: 0,
     left: 0,
