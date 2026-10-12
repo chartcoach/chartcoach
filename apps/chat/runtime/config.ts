@@ -174,6 +174,7 @@ export function loadConfig({
       port: e.CHARTCOACH_PORT,
       open: e.CHARTCOACH_OPEN,
       publicURL: e.CHARTCOACH_PUBLIC_URL,
+      public: e.CHARTCOACH_PUBLIC,
       username: e.CHARTCOACH_USERNAME,
       passwordEnv: e.CHARTCOACH_PASSWORD_ENV,
       passwordFile: e.CHARTCOACH_PASSWORD_FILE,
@@ -305,9 +306,14 @@ export function validateStartup(config: Config, environment: Environment = proce
   const publicAccess =
     publicHost !== undefined && !["localhost", "127.0.0.1", "[::1]"].includes(publicHost);
 
-  if ((!isLocalHost(config.server.host) || publicAccess) && !password)
+  if (config.server.public && password)
     throw new ConfigurationError(
-      "Network listening requires a password. Set CHARTCOACH_PASSWORD or pass --password-file.",
+      "--public serves without sign-in. Unset the server password, or drop --public and CHARTCOACH_PUBLIC.",
+    );
+
+  if ((!isLocalHost(config.server.host) || publicAccess) && !password && !config.server.public)
+    throw new ConfigurationError(
+      "Network listening requires a password. Set CHARTCOACH_PASSWORD or pass --password-file, or pass --public to serve without sign-in.",
     );
 
   // Embedded frames keep the browser cookie only when it is SameSite=None, which requires Secure.

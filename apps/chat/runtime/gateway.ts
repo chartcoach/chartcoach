@@ -44,7 +44,7 @@ function embedding(origins: string[]) {
 type Embedding = ReturnType<typeof embedding>;
 
 function requestAllowed(
-  request: Pick<IncomingMessage, "headers">,
+  request: Pick<IncomingMessage, "headers" | "method">,
   origin: URL,
   embed: Embedding,
   admitted: boolean,
@@ -53,7 +53,20 @@ function requestAllowed(
 
   const framed = embed.enabled && request.headers["sec-fetch-dest"] === "iframe";
 
-  if (request.headers["sec-fetch-site"] === "cross-site" && !embed.any && !framed && !admitted)
+  // A link from another site opens the app in its own tab. Cross-site frames and
+  // API calls stay limited to embedding origins.
+  const opened =
+    request.headers["sec-fetch-mode"] === "navigate" &&
+    request.headers["sec-fetch-dest"] === "document" &&
+    (request.method === "GET" || request.method === "HEAD");
+
+  if (
+    request.headers["sec-fetch-site"] === "cross-site" &&
+    !embed.any &&
+    !framed &&
+    !admitted &&
+    !opened
+  )
     return 403;
 
   if (request.headers.origin && request.headers.origin !== origin.origin && !admitted) return 403;

@@ -174,6 +174,35 @@ it("denies framing and cross-site callers unless embedding is configured", async
   ).toBe(403);
 });
 
+it("opens the app from a link on another site but refuses its cross-site calls", async () => {
+  await using app = await embeddedGateway({ embedOrigins: [] });
+
+  // fetch() overrides Sec-Fetch-Mode, so these requests set the browser's headers directly.
+  const status = (path: string, headers: Record<string, string>) =>
+    new Promise<number | undefined>((resolve, reject) => {
+      get(new URL(path, app.url), { headers }, (response) => {
+        response.resume();
+        resolve(response.statusCode);
+      }).once("error", reject);
+    });
+
+  const crossSite = { "sec-fetch-site": "cross-site" };
+
+  expect(
+    await status("/", { ...crossSite, "sec-fetch-mode": "navigate", "sec-fetch-dest": "document" }),
+  ).toBe(200);
+  expect(
+    await status("/", { ...crossSite, "sec-fetch-mode": "navigate", "sec-fetch-dest": "iframe" }),
+  ).toBe(403);
+  expect(
+    await status("/eve/v1/preferences", {
+      ...crossSite,
+      "sec-fetch-mode": "cors",
+      "sec-fetch-dest": "empty",
+    }),
+  ).toBe(403);
+});
+
 it("lets listed origins frame the app and call its API with credentials", async () => {
   await using app = await embeddedGateway({ embedOrigins: ["https://slides.example"] });
 

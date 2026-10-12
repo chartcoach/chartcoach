@@ -136,6 +136,10 @@ streams responses to port 4273. Sign in as `chartcoach` with the configured
 password. Each browser has its own history and model connections. The server
 operator can access stored credentials.
 
+For a public deployment without sign-in, pass `--public` or set `CHARTCOACH_PUBLIC=true`
+instead of a password. Every visitor can then use the configured server model, so cap its
+spend with the provider.
+
 For containers, the repository includes `infra/Dockerfile` and `infra/compose.yml`:
 
 ```bash

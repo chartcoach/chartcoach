@@ -47,6 +47,7 @@ export const configSchema = z.strictObject({
       port: z.number().int().min(0).max(65535).default(4273),
       open: z.boolean().default(true),
       publicURL: apiBaseURL.optional(),
+      public: z.boolean().default(false),
       username: text.regex(/^[^:]+$/).default("chartcoach"),
       passwordEnv: text.default("CHARTCOACH_PASSWORD"),
       passwordFile: text.optional(),

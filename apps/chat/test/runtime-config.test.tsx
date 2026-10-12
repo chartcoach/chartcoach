@@ -68,6 +68,23 @@ it("accepts keyless local models and requires authentication for network listeni
   expect(() => validateStartup(config, {})).toThrow("requires a password");
 });
 
+it("serves a public deployment without a password only when asked to", () => {
+  const config = loadConfig({
+    environment: {
+      CHARTCOACH_HOST: "0.0.0.0",
+      CHARTCOACH_PUBLIC_URL: "https://chat.example.org",
+      CHARTCOACH_PUBLIC: "true",
+    },
+    userConfig: "/missing/config.json",
+  });
+
+  expect(config.server.public).toBe(true);
+  expect(validateStartup(config, {})).toBeUndefined();
+  expect(() => validateStartup(config, { CHARTCOACH_PASSWORD: "private" })).toThrow(
+    "--public serves without sign-in",
+  );
+});
+
 it("rejects misspelled config fields and invalid values without revealing them", () => {
   const directory = mkdtempSync(join(tmpdir(), "chartcoach-config-"));
 

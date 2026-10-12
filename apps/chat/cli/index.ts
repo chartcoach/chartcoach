@@ -72,6 +72,7 @@ function chatOptions(command: Command) {
     )
     .option("--public-url <origin>", "reverse proxy origin (env: CHARTCOACH_PUBLIC_URL)")
     .option("--password-file <file>", "server password mount (env: CHARTCOACH_PASSWORD_FILE)")
+    .option("--public", "serve without sign-in on a network listener (env: CHARTCOACH_PUBLIC)")
     .option(
       "--no-open",
       "print the URL without opening a browser (env: CHARTCOACH_OPEN)",
@@ -125,6 +126,7 @@ function configuration(values: SettingsOptions, explicitOpen = false) {
         publicURL: values.publicUrl,
         open: explicitOpen ? values.open : undefined,
         passwordFile: values.passwordFile,
+        public: values.public,
       },
       storage: { dataDir: values.dataDir },
     },
