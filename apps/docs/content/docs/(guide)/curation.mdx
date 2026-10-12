@@ -277,12 +277,12 @@ import pyarrow as pa
 from lancedb.embeddings import EmbeddingFunctionConfig, get_registry
 
 registry = get_registry()
-registry.set_var("embedding-key", api_key)
+registry.set_var("CHARTCOACH_EMBEDDING_API_KEY", api_key)
 binding = registry.get("openai").create(
     name=model,
     dim=dimensions,
     base_url=base_url,
-    api_key="$var:embedding-key",
+    api_key="$var:CHARTCOACH_EMBEDDING_API_KEY",
 )
 metadata = registry.get_table_metadata([
     EmbeddingFunctionConfig(

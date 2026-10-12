@@ -1,11 +1,16 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Literal, cast
 
 import click
 
-from chartcoach._catalog.embedding import apply_embedding_variables
+from chartcoach._catalog.embedding import (
+    apply_embedding_variables,
+    apply_variables,
+    profile_variables,
+)
 from chartcoach._catalog.errors import CatalogError
 from chartcoach._catalog.search import catalog_search
 
@@ -43,7 +48,7 @@ from ..common import (
 @click.option(
     "--embedding-vars",
     type=click.Path(path_type=Path, dir_okay=False),
-    help="JSON file mapping LanceDB registry variable names to string values.",
+    help="JSON file mapping LanceDB registry variable names to string values. Overrides the environment.",
 )
 @click.option(
     "--format",
@@ -68,10 +73,18 @@ def search_command(
 
     resolved_mode = cast(Literal["fts", "vector", "hybrid"], mode)
     try:
-        if resolved_mode != "fts" and embedding_vars is not None:
-            apply_embedding_variables(embedding_vars)
+        catalog = load_catalog(ctx)
+        if resolved_mode != "fts":
+            # The environment supplies the profile's variables. A file overrides them.
+            apply_variables(
+                profile_variables(
+                    catalog._profile_metadata(profile).embedding_functions, os.environ
+                )
+            )
+            if embedding_vars is not None:
+                apply_embedding_variables(embedding_vars)
         result = catalog_search(
-            load_catalog(ctx),
+            catalog,
             text,
             profile=profile,
             mode=resolved_mode,

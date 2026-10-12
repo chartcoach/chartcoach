@@ -316,8 +316,8 @@ dimensions, and distance metric must match the selected profile.
 <Tab value="Python">
 
 The native table accepts `query_type="vector"` or `query_type="hybrid"`.
-Text queries use the profile's stored LanceDB embedding binding. Install its
-reported `python_requirements` and configure its credentials.
+Text queries use the profile's stored LanceDB embedding binding. Install the
+packages in its reported `python_requirements` and configure its credentials.
 See [Search and read matching guidelines](/python#search-and-read-matching-guidelines).
 
 </Tab>
@@ -332,9 +332,9 @@ for the chat app's local embedding model.
 </Tab>
 <Tab value="CLI">
 
-Use `--mode vector` or `--mode hybrid`. Install the profile's reported
-`python_requirements` and supply any required registry variables through
-`--embedding-vars`. See [Search an index](/cli#search-an-index).
+Use `--mode vector` or `--mode hybrid`. Install the packages in the profile's
+reported `python_requirements` and set `CHARTCOACH_EMBEDDING_API_KEY`, or supply
+registry variables through `--embedding-vars`. See [Search an index](/cli#search-an-index).
 
 </Tab>
 </Tabs>

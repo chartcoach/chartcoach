@@ -10,7 +10,7 @@ from mcp.types import CallToolResult, TextContent, ToolAnnotations
 from pydantic import BaseModel
 
 from chartcoach._catalog import Catalog, SourceDetail
-from chartcoach._catalog.embedding import embedding_environment as resolve_environment
+from chartcoach._catalog.embedding import profile_variables
 from chartcoach._catalog.errors import CatalogError, CatalogResponseTooLargeError
 from chartcoach._catalog.identity import catalog_identity
 from chartcoach._catalog.search import SearchEmbeddings, catalog_search
@@ -79,16 +79,10 @@ def register_tools(
     )
     variables: dict[str, str] = {}
     if profile:
-        metadata = catalog._profile_metadata(profile)
-        environment = resolve_environment(
-            os.environ if embedding_environment is None else embedding_environment
+        variables = profile_variables(
+            catalog._profile_metadata(profile).embedding_functions,
+            os.environ if embedding_environment is None else embedding_environment,
         )
-        for binding in metadata.embedding_functions:
-            for value in binding.model.values():
-                if isinstance(value, str) and value.startswith("$var:"):
-                    name = value.removeprefix("$var:")
-                    if environment.get(name):
-                        variables[name] = environment[name]
     variables.update(settings.embedding_variables)
     embedding_context = SearchEmbeddings(variables)
     search_profile = settings.profile

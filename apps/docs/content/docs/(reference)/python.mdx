@@ -237,9 +237,9 @@ citations = catalog.cite(ids=ids)
 
 Explicit `query_type="fts"` keeps embedding providers idle. `vector` and `hybrid`
 pass text to the embedding function persisted in the LanceDB table. Install
-the exact `python_requirements` reported by
-`catalog.describe(profile=PROFILE)` and register custom aliases before semantic
-search.
+the packages listed in the `python_requirements` reported by
+`catalog.describe(profile=PROFILE)`, in any version, and register custom aliases
+before semantic search.
 
 For a profile whose binding uses `$var:provider-key`, load the secret from the
 application's environment before text-based vector or hybrid search:

@@ -313,9 +313,7 @@ def test_embedding_initialization_failure_is_a_redacted_embedding_error(
     assert catalog_search(indexed_catalog, "direct labels", profile=_PROFILE)["matches"]
 
 
-@pytest.mark.parametrize(
-    "unavailable", ["alias", "missing_requirement", "incompatible_requirement"]
-)
+@pytest.mark.parametrize("unavailable", ["alias", "missing_requirement"])
 def test_semantic_setup_reports_capability_failures_and_keeps_fts_available(
     indexed_catalog: Catalog, unavailable: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -328,12 +326,7 @@ def test_semantic_setup_reports_capability_failures_and_keeps_fts_available(
     if unavailable == "alias":
         monkeypatch.setattr(get_registry(), "get", missing_alias)
     else:
-        monkeypatch.setattr(
-            "chartcoach._catalog.search.version",
-            missing_distribution
-            if unavailable == "missing_requirement"
-            else lambda _name: "0.0.0",
-        )
+        monkeypatch.setattr("chartcoach._catalog.search.version", missing_distribution)
 
     with pytest.raises(CatalogError) as exc_info:
         catalog_search(
@@ -345,7 +338,19 @@ def test_semantic_setup_reports_capability_failures_and_keeps_fts_available(
     if unavailable == "alias":
         assert exc_info.value.details["alias"] == _ALIAS
     else:
-        assert exc_info.value.details["actual"] == {
-            "numpy": "missing" if unavailable == "missing_requirement" else "0.0.0"
-        }
+        assert exc_info.value.details["missing"] == ["numpy"]
     assert catalog_search(indexed_catalog, "direct labels", profile=_PROFILE)["matches"]
+
+
+def test_semantic_search_accepts_other_versions_of_recorded_requirements(
+    indexed_catalog: Catalog, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The profile records the numpy release it was built with. Any installed
+    # release serves queries, because the stored vectors fix the embedding.
+    monkeypatch.setattr("chartcoach._catalog.search.version", lambda _name: "0.0.0")
+
+    result = catalog_search(
+        indexed_catalog, "direct labels", profile=_PROFILE, mode="vector"
+    )
+
+    assert result["matches"][0]["id"] == "direct-labels"

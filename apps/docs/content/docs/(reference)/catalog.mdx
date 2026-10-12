@@ -120,15 +120,15 @@ requirements, and projection metadata belong in `profile.json`.
 document identities, text, labels, vectors, and embedding metadata.
 `profile.json` describes the index:
 
-| Field                                 | Meaning                                            |
-| ------------------------------------- | -------------------------------------------------- |
-| `schema_version`, `documents_version` | Metadata and document formats                      |
-| `entries_digest`, `manifest_digest`   | Catalog contents indexed by this profile           |
-| `embedding_functions`                 | LanceDB registry bindings from text to vectors     |
-| `dimensions`, `distance_metric`       | Vector size and retrieval distance                 |
-| `python_requirements`                 | Exact dependency versions recorded by the producer |
-| `lancedb_version`                     | Producer's LanceDB version                         |
-| `projection`                          | Projection algorithm and options, or `null`        |
+| Field                                 | Meaning                                                     |
+| ------------------------------------- | ----------------------------------------------------------- |
+| `schema_version`, `documents_version` | Metadata and document formats                               |
+| `entries_digest`, `manifest_digest`   | Catalog contents indexed by this profile                    |
+| `embedding_functions`                 | LanceDB registry bindings from text to vectors              |
+| `dimensions`, `distance_metric`       | Vector size and retrieval distance                          |
+| `python_requirements`                 | Query dependencies and the versions the producer built with |
+| `lancedb_version`                     | Producer's LanceDB version                                  |
+| `projection`                          | Projection algorithm and options, or `null`                 |
 
 The metadata file is at most 64 KiB and has a closed schema. Registry variable
 references use `$var:name`. Values remain caller-owned. Every profile contains

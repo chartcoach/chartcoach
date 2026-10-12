@@ -102,9 +102,10 @@ release-scoped handles. `catalog describe --profile NAME` reports the embedding
 binding, `distance_metric`, and `python_requirements`.
 
 Vector and hybrid modes embed the query text through the function declared by
-the profile. Install the exact `python_requirements` shown by `catalog describe
---profile NAME`. A fresh CLI process can set LanceDB registry variables from a
-caller-owned JSON file:
+the profile. Install the packages listed in its `python_requirements`, in any
+version. `CHARTCOACH_EMBEDDING_API_KEY` supplies the profile's credential when
+the variable the profile names is unset. A fresh CLI process can also set LanceDB
+registry variables from a caller-owned JSON file, which overrides the environment:
 
 ```json
 {
