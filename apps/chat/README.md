@@ -288,6 +288,9 @@ precedence over the password environment variable. Keep TLS termination and proc
 restarts in your deployment platform. The worker's workflow callbacks stay on its
 private loopback listener. `/healthz` reports readiness for health checks.
 
+Set `CF_ANALYTICS_TOKEN` to your Cloudflare Web Analytics beacon token to enable
+analytics on every chat page. Analytics is disabled when the variable is unset or empty.
+
 ## Embed in another page
 
 List the origins of the pages that show ChartCoach in an iframe:

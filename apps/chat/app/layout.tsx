@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
+import { connection } from "next/server";
 import type { ReactNode } from "react";
 import * as stylex from "@stylexjs/stylex";
 import { colors } from "../components/ui/tokens.stylex";
@@ -42,10 +44,24 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  await connection();
+  const analyticsToken = process.env.CF_ANALYTICS_TOKEN?.trim();
+
   return (
     <html lang="en" className={`${sans.variable} ${mono.variable}`}>
-      <body {...stylex.props(styles.body)}>{children}</body>
+      <body {...stylex.props(styles.body)}>
+        {children}
+        {analyticsToken && (
+          <Script
+            type="module"
+            crossOrigin="anonymous"
+            src="https://static.cloudflareinsights.com/beacon.min.js"
+            data-cf-beacon={JSON.stringify({ token: analyticsToken })}
+            strategy="afterInteractive"
+          />
+        )}
+      </body>
     </html>
   );
 }
