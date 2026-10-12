@@ -43,6 +43,7 @@ export function readEnvironment(environment: Record<string, string | undefined>)
       CHARTCOACH_PORT: z.coerce.number().pipe(server.port.unwrap()).optional(),
       CHARTCOACH_OPEN: boolean,
       CHARTCOACH_PUBLIC_URL: server.publicURL,
+      CHARTCOACH_PUBLIC: boolean,
       CHARTCOACH_USERNAME: server.username.unwrap().optional(),
       CHARTCOACH_PASSWORD_ENV: text,
       CHARTCOACH_PASSWORD_FILE: text,

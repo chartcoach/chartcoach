@@ -204,6 +204,7 @@ the resolved connection without its credentials.
 | `server.port`                 | `CHARTCOACH_PORT`                         |
 | `server.open`                 | `CHARTCOACH_OPEN`                         |
 | `server.publicURL`            | `CHARTCOACH_PUBLIC_URL`                   |
+| `server.public`               | `CHARTCOACH_PUBLIC`                       |
 | `server.username`             | `CHARTCOACH_USERNAME`                     |
 | `server.passwordEnv`          | `CHARTCOACH_PASSWORD_ENV`                 |
 | `server.passwordFile`         | `CHARTCOACH_PASSWORD_FILE`                |
@@ -270,6 +271,18 @@ connections and conversation history through its signed cookie. This is a person
 or small-group deployment. The operator can access stored credentials and any
 configured server model is shared with everyone who can sign in.
 
+To serve everyone without sign-in, replace the password with `--public`:
+
+```bash
+npx chartcoach chat --host 0.0.0.0 --no-open --public \
+  --public-url https://chat.example.org
+```
+
+`CHARTCOACH_PUBLIC=true` sets the same mode. Every visitor gets separate conversations
+through their own browser cookie, and every visitor can use the configured server model,
+so cap its spend with the provider. Starting with both `--public` and a password fails,
+because the password would not be asked for.
+
 For secret mounts, set `CHARTCOACH_PASSWORD_FILE` to a readable file. The file takes
 precedence over the password environment variable. Keep TLS termination and process
 restarts in your deployment platform. The worker's workflow callbacks stay on its
@@ -329,6 +342,8 @@ From a repository checkout:
 export CHARTCOACH_PASSWORD='choose-a-long-private-password'
 docker compose -f infra/compose.yml up --build -d
 ```
+
+For a public deployment, export `CHARTCOACH_PUBLIC=true` instead of the password.
 
 Open `http://127.0.0.1:4273`. The service binds the host port to loopback and stores
 conversations and cache in named volumes. Set `CHARTCOACH_PUBLIC_URL` when using an
