@@ -86,7 +86,7 @@ function FilterDraft({
               ? valid
                 ? "Could not check selection"
                 : "Selection needs attention"
-              : `${count.toLocaleString()} guidelines selected`}
+              : `${count.toLocaleString()} ${count === 1 ? "guideline" : "guidelines"} selected`}
           </p>
           {error ? <p {...stylex.props(ui.error, styles.error)}>{error}</p> : null}
           <p
@@ -175,7 +175,12 @@ export function GuidelinesPage(props: GuidelinesProps) {
   }, []);
 
   return (
-    <main {...stylex.props(styles.page)} aria-label="Guidelines settings">
+    <main
+      id="guidelines"
+      tabIndex={-1}
+      {...stylex.props(styles.page)}
+      aria-label="Guidelines settings"
+    >
       <header {...stylex.props(styles.header)}>
         <div>
           <h1 ref={heading} tabIndex={-1} {...stylex.props(styles.title)}>

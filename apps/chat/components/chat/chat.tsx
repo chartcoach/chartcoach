@@ -54,7 +54,7 @@ export function ChatConversation() {
     navigation,
   );
 
-  if (workspace.loading) return <WorkspacePending />;
+  if (workspace.loading && (workspace.requestedId || workspace.error)) return <WorkspacePending />;
 
   return (
     <WorkspaceView>
@@ -92,12 +92,16 @@ export function ChatConversation() {
 }
 
 export function WorkspacePending() {
-  const { state } = useChatWorkspace();
+  const { state, navigation } = useChatWorkspace();
   const { workspace } = state;
 
   return (
     <WorkspaceView>
-      <main {...stylex.props(styles.settingsFallback)}>
+      <main
+        id={navigation.view === "guidelines" ? "guidelines" : "message"}
+        tabIndex={-1}
+        {...stylex.props(styles.settingsFallback)}
+      >
         <h1>{workspace.requestedId ? "Conversation" : "ChartCoach"}</h1>
         <p role={workspace.threadError || workspace.error ? "alert" : "status"}>
           {workspace.threadError ?? workspace.error ?? "Loading your workspace…"}
@@ -127,8 +131,11 @@ function ChatLayout({ children }: { children: ReactNode }) {
       hasAttachment={hasAttachment}
       onFiles={(files) => void state.upload(files)}
     >
-      <a {...stylex.props(styles.skip, ui.focus)} href="#message">
-        Skip to message
+      <a
+        {...stylex.props(styles.skip, ui.focus)}
+        href={navigation.view === "guidelines" ? "#guidelines" : "#message"}
+      >
+        {navigation.view === "guidelines" ? "Skip to guidelines" : "Skip to message"}
       </a>
       <header
         {...stylex.props(

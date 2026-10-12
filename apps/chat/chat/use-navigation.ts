@@ -22,7 +22,11 @@ export function useNavigation(workspace: ReturnType<typeof useWorkspace>) {
   const [desktopOpen, setDesktopOpen] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const view = workspace.pathname.endsWith("/guidelines") ? "guidelines" : "chat";
+
+  const view: "guidelines" | "chat" = workspace.pathname.endsWith("/guidelines")
+    ? "guidelines"
+    : "chat";
+
   const searchInput = useRef<HTMLInputElement>(null);
   const focusSearch = useRef(false);
   useEffect(() => {
