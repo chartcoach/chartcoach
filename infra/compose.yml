@@ -4,7 +4,7 @@ services:
   chartcoach:
     build:
       context: ..
-      dockerfile: infra/Dockerfile
+      dockerfile: infra/chat.Dockerfile
     image: ${CHARTCOACH_IMAGE:-chartcoach:local}
     init: true
     restart: unless-stopped

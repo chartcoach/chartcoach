@@ -203,7 +203,7 @@ template state in the data directory and compiler dependencies in the build. npm
 consumer platform. The source workspace keeps the compiler, frontend dependencies,
 and private brand and skill packages.
 
-`infra/Dockerfile` builds and installs the same npm tarballs. `infra/compose.yml` persists `/data`
+`infra/chat.Dockerfile` builds and installs the same npm tarballs. `infra/compose.yml` persists `/data`
 and `/cache`. `tools/release/verify-chat.ts` installs both tarballs outside the
 workspace and checks the CLI, authenticated browser, a streamed grounded answer,
 and conversation persistence after restart.
