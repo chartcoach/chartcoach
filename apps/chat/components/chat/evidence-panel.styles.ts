@@ -95,7 +95,11 @@ export const styles = stylex.create({
     backgroundColor: "#00000045",
     backdropFilter: "blur(2px)",
     animationName: { default: fadeIn, ":is([data-state=closed])": fadeOut },
-    animationDuration: { default: "200ms", [media.reducedMotion]: "0ms" },
+    animationDuration: {
+      default: "320ms",
+      ":is([data-state=closed])": "200ms",
+      [media.reducedMotion]: "0ms",
+    },
   },
   sheet: {
     paddingLeft: "env(safe-area-inset-left)",
@@ -121,8 +125,12 @@ export const styles = stylex.create({
     boxShadow: "0 -12px 60px #00000020",
     outlineStyle: "none",
     animationName: { default: enter, ":is([data-state=closed])": exit },
-    animationDuration: { default: "240ms", [media.reducedMotion]: "0ms" },
-    animationTimingFunction: motion.easeOut,
+    animationDuration: {
+      default: "420ms",
+      ":is([data-state=closed])": "240ms",
+      [media.reducedMotion]: "0ms",
+    },
+    animationTimingFunction: { default: motion.fluid, ":is([data-state=closed])": motion.easeOut },
   },
   sheetHeader: {
     display: "flex",
@@ -166,8 +174,9 @@ export const styles = stylex.create({
     lineHeight: 1.5,
   },
   sectionCount: { marginLeft: 6, fontVariantNumeric: "tabular-nums" },
-  cards: { display: "grid", gap: 14 },
-  rows: { listStyle: "none", margin: 0, padding: 0 },
+  cards: { position: "relative" },
+  card: { paddingTop: { default: 0, [stylex.when.ancestor(":not(:first-child)")]: 14 } },
+  rows: { listStyle: "none", margin: 0, padding: 0, position: "relative" },
   row: {
     display: "block",
     paddingBlock: 12,

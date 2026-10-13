@@ -75,7 +75,9 @@ export function deriveConversation(
   messages: readonly EveMessage[],
   options: ConversationOptions = {},
 ) {
-  const lastAssistant = messages.findLast((message) => message.role === "assistant");
+  // Optimistic messages belong to a send in flight, never to an earlier failure.
+  const confirmed = messages.filter((message) => !message.metadata?.optimistic);
+  const lastAssistant = confirmed.findLast((message) => message.role === "assistant");
   const guidelines = new Map<string, ReadGuideline>();
   const retrieved = new Map<string, GuidelinePreview>();
   const promotions = new Map<string, "primary" | "supporting">();
@@ -198,7 +200,7 @@ export function deriveConversation(
       failed,
       failureReason: failed
         ? ((turnId ? options.failureReasons?.get(turnId) : undefined) ??
-          (message === messages.at(-1) ? options.error : undefined))
+          (message === confirmed.at(-1) ? options.error : undefined))
         : undefined,
     });
   }

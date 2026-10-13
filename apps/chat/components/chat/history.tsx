@@ -21,6 +21,7 @@ import Link from "next/link";
 import { chatPath } from "../../shared/routes";
 import * as stylex from "@stylexjs/stylex";
 import type { useNavigation } from "../../chat/use-navigation";
+import { useListMotion } from "../ui/use-list-motion";
 import { styles } from "./history.styles";
 import { historyRowScope } from "../ui/tokens.stylex";
 import { ui } from "../ui/ui";
@@ -184,6 +185,7 @@ function HistoryList({
 
   const visibleIds = new Set(ids);
   const query = search.trim().toLowerCase();
+  const list = useListMotion<HTMLDivElement>(`${archived}:${query}`);
 
   const hasMatches = items.some(
     (item) => visibleIds.has(item.id) && (item.title ?? "").toLowerCase().includes(query),
@@ -235,7 +237,7 @@ function HistoryList({
           </button>
         </div>
       </div>
-      <div {...stylex.props(styles.scroll)}>
+      <div ref={list} {...stylex.props(styles.scroll)}>
         {loading ? (
           <p {...stylex.props(styles.empty)} role="status">
             Loading conversations…
@@ -326,6 +328,7 @@ function HistoryItem({
     <ViewTransition default="none" update="auto">
       <ThreadListItemPrimitive.Root
         {...stylex.props(styles.item, historyRowScope)}
+        data-motion-key={id}
         data-active={chatActive && active ? "true" : undefined}
         aria-current={chatActive && active ? "page" : undefined}
       >

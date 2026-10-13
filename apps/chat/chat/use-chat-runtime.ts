@@ -7,6 +7,7 @@ import { useExternalStoreRuntime, type AssistantRuntime } from "@assistant-ui/re
 import { readAttachment, type ChartAttachment } from "./attachment";
 import { useChartAttachments } from "./use-chart-attachments";
 import type { MessageView } from "./evidence";
+import type { SentTurn } from "./turns";
 import { useConversation } from "./use-conversation";
 import { useThreadSession } from "./use-thread-session";
 import type { CatalogFilterSelection } from "./use-catalog-filters";
@@ -40,6 +41,7 @@ export function useChatRuntime(
   const runtimeRef = useRef<AssistantRuntime>(undefined);
   const pendingSend = useRef<AbortController>(undefined);
   const [preparing, setPreparing] = useState(false);
+  const [turns, setTurns] = useState<readonly SentTurn[]>([]);
 
   const agent = useEveAgent({
     // Eve's optimistic projection flattens images into literal [file: ...] text.
@@ -76,19 +78,26 @@ export function useChatRuntime(
     ) ||
     (agent.error && "code" in agent.error && agent.error.code === "session_not_active");
 
-  const { adapter, reading, messageInput, upload, uploadExample } = useChartAttachments(
+  const { adapter, reading, example, messageInput, upload, sendExample } = useChartAttachments(
     runtimeRef,
     busy || agent.status === "resuming",
     setError,
   );
 
-  const disabled = busy || reading || agent.status === "resuming" || workspace.loading;
+  const disabled = busy || reading || !!example || agent.status === "resuming" || workspace.loading;
 
   const conversation = useConversation(
     agent,
     thread.threadId,
     interruptedTurns,
     workspace.guidelineLinks,
+    turns,
+    busy,
+  );
+
+  const shownMessages = useMemo(
+    () => conversation.messages.map(({ message }) => message),
+    [conversation.messages],
   );
 
   const statusText =
@@ -144,7 +153,14 @@ export function useChatRuntime(
       },
     },
     convertMessage(view, index) {
-      const converted = convertEveMessage(view.message, index, agent.data.messages, {
+      // Sent turns draw their own optimistic messages, which a cancelled run must
+      // keep. assistant-ui discards optimistic heads on cancel.
+      const message = {
+        ...view.message,
+        metadata: { ...view.message.metadata, optimistic: undefined },
+      };
+
+      const converted = convertEveMessage(message, index, shownMessages, {
         isRunning: busy,
         error: agent.error,
       });
@@ -188,9 +204,30 @@ export function useChatRuntime(
             },
           ];
 
-      try {
-        setPreparing(true);
+      const turn: SentTurn = {
+        id: crypto.randomUUID(),
+        start: agent.data.messages.length,
+        parts: [
+          ...content.flatMap((part) =>
+            part.type === "text" ? [{ type: "text" as const, text: part.text }] : [],
+          ),
+          ...(chart
+            ? [
+                {
+                  type: "file" as const,
+                  mediaType: chart.mediaType,
+                  filename: chart.filename,
+                  url: chart.data,
+                },
+              ]
+            : []),
+        ],
+      };
 
+      setPreparing(true);
+      setTurns((current) => [...current, turn]);
+
+      try {
         const title =
           content
             .flatMap((part) => (part.type === "text" ? [part.text] : []))
@@ -213,6 +250,9 @@ export function useChatRuntime(
             : "Could not send the message. Try again.";
 
         setError(reason);
+        setTurns((current) =>
+          current.map((item) => (item === turn ? { ...item, withdrawn: true } : item)),
+        );
         const composer = runtimeRef.current!.thread.composer;
 
         if (composer.getState().isEmpty) {
@@ -261,6 +301,7 @@ export function useChatRuntime(
     agent.reset();
     thread.reset();
     setAttachments(new Map());
+    setTurns([]);
     sentChart.current = undefined;
     setInterruptedTurns(new Set());
     setError(undefined);
@@ -330,6 +371,8 @@ export function useChatRuntime(
     busy,
     disabled,
     reading,
+    example,
+    resuming: agent.status === "resuming",
     error: conversation.messages.at(-1)?.failureReason === currentError ? undefined : currentError,
     recover: needsNewSession
       ? async () => {
@@ -343,7 +386,7 @@ export function useChatRuntime(
         }
       : undefined,
     upload,
-    uploadExample,
+    sendExample,
     newChat,
     restartKeepingChart,
     statusText,

@@ -6,7 +6,7 @@ import type { MessageView } from "../../chat/evidence";
 import { ToolActivity, toolPresentation } from "./tool-activity";
 import { Collapse } from "../ui/collapse";
 import * as stylex from "@stylexjs/stylex";
-import { colors, media } from "../ui/tokens.stylex";
+import { colors, media, motion } from "../ui/tokens.stylex";
 import { ui } from "../ui/ui";
 import { ProgressLabel, ProgressMark } from "./progress";
 import { progressLabels, progressPhase } from "../../chat/progress";
@@ -114,7 +114,7 @@ const styles = stylex.create({
     width: "min(100%, 400px)",
     alignItems: "center",
     alignContent: "center",
-    gap: 8,
+    columnGap: 8,
     minHeight: 44,
     paddingBlock: 4,
     paddingInline: 0,
@@ -127,14 +127,18 @@ const styles = stylex.create({
     fontSize: 12,
   },
   count: { fontVariantNumeric: "tabular-nums", textAlign: "right" },
-  settledSummary: { width: "min(100%, 176px)", rowGap: 0 },
+  settledSummary: { width: "min(100%, 176px)" },
   actionSlot: {
     gridColumn: "2 / -1",
-    height: 20,
+    height: 28,
+    paddingTop: 8,
     minWidth: 0,
     overflow: "hidden",
+    transitionProperty: "height, padding-top, opacity",
+    transitionDuration: { default: motion.move, [media.reducedMotion]: "0ms" },
+    transitionTimingFunction: motion.fluid,
   },
-  settled: { height: 0 },
+  settled: { height: 0, paddingTop: 0, opacity: 0 },
   action: { display: "flex", alignItems: "center", gap: 6, minWidth: 0, lineHeight: "20px" },
   actionText: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
   pendingControls: { visibility: "hidden" },

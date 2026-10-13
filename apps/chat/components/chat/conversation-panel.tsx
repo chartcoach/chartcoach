@@ -3,6 +3,7 @@ import * as stylex from "@stylexjs/stylex";
 import { getExternalStoreMessages, MessagePrimitive, ThreadPrimitive } from "@assistant-ui/react";
 import type { MessageView, deriveConversation } from "../../chat/evidence";
 import type { ChartAttachment } from "../../chat/attachment";
+import { useConversationStart } from "./use-conversation-start";
 import { Message } from "./message";
 import { EvidencePanel } from "./evidence-panel";
 import { Conversation } from "./conversation";
@@ -16,54 +17,61 @@ export function ConversationPanel({
   conversation,
   attachments,
   empty,
+  restoring,
   showStatus,
   busy,
   disabled,
   statusText,
-  sentMessageId,
   matchedGuidelines,
-  uploadExample,
+  sendExample,
+  example,
   composer,
 }: {
   heading: RefObject<HTMLHeadingElement | null>;
   conversation: ReturnType<typeof deriveConversation>;
   attachments: ReadonlyMap<string, ChartAttachment>;
   empty: boolean;
+  restoring: boolean;
   showStatus: boolean;
   busy: boolean;
   disabled: boolean;
   statusText: string;
-  sentMessageId?: string;
   matchedGuidelines?: number;
-  uploadExample: (path: string) => Promise<boolean>;
+  sendExample: (path: string, prompt: string) => Promise<void>;
+  example?: string;
   composer: ReactNode;
 }) {
+  const { welcome, welcomeRef, columnRef, messagesRef, panelRef } = useConversationStart(
+    empty,
+    restoring,
+  );
+
   return (
-    <main {...stylex.props(styles.main)} data-empty={empty}>
+    <main {...stylex.props(styles.main)} data-empty={welcome}>
       <h1 ref={heading} tabIndex={-1} {...stylex.props(ui.srOnly)}>
         chartcoach conversation
       </h1>
       <ThreadPrimitive.Root
         {...stylex.props(
           styles.workspace,
-          empty && styles.emptyWorkspace,
-          !empty && styles.withEvidence,
+          welcome && styles.emptyWorkspace,
+          !welcome && styles.withEvidence,
         )}
       >
-        <div {...stylex.props(styles.thread, empty && styles.emptyThread)}>
-          <Conversation>
-            {empty ? (
-              <section {...stylex.props(styles.welcome)}>
+        <div ref={columnRef} {...stylex.props(styles.thread, welcome && styles.emptyThread)}>
+          <Conversation empty={welcome || restoring}>
+            {welcome ? (
+              <section ref={welcomeRef} {...stylex.props(styles.welcome)} inert={!empty}>
                 <h2 {...stylex.props(styles.title)}>
                   Design with <span {...stylex.props(styles.accent)}>guidance.</span>
                 </h2>
                 <p {...stylex.props(styles.intro)}>
                   Review a chart, plan a design, or explore a tradeoff.
                 </p>
-                <Starters disabled={disabled} onImage={uploadExample} />
+                <Starters disabled={disabled} pending={example} onExample={sendExample} />
               </section>
             ) : (
-              <div {...stylex.props(styles.messages)}>
+              <div ref={messagesRef} {...stylex.props(styles.messages)}>
                 <ThreadPrimitive.Messages>
                   {({ message }) => {
                     const view = getExternalStoreMessages<MessageView>(message)[0];
@@ -99,9 +107,9 @@ export function ConversationPanel({
           {composer}
         </div>
         <EvidencePanel
-          key={sentMessageId ?? "empty"}
+          ref={panelRef}
           items={conversation.evidence}
-          active={!empty}
+          active={!welcome && !restoring}
           busy={busy}
         />
       </ThreadPrimitive.Root>

@@ -36,7 +36,7 @@ function ExampleChat({ disabled = false }: { disabled?: boolean }) {
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
-      <Starters disabled={disabled || attachments.reading} onImage={attachments.uploadExample} />
+      <Starters disabled={disabled || attachments.reading} onExample={attachments.sendExample} />
     </AssistantRuntimeProvider>
   );
 }

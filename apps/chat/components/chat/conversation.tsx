@@ -1,4 +1,4 @@
-import { ThreadPrimitive, useAuiEvent, useAuiState } from "@assistant-ui/react";
+import { ThreadPrimitive, useAuiEvent } from "@assistant-ui/react";
 import { ArrowDown } from "lucide-react";
 import type { ReactNode } from "react";
 import * as stylex from "@stylexjs/stylex";
@@ -46,7 +46,7 @@ const styles = stylex.create({
     position: "absolute",
     bottom: 12,
     left: "50%",
-    transform: "translateX(-50%)",
+    translate: "-50% 0",
     gap: 8,
     backgroundColor: colors.surface,
     borderWidth: 1,
@@ -59,8 +59,7 @@ const styles = stylex.create({
   },
 });
 
-export function Conversation({ children }: { children: ReactNode }) {
-  const empty = useAuiState((state) => state.thread.messages.length === 0);
+export function Conversation({ empty, children }: { empty: boolean; children: ReactNode }) {
   const { viewportRef, atLatest, scrollToLatest } = useContentScroll("bottom", !empty);
   useAuiEvent("thread.runStart", scrollToLatest);
 
@@ -80,7 +79,10 @@ export function Conversation({ children }: { children: ReactNode }) {
         <div {...stylex.props(styles.content, empty && styles.welcome)}>{children}</div>
       </ThreadPrimitive.Viewport>
       {!empty && !atLatest ? (
-        <button {...stylex.props(ui.button, ui.focus, styles.latest)} onClick={scrollToLatest}>
+        <button
+          {...stylex.props(ui.button, ui.focus, ui.appear, styles.latest)}
+          onClick={scrollToLatest}
+        >
           <ArrowDown size={14} aria-hidden="true" /> Latest response
         </button>
       ) : null}
