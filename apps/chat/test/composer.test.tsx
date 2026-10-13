@@ -99,7 +99,8 @@ it("opens the full tracing explanation and restores focus when dismissed", async
         .querySelector<HTMLButtonElement>('button[aria-label="Close privacy details"]')!
         .click(),
     );
-    expect(document.activeElement).toBe(trigger);
+    // Radix restores focus after the popover unmounts.
+    await vi.waitFor(() => expect(document.activeElement).toBe(trigger));
   } finally {
     await act(async () => root.unmount());
     container.remove();
