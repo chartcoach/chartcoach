@@ -5,9 +5,7 @@ import { antiSlopEffectPluginRules, type AntiSlopEffectRuleName } from "./effect
 
 export const antiSlopIgnorePatterns = [
   ".agent/**",
-  ".agents/**",
   ".claude/**",
-  ".codex/**",
   ".continue/**",
   ".cursor/**",
   ".gemini/**",
