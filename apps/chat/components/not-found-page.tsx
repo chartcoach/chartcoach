@@ -4,14 +4,9 @@ import { ArrowRight, BookOpen } from "lucide-react";
 import * as stylex from "@stylexjs/stylex";
 import logo from "@chartcoach/brand/assets/brand/chartcoach-horizontal.svg";
 import logoWhite from "@chartcoach/brand/assets/brand/chartcoach-horizontal-white.svg";
+import notFound from "@chartcoach/brand/assets/brand/not-found.svg";
 import { colors, media } from "./ui/tokens.stylex";
 import { ui } from "./ui/ui";
-
-const digits = [
-  ["10010", "10010", "10010", "11111", "00010", "00010", "00010"],
-  ["01110", "10001", "10001", "10001", "10001", "10001", "01110"],
-  ["10010", "10010", "10010", "11111", "00010", "00010", "00010"],
-];
 
 export function NotFoundPage() {
   return (
@@ -37,48 +32,19 @@ export function NotFoundPage() {
         </Link>
       </header>
       <main {...stylex.props(styles.main)}>
-        <svg
-          viewBox="0 0 440 300"
-          fill="none"
-          aria-hidden="true"
-          focusable="false"
+        <Image
+          src={notFound}
+          alt=""
+          width={440}
+          height={300}
+          unoptimized
           {...stylex.props(styles.chart)}
-        >
-          <g {...stylex.props(styles.grid)}>
-            {[64, 104, 144, 184, 224, 264].map((y) => (
-              <path key={y} d={`M24 ${y}H416`} />
-            ))}
-            {[56, 96, 136, 176, 216, 256, 296, 336, 376, 416].map((x) => (
-              <path key={x} d={`M${x} 24V264`} />
-            ))}
-          </g>
-          <path d="M24 24V264H416" {...stylex.props(styles.axis)} />
-          <g {...stylex.props(styles.points)}>
-            {digits.flatMap((rows, digit) =>
-              rows.flatMap((row, y) =>
-                Array.from(row).map((value, x) =>
-                  value === "1" ? (
-                    <circle
-                      key={`${digit}:${x}:${y}`}
-                      cx={56 + digit * 132 + x * 22}
-                      cy={68 + y * 22}
-                      r={6}
-                    />
-                  ) : null,
-                ),
-              ),
-            )}
-          </g>
-          <circle cx="232" cy="134" r="18" {...stylex.props(styles.halo)} />
-          <circle cx="232" cy="134" r="7" {...stylex.props(styles.missingPoint)} />
-          <path d="M227 134H237M232 129V139" {...stylex.props(styles.cross)} />
-        </svg>
+        />
         <div {...stylex.props(styles.content)}>
           <p {...stylex.props(styles.eyebrow)}>404 / Page not found</p>
           <h1 {...stylex.props(styles.title)}>We couldn’t find that page.</h1>
           <p {...stylex.props(styles.description)}>
-            The link may have changed, or the address may be incomplete. Your next chart starts
-            here.
+            Start a new conversation or browse the guidelines for your next chart.
           </p>
           <nav aria-label="Page recovery" {...stylex.props(styles.actions)}>
             <Link href="/" {...stylex.props(ui.button, ui.focus, styles.primary)}>
@@ -131,13 +97,7 @@ const styles = stylex.create({
     marginInline: "auto",
     paddingBlock: { default: 64, [media.mobile]: 40, [media.short]: 16 },
   },
-  chart: { width: "100%", height: "auto", overflow: "visible" },
-  grid: { stroke: colors.border, strokeWidth: 1, opacity: 0.6 },
-  axis: { stroke: colors.muted, strokeWidth: 1, opacity: 0.45 },
-  points: { fill: colors.muted, opacity: 0.7 },
-  halo: { fill: "color-mix(in srgb, var(--brand-crimson) 8%, transparent)" },
-  missingPoint: { stroke: colors.accent, strokeWidth: 1.5 },
-  cross: { stroke: colors.accent, strokeWidth: 1.5 },
+  chart: { width: "100%", height: "auto" },
   content: { minWidth: 0 },
   eyebrow: {
     color: colors.accentText,
