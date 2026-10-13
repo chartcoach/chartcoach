@@ -19,7 +19,7 @@ function phase(parts: EveMessage["parts"], metadata: EveMessage["metadata"] = {}
 
 it("keeps exploration steady across tool calls and the model's intervening reasoning", () => {
   expect(phase([])).toBe("starting");
-  expect(phase([{ ...part, toolName: "load_skill" }])).toBe("choosing");
+  expect(phase([{ ...part, toolName: "eve:load-skill" }])).toBe("choosing");
   const completed: EveDynamicToolPart = { ...part, state: "output-available", output: {} };
   expect(phase([part])).toBe("exploring");
   expect(phase([completed])).toBe("exploring");
