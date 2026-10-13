@@ -100,6 +100,15 @@ transport schemas, and `_mcp/http.py` owns ASGI lifespan, readiness, bearer auth
 and explicit SDK Host/Origin checks. The CLI loads dotenv before resolving
 configuration, then hands one `MCPConfig` to `run`.
 
+The MCP adapter serializes each validated result as the same JSON object in text
+content and `structuredContent`. Catalog errors retain their codes and details,
+while the adapter supplies recovery hints
+that name MCP tools. `describe` adds MCP-specific runtime metadata for the SQL
+deadline and active search configuration. Canonical document columns and roles
+describe search filters without opening the index or initializing a provider.
+Catalog enumeration uses ordered SQL pages. Ranked search remains candidate
+discovery with a document limit before guideline deduplication.
+
 A tool registration snapshots variables declared by its release-owned profile.
 Its `SearchEmbeddings` context validates requirements and the portable model,
 then constructs one native LanceDB function on the first semantic request.

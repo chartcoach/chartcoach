@@ -7,10 +7,14 @@ from pydantic import BaseModel, ConfigDict, Field, RootModel
 
 from chartcoach._catalog.errors import CatalogErrorCode
 
-McpLimit = Annotated[int, Field(ge=1, le=100, strict=True)]
+McpLimit = Annotated[int, Field(ge=1, strict=True)]
 McpId = Annotated[str, Field(min_length=1)]
-McpIds = Annotated[list[McpId], Field(min_length=1, max_length=100)]
-McpRoles = Annotated[list[McpId], Field(max_length=100)]
+McpIds = Annotated[
+    list[McpId],
+    Field(
+        description="Guideline entry IDs from sql rows or search matches[].id. An empty list returns empty records.",
+    ),
+]
 
 
 class _ResultModel(BaseModel):
@@ -46,6 +50,18 @@ class ProfileInfo(_ResultModel):
     projection: dict[str, object] | None
 
 
+class SearchInfo(_ResultModel):
+    profile: str
+    filter_columns: list[str]
+    document_roles: list[str]
+
+
+class MCPInfo(_ResultModel):
+    sql_engine: Literal["DuckDB"]
+    sql_timeout_seconds: float
+    search: SearchInfo | None
+
+
 class DescribeToolResult(_ResultModel):
     resolved_location: str | None
     release_digest: str | None
@@ -56,6 +72,7 @@ class DescribeToolResult(_ResultModel):
     label_families: list[VocabularyInfo]
     profiles: list[str]
     profile: ProfileInfo | None
+    mcp: MCPInfo
 
 
 class SqlColumn(_ResultModel):
@@ -67,7 +84,9 @@ class SqlToolResult(_ResultModel):
     columns: list[SqlColumn]
     rows: list[dict[str, object]]
     row_count: int
-    truncated: bool
+    truncated: bool = Field(
+        description="More rows exist in this query result beyond the tool limit. SQL LIMIT/OFFSET pages have their own boundary."
+    )
     limit: int
     entries_digest: str
     manifest_digest: str
@@ -161,9 +180,13 @@ class SearchToolResult(_ResultModel):
     mode: Literal["fts", "vector", "hybrid"]
     score_kind: Literal["distance", "relevance"]
     matches: list[GuidelineMatch]
-    match_count: int
-    documents_considered: int
-    documents_truncated: bool
+    match_count: int = Field(description="Number of returned guideline matches.")
+    documents_considered: int = Field(
+        description="Ranked document hits retained before grouping by guideline."
+    )
+    documents_truncated: bool = Field(
+        description="Additional document hits exist beyond the requested limit. Increase limit to consider more candidates."
+    )
     limit: int
     where: str | None
     resolved_location: str | None

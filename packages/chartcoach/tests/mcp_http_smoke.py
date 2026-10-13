@@ -17,6 +17,15 @@ import httpx2
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 from mcp.client.streamable_http import streamable_http_client
+from mcp.types import CallToolResult, TextContent
+
+
+def text_payload(result: CallToolResult) -> dict:
+    payload = json.loads(
+        "".join(item.text for item in result.content if isinstance(item, TextContent))
+    )
+    assert payload == result.structured_content
+    return payload
 
 
 async def check_tools(session: ClientSession) -> None:
@@ -25,18 +34,27 @@ async def check_tools(session: ClientSession) -> None:
     assert {tool.name for tool in tools.tools} == {"describe", "sql", "read", "cite"}
     described = await session.call_tool("describe")
     assert not described.is_error
-    identity = described.structured_content["release_digest"]
+    identity = text_payload(described)["release_digest"]
     assert identity
     read = await session.call_tool("read", {"ids": ["direct-labels"]})
     assert not read.is_error
-    assert read.structured_content["records"][0]["id"] == "direct-labels"
-    assert read.structured_content["release_digest"] == identity
+    assert text_payload(read)["records"][0]["id"] == "direct-labels"
+    assert text_payload(read)["release_digest"] == identity
     sql = await session.call_tool(
         "sql", {"statement": "SELECT count(*) AS entries FROM guidelines"}
     )
     assert not sql.is_error
-    assert sql.structured_content["rows"][0]["entries"] > 0
-    assert sql.structured_content["release_digest"] == identity
+    assert text_payload(sql)["rows"][0]["entries"] > 0
+    assert text_payload(sql)["release_digest"] == identity
+    probe = await session.call_tool(
+        "sql", {"statement": "SELECT 1 AS probe", "limit": 1}
+    )
+    assert text_payload(probe)["rows"] == [{"probe": 1}]
+    cited = await session.call_tool("cite", {"ids": ["direct-labels"]})
+    assert text_payload(cited)["records"][0]["url"].endswith("direct-labels")
+    missing = await session.call_tool("read", {"ids": ["missing"]})
+    assert missing.is_error
+    assert text_payload(missing)["error"]["code"] == "lookup"
 
 
 async def check_http(url: str) -> None:

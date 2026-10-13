@@ -12,7 +12,6 @@ CatalogErrorCode: TypeAlias = Literal[
     "incompatible_profile",
     "embedding_failure",
     "operation_failed",
-    "response_too_large",
 ]
 
 
@@ -81,12 +80,6 @@ class CatalogOperationError(CatalogError):
     default_code: CatalogErrorCode = "operation_failed"
 
 
-class CatalogResponseTooLargeError(CatalogError):
-    """Raised when a bounded transport result exceeds its byte budget."""
-
-    default_code: CatalogErrorCode = "response_too_large"
-
-
 def require_string_sequence(name: str, values: Sequence[str]) -> None:
     """Reject a scalar string or a sequence containing non-string values."""
 
@@ -120,7 +113,6 @@ __all__ = [
     "CatalogLookupError",
     "CatalogOperationError",
     "CatalogProfileError",
-    "CatalogResponseTooLargeError",
     "CatalogValidationError",
     "format_error",
     "require_string_sequence",

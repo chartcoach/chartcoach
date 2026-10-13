@@ -24,43 +24,64 @@ by the MCP client and has no URL.
 Start with `describe`, then choose candidates through SQL or configured search:
 
 1. `describe` reports catalog identity, table schemas, vocabulary, and
-   profile names.
+   profile names. Its `mcp` field reports the SQL engine, deadline, and active
+   search configuration.
 2. `sql` selects compact guideline entry candidate IDs.
 3. `search`, when configured, finds candidates through the startup index profile.
 4. `read` returns complete selected entry records and source fields.
 5. `cite` returns the public guideline and source citations.
 
-One schema-first SQL query is:
+### Enumerate all guidelines
+
+Use `sql` to enumerate the catalog in a stable order:
 
 ```sql
-select id, title
+select id, title, description
 from guidelines
 order by id
-limit 5
+limit 100 offset 0
 ```
 
-Every tool advertises a concrete success schema plus this error branch:
+Set the tool's `limit` to at least the SQL page size. Advance `offset` by
+`row_count` and stop when a page returns fewer than 100 rows. Keep the projection
+and ordering consistent. Pass discovered IDs to `read`, then cite the entries
+used in the answer.
+
+`truncated` reports the tool's row cap. A query with `limit 100` can return
+`truncated: false` while later pages still exist.
+
+For a cheap result-delivery diagnostic, call `sql` with
+`statement="SELECT 1 AS probe"` and `limit=1`. The returned `rows` must contain
+`{"probe": 1}` in both the text and structured results.
+
+Every tool advertises a success schema and an error branch. For example,
+`sql(statement="SELECT 1; SELECT 2")` returns:
 
 ```json
 {
   "error": {
-    "code": "lookup",
-    "message": "Unknown guideline entry ID: missing",
+    "code": "invalid_input",
+    "message": "SQL queries must contain exactly one statement.",
     "details": {},
-    "hints": ["Copy an exact guideline entry ID from a discovery result."]
+    "hints": [
+      "Pass one SELECT query. Multiple statements are rejected.",
+      "Use describe.tables for table and column names, or sql with DESCRIBE guidelines for native SQL types."
+    ]
   }
 }
 ```
 
-Catalog failures return structured `code`, `message`, `details`, and `hints`,
-with the same recovery guidance in text content and MCP `isError: true`.
+Successful results and catalog failures return the same JSON object in
+`structuredContent` and a text content block. Text content carries the full
+data, including explicit empty `rows` or `matches`.
+Catalog failures contain `code`, `message`, `details`, and MCP-specific `hints`,
+with MCP `isError: true`. Recovery guidance names tools the client can call.
 Invalid tool argument types and limits use the MCP SDK's text error response.
 Stable catalog codes distinguish
 `lookup`, `invalid_input`, `integrity`, `unavailable_capability`,
-`incompatible_profile`, `embedding_failure`, `operation_failed`, and
-`response_too_large`. `operation_failed` identifies a resource or native
-operation failure whose cause could not be attributed to invalid input or
-embedding initialization.
+`incompatible_profile`, `embedding_failure`, and `operation_failed`.
+`operation_failed` identifies failures during a native operation or resource
+access.
 
 ## Tools
 
@@ -70,26 +91,52 @@ embedding initialization.
 reads its small verified `profile.json`. The index stays unopened and the
 embedding function stays unconstructed.
 
+The result includes `tables` with names, row counts and columns, `section_roles`,
+`label_families`, `profiles`, optional `profile` metadata, and catalog identity.
+`mcp` contains `sql_engine`, `sql_timeout_seconds`, and `search`. When search is
+configured, `mcp.search` reports its startup `profile`, `filter_columns`, and
+`document_roles`. It is `null` when search is unconfigured.
+The `profiles` list describes the catalog's available profiles. Inspecting one
+with `describe(profile=...)` leaves the startup search profile unchanged.
+
 ### `sql`
 
-`sql(statement, limit=100)` accepts one read-only `SELECT`. `limit` is from 1
-through 100. The result contains typed columns, bounded rows, truncation state,
-and catalog identity. DuckDB external access is disabled. MCP interrupts SQL
-execution after five seconds by default; configure `CHARTCOACH_MCP_SQL_TIMEOUT`
+`sql(statement, limit=100)` accepts one read-only `SELECT` or a schema query such
+as `DESCRIBE guidelines`. `limit` is a positive integer that caps returned rows.
+The result contains typed columns, rows, truncation state, and catalog identity.
+[DuckDB](https://duckdb.org/docs/stable/) is the SQL engine. `describe` reports
+[Polars](https://docs.pola.rs/) dataframe column types. Use `DESCRIBE guidelines`
+through `sql` for the native SQL types.
+External file and network access is disabled for MCP queries. MCP interrupts SQL
+execution after five seconds by default. Configure `CHARTCOACH_MCP_SQL_TIMEOUT`
 to change the deadline.
 
 ### `read`
 
-`read(ids, roles=null, source_detail="minimal")` accepts 1 through 100 guideline
-entry IDs and up to 100 section roles. Source detail is `none`, `minimal`, or
-`full`. The result contains `records`, `entries_digest`, `manifest_digest`, and
-`release_digest`.
+`read(ids, roles=null, source_detail="minimal")` accepts a list of guideline
+entry IDs and optional section roles. Copy guideline IDs from SQL rows or
+`search.matches[].id`. Each record includes `id`, `title`, `description`,
+`labels`, complete selected `sections`, and `sources`. Use role names from
+`describe.section_roles`. `null` or `[]` retains all sections. Inspect context
+and exceptions before applying advice.
+An empty ID list returns `records: []`.
+
+Source detail controls the source records:
+
+- `none` returns an empty `sources` list.
+- `minimal` includes `reference_id`, `authors_text`, `year`, `source_title`,
+  `doi`, and `url`.
+- `full` adds all parsed source fields and the entry's raw
+  [BibTeX](https://www.bibtex.org/) bibliography `references`.
+
+Use `cite` for formatted citations. The result also contains `entries_digest`,
+`manifest_digest`, and `release_digest`.
 
 ### `cite`
 
-`cite(ids, url_template=...)` accepts 1 through 100 guideline entry IDs. The
+`cite(ids, url_template=...)` accepts a list of guideline entry IDs. The
 result contains guideline links, formatted source citations, and catalog
-identity.
+identity. An empty ID list returns `records: []`.
 
 ### `search`
 
@@ -105,14 +152,32 @@ chartcoach mcp \
 ```
 
 `search(text, limit=10, where=null, mode="fts")` binds the startup index profile.
-`limit` is from 1 through 100 and counts search document hits before guideline
-deduplication. The result contains `matches` and `match_count`. FTS and hybrid
-scores are relevance. Vector scores are distances. Match excerpts are bounded
-to 360 characters.
+`limit` is a positive integer counting document hits before grouping them by
+guideline. The result contains `matches` and `match_count`, the number of
+returned guidelines. `documents_considered` counts the retained document hits.
+`documents_truncated` indicates that more document hits exist beyond the limit.
+Increase `limit` to consider more candidates. Full-text search (FTS) and hybrid
+scores are relevance, with higher scores ranking first. Vector scores are
+distances, with lower distances ranking first. Scores belong to one query and
+profile. Match excerpts are bounded to 360 characters.
 
-`where` accepts a LanceDB SQL expression over indexed document columns. A
-filter-validation error lists those columns. Filters are planned before
-semantic embedding. For example, `role = 'overview'` searches entry overviews.
+Each match includes a guideline `id`, `title`, `description`, `labels`,
+`matched_document_id`, `matched_role`, `matched_excerpt`, `excerpt_truncated`,
+`score`, and `score_kind`. The index splits each guideline into overview,
+complete-document, and section rows whose `parent_id` is the guideline ID.
+Several document hits can collapse to one guideline match, so the number of
+matches can be smaller than `limit`. Pass `matches[].id` to `read` and `cite`.
+Use `read` to obtain complete selected sections.
+
+`where` accepts a [LanceDB](https://lancedb.com/docs/) SQL expression. LanceDB
+queries the catalog's text and vector index. Filters use the columns listed in
+`describe.mcp.search.filter_columns`, with `AND`/`OR` and single-quoted string
+literals. Filters are planned before semantic embedding. For example,
+`role = 'overview'` searches entry overviews, while `role = 'section.advice'`
+searches advice sections. Search document roles use the `section.` prefix.
+The `read` tool uses the unprefixed section name such as `advice`.
+Combine filters with catalog labels, for example
+`array_has(labels, 'basis:empirical') AND role = 'overview'`.
 
 Vector and hybrid search reconstruct the profile’s native LanceDB embedding
 function. Variables such as `$var:CHARTCOACH_EMBEDDING_API_KEY` resolve from the startup
@@ -138,13 +203,6 @@ values; avoid logging those for credential configuration. LanceDB and embedding 
 diagnostic logs.
 Missing-variable errors list the required names. The server reads its variable
 file once, so restart it after updating that file.
-
-## Response budget
-
-Structured tool data is capped at 64 KiB. A complete result that exceeds the
-budget returns `response_too_large` with instructions to narrow guideline entry
-IDs, source detail, SQL columns, or result limits. Selected evidence and SQL
-scalar values are never silently clipped.
 
 ## Transports
 

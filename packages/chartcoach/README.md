@@ -175,6 +175,11 @@ See [.env.example](.env.example) for deployment settings.
 server, or mount the ASGI app with its lifespan. The Python factories do not
 load dotenv or mutate the process environment.
 
+MCP tools return their validated JSON in both text and structured content.
+Start with `describe` for tables, section roles, profiles, and the server's
+active search configuration. Enumerate all guidelines with ordered `sql`
+pages using `LIMIT`/`OFFSET`, then `read` and `cite` the discovered IDs.
+
 Select a release-owned profile with `CHARTCOACH_INDEX_PROFILE`. Its `$var:name`
 credentials resolve from environment variables or a private
 `CHARTCOACH_EMBEDDING_VARS` JSON file. Each server retains its own lazy native

@@ -41,9 +41,10 @@ def create_server(
         "chartcoach",
         description="Inspect one source-traced Guideline Catalog.",
         instructions=(
-            "Call describe first to inspect catalog identity, tables, vocabulary, and profiles. "
-            "Use sql for compact discovery, then read selected guideline entry IDs and cite their sources. "
-            "Example: SELECT id, title FROM guidelines ORDER BY id LIMIT 5"
+            "Call describe first for schemas, vocabulary and active search configuration. "
+            "Use sql for candidate selection and catalog enumeration, or configured search "
+            "for ranked topic candidates. Read guideline IDs to inspect context and exceptions, "
+            "then cite their sources."
         ),
         log_level=settings.log_level,
     )

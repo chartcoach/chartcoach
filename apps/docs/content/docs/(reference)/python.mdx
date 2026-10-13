@@ -360,7 +360,6 @@ stored vectors and leaves the destination and runtime cache unchanged.
 
 Expected chartcoach failures raise `CatalogError`. Its `code` is one of
 `lookup`, `invalid_input`, `integrity`, `unavailable_capability`,
-`incompatible_profile`, `embedding_failure`, `operation_failed`, or
-`response_too_large`.
+`incompatible_profile`, `embedding_failure`, or `operation_failed`.
 `details` carries machine-readable recovery context, and `hints` describes the
 next valid action. LanceDB objects retain their own exception behavior.

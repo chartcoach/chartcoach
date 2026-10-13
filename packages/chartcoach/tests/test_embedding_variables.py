@@ -148,7 +148,9 @@ asyncio.run(run())
     result = _run(script)
 
     assert result.returncode == 0, result.stderr
-    assert "--embedding-vars" in result.stdout
+    assert "mode='fts'" in result.stdout
+    assert "CHARTCOACH_EMBEDDING_VARS" in result.stdout
+    assert "restart" in result.stdout
     assert "producer-secret-value" not in result.stdout
     assert "producer-secret-value" not in result.stderr
 
