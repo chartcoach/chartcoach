@@ -12,6 +12,7 @@ import { useChatPresentation } from "../../chat/use-chat-presentation";
 import { useModelContext } from "../../chat/use-model-context";
 import { useWorkspace } from "../../chat/use-workspace";
 import { useNavigation } from "../../chat/use-navigation";
+import { threadIdSchema } from "../../shared/threads";
 import { ModelSettings } from "../settings/model-settings";
 import { HistoryPanel } from "./history";
 import { NavigationHeader } from "./navigation-header";
@@ -31,7 +32,7 @@ export function useChatWorkspace() {
   return context;
 }
 
-export function ChatConversation() {
+function ChatConversation() {
   const { state, navigation } = useChatWorkspace();
 
   const {
@@ -72,7 +73,6 @@ export function ChatConversation() {
         uploadExample={uploadExample}
         composer={
           <Composer
-            embedded={empty}
             onUpload={onUpload}
             messageInput={messageInput}
             busy={busy}
@@ -122,6 +122,10 @@ export function WorkspacePending() {
 function ChatLayout({ children }: { children: ReactNode }) {
   const { state, navigation } = useChatWorkspace();
   const { workspace, catalog, disabled } = state;
+
+  const validChatRoute =
+    !workspace.requestedId || threadIdSchema.safeParse(workspace.requestedId).success;
+
   const hasAttachment = useAuiState((value) => value.composer.attachments.length > 0);
   useModelContext(workspace.connection?.model);
 
@@ -151,7 +155,9 @@ function ChatLayout({ children }: { children: ReactNode }) {
           disabled={state.busy || state.reading || !workspace.ready}
           guidelineCount={catalog.selection?.matchedGuidelines}
         />
-        <div {...stylex.props(styles.canvas)}>{children}</div>
+        <div {...stylex.props(styles.canvas)}>
+          {navigation.view === "chat" && validChatRoute ? <ChatConversation /> : children}
+        </div>
       </div>
     </Dropzone>
   );

@@ -1,11 +1,11 @@
 import { BookOpen, ChevronDown, X } from "lucide-react";
 import { Collapsible, Dialog } from "radix-ui";
 import { useEvidencePanel } from "../../chat/use-evidence-panel";
+import { useContentScroll } from "../../chat/use-content-scroll";
 import type { EvidenceItem } from "../../chat/evidence";
 import { EvidenceList } from "./evidence-list";
 import { Collapse } from "../ui/collapse";
 import * as stylex from "@stylexjs/stylex";
-import { motionScope } from "../ui/tokens.stylex";
 import { ui } from "../ui/ui";
 import { styles } from "./evidence-panel.styles";
 
@@ -31,12 +31,15 @@ export function EvidencePanel({
     restoreFocus,
   } = useEvidencePanel(items, busy);
 
+  const desktopScroll = useContentScroll();
+  const sheetScroll = useContentScroll();
+
   if (!active) return null;
 
   return (
     <aside {...stylex.props(styles.panel)} aria-label="Guideline evidence">
       <Collapsible.Root
-        {...stylex.props(motionScope, styles.desktop)}
+        {...stylex.props(styles.desktop)}
         open={expanded}
         onOpenChange={setExpanded}
       >
@@ -55,11 +58,13 @@ export function EvidencePanel({
         </Collapsible.Trigger>
         <Collapsible.Content forceMount>
           <Collapse open={expanded}>
-            <div {...stylex.props(styles.scroll)}>
-              <p {...stylex.props(styles.summary)} role="status">
-                {summary}
-              </p>
-              <EvidenceList groups={groups} busy={busy} />
+            <div ref={desktopScroll.viewportRef} {...stylex.props(styles.scroll)}>
+              <div>
+                <p {...stylex.props(styles.summary)} role="status">
+                  {summary}
+                </p>
+                <EvidenceList groups={groups} busy={busy} />
+              </div>
             </div>
           </Collapse>
         </Collapsible.Content>
@@ -81,7 +86,7 @@ export function EvidencePanel({
           <Dialog.Overlay {...stylex.props(styles.overlay)} />
           <Dialog.Content
             aria-modal="true"
-            {...stylex.props(motionScope, styles.sheet)}
+            {...stylex.props(styles.sheet)}
             onCloseAutoFocus={restoreFocus}
           >
             <header {...stylex.props(styles.sheetHeader)}>
@@ -98,8 +103,10 @@ export function EvidencePanel({
                 <X size={18} aria-hidden="true" />
               </Dialog.Close>
             </header>
-            <div {...stylex.props(styles.sheetScroll)}>
-              <EvidenceList groups={groups} busy={busy} />
+            <div ref={sheetScroll.viewportRef} {...stylex.props(styles.sheetScroll)}>
+              <div>
+                <EvidenceList groups={groups} busy={busy} />
+              </div>
             </div>
           </Dialog.Content>
         </Dialog.Portal>

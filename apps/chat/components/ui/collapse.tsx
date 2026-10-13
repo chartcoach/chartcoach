@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import * as stylex from "@stylexjs/stylex";
-import { media, motion, motionScope } from "./tokens.stylex";
+import { media, motion } from "./tokens.stylex";
 
 const styles = stylex.create({
   root: {
@@ -12,7 +12,6 @@ const styles = stylex.create({
     transitionDuration: {
       default: motion.disclosure,
       [media.reducedMotion]: "0ms",
-      [stylex.when.ancestor(":has(:focus-visible)", motionScope)]: "0ms",
     },
   },
   open: { gridTemplateRows: "1fr", opacity: 1 },

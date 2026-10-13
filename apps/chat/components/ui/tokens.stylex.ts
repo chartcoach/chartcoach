@@ -41,10 +41,6 @@ export const motion = stylex.defineConsts({
   control: "160ms",
 });
 
-export const motionScope = stylex.defineMarker();
-
 export const disclosureScope = stylex.defineMarker();
-
-export const emptyThreadScope = stylex.defineMarker();
 
 export const historyRowScope = stylex.defineMarker();

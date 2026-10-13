@@ -70,7 +70,6 @@ const styles = stylex.create({
         [DETAILS_ANIMATION]: {
           default: motion.disclosure,
           [media.reducedMotion]: "0ms",
-          ":has(> summary:focus-visible)": "0ms",
         },
       },
       transitionTimingFunction: {

@@ -1,6 +1,7 @@
 import { AttachmentPrimitive, ComposerPrimitive } from "@assistant-ui/react";
 import * as Match from "effect/Match";
 import { ArrowUp, ImagePlus, Info, X } from "lucide-react";
+import { Popover } from "radix-ui";
 import type { ReactNode, RefObject } from "react";
 import * as stylex from "@stylexjs/stylex";
 import { colors, media, motion } from "../ui/tokens.stylex";
@@ -12,8 +13,8 @@ const styles = stylex.create({
     flexShrink: 0,
     marginInline: "auto",
     paddingTop: 12,
-    paddingInline: { default: 24, [media.mobile]: 18 },
-    paddingBottom: "max(18px, env(safe-area-inset-bottom))",
+    paddingInline: { default: 24, [media.mobile]: 12 },
+    paddingBottom: "max(8px, env(safe-area-inset-bottom))",
   },
   root: {
     backgroundColor: colors.surface,
@@ -22,9 +23,8 @@ const styles = stylex.create({
     borderColor: { default: colors.border, ":focus-within": colors.muted },
     borderRadius: 16,
     boxShadow: "0 2px 12px #00000006",
-    padding: 16,
+    padding: { default: 16, [media.mobile]: 12 },
   },
-  embedded: { width: "100%", paddingInline: 0, paddingTop: 24, paddingBottom: 0 },
   input: {
     display: "block",
     width: "100%",
@@ -34,7 +34,7 @@ const styles = stylex.create({
     color: "inherit",
     outlineStyle: "none",
     lineHeight: 1.6,
-    minHeight: { default: 64, [media.short]: 48 },
+    minHeight: { default: 48, [media.mobile]: 40, [media.short]: 32 },
     maxHeight: 180,
     paddingBlock: 0,
     paddingInline: 2,
@@ -117,29 +117,44 @@ const styles = stylex.create({
   },
   remove: { marginLeft: "auto", flexShrink: 0 },
   note: {
-    display: "grid",
-    gap: 4,
+    display: "flex",
+    justifyContent: "center",
     textAlign: "center",
     color: colors.muted,
     fontSize: 12,
     lineHeight: 1.5,
-    marginTop: { default: 12, [media.mobile]: 9 },
+    marginTop: 4,
   },
-  noteLine: { margin: 0 },
-  tracingNotice: {
+  privacyTrigger: {
+    fontSize: 11,
+    gap: 6,
+    minHeight: 32,
+    paddingBlock: 4,
+    paddingInline: 8,
+  },
+  privacyContent: {
+    zIndex: 50,
+    width: "min(340px, calc(100vw - 32px))",
+    padding: 18,
+    backgroundColor: colors.surface,
+    color: colors.foreground,
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: colors.border,
+    borderRadius: 12,
+    boxShadow: "0 8px 32px #00000020",
+    fontSize: 13,
+    lineHeight: 1.6,
+  },
+  privacyHeading: {
     display: "flex",
-    alignItems: "flex-start",
+    alignItems: "center",
+    justifyContent: "space-between",
     gap: 8,
-    width: "min(100%, 680px)",
-    marginBlock: 2,
-    marginInline: "auto",
-    paddingBlock: 9,
-    paddingInline: 11,
-    borderRadius: 8,
-    backgroundColor: colors.navigation,
-    textAlign: "left",
+    marginBottom: 8,
   },
-  tracingIcon: { flexShrink: 0, marginTop: 2 },
+  privacyTitle: { fontWeight: 550 },
+  privacyText: { color: colors.muted, marginTop: 8 },
   tracingLink: {
     color: colors.accentText,
     fontWeight: 500,
@@ -157,7 +172,6 @@ export function Composer({
   onRecover,
   modelControl,
   tracing = false,
-  embedded = false,
 }: {
   onUpload: (files: File[]) => void;
   messageInput: RefObject<HTMLTextAreaElement | null>;
@@ -168,10 +182,9 @@ export function Composer({
   onRecover?: () => Promise<void>;
   modelControl?: ReactNode;
   tracing?: boolean;
-  embedded?: boolean;
 }) {
   return (
-    <div {...stylex.props(styles.area, embedded && styles.embedded)}>
+    <div {...stylex.props(styles.area)}>
       <ComposerPrimitive.Root {...stylex.props(styles.root)} aria-label="Message composer">
         <ComposerPrimitive.Attachments>
           {({ attachment }) => {
@@ -218,7 +231,7 @@ export function Composer({
           {...stylex.props(styles.input)}
           id="message"
           ref={messageInput}
-          placeholder="Ask about your chart or a design choice…"
+          placeholder="Ask about your chart…"
           minRows={1}
           maxRows={6}
           disabled={disabled}
@@ -292,28 +305,55 @@ export function Composer({
           </button>
         </div>
       ) : null}
-      <div {...stylex.props(styles.note)} id="message-privacy">
-        <p {...stylex.props(styles.noteLine)}>
-          Messages and images are sent to the configured AI provider.
-        </p>
-        {embedded && tracing ? (
-          <p {...stylex.props(styles.tracingNotice)}>
-            <Info {...stylex.props(styles.tracingIcon)} size={14} aria-hidden="true" />
-            <span>
-              Conversation tracing is enabled to improve ChartCoach and may include messages,
-              images, and responses. You can opt out by{" "}
-              <a
-                {...stylex.props(styles.tracingLink, ui.focus)}
-                href="https://docs.chartcoach.dev/"
-                target="_blank"
-                rel="noreferrer"
-              >
-                self-hosting ChartCoach with tracing disabled
-              </a>
-              .
+      <div {...stylex.props(styles.note)}>
+        <Popover.Root>
+          <Popover.Trigger
+            {...stylex.props(ui.button, ui.quietButton, ui.focus, styles.privacyTrigger)}
+            title="Privacy and tracing"
+          >
+            <span id="message-privacy">
+              Sent to your AI provider{tracing ? " · Tracing on" : ""}
             </span>
-          </p>
-        ) : null}
+            <Info size={12} {...stylex.props(ui.icon)} aria-hidden="true" />
+          </Popover.Trigger>
+          <Popover.Portal>
+            <Popover.Content
+              {...stylex.props(styles.privacyContent)}
+              side="top"
+              sideOffset={8}
+              collisionPadding={16}
+              aria-label="Privacy and tracing details"
+            >
+              <div {...stylex.props(styles.privacyHeading)}>
+                <h2 {...stylex.props(styles.privacyTitle)}>Your conversation</h2>
+                <Popover.Close
+                  {...stylex.props(ui.button, ui.quietButton, ui.focus)}
+                  aria-label="Close privacy details"
+                >
+                  <X size={16} aria-hidden="true" />
+                </Popover.Close>
+              </div>
+              <p {...stylex.props(styles.privacyText)}>
+                Messages and images are sent to the configured AI provider.
+              </p>
+              {tracing ? (
+                <p {...stylex.props(styles.privacyText)}>
+                  Conversation tracing is enabled to improve ChartCoach and may include messages,
+                  images, and responses. You can opt out by{" "}
+                  <a
+                    {...stylex.props(styles.tracingLink, ui.focus)}
+                    href="https://docs.chartcoach.dev/"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    self-hosting ChartCoach with tracing disabled
+                  </a>
+                  .
+                </p>
+              ) : null}
+            </Popover.Content>
+          </Popover.Portal>
+        </Popover.Root>
       </div>
     </div>
   );

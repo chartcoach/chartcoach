@@ -26,7 +26,6 @@ export const styles = stylex.create({
         default: null,
         [FLUID_DETAILS]: {
           default: motion.disclosure,
-          ":has(> summary:focus-visible)": "0ms",
           [media.reducedMotion]: "0ms",
         },
       },

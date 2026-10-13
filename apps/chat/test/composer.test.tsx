@@ -4,20 +4,13 @@ import {
   useExternalStoreRuntime,
   type ThreadMessage,
 } from "@assistant-ui/react";
-import { useRef } from "react";
-import { expect, it } from "vite-plus/test";
+import { act, useRef } from "react";
+import { createRoot } from "react-dom/client";
+import { expect, it, vi } from "vite-plus/test";
 import { Composer } from "../components/chat/composer";
 import { renderDocument } from "./render-document";
 
-function NativeComposer({
-  running,
-  tracing = false,
-  embedded = false,
-}: {
-  running: boolean;
-  tracing?: boolean;
-  embedded?: boolean;
-}) {
+function NativeComposer({ running, tracing = false }: { running: boolean; tracing?: boolean }) {
   const runtime = useExternalStoreRuntime<ThreadMessage>({
     messages: [],
     isRunning: running,
@@ -36,7 +29,6 @@ function NativeComposer({
         disabled={running}
         reading={false}
         tracing={tracing}
-        embedded={embedded}
       />
     </AssistantRuntimeProvider>
   );
@@ -70,20 +62,47 @@ it("exposes cancellation while the runtime is running", () => {
   expect(page.querySelector("textarea")?.disabled).toBe(true);
 });
 
-it("discloses functional conversation tracing on the landing composer", () => {
-  const traced = renderDocument(<NativeComposer running={false} tracing embedded />);
+it("names the provider and active tracing beside the composer", () => {
+  const traced = renderDocument(<NativeComposer running={false} tracing />);
   const notice = traced.getElementById("message-privacy")!;
-  const link = notice.querySelector<HTMLAnchorElement>("a")!;
-
-  expect(notice.textContent).toContain(
-    "Conversation tracing is enabled to improve ChartCoach and may include messages, images, and responses.",
-  );
-  expect(link.textContent).toBe("self-hosting ChartCoach with tracing disabled");
-  expect(link.href).toBe("https://docs.chartcoach.dev/");
-  expect(renderDocument(<NativeComposer running={false} tracing />).body.textContent).not.toContain(
-    "Conversation tracing is enabled",
-  );
+  expect(notice.textContent).toBe("Sent to your AI provider · Tracing on");
   expect(
-    renderDocument(<NativeComposer running={false} embedded />).body.textContent,
-  ).not.toContain("Conversation tracing is enabled");
+    renderDocument(<NativeComposer running={false} />).getElementById("message-privacy")
+      ?.textContent,
+  ).toBe("Sent to your AI provider");
+});
+
+it("opens the full tracing explanation and restores focus when dismissed", async () => {
+  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
+  const container = document.createElement("div");
+  document.body.append(container);
+  const root = createRoot(container);
+
+  try {
+    await act(async () => root.render(<NativeComposer running={false} tracing />));
+
+    const trigger = Array.from(document.querySelectorAll("button")).find((button) =>
+      button.textContent?.includes("Sent to your AI provider"),
+    )!;
+
+    trigger.focus();
+    await act(async () => trigger.click());
+    const details = document.querySelector('[role="dialog"]')!;
+    expect(details.textContent).toContain(
+      "Conversation tracing is enabled to improve ChartCoach and may include messages, images, and responses.",
+    );
+    const link = details.querySelector<HTMLAnchorElement>("a")!;
+    expect(link.textContent).toBe("self-hosting ChartCoach with tracing disabled");
+    expect(link.href).toBe("https://docs.chartcoach.dev/");
+    await act(async () =>
+      document
+        .querySelector<HTMLButtonElement>('button[aria-label="Close privacy details"]')!
+        .click(),
+    );
+    expect(document.activeElement).toBe(trigger);
+  } finally {
+    await act(async () => root.unmount());
+    container.remove();
+    vi.unstubAllGlobals();
+  }
 });

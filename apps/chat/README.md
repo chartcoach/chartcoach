@@ -478,7 +478,8 @@ LANGFUSE_SECRET_KEY=sk-lf-...
 LANGFUSE_BASE_URL=https://cloud.langfuse.com
 ```
 
-When tracing is enabled and both keys are present, the landing page tells users
+When tracing is enabled and both keys are present, the composer shows **Tracing on**.
+Choose **Sent to your AI provider** below the composer for the full explanation. It tells users
 that conversation traces may include messages, images, and responses. The notice
 links to self-hosting instructions for running ChartCoach with tracing disabled.
 

@@ -202,16 +202,20 @@ export const styles = stylex.create({
   modelName: {
     color: colors.muted,
     fontSize: 12,
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap",
+    overflowWrap: "anywhere",
   },
-  trigger: { gridArea: "model", justifySelf: "start", maxWidth: "min(210px, 100%)", minWidth: 0 },
+  trigger: {
+    gridArea: "model",
+    justifySelf: "start",
+    maxWidth: "100%",
+    minWidth: 0,
+    textAlign: "left",
+  },
   triggerText: {
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap",
-    maxWidth: { default: 160, [media.mobile]: 100 },
+    whiteSpace: "normal",
+    overflowWrap: "anywhere",
+    lineHeight: 1.4,
+    fontSize: 12,
   },
   note: {
     display: "flex",

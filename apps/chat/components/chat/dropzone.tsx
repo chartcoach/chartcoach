@@ -1,6 +1,7 @@
 import { ImagePlus } from "lucide-react";
 import type { ReactNode } from "react";
 import { useFileDrop } from "../../chat/use-file-drop";
+import { useViewportHeight } from "../../chat/use-viewport-height";
 import * as stylex from "@stylexjs/stylex";
 import { colors } from "../ui/tokens.stylex";
 import { ui } from "../ui/ui";
@@ -8,12 +9,13 @@ import { ui } from "../ui/ui";
 const styles = stylex.create({
   shell: {
     height: "100dvh",
-    minHeight: 320,
+    minHeight: 0,
     display: "flex",
     flexDirection: "column",
     paddingLeft: "env(safe-area-inset-left)",
     paddingRight: "env(safe-area-inset-right)",
   },
+  height: (height: number) => ({ height }),
   overlay: {
     position: "fixed",
     inset: 12,
@@ -56,9 +58,10 @@ export function Dropzone({
   onFiles: (files: File[]) => void;
 }) {
   const active = useFileDrop(disabled, onFiles);
+  const height = useViewportHeight();
 
   return (
-    <div {...stylex.props(styles.shell)}>
+    <div {...stylex.props(styles.shell, height !== undefined && styles.height(height))}>
       {children}
       {active ? (
         <div {...stylex.props(styles.overlay)} role="status">

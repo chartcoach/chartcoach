@@ -29,7 +29,7 @@ export function useChatFocus(
     const moved = !!previousInput.current && previousInput.current !== messageInput.current;
     previousInput.current = messageInput.current;
 
-    // The first accepted turn relocates the composer. Preserve any other chosen focus.
+    // A route transition can replace the input after focus falls back to the document body.
     if (!pending.current && !(moved && document.activeElement === document.body)) return;
 
     const desktop = window.matchMedia(
