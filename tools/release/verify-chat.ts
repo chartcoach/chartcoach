@@ -712,15 +712,26 @@ try {
   assert.deepEqual(unchangedScope.guidelines, saved.guidelines);
 
   const unknownPage = await context.newPage();
-  const invalid = await unknownPage.goto(new URL("/chat/invalid-id", url).href);
-  assert.equal(invalid?.status(), 404);
-  assert.equal(
-    await unknownPage.getByRole("region", { name: "Conversation", exact: true }).count(),
-    0,
-  );
-  await unknownPage.goto(new URL("/chat/c3666202-50b1-449c-ac0c-9d458e936f92", url).href);
-  await unknownPage.getByRole("alert").filter({ hasText: "Conversation not found." }).waitFor();
-  assert.equal(await unknownPage.locator("article > header > h2").count(), 0);
+  const missing = await unknownPage.goto(new URL("/missing-page", url).href);
+  assert.equal(missing?.status(), 404);
+  await unknownPage.getByRole("heading", { name: "We couldn’t find that page." }).waitFor();
+  await unknownPage.getByRole("link", { name: "Back to chat", exact: true }).click();
+  await unknownPage.waitForURL(new URL("/", url).href);
+
+  for (const path of [
+    "/chat/invalid-id",
+    "/chat/c3666202-50b1-449c-ac0c-9d458e936f92",
+    "/chat/c3666202-50b1-449c-ac0c-9d458e936f92/guidelines",
+  ]) {
+    await unknownPage.goto(new URL(path, url).href);
+    await unknownPage.waitForURL(new URL("/", url).href);
+    await unknownPage
+      .getByRole("textbox", { name: /message|ask|chart/i })
+      .first()
+      .waitFor();
+    assert.equal(await unknownPage.locator("article > header > h2").count(), 0);
+  }
+
   await unknownPage.close();
 
   const otherOwner = await browser.newContext({
@@ -730,7 +741,12 @@ try {
   const privatePage = await otherOwner.newPage();
   privatePage.on("pageerror", (error) => errors.push(error.message));
   await privatePage.goto(new URL(threadPath, url).href);
-  await privatePage.getByRole("alert").filter({ hasText: "Conversation not found." }).waitFor();
+  await privatePage.waitForURL(new URL("/", url).href);
+  await privatePage
+    .getByRole("textbox", { name: /message|ask|chart/i })
+    .first()
+    .waitFor();
+  assert.equal(await privatePage.locator("article > header > h2").count(), 0);
 
   const privateRead = await privatePage.evaluate(
     async (id) => (await fetch(`/eve/v1/threads/${id}`)).status,

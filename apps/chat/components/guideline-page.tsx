@@ -6,6 +6,7 @@ import { useGuidelinePage } from "../chat/use-guideline-page";
 import { ui } from "./ui/ui";
 import { colors } from "./ui/tokens.stylex";
 import Link from "next/link";
+import { NotFoundPage } from "./not-found-page";
 
 const styles = stylex.create({
   page: {
@@ -24,7 +25,9 @@ const styles = stylex.create({
 });
 
 export function GuidelinePage({ id }: { id: string }) {
-  const { guideline, error } = useGuidelinePage(id);
+  const { guideline, error, notFound } = useGuidelinePage(id);
+
+  if (notFound) return <NotFoundPage />;
 
   return (
     <main {...stylex.props(styles.page)}>

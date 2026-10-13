@@ -1,7 +1,12 @@
 import { defaultGuidelineLinks } from "../shared/guideline-links";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useParams, usePathname, useRouter } from "next/navigation";
-import { loadPreferences, loadThread, loadThreads } from "../browser/workspace-client";
+import {
+  loadPreferences,
+  loadThread,
+  loadThreads,
+  WorkspaceRequestError,
+} from "../browser/workspace-client";
 import { chatPath } from "../shared/routes";
 import type { Connection } from "../shared/preferences";
 import type { SavedThread, ThreadDetail } from "../shared/threads";
@@ -147,14 +152,19 @@ export function useWorkspace() {
         setConnectionId(thread.connectionId);
       })
       .catch((cause) => {
-        if (!controller.signal.aborted)
-          setThreadError(
-            cause instanceof Error ? cause.message : "Could not open the conversation.",
-          );
+        if (controller.signal.aborted) return;
+
+        if (cause instanceof WorkspaceRequestError && cause.status === 404) {
+          router.replace("/", { scroll: false });
+
+          return;
+        }
+
+        setThreadError(cause instanceof Error ? cause.message : "Could not open the conversation.");
       });
 
     return () => controller.abort();
-  }, [requestedId, ready, threadAttempt, pendingRoute]);
+  }, [requestedId, ready, threadAttempt, pendingRoute, router]);
 
   const openThread = useCallback(
     (id: string) =>

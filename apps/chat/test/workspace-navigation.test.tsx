@@ -44,6 +44,8 @@ let workspace: ReturnType<typeof useWorkspace>;
 
 let router: AppRouterInstance;
 
+let replace = vi.fn<AppRouterInstance["replace"]>();
+
 let threadResponse: ReturnType<typeof Promise.withResolvers<Response>>;
 
 function Workspace() {
@@ -52,11 +54,11 @@ function Workspace() {
   return workspace.loading ? <p>Loading workspace</p> : <textarea aria-label="Draft" />;
 }
 
-function navigate(id?: string) {
+function navigate(id?: string, pathname = id ? `/chat/${id}` : "/") {
   return act(async () =>
     root.render(
       <AppRouterContext value={router}>
-        <PathnameContext value={id ? `/chat/${id}` : "/"}>
+        <PathnameContext value={pathname}>
           <PathParamsContext value={id ? { threadId: id } : {}}>
             <Workspace />
           </PathParamsContext>
@@ -71,12 +73,13 @@ beforeEach(() => {
   const container = document.createElement("div");
   document.body.append(container);
   root = createRoot(container);
+  replace = vi.fn<AppRouterInstance["replace"]>();
   router = {
     back: vi.fn(),
     forward: vi.fn(),
     refresh: vi.fn(),
     push: vi.fn(),
-    replace: vi.fn(),
+    replace,
     prefetch: vi.fn(),
     bfcacheId: "workspace",
   };
@@ -148,6 +151,62 @@ it("still loads a directly opened saved conversation before revealing its compos
   expect(workspace.loading).toBe(false);
   expect(workspace.active?.id).toBe(firstId);
   expect(document.querySelector("textarea")).not.toBeNull();
+});
+
+it.each([`/chat/${firstId}`, `/chat/${firstId}/guidelines`])(
+  "returns a missing conversation at %s to the landing page",
+  async (pathname) => {
+    await navigate(firstId, pathname);
+    await act(async () =>
+      threadResponse.resolve(Response.json({ error: "Conversation not found." }, { status: 404 })),
+    );
+    expect(replace).toHaveBeenCalledExactlyOnceWith("/", { scroll: false });
+    expect(workspace.threadError).toBeUndefined();
+    await navigate();
+    expect(workspace.loading).toBe(false);
+    expect(document.querySelector("textarea")).not.toBeNull();
+  },
+);
+
+it("clears the previous conversation after a missing destination returns home", async () => {
+  await navigate();
+  await act(async () => workspace.adoptThread(savedThread()));
+  await navigate(firstId);
+  const key = workspace.key;
+  replace.mockClear();
+  await navigate(secondId);
+  await act(async () =>
+    threadResponse.resolve(Response.json({ error: "Conversation not found." }, { status: 404 })),
+  );
+  expect(replace).toHaveBeenCalledExactlyOnceWith("/", { scroll: false });
+  await navigate();
+  expect(workspace.active).toBeUndefined();
+  expect(workspace.key).not.toBe(key);
+});
+
+it("retains conversation failures for retry when the server is temporarily unavailable", async () => {
+  await navigate(firstId);
+  await act(async () =>
+    threadResponse.resolve(Response.json({ error: "Conversation not found." }, { status: 503 })),
+  );
+  expect(replace).not.toHaveBeenCalled();
+  expect(workspace.threadError).toBe("Conversation not found.");
+  threadResponse = Promise.withResolvers<Response>();
+  await act(async () => workspace.retry());
+  await act(async () => threadResponse.resolve(Response.json(savedThread())));
+  expect(workspace.active?.id).toBe(firstId);
+  expect(workspace.threadError).toBeUndefined();
+});
+
+it("ignores a late missing-conversation response after navigating away", async () => {
+  await navigate(firstId);
+  await navigate();
+  await act(async () =>
+    threadResponse.resolve(Response.json({ error: "Conversation not found." }, { status: 404 })),
+  );
+  expect(replace).not.toHaveBeenCalled();
+  expect(workspace.loading).toBe(false);
+  expect(workspace.threadError).toBeUndefined();
 });
 
 it("loads an unrelated destination if navigation interrupts conversation creation", async () => {
