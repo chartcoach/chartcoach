@@ -429,7 +429,12 @@ try {
   const rootResponse = await context.request.get(url);
   assert.equal(rootResponse.headers()["x-powered-by"], undefined);
   assert.equal(await page.getByText("Saved for this browser", { exact: true }).count(), 0);
+  await page.getByText("Sent to your AI provider · Tracing on", { exact: true }).waitFor();
+  await page
+    .getByRole("button", { name: "Sent to your AI provider · Tracing on", exact: true })
+    .click();
   await page.getByText("Conversation tracing is enabled", { exact: false }).waitFor();
+  await page.getByRole("button", { name: "Close privacy details", exact: true }).click();
   await page.getByRole("button", { name: "Close sidebar", exact: true }).click();
   const mark = page.getByRole("button", { name: "Open sidebar", exact: true });
 
@@ -500,11 +505,20 @@ try {
       .inputValue(),
     "Discuss clear labels in a comparison.",
   );
+  const composer = page.getByRole("textbox", { name: /message|ask|chart/i }).first();
+  const initialComposer = await composer.elementHandle();
+
+  assert.ok(initialComposer);
   await page.getByRole("button", { name: "Remove image", exact: true }).waitFor();
   await page.getByRole("button", { name: /send/i }).click();
   await page
     .getByText("Use clear labels for the comparison.", { exact: true })
     .waitFor({ timeout: 90_000 });
+  assert.equal(
+    await composer.evaluate((element, before) => element === before, initialComposer),
+    true,
+    "Saving the first message preserves the composer element",
+  );
   const primaryCitation = page.getByRole("link", { name: `Primary: ${title}`, exact: true });
   await primaryCitation.waitFor();
   assert.equal(
@@ -700,6 +714,10 @@ try {
   const unknownPage = await context.newPage();
   const invalid = await unknownPage.goto(new URL("/chat/invalid-id", url).href);
   assert.equal(invalid?.status(), 404);
+  assert.equal(
+    await unknownPage.getByRole("region", { name: "Conversation", exact: true }).count(),
+    0,
+  );
   await unknownPage.goto(new URL("/chat/c3666202-50b1-449c-ac0c-9d458e936f92", url).href);
   await unknownPage.getByRole("alert").filter({ hasText: "Conversation not found." }).waitFor();
   assert.equal(await unknownPage.locator("article > header > h2").count(), 0);

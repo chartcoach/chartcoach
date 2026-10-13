@@ -8,7 +8,6 @@ import { EvidencePanel } from "./evidence-panel";
 import { Conversation } from "./conversation";
 import { Starters } from "./starters";
 import { ProgressLabel, ProgressMark } from "./progress";
-import { emptyThreadScope } from "../ui/tokens.stylex";
 import { ui } from "../ui/ui";
 import { styles } from "./chat.styles";
 
@@ -40,10 +39,7 @@ export function ConversationPanel({
   composer: ReactNode;
 }) {
   return (
-    <main
-      {...stylex.props(styles.main, empty && styles.empty, emptyThreadScope)}
-      data-empty={empty}
-    >
+    <main {...stylex.props(styles.main)} data-empty={empty}>
       <h1 ref={heading} tabIndex={-1} {...stylex.props(ui.srOnly)}>
         ChartCoach conversation
       </h1>
@@ -64,7 +60,6 @@ export function ConversationPanel({
                 <p {...stylex.props(styles.intro)}>
                   Review a chart, plan a design, or explore a tradeoff.
                 </p>
-                {composer}
                 <Starters disabled={disabled} onImage={uploadExample} />
               </section>
             ) : (
@@ -101,7 +96,7 @@ export function ConversationPanel({
               </p>
             ) : null}
           </Conversation>
-          {!empty ? composer : null}
+          {composer}
         </div>
         <EvidencePanel
           key={sentMessageId ?? "empty"}

@@ -1,5 +1,5 @@
 import * as stylex from "@stylexjs/stylex";
-import { colors, media, motion, motionScope } from "./tokens.stylex";
+import { colors, media, motion } from "./tokens.stylex";
 
 const reveal = stylex.keyframes({
   from: { opacity: 0, transform: "translateY(3px)" },
@@ -101,7 +101,6 @@ export const ui = stylex.create({
     transitionDuration: {
       default: motion.control,
       [media.reducedMotion]: "0ms",
-      [stylex.when.ancestor(":has(:focus-visible)", motionScope)]: "0ms",
     },
   },
   mono: { fontFamily: "var(--font-geist-mono), monospace" },

@@ -56,29 +56,28 @@ function Starter({
       <img src={starter.image} alt="" width={960} height={560} {...stylex.props(styles.image)} />
       <span {...stylex.props(styles.text)}>
         <SuggestionPrimitive.Title {...stylex.props(styles.title)} />
+        <span {...stylex.props(styles.description)}>{starter.description}</span>
       </span>
     </SuggestionPrimitive.Trigger>
   );
 }
 
 const styles = stylex.create({
-  root: { marginTop: 28 },
+  root: { marginTop: { default: 40, [media.mobile]: 32 } },
   heading: { marginTop: 0, marginBottom: 12, color: colors.muted, fontSize: 12 },
   list: {
     display: "grid",
     gridTemplateColumns: {
       default: "repeat(3, minmax(0, 1fr))",
-      [media.mobile]: "repeat(3, 174px)",
+      [media.mobile]: "minmax(0, 1fr)",
     },
     gap: 12,
-    overflowX: "auto",
     padding: 2,
-    scrollbarWidth: "thin",
-    scrollbarColor: `${colors.scrollThumb} transparent`,
   },
   card: {
     display: "flex",
-    flexDirection: "column",
+    flexDirection: { default: "column", [media.mobile]: "row" },
+    alignItems: { default: "stretch", [media.mobile]: "center" },
     padding: 0,
     textAlign: "left",
     minWidth: 0,
@@ -88,7 +87,7 @@ const styles = stylex.create({
       default: colors.border,
       ":hover:enabled": { default: null, [media.hover]: colors.muted },
     },
-    borderRadius: 12,
+    borderRadius: 10,
     backgroundColor: {
       default: colors.background,
       ":hover:enabled": { default: null, [media.hover]: colors.navigation },
@@ -103,12 +102,14 @@ const styles = stylex.create({
   },
   image: {
     display: "block",
-    width: "100%",
-    height: "auto",
+    width: { default: "100%", [media.mobile]: 88 },
+    height: { default: "auto", [media.mobile]: 68 },
+    flexShrink: 0,
     aspectRatio: "12 / 7",
     objectFit: "contain",
     backgroundColor: "#fafafa",
   },
-  text: { padding: 12 },
-  title: { fontSize: 12, fontWeight: 500, lineHeight: 1.4 },
+  text: { display: "grid", gap: 4, padding: 12, minWidth: 0 },
+  title: { fontSize: 14, fontWeight: 500, lineHeight: 1.4 },
+  description: { fontSize: 12, color: colors.muted, lineHeight: 1.5 },
 });
