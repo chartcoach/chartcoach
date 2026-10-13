@@ -46,11 +46,12 @@ function ChatConversation() {
     statusText,
     messageInput,
     catalog,
-    uploadExample,
+    sendExample,
+    example,
     workspace,
   } = state;
 
-  const { heading, empty, showStatus, sentMessageId, onUpload } = useChatPresentation(
+  const { heading, empty, restoring, showStatus, onUpload } = useChatPresentation(
     state,
     navigation,
   );
@@ -64,13 +65,14 @@ function ChatConversation() {
         conversation={conversation}
         attachments={attachments}
         empty={empty}
+        restoring={restoring}
         showStatus={showStatus}
         busy={busy}
         disabled={disabled}
         statusText={statusText}
-        sentMessageId={sentMessageId}
         matchedGuidelines={catalog.selection?.matchedGuidelines}
-        uploadExample={uploadExample}
+        sendExample={sendExample}
+        example={example}
         composer={
           <Composer
             onUpload={onUpload}

@@ -15,6 +15,8 @@ export type ProgressPhase = keyof typeof progressLabels;
 export function progressPhase(view: MessageView): ProgressPhase {
   if (view.complete || view.failed || view.stopped || (view.answer && !view.drafting))
     return "complete";
+
+  if (view.message.metadata?.optimistic) return "preparing";
   const tools = view.message.parts.filter((part) => part.type === "dynamic-tool");
   const presentation = tools.findLast((part) => part.toolName === "present_answer");
 

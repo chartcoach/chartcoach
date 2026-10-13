@@ -1,4 +1,4 @@
-import { SuggestionPrimitive, ThreadPrimitive, useAui } from "@assistant-ui/react";
+import { SuggestionPrimitive, ThreadPrimitive } from "@assistant-ui/react";
 import * as stylex from "@stylexjs/stylex";
 import { starters } from "../../shared/starters";
 import { colors, media } from "../ui/tokens.stylex";
@@ -6,10 +6,13 @@ import { ui } from "../ui/ui";
 
 export function Starters({
   disabled,
-  onImage,
+  pending,
+  onExample,
 }: {
   disabled: boolean;
-  onImage: (path: string) => Promise<boolean>;
+  /** The example image being prepared for sending. */
+  pending?: string;
+  onExample: (image: string, prompt: string) => Promise<void>;
 }) {
   return (
     <section aria-label="Try an example" {...stylex.props(styles.root)}>
@@ -20,7 +23,12 @@ export function Starters({
             const starter = starters.find((item) => item.prompt === suggestion.prompt);
 
             return starter ? (
-              <Starter starter={starter} disabled={disabled} onImage={onImage} />
+              <Starter
+                starter={starter}
+                disabled={disabled}
+                pending={starter.image === pending}
+                onExample={onExample}
+              />
             ) : null;
           }}
         </ThreadPrimitive.Suggestions>
@@ -32,26 +40,22 @@ export function Starters({
 function Starter({
   starter,
   disabled,
-  onImage,
+  pending,
+  onExample,
 }: {
   starter: (typeof starters)[number];
   disabled: boolean;
-  onImage: (path: string) => Promise<boolean>;
+  pending: boolean;
+  onExample: (image: string, prompt: string) => Promise<void>;
 }) {
-  const aui = useAui();
-
   return (
     <SuggestionPrimitive.Trigger
-      {...stylex.props(ui.focus, styles.card)}
+      {...stylex.props(ui.focus, styles.card, pending && styles.pending)}
       disabled={disabled}
-      onClick={async (event) => {
+      aria-busy={pending}
+      onClick={(event) => {
         event.preventDefault();
-        const prompt = aui.suggestion().getState().prompt;
-
-        if (await onImage(starter.image)) {
-          aui.composer().setText(prompt);
-          aui.composer().send();
-        }
+        void onExample(starter.image, starter.prompt);
       }}
     >
       <img src={starter.image} alt="" width={960} height={560} {...stylex.props(styles.image)} />
@@ -101,6 +105,7 @@ const styles = stylex.create({
     overflow: "hidden",
     color: colors.foreground,
   },
+  pending: { transform: "scale(0.98)", borderColor: colors.muted },
   image: {
     display: "block",
     width: { default: "100%", [media.mobile]: 88 },

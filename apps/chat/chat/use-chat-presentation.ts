@@ -21,16 +21,12 @@ export function useChatPresentation(
   return {
     hasAttachment,
     heading,
-    empty: conversation.messages.length === 0,
+    empty: !latest,
+    restoring: !latest && state.resuming,
     showStatus:
       busy &&
-      (!latest ||
-        latest.message.role !== "assistant" ||
-        latest.complete ||
-        latest.failed ||
-        latest.stopped),
-    sentMessageId: conversation.messages.findLast(({ message }) => message.role === "user")?.message
-      .id,
+      !!latest &&
+      (latest.message.role !== "assistant" || latest.complete || latest.failed || latest.stopped),
     dropDisabled: state.disabled || navigation.view === "guidelines",
     onUpload: (files: File[]) => {
       if (navigation.view === "chat") void state.upload(files);

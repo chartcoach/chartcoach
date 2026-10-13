@@ -6,11 +6,22 @@ const reveal = stylex.keyframes({
   to: { opacity: 1, transform: "translateY(0)" },
 });
 
+const arrive = stylex.keyframes({
+  from: { opacity: 0, transform: "translateY(8px)" },
+  to: { opacity: 1, transform: "translateY(0)" },
+});
+
 export const ui = stylex.create({
   appear: {
     animationName: reveal,
     animationDuration: { default: "220ms", [media.reducedMotion]: "0ms" },
     animationTimingFunction: motion.easeOut,
+  },
+  arrive: {
+    animationName: arrive,
+    animationDuration: { default: motion.enter, [media.reducedMotion]: "0ms" },
+    animationTimingFunction: motion.easeOut,
+    animationFillMode: "backwards",
   },
   srOnly: {
     position: "absolute",

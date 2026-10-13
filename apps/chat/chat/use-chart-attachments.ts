@@ -9,6 +9,7 @@ export function useChartAttachments(
   onError: (message: string | undefined) => void,
 ) {
   const [reading, setReading] = useState(false);
+  const [example, setExample] = useState<string>();
   const uploading = useRef(false);
   const exampleRequest = useRef<AbortController>(undefined);
   useEffect(() => () => exampleRequest.current?.abort(), []);
@@ -95,11 +96,11 @@ export function useChartAttachments(
     }
   }
 
-  async function uploadExample(path: string) {
-    if (blocked || uploading.current || exampleRequest.current) return false;
+  async function sendExample(path: string, prompt: string) {
+    if (blocked || uploading.current || exampleRequest.current) return;
     const controller = new AbortController();
     exampleRequest.current = controller;
-    setReading(true);
+    setExample(path);
     onError(undefined);
 
     try {
@@ -109,23 +110,43 @@ export function useChartAttachments(
 
       if (!response.ok) throw new Error("Could not load the example chart. Try again.");
       const blob = await response.blob();
-      controller.signal.throwIfAborted();
-      exampleRequest.current = undefined;
-      await runtimeRef.current!.thread.composer.addAttachment(
+
+      const chart = await readAttachment(
         new File([blob], path.split("/").at(-1)!, { type: "image/png" }),
       );
 
-      return true;
+      controller.signal.throwIfAborted();
+      exampleRequest.current = undefined;
+      // Send without staging the example in the composer, so the welcome hands
+      // straight over to the conversation.
+      runtimeRef.current!.thread.append({
+        content: [{ type: "text", text: prompt }],
+        attachments: [
+          {
+            id: chart.filename,
+            type: "image",
+            name: chart.name,
+            contentType: chart.mediaType,
+            status: { type: "complete" },
+            content: [
+              {
+                type: "file",
+                data: chart.data,
+                mimeType: chart.mediaType,
+                filename: chart.filename,
+              },
+            ],
+          },
+        ],
+      });
     } catch {
       if (!controller.signal.aborted)
         onError("Could not load the example chart. Try again or upload your own.");
-
-      return false;
     } finally {
       exampleRequest.current = undefined;
-      setReading(false);
+      setExample(undefined);
     }
   }
 
-  return { adapter, reading, messageInput, upload, uploadExample };
+  return { adapter, reading, example, messageInput, upload, sendExample };
 }

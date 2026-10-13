@@ -1,4 +1,4 @@
-import { ThreadPrimitive, useAuiEvent, useAuiState } from "@assistant-ui/react";
+import { ThreadPrimitive, useAuiEvent } from "@assistant-ui/react";
 import { ArrowDown } from "lucide-react";
 import type { ReactNode } from "react";
 import * as stylex from "@stylexjs/stylex";
@@ -59,8 +59,7 @@ const styles = stylex.create({
   },
 });
 
-export function Conversation({ children }: { children: ReactNode }) {
-  const empty = useAuiState((state) => state.thread.messages.length === 0);
+export function Conversation({ empty, children }: { empty: boolean; children: ReactNode }) {
   const { viewportRef, atLatest, scrollToLatest } = useContentScroll("bottom", !empty);
   useAuiEvent("thread.runStart", scrollToLatest);
 

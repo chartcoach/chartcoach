@@ -37,8 +37,13 @@ export const media = stylex.defineConsts({
 
 export const motion = stylex.defineConsts({
   easeOut: "cubic-bezier(0.23, 1, 0.32, 1)",
+  easeOutCubic: "cubic-bezier(0.33, 1, 0.68, 1)",
+  easeInOut: "cubic-bezier(0.77, 0, 0.175, 1)",
   disclosure: "200ms",
   control: "160ms",
+  enter: "280ms",
+  exit: "160ms",
+  move: "360ms",
 });
 
 export const disclosureScope = stylex.defineMarker();

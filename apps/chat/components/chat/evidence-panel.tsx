@@ -1,5 +1,6 @@
 import { BookOpen, ChevronDown, X } from "lucide-react";
 import { Collapsible, Dialog } from "radix-ui";
+import type { Ref } from "react";
 import { useEvidencePanel } from "../../chat/use-evidence-panel";
 import { useContentScroll } from "../../chat/use-content-scroll";
 import type { EvidenceItem } from "../../chat/evidence";
@@ -10,10 +11,12 @@ import { ui } from "../ui/ui";
 import { styles } from "./evidence-panel.styles";
 
 export function EvidencePanel({
+  ref,
   items,
   active = items.length > 0,
   busy = false,
 }: {
+  ref?: Ref<HTMLElement>;
   items: readonly EvidenceItem[];
   active?: boolean;
   busy?: boolean;
@@ -37,7 +40,7 @@ export function EvidencePanel({
   if (!active) return null;
 
   return (
-    <aside {...stylex.props(styles.panel)} aria-label="Guideline evidence">
+    <aside ref={ref} {...stylex.props(styles.panel)} aria-label="Guideline evidence">
       <Collapsible.Root
         {...stylex.props(styles.desktop)}
         open={expanded}

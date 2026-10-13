@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Answer } from "./answer";
 import { Activity } from "./activity";
 import type { ChartAttachment } from "../../chat/attachment";
@@ -15,9 +16,18 @@ export function Message({
   attachments: ReadonlyMap<string, ChartAttachment>;
 }) {
   const { message, guidelines, answer, drafting, complete, stopped, failed } = view;
+  // Messages the reader just sent arrive once; their confirmed copies keep this element.
+  const [sent] = useState(() => message.metadata?.optimistic === true);
 
   return (
-    <article {...stylex.props(styles.message, message.role === "user" && styles.user)}>
+    <article
+      {...stylex.props(
+        styles.message,
+        message.role === "user" && styles.user,
+        sent && ui.arrive,
+        sent && message.role === "assistant" && styles.reply,
+      )}
+    >
       <header {...stylex.props(styles.header)}>
         <h2 {...stylex.props(styles.author)}>{message.role === "user" ? "You" : "chartcoach"}</h2>
         {view.workflow ? (
@@ -108,6 +118,7 @@ const styles = stylex.create({
     borderBottomColor: colors.border,
     paddingBottom: 26,
   },
+  reply: { animationDelay: "60ms" },
   text: { whiteSpace: "pre-wrap", margin: 0 },
   attachment: { marginBlock: 12, marginInline: 0 },
   image: {
