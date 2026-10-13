@@ -34,7 +34,7 @@ const skillLabels = {
 };
 
 function skillActivity(part: EveDynamicToolPart) {
-  if (part.toolName !== "load_skill") return undefined;
+  if (part.toolName !== "eve:load-skill") return undefined;
   const workflow = parseTool(part).workflow;
 
   if (!workflow)

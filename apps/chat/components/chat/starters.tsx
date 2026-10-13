@@ -50,6 +50,7 @@ function Starter({
 
         if (await onImage(starter.image)) {
           aui.composer().setText(prompt);
+          aui.composer().send();
         }
       }}
     >

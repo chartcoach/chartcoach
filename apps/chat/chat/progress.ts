@@ -22,7 +22,7 @@ export function progressPhase(view: MessageView): ProgressPhase {
 
   if (presentation) return "writing";
 
-  if (tools.some((part) => part.toolName !== "load_skill")) return "exploring";
+  if (tools.some((part) => part.toolName !== "eve:load-skill")) return "exploring";
 
   if (tools.some((part) => part.state === "output-available" && !part.partial)) return "exploring";
 

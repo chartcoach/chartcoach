@@ -20,7 +20,7 @@ it.each([
             {
               type: "dynamic-tool",
               toolCallId: "workflow",
-              toolName: "load_skill",
+              toolName: "eve:load-skill",
               state: "output-available",
               input: { skill },
               output: "Loaded guidance",

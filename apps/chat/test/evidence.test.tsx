@@ -13,7 +13,7 @@ it("shows the successfully loaded workflow per turn and restores it from history
   const pending: EveDynamicToolPart = {
     type: "dynamic-tool",
     toolCallId: "load",
-    toolName: "load_skill",
+    toolName: "eve:load-skill",
     state: "input-available",
     input: { skill: "visfeedback" },
   };

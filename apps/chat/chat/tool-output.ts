@@ -109,7 +109,7 @@ export function parseTool(part: EveDynamicToolPart) {
 
   return {
     workflow:
-      part.toolName === "load_skill" ? skillInput.safeParse(part.input).data?.skill : undefined,
+      part.toolName === "eve:load-skill" ? skillInput.safeParse(part.input).data?.skill : undefined,
     method: searchMethodInput.safeParse(part.input).data?.method,
     description:
       complete && part.toolName === "describe_catalog"

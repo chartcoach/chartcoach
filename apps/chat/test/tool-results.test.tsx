@@ -12,7 +12,7 @@ it.each([
       part={{
         type: "dynamic-tool",
         toolCallId: "skill",
-        toolName: "load_skill",
+        toolName: "eve:load-skill",
         state: "output-available",
         input: { skill },
         output: "Full agent instructions are model context, not the activity result.",
