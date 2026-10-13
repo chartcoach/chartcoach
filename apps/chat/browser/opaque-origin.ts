@@ -1,4 +1,4 @@
-// A sandboxed embedding frame gives ChartCoach an opaque origin. Requests to its own
+// A sandboxed embedding frame gives chartcoach an opaque origin. Requests to its own
 // server are then cross-origin, and fetch omits the browser identity and embed access
 // cookies unless credentials are included. Eve and Next call the global fetch;
 // Next explicitly requests same-origin credentials even in this frame.

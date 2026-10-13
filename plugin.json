@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "chartcoach",
-  "description": "Use source-traced visualization guidance from the ChartCoach Guideline Catalog.",
+  "description": "Use source-traced visualization guidance from the chartcoach Guideline Catalog.",
   "author": {
     "name": "Péter Ferenc Gyarmati",
     "email": "dev.petergy@gmail.com"

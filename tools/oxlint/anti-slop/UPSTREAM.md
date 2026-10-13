@@ -17,7 +17,7 @@ Knip retains the upstream-generated padding options declaration surface through
 a file-scoped exported-type exemption. Production rule exports remain checked.
 
 The existing fourteen generic rules and their lexical type-flow helpers retain
-ChartCoach's local behavior and compatibility tests. They were not overwritten by
+chartcoach's local behavior and compatibility tests. They were not overwritten by
 this import. Future updates must compare these local implementations before merging
 upstream changes.
 

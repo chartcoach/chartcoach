@@ -12,7 +12,7 @@ export function NotFoundPage() {
   return (
     <div {...stylex.props(styles.page)}>
       <header {...stylex.props(styles.header)}>
-        <Link href="/" aria-label="ChartCoach home" {...stylex.props(styles.brand, ui.focus)}>
+        <Link href="/" aria-label="chartcoach home" {...stylex.props(styles.brand, ui.focus)}>
           <Image
             src={logo}
             alt=""

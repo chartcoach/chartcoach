@@ -5,7 +5,7 @@ import { parseSkill } from "./skill-source";
 export default defineInstructions({
   content: `${parseSkill(core).markdown}
 
-# ChartCoach chat
+# chartcoach chat
 
 Help the user review a chart, choose a visualization, or discuss a visualization
 decision. Ground each answer in guidelines retrieved and read in this conversation.

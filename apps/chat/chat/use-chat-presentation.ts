@@ -13,7 +13,7 @@ export function useChatPresentation(
   const heading = useRef<HTMLHeadingElement>(null);
   const title = state.workspace.loading ? "Conversation" : state.workspace.active?.title;
   useEffect(() => {
-    if (navigation.view === "chat") document.title = title ? `${title} · ChartCoach` : "ChartCoach";
+    if (navigation.view === "chat") document.title = title ? `${title} · chartcoach` : "chartcoach";
   }, [title, navigation.view]);
   useChatFocus(navigation.view, state.workspace.loading, state.disabled, messageInput, heading);
   const latest = conversation.messages.at(-1);

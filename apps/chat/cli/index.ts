@@ -135,7 +135,7 @@ function configuration(values: SettingsOptions, explicitOpen = false) {
 
 const program = new Command()
   .name("chartcoach")
-  .description("Run ChartCoach locally for source-traced visualization design guidance.")
+  .description("Run chartcoach locally for source-traced visualization design guidance.")
   .version(version)
   .addHelpText(
     "after",
@@ -217,7 +217,7 @@ fileOptions(
       process.stdout.write(
         command.opts().json
           ? `${JSON.stringify(report)}\n`
-          : `ChartCoach ${version}\nCatalog: ${report.catalog.guidelines} guidelines (${report.catalog.digest ?? "local bundle"})\nData: ${config.storage.dataDir}\nModel: ${config.model.model ?? "Configure in the browser"}\nDuckDB, SQLite, LanceDB, embeddings: available\n`,
+          : `chartcoach ${version}\nCatalog: ${report.catalog.guidelines} guidelines (${report.catalog.digest ?? "local bundle"})\nData: ${config.storage.dataDir}\nModel: ${config.model.model ?? "Configure in the browser"}\nDuckDB, SQLite, LanceDB, embeddings: available\n`,
       );
     } catch (error) {
       if (!command.opts().json) throw error;

@@ -34,7 +34,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "ChartCoach",
+  title: "chartcoach",
   description: "Discuss your chart with an agent that cites visualization guidance.",
   icons: {
     icon: [

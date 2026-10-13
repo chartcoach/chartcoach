@@ -76,7 +76,7 @@ def npm_artifact(
         "chartcoach",
     } or not re.fullmatch(r"(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)", version):
         raise ValueError(
-            "Expected a ChartCoach npm package with a stable X.Y.Z version"
+            "Expected a chartcoach npm package with a stable X.Y.Z version"
         )
     if expected_version is not None and version != expected_version:
         raise ValueError("Python and npm artifact versions differ")
@@ -104,7 +104,7 @@ def release_files(
     tarballs = list((directory / "npm").glob("*.tgz"))
     wheels = list((directory / "python").glob("chartcoach-*-py3-none-any.whl"))
     if len(tarballs) != 2 or len(wheels) != 1:
-        raise ValueError("Expected two npm tarballs and one ChartCoach wheel")
+        raise ValueError("Expected two npm tarballs and one chartcoach wheel")
     version = (
         wheels[0].name.removeprefix("chartcoach-").removesuffix("-py3-none-any.whl")
     )

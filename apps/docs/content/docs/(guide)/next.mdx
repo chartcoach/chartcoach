@@ -4,7 +4,7 @@ description: Use one Guideline Catalog for browser exploration, agent search, an
 icon: AppWindow
 ---
 
-The [ChartCoach chat app](https://github.com/chartcoach/chartcoach/tree/main/apps/chat)
+The [chartcoach chat app](https://github.com/chartcoach/chartcoach/tree/main/apps/chat)
 shows how the same Guideline Catalog used from Python and the terminal can power
 a web interface. A person chooses the agent's guidelines, shares a chart, and
 receives feedback linked to the guidelines behind it.
@@ -73,7 +73,7 @@ complete source context.
 The server combines the catalog reader with native database clients.
 [LanceDB](https://lancedb.github.io/lancedb/js/) searches the index, while
 [DuckDB](https://duckdb.org/docs/stable/clients/node_neo/overview) queries the
-catalog tables. ChartCoach opens and verifies the artifacts. The database
+catalog tables. chartcoach opens and verifies the artifacts. The database
 clients execute their own queries.
 
 | Question                                          | Retrieval path                                          |
@@ -104,7 +104,7 @@ a recommendation fits the chart.
 agent tools. [assistant-ui](https://www.assistant-ui.com/docs) supplies the chat
 controls and message presentation.
 
-The agent loads the ChartCoach workflow skill that fits each question. The response
+The agent loads the chartcoach workflow skill that fits each question. The response
 shows **Review**, **Recommend**, or **Discuss** once that skill is active.
 The core skill stays in the agent's instructions,
 and the workflow skill supplies the evidence and applicability checks. Starter

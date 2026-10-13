@@ -1,4 +1,4 @@
-# ChartCoach chat
+# chartcoach chat
 
 Review a chart, recommend a design, or discuss a visualization choice with
 guideline-backed advice and visual citations. [Next.js](https://nextjs.org/) hosts the interface,
@@ -35,7 +35,7 @@ Release-age policies can temporarily select the old `0.0.0` name reservation,
 which has no CLI. Request an exact released version to surface the age-policy
 error, then wait until that release is eligible or adjust your runner's policy.
 
-ChartCoach opens its local URL in an interactive terminal. Choose **Model settings**
+chartcoach opens its local URL in an interactive terminal. Choose **Model settings**
 to connect Anthropic, OpenAI, Gemini, or an OpenAI-compatible endpoint. Choose a
 model that supports images and tool calls. Conversations and encrypted connections
 persist across restarts and package upgrades. Press Ctrl+C to stop the server.
@@ -62,15 +62,15 @@ The launcher resolves the official catalog selection to an immutable release at
 startup. That release stays fixed until the server restarts.
 
 If startup still reports that the data directory is locked, the error prints its
-path and commands to find and stop the background ChartCoach runtime. On macOS
+path and commands to find and stop the background chartcoach runtime. On macOS
 and Linux, run the printed `lsof` command, inspect the listed PID with
-`ps -p PID -o command=`, then stop ChartCoach with `kill -TERM PID` and retry.
+`ps -p PID -o command=`, then stop chartcoach with `kill -TERM PID` and retry.
 Replace `PID` with its process ID; `killport` expects a port number instead.
-In another ChartCoach terminal, Ctrl+C stops
+In another chartcoach terminal, Ctrl+C stops
 the session. Windows feedback supplies PowerShell commands.
 To run a separate session, choose another `--data-dir` and use `--port 0`.
 
-An npm `ETIMEDOUT` happens while fetching the package, before ChartCoach starts.
+An npm `ETIMEDOUT` happens while fetching the package, before chartcoach starts.
 Retry with cached package data preferred and more network retries:
 
 ```bash
@@ -175,7 +175,7 @@ Configuration files are optional. If you prefer to save settings, pass
 ```
 
 Configuration precedence is flags, explicitly selected env file, inherited
-environment, automatic `.env`, selected JSON file, then defaults. `--config` or `CHARTCOACH_CONFIG` selects a file. Otherwise ChartCoach
+environment, automatic `.env`, selected JSON file, then defaults. `--config` or `CHARTCOACH_CONFIG` selects a file. Otherwise chartcoach
 reads `chat/config.json` in the platform's user configuration directory for `chartcoach`.
 Relative file paths resolve beside that file. Paths passed through flags or the
 environment resolve from your working directory. Invocation overrides are not saved.
@@ -293,7 +293,7 @@ analytics on every chat page. Analytics is disabled when the variable is unset o
 
 ## Embed in another page
 
-List the origins of the pages that show ChartCoach in an iframe:
+List the origins of the pages that show chartcoach in an iframe:
 
 ```bash
 export CHARTCOACH_EMBED_ORIGINS=https://slides.example.org
@@ -306,14 +306,14 @@ server denies framing.
 
 Some hosts, such as notebook and slide tools that isolate authored content, render
 embeds inside an [iframe sandbox](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/iframe#sandbox)
-without `allow-same-origin`. ChartCoach then runs with an opaque origin, and browsers
+without `allow-same-origin`. chartcoach then runs with an opaque origin, and browsers
 match no listed origin against that frame. Use `*` for these hosts:
 
 ```bash
 export CHARTCOACH_EMBED_ORIGINS='*'
 ```
 
-`*` lets any website frame ChartCoach and call its API from the visitor's browser.
+`*` lets any website frame chartcoach and call its API from the visitor's browser.
 
 With embedding enabled, the browser cookie is `SameSite=None; Secure; Partitioned`.
 Each embedding site keeps its own conversations and connections, separate from direct
@@ -368,7 +368,7 @@ services:
 ```
 
 Model base URLs resolve from inside the container. Use a Compose service name for
-another model container. `127.0.0.1` addresses ChartCoach's own container.
+another model container. `127.0.0.1` addresses chartcoach's own container.
 
 For a published image, set `CHARTCOACH_IMAGE` to a versioned image reference and
 run `docker compose -f infra/compose.yml up -d --no-build --pull always`. The release
@@ -481,21 +481,21 @@ LANGFUSE_BASE_URL=https://cloud.langfuse.com
 When tracing is enabled and both keys are present, the composer shows **Tracing on**.
 Choose **Sent to your AI provider** below the composer for the full explanation. It tells users
 that conversation traces may include messages, images, and responses. The notice
-links to self-hosting instructions for running ChartCoach with tracing disabled.
+links to self-hosting instructions for running chartcoach with tracing disabled.
 
 Use your project's region or self-hosted URL. The launcher uses the same env file
 for models, server settings, and tracing. Enabling tracing requires both keys at
 startup. `doctor --env-file ./chat.env --json` reports the tracing host and enabled
 state, while keeping credentials private.
 
-Find **ChartCoach response** in Langfuse. Each user turn has its own trace, and
+Find **chartcoach response** in Langfuse. Each user turn has its own trace, and
 the Eve conversation ID groups follow-ups in one session. The **respond-to-user**
 agent observation contains the user message and chart as input and the displayed
 structured answer as output. **generate-response** observations capture each
 model invocation. Generations and the tools they request are siblings under their agent step.
 Long conversations also include **compact-history** generations with the summary
 prompt, response, and usage attached to their turn. Manual compaction between turns
-has its own **ChartCoach history compaction** trace in the same session, with its
+has its own **chartcoach history compaction** trace in the same session, with its
 summary calls beneath a **compact-session** agent observation.
 Model observations include token totals and cached-token usage. Langfuse calculates
 cost when it recognizes the model. Observations include the authenticated principal
@@ -557,7 +557,7 @@ guideline records remain available for inspection.
 
 Ask for feedback, a chart recommendation, or an explanation of a design choice.
 The agent chooses the workflow from your request. **Review**, **Recommend**, or
-**Discuss** appears beside ChartCoach when its skill is loaded for that response.
+**Discuss** appears beside chartcoach when its skill is loaded for that response.
 Follow-up questions can activate a different workflow with the same guideline selection.
 
 The three starter cards provide illustrative chart images and a data brief.

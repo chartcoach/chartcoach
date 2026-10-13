@@ -593,7 +593,7 @@ it("groups repeated manual Eve compaction calls beneath one maintenance root bef
     expect(spans).toHaveLength(3);
     expect(generations).toHaveLength(2);
     expect(root.parentSpanContext).toBeUndefined();
-    expect(root.attributes["langfuse.trace.name"]).toBe("ChartCoach history compaction");
+    expect(root.attributes["langfuse.trace.name"]).toBe("chartcoach history compaction");
     expect(root.attributes["langfuse.trace.tags"]).toEqual(["chartcoach", "chat", "compaction"]);
     expect(root.attributes["session.id"]).toBe("lifecycle-session");
     expect(root.attributes["gen_ai.usage.input_tokens"]).toBeUndefined();

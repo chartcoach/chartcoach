@@ -1,10 +1,10 @@
 ---
 title: Chat locally
-description: Run the ChartCoach chat app on your computer or server.
+description: Run the chartcoach chat app on your computer or server.
 icon: MessagesSquare
 ---
 
-Start ChartCoach with Node.js 24 or later:
+Start chartcoach with Node.js 24 or later:
 
 ```bash
 npx chartcoach
@@ -19,7 +19,7 @@ deno x -A chartcoach
 
 `bunx chartcoach` uses Node.js. Add `--bun` to run with Bun itself. Deno's `-A`
 grants access to storage, native catalog engines, the network, and worker processes.
-All three runners accept the same ChartCoach flags and environment variables.
+All three runners accept the same chartcoach flags and environment variables.
 
 Choose **Model settings** to connect a provider and select a model that supports
 images and tool calls. Upload a chart or ask about a visualization choice.
@@ -151,7 +151,7 @@ Compose publishes `127.0.0.1:4273` and retains data in named volumes. Set
 `CHARTCOACH_PUBLIC_URL` when accessing it through an HTTPS proxy. Model endpoints
 must be reachable from inside the container.
 
-To show ChartCoach in an iframe on another page, such as a slide deck, list that page's
+To show chartcoach in an iframe on another page, such as a slide deck, list that page's
 origin in `CHARTCOACH_EMBED_ORIGINS`. A password-protected server opens in a frame with
 `CHARTCOACH_EMBED_KEY`. The chat README covers sandboxed hosts and the cookie scope.
 

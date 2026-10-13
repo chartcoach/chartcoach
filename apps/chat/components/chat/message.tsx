@@ -19,7 +19,7 @@ export function Message({
   return (
     <article {...stylex.props(styles.message, message.role === "user" && styles.user)}>
       <header {...stylex.props(styles.header)}>
-        <h2 {...stylex.props(styles.author)}>{message.role === "user" ? "You" : "ChartCoach"}</h2>
+        <h2 {...stylex.props(styles.author)}>{message.role === "user" ? "You" : "chartcoach"}</h2>
         {view.workflow ? (
           <span
             {...stylex.props(styles.workflow, ui.appear)}

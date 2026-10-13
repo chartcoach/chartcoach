@@ -14,11 +14,11 @@ export function renderLoading(chalk: ChalkInstance = chalkStderr) {
 }
 
 export function renderStopping(chalk: ChalkInstance = chalkStderr) {
-  return `\n${chalk.yellow("◌")} Stopping ChartCoach…\n`;
+  return `\n${chalk.yellow("◌")} Stopping chartcoach…\n`;
 }
 
 export function renderStopped(chalk: ChalkInstance = chalkStderr) {
-  return `${chalk.green("✓")} ChartCoach stopped.\n`;
+  return `${chalk.green("✓")} chartcoach stopped.\n`;
 }
 
 export function renderReady(
@@ -29,7 +29,7 @@ export function renderReady(
 
   return [
     "",
-    `${chalk.green("✓")} ${chalk.bold("ChartCoach")} ${chalk.green("is ready")}`,
+    `${chalk.green("✓")} ${chalk.bold("chartcoach")} ${chalk.green("is ready")}`,
     `  ${chalk.hex(accent)("➜")} ${chalk.cyan.underline(url)}`,
     "",
     row("Catalog", `${chalk.bold(catalog.guidelines)} guidelines`),

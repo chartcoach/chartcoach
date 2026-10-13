@@ -41,7 +41,7 @@ export function ConversationPanel({
   return (
     <main {...stylex.props(styles.main)} data-empty={empty}>
       <h1 ref={heading} tabIndex={-1} {...stylex.props(ui.srOnly)}>
-        ChartCoach conversation
+        chartcoach conversation
       </h1>
       <ThreadPrimitive.Root
         {...stylex.props(

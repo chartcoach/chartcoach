@@ -22,7 +22,7 @@ function cookie(request: Pick<IncomingMessage, "headers">, name: string) {
     ?.slice(name.length + 1);
 }
 
-/** Pages that may frame ChartCoach and call it from inside that frame. */
+/** Pages that may frame chartcoach and call it from inside that frame. */
 function embedding(origins: string[]) {
   const any = origins.includes("*");
 
@@ -140,7 +140,7 @@ export function createGateway({
 
     if (requestAllowed(request, publicURL, embed, admitted)) {
       response.writeHead(403, { "cache-control": "no-store" });
-      response.end("Open ChartCoach at its configured URL.");
+      response.end("Open chartcoach at its configured URL.");
 
       return;
     }
@@ -208,9 +208,9 @@ export function createGateway({
     ) {
       response.writeHead(401, {
         "cache-control": "no-store",
-        "www-authenticate": 'Basic realm="ChartCoach", charset="UTF-8"',
+        "www-authenticate": 'Basic realm="chartcoach", charset="UTF-8"',
       });
-      response.end("Sign in to ChartCoach.");
+      response.end("Sign in to chartcoach.");
 
       return;
     }
@@ -249,7 +249,7 @@ export function createGateway({
         }
 
         response.writeHead(502, { "content-type": "application/json" });
-        response.end('{"error":"The chat runtime is unavailable. Restart ChartCoach."}');
+        response.end('{"error":"The chat runtime is unavailable. Restart chartcoach."}');
       });
 
       return;

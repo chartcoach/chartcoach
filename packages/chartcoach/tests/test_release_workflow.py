@@ -289,7 +289,7 @@ def test_distribution_verifier_rejects_additional_wheels(release_files: Path) ->
     )
     assert result.returncode == 2
     assert (
-        "exactly one ChartCoach wheel and matching source distribution" in result.stderr
+        "exactly one chartcoach wheel and matching source distribution" in result.stderr
     )
 
 

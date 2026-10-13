@@ -26,7 +26,7 @@ check_version() {
     const chat = require("./apps/chat/package.json");
     const tag = process.argv[1];
     if (python.package_name !== "chartcoach" || npm.name !== "@chartcoach/catalog" || chat.name !== "chartcoach") {
-      console.error("Expected the ChartCoach Python, catalog, and chat package identities");
+      console.error("Expected the chartcoach Python, catalog, and chat package identities");
       process.exitCode = 1;
     } else if (python.version !== npm.version || python.version !== chat.version) {
       console.error(`Software versions must match: Python ${python.version}, catalog ${npm.version}, chat ${chat.version}`);

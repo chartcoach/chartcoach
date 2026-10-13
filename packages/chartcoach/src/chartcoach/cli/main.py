@@ -15,7 +15,7 @@ CONTEXT_SETTINGS = {"help_option_names": ["-h", "--help"]}
     context_settings=CONTEXT_SETTINGS,
     invoke_without_command=True,
     no_args_is_help=False,
-    help="Inspect and query the ChartCoach guideline catalog.",
+    help="Inspect and query the chartcoach guideline catalog.",
 )
 @click.version_option(__version__, prog_name="chartcoach")
 @click.pass_context

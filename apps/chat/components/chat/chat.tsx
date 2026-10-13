@@ -102,7 +102,7 @@ export function WorkspacePending() {
         tabIndex={-1}
         {...stylex.props(styles.settingsFallback)}
       >
-        <h1>{workspace.requestedId ? "Conversation" : "ChartCoach"}</h1>
+        <h1>{workspace.requestedId ? "Conversation" : "chartcoach"}</h1>
         <p role={workspace.threadError || workspace.error ? "alert" : "status"}>
           {workspace.threadError ?? workspace.error ?? "Loading your workspace…"}
         </p>
