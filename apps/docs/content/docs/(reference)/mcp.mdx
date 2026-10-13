@@ -266,7 +266,8 @@ separately at `chat.chartcoach.dev`; see the
 
 `infra/mcp.Dockerfile` builds the server from the locked workspace with
 [uv](https://docs.astral.sh/uv/guides/integration/docker/), including OpenAI-compatible
-semantic search, and starts it on port 8000 over Streamable HTTP:
+semantic search and [tool-call tracing](#trace-tool-calls), and starts it on port
+8000 over Streamable HTTP:
 
 ```bash
 docker build -f infra/mcp.Dockerfile -t chartcoach-mcp .
@@ -283,6 +284,92 @@ checks `/healthz`. Other settings in [Configuration](#configuration) apply as
 environment variables. On Coolify, create an application from this repository with
 the Dockerfile build pack and `infra/mcp.Dockerfile`, expose port 8000, and mount
 a volume at `/cache`.
+
+## Trace tool calls
+
+[Langfuse](https://langfuse.com/docs/observability/overview) records each tool
+call as a trace with its arguments, result, latency, and errors. Install the
+`tracing` extra and set the Langfuse project keys in the server environment:
+
+```dotenv
+CHARTCOACH_MCP_TRACING=true
+LANGFUSE_PUBLIC_KEY=pk-lf-...
+LANGFUSE_SECRET_KEY=sk-lf-...
+LANGFUSE_BASE_URL=https://cloud.langfuse.com
+```
+
+```bash
+uvx --from "chartcoach[mcp,tracing]" chartcoach mcp
+```
+
+Startup fails when tracing is enabled and either key is missing. Use your
+project's region or self-hosted URL. `LANGFUSE_TRACING_ENVIRONMENT` labels the
+environment, and `LANGFUSE_RELEASE` identifies a deployment. The Langfuse client
+reads its other [environment variables](https://langfuse.com/docs/observability/sdk/advanced-features),
+such as `LANGFUSE_SAMPLE_RATE`. The server flushes buffered traces when the
+transport stops, including after `SIGTERM`.
+
+Enabling tracing sends every tool argument and result to the Langfuse project,
+including search text and SQL statements from MCP clients. Treat the project as
+a destination for that client data.
+
+Each trace is named after its tool, such as `search`, and holds one observation:
+
+| Field   | Value                                                                          |
+| ------- | ------------------------------------------------------------------------------ |
+| Type    | `retriever` for `search`, `sql`, and `read`. `tool` for `describe` and `cite`. |
+| Input   | Tool arguments as the client sent them                                         |
+| Output  | Structured tool result, or the MCP SDK's error text                            |
+| Level   | `ERROR` for failed calls, with the error message as the status message         |
+| Version | Installed chartcoach version                                                   |
+| Tags    | `chartcoach` and `mcp`                                                         |
+
+Observation metadata identifies the catalog, client, and failure:
+
+| Key                | Value                                                      |
+| ------------------ | ---------------------------------------------------------- |
+| `catalogId`        | Release digest, or a digest of the entries and manifest    |
+| `catalogReleaseId` | Release digest, when the catalog was opened from a release |
+| `client`           | MCP `clientInfo` name, with its version in `clientVersion` |
+| `userAgent`        | HTTP `User-Agent` header                                   |
+| `errorCode`        | Catalog error code such as `lookup`, or `tool_error`       |
+| `sessionSource`    | Identifier that set the session, from the session table    |
+
+Langfuse groups traces into a session when the client identifies its
+conversation. The server uses the first identifier it finds:
+
+| `sessionSource`          | Sent by                                                                 | Groups                  |
+| ------------------------ | ----------------------------------------------------------------------- | ----------------------- |
+| `baggage`                | Clients that send `langfuse_session_id` baggage in `_meta`              | The client's session    |
+| `openai/session`         | ChatGPT, as a `_meta` field on each tool call                           | One conversation        |
+| `CLAUDE_CODE_SESSION_ID` | Claude Code, as an environment variable for the stdio servers it starts | One Claude Code session |
+| `process`                | Other stdio clients                                                     | One server process      |
+| `Mcp-Session-Id`         | Stateful HTTP clients (`--stateful`), stored as a truncated SHA-256     | One MCP connection      |
+
+The Langfuse user comes from `langfuse_user_id` baggage or ChatGPT's
+`openai/subject`. Stateless HTTP calls that carry neither identifier become
+individual traces. Filter them by `client` or `userAgent`.
+
+Clients that trace their own work can join the tool observation to it. Send a
+[W3C `traceparent`](https://www.w3.org/TR/trace-context/) and OpenTelemetry
+baggage in the request `_meta`:
+
+```json
+{
+  "traceparent": "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01",
+  "baggage": "langfuse_session_id=run-42,langfuse_user_id=analyst-7"
+}
+```
+
+The tool observation becomes a child of the caller's span, in session `run-42`
+for user `analyst-7`. These identifiers are client-reported labels for analysis.
+
+Every tool call also writes one `chartcoach.mcp` log record with the tool,
+outcome, duration, and trace ID. Tool arguments stay in the trace:
+
+```text
+tool=read outcome=lookup duration_ms=15.8 trace_id=c599adaf6ddca0ffa0b77a93ed7fa705
+```
 
 ## Configuration
 
@@ -315,6 +402,7 @@ source of truth for validation.
 | `CHARTCOACH_MCP_STATELESS`       | Legacy HTTP session policy                |
 | `CHARTCOACH_MCP_JSON_RESPONSE`   | JSON responses; `false` enables streaming |
 | `CHARTCOACH_MCP_SQL_TIMEOUT`     | SQL execution deadline, in seconds        |
+| `CHARTCOACH_MCP_TRACING`         | Langfuse tool-call tracing                |
 
 Repeated `--allowed-host` and `--allowed-origin` options replace the corresponding
 environment allowlist. The public URL is always added. Modern MCP uses per-request
@@ -351,6 +439,13 @@ without reading dotenv or mutating process state. `MCPConfig` reads a selected
 embedding JSON file once during validation, including direct Python construction. `run(config)` owns catalog
 opening and the selected server loop. For an embedded launch, load dotenv in
 your application before `load_config()` if needed.
+
+`create_server` adds the attributes from [Trace tool calls](#trace-tool-calls)
+to the MCP SDK's [OpenTelemetry](https://opentelemetry.io/docs/languages/python/)
+tool spans and logs each call. Any tracer provider configured in your process
+exports those spans, including the one a `langfuse.Langfuse()` client registers.
+`run(config)` starts Langfuse when `config.tracing` is true and flushes it when the
+transport stops.
 
 The returned ASGI app owns the MCP SDK lifespan. If you mount it in another
 Starlette or FastAPI app, enter `app.router.lifespan_context(app)` from the

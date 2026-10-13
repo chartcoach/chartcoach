@@ -100,6 +100,16 @@ transport schemas, and `_mcp/http.py` owns ASGI lifespan, readiness, bearer auth
 and explicit SDK Host/Origin checks. The CLI loads dotenv before resolving
 configuration, then hands one `MCPConfig` to `run`.
 
+`_mcp/telemetry.py` owns tool-call observability. `create_server` registers its
+`ToolTelemetry` middleware, which runs inside the MCP SDK's OpenTelemetry
+middleware and annotates the SDK's `tools/call` span with arguments, result,
+catalog identity, client, session, and error code. It also writes one
+`chartcoach.mcp` log record per call. Tool functions stay free of tracing code.
+`run` owns the exporter: with `tracing` enabled it starts a Langfuse client,
+which registers its span processor on the global tracer provider, and shuts it
+down after the transport stops. A SIGTERM handler turns uvicorn's re-raised
+signal into `SystemExit` so that shutdown flushes buffered spans.
+
 The MCP adapter serializes each validated result as the same JSON object in text
 content and `structuredContent`. Catalog errors retain their codes and details,
 while the adapter supplies recovery hints
@@ -199,6 +209,7 @@ document/vector export. `projection.parquet` is required exactly when
 | `index`            | LanceDB tables and index search                                  |
 | `embedding-openai` | Native LanceDB adapter for OpenAI-compatible embedding providers |
 | `mcp`              | Model Context Protocol transport and dotenv launch configuration |
+| `tracing`          | Langfuse export for MCP tool-call traces                         |
 | `curation`         | Profile builds, validation, publication, and selection           |
 | `projection`       | UMAP projection during profile production                        |
 

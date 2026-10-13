@@ -16,12 +16,12 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
     --mount=type=bind,source=packages/chartcoach/pyproject.toml,target=packages/chartcoach/pyproject.toml \
-    uv sync --locked --package chartcoach --extra mcp --extra embedding-openai \
+    uv sync --locked --package chartcoach --extra mcp --extra embedding-openai --extra tracing \
         --no-install-workspace
 
 COPY . /app
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --locked --package chartcoach --extra mcp --extra embedding-openai \
+    uv sync --locked --package chartcoach --extra mcp --extra embedding-openai --extra tracing \
         --no-editable
 
 FROM python:3.12-slim-bookworm

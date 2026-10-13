@@ -167,7 +167,9 @@ The CLI loads `.env` in its working directory, or the file selected by
 `CHARTCOACH_MCP_HOST=0.0.0.0`, and
 `CHARTCOACH_MCP_PUBLIC_URL=https://mcp.chartcoach.dev`. Set
 `CHARTCOACH_MCP_TOKEN` for bearer authentication. The MCP endpoint defaults to
-`/mcp`, with unauthenticated readiness at `/healthz`.
+`/mcp`, with unauthenticated readiness at `/healthz`. Install
+`chartcoach[mcp,tracing]` and set `CHARTCOACH_MCP_TRACING=true` with the
+`LANGFUSE_*` project keys to record each tool call as a Langfuse trace.
 See [.env.example](.env.example) for deployment settings.
 
 `chartcoach.mcp` exports `MCPConfig`, `load_config`, `register_tools`,

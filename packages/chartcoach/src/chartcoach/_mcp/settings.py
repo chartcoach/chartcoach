@@ -13,6 +13,7 @@ DEFAULT_PATH = "/mcp"
 DEFAULT_STATELESS = True
 DEFAULT_JSON_RESPONSE = True
 DEFAULT_SQL_TIMEOUT = 5.0
+DEFAULT_TRACING = False
 
 # CLI, environment loading, and Python composition use this one schema.
 ENVIRONMENT_FIELDS = {
@@ -31,4 +32,5 @@ ENVIRONMENT_FIELDS = {
     "stateless": "CHARTCOACH_MCP_STATELESS",
     "json_response": "CHARTCOACH_MCP_JSON_RESPONSE",
     "sql_timeout": "CHARTCOACH_MCP_SQL_TIMEOUT",
+    "tracing": "CHARTCOACH_MCP_TRACING",
 }

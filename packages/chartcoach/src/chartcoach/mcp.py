@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import logging
+import signal
+import sys
 from collections.abc import Mapping
 
 try:
@@ -18,6 +20,7 @@ from ._catalog import Catalog, open_catalog
 from ._mcp.config import MCPConfig, load_config
 from ._mcp.http import create_app
 from ._mcp.settings import DEFAULT_LOG_LEVEL, DEFAULT_SQL_TIMEOUT
+from ._mcp.telemetry import ToolTelemetry, start_langfuse
 from ._mcp.tools import register_tools
 
 
@@ -35,6 +38,8 @@ def create_server(
     Only variables declared by the selected profile are read from the environment.
     Explicit variables take precedence. No model, index, or credential is needed
     for full-text search. Extend the returned SDK server with your own tools.
+    Tool calls are logged and annotate the SDK's OpenTelemetry spans for any
+    tracer provider the process configures.
     """
     settings = MCPConfig(profile=profile, sql_timeout=sql_timeout, log_level=log_level)
     server = MCPServer(
@@ -47,6 +52,7 @@ def create_server(
             "then cite their sources."
         ),
         log_level=settings.log_level,
+        middleware=[ToolTelemetry(catalog)],
     )
     register_tools(
         server,
@@ -60,11 +66,27 @@ def create_server(
 
 
 def run(config: MCPConfig) -> None:
-    """Open one catalog, compose its server, and run the selected transport."""
+    """Open one catalog, compose its server, and run the selected transport.
+
+    With tracing enabled, Langfuse exports tool spans until the transport stops.
+    """
     logging.basicConfig(
         level=config.log_level,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
+    langfuse = start_langfuse() if config.tracing else None
+    if langfuse is not None:
+        # uvicorn re-raises SIGTERM after its graceful shutdown. Exiting through
+        # SystemExit runs the finally block, which flushes buffered spans.
+        signal.signal(signal.SIGTERM, lambda signum, _: sys.exit(128 + signum))
+    try:
+        _serve(config)
+    finally:
+        if langfuse is not None:
+            langfuse.shutdown()
+
+
+def _serve(config: MCPConfig) -> None:
     catalog = open_catalog(config.source)
     server = create_server(
         catalog,
@@ -75,11 +97,12 @@ def run(config: MCPConfig) -> None:
         log_level=config.log_level,
     )
     logging.getLogger(__name__).info(
-        "Starting chartcoach MCP transport=%s host=%s port=%s release=%s",
+        "Starting chartcoach MCP transport=%s host=%s port=%s release=%s tracing=%s",
         config.transport,
         config.host,
         config.port,
         catalog.release.digest if catalog.release else None,
+        config.tracing,
     )
     if config.transport == "stdio":
         server.run()
