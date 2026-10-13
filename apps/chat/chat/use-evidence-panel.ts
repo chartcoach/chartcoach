@@ -7,6 +7,10 @@ export function useEvidencePanel(items: readonly EvidenceItem[], busy: boolean) 
   const mobileTrigger = useRef<HTMLButtonElement>(null);
   const desktopTrigger = useRef<HTMLButtonElement>(null);
 
+  // Streaming rebuilds evidence objects on every chunk. Regroup only when a
+  // guideline joins or changes stage, so the lists keep their identity.
+  const signature = items.map(({ guideline, stage }) => `${guideline.id}:${stage}`).join("\n");
+
   const groups = useMemo(() => {
     const primary: EvidenceItem[] = [];
     const supporting: EvidenceItem[] = [];
@@ -37,7 +41,7 @@ export function useEvidencePanel(items: readonly EvidenceItem[], busy: boolean) 
       readCount: items.length - matched.length,
       total: items.length,
     };
-  }, [items]);
+  }, [signature]);
 
   const primaryCount = groups.primary.length;
 

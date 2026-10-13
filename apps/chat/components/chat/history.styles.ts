@@ -125,6 +125,7 @@ export const styles = stylex.create({
   sectionTitle: { margin: 0, fontSize: 12, fontWeight: 500, color: colors.muted },
   archiveToggle: { minWidth: 36, minHeight: 44 },
   scroll: {
+    position: "relative",
     flex: 1,
     minHeight: 0,
     overflowY: "auto",

@@ -166,8 +166,9 @@ export const styles = stylex.create({
     lineHeight: 1.5,
   },
   sectionCount: { marginLeft: 6, fontVariantNumeric: "tabular-nums" },
-  cards: { display: "grid", gap: 14 },
-  rows: { listStyle: "none", margin: 0, padding: 0 },
+  cards: { position: "relative" },
+  card: { paddingTop: { default: 0, [stylex.when.ancestor(":not(:first-child)")]: 14 } },
+  rows: { listStyle: "none", margin: 0, padding: 0, position: "relative" },
   row: {
     display: "block",
     paddingBlock: 12,

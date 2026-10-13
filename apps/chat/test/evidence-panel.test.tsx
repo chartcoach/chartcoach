@@ -1,5 +1,8 @@
 // @vitest-environment jsdom
-import { expect, it } from "vite-plus/test";
+import { act } from "react";
+import { createRoot } from "react-dom/client";
+import { expect, it, vi } from "vite-plus/test";
+import type { EvidenceItem } from "../chat/evidence";
 import { EvidencePanel } from "../components/chat/evidence-panel";
 import { renderDocument } from "./render-document";
 
@@ -92,4 +95,67 @@ it("distinguishes waiting for retrieval from an empty result", () => {
       ?.textContent,
   ).toBe("No guidelines retrieved yet");
   expect(renderDocument(<EvidencePanel items={[]} />).body.childElementCount).toBe(0);
+});
+
+it("keeps a guideline that leaves the shortlist in place until it has collapsed", async () => {
+  vi.useFakeTimers();
+  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
+  vi.stubGlobal("matchMedia", () => ({ matches: false }));
+  vi.stubGlobal(
+    "ResizeObserver",
+    class {
+      observe() {}
+      disconnect() {}
+    },
+  );
+
+  const candidate = (id: string, stage: EvidenceItem["stage"] = "matched"): EvidenceItem => ({
+    stage,
+    guideline: { id, title: `Guideline ${id}`, url: `https://chartcoach.dev/guidelines/${id}` },
+  });
+
+  const container = document.createElement("div");
+  document.body.append(container);
+  const root = createRoot(container);
+
+  const shortlist = () =>
+    Array.from(
+      container.querySelectorAll('section[aria-label="Search results"] > ul > li'),
+      (row) => [row.querySelector("a")?.getAttribute("aria-label"), row.hasAttribute("inert")],
+    );
+
+  try {
+    await act(async () =>
+      root.render(<EvidencePanel busy items={["a", "b", "c", "d"].map((id) => candidate(id))} />),
+    );
+    // Reading a match moves it ahead of the shortlist it pushes "c" out of.
+    await act(async () =>
+      root.render(
+        <EvidencePanel
+          busy
+          items={[candidate("d", "read"), ...["a", "b", "c"].map((id) => candidate(id))]}
+        />,
+      ),
+    );
+
+    expect(shortlist()).toEqual([
+      ["Read guideline: Guideline d", false],
+      ["Read guideline: Guideline a", false],
+      ["Read guideline: Guideline b", false],
+      ["Read guideline: Guideline c", true],
+    ]);
+
+    await act(async () => vi.runAllTimers());
+
+    expect(shortlist()).toEqual([
+      ["Read guideline: Guideline d", false],
+      ["Read guideline: Guideline a", false],
+      ["Read guideline: Guideline b", false],
+    ]);
+  } finally {
+    await act(async () => root.unmount());
+    container.remove();
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  }
 });

@@ -1,7 +1,8 @@
 import { ArrowUpRight } from "lucide-react";
+import { useState } from "react";
 import type { GuidelinePreview } from "../chat/tool-output";
 import * as stylex from "@stylexjs/stylex";
-import { colors } from "./ui/tokens.stylex";
+import { colors, media, motion } from "./ui/tokens.stylex";
 import { ui } from "./ui/ui";
 
 const styles = stylex.create({
@@ -52,7 +53,13 @@ const styles = stylex.create({
     width: "100%",
     height: "auto",
     backgroundColor: colors.background,
+    opacity: 0,
+    transitionProperty: "opacity",
+    transitionDuration: { default: motion.enter, [media.reducedMotion]: "0ms" },
+    transitionTimingFunction: motion.easeOut,
   },
+  loaded: { opacity: 1 },
+  covered: { visibility: "hidden" },
   footer: {
     display: "flex",
     alignItems: "center",
@@ -67,6 +74,10 @@ const styles = stylex.create({
 });
 
 export function GuidelineCard({ guideline }: { guideline: GuidelinePreview }) {
+  const [image, setImage] = useState<"loading" | "loaded" | "failed">("loading");
+  // The title stands in for a missing or broken preview image.
+  const preview = !!guideline.imageURL && image !== "failed";
+
   return (
     <a
       {...stylex.props(ui.focus, styles.card)}
@@ -76,13 +87,13 @@ export function GuidelineCard({ guideline }: { guideline: GuidelinePreview }) {
       aria-label={guideline.title}
     >
       <span {...stylex.props(styles.preview)} aria-hidden="true">
-        <span {...stylex.props(styles.fallback)}>
+        <span {...stylex.props(styles.fallback, preview && styles.covered)}>
           <span>{guideline.title}</span>
         </span>
-        {guideline.imageURL ? (
+        {preview ? (
           <img
             key={guideline.id}
-            {...stylex.props(styles.image)}
+            {...stylex.props(styles.image, image === "loaded" && styles.loaded)}
             src={guideline.imageURL}
             alt=""
             width={1200}
@@ -90,9 +101,8 @@ export function GuidelineCard({ guideline }: { guideline: GuidelinePreview }) {
             loading="lazy"
             decoding="async"
             referrerPolicy="no-referrer"
-            onError={(event) => {
-              event.currentTarget.style.display = "none";
-            }}
+            onLoad={() => setImage("loaded")}
+            onError={() => setImage("failed")}
           />
         ) : null}
       </span>
