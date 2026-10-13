@@ -36,6 +36,32 @@ afterAll(async () => {
 });
 
 describe("generated site artifacts", () => {
+  it("offers catalog and home recovery from the generated 404 page", async () => {
+    const html = await fs.readFile(path.join(outputDirectory, "404.html"), "utf8");
+    const document = new JSDOM(html).window.document;
+    expect(document.querySelector("h1")?.textContent).toBe("That page is missing.");
+    const links = Array.from(document.querySelectorAll('nav[aria-label="Page recovery"] a'));
+    expect(links.map((link) => [link.textContent?.trim(), link.getAttribute("href")])).toEqual([
+      ["Browse guidelines", "/guidelines/"],
+      ["Return home", "/"],
+    ]);
+  });
+
+  it("copies the shared 404 artwork into the public site output", async () => {
+    const html = await fs.readFile(path.join(outputDirectory, "404.html"), "utf8");
+    const document = new JSDOM(html).window.document;
+    const image = document.querySelector("main img");
+    expect(image).not.toBeNull();
+    const imagePath = new URL(image!.getAttribute("src")!, "https://chartcoach.dev").pathname;
+    const published = await fs.readFile(path.join(outputDirectory, imagePath.replace(/^\//, "")));
+
+    const authored = await fs.readFile(
+      new URL("../../../packages/brand/assets/brand/not-found.svg", import.meta.url),
+    );
+
+    expect(published).toEqual(authored);
+  });
+
   it("renders the structured example as parseable section records", async () => {
     const html = await fs.readFile(path.join(outputDirectory, "index.html"), "utf8");
     const document = new JSDOM(html).window.document;

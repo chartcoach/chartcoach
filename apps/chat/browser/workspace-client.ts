@@ -15,6 +15,15 @@ import {
 } from "../shared/threads";
 import type { ChartAttachment } from "../chat/attachment";
 
+export class WorkspaceRequestError extends Error {
+  constructor(
+    readonly status: number,
+    message: string,
+  ) {
+    super(message);
+  }
+}
+
 async function request<T, B>(path: string, schema: z.ZodType<T>, body?: B, signal?: AbortSignal) {
   const options: RequestInit = { signal, cache: "no-store" };
 
@@ -28,7 +37,8 @@ async function request<T, B>(path: string, schema: z.ZodType<T>, body?: B, signa
   const data: unknown = await response.json();
 
   if (!response.ok)
-    throw new Error(
+    throw new WorkspaceRequestError(
+      response.status,
       z.object({ error: z.string() }).safeParse(data).data?.error ??
         "The request failed. Try again.",
     );

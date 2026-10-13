@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { notFound } from "next/navigation";
+import { redirect } from "next/navigation";
 import { threadIdSchema } from "../../../../shared/threads";
 
 export default async function Layout({
@@ -9,7 +9,7 @@ export default async function Layout({
   children: ReactNode;
   params: Promise<{ threadId: string }>;
 }) {
-  if (!threadIdSchema.safeParse((await params).threadId).success) notFound();
+  if (!threadIdSchema.safeParse((await params).threadId).success) redirect("/");
 
   return children;
 }

@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 300" width="440" height="300" fill="none">
+  <style>
+    :root {
+      --point: #686870;
+      --grid: #e7e7ea;
+      --mark: #1f1f1f;
+      --accent: #e0364b;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --point: #aaaab3;
+        --grid: #303035;
+        --mark: #ededee;
+        --accent: #f25a6d;
+      }
+    }
+  </style>
+  <g stroke="var(--grid)" stroke-width="1" opacity=".6">
+    <path d="M24 64H416" />
+    <path d="M24 104H416" />
+    <path d="M24 144H416" />
+    <path d="M24 184H416" />
+    <path d="M24 224H416" />
+    <path d="M24 264H416" />
+    <path d="M56 24V264" />
+    <path d="M96 24V264" />
+    <path d="M136 24V264" />
+    <path d="M176 24V264" />
+    <path d="M216 24V264" />
+    <path d="M256 24V264" />
+    <path d="M296 24V264" />
+    <path d="M336 24V264" />
+    <path d="M376 24V264" />
+    <path d="M416 24V264" />
+  </g>
+  <path d="M24 24V264H416" stroke="var(--point)" stroke-width="1" opacity=".45" />
+  <g fill="var(--point)" opacity=".7">
+    <circle cx="56" cy="68" r="6" />
+    <circle cx="122" cy="68" r="6" />
+    <circle cx="56" cy="90" r="6" />
+    <circle cx="122" cy="90" r="6" />
+    <circle cx="56" cy="112" r="6" />
+    <circle cx="122" cy="112" r="6" />
+    <circle cx="56" cy="134" r="6" />
+    <circle cx="78" cy="134" r="6" />
+    <circle cx="100" cy="134" r="6" />
+    <circle cx="122" cy="134" r="6" />
+    <circle cx="144" cy="134" r="6" />
+    <circle cx="122" cy="156" r="6" />
+    <circle cx="122" cy="178" r="6" />
+    <circle cx="122" cy="200" r="6" />
+    <circle cx="210" cy="68" r="6" />
+    <circle cx="232" cy="68" r="6" />
+    <circle cx="254" cy="68" r="6" />
+    <circle cx="188" cy="90" r="6" />
+    <circle cx="276" cy="90" r="6" />
+    <circle cx="188" cy="112" r="6" />
+    <circle cx="276" cy="112" r="6" />
+    <circle cx="188" cy="134" r="6" />
+    <circle cx="276" cy="134" r="6" />
+    <circle cx="188" cy="156" r="6" />
+    <circle cx="276" cy="156" r="6" />
+    <circle cx="188" cy="178" r="6" />
+    <circle cx="276" cy="178" r="6" />
+    <circle cx="210" cy="200" r="6" />
+    <circle cx="232" cy="200" r="6" />
+    <circle cx="254" cy="200" r="6" />
+    <circle cx="320" cy="68" r="6" />
+    <circle cx="386" cy="68" r="6" />
+    <circle cx="320" cy="90" r="6" />
+    <circle cx="386" cy="90" r="6" />
+    <circle cx="320" cy="112" r="6" />
+    <circle cx="386" cy="112" r="6" />
+    <circle cx="320" cy="134" r="6" />
+    <circle cx="342" cy="134" r="6" />
+    <circle cx="364" cy="134" r="6" />
+    <circle cx="386" cy="134" r="6" />
+    <circle cx="408" cy="134" r="6" />
+    <circle cx="386" cy="156" r="6" />
+    <circle cx="386" cy="178" r="6" />
+    <circle cx="386" cy="200" r="6" />
+  </g>
+  <circle cx="232" cy="134" r="23" fill="var(--accent)" fill-opacity=".08" />
+  <g transform="translate(212 114) scale(.4)">
+    <g fill="var(--mark)">
+      <rect x="47.9" y="5" width="4.2" height="13" rx="2.1" transform="rotate(140 50 50)" />
+      <rect x="47.9" y="5" width="4.2" height="13" rx="2.1" transform="rotate(160 50 50)" />
+      <rect x="47.9" y="5" width="4.2" height="13" rx="2.1" transform="rotate(180 50 50)" />
+      <rect x="47.9" y="5" width="4.2" height="13" rx="2.1" transform="rotate(200 50 50)" />
+      <rect x="47.9" y="5" width="4.2" height="13" rx="2.1" transform="rotate(220 50 50)" />
+      <rect x="47.9" y="5" width="4.2" height="13" rx="2.1" transform="rotate(240 50 50)" />
+      <rect x="47.9" y="5" width="4.2" height="13" rx="2.1" transform="rotate(260 50 50)" />
+      <rect x="47.9" y="5" width="4.2" height="13" rx="2.1" transform="rotate(280 50 50)" />
+      <rect x="47.9" y="5" width="4.2" height="13" rx="2.1" transform="rotate(300 50 50)" />
+      <rect x="47.9" y="5" width="4.2" height="13" rx="2.1" transform="rotate(320 50 50)" />
+      <rect x="47.9" y="5" width="4.2" height="13" rx="2.1" transform="rotate(340 50 50)" />
+    </g>
+    <g fill="var(--accent)">
+      <rect x="47.9" y="5" width="4.2" height="13" rx="2.1" transform="rotate(0 50 50)" />
+      <rect x="47.9" y="5" width="4.2" height="13" rx="2.1" transform="rotate(20 50 50)" />
+      <rect x="47.9" y="5" width="4.2" height="13" rx="2.1" transform="rotate(40 50 50)" />
+    </g>
+  </g>
+</svg>

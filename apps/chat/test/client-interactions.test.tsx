@@ -5,6 +5,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 import { ConnectionForm } from "../components/settings/connection-form";
 import { emptyConnection } from "../chat/use-connection-form";
 import { Dropzone } from "../components/chat/dropzone";
+import { GuidelinePage } from "../components/guideline-page";
 
 let root: Root;
 
@@ -23,6 +24,29 @@ afterEach(async () => {
 });
 
 const render = (element: ReactNode) => act(async () => root.render(element));
+
+it("offers recovery links when a guideline URL cannot be found", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => Response.json({ error: "Guideline not found." }, { status: 404 })),
+  );
+  await render(<GuidelinePage id="missing-guideline" />);
+  expect(document.querySelector("h1")?.textContent).toBe("We couldn’t find that page.");
+  const links = Array.from(document.querySelectorAll("main a"));
+  expect(links.map((link) => [link.textContent?.trim(), link.getAttribute("href")])).toEqual([
+    ["Back to chat", "/"],
+    ["Browse guidelines", "/guidelines"],
+  ]);
+});
+
+it("shows the guideline error when its server is temporarily unavailable", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => Response.json({ error: "Try again soon." }, { status: 503 })),
+  );
+  await render(<GuidelinePage id="guideline" />);
+  expect(document.querySelector('[role="alert"]')?.textContent).toBe("Try again soon.");
+});
 
 async function fill(name: string, value: string) {
   await act(async () => {
