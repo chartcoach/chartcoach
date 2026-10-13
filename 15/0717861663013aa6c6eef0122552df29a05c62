@@ -1,0 +1,54 @@
+packages/chartcoach/src/chartcoach/mcp.py
+  s_069c42d732141e::t_30f8c8bd97f2e2 23,41-42,55,69-72,77,82-89,100,105
+  s_069c42d732141e::t_4285ade6e19850 6-7,78-81
+packages/chartcoach/pyproject.toml
+  s_069c42d732141e::t_8805402501f4f7 42,65
+packages/chartcoach/src/chartcoach/_mcp/settings.py
+  s_069c42d732141e::t_55ff0857ab4033 16,35
+packages/chartcoach/tests/test_mcp_config.py
+  s_069c42d732141e::t_78efd32b4fd873 29,41
+packages/chartcoach/src/chartcoach/_mcp/telemetry.py
+  s_069c42d732141e::t_31e759db997110 1-21,23-96,98-103,106,110-119,124-168,180,183,186,196-203
+  s_069c42d732141e::t_ed72ab33bd1269 104-105,109,121-123
+  s_069c42d732141e::t_e219b6e1078eb6 22,97,107-108,120,187-195
+  s_069c42d732141e::t_4285ade6e19850 169-179,181-182,184
+  s_069c42d732141e::t_e96ff30f2d19ff 185
+packages/chartcoach/src/chartcoach/cli/mcp.py
+  s_069c42d732141e::t_5eeac9a9810d03 97-101
+infra/mcp.Dockerfile
+  s_069c42d732141e::t_78efd32b4fd873 19,24
+apps/docs/content/docs/(reference)/mcp.mdx
+  s_069c42d732141e::t_8f19e25673b743 269-270,316-317,326-328,345,353-362,364-366,368,405,443-448
+  s_069c42d732141e::t_97b149a5e4ade7 288-315,337-340,348-352,363,367,369-373
+  s_069c42d732141e::t_014b9638d4e8b0 318-319,321-325,329-336,341-344,346-347
+  s_069c42d732141e::t_578443dc622bd2 320
+packages/chartcoach/tests/test_optional_boundaries.py
+  s_069c42d732141e::t_78efd32b4fd873 199-236
+development_docs/architecture/runtime-and-curation.md
+  s_069c42d732141e::t_3340e08703c1b7 103-112,212
+packages/chartcoach/tests/test_mcp_telemetry.py
+  s_069c42d732141e::t_3231e7e3fbc481 1-3,5-7,11,14-27,33-156,160-173,175-181,184-189,191-193,198-199,201,203-224,240,242,244-249,280-281,286-287,289-299,301-319
+  s_069c42d732141e::t_d7a5f88ec37b71 4,8-10,12-13,28-32,200,202,225-239,241,243,250-279,282-285,300
+  s_069c42d732141e::t_f5f21289b6453a 288
+  s_069c42d732141e::t_d4b4c0ac58c378 157-159,174,182-183,190,194-197
+packages/chartcoach/README.md
+  s_069c42d732141e::t_3340e08703c1b7 170-172
+packages/chartcoach/src/chartcoach/_mcp/config.py
+  s_069c42d732141e::t_55ff0857ab4033 64
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "150717861663013aa6c6eef0122552df29a05c62",
+  "prompts": {},
+  "sessions": {
+    "s_069c42d732141e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "19cd8dda-6f11-4b62-b637-bc62cc7b4cf4",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Péter Ferenc Gyarmati <dev.petergy@gmail.com>"
+    }
+  }
+}
