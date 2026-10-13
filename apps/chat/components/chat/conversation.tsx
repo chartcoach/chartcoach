@@ -46,7 +46,7 @@ const styles = stylex.create({
     position: "absolute",
     bottom: 12,
     left: "50%",
-    transform: "translateX(-50%)",
+    translate: "-50% 0",
     gap: 8,
     backgroundColor: colors.surface,
     borderWidth: 1,
@@ -79,7 +79,10 @@ export function Conversation({ empty, children }: { empty: boolean; children: Re
         <div {...stylex.props(styles.content, empty && styles.welcome)}>{children}</div>
       </ThreadPrimitive.Viewport>
       {!empty && !atLatest ? (
-        <button {...stylex.props(ui.button, ui.focus, styles.latest)} onClick={scrollToLatest}>
+        <button
+          {...stylex.props(ui.button, ui.focus, ui.appear, styles.latest)}
+          onClick={scrollToLatest}
+        >
           <ArrowDown size={14} aria-hidden="true" /> Latest response
         </button>
       ) : null}

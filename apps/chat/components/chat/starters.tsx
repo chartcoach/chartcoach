@@ -1,7 +1,7 @@
 import { SuggestionPrimitive, ThreadPrimitive } from "@assistant-ui/react";
 import * as stylex from "@stylexjs/stylex";
 import { starters } from "../../shared/starters";
-import { colors, media } from "../ui/tokens.stylex";
+import { colors, media, motion } from "../ui/tokens.stylex";
 import { ui } from "../ui/ui";
 
 export function Starters({
@@ -102,6 +102,9 @@ const styles = stylex.create({
     userSelect: "none",
     WebkitTapHighlightColor: "transparent",
     transform: { default: "scale(1)", ":active:enabled": "scale(0.98)" },
+    transitionProperty: "transform, background-color, border-color",
+    transitionDuration: { default: motion.control, [media.reducedMotion]: "0ms" },
+    transitionTimingFunction: `${motion.easeOut}, ease, ease`,
     overflow: "hidden",
     color: colors.foreground,
   },

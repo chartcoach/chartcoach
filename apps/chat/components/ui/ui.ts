@@ -65,6 +65,9 @@ export const ui = stylex.create({
     cursor: { default: "pointer", ":disabled": "default" },
     opacity: { default: 1, ":disabled": 0.45 },
     WebkitTapHighlightColor: "transparent",
+    transitionProperty: "transform, background-color, color, opacity",
+    transitionDuration: { default: motion.control, [media.reducedMotion]: "0ms" },
+    transitionTimingFunction: motion.easeOut,
   },
   quietButton: {
     backgroundColor: {

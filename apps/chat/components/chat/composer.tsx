@@ -7,6 +7,11 @@ import * as stylex from "@stylexjs/stylex";
 import { colors, media, motion } from "../ui/tokens.stylex";
 import { ui } from "../ui/ui";
 
+const swap = stylex.keyframes({
+  from: { opacity: 0, transform: "scale(0.9)" },
+  to: { opacity: 1, transform: "scale(1)" },
+});
+
 const styles = stylex.create({
   area: {
     width: "min(100%, 720px)",
@@ -74,6 +79,11 @@ const styles = stylex.create({
       ":disabled": 1,
       ":hover:enabled": { default: null, [media.hover]: 0.8 },
     },
+  },
+  swap: {
+    animationName: swap,
+    animationDuration: { default: motion.control, [media.reducedMotion]: "0ms" },
+    animationTimingFunction: motion.easeOut,
   },
   stop: { backgroundColor: "transparent", padding: 4 },
   stopFace: {
@@ -201,7 +211,7 @@ export function Composer({
             );
 
             return (
-              <AttachmentPrimitive.Root {...stylex.props(styles.attachment)}>
+              <AttachmentPrimitive.Root {...stylex.props(styles.attachment, ui.appear)}>
                 {src ? (
                   <img
                     {...stylex.props(styles.thumbnail)}
@@ -266,7 +276,7 @@ export function Composer({
           {modelControl}
           {busy ? (
             <ComposerPrimitive.Cancel
-              {...stylex.props(ui.button, ui.focus, styles.send, styles.stop)}
+              {...stylex.props(ui.button, ui.focus, styles.send, styles.stop, styles.swap)}
               aria-label="Stop response"
               title="Stop response"
             >
@@ -276,7 +286,7 @@ export function Composer({
             </ComposerPrimitive.Cancel>
           ) : (
             <ComposerPrimitive.Send
-              {...stylex.props(ui.button, ui.focus, styles.send)}
+              {...stylex.props(ui.button, ui.focus, styles.send, styles.swap)}
               aria-label="Send message"
               disabled={disabled}
             >

@@ -11,6 +11,10 @@ const slideOut = stylex.keyframes({
   to: { transform: "translateX(-100%)" },
 });
 
+const fadeIn = stylex.keyframes({ from: { opacity: 0 }, to: { opacity: 1 } });
+
+const fadeOut = stylex.keyframes({ from: { opacity: 1 }, to: { opacity: 0 } });
+
 export const styles = stylex.create({
   dock: {
     display: { default: "none", [media.navigationDesktop]: "block" },
@@ -26,11 +30,27 @@ export const styles = stylex.create({
   innerClosed: { width: 64 },
   rail: { display: "flex", flexDirection: "column", alignItems: "center", gap: 4, paddingTop: 12 },
   inner: { width: 256, height: "100%" },
-  overlay: { position: "fixed", inset: 0, zIndex: 40, backgroundColor: "#00000045" },
+  overlay: {
+    position: "fixed",
+    inset: 0,
+    zIndex: 40,
+    backgroundColor: "#00000045",
+    animationName: { default: fadeIn, ":is([data-state=closed])": fadeOut },
+    animationDuration: {
+      default: "320ms",
+      ":is([data-state=closed])": "200ms",
+      [media.reducedMotion]: "0ms",
+    },
+    animationTimingFunction: motion.easeOut,
+  },
   drawer: {
     animationName: { default: slideIn, ":is([data-state=closed])": slideOut },
-    animationDuration: { default: "180ms", [media.reducedMotion]: "0ms" },
-    animationTimingFunction: motion.easeOut,
+    animationDuration: {
+      default: "320ms",
+      ":is([data-state=closed])": "200ms",
+      [media.reducedMotion]: "0ms",
+    },
+    animationTimingFunction: { default: motion.fluid, ":is([data-state=closed])": motion.easeOut },
     position: "fixed",
     insetBlock: 0,
     left: 0,
