@@ -2,16 +2,16 @@ from __future__ import annotations
 
 import json
 import os
-from collections.abc import Callable, Mapping
-from typing import Literal
+from collections.abc import Callable, Mapping, Sequence
+from typing import Annotated, Literal
 
 from mcp.server import MCPServer
 from mcp.types import CallToolResult, TextContent, ToolAnnotations
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from chartcoach._catalog import Catalog, SourceDetail
 from chartcoach._catalog.embedding import profile_variables
-from chartcoach._catalog.errors import CatalogError, CatalogResponseTooLargeError
+from chartcoach._catalog.errors import CatalogError
 from chartcoach._catalog.identity import catalog_identity
 from chartcoach._catalog.search import SearchEmbeddings, catalog_search
 from chartcoach._catalog.sql import catalog_sql
@@ -28,7 +28,6 @@ from .models import (
     McpId,
     McpIds,
     McpLimit,
-    McpRoles,
     ReadCallResult,
     ReadToolResult,
     SearchCallResult,
@@ -37,8 +36,6 @@ from .models import (
     SqlToolResult,
 )
 from .settings import DEFAULT_SQL_TIMEOUT
-
-MAX_STRUCTURED_RESPONSE_BYTES = 65_536
 
 
 def _add_tool(
@@ -87,33 +84,81 @@ def register_tools(
     embedding_context = SearchEmbeddings(variables)
     search_profile = settings.profile
 
-    def describe(profile: str | None = None) -> DescribeCallResult:
+    def failure(tool: str, error: CatalogError) -> CallToolResult:
+        return _failure(
+            error,
+            hints=_recovery_hints(error, tool=tool, catalog=catalog),
+        )
+
+    def describe(
+        profile: Annotated[
+            str | None,
+            Field(
+                description="Profile name to inspect from profiles. Omit to list profiles. Inspection leaves the active search profile unchanged.",
+            ),
+        ] = None,
+    ) -> DescribeCallResult:
         try:
+            description = catalog.describe(profile=profile)
+            search_info: dict[str, object] | None = None
+            if search_profile is not None:
+                documents = catalog.documents()
+                search_info = {
+                    "profile": search_profile,
+                    "filter_columns": [*documents.columns, "vector"],
+                    "document_roles": sorted(
+                        documents.get_column("role").unique().to_list()
+                    ),
+                }
             return _success(
-                catalog.describe(profile=profile),
+                {
+                    **description,
+                    "mcp": {
+                        "sql_engine": "DuckDB",
+                        "sql_timeout_seconds": settings.sql_timeout,
+                        "search": search_info,
+                    },
+                },
                 DescribeToolResult,
-                "Returned catalog description.",
             )
         except CatalogError as exc:
-            return _failure(exc)
+            return failure("describe", exc)
 
-    def sql(statement: str, *, limit: McpLimit = 100) -> SqlCallResult:
+    def sql(
+        statement: Annotated[
+            str,
+            Field(
+                description="One read-only DuckDB query using tables and columns from describe. DESCRIBE guidelines returns native SQL types.",
+            ),
+        ],
+        *,
+        limit: Annotated[McpLimit, Field(description="Maximum returned rows.")] = 100,
+    ) -> SqlCallResult:
         try:
             return _success(
                 catalog_sql(
                     catalog, statement, limit=limit, timeout=settings.sql_timeout
                 ),
                 SqlToolResult,
-                "Returned bounded SQL rows.",
             )
         except CatalogError as exc:
-            return _failure(exc)
+            return failure("sql", exc)
 
     def read(
         ids: McpIds,
         *,
-        roles: McpRoles | None = None,
-        source_detail: SourceDetail = "minimal",
+        roles: Annotated[
+            list[McpId] | None,
+            Field(
+                description="Section names from describe.section_roles[].name, such as advice or exceptions. Null or [] retains all sections.",
+            ),
+        ] = None,
+        source_detail: Annotated[
+            SourceDetail,
+            Field(
+                description="none: empty sources. minimal: reference ID, authors, year, title, DOI and URL. full: all parsed fields and raw BibTeX references. Use cite for formatted citations.",
+            ),
+        ] = "minimal",
     ) -> ReadCallResult:
         try:
             return _success(
@@ -124,15 +169,19 @@ def register_tools(
                     **catalog_identity(catalog),
                 },
                 ReadToolResult,
-                "Returned complete guideline entry records.",
             )
         except CatalogError as exc:
-            return _failure(exc)
+            return failure("read", exc)
 
     def cite(
         ids: McpIds,
         *,
-        url_template: str = DEFAULT_GUIDELINE_URL_TEMPLATE,
+        url_template: Annotated[
+            str,
+            Field(
+                description="Public guideline URL template containing {id}. Keep the default for official catalog links.",
+            ),
+        ] = DEFAULT_GUIDELINE_URL_TEMPLATE,
     ) -> CiteCallResult:
         try:
             return _success(
@@ -141,16 +190,19 @@ def register_tools(
                     **catalog_identity(catalog),
                 },
                 CiteToolResult,
-                "Returned guideline and source citations.",
             )
         except CatalogError as exc:
-            return _failure(exc)
+            return failure("cite", exc)
 
     _add_tool(
         server,
         describe,
         name="describe",
-        description="Describe the catalog identity, tables, vocabulary, and index profiles.",
+        description=(
+            "Inspect catalog identity, table schemas and row counts, section roles, label families, "
+            "and available profiles. mcp.search reports the active search profile and its "
+            "filter columns and document roles, or null when search is unconfigured."
+        ),
         open_world=False,
     )
     _add_tool(
@@ -158,8 +210,11 @@ def register_tools(
         sql,
         name="sql",
         description=(
-            "Run one read-only SELECT over the catalog tables. Returns typed columns, bounded rows, "
-            "truncation state, and catalog identity. Inspect table columns with describe."
+            "Query catalog tables with read-only DuckDB SQL. Returns typed rows. "
+            "truncated reports the tool's row cap, not completion of SQL pagination. "
+            "Enumerate with SELECT id, title, description FROM guidelines ORDER BY id "
+            "LIMIT 100 OFFSET 0. Set the tool limit to at least the SQL page size, advance "
+            "OFFSET by row_count, and stop when row_count is smaller than the page size."
         ),
         open_world=False,
     )
@@ -167,25 +222,53 @@ def register_tools(
         server,
         read,
         name="read",
-        description="Read 1 through 100 exact guideline entry IDs with complete selected sections and source metadata.",
+        description=(
+            "Read guideline entries by ID. Returns records with title, description, labels, "
+            "complete selected sections and sources. Inspect context and exceptions before "
+            "applying advice."
+        ),
         open_world=False,
     )
     _add_tool(
         server,
         cite,
         name="cite",
-        description="Return public guideline links and source citations for 1 through 100 exact guideline entry IDs.",
+        description=(
+            "Return guideline links and formatted source citations for entry IDs. "
+            "Each record includes its title, URL, guideline_citation and sources "
+            "with bibliographic fields, citation text, DOI and URL."
+        ),
         open_world=False,
     )
 
     if search_profile is not None:
 
         def search(
-            text: McpId,
+            text: Annotated[
+                McpId,
+                Field(
+                    description="Keywords for fts, or a natural-language topic for vector/hybrid."
+                ),
+            ],
             *,
-            limit: McpLimit = 10,
-            where: str | None = None,
-            mode: Literal["fts", "vector", "hybrid"] = "fts",
+            limit: Annotated[
+                McpLimit,
+                Field(
+                    description="Maximum document hits before grouping by guideline. Increase to retrieve more distinct guideline candidates."
+                ),
+            ] = 10,
+            where: Annotated[
+                str | None,
+                Field(
+                    description="LanceDB SQL predicate over describe.mcp.search.filter_columns. parent_id is the guideline ID, id is the document ID. Examples: role = 'section.advice', array_has(labels, 'basis:empirical') AND role = 'overview'. Omit to search all documents."
+                ),
+            ] = None,
+            mode: Annotated[
+                Literal["fts", "vector", "hybrid"],
+                Field(
+                    description="fts: keyword relevance, higher is better. vector: semantic distance, lower is better. hybrid: combined relevance, higher is better. Vector/hybrid require the profile's provider dependencies and variables."
+                ),
+            ] = "fts",
         ) -> SearchCallResult:
             try:
                 return _success(
@@ -199,75 +282,102 @@ def register_tools(
                         embedding_context=embedding_context,
                     ),
                     SearchToolResult,
-                    "Returned ranked guideline matches.",
                 )
             except CatalogError as exc:
-                return _failure(exc)
+                return failure("search", exc)
 
         _add_tool(
             server,
             search,
             name="search",
             description=(
-                "Search the startup index profile. FTS returns relevance scores. Vector returns distances. "
-                "Hybrid returns relevance scores. The limit counts document hits before guideline deduplication."
+                "Find ranked guideline candidates in the active profile from describe.mcp.search. "
+                "Returns matches with guideline IDs, matched document roles, excerpts and scores. "
+                "Several document hits may match one guideline. Use matches[].id with read/cite, "
+                "or sql to enumerate the catalog."
             ),
             open_world=True,
         )
 
 
-def _success(payload: object, model: type[BaseModel], text: str) -> CallToolResult:
-    validated = model.model_validate(payload)
-    structured = validated.model_dump(mode="json", exclude_unset=True)
-    size = _structured_size(structured)
-    if size > MAX_STRUCTURED_RESPONSE_BYTES:
-        return _failure(
-            CatalogResponseTooLargeError(
-                "Complete tool result exceeds the 64 KiB response limit.",
-                details={"bytes": size, "limit": MAX_STRUCTURED_RESPONSE_BYTES},
-                hints=[
-                    "Narrow the SQL query, requested guideline entry IDs, source detail, or search limit."
-                ],
+def _recovery_hints(error: CatalogError, *, tool: str, catalog: Catalog) -> list[str]:
+    if tool == "describe" and error.code == "lookup":
+        return [
+            "Call describe with profile=null, then select an exact name from profiles."
+        ]
+    if tool in {"read", "cite"} and error.code == "lookup":
+        if tool == "read" and "id" not in error.details:
+            return [
+                "Use roles=null for all sections, or choose from: "
+                + ", ".join(catalog.manifest.section_roles)
+                + "."
+            ]
+        return [
+            "Use guideline IDs from sql rows or search matches[].id.",
+            'Discover IDs with sql(statement="SELECT id, title FROM guidelines ORDER BY id LIMIT 100").',
+        ]
+    if tool == "sql":
+        hints = [hint for hint in error.hints if "chartcoach.duckdb." not in hint]
+        if error.code == "invalid_input":
+            hints.append(
+                "Use describe.tables for table and column names, or sql with DESCRIBE guidelines for native SQL types."
             )
+        return hints
+    if tool != "search":
+        return list(error.hints)
+    if "columns" in error.details:
+        return [
+            "Use document columns from describe.mcp.search.filter_columns. Quote string values, such as role = 'overview', or set where=null."
+        ]
+    if "variables" in error.details:
+        hints = [
+            "Set the listed variables in the server environment or CHARTCOACH_EMBEDDING_VARS, then restart the server."
+        ]
+    else:
+        hints = [
+            hint.replace("catalog.describe(profile=...)", "describe(profile=...)")
+            for hint in error.hints
+        ]
+    if error.code in {
+        "unavailable_capability",
+        "embedding_failure",
+        "operation_failed",
+        "incompatible_profile",
+        "integrity",
+    }:
+        hints.append(
+            "Try search with mode='fts' and where=null, or use sql over guidelines if the index is unavailable."
         )
-    return CallToolResult(
-        content=[TextContent(type="text", text=text)],
-        structured_content=structured,
-        is_error=False,
-    )
+    return hints
 
 
-def _failure(error: CatalogError) -> CallToolResult:
-    payload = ErrorToolResult(
-        error=ErrorBody(
-            code=error.code,
-            message=error.message,
-            details=dict(error.details),
-            hints=list(error.hints),
-        )
-    ).model_dump(mode="json")
-    if _structured_size(payload) > MAX_STRUCTURED_RESPONSE_BYTES:
-        error = CatalogResponseTooLargeError(
-            "Tool error details exceed the 64 KiB response limit.",
-            details={"limit": MAX_STRUCTURED_RESPONSE_BYTES},
-            hints=["Narrow the request before retrying."],
-        )
-        payload = ErrorToolResult(
+def _success(payload: object, model: type[BaseModel]) -> CallToolResult:
+    return _result(model.model_validate(payload), is_error=False)
+
+
+def _failure(error: CatalogError, *, hints: Sequence[str]) -> CallToolResult:
+    return _result(
+        ErrorToolResult(
             error=ErrorBody(
                 code=error.code,
                 message=error.message,
                 details=dict(error.details),
-                hints=list(error.hints),
+                hints=list(hints),
             )
-        ).model_dump(mode="json")
-    return CallToolResult(
-        content=[TextContent(type="text", text=str(error))],
-        structured_content=payload,
+        ),
         is_error=True,
     )
 
 
-def _structured_size(value: object) -> int:
-    return len(
-        json.dumps(value, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+def _result(payload: BaseModel, *, is_error: bool) -> CallToolResult:
+    structured = payload.model_dump(mode="json", exclude_unset=True)
+    return CallToolResult(
+        content=[
+            TextContent(
+                type="text",
+                text=json.dumps(structured, ensure_ascii=False, separators=(",", ":")),
+            )
+        ],
+        structured_content=structured,
+        is_error=is_error,
     )

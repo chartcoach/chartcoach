@@ -285,7 +285,7 @@ def _validate_filter(table: Table, where: str, *, profile: str) -> None:
         except ValueError as exc:
             raise CatalogValidationError(
                 "LanceDB could not validate the index filter against its document columns.",
-                details={"profile": profile, "columns": columns},
+                details={"profile": profile, "columns": columns, "reason": str(exc)},
                 hints=[
                     "Available document columns: " + ", ".join(columns) + ".",
                     "Inspect catalog.index(profile).schema in Python, or omit the filter to search all documents.",
@@ -363,7 +363,7 @@ def _validate_semantic_environment(
                 "recorded": dict(metadata.python_requirements),
             },
             hints=[
-                "Install the listed packages, for example with chartcoach[embedding-openai]."
+                "Install the listed packages in the environment running the search."
             ],
         )
     missing_variables: list[str] = []

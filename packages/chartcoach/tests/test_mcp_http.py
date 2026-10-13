@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 from contextlib import asynccontextmanager
 
 import httpx2
@@ -10,7 +11,7 @@ from chartcoach.mcp import MCPConfig, create_app, create_server, register_tools
 from mcp import ClientSession
 from mcp.client.streamable_http import streamable_http_client
 from mcp.server import MCPServer
-from mcp.types import CallToolResult
+from mcp.types import CallToolResult, TextContent
 from starlette.applications import Starlette
 from starlette.routing import Mount
 
@@ -85,6 +86,27 @@ def test_http_client_tools_auth_origin_policy_and_readiness(
                     )
                     assert sql.is_error is False
                     assert sql.structured_content["rows"] == [{"value": 1}]
+                    large_sql = await session.call_tool(
+                        "sql", {"statement": "SELECT repeat('é', 33000) AS text"}
+                    )
+                    assert large_sql.is_error is False
+                    assert large_sql.structured_content["rows"] == [
+                        {"text": "é" * 33_000}
+                    ]
+                    for tool_result in (
+                        result,
+                        sql,
+                        large_sql,
+                        await session.call_tool("describe"),
+                        await session.call_tool("cite", {"ids": ["direct-labels"]}),
+                        await session.call_tool("read", {"ids": ["missing"]}),
+                    ):
+                        text = "".join(
+                            item.text
+                            for item in tool_result.content
+                            if isinstance(item, TextContent)
+                        )
+                        assert json.loads(text) == tool_result.structured_content
             assert (await client.get("/healthz")).status_code == 503
 
     asyncio.run(exercise())

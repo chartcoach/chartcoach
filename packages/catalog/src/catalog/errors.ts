@@ -7,8 +7,7 @@ export type CatalogErrorCode =
   | "unavailable_capability"
   | "incompatible_profile"
   | "embedding_failure"
-  | "operation_failed"
-  | "response_too_large";
+  | "operation_failed";
 
 export type CatalogErrorOptions = Readonly<{
   code?: CatalogErrorCode;
