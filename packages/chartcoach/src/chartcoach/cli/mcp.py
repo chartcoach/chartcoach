@@ -94,6 +94,11 @@ from .environment import load_env_file
     type=click.FloatRange(min=0, min_open=True),
     help=f"SQL execution deadline in seconds ({settings.ENVIRONMENT_FIELDS['sql_timeout']}). Default: {settings.DEFAULT_SQL_TIMEOUT:g}.",
 )
+@click.option(
+    "--tracing/--no-tracing",
+    default=None,
+    help=f"Export tool-call traces to Langfuse ({settings.ENVIRONMENT_FIELDS['tracing']}). Requires chartcoach[tracing] and the LANGFUSE_* keys. Default: {'on' if settings.DEFAULT_TRACING else 'off'}.",
+)
 def mcp_command(**options: object) -> None:
     from chartcoach._catalog.errors import CatalogError
 

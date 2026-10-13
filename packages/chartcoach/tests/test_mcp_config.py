@@ -26,6 +26,7 @@ def test_environment_overrides_and_configuration_redaction(tmp_path: Path) -> No
             "CHARTCOACH_MCP_TOKEN": "access-secret",
             "CHARTCOACH_MCP_STATELESS": "false",
             "CHARTCOACH_MCP_SQL_TIMEOUT": "2.5",
+            "CHARTCOACH_MCP_TRACING": "true",
             "CHARTCOACH_EMBEDDING_VARS": str(variables),
             "CHARTCOACH_EMBEDDING_API_KEY": "provider-secret",
         },
@@ -37,6 +38,7 @@ def test_environment_overrides_and_configuration_redaction(tmp_path: Path) -> No
     assert config.public_url == "https://mcp.chartcoach.dev"
     assert config.stateless is False
     assert config.sql_timeout == 2.5
+    assert config.tracing is True
     assert config.embedding_variables == {"provider-key": "file-secret"}
     assert config.embedding_environment is not None
     assert (

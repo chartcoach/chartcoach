@@ -196,6 +196,44 @@ assert "chartcoach[mcp]" in result.output
     assert result.returncode == 0, result.stderr
 
 
+def test_mcp_tracing_reports_the_extra_when_langfuse_is_absent(
+    tmp_path: Path,
+) -> None:
+    script = """
+import importlib.abc
+
+class BlockLangfuse(importlib.abc.MetaPathFinder):
+    def find_spec(self, fullname, path=None, target=None):
+        if fullname == "langfuse" or fullname.startswith("langfuse."):
+            raise ModuleNotFoundError("blocked langfuse", name=fullname)
+        return None
+
+import sys
+sys.meta_path.insert(0, BlockLangfuse())
+from chartcoach.cli.main import main
+from click.testing import CliRunner
+
+result = CliRunner().invoke(main, ["mcp", "--tracing"])
+assert result.exit_code == 1, result.output
+assert "chartcoach[mcp,tracing]" in result.output
+"""
+
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        check=False,
+        capture_output=True,
+        cwd=tmp_path,
+        env={
+            **os.environ,
+            "LANGFUSE_PUBLIC_KEY": "pk-lf-boundary-test",
+            "LANGFUSE_SECRET_KEY": "sk-lf-boundary-test",
+        },
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+
+
 def test_index_profile_reports_the_index_extra_when_lancedb_is_absent(
     tmp_path: Path,
 ) -> None:

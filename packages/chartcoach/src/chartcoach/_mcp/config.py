@@ -61,6 +61,7 @@ class MCPConfig(BaseModel):
     sql_timeout: float = Field(
         default=settings.DEFAULT_SQL_TIMEOUT, gt=0, allow_inf_nan=False
     )
+    tracing: bool = settings.DEFAULT_TRACING
     embedding_variables: dict[str, str] = Field(
         default_factory=dict, repr=False, exclude=True, validate_default=True
     )
