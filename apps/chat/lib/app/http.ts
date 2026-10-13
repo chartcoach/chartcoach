@@ -7,7 +7,7 @@ export function checkOrigin(request: Request) {
   const origin = request.headers.get("origin");
 
   if (origin && !URL.canParse(origin))
-    throw new AppError({ status: 403, message: "Open these settings from ChartCoach." });
+    throw new AppError({ status: 403, message: "Open these settings from chartcoach." });
 
   const host =
     request.headers.get("x-forwarded-host") ??
@@ -18,7 +18,7 @@ export function checkOrigin(request: Request) {
     request.headers.get("sec-fetch-site") === "cross-site" ||
     (origin && new URL(origin).host !== host)
   )
-    throw new AppError({ status: 403, message: "Open these settings from ChartCoach." });
+    throw new AppError({ status: 403, message: "Open these settings from chartcoach." });
 }
 
 export const readJson = <T>(request: Request, schema: z.ZodType<T>, maxBytes = 64_000) =>

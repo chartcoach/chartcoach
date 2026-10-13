@@ -9,7 +9,7 @@ const handlePage = async (request: IncomingMessage, response: ServerResponse) =>
 
   if (path === "/duckdb/duckdb-eh.wasm") response.end("wasm");
   else if (path === "/" || path.startsWith("/chat/") || path === "/guidelines")
-    response.end("<h1>ChartCoach</h1>");
+    response.end("<h1>chartcoach</h1>");
   else {
     response.writeHead(404);
     response.end("Page not found.");
@@ -53,7 +53,7 @@ it("protects assets and streams authenticated requests through the same origin",
       authorization: `Basic ${Buffer.from("chartcoach:private-password").toString("base64")}`,
     };
 
-    expect(await (await fetch(url, { headers })).text()).toContain("ChartCoach");
+    expect(await (await fetch(url, { headers })).text()).toContain("chartcoach");
     expect(
       (await fetch(url, { headers: { ...headers, origin: "https://attacker.example" } })).status,
     ).toBe(403);
@@ -274,7 +274,7 @@ it("opens a password-protected app in sandboxed frames with the embed key", asyn
   const access = { cookie: cookie.split(";")[0] };
 
   expect(await (await fetch(app.url, { headers: { ...framed, ...access } })).text()).toContain(
-    "ChartCoach",
+    "chartcoach",
   );
 
   const api = await fetch(new URL("eve/v1/preferences", app.url), {
@@ -307,7 +307,7 @@ it("preserves origin variation when the page renderer replaces Vary", async () =
     handlePage: async (_request, response) => {
       response.setHeader("vary", "rsc, Accept-Encoding");
       response.writeHead(200, { vary: "rsc, next-router-state-tree, Accept-Encoding" });
-      response.end("ChartCoach");
+      response.end("chartcoach");
     },
     agentURL: "http://127.0.0.1:1",
     token: "private-worker-token",

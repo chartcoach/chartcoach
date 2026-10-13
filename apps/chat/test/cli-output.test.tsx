@@ -16,7 +16,7 @@ it("renders a readable startup summary with optional terminal color", () => {
 
   expect(renderLoading(plain)).toBe("◌ Loading catalog…\n");
   expect(output).toBe(`
-✓ ChartCoach is ready
+✓ chartcoach is ready
   ➜ http://127.0.0.1:4273/
 
   Catalog  781 guidelines

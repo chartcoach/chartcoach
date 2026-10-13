@@ -43,7 +43,7 @@ it("recovers abandoned locks, isolates parallel sessions, and releases their res
         _request: import("node:http").IncomingMessage,
         response: import("node:http").ServerResponse,
       ) => {
-        response.end("ChartCoach");
+        response.end("chartcoach");
       },
       close: async () => {},
     }),
@@ -57,7 +57,7 @@ it("recovers abandoned locks, isolates parallel sessions, and releases their res
     {
       await using app = await startChat(config, options);
       expect(app.dataDir).toBe(config.storage.dataDir);
-      expect(await (await fetch(app.url)).text()).toBe("ChartCoach");
+      expect(await (await fetch(app.url)).text()).toBe("chartcoach");
       expect(log).toHaveBeenCalledTimes(1);
       pid = Number(await readFile(join(config.storage.dataDir, "worker.pid"), "utf8"));
 
@@ -73,7 +73,7 @@ it("recovers abandoned locks, isolates parallel sessions, and releases their res
       await Promise.race([waiting.promise, stopped]);
       controller.abort();
       await expect(stopped).rejects.toBe(controller.signal.reason);
-      expect(await (await fetch(app.url)).text()).toBe("ChartCoach");
+      expect(await (await fetch(app.url)).text()).toBe("chartcoach");
 
       const busy = { ...config, server: { ...config.server, port: Number(new URL(app.url).port) } };
       let session: string;
@@ -83,7 +83,7 @@ it("recovers abandoned locks, isolates parallel sessions, and releases their res
         session = parallel.dataDir;
         expect(session).toMatch(`${join(config.storage.dataDir, "sessions", "session-")}`);
         expect(parallel.url).not.toBe(app.url);
-        expect(await (await fetch(parallel.url)).text()).toBe("ChartCoach");
+        expect(await (await fetch(parallel.url)).text()).toBe("chartcoach");
         sessionPID = Number(await readFile(join(session, "worker.pid"), "utf8"));
         expect(sessionPID).not.toBe(pid);
         await writeFile(join(session, "saved.txt"), "independent session");
@@ -101,10 +101,10 @@ it("recovers abandoned locks, isolates parallel sessions, and releases their res
         expect(await readFile(join(resumed.dataDir, "saved.txt"), "utf8")).toBe(
           "independent session",
         );
-        expect(await (await fetch(resumed.url)).text()).toBe("ChartCoach");
+        expect(await (await fetch(resumed.url)).text()).toBe("chartcoach");
       }
 
-      expect(await (await fetch(app.url)).text()).toBe("ChartCoach");
+      expect(await (await fetch(app.url)).text()).toBe("chartcoach");
 
       // A fixed public URL must not silently route a second session to the first one.
       const fixed = { ...busy, server: { ...busy.server, publicURL: app.url } };
@@ -167,7 +167,7 @@ it("recovers abandoned locks, isolates parallel sessions, and releases their res
     expect(() => process.kill(interruptedPID, 0)).toThrow();
     await expect(stat(join(config.storage.dataDir, ".lock"))).rejects.toThrow();
     await using recovered = await startChat(config, options);
-    expect(await (await fetch(recovered.url)).text()).toBe("ChartCoach");
+    expect(await (await fetch(recovered.url)).text()).toBe("chartcoach");
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

@@ -55,7 +55,7 @@ export async function startChat(
   const workspace = await lockWorkspace(
     config.storage.dataDir,
     lifetime,
-    () => controller.abort(new Error("The workspace lock was lost. Restart ChartCoach.")),
+    () => controller.abort(new Error("The workspace lock was lost. Restart chartcoach.")),
     log,
     local,
   ).catch((error) => {
@@ -248,10 +248,10 @@ async function lockWorkspace(
         throw new Error(
           [
             `The data directory is still locked:\n  ${directory}`,
-            `Press Ctrl+C in the other ChartCoach terminal, or find its background runtime${windows ? " in PowerShell" : ""}:`,
+            `Press Ctrl+C in the other chartcoach terminal, or find its background runtime${windows ? " in PowerShell" : ""}:`,
             `  ${find}`,
             ...(windows ? [] : ["Inspect the listed PID: ps -p PID -o command="]),
-            `Stop ChartCoach with ${stop}, replacing PID with its process ID, then retry.`,
+            `Stop chartcoach with ${stop}, replacing PID with its process ID, then retry.`,
             "PID is a process ID, not a port number.",
             "For a separate session, use --data-dir <directory> --port 0.",
             "If --public-url is configured, choose a distinct public URL for that session.",
@@ -259,7 +259,7 @@ async function lockWorkspace(
         );
       }
 
-      if (attempt === 0) log("Waiting for the previous ChartCoach session to release its data…");
+      if (attempt === 0) log("Waiting for the previous chartcoach session to release its data…");
     }
 
     await delay(1000, undefined, { signal });

@@ -21,7 +21,7 @@ def build_lancedb_index(
     *,
     embedding: EmbeddingFunction,
 ) -> Table:
-    """Build the fixed ChartCoach document table with a LanceDB embedding."""
+    """Build the fixed chartcoach document table with a LanceDB embedding."""
 
     embedding = _validated_embedding(embedding)
     frame = catalog.documents()

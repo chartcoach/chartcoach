@@ -33,7 +33,7 @@ it.each([
   );
 
   const header = page.querySelector("header")!;
-  expect(header.textContent).toContain("ChartCoach");
+  expect(header.textContent).toContain("chartcoach");
   expect(header.querySelector('[role="status"]')?.getAttribute("aria-label")).toBe(
     `Active mode: ${label}`,
   );

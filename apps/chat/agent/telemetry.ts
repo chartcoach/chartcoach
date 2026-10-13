@@ -102,7 +102,7 @@ export class LangfuseProcessor extends LangfuseSpanProcessor {
         context[`langfuse.observation.metadata.${key}`] = value;
     }
 
-    context["langfuse.trace.name"] = "ChartCoach response";
+    context["langfuse.trace.name"] = "chartcoach response";
     context["langfuse.trace.tags"] = ["chartcoach", "chat"];
     span.setAttributes(context);
 
@@ -203,7 +203,7 @@ export class LangfuseProcessor extends LangfuseSpanProcessor {
         };
 
         if (group) {
-          attributes["langfuse.trace.name"] = "ChartCoach history compaction";
+          attributes["langfuse.trace.name"] = "chartcoach history compaction";
           attributes["langfuse.trace.tags"] = ["chartcoach", "chat", "compaction"];
         }
       }

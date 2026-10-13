@@ -222,7 +222,7 @@ try {
     resolve(root, chatArchive),
     resolve(root, catalogArchive),
   ]);
-  // An installing Next app's configuration must not change ChartCoach's routes.
+  // An installing Next app's configuration must not change chartcoach's routes.
   await writeFile(
     join(directory, "next.config.mjs"),
     'export default { basePath: "/host-app", output: "export", poweredByHeader: true };\n',
@@ -403,7 +403,7 @@ try {
   assert.equal(remoteReport.includes("consumer-private-embedding-key"), false);
 
   let url = await start();
-  assert.match(runtimeOutput, /✓ ChartCoach is ready/);
+  assert.match(runtimeOutput, /✓ chartcoach is ready/);
   assert.equal(runtimeOutput.includes("\u001B["), false, "Redirected CLI output contains no color");
   assert.equal((await fetch(url)).status, 401);
   browser = await chromium.launch({
@@ -527,7 +527,7 @@ try {
   );
   assert.deepEqual(await page.locator("article > header > h2").allTextContents(), [
     "You",
-    "ChartCoach",
+    "chartcoach",
   ]);
   await page.getByText("1 primary · 1 found", { exact: true }).waitFor();
   await page.getByText("Response complete.", { exact: true }).waitFor({ state: "attached" });
@@ -664,7 +664,7 @@ try {
   await page.getByRole("menuitem", { name: "Rename", exact: true }).click();
   await page.getByRole("textbox", { name: "Conversation title", exact: true }).fill(renamedTitle);
   await page.getByRole("button", { name: "Save", exact: true }).click();
-  await page.waitForFunction((title) => document.title === `${title} · ChartCoach`, renamedTitle);
+  await page.waitForFunction((title) => document.title === `${title} · chartcoach`, renamedTitle);
   const historyLink = page.getByRole("link", { name: renamedTitle, exact: true });
   assert.equal(await historyLink.getAttribute("href"), threadPath);
   await page.getByRole("link", { name: "New chat", exact: true }).click();
@@ -762,7 +762,7 @@ try {
   const embedHost = createServer((_request, response) => {
     response.setHeader("content-type", "text/html");
     response.end(
-      `<iframe title="ChartCoach" sandbox="allow-scripts allow-forms" style="width:100%;height:900px" src="${embedURL.href}"></iframe>`,
+      `<iframe title="chartcoach" sandbox="allow-scripts allow-forms" style="width:100%;height:900px" src="${embedURL.href}"></iframe>`,
     );
   });
 
@@ -775,7 +775,7 @@ try {
     const embeddedPage = await embeddedContext.newPage();
     embeddedPage.on("pageerror", (error) => errors.push(error.message));
     await embeddedPage.goto(`http://localhost:${hostAddress.port}`);
-    const embedded = embeddedPage.frameLocator('iframe[title="ChartCoach"]');
+    const embedded = embeddedPage.frameLocator('iframe[title="chartcoach"]');
     await embedded
       .getByRole("textbox", { name: /message|ask|chart/i })
       .first()

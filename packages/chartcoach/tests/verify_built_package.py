@@ -18,7 +18,7 @@ _FIXTURE_RELEASE = _REPOSITORY / "fixtures" / "catalog-release"
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Verify built ChartCoach distributions."
+        description="Verify built chartcoach distributions."
     )
     parser.add_argument(
         "--dist-dir",
@@ -34,7 +34,7 @@ def main() -> None:
     options = parser.parse_args()
     wheels = list(options.dist_dir.resolve().glob("chartcoach-*-py3-none-any.whl"))
     if len(wheels) != 1:
-        parser.error("Expected exactly one ChartCoach wheel in --dist-dir")
+        parser.error("Expected exactly one chartcoach wheel in --dist-dir")
     wheel = wheels[0]
     distribution = wheel.name.removesuffix("-py3-none-any.whl")
     sdist = wheel.with_name(f"{distribution}.tar.gz")
@@ -45,7 +45,7 @@ def main() -> None:
     }
     if distributions != {wheel, sdist}:
         parser.error(
-            "Expected exactly one ChartCoach wheel and matching source distribution"
+            "Expected exactly one chartcoach wheel and matching source distribution"
         )
     from agent_plugins import Plugin
 

@@ -112,7 +112,7 @@ def _options(values: Mapping[str, object]) -> dict[str, object]:
     reserved = {"n_components", "n_jobs", "precomputed_knn"} & values.keys()
     if reserved:
         names = ", ".join(sorted(reserved))
-        raise ValueError(f"ChartCoach owns these UMAP options: {names}.")
+        raise ValueError(f"chartcoach owns these UMAP options: {names}.")
 
     options: dict[str, object] = {
         "n_neighbors": 15,

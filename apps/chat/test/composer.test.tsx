@@ -89,10 +89,10 @@ it("opens the full tracing explanation and restores focus when dismissed", async
     await act(async () => trigger.click());
     const details = document.querySelector('[role="dialog"]')!;
     expect(details.textContent).toContain(
-      "Conversation tracing is enabled to improve ChartCoach and may include messages, images, and responses.",
+      "Conversation tracing is enabled to improve chartcoach and may include messages, images, and responses.",
     );
     const link = details.querySelector<HTMLAnchorElement>("a")!;
-    expect(link.textContent).toBe("self-hosting ChartCoach with tracing disabled");
+    expect(link.textContent).toBe("self-hosting chartcoach with tracing disabled");
     expect(link.href).toBe("https://docs.chartcoach.dev/");
     await act(async () =>
       document

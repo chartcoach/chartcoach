@@ -32,7 +32,7 @@ export function GuidelinePage({ id }: { id: string }) {
   return (
     <main {...stylex.props(styles.page)}>
       <Link {...stylex.props(ui.focus)} href="/">
-        ChartCoach
+        chartcoach
       </Link>
       {error ? (
         <p role="alert">{error}</p>

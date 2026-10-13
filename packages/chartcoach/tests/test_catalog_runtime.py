@@ -304,7 +304,7 @@ def test_http_catalog_and_release_descriptors_share_verified_artifacts(
         exact_url = f"{base_url}/catalog/releases/{release.digest}/release.json"
         selected = open_catalog(
             selected_url,
-            storage_options={"headers": {"X-ChartCoach-Test": "runtime"}},
+            storage_options={"headers": {"X-chartcoach-Test": "runtime"}},
         )
         exact = open_catalog(exact_url)
 

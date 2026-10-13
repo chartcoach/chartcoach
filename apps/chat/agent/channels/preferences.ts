@@ -43,7 +43,7 @@ const owner = (request: Request) =>
     if (!value.success)
       return yield* new AppError({
         status: 401,
-        message: "Reload ChartCoach to open your settings.",
+        message: "Reload chartcoach to open your settings.",
       });
 
     return value.data;
@@ -74,7 +74,7 @@ export default defineChannel({
             catch: () =>
               new AppError({
                 status: 403,
-                message: "Open ChartCoach directly to load your settings.",
+                message: "Open chartcoach directly to load your settings.",
               }),
           });
           const auth = yield* Effect.promise(() => routeAuth(request, accessRouteAuth));

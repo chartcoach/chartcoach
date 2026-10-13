@@ -338,7 +338,7 @@ export function Composer({
               </p>
               {tracing ? (
                 <p {...stylex.props(styles.privacyText)}>
-                  Conversation tracing is enabled to improve ChartCoach and may include messages,
+                  Conversation tracing is enabled to improve chartcoach and may include messages,
                   images, and responses. You can opt out by{" "}
                   <a
                     {...stylex.props(styles.tracingLink, ui.focus)}
@@ -346,7 +346,7 @@ export function Composer({
                     target="_blank"
                     rel="noreferrer"
                   >
-                    self-hosting ChartCoach with tracing disabled
+                    self-hosting chartcoach with tracing disabled
                   </a>
                   .
                 </p>

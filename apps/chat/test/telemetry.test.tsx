@@ -152,7 +152,7 @@ it("exports session-scoped model and tool trees while omitting orchestration spa
       const tool = session.find((span) => span.name === "execute_tool read_guidelines")!;
       expect(tool.parentSpanContext?.spanId).toBe(model.parentSpanContext?.spanId);
       expect(model.attributes).toMatchObject({
-        "langfuse.trace.name": "ChartCoach response",
+        "langfuse.trace.name": "chartcoach response",
         "user.id": "reviewer",
         "gen_ai.usage.input_tokens": 20,
         "gen_ai.usage.output_tokens": 5,
