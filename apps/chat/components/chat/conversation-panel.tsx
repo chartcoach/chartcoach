@@ -9,6 +9,7 @@ import { EvidencePanel } from "./evidence-panel";
 import { Conversation } from "./conversation";
 import { Starters } from "./starters";
 import { ProgressLabel, ProgressMark } from "./progress";
+import { LoadingMark } from "../ui/loading-mark";
 import { ui } from "../ui/ui";
 import { styles } from "./chat.styles";
 
@@ -41,10 +42,8 @@ export function ConversationPanel({
   example?: string;
   composer: ReactNode;
 }) {
-  const { welcome, welcomeRef, columnRef, messagesRef, panelRef } = useConversationStart(
-    empty,
-    restoring,
-  );
+  const { welcome, welcomeRef, startersRef, columnRef, composerRef, messagesRef, panelRef } =
+    useConversationStart(empty, restoring);
 
   return (
     <main {...stylex.props(styles.main)} data-empty={welcome}>
@@ -59,16 +58,18 @@ export function ConversationPanel({
         )}
       >
         <div ref={columnRef} {...stylex.props(styles.thread, welcome && styles.emptyThread)}>
-          <Conversation empty={welcome || restoring}>
+          <Conversation empty={welcome || restoring} centered={welcome}>
             {welcome ? (
               <section ref={welcomeRef} {...stylex.props(styles.welcome)} inert={!empty}>
-                <h2 {...stylex.props(styles.title)}>
-                  Design with <span {...stylex.props(styles.accent)}>guidance.</span>
-                </h2>
+                <div {...stylex.props(styles.lockup)}>
+                  <LoadingMark active={false} size={40} />
+                  <h2 {...stylex.props(styles.title)}>
+                    Design with <span {...stylex.props(styles.accent)}>guidance.</span>
+                  </h2>
+                </div>
                 <p {...stylex.props(styles.intro)}>
                   Review a chart, plan a&nbsp;design, or explore a&nbsp;tradeoff.
                 </p>
-                <Starters disabled={disabled} pending={example} onExample={sendExample} />
               </section>
             ) : (
               <div ref={messagesRef} {...stylex.props(styles.messages)}>
@@ -104,7 +105,17 @@ export function ConversationPanel({
               </p>
             ) : null}
           </Conversation>
-          {composer}
+          <div ref={composerRef} {...stylex.props(styles.composer)}>
+            {composer}
+          </div>
+          {welcome ? (
+            <Starters
+              ref={startersRef}
+              disabled={disabled}
+              pending={example}
+              onExample={sendExample}
+            />
+          ) : null}
         </div>
         <EvidencePanel
           ref={panelRef}

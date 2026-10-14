@@ -35,6 +35,11 @@ const styles = stylex.create({
     "::-webkit-scrollbar-track": { backgroundColor: "transparent" },
     "::-webkit-scrollbar-thumb": { backgroundColor: colors.scrollThumb, borderRadius: 3 },
   },
+  // Spacious windows center the welcome and composer together, so the shell takes its content height.
+  centered: {
+    flexGrow: { default: 1, [media.spacious]: 0 },
+    flexBasis: { default: "0%", [media.spacious]: "auto" },
+  },
   content: { width: "min(100%, 672px)", marginInline: "auto", position: "relative" },
   welcome: {
     minHeight: "100%",
@@ -59,12 +64,20 @@ const styles = stylex.create({
   },
 });
 
-export function Conversation({ empty, children }: { empty: boolean; children: ReactNode }) {
+export function Conversation({
+  empty,
+  centered = false,
+  children,
+}: {
+  empty: boolean;
+  centered?: boolean;
+  children: ReactNode;
+}) {
   const { viewportRef, atLatest, scrollToLatest } = useContentScroll("bottom", !empty);
   useAuiEvent("thread.runStart", scrollToLatest);
 
   return (
-    <div {...stylex.props(styles.shell)}>
+    <div {...stylex.props(styles.shell, centered && styles.centered)}>
       <ThreadPrimitive.Viewport
         {...stylex.props(ui.focus, styles.viewport)}
         ref={viewportRef}

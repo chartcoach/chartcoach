@@ -29,6 +29,10 @@ export const media = stylex.defineConsts({
   catalogWide: "@container chat (min-width: 760px)",
   navigationDesktop: "@media (min-width: 1100px)",
   short: "@media (max-height: 620px)",
+  /** Phones and short windows keep the composer at the bottom of an empty chat. */
+  compact: "@media (max-width: 520px), (max-height: 620px)",
+  spacious: "@media (min-width: 521px) and (min-height: 621px)",
+  landscape: "@media (min-width: 521px) and (max-height: 620px)",
   shortNarrow: "@media (max-width: 719px) and (max-height: 600px)",
   hover: "@media (hover: hover) and (pointer: fine)",
   coarse: "@media (pointer: coarse)",
