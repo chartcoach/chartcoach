@@ -98,6 +98,7 @@ export const styles = stylex.create({
     color: colors.muted,
     lineHeight: 1.65,
     fontSize: { default: 16, [media.mobile]: 14 },
+    textWrap: "balance",
     textAlign: "center",
     marginInline: "auto",
     marginBlock: 0,

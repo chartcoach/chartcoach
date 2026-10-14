@@ -66,7 +66,7 @@ export function ConversationPanel({
                   Design with <span {...stylex.props(styles.accent)}>guidance.</span>
                 </h2>
                 <p {...stylex.props(styles.intro)}>
-                  Review a chart, plan a design, or explore a tradeoff.
+                  Review a chart, plan a&nbsp;design, or explore a&nbsp;tradeoff.
                 </p>
                 <Starters disabled={disabled} pending={example} onExample={sendExample} />
               </section>
