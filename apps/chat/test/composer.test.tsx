@@ -4,13 +4,24 @@ import {
   useExternalStoreRuntime,
   type ThreadMessage,
 } from "@assistant-ui/react";
-import { act, useRef } from "react";
+import { act, useRef, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { createRoot } from "react-dom/client";
 import { expect, it, vi } from "vite-plus/test";
 import { Composer } from "../components/chat/composer";
 import { renderDocument } from "./render-document";
 
-function NativeComposer({ running, tracing = false }: { running: boolean; tracing?: boolean }) {
+function NativeComposer({
+  running,
+  tracing = false,
+  modelControl,
+  keepExpanded,
+}: {
+  running: boolean;
+  tracing?: boolean;
+  modelControl?: ReactNode;
+  keepExpanded?: boolean;
+}) {
   const runtime = useExternalStoreRuntime<ThreadMessage>({
     messages: [],
     isRunning: running,
@@ -29,6 +40,8 @@ function NativeComposer({ running, tracing = false }: { running: boolean; tracin
         disabled={running}
         reading={false}
         tracing={tracing}
+        modelControl={modelControl}
+        keepExpanded={keepExpanded}
       />
     </AssistantRuntimeProvider>
   );
@@ -106,4 +119,78 @@ it("opens the full tracing explanation and restores focus when dismissed", async
     container.remove();
     vi.unstubAllGlobals();
   }
+});
+
+async function mountComposer(modelControl?: ReactNode) {
+  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
+  const container = document.createElement("div");
+  document.body.append(container);
+  const root = createRoot(container);
+  await act(async () =>
+    root.render(<NativeComposer running={false} modelControl={modelControl} />),
+  );
+
+  return {
+    composer: container.querySelector<HTMLElement>('[aria-label="Message composer"]')!,
+    input: container.querySelector("textarea")!,
+    unmount: async () => {
+      await act(async () => root.unmount());
+      container.remove();
+      vi.unstubAllGlobals();
+    },
+  };
+}
+
+it("collapses an idle empty composer and expands it for editing or a draft", async () => {
+  const { composer, input, unmount } = await mountComposer();
+
+  try {
+    expect(composer.dataset.state).toBe("collapsed");
+    await act(async () => input.focus());
+    expect(composer.dataset.state).toBe("expanded");
+    await act(async () => input.blur());
+    expect(composer.dataset.state).toBe("collapsed");
+
+    await act(async () => {
+      input.focus();
+      Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")!.set!.call(
+        input,
+        "Should the axis start at zero?",
+      );
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await act(async () => input.blur());
+    expect(composer.dataset.state).toBe("expanded");
+  } finally {
+    await unmount();
+  }
+});
+
+it("stays expanded while focus is inside a portaled composer control", async () => {
+  // Radix dialogs, such as model settings, render their content outside the composer form.
+  const { composer, input, unmount } = await mountComposer(
+    createPortal(<button type="button">Choose model</button>, document.body),
+  );
+
+  try {
+    await act(async () => input.focus());
+
+    const control = Array.from(document.querySelectorAll("button")).find(
+      (button) => button.textContent === "Choose model",
+    )!;
+
+    await act(async () => control.focus());
+    expect(composer.dataset.state).toBe("expanded");
+    await act(async () => control.blur());
+    expect(composer.dataset.state).toBe("collapsed");
+  } finally {
+    await unmount();
+  }
+});
+
+it("keeps the model control row open when the caller requires it", () => {
+  const page = renderDocument(<NativeComposer running={false} keepExpanded />);
+  expect(page.querySelector<HTMLElement>('[aria-label="Message composer"]')?.dataset.state).toBe(
+    "expanded",
+  );
 });

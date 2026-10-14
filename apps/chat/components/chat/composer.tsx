@@ -1,8 +1,8 @@
-import { AttachmentPrimitive, ComposerPrimitive } from "@assistant-ui/react";
+import { AttachmentPrimitive, ComposerPrimitive, useAuiState } from "@assistant-ui/react";
 import * as Match from "effect/Match";
 import { ArrowUp, ImagePlus, Info, X } from "lucide-react";
 import { Popover } from "radix-ui";
-import type { ReactNode, RefObject } from "react";
+import { useState, type ReactNode, type RefObject } from "react";
 import * as stylex from "@stylexjs/stylex";
 import { colors, media, motion } from "../ui/tokens.stylex";
 import { ui } from "../ui/ui";
@@ -26,9 +26,17 @@ const styles = stylex.create({
     borderWidth: 1,
     borderStyle: "solid",
     borderColor: { default: colors.border, ":focus-within": colors.muted },
-    borderRadius: 16,
+    borderRadius: { default: 16, [media.mobile]: 26 },
     boxShadow: "0 2px 12px #00000006",
     padding: { default: 16, [media.mobile]: 12 },
+  },
+  collapsedRoot: {
+    display: { default: null, [media.mobile]: "grid" },
+    gridTemplateColumns: { default: null, [media.mobile]: "auto minmax(0, 1fr) auto" },
+    gridTemplateAreas: { default: null, [media.mobile]: '"attachment input send"' },
+    alignItems: { default: null, [media.mobile]: "center" },
+    columnGap: { default: null, [media.mobile]: 2 },
+    padding: { default: 16, [media.mobile]: 3 },
   },
   input: {
     display: "block",
@@ -39,7 +47,7 @@ const styles = stylex.create({
     color: "inherit",
     outlineStyle: "none",
     lineHeight: 1.6,
-    minHeight: { default: 48, [media.mobile]: 40, [media.short]: 32 },
+    minHeight: { default: 48, [media.short]: 32, [media.mobile]: 0 },
     maxHeight: 180,
     paddingBlock: 0,
     paddingInline: 2,
@@ -47,6 +55,7 @@ const styles = stylex.create({
     WebkitTapHighlightColor: "transparent",
     "::placeholder": { color: colors.muted },
   },
+  collapsedInput: { gridArea: "input" },
   controls: {
     display: "grid",
     gridTemplateColumns: {
@@ -59,6 +68,9 @@ const styles = stylex.create({
     alignItems: "center",
     marginTop: 10,
   },
+  collapsedControls: { display: { default: "grid", [media.mobile]: "contents" } },
+  model: { display: "contents" },
+  collapsedModel: { display: { default: "contents", [media.mobile]: "none" } },
   attachmentControl: { gridArea: "attachment", minWidth: { default: 128, [media.mobile]: 44 } },
   attachmentLabel: { display: { default: "inline", [media.mobile]: "none" }, whiteSpace: "nowrap" },
   send: {
@@ -181,6 +193,7 @@ export function Composer({
   error,
   onRecover,
   modelControl,
+  keepExpanded = false,
   tracing = false,
 }: {
   onUpload: (files: File[]) => void;
@@ -191,11 +204,32 @@ export function Composer({
   error?: string;
   onRecover?: () => Promise<void>;
   modelControl?: ReactNode;
+  keepExpanded?: boolean;
   tracing?: boolean;
 }) {
+  const [editing, setEditing] = useState(false);
+
+  const draft = useAuiState(
+    (state) => state.composer.text !== "" || state.composer.attachments.length > 0,
+  );
+
+  const collapsed = !keepExpanded && !editing && !draft;
+
   return (
     <div {...stylex.props(styles.area)}>
-      <ComposerPrimitive.Root {...stylex.props(styles.root)} aria-label="Message composer">
+      <ComposerPrimitive.Root
+        {...stylex.props(styles.root, collapsed && styles.collapsedRoot)}
+        aria-label="Message composer"
+        data-state={collapsed ? "collapsed" : "expanded"}
+        // React delivers focus from portaled children, such as the model dialog, through
+        // this root. Their DOM nodes sit outside it, and they keep the composer expanded.
+        onFocus={(event) => {
+          if (!event.currentTarget.contains(event.target)) setEditing(true);
+        }}
+        onBlur={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget)) setEditing(false);
+        }}
+      >
         <ComposerPrimitive.Attachments>
           {({ attachment }) => {
             const content = attachment.content?.find(
@@ -238,7 +272,7 @@ export function Composer({
           Message
         </label>
         <ComposerPrimitive.Input
-          {...stylex.props(styles.input)}
+          {...stylex.props(styles.input, collapsed && styles.collapsedInput)}
           id="message"
           ref={messageInput}
           placeholder="Ask about your chart…"
@@ -249,6 +283,7 @@ export function Composer({
           cancelOnEscape={false}
           addAttachmentOnPaste={false}
           aria-describedby="upload-hint message-privacy"
+          onFocus={() => setEditing(true)}
           onPaste={(event) => {
             const files = Array.from(event.clipboardData.files);
 
@@ -258,7 +293,14 @@ export function Composer({
             }
           }}
         />
-        <div {...stylex.props(styles.controls)}>
+        <div
+          {...stylex.props(styles.controls, collapsed && styles.collapsedControls)}
+          // WebKit blurs the input when a button is pressed without focusing the button. The
+          // composer would collapse under the pointer and the button would miss its click.
+          onMouseDown={(event) => {
+            if (document.activeElement === messageInput.current) event.preventDefault();
+          }}
+        >
           <ComposerPrimitive.AddAttachment
             {...stylex.props(ui.button, ui.quietButton, ui.focus, styles.attachmentControl)}
             multiple={false}
@@ -273,7 +315,9 @@ export function Composer({
           <span {...stylex.props(ui.srOnly)} id="upload-hint">
             PNG, JPEG, WebP · Up to 3 MiB
           </span>
-          {modelControl}
+          <div {...stylex.props(styles.model, collapsed && styles.collapsedModel)}>
+            {modelControl}
+          </div>
           {busy ? (
             <ComposerPrimitive.Cancel
               {...stylex.props(ui.button, ui.focus, styles.send, styles.stop, styles.swap)}

@@ -14,12 +14,12 @@ const orbit = stylex.keyframes({
 const angles = [140, 160, 180, 200, 220, 240, 260, 280, 300, 320, 340, 0, 20, 40];
 
 const styles = stylex.create({
-  root: {
+  root: (size: number) => ({
     display: "inline-block",
-    width: 24,
-    height: 24,
+    width: size,
+    height: size,
     flexShrink: 0,
-  },
+  }),
   motion: {
     transformOrigin: "50px 50px",
     animationDuration: "5.6s",
@@ -39,9 +39,14 @@ const styles = stylex.create({
   accent: { fill: colors.accent },
 });
 
-export function LoadingMark({ active = true }: { active?: boolean }) {
+export function LoadingMark({ active = true, size = 24 }: { active?: boolean; size?: number }) {
   return (
-    <svg {...stylex.props(styles.root)} viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+    <svg
+      {...stylex.props(styles.root(size))}
+      viewBox="0 0 100 100"
+      aria-hidden="true"
+      focusable="false"
+    >
       {angles.map((angle, index) => (
         <g key={angle} transform={`rotate(${angle} 50 50)`}>
           <g {...stylex.props(styles.motion, styles.spread(index), !active && styles.paused)}>
