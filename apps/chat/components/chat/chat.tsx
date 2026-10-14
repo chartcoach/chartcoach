@@ -85,6 +85,7 @@ function ChatConversation() {
             modelControl={
               <ModelSettings workspace={workspace} disabled={disabled || !workspace.ready} />
             }
+            keepExpanded={workspace.ready && !workspace.connection}
             tracing={workspace.tracing}
           />
         }
